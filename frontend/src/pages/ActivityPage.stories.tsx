@@ -120,15 +120,16 @@ export const ReaderView: Story = {
   play: async ({ canvas }) => {
     await waitFor(() => expect((canvas.getAllByText('Lanterns Over Kasumi')).length).toBeGreaterThan(0))
     await expect(canvas.queryByRole('button', { name: 'Pause downloads' })).not.toBeInTheDocument()
-    await expect(canvas.queryByRole('button', { name: 'Clear queue' })).not.toBeInTheDocument()
+    await expect(canvas.queryByRole('button', { name: 'More queue actions' })).not.toBeInTheDocument()
     await expect(canvas.queryByRole('button', { name: 'Review' })).not.toBeInTheDocument()
   },
 }
 
 export const ClearQueueConfirm: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Clear queue' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'More queue actions' }))
     const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Clear queue' }))
     const dialog = await body.findByRole('dialog')
     await waitFor(() => expect(within(dialog).getByText(/Pending downloads will be removed/)).toBeVisible())
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Cancel' }))

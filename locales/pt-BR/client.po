@@ -518,12 +518,12 @@ msgstr "{active, plural, one {# download em andamento} many {# downloads em anda
 msgid "{adds} added by you, {excluded} excluded from taste"
 msgstr "{adds} adicionados por você, {excluded} excluídos do gosto"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{affected, plural, one {Removed # failed download} other {Removed # failed downloads}}"
 msgstr "{affected, plural, one {# download com falha removido} many {# downloads com falha removidos} other {# downloads com falha removidos}}"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{affected, plural, one {Retrying # failed download} other {Retrying # failed downloads}}"
 msgstr "{affected, plural, one {Tentando novamente # download com falha} many {Tentando novamente # downloads com falha} other {Tentando novamente # downloads com falha}}"
@@ -1214,12 +1214,12 @@ msgstr "{markerLabel} A adaptação de anime começa aqui · clique para expandi
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "{matched} de {total} correspondidos, {positive} positivos, {avoided} evitados, {superseded} já seus"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{matchingCount, plural, one {# failed download will be queued again, ignoring the automatic retry limit.} other {# failed downloads will be queued again, ignoring the automatic retry limit.}}"
 msgstr "{matchingCount, plural, one {# download com falha será enfileirado de novo, ignorando o limite automático de tentativas.} many {# downloads com falha serão enfileirados de novo, ignorando o limite automático de tentativas.} other {# downloads com falha serão enfileirados de novo, ignorando o limite automático de tentativas.}}"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{matchingCount, plural, one {# failed download will be removed from the queue.} other {# failed downloads will be removed from the queue.}}"
 msgstr "{matchingCount, plural, one {# download com falha será removido da fila.} many {# downloads com falha serão removidos da fila.} other {# downloads com falha serão removidos da fila.}}"
@@ -3152,7 +3152,7 @@ msgstr "Tudo é opcional. O Maki baixa de suas próprias fontes sem precisar des
 msgid "all read"
 msgstr "todos lidos"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "All reasons"
 msgstr "Todos os motivos"
@@ -3172,7 +3172,7 @@ msgstr "Todas as raízes"
 msgid "All series"
 msgstr "Todas as séries"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -4202,13 +4202,13 @@ msgid "Can't sign in with the saved details."
 msgstr ""
 
 #: src/components/DiscoverPresets.tsx
-#: src/components/FailedQueueActions.tsx
 #: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
@@ -4969,6 +4969,7 @@ msgstr "Limpar padrão"
 msgid "Clear filters"
 msgstr "Limpar filtros"
 
+#: src/components/QueueActions.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Clear queue"
@@ -5736,7 +5737,7 @@ msgstr "Não foi possível pausar os downloads"
 msgid "Couldn't reach {label}."
 msgstr "Não foi possível acessar {label}."
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Couldn't remove the failed downloads"
 msgstr "Não foi possível remover os downloads com falha"
@@ -5746,7 +5747,7 @@ msgstr "Não foi possível remover os downloads com falha"
 msgid "Couldn't resume the downloads"
 msgstr "Não foi possível retomar os downloads"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Couldn't retry the failed downloads"
 msgstr "Não foi possível tentar novamente os downloads com falha"
@@ -6534,7 +6535,7 @@ msgstr "Documentação"
 msgid "Don't auto-queue more than (chapters)"
 msgstr "Não enfileirar automaticamente mais do que (capítulos)"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Don't grab removed torrent releases again"
 msgstr "Não baixar de novo lançamentos de torrent removidos"
@@ -10823,6 +10824,10 @@ msgstr ""
 msgid "More options for {seriesTitle}"
 msgstr "Mais opções para {seriesTitle}"
 
+#: src/components/QueueActions.tsx
+msgid "More queue actions"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "More recommendation feedback actions"
@@ -12288,7 +12293,7 @@ msgstr "Ainda não há recomendações"
 msgid "Nothing to relink"
 msgstr "Nada para reassociar"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Nothing to retry"
 msgstr "Nada para tentar novamente"
@@ -14051,7 +14056,7 @@ msgstr "Lê o índice de cada arquivo compactado, não seu conteúdo. Leva segun
 msgid "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 msgstr "Lê cada byte e o verifica contra as próprias somas de verificação do arquivo compactado, detectando arquivos deteriorados no disco. Uma leitura completa da biblioteca leva cerca de meia hora por 100 GB em um disco rígido. Os arquivos são verificados quando chegam, então isto serve para rever o que já está lá."
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Reason"
 msgstr "Motivo"
@@ -14394,7 +14399,7 @@ msgstr "Reassociar arquivos lê cada arquivo de volume para encontrar os capítu
 msgid "Reload"
 msgstr "Recarregar"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/series/RemoveSeriesDialog.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -14464,12 +14469,12 @@ msgstr ""
 msgid "Remove everything from this device?"
 msgstr ""
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Remove failed"
 msgstr "Remover falhas"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Remove failed downloads"
 msgstr "Remover downloads com falha"
@@ -15080,13 +15085,13 @@ msgstr "Tentativas"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#: src/components/FailedQueueActions.tsx
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueueActions.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/releases/UpcomingView.tsx
@@ -15117,12 +15122,12 @@ msgstr "Tentar novamente e cancelar downloads enfileirados"
 msgid "Retry download"
 msgstr "Tentar download novamente"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Retry failed"
 msgstr "Tentar novamente os com falha"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Retry failed downloads"
 msgstr "Tentar novamente os downloads com falha"
@@ -16971,7 +16976,7 @@ msgstr "Ordenar pelos mais recentes primeiro"
 msgid "Sort oldest first"
 msgstr "Ordenar pelos mais antigos primeiro"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx

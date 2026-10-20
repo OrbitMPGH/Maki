@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Button, Checkbox, Group, Modal, Select, Stack, Text } from '@mantine/core'
-import { IconRefresh, IconTrash } from '@tabler/icons-react'
+import { ActionIcon, Button, Checkbox, Group, Menu, Modal, Select, Stack, Text } from '@mantine/core'
+import { IconDots, IconRefresh, IconTrash } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -18,8 +18,12 @@ type Mode = 'retry' | 'remove'
 
 const TORRENT_SOURCE = 'torrent'
 
-/** Retry all and Remove all for the Failed rows, with a way to narrow to one failure reason or source. */
-export function FailedQueueActions() {
+/**
+ * Activity's bulk queue actions: Retry for the Failed rows in view, and the destructive ones (Remove
+ * failed, Clear queue) behind a menu so the header isn't a row of red buttons at rest. Retry and
+ * Remove can narrow to one failure reason or source.
+ */
+export function QueueActions({ onClearQueue }: { onClearQueue?: () => void }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
   const sourceLabel = useSourceLabel()
@@ -50,7 +54,6 @@ export function FailedQueueActions() {
 
   const total = all.reduce((sum, g) => sum + g.count, 0)
   const retryable = all.some((g) => g.sourceName !== TORRENT_SOURCE)
-  if (total === 0) return null
 
   // Reasons the chosen source has failed with, and the other way round, so the two lists never
   // offer a pair that matches nothing.
@@ -113,93 +116,112 @@ export function FailedQueueActions() {
 
   const showPickers = reasonOptions.length > 1 || sourceOptions.length > 1 || reason !== null || source !== null
 
-  return (
-    <>
-      <Group gap="xs">
-        {retryable && (
-          <Button variant="light" leftSection={<IconRefresh size={16} />} loading={retry.isPending} onClick={openRetry}>
-            <Trans>Retry failed</Trans>
-          </Button>
+  const dialog = (
+    <Modal
+      opened={mode !== null}
+      onClose={close}
+      centered
+      title={mode === 'retry' ? <Trans>Retry failed downloads</Trans> : <Trans>Remove failed downloads</Trans>}
+    >
+      <Stack gap="sm">
+        {showPickers && (
+          <>
+            <Select
+              label={t`Reason`}
+              placeholder={t`All reasons`}
+              data={reasonOptions}
+              value={reason}
+              onChange={setReason}
+              clearable
+              allowDeselect
+              comboboxProps={{ withinPortal: true }}
+            />
+            <Select
+              label={t`Source`}
+              placeholder={t`All sources`}
+              data={sourceOptions}
+              value={source}
+              onChange={setSource}
+              clearable
+              allowDeselect
+              comboboxProps={{ withinPortal: true }}
+            />
+          </>
         )}
-        <Button variant="light" color="var(--danger)" leftSection={<IconTrash size={16} />} onClick={() => setMode('remove')}>
-          <Trans>Remove failed</Trans>
-        </Button>
-      </Group>
-
-      <Modal
-        opened={mode !== null}
-        onClose={close}
-        centered
-        title={mode === 'retry' ? <Trans>Retry failed downloads</Trans> : <Trans>Remove failed downloads</Trans>}
-      >
-        <Stack gap="sm">
-          {showPickers && (
-            <>
-              <Select
-                label={t`Reason`}
-                placeholder={t`All reasons`}
-                data={reasonOptions}
-                value={reason}
-                onChange={setReason}
-                clearable
-                allowDeselect
-                comboboxProps={{ withinPortal: true }}
-              />
-              <Select
-                label={t`Source`}
-                placeholder={t`All sources`}
-                data={sourceOptions}
-                value={source}
-                onChange={setSource}
-                clearable
-                allowDeselect
-                comboboxProps={{ withinPortal: true }}
-              />
-            </>
-          )}
-          <Text size="sm">
-            {mode === 'retry' ? (
-              <Plural
-                value={matchingCount}
-                one="# failed download will be queued again, ignoring the automatic retry limit."
-                other="# failed downloads will be queued again, ignoring the automatic retry limit."
-              />
-            ) : (
-              <Plural
-                value={matchingCount}
-                one="# failed download will be removed from the queue."
-                other="# failed downloads will be removed from the queue."
-              />
-            )}
-          </Text>
-          {mode === 'remove' && includesTorrents && (
-            <Checkbox
-              checked={blockReleases}
-              onChange={(e) => setBlockReleases(e.currentTarget.checked)}
-              label={t`Don't grab removed torrent releases again`}
+        <Text size="sm">
+          {mode === 'retry' ? (
+            <Plural
+              value={matchingCount}
+              one="# failed download will be queued again, ignoring the automatic retry limit."
+              other="# failed downloads will be queued again, ignoring the automatic retry limit."
+            />
+          ) : (
+            <Plural
+              value={matchingCount}
+              one="# failed download will be removed from the queue."
+              other="# failed downloads will be removed from the queue."
             />
           )}
-          <Group justify="flex-end">
-            <Button variant="default" onClick={close}>
-              <Trans>Cancel</Trans>
+        </Text>
+        {mode === 'remove' && includesTorrents && (
+          <Checkbox
+            checked={blockReleases}
+            onChange={(e) => setBlockReleases(e.currentTarget.checked)}
+            label={t`Don't grab removed torrent releases again`}
+          />
+        )}
+        <Group justify="flex-end">
+          <Button variant="default" onClick={close}>
+            <Trans>Cancel</Trans>
+          </Button>
+          {mode === 'retry' ? (
+            <Button loading={retry.isPending} disabled={matchingCount === 0} onClick={() => runRetry(filter())}>
+              <Trans>Retry</Trans>
             </Button>
-            {mode === 'retry' ? (
-              <Button loading={retry.isPending} disabled={matchingCount === 0} onClick={() => runRetry(filter())}>
-                <Trans>Retry</Trans>
-              </Button>
-            ) : (
-              <Button
-                color="var(--danger-fill)"
-                loading={remove.isPending}
-                disabled={matchingCount === 0}
-                onClick={runRemove}
-              >
-                <Trans>Remove</Trans>
-              </Button>
-            )}
-          </Group>
-        </Stack>
-      </Modal>
+          ) : (
+            <Button
+              color="var(--danger-fill)"
+              loading={remove.isPending}
+              disabled={matchingCount === 0}
+              onClick={runRemove}
+            >
+              <Trans>Remove</Trans>
+            </Button>
+          )}
+        </Group>
+      </Stack>
+    </Modal>
+  )
+
+  if (total === 0 && !onClearQueue) return null
+
+  return (
+    <>
+      {retryable && (
+        <Button variant="light" leftSection={<IconRefresh size={16} />} loading={retry.isPending} onClick={openRetry}>
+          <Trans>Retry failed</Trans>
+        </Button>
+      )}
+      <Menu position="bottom-end" withinPortal>
+        <Menu.Target>
+          <ActionIcon variant="default" size="lg" aria-label={t`More queue actions`}>
+            <IconDots size={18} />
+          </ActionIcon>
+        </Menu.Target>
+        <Menu.Dropdown>
+          {total > 0 && (
+            <Menu.Item color="var(--danger)" leftSection={<IconTrash size={16} />} onClick={() => setMode('remove')}>
+              <Trans>Remove failed</Trans>
+            </Menu.Item>
+          )}
+          {onClearQueue && (
+            <Menu.Item color="var(--danger)" leftSection={<IconTrash size={16} />} onClick={onClearQueue}>
+              <Trans>Clear queue</Trans>
+            </Menu.Item>
+          )}
+        </Menu.Dropdown>
+      </Menu>
+      {dialog}
     </>
   )
 }

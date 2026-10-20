@@ -518,12 +518,12 @@ msgstr "{active, plural, other {# 个下载正在进行中}}"
 msgid "{adds} added by you, {excluded} excluded from taste"
 msgstr "{adds} 个由你添加，{excluded} 个已从品味中排除"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{affected, plural, one {Removed # failed download} other {Removed # failed downloads}}"
 msgstr "{affected, plural, other {已移除 # 个失败的下载}}"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{affected, plural, one {Retrying # failed download} other {Retrying # failed downloads}}"
 msgstr "{affected, plural, other {正在重试 # 个失败的下载}}"
@@ -1214,12 +1214,12 @@ msgstr "{markerLabel} 动画改编从此处开始 · 点击展开"
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "{matched} / {total} 个匹配，{positive} 个正向，{avoided} 个已避开，{superseded} 个已经拥有"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{matchingCount, plural, one {# failed download will be queued again, ignoring the automatic retry limit.} other {# failed downloads will be queued again, ignoring the automatic retry limit.}}"
 msgstr "{matchingCount, plural, other {# 个失败的下载将重新排队，忽略自动重试上限。}}"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{matchingCount, plural, one {# failed download will be removed from the queue.} other {# failed downloads will be removed from the queue.}}"
 msgstr "{matchingCount, plural, other {# 个失败的下载将从队列中移除。}}"
@@ -3151,7 +3151,7 @@ msgstr "全部为可选项。即使不配置这些，Maki 也能通过自带来�
 msgid "all read"
 msgstr "全部已读"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "All reasons"
 msgstr "全部原因"
@@ -3171,7 +3171,7 @@ msgstr "所有根目录"
 msgid "All series"
 msgstr "所有系列"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -4201,13 +4201,13 @@ msgid "Can't sign in with the saved details."
 msgstr ""
 
 #: src/components/DiscoverPresets.tsx
-#: src/components/FailedQueueActions.tsx
 #: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
@@ -4968,6 +4968,7 @@ msgstr "清除默认设置"
 msgid "Clear filters"
 msgstr "清除筛选"
 
+#: src/components/QueueActions.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Clear queue"
@@ -5735,7 +5736,7 @@ msgstr "无法暂停下载"
 msgid "Couldn't reach {label}."
 msgstr "无法连接到 {label}。"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Couldn't remove the failed downloads"
 msgstr "无法移除失败的下载"
@@ -5745,7 +5746,7 @@ msgstr "无法移除失败的下载"
 msgid "Couldn't resume the downloads"
 msgstr "无法恢复下载"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Couldn't retry the failed downloads"
 msgstr "无法重试失败的下载"
@@ -6533,7 +6534,7 @@ msgstr "文档"
 msgid "Don't auto-queue more than (chapters)"
 msgstr "自动排队数量不超过（章节）"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Don't grab removed torrent releases again"
 msgstr "不再抓取已移除的种子版本"
@@ -10822,6 +10823,10 @@ msgstr ""
 msgid "More options for {seriesTitle}"
 msgstr "{seriesTitle} 的更多选项"
 
+#: src/components/QueueActions.tsx
+msgid "More queue actions"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "More recommendation feedback actions"
@@ -12287,7 +12292,7 @@ msgstr "暂无推荐内容"
 msgid "Nothing to relink"
 msgstr "无需重新关联"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Nothing to retry"
 msgstr "没有需要重试的内容"
@@ -14050,7 +14055,7 @@ msgstr "读取每个归档的目录，而不是其内容。整个资料库只需
 msgid "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 msgstr "读取每个字节并与归档自身的校验和进行核对，这样可以发现已在磁盘上损坏的文件。在硬盘上完整读取资料库时，每 100 GB 约需半小时。文件到达时会进行验证，因此此选项用于重新检查已有内容。"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Reason"
 msgstr "原因"
@@ -14393,7 +14398,7 @@ msgstr "重新关联操作会读取每个卷文件以查找其中的章节。无
 msgid "Reload"
 msgstr "重新加载"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/series/RemoveSeriesDialog.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -14463,12 +14468,12 @@ msgstr ""
 msgid "Remove everything from this device?"
 msgstr ""
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Remove failed"
 msgstr "移除失败项"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Remove failed downloads"
 msgstr "移除失败的下载"
@@ -15079,13 +15084,13 @@ msgstr "重试次数"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#: src/components/FailedQueueActions.tsx
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueueActions.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/releases/UpcomingView.tsx
@@ -15116,12 +15121,12 @@ msgstr "重试和取消排队的下载"
 msgid "Retry download"
 msgstr "重试下载"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Retry failed"
 msgstr "重试失败项"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Retry failed downloads"
 msgstr "重试失败的下载"
@@ -16970,7 +16975,7 @@ msgstr "按最新优先排序"
 msgid "Sort oldest first"
 msgstr "按最早优先排序"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx

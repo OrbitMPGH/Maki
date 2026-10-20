@@ -518,12 +518,12 @@ msgstr "{active, plural, other {다운로드 #개 진행 중}}"
 msgid "{adds} added by you, {excluded} excluded from taste"
 msgstr "직접 추가함 {adds}개, 취향에서 제외됨 {excluded}개"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{affected, plural, one {Removed # failed download} other {Removed # failed downloads}}"
 msgstr "{affected, plural, other {실패한 다운로드 #개를 제거함}}"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{affected, plural, one {Retrying # failed download} other {Retrying # failed downloads}}"
 msgstr "{affected, plural, other {실패한 다운로드 #개를 다시 시도하는 중}}"
@@ -1214,12 +1214,12 @@ msgstr "{markerLabel} 애니메이션 적용 시작 지점 · 클릭하여 펼�
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "{total}개 중 {matched}개 일치, 긍정 {positive}개, 회피 {avoided}개, 이미 보유 {superseded}개"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{matchingCount, plural, one {# failed download will be queued again, ignoring the automatic retry limit.} other {# failed downloads will be queued again, ignoring the automatic retry limit.}}"
 msgstr "{matchingCount, plural, other {실패한 다운로드 #개를 자동 재시도 한도와 상관없이 다시 대기열에 넣습니다.}}"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{matchingCount, plural, one {# failed download will be removed from the queue.} other {# failed downloads will be removed from the queue.}}"
 msgstr "{matchingCount, plural, other {실패한 다운로드 #개를 대기열에서 제거합니다.}}"
@@ -3151,7 +3151,7 @@ msgstr "모두 선택 사항입니다. 이 도구가 없어도 Maki 자체 소�
 msgid "all read"
 msgstr "모두 읽음"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "All reasons"
 msgstr "모든 사유"
@@ -3171,7 +3171,7 @@ msgstr "모든 루트"
 msgid "All series"
 msgstr "모든 시리즈"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -4201,13 +4201,13 @@ msgid "Can't sign in with the saved details."
 msgstr ""
 
 #: src/components/DiscoverPresets.tsx
-#: src/components/FailedQueueActions.tsx
 #: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
@@ -4968,6 +4968,7 @@ msgstr "기본값 지우기"
 msgid "Clear filters"
 msgstr "필터 지우기"
 
+#: src/components/QueueActions.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Clear queue"
@@ -5735,7 +5736,7 @@ msgstr "다운로드를 일시 정지하지 못했습니다"
 msgid "Couldn't reach {label}."
 msgstr "{label}에 연결하지 못했습니다."
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Couldn't remove the failed downloads"
 msgstr "실패한 다운로드를 제거하지 못했습니다"
@@ -5745,7 +5746,7 @@ msgstr "실패한 다운로드를 제거하지 못했습니다"
 msgid "Couldn't resume the downloads"
 msgstr "다운로드를 재개하지 못했습니다"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Couldn't retry the failed downloads"
 msgstr "실패한 다운로드를 다시 시도하지 못했습니다"
@@ -6533,7 +6534,7 @@ msgstr "문서"
 msgid "Don't auto-queue more than (chapters)"
 msgstr "자동 대기열 최대 개수 (챕터)"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Don't grab removed torrent releases again"
 msgstr "제거한 토렌트 릴리스는 다시 받지 않음"
@@ -10822,6 +10823,10 @@ msgstr ""
 msgid "More options for {seriesTitle}"
 msgstr "{seriesTitle}의 추가 옵션"
 
+#: src/components/QueueActions.tsx
+msgid "More queue actions"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "More recommendation feedback actions"
@@ -12287,7 +12292,7 @@ msgstr "아직 추천할 항목이 없습니다"
 msgid "Nothing to relink"
 msgstr "다시 연결할 항목 없음"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Nothing to retry"
 msgstr "다시 시도할 항목이 없습니다"
@@ -14050,7 +14055,7 @@ msgstr "각 보관 파일의 목차를 읽으며 내용은 읽지 않습니다. 
 msgid "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 msgstr "모든 바이트를 읽고 보관 파일 자체 체크섬과 비교하여 디스크에서 손상된 파일을 찾아냅니다. 라이브러리 전체를 읽는 작업은 하드 디스크에서 100GB당 약 30분이 걸립니다. 파일은 도착할 때 검증되므로 이미 있는 파일을 다시 확인할 때 사용합니다."
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Reason"
 msgstr "사유"
@@ -14393,7 +14398,7 @@ msgstr "파일 다시 연결은 각 권 파일을 읽어 안에 든 챕터를 �
 msgid "Reload"
 msgstr "새로 고침"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/series/RemoveSeriesDialog.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -14463,12 +14468,12 @@ msgstr ""
 msgid "Remove everything from this device?"
 msgstr ""
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Remove failed"
 msgstr "실패 항목 제거"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Remove failed downloads"
 msgstr "실패한 다운로드 제거"
@@ -15079,13 +15084,13 @@ msgstr "재시도"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#: src/components/FailedQueueActions.tsx
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueueActions.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/releases/UpcomingView.tsx
@@ -15116,12 +15121,12 @@ msgstr "대기 중인 다운로드 재시도 및 취소"
 msgid "Retry download"
 msgstr "다운로드 재시도"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Retry failed"
 msgstr "실패 항목 다시 시도"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Retry failed downloads"
 msgstr "실패한 다운로드 다시 시도"
@@ -16970,7 +16975,7 @@ msgstr "최신순으로 정렬"
 msgid "Sort oldest first"
 msgstr "오래된 순으로 정렬"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx

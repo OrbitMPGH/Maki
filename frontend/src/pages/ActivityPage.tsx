@@ -28,7 +28,6 @@ import {
   IconHistory,
   IconRefresh,
   IconSearch,
-  IconTrash,
   IconX,
 } from '@tabler/icons-react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -65,14 +64,16 @@ import type {
   UpgradeHistoryRowDto,
   UpgradeQueueInfoDto,
 } from '../api/upgrades'
+import type { QueueItemDto } from '../api/types'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
-import { FailedQueueActions } from '../components/FailedQueueActions'
+import { QueueActions } from '../components/QueueActions'
 import { ImportReviewModal } from '../components/ImportReviewModal'
 import { QueuePauseBanner, QueuePauseButton } from '../components/QueuePause'
 import { FileQualityBadge } from '../components/series/FileQualityBadge'
 import { TorrentProposalCard } from '../components/upgrades/TorrentProposalCard'
 import { EmptyState } from '../components/ui/EmptyState'
+import { SectionHeader } from '../components/ui/SectionHeader'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
@@ -185,6 +186,25 @@ function upgradeRejectionText(
 type ActivityTab = 'queue' | 'upgrades' | 'upcoming'
 
 /** What a section shows in place of its skeleton once its first fetch has failed. */
+/** The series a queue row belongs to: its cover, its title and, under it, the chapter or release. */
+function QueueSeriesCell({ item, small }: { item: QueueItemDto; small?: boolean }) {
+  return (
+    <div className="queue-series" data-small={small || undefined}>
+      <Link to={`/series/${item.seriesId}`} className="queue-series-cover" tabIndex={-1} aria-hidden>
+        {item.seriesCoverUrl && <img src={item.seriesCoverUrl} alt="" loading="lazy" decoding="async" />}
+      </Link>
+      <div className="queue-series-text">
+        <Text component={Link} to={`/series/${item.seriesId}`} className="queue-series-title" lineClamp={2}>
+          {item.seriesTitle}
+        </Text>
+        <Text size="xs" c="var(--ink-3)" className="tnum" lineClamp={2}>
+          {queueItemLabel(item)}
+        </Text>
+      </div>
+    </div>
+  )
+}
+
 function LoadFailed({ query }: { query: { error: unknown; isRefetching: boolean; refetch: () => unknown } }) {
   const { t } = useLingui()
   return (
@@ -391,14 +411,7 @@ export default function ActivityPage() {
           canManageQueue ? (
             <Group gap="xs">
               <QueuePauseButton />
-              {queue && queue.total > 0 && (
-                <>
-                  <FailedQueueActions />
-                  <Button color="var(--danger)" variant="light" leftSection={<IconTrash size={16} />} onClick={() => setClearConfirmOpen(true)}>
-                    <Trans>Clear queue</Trans>
-                  </Button>
-                </>
-              )}
+              <QueueActions onClearQueue={queue && queue.total > 0 ? () => setClearConfirmOpen(true) : undefined} />
             </Group>
           ) : undefined
         }
@@ -458,9 +471,6 @@ export default function ActivityPage() {
                   <Table.Th>
                     <Trans>Series</Trans>
                   </Table.Th>
-                  <Table.Th>
-                    <Trans>Chapter</Trans>
-                  </Table.Th>
                   <Table.Th data-priority="low">
                     <Trans>Source</Trans>
                   </Table.Th>
@@ -495,21 +505,7 @@ export default function ActivityPage() {
                   return (
                     <Table.Tr key={q.id}>
                       <Table.Td>
-                        <Text
-                          component={Link}
-                          to={`/series/${q.seriesId}`}
-                          size="sm"
-                          fw={600}
-                          c="brand.4"
-                          lineClamp={2}
-                        >
-                          {q.seriesTitle}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm" className="tnum">
-                          {queueItemLabel(q)}
-                        </Text>
+                        <QueueSeriesCell item={q} />
                       </Table.Td>
                       <Table.Td data-priority="low">
                         {q.status === 'Resolving' ? (
@@ -734,12 +730,7 @@ export default function ActivityPage() {
       </Modal>
 
       <Stack gap="sm" mt="xl">
-        <Group gap="xs">
-          <IconHistory size={18} />
-          <Title order={2} size="h4">
-            <Trans>History</Trans>
-          </Title>
-        </Group>
+        <SectionHeader icon={IconHistory} title={t`History`} count={history?.total} />
 
         {!history ? (
           historyQuery.isError ? (
@@ -762,9 +753,6 @@ export default function ActivityPage() {
                     <Table.Tr>
                       <Table.Th>
                         <Trans>Series</Trans>
-                      </Table.Th>
-                      <Table.Th>
-                        <Trans>Chapter</Trans>
                       </Table.Th>
                       <Table.Th data-priority="low">
                         <Trans>Source</Trans>
@@ -790,21 +778,7 @@ export default function ActivityPage() {
                       return (
                         <Table.Tr key={q.id}>
                           <Table.Td>
-                            <Text
-                              component={Link}
-                              to={`/series/${q.seriesId}`}
-                              size="sm"
-                              fw={600}
-                              c="brand.4"
-                              lineClamp={2}
-                            >
-                              {q.seriesTitle}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Text size="sm" className="tnum">
-                              {queueItemLabel(q)}
-                            </Text>
+                            <QueueSeriesCell item={q} small />
                           </Table.Td>
                           <Table.Td data-priority="low">
                             <Stack gap={2}>

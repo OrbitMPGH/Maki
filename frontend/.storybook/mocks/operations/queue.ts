@@ -43,6 +43,7 @@ const item = (seriesId: number, over: Partial<QueueItemDto>): QueueItemDto => ({
   completedAt: null,
   origin: 'manual',
   upgrade: null,
+  seriesCoverUrl: `/api/v1/mediacover/${seriesId}/cover.jpg`,
   ...over,
 })
 

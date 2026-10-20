@@ -518,12 +518,12 @@ msgstr "{active, plural, one {# Download läuft} other {# Downloads laufen}}"
 msgid "{adds} added by you, {excluded} excluded from taste"
 msgstr "{adds} von dir hinzugefügt, {excluded} vom Geschmack ausgeschlossen"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{affected, plural, one {Removed # failed download} other {Removed # failed downloads}}"
 msgstr "{affected, plural, one {# fehlgeschlagenen Download entfernt} other {# fehlgeschlagene Downloads entfernt}}"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{affected, plural, one {Retrying # failed download} other {Retrying # failed downloads}}"
 msgstr "{affected, plural, one {Wiederholt # fehlgeschlagenen Download} other {Wiederholt # fehlgeschlagene Downloads}}"
@@ -1214,12 +1214,12 @@ msgstr "{markerLabel} Hier beginnt die Anime-Adaption · zum Aufklappen klicken"
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "{matched} von {total} zugeordnet, {positive} positiv, {avoided} gemieden, {superseded} bereits deins"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{matchingCount, plural, one {# failed download will be queued again, ignoring the automatic retry limit.} other {# failed downloads will be queued again, ignoring the automatic retry limit.}}"
 msgstr "{matchingCount, plural, one {# fehlgeschlagener Download wird erneut eingereiht, ohne das automatische Wiederholungslimit zu beachten.} other {# fehlgeschlagene Downloads werden erneut eingereiht, ohne das automatische Wiederholungslimit zu beachten.}}"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{matchingCount, plural, one {# failed download will be removed from the queue.} other {# failed downloads will be removed from the queue.}}"
 msgstr "{matchingCount, plural, one {# fehlgeschlagener Download wird aus der Warteschlange entfernt.} other {# fehlgeschlagene Downloads werden aus der Warteschlange entfernt.}}"
@@ -3152,7 +3152,7 @@ msgstr "Alles optional. Maki lädt auch ohne diese Dienste von eigenen Quellen h
 msgid "all read"
 msgstr "alle gelesen"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "All reasons"
 msgstr "Alle Gründe"
@@ -3172,7 +3172,7 @@ msgstr "Alle Stammordner"
 msgid "All series"
 msgstr "Alle Serien"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -4202,13 +4202,13 @@ msgid "Can't sign in with the saved details."
 msgstr ""
 
 #: src/components/DiscoverPresets.tsx
-#: src/components/FailedQueueActions.tsx
 #: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
@@ -4969,6 +4969,7 @@ msgstr "Standard leeren"
 msgid "Clear filters"
 msgstr "Filter zurücksetzen"
 
+#: src/components/QueueActions.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Clear queue"
@@ -5736,7 +5737,7 @@ msgstr "Downloads konnten nicht pausiert werden"
 msgid "Couldn't reach {label}."
 msgstr "{label} konnte nicht erreicht werden."
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Couldn't remove the failed downloads"
 msgstr "Die fehlgeschlagenen Downloads konnten nicht entfernt werden"
@@ -5746,7 +5747,7 @@ msgstr "Die fehlgeschlagenen Downloads konnten nicht entfernt werden"
 msgid "Couldn't resume the downloads"
 msgstr "Downloads konnten nicht fortgesetzt werden"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Couldn't retry the failed downloads"
 msgstr "Die fehlgeschlagenen Downloads konnten nicht wiederholt werden"
@@ -6534,7 +6535,7 @@ msgstr "Dokumentation"
 msgid "Don't auto-queue more than (chapters)"
 msgstr "Nicht mehr als (Kapitel) automatisch einreihen"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Don't grab removed torrent releases again"
 msgstr "Entfernte Torrent-Veröffentlichungen nicht erneut übernehmen"
@@ -10823,6 +10824,10 @@ msgstr ""
 msgid "More options for {seriesTitle}"
 msgstr "Weitere Optionen für {seriesTitle}"
 
+#: src/components/QueueActions.tsx
+msgid "More queue actions"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "More recommendation feedback actions"
@@ -12288,7 +12293,7 @@ msgstr "Noch nichts zu empfehlen"
 msgid "Nothing to relink"
 msgstr "Nichts neu zu verknüpfen"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Nothing to retry"
 msgstr "Nichts zu wiederholen"
@@ -14051,7 +14056,7 @@ msgstr "Liest das Inhaltsverzeichnis jedes Archivs, nicht dessen Inhalt. Für ei
 msgid "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 msgstr "Liest jedes Byte und prüft es gegen die eigenen Prüfsummen des Archivs. Dadurch werden Dateien erkannt, die auf der Festplatte beschädigt wurden. Ein vollständiges Lesen der Bibliothek dauert auf einer Festplatte etwa eine halbe Stunde pro 100 GB. Dateien werden beim Eintreffen geprüft, daher dient dies zur erneuten Kontrolle bereits vorhandener Dateien."
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Reason"
 msgstr "Grund"
@@ -14394,7 +14399,7 @@ msgstr "Beim Neuverknüpfen wird jede Banddatei gelesen, um die enthaltenen Kapi
 msgid "Reload"
 msgstr "Neu laden"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/series/RemoveSeriesDialog.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -14464,12 +14469,12 @@ msgstr ""
 msgid "Remove everything from this device?"
 msgstr ""
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Remove failed"
 msgstr "Fehlgeschlagene entfernen"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Remove failed downloads"
 msgstr "Fehlgeschlagene Downloads entfernen"
@@ -15080,13 +15085,13 @@ msgstr "Wiederholungen"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#: src/components/FailedQueueActions.tsx
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueueActions.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/releases/UpcomingView.tsx
@@ -15117,12 +15122,12 @@ msgstr "Downloads in der Warteschlange wiederholen und abbrechen"
 msgid "Retry download"
 msgstr "Download wiederholen"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Retry failed"
 msgstr "Fehlgeschlagene wiederholen"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Retry failed downloads"
 msgstr "Fehlgeschlagene Downloads wiederholen"
@@ -16971,7 +16976,7 @@ msgstr "Neueste zuerst sortieren"
 msgid "Sort oldest first"
 msgstr "Älteste zuerst sortieren"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx

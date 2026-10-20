@@ -8704,21 +8704,73 @@ body.reader-open {
 }
 
 /* Activity. Same idea: column widths in CSS so the queue can collapse to the
-   three columns that matter. */
-.activity-queue-table thead th:nth-child(4) {
+   three columns that matter. The series column takes what is left. */
+.activity-queue-table thead th:nth-child(2) {
   width: 240px;
 }
-.activity-queue-table thead th:nth-child(5) {
-  width: 150px;
+.activity-queue-table thead th:nth-child(3) {
+  width: 200px;
 }
-.activity-queue-table thead th:nth-child(6) {
-  width: 190px;
+.activity-queue-table thead th:nth-child(4) {
+  width: 270px;
+}
+.activity-queue-table thead th:nth-child(5) {
+  width: 140px;
+}
+.activity-history-table thead th:nth-child(3) {
+  width: 160px;
 }
 .activity-history-table thead th:nth-child(4) {
-  width: 150px;
+  width: 190px;
 }
-.activity-history-table thead th:nth-child(5) {
-  width: 160px;
+
+/* An upgrade's rejection reason is a sentence. On one line it widened the status column until the
+   series column was left a few words wide. */
+.activity-queue-table .status-dot {
+  white-space: normal;
+  align-items: flex-start;
+}
+.activity-queue-table .status-dot::before {
+  margin-top: 0.45em;
+}
+
+/* A queue row's series: the cover beside the title, the chapter or release under it. */
+.queue-series {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+}
+.queue-series-cover {
+  width: 32px;
+  height: 48px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--surface-2);
+}
+.queue-series[data-small] .queue-series-cover {
+  width: 24px;
+  height: 36px;
+  border-radius: 4px;
+}
+.queue-series-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.queue-series-text {
+  min-width: 0;
+}
+.queue-series-title {
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-hi);
+  text-decoration: none;
+}
+.queue-series-title:hover {
+  color: var(--brand-fg);
 }
 
 /* Activity > Upcoming. A day grid, one row per series; the bar is a likely span, never a date.
@@ -8939,6 +8991,15 @@ body.reader-open {
   .activity-queue-table tbody td,
   .activity-history-table tbody td {
     padding-inline: 0.4rem;
+  }
+  .queue-series {
+    min-width: 0;
+    gap: 8px;
+  }
+  .queue-series .queue-series-cover {
+    width: 24px;
+    height: 36px;
+    border-radius: 4px;
   }
 }
 

@@ -416,6 +416,7 @@ export interface QueueItemDto {
   origin: QueueOrigin
   /** Set only when `origin` is 'upgrade'. */
   upgrade: UpgradeQueueInfoDto | null
+  seriesCoverUrl: string | null
 }
 
 export interface QueueHistoryDto {

@@ -51,6 +51,7 @@ const queueItem = (status: string, overrides: Partial<QueueItemDto> = {}): Queue
   completedAt: null,
   origin: 'manual',
   upgrade: null,
+  seriesCoverUrl: null,
   ...overrides,
 })
 

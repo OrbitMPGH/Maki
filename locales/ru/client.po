@@ -518,12 +518,12 @@ msgstr "{active, plural, one {# загрузка выполняется} few {# 
 msgid "{adds} added by you, {excluded} excluded from taste"
 msgstr "{adds} добавлено вами, {excluded} исключено из вкусов"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{affected, plural, one {Removed # failed download} other {Removed # failed downloads}}"
 msgstr "{affected, plural, one {Удалена # неудачная загрузка} few {Удалены # неудачные загрузки} many {Удалено # неудачных загрузок} other {Удалено # неудачной загрузки}}"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{affected, plural, one {Retrying # failed download} other {Retrying # failed downloads}}"
 msgstr "{affected, plural, one {Повторная попытка для # неудачной загрузки} few {Повторная попытка для # неудачных загрузок} many {Повторная попытка для # неудачных загрузок} other {Повторная попытка для # неудачной загрузки}}"
@@ -1214,12 +1214,12 @@ msgstr "{markerLabel} Аниме-адаптация начинается зде�
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "Совпало {matched} из {total}, положительных {positive}, исключено {avoided}, уже у вас {superseded}"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{matchingCount, plural, one {# failed download will be queued again, ignoring the automatic retry limit.} other {# failed downloads will be queued again, ignoring the automatic retry limit.}}"
 msgstr "{matchingCount, plural, one {# неудачная загрузка будет поставлена в очередь заново, без учёта автоматического лимита повторов.} few {# неудачные загрузки будут поставлены в очередь заново, без учёта автоматического лимита повторов.} many {# неудачных загрузок будут поставлены в очередь заново, без учёта автоматического лимита повторов.} other {# неудачной загрузки будут поставлены в очередь заново, без учёта автоматического лимита повторов.}}"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{matchingCount, plural, one {# failed download will be removed from the queue.} other {# failed downloads will be removed from the queue.}}"
 msgstr "{matchingCount, plural, one {# неудачная загрузка будет удалена из очереди.} few {# неудачные загрузки будут удалены из очереди.} many {# неудачных загрузок будут удалены из очереди.} other {# неудачной загрузки будут удалены из очереди.}}"
@@ -3152,7 +3152,7 @@ msgstr "Все параметры необязательны. Maki скачив�
 msgid "all read"
 msgstr "всё прочитано"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "All reasons"
 msgstr "Все причины"
@@ -3172,7 +3172,7 @@ msgstr "Все корневые папки"
 msgid "All series"
 msgstr "Все серии"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -4202,13 +4202,13 @@ msgid "Can't sign in with the saved details."
 msgstr ""
 
 #: src/components/DiscoverPresets.tsx
-#: src/components/FailedQueueActions.tsx
 #: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
@@ -4969,6 +4969,7 @@ msgstr "Очистить значение по умолчанию"
 msgid "Clear filters"
 msgstr "Сбросить фильтры"
 
+#: src/components/QueueActions.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Clear queue"
@@ -5736,7 +5737,7 @@ msgstr "Не удалось приостановить загрузки"
 msgid "Couldn't reach {label}."
 msgstr "Не удалось подключиться к {label}."
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Couldn't remove the failed downloads"
 msgstr "Не удалось удалить неудачные загрузки"
@@ -5746,7 +5747,7 @@ msgstr "Не удалось удалить неудачные загрузки"
 msgid "Couldn't resume the downloads"
 msgstr "Не удалось возобновить загрузки"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Couldn't retry the failed downloads"
 msgstr "Не удалось повторить неудачные загрузки"
@@ -6534,7 +6535,7 @@ msgstr "Документация"
 msgid "Don't auto-queue more than (chapters)"
 msgstr "Не ставить в очередь автоматически больше (глав)"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Don't grab removed torrent releases again"
 msgstr "Не загружать удалённые торрент-релизы снова"
@@ -10823,6 +10824,10 @@ msgstr ""
 msgid "More options for {seriesTitle}"
 msgstr "Дополнительные параметры для {seriesTitle}"
 
+#: src/components/QueueActions.tsx
+msgid "More queue actions"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "More recommendation feedback actions"
@@ -12288,7 +12293,7 @@ msgstr "Пока нечего рекомендовать"
 msgid "Nothing to relink"
 msgstr "Нечего перепривязывать"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Nothing to retry"
 msgstr "Нечего повторять"
@@ -14051,7 +14056,7 @@ msgstr "Читает оглавление каждого архива, а не �
 msgid "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 msgstr "Читает каждый байт и сверяет его с контрольными суммами самого архива, что позволяет обнаружить файл, испортившийся на диске. Полное чтение библиотеки занимает около получаса на каждые 100 ГБ на жёстком диске. Файлы проверяются при поступлении, поэтому эта операция нужна для повторной проверки уже имеющихся данных."
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Reason"
 msgstr "Причина"
@@ -14394,7 +14399,7 @@ msgstr "Перепривязка читает каждый файл тома, ч
 msgid "Reload"
 msgstr "Перезагрузить"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/series/RemoveSeriesDialog.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -14464,12 +14469,12 @@ msgstr ""
 msgid "Remove everything from this device?"
 msgstr ""
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Remove failed"
 msgstr "Удалить неудачные"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Remove failed downloads"
 msgstr "Удалить неудачные загрузки"
@@ -15080,13 +15085,13 @@ msgstr "Повторы"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#: src/components/FailedQueueActions.tsx
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueueActions.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/releases/UpcomingView.tsx
@@ -15117,12 +15122,12 @@ msgstr "Повторить и отменить загрузки в очеред�
 msgid "Retry download"
 msgstr "Повторить загрузку"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Retry failed"
 msgstr "Повторить неудачные"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Retry failed downloads"
 msgstr "Повторить неудачные загрузки"
@@ -16971,7 +16976,7 @@ msgstr "Сортировать: сначала новые"
 msgid "Sort oldest first"
 msgstr "Сортировать: сначала старые"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx

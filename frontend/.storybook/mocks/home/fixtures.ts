@@ -343,6 +343,7 @@ export function queueItem(
     completedAt: null,
     origin: 'monitorrefresh',
     upgrade: null,
+    seriesCoverUrl: `/api/v1/mediacover/${seriesId}/cover.jpg`,
     ...overrides,
   }
 }

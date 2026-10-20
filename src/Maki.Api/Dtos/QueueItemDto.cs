@@ -50,7 +50,8 @@ public record QueueItemDto(
     DateTime QueuedAt,
     DateTime? CompletedAt,
     string Origin,
-    UpgradeQueueInfoDto? Upgrade)
+    UpgradeQueueInfoDto? Upgrade,
+    string? SeriesCoverUrl)
 {
     /// <param name="upgradeHistory">The applied upgrade's history state, when the caller looked it up.</param>
     public static QueueItemDto FromEntity(DownloadQueueItem item, Chapter? chapter, Series series, string sourceName,
@@ -84,7 +85,8 @@ public record QueueItemDto(
             item.QueuedAt,
             item.CompletedAt,
             item.Origin.ToString().ToLowerInvariant(),
-            UpgradeQueueInfoDto.From(item.UpgradeInfoJson, upgradeHistory));
+            UpgradeQueueInfoDto.From(item.UpgradeInfoJson, upgradeHistory),
+            SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.LastMetadataRefresh));
     }
 
     /// <summary>

@@ -518,12 +518,12 @@ msgstr "{active, plural, one {# téléchargement en cours} many {# téléchargem
 msgid "{adds} added by you, {excluded} excluded from taste"
 msgstr "{adds} ajoutés par vous, {excluded} exclus des goûts"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{affected, plural, one {Removed # failed download} other {Removed # failed downloads}}"
 msgstr "{affected, plural, one {# téléchargement en échec retiré} many {# téléchargements en échec retirés} other {# téléchargements en échec retirés}}"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{affected, plural, one {Retrying # failed download} other {Retrying # failed downloads}}"
 msgstr "{affected, plural, one {Nouvel essai pour # téléchargement en échec} many {Nouvel essai pour # téléchargements en échec} other {Nouvel essai pour # téléchargements en échec}}"
@@ -1214,12 +1214,12 @@ msgstr "{markerLabel} L'adaptation animée commence ici · cliquer pour dévelop
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "{matched} sur {total} correspondants, {positive} positifs, {avoided} évités, {superseded} déjà à vous"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{matchingCount, plural, one {# failed download will be queued again, ignoring the automatic retry limit.} other {# failed downloads will be queued again, ignoring the automatic retry limit.}}"
 msgstr "{matchingCount, plural, one {# téléchargement en échec sera remis en file, sans tenir compte de la limite automatique de nouvelles tentatives.} many {# téléchargements en échec seront remis en file, sans tenir compte de la limite automatique de nouvelles tentatives.} other {# téléchargements en échec seront remis en file, sans tenir compte de la limite automatique de nouvelles tentatives.}}"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "{matchingCount, plural, one {# failed download will be removed from the queue.} other {# failed downloads will be removed from the queue.}}"
 msgstr "{matchingCount, plural, one {# téléchargement en échec sera retiré de la file d'attente.} many {# téléchargements en échec seront retirés de la file d'attente.} other {# téléchargements en échec seront retirés de la file d'attente.}}"
@@ -3152,7 +3152,7 @@ msgstr "Tout est facultatif. Maki télécharge depuis ses propres sources sans a
 msgid "all read"
 msgstr "tous lus"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "All reasons"
 msgstr "Toutes les raisons"
@@ -3172,7 +3172,7 @@ msgstr "Toutes les racines"
 msgid "All series"
 msgstr "Toutes les séries"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -4202,13 +4202,13 @@ msgid "Can't sign in with the saved details."
 msgstr ""
 
 #: src/components/DiscoverPresets.tsx
-#: src/components/FailedQueueActions.tsx
 #: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
@@ -4969,6 +4969,7 @@ msgstr "Effacer la valeur par défaut"
 msgid "Clear filters"
 msgstr "Effacer les filtres"
 
+#: src/components/QueueActions.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Clear queue"
@@ -5736,7 +5737,7 @@ msgstr "Impossible de mettre les téléchargements en pause"
 msgid "Couldn't reach {label}."
 msgstr "Impossible de joindre {label}."
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Couldn't remove the failed downloads"
 msgstr "Impossible de retirer les téléchargements en échec"
@@ -5746,7 +5747,7 @@ msgstr "Impossible de retirer les téléchargements en échec"
 msgid "Couldn't resume the downloads"
 msgstr "Impossible de reprendre les téléchargements"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Couldn't retry the failed downloads"
 msgstr "Impossible de relancer les téléchargements en échec"
@@ -6534,7 +6535,7 @@ msgstr "Documentation"
 msgid "Don't auto-queue more than (chapters)"
 msgstr "Ne pas mettre en file automatiquement plus de (chapitres)"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Don't grab removed torrent releases again"
 msgstr "Ne plus reprendre les versions de torrent retirées"
@@ -10823,6 +10824,10 @@ msgstr ""
 msgid "More options for {seriesTitle}"
 msgstr "Plus d'options pour {seriesTitle}"
 
+#: src/components/QueueActions.tsx
+msgid "More queue actions"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "More recommendation feedback actions"
@@ -12288,7 +12293,7 @@ msgstr "Rien à recommander pour le moment"
 msgid "Nothing to relink"
 msgstr "Aucun fichier à réassocier"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Nothing to retry"
 msgstr "Rien à relancer"
@@ -14051,7 +14056,7 @@ msgstr "Lit la table des matières de chaque archive, pas son contenu. Quelques 
 msgid "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 msgstr "Lit chaque octet et le compare aux sommes de contrôle de l'archive, ce qui détecte les fichiers corrompus sur le disque. Une lecture complète de la bibliothèque prend environ une demi-heure par 100 Gio sur un disque dur. Les fichiers sont vérifiés à leur arrivée, cette fonction sert donc à revérifier ce qui est déjà présent."
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Reason"
 msgstr "Raison"
@@ -14394,7 +14399,7 @@ msgstr "La réassociation lit chaque fichier de volume pour trouver les chapitre
 msgid "Reload"
 msgstr "Recharger"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/series/RemoveSeriesDialog.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -14464,12 +14469,12 @@ msgstr ""
 msgid "Remove everything from this device?"
 msgstr ""
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Remove failed"
 msgstr "Retirer les échecs"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Remove failed downloads"
 msgstr "Retirer les téléchargements en échec"
@@ -15080,13 +15085,13 @@ msgstr "Nouvelles tentatives"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#: src/components/FailedQueueActions.tsx
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueueActions.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/releases/UpcomingView.tsx
@@ -15117,12 +15122,12 @@ msgstr "Réessayer et annuler les téléchargements en file"
 msgid "Retry download"
 msgstr "Réessayer le téléchargement"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Retry failed"
 msgstr "Relancer les échecs"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Retry failed downloads"
 msgstr "Relancer les téléchargements en échec"
@@ -16971,7 +16976,7 @@ msgstr "Trier par les plus récents d'abord"
 msgid "Sort oldest first"
 msgstr "Trier par les plus anciens d'abord"
 
-#: src/components/FailedQueueActions.tsx
+#: src/components/QueueActions.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
