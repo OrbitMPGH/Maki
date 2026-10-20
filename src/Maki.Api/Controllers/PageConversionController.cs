@@ -106,7 +106,7 @@ public class PageConversionController(
             return this.Conflict(localizer, "error.pageConversion.off");
         }
 
-        await worker.StartAsync(ct);
+        await worker.StartPassAsync(ct);
         return await Status(ct);
     }
 

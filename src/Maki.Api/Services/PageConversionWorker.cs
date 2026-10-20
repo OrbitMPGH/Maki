@@ -69,7 +69,7 @@ public class PageConversionWorker(
         }
     }
 
-    public async Task StartAsync(CancellationToken ct)
+    public async Task StartPassAsync(CancellationToken ct)
     {
         lock (_sync)
         {

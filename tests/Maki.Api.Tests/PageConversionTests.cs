@@ -313,7 +313,7 @@ public sealed class PageConversionTests : IDisposable
         var worker = new PageConversionWorker(services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(),
             settings, NullLogger<PageConversionWorker>.Instance) { DelayBetweenFiles = TimeSpan.Zero };
 
-        await worker.StartAsync(CancellationToken.None);
+        await worker.StartPassAsync(CancellationToken.None);
         await worker.RunPassAsync(CancellationToken.None);
 
         Assert.NotNull(Row(convertible).OriginalImageFormat);
@@ -335,7 +335,7 @@ public sealed class PageConversionTests : IDisposable
         var settings = new SettingsService(_world.Db.ScopeFactory());
         var worker = new PageConversionWorker(_world.Db.ScopeFactory(), settings, NullLogger<PageConversionWorker>.Instance);
 
-        await worker.StartAsync(CancellationToken.None);
+        await worker.StartPassAsync(CancellationToken.None);
         await worker.PauseAsync(CancellationToken.None);
         await worker.RunPassAsync(CancellationToken.None);
 
