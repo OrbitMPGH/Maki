@@ -671,10 +671,12 @@ export const scrobbleSettings: ScrobbleSettings = {
 
 export const scrobbleStatus: ScrobbleStatus = {
   connections: [
+    { service: 'kavita', label: 'Kavita', configured: false, connected: false, username: null, oAuth: false, syncReading: true, syncRatings: false, animeList: false, animeSignals: false },
     { service: 'anilist', label: 'AniList', configured: true, connected: true, username: 'rin_reads', oAuth: true, syncReading: true, syncRatings: true, animeList: true, animeSignals: false },
     { service: 'mal', label: 'MyAnimeList', configured: false, connected: false, username: null, oAuth: true, syncReading: false, syncRatings: false, animeList: true, animeSignals: false },
     { service: 'mangabaka', label: 'MangaBaka', configured: false, connected: false, username: null, oAuth: false, syncReading: false, syncRatings: false, animeList: false, animeSignals: false },
     { service: 'kitsu', label: 'Kitsu', configured: true, connected: true, username: 'rin@example.test', oAuth: false, syncReading: true, syncRatings: false, animeList: true, animeSignals: false },
+    { service: 'mangaupdates', label: 'MangaUpdates', configured: false, connected: false, username: null, oAuth: false, syncReading: false, syncRatings: false, animeList: false, animeSignals: false },
   ],
   running: false,
   lastSyncAt: minutesAgo(18),

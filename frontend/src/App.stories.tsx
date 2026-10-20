@@ -3,6 +3,7 @@ import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api } from '../.storybook/mocks/api'
 import { setupStatus, uiSettings } from '../.storybook/mocks/shared'
+import { scrobbleHandlers } from '../.storybook/mocks/insights'
 import App from './App'
 
 /**
@@ -44,7 +45,8 @@ export const DiscoverTaste: Story = at('/discover/taste')
 export const Import: Story = at('/import')
 export const Activity: Story = at('/activity')
 export const Requests: Story = at('/requests')
-export const Scrobble: Story = at('/scrobble')
+// Settings registers its own /scrobble/status first, so without this the page gets the Settings fixture.
+export const Scrobble: Story = { parameters: { router: { initialEntries: ['/scrobble'] }, msw: scrobbleHandlers() } }
 export const Stats: Story = at('/stats')
 export const Notifications: Story = at('/notifications')
 export const Settings: Story = at('/settings')
