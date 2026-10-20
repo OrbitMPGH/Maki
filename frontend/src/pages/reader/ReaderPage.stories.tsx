@@ -144,6 +144,18 @@ export const EndOfChapter: Story = {
   },
 }
 
+/** A quick second press on the last page stops at the end screen instead of carrying on into Chapter 22. */
+export const DoublePressStopsAtTheEnd: Story = {
+  parameters: open(6019),
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 19 - page 14' })
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}')
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    await expect(canvas.getByRole('heading', { name: 'Chapter 19' })).toBeVisible()
+    await expect(canvas.getByRole('button', { name: /Read Chapter 22/ })).toBeVisible()
+  },
+}
+
 export const StayHereAfterTheEnd: Story = {
   parameters: open(6019),
   play: async ({ canvas, userEvent }) => {
