@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import {
   ActionIcon,
   Anchor,
@@ -76,6 +76,7 @@ import { FileQualityBadge } from '../components/series/FileQualityBadge'
 import { TorrentProposalCard } from '../components/upgrades/TorrentProposalCard'
 import { EmptyState } from '../components/ui/EmptyState'
 import { SectionHeader } from '../components/ui/SectionHeader'
+import { SeriesCell } from '../components/SeriesCell'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
@@ -188,37 +189,6 @@ function upgradeRejectionText(
 type ActivityTab = 'queue' | 'upgrades' | 'upcoming'
 
 /** What a section shows in place of its skeleton once its first fetch has failed. */
-/** The series a row belongs to: its cover, its title and, under it, the chapter, release or file. */
-function SeriesCell({
-  seriesId,
-  title,
-  coverUrl,
-  detail,
-  small,
-}: {
-  seriesId: number
-  title: string
-  coverUrl: string | null
-  detail: ReactNode
-  small?: boolean
-}) {
-  return (
-    <div className="queue-series" data-small={small || undefined}>
-      <Link to={`/series/${seriesId}`} className="queue-series-cover" tabIndex={-1} aria-hidden>
-        {coverUrl && <img src={coverUrl} alt="" loading="lazy" decoding="async" />}
-      </Link>
-      <div className="queue-series-text">
-        <Text component={Link} to={`/series/${seriesId}`} className="queue-series-title" lineClamp={2}>
-          {title}
-        </Text>
-        <Text component="div" size="xs" c="var(--ink-3)" className="tnum" lineClamp={2}>
-          {detail}
-        </Text>
-      </div>
-    </div>
-  )
-}
-
 function QueueSeriesCell({ item, small }: { item: QueueItemDto; small?: boolean }) {
   return (
     <SeriesCell
@@ -1114,7 +1084,7 @@ export default function ActivityPage() {
                                   {expanded &&
                                     entry.rows.map((row) => (
                                       <Table.Tr key={row.id}>
-                                        <Table.Td colSpan={2} className="queue-series-indent">
+                                        <Table.Td colSpan={2} className="series-cell-indent">
                                           <Text size="xs" c="var(--ink-3)" className="tnum">
                                             {chapterRowLabel(row)}
                                             {' · '}

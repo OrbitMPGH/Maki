@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
+using Maki.Api.Dtos;
 using System.Text.Json;
 using Maki.Api.Jobs;
 using Maki.Api.Localization;
@@ -88,31 +89,68 @@ public class ScrobbleController(
         var lastSync = await scrobbler.LastSyncAtAsync(ct);
         var interval = await scrobbler.IntervalMinutesAsync(ct);
 
-        var recent = await db.ScrobbleSyncStates.AsNoTracking()
+        var recentKavita = await db.ScrobbleSyncStates.AsNoTracking()
             .OrderByDescending(s => s.SyncedAt)
             .Take(40)
-            .Select(s => new { s.Title, s.Service, s.Chapter, s.Volume, s.Status, At = s.SyncedAt, s.Error })
+            .Select(s => new RecentRow(s.Title, s.Service, s.Chapter, s.Volume, s.Status, s.SyncedAt, s.Error, null))
             .ToListAsync(ct);
 
-        var unmatched = (await db.ScrobbleUnmatched.AsNoTracking()
-                .OrderBy(u => u.Title).ThenBy(u => u.Service)
-                .ToListAsync(ct))
-            .Select(u => new
+        var unmatchedRows = await db.ScrobbleUnmatched.AsNoTracking()
+            .OrderBy(u => u.Title).ThenBy(u => u.Service)
+            .ToListAsync(ct);
+
+        var recentNative = await db.SeriesScrobbleStates.AsNoTracking()
+            .OrderByDescending(s => s.SyncedAt)
+            .Take(40)
+            .Join(db.Series, s => s.SeriesId, sr => sr.Id,
+                (s, sr) => new RecentRow(sr.Title, s.Service, s.Chapter, s.Volume, s.Status, s.SyncedAt, s.Error, sr.Id))
+            .ToListAsync(ct);
+        var recentRows = recentKavita.Concat(recentNative).OrderByDescending(s => s.At).Take(40).ToList();
+
+        // Kavita rows name a Kavita series, not one of ours. They are tied to a library series the
+        // way the series page ties them (normalized title or folder name), only to show its cover.
+        var library = await LibrarySeriesByTitleAsync(
+            recentRows.Where(r => r.SeriesId is null).Select(r => r.Title).Concat(unmatchedRows.Select(u => u.Title)),
+            ct);
+        var nativeIds = recentRows.Where(r => r.SeriesId is not null).Select(r => r.SeriesId!.Value).Distinct().ToList();
+        var covers = await db.Series.AsNoTracking()
+            .Where(s => nativeIds.Contains(s.Id))
+            .Select(s => new LibrarySeries(s.Id, s.CoverPath, s.LastMetadataRefresh))
+            .ToDictionaryAsync(s => s.Id, ct);
+        LibrarySeries? SeriesFor(int? id, string title) =>
+            id is { } known ? covers.GetValueOrDefault(known) : library.GetValueOrDefault(ScrobbleMatching.NormalizeTitle(title));
+
+        var recent = recentRows.Select(r =>
+        {
+            var series = SeriesFor(r.SeriesId, r.Title);
+            return new
+            {
+                r.Title,
+                r.Service,
+                r.Chapter,
+                r.Volume,
+                r.Status,
+                r.At,
+                r.Error,
+                SeriesId = series?.Id,
+                CoverUrl = series is null ? null : SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.Refreshed),
+            };
+        }).ToList();
+
+        var unmatched = unmatchedRows.Select(u =>
+        {
+            var series = SeriesFor(null, u.Title);
+            return new
             {
                 u.KavitaSeriesId,
                 u.Service,
                 u.Title,
                 u.Reason,
                 Candidates = JsonSerializer.Deserialize<List<ScrobbleService.CandidateDto>>(u.CandidatesJson) ?? [],
-            });
-
-        var recentNative = await db.SeriesScrobbleStates.AsNoTracking()
-            .OrderByDescending(s => s.SyncedAt)
-            .Take(40)
-            .Join(db.Series, s => s.SeriesId, sr => sr.Id,
-                (s, sr) => new { sr.Title, s.Service, s.Chapter, s.Volume, s.Status, At = s.SyncedAt, s.Error })
-            .ToListAsync(ct);
-        recent = recent.Concat(recentNative).OrderByDescending(s => s.At).Take(40).ToList();
+                SeriesId = series?.Id,
+                CoverUrl = series is null ? null : SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.Refreshed),
+            };
+        });
 
         // Rendered here rather than at the raise site: this log is one person's own, and they may
         // have changed language since the line was written. A row with no key is somebody else's
@@ -145,6 +183,44 @@ public class ScrobbleController(
             Unmatched = unmatched,
             Log = log,
         });
+    }
+
+    private sealed record RecentRow(
+        string Title, string Service, int Chapter, int Volume, string? Status, DateTime At, string? Error, int? SeriesId);
+
+    private sealed record LibrarySeries(int Id, string? CoverPath, DateTime? Refreshed);
+
+    /// <summary>
+    /// Library series keyed by normalized title and folder name, for the titles asked about. Every
+    /// series is read because the key is computed in memory; only id, names and cover columns.
+    /// </summary>
+    private async Task<Dictionary<string, LibrarySeries>> LibrarySeriesByTitleAsync(
+        IEnumerable<string> titles, CancellationToken ct)
+    {
+        var wanted = titles.Select(ScrobbleMatching.NormalizeTitle).Where(k => k.Length > 0).ToHashSet();
+        var found = new Dictionary<string, LibrarySeries>();
+        if (wanted.Count == 0)
+        {
+            return found;
+        }
+
+        var all = await db.Series.AsNoTracking()
+            .OrderBy(s => s.Id)
+            .Select(s => new { s.Id, s.Title, s.FolderName, s.CoverPath, s.LastMetadataRefresh })
+            .ToListAsync(ct);
+        foreach (var s in all)
+        {
+            foreach (var name in new[] { s.Title, s.FolderName })
+            {
+                var key = ScrobbleMatching.NormalizeTitle(name ?? "");
+                if (wanted.Contains(key))
+                {
+                    found.TryAdd(key, new LibrarySeries(s.Id, s.CoverPath, s.LastMetadataRefresh));
+                }
+            }
+        }
+
+        return found;
     }
 
     /// <summary>

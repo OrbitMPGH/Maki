@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import {
   Alert,
   Anchor,
-  Badge,
   Box,
   Button,
   Group,
@@ -14,16 +13,17 @@ import {
   Table,
   Text,
   TextInput,
-  Title,
   Tooltip,
 } from '@mantine/core'
-import { IconRefresh } from '@tabler/icons-react'
+import { IconHistory, IconListDetails, IconPlugConnected, IconRefresh, IconUserQuestion } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SectionHeader } from '../components/ui/SectionHeader'
+import { SeriesCell } from '../components/SeriesCell'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
@@ -75,12 +75,28 @@ function groupBySeries(rows: ScrobbleSyncRow[], connections: ScrobbleConnection[
   const byOrder = (a: string, b: string) => order(a) - order(b)
   const groups = new Map<
     string,
-    { title: string; at: string; seen: Set<string>; outcomes: Map<string, SyncOutcome>; failures: ScrobbleSyncRow[] }
+    {
+      title: string
+      at: string
+      seriesId: number | null
+      coverUrl: string | null
+      seen: Set<string>
+      outcomes: Map<string, SyncOutcome>
+      failures: ScrobbleSyncRow[]
+    }
   >()
   for (const r of rows) {
     let group = groups.get(r.title)
     if (!group) {
-      group = { title: r.title, at: r.at, seen: new Set(), outcomes: new Map(), failures: [] }
+      group = {
+        title: r.title,
+        at: r.at,
+        seriesId: r.seriesId,
+        coverUrl: r.coverUrl,
+        seen: new Set(),
+        outcomes: new Map(),
+        failures: [],
+      }
       groups.set(r.title, group)
     }
     if (group.seen.has(r.service)) continue
@@ -95,7 +111,7 @@ function groupBySeries(rows: ScrobbleSyncRow[], connections: ScrobbleConnection[
     else group.outcomes.set(key, { chapter: r.chapter, volume: r.volume, status: r.status, services: [r.service] })
   }
   // Trackers in the Connections order everywhere, so the same icons sit in the same place row to row.
-  return [...groups.values()].map(({ title, at, outcomes, failures }) => {
+  return [...groups.values()].map(({ title, at, seriesId, coverUrl, outcomes, failures }) => {
     const lines = [...outcomes.values()]
     for (const line of lines) line.services.sort(byOrder)
     lines.sort((a, b) => b.chapter - a.chapter || byOrder(a.services[0], b.services[0]))
@@ -104,7 +120,7 @@ function groupBySeries(rows: ScrobbleSyncRow[], connections: ScrobbleConnection[
       null,
     )
     failures.sort((a, b) => byOrder(a.service, b.service))
-    return { title, at, main, others: lines.filter((line) => line !== main), failures }
+    return { title, at, seriesId, coverUrl, main, others: lines.filter((line) => line !== main), failures }
   })
 }
 
@@ -334,7 +350,9 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
           {connection.connected ? (
             <Button
               size="compact-sm"
-              variant="default"
+              variant="subtle"
+              color="var(--neutral)"
+              className="scrobble-disconnect"
               loading={disconnect.isPending}
               onClick={() =>
                 disconnect.mutate(connection.service)
@@ -378,54 +396,72 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
     )
   }
 
+  const href = item.seriesId != null ? `/series/${item.seriesId}` : null
+  const cover = item.coverUrl && <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />
   return (
     <Panel p="md">
-      <Group gap="xs">
-        <StatusDot tone="warn" aria-hidden />
-        <Text fw={700}>{item.title}</Text>
-        <TagChip size="sm">{serviceLabel(data?.connections, item.service)}</TagChip>
-      </Group>
-      <Text size="sm" c="var(--ink-3)">
-        {item.reason}
-      </Text>
-      {item.candidates.length > 0 && (
-        <Stack gap={4} mt="xs">
-          {item.candidates.map((c) => (
-            <Group key={c.id} gap="xs">
-              <Button size="compact-xs" variant="light" onClick={() => assign(c.id)}>
-                <Trans>Use</Trans>
-              </Button>
-              <Text size="sm" component="a" href={c.url} target="_blank" rel="noopener" c="brand.4">
-                {c.title}
+      <div className="cover-panel scrobble-review">
+        {/* No library series matched this title, so there is no cover to show and no empty box either. */}
+        {href && (
+          <Link to={href} className="cover-panel-cover" tabIndex={-1} aria-hidden>
+            {cover}
+          </Link>
+        )}
+        <div className="cover-panel-body">
+          <Group gap="xs">
+            <StatusDot tone="warn" aria-hidden />
+            {href ? (
+              <Text component={Link} to={href} className="series-cell-title">
+                {item.title}
               </Text>
-            </Group>
-          ))}
-        </Stack>
-      )}
-      <Group mt="sm" gap="xs">
-        <TextInput
-          aria-label={t`Paste series URL or id…`}
-          size="xs"
-          style={{ flex: '1 1 12rem' }}
-          placeholder={t`Paste series URL or id…`}
-          value={input}
-          onChange={(e) => setInput(e.currentTarget.value)}
-          onKeyDown={(e) => e.key === 'Enter' && assign(input)}
-        />
-        <Button size="compact-sm" onClick={() => assign(input)} loading={match.isPending}>
-          <Trans>Assign</Trans>
-        </Button>
-        <Button
-          size="compact-sm"
-          variant="default"
-          loading={ignore.isPending}
-          onClick={() =>
-            ignore.mutate({ kavitaSeriesId: item.kavitaSeriesId, service: item.service })
-          }
-        >
-          <Trans>Ignore</Trans>
-        </Button>
-      </Group>
+            ) : (
+              <Text className="series-cell-title">{item.title}</Text>
+            )}
+            <TagChip size="sm">{serviceLabel(data?.connections, item.service)}</TagChip>
+          </Group>
+          <Text size="sm" c="var(--ink-3)">
+            {item.reason}
+          </Text>
+          {item.candidates.length > 0 && (
+            <Stack gap={4} mt="xs">
+              {item.candidates.map((c) => (
+                <Group key={c.id} gap="xs">
+                  <Button size="compact-xs" variant="light" onClick={() => assign(c.id)}>
+                    <Trans>Use</Trans>
+                  </Button>
+                  <Text size="sm" component="a" href={c.url} target="_blank" rel="noopener" c="brand.4">
+                    {c.title}
+                  </Text>
+                </Group>
+              ))}
+            </Stack>
+          )}
+          <Group mt="sm" gap="xs">
+            <TextInput
+              aria-label={t`Paste series URL or id…`}
+              size="xs"
+              style={{ flex: '1 1 12rem' }}
+              placeholder={t`Paste series URL or id…`}
+              value={input}
+              onChange={(e) => setInput(e.currentTarget.value)}
+              onKeyDown={(e) => e.key === 'Enter' && assign(input)}
+            />
+            <Button size="compact-sm" onClick={() => assign(input)} loading={match.isPending}>
+              <Trans>Assign</Trans>
+            </Button>
+            <Button
+              size="compact-sm"
+              variant="default"
+              loading={ignore.isPending}
+              onClick={() =>
+                ignore.mutate({ kavitaSeriesId: item.kavitaSeriesId, service: item.service })
+              }
+            >
+              <Trans>Ignore</Trans>
+            </Button>
+          </Group>
+        </div>
+      </div>
     </Panel>
   )
 }
@@ -473,18 +509,7 @@ export default function ScrobblePage() {
         </Trans>
       }
       actions={
-        <Group gap="sm">
-          <Text size="xs" c="var(--ink-3)" ta={{ base: 'left', sm: 'right' }} className="tnum">
-            {data?.running ? (
-              <Trans>
-                sync running… · last {lastSync} · next {nextSync}
-              </Trans>
-            ) : (
-              <Trans>
-                last {lastSync} · next {nextSync}
-              </Trans>
-            )}
-          </Text>
+        <>
           {/* data-disabled rather than disabled: a disabled button gets no hover or focus, so the
               tooltip saying why could never show. */}
           <Tooltip label={t`Connect a tracker first`} disabled={anyTrackerConnected}>
@@ -503,9 +528,23 @@ export default function ScrobblePage() {
               <Trans>Sync now</Trans>
             </Button>
           </Tooltip>
-        </Group>
+        </>
       }
     />
+  )
+
+  const syncTimes = (
+    <Text size="xs" c="var(--ink-3)" className="tnum">
+      {data?.running ? (
+        <Trans>
+          sync running… · last {lastSync} · next {nextSync}
+        </Trans>
+      ) : (
+        <Trans>
+          last {lastSync} · next {nextSync}
+        </Trans>
+      )}
+    </Text>
   )
 
   if (error && !data) {
@@ -532,129 +571,119 @@ export default function ScrobblePage() {
         </Alert>
       )}
 
-      <Title order={2} size="h4" mb="sm">
-        <Trans>Connections</Trans>
-      </Title>
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} mb="lg">
-        {data
-          ? data.connections.map((c) => <ConnectionCard key={c.service} connection={c} />)
-          : Array.from({ length: 6 }, (_, i) => <Skeleton key={i} h={96} aria-hidden />)}
-      </SimpleGrid>
-
-      <Group gap="xs" mb="sm">
-        <Title order={2} size="h4">
-          <Trans>Needs review</Trans>
-        </Title>
-        {data && data.unmatched.length > 0 && (
-          <Badge variant="light" color="var(--warn)">
-            {data.unmatched.length}
-          </Badge>
-        )}
-      </Group>
-      {!data ? (
-        <Skeleton h={72} mb="lg" aria-hidden />
-      ) : data.unmatched.length > 0 ? (
-        <Stack gap="sm" mb="lg">
-          {data.unmatched.map((u) => (
-            <UnmatchedCard key={`${u.kavitaSeriesId}-${u.service}`} item={u} />
-          ))}
+      <Stack gap="xl" mt="xs">
+        <Stack gap="sm">
+          <SectionHeader icon={IconPlugConnected} title={t`Connections`} />
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
+            {data
+              ? data.connections.map((c) => <ConnectionCard key={c.service} connection={c} />)
+              : Array.from({ length: 6 }, (_, i) => <Skeleton key={i} h={96} aria-hidden />)}
+          </SimpleGrid>
         </Stack>
-      ) : (
-        <Box mb="lg">
-          <EmptyState compact mood="pleased" title={t`Nothing needs review.`} />
-        </Box>
-      )}
 
-      <Title order={2} size="h4" mb="sm">
-        <Trans>Recent syncs</Trans>
-      </Title>
-      {!data ? (
-        <Box mb="lg">
-          <TableSkeleton columns={3} rows={4} />
-        </Box>
-      ) : data.recent.length > 0 ? (
-        <Panel p={0} className="table-panel" mb="lg">
-          <Table.ScrollContainer minWidth={600}>
-            <Table className="panel-table scrobble-recent-table" highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>
-                    <Trans>Series</Trans>
-                  </Table.Th>
-                  <Table.Th>
-                    <Trans>Result</Trans>
-                  </Table.Th>
-                  <Table.Th data-priority="low">
-                    <Trans>When</Trans>
-                  </Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {groupBySeries(data.recent, data.connections).map((group) => (
-                  <Table.Tr key={group.title}>
-                    <Table.Td className="scrobble-recent-series">{group.title || '#'}</Table.Td>
-                    <Table.Td>
-                      <RecentSyncResult group={group} connections={data.connections} />
-                    </Table.Td>
-                    <Table.Td data-priority="low">
-                      <Text size="sm" c="var(--ink-3)">
-                        {fmtTime(group.at)}
-                      </Text>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
-        </Panel>
-      ) : (
-        <Box mb="lg">
-          <EmptyState compact mood="asleep" title={t`No syncs yet.`} />
-        </Box>
-      )}
-
-      <Title order={2} size="h4" mb="sm">
-        <Trans>Activity log</Trans>
-      </Title>
-      <Panel p="sm">
-        <ScrollArea.Autosize mah={320}>
+        <Stack gap="sm">
+          <SectionHeader
+            icon={IconUserQuestion}
+            title={t`Needs review`}
+            count={data && data.unmatched.length > 0 ? data.unmatched.length : undefined}
+          />
           {!data ? (
-            <Skeleton h={48} aria-hidden />
-          ) : data.log.length > 0 ? (
-            <Stack gap={2}>
-              {dedupeKeys(data.log.map((l) => `${l.timestamp}-${l.service}-${l.message}`)).map((key, i) => {
-                const l = data.log[i]
-                return (
-                  // component="div": the line contains a Badge (a div), invalid inside <p>
-                  <Text key={key} size="xs" ff="monospace" component="div">
-                    <Text
-                      span
-                      c={
-                        l.level === 'error'
-                          ? 'var(--danger)'
-                          : l.level === 'warning'
-                            ? 'var(--warn)'
-                            : 'var(--ink-3)'
-                      }
-                    >
-                      {fmtTime(l.timestamp)}
-                    </Text>{' '}
-                    {l.service && (
-                      <Badge size="xs" variant="light" mr={4}>
-                        {serviceLabel(data.connections, l.service)}
-                      </Badge>
-                    )}
-                    {l.title && <Text span fw={600}>{l.title} </Text>}
-                    {l.message}
-                  </Text>
-                )
-              })}
+            <Skeleton h={72} aria-hidden />
+          ) : data.unmatched.length > 0 ? (
+            <Stack gap="sm">
+              {data.unmatched.map((u) => (
+                <UnmatchedCard key={`${u.kavitaSeriesId}-${u.service}`} item={u} />
+              ))}
             </Stack>
           ) : (
-            <EmptyState compact mood="asleep" title={t`No activity yet.`} />
+            <EmptyState compact mood="pleased" title={t`Nothing needs review.`} />
           )}
-        </ScrollArea.Autosize>
-      </Panel>
+        </Stack>
+
+        <Stack gap="sm">
+          <SectionHeader icon={IconHistory} title={t`Recent syncs`} action={data ? syncTimes : undefined} />
+          {!data ? (
+            <TableSkeleton columns={3} rows={4} />
+          ) : data.recent.length > 0 ? (
+            <Panel p={0} className="table-panel">
+              <Table.ScrollContainer minWidth={600}>
+                <Table className="panel-table scrobble-recent-table" highlightOnHover>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>
+                        <Trans>Series</Trans>
+                      </Table.Th>
+                      <Table.Th>
+                        <Trans>Result</Trans>
+                      </Table.Th>
+                      <Table.Th data-priority="low">
+                        <Trans>When</Trans>
+                      </Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {groupBySeries(data.recent, data.connections).map((group) => (
+                      <Table.Tr key={group.title}>
+                        <Table.Td>
+                          <SeriesCell
+                            seriesId={group.seriesId}
+                            title={group.title || '#'}
+                            coverUrl={group.coverUrl}
+                            small
+                          />
+                        </Table.Td>
+                        <Table.Td>
+                          <RecentSyncResult group={group} connections={data.connections} />
+                        </Table.Td>
+                        <Table.Td data-priority="low">
+                          <Text size="sm" c="var(--ink-3)">
+                            {fmtTime(group.at)}
+                          </Text>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
+            </Panel>
+          ) : (
+            <EmptyState compact mood="asleep" title={t`No syncs yet.`} />
+          )}
+        </Stack>
+
+        <Stack gap="sm">
+          <SectionHeader icon={IconListDetails} title={t`Activity log`} />
+          <Panel p={0}>
+            <ScrollArea.Autosize mah={360}>
+              {!data ? (
+                <Box p="sm">
+                  <Skeleton h={48} aria-hidden />
+                </Box>
+              ) : data.log.length > 0 ? (
+                <ul className="scrobble-log">
+                  {dedupeKeys(data.log.map((l) => `${l.timestamp}-${l.service}-${l.message}`)).map((key, i) => {
+                    const l = data.log[i]
+                    return (
+                      <li key={key} className="scrobble-log-line" data-level={l.level}>
+                        <span className="scrobble-log-time tnum">{fmtTime(l.timestamp)}</span>
+                        <span className="scrobble-log-service">
+                          {l.service && <TrackerMarks services={[l.service]} connections={data.connections} />}
+                        </span>
+                        <span className="scrobble-log-text">
+                          {l.title && <span className="scrobble-log-title">{l.title}</span>}
+                          {l.message}
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              ) : (
+                <EmptyState compact mood="asleep" title={t`No activity yet.`} />
+              )}
+            </ScrollArea.Autosize>
+          </Panel>
+        </Stack>
+      </Stack>
     </SurfaceFrame>
   )
 }

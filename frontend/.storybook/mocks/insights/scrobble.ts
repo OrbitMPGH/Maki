@@ -45,8 +45,9 @@ export const disconnectedConnections: ScrobbleConnection[] = connectedConnection
 )
 
 const title = (id: number) => seriesById(id).title
+const linked = (id: number) => ({ seriesId: id, coverUrl: `/api/v1/mediacover/${id}/cover.jpg` })
 
-export const recentSyncs: ScrobbleSyncRow[] = [
+const syncs: Omit<ScrobbleSyncRow, 'seriesId' | 'coverUrl'>[] = [
   { title: title(1), service: 'anilist', chapter: 131, volume: 14, status: 'reading', at: minutesAgo(12), error: null },
   { title: title(1), service: 'mal', chapter: 131, volume: 14, status: 'reading', at: minutesAgo(12), error: null },
   { title: title(1), service: 'kitsu', chapter: 0, volume: 0, status: null, at: minutesAgo(12), error: 'Kitsu answered 429: slow down.' },
@@ -65,6 +66,11 @@ export const recentSyncs: ScrobbleSyncRow[] = [
   { title: title(2), service: 'mangaupdates', chapter: 96, volume: 11, status: 'completed', at: daysAgo(3), error: null },
 ]
 
+export const recentSyncs: ScrobbleSyncRow[] = syncs.map((row) => {
+  const series = [1, 2, 3, 5, 7].find((id) => title(id) === row.title)
+  return { ...row, ...(series ? linked(series) : { seriesId: null, coverUrl: null }) }
+})
+
 export const unmatched: ScrobbleUnmatchedItem[] = [
   {
     kavitaSeriesId: 41,
@@ -75,6 +81,7 @@ export const unmatched: ScrobbleUnmatchedItem[] = [
       { id: '118201', title: 'Paper Moon Detective', url: 'https://anilist.co/manga/118201' },
       { id: '118944', title: 'Paper Moon Detective: Side Stories', url: 'https://anilist.co/manga/118944' },
     ],
+    ...linked(4),
   },
   {
     kavitaSeriesId: 57,
@@ -82,6 +89,8 @@ export const unmatched: ScrobbleUnmatchedItem[] = [
     title: title(12),
     reason: 'No result for this title.',
     candidates: [],
+    seriesId: null,
+    coverUrl: null,
   },
 ]
 

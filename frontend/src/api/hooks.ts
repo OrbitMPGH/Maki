@@ -3811,6 +3811,9 @@ export interface ScrobbleUnmatchedItem {
   title: string
   reason: string
   candidates: ScrobbleCandidate[]
+  /** The library series this title matched, by normalized title or folder name; null when none did. */
+  seriesId: number | null
+  coverUrl: string | null
 }
 
 export interface ScrobbleSyncRow {
@@ -3821,6 +3824,9 @@ export interface ScrobbleSyncRow {
   status: string | null
   at: string
   error: string | null
+  /** The library series this row is about; null for a Kavita title no library series matched. */
+  seriesId: number | null
+  coverUrl: string | null
 }
 
 export interface ScrobbleLogRow {

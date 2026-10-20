@@ -8602,10 +8602,6 @@ body.reader-open {
 .scrobble-recent-table thead th:nth-child(3) {
   width: 150px;
 }
-.scrobble-recent-series {
-  font-weight: var(--fw-medium);
-  vertical-align: top;
-}
 .scrobble-recent-table td {
   vertical-align: top;
 }
@@ -8669,6 +8665,54 @@ body.reader-open {
   flex: none;
 }
 
+/* A text-only button under a card's text, pulled left by its own padding so the word lines up. */
+.scrobble-disconnect {
+  margin-inline-start: calc(var(--button-padding-x, 10px) * -1);
+}
+
+/* Activity log: one line per event, time then tracker then what happened. A warning or error is
+   marked by a rule down the left edge rather than colouring the text. */
+.scrobble-log {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+.scrobble-log-line {
+  display: grid;
+  grid-template-columns: 10.5rem 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 2px 12px;
+  padding: 5px var(--mantine-spacing-md);
+  font-size: var(--type-meta);
+  box-shadow: inset 2px 0 transparent;
+}
+.scrobble-log-line + .scrobble-log-line {
+  border-top: 1px solid var(--hairline);
+}
+.scrobble-log-line[data-level='warning'] {
+  box-shadow: inset 2px 0 var(--warn);
+}
+.scrobble-log-line[data-level='error'] {
+  box-shadow: inset 2px 0 var(--danger);
+}
+.scrobble-log-time {
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.scrobble-log-service {
+  display: inline-flex;
+}
+.scrobble-log-text {
+  min-width: 0;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.scrobble-log-title {
+  margin-right: 6px;
+  font-weight: var(--fw-semibold);
+  color: var(--ink-hi);
+}
+
 @media (max-width: 47.9375em) {
   .scrobble-table thead th {
     width: auto;
@@ -8707,6 +8751,17 @@ body.reader-open {
   .scrobble-recent-table [data-priority='low'] {
     display: none;
   }
+  /* The candidates and the input need the width more than the card needs its cover. */
+  .scrobble-review .cover-panel-cover {
+    display: none;
+  }
+  .scrobble-log-line {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+  .scrobble-log-time {
+    grid-column: 1 / -1;
+    font-size: var(--type-micro);
+  }
 }
 
 /* Activity. Same idea: column widths in CSS so the queue can collapse to the
@@ -8740,14 +8795,15 @@ body.reader-open {
   margin-top: 0.45em;
 }
 
-/* A queue row's series: the cover beside the title, the chapter or release under it. */
-.queue-series {
+/* A table row's series (Activity, Scrobble): the cover beside the title, the chapter, release or
+   file under it. */
+.series-cell {
   display: flex;
   align-items: center;
   gap: 12px;
   min-width: 220px;
 }
-.queue-series-cover {
+.series-cell-cover {
   width: 32px;
   height: 48px;
   flex-shrink: 0;
@@ -8755,24 +8811,24 @@ body.reader-open {
   border-radius: 5px;
   background: var(--surface-2);
 }
-.queue-series[data-small] .queue-series-cover {
+.series-cell[data-small] .series-cell-cover {
   width: 24px;
   height: 36px;
   border-radius: 4px;
 }
-.queue-series-cover img {
+.series-cell-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-/* A volume release waiting on Activity > Upgrades: the series cover beside the proposal. */
-.proposal-card {
+/* A panel led by its series' cover: a volume release on Activity > Upgrades, a Scrobble review. */
+.cover-panel {
   display: flex;
   align-items: flex-start;
   gap: var(--mantine-spacing-md);
 }
-.proposal-card-cover {
+.cover-panel-cover {
   width: 48px;
   height: 72px;
   flex-shrink: 0;
@@ -8780,31 +8836,31 @@ body.reader-open {
   border-radius: var(--radius-thumb);
   background: var(--surface-2);
 }
-.proposal-card-cover img {
+.cover-panel-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-.proposal-card-body {
+.cover-panel-body {
   flex: 1;
   min-width: 0;
 }
 
 /* A replaced file under its volume row, lined up with the row's text rather than its cover. */
-.panel-table td.queue-series-indent {
+.panel-table td.series-cell-indent {
   padding-inline-start: calc(var(--table-horizontal-spacing, var(--mantine-spacing-xs)) + 44px);
 }
-.queue-series-text {
+.series-cell-text {
   min-width: 0;
 }
-.queue-series-title {
+.series-cell-title {
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
   color: var(--ink-hi);
   text-decoration: none;
 }
-.queue-series-title:hover {
+.series-cell-title:hover {
   color: var(--brand-fg);
 }
 
@@ -9027,11 +9083,11 @@ body.reader-open {
   .activity-history-table tbody td {
     padding-inline: 0.4rem;
   }
-  .queue-series {
+  .series-cell {
     min-width: 0;
     gap: 8px;
   }
-  .queue-series .queue-series-cover {
+  .series-cell .series-cell-cover {
     width: 24px;
     height: 36px;
     border-radius: 4px;
