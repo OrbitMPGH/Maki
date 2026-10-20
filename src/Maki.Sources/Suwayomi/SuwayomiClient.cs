@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Maki.Core.Mihon;
 using Maki.Core.Sources;
 
 namespace Maki.Sources.Suwayomi;
@@ -330,13 +331,8 @@ public sealed class SuwayomiClient(IHttpClientFactory httpClientFactory, Suwayom
                 SuwayomiGraphQl.String(c, "realUrl")))]
             : throw new InvalidOperationException("Suwayomi answered without a chapter list");
 
-    /// <summary>
-    /// Mihon stores the number as a 32-bit float and Suwayomi widens it, so 10.1 arrives as
-    /// 10.100000381469727. Narrowing back to float and printing its shortest form recovers 10.1.
-    /// </summary>
     private static double ChapterNumber(JsonElement chapter) =>
         chapter.TryGetProperty("chapterNumber", out var n) && n.ValueKind == JsonValueKind.Number
-            ? double.Parse(((float)n.GetDouble()).ToString(System.Globalization.CultureInfo.InvariantCulture),
-                System.Globalization.CultureInfo.InvariantCulture)
+            ? MihonFloat.Narrow((float)n.GetDouble())
             : -1;
 }

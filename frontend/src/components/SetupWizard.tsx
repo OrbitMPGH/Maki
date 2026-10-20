@@ -675,7 +675,7 @@ function FinishStep({ goTo, finishTo }: { goTo: (step: StepId) => void; finishTo
             <Trans>Connect your trackers</Trans>
           </Text>
           <Text className="setup-row-description">
-            <Trans>Send reading progress to AniList, MyAnimeList, Kitsu or MangaBaka.</Trans>
+            <Trans>Send reading progress to AniList, MyAnimeList, Kitsu, MangaBaka or MangaUpdates.</Trans>
           </Text>
         </UnstyledButton>
         <UnstyledButton className="setup-next-card" onClick={() => finishTo('/settings?tab=users&s=users')}>

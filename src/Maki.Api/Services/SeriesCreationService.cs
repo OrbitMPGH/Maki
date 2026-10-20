@@ -243,7 +243,7 @@ public class SeriesCreationService(
             {
                 UserId = attributedUserId.Value, Series = series,
                 AddedToLibraryAtUtc = now,
-                AddedFrom = addedFrom is "recommendation" or "request" or ImportListService.AddedFrom ? addedFrom : "library",
+                AddedFrom = addedFrom is "recommendation" or "request" or ImportListService.AddedFrom or MihonImportService.AddedFrom ? addedFrom : "library",
                 UpdatedAt = now
             });
             bumpSignalFor = attributedUserId.Value;

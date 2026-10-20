@@ -1002,6 +1002,35 @@ namespace Maki.Data.Migrations
                     b.ToTable("NotificationTags", (string)null);
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.PendingReadImport", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NumbersJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("SeriesId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("PendingReadImports");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.PushSubscription", b =>
                 {
                     b.Property<int>("Id")
@@ -3060,6 +3089,21 @@ namespace Maki.Data.Migrations
                     b.HasOne("Maki.Core.Entities.Tag", null)
                         .WithMany()
                         .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.PendingReadImport", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maki.Data.Identity.MakiUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

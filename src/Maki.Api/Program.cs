@@ -913,6 +913,7 @@ try
     builder.Services.AddScoped<UpgradeTrashService>();
     builder.Services.AddScoped<TorrentUpgradeService>();
     builder.Services.AddScoped<SeriesCreationService>();
+    builder.Services.AddScoped<TagService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
     builder.Services.AddScoped<TorrentImportService>();
@@ -1005,24 +1006,29 @@ try
         MalOAuthUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_MAL_OAUTH") ?? "https://myanimelist.net/v1/oauth2",
         MangaBakaApiUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_MANGABAKA_API") ?? "https://api.mangabaka.org",
         KitsuApiUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_KITSU_API") ?? "https://kitsu.app/api/edge",
-        KitsuOAuthUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_KITSU_OAUTH") ?? "https://kitsu.app/api/oauth"));
+        KitsuOAuthUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_KITSU_OAUTH") ?? "https://kitsu.app/api/oauth",
+        MangaUpdatesApiUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_MANGAUPDATES_API") ?? "https://api.mangaupdates.com/v1"));
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTokenStore, ScrobbleTokenStore>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.AniListTracker>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.MalTracker>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.MangaBakaTracker>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.KitsuTracker>();
+    builder.Services.AddSingleton<Maki.Core.Scrobbling.MangaUpdatesTracker>();
     builder.Services.AddSingleton<ScrobbleService>();
-    // The same four instances, in ScrobbleService's order, for consumers that only need the interface.
+    // The same five instances, in ScrobbleService's order, for consumers that only need the interface.
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.AniListTracker>());
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.MalTracker>());
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.MangaBakaTracker>());
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.KitsuTracker>());
+    builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.MangaUpdatesTracker>());
     builder.Services.AddSingleton<ImportListService>();
     builder.Services.AddScoped<SeriesRequestSubmitter>();
     builder.Services.AddSingleton<AnimeSignalSources>();
     builder.Services.AddSingleton<AnimeSignalSyncService>();
     builder.Services.AddScoped<AnimeResumeService>();
     builder.Services.AddSingleton<AnimeResumePendingService>();
+    builder.Services.AddSingleton<PendingReadImportService>();
+    builder.Services.AddScoped<MihonImportService>();
 
     // Read before the host is built, unlike the rest of auth.*, because whether the OpenID Connect
     // scheme is registered at all is decided here. See OidcRuntimeOptions.Load.

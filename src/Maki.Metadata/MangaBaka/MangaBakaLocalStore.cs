@@ -513,7 +513,7 @@ public class MangaBakaLocalStore(
         return matches;
     }
 
-    public async Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default)
+    public virtual async Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default)
     {
         if (!long.TryParse(providerId, out var id))
         {
@@ -1820,9 +1820,89 @@ public class MangaBakaLocalStore(
             }
         }
 
+        await FollowMergedAsync(conn, pending, result, chunkSize, ct);
+        return result;
+    }
+
+    /// <summary>
+    /// MangaUpdates slug -> canonical MangaBaka id. <c>source_manga_updates_id</c> is text, so this is a
+    /// separate parameterized lookup rather than another column in the numeric one. Slugs are lowercase
+    /// base36 and the dump is lowercase apart from a couple of stray rows, so both sides are compared
+    /// lowercased, through the expression index <c>ix_ext_mangaupdates</c>. The <c>IS NOT NULL</c> term
+    /// is what lets SQLite prove the partial index applies. Keys of the result are lowercase.
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<string, long>> GetIdsByMangaUpdatesIdsAsync(
+        IReadOnlyCollection<string> slugs, CancellationToken ct = default)
+    {
+        var wanted = slugs
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s.Trim().ToLowerInvariant())
+            .Distinct()
+            .ToList();
+        if (wanted.Count == 0 || !await IsAvailableAsync(ct))
+        {
+            return new Dictionary<string, long>();
+        }
+
+        var result = new Dictionary<string, long>(wanted.Count);
+        var pending = new List<(string External, long SeriesId)>();
+
+        using var conn = Open();
+        const int chunkSize = 500;
+        for (var offset = 0; offset < wanted.Count; offset += chunkSize)
+        {
+            var chunk = wanted.Skip(offset).Take(chunkSize).ToList();
+            using var cmd = conn.CreateCommand();
+            var names = new List<string>(chunk.Count);
+            for (var i = 0; i < chunk.Count; i++)
+            {
+                names.Add($"$p{i}");
+                cmd.Parameters.AddWithValue($"$p{i}", chunk[i]);
+            }
+
+            cmd.CommandText = $"""
+                SELECT lower(source_manga_updates_id), id, state, merged_with, type
+                FROM series
+                WHERE source_manga_updates_id IS NOT NULL
+                  AND lower(source_manga_updates_id) IN ({string.Join(",", names)})
+                """;
+            cmd.CommandTimeout = 600;
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                var external = GetString(reader, 0);
+                if (string.IsNullOrEmpty(external))
+                {
+                    continue;
+                }
+
+                var seriesId = reader.GetInt64(1);
+                if (GetString(reader, 2) == "merged" && long.TryParse(GetString(reader, 3), out var canonical))
+                {
+                    pending.Add((external, canonical));
+                    continue;
+                }
+
+                if (GetString(reader, 4) == "novel")
+                {
+                    continue;
+                }
+
+                result.TryAdd(external, seriesId);
+            }
+        }
+
+        await FollowMergedAsync(conn, pending, result, chunkSize, ct);
+        return result;
+    }
+
+    private static async Task FollowMergedAsync<TKey>(
+        SqliteConnection conn, List<(TKey External, long SeriesId)> pending, Dictionary<TKey, long> result,
+        int chunkSize, CancellationToken ct) where TKey : notnull
+    {
         for (var hop = 0; hop < 5 && pending.Count > 0; hop++)
         {
-            var next = new List<(long External, long SeriesId)>();
+            var next = new List<(TKey External, long SeriesId)>();
             var ids = pending.Select(x => x.SeriesId).Distinct().ToList();
             var states = new Dictionary<long, (string? State, string? MergedWith, string? Type)>(ids.Count);
             for (var offset = 0; offset < ids.Count; offset += chunkSize)
@@ -1859,8 +1939,6 @@ public class MangaBakaLocalStore(
 
             pending = next;
         }
-
-        return result;
     }
 
     private SqliteConnection Open()
