@@ -373,6 +373,42 @@ public class HomeControllerTests : IDisposable
         Assert.NotNull(item.ReadChapterId);
     }
 
+    private void EditFile(int chapterId, Action<ChapterFile> edit)
+    {
+        using var db = _db.NewContext();
+        var fileId = db.Chapters.Single(c => c.Id == chapterId).ChapterFileId;
+        edit(db.ChapterFiles.Single(f => f.Id == fileId));
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task RecentlyAdded_leaves_out_relinked_and_redownloaded_files()
+    {
+        var relinked = _db.SeedSeries("Relinked");
+        var redownloaded = _db.SeedSeries("Redownloaded");
+        var fresh = _db.SeedSeries("Fresh");
+        EditFile(SeedChapter(relinked, 1, addedAt: Base.AddDays(2)),
+            f => f.SourceName = ChapterFile.RelinkSourceName);
+        EditFile(SeedChapter(redownloaded, 1, addedAt: Base.AddDays(2)),
+            f => f.ReplacedAtUtc = f.DateAdded);
+        SeedChapter(fresh, 1, addedAt: Base);
+
+        var items = Recent(await Controller().RecentlyAdded(ct: CancellationToken.None));
+
+        Assert.Equal(["Fresh"], items.Select(i => i.SeriesTitle));
+    }
+
+    [Fact]
+    public async Task RecentlyAdded_keeps_a_file_upgraded_since_it_was_added()
+    {
+        var seriesId = _db.SeedSeries("Upgraded");
+        EditFile(SeedChapter(seriesId, 1, addedAt: Base), f => f.ReplacedAtUtc = Base.AddDays(3));
+
+        var item = Assert.Single(Recent(await Controller().RecentlyAdded(ct: CancellationToken.None)));
+
+        Assert.Equal(Base, item.AddedAt);
+    }
+
     [Fact]
     public async Task RecentlyAdded_read_chapter_is_null_once_everything_is_read()
     {

@@ -218,6 +218,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                         var mappingId = candidate.SourceMappingId ?? op.SourceMappingId;
                         var mapping = mappingId == null ? null : await db.SourceMappings.FindAsync([mappingId], ct);
                         var replacement = new ChapterFile { SeriesId = chapter.SeriesId, RelativePath = candidate.FinalPath!, Size = new FileInfo(HealthPaths.Resolve(root.Path, candidate.FinalPath!)).Length, SourceName = mapping?.SourceName ?? "health", DateAdded = DateTime.UtcNow };
+                        replacement.ReplacedAtUtc = replacement.DateAdded;
                         var group = mapping == null ? null : await db.ChapterSourceLinks
                             .Where(l => l.ChapterId == chapter.Id && l.SourceMappingId == mapping.Id)
                             .Select(l => l.Group)

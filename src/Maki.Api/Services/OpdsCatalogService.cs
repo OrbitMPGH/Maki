@@ -1,4 +1,5 @@
 using Maki.Api.Localization;
+using Maki.Core.Entities;
 using Maki.Core.Opds;
 using Maki.Core.Reading;
 using Maki.Data;
@@ -299,6 +300,7 @@ public class OpdsCatalogService(
     {
         var recentFiles = await db.ChapterFiles
             .AsNoTracking()
+            .Where(ChapterFile.IsNewContent)
             .OrderByDescending(f => f.DateAdded)
             .Take(RecentFileScan)
             .Select(f => new { f.Id, f.DateAdded })

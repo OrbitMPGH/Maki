@@ -1,9 +1,21 @@
+using System.Linq.Expressions;
 using Maki.Core.Quality;
 
 namespace Maki.Core.Entities;
 
 public class ChapterFile
 {
+    /// <summary><see cref="SourceName"/> of a file a relink adopted from disk.</summary>
+    public const string RelinkSourceName = "relink";
+
+    /// <summary>
+    /// Files that brought something new to the library, for the recently added lists. A relink
+    /// adopts a file that was already on disk, and a re-download or health repair restamps
+    /// <see cref="DateAdded"/> with <see cref="ReplacedAtUtc"/> set to the same moment.
+    /// </summary>
+    public static readonly Expression<Func<ChapterFile, bool>> IsNewContent =
+        f => f.SourceName != RelinkSourceName && (f.ReplacedAtUtc == null || f.ReplacedAtUtc != f.DateAdded);
+
     public int Id { get; set; }
     public int SeriesId { get; set; }
 
@@ -43,6 +55,9 @@ public class ChapterFile
     /// <summary>"Protect from upgrades". A trusted file is never replaced by the upgrader.</summary>
     public bool Trusted { get; set; }
 
-    /// <summary>Last successful upgrade. <see cref="DateAdded"/> keeps meaning added to the library.</summary>
+    /// <summary>
+    /// Last successful upgrade, which keeps <see cref="DateAdded"/>. A re-download or health repair
+    /// that restamps <see cref="DateAdded"/> sets this to the same value (see <see cref="IsNewContent"/>).
+    /// </summary>
     public DateTime? ReplacedAtUtc { get; set; }
 }

@@ -1,5 +1,6 @@
 using Maki.Api.Dtos;
 using Maki.Api.Services;
+using Maki.Core.Entities;
 using Maki.Core.Reading;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -320,7 +321,8 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     /// Caveat worth knowing when the rail looks odd: a first-time adopt/import of an existing
     /// on-disk library stamps <c>DateAdded</c> = now on every file it discovers, so everything
     /// looks freshly added right after one. Rescans do not restamp — only files never seen before
-    /// get a row.
+    /// get a row. Relinked files and in-place replacements are left out
+    /// (<see cref="ChapterFile.IsNewContent"/>).
     /// </para>
     /// </summary>
     [HttpGet("recently-added")]
@@ -330,6 +332,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
 
         var recentFiles = await db.ChapterFiles
             .AsNoTracking()
+            .Where(ChapterFile.IsNewContent)
             .OrderByDescending(f => f.DateAdded)
             .Take(RecentFileScan)
             .Select(f => new { f.Id, f.SeriesId, f.DateAdded })
