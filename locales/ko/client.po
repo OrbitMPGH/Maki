@@ -975,11 +975,6 @@ msgstr ""
 msgid "{have} of {total}"
 msgstr ""
 
-#: src/components/ui/CoverCard.tsx
-#, fuzzy
-#~ msgid "{have} of {totalLabel}"
-#~ msgstr "{totalLabel} 중 {have}"
-
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
@@ -2801,11 +2796,6 @@ msgstr "추가"
 msgid "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
 msgstr "{chapterLanguageToken}을(를) 설정의 챕터 형식에 추가하여 구분하세요."
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-#~ msgid "Add {title} to library"
-#~ msgstr "라이브러리에 {title} 추가"
-
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
@@ -4259,20 +4249,10 @@ msgstr ""
 msgid "ch. {0} · vol. {1}"
 msgstr ""
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "ch. {chapter}"
-#~ msgstr "{chapter}화"
-
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Ch. {chapter}"
 msgstr "챕터 {chapter}"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "ch. {chapter} · vol. {volume}"
-#~ msgstr "{chapter}화 · {volume}권"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -5145,11 +5125,6 @@ msgstr "조건"
 msgid "Config key"
 msgstr "설정 키"
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "configured, not connected"
-#~ msgstr "설정됨, 연결되지 않음"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Confirm metadata matches"
@@ -5217,11 +5192,6 @@ msgstr ""
 #, fuzzy
 msgid "Connect your trackers"
 msgstr "트래커 연결"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "connected"
-#~ msgstr "연결됨"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -6204,11 +6174,6 @@ msgstr "인구통계"
 #, fuzzy
 msgid "Density"
 msgstr "밀도"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-#~ msgid "Density: {densityLabel}"
-#~ msgstr "밀도: {densityLabel}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -11675,11 +11640,6 @@ msgstr "아직 확인하지 않음"
 msgid "Not configured"
 msgstr "설정되지 않음"
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "not configured (see Settings)"
-#~ msgstr "설정되지 않음 (설정 참조)"
-
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -13804,11 +13764,6 @@ msgstr "각 보관 파일의 목차를 읽으며 내용은 읽지 않습니다. 
 msgid "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 msgstr "모든 바이트를 읽고 보관 파일 자체 체크섬과 비교하여 디스크에서 손상된 파일을 찾아냅니다. 라이브러리 전체를 읽는 작업은 하드 디스크에서 100GB당 약 30분이 걸립니다. 파일은 도착할 때 검증되므로 이미 있는 파일을 다시 확인할 때 사용합니다."
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
-#~ msgstr "Kavita에서 읽기 진행 상황을 읽고 {intervalMinutes, plural, other {#분}}마다 트래커에 앞으로 나아가는 업데이트만 전송합니다. 원격 진행 상황은 절대 낮아지지 않으며 완료된 항목도 이전 상태로 돌아가지 않습니다. 설정에서 자격 증명을 구성하세요."
-
 #: src/components/FailedQueueActions.tsx
 #, fuzzy
 msgid "Reason"
@@ -15575,11 +15530,6 @@ msgstr "스크롤 속도 · {chaptersLeft} · {basis}"
 msgid "Search"
 msgstr "검색"
 
-#: src/components/CommandPalette.tsx
-#, fuzzy
-#~ msgid "Search ({shortcut})"
-#~ msgstr "검색 ({shortcut})"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Search by chapter number or title"
@@ -16112,11 +16062,6 @@ msgstr "서버 현지 시간, 0부터 23까지."
 #, fuzzy
 msgid "Server URL"
 msgstr "서버 URL"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "Service"
-#~ msgstr "서비스"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -19079,11 +19024,6 @@ msgstr "URL"
 msgid "Use"
 msgstr "사용"
 
-#: src/components/import/ImportMatchFinder.tsx
-#, fuzzy
-#~ msgid "Use {title}"
-#~ msgstr "{title} 사용"
-
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Use a recovery code"
@@ -19327,11 +19267,6 @@ msgstr "보기"
 #, fuzzy
 msgid "View {title}"
 msgstr "{title} 보기"
-
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-#~ msgid "View {title} in library"
-#~ msgstr "라이브러리에서 {title} 보기"
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy

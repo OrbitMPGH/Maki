@@ -975,11 +975,6 @@ msgstr ""
 msgid "{have} of {total}"
 msgstr ""
 
-#: src/components/ui/CoverCard.tsx
-#, fuzzy
-#~ msgid "{have} of {totalLabel}"
-#~ msgstr "{have} / {totalLabel}"
-
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
@@ -2801,11 +2796,6 @@ msgstr "添加"
 msgid "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
 msgstr "在设置的章节格式中添加 {chapterLanguageToken}，以便区分它们。"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-#~ msgid "Add {title} to library"
-#~ msgstr "将 {title} 添加到资料库"
-
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
@@ -4259,20 +4249,10 @@ msgstr ""
 msgid "ch. {0} · vol. {1}"
 msgstr ""
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "ch. {chapter}"
-#~ msgstr "第 {chapter} 章"
-
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Ch. {chapter}"
 msgstr "第 {chapter} 章"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "ch. {chapter} · vol. {volume}"
-#~ msgstr "第 {chapter} 章 · 卷 {volume}"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -5145,11 +5125,6 @@ msgstr "条件"
 msgid "Config key"
 msgstr "配置密钥"
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "configured, not connected"
-#~ msgstr "已配置，未连接"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Confirm metadata matches"
@@ -5217,11 +5192,6 @@ msgstr ""
 #, fuzzy
 msgid "Connect your trackers"
 msgstr "连接进度跟踪服务"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "connected"
-#~ msgstr "已连接"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -6204,11 +6174,6 @@ msgstr "受众类型"
 #, fuzzy
 msgid "Density"
 msgstr "密度"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-#~ msgid "Density: {densityLabel}"
-#~ msgstr "密度：{densityLabel}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -11675,11 +11640,6 @@ msgstr "尚未检查"
 msgid "Not configured"
 msgstr "尚未配置"
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "not configured (see Settings)"
-#~ msgstr "未配置（请查看设置）"
-
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -13804,11 +13764,6 @@ msgstr "读取每个归档的目录，而不是其内容。整个资料库只需
 msgid "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 msgstr "读取每个字节并与归档自身的校验和进行核对，这样可以发现已在磁盘上损坏的文件。在硬盘上完整读取资料库时，每 100 GB 约需半小时。文件到达时会进行验证，因此此选项用于重新检查已有内容。"
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
-#~ msgstr "从 Kavita 读取阅读进度，并每 {intervalMinutes, plural, other {# 分钟}} 向你的跟踪器推送只前进不后退的更新。远程进度不会降低，已完成条目也不会降级。在设置中配置凭据。"
-
 #: src/components/FailedQueueActions.tsx
 #, fuzzy
 msgid "Reason"
@@ -15575,11 +15530,6 @@ msgstr "滚动速度 · {chaptersLeft} · {basis}"
 msgid "Search"
 msgstr "搜索"
 
-#: src/components/CommandPalette.tsx
-#, fuzzy
-#~ msgid "Search ({shortcut})"
-#~ msgstr "搜索（{shortcut}）"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Search by chapter number or title"
@@ -16112,11 +16062,6 @@ msgstr "服务器本地时间，0 到 23。"
 #, fuzzy
 msgid "Server URL"
 msgstr "服务器 URL"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "Service"
-#~ msgstr "服务"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -19079,11 +19024,6 @@ msgstr "URL"
 msgid "Use"
 msgstr "使用"
 
-#: src/components/import/ImportMatchFinder.tsx
-#, fuzzy
-#~ msgid "Use {title}"
-#~ msgstr "使用 {title}"
-
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Use a recovery code"
@@ -19327,11 +19267,6 @@ msgstr "视图"
 #, fuzzy
 msgid "View {title}"
 msgstr "查看 {title}"
-
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-#~ msgid "View {title} in library"
-#~ msgstr "在资料库中查看 {title}"
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
