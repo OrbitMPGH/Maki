@@ -39,8 +39,8 @@ export const UpgradeWithSkips: Story = {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Review import' })
     await waitFor(async () => expect(await within(dialog).findByText('Held back before importing')).toBeVisible())
-    const skips = within(dialog).getAllByRole('checkbox', { name: 'Skip this file' })
-    await expect(skips[1]).toBeChecked()
+    const skips = await within(dialog).findAllByRole('checkbox', { name: 'Skip this file' })
+    await waitFor(() => expect(skips[1]).toBeChecked())
     await userEvent.click(skips[0])
     await waitFor(() => expect(within(dialog).getByText('2 files will be left out of the import')).toBeVisible())
   },

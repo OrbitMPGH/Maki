@@ -230,6 +230,7 @@ export function DownloadQueueSection() {
   const [retryAttempts, setRetryAttempts] = useState<number>(5)
   const [itemTimeoutMinutes, setItemTimeoutMinutes] = useState<number>(120)
   const [bulkHoldThreshold, setBulkHoldThreshold] = useState<number>(5)
+  const [adaptiveRefresh, setAdaptiveRefresh] = useState(true)
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useSliceSync(
@@ -238,12 +239,14 @@ export function DownloadQueueSection() {
       retryAttempts: settings.retryEnabled ? settings.retryMaxAttempts : 0,
       itemTimeoutMinutes: settings.itemTimeoutMinutes,
       bulkHoldThreshold: settings.bulkHoldThreshold,
+      adaptiveRefresh: settings.adaptiveRefresh,
     },
     (slice) => {
       setConcurrentChapters(slice.concurrentChapters)
       setRetryAttempts(slice.retryAttempts)
       setItemTimeoutMinutes(slice.itemTimeoutMinutes)
       setBulkHoldThreshold(slice.bulkHoldThreshold)
+      setAdaptiveRefresh(slice.adaptiveRefresh)
     },
     discarded,
   )
@@ -253,7 +256,8 @@ export function DownloadQueueSection() {
     (Number(concurrentChapters) !== settings.concurrentChapters ||
       Number(retryAttempts) !== (settings.retryEnabled ? settings.retryMaxAttempts : 0) ||
       Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes ||
-      Number(bulkHoldThreshold) !== settings.bulkHoldThreshold)
+      Number(bulkHoldThreshold) !== settings.bulkHoldThreshold ||
+      adaptiveRefresh !== settings.adaptiveRefresh)
 
   return (
     <SettingsSection
@@ -277,6 +281,7 @@ export function DownloadQueueSection() {
             ...(retries > 0 && { retryMaxAttempts: retries }),
             itemTimeoutMinutes: clampItemTimeout(Number(itemTimeoutMinutes)),
             bulkHoldThreshold: Number(bulkHoldThreshold),
+            adaptiveRefresh,
           },
           { onSuccess: savedToast },
         )
@@ -346,6 +351,13 @@ export function DownloadQueueSection() {
         value={bulkHoldThreshold}
         onChange={setBulkHoldThreshold}
         w={220}
+        mb="md"
+      />
+      <Switch
+        label={t`Check quiet series less often`}
+        description={t`A series is checked every 30 minutes for a few hours after a new chapter, every 2 hours while chapters keep coming, every 6 hours after two quiet weeks and once a day after two quiet months. A new chapter puts it straight back on the fast checks. Off checks every series every 30 minutes.`}
+        checked={adaptiveRefresh}
+        onChange={(e) => setAdaptiveRefresh(e.currentTarget.checked)}
       />
     </SettingsSection>
   )

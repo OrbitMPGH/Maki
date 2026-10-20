@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
 import { metadataSettings } from '../../.storybook/mocks/shared'
@@ -61,7 +61,7 @@ export const BrowseError: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Catalogue unavailable')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Try again' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Try again' })).toBeVisible()
   },
 }
 
@@ -126,7 +126,7 @@ export const ExpandedRail: Story = {
 export const EditLayout: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Edit layout' }))
-    await expect(canvas.getByRole('tab', { name: 'Recommended' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('tab', { name: 'Recommended' })).toBeDisabled())
   },
 }
 
@@ -143,7 +143,7 @@ export const RecommendedCustomizeOpen: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Customize' }))
     await expect(await canvas.findByText('Seed from')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Apply' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Apply' })).toBeVisible()
   },
 }
 
@@ -162,7 +162,7 @@ export const RecommendedShowMore: Story = {
   parameters: { router: route('/discover/recommended') },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Show more' }))
-    await expect(await canvas.findAllByRole('button', { name: /^View and add / })).not.toHaveLength(0)
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: /^View and add / })).not.toHaveLength(0))
   },
 }
 

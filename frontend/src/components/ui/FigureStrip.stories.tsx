@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { FigureStrip } from './FigureStrip'
 
 const meta = {
@@ -20,10 +20,10 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('1,480')).toBeVisible()
+    await expect(await canvas.findByText('1,480')).toBeVisible()
     // A zero is dimmed rather than coloured: an empty "Failed" is good news.
-    await expect(canvas.getByText('Failed').closest('.figure-strip-item')).toHaveAttribute('data-zero', 'true')
-    await expect(canvas.getByText('Downloading').closest('.figure-strip-item')).not.toHaveAttribute('data-zero')
+    await waitFor(() => expect(canvas.getByText('Failed').closest('.figure-strip-item')).toHaveAttribute('data-zero', 'true'))
+    await waitFor(() => expect(canvas.getByText('Downloading').closest('.figure-strip-item')).not.toHaveAttribute('data-zero'))
   },
 }
 
@@ -34,7 +34,7 @@ export const Flush: Story = {
 export const Loading: Story = {
   args: { loading: true },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Completed')).toBeVisible()
+    await expect(await canvas.findByText('Completed')).toBeVisible()
     await expect(canvas.queryByText('1,480')).not.toBeInTheDocument()
   },
 }

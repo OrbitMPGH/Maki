@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import type { UpgradeScanResultDto } from '../../api/upgrades'
 import { seriesMsw } from '../../../.storybook/mocks/series'
 import { UpgradeNowResultModal } from './UpgradeNowResultModal'
@@ -31,8 +31,8 @@ type Story = StoryObj<typeof meta>
 export const Queued: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
-    await expect(dialog).toHaveTextContent(/Queued upgrade from/)
-    await expect(dialog).toHaveTextContent('1600px')
+    await waitFor(() => expect(dialog).toHaveTextContent(/Queued upgrade from/))
+    await waitFor(() => expect(dialog).toHaveTextContent('1600px'))
   },
 }
 

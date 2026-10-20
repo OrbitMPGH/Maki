@@ -31,8 +31,8 @@ type Story = StoryObj<typeof meta>
 
 export const MostRead: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('link', { name: 'Lanterns Over Kasumi' })).toBeVisible()
-    await expect(canvas.getByText('34 ch.')).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: 'Lanterns Over Kasumi' })).toBeVisible()
+    await expect(await canvas.findByText('34 ch.')).toBeVisible()
   },
 }
 
@@ -56,6 +56,6 @@ export const RemovedSeriesAndNoCover: Story = {
 export const Empty: Story = {
   args: { icon: IconHourglassLow, title: 'Barely touched', items: [], emptyText: 'Everything you started, you kept reading.' },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Everything you started, you kept reading.')).toBeVisible()
+    await expect(await canvas.findByText('Everything you started, you kept reading.')).toBeVisible()
   },
 }

@@ -46,22 +46,22 @@ type Story = StoryObj<typeof meta>
 
 export const OpensDrawerWithReviews: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Reviews' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reviews' }))
     const drawer = await within(canvasElement.ownerDocument.body).findByRole('dialog')
     const reviewer = await within(drawer).findByText('quietlantern')
     // The drawer is still sliding in when its content first renders.
     await waitFor(() => expect(reviewer).toBeVisible())
-    await expect(within(drawer).getByRole('link', { name: /read more on myanimelist/i })).toHaveAttribute(
+    await waitFor(() => expect(within(drawer).getByRole('link', { name: /read more on myanimelist/i })).toHaveAttribute(
       'href',
       'https://myanimelist.net/manga/10201/_/reviews',
-    )
+    ))
   },
 }
 
 export const NoReviews: Story = {
   parameters: { msw: reviewsFor(() => HttpResponse.json([])) },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Reviews' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reviews' }))
     const empty = await within(canvasElement.ownerDocument.body).findByText('No reviews on MyAnimeList yet.')
     await waitFor(() => expect(empty).toBeVisible())
   },
@@ -70,7 +70,7 @@ export const NoReviews: Story = {
 export const Loading: Story = {
   parameters: { msw: reviewsFor(() => neverResolve()) },
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Reviews' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reviews' }))
   },
 }
 
@@ -78,13 +78,13 @@ export const UpstreamFailed: Story = {
   // `null` is how the server says MyAnimeList itself did not answer.
   parameters: { msw: reviewsFor(() => HttpResponse.json(null)) },
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Reviews' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reviews' }))
   },
 }
 
 export const ServerError: Story = {
   parameters: { msw: reviewsFor(() => failWith(502, 'MyAnimeList is not answering')) },
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Reviews' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reviews' }))
   },
 }

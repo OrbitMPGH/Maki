@@ -13,7 +13,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: /delete permanently/i }))
+    await userEvent.click(await canvas.findByRole('button', { name: /delete permanently/i }))
     await expect(args.onConfirm).toHaveBeenCalledOnce()
   },
 }

@@ -31,8 +31,8 @@ export const ToastWhileDownloading: Story = {
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body)
     await expect(await body.findByText('Downloading metadata database')).toBeVisible()
-    await expect(body.getByText('62%')).toBeVisible()
-    await expect(body.getByText(/207 MB of 333 MB/)).toBeVisible()
+    await expect(await body.findByText('62%')).toBeVisible()
+    await expect(await body.findByText(/207 MB of 333 MB/)).toBeVisible()
   },
 }
 
@@ -57,8 +57,8 @@ export const QuietWhenIdle: Story = {
 export const BarDownloading: StoryObj<typeof DumpProgressBar> = {
   render: () => <DumpProgressBar progress={downloadingDump} />,
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Downloading metadata database')).toBeVisible()
-    await expect(canvas.getByRole('progressbar', { name: 'Downloading metadata database' })).toBeVisible()
+    await expect(await canvas.findByText('Downloading metadata database')).toBeVisible()
+    await expect(await canvas.findByRole('progressbar', { name: 'Downloading metadata database' })).toBeVisible()
   },
 }
 

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { continueReading, jumpBackIn } from '../../../.storybook/mocks/home'
 import { ReadingRail } from './ReadingRail'
 
@@ -15,15 +15,15 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('link', { name: /Lanterns Over Kasumi/ })).toHaveAttribute('href', '/read/1132')
-    await expect(canvas.getAllByRole('button', { name: /more options for/i })).toHaveLength(continueReading.length)
+    await waitFor(() => expect(canvas.getByRole('link', { name: /Lanterns Over Kasumi/ })).toHaveAttribute('href', '/read/1132'))
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: /more options for/i })).toHaveLength(continueReading.length))
   },
 }
 
 export const NotStartedAndNoCover: Story = {
   args: { items: jumpBackIn, rail: 'jumpback' },
   play: async ({ canvas }) => {
-    await expect(canvas.getAllByText('Start')).toHaveLength(jumpBackIn.length)
+    await waitFor(() => expect(canvas.getAllByText('Start')).toHaveLength(jumpBackIn.length))
   },
 }
 

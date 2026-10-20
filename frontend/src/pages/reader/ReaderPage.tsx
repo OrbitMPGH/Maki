@@ -39,6 +39,9 @@ const DOUBLE_TAP_SLOP = 40
 // How many pages from the end of a chapter the next chapter's first pages start loading.
 const WARM_NEXT_WITHIN = 3
 const CHROME_HIDE_MS = 4000
+// A page turn this soon after moving to another chapter or the end screen is the tail of a double tap,
+// a fling or a held key, and must not carry on through the next chapter boundary.
+const CHAPTER_SETTLE_MS = 800
 const FLUSH_WAIT_MS = 2000
 
 /**
@@ -83,6 +86,8 @@ export default function ReaderPage() {
   // on that chapter's last page, not wherever it was last resumed (page 1 for a completed one).
   const enterAtEndRef = useRef(false)
   const leavingRef = useRef(false)
+  const lastTransitionRef = useRef(0)
+  const changingChapterRef = useRef(false)
   const mountedRef = useRef(true)
   useEffect(() => {
     mountedRef.current = true
@@ -243,6 +248,8 @@ export default function ReaderPage() {
     // A completion still in the queue rides along on this visit's own writes, as if finished here.
     setFinishedFor(queued.finished ? manifest.chapterId : null)
     leavingRef.current = false
+    if (changingChapterRef.current) lastTransitionRef.current = Date.now()
+    changingChapterRef.current = false
   }, [manifest, isFetching, isError, resumedFor, queued, seekToPage])
 
   // Own the viewport: no page scrolling behind the reader, and always-dark chrome.
@@ -313,6 +320,7 @@ export default function ReaderPage() {
       // earlier visit to `target` would otherwise be served as-is (staleTime is Infinity) with its
       // now-stale resumePage. Drop it so the coming mount always fetches fresh.
       queryClient.removeQueries({ queryKey: ['reader-manifest', target] })
+      changingChapterRef.current = true
       navigate(`/read/${target}`, { replace: true })
     },
     [
@@ -334,13 +342,17 @@ export default function ReaderPage() {
   const zoomReset = useCallback(() => setZoom(1), [])
 
   const reachEnd = useCallback(() => {
+    lastTransitionRef.current = Date.now()
     setAtEnd(true)
     if (manifest && tracking) setFinishedFor(manifest.chapterId)
   }, [manifest, tracking])
 
+  const settling = useCallback(() => Date.now() - lastTransitionRef.current < CHAPTER_SETTLE_MS, [])
+
   const next = useCallback(() => {
     // On the end screen the forward key is the "second press" it asks for.
     if (atEnd) {
+      if (settling()) return
       if (manifest?.nextChapterId != null) void goToChapter(manifest.nextChapterId, true)
       return
     }
@@ -356,20 +368,22 @@ export default function ReaderPage() {
     // Auto-advance means what it says: the page turn off the last page lands in the next chapter.
     // With it off, an interstitial instead: the chapter ends where you asked it to, and the jump
     // is a deliberate second press.
+    if (settling()) return
     if (prefs.autoNextChapter) void goToChapter(manifest.nextChapterId, true)
     else reachEnd()
-  }, [atEnd, spreads, spreadIndex, manifest, prefs.autoNextChapter, goToChapter, seekToPage, reachEnd])
+  }, [atEnd, spreads, spreadIndex, manifest, prefs.autoNextChapter, goToChapter, seekToPage, reachEnd, settling])
 
   /** Continuous mode's equivalent of `next()` hitting the chapter boundary: no spreads to check,
    *  the strip only ever has one more chapter to reach for. */
   const continuousPastEnd = useCallback(() => {
+    if (settling()) return
     if (manifest?.nextChapterId == null) {
       reachEnd()
       return
     }
     if (prefs.autoNextChapter) void goToChapter(manifest.nextChapterId, true)
     else reachEnd()
-  }, [manifest, prefs.autoNextChapter, goToChapter, reachEnd])
+  }, [manifest, prefs.autoNextChapter, goToChapter, reachEnd, settling])
 
   const previous = useCallback(() => {
     if (atEnd) {
@@ -379,10 +393,10 @@ export default function ReaderPage() {
     const previousSpread = spreads[spreadIndex - 1]
     if (previousSpread) {
       seekToPage(previousSpread[0])
-    } else if (manifest?.previousChapterId != null) {
+    } else if (manifest?.previousChapterId != null && !settling()) {
       void goToChapter(manifest.previousChapterId, false, true)
     }
-  }, [spreads, spreadIndex, manifest, goToChapter, atEnd, seekToPage])
+  }, [spreads, spreadIndex, manifest, goToChapter, atEnd, seekToPage, settling])
 
   // The listener is registered once and reads the latest handler, so it is not torn down and
   // re-added on every render (a page change in continuous mode re-renders on each scroll step).

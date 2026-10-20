@@ -29,22 +29,22 @@ export const OnHover: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     // The bubble lives in a portal on document.body, rendered empty and hidden until a target is hovered.
     const body = within(canvasElement.ownerDocument.body)
-    const tip = body.getByRole('tooltip', { hidden: true })
-    await expect(tip).toHaveAttribute('aria-hidden', 'true')
-    await userEvent.hover(canvas.getByRole('button', { name: 'Mark' }))
+    const tip = await body.findByRole('tooltip', { hidden: true })
+    await waitFor(() => expect(tip).toHaveAttribute('aria-hidden', 'true'))
+    await userEvent.hover(await canvas.findByRole('button', { name: 'Mark' }))
     await waitFor(() => expect(tip).toHaveAttribute('data-open'))
-    await expect(tip).toHaveTextContent('Mark as read')
-    await userEvent.unhover(canvas.getByRole('button', { name: 'Mark' }))
-    await userEvent.hover(canvas.getByRole('button', { name: 'No tip' }))
+    await waitFor(() => expect(tip).toHaveTextContent('Mark as read'))
+    await userEvent.unhover(await canvas.findByRole('button', { name: 'Mark' }))
+    await userEvent.hover(await canvas.findByRole('button', { name: 'No tip' }))
     await waitFor(() => expect(tip).not.toHaveAttribute('data-open'))
   },
 }
 
 export const OnKeyboardFocus: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    const tip = within(canvasElement.ownerDocument.body).getByRole('tooltip', { hidden: true })
+    const tip = await within(canvasElement.ownerDocument.body).findByRole('tooltip', { hidden: true })
     await userEvent.tab()
-    await expect(canvas.getByRole('button', { name: 'Mark' })).toHaveFocus()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Mark' })).toHaveFocus())
     await waitFor(() => expect(tip).toHaveAttribute('data-open'))
     await userEvent.tab()
     await waitFor(() => expect(tip).toHaveTextContent('Chapter 142 of 143, downloaded from MangaDex'))

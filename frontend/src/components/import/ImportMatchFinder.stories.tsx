@@ -22,7 +22,7 @@ export const SearchResults: Story = {
     const dialog = await body.findByRole('dialog', { name: /Find a match for/ })
     const option = await within(dialog).findByRole('button', { name: /^Paper Crane Cartel\s?\d{4}$/ }, { timeout: 4000 })
     await userEvent.click(option)
-    await expect(args.onPick).toHaveBeenCalledWith(expect.objectContaining({ providerId: 'mb-30020' }))
+    await waitFor(() => expect(args.onPick).toHaveBeenCalledWith(expect.objectContaining({ providerId: 'mb-30020' })))
   },
 }
 
@@ -39,8 +39,8 @@ export const PasteALink: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: /Find a match for/ })
-    await userEvent.type(within(dialog).getByLabelText(/MangaBaka id, or a MangaBaka/), 'https://anilist.co/manga/30013')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Use' }))
+    await userEvent.type(await within(dialog).findByLabelText(/MangaBaka id, or a MangaBaka/), 'https://anilist.co/manga/30013')
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Use' }))
     await waitFor(() => expect(args.onPick).toHaveBeenCalled())
     await expect(args.onPick.mock.calls[0][0]).toMatchObject({ title: 'Paper Crane Cartel' })
   },
@@ -51,8 +51,8 @@ export const PastedLinkNotFound: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: /Find a match for/ })
-    await userEvent.type(within(dialog).getByLabelText(/MangaBaka id, or a MangaBaka/), 'nope-999')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Use' }))
+    await userEvent.type(await within(dialog).findByLabelText(/MangaBaka id, or a MangaBaka/), 'nope-999')
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Use' }))
     await waitFor(async () => expect(await within(dialog).findByText('No series matches that id or link.')).toBeVisible())
   },
 }

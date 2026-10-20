@@ -18,4 +18,11 @@ public class ChapterSourceLink
     public string? Title { get; set; }
     public DateTime? ReleaseDate { get; set; }
     public string? Group { get; set; }
+
+    /// <summary>
+    /// When a refresh first saw this chapter on this mapping, written once. Null for a mapping's
+    /// first snapshot and for back-catalogue chapters a source adds later, because neither is a
+    /// release: stamping them would read a whole catalogue as one day's drop.
+    /// </summary>
+    public DateTime? FirstSeenAt { get; set; }
 }

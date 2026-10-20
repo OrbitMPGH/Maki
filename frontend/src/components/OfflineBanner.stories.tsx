@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { getConnectivity, onConnectivityChange, setConnectivity } from '../lib/connectivity'
 import { OfflineBanner } from './OfflineBanner'
 
@@ -40,11 +40,11 @@ export const Offline: Story = {
     ),
   ],
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('status')).toHaveTextContent("You're offline")
-    await expect(canvas.getByRole('link', { name: 'Offline reading' })).toHaveAttribute(
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent("You're offline"))
+    await waitFor(() => expect(canvas.getByRole('link', { name: 'Offline reading' })).toHaveAttribute(
       'href',
       '/settings?tab=reading&s=offline-reading',
-    )
+    ))
   },
 }
 

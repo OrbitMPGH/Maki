@@ -28,7 +28,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('63%')).toBeVisible()
+    await expect(await canvas.findByText('63%')).toBeVisible()
   },
 }
 
@@ -46,7 +46,7 @@ export const FoldsIntoOther: Story = {
     ],
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Other')).toBeVisible()
+    await expect(await canvas.findByText('Other')).toBeVisible()
   },
 }
 

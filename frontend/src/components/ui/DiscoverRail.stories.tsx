@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { catalogueItem, popularPicks, recommendedPicks } from '../../../.storybook/mocks/home'
 import { DiscoverRailRow, EngineCard, EngineRailRow, RecommendationCard, RecommendationRow } from './DiscoverRail'
 
@@ -25,15 +25,15 @@ type Story = StoryObj<typeof meta>
 
 export const NotInLibrary: Story = {
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: `View and add ${item.title}` }))
-    await expect(args.onOpen).toHaveBeenCalledWith(item)
+    await userEvent.click(await canvas.findByRole('button', { name: `View and add ${item.title}` }))
+    await waitFor(() => expect(args.onOpen).toHaveBeenCalledWith(item))
   },
 }
 
 export const InLibrary: Story = {
   args: { inLibrarySeriesId: 3 },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('button', { name: `View ${item.title}` })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: `View ${item.title}` })).toBeVisible()
   },
 }
 
@@ -64,8 +64,8 @@ export const ListRow: Story = {
     </div>
   ),
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: new RegExp(`^${item.title}`) }))
-    await expect(args.onOpen).toHaveBeenCalledWith(item)
+    await userEvent.click(await canvas.findByRole('button', { name: new RegExp(`^${item.title}`) }))
+    await waitFor(() => expect(args.onOpen).toHaveBeenCalledWith(item))
   },
 }
 
@@ -90,7 +90,7 @@ export const EngineCardWithReasons: Story = {
     <EngineCard item={recommendedPicks[2]} inLibrarySeriesId={null} onOpen={args.onOpen} />
   ),
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/Readers who finished .* also finished this/)).toBeVisible()
+    await expect(await canvas.findByText(/Readers who finished .* also finished this/)).toBeVisible()
   },
 }
 
@@ -99,7 +99,7 @@ export const EngineCardAuthorMatch: Story = {
     <EngineCard item={recommendedPicks[1]} inLibrarySeriesId={7} onOpen={args.onOpen} />
   ),
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('By an author you read')).toBeVisible()
+    await expect(await canvas.findByText('By an author you read')).toBeVisible()
   },
 }
 
@@ -114,8 +114,8 @@ export const RailOfCatalogueCards: Story = {
     />
   ),
   play: async ({ args, canvas, userEvent }) => {
-    await expect(canvas.getByRole('button', { name: /View Iron Petal Academy/ })).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: /View and add Hollow Orchard Postman/ }))
+    await expect(await canvas.findByRole('button', { name: /View Iron Petal Academy/ })).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: /View and add Hollow Orchard Postman/ }))
     await expect(args.onOpen).toHaveBeenCalledOnce()
   },
 }

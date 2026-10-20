@@ -1,5 +1,6 @@
 using Maki.Api.Dtos;
 using Maki.Api.Services;
+using Maki.Core.Entities;
 using Maki.Core.Reading;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -103,7 +104,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
             .Where(p => !p.Watched)
             .OrderByDescending(p => p.UpdatedAt)
             .Take(RecentProgressScan)
-            .Select(p => new { p.SeriesId, p.Completed, p.UnreadAt, p.PageIndex, p.UpdatedAt })
+            .Select(p => new { p.SeriesId, p.ChapterId, p.Completed, p.UnreadAt, p.PageIndex, p.UpdatedAt })
             .ToListAsync(ct);
 
         // A removed series stays off both rails until any of its progress rows moves past the
@@ -125,8 +126,26 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         // Tombstones excluded: a chapter the user just marked unread is the most recently touched
         // incomplete row, and resuming into it would hijack "Continue reading". It is still unread,
         // so the Jump-back-in resolver below offers it in its proper place.
-        var inProgressSeries = recent
+        //
+        // A part-read chapter whose file is gone (deleted or removed on purpose) has nothing to
+        // resume into. Its series counts as finished instead, so Jump back in offers the next
+        // chapter that is actually there.
+        var partReadIds = recent
             .Where(p => !p.Completed && p.UnreadAt == null && p.PageIndex > 0)
+            .Select(p => p.ChapterId)
+            .Distinct()
+            .ToList();
+        var onDisk = partReadIds.Count == 0
+            ? []
+            : (await db.Chapters
+                .AsNoTracking()
+                .Where(c => partReadIds.Contains(c.Id) && c.ChapterFileId != null)
+                .Select(c => c.Id)
+                .ToListAsync(ct))
+            .ToHashSet();
+
+        var inProgressSeries = recent
+            .Where(p => !p.Completed && p.UnreadAt == null && p.PageIndex > 0 && onDisk.Contains(p.ChapterId))
             .GroupBy(p => p.SeriesId)
             .Select(g => new { SeriesId = g.Key, Last = g.Max(p => p.UpdatedAt) })
             .OrderByDescending(x => x.Last)
@@ -142,7 +161,8 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         // with nothing left. Bounded all the same, since each survivor costs a chapter lookup in
         // NextForAsync below.
         var finishedSeries = recent
-            .Where(p => p.Completed && !continuedSet.Contains(p.SeriesId))
+            .Where(p => (p.Completed || (p.UnreadAt == null && p.PageIndex > 0 && !onDisk.Contains(p.ChapterId)))
+                && !continuedSet.Contains(p.SeriesId))
             .GroupBy(p => p.SeriesId)
             .Select(g => new { SeriesId = g.Key, Last = g.Max(p => p.UpdatedAt) })
             .OrderByDescending(x => x.Last)
@@ -166,7 +186,8 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         // The actual in-progress rows for just the series above, newest per series.
         var resumeRows = (await db.ChapterProgress
                 .Where(p => continuedIds.Contains(p.SeriesId)
-                    && !p.Completed && p.UnreadAt == null && p.PageIndex > 0)
+                    && !p.Completed && p.UnreadAt == null && p.PageIndex > 0
+                    && db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null))
                 .Select(p => new { p.SeriesId, p.ChapterId, p.PageIndex, p.PageCount, p.UpdatedAt })
                 .ToListAsync(ct))
             .GroupBy(p => p.SeriesId)
@@ -300,7 +321,8 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     /// Caveat worth knowing when the rail looks odd: a first-time adopt/import of an existing
     /// on-disk library stamps <c>DateAdded</c> = now on every file it discovers, so everything
     /// looks freshly added right after one. Rescans do not restamp — only files never seen before
-    /// get a row.
+    /// get a row. Relinked files and in-place replacements are left out
+    /// (<see cref="ChapterFile.IsNewContent"/>).
     /// </para>
     /// </summary>
     [HttpGet("recently-added")]
@@ -310,6 +332,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
 
         var recentFiles = await db.ChapterFiles
             .AsNoTracking()
+            .Where(ChapterFile.IsNewContent)
             .OrderByDescending(f => f.DateAdded)
             .Take(RecentFileScan)
             .Select(f => new { f.Id, f.SeriesId, f.DateAdded })

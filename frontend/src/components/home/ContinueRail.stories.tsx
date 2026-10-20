@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { continueReading, jumpBackIn } from '../../../.storybook/mocks/home'
 import { ContinueRail } from './ContinueRail'
 
@@ -15,7 +15,7 @@ type Story = StoryObj<typeof meta>
 
 export const Continue: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getAllByRole('button', { name: /more options for/i })).toHaveLength(continueReading.length)
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: /more options for/i })).toHaveLength(continueReading.length))
   },
 }
 

@@ -40,10 +40,10 @@ const upgradesTab = { router: { path: '/activity', initialEntries: ['/activity?t
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect((await canvas.findAllByText('Lanterns Over Kasumi')).length).toBeGreaterThan(0)
-    await expect(canvas.getAllByText('Needs review').length).toBeGreaterThan(0)
-    await expect(canvas.getByText('The source returned no pages')).toBeVisible()
-    await expect(canvas.getByText('History')).toBeVisible()
+    await waitFor(() => expect((canvas.getAllByText('Lanterns Over Kasumi')).length).toBeGreaterThan(0))
+    await waitFor(() => expect(canvas.getAllByText('Needs review').length).toBeGreaterThan(0))
+    await expect(await canvas.findByText('The source returned no pages')).toBeVisible()
+    await expect(await canvas.findByText('History')).toBeVisible()
   },
 }
 
@@ -77,8 +77,8 @@ export const QueueLoadFailed: Story = {
     ],
   },
   play: async ({ canvas }) => {
-    await expect((await canvas.findAllByText("Couldn't load this section")).length).toBeGreaterThan(0)
-    await expect(canvas.getAllByRole('button', { name: 'Retry' }).length).toBeGreaterThan(0)
+    await waitFor(() => expect((canvas.getAllByText("Couldn't load this section")).length).toBeGreaterThan(0))
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Retry' }).length).toBeGreaterThan(0))
   },
 }
 
@@ -86,7 +86,7 @@ export const AllDownloadsPaused: Story = {
   parameters: { msw: [http.get(api('/queue/pause'), () => HttpResponse.json(pausedAll))] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Downloads paused')).toBeVisible()
-    await expect((await canvas.findAllByText('Paused')).length).toBeGreaterThan(0)
+    await waitFor(() => expect((canvas.getAllByText('Paused')).length).toBeGreaterThan(0))
   },
 }
 
@@ -118,7 +118,7 @@ export const LongTitles: Story = {
 export const ReaderView: Story = {
   parameters: { auth: 'reader' },
   play: async ({ canvas }) => {
-    await expect((await canvas.findAllByText('Lanterns Over Kasumi')).length).toBeGreaterThan(0)
+    await waitFor(() => expect((canvas.getAllByText('Lanterns Over Kasumi')).length).toBeGreaterThan(0))
     await expect(canvas.queryByRole('button', { name: 'Pause downloads' })).not.toBeInTheDocument()
     await expect(canvas.queryByRole('button', { name: 'Clear queue' })).not.toBeInTheDocument()
     await expect(canvas.queryByRole('button', { name: 'Review' })).not.toBeInTheDocument()
@@ -131,7 +131,7 @@ export const ClearQueueConfirm: Story = {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog')
     await waitFor(() => expect(within(dialog).getByText(/Pending downloads will be removed/)).toBeVisible())
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Cancel' }))
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument())
   },
 }
@@ -139,10 +139,10 @@ export const ClearQueueConfirm: Story = {
 export const RemoveTorrentRelease: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     const row = (await canvas.findByText(awaitingImportItem.releaseTitle!)).closest('tr')!
-    await userEvent.click(within(row).getByRole('button', { name: 'Remove from queue' }))
+    await userEvent.click(await within(row).findByRole('button', { name: 'Remove from queue' }))
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog')
-    await expect(within(dialog).getByRole('checkbox', { name: "Don't grab this release again" })).toBeChecked()
+    await waitFor(() => expect(within(dialog).getByRole('checkbox', { name: "Don't grab this release again" })).toBeChecked())
   },
 }
 
@@ -175,8 +175,23 @@ export const UpgradesTab: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Recent upgrades')).toBeVisible()
     await expect(await canvas.findByText('Volume releases waiting for you')).toBeVisible()
-    await expect(canvas.getByText('Cutoff unmet')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Scan now' })).toBeVisible()
+    await expect(await canvas.findByText('Cutoff unmet')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Scan now' })).toBeVisible()
+  },
+}
+
+export const UpcomingTab: Story = {
+  parameters: { router: { path: '/activity', initialEntries: ['/activity?tab=upcoming'] } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Running late')).toBeVisible()
+    await expect(await canvas.findByRole('tab', { name: 'Upcoming', selected: true })).toBeVisible()
+  },
+}
+
+export const SwitchToUpcoming: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('tab', { name: 'Upcoming' }))
+    await expect(await canvas.findByText('Further out')).toBeVisible()
   },
 }
 
@@ -197,7 +212,7 @@ export const UpgradesScanRunning: Story = {
     ],
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('button', { name: 'Scan running…' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Scan running…' })).toBeDisabled())
   },
 }
 

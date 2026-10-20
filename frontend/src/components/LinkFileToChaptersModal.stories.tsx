@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, neverResolve } from '../../.storybook/mocks/api'
 import { chaptersFor, filesFor, seriesMsw } from '../../.storybook/mocks/series'
@@ -24,7 +24,7 @@ const dialogOf = (canvasElement: HTMLElement) => within(canvasElement.ownerDocum
 export const UnlinkedVolume: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
-    await expect((await within(dialog).findAllByRole('button', { pressed: false })).length).toBeGreaterThan(5)
+    await waitFor(() => expect((within(dialog).getAllByRole('button', { pressed: false })).length).toBeGreaterThan(5))
   },
 }
 
@@ -33,7 +33,7 @@ export const PickChapters: Story = {
     const dialog = await dialogOf(canvasElement)
     const rows = await within(dialog).findAllByRole('button', { pressed: false })
     await userEvent.click(rows[0])
-    await expect(rows[0]).toHaveAttribute('aria-pressed', 'true')
+    await waitFor(() => expect(rows[0]).toHaveAttribute('aria-pressed', 'true'))
   },
 }
 

@@ -17,9 +17,9 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Recent imports')).toBeVisible()
-    await expect(canvas.getByText(/but not every file could be put back/)).toBeVisible()
-    await expect(canvas.getByText('Still finding sources. Undoing cancels that.')).toBeVisible()
-    await expect(canvas.getByText('The series was removed since, nothing to undo.')).toBeVisible()
+    await expect(await canvas.findByText(/but not every file could be put back/)).toBeVisible()
+    await expect(await canvas.findByText('Still finding sources. Undoing cancels that.')).toBeVisible()
+    await expect(await canvas.findByText('The series was removed since, nothing to undo.')).toBeVisible()
   },
 }
 
@@ -28,7 +28,7 @@ export const UndoOneFolder: Story = {
     await userEvent.click((await canvas.findAllByRole('button', { name: 'Undo' }))[0])
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Undo the import of Starlit Ferry (2023) [Digital]?' })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Undo import' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Undo import' }))
     await waitFor(() => expect(args.onUndone).toHaveBeenCalled())
     await waitFor(async () => expect(await body.findByText('Undid the import of 1 folder')).toBeVisible())
   },
@@ -39,7 +39,7 @@ export const UndoWholeBatch: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Undo all' }))
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Undo import' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Undo import' }))
     await waitFor(async () => expect(await body.findByText('The series has been read since, so it cannot be undone.')).toBeVisible())
   },
 }
@@ -51,7 +51,7 @@ export const NoRecentImports: Story = {
 export const UndoThisImportButton: Story = {
   render: () => <UndoBatchButton batchId="batch-a" count={2} onUndone={fn()} />,
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Undo this import' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Undo this import' }))
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Undo the import of 2 folders?' })
     await waitFor(() => expect(dialog).toBeVisible())

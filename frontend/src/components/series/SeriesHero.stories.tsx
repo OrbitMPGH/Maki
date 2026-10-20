@@ -39,7 +39,7 @@ type Story = StoryObj<typeof meta>
 export const Ongoing: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { level: 1, name: /Lanterns Over Kasumi/ })).toBeVisible()
-    await expect(canvas.getByRole('tab', { name: 'Chapters' })).toBeVisible()
+    await expect(await canvas.findByRole('tab', { name: 'Chapters' })).toBeVisible()
   },
 }
 

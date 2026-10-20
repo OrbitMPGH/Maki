@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { Button, List, Stack, Text, TextInput } from '@mantine/core'
 import { AuthError, AuthFrame } from './AuthFrame'
 
@@ -24,9 +24,9 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('heading', { level: 1, name: 'Maki' })).toBeVisible()
-    await expect(canvas.getByText('Self-hosted manga library and downloader.')).toBeVisible()
-    await expect(canvas.getByRole('heading', { level: 2, name: 'Sign in' })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { level: 1, name: 'Maki' })).toBeVisible()
+    await expect(await canvas.findByText('Self-hosted manga library and downloader.')).toBeVisible()
+    await expect(await canvas.findByRole('heading', { level: 2, name: 'Sign in' })).toBeVisible()
   },
 }
 
@@ -66,7 +66,7 @@ export const WithError: Story = {
     ),
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('alert')).toHaveTextContent('Invalid username or password')
+    await waitFor(() => expect(canvas.getByRole('alert')).toHaveTextContent('Invalid username or password'))
   },
 }
 

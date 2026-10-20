@@ -278,6 +278,7 @@ export const downloadSettings: DownloadSettings = {
   bulkHoldThreshold: 5,
   sourceOrder: 'manual',
   scoutOnMatch: false,
+  adaptiveRefresh: true,
 }
 
 export const readFileCleanup: ReadFileCleanupSettings = { enabled: false, days: 7, keepLast: true }
@@ -653,7 +654,10 @@ export const scrobbleSettings: ScrobbleSettings = {
   kitsuClientSecret: null,
   kitsuEmail: 'rin@example.test',
   kitsuPassword: null,
+  mangaUpdatesUsername: null,
+  mangaUpdatesPassword: null,
   kitsuPasswordSet: true,
+  mangaUpdatesPasswordSet: false,
   mangaBakaTokenSet: false,
   mangaUpdatesUsername: null,
   mangaUpdatesPassword: null,

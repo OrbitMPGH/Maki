@@ -84,6 +84,7 @@ import { useLabel } from '../i18n-context'
 import { useSourceLabel } from '../sourceLabels'
 import { formatBytes, formatCalendarDate, formatDateTime, formatTime } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { UpcomingView } from '../components/releases/UpcomingView'
 
 const HISTORY_PAGE_SIZE = 25
 const UPGRADES_PAGE_SIZE = 25
@@ -181,7 +182,7 @@ function upgradeRejectionText(
   return reason ? now`Not an upgrade: ${reason}` : null
 }
 
-type ActivityTab = 'queue' | 'upgrades'
+type ActivityTab = 'queue' | 'upgrades' | 'upcoming'
 
 /** What a section shows in place of its skeleton once its first fetch has failed. */
 function LoadFailed({ query }: { query: { error: unknown; isRefetching: boolean; refetch: () => unknown } }) {
@@ -221,7 +222,7 @@ export default function ActivityPage() {
   // straight at Upgrades and a refresh doesn't bounce back to Queue.
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedTab = searchParams.get('tab')
-  const tab: ActivityTab = requestedTab === 'upgrades' ? 'upgrades' : 'queue'
+  const tab: ActivityTab = requestedTab === 'upgrades' || requestedTab === 'upcoming' ? requestedTab : 'queue'
   const changeTab = (value: string | null) => {
     if (!value) return
     const next = new URLSearchParams(searchParams)
@@ -416,7 +417,12 @@ export default function ActivityPage() {
             <Trans>Upgrades</Trans>
             {pendingProposals > 0 && <span className="series-tab-count tnum">{pendingProposals}</span>}
           </Tabs.Tab>
+          <Tabs.Tab value="upcoming"><Trans>Upcoming</Trans></Tabs.Tab>
         </Tabs.List>
+
+        <Tabs.Panel value="upcoming">
+          <UpcomingView />
+        </Tabs.Panel>
 
         <Tabs.Panel value="queue">
       <QueuePauseBanner canManage={canManageQueue} />

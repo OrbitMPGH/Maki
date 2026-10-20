@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { Creators, DetailRecord } from './DiscoverRecord'
 
 const meta = {
@@ -33,6 +33,6 @@ export const WithCreatorLinks: Story = {
   },
   play: async ({ canvas }) => {
     const link = await canvas.findByRole('link', { name: 'Aoi Mizuhara' })
-    await expect(link).toHaveAttribute('href', '/creator/Aoi%20Mizuhara?role=author')
+    await waitFor(() => expect(link).toHaveAttribute('href', '/creator/Aoi%20Mizuhara?role=author'))
   },
 }

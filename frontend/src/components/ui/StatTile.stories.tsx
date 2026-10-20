@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { StatTile } from './StatTile'
 
 const meta = {
@@ -16,7 +16,7 @@ export const Default: Story = {}
 export const WithDelta: Story = {
   args: { delta: 0.12, deltaLabel: 'vs previous 30 days' },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('+12%')).toHaveAttribute('title', 'vs previous 30 days')
+    await waitFor(() => expect(canvas.getByText('+12%')).toHaveAttribute('title', 'vs previous 30 days'))
   },
 }
 
@@ -27,7 +27,7 @@ export const InvertedDelta: Story = {
 export const ZeroBaseline: Story = {
   args: { delta: null },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('-')).toBeVisible()
+    await expect(await canvas.findByText('-')).toBeVisible()
   },
 }
 

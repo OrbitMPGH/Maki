@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api } from '../../../.storybook/mocks/api'
 import { pageUrlsFor } from '../../../.storybook/mocks/entry/fixtures'
@@ -37,7 +37,7 @@ type Story = StoryObj<typeof meta>
 export const SinglePage: Story = {
   play: async ({ args, canvas }) => {
     await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible()
-    await expect(args.onMeasure).toHaveBeenCalledWith(5, expect.anything())
+    await waitFor(() => expect(args.onMeasure).toHaveBeenCalledWith(5, expect.anything()))
   },
 }
 
@@ -53,7 +53,7 @@ export const DoublePageRightToLeft: Story = {
   args: { spread: [3, 4] },
   play: async ({ canvas, canvasElement }) => {
     await canvas.findByRole('img', { name: 'Chapter 132 - page 4' })
-    await expect(canvas.getByRole('img', { name: 'Chapter 132 - page 5' })).toBeVisible()
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 5' })).toBeVisible()
     // Right to left puts the lower page number on the right.
     const [first, second] = Array.from(canvasElement.querySelectorAll('img.reader-page')).map((img) => img.getAttribute('alt'))
     await expect(first).toBe('Chapter 132 - page 5')
@@ -85,6 +85,6 @@ export const PageFailsToLoad: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('This page failed to load.')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Try again' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Try again' })).toBeVisible()
   },
 }

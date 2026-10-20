@@ -32,7 +32,7 @@ export const PickingATokenAppendsIt: Story = {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = within(await body.findByRole('dialog'))
     await userEvent.click(await dialog.findByText('12'))
-    await expect(dialog.getByDisplayValue(/\{Series Title\} - .*\{Chapter\}/)).toBeVisible()
+    await expect(await dialog.findByDisplayValue(/\{Series Title\} - .*\{Chapter\}/)).toBeVisible()
   },
 }
 

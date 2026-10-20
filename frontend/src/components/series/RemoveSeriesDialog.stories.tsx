@@ -26,7 +26,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Remove' }))
     await expect(args.onConfirm).toHaveBeenCalledOnce()
   },
 }
@@ -45,7 +45,7 @@ export const TogglesFiles: Story = {
   },
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
-    await userEvent.click(within(dialog).getByRole('checkbox', { name: /also delete files/i }))
+    await userEvent.click(await within(dialog).findByRole('checkbox', { name: /also delete files/i }))
     await expect(await within(dialog).findByText(/recycle bin/)).toBeVisible()
   },
 }
