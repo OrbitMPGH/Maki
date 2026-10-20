@@ -70,7 +70,7 @@ const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesIt
             {item.seriesTitle}
           </span>
           <div className="cover-row">
-            <span>{relativeTime(item.addedAt)}</span>
+            <span>{relativeTime(item.addedAt, 'narrow')}</span>
             <span
               className="cover-new cover-new-quiet"
               data-tip={plural(newChapterCount, {

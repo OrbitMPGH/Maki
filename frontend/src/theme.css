@@ -1397,6 +1397,12 @@ body {
   white-space: nowrap;
   color: rgba(255, 255, 255, 0.7);
 }
+/* The count pill keeps its width; the text beside it gives way first. */
+.cover-row > :first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .cover-title + .cover-row {
   margin-top: 5px;
 }
@@ -1411,6 +1417,7 @@ body {
   border-radius: var(--radius-pill);
   background: var(--mantine-primary-color-filled);
   color: var(--mantine-primary-color-contrast);
+  flex-shrink: 0;
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);
 }
