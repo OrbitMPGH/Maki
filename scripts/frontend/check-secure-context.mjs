@@ -17,7 +17,8 @@ const banned = [
   { pattern: /\bcaches\./, use: "the helpers in 'lib/pwa/cache'", home: 'lib/pwa/' },
   { pattern: /\b(?:PushManager|pushManager)\b/, use: "the helpers in 'lib/pwa/push'", home: 'lib/pwa/' },
   { pattern: /\bnavigator\.storage\b/, use: "the helpers in 'lib/pwa/storage'", home: 'lib/pwa/' },
-  { pattern: /\bNotification\./, use: "the helpers in 'lib/pwa/push'", home: 'lib/pwa/' },
+  // The browser API's own members only: Mantine's <Notification> has `Notification.extend` too.
+  { pattern: /\bNotification\.(?:permission|requestPermission|maxActions)\b|\bnew Notification\(/, name: 'Notification', use: "the helpers in 'lib/pwa/push'", home: 'lib/pwa/' },
 ]
 
 // The service worker only ever runs in a secure context, so it uses these APIs directly.
@@ -58,9 +59,9 @@ for (const file of files) {
     .split('\n')
     .forEach((line, i) => {
       if (/^\s*(\/\/|\*|\/\*)/.test(line)) return
-      for (const { pattern, use, home } of banned) {
+      for (const { pattern, name, use, home } of banned) {
         if ((home && rel.startsWith(home)) || !pattern.test(line)) continue
-        failures.push(`frontend/src/${rel}:${i + 1}: ${pattern.source.replace(/\b/g, '')} is undefined over plain HTTP. Use ${use}.`)
+        failures.push(`frontend/src/${rel}:${i + 1}: ${name ?? pattern.source.replace(/\b/g, '')} is undefined over plain HTTP. Use ${use}.`)
       }
     })
 }
