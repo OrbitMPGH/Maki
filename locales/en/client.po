@@ -4403,6 +4403,10 @@ msgstr "Continuous layout only, in pixels."
 msgid "Continuous vertical (webtoon)"
 msgstr "Continuous vertical (webtoon)"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Continuous, because this chapter's pages are very tall."
+msgstr "Continuous, because this chapter's pages are very tall."
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
 msgid "Copied"
@@ -4743,6 +4747,15 @@ msgstr "Creators, type, status, content rating"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
 msgstr "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Crop borders"
+msgstr "Crop borders"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Crop borders on or off"
+msgstr "Crop borders on or off"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Cross-id"
@@ -10326,6 +10339,10 @@ msgstr "Open the page to check it's the right series"
 msgid "Open the search with these filters from now on"
 msgstr "Open the search with these filters from now on"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Open webtoon chapters in Continuous layout"
+msgstr "Open webtoon chapters in Continuous layout"
+
 #: src/pages/HealthPage.tsx
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
 msgstr "Opens a deletion review. Nothing is removed until you confirm it there."
@@ -12335,6 +12352,14 @@ msgstr "Root folders"
 msgid "Rose"
 msgstr "Rose"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Rotate"
+msgstr "Rotate"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Rotate to fit"
+msgstr "Rotate to fit"
+
 #: src/components/SourceCompareModal.tsx
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "Row {zoomRowNumber} of {zoomTotalPages}"
@@ -12766,6 +12791,10 @@ msgstr "Scroll forward"
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Scroll to finish the preview"
 msgstr "Scroll to finish the preview"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Scroll webtoon chapters"
+msgstr "Scroll webtoon chapters"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Scrolling pace · {chaptersLeft} · {basis}"
@@ -13418,6 +13447,10 @@ msgstr "Show their newest titles in a rail on Home and Discover"
 msgid "Show this section"
 msgstr "Show this section"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Show whole"
+msgstr "Show whole"
+
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
 msgstr "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
@@ -13525,6 +13558,10 @@ msgstr "Single"
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Single page"
 msgstr "Single page"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Single page layout only."
+msgstr "Single page layout only."
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -13801,9 +13838,17 @@ msgstr "specials, omake, decimal chapters, monitor new items, monitoring, incogn
 msgid "Spin-off of {relatedTo}"
 msgstr "Spin-off of {relatedTo}"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Split"
+msgstr "Split"
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Split from the tier above"
 msgstr "Split from the tier above"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Split into two pages"
+msgstr "Split into two pages"
 
 #: src/components/TagBuckets.tsx
 msgid "Spoiler - hover to reveal"
@@ -15138,6 +15183,10 @@ msgstr "Trending now"
 msgid "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
 msgstr "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Trims white or black margins. Continuous layout trims the sides only."
+msgstr "Trims white or black margins. Continuous layout trims the sides only."
+
 #: src/components/RelinkFilesModal.tsx
 msgid "Trust {name}"
 msgstr "Trust {name}"
@@ -16145,6 +16194,10 @@ msgstr "When a refresh finds more new chapters for a series than this, none of t
 msgid "When importing an existing series from disk: rename its folder to the series folder format, or keep it as found."
 msgstr "When importing an existing series from disk: rename its folder to the series folder format, or keep it as found."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "When most pages are very tall. A layout picked in the reader still wins."
+msgstr "When most pages are very tall. A layout picked in the reader still wins."
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
 msgstr "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
@@ -16229,6 +16282,10 @@ msgstr "While reading"
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "While reading only tells you about new chapters while you are partway through."
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Whole"
+msgstr "Whole"
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Whole franchise"
 msgstr "Whole franchise"
@@ -16249,6 +16306,11 @@ msgstr "Whole year"
 #: src/api/upgrades.ts
 msgid "Whole-series pack, needs your call"
 msgstr "Whole-series pack, needs your call"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Wide pages"
+msgstr "Wide pages"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Width"

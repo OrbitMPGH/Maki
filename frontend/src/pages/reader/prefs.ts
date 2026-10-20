@@ -9,6 +9,7 @@ export type ReaderMode = 'paged' | 'double' | 'vertical'
 export type ReaderDirection = 'ltr' | 'rtl'
 export type ReaderFit = 'width' | 'height' | 'screen' | 'original'
 export type ReaderFilter = 'none' | 'grayscale' | 'sepia' | 'invert'
+export type ReaderSplitWide = 'off' | 'split' | 'rotate'
 
 export interface ReaderPrefs {
   mode: ReaderMode
@@ -31,6 +32,12 @@ export interface ReaderPrefs {
   filter: ReaderFilter
   /** Hold a screen wake lock while reading, where the browser offers one. */
   keepAwake: boolean
+  /** Single-page mode only: show a wide page whole, as two halves in reading order, or turned a quarter. */
+  splitWide: ReaderSplitWide
+  /** Trim uniform white or black margins. Continuous mode trims the sides only, so a strip keeps its gutters. */
+  cropBorders: boolean
+  /** Open a chapter of very tall pages in continuous mode. The server fills it per layer: on for the defaults, off for a profile or override that never set it. */
+  autoWebtoon: boolean
 }
 
 /** The two page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. */
@@ -59,6 +66,9 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   dim: 0,
   filter: 'none',
   keepAwake: true,
+  splitWide: 'off',
+  cropBorders: false,
+  autoWebtoon: true,
 }
 
 /** The CSS filter for the page images, or undefined when the prefs ask for none. */

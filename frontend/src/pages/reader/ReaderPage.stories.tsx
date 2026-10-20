@@ -121,6 +121,73 @@ export const ContinuousWebtoon: Story = {
   },
 }
 
+// Chapter ids of their own: with isolate off, page URLs of a chapter other stories open are already
+// in the image cache as portrait pages, and these handlers would never be asked.
+const stripPages = (chapterId: number) =>
+  http.get(api(`/reader/chapter/${chapterId}/page/:n`), ({ params }) =>
+    HttpResponse.redirect(`/mock/strip/${chapterId}/${Number(params.n) + 1}.svg`),
+  )
+const spreadPages = (chapterId: number) =>
+  http.get(api(`/reader/chapter/${chapterId}/page/:n`), ({ params }) =>
+    HttpResponse.redirect(`/mock/spread/${chapterId}/${Number(params.n) + 1}.svg`),
+  )
+
+/** Paged by default, but every page is a tall strip slice, so the chapter opens scrolling. */
+export const WebtoonChapterOpensContinuous: Story = {
+  parameters: {
+    ...open(7701),
+    msw: [
+      withManifest({
+        ...chapters[1132],
+        chapterId: 7701,
+        prefsSource: 'Global',
+        prefs: { ...chapters[1132].prefs, autoWebtoon: true },
+      }),
+      stripPages(7701),
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await expect(canvasElement.querySelector('.reader-continuous')).not.toBeNull()
+    await summonChrome({ canvasElement, userEvent })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
+    const popover = within(canvasElement.ownerDocument.body)
+    await expect(await popover.findByText("Continuous, because this chapter's pages are very tall.")).toBeVisible()
+  },
+}
+
+/** A profile's layout is a choice, so tall pages leave it alone. */
+export const ProfileLayoutBeatsWebtoonDetection: Story = {
+  parameters: { ...open(7702), msw: [withManifest({ ...chapters[1132], chapterId: 7702 }), stripPages(7702)] },
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await expect(canvasElement.querySelector('.reader-continuous')).toBeNull()
+  },
+}
+
+/** Each half of a spread is a turn of its own, but both are page 6 as far as progress goes. */
+export const SplitSpreadRightToLeft: Story = {
+  parameters: {
+    ...open(7703),
+    msw: [
+      withManifest({ ...chapters[1132], chapterId: 7703, prefs: { ...chapters[1132].prefs, splitWide: 'split' } }),
+      spreadPages(7703),
+    ],
+  },
+  play: async ({ canvas, userEvent }) => {
+    const first = await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await expect(first.style.left).toBe('-100%')
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect((await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).style.left).toBe('0%')
+    await expect(canvas.getByText('Page 6 of 18')).toBeInTheDocument()
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect((await canvas.findByRole('img', { name: 'Chapter 132 - page 7' })).style.left).toBe('-100%')
+    // Back again lands on the half read last.
+    await userEvent.keyboard('{ArrowRight}')
+    await expect((await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).style.left).toBe('0%')
+  },
+}
+
 export const DoublePage: Story = {
   parameters: open(1201),
   play: async ({ canvas, userEvent }) => {

@@ -5352,6 +5352,10 @@ msgstr "連続レイアウトのみ、ピクセル単位です。"
 msgid "Continuous vertical (webtoon)"
 msgstr "連続縦スクロール（webtoon）"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Continuous, because this chapter's pages are very tall."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5772,6 +5776,15 @@ msgstr ""
 #, fuzzy
 msgid "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
 msgstr "クレジットページと次の章の最初のページは似ていることが多いため、ここでページの区切りを指定します。"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Crop borders"
+msgstr ""
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Crop borders on or off"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -12571,6 +12584,10 @@ msgstr "ページを開いて正しいシリーズか確認"
 msgid "Open the search with these filters from now on"
 msgstr "今後はこのフィルターを適用した状態で検索を開く"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Open webtoon chapters in Continuous layout"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
@@ -15019,6 +15036,14 @@ msgstr "ルートフォルダー"
 msgid "Rose"
 msgstr "ローズ"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Rotate"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Rotate to fit"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
@@ -15533,6 +15558,10 @@ msgstr "次へスクロール"
 #, fuzzy
 msgid "Scroll to finish the preview"
 msgstr "スクロールしてプレビューを終える"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Scroll webtoon chapters"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16324,6 +16353,10 @@ msgstr "最新作品を「ホーム」と「見つける」のレールに表示
 msgid "Show this section"
 msgstr "このセクションを表示"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Show whole"
+msgstr ""
+
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
@@ -16456,6 +16489,10 @@ msgstr "単一"
 #, fuzzy
 msgid "Single page"
 msgstr "単一ページ"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Single page layout only."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -16793,10 +16830,18 @@ msgstr "特別編, おまけ, 小数の章, 新しい項目を監視, 監視, �
 msgid "Spin-off of {relatedTo}"
 msgstr "{relatedTo}のスピンオフ"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Split"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Split from the tier above"
 msgstr "上のティアから分離"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Split into two pages"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -18423,6 +18468,10 @@ msgstr "話題の作品"
 msgid "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
 msgstr "{sourceNames}を優先順に試し、章がある最初のソースを使います。ソース名を指定するとそのソースに固定されます。フォールバックはなく、選んだ場所からのみ候補を取得します。"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Trims white or black margins. Continuous layout trims the sides only."
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "Trust {name}"
@@ -19661,6 +19710,10 @@ msgstr "更新でシリーズの新しい章がこの数を超えて見つかっ
 msgid "When importing an existing series from disk: rename its folder to the series folder format, or keep it as found."
 msgstr "既存のシリーズをディスクからインポートするとき：そのフォルダーをシリーズフォルダー形式に名前変更するか、見つかったままの名前で残すかを選びます。"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "When most pages are very tall. A layout picked in the reader still wins."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
@@ -19766,6 +19819,10 @@ msgstr "読書中"
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "読書中は、シリーズの途中にいる間だけ新しい章を知らせます。"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Whole"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Whole franchise"
@@ -19791,6 +19848,11 @@ msgstr "年間全体"
 #, fuzzy
 msgid "Whole-series pack, needs your call"
 msgstr "シリーズ全体のパックのため、判断が必要です"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Wide pages"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

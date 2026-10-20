@@ -21,6 +21,10 @@ export const daysAhead = (n: number) => daysAgo(-n)
 export const cover = (seed: string | number) => `/mock/cover/${encodeURIComponent(String(seed))}.svg`
 /** A generated manga page for the reader, served by `/mock/page/:seed/:n`. */
 export const pageImage = (seed: string | number, n: number) => `/mock/page/${encodeURIComponent(String(seed))}/${n}.svg`
+/** A generated two-page spread, twice a page's width, its halves marked in right-to-left reading order. */
+export const spreadImage = (seed: string | number, n: number) => `/mock/spread/${encodeURIComponent(String(seed))}/${n}.svg`
+/** A generated webtoon slice, three times taller than it is wide. */
+export const stripImage = (seed: string | number, n: number) => `/mock/strip/${encodeURIComponent(String(seed))}/${n}.svg`
 /** A generated wide banner/backdrop image. */
 export const banner = (seed: string | number) => `/mock/banner/${encodeURIComponent(String(seed))}.svg`
 

@@ -100,7 +100,8 @@ export function ReadingProfilesSection() {
       {creating && (
         <ProfileEditor
           key="new"
-          initial={{ name: '', prefs: DEFAULT_PREFS, seriesTypes: [] }}
+          // A profile's layout is a deliberate choice, so detection stays off until asked for.
+          initial={{ name: '', prefs: { ...DEFAULT_PREFS, autoWebtoon: false }, seriesTypes: [] }}
           taken={(profiles ?? []).flatMap((p) => p.seriesTypes)}
           submitLabel={t`Create`}
           busy={create.isPending}
@@ -432,6 +433,35 @@ function ProfileEditor({
         />
       </Group>
 
+      <Group grow align="flex-start">
+        <Select
+          label={t`Wide pages`}
+          description={t`Single page layout only.`}
+          allowDeselect={false}
+          value={prefs.splitWide}
+          onChange={(value) => value && set({ splitWide: value as ReaderPrefs['splitWide'] })}
+          data={[
+            { value: 'off', label: t`Show whole` },
+            { value: 'split', label: t`Split into two pages` },
+            { value: 'rotate', label: t`Rotate to fit` },
+          ]}
+        />
+      </Group>
+
+      <Switch
+        size="sm"
+        label={t`Crop borders`}
+        description={t`Trims white or black margins. Continuous layout trims the sides only.`}
+        checked={prefs.cropBorders}
+        onChange={(e) => set({ cropBorders: e.currentTarget.checked })}
+      />
+      <Switch
+        size="sm"
+        label={t`Open webtoon chapters in Continuous layout`}
+        description={t`When most pages are very tall. A layout picked in the reader still wins.`}
+        checked={prefs.autoWebtoon}
+        onChange={(e) => set({ autoWebtoon: e.currentTarget.checked })}
+      />
       <Switch
         size="sm"
         label={t`Advance to the next chapter at the end`}

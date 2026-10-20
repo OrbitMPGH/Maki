@@ -6001,6 +6001,33 @@ body.reader-open {
   max-width: none;
 }
 
+/* A trimmed, split or turned page (PagedView's RegionPage). The canvas inside takes the fit
+   classes and gives the box its size; `clip` rather than `hidden` keeps this from becoming a scroll
+   container, whose flex min-width of 0 would let a 1:1 page shrink and cut its own edge off. */
+.reader-region {
+  position: relative;
+  overflow: clip;
+}
+.reader-region[data-fit='width'] {
+  width: 100%;
+}
+.reader-paged[data-double='true'] .reader-region {
+  max-width: 50%;
+}
+.reader-paged[data-double='true'] .reader-region .reader-page {
+  max-width: 100%;
+}
+.reader-region-frame {
+  position: absolute;
+  overflow: clip;
+}
+.reader-region-image {
+  position: absolute;
+  max-width: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
 .reader-next-chapter-hint {
   position: fixed;
   left: 50%;

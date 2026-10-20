@@ -74,3 +74,14 @@ export const PageFailsToLoad: Story = {
     await expect((await canvas.findAllByText('This page failed to load.')).length).toBeGreaterThan(0)
   },
 }
+
+/** Only the sides are trimmed in a strip: the top and bottom margins are its gutters. */
+export const CroppedSides: Story = {
+  args: { cropBorders: true, fit: 'original' },
+  play: async ({ canvas }) => {
+    const page = await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })
+    await expect(page).toHaveAttribute('data-loaded', 'true')
+    await expect(page.style.objectFit).toBe('cover')
+    await expect(Number.parseFloat(page.style.width)).toBeLessThan(800)
+  },
+}

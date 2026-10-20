@@ -5353,6 +5353,10 @@ msgstr "Nur für kontinuierliches Layout, in Pixeln."
 msgid "Continuous vertical (webtoon)"
 msgstr "Kontinuierlich vertikal (Webtoon)"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Continuous, because this chapter's pages are very tall."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5773,6 +5777,15 @@ msgstr ""
 #, fuzzy
 msgid "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
 msgstr "Coverseiten und erste Seiten des nächsten Kapitels sehen oft ähnlich aus. Diese Option markiert den Übergang."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Crop borders"
+msgstr ""
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Crop borders on or off"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -12572,6 +12585,10 @@ msgstr "Seite öffnen, um zu prüfen, ob es die richtige Serie ist"
 msgid "Open the search with these filters from now on"
 msgstr "Suche ab jetzt mit diesen Filtern öffnen"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Open webtoon chapters in Continuous layout"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
@@ -15020,6 +15037,14 @@ msgstr "Stammordner"
 msgid "Rose"
 msgstr "Rose"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Rotate"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Rotate to fit"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
@@ -15534,6 +15559,10 @@ msgstr "Vorwärts scrollen"
 #, fuzzy
 msgid "Scroll to finish the preview"
 msgstr "Scrolle, um die Vorschau zu beenden"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Scroll webtoon chapters"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16325,6 +16354,10 @@ msgstr "Zeige ihre neuesten Titel als Rail auf Start und Entdecken"
 msgid "Show this section"
 msgstr "Diesen Abschnitt anzeigen"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Show whole"
+msgstr ""
+
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
@@ -16457,6 +16490,10 @@ msgstr "Einzeln"
 #, fuzzy
 msgid "Single page"
 msgstr "Einzelne Seite"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Single page layout only."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -16794,10 +16831,18 @@ msgstr "Specials, Omake, Dezimalkapitel, neue Inhalte überwachen, Überwachung,
 msgid "Spin-off of {relatedTo}"
 msgstr "Spin-off von {relatedTo}"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Split"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Split from the tier above"
 msgstr "Von der Stufe darüber trennen"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Split into two pages"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -18424,6 +18469,10 @@ msgstr "Gerade im Trend"
 msgid "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
 msgstr "Versucht {sourceNames} in Prioritätsreihenfolge und nimmt die erste Quelle, die das Kapitel hat. Wenn du eine Quelle benennst, wird sie fest zugewiesen: Es gibt keinen Fallback, daher erhältst du nur von der ausgewählten Quelle einen Kandidaten."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Trims white or black margins. Continuous layout trims the sides only."
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "Trust {name}"
@@ -19662,6 +19711,10 @@ msgstr "Wenn eine Aktualisierung mehr neue Kapitel für eine Serie findet als hi
 msgid "When importing an existing series from disk: rename its folder to the series folder format, or keep it as found."
 msgstr "Beim Import einer vorhandenen Serie von der Festplatte: Benenne ihren Ordner nach dem Serienordnerformat um oder behalte ihn so, wie er gefunden wurde."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "When most pages are very tall. A layout picked in the reader still wins."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
@@ -19767,6 +19820,10 @@ msgstr "Beim Lesen"
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "Beim Lesen informiert dich nur über neue Kapitel, solange du die Serie noch nicht abgeschlossen hast."
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Whole"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Whole franchise"
@@ -19792,6 +19849,11 @@ msgstr "Ganzes Jahr"
 #, fuzzy
 msgid "Whole-series pack, needs your call"
 msgstr "Paket mit der ganzen Serie, du musst entscheiden"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Wide pages"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

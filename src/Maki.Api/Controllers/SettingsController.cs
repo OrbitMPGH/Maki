@@ -341,7 +341,7 @@ public class SettingsController(
         var stored = await userSettings.GetManyAsync(
             [SettingKeys.ReaderPrefs, SettingKeys.ReaderPushToKavita, SettingKeys.ReaderPullFromKavita], ct);
         return Ok(new ReaderSettings(
-            Maki.Core.Reading.ReaderPrefsSpec.Parse(stored.GetValueOrDefault(SettingKeys.ReaderPrefs)),
+            Maki.Core.Reading.ReaderPrefsSpec.Parse(stored.GetValueOrDefault(SettingKeys.ReaderPrefs)).WithAutoWebtoon(true),
             stored.GetValueOrDefault(SettingKeys.ReaderPushToKavita) == "true",
             KavitaUserId: await kavitaUser.ResolveAsync(ct),
             PullFromKavita: stored.GetValueOrDefault(SettingKeys.ReaderPullFromKavita) == "true",

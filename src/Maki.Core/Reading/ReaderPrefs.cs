@@ -42,7 +42,23 @@ public record ReaderPrefsSpec(
     /// <summary>A colour filter applied to the page images: one of <c>none</c>, <c>grayscale</c>, <c>sepia</c>, <c>invert</c>.</summary>
     string Filter = ReaderPrefsSpec.FilterNone,
     /// <summary>Hold a screen wake lock while the reader is being read, where the browser offers one.</summary>
-    bool KeepAwake = true)
+    bool KeepAwake = true,
+    /// <summary>
+    /// What single-page mode does with a page wider than it is tall: <c>off</c> shows it whole,
+    /// <c>split</c> shows its halves one after the other in reading order, <c>rotate</c> turns it a
+    /// quarter so it fills a portrait screen. Halves are a display concern only: progress still
+    /// counts the archive's pages.
+    /// </summary>
+    string SplitWide = ReaderPrefsSpec.SplitOff,
+    /// <summary>Trim uniform white or black margins off each page, measured in the browser.</summary>
+    bool CropBorders = false,
+    /// <summary>
+    /// Open a chapter whose pages are mostly very tall in continuous mode. Null means "not set on
+    /// this layer": the global defaults treat that as on, and a profile or series override as off,
+    /// because choosing a layout there is the explicit choice the detection must not override.
+    /// See <see cref="WithAutoWebtoon"/>.
+    /// </summary>
+    bool? AutoWebtoon = null)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";
@@ -60,6 +76,8 @@ public record ReaderPrefsSpec(
 
     public const string FilterNone = "none";
 
+    public const string SplitOff = "off";
+
     public const string FitWidth = "width";
     public const string FitHeight = "height";
     public const string FitScreen = "screen";
@@ -75,6 +93,7 @@ public record ReaderPrefsSpec(
     private static readonly string[] Directions = [DirectionLtr, DirectionRtl];
     private static readonly string[] Fits = [FitWidth, FitHeight, FitScreen, FitOriginal];
     private static readonly string[] Filters = [FilterNone, "grayscale", "sepia", "invert"];
+    private static readonly string[] SplitModes = [SplitOff, "split", "rotate"];
 
     /// <summary>Clamps free-text fields back onto known values so a bad write can't wedge the reader.</summary>
     public ReaderPrefsSpec Sanitized() => this with
@@ -87,7 +106,11 @@ public record ReaderPrefsSpec(
         Scale = Math.Clamp(Scale, 25, 400),
         Dim = Math.Clamp(Dim, 0, 80),
         Filter = Filters.Contains(Filter) ? Filter : FilterNone,
+        SplitWide = SplitModes.Contains(SplitWide) ? SplitWide : SplitOff,
     };
+
+    /// <summary>Fills an unset <see cref="AutoWebtoon"/> with the layer's default: on for the global defaults only.</summary>
+    public ReaderPrefsSpec WithAutoWebtoon(bool globalLayer) => this with { AutoWebtoon = AutoWebtoon ?? globalLayer };
 
     /// <summary>Reads a stored blob, falling back to defaults for null/blank/unparseable JSON.</summary>
     public static ReaderPrefsSpec Parse(string? json)

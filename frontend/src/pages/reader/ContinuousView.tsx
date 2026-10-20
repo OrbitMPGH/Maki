@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { cropRegion, sidesOnly } from './pageShape'
 import type { ReaderFit } from './prefs'
 
 const FIT_CLASS: Record<ReaderFit, string> = {
@@ -20,6 +21,32 @@ const BOTTOM_EPSILON = 2
 // half-filled meter left behind does not turn the next wheel notch into a chapter jump.
 const PAST_END_IDLE_MS = 1200
 
+/**
+ * Trims a strip page's side margins in place, on the element itself: the strip tracks, observes and
+ * scrolls to these exact images, so the crop cannot wrap them. A box of the trimmed shape with
+ * `object-fit: cover` shows exactly the middle columns. Top and bottom stay, since a strip's
+ * gutters are part of its pacing. Set straight on the element rather than through state so the
+ * new height is in place before the load is reported and the resume settles against it.
+ */
+function applySideCrop(image: HTMLImageElement, enabled: boolean, fit: ReaderFit) {
+  const region = enabled && image.naturalWidth > 0 ? sidesOnly(cropRegion(image)) : null
+  const style = image.style
+  if (!region) {
+    style.removeProperty('aspect-ratio')
+    style.removeProperty('object-fit')
+    style.removeProperty('object-position')
+    style.removeProperty('width')
+    return
+  }
+  const width = Math.round(image.naturalWidth * region.w)
+  style.aspectRatio = `${width} / ${image.naturalHeight}`
+  style.objectFit = 'cover'
+  style.objectPosition = `${(region.x / (1 - region.w)) * 100}% 0`
+  // 1:1 sizes from the natural width, which is the uncropped one; the trimmed width is the 1:1 size.
+  if (fit === 'original') style.width = `${width}px`
+  else style.removeProperty('width')
+}
+
 interface StripPageProps {
   index: number
   src: string
@@ -28,6 +55,7 @@ interface StripPageProps {
   scale: number
   tone: string | undefined
   eager: boolean
+  cropBorders: boolean
   register: (index: number, element: HTMLImageElement | null) => void
   onSettled: (index: number, element: HTMLImageElement) => void
 }
@@ -44,6 +72,7 @@ const StripPage = memo(function StripPage({
   scale,
   tone,
   eager,
+  cropBorders,
   register,
   onSettled,
 }: StripPageProps) {
@@ -61,6 +90,13 @@ const StripPage = memo(function StripPage({
     },
     [index, register],
   )
+
+  const crop = useRef({ cropBorders, fit })
+  crop.current = { cropBorders, fit }
+  useEffect(() => {
+    const element = image.current
+    if (element?.complete) applySideCrop(element, cropBorders, fit)
+  }, [cropBorders, fit])
 
   const retry = () => {
     image.current?.removeAttribute('data-loaded')
@@ -88,7 +124,10 @@ const StripPage = memo(function StripPage({
         loading={eager ? 'eager' : 'lazy'}
         decoding="async"
         draggable={false}
-        onLoad={(event) => onSettled(index, event.currentTarget)}
+        onLoad={(event) => {
+          applySideCrop(event.currentTarget, crop.current.cropBorders, crop.current.fit)
+          onSettled(index, event.currentTarget)
+        }}
         onError={(event) => {
           setFailed(true)
           onSettled(index, event.currentTarget)
@@ -126,6 +165,7 @@ export default function ContinuousView({
   gap,
   label,
   pastEndLabel,
+  cropBorders = false,
 }: {
   urls: string[]
   page: number
@@ -149,6 +189,8 @@ export default function ContinuousView({
   tone?: string
   gap: number
   label: string
+  /** Trim the pages' side margins. */
+  cropBorders?: boolean
 }) {
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
@@ -373,6 +415,7 @@ export default function ContinuousView({
             scale={scale}
             tone={tone}
             eager={index < 3 || Math.abs(index - page) <= 2}
+            cropBorders={cropBorders}
             register={registerPage}
             onSettled={onPageSettled}
           />
