@@ -502,7 +502,7 @@ export default function ScrobblePage() {
           read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is
           connected. Remote progress is never lowered and completed entries are never demoted. Trackers are
           set up in{' '}
-          <Anchor component={Link} to={TRACKER_SETTINGS}>
+          <Anchor component={Link} to={TRACKER_SETTINGS} underline="always">
             Settings
           </Anchor>
           .

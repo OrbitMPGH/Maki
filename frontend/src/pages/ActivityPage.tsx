@@ -518,7 +518,7 @@ export default function ActivityPage() {
                                 {sourceLabel(q.sourceName)}
                               </Text>
                               {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
-                                <Badge size="xs" variant="light" color="var(--brand)">
+                                <Badge size="xs" variant="light" color="var(--brand-fg)">
                                   {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
                                 </Badge>
                               )}
@@ -783,7 +783,7 @@ export default function ActivityPage() {
                                   {sourceLabel(q.sourceName)}
                                 </Text>
                                 {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
-                                  <Badge size="xs" variant="light" color="var(--brand)">
+                                  <Badge size="xs" variant="light" color="var(--brand-fg)">
                                     {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
                                   </Badge>
                                 )}

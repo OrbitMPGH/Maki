@@ -88,7 +88,7 @@ function UndoConfirm({
           <Button variant="default" onClick={onClose}>
             <Trans>Cancel</Trans>
           </Button>
-          <Button color="var(--danger)" loading={undo.isPending} onClick={run}>
+          <Button color="var(--danger-fill)" loading={undo.isPending} onClick={run}>
             <Trans>Undo import</Trans>
           </Button>
         </Group>
@@ -136,7 +136,7 @@ function FolderRow({
   const undoneOn = folder.undoneAt ? formatDateTime(folder.undoneAt) : null
   return (
     <Group justify="space-between" wrap="nowrap" align="flex-start">
-      <div style={{ minWidth: 0 }}>
+      <div style={{ minWidth: 0, flex: 1 }}>
         <Group gap={6} wrap="wrap">
           <Text size="sm" fw={600} style={{ overflowWrap: 'anywhere' }}>
             {originalFolderName}
@@ -183,13 +183,27 @@ function FolderRow({
         ) : null}
       </div>
       {folder.diskPending ? (
-        <Button size="xs" variant="default" leftSection={<IconArrowBackUp size={14} />} onClick={onUndo} disabled={busy}>
+        <Button
+          size="xs"
+          variant="default"
+          leftSection={<IconArrowBackUp size={14} />}
+          onClick={onUndo}
+          disabled={busy}
+          style={{ flexShrink: 0 }}
+        >
           <Trans>Retry</Trans>
         </Button>
       ) : (
         !folder.undoneAt &&
         !folder.seriesGone && (
-          <Button size="xs" variant="default" leftSection={<IconArrowBackUp size={14} />} onClick={onUndo} disabled={busy}>
+          <Button
+            size="xs"
+            variant="default"
+            leftSection={<IconArrowBackUp size={14} />}
+            onClick={onUndo}
+            disabled={busy}
+            style={{ flexShrink: 0 }}
+          >
             <Trans>Undo</Trans>
           </Button>
         )
