@@ -9,6 +9,7 @@ export type ReaderMode = 'paged' | 'double' | 'vertical'
 export type ReaderDirection = 'ltr' | 'rtl'
 export type ReaderFit = 'width' | 'height' | 'screen' | 'original'
 export type ReaderFilter = 'none' | 'grayscale' | 'sepia' | 'invert'
+export type ReaderSplitWide = 'off' | 'split' | 'rotate'
 
 export interface ReaderPrefs {
   mode: ReaderMode
@@ -31,6 +32,12 @@ export interface ReaderPrefs {
   filter: ReaderFilter
   /** Hold a screen wake lock while reading, where the browser offers one. */
   keepAwake: boolean
+  /** Single-page mode only: show a wide page whole, as two halves in reading order, or turned a quarter. */
+  splitWide: ReaderSplitWide
+  /** Trim uniform white or black margins, in the paged layouts only. */
+  cropBorders: boolean
+  /** Open a chapter of very tall pages in continuous mode. The server fills it per layer: on for the defaults, off for a profile or override that never set it. */
+  autoWebtoon: boolean
 }
 
 /** The two page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. */
@@ -59,6 +66,9 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   dim: 0,
   filter: 'none',
   keepAwake: true,
+  splitWide: 'off',
+  cropBorders: false,
+  autoWebtoon: true,
 }
 
 /** The CSS filter for the page images, or undefined when the prefs ask for none. */
@@ -217,6 +227,39 @@ export function useReaderPrefs(manifest: ReaderManifest | undefined, settled = t
   )
 
   /**
+   * Saves a change as this series' own override, moving the series there first if it was on a
+   * profile or the global defaults. For choices that only make sense for the one series.
+   */
+  const keepForSeries = useCallback(
+    (patch: Partial<ReaderPrefs>) => {
+      if (!seriesId || adoptedFor.current === null) return
+      if (target.current.resolved.source === 'Series') {
+        update(patch)
+        return
+      }
+      // A queued edit was made against the old destination, so it goes there before the move.
+      if (timer.current) {
+        clearTimeout(timer.current)
+        timer.current = null
+        save(prefsRef.current)
+      }
+      const next = { ...prefsRef.current, ...patch }
+      prefsRef.current = next
+      setPrefs(next)
+      void api<ResolvedReaderPrefs>(`/reader/series/${seriesId}/prefs`, {
+        method: 'PUT',
+        body: JSON.stringify({ prefs: next }),
+      })
+        .then((answer) => {
+          setPrefs({ ...DEFAULT_PREFS, ...answer.prefs })
+          setResolved(answer)
+        })
+        .catch(() => {})
+    },
+    [seriesId, update, save],
+  )
+
+  /**
    * Repoints the series at a different source of settings. The server re-resolves and hands back
    * the answer, so the reader shows what it will actually open with next time rather than the
    * client guessing.
@@ -256,6 +299,7 @@ export function useReaderPrefs(manifest: ReaderManifest | undefined, settled = t
   return {
     prefs,
     update,
+    keepForSeries,
     selection: selectionOf(resolved),
     setSelection,
     /** Which of the three destinations an edit lands in, for the "applies to" hint. */

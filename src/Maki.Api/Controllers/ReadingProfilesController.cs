@@ -150,5 +150,5 @@ public class ReadingProfilesController(
         [.. (types ?? []).Select(SeriesTypes.Normalize).OfType<string>().Distinct(StringComparer.Ordinal)];
 
     private static ReadingProfileDto ToDto(ReadingProfile p) =>
-        new(p.Id, p.Name, ReaderPrefsSpec.Parse(p.PrefsJson), [.. p.Types()]);
+        new(p.Id, p.Name, ReaderPrefsSpec.Parse(p.PrefsJson).WithAutoWebtoon(false), [.. p.Types()]);
 }

@@ -41,6 +41,7 @@ export default function ShortcutSheet({ rtl, onClose }: { rtl: boolean; onClose:
         { keys: ['2'], label: t`Double page` },
         { keys: ['3'], label: t`Continuous` },
         { keys: ['D'], label: t`Switch reading direction` },
+        { keys: ['C'], label: t`Crop borders on or off` },
         { keys: ['+', '−'], label: t`Zoom in and out` },
         { keys: ['0'], label: t`Reset zoom` },
       ],

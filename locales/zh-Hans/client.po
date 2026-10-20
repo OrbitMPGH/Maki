@@ -5387,6 +5387,10 @@ msgstr "仅适用于连续布局，单位为像素。"
 msgid "Continuous vertical (webtoon)"
 msgstr "连续垂直（条漫）"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Continuous, because this chapter's pages are very tall."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5816,6 +5820,15 @@ msgstr ""
 #, fuzzy
 msgid "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
 msgstr "卷末致谢页和下一章开头几页经常相似，因此此项用于标记章节分界。"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Crop borders"
+msgstr ""
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Crop borders on or off"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -12670,6 +12683,10 @@ msgstr "打开页面以确认这是正确的系列"
 msgid "Open the search with these filters from now on"
 msgstr "以后用这些筛选条件打开搜索"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Open webtoon chapters in Continuous layout"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
@@ -15122,6 +15139,14 @@ msgstr "根文件夹"
 msgid "Rose"
 msgstr "玫瑰色"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Rotate"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Rotate to fit"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
@@ -15645,6 +15670,10 @@ msgstr "向前滚动"
 #, fuzzy
 msgid "Scroll to finish the preview"
 msgstr "滚动以结束预览"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Scroll webtoon chapters"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16434,6 +16463,10 @@ msgstr "在“首页”和“发现”的推荐栏中显示其最新作品"
 msgid "Show this section"
 msgstr "显示此区块"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Show whole"
+msgstr ""
+
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
@@ -16566,6 +16599,10 @@ msgstr "单页"
 #, fuzzy
 msgid "Single page"
 msgstr "单页"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Single page layout only."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -16903,10 +16940,18 @@ msgstr "specials, omake, 小数章节, 跟踪新内容, 监控, 隐身, 不同�
 msgid "Spin-off of {relatedTo}"
 msgstr "{relatedTo} 的衍生作品"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Split"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Split from the tier above"
 msgstr "与上一层级分开"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Split into two pages"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -18542,6 +18587,10 @@ msgstr "当前热门"
 msgid "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
 msgstr "按优先级顺序尝试 {sourceNames}，并采用第一个包含该章节的来源。指定来源则会将其固定：不会回退，因此候选项只会来自你选择的来源。"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Trims white or black margins. Not applied in the Continuous layout."
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "Trust {name}"
@@ -19778,6 +19827,10 @@ msgstr "如果刷新时为某个系列发现的新章节数量超过此值，将
 msgid "When importing an existing series from disk: rename its folder to the series folder format, or keep it as found."
 msgstr "从磁盘导入现有系列时：将其文件夹重命名为系列文件夹格式，或保持原样。"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "When most pages are very tall. A layout picked in the reader still wins."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
@@ -19883,6 +19936,10 @@ msgstr "阅读时"
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "阅读时仅会在你阅读系列期间通知你新章节。"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Whole"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Whole franchise"
@@ -19908,6 +19965,11 @@ msgstr "全年"
 #, fuzzy
 msgid "Whole-series pack, needs your call"
 msgstr "整系列合集包，需要你来决定"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Wide pages"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

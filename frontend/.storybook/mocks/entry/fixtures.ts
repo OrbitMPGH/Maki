@@ -19,8 +19,8 @@ export const pageUrlFor = (chapterId: number, index: number, thumb = false) =>
 export const pageUrlsFor = (chapterId: number, count: number, thumb = false) =>
   Array.from({ length: count }, (_, i) => pageUrlFor(chapterId, i, thumb))
 
-export const mangaPrefs: ReaderPrefs = { ...DEFAULT_PREFS, mode: 'paged', direction: 'rtl', fit: 'height' }
-export const webtoonPrefs: ReaderPrefs = { ...DEFAULT_PREFS, mode: 'vertical', direction: 'ltr', fit: 'width', pageGap: 0 }
+export const mangaPrefs: ReaderPrefs = { ...DEFAULT_PREFS, mode: 'paged', direction: 'rtl', fit: 'height', autoWebtoon: false }
+export const webtoonPrefs: ReaderPrefs = { ...DEFAULT_PREFS, mode: 'vertical', direction: 'ltr', fit: 'width', pageGap: 0, autoWebtoon: false }
 export const doublePrefs: ReaderPrefs = { ...DEFAULT_PREFS, mode: 'double', direction: 'rtl', fit: 'height' }
 
 export const readingProfiles: ReadingProfile[] = [

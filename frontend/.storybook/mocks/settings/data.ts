@@ -70,6 +70,9 @@ export const readerPrefs: ReaderPrefs = {
   dim: 0,
   filter: 'none',
   keepAwake: true,
+  splitWide: 'off',
+  cropBorders: false,
+  autoWebtoon: true,
 }
 
 export const readerSettings: ReaderSettings = {

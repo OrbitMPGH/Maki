@@ -5388,6 +5388,10 @@ msgstr "Yalnızca sürekli düzende, piksel cinsinden."
 msgid "Continuous vertical (webtoon)"
 msgstr "Sürekli dikey (webtoon)"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Continuous, because this chapter's pages are very tall."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5817,6 +5821,15 @@ msgstr ""
 #, fuzzy
 msgid "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
 msgstr "Künye sayfalarıyla sonraki bölümün ilk sayfaları sık sık birbirine benzer. Bu işaret sayfa geçişini belirtir."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Crop borders"
+msgstr ""
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Crop borders on or off"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -12671,6 +12684,10 @@ msgstr "Doğru seri olduğunu kontrol etmek için sayfayı açın"
 msgid "Open the search with these filters from now on"
 msgstr "Bundan sonra aramayı bu filtrelerle aç"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Open webtoon chapters in Continuous layout"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
@@ -15123,6 +15140,14 @@ msgstr "Kök klasörler"
 msgid "Rose"
 msgstr "Gül"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Rotate"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Rotate to fit"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
@@ -15646,6 +15671,10 @@ msgstr "İleri kaydır"
 #, fuzzy
 msgid "Scroll to finish the preview"
 msgstr "Önizlemeyi bitirmek için kaydırın"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Scroll webtoon chapters"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16435,6 +16464,10 @@ msgstr "En yeni başlıklarını Ana Sayfa ve Keşfet'te bir bölümde göster"
 msgid "Show this section"
 msgstr "Bu bölümü göster"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Show whole"
+msgstr ""
+
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
@@ -16567,6 +16600,10 @@ msgstr "Tek"
 #, fuzzy
 msgid "Single page"
 msgstr "Tek sayfa"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Single page layout only."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -16904,10 +16941,18 @@ msgstr "özel bölümler, omake, ondalıklı bölüm numaraları, yeni öğeleri
 msgid "Spin-off of {relatedTo}"
 msgstr "{relatedTo} yan ürünü"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Split"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Split from the tier above"
 msgstr "Üstteki kademeden ayır"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Split into two pages"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -18543,6 +18588,10 @@ msgstr "Şu anda yükselişte"
 msgid "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
 msgstr "{sourceNames} kaynaklarını öncelik sırasına göre dener ve bölüme sahip olan ilkini alır. Bunun yerine bir kaynak adlandırmak onu sabitler: geri dönüş yoktur, bu yüzden yalnızca seçtiğiniz yerden bir aday alırsınız."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Trims white or black margins. Not applied in the Continuous layout."
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "Trust {name}"
@@ -19779,6 +19828,10 @@ msgstr "Bir yenileme, bir seri için bundan fazla yeni bölüm bulduğunda hiçb
 msgid "When importing an existing series from disk: rename its folder to the series folder format, or keep it as found."
 msgstr "Diskten mevcut bir seriyi içe aktarırken: klasörünü seri klasör biçimine göre yeniden adlandırın veya bulunduğu gibi bırakın."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "When most pages are very tall. A layout picked in the reader still wins."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
@@ -19884,6 +19937,10 @@ msgstr "Okurken"
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "Okurken yalnızca, seriyi yarıda bıraktığınız sürece yeni bölümler hakkında bilgi verir."
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Whole"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Whole franchise"
@@ -19909,6 +19966,11 @@ msgstr "Tüm yıl"
 #, fuzzy
 msgid "Whole-series pack, needs your call"
 msgstr "Tüm seri paketi, kararınız gerekiyor"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Wide pages"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
