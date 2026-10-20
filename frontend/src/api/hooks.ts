@@ -4004,8 +4004,11 @@ export interface ScrobbleSettings {
   kitsuClientSecret: string | null
   kitsuEmail: string | null
   kitsuPassword: string | null
+  mangaUpdatesUsername: string | null
+  mangaUpdatesPassword: string | null
   /** The server never echoes the secrets back; these say whether one is stored. */
   kitsuPasswordSet: boolean
+  mangaUpdatesPasswordSet: boolean
   mangaBakaTokenSet: boolean
   intervalMinutes: number
   planToRead: boolean

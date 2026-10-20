@@ -363,6 +363,7 @@ public class ImportListService(
                 await ResolveAsync(MangaBakaLocalStore.ExternalSource.AniList, e => e.AniListId);
                 await ResolveAsync(MangaBakaLocalStore.ExternalSource.MyAnimeList, e => e.MalId);
                 await ResolveAsync(MangaBakaLocalStore.ExternalSource.Kitsu, e => e.KitsuId);
+                await ResolveMangaUpdatesAsync();
 
                 var unmatched = unresolved.Where(e => !resolved.ContainsKey(e.RemoteId)).ToList();
                 await RecordAsync(user.Id, tracker.Name, unmatched, ImportListSkipReason.Unmatched, null, ct);
@@ -488,6 +489,24 @@ public class ImportListService(
             foreach (var entry in pendingEntries)
             {
                 if (map.TryGetValue(key(entry)!.Value, out var mangaBakaId) && mangaBakaId is > 0 and <= int.MaxValue)
+                {
+                    resolved[entry.RemoteId] = (int)mangaBakaId;
+                }
+            }
+        }
+
+        async Task ResolveMangaUpdatesAsync()
+        {
+            var pendingEntries = unresolved
+                .Where(e => !resolved.ContainsKey(e.RemoteId) && !string.IsNullOrEmpty(e.MangaUpdatesId))
+                .ToList();
+            if (pendingEntries.Count == 0) return;
+
+            var map = await store.GetIdsByMangaUpdatesIdsAsync(pendingEntries.Select(e => e.MangaUpdatesId!).ToList(), ct);
+            foreach (var entry in pendingEntries)
+            {
+                if (map.TryGetValue(entry.MangaUpdatesId!.ToLowerInvariant(), out var mangaBakaId) &&
+                    mangaBakaId is > 0 and <= int.MaxValue)
                 {
                     resolved[entry.RemoteId] = (int)mangaBakaId;
                 }

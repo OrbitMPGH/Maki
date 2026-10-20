@@ -36,7 +36,8 @@ public record RemoteEntry(
 /// <summary>
 /// One entry of a user's remote list, as returned by <see cref="IScrobbleTracker.ListAsync"/>.
 /// Cross ids are whatever the tracker hands out alongside its own id (AniList exposes MAL ids,
-/// Kitsu exposes mappings); null when unknown. MangaBakaId is only set by the MangaBaka tracker.
+/// Kitsu exposes mappings); null when unknown. MangaBakaId is only set by the MangaBaka tracker,
+/// MangaUpdatesId (the lowercase base36 slug) only by the MangaUpdates tracker.
 /// </summary>
 public record RemoteListEntry(
     string RemoteId,
@@ -45,7 +46,8 @@ public record RemoteListEntry(
     long? AniListId = null,
     long? MalId = null,
     long? KitsuId = null,
-    long? MangaBakaId = null);
+    long? MangaBakaId = null,
+    string? MangaUpdatesId = null);
 
 /// <summary>A search result offered for matching.</summary>
 public record ScrobbleCandidate(string Id, string Title, IReadOnlyList<string> AltTitles, string Url);

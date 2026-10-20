@@ -216,7 +216,14 @@ public class ScrobbleController(
         }
 
         var remoteId = request.RemoteId.Trim();
-        if (!remoteId.All(char.IsAsciiDigit) || remoteId.Length == 0)
+        if (request.Service == "mangaupdates")
+        {
+            if (!MangaUpdatesIds.TryParse(remoteId, out remoteId!))
+            {
+                return this.Fail(localizer, "error.scrobble.invalidRemoteId");
+            }
+        }
+        else if (!remoteId.All(char.IsAsciiDigit) || remoteId.Length == 0)
         {
             var ids = ScrobbleMatching.ParseWebLinks([remoteId]);
             if (!ids.TryGetValue(request.Service, out remoteId!))

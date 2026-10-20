@@ -40,7 +40,7 @@ Kavita-first but not Kavita-only: Maki owns acquisition (built-in multi-language
 - Multilingual libraries: a series' source link can hold several languages, each with its own chapters and files; per-user title-language preference picks the display title.
 - Local MangaBaka metadata mirror (~3 GB nightly snapshot) for instant, rate-limit-free search and cross-IDs (MAL/AniList/MangaUpdates/Kitsu).
 - Torrent acquisition alongside direct scraping, same download queue; non-CBZ downloads and imports are converted on the way in (PDF is kept and read in place).
-- Scrobbling to AniList, MyAnimeList, Kitsu, MangaBaka, whether reading happened in Maki, Kavita, or over OPDS.
+- Scrobbling to AniList, MyAnimeList, Kitsu, MangaBaka, MangaUpdates, whether reading happened in Maki, Kavita, or over OPDS.
 - OPDS 1.2 server with page streaming, off by default, per-user rotatable feed token.
 - Discover: local ONNX embeddings over the MangaBaka dump for feel-based recommendations, filterable by year/rating/type/status/genre/chapter count/content rating/popularity; Browse rails and a Your Taste view.
 - Stats: append-only reading/download history, plus a per-user progression layer (level, achievements, streaks, self-set goals) derived from the same log and hideable with one switch. Rewind is the animated year recap it launches. Per-series incognito keeps a title out of stats.

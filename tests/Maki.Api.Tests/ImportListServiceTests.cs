@@ -82,8 +82,10 @@ public class ImportListServiceTests : IDisposable
     private int Adder(int maxPerRun = 10) =>
         SeedUser("adder", MakiPermission.AddSeries | MakiPermission.UseTrackers, maxPerRun);
 
-    private static RemoteListEntry Entry(string remoteId, long? mangaBaka = null, long? aniList = null) =>
-        new(remoteId, ScrobbleStatus.Reading, $"Title {remoteId}", AniListId: aniList, MangaBakaId: mangaBaka);
+    private static RemoteListEntry Entry(
+        string remoteId, long? mangaBaka = null, long? aniList = null, string? mangaUpdates = null) =>
+        new(remoteId, ScrobbleStatus.Reading, $"Title {remoteId}", AniListId: aniList, MangaBakaId: mangaBaka,
+            MangaUpdatesId: mangaUpdates);
 
     private List<int?> LibraryIds()
     {
@@ -106,6 +108,38 @@ public class ImportListServiceTests : IDisposable
         Assert.All(db.ImportListSkips.ToList(), x => Assert.Equal(ImportListSkipReason.Added, x.Reason));
         Assert.All(db.UserSeriesStates.ToList(), x => Assert.Equal(ImportListService.AddedFrom, x.AddedFrom));
         Assert.Single(_inbox.Raised, r => r.Type == Maki.Core.Inbox.InboxEventType.ImportListFinished);
+    }
+
+    [Fact]
+    public async Task Resolves_a_MangaUpdates_slug_to_a_MangaBaka_id()
+    {
+        var user = Adder();
+        _tracker.Entries = [Entry("pb8uwds", mangaUpdates: "pb8uwds"), Entry("zzzzzzz", mangaUpdates: "zzzzzzz")];
+        _store.MangaUpdates["pb8uwds"] = 103;
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(1, result!.Added);
+        Assert.Equal(new int?[] { 103 }, LibraryIds());
+        using var db = _db.NewContext();
+        Assert.Contains(db.ImportListSkips.ToList(),
+            x => x.RemoteId == "zzzzzzz" && x.Reason == ImportListSkipReason.Unmatched);
+    }
+
+    [Fact]
+    public async Task A_missing_dump_leaves_MangaUpdates_entries_for_a_later_tick()
+    {
+        var user = Adder();
+        _store.Available = false;
+        _tracker.Entries = [Entry("pb8uwds", mangaUpdates: "pb8uwds")];
+        _store.MangaUpdates["pb8uwds"] = 103;
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.True(result!.DumpUnavailable);
+        Assert.Empty(LibraryIds());
+        using var db = _db.NewContext();
+        Assert.Empty(db.ImportListSkips);
     }
 
     [Fact]
@@ -597,9 +631,16 @@ public class ImportListServiceTests : IDisposable
         new MangaBakaDumpOptions("", Path.GetTempPath()), new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance)
     {
         public Dictionary<long, long> AniList { get; } = [];
+        public Dictionary<string, long> MangaUpdates { get; } = [];
         public bool Available { get; set; } = true;
 
         public override Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(Available);
+
+        public override Task<IReadOnlyDictionary<string, long>> GetIdsByMangaUpdatesIdsAsync(
+            IReadOnlyCollection<string> slugs, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyDictionary<string, long>>(
+                slugs.Select(s => s.ToLowerInvariant()).Where(MangaUpdates.ContainsKey)
+                    .Distinct().ToDictionary(s => s, s => MangaUpdates[s]));
 
         public override Task<IReadOnlyDictionary<long, long>> GetIdsByExternalIdsAsync(
             ExternalSource source, IReadOnlyCollection<long> externalIds, CancellationToken ct = default) =>

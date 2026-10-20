@@ -56,6 +56,8 @@ public class ScrobbleMatchingTests
     [InlineData("https://evil.example/anilist.co/manga/30013")]
     [InlineData("https://notmyanimelist.net/manga/13")]
     [InlineData("https://mangabaka.org.evil.example/8215")]
+    [InlineData("https://mangaupdates.com.evil.example/series/pb8uwds")]
+    [InlineData("https://www.mangaupdates.com/series.html?id=12345")]
     public void RejectsForeignHostsWithAMatchingPath(string url)
     {
         Assert.Empty(ScrobbleMatching.ParseWebLinks([url]));
@@ -69,6 +71,9 @@ public class ScrobbleMatchingTests
     [InlineData("https://mangabaka.org/8215", "mangabaka", "8215")]
     [InlineData("https://www.mangabaka.org/series/8215", "mangabaka", "8215")]
     [InlineData("https://mangabaka.dev/8215", "mangabaka", "8215")]
+    [InlineData("https://www.mangaupdates.com/series/pb8uwds/one-piece", "mangaupdates", "pb8uwds")]
+    [InlineData("https://mangaupdates.com/series/PB8UWDS", "mangaupdates", "pb8uwds")]
+    [InlineData("https://www.mangaupdates.com/series/6028577/some-title", "mangaupdates", "6028577")]
     public void AcceptsRealHosts(string url, string service, string expectedId)
     {
         var ids = ScrobbleMatching.ParseWebLinks([url]);

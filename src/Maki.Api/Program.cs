@@ -1005,18 +1005,21 @@ try
         MalOAuthUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_MAL_OAUTH") ?? "https://myanimelist.net/v1/oauth2",
         MangaBakaApiUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_MANGABAKA_API") ?? "https://api.mangabaka.org",
         KitsuApiUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_KITSU_API") ?? "https://kitsu.app/api/edge",
-        KitsuOAuthUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_KITSU_OAUTH") ?? "https://kitsu.app/api/oauth"));
+        KitsuOAuthUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_KITSU_OAUTH") ?? "https://kitsu.app/api/oauth",
+        MangaUpdatesApiUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_MANGAUPDATES_API") ?? "https://api.mangaupdates.com/v1"));
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTokenStore, ScrobbleTokenStore>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.AniListTracker>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.MalTracker>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.MangaBakaTracker>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.KitsuTracker>();
+    builder.Services.AddSingleton<Maki.Core.Scrobbling.MangaUpdatesTracker>();
     builder.Services.AddSingleton<ScrobbleService>();
-    // The same four instances, in ScrobbleService's order, for consumers that only need the interface.
+    // The same five instances, in ScrobbleService's order, for consumers that only need the interface.
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.AniListTracker>());
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.MalTracker>());
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.MangaBakaTracker>());
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.KitsuTracker>());
+    builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.MangaUpdatesTracker>());
     builder.Services.AddSingleton<ImportListService>();
     builder.Services.AddScoped<SeriesRequestSubmitter>();
     builder.Services.AddSingleton<AnimeSignalSources>();

@@ -713,6 +713,9 @@ public static class SettingKeys
     /// <summary>Kitsu account email/password — exchanged for a token via the password grant (no redirect flow).</summary>
     public const string ScrobbleKitsuEmail = "scrobble.kitsuemail";
     public const string ScrobbleKitsuPassword = "scrobble.kitsupassword";
+    /// <summary>MangaUpdates account username/password, exchanged lazily for a session token.</summary>
+    public const string ScrobbleMangaUpdatesUsername = "scrobble.mangaupdates.username";
+    public const string ScrobbleMangaUpdatesPassword = "scrobble.mangaupdates.password";
     public const string ScrobbleIntervalMinutes = "scrobble.intervalminutes";
     /// <summary>"true" → unread Kavita series are added to the sites as plan-to-read.</summary>
     public const string ScrobblePlanToRead = "scrobble.plantoread";
