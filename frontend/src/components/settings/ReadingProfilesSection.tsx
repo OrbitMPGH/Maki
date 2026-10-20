@@ -451,7 +451,7 @@ function ProfileEditor({
       <Switch
         size="sm"
         label={t`Crop borders`}
-        description={t`Trims white or black margins. Continuous layout trims the sides only.`}
+        description={t`Trims white or black margins. Not applied in the Continuous layout.`}
         checked={prefs.cropBorders}
         onChange={(e) => set({ cropBorders: e.currentTarget.checked })}
       />

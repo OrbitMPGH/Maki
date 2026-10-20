@@ -15278,8 +15278,8 @@ msgid "Tries {sourceNames} in priority order and takes the first that has the ch
 msgstr "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
 
 #: src/components/settings/ReadingProfilesSection.tsx
-msgid "Trims white or black margins. Continuous layout trims the sides only."
-msgstr "Trims white or black margins. Continuous layout trims the sides only."
+msgid "Trims white or black margins. Not applied in the Continuous layout."
+msgstr "Trims white or black margins. Not applied in the Continuous layout."
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Trust {name}"

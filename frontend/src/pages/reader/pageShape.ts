@@ -135,12 +135,6 @@ export function isFull(region: Region): boolean {
   return region.x === 0 && region.y === 0 && region.w === 1 && region.h === 1
 }
 
-/** A crop reduced to its left and right margins, for the continuous strip. */
-export function sidesOnly(region: Region | null): Region | null {
-  if (!region || 1 - region.w < MIN_CROP_SHARE) return null
-  return { x: region.x, y: 0, w: region.w, h: 1 }
-}
-
 // Height over width at which a page counts as a webtoon slice. Print pages sit near 1.4 to 1.6.
 const TALL_RATIO = 2
 const PROBE_PAGES = 4

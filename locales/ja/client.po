@@ -18552,7 +18552,7 @@ msgid "Tries {sourceNames} in priority order and takes the first that has the ch
 msgstr "{sourceNames}を優先順に試し、章がある最初のソースを使います。ソース名を指定するとそのソースに固定されます。フォールバックはなく、選んだ場所からのみ候補を取得します。"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-msgid "Trims white or black margins. Continuous layout trims the sides only."
+msgid "Trims white or black margins. Not applied in the Continuous layout."
 msgstr ""
 
 #: src/components/RelinkFilesModal.tsx

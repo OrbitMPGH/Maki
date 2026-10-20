@@ -82,7 +82,7 @@ export default function ReaderPage() {
     refetch,
   } = useReaderManifest(chapterId)
   useDocumentTitle(manifest ? `${manifest.seriesTitle} - ${manifest.label}` : null)
-  const { prefs, update, selection, setSelection, source, autoProfileId, profiles } =
+  const { prefs, update, keepForSeries, selection, setSelection, source, autoProfileId, profiles } =
     useReaderPrefs(manifest, !isFetching && !isError)
   // A layout or fit picked by hand during this visit to the series. Webtoon detection only stands
   // in for a choice nobody made, so either one ends it for the series.
@@ -154,17 +154,32 @@ export default function ReaderPage() {
   const edit = useCallback(
     (patch: Partial<ReaderPrefs>) => {
       const seriesId = manifest?.seriesId
-      if (seriesId != null && ('mode' in patch || 'fit' in patch)) {
+      const layout = 'mode' in patch || 'fit' in patch
+      if (seriesId != null && layout) {
         setHandPicked((current) => {
           const same = current?.seriesId === seriesId ? current : null
           return { seriesId, mode: Boolean(same?.mode) || 'mode' in patch, fit: Boolean(same?.fit) || 'fit' in patch }
         })
       }
+      // Overriding what detection chose is a choice for this series. Kept on the profile or the
+      // global defaults, detection would switch the next visit straight back.
+      if (layout && autoVertical) {
+        keepForSeries({ mode, fit, ...patch, autoWebtoon: false })
+        return
+      }
       update(patch)
     },
-    [manifest, update],
+    [manifest, update, keepForSeries, autoVertical, mode, fit],
   )
   const splitting = mode === 'paged' && prefs.splitWide === 'split'
+  // A half only means something while splitting, so a page reached any other way starts on the first.
+  useEffect(() => {
+    if (!splitting) setHalf(0)
+  }, [splitting])
+  const onStripPage = useCallback((index: number) => {
+    setPage(index)
+    setHalf(0)
+  }, [])
 
   const spreads = useSpreads(pageCount, wide, mode === 'double')
   const spreadIndex = useMemo(() => spreadIndexOf(spreads, page), [spreads, page])
@@ -172,6 +187,10 @@ export default function ReaderPage() {
   const shownTo = useMemo(() => Math.max(page, ...(spreads[spreadIndex] ?? [])), [spreads, spreadIndex, page])
   // "4-5" while a spread shows two pages, so the last spread can say it reached the final page.
   const pageNumber = shownTo > page ? `${page + 1}-${shownTo + 1}` : `${page + 1}`
+  // The first half of a wide last page is not the end of the chapter: it completes once the second
+  // half is up, so until then the position on record stops a page short.
+  const recordedTo =
+    splitting && half === 0 && wide[shownTo] && shownTo >= pageCount - 1 ? Math.max(0, shownTo - 1) : shownTo
 
   const { data: bookmarks } = useBookmarks(chapterId)
   const toggleBookmark = useToggleBookmark(chapterId)
@@ -233,7 +252,7 @@ export default function ReaderPage() {
   const { settle: settleProgress } = useReaderProgress(
     manifest?.chapterId,
     manifest?.seriesId,
-    finished ? pageCount - 1 : shownTo,
+    finished ? pageCount - 1 : recordedTo,
     pageCount,
     finished,
     tracking,
@@ -352,7 +371,7 @@ export default function ReaderPage() {
         // from nothing, so it has to go out with this write or it is lost.
         const seconds = clock.take()
         const { chapterId: leftId, seriesId } = manifest
-        const at = done ? pageCount - 1 : shownTo
+        const at = done ? pageCount - 1 : recordedTo
         // Navigation waits for the write only up to a short grace period: a hung save must not
         // freeze the page turn. The chain keeps running after navigating, so the position still
         // lands, and settle-then-flush stays in order.
@@ -375,7 +394,7 @@ export default function ReaderPage() {
     [
       manifest,
       navigate,
-      shownTo,
+      recordedTo,
       pageCount,
       queryClient,
       invalidateProgress,
@@ -714,7 +733,7 @@ export default function ReaderPage() {
   // The manifest's read count is a snapshot from when the chapter opened, so finishing this one on
   // screen is added here, on the same condition the server uses. Incognito writes nothing.
   const readingCounted =
-    !incognito && !manifest.completed && (finished || shownTo >= manifest.pageCount - 1)
+    !incognito && !manifest.completed && (finished || recordedTo >= manifest.pageCount - 1)
 
   return (
     <div className="reader-root" style={{ background: prefs.background }}>
@@ -725,7 +744,7 @@ export default function ReaderPage() {
         onSeek={seekToPage}
         onPrevChapter={() => void goToChapter(manifest.previousChapterId, false)}
         // Skipping ahead is not finishing: only leaving from the last page counts as read.
-        onNextChapter={() => void goToChapter(manifest.nextChapterId, shownTo >= manifest.pageCount - 1)}
+        onNextChapter={() => void goToChapter(manifest.nextChapterId, recordedTo >= manifest.pageCount - 1)}
         prefs={view}
         onPrefs={edit}
         autoLayout={autoVertical}
@@ -782,7 +801,7 @@ export default function ReaderPage() {
             <ContinuousView
               urls={urls}
               page={page}
-              onPageChange={setPage}
+              onPageChange={onStripPage}
               seekVersion={seekVersion}
               onPastEnd={continuousPastEnd}
               hasNext={manifest.nextChapterId != null}
@@ -791,7 +810,6 @@ export default function ReaderPage() {
               tone={tone}
               gap={prefs.pageGap}
               label={manifest.label}
-              cropBorders={prefs.cropBorders}
             />
           ) : (
             <PagedView

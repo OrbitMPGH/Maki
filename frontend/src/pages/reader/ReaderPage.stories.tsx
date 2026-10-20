@@ -188,6 +188,93 @@ export const SplitSpreadRightToLeft: Story = {
   },
 }
 
+const seriesPrefsSaves: ReaderManifest['prefs'][] = []
+
+/** Picking a layout over a detected webtoon is kept for the series with detection off, so it sticks. */
+export const HandPickedLayoutStaysWithTheSeries: Story = {
+  parameters: {
+    ...open(7704),
+    msw: [
+      withManifest({
+        ...chapters[1132],
+        chapterId: 7704,
+        prefsSource: 'Global',
+        prefs: { ...chapters[1132].prefs, autoWebtoon: true },
+      }),
+      stripPages(7704),
+      http.put(api('/reader/series/:id/prefs'), async ({ request }) => {
+        const { prefs } = (await request.json()) as { prefs: ReaderManifest['prefs'] }
+        seriesPrefsSaves.push(prefs)
+        return HttpResponse.json({ prefs, source: 'Series', profileId: null, pinnedProfileId: null, autoProfileId: 1 })
+      }),
+    ],
+  },
+  beforeEach: () => {
+    seriesPrefsSaves.length = 0
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await waitFor(() => expect(canvasElement.querySelector('.reader-continuous')).not.toBeNull())
+    await userEvent.keyboard('1')
+    await waitFor(() => expect(seriesPrefsSaves.at(-1)).toMatchObject({ mode: 'paged', autoWebtoon: false }))
+    await waitFor(() => expect(canvasElement.querySelector('.reader-continuous')).toBeNull())
+  },
+}
+
+const progressWrites: { pageIndex: number; completed?: boolean }[] = []
+
+/** The first half of a wide last page is not the end: the chapter completes on the second half. */
+export const SplitLastPageCompletesOnItsSecondHalf: Story = {
+  parameters: {
+    ...open(7705),
+    msw: [
+      withManifest({
+        ...chapters[1132],
+        chapterId: 7705,
+        resumePage: 15,
+        prefs: { ...chapters[1132].prefs, splitWide: 'split' },
+      }),
+      spreadPages(7705),
+      http.put(api('/reader/chapter/:id/progress'), async ({ request }) => {
+        progressWrites.push((await request.json()) as { pageIndex: number; completed?: boolean })
+        return new HttpResponse(null, { status: 204 })
+      }),
+    ],
+  },
+  beforeEach: () => {
+    progressWrites.length = 0
+  },
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 16' })
+    for (let turn = 0; turn < 4; turn++) await userEvent.keyboard('{ArrowLeft}')
+    await expect((await canvas.findByRole('img', { name: 'Chapter 132 - page 18' })).style.left).toBe('-100%')
+    await waitFor(() => expect(progressWrites.some((write) => write.pageIndex === 16)).toBe(true))
+    await expect(progressWrites.every((write) => write.pageIndex < 17 && !write.completed)).toBe(true)
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect((await canvas.findByRole('img', { name: 'Chapter 132 - page 18' })).style.left).toBe('0%')
+    await waitFor(() => expect(progressWrites.some((write) => write.pageIndex === 17)).toBe(true))
+  },
+}
+
+/** A page reached while scrolling starts on its first half once the layout is paged again. */
+export const PageFromTheStripStartsOnTheFirstHalf: Story = {
+  parameters: {
+    ...open(7706),
+    msw: [
+      withManifest({ ...chapters[1132], chapterId: 7706, prefs: { ...chapters[1132].prefs, splitWide: 'split' } }),
+      spreadPages(7706),
+    ],
+  },
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect((await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).style.left).toBe('0%')
+    await userEvent.keyboard('3')
+    await userEvent.keyboard('1')
+    await expect((await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).style.left).toBe('-100%')
+  },
+}
+
 export const DoublePage: Story = {
   parameters: open(1201),
   play: async ({ canvas, userEvent }) => {
