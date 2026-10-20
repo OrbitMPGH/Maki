@@ -92,7 +92,7 @@ export const AssigningAMatch: Story = {
 
 export const AssigningByPastedId: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    const [field] = await canvas.findAllByRole('textbox', { name: 'Paste series URL or numeric id…' })
+    const [field] = await canvas.findAllByRole('textbox', { name: 'Paste series URL or id…' })
     await userEvent.type(field, '118201{Enter}')
     // Notifications outlive a story, so an earlier run's toast can still be on screen.
     await expect(
