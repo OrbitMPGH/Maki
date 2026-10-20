@@ -820,10 +820,6 @@ msgstr "{have, plural, one {# chapter} other {# chapters}}"
 msgid "{have} of {total}"
 msgstr "{have} of {total}"
 
-#: src/components/ui/CoverCard.tsx
-#~ msgid "{have} of {totalLabel}"
-#~ msgstr "{have} of {totalLabel}"
-
 #: src/components/series/SeriesHero.tsx
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
@@ -2301,10 +2297,6 @@ msgstr "Add"
 msgid "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
 msgstr "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
 
-#: src/components/discover/DiscoverHero.tsx
-#~ msgid "Add {title} to library"
-#~ msgstr "Add {title} to library"
-
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
 msgid "Add a rail"
@@ -3502,17 +3494,9 @@ msgstr "ch. {0}"
 msgid "ch. {0} · vol. {1}"
 msgstr "ch. {0} · vol. {1}"
 
-#: src/pages/ScrobblePage.tsx
-#~ msgid "ch. {chapter}"
-#~ msgstr "ch. {chapter}"
-
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Ch. {chapter}"
 msgstr "Ch. {chapter}"
-
-#: src/pages/ScrobblePage.tsx
-#~ msgid "ch. {chapter} · vol. {volume}"
-#~ msgstr "ch. {chapter} · vol. {volume}"
 
 #: src/components/SourceCompareModal.tsx
 msgid "Ch. {chapterLabel}"
@@ -4235,10 +4219,6 @@ msgstr "Conditions"
 msgid "Config key"
 msgstr "Config key"
 
-#: src/pages/ScrobblePage.tsx
-#~ msgid "configured, not connected"
-#~ msgstr "configured, not connected"
-
 #: src/pages/ImportPage.tsx
 msgid "Confirm metadata matches"
 msgstr "Confirm metadata matches"
@@ -4294,10 +4274,6 @@ msgstr "Connect their own AniList, MAL, Kitsu or MangaUpdates account"
 #: src/components/SetupWizard.tsx
 msgid "Connect your trackers"
 msgstr "Connect your trackers"
-
-#: src/pages/ScrobblePage.tsx
-#~ msgid "connected"
-#~ msgstr "connected"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -5091,10 +5067,6 @@ msgstr "Demographic"
 #: src/components/ui/viewPrefs.tsx
 msgid "Density"
 msgstr "Density"
-
-#: src/pages/LibraryPage.tsx
-#~ msgid "Density: {densityLabel}"
-#~ msgstr "Density: {densityLabel}"
 
 #: src/pages/LibraryPage.tsx
 msgid "Descending"
@@ -9595,10 +9567,6 @@ msgstr "Not checked yet"
 msgid "Not configured"
 msgstr "Not configured"
 
-#: src/pages/ScrobblePage.tsx
-#~ msgid "not configured (see Settings)"
-#~ msgstr "not configured (see Settings)"
-
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 msgid "Not connected"
@@ -11345,10 +11313,6 @@ msgstr "Reads each archive's table of contents, not its contents. Seconds for a 
 msgid "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 msgstr "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 
-#: src/pages/ScrobblePage.tsx
-#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
-#~ msgstr "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
-
 #: src/components/FailedQueueActions.tsx
 msgid "Reason"
 msgstr "Reason"
@@ -12799,10 +12763,6 @@ msgstr "Scrolling pace · {chaptersLeft} · {basis}"
 msgid "Search"
 msgstr "Search"
 
-#: src/components/CommandPalette.tsx
-#~ msgid "Search ({shortcut})"
-#~ msgstr "Search ({shortcut})"
-
 #: src/pages/SeriesDetailPage.tsx
 msgid "Search by chapter number or title"
 msgstr "Search by chapter number or title"
@@ -13242,10 +13202,6 @@ msgstr "Server local time, 0 to 23."
 #: src/components/NotificationsSection.tsx
 msgid "Server URL"
 msgstr "Server URL"
-
-#: src/pages/ScrobblePage.tsx
-#~ msgid "Service"
-#~ msgstr "Service"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Session lifetime (days)"
@@ -15675,10 +15631,6 @@ msgstr "URL"
 msgid "Use"
 msgstr "Use"
 
-#: src/components/import/ImportMatchFinder.tsx
-#~ msgid "Use {title}"
-#~ msgstr "Use {title}"
-
 #: src/pages/LoginPage.tsx
 msgid "Use a recovery code"
 msgstr "Use a recovery code"
@@ -15876,10 +15828,6 @@ msgstr "View"
 #: src/components/ui/DiscoverRail.tsx
 msgid "View {title}"
 msgstr "View {title}"
-
-#: src/components/discover/DiscoverHero.tsx
-#~ msgid "View {title} in library"
-#~ msgstr "View {title} in library"
 
 #: src/components/home/DownloadingStrip.tsx
 msgid "View activity"

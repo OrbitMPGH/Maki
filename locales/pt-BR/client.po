@@ -975,11 +975,6 @@ msgstr ""
 msgid "{have} of {total}"
 msgstr ""
 
-#: src/components/ui/CoverCard.tsx
-#, fuzzy
-#~ msgid "{have} of {totalLabel}"
-#~ msgstr "{have} de {totalLabel}"
-
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
@@ -2802,11 +2797,6 @@ msgstr "Adicionar"
 msgid "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
 msgstr "Adicione {chapterLanguageToken} ao formato do capítulo em Configurações para diferenciá-los."
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-#~ msgid "Add {title} to library"
-#~ msgstr "Adicionar {title} à biblioteca"
-
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
@@ -4260,20 +4250,10 @@ msgstr ""
 msgid "ch. {0} · vol. {1}"
 msgstr ""
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "ch. {chapter}"
-#~ msgstr "cap. {chapter}"
-
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Ch. {chapter}"
 msgstr "Cap. {chapter}"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "ch. {chapter} · vol. {volume}"
-#~ msgstr "cap. {chapter} · vol. {volume}"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -5150,11 +5130,6 @@ msgstr "Condições"
 msgid "Config key"
 msgstr "Chave de configuração"
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "configured, not connected"
-#~ msgstr "configurado, não conectado"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Confirm metadata matches"
@@ -5222,11 +5197,6 @@ msgstr ""
 #, fuzzy
 msgid "Connect your trackers"
 msgstr "Conecte seus rastreadores"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "connected"
-#~ msgstr "conectado"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -6200,11 +6170,6 @@ msgstr "Demografia"
 #, fuzzy
 msgid "Density"
 msgstr "Densidade"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-#~ msgid "Density: {densityLabel}"
-#~ msgstr "Densidade: {densityLabel}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -11685,11 +11650,6 @@ msgstr "Ainda não verificado"
 msgid "Not configured"
 msgstr "Não configurado"
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "not configured (see Settings)"
-#~ msgstr "não configurado (consulte Configurações)"
-
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -13810,11 +13770,6 @@ msgstr "Lê o índice de cada arquivo compactado, não seu conteúdo. Leva segun
 msgid "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 msgstr "Lê cada byte e o verifica contra as próprias somas de verificação do arquivo compactado, detectando arquivos deteriorados no disco. Uma leitura completa da biblioteca leva cerca de meia hora por 100 GB em um disco rígido. Os arquivos são verificados quando chegam, então isto serve para rever o que já está lá."
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
-#~ msgstr "Lê o progresso de leitura do Kavita e envia atualizações somente para frente aos seus trackers a cada {intervalMinutes, plural, one {# minuto} many {# minutos}other {# minutos}}. O progresso remoto nunca é reduzido e entradas concluídas nunca são rebaixadas. Configure as credenciais em Configurações."
-
 #: src/components/FailedQueueActions.tsx
 #, fuzzy
 msgid "Reason"
@@ -15569,11 +15524,6 @@ msgstr "Ritmo de rolagem · {chaptersLeft} · {basis}"
 msgid "Search"
 msgstr "Pesquisar"
 
-#: src/components/CommandPalette.tsx
-#, fuzzy
-#~ msgid "Search ({shortcut})"
-#~ msgstr "Pesquisar ({shortcut})"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Search by chapter number or title"
@@ -16106,11 +16056,6 @@ msgstr "Hora local do servidor, de 0 a 23."
 #, fuzzy
 msgid "Server URL"
 msgstr "URL do servidor"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "Service"
-#~ msgstr "Serviço"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -19073,11 +19018,6 @@ msgstr "URL"
 msgid "Use"
 msgstr "Usar"
 
-#: src/components/import/ImportMatchFinder.tsx
-#, fuzzy
-#~ msgid "Use {title}"
-#~ msgstr "Usar {title}"
-
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Use a recovery code"
@@ -19321,11 +19261,6 @@ msgstr "Visualização"
 #, fuzzy
 msgid "View {title}"
 msgstr "Ver {title}"
-
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-#~ msgid "View {title} in library"
-#~ msgstr "Ver {title} na biblioteca"
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
