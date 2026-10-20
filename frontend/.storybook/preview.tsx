@@ -100,6 +100,19 @@ const preview: Preview = {
   loaders: [
     mswLoader(async () => {
       const { setupWorker } = await import('msw/browser')
+      // A browser can have the Service Worker API and still refuse to register this one (the Claude
+      // desktop app's pane does for some origins, with "An unknown error occurred when fetching the
+      // script"). msw patches fetch and XHR in the page when the API is missing, so hide it before
+      // msw looks. Probed up front because a failed `worker.start()` leaves WebSocket patched and
+      // cannot be started again. Images never go through fetch; main.ts serves those.
+      if ('serviceWorker' in navigator) {
+        try {
+          await navigator.serviceWorker.register('/mockServiceWorker.js')
+        } catch (error) {
+          console.warn('[msw] Service Worker unavailable, mocking in the page instead.', error)
+          delete (Navigator.prototype as { serviceWorker?: unknown }).serviceWorker
+        }
+      }
       // Initial handlers rather than `msw.use` in beforeEach: the loader resets to these before every
       // story and then applies `parameters.msw`, which therefore wins.
       const worker = setupWorker(...defaultHandlers)
