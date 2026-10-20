@@ -98,6 +98,19 @@ public class MangaPlusSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_dates_each_chapter_and_announces_the_next_one()
+    {
+        var source = WithDetail();
+        Assert.Null(source.AnnouncedNextRelease("100020"));
+
+        var chapters = await source.ListChaptersAsync("100020");
+
+        Assert.Equal(new DateTime(2026, 8, 23, 15, 0, 0, DateTimeKind.Utc), chapters.Single(c => c.Number == 1191).ReleaseDate);
+        Assert.Equal(DateTimeKind.Utc, chapters.Single(c => c.Number == 1).ReleaseDate!.Value.Kind);
+        Assert.Equal(new DateTime(2026, 9, 6, 15, 0, 0, DateTimeKind.Utc), source.AnnouncedNextRelease("100020"));
+    }
+
+    [Fact]
     public async Task ListChapters_maps_the_hash_prefixed_name_and_subtitle()
     {
         var chapters = await WithDetail().ListChaptersAsync("100020");

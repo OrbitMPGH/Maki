@@ -31,6 +31,8 @@ public partial class ComicWalkerSource(IHttpClientFactory httpClientFactory) : I
     public string BaseUrl => "https://comic-walker.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
     public SourceKind Kind => SourceKind.Official;
+    /// <summary>The API gives the episode's <c>updateDate</c>, not its publication.</summary>
+    public bool ReleaseDatesAreReliable => false;
     public IReadOnlyList<string> SupportedLanguages => ["ja"];
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);

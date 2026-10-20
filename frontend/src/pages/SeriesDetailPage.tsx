@@ -151,6 +151,7 @@ import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
+import { ReleaseOutlookSummary } from '../components/releases/ReleaseOutlookSummary'
 import { SourceCompareModal } from '../components/SourceCompareModal'
 import type { PickChapter } from '../components/SourceCompareModal'
 import { formatDate, formatReadingTime } from '../format'
@@ -1962,12 +1963,16 @@ function SeriesDetailBody() {
                       </Alert>
                   )}
                   {canManageSources && (
-                    <SourceMappingsSection
-                        seriesId={seriesId}
-                        seriesTitle={series.title}
-                        matching={series.sourceMatchPending}
-                    />
+                    <>
+                      <SourceMappingsSection
+                          seriesId={seriesId}
+                          seriesTitle={series.title}
+                          matching={series.sourceMatchPending}
+                      />
+                      <Divider my="md" color="var(--hairline)" />
+                    </>
                   )}
+                  <ReleaseOutlookSummary seriesId={seriesId} />
                   <Divider my="md" color="var(--hairline)" />
                   <Text size="xs" c="var(--ink-3)">
                     {scanning ? (

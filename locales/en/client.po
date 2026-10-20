@@ -454,6 +454,14 @@ msgstr "{alt} has no page {page}"
 msgid "{alt}, page {page}"
 msgstr "{alt}, page {page}"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "{announcedBy} has it scheduled for {announced}"
+msgstr "{announcedBy} has it scheduled for {announced}"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "{announcedBy} has it scheduled for {when}"
+msgstr "{announcedBy} has it scheduled for {when}"
+
 #: src/components/RatingImportModal.tsx
 msgid "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
 msgstr "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
@@ -663,6 +671,10 @@ msgstr "{cycles, plural, one {re-added #×} other {re-added #×}}"
 msgid "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
 msgstr "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "{days, plural, one {Usually every day.} other {Usually every # days.}}"
+msgstr "{days, plural, one {Usually every day.} other {Usually every # days.}}"
+
 #: src/components/series/ChapterTableRows.tsx
 msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
 msgstr "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
@@ -820,10 +832,6 @@ msgstr "{have, plural, one {# chapter} other {# chapters}}"
 msgid "{have} of {total}"
 msgstr "{have} of {total}"
 
-#: src/components/ui/CoverCard.tsx
-#~ msgid "{have} of {totalLabel}"
-#~ msgstr "{have} of {totalLabel}"
-
 #: src/components/series/SeriesHero.tsx
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
@@ -835,6 +843,10 @@ msgstr "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} l
 #: src/components/series/SeriesHero.tsx
 msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
 msgstr "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "{hits} of the last {checked} chapters came out inside the window drawn for them."
+msgstr "{hits} of the last {checked} chapters came out inside the window drawn for them."
 
 #: src/components/RecommendationModelSwitch.tsx
 msgid "{hours, plural, one {# hr} other {# hr}}"
@@ -2099,6 +2111,14 @@ msgstr "A scan is already running"
 msgid "a second copy of another comic in the folder, which is used instead"
 msgstr "a second copy of another comic in the folder, which is used instead"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "A series is checked every 30 minutes for a few hours after a new chapter, every 2 hours while chapters keep coming, every 6 hours after two quiet weeks and once a day after two quiet months. A new chapter puts it straight back on the fast checks. Off checks every series every 30 minutes."
+msgstr "A series is checked every 30 minutes for a few hours after a new chapter, every 2 hours while chapters keep coming, every 6 hours after two quiet weeks and once a day after two quiet months. A new chapter puts it straight back on the fast checks. Off checks every series every 30 minutes."
+
+#: src/components/releases/UpcomingView.tsx
+msgid "A series shows up here once its chapters come out on a steady enough rhythm, or when its source announces the next one."
+msgstr "A series shows up here once its chapters come out on a steady enough rhythm, or when its source announces the next one."
+
 #: src/components/import/RecentImports.tsx
 msgid "A series that has been downloaded into or read since cannot be undone. ComicInfo.xml changes Maki wrote inside your own CBZs are not reverted."
 msgstr "A series that has been downloaded into or read since cannot be undone. ComicInfo.xml changes Maki wrote inside your own CBZs are not reverted."
@@ -2300,10 +2320,6 @@ msgstr "Add"
 #: src/components/RenameSeriesModal.tsx
 msgid "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
 msgstr "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
-
-#: src/components/discover/DiscoverHero.tsx
-#~ msgid "Add {title} to library"
-#~ msgstr "Add {title} to library"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -2738,6 +2754,10 @@ msgstr "Anime ends at ch. {0}"
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Anime you've watched"
 msgstr "Anime you've watched"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Announced by the source"
+msgstr "Announced by the source"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
@@ -3502,17 +3522,9 @@ msgstr "ch. {0}"
 msgid "ch. {0} · vol. {1}"
 msgstr "ch. {0} · vol. {1}"
 
-#: src/pages/ScrobblePage.tsx
-#~ msgid "ch. {chapter}"
-#~ msgstr "ch. {chapter}"
-
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Ch. {chapter}"
 msgstr "Ch. {chapter}"
-
-#: src/pages/ScrobblePage.tsx
-#~ msgid "ch. {chapter} · vol. {volume}"
-#~ msgstr "ch. {chapter} · vol. {volume}"
 
 #: src/components/SourceCompareModal.tsx
 msgid "Ch. {chapterLabel}"
@@ -3908,9 +3920,41 @@ msgstr "Check in Settings"
 msgid "Check now"
 msgstr "Check now"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Check quiet series less often"
+msgstr "Check quiet series less often"
+
 #: src/api/inbox.ts
 msgid "Checked after each nightly catalogue update. Follow someone from their creator page."
 msgstr "Checked after each nightly catalogue update. Follow someone from their creator page."
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 2 hours while chapters keep coming."
+msgstr "Checked every 2 hours while chapters keep coming."
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 30 minutes for a few hours after a new chapter."
+msgstr "Checked every 30 minutes for a few hours after a new chapter."
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 30 minutes."
+msgstr "Checked every 30 minutes."
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 6 hours after two weeks without a chapter."
+msgstr "Checked every 6 hours after two weeks without a chapter."
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 6 hours until it has some release history."
+msgstr "Checked every 6 hours until it has some release history."
+
+#: src/components/releases/outlookText.ts
+msgid "Checked once a day while it is quiet."
+msgstr "Checked once a day while it is quiet."
+
+#: src/components/releases/outlookText.ts
+msgid "Checked right after the announced time."
+msgstr "Checked right after the announced time."
 
 #: src/components/MetadataDumpProgress.tsx
 msgid "Checking for a new metadata snapshot"
@@ -4231,10 +4275,6 @@ msgstr "Conditions"
 msgid "Config key"
 msgstr "Config key"
 
-#: src/pages/ScrobblePage.tsx
-#~ msgid "configured, not connected"
-#~ msgstr "configured, not connected"
-
 #: src/pages/ImportPage.tsx
 msgid "Confirm metadata matches"
 msgstr "Confirm metadata matches"
@@ -4290,10 +4330,6 @@ msgstr "Connect their own AniList, MAL, Kitsu or MangaUpdates account"
 #: src/components/SetupWizard.tsx
 msgid "Connect your trackers"
 msgstr "Connect your trackers"
-
-#: src/pages/ScrobblePage.tsx
-#~ msgid "connected"
-#~ msgstr "connected"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -4580,6 +4616,7 @@ msgstr "Couldn't load the details for this title."
 msgid "Couldn't load this rail"
 msgstr "Couldn't load this rail"
 
+#: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Couldn't load this section"
 msgstr "Couldn't load this section"
@@ -5085,10 +5122,6 @@ msgid "Density"
 msgstr "Density"
 
 #: src/pages/LibraryPage.tsx
-#~ msgid "Density: {densityLabel}"
-#~ msgstr "Density: {densityLabel}"
-
-#: src/pages/LibraryPage.tsx
 msgid "Descending"
 msgstr "Descending"
 
@@ -5487,6 +5520,10 @@ msgstr "e.g. Ongoing & behind"
 #: src/components/settings/UsersSection.tsx
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr "Each account has its own login, permissions, content rating and reading history."
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Each bar spans the days a chapter is likely, worked out from the series' own release history, so it is a span and never a promise. The percentage is how often its recent chapters came out inside the span drawn for them. A diamond marks a day the source itself announced."
+msgstr "Each bar spans the days a chapter is likely, worked out from the series' own release history, so it is a span and never a promise. The percentage is how often its recent chapters came out inside the span drawn for them. A diamond marks a day the source itself announced."
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Each language adds its own chapter rows and files."
@@ -6463,6 +6500,10 @@ msgstr "Full screen"
 msgid "Fully read owned"
 msgstr "Fully read owned"
 
+#: src/components/releases/UpcomingView.tsx
+msgid "Further out"
+msgstr "Further out"
+
 #: src/api/queue.ts
 msgid "Gave up after the download time limit"
 msgstr "Gave up after the download time limit"
@@ -6779,6 +6820,10 @@ msgstr "Hide this and its franchise"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Hide this title"
 msgstr "Hide this title"
+
+#: src/components/releases/outlookText.ts
+msgid "High confidence"
+msgstr "High confidence"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "High quality"
@@ -7604,6 +7649,10 @@ msgstr "Larger than the auto-grab size limit"
 msgid "last {lastSync} · next {nextSync}"
 msgstr "last {lastSync} · next {nextSync}"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Last chapter {last}."
+msgstr "Last chapter {last}."
+
 #: src/pages/reader/ChapterEnd.tsx
 msgid "Last chapter on disk"
 msgstr "Last chapter on disk"
@@ -7870,6 +7919,15 @@ msgstr "Library title"
 msgid "Light"
 msgstr "Light"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+#: src/components/releases/UpcomingView.tsx
+msgid "Likely {range}"
+msgstr "Likely {range}"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Likely {range}. {confidence}: {hits} of the last {checked} came out inside their window."
+msgstr "Likely {range}. {confidence}: {hits} of the last {checked} came out inside their window."
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -8067,6 +8125,10 @@ msgstr "loose"
 #: src/components/import/ImportPlanModal.tsx
 msgid "loose page images"
 msgstr "loose page images"
+
+#: src/components/releases/outlookText.ts
+msgid "Low confidence"
+msgstr "Low confidence"
 
 #: src/pages/HealthPage.tsx
 msgid "Low disk error (%)"
@@ -8462,6 +8524,10 @@ msgstr "Median"
 #: src/pages/stats/SourceReliability.tsx
 msgid "Median wait"
 msgstr "Median wait"
+
+#: src/components/releases/outlookText.ts
+msgid "Medium confidence"
+msgstr "Medium confidence"
 
 #: src/App.tsx
 msgid "Menu"
@@ -9057,10 +9123,15 @@ msgstr "Newest first"
 msgid "Newly enabled sources join at the bottom."
 msgstr "Newly enabled sources join at the bottom."
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Next chapter"
 msgstr "Next chapter"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Next check {next}."
+msgstr "Next check {next}."
 
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/theme-context.tsx
@@ -9082,6 +9153,10 @@ msgstr "Next up"
 #: src/components/home/ContinueHero.tsx
 msgid "Next up to jump back in"
 msgstr "Next up to jump back in"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Next week"
+msgstr "Next week"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Next..."
@@ -9565,6 +9640,10 @@ msgstr "Not analyzed"
 msgid "Not available offline"
 msgstr "Not available offline"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not checked for new chapters: it is finished and complete, or has no source switched on."
+msgstr "Not checked for new chapters: it is finished and complete, or has no source switched on."
+
 #: src/pages/settings/SystemCards.tsx
 msgid "Not checked yet"
 msgstr "Not checked yet"
@@ -9572,10 +9651,6 @@ msgstr "Not checked yet"
 #: src/components/ui/status.tsx
 msgid "Not configured"
 msgstr "Not configured"
-
-#: src/pages/ScrobblePage.tsx
-#~ msgid "not configured (see Settings)"
-#~ msgstr "not configured (see Settings)"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -9593,6 +9668,10 @@ msgstr "Not connected."
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Not enough genre data yet"
 msgstr "Not enough genre data yet"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not enough release history for an estimate yet."
+msgstr "Not enough release history for an estimate yet."
 
 #: src/pwa/offlineChapters.ts
 msgid "Not enough space on this device"
@@ -9881,6 +9960,10 @@ msgstr "Nothing to import, no scores on {label} differ from your local ratings."
 #: src/pages/HomePage.tsx
 msgid "Nothing to pick up yet"
 msgstr "Nothing to pick up yet"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Nothing to place yet"
+msgstr "Nothing to place yet"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Nothing to profile yet"
@@ -11019,6 +11102,10 @@ msgstr "Queued for download"
 msgid "Queued upgrade from {winnerSource}"
 msgstr "Queued upgrade from {winnerSource}"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Quiet for longer than its usual rhythm, so there is no estimate."
+msgstr "Quiet for longer than its usual rhythm, so there is no estimate."
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Quiet period (days)"
 msgstr "Quiet period (days)"
@@ -11323,10 +11410,6 @@ msgstr "Reads each archive's table of contents, not its contents. Seconds for a 
 msgid "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 msgstr "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 
-#: src/pages/ScrobblePage.tsx
-#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
-#~ msgstr "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
-
 #: src/components/FailedQueueActions.tsx
 msgid "Reason"
 msgstr "Reason"
@@ -11583,6 +11666,10 @@ msgstr "Release number may be a sequel, not a chapter"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Released"
 msgstr "Released"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Releases too irregularly to estimate."
+msgstr "Releases too irregularly to estimate."
 
 #: src/components/CatalogueFilters.tsx
 msgid "Releasing"
@@ -12171,6 +12258,7 @@ msgstr "Retries"
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
+#: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/HomePage.tsx
@@ -12366,6 +12454,15 @@ msgstr "Run the daily scan"
 #: src/pages/HealthPage.tsx
 msgid "Running"
 msgstr "Running"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Running late"
+msgstr "Running late"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+#: src/components/releases/UpcomingView.tsx
+msgid "Running late. It was likely {range}."
+msgstr "Running late. It was likely {range}."
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -12776,10 +12873,6 @@ msgstr "Scrolling pace · {chaptersLeft} · {basis}"
 #: src/components/ReleaseSearchModal.tsx
 msgid "Search"
 msgstr "Search"
-
-#: src/components/CommandPalette.tsx
-#~ msgid "Search ({shortcut})"
-#~ msgstr "Search ({shortcut})"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Search by chapter number or title"
@@ -13220,10 +13313,6 @@ msgstr "Server local time, 0 to 23."
 #: src/components/NotificationsSection.tsx
 msgid "Server URL"
 msgstr "Server URL"
-
-#: src/pages/ScrobblePage.tsx
-#~ msgid "Service"
-#~ msgstr "Service"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Session lifetime (days)"
@@ -14415,6 +14504,10 @@ msgstr "The most popular titles in the MangaBaka catalogue."
 msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
 msgstr "The newest titles from the creators and studios you follow. Empty until you follow someone."
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "The next check is due."
+msgstr "The next check is due."
+
 #: src/pages/discover/TasteTab.tsx
 msgid "The odd one out"
 msgstr "The odd one out"
@@ -14845,6 +14938,7 @@ msgstr "this title only"
 msgid "This upgrade was already reverted"
 msgstr "This upgrade was already reverted"
 
+#: src/components/releases/UpcomingView.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "This week"
 msgstr "This week"
@@ -15506,6 +15600,10 @@ msgstr "Up to ch. {end}"
 msgid "Up to date, last checked {checkedAtLabel}"
 msgstr "Up to date, last checked {checkedAtLabel}"
 
+#: src/pages/ActivityPage.tsx
+msgid "Upcoming"
+msgstr "Upcoming"
+
 #: src/components/layout/SidebarFooter.tsx
 msgid "Update {latestVersion} available"
 msgstr "Update {latestVersion} available"
@@ -15632,10 +15730,6 @@ msgstr "URL"
 #: src/pages/ScrobblePage.tsx
 msgid "Use"
 msgstr "Use"
-
-#: src/components/import/ImportMatchFinder.tsx
-#~ msgid "Use {title}"
-#~ msgstr "Use {title}"
 
 #: src/pages/LoginPage.tsx
 msgid "Use a recovery code"
@@ -15835,10 +15929,6 @@ msgstr "View"
 msgid "View {title}"
 msgstr "View {title}"
 
-#: src/components/discover/DiscoverHero.tsx
-#~ msgid "View {title} in library"
-#~ msgstr "View {title} in library"
-
 #: src/components/home/DownloadingStrip.tsx
 msgid "View activity"
 msgstr "View activity"
@@ -16035,6 +16125,10 @@ msgstr "Webhook URL"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Webtoon"
 msgstr "Webtoon"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Week of {start}"
+msgstr "Week of {start}"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "Weekend share"
