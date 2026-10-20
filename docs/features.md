@@ -90,6 +90,19 @@
   language, and reading direction. Files are written atomically, so a reader never sees a
   half-written CBZ. Maki can also write a `cover.jpg` into each series folder for readers that
   look for one.
+- **Page conversion.** Off by default (Settings, Library, Page conversion). Pick WebP or AVIF and
+  a quality, and new downloads are stored with their JPEG pages in that format and their PNG pages
+  as lossless WebP. A pausable library pass converts the files already on disk, one at a time, and
+  shows what it saved. A page or file that would not come out at least 5% smaller is kept as it
+  was, and so are WebP and AVIF pages, animations, pages under 16 KB and pages over 16,383 pixels
+  on a side. Files hardlinked to a torrent client's copy are skipped. Originals wait in the upgrade
+  trash (`.maki-trash/<series id>/conv-*`) for the trash retention period, and the pass pauses
+  itself rather than leave less than 1 GB free. WebP opens in every reader Maki works with
+  (browsers, Kavita, Komga, KOReader, Mihon, Panels); AVIF does not open in KOReader or on iOS
+  before 16. JPEG XL is not offered: the image library Maki bundles cannot write it, and Kavita
+  and KOReader cannot read it. Upgrades, source quality estimates and the quality shown on the
+  series page keep judging a converted chapter by the size and format it was downloaded in, so
+  converting never makes a copy look like a worse release.
 - **Multilingual libraries.** A series' link to a source can hold several languages, each with
   its own chapter rows and files, with the language recorded in ComicInfo.xml. Per-user
   title-language preferences pick the display title without renaming anything on disk.
