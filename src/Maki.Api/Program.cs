@@ -969,6 +969,7 @@ try
     builder.Services.AddSingleton<OpdsProgressWriter>().AddHostedService(sp => sp.GetRequiredService<OpdsProgressWriter>());
     builder.Services.AddScoped<KoreaderDocumentIndexer>();
     builder.Services.AddScoped<KoreaderSyncService>();
+    builder.Services.AddSingleton<KoreaderPushWriter>().AddHostedService(sp => sp.GetRequiredService<KoreaderPushWriter>());
 
     // Aggregated searches fan out to every indexer, hence the long timeout. Both are LAN services, so
     // neither gets PublicAddressGuard.

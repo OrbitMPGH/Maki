@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Quartz;
 
@@ -27,6 +28,14 @@ public sealed class KoreaderSyncTests : IDisposable
     private readonly string _root = Path.Combine(Path.GetTempPath(), "maki-kosync-tests", Guid.NewGuid().ToString("N"));
     private readonly int _user;
     private readonly string _token;
+    private readonly Clock _clock = new(DateTimeOffset.UtcNow);
+    private readonly KoreaderPushWriter _writer;
+
+    private sealed class Clock(DateTimeOffset now) : TimeProvider
+    {
+        public DateTimeOffset Now { get; set; } = now;
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
 
     public KoreaderSyncTests()
     {
@@ -34,6 +43,23 @@ public sealed class KoreaderSyncTests : IDisposable
         _user = _db.SeedUser("koreader", MakiPermission.UseOpds, allRootFolders: true);
         _token = _db.SeedApiKey(_user, UserApiKeyScope.Opds);
         _db.SetUserConfig(_user, (SettingKeys.OpdsEnabled, "true"));
+        _writer = Writer();
+    }
+
+    /// <summary>The push writer over its own scopes, as the host runs it.</summary>
+    private KoreaderPushWriter Writer()
+    {
+        var services = new ServiceCollection();
+        services.AddScoped<DataScope>();
+        services.AddScoped(sp => new MakiDbContext(_db.Options, sp.GetRequiredService<DataScope>()));
+        services.AddScoped(sp => Reader(sp.GetRequiredService<MakiDbContext>()));
+        services.AddScoped(sp => new KoreaderSyncService(sp.GetRequiredService<MakiDbContext>(),
+            sp.GetRequiredService<ReaderService>(), _cache));
+        services.AddScoped(sp => new OpdsAccessService(sp.GetRequiredService<MakiDbContext>(), TimeProvider.System));
+        services.AddScoped(sp => new KoreaderDocumentIndexer(sp.GetRequiredService<MakiDbContext>(),
+            NullLogger<KoreaderDocumentIndexer>.Instance));
+        return new KoreaderPushWriter(services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(),
+            new NoScheduler(), _clock, NullLogger<KoreaderPushWriter>.Instance);
     }
 
     public void Dispose()
@@ -79,6 +105,8 @@ public sealed class KoreaderSyncTests : IDisposable
         return new KoreaderSyncController(
             new OpdsAccessService(db, TimeProvider.System),
             new KoreaderSyncService(db, reader, _cache),
+            _writer,
+            new KoreaderDocumentIndexer(db, NullLogger<KoreaderDocumentIndexer>.Instance),
             db,
             new NoScheduler(),
             new TestLocalizer(),
@@ -92,11 +120,21 @@ public sealed class KoreaderSyncTests : IDisposable
         new(db, _archives, new ReadingProgressService(db, _gate, NullLogger<ReadingProgressService>.Instance),
             InertKavitaPusher.For(_db.ScopeFactory()), new ReadingSessionService(db), NullLogger<ReaderService>.Instance);
 
-    private async Task IndexAsync()
+    private async Task<int> IndexAsync()
     {
         await using var db = _db.NewContext();
-        Assert.True(await new KoreaderDocumentIndexer(db, NullLogger<KoreaderDocumentIndexer>.Instance)
-            .RunAsync(CancellationToken.None));
+        var added = await new KoreaderDocumentIndexer(db, NullLogger<KoreaderDocumentIndexer>.Instance)
+            .RunAsync(CancellationToken.None);
+        Assert.True(added >= 0);
+        return added;
+    }
+
+    /// <summary>A push as KOReader makes it, then whatever the writer does with it.</summary>
+    private async Task<IActionResult> Pushed(string? token, KoreaderProgressRequest body)
+    {
+        var result = await Controller(token).Push(body, default);
+        await _writer.FlushAsync(default);
+        return result;
     }
 
     private string WriteCbz(string name, params string[] entries)
@@ -218,7 +256,7 @@ public sealed class KoreaderSyncTests : IDisposable
         await IndexAsync();
 
         // KOReader page 5 of 6 is archive page 4, the second page of chapter 3.
-        var result = await Controller(_token).Push(Body(KoreaderDigest.PartialMd5(path), "5", 0.8333), default);
+        var result = await Pushed(_token, Body(KoreaderDigest.PartialMd5(path), "5", 0.8333));
 
         Assert.IsType<OkObjectResult>(result);
         Assert.True(Progress(chapters[1m])!.Completed);
@@ -235,7 +273,7 @@ public sealed class KoreaderSyncTests : IDisposable
         var (path, chapters) = SeedFile(SeedSeries("Solo"), "Solo.cbz", ["001.jpg", "002.jpg", "003.jpg"], 7m);
         await IndexAsync();
 
-        await Controller(_token).Push(Body(KoreaderDigest.PartialMd5(path), "3", 1), default);
+        await Pushed(_token, Body(KoreaderDigest.PartialMd5(path), "3", 1));
 
         Assert.True(Progress(chapters[7m])!.Completed);
     }
@@ -251,14 +289,15 @@ public sealed class KoreaderSyncTests : IDisposable
     }
 
     [Fact]
-    public async Task An_unknown_document_is_accepted_and_writes_nothing()
+    public async Task An_unknown_document_answers_200_and_writes_nothing()
     {
         var (_, chapters) = SeedVolume();
         await IndexAsync();
 
-        var result = (ObjectResult)await Controller(_token).Push(Body(new string('a', 32), "5", 0.8), default);
+        var result = await Pushed(_token, Body(new string('a', 32), "5", 0.8));
 
-        Assert.Equal(202, result.StatusCode);
+        // Anything but 200 is a failure to KOReader, which queues it and stops draining at it.
+        Assert.IsType<OkObjectResult>(result);
         Assert.All(chapters.Values, id => Assert.Null(Progress(id)));
     }
 
@@ -274,9 +313,9 @@ public sealed class KoreaderSyncTests : IDisposable
         var (path, chapters) = SeedVolume();
         await IndexAsync();
 
-        var result = (ObjectResult)await Controller(_token).Push(Body(KoreaderDigest.PartialMd5(path), "6", 1), default);
+        var result = await Pushed(_token, Body(KoreaderDigest.PartialMd5(path), "6", 1));
 
-        Assert.Equal(202, result.StatusCode);
+        Assert.IsType<OkObjectResult>(result);
         Assert.All(chapters.Values, id => Assert.Null(Progress(id)));
     }
 
@@ -306,7 +345,7 @@ public sealed class KoreaderSyncTests : IDisposable
         var (path, chapters) = SeedVolume();
         await IndexAsync();
         var digest = KoreaderDigest.PartialMd5(path);
-        await Controller(_token).Push(Body(digest, "4", 0.6667), default);
+        await Pushed(_token, Body(digest, "4", 0.6667));
 
         var echoed = Assert.IsType<KoreaderProgressResponse>(((OkObjectResult)await Controller(_token).Pull(digest, default)).Value);
         Assert.Equal(("4", "Kobo", "kobo-1"), (echoed.Progress, echoed.Device, echoed.DeviceId));
@@ -339,7 +378,7 @@ public sealed class KoreaderSyncTests : IDisposable
         var (_, chapters) = SeedFile(SeedSeries("Named"), "Named - Ch. 1.cbz", ["001.jpg", "002.jpg"], 1m);
         await IndexAsync();
 
-        await Controller(_token).Push(Body(KoreaderDigest.FileName("Named - Ch. 1.cbz"), "2", 1), default);
+        await Pushed(_token, Body(KoreaderDigest.FileName("Named - Ch. 1.cbz"), "2", 1));
 
         Assert.True(Progress(chapters[1m])!.Completed);
     }
@@ -352,9 +391,9 @@ public sealed class KoreaderSyncTests : IDisposable
         var (_, second) = SeedFile(SeedSeries("B"), Path.Combine("b", "Ch. 1.cbz"), ["001.jpg", "002.jpg"], 1m);
         await IndexAsync();
 
-        var result = (ObjectResult)await Controller(_token).Push(Body(KoreaderDigest.FileName("Ch. 1.cbz"), "1", 1), default);
+        var result = await Pushed(_token, Body(KoreaderDigest.FileName("Ch. 1.cbz"), "1", 1));
 
-        Assert.Equal(202, result.StatusCode);
+        Assert.IsType<OkObjectResult>(result);
         Assert.Null(Progress(first[1m]));
         Assert.Null(Progress(second[1m]));
     }
@@ -376,7 +415,7 @@ public sealed class KoreaderSyncTests : IDisposable
         await IndexAsync();
         Assert.NotEqual(before, KoreaderDigest.PartialMd5(path));
 
-        await Controller(_token).Push(Body(before, "2", 1), default);
+        await Pushed(_token, Body(before, "2", 1));
 
         Assert.True(Progress(chapters[1m])!.Completed);
     }
@@ -394,9 +433,102 @@ public sealed class KoreaderSyncTests : IDisposable
         }
 
         // ASP.NET's plain filename= parameter replaces what is not ASCII, and KOReader reads that one.
-        await Controller(_token).Push(Body(KoreaderDigest.FileName("S_rved - Ch. 1.cbz"), "1", 0.5), default);
+        await Pushed(_token, Body(KoreaderDigest.FileName("S_rved - Ch. 1.cbz"), "1", 0.5));
 
         Assert.Equal(0, Progress(chapters[1m])!.PageIndex);
+    }
+
+    [Fact]
+    public async Task A_push_for_a_file_the_index_has_not_reached_lands_after_the_next_pass()
+    {
+        var (path, chapters) = SeedVolume();
+
+        await Pushed(_token, Body(KoreaderDigest.PartialMd5(path), "5", 0.8333));
+        Assert.All(chapters.Values, id => Assert.Null(Progress(id)));
+        Assert.Equal(1, _writer.WaitingCount);
+
+        Assert.True(await IndexAsync() > 0);
+        _writer.RetryWaiting();
+        await _writer.FlushAsync(default);
+
+        Assert.True(Progress(chapters[2m])!.Completed);
+        Assert.Equal(1, Progress(chapters[3m])!.PageIndex);
+        Assert.Equal(0, _writer.WaitingCount);
+    }
+
+    [Fact]
+    public async Task A_later_push_for_the_same_document_replaces_the_one_waiting()
+    {
+        var (path, chapters) = SeedVolume();
+        var digest = KoreaderDigest.PartialMd5(path);
+
+        await Pushed(_token, Body(digest, "1", 0.1667));
+        await Pushed(_token, Body(digest, "4", 0.6667));
+        Assert.Equal(1, _writer.WaitingCount);
+
+        await IndexAsync();
+        _writer.RetryWaiting();
+        await _writer.FlushAsync(default);
+
+        Assert.True(Progress(chapters[2m])!.Completed);
+    }
+
+    [Fact]
+    public async Task A_waiting_push_is_dropped_once_its_owner_cannot_use_opds()
+    {
+        var (path, chapters) = SeedVolume();
+        await Pushed(_token, Body(KoreaderDigest.PartialMd5(path), "6", 1));
+        using (var db = _db.NewContext())
+        {
+            db.Users.Single(u => u.Id == _user).Permissions = default;
+            db.SaveChanges();
+        }
+
+        await IndexAsync();
+        _writer.RetryWaiting();
+        await _writer.FlushAsync(default);
+
+        Assert.All(chapters.Values, id => Assert.Null(Progress(id)));
+    }
+
+    [Fact]
+    public async Task A_waiting_push_is_dropped_after_a_week()
+    {
+        var (path, chapters) = SeedVolume();
+        await Pushed(_token, Body(KoreaderDigest.PartialMd5(path), "6", 1));
+
+        _clock.Now += KoreaderPushWriter.WaitFor + TimeSpan.FromMinutes(1);
+        await IndexAsync();
+        _writer.RetryWaiting();
+        await _writer.FlushAsync(default);
+
+        Assert.All(chapters.Values, id => Assert.Null(Progress(id)));
+        Assert.Equal(0, _writer.WaitingCount);
+    }
+
+    [Fact]
+    public async Task Only_a_file_no_pass_has_seen_asks_for_an_early_pass()
+    {
+        await IndexAsync();
+        await using var db = _db.NewContext();
+        var indexer = new KoreaderDocumentIndexer(db, NullLogger<KoreaderDocumentIndexer>.Instance);
+        Assert.False(await indexer.AnyUnindexedAsync(default));
+
+        SeedFile(SeedSeries("New"), "New.cbz", ["001.jpg"], 1m);
+        Assert.True(await indexer.AnyUnindexedAsync(default));
+        await IndexAsync();
+        Assert.False(await indexer.AnyUnindexedAsync(default));
+
+        // A file the pass cannot read gets no ids, and must not set a pass off on every later miss.
+        var seriesId = SeedSeries("Gone");
+        db.ChapterFiles.Add(new ChapterFile
+        {
+            SeriesId = seriesId, RelativePath = "Gone.cbz", Size = 1, SourceName = "test", DateAdded = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+        Assert.True(await indexer.AnyUnindexedAsync(default));
+        await IndexAsync();
+        Assert.False(await indexer.AnyUnindexedAsync(default));
     }
 
     [Fact]
@@ -405,7 +537,7 @@ public sealed class KoreaderSyncTests : IDisposable
         var (path, chapters) = SeedVolume("Hidden", s => s.Incognito = IncognitoMode.Full);
         await IndexAsync();
 
-        await Controller(_token).Push(Body(KoreaderDigest.PartialMd5(path), "6", 1), default);
+        await Pushed(_token, Body(KoreaderDigest.PartialMd5(path), "6", 1));
 
         Assert.All(chapters.Values, id => Assert.True(Progress(id)!.Completed));
         Assert.Empty(ChaptersRead());

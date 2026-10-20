@@ -111,31 +111,10 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock, IMemoryCach
             return null;
         }
 
-        // The two switches are the *owner's*, not the instance's: one reader can turn their catalogue
-        // off, or turn progress tracking off for a prefetching app, without touching anybody else's.
-        // Read with an explicit user filter because this runs before the request scope is narrowed —
-        // resolving the token is what decides who the caller is.
-        // IgnoreQueryFilters, and it is load-bearing. An OPDS request carries no cookie and no API-key
-        // header, so CurrentUserMiddleware has already narrowed the scope to *nobody* — resolving the
-        // token is what decides who the caller is, and that has not happened yet at this point. Without
-        // this the user-owned filter ANDs with the predicate below, finds no rows, and every valid feed
-        // URL answers 404. The narrowing the filter would have done is done explicitly instead: the
-        // predicate names the user the token resolved to, and nothing else.
-        var settings = await db.UserSettings
-            .IgnoreQueryFilters()
-            .AsNoTracking()
-            .Where(x => x.UserId == match.Id &&
-                        (x.Key == SettingKeys.OpdsEnabled || x.Key == SettingKeys.OpdsTrackProgress))
-            .ToDictionaryAsync(x => x.Key, x => x.Value, ct);
-
-        if (settings.GetValueOrDefault(SettingKeys.OpdsEnabled) != "true")
+        if (await TrackProgressAsync(match.Id, ct) is not { } trackProgress)
         {
             return null;
         }
-
-        // Absent means on: progress tracking is the default, and only an explicit "false" is the user
-        // having turned it off.
-        var trackProgress = settings.GetValueOrDefault(SettingKeys.OpdsTrackProgress) != "false";
 
         var now = clock.GetUtcNow().UtcDateTime;
         if (match.LastUsedAt is null || now - match.LastUsedAt > LastUsedGranularity)
@@ -164,5 +143,53 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock, IMemoryCach
         }
 
         return access;
+    }
+
+    /// <summary>
+    /// The access a user has right now, for work queued under an earlier request, such as a KOReader
+    /// push waiting for the document index. Null on the same conditions as <see cref="ResolveAsync"/>,
+    /// apart from the token, which was checked when the work was queued.
+    /// </summary>
+    public async Task<OpdsAccess?> ForUserAsync(int userId, CancellationToken ct)
+    {
+        var user = await db.Users.AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => new { u.Disabled, u.PendingSetup, u.Permissions, u.AllRootFolders })
+            .FirstOrDefaultAsync(ct);
+        if (user is null || user.Disabled || user.PendingSetup || !user.Permissions.Grants(MakiPermission.UseOpds))
+        {
+            return null;
+        }
+
+        return await TrackProgressAsync(userId, ct) is { } trackProgress
+            ? new OpdsAccess(trackProgress, userId, user.AllRootFolders)
+            : null;
+    }
+
+    /// <summary>
+    /// The owner's progress-tracking switch, or null when their catalogue is off. The two switches are
+    /// the owner's, not the instance's: one reader can turn their catalogue off, or turn tracking off
+    /// for a prefetching app, without touching anybody else's.
+    /// </summary>
+    private async Task<bool?> TrackProgressAsync(int userId, CancellationToken ct)
+    {
+        // IgnoreQueryFilters, and it is load-bearing. An OPDS request carries no cookie and no API-key
+        // header, so CurrentUserMiddleware has already narrowed the scope to *nobody*. Without this the
+        // user-owned filter ANDs with the predicate below, finds no rows, and every valid feed URL
+        // answers 404. The predicate names the user instead.
+        var settings = await db.UserSettings
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(x => x.UserId == userId &&
+                        (x.Key == SettingKeys.OpdsEnabled || x.Key == SettingKeys.OpdsTrackProgress))
+            .ToDictionaryAsync(x => x.Key, x => x.Value, ct);
+
+        if (settings.GetValueOrDefault(SettingKeys.OpdsEnabled) != "true")
+        {
+            return null;
+        }
+
+        // Absent means on: only an explicit "false" is the user having turned it off.
+        return settings.GetValueOrDefault(SettingKeys.OpdsTrackProgress) != "false";
     }
 }

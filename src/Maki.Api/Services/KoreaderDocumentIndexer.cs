@@ -19,6 +19,10 @@ public class KoreaderDocumentIndexer(MakiDbContext db, ILogger<KoreaderDocumentI
 
     private static readonly SemaphoreSlim Gate = new(1);
 
+    // The highest chapter file id the last complete pass went through. A file past it is one no pass
+    // has seen; anything at or below it that still has no ids is a file the pass could not read.
+    private static int _passedThrough;
+
     /// <summary>
     /// Records the digests of a file an OPDS client is downloading, under the name it was served as.
     /// KOReader stores that name only when "Use server filenames" is on, but the bytes always match.
@@ -32,15 +36,28 @@ public class KoreaderDocumentIndexer(MakiDbContext db, ILogger<KoreaderDocumentI
     }
 
     /// <summary>
+    /// Whether a pass run now would find a file no pass has seen, which is the only thing running one
+    /// early can fix. A miss is usually a book from somewhere else, and a pass stats every file, so
+    /// misses must not set one off on their own. Rewritten files are left to the timer.
+    /// </summary>
+    public Task<bool> AnyUnindexedAsync(CancellationToken ct)
+    {
+        var passedThrough = Volatile.Read(ref _passedThrough);
+        return db.ChapterFiles.IgnoreQueryFilters()
+            .AnyAsync(f => f.Id > passedThrough &&
+                           !db.KoreaderDocuments.IgnoreQueryFilters().Any(d => d.ChapterFileId == f.Id), ct);
+    }
+
+    /// <summary>
     /// Adds digests for every file whose current bytes have none. Skipped entirely while nobody has
     /// the OPDS catalogue on, since its token is what the sync signs in with.
     /// </summary>
-    /// <returns>false when a pass is already running.</returns>
-    public async Task<bool> RunAsync(CancellationToken ct)
+    /// <returns>How many document ids were added, or -1 when a pass is already running.</returns>
+    public async Task<int> RunAsync(CancellationToken ct)
     {
         if (!await Gate.WaitAsync(0, ct))
         {
-            return false;
+            return -1;
         }
 
         try
@@ -49,7 +66,7 @@ public class KoreaderDocumentIndexer(MakiDbContext db, ILogger<KoreaderDocumentI
                 .AnyAsync(s => s.Key == SettingKeys.OpdsEnabled && s.Value == "true", ct);
             if (!anyone)
             {
-                return true;
+                return 0;
             }
 
             var added = 0;
@@ -93,12 +110,13 @@ public class KoreaderDocumentIndexer(MakiDbContext db, ILogger<KoreaderDocumentI
                 added += await SaveAsync(rows, ct);
             }
 
+            Volatile.Write(ref _passedThrough, lastId);
             if (added > 0)
             {
                 logger.LogInformation("Indexed {Count} KOReader document id(s)", added);
             }
 
-            return true;
+            return added;
         }
         finally
         {

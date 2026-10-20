@@ -22,9 +22,10 @@ namespace Maki.Api.Controllers;
 /// ignored. It is a header, so unlike the feed URL it stays out of request logs.
 /// </para>
 /// <para>
-/// Status codes follow what KOReader's client accepts, which is narrower than REST would suggest: a
-/// push for a document Maki does not know answers 202 rather than 404, because KOReader queues any
-/// other failure for retry and stops draining its queue at the first one.
+/// Status codes follow what KOReader's client accepts, which is narrower than REST would suggest: it
+/// counts anything but 200 as a failed push, queues it, and stops draining that queue at the first
+/// failure. So every authorized push answers 200 at once, a book Maki does not know included, and is
+/// written by <see cref="KoreaderPushWriter"/> afterwards.
 /// </para>
 /// </summary>
 [ApiController]
@@ -35,6 +36,8 @@ namespace Maki.Api.Controllers;
 public class KoreaderSyncController(
     OpdsAccessService access,
     KoreaderSyncService sync,
+    KoreaderPushWriter pushes,
+    KoreaderDocumentIndexer indexer,
     MakiDbContext db,
     ISchedulerFactory schedulerFactory,
     ILocalizer localizer,
@@ -105,16 +108,8 @@ public class KoreaderSyncController(
             _ => null
         };
 
-        var timestamp = await sync.PushAsync(user.UserId, request.Document, progress, request.Percentage,
-            request.Device, request.DeviceId, ct);
-        if (timestamp is null)
-        {
-            await KoreaderDocumentIndexJob.TriggerSoonAsync(schedulerFactory, logger);
-            return StatusCode(StatusCodes.Status202Accepted,
-                new KoreaderPushResponse(request.Document, DateTimeOffset.UtcNow.ToUnixTimeSeconds()));
-        }
-
-        return Ok(new KoreaderPushResponse(request.Document, timestamp.Value));
+        pushes.Enqueue(user.UserId, request.Document, progress, request.Percentage, request.Device, request.DeviceId);
+        return Ok(new KoreaderPushResponse(request.Document, DateTimeOffset.UtcNow.ToUnixTimeSeconds()));
     }
 
     [HttpGet("syncs/progress/{document}")]
@@ -127,7 +122,8 @@ public class KoreaderSyncController(
 
         if (await sync.PullAsync(user.UserId, document, ct) is not { } found)
         {
-            await KoreaderDocumentIndexJob.TriggerSoonAsync(schedulerFactory, logger);
+            await KoreaderDocumentIndexJob.TriggerSoonAsync(schedulerFactory, logger,
+                () => indexer.AnyUnindexedAsync(ct));
             return Ok(new { });
         }
 

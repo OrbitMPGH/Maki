@@ -36,6 +36,9 @@ What happens with a pushed page:
   you reach the last page.
 - Books that didn't come from Maki are accepted and ignored, so they don't hold up KOReader's
   retry queue.
+- A page pushed for a file Maki hasn't recognised yet, such as one you copied over before the
+  background pass got to it, is kept for up to a week and applied once the pass has recorded the
+  file.
 
 ## How a file is recognised
 
