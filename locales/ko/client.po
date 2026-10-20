@@ -1057,6 +1057,10 @@ msgstr "{hours, plural, other {약 #시간 남음}}"
 msgid "{importedCount, plural, one {# imported} other {# imported}}"
 msgstr ""
 
+#: src/components/ImportReviewModal.tsx
+msgid "{importedCount, plural, one {Import # file} other {Import # files}}"
+msgstr ""
+
 #: src/sourceLabels.ts
 #, fuzzy
 msgid "{indexer} · Torrent"
@@ -1385,8 +1389,8 @@ msgstr "{newChapterCount, plural, other {최근 챕터 파일 #개}}"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
-msgstr "{newChapterCount, plural, other {내게 없는 챕터 #개 추가}}"
+#~ msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
+#~ msgstr "{newChapterCount, plural, other {내게 없는 챕터 #개 추가}}"
 
 #: src/components/series/SeriesHero.tsx
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
@@ -1730,8 +1734,8 @@ msgstr "{seriesStarted, plural, other {{seriesFinished}개 / 보유한 시리즈
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "{seriesTitle} - {fileCount, plural, one {# file} other {# files}} downloaded, {replacedFiles, plural, one {# existing file} other {# existing files}} affected, {newChapters, plural, one {# new chapter} other {# new chapters}}"
-msgstr "{seriesTitle} - {fileCount, plural, other {파일 #개}} 다운로드됨, {replacedFiles, plural, other {기존 파일 #개}} 영향받음, {newChapters, plural, other {새 챕터 #개}}"
+#~ msgid "{seriesTitle} - {fileCount, plural, one {# file} other {# files}} downloaded, {replacedFiles, plural, one {# existing file} other {# existing files}} affected, {newChapters, plural, one {# new chapter} other {# new chapters}}"
+#~ msgstr "{seriesTitle} - {fileCount, plural, other {파일 #개}} 다운로드됨, {replacedFiles, plural, other {기존 파일 #개}} 영향받음, {newChapters, plural, other {새 챕터 #개}}"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -1774,8 +1778,8 @@ msgstr "{size, plural, other {시리즈 #개, 이 보기의 {shareLabel}, {coher
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "{skippedCount, plural, one {# file will be left out of the import} other {# files will be left out of the import}}"
-msgstr "{skippedCount, plural, other {파일 #개는 가져오기에서 제외됩니다}}"
+#~ msgid "{skippedCount, plural, one {# file will be left out of the import} other {# files will be left out of the import}}"
+#~ msgstr "{skippedCount, plural, other {파일 #개는 가져오기에서 제외됩니다}}"
 
 #: src/components/import/MihonReview.tsx
 msgid "{skippedNonLibrary, plural, one {# manga that is not in the library was skipped.} other {# manga that are not in the library were skipped.}}"
@@ -2024,6 +2028,10 @@ msgstr "{totalSeries, plural, other {시리즈 #개}}"
 #, fuzzy
 msgid "{totalSeriesShown, plural, one {{shownCount} of # series shown.} other {{shownCount} of # series shown.}}"
 msgstr "{totalSeriesShown, plural, other {시리즈 #개 중 {shownCount}개를 표시합니다.}}"
+
+#: src/components/ImportReviewModal.tsx
+msgid "{trashedCount, plural, one {# file goes to the trash} other {# files go to the trash}}"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -3100,8 +3108,8 @@ msgid "Aggregator"
 msgstr "애그리게이터"
 
 #: src/components/CatalogueRules.tsx
+#: src/components/ChapterMapParts.tsx
 #: src/components/import/MihonReview.tsx
-#: src/components/RelinkFilesModal.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -3252,8 +3260,8 @@ msgstr "허용됨"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "already at cutoff"
-msgstr "이미 컷오프에 도달"
+#~ msgid "already at cutoff"
+#~ msgstr "이미 컷오프에 도달"
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -3651,6 +3659,10 @@ msgstr "할당"
 #, fuzzy
 msgid "At a glance"
 msgstr "한눈에 보기"
+
+#: src/components/ImportReviewModal.tsx
+msgid "At cutoff"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 msgid "At least {chapterMin} chapters"
@@ -4395,13 +4407,13 @@ msgstr "챕터 {chapterNumber}"
 msgid "Ch. {chapters}"
 msgstr "챕터 {chapters}"
 
-#: src/components/RelinkFilesModal.tsx
+#: src/components/ChapterMapParts.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Ch. {first}"
 msgstr "챕터 {first}"
 
-#: src/components/RelinkFilesModal.tsx
+#: src/components/ChapterMapParts.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Ch. {first} to {last}"
@@ -4437,7 +4449,11 @@ msgstr "챕터 {from}+"
 msgid "Ch. {label}: {detail}"
 msgstr "챕터 {label}: {detail}"
 
-#: src/components/RelinkFilesModal.tsx
+#: src/components/ImportReviewModal.tsx
+msgid "Ch. {label}: {stateText}"
+msgstr ""
+
+#: src/components/ChapterMapParts.tsx
 #, fuzzy
 msgid "Ch. {list}"
 msgstr "챕터 {list}"
@@ -4459,13 +4475,13 @@ msgstr "{total}화 중 {read}화"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Ch. {shown}"
-msgstr "챕터 {shown}"
+#~ msgid "Ch. {shown}"
+#~ msgstr "챕터 {shown}"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Ch. {shown} +{extra} more"
-msgstr "챕터 {shown} +{extra}개 더"
+#~ msgid "Ch. {shown} +{extra} more"
+#~ msgstr "챕터 {shown} +{extra}개 더"
 
 #: src/api/requests.ts
 #, fuzzy
@@ -6088,6 +6104,10 @@ msgstr "읽은 뒤 경과 일수"
 msgid "Days left"
 msgstr "남은 일수"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Decide later"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Decides when your reading day ends, which is what streaks and daily goals count against."
@@ -7575,6 +7595,10 @@ msgstr "곧 파일 제거됨"
 msgid "Files"
 msgstr "파일"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Files in this download"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -8626,6 +8650,10 @@ msgstr "신호 작동 방식"
 msgid "How the built-in reader opens a series. A profile applies automatically to the series types it covers; everything else uses Default. You can also pin a profile to a series, or change settings from inside the reader."
 msgstr "내장 리더가 시리즈를 여는 방식입니다. 프로필은 적용 대상 시리즈 유형에 자동으로 적용되며, 나머지는 기본값을 씁니다. 시리즈에 프로필을 고정하거나 리더 안에서 설정을 바꿀 수도 있습니다."
 
+#: src/components/ImportReviewModal.tsx
+msgid "How to import"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "How you read"
@@ -8744,6 +8772,11 @@ msgstr "이미지 형식"
 msgid "Import"
 msgstr "가져오기"
 
+#. placeholder {0}: file.fileName
+#: src/components/ImportReviewModal.tsx
+msgid "Import {0}"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Import {folderName}"
@@ -8784,8 +8817,8 @@ msgstr "상태가 있는 항목 가져오기"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Import everything, replace the {replacedFiles, plural, one {# file} other {# files}} it covers"
-msgstr "모두 가져오고, 포함된 {replacedFiles, plural, other {파일 #개}}를 교체"
+#~ msgid "Import everything, replace the {replacedFiles, plural, one {# file} other {# files}} it covers"
+#~ msgstr "모두 가져오고, 포함된 {replacedFiles, plural, other {파일 #개}}를 교체"
 
 #: src/components/import/MihonSummary.tsx
 msgid "Import finished"
@@ -8824,8 +8857,8 @@ msgstr "이 인스턴스에서는 가져오기 목록이 꺼져 있습니다."
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Import only what is missing, keep existing files"
-msgstr "누락된 항목만 가져오고 기존 파일 유지"
+#~ msgid "Import only what is missing, keep existing files"
+#~ msgstr "누락된 항목만 가져오고 기존 파일 유지"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8916,6 +8949,7 @@ msgid "Imported into {seriesTitle}. The files move into its existing folder."
 msgstr "{seriesTitle}에 가져왔습니다. 파일은 기존 폴더로 옮깁니다."
 
 #: src/components/import/MihonImport.tsx
+#: src/components/ImportReviewModal.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Importing"
@@ -8923,8 +8957,8 @@ msgstr "가져오는 중"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Importing what is missing"
-msgstr "없는 항목 가져오는 중"
+#~ msgid "Importing what is missing"
+#~ msgstr "없는 항목 가져오는 중"
 
 #: src/pages/ImportPage.tsx
 msgid "Importing…"
@@ -9344,6 +9378,10 @@ msgstr "점수가 {upgradeUntilScore}에 이를 때까지 더 높은 점수의 �
 #, fuzzy
 msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
 msgstr "이 시리즈를 트래커 전송에서 제외하며, 전체에서는 통계에서도 완전히 제외합니다."
+
+#: src/components/ImportReviewModal.tsx
+msgid "kept"
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -10712,6 +10750,7 @@ msgstr "최소 너비 (px)"
 msgid "minutes read"
 msgstr "읽은 시간(분)"
 
+#: src/components/ImportReviewModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "missing"
@@ -11168,6 +11207,10 @@ msgstr "업그레이드 스캔을 한 적 없음"
 #, fuzzy
 msgid "Never upgrades"
 msgstr "업그레이드하지 않음"
+
+#: src/components/ImportReviewModal.tsx
+msgid "new"
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/settings/AccountSection.tsx
@@ -11850,7 +11893,7 @@ msgstr "로컬 MangaBaka 데이터베이스에 그 이름으로 등록된 사람
 msgid "none"
 msgstr "없음"
 
-#: src/components/RelinkFilesModal.tsx
+#: src/components/ChapterMapParts.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -12271,6 +12314,10 @@ msgstr "현재 이 섹션과 일치하는 항목이 없습니다."
 msgid "Nothing needs review."
 msgstr "검토할 항목이 없습니다."
 
+#: src/components/ImportReviewModal.tsx
+msgid "nothing new"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Nothing of theirs is in the searchable part of the catalogue."
@@ -12301,6 +12348,7 @@ msgstr "아직 천천히 음미하며 읽었다고 할 만큼 느린 작품이 �
 msgid "Nothing to browse yet"
 msgstr "아직 탐색할 항목이 없습니다"
 
+#: src/components/ImportReviewModal.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Nothing to import"
@@ -12686,6 +12734,10 @@ msgstr "연재 중"
 #, fuzzy
 msgid "Only {scanRootPath}, the root chosen on the Files tab"
 msgstr "{scanRootPath}만, 파일 탭에서 고른 루트"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Only add what is missing"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -14798,6 +14850,14 @@ msgstr "수리"
 msgid "Replace"
 msgstr "교체"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Replace what it covers"
+msgstr ""
+
+#: src/components/ImportReviewModal.tsx
+msgid "replaced"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass."
@@ -14805,8 +14865,8 @@ msgstr "교체된 파일은 삭제되기 전까지 이 기간 동안 보관됩�
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Replaced files go to the trash folder until housekeeping purges them, and can be reverted from Activity."
-msgstr "교체된 파일은 정리 작업이 삭제할 때까지 휴지통 폴더에 보관되며, 활동에서 되돌릴 수 있습니다."
+#~ msgid "Replaced files go to the trash folder until housekeeping purges them, and can be reverted from Activity."
+#~ msgstr "교체된 파일은 정리 작업이 삭제할 때까지 휴지통 폴더에 보관되며, 활동에서 되돌릴 수 있습니다."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -14815,8 +14875,8 @@ msgstr "교체 항목 #{opId}"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "replaces {replacedFileName}"
-msgstr "{replacedFileName}을(를) 교체함"
+#~ msgid "replaces {replacedFileName}"
+#~ msgstr "{replacedFileName}을(를) 교체함"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -14825,8 +14885,8 @@ msgstr "각 시리즈의 품질 프로필에 따라 다운로드한 파일을 �
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Replacing {replacedFiles, plural, one {# file} other {# files}}"
-msgstr "{replacedFiles, plural, other {파일 #개 교체 중}}"
+#~ msgid "Replacing {replacedFiles, plural, one {# file} other {# files}}"
+#~ msgstr "{replacedFiles, plural, other {파일 #개 교체 중}}"
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -16921,11 +16981,15 @@ msgstr "새 시리즈의 특별편 건너뛰기"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Skip this file"
-msgstr "이 파일 건너뛰기"
+#~ msgid "Skip this file"
+#~ msgstr "이 파일 건너뛰기"
 
 #: src/App.tsx
 msgid "Skip to content"
+msgstr ""
+
+#: src/components/ImportReviewModal.tsx
+msgid "skipped"
 msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
@@ -18151,8 +18215,8 @@ msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "The torrent keeps seeding whichever you pick."
-msgstr "토렌트는 선택한 대상을 계속 시딩합니다."
+#~ msgid "The torrent keeps seeding whichever you pick."
+#~ msgstr "토렌트는 선택한 대상을 계속 시딩합니다."
 
 #: src/api/queue.ts
 msgid "The torrent never appeared in the download client"
@@ -19021,6 +19085,7 @@ msgstr "권한이 없습니다"
 msgid "Unavailable"
 msgstr "사용할 수 없음"
 
+#: src/components/ImportReviewModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "unchanged"
@@ -20358,6 +20423,10 @@ msgstr "시리즈는 추가할 수 있지만 아직 루트 폴더 권한이 없�
 #, fuzzy
 msgid "You can keep browsing while it looks."
 msgstr "찾는 동안 계속 둘러볼 수 있습니다."
+
+#: src/components/ImportReviewModal.tsx
+msgid "You can undo this from Activity."
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy

@@ -5,30 +5,82 @@ import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
 import { awaitingImportItem, guardedItem, importPlan } from '../../.storybook/mocks/operations/queue'
 import { ImportReviewModal } from './ImportReviewModal'
 
+const settled = fn()
+const recordDecision = http.post(api('/queue/:id/import'), async ({ request }) => {
+  settled(await request.json())
+  return HttpResponse.json({ imported: 2, linked: 14, skipped: 1, deleted: 6 })
+})
+
 const meta = {
   component: ImportReviewModal,
   tags: ['ai-generated'],
   args: { queueItemId: awaitingImportItem.id, onClose: fn() },
+  parameters: { msw: [recordDecision] },
+  beforeEach: () => {
+    settled.mockClear()
+  },
 } satisfies Meta<typeof ImportReviewModal>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
+const openDialog = async (canvasElement: HTMLElement) => {
+  const body = within(canvasElement.ownerDocument.body)
+  const element = await body.findByRole('dialog', { name: 'Review import' })
+  return { element, dialog: within(element) }
+}
+
 export const Default: Story = {
-  play: async ({ canvasElement }) => {
-    const body = within(canvasElement.ownerDocument.body)
-    const dialog = await body.findByRole('dialog', { name: 'Review import' })
-    await waitFor(async () => expect(await within(dialog).findByText('Clockwork Tea House v01.cbz')).toBeVisible())
-    await waitFor(() => expect(within(dialog).getByText(/replaces Ch.1-4.cbz/)).toBeVisible())
-    await waitFor(() => expect(within(dialog).getByRole('button', { name: /Import everything, replace the 3 files it covers/ })).toBeVisible())
+  play: async ({ args, canvasElement, userEvent }) => {
+    const { element, dialog } = await openDialog(canvasElement)
+    await dialog.findByRole('checkbox', { name: 'Import Clockwork Tea House v01.cbz' })
+    await waitFor(() => expect(element).toHaveTextContent('12 replaced'))
+    await waitFor(() => expect(element).toHaveTextContent('2 new'))
+    await waitFor(() => expect(dialog.getByText(/6 files go to the trash/)).toBeVisible())
+    await userEvent.click(dialog.getByRole('button', { name: 'Import 3 files' }))
+    await waitFor(() => expect(settled).toHaveBeenCalledWith(expect.objectContaining({ mode: 'Replace' })))
+    await waitFor(() => expect(args.onClose).toHaveBeenCalled())
+  },
+}
+
+export const OnlyAddWhatIsMissing: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const { element, dialog } = await openDialog(canvasElement)
+    await userEvent.click(await dialog.findByText('Only add what is missing'))
+    await waitFor(() => expect(dialog.getByText('nothing new')).toBeVisible())
+    await waitFor(() => expect(element).toHaveTextContent('4 kept'))
+    expect(dialog.queryByText(/go to the trash/)).toBeNull()
+    await userEvent.click(dialog.getByRole('button', { name: 'Import 2 files' }))
+    await waitFor(() => expect(settled).toHaveBeenCalledWith(expect.objectContaining({ mode: 'SkipExisting' })))
+  },
+}
+
+export const LeaveAFileOut: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const { element, dialog } = await openDialog(canvasElement)
+    await userEvent.click(await dialog.findByRole('checkbox', { name: 'Import Clockwork Tea House v02.cbz' }))
+    await waitFor(() => expect(element).toHaveTextContent('4 replaced'))
+    await waitFor(() => expect(dialog.getByText(/1 file goes to the trash/)).toBeVisible())
+    await userEvent.click(dialog.getByRole('button', { name: 'Import 2 files' }))
+    await waitFor(() =>
+      expect(settled).toHaveBeenCalledWith(expect.objectContaining({ skipFiles: ['Clockwork Tea House v02.cbz'] })),
+    )
+  },
+}
+
+export const NothingTicked: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const { dialog } = await openDialog(canvasElement)
+    await userEvent.click(await dialog.findByRole('button', { name: 'None' }))
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Nothing to import' })).toBeDisabled())
   },
 }
 
 export const IgnoreDownload: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
-    const body = within(canvasElement.ownerDocument.body)
-    const dialog = await body.findByRole('dialog', { name: 'Review import' })
-    await userEvent.click(await within(dialog).findByRole('button', { name: 'Ignore this download' }))
+    const { dialog } = await openDialog(canvasElement)
+    await userEvent.click(await dialog.findByRole('button', { name: 'Ignore this download' }))
+    await waitFor(() => expect(settled).toHaveBeenCalledWith(expect.objectContaining({ mode: 'Reject' })))
     await waitFor(() => expect(args.onClose).toHaveBeenCalled())
   },
 }
@@ -36,13 +88,14 @@ export const IgnoreDownload: Story = {
 export const UpgradeWithSkips: Story = {
   args: { queueItemId: guardedItem.id },
   play: async ({ canvasElement, userEvent }) => {
-    const body = within(canvasElement.ownerDocument.body)
-    const dialog = await body.findByRole('dialog', { name: 'Review import' })
-    await waitFor(async () => expect(await within(dialog).findByText('Held back before importing')).toBeVisible())
-    const skips = await within(dialog).findAllByRole('checkbox', { name: 'Skip this file' })
-    await waitFor(() => expect(skips[1]).toBeChecked())
-    await userEvent.click(skips[0])
-    await waitFor(() => expect(within(dialog).getByText('2 files will be left out of the import')).toBeVisible())
+    const { dialog } = await openDialog(canvasElement)
+    await waitFor(async () => expect(await dialog.findByText('Held back before importing')).toBeVisible())
+    const atCutoff = await dialog.findByRole('checkbox', { name: 'Import Clockwork Tea House v02.cbz' })
+    await waitFor(() => expect(atCutoff).not.toBeChecked())
+    await waitFor(() => expect(dialog.getByText('At cutoff')).toBeVisible())
+    await waitFor(() => expect(dialog.getByText(/1 file goes to the trash/)).toBeVisible())
+    await userEvent.click(atCutoff)
+    await waitFor(() => expect(dialog.getByText(/6 files go to the trash/)).toBeVisible())
   },
 }
 

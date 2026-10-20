@@ -1057,6 +1057,10 @@ msgstr "{hours, plural, one {queda aproximadamente # h} many {quedan aproximadam
 msgid "{importedCount, plural, one {# imported} other {# imported}}"
 msgstr ""
 
+#: src/components/ImportReviewModal.tsx
+msgid "{importedCount, plural, one {Import # file} other {Import # files}}"
+msgstr ""
+
 #: src/sourceLabels.ts
 #, fuzzy
 msgid "{indexer} · Torrent"
@@ -1385,8 +1389,8 @@ msgstr "{newChapterCount, plural, one {# archivo de capítulo reciente} many {# 
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
-msgstr "{newChapterCount, plural, one {Incluye # capítulo que no tienes} many {Incluye # capítulos que no tienes} other {Incluye # capítulos que no tienes}}"
+#~ msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
+#~ msgstr "{newChapterCount, plural, one {Incluye # capítulo que no tienes} many {Incluye # capítulos que no tienes} other {Incluye # capítulos que no tienes}}"
 
 #: src/components/series/SeriesHero.tsx
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
@@ -1731,8 +1735,8 @@ msgstr "{seriesStarted, plural, one {{seriesFinished} de # serie leída hasta el
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "{seriesTitle} - {fileCount, plural, one {# file} other {# files}} downloaded, {replacedFiles, plural, one {# existing file} other {# existing files}} affected, {newChapters, plural, one {# new chapter} other {# new chapters}}"
-msgstr "{seriesTitle} - {fileCount, plural, one {# archivo descargado} many {# archivos descargados} other {# archivos descargados}}, {replacedFiles, plural, one {# archivo existente afectado} many {# archivos existentes afectados} other {# archivos existentes afectados}}, {newChapters, plural, one {# capítulo nuevo} many {# capítulos nuevos} other {# capítulos nuevos}}"
+#~ msgid "{seriesTitle} - {fileCount, plural, one {# file} other {# files}} downloaded, {replacedFiles, plural, one {# existing file} other {# existing files}} affected, {newChapters, plural, one {# new chapter} other {# new chapters}}"
+#~ msgstr "{seriesTitle} - {fileCount, plural, one {# archivo descargado} many {# archivos descargados} other {# archivos descargados}}, {replacedFiles, plural, one {# archivo existente afectado} many {# archivos existentes afectados} other {# archivos existentes afectados}}, {newChapters, plural, one {# capítulo nuevo} many {# capítulos nuevos} other {# capítulos nuevos}}"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -1775,8 +1779,8 @@ msgstr "{size, plural, one {# serie, {shareLabel} de esta vista, {coherenceWord}
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "{skippedCount, plural, one {# file will be left out of the import} other {# files will be left out of the import}}"
-msgstr "{skippedCount, plural, one {Se dejará fuera de la importación # archivo} many {Se dejarán fuera de la importación # archivos} other {Se dejarán fuera de la importación # archivos}}"
+#~ msgid "{skippedCount, plural, one {# file will be left out of the import} other {# files will be left out of the import}}"
+#~ msgstr "{skippedCount, plural, one {Se dejará fuera de la importación # archivo} many {Se dejarán fuera de la importación # archivos} other {Se dejarán fuera de la importación # archivos}}"
 
 #: src/components/import/MihonReview.tsx
 msgid "{skippedNonLibrary, plural, one {# manga that is not in the library was skipped.} other {# manga that are not in the library were skipped.}}"
@@ -2025,6 +2029,10 @@ msgstr "{totalSeries, plural, one {# serie} many {# series} other {# series}}"
 #, fuzzy
 msgid "{totalSeriesShown, plural, one {{shownCount} of # series shown.} other {{shownCount} of # series shown.}}"
 msgstr "{totalSeriesShown, plural, one {Mostrando {shownCount} de # serie.} many {Mostrando {shownCount} de # series.} other {Mostrando {shownCount} de # series.}}"
+
+#: src/components/ImportReviewModal.tsx
+msgid "{trashedCount, plural, one {# file goes to the trash} other {# files go to the trash}}"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -3101,8 +3109,8 @@ msgid "Aggregator"
 msgstr "Agregador"
 
 #: src/components/CatalogueRules.tsx
+#: src/components/ChapterMapParts.tsx
 #: src/components/import/MihonReview.tsx
-#: src/components/RelinkFilesModal.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -3253,8 +3261,8 @@ msgstr "Permitido"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "already at cutoff"
-msgstr "ya en el umbral"
+#~ msgid "already at cutoff"
+#~ msgstr "ya en el umbral"
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -3652,6 +3660,10 @@ msgstr "Asignar"
 #, fuzzy
 msgid "At a glance"
 msgstr "De un vistazo"
+
+#: src/components/ImportReviewModal.tsx
+msgid "At cutoff"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 msgid "At least {chapterMin} chapters"
@@ -4396,13 +4408,13 @@ msgstr "Cap. {chapterNumber}"
 msgid "Ch. {chapters}"
 msgstr "Cap. {chapters}"
 
-#: src/components/RelinkFilesModal.tsx
+#: src/components/ChapterMapParts.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Ch. {first}"
 msgstr "Cap. {first}"
 
-#: src/components/RelinkFilesModal.tsx
+#: src/components/ChapterMapParts.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Ch. {first} to {last}"
@@ -4438,7 +4450,11 @@ msgstr "cap. {from}+"
 msgid "Ch. {label}: {detail}"
 msgstr "Cap. {label}: {detail}"
 
-#: src/components/RelinkFilesModal.tsx
+#: src/components/ImportReviewModal.tsx
+msgid "Ch. {label}: {stateText}"
+msgstr ""
+
+#: src/components/ChapterMapParts.tsx
 #, fuzzy
 msgid "Ch. {list}"
 msgstr "Cap. {list}"
@@ -4460,13 +4476,13 @@ msgstr "cap. {read} de {total}"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Ch. {shown}"
-msgstr "Cap. {shown}"
+#~ msgid "Ch. {shown}"
+#~ msgstr "Cap. {shown}"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Ch. {shown} +{extra} more"
-msgstr "Cap. {shown} +{extra} más"
+#~ msgid "Ch. {shown} +{extra} more"
+#~ msgstr "Cap. {shown} +{extra} más"
 
 #: src/api/requests.ts
 #, fuzzy
@@ -6089,6 +6105,10 @@ msgstr "Días después de leer"
 msgid "Days left"
 msgstr "Días restantes"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Decide later"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Decides when your reading day ends, which is what streaks and daily goals count against."
@@ -7576,6 +7596,10 @@ msgstr "Archivo eliminado pronto"
 msgid "Files"
 msgstr "Archivos"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Files in this download"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -8627,6 +8651,10 @@ msgstr "Cómo funcionan las señales"
 msgid "How the built-in reader opens a series. A profile applies automatically to the series types it covers; everything else uses Default. You can also pin a profile to a series, or change settings from inside the reader."
 msgstr "Cómo abre el lector integrado una serie. Un perfil se aplica automáticamente a los tipos de serie que cubre; el resto usa el predeterminado. También puedes fijar un perfil a una serie o cambiar ajustes desde dentro del lector."
 
+#: src/components/ImportReviewModal.tsx
+msgid "How to import"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "How you read"
@@ -8745,6 +8773,11 @@ msgstr "Formatos de imagen"
 msgid "Import"
 msgstr "Importar"
 
+#. placeholder {0}: file.fileName
+#: src/components/ImportReviewModal.tsx
+msgid "Import {0}"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Import {folderName}"
@@ -8785,8 +8818,8 @@ msgstr "Importar entradas con estado"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Import everything, replace the {replacedFiles, plural, one {# file} other {# files}} it covers"
-msgstr "Importar todo y reemplazar {replacedFiles, plural, one {el # archivo que cubre} many {los # archivos que cubre} other {los # archivos que cubre}}"
+#~ msgid "Import everything, replace the {replacedFiles, plural, one {# file} other {# files}} it covers"
+#~ msgstr "Importar todo y reemplazar {replacedFiles, plural, one {el # archivo que cubre} many {los # archivos que cubre} other {los # archivos que cubre}}"
 
 #: src/components/import/MihonSummary.tsx
 msgid "Import finished"
@@ -8825,8 +8858,8 @@ msgstr "Las listas de importación están desactivadas en esta instancia."
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Import only what is missing, keep existing files"
-msgstr "Importar solo lo que falta, conservar los archivos existentes"
+#~ msgid "Import only what is missing, keep existing files"
+#~ msgstr "Importar solo lo que falta, conservar los archivos existentes"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8917,6 +8950,7 @@ msgid "Imported into {seriesTitle}. The files move into its existing folder."
 msgstr "Importada en {seriesTitle}. Los archivos se mueven a su carpeta existente."
 
 #: src/components/import/MihonImport.tsx
+#: src/components/ImportReviewModal.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Importing"
@@ -8924,8 +8958,8 @@ msgstr "Importando"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Importing what is missing"
-msgstr "Importar lo que falta"
+#~ msgid "Importing what is missing"
+#~ msgstr "Importar lo que falta"
 
 #: src/pages/ImportPage.tsx
 msgid "Importing…"
@@ -9345,6 +9379,10 @@ msgstr "Sigue aceptando copias con mejor puntuación hasta que una llegue a {upg
 #, fuzzy
 msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
 msgstr "Mantiene esta serie fuera de los envíos a los rastreadores y, en Completo, también la excluye por completo de las estadísticas."
+
+#: src/components/ImportReviewModal.tsx
+msgid "kept"
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -10713,6 +10751,7 @@ msgstr "Ancho mínimo (px)"
 msgid "minutes read"
 msgstr "minutos leídos"
 
+#: src/components/ImportReviewModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "missing"
@@ -11169,6 +11208,10 @@ msgstr "Nunca se ha analizado en busca de mejoras"
 #, fuzzy
 msgid "Never upgrades"
 msgstr "Nunca mejora"
+
+#: src/components/ImportReviewModal.tsx
+msgid "new"
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/settings/AccountSection.tsx
@@ -11851,7 +11894,7 @@ msgstr "Nadie con ese nombre está acreditado en la base de datos local de Manga
 msgid "none"
 msgstr "ninguno"
 
-#: src/components/RelinkFilesModal.tsx
+#: src/components/ChapterMapParts.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -12272,6 +12315,10 @@ msgstr "Ahora mismo nada coincide con esta fila."
 msgid "Nothing needs review."
 msgstr "No hay nada que revisar."
 
+#: src/components/ImportReviewModal.tsx
+msgid "nothing new"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Nothing of theirs is in the searchable part of the catalogue."
@@ -12302,6 +12349,7 @@ msgstr "Aún no hay ninguna lectura lo bastante pausada como para decir que la h
 msgid "Nothing to browse yet"
 msgstr "Aún no hay nada que explorar"
 
+#: src/components/ImportReviewModal.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Nothing to import"
@@ -12687,6 +12735,10 @@ msgstr "En curso"
 #, fuzzy
 msgid "Only {scanRootPath}, the root chosen on the Files tab"
 msgstr "Solo {scanRootPath}, la raíz elegida en la pestaña Archivos"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Only add what is missing"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -14799,6 +14851,14 @@ msgstr "Reparaciones"
 msgid "Replace"
 msgstr "Reemplazar"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Replace what it covers"
+msgstr ""
+
+#: src/components/ImportReviewModal.tsx
+msgid "replaced"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass."
@@ -14806,8 +14866,8 @@ msgstr "Los archivos reemplazados se conservan este tiempo antes de purgarse. 0 
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Replaced files go to the trash folder until housekeeping purges them, and can be reverted from Activity."
-msgstr "Los archivos reemplazados van a la carpeta de la papelera hasta que el mantenimiento los purgue, y se pueden revertir desde Actividad."
+#~ msgid "Replaced files go to the trash folder until housekeeping purges them, and can be reverted from Activity."
+#~ msgstr "Los archivos reemplazados van a la carpeta de la papelera hasta que el mantenimiento los purgue, y se pueden revertir desde Actividad."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -14816,8 +14876,8 @@ msgstr "Reemplazo n.º {opId}"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "replaces {replacedFileName}"
-msgstr "reemplaza a {replacedFileName}"
+#~ msgid "replaces {replacedFileName}"
+#~ msgstr "reemplaza a {replacedFileName}"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -14826,8 +14886,8 @@ msgstr "Reemplaza archivos descargados por versiones mejores, según el perfil d
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Replacing {replacedFiles, plural, one {# file} other {# files}}"
-msgstr "Reemplazando {replacedFiles, plural, one {# archivo} many {# archivos} other {# archivos}}"
+#~ msgid "Replacing {replacedFiles, plural, one {# file} other {# files}}"
+#~ msgstr "Reemplazando {replacedFiles, plural, one {# archivo} many {# archivos} other {# archivos}}"
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -16922,11 +16982,15 @@ msgstr "Omitir especiales en series nuevas"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "Skip this file"
-msgstr "Omitir este archivo"
+#~ msgid "Skip this file"
+#~ msgstr "Omitir este archivo"
 
 #: src/App.tsx
 msgid "Skip to content"
+msgstr ""
+
+#: src/components/ImportReviewModal.tsx
+msgid "skipped"
 msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
@@ -18152,8 +18216,8 @@ msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
-msgid "The torrent keeps seeding whichever you pick."
-msgstr "El torrent sigue compartiendo el que elijas."
+#~ msgid "The torrent keeps seeding whichever you pick."
+#~ msgstr "El torrent sigue compartiendo el que elijas."
 
 #: src/api/queue.ts
 msgid "The torrent never appeared in the download client"
@@ -19022,6 +19086,7 @@ msgstr "No autorizado"
 msgid "Unavailable"
 msgstr "No disponible"
 
+#: src/components/ImportReviewModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "unchanged"
@@ -20359,6 +20424,10 @@ msgstr "Puedes añadir series, pero todavía no te han concedido ninguna carpeta
 #, fuzzy
 msgid "You can keep browsing while it looks."
 msgstr "Puedes seguir navegando mientras busca."
+
+#: src/components/ImportReviewModal.tsx
+msgid "You can undo this from Activity."
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy

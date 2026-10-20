@@ -181,6 +181,25 @@ public class TorrentImportServiceTests : IDisposable
         Assert.Contains(file.Replaces, r => r.RelativePath.EndsWith("Berserk Vol.1 Ch.1.cbz"));
     }
 
+    [Fact]
+    public async Task Plan_lists_every_series_chapter_in_reading_order_for_the_map()
+    {
+        var (series, item) = SeedLibrary();
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.Add(new Chapter { SeriesId = series.Id, Number = 8, Language = "en" });
+            db.Chapters.Add(new Chapter { SeriesId = series.Id, Number = 7, Language = "en" });
+            db.SaveChanges();
+        }
+        SeedVolumeDownload(1, 2, 3, 4, 5, 6);
+
+        var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        Assert.Equal(["1", "2", "3", "4", "5", "6", "7", "8"], plan.Chapters.Select(c => c.Label));
+        Assert.All(plan.Chapters.Take(6), c => Assert.True(c.HasFile));
+        Assert.All(plan.Chapters.Skip(6), c => Assert.False(c.HasFile));
+    }
+
     /// <summary>
     /// The link step can run twice for one placed file: the poll that imported it was cut off before
     /// the queue row was saved, or a parked item is settled after the job already placed the files.

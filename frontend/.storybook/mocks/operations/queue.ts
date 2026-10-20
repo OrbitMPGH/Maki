@@ -114,7 +114,7 @@ export const failedItems: QueueItemDto[] = [
 ]
 export const awaitingImportItem = item(7, {
   chapterNumber: null,
-  releaseTitle: 'Clockwork Tea House v01-v05 [Digital] [Maki Scans]',
+  releaseTitle: 'Clockwork Tea House v01-v03 [Digital] [Maki Scans]',
   sourceName: 'torrent:Nyaa Mirror',
   status: 'AwaitingImport',
   origin: 'upgrade',
@@ -253,21 +253,35 @@ export const singleFailureGroup: QueueFailureGroupDto[] = [
   { reasonKey: 'error.download.noPages', sourceName: 'mangadex', count: 3 },
 ]
 
+const single = (n: number) => ({
+  chapterFileId: 910 + n,
+  relativePath: `Clockwork Tea House/Clockwork Tea House - Ch.${String(n).padStart(3, '0')}.cbz`,
+  size: 11_000_000,
+  chapters: [String(n)],
+})
+
+const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => String(from + i))
+
+/**
+ * A 32-chapter series: chapters 1 to 4 share one file, 5 and 6 are missing, 7 to 11 are single
+ * files, 12 to 15 share one file, 31 and 32 are missing. The download's two volumes cover 1 to 14,
+ * so a Replace trashes six files and keeps the 12 to 15 file for its chapter 15.
+ */
 export const importPlan = (queueItemId: number, over: Partial<TorrentImportPlanDto> = {}): TorrentImportPlanDto => ({
   parsingFingerprint: 'fp-7c1a',
   queueItemId,
   seriesId: 7,
   seriesTitle: title(7),
-  releaseName: 'Clockwork Tea House v01-v05 [Digital] [Maki Scans]',
+  releaseName: 'Clockwork Tea House v01-v03 [Digital] [Maki Scans]',
   files: [
     {
       fileName: 'Clockwork Tea House v01.cbz',
       size: 182_000_000,
       label: 'Vol.1',
-      chapters: ['1', '2', '3', '4', '5', '6'],
+      chapters: range(1, 6),
       newChapters: ['5', '6'],
       replaces: [
-        { chapterFileId: 901, relativePath: 'Clockwork Tea House/Ch.1-4.cbz', size: 61_000_000, chapters: ['1', '2', '3', '4'] },
+        { chapterFileId: 901, relativePath: 'Clockwork Tea House/Ch.1-4.cbz', size: 61_000_000, chapters: range(1, 4) },
       ],
       upgradeCount: 4,
       alreadyMetCount: 0,
@@ -276,14 +290,14 @@ export const importPlan = (queueItemId: number, over: Partial<TorrentImportPlanD
       fileName: 'Clockwork Tea House v02.cbz',
       size: 176_000_000,
       label: 'Vol.2',
-      chapters: Array.from({ length: 14 }, (_, i) => String(7 + i)),
+      chapters: range(7, 14),
       newChapters: [],
       replaces: [
-        { chapterFileId: 902, relativePath: 'Clockwork Tea House/Ch.7-20.cbz', size: 140_000_000, chapters: ['7', '8'] },
-        { chapterFileId: 903, relativePath: 'Clockwork Tea House/Ch.21.cbz', size: 11_000_000, chapters: ['21'] },
+        ...[7, 8, 9, 10, 11].map(single),
+        { chapterFileId: 902, relativePath: 'Clockwork Tea House/Ch.12-15.cbz', size: 48_000_000, chapters: range(12, 15) },
       ],
-      upgradeCount: 14,
-      alreadyMetCount: 0,
+      upgradeCount: 0,
+      alreadyMetCount: 8,
     },
     {
       fileName: 'Clockwork Tea House v03.pdf',
@@ -299,9 +313,14 @@ export const importPlan = (queueItemId: number, over: Partial<TorrentImportPlanD
   error: null,
   hasConflicts: true,
   newChapterCount: 2,
-  replacedFileCount: 3,
+  replacedFileCount: 7,
   isUpgrade: false,
   suggestedSkips: [],
+  chapters: range(1, 32).map((label) => ({
+    label,
+    number: Number(label),
+    hasFile: !['5', '6', '31', '32'].includes(label),
+  })),
   ...over,
 })
 

@@ -331,7 +331,8 @@ public class QueueController(
             plan.NewChapterCount,
             plan.ReplacedFileCount,
             plan.IsUpgrade,
-            plan.SuggestedSkips
+            plan.SuggestedSkips,
+            plan.Chapters
         });
     }
 

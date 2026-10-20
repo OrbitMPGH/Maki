@@ -898,6 +898,10 @@ msgstr "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgid "{importedCount, plural, one {# imported} other {# imported}}"
 msgstr "{importedCount, plural, one {# imported} other {# imported}}"
 
+#: src/components/ImportReviewModal.tsx
+msgid "{importedCount, plural, one {Import # file} other {Import # files}}"
+msgstr "{importedCount, plural, one {Import # file} other {Import # files}}"
+
 #: src/sourceLabels.ts
 msgid "{indexer} · Torrent"
 msgstr "{indexer} · Torrent"
@@ -1162,8 +1166,8 @@ msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent cha
 msgstr "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
 
 #: src/components/ImportReviewModal.tsx
-msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
-msgstr "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
+#~ msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
+#~ msgstr "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
 
 #: src/components/series/SeriesHero.tsx
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
@@ -1447,8 +1451,8 @@ msgid "{seriesStarted, plural, one {{seriesFinished} of # series read to the end
 msgstr "{seriesStarted, plural, one {{seriesFinished} of # series read to the end of what you hold.} other {{seriesFinished} of # series read to the end of what you hold.}}"
 
 #: src/components/ImportReviewModal.tsx
-msgid "{seriesTitle} - {fileCount, plural, one {# file} other {# files}} downloaded, {replacedFiles, plural, one {# existing file} other {# existing files}} affected, {newChapters, plural, one {# new chapter} other {# new chapters}}"
-msgstr "{seriesTitle} - {fileCount, plural, one {# file} other {# files}} downloaded, {replacedFiles, plural, one {# existing file} other {# existing files}} affected, {newChapters, plural, one {# new chapter} other {# new chapters}}"
+#~ msgid "{seriesTitle} - {fileCount, plural, one {# file} other {# files}} downloaded, {replacedFiles, plural, one {# existing file} other {# existing files}} affected, {newChapters, plural, one {# new chapter} other {# new chapters}}"
+#~ msgstr "{seriesTitle} - {fileCount, plural, one {# file} other {# files}} downloaded, {replacedFiles, plural, one {# existing file} other {# existing files}} affected, {newChapters, plural, one {# new chapter} other {# new chapters}}"
 
 #: src/pages/HealthPage.tsx
 msgid "{seriesTitle} has no {lowerLabel}. Refresh the series so the chapter exists, then import this archive."
@@ -1483,8 +1487,8 @@ msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}}
 msgstr "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 
 #: src/components/ImportReviewModal.tsx
-msgid "{skippedCount, plural, one {# file will be left out of the import} other {# files will be left out of the import}}"
-msgstr "{skippedCount, plural, one {# file will be left out of the import} other {# files will be left out of the import}}"
+#~ msgid "{skippedCount, plural, one {# file will be left out of the import} other {# files will be left out of the import}}"
+#~ msgstr "{skippedCount, plural, one {# file will be left out of the import} other {# files will be left out of the import}}"
 
 #: src/components/import/MihonReview.tsx
 msgid "{skippedNonLibrary, plural, one {# manga that is not in the library was skipped.} other {# manga that are not in the library were skipped.}}"
@@ -1686,6 +1690,10 @@ msgstr "{totalSeries, plural, one {# series} other {# series}}"
 #: src/pages/LibraryPage.tsx
 msgid "{totalSeriesShown, plural, one {{shownCount} of # series shown.} other {{shownCount} of # series shown.}}"
 msgstr "{totalSeriesShown, plural, one {{shownCount} of # series shown.} other {{shownCount} of # series shown.}}"
+
+#: src/components/ImportReviewModal.tsx
+msgid "{trashedCount, plural, one {# file goes to the trash} other {# files go to the trash}}"
+msgstr "{trashedCount, plural, one {# file goes to the trash} other {# files go to the trash}}"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "{turnedOff, plural, one {# turned off} other {# turned off}}"
@@ -2565,8 +2573,8 @@ msgid "Aggregator"
 msgstr "Aggregator"
 
 #: src/components/CatalogueRules.tsx
+#: src/components/ChapterMapParts.tsx
 #: src/components/import/MihonReview.tsx
-#: src/components/RelinkFilesModal.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -2689,8 +2697,8 @@ msgid "Allowed"
 msgstr "Allowed"
 
 #: src/components/ImportReviewModal.tsx
-msgid "already at cutoff"
-msgstr "already at cutoff"
+#~ msgid "already at cutoff"
+#~ msgstr "already at cutoff"
 
 #: src/api/upgrades.ts
 msgid "Already checked recently"
@@ -3018,6 +3026,10 @@ msgstr "Assign"
 #: src/components/discover/DiscoverGlance.tsx
 msgid "At a glance"
 msgstr "At a glance"
+
+#: src/components/ImportReviewModal.tsx
+msgid "At cutoff"
+msgstr "At cutoff"
 
 #: src/pages/LibraryPage.tsx
 msgid "At least {chapterMin} chapters"
@@ -3636,12 +3648,12 @@ msgstr "Ch. {chapterNumber}"
 msgid "Ch. {chapters}"
 msgstr "Ch. {chapters}"
 
-#: src/components/RelinkFilesModal.tsx
+#: src/components/ChapterMapParts.tsx
 #: src/pages/settings/LibraryCards.tsx
 msgid "Ch. {first}"
 msgstr "Ch. {first}"
 
-#: src/components/RelinkFilesModal.tsx
+#: src/components/ChapterMapParts.tsx
 #: src/pages/settings/LibraryCards.tsx
 msgid "Ch. {first} to {last}"
 msgstr "Ch. {first} to {last}"
@@ -3670,7 +3682,11 @@ msgstr "ch. {from}+"
 msgid "Ch. {label}: {detail}"
 msgstr "Ch. {label}: {detail}"
 
-#: src/components/RelinkFilesModal.tsx
+#: src/components/ImportReviewModal.tsx
+msgid "Ch. {label}: {stateText}"
+msgstr "Ch. {label}: {stateText}"
+
+#: src/components/ChapterMapParts.tsx
 msgid "Ch. {list}"
 msgstr "Ch. {list}"
 
@@ -3687,12 +3703,12 @@ msgid "ch. {read} of {total}"
 msgstr "ch. {read} of {total}"
 
 #: src/components/ImportReviewModal.tsx
-msgid "Ch. {shown}"
-msgstr "Ch. {shown}"
+#~ msgid "Ch. {shown}"
+#~ msgstr "Ch. {shown}"
 
 #: src/components/ImportReviewModal.tsx
-msgid "Ch. {shown} +{extra} more"
-msgstr "Ch. {shown} +{extra} more"
+#~ msgid "Ch. {shown} +{extra} more"
+#~ msgstr "Ch. {shown} +{extra} more"
 
 #: src/api/requests.ts
 msgid "ch. {start}"
@@ -5036,6 +5052,10 @@ msgstr "Days after reading"
 msgid "Days left"
 msgstr "Days left"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Decide later"
+msgstr "Decide later"
+
 #: src/components/settings/ProgressSection.tsx
 msgid "Decides when your reading day ends, which is what streaks and daily goals count against."
 msgstr "Decides when your reading day ends, which is what streaks and daily goals count against."
@@ -6262,6 +6282,10 @@ msgstr "File removed soon"
 msgid "Files"
 msgstr "Files"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Files in this download"
+msgstr "Files in this download"
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 msgid "Files on disk are not touched. Every user's access to this folder is removed, and adding it back later starts with no grants."
@@ -7123,6 +7147,10 @@ msgstr "How signals work"
 msgid "How the built-in reader opens a series. A profile applies automatically to the series types it covers; everything else uses Default. You can also pin a profile to a series, or change settings from inside the reader."
 msgstr "How the built-in reader opens a series. A profile applies automatically to the series types it covers; everything else uses Default. You can also pin a profile to a series, or change settings from inside the reader."
 
+#: src/components/ImportReviewModal.tsx
+msgid "How to import"
+msgstr "How to import"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "How you read"
 msgstr "How you read"
@@ -7219,6 +7247,11 @@ msgstr "Image formats"
 msgid "Import"
 msgstr "Import"
 
+#. placeholder {0}: file.fileName
+#: src/components/ImportReviewModal.tsx
+msgid "Import {0}"
+msgstr "Import {0}"
+
 #: src/pages/ImportPage.tsx
 msgid "Import {folderName}"
 msgstr "Import {folderName}"
@@ -7253,8 +7286,8 @@ msgid "Import entries with status"
 msgstr "Import entries with status"
 
 #: src/components/ImportReviewModal.tsx
-msgid "Import everything, replace the {replacedFiles, plural, one {# file} other {# files}} it covers"
-msgstr "Import everything, replace the {replacedFiles, plural, one {# file} other {# files}} it covers"
+#~ msgid "Import everything, replace the {replacedFiles, plural, one {# file} other {# files}} it covers"
+#~ msgstr "Import everything, replace the {replacedFiles, plural, one {# file} other {# files}} it covers"
 
 #: src/components/import/MihonSummary.tsx
 msgid "Import finished"
@@ -7287,8 +7320,8 @@ msgid "Import lists are turned off for this instance."
 msgstr "Import lists are turned off for this instance."
 
 #: src/components/ImportReviewModal.tsx
-msgid "Import only what is missing, keep existing files"
-msgstr "Import only what is missing, keep existing files"
+#~ msgid "Import only what is missing, keep existing files"
+#~ msgstr "Import only what is missing, keep existing files"
 
 #: src/pages/HealthPage.tsx
 msgid "Import page"
@@ -7362,13 +7395,14 @@ msgid "Imported into {seriesTitle}. The files move into its existing folder."
 msgstr "Imported into {seriesTitle}. The files move into its existing folder."
 
 #: src/components/import/MihonImport.tsx
+#: src/components/ImportReviewModal.tsx
 #: src/components/ui/status.tsx
 msgid "Importing"
 msgstr "Importing"
 
 #: src/components/ImportReviewModal.tsx
-msgid "Importing what is missing"
-msgstr "Importing what is missing"
+#~ msgid "Importing what is missing"
+#~ msgstr "Importing what is missing"
 
 #: src/pages/ImportPage.tsx
 msgid "Importing…"
@@ -7714,6 +7748,10 @@ msgstr "Keeps taking better scoring copies until one scores {upgradeUntilScore}"
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
 msgstr "Keeps this series out of tracker pushes, and out of stats entirely on Full."
+
+#: src/components/ImportReviewModal.tsx
+msgid "kept"
+msgstr "kept"
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Kept as linked"
@@ -8848,6 +8886,7 @@ msgstr "Minimum width (px)"
 msgid "minutes read"
 msgstr "minutes read"
 
+#: src/components/ImportReviewModal.tsx
 #: src/components/RelinkFilesModal.tsx
 msgid "missing"
 msgstr "missing"
@@ -9225,6 +9264,10 @@ msgstr "Never scanned for upgrades"
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Never upgrades"
 msgstr "Never upgrades"
+
+#: src/components/ImportReviewModal.tsx
+msgid "new"
+msgstr "new"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/settings/AccountSection.tsx
@@ -9783,7 +9826,7 @@ msgstr "Nobody by that name is credited in the local MangaBaka database."
 msgid "none"
 msgstr "none"
 
-#: src/components/RelinkFilesModal.tsx
+#: src/components/ChapterMapParts.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -10135,6 +10178,10 @@ msgstr "Nothing matches this rail right now."
 msgid "Nothing needs review."
 msgstr "Nothing needs review."
 
+#: src/components/ImportReviewModal.tsx
+msgid "nothing new"
+msgstr "nothing new"
+
 #: src/pages/CreatorPage.tsx
 msgid "Nothing of theirs is in the searchable part of the catalogue."
 msgstr "Nothing of theirs is in the searchable part of the catalogue."
@@ -10159,6 +10206,7 @@ msgstr "Nothing slow enough to call savoured yet."
 msgid "Nothing to browse yet"
 msgstr "Nothing to browse yet"
 
+#: src/components/ImportReviewModal.tsx
 #: src/pages/ImportPage.tsx
 msgid "Nothing to import"
 msgstr "Nothing to import"
@@ -10481,6 +10529,10 @@ msgstr "Ongoing"
 #: src/pages/HealthPage.tsx
 msgid "Only {scanRootPath}, the root chosen on the Files tab"
 msgstr "Only {scanRootPath}, the root chosen on the Files tab"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Only add what is missing"
+msgstr "Only add what is missing"
 
 #: src/components/NotificationsSection.tsx
 msgid "Only for tagged series"
@@ -12220,29 +12272,37 @@ msgstr "Repairs"
 msgid "Replace"
 msgstr "Replace"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Replace what it covers"
+msgstr "Replace what it covers"
+
+#: src/components/ImportReviewModal.tsx
+msgid "replaced"
+msgstr "replaced"
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass."
 msgstr "Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass."
 
 #: src/components/ImportReviewModal.tsx
-msgid "Replaced files go to the trash folder until housekeeping purges them, and can be reverted from Activity."
-msgstr "Replaced files go to the trash folder until housekeeping purges them, and can be reverted from Activity."
+#~ msgid "Replaced files go to the trash folder until housekeeping purges them, and can be reverted from Activity."
+#~ msgstr "Replaced files go to the trash folder until housekeeping purges them, and can be reverted from Activity."
 
 #: src/pages/HealthPage.tsx
 msgid "Replacement #{opId}"
 msgstr "Replacement #{opId}"
 
 #: src/components/ImportReviewModal.tsx
-msgid "replaces {replacedFileName}"
-msgstr "replaces {replacedFileName}"
+#~ msgid "replaces {replacedFileName}"
+#~ msgstr "replaces {replacedFileName}"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Replaces downloaded files with better releases, judged against each series' quality profile. The daily scan runs after the chosen hour. Scan now and scans started from a series page run regardless of the switch."
 msgstr "Replaces downloaded files with better releases, judged against each series' quality profile. The daily scan runs after the chosen hour. Scan now and scans started from a series page run regardless of the switch."
 
 #: src/components/ImportReviewModal.tsx
-msgid "Replacing {replacedFiles, plural, one {# file} other {# files}}"
-msgstr "Replacing {replacedFiles, plural, one {# file} other {# files}}"
+#~ msgid "Replacing {replacedFiles, plural, one {# file} other {# files}}"
+#~ msgstr "Replacing {replacedFiles, plural, one {# file} other {# files}}"
 
 #: src/components/layout/SidebarFooter.tsx
 msgid "Report a bug"
@@ -13984,12 +14044,16 @@ msgid "Skip specials on new series"
 msgstr "Skip specials on new series"
 
 #: src/components/ImportReviewModal.tsx
-msgid "Skip this file"
-msgstr "Skip this file"
+#~ msgid "Skip this file"
+#~ msgstr "Skip this file"
 
 #: src/App.tsx
 msgid "Skip to content"
 msgstr "Skip to content"
+
+#: src/components/ImportReviewModal.tsx
+msgid "skipped"
+msgstr "skipped"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Skipped {latestVersion}"
@@ -15000,8 +15064,8 @@ msgid "The torrent is no longer in the download client"
 msgstr "The torrent is no longer in the download client"
 
 #: src/components/ImportReviewModal.tsx
-msgid "The torrent keeps seeding whichever you pick."
-msgstr "The torrent keeps seeding whichever you pick."
+#~ msgid "The torrent keeps seeding whichever you pick."
+#~ msgstr "The torrent keeps seeding whichever you pick."
 
 #: src/api/queue.ts
 msgid "The torrent never appeared in the download client"
@@ -15717,6 +15781,7 @@ msgstr "Unauthorized"
 msgid "Unavailable"
 msgstr "Unavailable"
 
+#: src/components/ImportReviewModal.tsx
 #: src/components/RelinkFilesModal.tsx
 msgid "unchanged"
 msgstr "unchanged"
@@ -16808,6 +16873,10 @@ msgstr "You can add series, but no root folder has been granted to you yet. Ask 
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "You can keep browsing while it looks."
 msgstr "You can keep browsing while it looks."
+
+#: src/components/ImportReviewModal.tsx
+msgid "You can undo this from Activity."
+msgstr "You can undo this from Activity."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "You can't add series yourself. An admin decides where it lands and what gets downloaded."

@@ -51,6 +51,9 @@ public record ImportPlanFile(
     int UpgradeCount = 0,
     int AlreadyMetCount = 0);
 
+/// <param name="HasFile">Every row with this label is backed by a file today.</param>
+public record ImportPlanChapter(string Label, decimal? Number, bool HasFile);
+
 /// <param name="Reason"><c>unmeasurable</c> or <c>fewer_pages</c>.</param>
 public record VolumeGuardFailure(string File, string Reason);
 
@@ -129,6 +132,9 @@ public record TorrentImportPlan(
 
     /// <summary>For an upgrade, the files whose chapters are all already at cutoff or protected.</summary>
     public IReadOnlyList<string> SuggestedSkips { get; init; } = [];
+
+    /// <summary>Every chapter of the series in reading order, for the review's chapter map.</summary>
+    public IReadOnlyList<ImportPlanChapter> Chapters { get; init; } = [];
 
     /// <summary>
     /// The scan <see cref="Files"/> was built from, kept so the guard and the import reuse it rather
@@ -341,6 +347,11 @@ public class TorrentImportService(
         {
             IsUpgrade = isUpgrade,
             SuggestedSkips = suggestedSkips,
+            Chapters = chapters
+                .GroupBy(Label)
+                .Select(g => new ImportPlanChapter(g.Key, g.First().Number, g.All(c => c.ChapterFileId != null)))
+                .OrderBy(c => c.Number ?? decimal.MaxValue)
+                .ToList(),
             Sources = sources
         };
 

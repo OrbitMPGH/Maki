@@ -15,6 +15,7 @@ import {
 import { useAuth } from '../auth/AuthProvider'
 import { formatBytes } from '../format'
 import { useLabel } from '../i18n-context'
+import { AllNone, MapLegend, useRangeText } from './ChapterMapParts'
 
 const BASIS_LABELS: Record<string, MessageDescriptor> = {
   pageMarkers: msg`From its pages`,
@@ -61,20 +62,6 @@ interface Row {
   labels: string[]
   basis: string | null
   excluded: boolean
-}
-
-/** "0" → "Ch. 0"; a run of integers → "Ch. 0 to 8"; anything else lists them. */
-function useRangeText(labels: string[]): string {
-  const { t } = useLingui()
-  if (labels.length === 0) return ''
-  const first = labels[0]
-  const last = labels[labels.length - 1]
-  if (labels.length === 1) return t`Ch. ${first}`
-  const nums = labels.map(Number)
-  const run =
-    nums.every((n, i) => Number.isInteger(n) && (i === 0 || n === nums[i - 1] + 1))
-  const list = labels.join(', ')
-  return run ? t`Ch. ${first} to ${last}` : t`Ch. ${list}`
 }
 
 /**
@@ -381,12 +368,12 @@ export function RelinkFilesModal({
                   </Text>
                 </Text>
                 <Group gap={10} wrap="wrap">
-                  <Legend className="is-move" label={renderLabel(CELL_STATE_LABELS.movesToVolume)} />
-                  <Legend className="is-fill" label={renderLabel(CELL_STATE_LABELS.becomesReadable)} />
-                  <Legend className="" label={renderLabel(CELL_STATE_LABELS.unchanged)} />
-                  <Legend className="is-avail" label={renderLabel(CELL_STATE_LABELS.availableNotLinked)} />
-                  <Legend className="is-off" label={renderLabel(CELL_STATE_LABELS.missing)} />
-                  <Legend className="is-pin" label={renderLabel(CELL_STATE_LABELS.kept)} />
+                  <MapLegend className="is-move" label={renderLabel(CELL_STATE_LABELS.movesToVolume)} />
+                  <MapLegend className="is-fill" label={renderLabel(CELL_STATE_LABELS.becomesReadable)} />
+                  <MapLegend className="" label={renderLabel(CELL_STATE_LABELS.unchanged)} />
+                  <MapLegend className="is-avail" label={renderLabel(CELL_STATE_LABELS.availableNotLinked)} />
+                  <MapLegend className="is-off" label={renderLabel(CELL_STATE_LABELS.missing)} />
+                  <MapLegend className="is-pin" label={renderLabel(CELL_STATE_LABELS.kept)} />
                 </Group>
               </Group>
               <div
@@ -524,33 +511,6 @@ export function RelinkFilesModal({
         </Group>
       </Stack>
     </Modal>
-  )
-}
-
-function AllNone({ onAll, onNone }: { onAll: () => void; onNone: () => void }) {
-  return (
-    <Group gap={2}>
-      <Button size="compact-xs" variant="subtle" onClick={onAll}>
-        <Trans>All</Trans>
-      </Button>
-      <Text size="xs" c="var(--ink-4)">
-        ·
-      </Text>
-      <Button size="compact-xs" variant="subtle" onClick={onNone}>
-        <Trans>None</Trans>
-      </Button>
-    </Group>
-  )
-}
-
-function Legend({ className, label }: { className: string; label: string }) {
-  return (
-    <Group gap={6} wrap="nowrap">
-      <span className={`relink-swatch ${className}`} aria-hidden />
-      <Text size="xs" c="var(--ink-3)">
-        {label}
-      </Text>
-    </Group>
   )
 }
 

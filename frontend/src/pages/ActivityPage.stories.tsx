@@ -152,7 +152,7 @@ export const ReviewParkedDownload: Story = {
     await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[0])
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Review import' })
-    await waitFor(async () => expect(await within(dialog).findByText('Clockwork Tea House v01.cbz')).toBeVisible())
+    await waitFor(async () => expect(await within(dialog).findByRole('checkbox', { name: 'Import Clockwork Tea House v01.cbz' })).toBeVisible())
   },
 }
 

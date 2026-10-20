@@ -1816,19 +1816,6 @@ body {
 /* --- Import review ------------------------------------------------------- */
 /* The choices are full sentences with a count in them, so on a phone they wrap rather than
    losing their ending to Mantine's single-line label. */
-.import-review-actions .mantine-Button-root {
-  height: auto;
-  min-height: var(--button-height);
-  padding-block: 6px;
-}
-.import-review-actions .mantine-Button-inner,
-.import-review-actions .mantine-Button-label {
-  height: auto;
-  white-space: normal;
-  line-height: 1.3;
-  text-align: center;
-}
-
 /* --- Home downloading strip --------------------------------------------- */
 /* Title and release label share a line on wider screens, the label capped at half of it. On a
    phone the badge leaves too little room for both, so the label drops under the title. */
@@ -7924,6 +7911,71 @@ body.reader-open {
   border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
   background: color-mix(in srgb, var(--surface-2) 72%, transparent);
 }
+.relink-cell.is-held {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.relink-swatch.is-held {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--brand);
+}
+.relink-cell.is-lit {
+  box-shadow: 0 0 0 1px var(--surface), 0 0 0 2px var(--ink);
+}
+
+/* --- import review dialog: the same chapter map, rows with a size column --- */
+.relink-row.import-review-row {
+  grid-template-columns: 24px minmax(0, 0.8fr) minmax(0, 1fr) 112px 64px;
+  grid-template-areas: 'tick name range effect size';
+  transition: opacity 0.2s, background-color 0.2s;
+}
+.import-review-row.is-lit {
+  background: color-mix(in srgb, var(--brand) 7%, transparent);
+}
+.import-review-tick {
+  grid-area: tick;
+}
+.import-review-name {
+  grid-area: name;
+}
+.import-review-range {
+  grid-area: range;
+}
+.import-review-effect {
+  grid-area: effect;
+  display: flex;
+  justify-content: flex-end;
+}
+.import-review-size {
+  grid-area: size;
+  text-align: right;
+}
+@media (max-width: 36em) {
+  .relink-row.import-review-row {
+    grid-template-columns: 24px minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'tick name effect size'
+      '. range range range';
+    row-gap: 2px;
+  }
+  .import-review-map .relink-map {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+  }
+}
+.import-review-mode .mantine-SegmentedControl-label {
+  white-space: normal;
+  line-height: 1.25;
+}
+.import-review-map {
+  padding: 10px 10px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: color-mix(in srgb, var(--surface-2) 46%, transparent);
+}
+
 .series-detail-chapter-table thead th {
   background: color-mix(in srgb, var(--surface-2) 46%, transparent);
 }
