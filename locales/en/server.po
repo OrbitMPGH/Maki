@@ -708,6 +708,19 @@ msgstr "URL must be a full http:// or https:// address"
 msgid "error.notifications.webhookUrlRequired"
 msgstr "Webhook URL is required"
 
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.formatInvalid"
+msgstr "Choose WebP, AVIF or off"
+
+#. Starting the library pass while page conversion is switched off.
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.off"
+msgstr "Choose a format for page conversion first"
+
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.qualityRange"
+msgstr "Quality must be between {min} and {max}"
+
 #: src/Maki.Api/Controllers/PreviewController.cs
 msgid "error.preview.busy"
 msgstr "Other previews are loading right now. Try again in a moment."

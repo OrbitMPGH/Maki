@@ -83,8 +83,10 @@ public sealed class UpgradeEvaluator
         PageCount = file.PageCount,
         MedianWidth = file.MedianWidth,
         MedianHeight = file.MedianHeight,
-        ImageFormat = file.ImageFormat,
-        SizeBytes = file.Size,
+        ImageFormat = file.QualityImageFormat,
+        SizeBytes = file.QualitySize,
+        StoredImageFormat = file.OriginalImageFormat is null ? null : file.ImageFormat,
+        ConversionSavedBytes = file.OriginalImageFormat is null ? null : file.ConversionSavedBytes,
         Score = score,
         ReleaseName = file.ReleaseName,
         ReleaseHash = file.ReleaseHash
@@ -98,8 +100,8 @@ public sealed class UpgradeEvaluator
         file.ReleaseName ?? Path.GetFileName(file.RelativePath),
         file.PageCount,
         file.MedianWidth,
-        file.ImageFormat,
-        file.Size,
+        file.QualityImageFormat,
+        file.QualitySize,
         language,
         file.MedianHeight);
 }
@@ -296,6 +298,8 @@ public class UpgradeEvaluationService(
                     MedianWidth = c.ChapterFile.MedianWidth,
                     MedianHeight = c.ChapterFile.MedianHeight,
                     ImageFormat = c.ChapterFile.ImageFormat,
+                    OriginalImageFormat = c.ChapterFile.OriginalImageFormat,
+                    ConversionSavedBytes = c.ChapterFile.ConversionSavedBytes,
                     MeasuredAtUtc = c.ChapterFile.MeasuredAtUtc,
                     Trusted = c.ChapterFile.Trusted
                 }
