@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Localization;
-using Maki.Core.Entities;
+using Maki.Api.Services;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,11 +11,8 @@ namespace Maki.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/tags")]
-public class TagsController(ILocalizer localizer, MakiDbContext db) : ControllerBase
+public class TagsController(ILocalizer localizer, MakiDbContext db, TagService tagService) : ControllerBase
 {
-    private static readonly string[] Palette =
-        ["blue", "grape", "teal", "orange", "violet", "cyan", "pink", "lime", "indigo", "red"];
-
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
     {
@@ -45,20 +42,8 @@ public class TagsController(ILocalizer localizer, MakiDbContext db) : Controller
             return this.Fail(localizer, "error.tags.labelRequired");
         }
 
-        var existing = await db.Tags.FirstOrDefaultAsync(t => t.Label == label, ct);
-        if (existing is not null)
-        {
-            return Ok(new TagDto(existing.Id, existing.Label, existing.Color, await SeriesCount(existing.Id, ct)));
-        }
-
-        var tag = new Tag
-        {
-            Label = label,
-            Color = request.Color ?? Palette[ColorSlot(label)],
-        };
-        db.Tags.Add(tag);
-        await db.SaveChangesAsync(ct);
-        return Ok(new TagDto(tag.Id, tag.Label, tag.Color, 0));
+        var (tag, created) = await tagService.FindOrCreateAsync(label, request.Color, ct);
+        return Ok(new TagDto(tag.Id, tag.Label, tag.Color, created ? 0 : await SeriesCount(tag.Id, ct)));
     }
 
     [Authorize(Policy = Policies.ManageTags)]
@@ -145,22 +130,6 @@ public class TagsController(ILocalizer localizer, MakiDbContext db) : Controller
 
         await db.SaveChangesAsync(ct);
         return Ok(new { updated = series.Count });
-    }
-
-    /// <summary>
-    /// Picks a default colour from the label. Rolled by hand rather than via
-    /// <c>string.GetHashCode</c>, which is salted per process — the same label would otherwise
-    /// come out a different colour on every restart.
-    /// </summary>
-    private static int ColorSlot(string label)
-    {
-        var sum = 0;
-        foreach (var c in label.ToLowerInvariant())
-        {
-            sum = (sum * 31 + c) % Palette.Length;
-        }
-
-        return sum;
     }
 
     private Task<int> SeriesCount(int tagId, CancellationToken ct) =>

@@ -110,6 +110,11 @@ msgstr "{0, plural, one {# Kapitel} other {# Kapitel}}"
 msgid "{0, plural, one {# could not be moved (locked or permission denied)} other {# could not be moved (locked or permission denied)}}"
 msgstr "{0, plural, one {# konnte nicht verschoben werden (gesperrt oder fehlende Berechtigung)} other {# konnten nicht verschoben werden (gesperrt oder fehlende Berechtigung)}}"
 
+#. placeholder {0}: failed.length
+#: src/components/import/MihonSummary.tsx
+msgid "{0, plural, one {# failed} other {# failed}}"
+msgstr ""
+
 #. placeholder {0}: r.failed
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -179,6 +184,11 @@ msgstr "{0, plural, one {# bleibt am bisherigen Ort} other {# bleiben am bisheri
 msgid "{0, plural, one {# kept} other {# kept}}"
 msgstr "{0, plural, one {# behalten} other {# behalten}}"
 
+#. placeholder {0}: rows.length
+#: src/components/import/MihonReview.tsx
+msgid "{0, plural, one {# manga in your Mihon library.} other {# manga in your Mihon library.}}"
+msgstr ""
+
 #. placeholder {0}: items.length
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -239,6 +249,16 @@ msgstr "{0, plural, one {# ausgewählt} other {# ausgewählt}}"
 #, fuzzy
 msgid "{0, plural, one {# series finished} other {# series finished}}"
 msgstr "{0, plural, one {# Serie abgeschlossen} other {# Serien abgeschlossen}}"
+
+#. placeholder {0}: withProblems.length
+#: src/components/import/MihonSummary.tsx
+msgid "{0, plural, one {# series had problems applying tags or read marks} other {# series had problems applying tags or read marks}}"
+msgstr ""
+
+#. placeholder {0}: skipped.length
+#: src/components/import/MihonSummary.tsx
+msgid "{0, plural, one {# skipped} other {# skipped}}"
+msgstr ""
 
 #. placeholder {0}: active.items.length
 #. placeholder {0}: items.length
@@ -309,6 +329,11 @@ msgstr "{0, plural, one {Aus {readSeriesCount} deiner # Serie} other {Aus {readS
 #, fuzzy
 msgid "{0, plural, one {From all # series, weighted by what you read} other {From all # series, weighted by what you read}}"
 msgstr "{0, plural, one {Aus allen # Serien, gewichtet nach dem, was du liest} other {Aus allen # Serien, gewichtet nach dem, was du liest}}"
+
+#. placeholder {0}: groups.length
+#: src/components/import/MihonReview.tsx
+msgid "{0, plural, one {Import # series} other {Import # series}}"
+msgstr ""
 
 #. placeholder {0}: r.updated
 #: src/pages/SeriesDetailPage.tsx
@@ -406,11 +431,21 @@ msgstr "{0, plural, one {# nicht unterstütztes Kapitel entfernt} other {# nicht
 msgid "{0, plural, one {Restored and linked to # chapter} other {Restored and linked to # chapters}}"
 msgstr "{0, plural, one {Wiederhergestellt und mit # Kapitel verknüpft} other {Wiederhergestellt und mit # Kapiteln verknüpft}}"
 
+#. placeholder {0}: selectable.length
+#: src/components/import/MihonReview.tsx
+msgid "{0, plural, one {Select all # in this view} other {Select all # in this view}}"
+msgstr ""
+
 #. placeholder {0}: entries.length
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "{0, plural, one {Show all #} other {Show all #}}"
 msgstr "{0, plural, one {Alle # anzeigen} other {Alle # anzeigen}}"
+
+#. placeholder {0}: parsed.skippedNonLibrary
+#: src/components/import/MihonImport.tsx
+msgid "{0, plural, one {This backup has no manga in the library. # manga that is not in the library was skipped.} other {This backup has no manga in the library. # manga that are not in the library were skipped.}}"
+msgstr ""
 
 #. placeholder {0}: selected.size
 #: src/components/SeriesFilesSection.tsx
@@ -735,6 +770,10 @@ msgstr "{count, plural, one {Import von # Ordner rückgängig machen?} other {Im
 msgid "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {Posters: # files, {coverBytesLabel}}}"
 msgstr "{coverFileCount, plural, one {Poster: # Datei, {coverBytesLabel}} other {Poster: # Dateien, {coverBytesLabel}}}"
 
+#: src/components/import/MihonSummary.tsx
+msgid "{created, plural, one {# series added} other {# series added}}"
+msgstr ""
+
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
@@ -769,6 +808,14 @@ msgstr "{deletingSeriesCount, plural, one {Er wird aus # Serie entfernt. Das lä
 #, fuzzy
 msgid "{done} of {probes} chapter samples. The order below updates once it finishes."
 msgstr "{done} von {probes} Kapitel-Stichproben. Die Reihenfolge unten wird aktualisiert, sobald alles fertig ist."
+
+#: src/components/import/MihonImport.tsx
+msgid "{done} of {total}"
+msgstr ""
+
+#: src/components/import/MihonImport.tsx
+msgid "{done} of {total} matched before this stopped. Retry to carry on, or review what matched so far. The rest will show as not found, and you can match them by hand."
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -814,6 +861,10 @@ msgstr "{enabledCount, plural, one {# aktiviert} other {# aktiviert}}"
 #, fuzzy
 msgid "{eta} left"
 msgstr "{eta} verbleibend"
+
+#: src/components/import/MihonSummary.tsx
+msgid "{existing, plural, one {# already in the library} other {# already in the library}}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1382,6 +1433,10 @@ msgstr ""
 msgid "{readChapterCount} of {have} downloaded read"
 msgstr "{readChapterCount} von {have} heruntergeladenen Kapiteln gelesen"
 
+#: src/components/import/MihonReview.tsx
+msgid "{readCount, plural, one {# chapter read} other {# chapters read}}"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
@@ -1650,6 +1705,10 @@ msgstr "{size, plural, one {# Serie, {shareLabel} dieser Ansicht, {coherenceWord
 msgid "{skippedCount, plural, one {# file will be left out of the import} other {# files will be left out of the import}}"
 msgstr "{skippedCount, plural, one {# Datei wird vom Import ausgelassen} other {# Dateien werden vom Import ausgelassen}}"
 
+#: src/components/import/MihonReview.tsx
+msgid "{skippedNonLibrary, plural, one {# manga that is not in the library was skipped.} other {# manga that are not in the library were skipped.}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{source} {tierLabel} ({score})"
@@ -1779,6 +1838,10 @@ msgstr "{timedChapters, plural, one {Das Tempo basiert auf {formattedTimed} zeit
 #, fuzzy
 msgid "{title} is reachable"
 msgstr "{title} ist erreichbar"
+
+#: src/components/import/MihonSummary.tsx
+msgid "{title}: {reason}"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -2879,6 +2942,10 @@ msgstr "Hinzufügen und Entfernen werden in einem Durchlauf auf die Auswahl ange
 msgid "Adds chapters you don't have yet"
 msgstr "Ergänzt Kapitel, die du noch nicht hast"
 
+#: src/pages/ImportPage.tsx
+msgid "Adds the manga in your Mihon library to Maki. Each one is matched to MangaBaka, its categories can become tags, and chapters you have read can be marked as read."
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Adjusted by {editedBy}, asked for {askedFor}"
@@ -2923,6 +2990,7 @@ msgid "Aggregator"
 msgstr "Aggregator"
 
 #: src/components/CatalogueRules.tsx
+#: src/components/import/MihonReview.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -3207,6 +3275,7 @@ msgstr "und"
 msgid "and {remaining} more selected on other pages"
 msgstr "und {remaining} weitere auf anderen Seiten ausgewählt"
 
+#: src/components/import/mihonRows.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "AniList"
@@ -3367,6 +3436,10 @@ msgstr "Anwenden"
 #, fuzzy
 msgid "Apply {selectedCount}"
 msgstr "Auswahl von {selectedCount} anwenden"
+
+#: src/components/import/MihonReview.tsx
+msgid "Apply categories as tags"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4018,6 +4091,7 @@ msgstr ""
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/FailedQueueActions.tsx
+#: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
@@ -4332,6 +4406,7 @@ msgstr "Kap.{from}+"
 msgid "Ch.{number}"
 msgstr "Kap.{number}"
 
+#: src/components/import/MihonReview.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -4683,6 +4758,14 @@ msgstr "Prüft täglich auf GitHub, ob eine neue Version verfügbar ist, und zei
 #, fuzzy
 msgid "Chinese"
 msgstr "Chinesisch"
+
+#: src/components/import/MihonImport.tsx
+msgid "Choose a .tachibk file"
+msgstr ""
+
+#: src/components/import/MihonReview.tsx
+msgid "Choose a match"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -5211,6 +5294,10 @@ msgstr "Weiterlesen"
 #, fuzzy
 msgid "Continue reading {nextChapter}"
 msgstr "Weiterlesen {nextChapter}"
+
+#: src/components/import/MihonImport.tsx
+msgid "Continue to review with what resolved"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -6560,6 +6647,10 @@ msgstr "Jedes Konto hat eine eigene Anmeldung, Berechtigungen, Inhaltseinstufung
 msgid "Each language adds its own chapter rows and files."
 msgstr ""
 
+#: src/components/import/MihonReview.tsx
+msgid "Each Mihon category becomes a tag on the series. Manga in Mihon's Default category get no tag."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -7292,6 +7383,10 @@ msgstr "Nach Kapitelnummer oder Titel filtern"
 msgid "Filter by finding"
 msgstr "Nach Befund filtern"
 
+#: src/components/import/MihonReview.tsx
+msgid "Filter by match status"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Filter by root folder"
@@ -7363,6 +7458,7 @@ msgstr "Anderen Treffer für {folderName} finden"
 msgid "Find better copy"
 msgstr "Bessere Version finden"
 
+#: src/components/import/MihonReview.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Find match"
@@ -7552,6 +7648,10 @@ msgstr "Ordner benennen, Ordner umbenennen, Dateien umbenennen, importierte Date
 #, fuzzy
 msgid "Folder path"
 msgstr "Ordnerpfad"
+
+#: src/pages/ImportPage.tsx
+msgid "Folders"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -8404,11 +8504,23 @@ msgstr "Import"
 msgid "Import {folderName}"
 msgstr "{folderName} importieren"
 
+#: src/components/import/MihonReview.tsx
+msgid "Import {title}"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Import a folder"
 msgstr "Ordner importieren"
+
+#: src/pages/ImportPage.tsx
+msgid "Import a Mihon backup"
+msgstr ""
+
+#: src/components/import/MihonSummary.tsx
+msgid "Import another backup"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8429,6 +8541,10 @@ msgstr "Einträge mit Status importieren"
 #, fuzzy
 msgid "Import everything, replace the {replacedFiles, plural, one {# file} other {# files}} it covers"
 msgstr "Alles importieren und dabei {replacedFiles, plural, one {# abgedeckte Datei} other {# abgedeckte Dateien}} ersetzen"
+
+#: src/components/import/MihonSummary.tsx
+msgid "Import finished"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -8555,6 +8671,7 @@ msgstr "Importiert als {seriesTitle}. Der Ordner behält seinen Namen."
 msgid "Imported into {seriesTitle}. The files move into its existing folder."
 msgstr "Importiert in {seriesTitle}. Die Dateien wandern in dessen vorhandenen Ordner."
 
+#: src/components/import/MihonImport.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Importing"
@@ -8571,11 +8688,16 @@ msgid "Imports can be undone for 30 days."
 msgstr "Importe lassen sich 30 Tage lang rückgängig machen."
 
 #: src/components/import/ImportPlanModal.tsx
+#: src/components/import/MihonReview.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "In library"
 msgstr "In der Bibliothek"
+
+#: src/components/import/MihonImport.tsx
+msgid "In Mihon, open More > Settings > Data and storage > Create backup, then choose the .tachibk file it makes. Only manga in your library are imported."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -8948,6 +9070,10 @@ msgstr "Bildschirm wach halten"
 msgid "Keep the screen awake while reading"
 msgstr "Bildschirm beim Lesen wach halten"
 
+#: src/components/import/MihonImport.tsx
+msgid "Keep this tab open until it finishes."
+msgstr ""
+
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Keep upcoming chapters"
 msgstr ""
@@ -9002,6 +9128,10 @@ msgstr "Art"
 #, fuzzy
 msgid "Kinds"
 msgstr "Arten"
+
+#: src/components/import/mihonRows.ts
+msgid "Kitsu"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -9864,6 +9994,10 @@ msgstr "Manga-Verwaltung"
 msgid "MangaBaka aggregate score"
 msgstr "MangaBaka-Gesamtbewertung"
 
+#: src/components/import/mihonRows.ts
+msgid "MangaBaka id"
+msgstr ""
+
 #: src/components/import/ImportMatchFinder.tsx
 #, fuzzy
 msgid "MangaBaka id, or a MangaBaka, AniList or MyAnimeList link"
@@ -9933,6 +10067,10 @@ msgstr "Kapitel hier als gelesen markieren, sobald sie in Kavita gelesen wurden"
 msgid "Mark chapters read in Kavita too"
 msgstr "Kapitel auch in Kavita als gelesen markieren"
 
+#: src/components/import/MihonReview.tsx
+msgid "Mark chapters read in Mihon as read"
+msgstr ""
+
 #: src/components/series/AnimeResumeCallout.tsx
 #, fuzzy
 msgid "Mark chapters watched"
@@ -9988,10 +10126,15 @@ msgstr "Markiert hier als gelesen, welche Kapitel du in Kavita abgeschlossen has
 msgid "Martial Arts"
 msgstr "Kampfkünste"
 
+#: src/components/import/MihonReview.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Match"
 msgstr "Zuordnen"
+
+#: src/components/import/MihonReview.tsx
+msgid "Match for {title}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10013,6 +10156,10 @@ msgstr "System übernehmen"
 msgid "Match the series already in your library folders."
 msgstr "Serien abgleichen, die bereits in deinen Bibliotheksordnern liegen."
 
+#: src/components/import/MihonReview.tsx
+msgid "Matched"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Matches by meaning, description, and vibe. Falls back to title search on instances with no recommendation index."
@@ -10027,6 +10174,10 @@ msgstr "Die Zuordnung läuft im Hintergrund, eine Serie nach der anderen, damit 
 #, fuzzy
 msgid "Matching the remaining sources…"
 msgstr "Übrige Quellen werden zugeordnet…"
+
+#: src/components/import/MihonImport.tsx
+msgid "Matching your library to MangaBaka"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -10191,6 +10342,15 @@ msgstr "Metadaten direkt von der MangaBaka-API"
 msgid "Mid-way"
 msgstr "Mittendrin"
 
+#: src/components/import/MihonImport.tsx
+#: src/pages/ImportPage.tsx
+msgid "Mihon backup"
+msgstr ""
+
+#: src/components/import/MihonReview.tsx
+msgid "Mihon title"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Min"
@@ -10301,6 +10461,7 @@ msgstr "Überwachen"
 msgid "Monitor catches"
 msgstr "Vom Monitor gefunden"
 
+#: src/components/import/MihonReview.tsx
 #: src/components/ImportListsSection.tsx
 #, fuzzy
 msgid "Monitor for new chapters"
@@ -10571,6 +10732,7 @@ msgstr "Meine Bewertung von"
 msgid "My rating to"
 msgstr "Meine Bewertung bis"
 
+#: src/components/import/mihonRows.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "MyAnimeList"
@@ -10627,6 +10789,7 @@ msgstr "Mindestens zwei aktivierte Quellen zum Vergleichen erforderlich."
 msgid "Needs read tracking: use the reader or connect Kavita."
 msgstr "Benötigt Leseverfolgung: Nutze den Reader oder verbinde Kavita."
 
+#: src/components/import/MihonReview.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
@@ -10701,6 +10864,7 @@ msgstr "Neu"
 msgid "New chapter available"
 msgstr "Neues Kapitel verfügbar"
 
+#: src/components/import/MihonReview.tsx
 #: src/components/ImportListsSection.tsx
 #, fuzzy
 msgid "New chapters"
@@ -10778,6 +10942,10 @@ msgstr "Neue Serie"
 #, fuzzy
 msgid "New series defaults"
 msgstr "Standards für neue Serien"
+
+#: src/components/import/MihonSummary.tsx
+msgid "New series find their sources in the background. Chapters you read in Mihon are marked as soon as the series has a chapter list."
+msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy
@@ -11060,6 +11228,10 @@ msgstr "Keine Manga-Übereinstimmung"
 #, fuzzy
 msgid "No match"
 msgstr "Keine Zuordnung"
+
+#: src/components/import/MihonReview.tsx
+msgid "No match found."
+msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #: src/components/CatalogueRules.tsx
@@ -11481,6 +11653,10 @@ msgstr "Nicht jede Quelle führt Kapitel {chapterNumber}, daher zeigen einige Sp
 msgid "Not for me"
 msgstr "Nichts für mich"
 
+#: src/components/import/MihonReview.tsx
+msgid "Not found"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Not imported"
@@ -11704,6 +11880,10 @@ msgstr "Im Verlauf noch nichts."
 #, fuzzy
 msgid "Nothing in the queue"
 msgstr "Nichts in der Warteschlange"
+
+#: src/components/import/MihonReview.tsx
+msgid "Nothing in this view."
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -12284,6 +12464,10 @@ msgstr "Dateibefunde öffnen"
 #, fuzzy
 msgid "Open Health"
 msgstr "Gesundheit öffnen"
+
+#: src/components/import/MihonSummary.tsx
+msgid "Open library"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13343,6 +13527,10 @@ msgstr "Lies ein Kapitel im Reader von Maki, und die Verfolgung beginnt. Ein Adm
 msgid "Read a few chapters and this fills in."
 msgstr "Lies ein paar Kapitel, dann wird dies ausgefüllt."
 
+#: src/components/import/MihonImport.tsx
+msgid "Read backup"
+msgstr ""
+
 #: src/components/series/AnimeResumeCallout.tsx
 #, fuzzy
 msgid "Read ch. {resumeAt}"
@@ -13407,6 +13595,10 @@ msgstr "Jetzt lesen"
 #, fuzzy
 msgid "Read slowly over a long span"
 msgstr "Langsam über einen längeren Zeitraum gelesen"
+
+#: src/components/import/MihonReview.tsx
+msgid "Read ticks show in the chapter list. Series read counts only include downloaded chapters."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -14561,6 +14753,7 @@ msgstr "Wiederholungen"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/FailedQueueActions.tsx
 #: src/components/home/AnimeResumeRail.tsx
+#: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ImportReviewModal.tsx
@@ -14741,6 +14934,7 @@ msgid "Romanized"
 msgstr "Romanisiert"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/import/MihonReview.tsx
 #: src/components/ImportListsSection.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -15701,6 +15895,10 @@ msgstr "Serie hinzugefügt"
 #, fuzzy
 msgid "Series already in the destination root folder are skipped."
 msgstr "Serien, die bereits im Zielstammordner vorhanden sind, werden übersprungen."
+
+#: src/components/import/MihonReview.tsx
+msgid "Series already in your library are not added again. Importing them only applies tags and read state."
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -17014,6 +17212,10 @@ msgstr "Dieses Konto wurde noch nicht eingerichtet"
 msgid "That account is disabled"
 msgstr "Dieses Konto ist deaktiviert"
 
+#: src/components/import/MihonImport.tsx
+msgid "That backup is larger than the {MAX_BACKUP_MB} MB limit, so it can't be imported."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "That chapter no longer exists"
@@ -17590,6 +17792,10 @@ msgstr "Dieses Archiv wurde nur indexiert: Es ist bekannt, was es laut Index ent
 msgid "This archive is not inside any series folder in its root, so there is no series to import it into. Move it into the right folder and rescan, or use the Import page to bring in the folder it lives in."
 msgstr "Dieses Archiv befindet sich in seinem Stammordner nicht in einem Serienordner, daher gibt es keine Serie, in die es importiert werden kann. Verschiebe es in den richtigen Ordner und scanne erneut, oder verwende die Importseite, um den Ordner zu übernehmen, in dem es liegt."
 
+#: src/components/import/MihonReview.tsx
+msgid "This backup has no categories."
+msgstr ""
+
 #: src/components/settings/PushNotificationsSection.tsx
 msgid "This browser does not support push notifications."
 msgstr ""
@@ -17717,6 +17923,10 @@ msgstr "Diese Serie hat keine aktivierten Quellen"
 #, fuzzy
 msgid "This series has no quality profile"
 msgstr "Diese Serie hat kein Qualitätsprofil"
+
+#: src/components/import/MihonReview.tsx
+msgid "This series is already in the library, but you can't see it, so it can't be changed here."
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -17900,6 +18110,7 @@ msgstr "Getöntes Schwarz"
 
 #: src/api/customRails.ts
 #: src/components/CatalogueBrowser.tsx
+#: src/components/import/mihonRows.ts
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx

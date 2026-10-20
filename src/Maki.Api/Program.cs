@@ -913,6 +913,7 @@ try
     builder.Services.AddScoped<UpgradeTrashService>();
     builder.Services.AddScoped<TorrentUpgradeService>();
     builder.Services.AddScoped<SeriesCreationService>();
+    builder.Services.AddScoped<TagService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
     builder.Services.AddScoped<TorrentImportService>();
@@ -1026,6 +1027,8 @@ try
     builder.Services.AddSingleton<AnimeSignalSyncService>();
     builder.Services.AddScoped<AnimeResumeService>();
     builder.Services.AddSingleton<AnimeResumePendingService>();
+    builder.Services.AddSingleton<PendingReadImportService>();
+    builder.Services.AddScoped<MihonImportService>();
 
     // Read before the host is built, unlike the rest of auth.*, because whether the OpenID Connect
     // scheme is registered at all is decided here. See OidcRuntimeOptions.Load.
