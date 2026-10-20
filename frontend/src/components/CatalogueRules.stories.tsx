@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, neverResolve } from '../../.storybook/mocks/api'
 import { discoverPage, resetTabState } from '../../.storybook/mocks/discover'
@@ -26,7 +26,7 @@ type Story = StoryObj<typeof meta>
 
 export const SimpleView: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('radio', { name: 'Simple' })).toBeChecked()
+    await waitFor(() => expect(canvas.getByRole('radio', { name: 'Simple' })).toBeChecked())
   },
 }
 
@@ -56,14 +56,14 @@ export const RulesView: Story = {
     } satisfies RecommendationFilters,
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('radio', { name: 'Rules' })).toBeChecked()
+    await waitFor(() => expect(canvas.getByRole('radio', { name: 'Rules' })).toBeChecked())
   },
 }
 
 export const SwitchToRules: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByText('Rules'))
-    await expect(canvas.getByRole('radio', { name: 'Rules' })).toBeChecked()
+    await waitFor(() => expect(canvas.getByRole('radio', { name: 'Rules' })).toBeChecked())
   },
 }
 

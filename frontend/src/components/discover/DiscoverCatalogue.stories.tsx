@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { catalogueRails, discoverPage } from '../../../.storybook/mocks/discover'
 import { catalogue } from '../../../.storybook/mocks/shared'
 import { DiscoverCatalogue } from './DiscoverCatalogue'
@@ -25,15 +25,15 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     const tabs = await canvas.findAllByRole('tab')
-    await expect(tabs[0]).toHaveAttribute('aria-selected', 'true')
+    await waitFor(() => expect(tabs[0]).toHaveAttribute('aria-selected', 'true'))
   },
 }
 
 export const SwitchFeed: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('tab', { name: 'Top rated' }))
-    await expect(canvas.getByRole('tab', { name: 'Top rated' })).toHaveAttribute('aria-selected', 'true')
-    await expect(canvas.getByRole('tab', { name: 'Most popular' })).toHaveAttribute('aria-selected', 'false')
+    await waitFor(() => expect(canvas.getByRole('tab', { name: 'Top rated' })).toHaveAttribute('aria-selected', 'true'))
+    await waitFor(() => expect(canvas.getByRole('tab', { name: 'Most popular' })).toHaveAttribute('aria-selected', 'false'))
   },
 }
 
@@ -41,7 +41,7 @@ export const ShowMore: Story = {
   play: async ({ args, canvas, userEvent }) => {
     const [button] = await canvas.findAllByRole('button', { name: 'Show more' })
     await userEvent.click(button)
-    await expect(args.onShowMore).toHaveBeenCalledWith(expect.objectContaining({ key: 'popular' }))
+    await waitFor(() => expect(args.onShowMore).toHaveBeenCalledWith(expect.objectContaining({ key: 'popular' })))
   },
 }
 
@@ -49,7 +49,7 @@ export const OpenTitle: Story = {
   play: async ({ args, canvas, userEvent }) => {
     const [card] = await canvas.findAllByRole('button', { name: /^View and add / })
     await userEvent.click(card)
-    await expect(args.onOpen).toHaveBeenCalled()
+    await waitFor(() => expect(args.onOpen).toHaveBeenCalled())
   },
 }
 

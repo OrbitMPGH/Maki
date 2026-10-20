@@ -19,8 +19,8 @@ export const Default: Story = {}
 export const WithCount: Story = {
   args: { icon: IconSparkles, title: 'Recommended', count: 24 },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('heading', { level: 2, name: 'Recommended' })).toBeVisible()
-    await expect(canvas.getByText('24')).toBeVisible()
+    await expect(await canvas.findByRole('heading', { level: 2, name: 'Recommended' })).toBeVisible()
+    await expect(await canvas.findByText('24')).toBeVisible()
   },
 }
 

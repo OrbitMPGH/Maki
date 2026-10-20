@@ -35,9 +35,9 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Editing layout')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: /Move At a glance/ })).toBeVisible()
-    await expect(canvas.getByText('Unread favourites')).toBeVisible()
-    await expect(canvas.getByText('Hidden')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /Move At a glance/ })).toBeVisible()
+    await expect(await canvas.findByText('Unread favourites')).toBeVisible()
+    await expect(await canvas.findByText('Hidden')).toBeVisible()
   },
 }
 
@@ -46,7 +46,7 @@ export const OpenSectionProperties: Story = {
     await userEvent.click(await canvas.findByText('Continue reading'))
     const body = within(canvasElement.ownerDocument.body)
     const drawer = await body.findByRole('dialog', { name: 'Continue reading' })
-    await expect(within(drawer).getByRole('switch', { name: 'Show this section' })).toBeChecked()
+    await waitFor(() => expect(within(drawer).getByRole('switch', { name: 'Show this section' })).toBeChecked())
   },
 }
 
@@ -64,9 +64,9 @@ export const ChangeThenDone: Story = {
     await userEvent.click(await canvas.findByText('Currently popular'))
     const body = within(canvasElement.ownerDocument.body)
     const drawer = await body.findByRole('dialog', { name: 'Currently popular' })
-    await userEvent.click(within(drawer).getByRole('switch', { name: 'Show this section' }))
+    await userEvent.click(await within(drawer).findByRole('switch', { name: 'Show this section' }))
     await userEvent.keyboard('{Escape}')
-    await userEvent.click(canvas.getByRole('button', { name: 'Done' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Done' }))
     await waitFor(() => expect(args.onExit).toHaveBeenCalledOnce())
     await expect(await body.findByText('Layout saved')).toBeVisible()
   },
@@ -99,7 +99,7 @@ export const UnavailableSections: Story = {
       key === 'recommended' || key === 'popular' ? { id: 'story.unavailable', message: 'Needs the local MangaBaka database' } : null,
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findAllByText('Needs the local MangaBaka database')).toHaveLength(2)
+    await waitFor(() => expect(canvas.getAllByText('Needs the local MangaBaka database')).toHaveLength(2))
   },
 }
 
@@ -124,8 +124,8 @@ export const Loading: Story = {
 export const LoadFailed: Story = {
   render: (args) => <PageLayoutEditorLoading failed onExit={args.onExit} />,
   play: async ({ args, canvas, userEvent }) => {
-    await expect(canvas.getByText('The layout could not be loaded.')).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Exit editing' }))
+    await expect(await canvas.findByText('The layout could not be loaded.')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Exit editing' }))
     await expect(args.onExit).toHaveBeenCalledOnce()
   },
 }

@@ -20,7 +20,7 @@ const dialogOf = (canvasElement: HTMLElement) => within(canvasElement.ownerDocum
 export const PickAFile: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
-    await expect(dialog).toHaveTextContent('Link 2 chapters to a file')
+    await waitFor(() => expect(dialog).toHaveTextContent('Link 2 chapters to a file'))
     await expect(await within(dialog).findByText(/Bonus booklet/)).toBeVisible()
   },
 }
@@ -28,9 +28,9 @@ export const PickAFile: Story = {
 export const LinkSelectedFile: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const dialog = await dialogOf(canvasElement)
-    await expect(within(dialog).getByRole('button', { name: 'Link' })).toBeDisabled()
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Link' })).toBeDisabled())
     await userEvent.click(await within(dialog).findByRole('button', { name: /Bonus booklet/ }))
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Link' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Link' }))
     await waitFor(() => expect(args.onClose).toHaveBeenCalled())
   },
 }

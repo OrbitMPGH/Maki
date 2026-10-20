@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { RouteErrorBoundary } from './RouteErrorBoundary'
 
 function BrokenPage(): never {
@@ -18,7 +18,7 @@ type Story = StoryObj<typeof meta>
 export const Healthy: Story = {
   args: { children: <p style={{ padding: 24 }}>The page rendered normally.</p> },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('The page rendered normally.')).toBeVisible()
+    await expect(await canvas.findByText('The page rendered normally.')).toBeVisible()
   },
 }
 
@@ -26,7 +26,7 @@ export const ChildThrows: Story = {
   args: { children: <BrokenPage /> },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'This page hit an error' })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Reload' })).toBeVisible()
-    await expect(canvas.getByRole('link', { name: 'Go to start page' })).toHaveAttribute('href', '/')
+    await expect(await canvas.findByRole('button', { name: 'Reload' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('link', { name: 'Go to start page' })).toHaveAttribute('href', '/'))
   },
 }

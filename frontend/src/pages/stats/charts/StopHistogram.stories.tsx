@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { Panel } from '../../../components/ui/Panel'
 import { StopHistogram } from './StopHistogram'
 
@@ -23,7 +23,7 @@ type Story = StoryObj<typeof meta>
 /** The bucket holding the median is flagged and tinted. */
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getAllByText('Median')).toHaveLength(1)
+    await waitFor(() => expect(canvas.getAllByText('Median')).toHaveLength(1))
   },
 }
 

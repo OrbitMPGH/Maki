@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import {
@@ -54,7 +54,7 @@ export const Loading: Story = {
   },
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
-    await expect(within(dialog).getByRole('heading', { name: 'The Salt Cartographer' })).toBeVisible()
+    await expect(await within(dialog).findByRole('heading', { name: 'The Salt Cartographer' })).toBeVisible()
   },
 }
 
@@ -65,7 +65,7 @@ export const DetailFailed: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
     await expect(await within(dialog).findByText("Couldn't load the details for this title.")).toBeVisible()
-    await expect(within(dialog).getByRole('button', { name: 'Retry' })).toBeVisible()
+    await expect(await within(dialog).findByRole('button', { name: 'Retry' })).toBeVisible()
   },
 }
 
@@ -140,6 +140,6 @@ export const CloseButton: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const dialog = await dialogOf(canvasElement)
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Close' }))
-    await expect(args.onClose).toHaveBeenCalled()
+    await waitFor(() => expect(args.onClose).toHaveBeenCalled())
   },
 }

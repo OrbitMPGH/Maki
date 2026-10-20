@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith } from '../../.storybook/mocks/api'
 import { LoginPage } from './LoginPage'
@@ -26,9 +26,9 @@ export const WrongPassword: Story = {
   },
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByLabelText(/username/i), 'reader')
-    await userEvent.type(canvas.getByLabelText(/password/i, { selector: 'input' }), 'not-it')
-    await userEvent.click(canvas.getByRole('button', { name: /^sign in$/i }))
-    await expect(await canvas.findByRole('alert')).toHaveTextContent('Invalid username or password')
+    await userEvent.type(await canvas.findByLabelText(/password/i, { selector: 'input' }), 'not-it')
+    await userEvent.click(await canvas.findByRole('button', { name: /^sign in$/i }))
+    await waitFor(() => expect(canvas.getByRole('alert')).toHaveTextContent('Invalid username or password'))
   },
 }
 
@@ -38,8 +38,8 @@ export const TwoFactor: Story = {
   },
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByLabelText(/username/i), 'reader')
-    await userEvent.type(canvas.getByLabelText(/password/i, { selector: 'input' }), 'correct')
-    await userEvent.click(canvas.getByRole('button', { name: /^sign in$/i }))
+    await userEvent.type(await canvas.findByLabelText(/password/i, { selector: 'input' }), 'correct')
+    await userEvent.click(await canvas.findByRole('button', { name: /^sign in$/i }))
     await expect(await canvas.findByRole('heading', { name: /two-factor code/i })).toBeVisible()
   },
 }

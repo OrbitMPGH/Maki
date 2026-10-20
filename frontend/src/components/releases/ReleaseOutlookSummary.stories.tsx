@@ -30,16 +30,16 @@ type Story = StoryObj<typeof meta>
 
 export const Expected: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/^Likely /)).toBeVisible()
-    await expect(canvas.getByText('High confidence')).toBeVisible()
-    await expect(canvas.getByText(/Usually every 7 days/)).toBeVisible()
-    await expect(canvas.getByText(/Checked every 2 hours/)).toBeVisible()
+    await expect(await canvas.findByText(/^Likely /)).toBeVisible()
+    await expect(await canvas.findByText('High confidence')).toBeVisible()
+    await expect(await canvas.findByText(/Usually every 7 days/)).toBeVisible()
+    await expect(await canvas.findByText(/Checked every 2 hours/)).toBeVisible()
   },
 }
 
 export const ConfidenceExplained: Story = {
   play: async ({ canvas }) => {
-    await userEvent.hover(canvas.getByText('High confidence'))
+    await userEvent.hover(await canvas.findByText('High confidence'))
     await expect(await within(document.body).findByText('9 of the last 10 chapters came out inside the window drawn for them.')).toBeVisible()
   },
 }
@@ -47,30 +47,30 @@ export const ConfidenceExplained: Story = {
 export const AnnouncedByTheSource: Story = {
   args: { outlook: announcedOutlook },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/MANGA Plus has it scheduled for/)).toBeVisible()
-    await expect(canvas.getByText(/^Likely /)).toBeVisible()
+    await expect(await canvas.findByText(/MANGA Plus has it scheduled for/)).toBeVisible()
+    await expect(await canvas.findByText(/^Likely /)).toBeVisible()
   },
 }
 
 export const MediumConfidence: Story = {
   args: { outlook: mediumOutlook },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Medium confidence')).toBeVisible()
-    await expect(canvas.getByText(/Checked every 6 hours/)).toBeVisible()
+    await expect(await canvas.findByText('Medium confidence')).toBeVisible()
+    await expect(await canvas.findByText(/Checked every 6 hours/)).toBeVisible()
   },
 }
 
 export const RunningLate: Story = {
   args: { outlook: lateOutlook },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/^Running late\. It was likely /)).toBeVisible()
+    await expect(await canvas.findByText(/^Running late\. It was likely /)).toBeVisible()
   },
 }
 
 export const Irregular: Story = {
   args: { outlook: irregularOutlook },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Releases too irregularly to estimate.')).toBeVisible()
+    await expect(await canvas.findByText('Releases too irregularly to estimate.')).toBeVisible()
     await expect(canvas.queryByText(/confidence/)).toBeNull()
   },
 }
@@ -78,14 +78,14 @@ export const Irregular: Story = {
 export const NoHistoryYet: Story = {
   args: { outlook: unknownOutlook },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Not enough release history for an estimate yet.')).toBeVisible()
+    await expect(await canvas.findByText('Not enough release history for an estimate yet.')).toBeVisible()
   },
 }
 
 export const NotChecked: Story = {
   args: { outlook: finishedOutlook },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/Not checked for new chapters/)).toBeVisible()
+    await expect(await canvas.findByText(/Not checked for new chapters/)).toBeVisible()
   },
 }
 

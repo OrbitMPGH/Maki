@@ -30,7 +30,7 @@ export const Pausing: Story = {
     const body = within(canvasElement.ownerDocument.body)
     const pause = await body.findByRole('button', { name: 'Pause Rewind' })
     await userEvent.click(pause)
-    await expect(body.getByRole('button', { name: 'Resume Rewind' })).toHaveAttribute('aria-pressed', 'true')
+    await waitFor(() => expect(body.getByRole('button', { name: 'Resume Rewind' })).toHaveAttribute('aria-pressed', 'true'))
   },
 }
 

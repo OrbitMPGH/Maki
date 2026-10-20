@@ -50,8 +50,8 @@ export const Healthy: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('System checks')).toBeVisible()
     await expect(await canvas.findByText(/Everything is passing/)).toBeVisible()
-    await expect(canvas.getByText('Image cache and backups')).toBeVisible()
-    await expect(canvas.getByText('Health settings')).toBeVisible()
+    await expect(await canvas.findByText('Image cache and backups')).toBeVisible()
+    await expect(await canvas.findByText('Health settings')).toBeVisible()
   },
 }
 
@@ -59,7 +59,7 @@ export const ShowPassingChecks: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('switch', { name: 'Show passing' }))
     await expect(await canvas.findByText('The database passed its integrity check')).toBeVisible()
-    await expect(canvas.getByText('/library/manga has 842 GB free (71%)')).toBeVisible()
+    await expect(await canvas.findByText('/library/manga has 842 GB free (71%)')).toBeVisible()
   },
 }
 
@@ -67,8 +67,8 @@ export const Warnings: Story = {
   parameters: { msw: [withOverview({ checks: warningChecks, openFindings: 4 })] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('/library/manhwa has 38 GB free (9%), below the 10% warning level')).toBeVisible()
-    await expect(canvas.getByText('3 need attention')).toBeVisible()
-    await expect(canvas.getByText(/Acknowledged, hidden from the header badge/)).toBeVisible()
+    await expect(await canvas.findByText('3 need attention')).toBeVisible()
+    await expect(await canvas.findByText(/Acknowledged, hidden from the header badge/)).toBeVisible()
   },
 }
 
@@ -76,7 +76,7 @@ export const Errors: Story = {
   parameters: { msw: [withOverview({ checks: errorChecks, openFindings: 12 })] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('The database reported a failed integrity check')).toBeVisible()
-    await expect(canvas.getByText('5 need attention')).toBeVisible()
+    await expect(await canvas.findByText('5 need attention')).toBeVisible()
   },
 }
 
@@ -92,8 +92,8 @@ export const GroupedWarnings: Story = {
   parameters: { msw: [withOverview({ checks: groupedChecks })] },
   play: async ({ canvas, userEvent }) => {
     await expect(await canvas.findByText('4 monitored series have no enabled sources')).toBeVisible()
-    await expect(canvas.getByText('3 series are failing to refresh from their sources')).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Show all 4 checks' }))
+    await expect(await canvas.findByText('3 series are failing to refresh from their sources')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Show all 4 checks' }))
     await expect(await canvas.findByText('Bluefin Boys is monitored but has no enabled sources')).toBeVisible()
   },
 }
@@ -103,7 +103,7 @@ export const SourceWithAffectedSeries: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Show 3 affected series' }))
     await expect(await canvas.findByText('HTTP 403 while loading the chapter list')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Refresh all' })).toBeEnabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Refresh all' })).toBeEnabled())
   },
 }
 
@@ -111,8 +111,8 @@ export const ScanRunning: Story = {
   parameters: { msw: [withOverview({ scans: [runningScan, verifyScan], openFindings: 2 })] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Index scan 7: running')).toBeVisible()
-    await expect(canvas.getByText('Verify scan 8: pending')).toBeVisible()
-    await expect(canvas.getAllByRole('button', { name: 'Cancel scan' })).toHaveLength(2)
+    await expect(await canvas.findByText('Verify scan 8: pending')).toBeVisible()
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Cancel scan' })).toHaveLength(2))
   },
 }
 
@@ -155,12 +155,12 @@ export const ScanMenu: Story = {
 export const EditHealthSettings: Story = {
   play: async ({ canvas, userEvent }) => {
     const save = await canvas.findByRole('button', { name: 'Save health settings' })
-    await expect(save).toBeDisabled()
-    const hour = canvas.getByLabelText('Daily scan hour (0-23)')
+    await waitFor(() => expect(save).toBeDisabled())
+    const hour = await canvas.findByLabelText('Daily scan hour (0-23)')
     await userEvent.clear(hour)
     await userEvent.type(hour, '5')
-    await expect(save).toBeEnabled()
-    await userEvent.click(canvas.getByRole('button', { name: /Thresholds/ }))
+    await waitFor(() => expect(save).toBeEnabled())
+    await userEvent.click(await canvas.findByRole('button', { name: /Thresholds/ }))
     await expect(await canvas.findByLabelText('Low disk warning (%)')).toBeVisible()
   },
 }
@@ -168,8 +168,8 @@ export const EditHealthSettings: Story = {
 export const RebuildImageCache: Story = {
   play: async ({ canvas, userEvent }) => {
     await expect(await canvas.findByText('Missing posters')).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Rebuild missing images' }))
-    await expect(canvas.getByRole('link', { name: 'Backup and cache tools' })).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Rebuild missing images' }))
+    await expect(await canvas.findByRole('link', { name: 'Backup and cache tools' })).toBeVisible()
   },
 }
 
@@ -177,7 +177,7 @@ export const FilesTab: Story = {
   parameters: tab('files'),
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Lanterns Over Kasumi/Lanterns Over Kasumi - Ch.57.cbz')).toBeVisible()
-    await expect(canvas.getAllByText('Not linked').length).toBeGreaterThan(0)
+    await waitFor(() => expect(canvas.getAllByText('Not linked').length).toBeGreaterThan(0))
   },
 }
 
@@ -213,12 +213,12 @@ export const BulkSelectAndDelete: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('checkbox', { name: 'Select every file on this page' }))
     await expect(await canvas.findByText('5 selected')).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Delete' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Delete' }))
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Delete 5 archives?' })
-    const confirm = within(dialog).getByRole('button', { name: 'Delete permanently' })
-    await expect(confirm).toBeDisabled()
-    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'I confirm permanent deletion of 5 archives.' }))
+    const confirm = await within(dialog).findByRole('button', { name: 'Delete permanently' })
+    await waitFor(() => expect(confirm).toBeDisabled())
+    await userEvent.click(await within(dialog).findByRole('checkbox', { name: 'I confirm permanent deletion of 5 archives.' }))
     await userEvent.click(confirm)
     await expect(await canvas.findByText('4 deleted, 1 refused:')).toBeVisible()
   },
@@ -231,7 +231,7 @@ export const ReviewDamagedArchive: Story = {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Review archive' })
     await waitFor(async () => expect(await within(dialog).findByText('Request replacement', { selector: 'h3' })).toBeVisible())
-    await expect(within(dialog).getByRole('button', { name: 'Download candidate for review' })).toBeEnabled()
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Download candidate for review' })).toBeEnabled())
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Review permanent deletion' })).toBeVisible())
   },
 }
@@ -300,8 +300,8 @@ export const RepairsTab: Story = {
   parameters: tab('repairs'),
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Replacement #1')).toBeVisible()
-    await expect(canvas.getByText('Deletion review #2')).toBeVisible()
-    await expect(canvas.getByText('No source had a candidate for chapter 4')).toBeVisible()
+    await expect(await canvas.findByText('Deletion review #2')).toBeVisible()
+    await expect(await canvas.findByText('No source had a candidate for chapter 4')).toBeVisible()
   },
 }
 
@@ -319,10 +319,10 @@ export const ReviewReplacement: Story = {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Operation #1' })
     const apply = await within(dialog).findByRole('button', { name: 'Apply replacement' })
-    await expect(apply).toBeDisabled()
-    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'I approve applying these replacement files.' }))
-    await userEvent.click(within(dialog).getByRole('checkbox', { name: /Reset bookmarks and resume positions/ }))
-    await expect(apply).toBeEnabled()
+    await waitFor(() => expect(apply).toBeDisabled())
+    await userEvent.click(await within(dialog).findByRole('checkbox', { name: 'I approve applying these replacement files.' }))
+    await userEvent.click(await within(dialog).findByRole('checkbox', { name: /Reset bookmarks and resume positions/ }))
+    await waitFor(() => expect(apply).toBeEnabled())
   },
 }
 
@@ -341,7 +341,7 @@ export const HistoryTab: Story = {
   parameters: tab('history'),
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Index scan 6 finished: 6200 files, 3 new findings')).toBeVisible()
-    await expect(canvas.getByText('Status change')).toBeVisible()
+    await expect(await canvas.findByText('Status change')).toBeVisible()
   },
 }
 

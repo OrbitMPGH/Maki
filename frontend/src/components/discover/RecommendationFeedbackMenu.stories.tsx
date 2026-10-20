@@ -52,10 +52,10 @@ export const DislikedAndHidden: Story = {
   play: async ({ canvas, userEvent, canvasElement }) => {
     const down = await ready(canvas, 'Thumbs down')
     await waitFor(() => expect(down).toHaveAttribute('aria-pressed', 'true'))
-    await userEvent.click(canvas.getByRole('button', { name: 'More recommendation feedback actions' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'More recommendation feedback actions' }))
     const restore = await body(canvasElement).findByRole('menuitem', { name: 'Restore hidden or dismissed title' })
-    await expect(restore).toBeEnabled()
-    await expect(body(canvasElement).getByRole('menuitem', { name: 'Hide this title' })).toBeDisabled()
+    await waitFor(() => expect(restore).toBeEnabled())
+    await waitFor(() => expect(body(canvasElement).getByRole('menuitem', { name: 'Hide this title' })).toBeDisabled())
   },
 }
 
@@ -63,8 +63,8 @@ export const MenuOpen: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'More recommendation feedback actions' }))
     await expect(await body(canvasElement).findByRole('menuitem', { name: 'Hide this title' })).toBeInTheDocument()
-    await expect(body(canvasElement).getByRole('menuitem', { name: 'Dismiss for 30 days' })).toBeInTheDocument()
-    await expect(body(canvasElement).getByRole('menuitem', { name: 'Seen anime' })).toBeInTheDocument()
+    await expect(await body(canvasElement).findByRole('menuitem', { name: 'Dismiss for 30 days' })).toBeInTheDocument()
+    await expect(await body(canvasElement).findByRole('menuitem', { name: 'Seen anime' })).toBeInTheDocument()
   },
 }
 

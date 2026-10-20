@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { StatusDot } from './StatusDot'
 
 const meta = {
@@ -13,7 +13,7 @@ type Story = StoryObj<typeof meta>
 export const Ok: Story = {
   args: { tone: 'ok', children: 'Completed' },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Completed').style.getPropertyValue('--dot')).toBe('var(--ok)')
+    await expect((await canvas.findByText('Completed')).style.getPropertyValue('--dot')).toBe('var(--ok)')
   },
 }
 
@@ -28,6 +28,6 @@ export const Danger: Story = {
 export const Live: Story = {
   args: { tone: 'info', live: true, children: 'Downloading' },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Downloading')).toHaveAttribute('data-live', 'true')
+    await waitFor(() => expect(canvas.getByText('Downloading')).toHaveAttribute('data-live', 'true'))
   },
 }

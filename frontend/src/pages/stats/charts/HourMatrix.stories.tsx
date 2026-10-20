@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { richRhythm } from '../../../../.storybook/mocks/insights'
 import { Panel } from '../../../components/ui/Panel'
 import { HourMatrix } from './HourMatrix'
@@ -23,8 +23,8 @@ type Story = StoryObj<typeof meta>
 
 export const Evenings: Story = {
   play: async ({ canvasElement, canvas }) => {
-    await expect(canvasElement.querySelectorAll('.stats-matrix-cell')).toHaveLength(168)
-    await expect(canvas.getByText(/Less/)).toBeVisible()
+    await waitFor(() => expect(canvasElement.querySelectorAll('.stats-matrix-cell')).toHaveLength(168))
+    await expect(await canvas.findByText(/Less/)).toBeVisible()
   },
 }
 

@@ -18,7 +18,7 @@ export const Default: Story = {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Ignored folders' })
     await waitFor(async () => expect(await within(dialog).findByText('Extras and bonus pages')).toBeVisible())
-    await userEvent.click(within(dialog).getAllByRole('button', { name: 'Stop ignoring' })[0])
+    await userEvent.click((await within(dialog).findAllByRole('button', { name: 'Stop ignoring' }))[0])
     await waitFor(async () => expect(await within(dialog).findByText('Scan again to list the folders you brought back.')).toBeVisible())
   },
 }

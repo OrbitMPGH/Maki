@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { IconDownload, IconSearch } from '@tabler/icons-react'
 import { LightActionIcon, LightBadge, LightGroup, LightStack, LightSwitch, LightText } from './lightMantine'
 
@@ -58,10 +58,10 @@ export const Switch: Story = {
     return <LightSwitch checked={on} disabled={false} onChange={(e) => setOn(e.currentTarget.checked)} aria-label="Wanted" />
   },
   play: async ({ canvas, userEvent }) => {
-    const toggle = canvas.getByRole('switch', { name: 'Wanted' })
-    await expect(toggle).toBeChecked()
+    const toggle = await canvas.findByRole('switch', { name: 'Wanted' })
+    await waitFor(() => expect(toggle).toBeChecked())
     await userEvent.click(toggle)
-    await expect(toggle).not.toBeChecked()
+    await waitFor(() => expect(toggle).not.toBeChecked())
   },
 }
 

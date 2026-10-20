@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith } from '../../.storybook/mocks/api'
 import { compareSnapshot, seriesMsw } from '../../.storybook/mocks/series'
@@ -28,7 +28,7 @@ export const ThreeSources: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
     await expect(await within(dialog).findByText('Source A')).toBeVisible()
-    await expect(within(dialog).getByText('Source B')).toBeVisible()
+    await expect(await within(dialog).findByText('Source B')).toBeVisible()
   },
 }
 
@@ -36,7 +36,7 @@ export const RevealSourceNames: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await dialogOf(canvasElement)
     await expect(await within(dialog).findByText('Source A')).toBeVisible()
-    await userEvent.click(within(dialog).getByRole('switch', { name: /Hide source names/ }))
+    await userEvent.click(await within(dialog).findByRole('switch', { name: /Hide source names/ }))
     await expect(await within(dialog).findByText('MangaDex')).toBeVisible()
   },
 }
@@ -77,7 +77,7 @@ export const PickBetterCopy: Story = {
   },
   play: async ({ canvasElement }) => {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: /find a better copy of ch\.12/i })
-    await expect((await within(dialog).findAllByRole('button', { name: 'Use this copy' })).length).toBeGreaterThan(0)
+    await waitFor(() => expect((within(dialog).getAllByRole('button', { name: 'Use this copy' })).length).toBeGreaterThan(0))
   },
 }
 

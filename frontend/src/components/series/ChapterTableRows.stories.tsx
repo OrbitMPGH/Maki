@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { Table, VisuallyHidden } from '@mantine/core'
 import { chaptersFor, fileQuality, progressFor } from '../../../.storybook/mocks/series'
 import { hoursAgo } from '../../../.storybook/mocks/api'
@@ -112,8 +112,8 @@ type Story = StoryObj<typeof meta>
 
 export const Downloaded: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/Ch\.5/)).toBeVisible()
-    await expect(canvas.getByRole('switch', { name: /Want .*Ch\.5/ })).toBeChecked()
+    await expect(await canvas.findByText(/Ch\.5/)).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /Want .*Ch\.5/ })).toBeChecked())
   },
 }
 
@@ -203,21 +203,21 @@ export const FileScheduledForDeletion: Story = {
 export const SelectModeSelected: Story = {
   args: { selectMode: true, selected: true },
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(canvas.getByText(/Ch\.5/))
-    await expect(args.actions.clickRow).toHaveBeenCalled()
+    await userEvent.click(await canvas.findByText(/Ch\.5/))
+    await waitFor(() => expect(args.actions.clickRow).toHaveBeenCalled())
   },
 }
 
 export const ReaderRow: Story = {
   args: { canEditMetadata: false, canDownload: false, canDelete: false, canFindBetterCopy: false },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('switch', { name: /Want .*Ch\.5/ })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /Want .*Ch\.5/ })).toBeDisabled())
   },
 }
 
 export const RowActionsMenu: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    const buttons = canvas.getAllByRole('button')
+    const buttons = await canvas.findAllByRole('button')
     await userEvent.click(buttons[buttons.length - 1])
     await expect(await within(canvasElement.ownerDocument.body).findByRole('menu')).toBeInTheDocument()
   },

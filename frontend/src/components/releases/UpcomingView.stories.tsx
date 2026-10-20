@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import { UpcomingView } from './UpcomingView'
@@ -14,11 +14,11 @@ type Story = StoryObj<typeof meta>
 
 export const Timeline: Story = {
   play: async ({ canvas }) => {
-    await expect((await canvas.findAllByText('Lanterns Over Kasumi')).length).toBeGreaterThan(0)
-    await expect(canvas.getByText('Running late')).toBeVisible()
-    await expect(canvas.getByText('Further out')).toBeVisible()
-    await expect(canvas.getAllByLabelText(/^Likely /).length).toBeGreaterThan(0)
-    await expect(canvas.getAllByLabelText(/MANGA Plus has it scheduled for/).length).toBeGreaterThan(0)
+    await waitFor(() => expect((canvas.getAllByText('Lanterns Over Kasumi')).length).toBeGreaterThan(0))
+    await expect(await canvas.findByText('Running late')).toBeVisible()
+    await expect(await canvas.findByText('Further out')).toBeVisible()
+    await waitFor(() => expect(canvas.getAllByLabelText(/^Likely /).length).toBeGreaterThan(0))
+    await waitFor(() => expect(canvas.getAllByLabelText(/MANGA Plus has it scheduled for/).length).toBeGreaterThan(0))
   },
 }
 
@@ -36,7 +36,7 @@ export const Phone: Story = {
   parameters: { viewport: { defaultViewport: 'mobile1' } },
   globals: { viewport: { value: 'mobile1', isRotated: false } },
   play: async ({ canvas }) => {
-    await expect((await canvas.findAllByText('Lanterns Over Kasumi')).length).toBeGreaterThan(0)
+    await waitFor(() => expect((canvas.getAllByText('Lanterns Over Kasumi')).length).toBeGreaterThan(0))
   },
 }
 

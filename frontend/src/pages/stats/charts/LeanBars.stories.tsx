@@ -25,8 +25,8 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('+13 pt')).toBeVisible()
-    await expect(canvas.getByText('−8 pt')).toBeVisible()
+    await expect(await canvas.findByText('+13 pt')).toBeVisible()
+    await expect(await canvas.findByText('−8 pt')).toBeVisible()
   },
 }
 
@@ -35,6 +35,6 @@ export const TopThree: Story = { args: { max: 3 } }
 export const NoLeanAtAll: Story = {
   args: { items: [{ name: 'Fantasy', readShare: 0.2, libraryShare: 0.2 }] },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('0 pt')).toBeVisible()
+    await expect(await canvas.findByText('0 pt')).toBeVisible()
   },
 }

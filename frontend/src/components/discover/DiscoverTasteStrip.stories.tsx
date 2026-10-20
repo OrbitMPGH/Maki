@@ -17,7 +17,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Steering these picks')).toBeVisible()
-    await expect(canvas.getByRole('link', { name: 'Your taste' })).toHaveAttribute('href', '/discover/taste')
+    await waitFor(() => expect(canvas.getByRole('link', { name: 'Your taste' })).toHaveAttribute('href', '/discover/taste'))
   },
 }
 

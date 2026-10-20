@@ -86,24 +86,24 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ args, canvas, userEvent }) => {
-    await expect(canvas.getByText('Lanterns Over Kasumi')).toBeVisible()
-    await expect(canvas.getByText('131/142 chapters read · 150 in series')).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Toggle bookmark' }))
+    await expect(await canvas.findByText('Lanterns Over Kasumi')).toBeVisible()
+    await expect(await canvas.findByText('131/142 chapters read · 150 in series')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Toggle bookmark' }))
     await expect(args.onToggleBookmark).toHaveBeenCalledOnce()
-    await userEvent.click(canvas.getByRole('button', { name: 'Keyboard shortcuts' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Keyboard shortcuts' }))
     await expect(args.onShortcuts).toHaveBeenCalledOnce()
   },
 }
 
 export const SettingsOpen: Story = {
   play: async ({ args, canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Reader settings' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
     const body = within(canvasElement.ownerDocument.body)
     await expect(await body.findByText('Reading profile')).toBeVisible()
-    await userEvent.click(body.getByText('Continuous'))
-    await expect(args.onPrefs).toHaveBeenCalledWith({ mode: 'vertical' })
-    await userEvent.click(body.getByLabelText('Incognito (don\'t record this session)'))
-    await expect(args.onIncognito).toHaveBeenCalledWith(true)
+    await userEvent.click(await body.findByText('Continuous'))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ mode: 'vertical' }))
+    await userEvent.click(await body.findByLabelText('Incognito (don\'t record this session)'))
+    await waitFor(() => expect(args.onIncognito).toHaveBeenCalledWith(true))
     // The toggle stays on after the click because the harness holds the state.
     await waitFor(() => expect(body.getByLabelText('Incognito (don\'t record this session)')).toBeChecked())
   },
@@ -114,18 +114,18 @@ export const ProfileDropdown: Story = {
   // outside click; the popover's exit transition is what keeps the option mounted long enough to fire.
   parameters: { realMotion: true },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Reader settings' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
     const body = within(canvasElement.ownerDocument.body)
     await userEvent.click(await body.findByLabelText('Reading profile', { selector: 'input' }))
     await userEvent.click(await body.findByRole('option', { name: 'Night reading' }))
-    await expect(args.onSelection).toHaveBeenCalledWith(3)
+    await waitFor(() => expect(args.onSelection).toHaveBeenCalledWith(3))
   },
 }
 
 export const SeriesOverride: Story = {
   args: { selection: 'series', source: 'Series' },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Reader settings' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
     const body = within(canvasElement.ownerDocument.body)
     await expect(await body.findByText('Changes apply to this series only.')).toBeInTheDocument()
   },
@@ -134,7 +134,7 @@ export const SeriesOverride: Story = {
 export const GlobalDefaults: Story = {
   args: { selection: 'auto', source: 'Global', autoProfileId: null },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Reader settings' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
     const body = within(canvasElement.ownerDocument.body)
     await expect(await body.findByText('Changes apply to your reader defaults.')).toBeInTheDocument()
   },
@@ -143,7 +143,7 @@ export const GlobalDefaults: Story = {
 export const OriginalFitShowsScale: Story = {
   args: { prefs: { ...mangaPrefs, fit: 'original', scale: 150 } },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Reader settings' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
     const body = within(canvasElement.ownerDocument.body)
     await expect(await body.findByText('Scale (150%)')).toBeInTheDocument()
   },
@@ -155,8 +155,8 @@ export const FirstChapterOfSeries: Story = {
     prefs: { ...mangaPrefs, direction: 'ltr' },
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('button', { name: 'Previous chapter' })).toBeDisabled()
-    await expect(canvas.getByRole('button', { name: 'Next chapter' })).toBeEnabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Previous chapter' })).toBeDisabled())
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Next chapter' })).toBeEnabled())
   },
 }
 
@@ -164,13 +164,13 @@ export const LastChapterOnDisk: Story = {
   args: { manifest: chapters[1142], page: 11, pageLabel: '12' },
   play: async ({ canvas }) => {
     // Right to left mirrors the chevrons, so the left one is the (missing) next chapter.
-    await expect(canvas.getByRole('button', { name: 'Next chapter' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Next chapter' })).toBeDisabled())
   },
 }
 
 export const NextChapterFromTheToolbar: Story = {
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Next chapter' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Next chapter' }))
     await expect(args.onNextChapter).toHaveBeenCalledOnce()
   },
 }
@@ -178,7 +178,7 @@ export const NextChapterFromTheToolbar: Story = {
 export const EverythingRead: Story = {
   args: { manifest: chapters[2096], readingCounted: true, page: 23, pageLabel: '24' },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('all read')).toBeVisible()
+    await expect(await canvas.findByText('all read')).toBeVisible()
   },
 }
 
@@ -189,7 +189,7 @@ export const Bookmarked: Story = {
 export const BookmarksNeedConnection: Story = {
   args: { bookmarkDisabled: true },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('button', { name: 'Toggle bookmark' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Toggle bookmark' })).toBeDisabled())
   },
 }
 
@@ -200,7 +200,7 @@ export const Incognito: Story = {
 export const ZoomedIn: Story = {
   args: { zoom: 2.5 },
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Reset zoom' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reset zoom' }))
     await expect(args.onZoomReset).toHaveBeenCalledOnce()
   },
 }

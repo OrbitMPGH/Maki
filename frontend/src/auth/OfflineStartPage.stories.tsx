@@ -13,16 +13,16 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('heading', { name: "You're offline" })).toBeVisible()
-    await expect(canvas.getByText(/Maki can't reach the server/)).toBeVisible()
+    await expect(await canvas.findByRole('heading', { name: "You're offline" })).toBeVisible()
+    await expect(await canvas.findByText(/Maki can't reach the server/)).toBeVisible()
   },
 }
 
 export const TryAgain: Story = {
   play: async ({ canvas, userEvent }) => {
     // Retrying re-asks the server who is signed in; the page stays up while it answers.
-    await userEvent.click(canvas.getByRole('button', { name: 'Try again' }))
-    await expect(canvas.getByRole('heading', { name: "You're offline" })).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Try again' }))
+    await expect(await canvas.findByRole('heading', { name: "You're offline" })).toBeVisible()
   },
 }
 

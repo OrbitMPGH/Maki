@@ -18,8 +18,8 @@ type Story = StoryObj<typeof meta>
 export const WithTags: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Favourites')).toBeVisible()
-    await expect(canvas.getByText('Reading now')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Edit' })).toBeVisible()
+    await expect(await canvas.findByText('Reading now')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Edit' })).toBeVisible()
   },
 }
 
@@ -34,7 +34,7 @@ export const Editing: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Edit' }))
     await expect(await canvas.findByText('Press Enter to create a new tag')).toBeVisible()
-    await expect(canvas.getByLabelText('Your tags')).toHaveFocus()
+    await waitFor(() => expect(canvas.getByLabelText('Your tags')).toHaveFocus())
   },
 }
 

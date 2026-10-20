@@ -36,10 +36,10 @@ export const ApplyingASelection: Story = {
   play: async ({ canvasElement, userEvent, args }) => {
     const body = bodyOf(canvasElement)
     await body.findByText('6 of 6 selected')
-    await userEvent.click(body.getByRole('checkbox', { name: 'Lanterns Over Kasumi' }))
-    await userEvent.click(body.getByRole('checkbox', { name: 'Snowfield Letters' }))
-    await expect(body.getByText('4 of 6 selected')).toBeVisible()
-    await userEvent.click(body.getByRole('button', { name: 'Apply 4' }))
+    await userEvent.click(await body.findByRole('checkbox', { name: 'Lanterns Over Kasumi' }))
+    await userEvent.click(await body.findByRole('checkbox', { name: 'Snowfield Letters' }))
+    await expect(await body.findByText('4 of 6 selected')).toBeVisible()
+    await userEvent.click(await body.findByRole('button', { name: 'Apply 4' }))
     await expect(await body.findByText('Imported 4 ratings')).toBeVisible()
     await waitFor(() => expect(args.onClose).toHaveBeenCalled())
   },
@@ -49,9 +49,9 @@ export const SelectNone: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const body = bodyOf(canvasElement)
     await body.findByText('6 of 6 selected')
-    await userEvent.click(body.getByRole('checkbox', { name: /selected/ }))
-    await expect(body.getByText('0 of 6 selected')).toBeVisible()
-    await expect(body.getByRole('button', { name: 'Apply' })).toBeDisabled()
+    await userEvent.click(await body.findByRole('checkbox', { name: /selected/ }))
+    await expect(await body.findByText('0 of 6 selected')).toBeVisible()
+    await waitFor(() => expect(body.getByRole('button', { name: 'Apply' })).toBeDisabled())
   },
 }
 
@@ -75,7 +75,7 @@ export const TrackerError: Story = {
   play: async ({ canvasElement }) => {
     const body = bodyOf(canvasElement)
     await expect(await body.findByText(/AniList refused the saved token/)).toBeVisible()
-    await expect(body.getByRole('button', { name: 'Retry' })).toBeVisible()
+    await expect(await body.findByRole('button', { name: 'Retry' })).toBeVisible()
   },
 }
 

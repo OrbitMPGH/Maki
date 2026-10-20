@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { Text, Title } from '@mantine/core'
 import { Panel } from './Panel'
 import { SurfaceFrame } from './SurfaceFrame'
@@ -26,7 +26,7 @@ type Story = StoryObj<typeof meta>
 export const WideStandard: Story = {
   play: async ({ canvasElement }) => {
     const frame = canvasElement.querySelector('.surface-frame')
-    await expect(frame).toHaveClass('surface-frame--wide', 'surface-frame--standard')
+    await waitFor(() => expect(frame).toHaveClass('surface-frame--wide', 'surface-frame--standard'))
   },
 }
 
@@ -37,7 +37,7 @@ export const FullWidth: Story = {
 export const Editorial: Story = {
   args: { pageStyle: 'editorial' },
   play: async ({ canvasElement }) => {
-    await expect(canvasElement.querySelector('.surface-frame')).toHaveAttribute('data-page-style', 'editorial')
+    await waitFor(() => expect(canvasElement.querySelector('.surface-frame')).toHaveAttribute('data-page-style', 'editorial'))
   },
 }
 

@@ -44,7 +44,7 @@ export const ReadingSectionsAsRails: Story = {
 export const JumpBackInHero: Story = {
   parameters: { msw: homePage(layout({ hero: { continue: true, jumpback: true } })) },
   play: async ({ canvas }) => {
-    await expect(await canvas.findAllByRole('complementary', { name: /next up/i })).toHaveLength(2)
+    await waitFor(() => expect(canvas.getAllByRole('complementary', { name: /next up/i })).toHaveLength(2))
   },
 }
 
@@ -122,7 +122,7 @@ export const NothingToPickUp: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Nothing to pick up yet')).toBeVisible()
-    await expect(canvas.getByRole('link', { name: /browse library/i })).toHaveAttribute('href', '/library')
+    await waitFor(() => expect(canvas.getByRole('link', { name: /browse library/i })).toHaveAttribute('href', '/library'))
   },
 }
 
@@ -130,7 +130,7 @@ export const ReadingFailed: Story = {
   parameters: { msw: homePage(http.get(api('/home/reading'), () => failWith(500))) },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/couldn't load your reading progress/i)).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Retry' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Retry' })).toBeVisible()
   },
 }
 
@@ -152,8 +152,8 @@ export const EmptyLibrary: Story = {
   parameters: { msw: homePage(http.get(api('/series'), () => HttpResponse.json([]))) },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Nothing in your library yet')).toBeVisible()
-    await expect(await canvas.findByRole('link', { name: 'Add series' })).toHaveAttribute('href', '/add')
-    await expect(canvas.getByRole('link', { name: /import a folder/i })).toHaveAttribute('href', '/import')
+    await waitFor(() => expect(canvas.getByRole('link', { name: 'Add series' })).toHaveAttribute('href', '/add'))
+    await waitFor(() => expect(canvas.getByRole('link', { name: /import a folder/i })).toHaveAttribute('href', '/import'))
   },
 }
 
@@ -209,7 +209,7 @@ export const EditLayout: Story = {
   parameters: { router: { initialEntries: ['/?edit=1'] }, msw: homePage(layout({ rails: [1, 2] })) },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Editing layout')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Done' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Done' })).toBeVisible()
   },
 }
 
@@ -227,7 +227,7 @@ export const OpenLayoutEditor: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Edit layout' }))
     await expect(await canvas.findByText('Editing layout')).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Cancel' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Cancel' }))
     await expect(await canvas.findByRole('heading', { level: 2, name: /continue reading/i })).toBeVisible()
   },
 }

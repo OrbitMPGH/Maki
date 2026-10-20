@@ -17,7 +17,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('button', { name: 'Retry failed' })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Remove failed' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Remove failed' })).toBeVisible()
   },
 }
 
@@ -26,7 +26,7 @@ export const RetryNarrowedByReason: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Retry failed' }))
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Retry failed downloads' })
-    await userEvent.click(within(dialog).getByRole('combobox', { name: 'Reason' }))
+    await userEvent.click(await within(dialog).findByRole('combobox', { name: 'Reason' }))
     await userEvent.click(await body.findByRole('option', { name: 'The source returned no pages' }))
     await waitFor(() =>
       expect(within(dialog).getByText('4 failed downloads will be queued again, ignoring the automatic retry limit.')).toBeVisible(),
@@ -39,7 +39,7 @@ export const RemoveWithTorrents: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Remove failed' }))
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Remove failed downloads' })
-    await expect(within(dialog).getByRole('checkbox', { name: "Don't grab removed torrent releases again" })).toBeChecked()
+    await waitFor(() => expect(within(dialog).getByRole('checkbox', { name: "Don't grab removed torrent releases again" })).toBeChecked())
     await waitFor(() => expect(within(dialog).getByText('8 failed downloads will be removed from the queue.')).toBeVisible())
   },
 }

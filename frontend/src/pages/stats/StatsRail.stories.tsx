@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { RangeControl } from './RangeControl'
 import { StatsRail } from './StatsRail'
 import { StatsSection } from './StatsSection'
@@ -45,17 +45,17 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('navigation', { name: 'Stats sections' })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: /Reading/ })).toHaveAttribute('aria-current', 'location')
+    await expect(await canvas.findByRole('navigation', { name: 'Stats sections' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: /Reading/ })).toHaveAttribute('aria-current', 'location'))
   },
 }
 
 export const WithWindowPicker: Story = {
   args: { end: <Window /> },
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: /Taste/ }))
-    await expect(canvas.getByRole('button', { name: /Taste/ })).toHaveAttribute('aria-current', 'location')
-    await expect(canvas.getByRole('radio', { name: '30 days' })).toBeChecked()
+    await userEvent.click(await canvas.findByRole('button', { name: /Taste/ }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /Taste/ })).toHaveAttribute('aria-current', 'location'))
+    await waitFor(() => expect(canvas.getByRole('radio', { name: '30 days' })).toBeChecked())
   },
 }
 
@@ -63,7 +63,7 @@ export const WithWindowPicker: Story = {
 export const DeepLinked: Story = {
   parameters: { router: { initialEntries: ['/stats?section=library'] } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('button', { name: /Library/ })).toHaveAttribute('aria-current', 'location')
-    await expect(canvas.getByText('everyone')).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: /Library/ })).toHaveAttribute('aria-current', 'location'))
+    await expect(await canvas.findByText('everyone')).toBeVisible()
   },
 }

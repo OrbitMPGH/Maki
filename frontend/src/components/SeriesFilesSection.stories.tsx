@@ -18,7 +18,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/Bonus booklet/)).toBeVisible()
-    await expect(canvas.getByText('Vol.3')).toBeVisible()
+    await expect(await canvas.findByText('Vol.3')).toBeVisible()
   },
 }
 
@@ -26,10 +26,10 @@ export const SelectAndDelete: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Select' }))
     await userEvent.click(await canvas.findByRole('button', { name: /select all on disk/i }))
-    await userEvent.click(canvas.getByRole('button', { name: /delete selected/i }))
+    await userEvent.click(await canvas.findByRole('button', { name: /delete selected/i }))
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
-    await expect(within(dialog).getByRole('button', { name: 'Delete' })).toBeVisible()
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    await expect(await within(dialog).findByRole('button', { name: 'Delete' })).toBeVisible()
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Cancel' }))
   },
 }
 
@@ -44,9 +44,9 @@ export const BinRefusesDelete: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Select' }))
     await userEvent.click(await canvas.findByRole('button', { name: /select all on disk/i }))
-    await userEvent.click(canvas.getByRole('button', { name: /delete selected/i }))
+    await userEvent.click(await canvas.findByRole('button', { name: /delete selected/i }))
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Delete' }))
     await expect(await within(dialog).findByRole('button', { name: 'Delete permanently' })).toBeVisible()
   },
 }

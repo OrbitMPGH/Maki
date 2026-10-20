@@ -36,7 +36,7 @@ export const AdminAllTabs: Story = {
       await expect(await canvas.findByRole('tab', { name })).toBeVisible()
     }
     await expect(await canvas.findByRole('heading', { name: 'Sign-in' })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Run setup guide' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Run setup guide' })).toBeVisible()
   },
 }
 
@@ -53,7 +53,7 @@ export const PreferencesTab: Story = {
   parameters: { router: { path: '/settings', initialEntries: ['/settings?tab=preferences'] } },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Appearance' })).toBeVisible()
-    await expect(canvas.getByRole('heading', { name: 'Push notifications' })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { name: 'Push notifications' })).toBeVisible()
   },
 }
 
@@ -61,7 +61,7 @@ export const ReadingTab: Story = {
   parameters: { router: { path: '/settings', initialEntries: ['/settings?tab=reading'] } },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Kavita read sync' })).toBeVisible()
-    await expect(canvas.getByRole('heading', { name: 'OPDS catalogue' })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { name: 'OPDS catalogue' })).toBeVisible()
   },
 }
 
@@ -77,7 +77,7 @@ export const DownloadsTab: Story = {
   parameters: { router: { path: '/settings', initialEntries: ['/settings?tab=downloads'] } },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Download queue' })).toBeVisible()
-    await expect(canvas.getByRole('heading', { name: 'Upgrade scan' })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { name: 'Upgrade scan' })).toBeVisible()
   },
 }
 
@@ -85,7 +85,7 @@ export const IntegrationsTab: Story = {
   parameters: { router: { path: '/settings', initialEntries: ['/settings?tab=integrations'] } },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Kavita' })).toBeVisible()
-    await expect(canvas.getByRole('heading', { name: 'Suwayomi' })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { name: 'Suwayomi' })).toBeVisible()
   },
 }
 
@@ -100,7 +100,7 @@ export const SystemTab: Story = {
   parameters: { router: { path: '/settings', initialEntries: ['/settings?tab=system'] } },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Backup & restore' })).toBeVisible()
-    await expect((await canvas.findAllByRole('button', { name: 'Restore' })).length).toBe(3)
+    await waitFor(() => expect((canvas.getAllByRole('button', { name: 'Restore' })).length).toBe(3))
   },
 }
 
@@ -133,7 +133,7 @@ export const Reader: Story = {
   parameters: { auth: 'reader' },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('tab', { name: 'Account' })).toBeVisible()
-    await expect(canvas.getByRole('tab', { name: 'Preferences' })).toBeVisible()
+    await expect(await canvas.findByRole('tab', { name: 'Preferences' })).toBeVisible()
     await expect(canvas.queryByRole('tab', { name: 'Downloads' })).toBeNull()
     await expect(canvas.queryByRole('tab', { name: 'System' })).toBeNull()
     await expect(canvas.queryByRole('button', { name: 'Run setup guide' })).toBeNull()
@@ -165,9 +165,9 @@ export const UnsavedChangesGuard: Story = {
     await userEvent.type(field, '4')
     await userEvent.click(await canvas.findByRole('tab', { name: 'Account' }))
     await expect(await body.findByText('Discard unsaved changes?')).toBeVisible()
-    await userEvent.click(body.getByRole('button', { name: 'Keep editing' }))
+    await userEvent.click(await body.findByRole('button', { name: 'Keep editing' }))
     await waitFor(() => expect(body.queryByText('Discard unsaved changes?')).toBeNull())
-    await expect(canvas.getByRole('tab', { name: 'Downloads', selected: true })).toBeVisible()
+    await expect(await canvas.findByRole('tab', { name: 'Downloads', selected: true })).toBeVisible()
   },
 }
 

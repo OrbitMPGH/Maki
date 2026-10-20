@@ -15,18 +15,18 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('heading', { level: 3, name: 'Lanterns Over Kasumi' })).toBeVisible()
-    await expect(canvas.getByRole('progressbar', { name: 'Reading progress' })).toHaveAttribute('aria-valuenow', '12')
+    await expect(await canvas.findByRole('heading', { level: 3, name: 'Lanterns Over Kasumi' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('progressbar', { name: 'Reading progress' })).toHaveAttribute('aria-valuenow', '12'))
   },
 }
 
 export const PickFromNextUp: Story = {
   play: async ({ canvas, userEvent }) => {
-    const row = canvas.getByRole('button', { name: /Ashen Crown Regression/ })
-    await expect(row).toHaveAttribute('aria-pressed', 'false')
+    const row = await canvas.findByRole('button', { name: /Ashen Crown Regression/ })
+    await waitFor(() => expect(row).toHaveAttribute('aria-pressed', 'false'))
     await userEvent.click(row)
-    await expect(row).toHaveAttribute('aria-pressed', 'true')
-    await expect(canvas.getByRole('heading', { level: 3, name: 'Ashen Crown Regression' })).toBeVisible()
+    await waitFor(() => expect(row).toHaveAttribute('aria-pressed', 'true'))
+    await expect(await canvas.findByRole('heading', { level: 3, name: 'Ashen Crown Regression' })).toBeVisible()
   },
 }
 
@@ -40,7 +40,7 @@ export const SingleSeries: Story = {
 export const NotStartedChapter: Story = {
   args: { items: jumpBackIn, rail: 'jumpback' },
   play: async ({ canvas }) => {
-    await expect(canvas.getAllByRole('link', { name: 'Start chapter' })[0]).toBeVisible()
+    await expect((await canvas.findAllByRole('link', { name: 'Start chapter' }))[0]).toBeVisible()
   },
 }
 
@@ -61,7 +61,7 @@ export const ManyInNextUp: Story = {
 
 export const MenuInHero: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'More options for Lanterns Over Kasumi' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'More options for Lanterns Over Kasumi' }))
     const body = within(canvasElement.ownerDocument.body)
     await waitFor(() => expect(body.getByRole('menuitem', { name: 'Open series' })).toBeVisible())
   },

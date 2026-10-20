@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { Paper } from '@mantine/core'
 import { progressSummary } from '../../../.storybook/mocks/home'
 import { ProgressCard } from './ProgressCard'
@@ -26,9 +26,9 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Level 12')).toBeVisible()
-    await expect(canvas.getByText('Day streak')).toBeVisible()
-    await expect(canvas.getByRole('link')).toHaveAttribute('href', '/stats?section=progress')
+    await expect(await canvas.findByText('Level 12')).toBeVisible()
+    await expect(await canvas.findByText('Day streak')).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('link')).toHaveAttribute('href', '/stats?section=progress'))
   },
 }
 

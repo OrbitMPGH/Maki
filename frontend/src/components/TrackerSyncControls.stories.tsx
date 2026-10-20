@@ -29,15 +29,15 @@ type Story = StoryObj<typeof meta>
 
 export const Connected: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('switch', { name: 'Scrobble reading' })).toBeChecked()
-    await expect(canvas.getByRole('switch', { name: /Use anime for recommendation taste/ })).toBeChecked()
-    await expect(canvas.getByRole('button', { name: 'Import ratings' })).toBeEnabled()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: 'Scrobble reading' })).toBeChecked())
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /Use anime for recommendation taste/ })).toBeChecked())
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Import ratings' })).toBeEnabled())
   },
 }
 
 export const TogglingReading: Story = {
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('switch', { name: 'Scrobble reading' }))
+    await userEvent.click(await canvas.findByRole('switch', { name: 'Scrobble reading' }))
     await waitFor(() => expect(saved).toHaveBeenCalledWith({ reading: false, ratings: true, anime: true }))
   },
 }
@@ -47,7 +47,7 @@ export const WithoutAnimeList: Story = {
   args: { service: 'mangabaka', label: 'MangaBaka', connection: connectedConnections[3] },
   play: async ({ canvas, userEvent }) => {
     await expect(canvas.queryByRole('switch', { name: /anime/ })).toBeNull()
-    await userEvent.click(canvas.getByRole('switch', { name: 'Sync ratings' }))
+    await userEvent.click(await canvas.findByRole('switch', { name: 'Sync ratings' }))
     await waitFor(() => expect(saved).toHaveBeenCalledWith({ reading: true, ratings: false }))
   },
 }
@@ -55,15 +55,15 @@ export const WithoutAnimeList: Story = {
 export const RatingsSyncOff: Story = {
   args: { service: 'mal', label: 'MyAnimeList', connection: connectedConnections[1] },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('switch', { name: 'Sync ratings' })).not.toBeChecked()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: 'Sync ratings' })).not.toBeChecked())
   },
 }
 
 export const NotConnected: Story = {
   args: { connection: disconnectedConnections[0] },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('button', { name: 'Import ratings' })).toBeDisabled()
-    await expect(canvas.getByText('Connect on the Scrobble page to import.')).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Import ratings' })).toBeDisabled())
+    await expect(await canvas.findByText('Connect on the Scrobble page to import.')).toBeVisible()
   },
 }
 
@@ -71,13 +71,13 @@ export const NotConnected: Story = {
 export const StatusLoading: Story = {
   args: { connection: undefined },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('switch', { name: 'Scrobble reading' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: 'Scrobble reading' })).toBeDisabled())
   },
 }
 
 export const OpensRatingImport: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Import ratings' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Import ratings' }))
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Import ratings from AniList' })
     await waitFor(() => expect(dialog).toBeVisible())

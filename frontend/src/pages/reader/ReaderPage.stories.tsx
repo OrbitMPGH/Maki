@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import { chapters } from '../../../.storybook/mocks/entry/fixtures'
@@ -41,7 +41,7 @@ export const PagedManga: Story = {
   parameters: open(1132),
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible()
-    await expect(canvas.getByText('Page 6 of 18')).toBeInTheDocument()
+    await expect(await canvas.findByText('Page 6 of 18')).toBeInTheDocument()
   },
 }
 
@@ -51,8 +51,8 @@ export const ToolbarOpen: Story = {
     await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
     await summonChrome({ canvasElement, userEvent })
     await expect(await canvas.findByRole('link', { name: 'Back to series' })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Toggle bookmark' })).toBeVisible()
-    await expect(canvas.getByText('6 / 18')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Toggle bookmark' })).toBeVisible()
+    await expect(await canvas.findByText('6 / 18')).toBeVisible()
   },
 }
 
@@ -64,7 +64,7 @@ export const SettingsOpen: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
     const body = within(canvasElement.ownerDocument.body)
     await expect(await body.findByText('Reading profile')).toBeVisible()
-    await expect(await body.findByText(/^Changes /)).toHaveTextContent('Changes retune')
+    await waitFor(() => expect(body.getByText(/^Changes /)).toHaveTextContent('Changes retune'))
   },
 }
 
@@ -88,7 +88,7 @@ export const ThumbnailStrip: Story = {
     await userEvent.keyboard('t')
     // Bookmarks come from the server; page 4 is one of the two in the fixture.
     await expect(await canvas.findByRole('button', { name: 'Go to page 4 (bookmarked)' })).toBeInTheDocument()
-    await expect(canvas.getByRole('button', { name: 'Go to page 6' })).toHaveAttribute('aria-current', 'true')
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Go to page 6' })).toHaveAttribute('aria-current', 'true'))
   },
 }
 
@@ -98,7 +98,7 @@ export const KeyboardShortcuts: Story = {
     await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
     await userEvent.keyboard('?')
     const dialog = await canvas.findByRole('dialog', { name: 'Keyboard shortcuts' })
-    await expect(dialog).toBeVisible()
+    await waitFor(() => expect(dialog).toBeVisible())
     await userEvent.keyboard('{Escape}')
     await expect(canvas.queryByRole('dialog')).not.toBeInTheDocument()
   },
@@ -128,7 +128,7 @@ export const DoublePage: Story = {
     // The cover stands alone; the next turn shows pages 2 and 3 side by side.
     await userEvent.keyboard('{ArrowLeft}')
     await expect(await canvas.findByRole('img', { name: 'Chapter 1: The first letter - page 2' })).toBeVisible()
-    await expect(canvas.getByRole('img', { name: 'Chapter 1: The first letter - page 3' })).toBeVisible()
+    await expect(await canvas.findByRole('img', { name: 'Chapter 1: The first letter - page 3' })).toBeVisible()
   },
 }
 
@@ -139,8 +139,8 @@ export const EndOfChapter: Story = {
     await canvas.findByRole('img', { name: 'Chapter 19 - page 14' })
     await userEvent.keyboard('{ArrowLeft}')
     await expect(await canvas.findByRole('heading', { name: 'Chapter 19' })).toBeVisible()
-    await expect(canvas.getByText("Chapters 20 to 21 aren't downloaded, so this skips them.", { exact: false })).toBeInTheDocument()
-    await expect(canvas.getByRole('button', { name: /Read Chapter 22/ })).toBeVisible()
+    await expect(await canvas.findByText("Chapters 20 to 21 aren't downloaded, so this skips them.", { exact: false })).toBeInTheDocument()
+    await expect(await canvas.findByRole('button', { name: /Read Chapter 22/ })).toBeVisible()
   },
 }
 
@@ -151,8 +151,8 @@ export const DoublePressStopsAtTheEnd: Story = {
     await canvas.findByRole('img', { name: 'Chapter 19 - page 14' })
     await userEvent.keyboard('{ArrowLeft}{ArrowLeft}')
     await new Promise((resolve) => setTimeout(resolve, 500))
-    await expect(canvas.getByRole('heading', { name: 'Chapter 19' })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: /Read Chapter 22/ })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { name: 'Chapter 19' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /Read Chapter 22/ })).toBeVisible()
   },
 }
 
@@ -173,7 +173,7 @@ export const EndOfFinishedSeries: Story = {
     await userEvent.keyboard('{ArrowLeft}')
     await expect(await canvas.findByText("You're caught up")).toBeVisible()
     const end = within(canvasElement.querySelector<HTMLElement>('.reader-end')!)
-    await expect(end.getByRole('link', { name: 'Back to series' })).toBeVisible()
+    await expect(await end.findByRole('link', { name: 'Back to series' })).toBeVisible()
   },
 }
 
@@ -219,7 +219,7 @@ export const LeftToRightWithPageBadge: Story = {
   },
   play: async ({ canvas, canvasElement }) => {
     await canvas.findByRole('img', { name: 'Chapter 132 - page 1' })
-    await expect(canvasElement.querySelector('.reader-page-badge')).toHaveTextContent('1 / 18')
+    await waitFor(() => expect(canvasElement.querySelector('.reader-page-badge')).toHaveTextContent('1 / 18'))
   },
 }
 
@@ -244,7 +244,7 @@ export const NoReadableFile: Story = {
   parameters: open(9999),
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('This chapter has no readable file.')).toBeVisible()
-    await expect(canvas.getByRole('link', { name: 'Back to library' })).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: 'Back to library' })).toBeVisible()
   },
 }
 
@@ -255,7 +255,7 @@ export const LoadFailed: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Could not load this chapter.')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Try again' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Try again' })).toBeVisible()
   },
 }
 
@@ -266,6 +266,6 @@ export const PageFailsToLoad: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('This page failed to load.')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Try again' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Try again' })).toBeVisible()
   },
 }

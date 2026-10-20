@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { RequestForm } from './RequestForm'
 
 const meta = {
@@ -50,12 +50,12 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.type(canvas.getByLabelText('From'), '12')
-    await userEvent.type(canvas.getByLabelText('To'), '40')
-    await userEvent.type(canvas.getByLabelText('Note (optional)'), 'The scanlation group is the one I follow')
-    await userEvent.click(canvas.getByRole('button', { name: 'Request series' }))
+    await userEvent.type(await canvas.findByLabelText('From'), '12')
+    await userEvent.type(await canvas.findByLabelText('To'), '40')
+    await userEvent.type(await canvas.findByLabelText('Note (optional)'), 'The scanlation group is the one I follow')
+    await userEvent.click(await canvas.findByRole('button', { name: 'Request series' }))
     await expect(args.onSubmit).toHaveBeenCalledOnce()
-    await expect(args.onChapterStart).toHaveBeenLastCalledWith(12)
+    await waitFor(() => expect(args.onChapterStart).toHaveBeenLastCalledWith(12))
   },
 }
 
