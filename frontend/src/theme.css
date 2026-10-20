@@ -856,11 +856,17 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
   font-size: var(--type-meta);
   font-weight: 600;
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
+}
+.nav-footer-version-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .nav-footer .nav-footer-version-button {
   margin-left: -4px;
@@ -1402,6 +1408,12 @@ body {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* A lone line ("Anime ends at ch. 120") has no pill to make room for, so it wraps instead of clipping. */
+.cover-row > :only-child {
+  overflow: visible;
+  white-space: normal;
+  line-height: 1.25;
 }
 .cover-title + .cover-row {
   margin-top: 5px;

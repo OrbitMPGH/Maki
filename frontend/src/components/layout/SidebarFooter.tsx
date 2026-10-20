@@ -197,8 +197,10 @@ function VersionLabel({
   isSkipped: boolean
 }) {
   const { t } = useLingui()
+  // A nightly's build stamp ("-nightly.202610210024-") is too long for the sidebar; the tooltip keeps it.
+  const shown = version.replace(/-nightly\.\d+-/, '-nightly ')
   const tooltip = unofficial
-    ? t`Unofficial build (not a tagged release)`
+    ? `${t`Unofficial build (not a tagged release)`}: v${version}`
     : latestVersion && isSkipped
       ? t`${latestVersion} available, skipped`
       : latestVersion
@@ -213,10 +215,13 @@ function VersionLabel({
           className="nav-footer-version nav-footer-version-button"
           onClick={() => setSkippedVersion(null)}
         >
-          <span className="nav-footer-dot" />v{version}
+          <span className="nav-footer-dot" />
+          <span className="nav-footer-version-text">v{shown}</span>
         </button>
       ) : (
-        <span className="nav-footer-version">v{version}</span>
+        <span className="nav-footer-version">
+          <span className="nav-footer-version-text">v{shown}</span>
+        </span>
       )}
     </Tooltip>
   )
