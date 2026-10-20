@@ -12,9 +12,10 @@ namespace Maki.Api.Services;
 
 /// <summary>
 /// A resolved OPDS request: the catalogue is enabled and the token in the path belongs to a usable
-/// account. <see cref="UserId"/> is who the reading is attributed to.
+/// account. <see cref="UserId"/> is who the reading is attributed to. <see cref="Komga"/> is whether
+/// the same token also opens the Komga-compatible API.
 /// </summary>
-public record OpdsAccess(bool TrackProgress, int UserId, bool AllRootFolders);
+public record OpdsAccess(bool TrackProgress, int UserId, bool AllRootFolders, bool Komga = false);
 
 /// <summary>
 /// Resolves the token in an OPDS URL to the user it belongs to.
@@ -111,7 +112,7 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock, IMemoryCach
             return null;
         }
 
-        if (await TrackProgressAsync(match.Id, ct) is not { } trackProgress)
+        if (await SwitchesAsync(match.Id, ct) is not { } switches)
         {
             return null;
         }
@@ -124,7 +125,7 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock, IMemoryCach
                 .ExecuteUpdateAsync(s => s.SetProperty(k => k.LastUsedAt, now), ct);
         }
 
-        var access = new OpdsAccess(trackProgress, match.Id, match.AllRootFolders);
+        var access = new OpdsAccess(switches.TrackProgress, match.Id, match.AllRootFolders, switches.Komga);
 
         // An eviction while this was reading may have been about this key, so the answer is not kept.
         // Checked and stored under the lock EvictUser takes, so one cannot land in between.
@@ -161,17 +162,19 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock, IMemoryCach
             return null;
         }
 
-        return await TrackProgressAsync(userId, ct) is { } trackProgress
-            ? new OpdsAccess(trackProgress, userId, user.AllRootFolders)
+        return await SwitchesAsync(userId, ct) is { } switches
+            ? new OpdsAccess(switches.TrackProgress, userId, user.AllRootFolders, switches.Komga)
             : null;
     }
 
+    private readonly record struct Switches(bool TrackProgress, bool Komga);
+
     /// <summary>
-    /// The owner's progress-tracking switch, or null when their catalogue is off. The two switches are
+    /// The owner's tracking and Komga switches, or null when their catalogue is off. The switches are
     /// the owner's, not the instance's: one reader can turn their catalogue off, or turn tracking off
     /// for a prefetching app, without touching anybody else's.
     /// </summary>
-    private async Task<bool?> TrackProgressAsync(int userId, CancellationToken ct)
+    private async Task<Switches?> SwitchesAsync(int userId, CancellationToken ct)
     {
         // IgnoreQueryFilters, and it is load-bearing. An OPDS request carries no cookie and no API-key
         // header, so CurrentUserMiddleware has already narrowed the scope to *nobody*. Without this the
@@ -181,7 +184,8 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock, IMemoryCach
             .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(x => x.UserId == userId &&
-                        (x.Key == SettingKeys.OpdsEnabled || x.Key == SettingKeys.OpdsTrackProgress))
+                        (x.Key == SettingKeys.OpdsEnabled || x.Key == SettingKeys.OpdsTrackProgress ||
+                         x.Key == SettingKeys.KomgaEnabled))
             .ToDictionaryAsync(x => x.Key, x => x.Value, ct);
 
         if (settings.GetValueOrDefault(SettingKeys.OpdsEnabled) != "true")
@@ -189,7 +193,8 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock, IMemoryCach
             return null;
         }
 
-        // Absent means on: only an explicit "false" is the user having turned it off.
-        return settings.GetValueOrDefault(SettingKeys.OpdsTrackProgress) != "false";
+        // Absent means on: only an explicit "false" is the user having turned tracking off.
+        return new Switches(settings.GetValueOrDefault(SettingKeys.OpdsTrackProgress) != "false",
+            settings.GetValueOrDefault(SettingKeys.KomgaEnabled) == "true");
     }
 }

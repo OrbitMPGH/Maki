@@ -119,6 +119,18 @@ export const OpdsEnabled: Story = {
   },
 }
 
+export const OpdsKomgaEnabled: Story = {
+  render: () => <OpdsSection />,
+  parameters: {
+    msw: settingsMsw(http.get(api('/settings/opds'), () => HttpResponse.json({ ...opdsOn, komga: true }))),
+  },
+  play: async ({ canvas }) => {
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /^Komga-compatible API/ })).toBeChecked())
+    await expect(await canvas.findByText(/\/komga$/)).toBeVisible()
+    await expect(await canvas.findByText(/last part of your feed URL/)).toBeVisible()
+  },
+}
+
 export const OpdsDisabled: Story = {
   render: () => <OpdsSection />,
   parameters: { msw: settingsMsw(http.get(api('/settings/opds'), () => HttpResponse.json(opdsOff))) },

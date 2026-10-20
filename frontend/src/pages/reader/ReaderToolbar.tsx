@@ -52,6 +52,7 @@ export default function ReaderToolbar({
   onNextChapter,
   prefs,
   onPrefs,
+  autoLayout = false,
   selection,
   onSelection,
   source,
@@ -86,6 +87,8 @@ export default function ReaderToolbar({
   onNextChapter: () => void
   prefs: ReaderPrefs
   onPrefs: (patch: Partial<ReaderPrefs>) => void
+  /** The layout on screen was picked by webtoon detection, not by any setting. */
+  autoLayout?: boolean
   selection: PrefsSelection
   onSelection: (selection: PrefsSelection) => void
   source: PrefsSource
@@ -389,7 +392,8 @@ export default function ReaderToolbar({
                 <IconSettings size={18} />
               </ActionIcon>
             </Popover.Target>
-            <Popover.Dropdown>
+            {/* Taller than a landscape phone or a short window: it scrolls rather than running off the top. */}
+            <Popover.Dropdown style={{ maxHeight: 'calc(100dvh - 72px)', overflowY: 'auto' }}>
               <Stack gap="sm">
                 <div>
                   <Text fz="xs" c="var(--ink-3)" mb={4}>
@@ -407,7 +411,31 @@ export default function ReaderToolbar({
                       { label: t`Continuous`, value: 'vertical' },
                     ]}
                   />
+                  {autoLayout && (
+                    <Text fz="xs" c="var(--ink-3)" mt={4}>
+                      <Trans>Continuous, because this chapter's pages are very tall.</Trans>
+                    </Text>
+                  )}
                 </div>
+                {prefs.mode === 'paged' && (
+                  <div>
+                    <Text fz="xs" c="var(--ink-3)" mb={4}>
+                      <Trans>Wide pages</Trans>
+                    </Text>
+                    <SegmentedControl
+                      aria-label={t`Wide pages`}
+                      fullWidth
+                      size="xs"
+                      value={prefs.splitWide}
+                      onChange={(value) => onPrefs({ splitWide: value as ReaderPrefs['splitWide'] })}
+                      data={[
+                        { label: t`Whole`, value: 'off' },
+                        { label: t`Split`, value: 'split' },
+                        { label: t`Rotate`, value: 'rotate' },
+                      ]}
+                    />
+                  </div>
+                )}
                 <div>
                   <Text fz="xs" c="var(--ink-3)" mb={4}>
                     <Trans>Direction</Trans>
@@ -509,6 +537,18 @@ export default function ReaderToolbar({
                     ]}
                   />
                 </div>
+                <Switch
+                  size="xs"
+                  label={t`Crop borders`}
+                  checked={prefs.cropBorders}
+                  onChange={(event) => onPrefs({ cropBorders: event.currentTarget.checked })}
+                />
+                <Switch
+                  size="xs"
+                  label={t`Scroll webtoon chapters`}
+                  checked={prefs.autoWebtoon}
+                  onChange={(event) => onPrefs({ autoWebtoon: event.currentTarget.checked })}
+                />
                 <Switch
                   size="xs"
                   label={t`Tap zones`}

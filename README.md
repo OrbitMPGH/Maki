@@ -49,8 +49,8 @@
 
 Maki watches manga sites for new chapters, downloads the pages and writes CBZ files with
 ComicInfo.xml metadata. [Kavita](https://www.kavitareader.com) and most comic readers understand
-that format, so the same folder works everywhere. You can also read in Maki's own reader, or over
-OPDS in Panels, Chunky, KOReader and Mihon.
+that format, so the same folder works everywhere. You can also read in Maki's own reader, over
+OPDS in Panels, Chunky, KOReader and Mihon, or in apps that speak Komga's API.
 
 > [!NOTE]
 > Maki is almost entirely AI-slop-built, developed with Anthropic's latest Claude models. It is

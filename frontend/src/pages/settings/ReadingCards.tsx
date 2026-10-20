@@ -195,9 +195,13 @@ export function OpdsSection() {
 
   const enabled = opds?.enabled ?? false
   const trackProgress = opds?.trackProgress ?? true
+  const komga = opds?.komga ?? false
   // The server emits a relative path on purpose (it can't know the host behind a reverse proxy),
   // so the address the user actually pastes is assembled here.
   const feedUrl = revealedPath ? `${window.location.origin}${revealedPath}` : null
+  // Komga apps take the same token on its own, as their API key.
+  const token = revealedPath ? revealedPath.split('/').pop() || null : null
+  const komgaAddress = `${window.location.origin}/komga`
 
   const closePasswordModals = () => {
     setRotateModalOpen(false)
@@ -205,7 +209,10 @@ export function OpdsSection() {
     setPassword('')
   }
 
-  const saveWith = (patch: Partial<{ enabled: boolean; trackProgress: boolean }>, confirmPassword?: string) =>
+  const saveWith = (
+    patch: Partial<{ enabled: boolean; trackProgress: boolean; komga: boolean }>,
+    confirmPassword?: string,
+  ) =>
     save.mutate(
       { enabled, trackProgress, ...patch, password: confirmPassword || undefined },
       {
@@ -218,10 +225,10 @@ export function OpdsSection() {
       },
     )
 
-  const copy = () => {
-    if (!feedUrl) return
-    void copyFeedUrl(feedUrl).then((ok) => {
-      if (ok) notifications.show({ message: now`Feed URL copied`, color: 'var(--ok)' })
+  const copy = (value: string | null, message: string) => {
+    if (!value) return
+    void copyFeedUrl(value).then((ok) => {
+      if (ok) notifications.show({ message, color: 'var(--ok)' })
     })
   }
 
@@ -265,7 +272,11 @@ export function OpdsSection() {
                 <Group gap="xs" wrap="nowrap">
                   <Code style={{ overflowWrap: 'anywhere' }}>{feedUrl}</Code>
                   <Tooltip label={t`Copy feed URL`}>
-                    <ActionIcon variant="light" onClick={copy} aria-label={t`Copy feed URL`}>
+                    <ActionIcon
+                      variant="light"
+                      onClick={() => copy(feedUrl, now`Feed URL copied`)}
+                      aria-label={t`Copy feed URL`}
+                    >
                       <IconCopy size={16} />
                     </ActionIcon>
                   </Tooltip>
@@ -313,6 +324,70 @@ export function OpdsSection() {
                 fetch pages ahead.
               </Trans>
             </Text>
+          </div>
+        )}
+
+        {enabled && (
+          <div>
+            <Switch
+              label={t`Komga-compatible API`}
+              checked={komga}
+              onChange={(e) => saveWith({ komga: e.currentTarget.checked })}
+            />
+            <Text size="xs" c="var(--ink-3)" mt={4}>
+              <Trans>
+                For apps that only connect to a Komga server, like the Mihon Komga extension and
+                Tachimanga. Reading progress syncs both ways; in Mihon, turn on the Komga tracker.
+              </Trans>
+            </Text>
+            {komga && (
+              <Stack gap={6} mt="xs">
+                <Group gap="xs" wrap="nowrap">
+                  <Text size="sm" fw={500}>
+                    <Trans>Server address</Trans>
+                  </Text>
+                  <Code style={{ overflowWrap: 'anywhere' }}>{komgaAddress}</Code>
+                  <Tooltip label={t`Copy server address`}>
+                    <ActionIcon
+                      variant="light"
+                      onClick={() => copy(komgaAddress, now`Server address copied`)}
+                      aria-label={t`Copy server address`}
+                    >
+                      <IconCopy size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Group>
+                {token && (
+                  <Group gap="xs" wrap="nowrap">
+                    <Text size="sm" fw={500}>
+                      <Trans>API key</Trans>
+                    </Text>
+                    <Code style={{ overflowWrap: 'anywhere' }}>{token}</Code>
+                    <Tooltip label={t`Copy API key`}>
+                      <ActionIcon
+                        variant="light"
+                        onClick={() => copy(token, now`API key copied`)}
+                        aria-label={t`Copy API key`}
+                      >
+                        <IconCopy size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+                  </Group>
+                )}
+                <Text size="xs" c="var(--ink-3)">
+                  {token ? (
+                    <Trans>
+                      Enter the API key in the app, or any username with the API key as the password.
+                    </Trans>
+                  ) : (
+                    <Trans>
+                      The API key is the last part of your feed URL, after /opds/. Enter it in the app,
+                      or use any username with the API key as the password.
+                    </Trans>
+                  )}
+                </Text>
+              </Stack>
+            )}
           </div>
         )}
       </Stack>

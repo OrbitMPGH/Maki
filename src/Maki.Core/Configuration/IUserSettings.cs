@@ -82,6 +82,7 @@ public static class UserSettingKeys
         SettingKeys.DiscoverFollowing,
         SettingKeys.OpdsEnabled,
         SettingKeys.OpdsTrackProgress,
+        SettingKeys.KomgaEnabled,
         SettingKeys.ScrobblePlanToRead,
         SettingKeys.ScrobbleMangaBakaToken,
         SettingKeys.ScrobbleKitsuEmail,

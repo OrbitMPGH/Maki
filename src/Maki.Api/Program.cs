@@ -966,6 +966,9 @@ try
     builder.Services.AddScoped<ReadingTimeEstimateService>();
     builder.Services.AddScoped<OpdsCatalogService>();
     builder.Services.AddScoped<OpdsAccessService>();
+    builder.Services.AddScoped<Maki.Api.Komga.KomgaAuthenticator>();
+    builder.Services.AddScoped<Maki.Api.Komga.KomgaAuthFilter>();
+    builder.Services.AddScoped<Maki.Api.Komga.KomgaCatalogService>();
     builder.Services.AddSingleton<OpdsProgressWriter>().AddHostedService(sp => sp.GetRequiredService<OpdsProgressWriter>());
     builder.Services.AddScoped<KoreaderDocumentIndexer>();
     builder.Services.AddScoped<KoreaderSyncService>();

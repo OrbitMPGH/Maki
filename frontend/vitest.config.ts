@@ -30,6 +30,10 @@ export default defineConfig((env) =>
           ],
           test: {
             name: 'storybook',
+            // On CI runners MSW intermittently misses a request (it reaches Vite's proxy instead), and
+            // whichever story was running fails; a different handful each run. A broken story still
+            // fails every attempt.
+            retry: process.env.CI ? 2 : 0,
             // A fresh iframe per file reloads the whole app 202 times: 97% of a CI run, and each
             // closing iframe churns MSW's service worker clients. The preview resets state per story.
             isolate: false,

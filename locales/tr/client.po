@@ -3404,9 +3404,14 @@ msgstr "Yöneticinin bilmesi gereken bir şey"
 #: src/components/settings/IndexerForm.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/IntegrationCards.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "API key"
 msgstr "API anahtarı"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "API key copied"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -5387,6 +5392,10 @@ msgstr "Yalnızca sürekli düzende, piksel cinsinden."
 msgid "Continuous vertical (webtoon)"
 msgstr "Sürekli dikey (webtoon)"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Continuous, because this chapter's pages are very tall."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5399,6 +5408,10 @@ msgstr "Kopyalandı"
 msgid "Copy"
 msgstr "Kopyala"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy API key"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Copy codes"
@@ -5408,6 +5421,10 @@ msgstr "Kodları kopyala"
 #, fuzzy
 msgid "Copy feed URL"
 msgstr "Besleme URL'sini kopyala"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy server address"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy sync server address"
@@ -5812,6 +5829,15 @@ msgstr ""
 #, fuzzy
 msgid "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
 msgstr "Künye sayfalarıyla sonraki bölümün ilk sayfaları sık sık birbirine benzer. Bu işaret sayfa geçişini belirtir."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Crop borders"
+msgstr ""
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Crop borders on or off"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -6921,6 +6947,10 @@ msgstr "İngilizce (MangaBaka varsayılanı)"
 msgid "Enter one of your recovery codes"
 msgstr "Kurtarma kodlarınızdan birini girin"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Enter the API key in the app, or any username with the API key as the password."
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Enter your authenticator code"
@@ -7314,9 +7344,8 @@ msgstr "Besleme URL'si kopyalandı"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
-msgstr "besleme url'si, katalog, panels, chunky, koreader, tachiyomi, mihon, akış, belirteç, ilerlemeyi takip et"
+msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress, komga, tachimanga, api key"
+msgstr ""
 
 #: src/components/LuckyButton.tsx
 #, fuzzy
@@ -7763,6 +7792,10 @@ msgstr "Bildirim ayarlarınızdaki varsayılanı takip eder."
 #, fuzzy
 msgid "For 1 hour"
 msgstr "1 saat boyunca"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "For apps that only connect to a Komga server, like the Mihon Komga extension and Tachimanga. Reading progress syncs both ways; in Mihon, turn on the Komga tracker."
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "For each series you are reading, saves the next unread chapters while online and removes them once read. Chapters you save yourself stay until you remove them."
@@ -9215,6 +9248,10 @@ msgstr "Kaynak türleri"
 
 #: src/components/import/mihonRows.ts
 msgid "Kitsu"
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Komga-compatible API"
 msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
@@ -12669,6 +12706,10 @@ msgstr "Doğru seri olduğunu kontrol etmek için sayfayı açın"
 msgid "Open the search with these filters from now on"
 msgstr "Bundan sonra aramayı bu filtrelerle aç"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Open webtoon chapters in Continuous layout"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
@@ -15121,6 +15162,14 @@ msgstr "Kök klasörler"
 msgid "Rose"
 msgstr "Gül"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Rotate"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Rotate to fit"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
@@ -15644,6 +15693,10 @@ msgstr "İleri kaydır"
 #, fuzzy
 msgid "Scroll to finish the preview"
 msgstr "Önizlemeyi bitirmek için kaydırın"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Scroll webtoon chapters"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16180,6 +16233,14 @@ msgstr "Bu filtrelerle eşleşen ve zaten kitaplığınızda bulunan seriler."
 msgid "Series you finished a chapter of that still have more to read."
 msgstr "Bir bölümünü bitirdiğiniz ve okumaya devam edebileceğiniz seriler."
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Server address"
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Server address copied"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Server local time, 0 to 23."
@@ -16429,6 +16490,10 @@ msgstr "En yeni başlıklarını Ana Sayfa ve Keşfet'te bir bölümde göster"
 msgid "Show this section"
 msgstr "Bu bölümü göster"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Show whole"
+msgstr ""
+
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
@@ -16561,6 +16626,10 @@ msgstr "Tek"
 #, fuzzy
 msgid "Single page"
 msgstr "Tek sayfa"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Single page layout only."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -16898,10 +16967,18 @@ msgstr "özel bölümler, omake, ondalıklı bölüm numaraları, yeni öğeleri
 msgid "Spin-off of {relatedTo}"
 msgstr "{relatedTo} yan ürünü"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Split"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Split from the tier above"
 msgstr "Üstteki kademeden ayır"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Split into two pages"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -17450,6 +17527,10 @@ msgstr "Diskteki tüm bölümler bunlar."
 #, fuzzy
 msgid "The anime covers through ch. {covered}."
 msgstr "Anime, b. {covered}'e kadar olan kısmı kapsıyor."
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "The API key is the last part of your feed URL, after /opds/. Enter it in the app, or use any username with the API key as the password."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -18544,6 +18625,10 @@ msgstr "Şu anda yükselişte"
 #, fuzzy
 msgid "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
 msgstr "{sourceNames} kaynaklarını öncelik sırasına göre dener ve bölüme sahip olan ilkini alır. Bunun yerine bir kaynak adlandırmak onu sabitler: geri dönüş yoktur, bu yüzden yalnızca seçtiğiniz yerden bir aday alırsınız."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Trims white or black margins. Not applied in the Continuous layout."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -19785,6 +19870,10 @@ msgstr "Bir yenileme, bir seri için bundan fazla yeni bölüm bulduğunda hiçb
 msgid "When importing an existing series from disk: rename its folder to the series folder format, or keep it as found."
 msgstr "Diskten mevcut bir seriyi içe aktarırken: klasörünü seri klasör biçimine göre yeniden adlandırın veya bulunduğu gibi bırakın."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "When most pages are very tall. A layout picked in the reader still wins."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
@@ -19890,6 +19979,10 @@ msgstr "Okurken"
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "Okurken yalnızca, seriyi yarıda bıraktığınız sürece yeni bölümler hakkında bilgi verir."
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Whole"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Whole franchise"
@@ -19915,6 +20008,11 @@ msgstr "Tüm yıl"
 #, fuzzy
 msgid "Whole-series pack, needs your call"
 msgstr "Tüm seri paketi, kararınız gerekiyor"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Wide pages"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

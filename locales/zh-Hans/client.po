@@ -3403,9 +3403,14 @@ msgstr "管理员需要了解的任何信息"
 #: src/components/settings/IndexerForm.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/IntegrationCards.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "API key"
 msgstr "API 密钥"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "API key copied"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -5386,6 +5391,10 @@ msgstr "仅适用于连续布局，单位为像素。"
 msgid "Continuous vertical (webtoon)"
 msgstr "连续垂直（条漫）"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Continuous, because this chapter's pages are very tall."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5398,6 +5407,10 @@ msgstr "已复制"
 msgid "Copy"
 msgstr "复制"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy API key"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Copy codes"
@@ -5407,6 +5420,10 @@ msgstr "复制代码"
 #, fuzzy
 msgid "Copy feed URL"
 msgstr "复制订阅源 URL"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy server address"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy sync server address"
@@ -5811,6 +5828,15 @@ msgstr ""
 #, fuzzy
 msgid "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
 msgstr "卷末致谢页和下一章开头几页经常相似，因此此项用于标记章节分界。"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Crop borders"
+msgstr ""
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Crop borders on or off"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -6920,6 +6946,10 @@ msgstr "英文（MangaBaka 默认）"
 msgid "Enter one of your recovery codes"
 msgstr "输入你的一个恢复代码"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Enter the API key in the app, or any username with the API key as the password."
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Enter your authenticator code"
@@ -7313,9 +7343,8 @@ msgstr "订阅源 URL 已复制"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
-msgstr "订阅源 URL，目录，面板，Chunky，KOReader，Tachiyomi，Mihon，流式传输，令牌，跟踪进度"
+msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress, komga, tachimanga, api key"
+msgstr ""
 
 #: src/components/LuckyButton.tsx
 #, fuzzy
@@ -7762,6 +7791,10 @@ msgstr "遵循通知设置中的默认值。"
 #, fuzzy
 msgid "For 1 hour"
 msgstr "1 小时"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "For apps that only connect to a Komga server, like the Mihon Komga extension and Tachimanga. Reading progress syncs both ways; in Mihon, turn on the Komga tracker."
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "For each series you are reading, saves the next unread chapters while online and removes them once read. Chapters you save yourself stay until you remove them."
@@ -9214,6 +9247,10 @@ msgstr "类型"
 
 #: src/components/import/mihonRows.ts
 msgid "Kitsu"
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Komga-compatible API"
 msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
@@ -12668,6 +12705,10 @@ msgstr "打开页面以确认这是正确的系列"
 msgid "Open the search with these filters from now on"
 msgstr "以后用这些筛选条件打开搜索"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Open webtoon chapters in Continuous layout"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
@@ -15120,6 +15161,14 @@ msgstr "根文件夹"
 msgid "Rose"
 msgstr "玫瑰色"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Rotate"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Rotate to fit"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
@@ -15643,6 +15692,10 @@ msgstr "向前滚动"
 #, fuzzy
 msgid "Scroll to finish the preview"
 msgstr "滚动以结束预览"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Scroll webtoon chapters"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16179,6 +16232,14 @@ msgstr "资料库中符合这些筛选条件的作品。"
 msgid "Series you finished a chapter of that still have more to read."
 msgstr "已读完一个章节但还有内容待读的作品。"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Server address"
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Server address copied"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Server local time, 0 to 23."
@@ -16428,6 +16489,10 @@ msgstr "在“首页”和“发现”的推荐栏中显示其最新作品"
 msgid "Show this section"
 msgstr "显示此区块"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Show whole"
+msgstr ""
+
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
@@ -16560,6 +16625,10 @@ msgstr "单页"
 #, fuzzy
 msgid "Single page"
 msgstr "单页"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Single page layout only."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -16897,10 +16966,18 @@ msgstr "specials, omake, 小数章节, 跟踪新内容, 监控, 隐身, 不同�
 msgid "Spin-off of {relatedTo}"
 msgstr "{relatedTo} 的衍生作品"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Split"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Split from the tier above"
 msgstr "与上一层级分开"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Split into two pages"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -17449,6 +17526,10 @@ msgstr "磁盘上已经没有其他章节了。"
 #, fuzzy
 msgid "The anime covers through ch. {covered}."
 msgstr "动画改编覆盖到第 {covered} 章。"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "The API key is the last part of your feed URL, after /opds/. Enter it in the app, or use any username with the API key as the password."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -18543,6 +18624,10 @@ msgstr "当前热门"
 #, fuzzy
 msgid "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
 msgstr "按优先级顺序尝试 {sourceNames}，并采用第一个包含该章节的来源。指定来源则会将其固定：不会回退，因此候选项只会来自你选择的来源。"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Trims white or black margins. Not applied in the Continuous layout."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -19784,6 +19869,10 @@ msgstr "如果刷新时为某个系列发现的新章节数量超过此值，将
 msgid "When importing an existing series from disk: rename its folder to the series folder format, or keep it as found."
 msgstr "从磁盘导入现有系列时：将其文件夹重命名为系列文件夹格式，或保持原样。"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "When most pages are very tall. A layout picked in the reader still wins."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
@@ -19889,6 +19978,10 @@ msgstr "阅读时"
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "阅读时仅会在你阅读系列期间通知你新章节。"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Whole"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Whole franchise"
@@ -19914,6 +20007,11 @@ msgstr "全年"
 #, fuzzy
 msgid "Whole-series pack, needs your call"
 msgstr "整系列合集包，需要你来决定"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Wide pages"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

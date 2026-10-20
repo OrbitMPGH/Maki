@@ -2799,8 +2799,13 @@ msgstr "Anything the admin should know"
 #: src/components/settings/IndexerForm.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/IntegrationCards.tsx
+#: src/pages/settings/ReadingCards.tsx
 msgid "API key"
 msgstr "API key"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "API key copied"
+msgstr "API key copied"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -4443,6 +4448,10 @@ msgstr "Continuous layout only, in pixels."
 msgid "Continuous vertical (webtoon)"
 msgstr "Continuous vertical (webtoon)"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Continuous, because this chapter's pages are very tall."
+msgstr "Continuous, because this chapter's pages are very tall."
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
 msgid "Copied"
@@ -4453,6 +4462,10 @@ msgstr "Copied"
 msgid "Copy"
 msgstr "Copy"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy API key"
+msgstr "Copy API key"
+
 #: src/components/settings/AccountSection.tsx
 msgid "Copy codes"
 msgstr "Copy codes"
@@ -4460,6 +4473,10 @@ msgstr "Copy codes"
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy feed URL"
 msgstr "Copy feed URL"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy server address"
+msgstr "Copy server address"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy sync server address"
@@ -4788,6 +4805,15 @@ msgstr "Creators, type, status, content rating"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
 msgstr "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Crop borders"
+msgstr "Crop borders"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Crop borders on or off"
+msgstr "Crop borders on or off"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Cross-id"
@@ -5700,6 +5726,10 @@ msgstr "English (MangaBaka default)"
 msgid "Enter one of your recovery codes"
 msgstr "Enter one of your recovery codes"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Enter the API key in the app, or any username with the API key as the password."
+msgstr "Enter the API key in the app, or any username with the API key as the password."
+
 #: src/pages/LoginPage.tsx
 msgid "Enter your authenticator code"
 msgstr "Enter your authenticator code"
@@ -6019,8 +6049,8 @@ msgstr "Feed URL copied"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
-msgstr "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
+msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress, komga, tachimanga, api key"
+msgstr "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress, komga, tachimanga, api key"
 
 #: src/components/LuckyButton.tsx
 msgid "Feeling lucky"
@@ -6386,6 +6416,10 @@ msgstr "Follows the default on your notification settings."
 #: src/components/QueuePause.tsx
 msgid "For 1 hour"
 msgstr "For 1 hour"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "For apps that only connect to a Komga server, like the Mihon Komga extension and Tachimanga. Reading progress syncs both ways; in Mihon, turn on the Komga tracker."
+msgstr "For apps that only connect to a Komga server, like the Mihon Komga extension and Tachimanga. Reading progress syncs both ways; in Mihon, turn on the Komga tracker."
 
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "For each series you are reading, saves the next unread chapters while online and removes them once read. Chapters you save yourself stay until you remove them."
@@ -7577,6 +7611,10 @@ msgstr "Kinds"
 #: src/components/import/mihonRows.ts
 msgid "Kitsu"
 msgstr "Kitsu"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Komga-compatible API"
+msgstr "Komga-compatible API"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "KOReader can send back how far you read in chapters it downloaded from Maki, even when you read them offline, and pick up where you stopped here. Those pages count toward your library, Rewind and trackers."
@@ -10431,6 +10469,10 @@ msgstr "Open the page to check it's the right series"
 msgid "Open the search with these filters from now on"
 msgstr "Open the search with these filters from now on"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Open webtoon chapters in Continuous layout"
+msgstr "Open webtoon chapters in Continuous layout"
+
 #: src/pages/HealthPage.tsx
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
 msgstr "Opens a deletion review. Nothing is removed until you confirm it there."
@@ -12445,6 +12487,14 @@ msgstr "Root folders"
 msgid "Rose"
 msgstr "Rose"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Rotate"
+msgstr "Rotate"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Rotate to fit"
+msgstr "Rotate to fit"
+
 #: src/components/SourceCompareModal.tsx
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "Row {zoomRowNumber} of {zoomTotalPages}"
@@ -12885,6 +12935,10 @@ msgstr "Scroll forward"
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Scroll to finish the preview"
 msgstr "Scroll to finish the preview"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Scroll webtoon chapters"
+msgstr "Scroll webtoon chapters"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Scrolling pace · {chaptersLeft} · {basis}"
@@ -13328,6 +13382,14 @@ msgstr "Series you already have that match these filters."
 msgid "Series you finished a chapter of that still have more to read."
 msgstr "Series you finished a chapter of that still have more to read."
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Server address"
+msgstr "Server address"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Server address copied"
+msgstr "Server address copied"
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Server local time, 0 to 23."
 msgstr "Server local time, 0 to 23."
@@ -13533,6 +13595,10 @@ msgstr "Show their newest titles in a rail on Home and Discover"
 msgid "Show this section"
 msgstr "Show this section"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Show whole"
+msgstr "Show whole"
+
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
 msgstr "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
@@ -13640,6 +13706,10 @@ msgstr "Single"
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Single page"
 msgstr "Single page"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Single page layout only."
+msgstr "Single page layout only."
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -13916,9 +13986,17 @@ msgstr "specials, omake, decimal chapters, monitor new items, monitoring, incogn
 msgid "Spin-off of {relatedTo}"
 msgstr "Spin-off of {relatedTo}"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Split"
+msgstr "Split"
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Split from the tier above"
 msgstr "Split from the tier above"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Split into two pages"
+msgstr "Split into two pages"
 
 #: src/components/TagBuckets.tsx
 msgid "Spoiler - hover to reveal"
@@ -14372,6 +14450,10 @@ msgstr "That's every chapter on disk."
 #: src/components/AnimeCoverageBar.tsx
 msgid "The anime covers through ch. {covered}."
 msgstr "The anime covers through ch. {covered}."
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "The API key is the last part of your feed URL, after /opds/. Enter it in the app, or use any username with the API key as the password."
+msgstr "The API key is the last part of your feed URL, after /opds/. Enter it in the app, or use any username with the API key as the password."
 
 #: src/components/NotificationsSection.tsx
 msgid "The API token of your Pushover application."
@@ -15269,6 +15351,10 @@ msgstr "Trending now"
 #: src/pages/HealthPage.tsx
 msgid "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
 msgstr "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Trims white or black margins. Not applied in the Continuous layout."
+msgstr "Trims white or black margins. Not applied in the Continuous layout."
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Trust {name}"
@@ -16281,6 +16367,10 @@ msgstr "When a refresh finds more new chapters for a series than this, none of t
 msgid "When importing an existing series from disk: rename its folder to the series folder format, or keep it as found."
 msgstr "When importing an existing series from disk: rename its folder to the series folder format, or keep it as found."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "When most pages are very tall. A layout picked in the reader still wins."
+msgstr "When most pages are very tall. A layout picked in the reader still wins."
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
 msgstr "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
@@ -16365,6 +16455,10 @@ msgstr "While reading"
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "While reading only tells you about new chapters while you are partway through."
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Whole"
+msgstr "Whole"
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Whole franchise"
 msgstr "Whole franchise"
@@ -16385,6 +16479,11 @@ msgstr "Whole year"
 #: src/api/upgrades.ts
 msgid "Whole-series pack, needs your call"
 msgstr "Whole-series pack, needs your call"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Wide pages"
+msgstr "Wide pages"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Width"

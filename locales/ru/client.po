@@ -3404,9 +3404,14 @@ msgstr "Всё, что должен знать администратор"
 #: src/components/settings/IndexerForm.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/IntegrationCards.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "API key"
 msgstr "Ключ API"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "API key copied"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -5387,6 +5392,10 @@ msgstr "Только для непрерывной раскладки, в пик
 msgid "Continuous vertical (webtoon)"
 msgstr "Непрерывная вертикальная (вебтун)"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Continuous, because this chapter's pages are very tall."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5399,6 +5408,10 @@ msgstr "Скопировано"
 msgid "Copy"
 msgstr "Копировать"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy API key"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Copy codes"
@@ -5408,6 +5421,10 @@ msgstr "Копировать коды"
 #, fuzzy
 msgid "Copy feed URL"
 msgstr "Копировать URL ленты"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy server address"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy sync server address"
@@ -5812,6 +5829,15 @@ msgstr ""
 #, fuzzy
 msgid "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
 msgstr "Страницы с благодарностями и первые страницы следующей главы часто похожи, поэтому этот параметр отмечает место перехода."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Crop borders"
+msgstr ""
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Crop borders on or off"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -6921,6 +6947,10 @@ msgstr "Английский (по умолчанию в MangaBaka)"
 msgid "Enter one of your recovery codes"
 msgstr "Введите один из ваших кодов восстановления"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Enter the API key in the app, or any username with the API key as the password."
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Enter your authenticator code"
@@ -7314,9 +7344,8 @@ msgstr "URL ленты скопирован"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
-msgstr "url ленты, каталог, каталог, панели, chunky, koreader, tachiyomi, mihon, потоковая передача, токен, прогресс чтения"
+msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress, komga, tachimanga, api key"
+msgstr ""
 
 #: src/components/LuckyButton.tsx
 #, fuzzy
@@ -7763,6 +7792,10 @@ msgstr "Следует значению по умолчанию в настро�
 #, fuzzy
 msgid "For 1 hour"
 msgstr "На 1 час"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "For apps that only connect to a Komga server, like the Mihon Komga extension and Tachimanga. Reading progress syncs both ways; in Mihon, turn on the Komga tracker."
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "For each series you are reading, saves the next unread chapters while online and removes them once read. Chapters you save yourself stay until you remove them."
@@ -9215,6 +9248,10 @@ msgstr "Типы"
 
 #: src/components/import/mihonRows.ts
 msgid "Kitsu"
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Komga-compatible API"
 msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
@@ -12669,6 +12706,10 @@ msgstr "Откройте страницу и убедитесь, что это �
 msgid "Open the search with these filters from now on"
 msgstr "В дальнейшем открывать поиск с этими фильтрами"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Open webtoon chapters in Continuous layout"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
@@ -15121,6 +15162,14 @@ msgstr "Корневые папки"
 msgid "Rose"
 msgstr "Розовый"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Rotate"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Rotate to fit"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
@@ -15644,6 +15693,10 @@ msgstr "Прокрутить вперёд"
 #, fuzzy
 msgid "Scroll to finish the preview"
 msgstr "Прокрутите, чтобы закончить предпросмотр"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Scroll webtoon chapters"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16180,6 +16233,14 @@ msgstr "Серии, которые уже есть у вас и соответс
 msgid "Series you finished a chapter of that still have more to read."
 msgstr "Серии, в которых вы прочитали главу, но есть ещё что читать."
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Server address"
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Server address copied"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Server local time, 0 to 23."
@@ -16429,6 +16490,10 @@ msgstr "Показывать их новые произведения в под�
 msgid "Show this section"
 msgstr "Показывать этот раздел"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Show whole"
+msgstr ""
+
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
@@ -16561,6 +16626,10 @@ msgstr "Одиночный"
 #, fuzzy
 msgid "Single page"
 msgstr "Одна страница"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Single page layout only."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -16898,10 +16967,18 @@ msgstr "спецглавы, омакэ, десятичные главы, отс�
 msgid "Spin-off of {relatedTo}"
 msgstr "Спин-офф {relatedTo}"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Split"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Split from the tier above"
 msgstr "Отделить от уровня выше"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Split into two pages"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -17450,6 +17527,10 @@ msgstr "Это все главы на диске."
 #, fuzzy
 msgid "The anime covers through ch. {covered}."
 msgstr "Аниме охватывает главы до {covered}."
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "The API key is the last part of your feed URL, after /opds/. Enter it in the app, or use any username with the API key as the password."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -18544,6 +18625,10 @@ msgstr "Сейчас в тренде"
 #, fuzzy
 msgid "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
 msgstr "Пробует {sourceNames} в порядке приоритета и берёт первый источник с этой главой. Указание источника закрепляет его: запасного варианта нет, поэтому кандидат будет только из выбранного места."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Trims white or black margins. Not applied in the Continuous layout."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -19785,6 +19870,10 @@ msgstr "Если при обновлении находится больше н�
 msgid "When importing an existing series from disk: rename its folder to the series folder format, or keep it as found."
 msgstr "При импорте существующей серии с диска: переименовать её папку по формату папок серий или оставить как есть."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "When most pages are very tall. A layout picked in the reader still wins."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
@@ -19890,6 +19979,10 @@ msgstr "Во время чтения"
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "Во время чтения сообщает о новых главах только пока вы находитесь в середине серии."
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Whole"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Whole franchise"
@@ -19915,6 +20008,11 @@ msgstr "Весь год"
 #, fuzzy
 msgid "Whole-series pack, needs your call"
 msgstr "Пакет всей серии, нужно ваше решение"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Wide pages"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

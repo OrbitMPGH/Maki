@@ -827,6 +827,13 @@ public static class SettingKeys
     public const string OpdsTrackProgress = "opds.trackprogress";
 
     /// <summary>
+    /// "true" → serve the Komga-compatible API under <c>/komga</c> for this user's OPDS token. Default
+    /// off, and only answers while <see cref="OpdsEnabled"/> is on too: it is a second protocol over
+    /// the same credential, not a separate one.
+    /// </summary>
+    public const string KomgaEnabled = "komga.enabled";
+
+    /// <summary>
     /// "true" → redirect HTTP to HTTPS, send HSTS, and mark the session cookie <c>Secure</c>
     /// unconditionally. Default off, because the common deployment is plain HTTP on a LAN and a
     /// <c>Secure</c> cookie there simply never comes back — the user would be unable to log in with
