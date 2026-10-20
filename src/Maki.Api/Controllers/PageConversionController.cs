@@ -37,11 +37,9 @@ public class PageConversionController(
     {
         var stored = await PageConversionOptions.ReadAsync(db, ct);
         var snapshot = await worker.SnapshotAsync(ct);
-        var converted = await db.ChapterFiles.IgnoreQueryFilters()
-            .Where(f => f.OriginalImageFormat != null)
-            .GroupBy(_ => 1)
-            .Select(g => new { Files = g.Count(), Saved = g.Sum(f => f.ConversionSavedBytes) })
-            .FirstOrDefaultAsync(ct);
+        var converted = db.ChapterFiles.IgnoreQueryFilters().Where(f => f.OriginalImageFormat != null);
+        var convertedFiles = await converted.CountAsync(ct);
+        var savedBytes = await converted.SumAsync(f => f.ConversionSavedBytes, ct);
         var pending = await PageConversionWorker.PendingQuery(db).CountAsync(ct);
         var (trashBytes, trashFiles) = TrashedOriginals(await db.RootFolders.Select(r => r.Path).ToListAsync(ct));
         var options = await UpgradeOptions.LoadAsync(settings, ct);
@@ -54,7 +52,7 @@ public class PageConversionController(
                 PageConversionHold.ConversionOff => "conversionOff",
                 _ => null
             }, snapshot.CurrentFile, snapshot.Pass),
-            new LibraryDto(converted?.Files ?? 0, converted?.Saved ?? 0, pending, trashBytes, trashFiles,
+            new LibraryDto(convertedFiles, savedBytes, pending, trashBytes, trashFiles,
                 options.TrashRetentionDays)));
     }
 
