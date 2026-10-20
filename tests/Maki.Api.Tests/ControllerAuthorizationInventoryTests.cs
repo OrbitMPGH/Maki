@@ -226,7 +226,10 @@ public sealed class ControllerAuthorizationInventoryTests
         "SettingsController.SetUi",
     ];
 
-    /// <summary>Sign-in, OIDC and OAuth callbacks, and the OPDS feed (its path token authenticates it).</summary>
+    /// <summary>
+    /// Sign-in, OIDC and OAuth callbacks, the OPDS feed (its path token authenticates it) and the
+    /// Komga API (KomgaAuthFilter authenticates every action with the same token).
+    /// </summary>
     private static readonly string[] Anonymous =
     [
         "AuthController.Login",
@@ -234,6 +237,41 @@ public sealed class ControllerAuthorizationInventoryTests
         "AuthController.OidcChallenge",
         "AuthController.Setup",
         "AuthController.TwoFactor",
+        "KomgaController.Authors",
+        "KomgaController.AuthorsPaged",
+        "KomgaController.Book",
+        "KomgaController.BookThumbnail",
+        "KomgaController.Books",
+        "KomgaController.ClearBookProgress",
+        "KomgaController.Download",
+        "KomgaController.EmptyList",
+        "KomgaController.Genres",
+        "KomgaController.LatestBooks",
+        "KomgaController.Libraries",
+        "KomgaController.Library",
+        "KomgaController.MarkSeriesRead",
+        "KomgaController.MarkSeriesUnread",
+        "KomgaController.Me",
+        "KomgaController.NewSeries",
+        "KomgaController.NextBook",
+        "KomgaController.OnDeck",
+        "KomgaController.OneSeries",
+        "KomgaController.Page",
+        "KomgaController.Pages",
+        "KomgaController.PreviousBook",
+        "KomgaController.Publishers",
+        "KomgaController.Series",
+        "KomgaController.SeriesBooks",
+        "KomgaController.SeriesThumbnail",
+        "KomgaController.SetBookProgress",
+        "KomgaController.SetCookie",
+        "KomgaController.SetTachiyomiProgress",
+        "KomgaController.SetTachiyomiProgressV2",
+        "KomgaController.TachiyomiProgress",
+        "KomgaController.TachiyomiProgressV2",
+        "KomgaController.Tags",
+        "KomgaController.Unsupported",
+        "KomgaController.UpdatedSeries",
         "OpdsController.Cover",
         "OpdsController.Download",
         "OpdsController.OnDeck",

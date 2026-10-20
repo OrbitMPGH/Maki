@@ -3367,9 +3367,14 @@ msgstr "Qualquer coisa que o administrador deva saber"
 #: src/components/settings/IndexerForm.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/IntegrationCards.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "API key"
 msgstr "Chave da API"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "API key copied"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -5338,6 +5343,10 @@ msgstr "Copiado"
 msgid "Copy"
 msgstr "Copiar"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy API key"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Copy codes"
@@ -5347,6 +5356,10 @@ msgstr "Copiar códigos"
 #, fuzzy
 msgid "Copy feed URL"
 msgstr "Copiar URL do feed"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy server address"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -6847,6 +6860,10 @@ msgstr "Inglês (padrão do MangaBaka)"
 msgid "Enter one of your recovery codes"
 msgstr "Digite um dos seus códigos de recuperação"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Enter the API key in the app, or any username with the API key as the password."
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Enter your authenticator code"
@@ -7241,8 +7258,13 @@ msgstr "URL do feed copiada"
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
-msgstr "url do feed, catálogo, catálogos, painéis, chunky, koreader, tachiyomi, mihon, streaming, token, acompanhar progresso"
+#~ msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
+#~ msgstr "url do feed, catálogo, catálogos, painéis, chunky, koreader, tachiyomi, mihon, streaming, token, acompanhar progresso"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress, komga, tachimanga, api key"
+msgstr ""
 
 #: src/components/LuckyButton.tsx
 #, fuzzy
@@ -7687,6 +7709,10 @@ msgstr "Segue o padrão nas configurações de notificação."
 #, fuzzy
 msgid "For 1 hour"
 msgstr "Por 1 hora"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "For apps that only connect to a Komga server, like the Mihon Komga extension and Tachimanga. Reading progress syncs both ways; in Mihon, turn on the Komga tracker."
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "For each series you are reading, saves the next unread chapters while online and removes them once read. Chapters you save yourself stay until you remove them."
@@ -9131,6 +9157,10 @@ msgstr "Tipos"
 
 #: src/components/import/mihonRows.ts
 msgid "Kitsu"
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Komga-compatible API"
 msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
@@ -16004,6 +16034,14 @@ msgstr "Séries da sua biblioteca que correspondem a estes filtros."
 msgid "Series you finished a chapter of that still have more to read."
 msgstr "Séries em que você terminou um capítulo, mas ainda tem mais para ler."
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Server address"
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Server address copied"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Server local time, 0 to 23."
@@ -17255,6 +17293,10 @@ msgstr "Esses são todos os capítulos no disco."
 #, fuzzy
 msgid "The anime covers through ch. {covered}."
 msgstr "O anime cobre até o cap. {covered}."
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "The API key is the last part of your feed URL, after /opds/. Enter it in the app, or use any username with the API key as the password."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy

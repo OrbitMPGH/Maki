@@ -2760,8 +2760,13 @@ msgstr "Anything the admin should know"
 #: src/components/settings/IndexerForm.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/IntegrationCards.tsx
+#: src/pages/settings/ReadingCards.tsx
 msgid "API key"
 msgstr "API key"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "API key copied"
+msgstr "API key copied"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -4386,6 +4391,10 @@ msgstr "Copied"
 msgid "Copy"
 msgstr "Copy"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy API key"
+msgstr "Copy API key"
+
 #: src/components/settings/AccountSection.tsx
 msgid "Copy codes"
 msgstr "Copy codes"
@@ -4393,6 +4402,10 @@ msgstr "Copy codes"
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy feed URL"
 msgstr "Copy feed URL"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy server address"
+msgstr "Copy server address"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy this now. It can't be shown again; if you lose it, regenerate."
@@ -5619,6 +5632,10 @@ msgstr "English (MangaBaka default)"
 msgid "Enter one of your recovery codes"
 msgstr "Enter one of your recovery codes"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Enter the API key in the app, or any username with the API key as the password."
+msgstr "Enter the API key in the app, or any username with the API key as the password."
+
 #: src/pages/LoginPage.tsx
 msgid "Enter your authenticator code"
 msgstr "Enter your authenticator code"
@@ -5938,8 +5955,13 @@ msgstr "Feed URL copied"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
-msgstr "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
+#~ msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
+#~ msgstr "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress, komga, tachimanga, api key"
+msgstr "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress, komga, tachimanga, api key"
 
 #: src/components/LuckyButton.tsx
 msgid "Feeling lucky"
@@ -6303,6 +6325,10 @@ msgstr "Follows the default on your notification settings."
 #: src/components/QueuePause.tsx
 msgid "For 1 hour"
 msgstr "For 1 hour"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "For apps that only connect to a Komga server, like the Mihon Komga extension and Tachimanga. Reading progress syncs both ways; in Mihon, turn on the Komga tracker."
+msgstr "For apps that only connect to a Komga server, like the Mihon Komga extension and Tachimanga. Reading progress syncs both ways; in Mihon, turn on the Komga tracker."
 
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "For each series you are reading, saves the next unread chapters while online and removes them once read. Chapters you save yourself stay until you remove them."
@@ -7486,6 +7512,10 @@ msgstr "Kinds"
 #: src/components/import/mihonRows.ts
 msgid "Kitsu"
 msgstr "Kitsu"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Komga-compatible API"
+msgstr "Komga-compatible API"
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -13142,6 +13172,14 @@ msgstr "Series you already have that match these filters."
 msgid "Series you finished a chapter of that still have more to read."
 msgstr "Series you finished a chapter of that still have more to read."
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Server address"
+msgstr "Server address"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Server address copied"
+msgstr "Server address copied"
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Server local time, 0 to 23."
 msgstr "Server local time, 0 to 23."
@@ -14166,6 +14204,10 @@ msgstr "That's every chapter on disk."
 #: src/components/AnimeCoverageBar.tsx
 msgid "The anime covers through ch. {covered}."
 msgstr "The anime covers through ch. {covered}."
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "The API key is the last part of your feed URL, after /opds/. Enter it in the app, or use any username with the API key as the password."
+msgstr "The API key is the last part of your feed URL, after /opds/. Enter it in the app, or use any username with the API key as the password."
 
 #: src/components/NotificationsSection.tsx
 msgid "The API token of your Pushover application."

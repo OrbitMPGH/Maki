@@ -2657,6 +2657,8 @@ export interface OpdsSettings {
    * so a plain GET always returns null here and the URL cannot be shown a second time.
    */
   feedUrl: string | null
+  /** The Komga-compatible API under `/komga`, opened by the same token. Only answers while `enabled` is on too. */
+  komga: boolean
 }
 
 export function useOpdsSettings() {
@@ -2670,7 +2672,7 @@ export function useSaveOpdsSettings() {
   const queryClient = useQueryClient()
   return useMutation({
     // `password` is only needed when the save mints the token (first enable); the server decides.
-    mutationFn: (settings: { enabled: boolean; trackProgress: boolean; password?: string }) =>
+    mutationFn: (settings: { enabled: boolean; trackProgress: boolean; komga?: boolean; password?: string }) =>
       api<OpdsSettings>('/settings/opds', { method: 'PUT', body: JSON.stringify(settings) }),
     onSuccess: (data) => {
       // The PUT mints the token on first enable, so seed the cache from the response rather
