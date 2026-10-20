@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Alert,
   Anchor,
   Badge,
@@ -10,7 +11,6 @@ import {
   Loader,
   Menu,
   Modal,
-  NumberInput,
   Pagination,
   Select,
   SimpleGrid,
@@ -22,6 +22,7 @@ import {
   Text,
   TextInput,
   Title,
+  Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
 import {
@@ -36,6 +37,8 @@ import {
   IconRefresh,
   IconScan,
   IconServer,
+  IconSettings,
+  IconStethoscope,
   IconTrash,
   type Icon,
 } from '@tabler/icons-react'
@@ -51,7 +54,6 @@ import {
   type HealthCheck,
   type HealthFile,
   type HealthOperation,
-  type HealthOptions,
   type HealthOverview,
   type MatchCounterpart,
   type OperationDetail,
@@ -59,8 +61,9 @@ import {
   type UnlinkedMatch,
 } from '../api/health'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SectionHeader } from '../components/ui/SectionHeader'
+import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
-import { Disclosure } from '../components/ui/Disclosure'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
@@ -82,6 +85,15 @@ const weight = (check: HealthCheck) =>
   !ISSUE.includes(check.status) ? 2 : check.acknowledged ? 1 : 0
 
 /** HealthMonitor's category strings. Anything unknown falls back to the generic system icon. */
+const CATEGORY_LABEL: Record<string, MessageDescriptor> = {
+  library: msg`Library`,
+  storage: msg`Storage`,
+  connections: msg`Connections`,
+  system: msg`System`,
+  downloads: msg`Downloads`,
+  job: msg`Scheduled jobs`,
+}
+
 const CATEGORY_ICON: Record<string, Icon> = {
   library: IconBooks,
   storage: IconDatabase,
@@ -126,6 +138,7 @@ const STATUS_LABEL: Record<string, MessageDescriptor> = {
   complete: msg`Complete`,
   completed: msg`Completed`,
   cancelled: msg`Cancelled`,
+  unavailable: msg`Unavailable`,
 }
 
 const bytes = (size: number, missing: string) => (size < 0 ? missing : formatBytes(size))
@@ -275,6 +288,17 @@ export default function HealthPage() {
             >
               <Trans>Check now</Trans>
             </Button>
+            <Tooltip label={t`Health settings`} withArrow>
+              <ActionIcon
+                component={Link}
+                to="/settings?tab=system&s=health"
+                variant="default"
+                size="lg"
+                aria-label={t`Health settings`}
+              >
+                <IconSettings size={18} />
+              </ActionIcon>
+            </Tooltip>
             <Menu position="bottom-end" withinPortal width={320}>
               <Menu.Target>
                 <Button leftSection={<IconScan size={16} />} rightSection={<IconChevronDown size={14} />}>
@@ -393,11 +417,10 @@ export default function HealthPage() {
         </Tabs.List>
 
         <Tabs.Panel value="overview">
-          <div className="health-overview">
+          <Stack gap="xl">
             <ChecksPanel checks={overview.data?.checks ?? []} loading={overview.isPending} run={run} />
             <CachePanel />
-            <OptionsPanel />
-          </div>
+          </Stack>
         </Tabs.Panel>
 
         <Tabs.Panel value="files">
@@ -861,29 +884,33 @@ function ChecksPanel({
   const categories = Array.from(new Set(visible.map((c) => c.category)))
   const totalChecks = checks.length
   // Shown only while something needs attention; a healthy system is the plain panel.
+  const renderLabel = useLabel()
   const unresolved = checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged)
   const severity = unresolved.some((c) => tone(c.status) === 'danger') ? 'danger' : 'warn'
 
   return (
-    <Panel className="health-area-checks" p="lg">
-      <Group justify="space-between" align="center" wrap="nowrap" mb="md">
-        <Group gap="sm" align="baseline" wrap="wrap">
-          <Title order={2} size="h3" fz="var(--type-section)">
-            <Trans>System checks</Trans>
-          </Title>
-          {unresolved.length > 0 && (
-            <StatusDot tone={severity}>
-              <Plural value={unresolved.length} one="# needs attention" other="# need attention" />
-            </StatusDot>
-          )}
-        </Group>
-        <Switch
-          size="xs"
-          label={t`Show passing`}
-          checked={showPassing}
-          onChange={(e) => setShowPassing(e.currentTarget.checked)}
-        />
-      </Group>
+    <Stack gap="sm">
+      <SectionHeader
+        icon={IconStethoscope}
+        title={t`System checks`}
+        count={totalChecks > 0 ? totalChecks : undefined}
+        action={
+          <Group gap="md" wrap="nowrap">
+            {unresolved.length > 0 && (
+              <StatusDot tone={severity}>
+                <Plural value={unresolved.length} one="# needs attention" other="# need attention" />
+              </StatusDot>
+            )}
+            <Switch
+              size="xs"
+              label={t`Show passing`}
+              checked={showPassing}
+              onChange={(e) => setShowPassing(e.currentTarget.checked)}
+            />
+          </Group>
+        }
+      />
+    <Panel p="lg">
 
       {loading && (
         <Stack gap="md" aria-hidden>
@@ -905,12 +932,15 @@ function ChecksPanel({
         </Alert>
       )}
       {checks.length > 0 && visible.length === 0 && (
-        <Text size="sm" c="var(--ink-3)">
-          <Trans>
-            Everything is passing. Turn on Show passing to see all{' '}
-            <Plural value={totalChecks} one="# check" other="# checks" />.
-          </Trans>
-        </Text>
+        <EmptyState
+          compact
+          mood="pleased"
+          title={t`Everything is passing`}
+          description={plural(totalChecks, {
+            one: 'Turn on Show passing to see the # check.',
+            other: 'Turn on Show passing to see all # checks.',
+          })}
+        />
       )}
 
       {categories.map((category) => {
@@ -924,7 +954,7 @@ function ChecksPanel({
           <div className="health-group" key={category}>
             <Group gap={7} className="health-group-label" wrap="nowrap">
               <CategoryIcon size={14} stroke={1.8} />
-              <span>{category}</span>
+              <span>{CATEGORY_LABEL[category] ? renderLabel(CATEGORY_LABEL[category]) : category}</span>
               <Text span size="xs" c="var(--ink-4)" fw={500} className="tnum">
                 {rows.length}
               </Text>
@@ -940,6 +970,7 @@ function ChecksPanel({
         )
       })}
     </Panel>
+    </Stack>
   )
 }
 
@@ -1895,101 +1926,16 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
   )
 }
 
-function OptionsPanel() {
-  const { t } = useLingui()
-  const { data } = useHealthData<HealthOptions>('/options')
-  const [draft, setDraft] = useState<HealthOptions | null>(null)
-  const [thresholdsOpen, setThresholdsOpen] = useState(false)
-  const action = useHealthAction()
-  const value = draft ?? data
-  if (!value) return null
-  const update = (patch: Partial<HealthOptions>) => setDraft({ ...value, ...patch })
-
-  return (
-    <Panel className="health-area-options" p="lg">
-      <Stack>
-        <Title order={2} size="h3" fz="var(--type-section)">
-          <Trans>Health settings</Trans>
-        </Title>
-        {action.error && <Alert color="var(--danger)">{action.error.message}</Alert>}
-        <Switch
-          label={t`Analyze new files and run daily reconciliation`}
-          checked={value.automaticScanning}
-          onChange={(e) => update({ automaticScanning: e.currentTarget.checked })}
-        />
-        <SimpleGrid cols={{ base: 1, sm: 2 }} style={{ alignItems: 'end' }}>
-          <NumberInput
-            label={t`Daily scan hour (0-23)`}
-            min={0}
-            max={23}
-            value={value.scanHour}
-            onChange={(v) => update({ scanHour: Number(v) })}
-          />
-          <TextInput
-            label={t`Timezone (empty uses server timezone)`}
-            value={value.timeZone ?? ''}
-            onChange={(e) => update({ timeZone: e.currentTarget.value || null })}
-          />
-          <NumberInput
-            label={t`Pages decoded at once (0 = automatic)`}
-            description={t`Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone.`}
-            min={0}
-            max={32}
-            value={value.scanWorkers}
-            onChange={(v) => update({ scanWorkers: Number(v) })}
-          />
-        </SimpleGrid>
-        <Disclosure
-          title={t`Thresholds`}
-          summary={t`Disk warning below ${value.warningPercent}% or ${value.warningGiB} GiB, error below ${value.errorPercent}% or ${value.errorGiB} GiB. Backups count as stale after ${value.backupDays} days.`}
-          opened={thresholdsOpen}
-          onToggle={() => setThresholdsOpen((o) => !o)}
-        >
-          <SimpleGrid cols={{ base: 1, sm: 2 }} style={{ alignItems: 'end' }}>
-            {(['warningPercent', 'errorPercent', 'warningGiB', 'errorGiB', 'backupDays'] as const).map((key) => (
-              <NumberInput
-                key={key}
-                label={
-                  {
-                    warningPercent: t`Low disk warning (%)`,
-                    errorPercent: t`Low disk error (%)`,
-                    warningGiB: t`Low disk warning (GiB)`,
-                    errorGiB: t`Low disk error (GiB)`,
-                    backupDays: t`Backup freshness (days)`,
-                  }[key]
-                }
-                min={0}
-                value={value[key]}
-                onChange={(v) => update({ [key]: Number(v) })}
-              />
-            ))}
-          </SimpleGrid>
-        </Disclosure>
-        <Button
-          disabled={!draft}
-          loading={action.isPending}
-          onClick={() =>
-            action.mutate({ path: '/options', method: 'PUT', body: value }, { onSuccess: () => setDraft(null) })
-          }
-        >
-          <Trans>Save health settings</Trans>
-        </Button>
-      </Stack>
-    </Panel>
-  )
-}
-
 function CachePanel() {
   const { t } = useLingui()
   const cache = useImageCache()
   const rebuild = useRebuildImageCache()
 
   return (
-    <Panel className="health-area-cache" p="lg">
-      <Stack>
-        <Title order={2} size="h3" fz="var(--type-section)">
-          <Trans>Image cache and backups</Trans>
-        </Title>
+    <Stack gap="sm">
+      <SectionHeader icon={IconPhotoScan} title={t`Image cache and backups`} />
+      <Panel p="lg">
+      <Group justify="space-between" align="center" gap="lg">
         {cache.data && (
           <div className="health-facts">
             {(
@@ -2010,7 +1956,6 @@ function CachePanel() {
             ))}
           </div>
         )}
-        {(cache.error ?? rebuild.error) && <Alert color="var(--danger)">{(cache.error ?? rebuild.error)?.message}</Alert>}
         <Group gap="xs">
           <Button
             variant="default"
@@ -2023,7 +1968,13 @@ function CachePanel() {
             <Trans>Backup and cache tools</Trans>
           </Button>
         </Group>
-      </Stack>
-    </Panel>
+      </Group>
+      {(cache.error ?? rebuild.error) && (
+        <Alert color="var(--danger)" mt="md">
+          {(cache.error ?? rebuild.error)?.message}
+        </Alert>
+      )}
+      </Panel>
+    </Stack>
   )
 }

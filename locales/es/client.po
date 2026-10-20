@@ -1994,6 +1994,10 @@ msgstr "{total, plural, one {Deseado para {spanLabel}: {wantedCount} de # capít
 msgid "{totalChapters} ch."
 msgstr "{totalChapters} cap."
 
+#: src/pages/HealthPage.tsx
+msgid "{totalChecks, plural, one {Turn on Show passing to see the # check.} other {Turn on Show passing to see all # checks.}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
@@ -2365,6 +2369,14 @@ msgstr "👎 No me gusta"
 #, fuzzy
 msgid "0 deletes them for good on the next housekeeping pass."
 msgstr "0 los elimina para siempre en la siguiente pasada de mantenimiento."
+
+#: src/pages/settings/SystemCards.tsx
+msgid "0 picks a number for this machine. Raise it to scan faster, lower it to leave the CPU alone."
+msgstr ""
+
+#: src/pages/settings/SystemCards.tsx
+msgid "0 to 23."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3351,7 +3363,7 @@ msgstr "Un webhook entrante de Slack o Mattermost."
 msgid "Analysis"
 msgstr "Análisis"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Analyze new files and run daily reconciliation"
 msgstr "Analizar archivos nuevos y ejecutar la conciliación diaria"
@@ -3856,7 +3868,7 @@ msgstr "Herramientas de copia de seguridad y caché"
 msgid "Backup created"
 msgstr "Copia de seguridad creada"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Backup freshness (days)"
 msgstr "Antigüedad de la copia de seguridad (días)"
@@ -5355,6 +5367,7 @@ msgid "Connecting to Kavita…"
 msgstr "Conectando con Kavita…"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Connections"
@@ -6004,14 +6017,15 @@ msgid "Cutoff: {cutoffLabel}"
 msgstr "Umbral: {cutoffLabel}"
 
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Daily scan hour"
 msgstr "Hora del escaneo diario"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "Daily scan hour (0-23)"
-msgstr "Hora del análisis diario (0-23)"
+#~ msgid "Daily scan hour (0-23)"
+#~ msgstr "Hora del análisis diario (0-23)"
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -6480,8 +6494,8 @@ msgstr "Espacio usado en disco"
 #. placeholder {3}: value.errorGiB
 #. placeholder {4}: value.backupDays
 #: src/pages/HealthPage.tsx
-msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
-msgstr ""
+#~ msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
+#~ msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -6747,6 +6761,7 @@ msgstr "Descargando…"
 #: src/components/NotificationsSection.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Downloads"
@@ -6946,6 +6961,10 @@ msgstr "Vaciar papelera"
 #, fuzzy
 msgid "Empty the recycle bin?"
 msgstr "¿Vaciar la papelera de reciclaje?"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Empty uses the server's timezone."
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -7218,9 +7237,13 @@ msgid "Everything else"
 msgstr "Todo lo demás"
 
 #: src/pages/HealthPage.tsx
+msgid "Everything is passing"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
-msgstr "Todo funciona. Activa Mostrar correctos para ver las {totalChecks, plural, one {# comprobación} many {# comprobaciones} other {# comprobaciones}}."
+#~ msgid "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
+#~ msgstr "Todo funciona. Activa Mostrar correctos para ver las {totalChecks, plural, one {# comprobación} many {# comprobaciones} other {# comprobaciones}}."
 
 #: src/components/discover/FollowingRail.tsx
 #, fuzzy
@@ -8293,6 +8316,11 @@ msgstr "Problemas de estado"
 #, fuzzy
 msgid "Health settings"
 msgstr "Ajustes de estado"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "health, scan, verify, reconciliation, scan hour, timezone, low disk, disk space, threshold, stale backup"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -9750,6 +9778,7 @@ msgstr "Niveles, insignias y rachas calculados a partir de tu historial de lectu
 #: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -9767,6 +9796,11 @@ msgstr "Cifras de la biblioteca"
 #, fuzzy
 msgid "Library folders"
 msgstr "Carpetas de biblioteca"
+
+#: src/pages/settings/registry.ts
+#: src/pages/settings/SystemCards.tsx
+msgid "Library health"
+msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy
@@ -10045,22 +10079,22 @@ msgstr "páginas sueltas de imagen"
 msgid "Low confidence"
 msgstr ""
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Low disk error (%)"
 msgstr "Error de poco espacio en disco (%)"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Low disk error (GiB)"
 msgstr "Error de poco espacio en disco (GiB)"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Low disk warning (%)"
 msgstr "Aviso de poco espacio en disco (%)"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Low disk warning (GiB)"
 msgstr "Aviso de poco espacio en disco (GiB)"
@@ -12994,10 +13028,14 @@ msgstr "Las páginas que una app de lectura en streaming obtiene cuentan como le
 msgid "Pages are kept exactly as the source served them."
 msgstr ""
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Pages decoded at once"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "Pages decoded at once (0 = automatic)"
-msgstr "Páginas decodificadas a la vez (0 = automático)"
+#~ msgid "Pages decoded at once (0 = automatic)"
+#~ msgstr "Páginas decodificadas a la vez (0 = automático)"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -15462,8 +15500,8 @@ msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "Save health settings"
-msgstr "Guardar ajustes de estado"
+#~ msgid "Save health settings"
+#~ msgstr "Guardar ajustes de estado"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -15671,8 +15709,8 @@ msgstr "Analizando en busca de mejoras…"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
-msgstr "Analizar consiste casi por completo en decodificar imágenes. Súbelo para recorrer la biblioteca más rápido o bájalo para no ocupar la CPU."
+#~ msgid "Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
+#~ msgstr "Analizar consiste casi por completo en decodificar imágenes. Súbelo para recorrer la biblioteca más rápido o bájalo para no ocupar la CPU."
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -15693,6 +15731,10 @@ msgstr "Busca en una carpeta raíz series que Maki aún no conoce, las relaciona
 #, fuzzy
 msgid "Scheduled"
 msgstr "Programado"
+
+#: src/pages/HealthPage.tsx
+msgid "Scheduled jobs"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -17332,6 +17374,10 @@ msgstr "Dejó de leer antes de terminar"
 msgid "Stopping"
 msgstr "Deteniendo"
 
+#: src/pages/HealthPage.tsx
+msgid "Storage"
+msgstr ""
+
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Storage on this device"
 msgstr ""
@@ -17497,6 +17543,7 @@ msgstr "Sinopsis"
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
 #: src/nav.ts
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "System"
@@ -18427,7 +18474,7 @@ msgstr "Este año"
 msgid "Those series are already being matched."
 msgstr "Esas series ya están obteniendo coincidencias."
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 msgid "Thresholds"
 msgstr ""
 
@@ -18522,10 +18569,14 @@ msgstr "Tiempo para terminar"
 msgid "Time zone"
 msgstr "Zona horaria"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Timezone"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "Timezone (empty uses server timezone)"
-msgstr "Zona horaria (vacío usa la zona horaria del servidor)"
+#~ msgid "Timezone (empty uses server timezone)"
+#~ msgstr "Zona horaria (vacío usa la zona horaria del servidor)"
 
 #: src/theme-context.tsx
 #, fuzzy
@@ -20022,6 +20073,10 @@ msgstr "Al importar una serie existente desde disco: renombrar su carpeta al for
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "When most pages are very tall. A layout picked in the reader still wins."
+msgstr ""
+
+#: src/pages/settings/SystemCards.tsx
+msgid "When the health scans run and where the disk and backup checks start warning. The checks and file findings are on the Health page."
 msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx

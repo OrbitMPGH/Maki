@@ -1993,6 +1993,10 @@ msgstr "{total, plural, other {{spanLabel} 想要 {wantedCount}/# 个章节}}"
 msgid "{totalChapters} ch."
 msgstr "{totalChapters} 章"
 
+#: src/pages/HealthPage.tsx
+msgid "{totalChecks, plural, one {Turn on Show passing to see the # check.} other {Turn on Show passing to see all # checks.}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
@@ -2364,6 +2368,14 @@ msgstr "👎 不喜欢"
 #, fuzzy
 msgid "0 deletes them for good on the next housekeeping pass."
 msgstr "0 表示在下一次定期清理时永久删除。"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "0 picks a number for this machine. Raise it to scan faster, lower it to leave the CPU alone."
+msgstr ""
+
+#: src/pages/settings/SystemCards.tsx
+msgid "0 to 23."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3350,7 +3362,7 @@ msgstr "来自 Slack 或 Mattermost 的入站 webhook。"
 msgid "Analysis"
 msgstr "分析"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Analyze new files and run daily reconciliation"
 msgstr "分析新文件并执行每日核对"
@@ -3855,7 +3867,7 @@ msgstr "备份和缓存工具"
 msgid "Backup created"
 msgstr "备份已创建"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Backup freshness (days)"
 msgstr "备份新鲜度（天）"
@@ -5354,6 +5366,7 @@ msgid "Connecting to Kavita…"
 msgstr "正在连接到 Kavita…"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Connections"
@@ -6003,14 +6016,15 @@ msgid "Cutoff: {cutoffLabel}"
 msgstr "截止线：{cutoffLabel}"
 
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Daily scan hour"
 msgstr "每日扫描时间"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "Daily scan hour (0-23)"
-msgstr "每日扫描时间（0-23 点）"
+#~ msgid "Daily scan hour (0-23)"
+#~ msgstr "每日扫描时间（0-23 点）"
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -6479,8 +6493,8 @@ msgstr "磁盘使用量"
 #. placeholder {3}: value.errorGiB
 #. placeholder {4}: value.backupDays
 #: src/pages/HealthPage.tsx
-msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
-msgstr ""
+#~ msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
+#~ msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -6746,6 +6760,7 @@ msgstr "下载中……"
 #: src/components/NotificationsSection.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Downloads"
@@ -6945,6 +6960,10 @@ msgstr "清空回收站"
 #, fuzzy
 msgid "Empty the recycle bin?"
 msgstr "要清空回收站吗？"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Empty uses the server's timezone."
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -7217,9 +7236,13 @@ msgid "Everything else"
 msgstr "其他所有内容"
 
 #: src/pages/HealthPage.tsx
+msgid "Everything is passing"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
-msgstr "一切正常。打开“显示正常项”以查看全部 {totalChecks, plural, other {# 项检查}}。"
+#~ msgid "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
+#~ msgstr "一切正常。打开“显示正常项”以查看全部 {totalChecks, plural, other {# 项检查}}。"
 
 #: src/components/discover/FollowingRail.tsx
 #, fuzzy
@@ -8292,6 +8315,11 @@ msgstr "健康问题"
 #, fuzzy
 msgid "Health settings"
 msgstr "健康设置"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "health, scan, verify, reconciliation, scan hour, timezone, low disk, disk space, threshold, stale backup"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -9749,6 +9777,7 @@ msgstr "等级、徽章和连续记录都根据你的阅读历史计算得出。
 #: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -9766,6 +9795,11 @@ msgstr "资料库统计"
 #, fuzzy
 msgid "Library folders"
 msgstr "资料库文件夹"
+
+#: src/pages/settings/registry.ts
+#: src/pages/settings/SystemCards.tsx
+msgid "Library health"
+msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy
@@ -10044,22 +10078,22 @@ msgstr "零散的页面图片"
 msgid "Low confidence"
 msgstr ""
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Low disk error (%)"
 msgstr "磁盘空间不足错误（%）"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Low disk error (GiB)"
 msgstr "磁盘空间不足错误（GiB）"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Low disk warning (%)"
 msgstr "磁盘空间不足警告（%）"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Low disk warning (GiB)"
 msgstr "磁盘空间不足警告（GiB）"
@@ -12993,10 +13027,14 @@ msgstr "流媒体应用请求的页面会标记为已读，因此 OPDS 阅读进
 msgid "Pages are kept exactly as the source served them."
 msgstr ""
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Pages decoded at once"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "Pages decoded at once (0 = automatic)"
-msgstr "一次解码的页面数（0 = 自动）"
+#~ msgid "Pages decoded at once (0 = automatic)"
+#~ msgstr "一次解码的页面数（0 = 自动）"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -15461,8 +15499,8 @@ msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "Save health settings"
-msgstr "保存健康设置"
+#~ msgid "Save health settings"
+#~ msgstr "保存健康设置"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -15670,8 +15708,8 @@ msgstr "正在扫描升级…"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
-msgstr "扫描几乎完全是图像解码。提高它可以更快扫过资料库，降低它可以减少对 CPU 的占用。"
+#~ msgid "Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
+#~ msgstr "扫描几乎完全是图像解码。提高它可以更快扫过资料库，降低它可以减少对 CPU 的占用。"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -15692,6 +15730,10 @@ msgstr "扫描根文件夹，查找 Maki 尚未收录的系列，将它们与元
 #, fuzzy
 msgid "Scheduled"
 msgstr "已计划"
+
+#: src/pages/HealthPage.tsx
+msgid "Scheduled jobs"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -17331,6 +17373,10 @@ msgstr "读完前停下"
 msgid "Stopping"
 msgstr "正在停止"
 
+#: src/pages/HealthPage.tsx
+msgid "Storage"
+msgstr ""
+
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Storage on this device"
 msgstr ""
@@ -17496,6 +17542,7 @@ msgstr "简介"
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
 #: src/nav.ts
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "System"
@@ -18426,7 +18473,7 @@ msgstr "今年"
 msgid "Those series are already being matched."
 msgstr "这些系列已经在匹配中。"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 msgid "Thresholds"
 msgstr ""
 
@@ -18521,10 +18568,14 @@ msgstr "完成所需时间"
 msgid "Time zone"
 msgstr "时区"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Timezone"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "Timezone (empty uses server timezone)"
-msgstr "时区（留空使用服务器时区）"
+#~ msgid "Timezone (empty uses server timezone)"
+#~ msgstr "时区（留空使用服务器时区）"
 
 #: src/theme-context.tsx
 #, fuzzy
@@ -20021,6 +20072,10 @@ msgstr "从磁盘导入现有系列时：将其文件夹重命名为系列文件
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "When most pages are very tall. A layout picked in the reader still wins."
+msgstr ""
+
+#: src/pages/settings/SystemCards.tsx
+msgid "When the health scans run and where the disk and backup checks start warning. The checks and file findings are on the Health page."
 msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx

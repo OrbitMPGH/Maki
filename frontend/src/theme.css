@@ -6639,32 +6639,7 @@ body.reader-open {
 }
 
 /* --- Health workspace ------------------------------------------------------ */
-/* Same idea as `.series-split`: one wide reading column beside a narrower column of tools, rather
-   than a single stack that leaves half the viewport empty on a desktop. The checks panel spans
-   both rows because it is the only one whose height grows with the library; the two panels beside
-   it are fixed-size and stack against its top. */
-.health-overview {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
-  grid-template-rows: max-content max-content;
-  grid-template-areas:
-    'checks cache'
-    'checks options';
-  gap: var(--mantine-spacing-lg);
-  align-items: start;
-}
-.health-area-checks {
-  grid-area: checks;
-}
-.health-area-cache {
-  grid-area: cache;
-}
-.health-area-options {
-  grid-area: options;
-}
-
-/* Three short facts side by side rather than a label column: in the narrow aside a 132px label
-   leaves nothing for the value. */
+/* Three short facts side by side rather than a label column. */
 .health-facts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -6785,13 +6760,6 @@ body.reader-open {
 }
 
 @media (max-width: 61.9375em) {
-  .health-overview {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      'checks'
-      'cache'
-      'options';
-  }
   .health-review {
     grid-template-columns: minmax(0, 1fr);
   }

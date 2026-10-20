@@ -1,6 +1,7 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { api } from './api'
 import * as d from './settings/data'
+import { healthOptions } from './operations/health'
 
 /** A PUT whose reply is the body it was sent, which is how most settings records answer. */
 const putEcho = (path: string) =>
@@ -9,6 +10,9 @@ const ok = () => new HttpResponse(null, { status: 204 })
 const success = () => HttpResponse.json({ success: true })
 
 export const settingsHandlers: HttpHandler[] = [
+  // System: the Library health card reads the Health page's own options endpoint.
+  http.get(api('/health/options'), () => HttpResponse.json(healthOptions)),
+  http.put(api('/health/options'), async ({ request }) => HttpResponse.json(await request.json())),
   // Account
   http.get(api('/account/2fa'), () => HttpResponse.json(d.twoFactorOff)),
   http.get(api('/account/apikeys'), () => HttpResponse.json(d.apiKeys)),

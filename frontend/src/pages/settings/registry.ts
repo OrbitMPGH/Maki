@@ -578,6 +578,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'health',
+    tab: 'system',
+    title: msg`Library health`,
+    admin: true,
+    keywords: msg({
+      message: `health, scan, verify, reconciliation, scan hour, timezone, low disk, disk space, threshold, stale backup`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'updates',
     tab: 'system',
     title: msg`Updates`,

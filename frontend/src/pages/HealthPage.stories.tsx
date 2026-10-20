@@ -1,4 +1,3 @@
-import { useEffect, useState, type ReactNode } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
@@ -14,22 +13,8 @@ import {
   verifyScan,
   warningChecks,
 } from '../../.storybook/mocks/operations/health'
-import { useAuth } from '../auth/AuthProvider'
+import { AfterSignIn } from '../../.storybook/AfterSignIn'
 import HealthPage from './HealthPage'
-
-/**
- * AuthProvider drops every cached health-workspace query when the signed-in user first resolves, which
- * orphans the page's own first fetches if it mounted before /auth/me answered. The real app holds the
- * page back behind its auth gate; this holds it back one tick past sign-in.
- */
-function AfterSignIn({ children }: { children: ReactNode }) {
-  const { me } = useAuth()
-  const [ready, setReady] = useState(false)
-  useEffect(() => {
-    if (me) setReady(true)
-  }, [me])
-  return ready ? children : null
-}
 
 const meta = {
   component: HealthPage,
@@ -51,7 +36,10 @@ export const Healthy: Story = {
     await expect(await canvas.findByText('System checks')).toBeVisible()
     await expect(await canvas.findByText(/Everything is passing/)).toBeVisible()
     await expect(await canvas.findByText('Image cache and backups')).toBeVisible()
-    await expect(await canvas.findByText('Health settings')).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: 'Health settings' })).toHaveAttribute(
+      'href',
+      '/settings?tab=system&s=health',
+    )
   },
 }
 
@@ -149,19 +137,6 @@ export const ScanMenu: Story = {
     const body = within(canvasElement.ownerDocument.body)
     await waitFor(async () => expect(await body.findByRole('menuitem', { name: /Index/ })).toBeVisible())
     await waitFor(() => expect(body.getByRole('menuitem', { name: /Verify/ })).toBeVisible())
-  },
-}
-
-export const EditHealthSettings: Story = {
-  play: async ({ canvas, userEvent }) => {
-    const save = await canvas.findByRole('button', { name: 'Save health settings' })
-    await waitFor(() => expect(save).toBeDisabled())
-    const hour = await canvas.findByLabelText('Daily scan hour (0-23)')
-    await userEvent.clear(hour)
-    await userEvent.type(hour, '5')
-    await waitFor(() => expect(save).toBeEnabled())
-    await userEvent.click(await canvas.findByRole('button', { name: /Thresholds/ }))
-    await expect(await canvas.findByLabelText('Low disk warning (%)')).toBeVisible()
   },
 }
 

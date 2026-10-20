@@ -57,7 +57,7 @@ import {
 } from './settings/DownloadCards'
 import { ImportListSettingsSection, KavitaCard, ScrobbleSection } from './settings/IntegrationCards'
 import { SuwayomiCard } from './settings/SuwayomiCards'
-import { BackupSection, ImageCacheSection, UpdatesSection } from './settings/SystemCards'
+import { BackupSection, HealthSettingsSection, ImageCacheSection, UpdatesSection } from './settings/SystemCards'
 import { scrollBehavior } from '../lib/scrollBehavior'
 
 /**
@@ -127,6 +127,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       network: <NetworkSection />,
       backup: <BackupSection />,
       'image-cache': <ImageCacheSection />,
+      health: <HealthSettingsSection />,
       updates: <UpdatesSection />,
     }),
     [i18n.locale],

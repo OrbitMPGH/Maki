@@ -1659,6 +1659,10 @@ msgstr "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter}
 msgid "{totalChapters} ch."
 msgstr "{totalChapters} ch."
 
+#: src/pages/HealthPage.tsx
+msgid "{totalChecks, plural, one {Turn on Show passing to see the # check.} other {Turn on Show passing to see all # checks.}}"
+msgstr "{totalChecks, plural, one {Turn on Show passing to see the # check.} other {Turn on Show passing to see all # checks.}}"
+
 #: src/pages/LibraryPage.tsx
 msgid "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
 msgstr "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
@@ -1958,6 +1962,14 @@ msgstr "👎 Disliked"
 #: src/pages/settings/LibraryCards.tsx
 msgid "0 deletes them for good on the next housekeeping pass."
 msgstr "0 deletes them for good on the next housekeeping pass."
+
+#: src/pages/settings/SystemCards.tsx
+msgid "0 picks a number for this machine. Raise it to scan faster, lower it to leave the CPU alone."
+msgstr "0 picks a number for this machine. Raise it to scan faster, lower it to leave the CPU alone."
+
+#: src/pages/settings/SystemCards.tsx
+msgid "0 to 23."
+msgstr "0 to 23."
 
 #: src/components/NotificationsSection.tsx
 msgid "1 (lowest) to 5 (highest)."
@@ -2764,7 +2776,7 @@ msgstr "An incoming webhook from Slack or Mattermost."
 msgid "Analysis"
 msgstr "Analysis"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 msgid "Analyze new files and run daily reconciliation"
 msgstr "Analyze new files and run daily reconciliation"
 
@@ -3183,7 +3195,7 @@ msgstr "Backup and cache tools"
 msgid "Backup created"
 msgstr "Backup created"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 msgid "Backup freshness (days)"
 msgstr "Backup freshness (days)"
 
@@ -4428,6 +4440,7 @@ msgid "Connecting to Kavita…"
 msgstr "Connecting to Kavita…"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 msgid "Connections"
 msgstr "Connections"
@@ -4962,12 +4975,13 @@ msgid "Cutoff: {cutoffLabel}"
 msgstr "Cutoff: {cutoffLabel}"
 
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/SystemCards.tsx
 msgid "Daily scan hour"
 msgstr "Daily scan hour"
 
 #: src/pages/HealthPage.tsx
-msgid "Daily scan hour (0-23)"
-msgstr "Daily scan hour (0-23)"
+#~ msgid "Daily scan hour (0-23)"
+#~ msgstr "Daily scan hour (0-23)"
 
 #: src/api/upgrades.ts
 msgid "Daily upgrade cap reached"
@@ -5351,8 +5365,8 @@ msgstr "Disk used"
 #. placeholder {3}: value.errorGiB
 #. placeholder {4}: value.backupDays
 #: src/pages/HealthPage.tsx
-msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
-msgstr "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
+#~ msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
+#~ msgstr "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -5575,6 +5589,7 @@ msgstr "Downloading…"
 #: src/components/NotificationsSection.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/registry.ts
 msgid "Downloads"
 msgstr "Downloads"
@@ -5739,6 +5754,10 @@ msgstr "Empty bin"
 #: src/pages/settings/LibraryCards.tsx
 msgid "Empty the recycle bin?"
 msgstr "Empty the recycle bin?"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Empty uses the server's timezone."
+msgstr "Empty uses the server's timezone."
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Enable"
@@ -5963,8 +5982,12 @@ msgid "Everything else"
 msgstr "Everything else"
 
 #: src/pages/HealthPage.tsx
-msgid "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
-msgstr "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
+msgid "Everything is passing"
+msgstr "Everything is passing"
+
+#: src/pages/HealthPage.tsx
+#~ msgid "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
+#~ msgstr "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
 
 #: src/components/discover/FollowingRail.tsx
 msgid "Everything they have in the catalogue is already in your library."
@@ -6842,6 +6865,11 @@ msgstr "Health issues"
 #: src/pages/HealthPage.tsx
 msgid "Health settings"
 msgstr "Health settings"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "health, scan, verify, reconciliation, scan hour, timezone, low disk, disk space, threshold, stale backup"
+msgstr "health, scan, verify, reconciliation, scan hour, timezone, low disk, disk space, threshold, stale backup"
 
 #: src/components/NotificationsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -8044,6 +8072,7 @@ msgstr "Levels, badges and streaks worked out from your reading history. All of 
 #: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -8058,6 +8087,11 @@ msgstr "Library counts"
 #: src/components/SetupWizard.tsx
 msgid "Library folders"
 msgstr "Library folders"
+
+#: src/pages/settings/registry.ts
+#: src/pages/settings/SystemCards.tsx
+msgid "Library health"
+msgstr "Library health"
 
 #: src/api/inbox.ts
 msgid "Library import finished"
@@ -8287,19 +8321,19 @@ msgstr "loose page images"
 msgid "Low confidence"
 msgstr "Low confidence"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 msgid "Low disk error (%)"
 msgstr "Low disk error (%)"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 msgid "Low disk error (GiB)"
 msgstr "Low disk error (GiB)"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 msgid "Low disk warning (%)"
 msgstr "Low disk warning (%)"
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 msgid "Low disk warning (GiB)"
 msgstr "Low disk warning (GiB)"
 
@@ -10725,9 +10759,13 @@ msgstr "Pages a streaming app fetches count as read, so OPDS reading reaches you
 msgid "Pages are kept exactly as the source served them."
 msgstr "Pages are kept exactly as the source served them."
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Pages decoded at once"
+msgstr "Pages decoded at once"
+
 #: src/pages/HealthPage.tsx
-msgid "Pages decoded at once (0 = automatic)"
-msgstr "Pages decoded at once (0 = automatic)"
+#~ msgid "Pages decoded at once (0 = automatic)"
+#~ msgstr "Pages decoded at once (0 = automatic)"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Pages fetched ahead. Not used in Continuous layout."
@@ -12761,8 +12799,8 @@ msgid "Save for offline"
 msgstr "Save for offline"
 
 #: src/pages/HealthPage.tsx
-msgid "Save health settings"
-msgstr "Save health settings"
+#~ msgid "Save health settings"
+#~ msgstr "Save health settings"
 
 #: src/components/SourceCompareModal.tsx
 msgid "Save order"
@@ -12942,8 +12980,8 @@ msgid "Scanning for upgrades…"
 msgstr "Scanning for upgrades…"
 
 #: src/pages/HealthPage.tsx
-msgid "Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
-msgstr "Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
+#~ msgid "Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
+#~ msgstr "Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
 
 #: src/pages/DiscoverPage.tsx
 msgid "Scanning the MangaBaka catalogue…"
@@ -12960,6 +12998,10 @@ msgstr "Scans a root folder for series Maki doesn't know yet, matches them to me
 #: src/pages/settings/SystemCards.tsx
 msgid "Scheduled"
 msgstr "Scheduled"
+
+#: src/pages/HealthPage.tsx
+msgid "Scheduled jobs"
+msgstr "Scheduled jobs"
 
 #: src/components/CatalogueFilters.tsx
 msgid "School Life"
@@ -14310,6 +14352,10 @@ msgstr "Stopped before finishing"
 msgid "Stopping"
 msgstr "Stopping"
 
+#: src/pages/HealthPage.tsx
+msgid "Storage"
+msgstr "Storage"
+
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Storage on this device"
 msgstr "Storage on this device"
@@ -14450,6 +14496,7 @@ msgstr "Synopsis"
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
 #: src/nav.ts
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/registry.ts
 msgid "System"
 msgstr "System"
@@ -15214,7 +15261,7 @@ msgstr "This year"
 msgid "Those series are already being matched."
 msgstr "Those series are already being matched."
 
-#: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 msgid "Thresholds"
 msgstr "Thresholds"
 
@@ -15291,9 +15338,13 @@ msgstr "Time to finish"
 msgid "Time zone"
 msgstr "Time zone"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Timezone"
+msgstr "Timezone"
+
 #: src/pages/HealthPage.tsx
-msgid "Timezone (empty uses server timezone)"
-msgstr "Timezone (empty uses server timezone)"
+#~ msgid "Timezone (empty uses server timezone)"
+#~ msgstr "Timezone (empty uses server timezone)"
 
 #: src/theme-context.tsx
 msgid "Tinted black"
@@ -16520,6 +16571,10 @@ msgstr "When importing an existing series from disk: rename its folder to the se
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "When most pages are very tall. A layout picked in the reader still wins."
 msgstr "When most pages are very tall. A layout picked in the reader still wins."
+
+#: src/pages/settings/SystemCards.tsx
+msgid "When the health scans run and where the disk and backup checks start warning. The checks and file findings are on the Health page."
+msgstr "When the health scans run and where the disk and backup checks start warning. The checks and file findings are on the Health page."
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."

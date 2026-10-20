@@ -10,7 +10,8 @@ import {
   updateStatusAvailable,
   updateStatusCurrent,
 } from '../../../.storybook/mocks/settings/data'
-import { BackupSection, ImageCacheSection, UpdatesSection } from './SystemCards'
+import { AfterSignIn } from '../../../.storybook/AfterSignIn'
+import { BackupSection, HealthSettingsSection, ImageCacheSection, UpdatesSection } from './SystemCards'
 
 const meta = {
   component: BackupSection,
@@ -249,5 +250,38 @@ export const ImageCacheRebuildAllConfirm: Story = {
     await expect(await dialog.findByText(/This re-downloads the poster for all 98 series/)).toBeVisible()
     await userEvent.click(await dialog.findByRole('button', { name: 'Rebuild all' }))
     await expect(await within(document.body).findByText('Rebuilding image cache')).toBeVisible()
+  },
+}
+
+export const LibraryHealth: Story = {
+  render: () => (
+    <AfterSignIn>
+      <HealthSettingsSection />
+    </AfterSignIn>
+  ),
+  play: async ({ canvas }) => {
+    await waitFor(() =>
+      expect(canvas.getByRole('switch', { name: 'Analyze new files and run daily reconciliation' })).toBeChecked(),
+    )
+    await expect(await canvas.findByLabelText('Low disk warning (%)')).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: 'Save' })).toBeNull()
+  },
+}
+
+export const LibraryHealthEditShowsSave: Story = {
+  render: () => (
+    <AfterSignIn>
+      <HealthSettingsSection />
+    </AfterSignIn>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    const hour = await canvas.findByLabelText('Daily scan hour')
+    await userEvent.clear(hour)
+    await userEvent.type(hour, '5')
+    await userEvent.tab()
+    const save = await canvas.findByRole('button', { name: 'Save' })
+    await userEvent.click(save)
+    await expect(await within(document.body).findByText('Saved')).toBeVisible()
+    await waitFor(() => expect(canvas.queryByRole('button', { name: 'Save' })).toBeNull())
   },
 }

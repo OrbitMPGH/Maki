@@ -1,18 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
-import type { ReactNode } from 'react'
 import { http } from 'msw'
-import { useAuth } from '../auth/AuthProvider'
+import { AfterSignIn } from '../../.storybook/AfterSignIn'
 import { settingsMsw } from '../../.storybook/mocks/settings'
 import { api, failWith } from '../../.storybook/mocks/api'
 import SettingsPage from './SettingsPage'
-
-// The app mounts the page behind AuthGate, so a deep link always sees the signed-in user on its first
-// render. Without the gate the link would be consumed while `me` is still loading.
-function AfterSignIn({ children }: { children: ReactNode }) {
-  const { loading } = useAuth()
-  return loading ? null : children
-}
 
 
 const meta = {
@@ -97,10 +89,18 @@ export const UsersTab: Story = {
 }
 
 export const SystemTab: Story = {
+  render: () => (
+    <AfterSignIn>
+      <SettingsPage />
+    </AfterSignIn>
+  ),
   parameters: { router: { path: '/settings', initialEntries: ['/settings?tab=system'] } },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Backup & restore' })).toBeVisible()
     await waitFor(() => expect((canvas.getAllByRole('button', { name: 'Restore' })).length).toBe(3))
+    await waitFor(() =>
+      expect(canvas.getByRole('switch', { name: 'Analyze new files and run daily reconciliation' })).toBeChecked(),
+    )
   },
 }
 
