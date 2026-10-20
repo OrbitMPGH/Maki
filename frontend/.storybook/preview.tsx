@@ -1,6 +1,7 @@
 import type { Decorator, Preview } from '@storybook/react-vite'
 import { mswLoader } from 'msw-storybook-addon/csf3'
 import { notifications } from '@mantine/notifications'
+import { configure } from 'storybook/test'
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 import '@fontsource-variable/onest'
@@ -52,6 +53,9 @@ shiftClock(NOW)
 // Under the test runner, entrance animations (`.auth-panel` fades in from opacity 0) make
 // `toBeVisible` race the keyframes. A browser person keeps the motion; Playwright gets none.
 if (navigator.webdriver) {
+  // Admin-only UI waits on /initialize.json, then /auth/me, then its own query. On a CI runner that
+  // chain outlasts findBy's default second.
+  configure({ asyncUtilTimeout: 5000 })
   const style = document.createElement('style')
   style.textContent =
     '*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition-duration:0s!important;transition-delay:0s!important}'
