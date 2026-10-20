@@ -1053,6 +1053,10 @@ msgstr "{hours, plural, one {# ч} few {# ч} many {# ч} other {# ч}}"
 msgid "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgstr "{hours, plural, one {остался примерно # ч} few {осталось примерно # ч} many {осталось примерно # ч} other {остался примерно # ч}}"
 
+#: src/pages/ImportPage.tsx
+msgid "{importedCount, plural, one {# imported} other {# imported}}"
+msgstr ""
+
 #: src/sourceLabels.ts
 #, fuzzy
 msgid "{indexer} · Torrent"
@@ -1628,6 +1632,10 @@ msgstr "{samples, plural, one {Измерено по # главе, серий в
 #, fuzzy
 msgid "{searchCap}+ matches"
 msgstr "{searchCap}+ совпадений"
+
+#: src/pages/ImportPage.tsx
+msgid "{selectedCount, plural, one {# folder selected} other {# folders selected}}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4067,6 +4075,10 @@ msgstr "Снизу"
 #, fuzzy
 msgid "Boys Love"
 msgstr "Boys Love"
+
+#: src/pages/ImportPage.tsx
+msgid "Brings series folders Maki doesn't know yet into the library."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -8749,8 +8761,8 @@ msgid "Import a folder"
 msgstr "Импортировать папку"
 
 #: src/pages/ImportPage.tsx
-msgid "Import a Mihon backup"
-msgstr ""
+#~ msgid "Import a Mihon backup"
+#~ msgstr ""
 
 #: src/components/import/MihonSummary.tsx
 msgid "Import another backup"
@@ -8786,7 +8798,6 @@ msgid "Import from {label}"
 msgstr "Импортировать из {label}"
 
 #: src/components/settings/UsersSection.tsx
-#: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Import library"
 msgstr "Импортировать библиотеку"
@@ -8915,6 +8926,10 @@ msgstr "Импортирование"
 #, fuzzy
 msgid "Importing what is missing"
 msgstr "Импорт недостающего"
+
+#: src/pages/ImportPage.tsx
+msgid "Importing…"
+msgstr ""
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -13240,6 +13255,10 @@ msgstr "Выберите язык"
 msgid "Pick a root folder"
 msgstr "Выберите корневую папку"
 
+#: src/pages/ImportPage.tsx
+msgid "Pick a root folder and scan it"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Pick a source by"
@@ -15696,6 +15715,10 @@ msgstr "сканирование, api key, сопоставление путей
 msgid "Scanlator"
 msgstr "Сканлейтор"
 
+#: src/pages/ImportPage.tsx
+msgid "Scanning finds the series folders in it that Maki doesn't know yet and matches each to metadata. On import every folder is renamed to the English title and its comic files are linked to chapters. Files keep their own names, and a PDF is kept as it is."
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -15724,8 +15747,8 @@ msgstr "Сканирование базы данных MangaBaka для поис
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
-msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
-msgstr "Ищет в корневой папке серии, ещё неизвестные Maki, сопоставляет их с метаданными, переименовывает папки в английские названия и связывает существующие файлы комиксов с главами. Файлы сохраняют исходные имена. PDF остаются без изменений и не конвертируются."
+#~ msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
+#~ msgstr "Ищет в корневой папке серии, ещё неизвестные Maki, сопоставляет их с метаданными, переименовывает папки в английские названия и связывает существующие файлы комиксов с главами. Файлы сохраняют исходные имена. PDF остаются без изменений и не конвертируются."
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy

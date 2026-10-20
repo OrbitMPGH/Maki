@@ -894,6 +894,10 @@ msgstr "{hours, plural, one {# hr} other {# hr}}"
 msgid "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgstr "{hours, plural, one {about # hr left} other {about # hr left}}"
 
+#: src/pages/ImportPage.tsx
+msgid "{importedCount, plural, one {# imported} other {# imported}}"
+msgstr "{importedCount, plural, one {# imported} other {# imported}}"
+
 #: src/sourceLabels.ts
 msgid "{indexer} · Torrent"
 msgstr "{indexer} · Torrent"
@@ -1363,6 +1367,10 @@ msgstr "{samples, plural, one {Measured from # chapter across {series} series in
 #: src/components/CatalogueBrowser.tsx
 msgid "{searchCap}+ matches"
 msgstr "{searchCap}+ matches"
+
+#: src/pages/ImportPage.tsx
+msgid "{selectedCount, plural, one {# folder selected} other {# folders selected}}"
+msgstr "{selectedCount, plural, one {# folder selected} other {# folders selected}}"
 
 #: src/pages/LibraryPage.tsx
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -3357,6 +3365,10 @@ msgstr "Bottom"
 #: src/components/CatalogueFilters.tsx
 msgid "Boys Love"
 msgstr "Boys Love"
+
+#: src/pages/ImportPage.tsx
+msgid "Brings series folders Maki doesn't know yet into the library."
+msgstr "Brings series folders Maki doesn't know yet into the library."
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Brought in from disk, not downloaded by Maki"
@@ -7221,8 +7233,8 @@ msgid "Import a folder"
 msgstr "Import a folder"
 
 #: src/pages/ImportPage.tsx
-msgid "Import a Mihon backup"
-msgstr "Import a Mihon backup"
+#~ msgid "Import a Mihon backup"
+#~ msgstr "Import a Mihon backup"
 
 #: src/components/import/MihonSummary.tsx
 msgid "Import another backup"
@@ -7253,7 +7265,6 @@ msgid "Import from {label}"
 msgstr "Import from {label}"
 
 #: src/components/settings/UsersSection.tsx
-#: src/pages/ImportPage.tsx
 msgid "Import library"
 msgstr "Import library"
 
@@ -7358,6 +7369,10 @@ msgstr "Importing"
 #: src/components/ImportReviewModal.tsx
 msgid "Importing what is missing"
 msgstr "Importing what is missing"
+
+#: src/pages/ImportPage.tsx
+msgid "Importing…"
+msgstr "Importing…"
 
 #: src/components/import/RecentImports.tsx
 msgid "Imports can be undone for 30 days."
@@ -10936,6 +10951,10 @@ msgstr "Pick a language"
 msgid "Pick a root folder"
 msgstr "Pick a root folder"
 
+#: src/pages/ImportPage.tsx
+msgid "Pick a root folder and scan it"
+msgstr "Pick a root folder and scan it"
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Pick a source by"
 msgstr "Pick a source by"
@@ -12970,6 +12989,10 @@ msgstr "scan, api key, path mapping, covers, library server, attribute reading, 
 msgid "Scanlator"
 msgstr "Scanlator"
 
+#: src/pages/ImportPage.tsx
+msgid "Scanning finds the series folders in it that Maki doesn't know yet and matches each to metadata. On import every folder is renamed to the English title and its comic files are linked to chapters. Files keep their own names, and a PDF is kept as it is."
+msgstr "Scanning finds the series folders in it that Maki doesn't know yet and matches each to metadata. On import every folder is renamed to the English title and its comic files are linked to chapters. Files keep their own names, and a PDF is kept as it is."
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/SeriesFilesSection.tsx
 msgid "Scanning folder…"
@@ -12992,8 +13015,8 @@ msgid "Scanning the MangaBaka database for matches…"
 msgstr "Scanning the MangaBaka database for matches…"
 
 #: src/pages/ImportPage.tsx
-msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
-msgstr "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
+#~ msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
+#~ msgstr "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Scheduled"

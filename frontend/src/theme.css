@@ -4227,6 +4227,7 @@ body {
     display: none;
   }
   .section-header-end {
+    max-width: 100%;
     margin-left: auto;
   }
 }
@@ -7112,73 +7113,93 @@ body.reader-open {
 }
 
 /* --- Import page --- */
-.import-workspace {
+/* The import's three steps across the top of its toolbar, drawn like the setup wizard's rail: a
+   numbered circle that becomes a check, the current step tinted, a thread joining them. */
+.import-steps {
   display: grid;
-  grid-template-columns: minmax(12rem, 0.34fr) minmax(0, 1fr);
-  gap: clamp(1rem, 2.5vw, 2rem);
-  margin-bottom: var(--mantine-spacing-lg);
-}
-.import-step-rail {
-  display: grid;
-  align-content: start;
-  gap: 0;
-  margin: 0;
-  padding: 0;
-  border-block: 1px solid var(--border);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 var(--mantine-spacing-sm);
+  padding: 0 0 var(--mantine-spacing-sm);
+  border-bottom: 1px solid var(--hairline);
   list-style: none;
 }
-.import-step-rail li {
-  display: grid;
-  grid-template-columns: 0.7rem minmax(0, 1fr);
-  gap: 0.7rem;
-  align-items: start;
-  padding: 0.85rem 0.15rem;
-  border-bottom: 1px solid var(--line-soft);
+.import-step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-surface);
   color: var(--ink-3);
 }
-.import-step-rail li:last-child {
-  border-bottom: 0;
+.import-step-thread {
+  flex: 1 1 auto;
+  min-width: 12px;
+  height: 1px;
+  margin-top: 13px;
+  background: var(--border);
 }
-.import-step-rail li[data-active='true'] {
+.import-step[data-state='done'] .import-step-thread {
+  background: color-mix(in srgb, var(--brand) 45%, var(--border));
+}
+.import-step[data-state='current'] {
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
   color: var(--ink-hi);
 }
-.import-step-dot {
-  width: 0.6rem;
-  height: 0.6rem;
-  margin-top: 0.25rem;
-  border: 1px solid currentColor;
-  border-radius: 50%;
+.import-step[data-state='done'] {
+  color: var(--ink-2);
 }
-.import-step-rail li[data-active='true'] .import-step-dot {
-  border-color: var(--brand);
-  background: var(--brand);
-  box-shadow: 0 0 0 3px var(--brand-glow);
-}
-.import-step-copy {
+.import-step-index {
   display: grid;
-  gap: 0.2rem;
-  min-width: 0;
-  font-weight: var(--fw-bold);
-}
-.import-step-copy small {
-  color: var(--ink-3);
+  place-items: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
   font-size: var(--type-micro);
-  font-weight: var(--fw-regular);
-  line-height: 1.35;
+  font-weight: var(--fw-strong);
+  font-variant-numeric: tabular-nums;
 }
-.import-control-row {
+.import-step[data-state='done'] .import-step-index {
+  border-color: color-mix(in srgb, var(--brand) 60%, transparent);
+  background: color-mix(in srgb, var(--brand) 14%, var(--surface));
+  color: var(--brand-fg, var(--brand));
+}
+.import-step[data-state='current'] .import-step-index {
+  border-color: var(--brand);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 22%, transparent);
+}
+.import-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
-  align-self: start;
-  border-block: 1px solid var(--border);
-  padding-block: 1rem;
+  padding-top: 3px;
+}
+.import-step-label {
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+}
+.import-step-hint {
+  overflow: hidden;
+  font-size: var(--type-micro);
+  color: var(--ink-4);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.import-step[data-state='current'] .import-step-hint {
+  color: var(--ink-3);
 }
 .import-root-select {
   flex: 1 1 20rem;
   min-width: min(100%, 20rem);
-}
-.import-results {
-  border-block: 1px solid var(--border);
-  padding-block: 0.7rem;
+  max-width: 34rem;
 }
 .import-results > .mantine-Text-root {
   overflow-wrap: anywhere;
@@ -7200,31 +7221,39 @@ body.reader-open {
 }
 
 @media (max-width: 47.9375em) {
-  .import-workspace {
-    grid-template-columns: minmax(0, 1fr);
+  .import-step {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 4px;
+    text-align: center;
   }
-  .import-step-rail {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .import-step-rail li {
-    grid-template-columns: 1fr;
-    gap: 0.35rem;
-    padding-inline: 0.35rem;
-  }
-  .import-step-dot {
-    margin-top: 0;
-  }
-  .import-step-copy small {
+  .import-step-thread {
     display: none;
   }
-  .import-control-row {
-    align-items: stretch;
+  .import-step-text {
+    align-items: center;
+    padding-top: 0;
+  }
+  .import-step-hint {
+    display: none;
   }
   .import-root-select {
     min-width: 100%;
   }
-  .import-control-row .mantine-Button-root {
+  .import-toolbar .mantine-Button-root {
     flex: 1 1 auto;
+  }
+  .import-toolbar-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+  .import-toolbar-actions .mantine-Button-root {
+    flex: 1 1 100%;
+  }
+  /* The in-library switch and the ignored-folders link don't fit one phone row beside each other. */
+  .import-surface .section-header-action .mantine-Switch-root {
+    flex-basis: 100%;
   }
 }
 

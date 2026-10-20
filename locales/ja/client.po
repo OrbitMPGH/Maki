@@ -1053,6 +1053,10 @@ msgstr "{hours, plural, other {#時間}}"
 msgid "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgstr "{hours, plural, other {残り約#時間}}"
 
+#: src/pages/ImportPage.tsx
+msgid "{importedCount, plural, one {# imported} other {# imported}}"
+msgstr ""
+
 #: src/sourceLabels.ts
 #, fuzzy
 msgid "{indexer} · Torrent"
@@ -1627,6 +1631,10 @@ msgstr "{samples, plural, other {ライブラリの{series}シリーズにまた
 #, fuzzy
 msgid "{searchCap}+ matches"
 msgstr "{searchCap}件以上一致"
+
+#: src/pages/ImportPage.tsx
+msgid "{selectedCount, plural, one {# folder selected} other {# folders selected}}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4066,6 +4074,10 @@ msgstr "下"
 #, fuzzy
 msgid "Boys Love"
 msgstr "ボーイズラブ"
+
+#: src/pages/ImportPage.tsx
+msgid "Brings series folders Maki doesn't know yet into the library."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -8748,8 +8760,8 @@ msgid "Import a folder"
 msgstr "フォルダーをインポート"
 
 #: src/pages/ImportPage.tsx
-msgid "Import a Mihon backup"
-msgstr ""
+#~ msgid "Import a Mihon backup"
+#~ msgstr ""
 
 #: src/components/import/MihonSummary.tsx
 msgid "Import another backup"
@@ -8785,7 +8797,6 @@ msgid "Import from {label}"
 msgstr "{label} からインポート"
 
 #: src/components/settings/UsersSection.tsx
-#: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Import library"
 msgstr "ライブラリをインポート"
@@ -8914,6 +8925,10 @@ msgstr "インポート中"
 #, fuzzy
 msgid "Importing what is missing"
 msgstr "不足分をインポート中"
+
+#: src/pages/ImportPage.tsx
+msgid "Importing…"
+msgstr ""
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -13239,6 +13254,10 @@ msgstr "言語を選んでください"
 msgid "Pick a root folder"
 msgstr "ルートフォルダーを選択"
 
+#: src/pages/ImportPage.tsx
+msgid "Pick a root folder and scan it"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Pick a source by"
@@ -15695,6 +15714,10 @@ msgstr "スキャン, APIキー, パスのマッピング, 表紙, ライブラ�
 msgid "Scanlator"
 msgstr "スキャンレーター"
 
+#: src/pages/ImportPage.tsx
+msgid "Scanning finds the series folders in it that Maki doesn't know yet and matches each to metadata. On import every folder is renamed to the English title and its comic files are linked to chapters. Files keep their own names, and a PDF is kept as it is."
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -15723,8 +15746,8 @@ msgstr "MangaBakaデータベースで一致を検索中…"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
-msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
-msgstr "ルートフォルダーをスキャンして、Makiがまだ把握していないシリーズを見つけ、メタデータと照合し、各フォルダー名を英語タイトルに変更して、既存のコミックファイルを章に紐付けます。ファイル名は変わりません。PDFは変換せず、そのまま保持します。"
+#~ msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
+#~ msgstr "ルートフォルダーをスキャンして、Makiがまだ把握していないシリーズを見つけ、メタデータと照合し、各フォルダー名を英語タイトルに変更して、既存のコミックファイルを章に紐付けます。ファイル名は変わりません。PDFは変換せず、そのまま保持します。"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
