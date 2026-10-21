@@ -2299,6 +2299,21 @@ body {
 .discover-hero-title:hover {
   color: var(--brand-fg, var(--brand));
 }
+/* A fixed box, two display lines at whatever size the band sets, so the band's height does not
+   follow the title. `useTitleFit` sets `data-fit="small"` on a title that needs more: three lines
+   at 0.58 x 1.07 fill the same 1.88em, and anything longer still is clamped. */
+.discover-hero.series-hero[data-compact] .series-hero-title {
+  height: calc(2 * 0.94em);
+  overflow: hidden;
+}
+.discover-hero .series-hero-title[data-fit='small'] .discover-hero-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.58em;
+  line-height: 1.07;
+}
 /* The feature's rows. Spacing lives here rather than on the elements so the short-viewport block
    at the bottom can tune the whole stack in one place. */
 .discover-hero-pills {
@@ -2310,13 +2325,22 @@ body {
   min-height: 22px;
   margin-top: 14px;
 }
+/* One row, held even when empty. Pills that wrap land on a second row the box cuts off whole, so
+   the band shows as many reasons as fit rather than growing to show all three. */
 .discover-hero-reasons {
+  height: 28px;
   margin-top: 12px;
+  overflow: hidden;
 }
 .discover-hero-actions {
   margin-top: 20px;
 }
 .discover-hero-reason {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 18px;
   padding: 4px 9px;
   border-radius: var(--radius-control);
   font-size: var(--type-micro);
