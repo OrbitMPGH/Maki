@@ -59,6 +59,9 @@ export function NotificationBell({ position = 'bottom-end' }: { position?: 'bott
       position={position}
       withArrow
       shadow="md"
+      // The bell lives in the fixed sidebar and header. An absolute dropdown rode the page's scroll
+      // and was pulled back a frame later, so it jittered behind the bell.
+      floatingStrategy="fixed"
       opened={opened}
       onChange={toggle}
     >
