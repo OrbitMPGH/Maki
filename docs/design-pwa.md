@@ -83,7 +83,7 @@ Only same-origin requests are considered. Everything not listed passes through u
 | Request | Strategy | Cache |
 |---|---|---|
 | Navigation whose path does not start with `/api/`, `/signalr`, `/swagger` | Network raced against 5 s. Rejected fetch, 502, 504 or timeout: the precached `/index.html`. | shell |
-| Precached URL | Cache first, network on miss | shell |
+| Precached URL | Cache first, store on miss (an entry that failed during install) | shell |
 | Other `/assets/*` (locale catalogs) | Cache first, store on miss (hashed, so safe). `activate` deletes every entry not in `__CATALOGS__`, the current build's catalog URLs | assets |
 | `/source-icons/*` | Cache first, store on miss, cap 500 entries | meta |
 | `/initialize.json` | Network first, cache fallback | meta |
