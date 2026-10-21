@@ -104,7 +104,7 @@ services:
 
 Kavita, FlareSolverr and Suwayomi are optional. A compose file with all of them is in
 [docs/docker-compose.example.yml](docs/docker-compose.example.yml). If you use FlareSolverr, set its
-URL under **Settings → FlareSolverr** to `http://flaresolverr:8191` and hit **Test**. For
+URL under **Settings → Downloads → FlareSolverr** to `http://flaresolverr:8191` and hit **Test**. For
 Suwayomi, set `http://suwayomi:4567` under **Settings → Integrations → Suwayomi**, hit **Test**,
 then **Manage sources** to turn on the ones you want.
 
