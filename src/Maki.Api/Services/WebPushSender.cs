@@ -12,9 +12,15 @@ namespace Maki.Api.Services;
 /// <summary>
 /// One push for one user, already rendered in their language. <paramref name="Url"/> is the in-app
 /// path a click opens; <paramref name="Tag"/> collapses repeats (<c>series-{id}</c>) on the device and,
-/// as the push Topic, at the push service while the device is offline.
+/// as the push Topic, at the push service while the device is offline. <paramref name="Devices"/>, when
+/// set, is sent to instead of the user's stored subscriptions: an alert about a revocation goes to the
+/// devices that revocation just forgot.
 /// </summary>
-public sealed record WebPushNotification(int UserId, string Title, string Body, string Url, string? Tag);
+public sealed record WebPushNotification(
+    int UserId, string Title, string Body, string Url, string? Tag, IReadOnlyList<PushDevice>? Devices = null);
+
+/// <summary>What a push needs to reach one device, detached from its subscription row.</summary>
+public sealed record PushDevice(string Endpoint, string P256dh, string Auth);
 
 /// <summary>
 /// Delivers Web Push to every device a user subscribed. Raises enqueue and return at once; one
@@ -51,9 +57,15 @@ public class WebPushSender(
     /// <summary>
     /// Forgets every device the user subscribed. Called wherever other sessions are revoked: a
     /// subscription is tied to the browser session, so a revoked device must stop receiving pushes too.
+    /// Returns the devices it forgot, so the security alert about the revocation can still reach them.
     /// </summary>
-    public static Task<int> DropSubscriptionsAsync(MakiDbContext db, int userId, CancellationToken ct) =>
-        db.PushSubscriptions.IgnoreQueryFilters().Where(s => s.UserId == userId).ExecuteDeleteAsync(ct);
+    public static async Task<IReadOnlyList<PushDevice>> DropSubscriptionsAsync(MakiDbContext db, int userId, CancellationToken ct)
+    {
+        var rows = db.PushSubscriptions.IgnoreQueryFilters().Where(s => s.UserId == userId);
+        var devices = await rows.Select(s => new PushDevice(s.Endpoint, s.P256dh, s.Auth)).ToListAsync(ct);
+        await rows.ExecuteDeleteAsync(ct);
+        return devices;
+    }
 
     /// <summary>Queues a push. A full queue drops it: a burst that large is a backlog nobody wants on their lock screen.</summary>
     public virtual void Enqueue(WebPushNotification notification)
@@ -79,16 +91,21 @@ public class WebPushSender(
         }
     }
 
-    /// <summary>Sends now, to every subscription the user holds. Returns how many took it and how many did not.</summary>
+    /// <summary>
+    /// Sends now, to every subscription the user holds, or to <see cref="WebPushNotification.Devices"/>
+    /// when the push names them. Returns how many took it and how many did not.
+    /// </summary>
     public async Task<(int Sent, int Failed)> SendAsync(WebPushNotification notification, CancellationToken ct)
     {
         // An unrestricted scope, so any user's rows load and delete without a filter bypass.
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
-        var subscriptions = await db.PushSubscriptions
-            .Where(s => s.UserId == notification.UserId)
-            .ToListAsync(ct);
-        if (subscriptions.Count == 0)
+        var subscriptions = notification.Devices is null
+            ? await db.PushSubscriptions.Where(s => s.UserId == notification.UserId).ToListAsync(ct)
+            : [];
+        var devices = notification.Devices
+            ?? subscriptions.Select(s => new PushDevice(s.Endpoint, s.P256dh, s.Auth)).ToList();
+        if (devices.Count == 0)
         {
             return (0, 0);
         }
@@ -107,11 +124,13 @@ public class WebPushSender(
         var now = time.GetUtcNow().UtcDateTime;
         var sent = 0;
         var failed = 0;
-        foreach (var subscription in subscriptions)
+        for (var i = 0; i < devices.Count; i++)
         {
-            var target = new LibSubscription { Endpoint = subscription.Endpoint };
-            target.SetKey(PushEncryptionKeyName.P256DH, subscription.P256dh);
-            target.SetKey(PushEncryptionKeyName.Auth, subscription.Auth);
+            // Null for a device a revocation already forgot: there is no row left to keep score on.
+            var subscription = i < subscriptions.Count ? subscriptions[i] : null;
+            var target = new LibSubscription { Endpoint = devices[i].Endpoint };
+            target.SetKey(PushEncryptionKeyName.P256DH, devices[i].P256dh);
+            target.SetKey(PushEncryptionKeyName.Auth, devices[i].Auth);
             var message = new PushMessage(payload)
             {
                 TimeToLive = TimeToLiveSeconds,
@@ -122,20 +141,28 @@ public class WebPushSender(
             try
             {
                 await client.RequestPushMessageDeliveryAsync(target, message, vapid, VapidAuthenticationScheme.Vapid, ct);
-                subscription.LastSuccessAt = now;
-                subscription.FailureCount = 0;
+                if (subscription is not null)
+                {
+                    subscription.LastSuccessAt = now;
+                    subscription.FailureCount = 0;
+                }
+
                 sent++;
             }
             catch (PushServiceClientException e) when (e.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone)
             {
-                logger.LogDebug("Push subscription {Id} is gone ({Status}), removing it", subscription.Id, (int)e.StatusCode);
-                db.PushSubscriptions.Remove(subscription);
+                logger.LogDebug("Push subscription {Id} is gone ({Status}), removing it", subscription?.Id, (int)e.StatusCode);
+                if (subscription is not null)
+                {
+                    db.PushSubscriptions.Remove(subscription);
+                }
+
                 failed++;
             }
             catch (Exception e) when (!ct.IsCancellationRequested)
             {
-                logger.LogDebug(e, "Push to subscription {Id} failed", subscription.Id);
-                if (++subscription.FailureCount >= MaxFailures)
+                logger.LogDebug(e, "Push to subscription {Id} failed", subscription?.Id);
+                if (subscription is not null && ++subscription.FailureCount >= MaxFailures)
                 {
                     db.PushSubscriptions.Remove(subscription);
                 }

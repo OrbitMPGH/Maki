@@ -56,7 +56,8 @@ internal sealed class RecordingInbox() : InboxService(
     public int DurableRaiseFailures { get; set; }
 
     public override Task RaiseOrThrowAsync(
-        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default)
+        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default,
+        IReadOnlyList<PushDevice>? pushDevices = null)
     {
         if (DurableRaiseFailures-- > 0) throw new InvalidOperationException("inbox write failed");
         Raised.Add((type, message, audience));
@@ -64,7 +65,8 @@ internal sealed class RecordingInbox() : InboxService(
     }
 
     public override Task RaiseAsync(
-        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default)
+        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default,
+        IReadOnlyList<PushDevice>? pushDevices = null)
     {
         Raised.Add((type, message, audience));
         return Task.CompletedTask;
