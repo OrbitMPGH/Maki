@@ -3624,6 +3624,10 @@ msgstr "Архив"
 msgid "Archives inventoried"
 msgstr "Архивы проиндексированы"
 
+#: src/pages/HomePage.tsx
+msgid "Arrange what Home shows."
+msgstr ""
+
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -11382,12 +11386,16 @@ msgid "Next tier at {nextValue}"
 msgstr "Следующий уровень на {nextValue}"
 
 #: src/components/home/ContinueHero.tsx
+msgid "Next to jump back in"
+msgstr ""
+
+#: src/components/home/ContinueHero.tsx
 msgid "Next up"
 msgstr ""
 
 #: src/components/home/ContinueHero.tsx
-msgid "Next up to jump back in"
-msgstr ""
+#~ msgid "Next up to jump back in"
+#~ msgstr ""
 
 #: src/components/releases/UpcomingView.tsx
 msgid "Next week"
@@ -13353,8 +13361,8 @@ msgstr "Выберите папки, из которых Maki читает фа�
 
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Pick up where you left off."
-msgstr "Продолжите с того места, на котором остановились."
+#~ msgid "Pick up where you left off."
+#~ msgstr "Продолжите с того места, на котором остановились."
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
@@ -15946,7 +15954,6 @@ msgstr "Синхронизация"
 msgid "Scroll"
 msgstr "Прокрутка"
 
-#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll back"
@@ -15957,7 +15964,6 @@ msgstr "Прокрутить назад"
 msgid "Scroll for next chapter"
 msgstr "Прокрутить к следующей главе"
 
-#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll forward"
@@ -16686,10 +16692,9 @@ msgstr "Показать все"
 
 #. placeholder {0}: items.length
 #: src/components/home/ContinueHero.tsx
-msgid "Show all {0}"
-msgstr ""
+#~ msgid "Show all {0}"
+#~ msgstr ""
 
-#: src/components/home/ContinueHero.tsx
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Show fewer"

@@ -20,20 +20,19 @@ export const Default: Story = {
   },
 }
 
-export const PickFromNextUp: Story = {
-  play: async ({ canvas, userEvent }) => {
-    const row = await canvas.findByRole('button', { name: /Ashen Crown Regression/ })
-    await waitFor(() => expect(row).toHaveAttribute('aria-pressed', 'false'))
-    await userEvent.click(row)
-    await waitFor(() => expect(row).toHaveAttribute('aria-pressed', 'true'))
-    await expect(await canvas.findByRole('heading', { level: 3, name: 'Ashen Crown Regression' })).toBeVisible()
+export const NextUpStrip: Story = {
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('heading', { level: 2, name: 'Next up' })).toBeVisible()
+    // The lead is the hero, so the strip holds everyone else and each poster opens the reader.
+    await expect(canvas.queryByRole('link', { name: /Ashen Crown Regression/ })).not.toBeNull()
+    await expect(canvas.getAllByRole('link', { name: /Lanterns Over Kasumi/ }).length).toBeGreaterThan(0)
   },
 }
 
 export const SingleSeries: Story = {
   args: { items: continueReading.slice(0, 1) },
   play: async ({ canvas }) => {
-    await expect(canvas.queryByRole('complementary', { name: 'Next up' })).toBeNull()
+    await expect(canvas.queryByRole('heading', { name: 'Next up' })).toBeNull()
   },
 }
 

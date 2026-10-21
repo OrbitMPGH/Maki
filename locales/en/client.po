@@ -2996,6 +2996,10 @@ msgstr "Archive"
 msgid "Archives inventoried"
 msgstr "Archives inventoried"
 
+#: src/pages/HomePage.tsx
+msgid "Arrange what Home shows."
+msgstr "Arrange what Home shows."
+
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -9410,12 +9414,16 @@ msgid "Next tier at {nextValue}"
 msgstr "Next tier at {nextValue}"
 
 #: src/components/home/ContinueHero.tsx
+msgid "Next to jump back in"
+msgstr "Next to jump back in"
+
+#: src/components/home/ContinueHero.tsx
 msgid "Next up"
 msgstr "Next up"
 
 #: src/components/home/ContinueHero.tsx
-msgid "Next up to jump back in"
-msgstr "Next up to jump back in"
+#~ msgid "Next up to jump back in"
+#~ msgstr "Next up to jump back in"
 
 #: src/components/releases/UpcomingView.tsx
 msgid "Next week"
@@ -11042,8 +11050,8 @@ msgid "Pick the folders Maki reads from and downloads into, and how it treats th
 msgstr "Pick the folders Maki reads from and downloads into, and how it treats the files it finds there."
 
 #: src/pages/HomePage.tsx
-msgid "Pick up where you left off."
-msgstr "Pick up where you left off."
+#~ msgid "Pick up where you left off."
+#~ msgstr "Pick up where you left off."
 
 #: src/components/discover/discoverSectionDefs.ts
 msgid "Picks based on the series you read most recently."
@@ -13192,7 +13200,6 @@ msgstr "Scrobbling"
 msgid "Scroll"
 msgstr "Scroll"
 
-#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 msgid "Scroll back"
 msgstr "Scroll back"
@@ -13201,7 +13208,6 @@ msgstr "Scroll back"
 msgid "Scroll for next chapter"
 msgstr "Scroll for next chapter"
 
-#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 msgid "Scroll forward"
 msgstr "Scroll forward"
@@ -13804,10 +13810,9 @@ msgstr "Show all"
 
 #. placeholder {0}: items.length
 #: src/components/home/ContinueHero.tsx
-msgid "Show all {0}"
-msgstr "Show all {0}"
+#~ msgid "Show all {0}"
+#~ msgstr "Show all {0}"
 
-#: src/components/home/ContinueHero.tsx
 #: src/components/TagBuckets.tsx
 msgid "Show fewer"
 msgstr "Show fewer"

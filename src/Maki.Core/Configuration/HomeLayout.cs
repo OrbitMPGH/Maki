@@ -30,6 +30,18 @@ public static class HomeSections
     /// </summary>
     public static readonly string[] All =
     [
+        ContinueReading, Glance, JumpBackIn, FromAnime, RecentlyAdded, Downloading, Following, Recommended, Popular
+    ];
+
+    /// <summary>
+    /// Discovery lives on Discover. Home ships without these two and a reader can still switch them
+    /// on in the layout editor.
+    /// </summary>
+    public static readonly string[] DefaultOff = [Recommended, Popular];
+
+    /// <summary>The shipping order before Home opened on its hero, which <see cref="HomeLayoutSpec.MigrateHeroFirst"/> recognises.</summary>
+    internal static readonly string[] HeroFirstPredecessor =
+    [
         Glance, Downloading, ContinueReading, JumpBackIn, FromAnime, RecentlyAdded, Following, Recommended, Popular
     ];
 
@@ -90,7 +102,8 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Se
         },
         new Dictionary<string, IReadOnlyList<string>> { [HomeSections.Glance] = HomeGlancePanels.All },
         RailAnchor: null,
-        Upgrade: MigrateGlance);
+        Upgrade: stored => MigrateHeroFirst(MigrateGlance(stored)),
+        DefaultOff: HomeSections.DefaultOff);
 
     /// <summary>Every known section, in shipping order, all on.</summary>
     public static HomeLayoutSpec Default => new HomeLayoutSpec().Merge([]);
@@ -148,6 +161,33 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Se
         }
 
         return migrated;
+    }
+
+    /// <summary>
+    /// Moves a layout nobody ever touched onto the current shipping order. One that still holds the
+    /// previous default (same order, everything on, no hero flipped, every glance panel on) was never
+    /// arranged by its owner, so it gets the new default; anything else is the owner's own
+    /// arrangement and is left alone. Custom rails stay after the built-in sections.
+    /// </summary>
+    public static IReadOnlyList<PageSection> MigrateHeroFirst(IReadOnlyList<PageSection> stored)
+    {
+        var builtIn = stored.Where(s => !LayoutRails.TryParse(s.Key, out _)).ToList();
+        if (!builtIn.Select(s => s.Key).SequenceEqual(HomeSections.HeroFirstPredecessor) ||
+            !builtIn.All(Untouched))
+        {
+            return stored;
+        }
+
+        var migrated = HomeSections.All
+            .Select(key => new PageSection(key, Enabled: !HomeSections.DefaultOff.Contains(key)))
+            .ToList();
+        migrated.AddRange(stored.Where(s => LayoutRails.TryParse(s.Key, out _)));
+        return migrated;
+
+        static bool Untouched(PageSection s) =>
+            s.Enabled &&
+            (s.Hero is null || s.Hero == (s.Key == HomeSections.ContinueReading)) &&
+            (s.Panels is null || s.Panels.All(p => p.Enabled));
     }
 
     /// <summary>Reads a stored blob, falling back to the default layout for null/blank/bad JSON.</summary>

@@ -3623,6 +3623,10 @@ msgstr "归档"
 msgid "Archives inventoried"
 msgstr "已盘点归档"
 
+#: src/pages/HomePage.tsx
+msgid "Arrange what Home shows."
+msgstr ""
+
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -11381,12 +11385,16 @@ msgid "Next tier at {nextValue}"
 msgstr "下一层级：{nextValue}"
 
 #: src/components/home/ContinueHero.tsx
+msgid "Next to jump back in"
+msgstr ""
+
+#: src/components/home/ContinueHero.tsx
 msgid "Next up"
 msgstr ""
 
 #: src/components/home/ContinueHero.tsx
-msgid "Next up to jump back in"
-msgstr ""
+#~ msgid "Next up to jump back in"
+#~ msgstr ""
 
 #: src/components/releases/UpcomingView.tsx
 msgid "Next week"
@@ -13352,8 +13360,8 @@ msgstr "选择 Maki 读取和下载内容的文件夹，以及如何处理其中
 
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Pick up where you left off."
-msgstr "从你上次离开的地方继续。"
+#~ msgid "Pick up where you left off."
+#~ msgstr "从你上次离开的地方继续。"
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
@@ -15945,7 +15953,6 @@ msgstr "阅读记录"
 msgid "Scroll"
 msgstr "滚动"
 
-#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll back"
@@ -15956,7 +15963,6 @@ msgstr "向后滚动"
 msgid "Scroll for next chapter"
 msgstr "滚动以阅读下一章"
 
-#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll forward"
@@ -16685,10 +16691,9 @@ msgstr "显示全部"
 
 #. placeholder {0}: items.length
 #: src/components/home/ContinueHero.tsx
-msgid "Show all {0}"
-msgstr ""
+#~ msgid "Show all {0}"
+#~ msgstr ""
 
-#: src/components/home/ContinueHero.tsx
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Show fewer"

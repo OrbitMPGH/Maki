@@ -36,12 +36,14 @@ public record PageSection(
 /// none placed, right before this section. Null appends it at the end.
 /// </param>
 /// <param name="Upgrade">Rewrites a layout stored by an older build before anything else runs.</param>
+/// <param name="DefaultOff">Sections that start switched off wherever a layout has not placed them yet.</param>
 public sealed record PageLayoutDefinition(
     IReadOnlyList<string> Keys,
     IReadOnlyDictionary<string, bool> HeroDefaults,
     IReadOnlyDictionary<string, IReadOnlyList<string>> Panels,
     string? RailAnchor = null,
-    Func<IReadOnlyList<PageSection>, IReadOnlyList<PageSection>>? Upgrade = null);
+    Func<IReadOnlyList<PageSection>, IReadOnlyList<PageSection>>? Upgrade = null,
+    IReadOnlyCollection<string>? DefaultOff = null);
 
 /// <summary>A custom rail's key in a page layout: <c>rail:{id}</c>.</summary>
 public static class LayoutRails
@@ -81,8 +83,9 @@ public static class PageLayouts
     /// <item>duplicates collapse to their first occurrence;</item>
     /// <item>hero flags and panels are filled in from the definition where missing, and removed
     /// where the section has none;</item>
-    /// <item>built-in sections the layout has never seen are appended, on: the user's own order is
-    /// the thing worth preserving, and a new section has no business jumping above it;</item>
+    /// <item>built-in sections the layout has never seen are appended, on unless the definition
+    /// lists them in <see cref="PageLayoutDefinition.DefaultOff"/>: the user's own order is the
+    /// thing worth preserving, and a new section has no business jumping above it;</item>
     /// <item>rails the layout has never seen go after <see cref="PageLayoutDefinition.RailAnchor"/>'s
     /// rule, in <paramref name="railIds"/> order.</item>
     /// </list>
@@ -117,7 +120,7 @@ public static class PageLayouts
         {
             if (seen.Add(key))
             {
-                ordered.Add(Normalize(new PageSection(key), def));
+                ordered.Add(Normalize(new PageSection(key, Enabled: def.DefaultOff?.Contains(key) != true), def));
             }
         }
 

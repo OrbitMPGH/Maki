@@ -37,14 +37,15 @@ export const ReadingSectionsAsRails: Story = {
   parameters: { msw: homePage(layout({ hero: { continue: false, jumpback: false } })) },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { level: 2, name: /jump back in/i })).toBeVisible()
-    await expect(canvas.queryByRole('complementary', { name: /next up/i })).toBeNull()
+    await expect(canvas.queryByRole('heading', { name: /next up|next to jump back in/i })).toBeNull()
   },
 }
 
 export const JumpBackInHero: Story = {
   parameters: { msw: homePage(layout({ hero: { continue: true, jumpback: true } })) },
   play: async ({ canvas }) => {
-    await waitFor(() => expect(canvas.getAllByRole('complementary', { name: /next up/i })).toHaveLength(2))
+    await waitFor(() => expect(canvas.getByRole('heading', { level: 2, name: 'Next up' })).toBeVisible())
+    await waitFor(() => expect(canvas.getByRole('heading', { level: 2, name: 'Next to jump back in' })).toBeVisible())
   },
 }
 
@@ -201,7 +202,7 @@ export const WithoutLocalDatabase: Story = {
 export const AsReader: Story = {
   parameters: { auth: 'reader' },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('link', { name: 'Request series' })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { level: 2, name: /continue reading/i })).toBeVisible()
   },
 }
 

@@ -986,12 +986,12 @@ export function useHomeRecentlyAdded(limit = 12, enabled = true) {
 
 /** Home section keys, in the order they ship. Mirrors `HomeSections.All` on the server exactly. */
 export const HOME_SECTIONS = [
-  'glance',
-  'downloading',
   'continue',
+  'glance',
   'jumpback',
   'fromanime',
   'recent',
+  'downloading',
   'following',
   'recommended',
   'popular',

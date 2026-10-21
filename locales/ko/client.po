@@ -3623,6 +3623,10 @@ msgstr "보관 파일"
 msgid "Archives inventoried"
 msgstr "보관 파일 확인 완료"
 
+#: src/pages/HomePage.tsx
+msgid "Arrange what Home shows."
+msgstr ""
+
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -11381,12 +11385,16 @@ msgid "Next tier at {nextValue}"
 msgstr "{nextValue}에서 다음 등급"
 
 #: src/components/home/ContinueHero.tsx
+msgid "Next to jump back in"
+msgstr ""
+
+#: src/components/home/ContinueHero.tsx
 msgid "Next up"
 msgstr ""
 
 #: src/components/home/ContinueHero.tsx
-msgid "Next up to jump back in"
-msgstr ""
+#~ msgid "Next up to jump back in"
+#~ msgstr ""
 
 #: src/components/releases/UpcomingView.tsx
 msgid "Next week"
@@ -13352,8 +13360,8 @@ msgstr "Maki가 파일을 읽고 다운로드할 폴더와 그 안에서 찾은 
 
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Pick up where you left off."
-msgstr "중단한 위치에서 계속"
+#~ msgid "Pick up where you left off."
+#~ msgstr "중단한 위치에서 계속"
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
@@ -15945,7 +15953,6 @@ msgstr "Scrobbling"
 msgid "Scroll"
 msgstr "스크롤"
 
-#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll back"
@@ -15956,7 +15963,6 @@ msgstr "뒤로 스크롤"
 msgid "Scroll for next chapter"
 msgstr "다음 챕터를 보려면 스크롤"
 
-#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll forward"
@@ -16685,10 +16691,9 @@ msgstr "전체 보기"
 
 #. placeholder {0}: items.length
 #: src/components/home/ContinueHero.tsx
-msgid "Show all {0}"
-msgstr ""
+#~ msgid "Show all {0}"
+#~ msgstr ""
 
-#: src/components/home/ContinueHero.tsx
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Show fewer"

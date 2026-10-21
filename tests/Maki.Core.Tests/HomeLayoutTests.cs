@@ -11,21 +11,32 @@ namespace Maki.Core.Tests;
 public class HomeLayoutTests
 {
     [Fact]
-    public void Default_has_every_section_enabled_in_shipping_order()
+    public void Default_has_every_section_in_shipping_order_with_discovery_off()
     {
         var spec = HomeLayoutSpec.Default;
 
         Assert.True(spec.Enabled);
         Assert.Equal(HomeSections.All, spec.Sections!.Select(s => s.Key));
-        Assert.All(spec.Sections!, s => Assert.True(s.Enabled));
+        Assert.All(spec.Sections!, s => Assert.Equal(!HomeSections.DefaultOff.Contains(s.Key), s.Enabled));
+        Assert.Equal([HomeSections.Recommended, HomeSections.Popular], HomeSections.DefaultOff);
     }
 
     [Fact]
-    public void Default_leads_with_glance_holding_every_panel_on()
+    public void Default_opens_on_continue_reading_with_glance_right_under_it()
+    {
+        var keys = HomeLayoutSpec.Default.Sections!.Select(s => s.Key).ToList();
+
+        Assert.Equal(HomeSections.ContinueReading, keys[0]);
+        Assert.Equal(HomeSections.Glance, keys[1]);
+        Assert.True(keys.IndexOf(HomeSections.Downloading) > keys.IndexOf(HomeSections.RecentlyAdded));
+    }
+
+    [Fact]
+    public void Default_glance_holds_every_panel_on()
     {
         var spec = HomeLayoutSpec.Default;
 
-        var glance = spec.Sections![0];
+        var glance = spec.Sections!.Single(s => s.Key == HomeSections.Glance);
         Assert.Equal(HomeSections.Glance, glance.Key);
         Assert.True(glance.Enabled);
         Assert.Equal(HomeGlancePanels.All, glance.Panels!.Select(p => p.Key));
@@ -68,9 +79,11 @@ public class HomeLayoutTests
         Assert.Equal(HomeSections.Glance, merged.Sections![0].Key);
         Assert.Equal(HomeSections.ContinueReading, merged.Sections[1].Key);
         Assert.False(merged.Sections[1].Enabled);
-        // ...and everything new lands after it, on, rather than jumping to its canonical slot.
+        // ...and everything new lands after it, on unless it ships off, rather than jumping to its canonical slot.
         Assert.Equal(HomeSections.All.Length, merged.Sections.Count);
-        Assert.All(merged.Sections.Skip(2), s => Assert.True(s.Enabled));
+        Assert.All(
+            merged.Sections.Skip(2),
+            s => Assert.Equal(!HomeSections.DefaultOff.Contains(s.Key), s.Enabled));
     }
 
     [Fact]
@@ -93,7 +106,7 @@ public class HomeLayoutTests
         Assert.True(fromAnime.Enabled);
         Assert.Null(fromAnime.Hero);
         Assert.Contains(appended, s => s.Key == HomeSections.Following && s.Enabled);
-        Assert.Equal(HomeSections.All.Length, merged.Sections.Count);
+        Assert.Equal(HomeSections.All.Length, merged.Sections!.Count);
     }
 
     [Fact]
@@ -348,5 +361,47 @@ public class HomeLayoutTests
         Assert.DoesNotContain(merged.Sections!, s => s.Key == HomeGlancePanels.Progress);
         var glance = merged.Sections!.Single(s => s.Key == HomeSections.Glance);
         Assert.False(glance.Panels!.Single(p => p.Key == HomeGlancePanels.Stats).Enabled);
+    }
+
+    private static List<PageSection> PreviousDefault() =>
+        HomeSections.HeroFirstPredecessor.Select(key => new PageSection(key)).ToList();
+
+    [Fact]
+    public void A_layout_still_on_the_previous_default_moves_to_the_new_one()
+    {
+        var merged = new HomeLayoutSpec(true, PreviousDefault()).Merge();
+
+        Assert.Equal(HomeSections.All, merged.Sections!.Select(s => s.Key));
+        Assert.False(merged.Sections!.Single(s => s.Key == HomeSections.Popular).Enabled);
+    }
+
+    [Fact]
+    public void The_move_keeps_custom_rails_after_the_built_in_sections()
+    {
+        var stored = PreviousDefault();
+        stored.Add(new PageSection(HomeSections.RailKey(4), Enabled: false));
+
+        var merged = new HomeLayoutSpec(true, stored).Merge([4]);
+
+        Assert.Equal(HomeSections.RailKey(4), merged.Sections![^1].Key);
+        Assert.False(merged.Sections[^1].Enabled);
+        Assert.Equal(HomeSections.All, merged.Sections.Take(HomeSections.All.Length).Select(s => s.Key));
+    }
+
+    [Fact]
+    public void A_layout_the_owner_arranged_is_left_where_it_is()
+    {
+        var reordered = PreviousDefault();
+        (reordered[0], reordered[1]) = (reordered[1], reordered[0]);
+        var withOneOff = PreviousDefault();
+        withOneOff[3] = withOneOff[3] with { Enabled = false };
+        var heroFlipped = PreviousDefault();
+        heroFlipped[2] = heroFlipped[2] with { Hero = false };
+
+        foreach (var stored in new[] { reordered, withOneOff, heroFlipped })
+        {
+            var merged = new HomeLayoutSpec(true, stored).Merge();
+            Assert.Equal(stored.Select(s => s.Key), merged.Sections!.Select(s => s.Key));
+        }
     }
 }
