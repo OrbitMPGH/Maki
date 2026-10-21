@@ -627,6 +627,14 @@ msgstr "{cellDate}：没有阅读内容"
 msgid "{chapterCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapterCount, plural, other {# 个章节}}"
 
+#: src/pages/LibraryPage.tsx
+msgid "{chapterMax, plural, one {At most # chapter} other {At most # chapters}}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "{chapterMin, plural, one {At least # chapter} other {At least # chapters}}"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "{chapterMinChip}–{chapterMaxChip} ch."
@@ -1585,6 +1593,10 @@ msgstr "{renamed, plural, other {已重命名 # 个系列}}"
 #, fuzzy
 msgid "{replacedFiles, plural, one {Replaces # file} other {Replaces # files}}"
 msgstr "{replacedFiles, plural, other {替换 # 个文件}}"
+
+#: src/components/import/MihonSummary.tsx
+msgid "{requested, plural, one {# sent for approval} other {# sent for approval}}"
+msgstr ""
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -3013,6 +3025,10 @@ msgstr "将未读系列添加为待读"
 msgid "Add user"
 msgstr "添加用户"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Add your details in Settings."
+msgstr ""
+
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -3665,8 +3681,8 @@ msgid "At cutoff"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
-msgid "At least {chapterMin} chapters"
-msgstr ""
+#~ msgid "At least {chapterMin} chapters"
+#~ msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -3691,8 +3707,8 @@ msgid "At least one language must stay enabled."
 msgstr "必须至少启用一种语言。"
 
 #: src/pages/LibraryPage.tsx
-msgid "At most {chapterMax} chapters"
-msgstr ""
+#~ msgid "At most {chapterMax} chapters"
+#~ msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -9365,8 +9381,12 @@ msgid "Keep the screen awake while reading"
 msgstr "阅读时保持屏幕常亮"
 
 #: src/components/import/MihonImport.tsx
-msgid "Keep this tab open until it finishes."
+msgid "Keep this page open until it finishes. Leaving it stops the import; run it again to carry on."
 msgstr ""
+
+#: src/components/import/MihonImport.tsx
+#~ msgid "Keep this tab open until it finishes."
+#~ msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Keep upcoming chapters"
@@ -20458,6 +20478,14 @@ msgstr "查找期间你可以继续浏览。"
 
 #: src/components/ImportReviewModal.tsx
 msgid "You can undo this from Activity."
+msgstr ""
+
+#: src/components/import/MihonSummary.tsx
+msgid "You can't add series directly, so these were sent to an admin as requests. Tags and read marks are not applied to them."
+msgstr ""
+
+#: src/components/import/MihonReview.tsx
+msgid "You can't add series directly. New ones are sent to an admin as requests, and tags and read marks are only applied to series already in the library."
 msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx

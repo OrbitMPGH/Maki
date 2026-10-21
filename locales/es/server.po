@@ -1576,6 +1576,11 @@ msgid "error.scrobble.aniListNotConfigured"
 msgstr "Configura primero el ID y el secreto de cliente de AniList en Ajustes"
 
 #: src/Maki.Api/Controllers/ScrobbleController.cs
+#. English: paste the mangaupdates.com/series link, or the id from the end of it
+msgid "error.scrobble.invalidMangaUpdatesId"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: expected a numeric id or a series URL for that service
 #, fuzzy
 msgid "error.scrobble.invalidRemoteId"
