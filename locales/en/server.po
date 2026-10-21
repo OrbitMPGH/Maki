@@ -989,6 +989,11 @@ msgstr "No download client is configured (Settings → Downloads → Download cl
 msgid "error.release.downloadClientRejected"
 msgstr "The download client refused to add the torrent."
 
+#. A qBittorrent duplicate upload of a torrent the user keeps in another category.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+msgid "error.release.downloadClientHeldOutsideLabel"
+msgstr "The download client already has this torrent in another category or label. Move it to Maki's, or remove it, and grab again."
+
 #. The download client did not answer, or answered with something that was not its API.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 msgid "error.release.downloadClientUnreachable"

@@ -74,6 +74,8 @@ public enum TorrentClientFailure
     LoginFailed,
     /// <summary>The client refused the torrent or magnet.</summary>
     Rejected,
+    /// <summary>The client already has the torrent outside Maki's category or label, where Maki's list cannot see it.</summary>
+    HeldOutsideLabel,
 }
 
 /// <summary>A refusal Maki can name; the message is English for logs only.</summary>

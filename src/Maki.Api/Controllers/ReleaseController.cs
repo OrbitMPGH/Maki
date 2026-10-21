@@ -99,6 +99,7 @@ public class ReleaseController(
             {
                 TorrentClientFailure.LoginFailed => "error.release.downloadClientLoginFailed",
                 TorrentClientFailure.Rejected => "error.release.downloadClientRejected",
+                TorrentClientFailure.HeldOutsideLabel => "error.release.downloadClientHeldOutsideLabel",
                 _ => "error.release.downloadClientUnreachable",
             });
         }

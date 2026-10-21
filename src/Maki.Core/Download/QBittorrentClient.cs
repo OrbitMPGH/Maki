@@ -19,7 +19,8 @@ public class QBittorrentClient : ITorrentClient
         [property: JsonPropertyName("state")] string State,
         [property: JsonPropertyName("progress")] double Progress,
         [property: JsonPropertyName("content_path")] string ContentPath,
-        [property: JsonPropertyName("added_on")] long AddedOn);
+        [property: JsonPropertyName("added_on")] long AddedOn,
+        [property: JsonPropertyName("category")] string? Category = null);
 
     private readonly SemaphoreSlim _loginLock = new(1, 1);
     private (string BaseUrl, string Username)? _authenticatedFor;
@@ -80,7 +81,8 @@ public class QBittorrentClient : ITorrentClient
 
     /// <summary>
     /// Uploads a .torrent file. Unlike a URL, which qBittorrent fetches later and so always accepts,
-    /// a file it already has is refused; that is not an error here, since the torrent is there.
+    /// a file it already has is refused; that is not an error here when the torrent sits in Maki's category.
+    /// In another category the list would never show it, so the grab fails rather than move the user's torrent.
     /// </summary>
     public Task AddFileAsync(TorrentClientSettings settings, byte[] torrent, string infoHash, CancellationToken ct = default) =>
         GuardAsync<object?>(async () =>
@@ -100,25 +102,32 @@ public class QBittorrentClient : ITorrentClient
             var body = response.IsSuccessStatusCode ? await response.Content.ReadAsStringAsync(ct) : string.Empty;
             if (response.StatusCode == HttpStatusCode.Conflict || body.Contains("Fails", StringComparison.OrdinalIgnoreCase))
             {
-                if (await HasTorrentAsync(settings, infoHash, ct))
+                var existing = await FindTorrentAsync(settings, infoHash, ct);
+                if (existing is null)
                 {
-                    return null;
+                    throw new TorrentClientException(TorrentClientFailure.Rejected, "qBittorrent rejected the torrent");
                 }
 
-                throw new TorrentClientException(TorrentClientFailure.Rejected, "qBittorrent rejected the torrent");
+                if (!string.Equals(existing.Category ?? string.Empty, settings.Label, StringComparison.Ordinal))
+                {
+                    throw new TorrentClientException(TorrentClientFailure.HeldOutsideLabel,
+                        $"qBittorrent already has this torrent in category '{existing.Category}'");
+                }
+
+                return null;
             }
 
             response.EnsureSuccessStatusCode();
             return null;
         }, ct);
 
-    private async Task<bool> HasTorrentAsync(TorrentClientSettings settings, string infoHash, CancellationToken ct)
+    private async Task<QbtTorrent?> FindTorrentAsync(TorrentClientSettings settings, string infoHash, CancellationToken ct)
     {
         using var response = await SendAuthenticatedAsync(
             settings, HttpMethod.Get, $"torrents/info?hashes={infoHash}", null, ct);
         response.EnsureSuccessStatusCode();
         var torrents = await response.Content.ReadFromJsonAsync<List<QbtTorrent>>(cancellationToken: ct);
-        return torrents is { Count: > 0 };
+        return torrents?.FirstOrDefault();
     }
 
     public Task<IReadOnlyList<ClientTorrent>> ListAsync(TorrentClientSettings settings, CancellationToken ct = default) =>
