@@ -190,6 +190,8 @@ function TimelineRow({ placed }: { placed: Placed }) {
   const when = outlook.announcedAt ? formatWeekdayDateTime(outlook.announcedAt) : ''
   const from = span ? Math.max(span[0], 0) : 0
   const to = span ? Math.min(span[1], UPCOMING_DAYS - 1) : 0
+  // An announcement from earlier today's window can fall on yesterday's column; draw it on today's.
+  const announcedDay = announced == null ? null : Math.max(announced, 0)
 
   return (
     <div className="upcoming-row">
@@ -214,11 +216,11 @@ function TimelineRow({ placed }: { placed: Placed }) {
             />
           </Tooltip>
         )}
-        {announced != null && announced >= 0 && announced < UPCOMING_DAYS && (
+        {announcedDay != null && announcedDay < UPCOMING_DAYS && (
           <Tooltip withArrow label={t`${announcedBy} has it scheduled for ${when}`}>
             <div
               className="upcoming-announced"
-              style={{ gridColumn: `${announced + 1} / ${announced + 2}` }}
+              style={{ gridColumn: `${announcedDay + 1} / ${announcedDay + 2}` }}
               role="img"
               tabIndex={0}
               aria-label={t`${announcedBy} has it scheduled for ${when}`}
