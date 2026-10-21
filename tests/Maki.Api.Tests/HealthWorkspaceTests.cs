@@ -407,13 +407,46 @@ public class HealthWorkspaceTests : IDisposable
             db.ReaderBookmarks.Add(new(){UserId=userId,SeriesId=chapters[0].SeriesId,ChapterId=chapters[0].Id,PageIndex=4});
             db.ChapterProgress.Add(new(){UserId=userId,SeriesId=chapters[0].SeriesId,ChapterId=chapters[0].Id,PageIndex=4,PageCount=5,Completed=true,ReadSeconds=120});
         }
-        await db.SaveChangesAsync();var op=await Stage(db,file);var service=Operations(db);
+        await db.SaveChangesAsync();SeedKoreaderId(chapters[0].ChapterFileId!.Value);var op=await Stage(db,file);var service=Operations(db);
         await Assert.ThrowsAnyAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,true,false,default));
         Assert.True(File.Exists(Path.Combine(root,"one.cbz")));
         await service.ApplyAsync(op.Id,file.Version,true,true,default);
         Assert.Equal("completed",op.Status);Assert.Equal(2,await db.ChapterFiles.CountAsync());Assert.Empty(db.ReaderBookmarks);
         Assert.All(db.ChapterProgress,p=>{Assert.Equal(0,p.PageIndex);Assert.True(p.Completed);Assert.Equal(120,p.ReadSeconds);});
         Assert.True(chapters[0].Wanted);Assert.False(chapters[1].Wanted);Assert.Empty(db.StatsEvents);
+        // The pages moved, so a copy of the old archive on a device no longer reads true.
+        Assert.Empty(db.KoreaderDocuments.AsNoTracking());
+    }
+    // Through a context of its own: one the service tracks would be cascaded by EF rather than by the database.
+    private void SeedKoreaderId(int chapterFileId)
+    {
+        using var db=fixture.NewContext();
+        db.KoreaderDocuments.Add(new(){ChapterFileId=chapterFileId,Kind=KoreaderDigestKind.Binary,Digest=new string('d',32),CreatedAt=DateTime.UtcNow});
+        db.SaveChanges();
+    }
+    [Fact] public async Task A_repair_that_keeps_every_page_in_place_moves_the_koreader_ids_to_the_replacement()
+    {
+        using var db=fixture.NewContext();
+        var folder=new RootFolder{Path=root};db.RootFolders.Add(folder);await db.SaveChangesAsync();
+        var path=Path.Combine(root,"one.cbz");
+        using(var zip=ZipFile.Open(path,ZipArchiveMode.Create))
+        {
+            using(var info=zip.CreateEntry("ComicInfo.xml").Open()) info.Write("<ComicInfo/>"u8);
+            using var page=zip.CreateEntry("001.png").Open(); page.Write(new Raster(8,8).EncodePng());
+        }
+        var series=new Series{Title="Kept pages",SortTitle="kept pages",RootFolderId=folder.Id,FolderName="Test"};db.Series.Add(series);await db.SaveChangesAsync();
+        var cf=new ChapterFile{SeriesId=series.Id,RelativePath="one.cbz",Size=new FileInfo(path).Length};db.ChapterFiles.Add(cf);await db.SaveChangesAsync();
+        db.Chapters.Add(new Chapter{SeriesId=series.Id,ChapterFileId=cf.Id,Number=1});
+        var file=new HealthFile{RootFolderId=folder.Id,RelativePath="one.cbz",ChapterFileId=cf.Id,SeriesId=series.Id};db.HealthFiles.Add(file);
+        await db.SaveChangesAsync();await new HealthScanService(db).AnalyzeAsync(file,root,true,default,0,true);
+        SeedKoreaderId(cf.Id);var op=await Stage(db,file);
+
+        await Operations(db).ApplyAsync(op.Id,file.Version,true,false,default);
+
+        Assert.Equal("completed",op.Status);
+        var replacement=await db.ChapterFiles.SingleAsync();
+        Assert.NotEqual(cf.Id,replacement.Id);
+        Assert.Equal(replacement.Id,(await db.KoreaderDocuments.AsNoTracking().SingleAsync()).ChapterFileId);
     }
     [Fact] public async Task Changed_candidate_is_rejected_before_original_is_moved()
     {

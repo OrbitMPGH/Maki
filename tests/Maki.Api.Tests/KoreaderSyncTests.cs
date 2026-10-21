@@ -580,6 +580,22 @@ public sealed class KoreaderSyncTests : IDisposable
     }
 
     [Fact]
+    public async Task A_new_write_time_over_the_same_bytes_restamps_the_row_it_already_has()
+    {
+        var (path, _) = SeedFile(SeedSeries("Touched"), "Touched.cbz", ["001.jpg", "002.jpg"], 1m);
+        await IndexAsync();
+        File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddHours(1));
+
+        await IndexAsync();
+
+        var info = new FileInfo(path);
+        using var db = _db.NewContext();
+        var binary = Assert.Single(db.KoreaderDocuments.Where(d => d.Kind == KoreaderDigestKind.Binary).ToList());
+        Assert.Equal(KoreaderDigest.PartialMd5(path), binary.Digest);
+        Assert.Equal(ReaderService.ArchiveVersionOf(info.Length, info.LastWriteTimeUtc.Ticks), binary.FileVersion);
+    }
+
+    [Fact]
     public async Task Only_a_file_no_pass_has_seen_asks_for_an_early_pass()
     {
         await IndexAsync();

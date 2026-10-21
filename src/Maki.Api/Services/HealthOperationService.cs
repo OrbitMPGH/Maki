@@ -237,6 +237,9 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                 }
                 // Include stale file rows even if no chapter still references them.
                 var oldFiles = await db.ChapterFiles.Where(f => f.RelativePath == file.RelativePath && db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == root.Id)).ToListAsync(ct);
+                // Same pages in the same places: a copy of the old archive on a KOReader device still reads true.
+                if (op.Kind == "repair" && !reset && chapters.Single().ChapterFileId is { } replacementId)
+                    await KoreaderDocumentIndexer.MoveAsync(db, oldFiles.Select(f => f.Id).ToList(), replacementId, ct);
                 db.ChapterFiles.RemoveRange(oldFiles);
                 foreach (var old in oldFiles) Invalidate(old.Id);
                 file.Removed = true;

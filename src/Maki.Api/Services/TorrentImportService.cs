@@ -89,6 +89,9 @@ public sealed class VolumeReplacementDetail
         index < ReplacementFileIds.Count && ReplacementFileIds[index] != 0 ? ReplacementFileIds[index] : ReplacementFileId;
     public bool Trusted { get; set; }
 
+    /// <summary>The file's KOReader document ids, which go with its row, for the row a revert gives it back.</summary>
+    public List<KoreaderDocumentIndexer.Carried> KoreaderDocuments { get; set; } = [];
+
     public string Serialize() => JsonSerializer.Serialize(this, Maki.Core.Quality.QualitySnapshot.Json);
 
     public static VolumeReplacementDetail? Parse(string? json)
@@ -706,6 +709,7 @@ public class TorrentImportService(
                 row.Id.ToString(CultureInfo.InvariantCulture), Path.GetFileName(row.RelativePath));
             var trashPath = LibraryPaths.Resolve(rootPath, trashRelative)!;
 
+            var carried = await KoreaderDocumentIndexer.CarryAsync(db, row.Id, CancellationToken.None);
             var beforeScore = evaluator?.Evaluate(row, backed[0].Language) is { } current ? current.Score.Score : 0;
             if (!afterByFile.TryGetValue(replacementId, out var after))
             {
@@ -737,7 +741,8 @@ public class TorrentImportService(
                     ReplacementFileIds = replacements,
                     DateAdded = row.DateAdded,
                     Trusted = row.Trusted,
-                    TakenChapters = taken
+                    TakenChapters = taken,
+                    KoreaderDocuments = carried
                 }.Serialize()
             };
             db.UpgradeHistory.Add(history);
@@ -750,6 +755,7 @@ public class TorrentImportService(
                 db.UpgradeHistory.Remove(history);
                 db.ChapterFiles.Add(row);
                 await db.SaveChangesAsync(CancellationToken.None);
+                await KoreaderDocumentIndexer.RestoreAsync(db, row.Id, carried, logger, CancellationToken.None);
                 continue;
             }
 
