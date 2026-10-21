@@ -91,7 +91,7 @@ export const GlanceLastInOrder: Story = {
         order: ['continue', 'downloading', 'jumpback', 'fromanime', 'recent', 'following', 'recommended', 'popular', 'glance'],
       }),
     ),
-  },,
+  },
   play: async ({ canvas }) => {
     const glance = await canvas.findByRole('region', { name: 'At a glance' })
     await expect(glance).not.toHaveAttribute('data-hosted')
