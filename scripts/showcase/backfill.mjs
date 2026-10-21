@@ -2,12 +2,11 @@
 // Run with the backend stopped. "data" writes the history, "achievements" dates the unlocks the
 // backend computed from it (start the backend and open the stats page in between).
 import { existsSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import { showcaseConfigDir } from './config.mjs'
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const configDir = process.env.MAKI_CONFIG_DIR ?? join(root, '.screenshots')
+const configDir = showcaseConfigDir()
 const mode = process.argv[2] ?? 'data'
 const DAYS = 74
 const USER_ID = 1

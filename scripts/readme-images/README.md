@@ -5,7 +5,8 @@ takes raw screenshots of a running Maki, `compose` lays them out with headlines 
 finished PNGs to `docs/readme/`.
 
 Run it against the showcase library, never a real one. `scripts/showcase/README.md` explains how
-to build that config and start it with the `backend-screenshots` launch preset.
+to build that config and start it:
+`MAKI_CONFIG_DIR=$PWD/.screenshots dotnet run --project src/Maki.Api`, which listens on port 8990.
 
 ## Run it
 

@@ -1,12 +1,11 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import { MakiClient } from './client.mjs'
 import { SERIES } from './series.mjs'
+import { showcaseConfigDir } from './config.mjs'
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const configDir = process.env.MAKI_CONFIG_DIR ?? join(root, '.screenshots')
+const configDir = showcaseConfigDir()
 const base = process.env.MAKI_URL ?? 'http://localhost:8990'
 const credentialsPath = join(configDir, 'credentials.json')
 

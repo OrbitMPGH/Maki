@@ -4,15 +4,26 @@ Builds a throwaway Maki config that looks like a real, lived-in library, for scr
 Nothing in it is a real account: one local user called Maki, 45 popular series, no monitoring, no
 upgrades, and a reading history backfilled over the last 74 days.
 
-The config lives in `.screenshots/` (ignored by git). The `backend-screenshots` launch preset runs
-the API against it on port 8990.
+The config lives in `.screenshots/` (ignored by git). Run the API against it from the repo root,
+on its default port 8990:
+
+```bash
+MAKI_CONFIG_DIR=$PWD/.screenshots dotnet run --project src/Maki.Api
+```
+
+The local `backend-screenshots` launch preset in `.claude/launch.json` does the same, but that file
+is not committed.
+
+The scripts here refuse to run against a real config folder. They only accept `.screenshots/`, or
+a folder you have marked by creating an empty `.showcase` file in it. Setting `MAKI_CONFIG_DIR`
+to anything else makes them stop.
 
 ## Build it
 
 1. Copy the catalogue data from any config that has it into `.screenshots/`: `mangabaka.db`,
    `embeddings.db`, `models/`, `coread-edges.db`, `reco-edges.db`, `reader-cohorts.db`,
    `taste-vectors.db`. Do not copy `maki.db`, `config.json` or `dataprotection-keys`.
-2. Start `backend-screenshots`.
+2. Start the backend with the command above.
 3. Create the account, root folder and series, then wait for source matching to finish:
 
 ```bash
