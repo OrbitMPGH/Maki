@@ -87,6 +87,7 @@ function PushControls() {
   const blocked = permission === 'denied'
 
   async function enable() {
+    const failed = t`This device could not subscribe to push notifications.`
     setBusy(true)
     try {
       const result = await requestNotificationPermission()
@@ -94,7 +95,7 @@ function PushControls() {
       const { publicKey } = await queryClient.fetchQuery(pushPublicKeyQuery)
       const subscription = await subscribePush(publicKey)
       const body = subscription && toSubscriptionBody(subscription)
-      if (!body) throw new Error(t`This device could not subscribe to push notifications.`)
+      if (!body) throw new Error(failed)
       try {
         await subscribe.mutateAsync(body)
       } catch (error) {
@@ -102,9 +103,10 @@ function PushControls() {
         throw error
       }
     } catch (error) {
-      // A failed server call has already raised its own toast.
-      if (!(error instanceof Error) || error.name === 'ApiError') return
-      notifications.show({ message: error.message, color: 'var(--danger)' })
+      // A failed server call has already raised its own toast. Anything else is a browser
+      // error whose text is untranslated, so it gets a fixed message.
+      if (error instanceof Error && error.name === 'ApiError') return
+      notifications.show({ message: failed, color: 'var(--danger)' })
     } finally {
       await refresh()
       setBusy(false)
