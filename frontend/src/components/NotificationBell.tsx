@@ -27,12 +27,12 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 
 /**
- * Header bell over the in-app notification inbox.
+ * Bell over the in-app notification inbox.
  * <p>
  * The badge count is its own query so it is live before anything opens the dropdown; the feed is
  * only fetched once the popover is opened, which keeps a page load to one small count request.
  */
-export function NotificationBell() {
+export function NotificationBell({ position = 'bottom-end' }: { position?: 'bottom-end' | 'top-start' }) {
   const { t } = useLingui()
   const [opened, { toggle, close }] = useDisclosure(false)
   const navigate = useNavigate()
@@ -56,7 +56,7 @@ export function NotificationBell() {
   return (
     <Popover
       width={380}
-      position="bottom-end"
+      position={position}
       withArrow
       shadow="md"
       opened={opened}

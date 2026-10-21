@@ -7095,7 +7095,6 @@ msgstr "時代"
 msgid "Erotica"
 msgstr "エロティカ"
 
-#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -8337,7 +8336,6 @@ msgstr "いずれも含まない"
 msgid "Have ({downloadedFilterCount})"
 msgstr "所持（{downloadedFilterCount}）"
 
-#: src/App.tsx
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8352,8 +8350,8 @@ msgstr "ヘルス問題"
 
 #: src/App.tsx
 #, fuzzy
-msgid "Health issues"
-msgstr "ヘルス問題"
+#~ msgid "Health issues"
+#~ msgstr "ヘルス問題"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12868,8 +12866,8 @@ msgstr "ファイルの検出結果を開く"
 
 #: src/App.tsx
 #, fuzzy
-msgid "Open Health"
-msgstr "ヘルスを開く"
+#~ msgid "Open Health"
+#~ msgstr "ヘルスを開く"
 
 #: src/components/import/MihonSummary.tsx
 msgid "Open library"
@@ -20007,7 +20005,6 @@ msgstr "希望（{wantedFilterCount}）"
 msgid "Wanted chapters may be downloaded again by existing automation."
 msgstr "希望した章は既存の自動化によって再度ダウンロードされる場合があります。"
 
-#: src/App.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Warning"

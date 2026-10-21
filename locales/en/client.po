@@ -5871,7 +5871,6 @@ msgstr "Era"
 msgid "Erotica"
 msgstr "Erotica"
 
-#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -6891,7 +6890,6 @@ msgstr "Has none of"
 msgid "Have ({downloadedFilterCount})"
 msgstr "Have ({downloadedFilterCount})"
 
-#: src/App.tsx
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
 msgid "Health"
@@ -6903,8 +6901,8 @@ msgid "Health issue"
 msgstr "Health issue"
 
 #: src/App.tsx
-msgid "Health issues"
-msgstr "Health issues"
+#~ msgid "Health issues"
+#~ msgstr "Health issues"
 
 #: src/pages/HealthPage.tsx
 msgid "Health settings"
@@ -10640,8 +10638,8 @@ msgid "Open file findings"
 msgstr "Open file findings"
 
 #: src/App.tsx
-msgid "Open Health"
-msgstr "Open Health"
+#~ msgid "Open Health"
+#~ msgstr "Open Health"
 
 #: src/components/import/MihonSummary.tsx
 msgid "Open library"
@@ -16538,7 +16536,6 @@ msgstr "Wanted ({wantedFilterCount})"
 msgid "Wanted chapters may be downloaded again by existing automation."
 msgstr "Wanted chapters may be downloaded again by existing automation."
 
-#: src/App.tsx
 #: src/pages/HealthPage.tsx
 msgid "Warning"
 msgstr "Warning"

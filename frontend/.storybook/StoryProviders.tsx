@@ -8,7 +8,6 @@ import { AppThemeProvider } from '../src/theme-context'
 import { AppI18nProvider } from '../src/i18n-context'
 import { AuthProvider } from '../src/auth/AuthProvider'
 import { NavHistoryProvider } from '../src/lib/navHistory'
-import { ShellTitleProvider } from '../src/lib/shellTitle'
 import { DocumentTitleProvider } from '../src/lib/documentTitle'
 
 // Mantine's Transition waits two animation frames plus its duration before a modal, drawer or menu
@@ -67,9 +66,7 @@ export function StoryProviders({
             <MemoryRouter initialEntries={router?.initialEntries ?? (router?.path ? [router.path] : ['/'])}>
               <AuthProvider>
                 <NavHistoryProvider>
-                  <ShellTitleProvider>
-                    <DocumentTitleProvider>{content}</DocumentTitleProvider>
-                  </ShellTitleProvider>
+                  <DocumentTitleProvider>{content}</DocumentTitleProvider>
                 </NavHistoryProvider>
               </AuthProvider>
             </MemoryRouter>

@@ -2646,11 +2646,12 @@ export interface HealthIssue {
   message: string
 }
 
-export function useHealth() {
+export function useHealth(enabled = true) {
   return useQuery({
     queryKey: ['health'],
     queryFn: () => api<HealthIssue[]>('/system/health'),
     refetchInterval: 60_000,
+    enabled,
   })
 }
 

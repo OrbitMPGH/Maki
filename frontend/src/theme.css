@@ -538,23 +538,6 @@ body {
   background: var(--app-bg);
   border-bottom: 1px solid var(--border);
 }
-.app-header-title {
-  max-width: 40vw;
-  color: var(--ink-hi);
-  letter-spacing: -0.01em;
-  animation: app-header-title-in 0.2s var(--ease);
-}
-@keyframes app-header-title-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .app-header-title {
-    animation: none;
-  }
-}
 
 /* Below Mantine's `sm` breakpoint the navbar stops being a column and becomes an overlay drawer,
    which changes two things the desktop styles above get away with:
@@ -712,6 +695,19 @@ body {
   border-top: 1px solid var(--border);
   padding-top: 10px;
   margin-top: 8px;
+}
+.nav-footer-account {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.nav-footer-account .nav-user {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+.nav-footer-account .nav-user-chevron {
+  display: none;
 }
 .nav-footer .nav-footer-help {
   width: 100%;
@@ -894,12 +890,11 @@ body {
 .command-palette-trigger {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
   flex-shrink: 0;
-  width: 34px;
+  width: 100%;
   height: 34px;
-  padding: 0;
+  padding: 0 6px 0 12px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   background: var(--surface-2);
@@ -914,16 +909,14 @@ body {
   border-color: var(--border-strong);
 }
 .command-palette-trigger-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
+  flex: 1;
   overflow: hidden;
-  clip: rect(0 0 0 0);
+  text-align: left;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .command-palette-trigger-kbd {
-  display: none;
+  display: inline-flex;
   align-items: center;
   height: 22px;
   padding: 0 8px;
@@ -934,29 +927,23 @@ body {
   font-size: var(--type-label);
   font-weight: var(--fw-semibold);
 }
-@media (min-width: 48em) {
-  .command-palette-trigger {
-    justify-content: flex-start;
-    width: min(320px, 36vw);
-    margin-right: 8px;
-    padding: 0 6px 0 12px;
-  }
-  .command-palette-trigger-label {
-    position: static;
-    width: auto;
-    height: auto;
-    margin: 0;
-    clip: auto;
-    display: inline;
-    flex: 1;
-    overflow: hidden;
-    text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .command-palette-trigger-kbd {
-    display: inline-flex;
-  }
+/* The phone's top bar has room for the glass only. */
+.command-palette-trigger-icon {
+  justify-content: center;
+  width: 34px;
+  padding: 0;
+}
+.command-palette-trigger-icon .command-palette-trigger-label,
+.command-palette-trigger-icon .command-palette-trigger-kbd {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 .command-palette-item[data-active='true'] {
   background: var(--surface-hover);
@@ -1044,6 +1031,14 @@ body {
   font-weight: var(--fw-bold);
   line-height: 18px;
   text-align: center;
+}
+.nav-count[data-tone='warn'] {
+  background: var(--warn);
+  color: var(--warn-on);
+}
+.nav-count[data-tone='danger'] {
+  background: var(--danger);
+  color: var(--danger-on);
 }
 .count-indicator > .mantine-Indicator-indicator {
   background-image: none;
@@ -3576,7 +3571,7 @@ body {
   /* Clears whatever header there is (none on desktop, the burger bar on mobile), plus real air.
      The inline padding is deliberately generous: the poster hard against the rail was the single
      thing that most made this band read as unfinished. */
-  padding: var(--app-shell-header-offset, 0px) clamp(24px, 3.6vw, 64px) 0;
+  padding: max(var(--app-shell-header-offset, 0px), 28px) clamp(24px, 3.6vw, 64px) 0;
 }
 /* Inline-flex and `fit-content` so the target is the arrow and the word, not the full width of
    the hero: a link as wide as the band sends a stray click halfway across the page back to it. */

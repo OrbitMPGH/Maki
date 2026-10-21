@@ -6,21 +6,14 @@ import {
   Burger,
   Center,
   Group,
-  Indicator,
   Loader,
-  Popover,
   ScrollArea,
   Stack,
   Text,
   Tooltip,
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import {
-  IconAlertTriangle,
-  IconArrowLeft,
-  IconDownload,
-  IconHeartbeat,
-} from '@tabler/icons-react'
+import { IconArrowLeft, IconDownload } from '@tabler/icons-react'
 import { lazy, Suspense, useEffect } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -38,7 +31,7 @@ import { OfflineStartPage } from './auth/OfflineStartPage'
 import { OfflineBanner } from './components/OfflineBanner'
 import { OfflineSync } from './pwa/OfflineSync'
 import { SetupAccountPage } from './pages/SetupAccountPage'
-import CommandPalette from './components/CommandPalette'
+import { CommandPaletteModal, CommandPaletteTrigger } from './components/CommandPalette'
 import { IconBrandMark } from './components/IconBrandMark'
 import { NotificationBell } from './components/NotificationBell'
 import MetadataDumpProgress from './components/MetadataDumpProgress'
@@ -54,7 +47,6 @@ import { useLanguageSync } from './i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, type NavItem } from './nav'
-import { ShellTitleProvider, useShellTitleValue } from './lib/shellTitle'
 import { DocumentTitle, DocumentTitleProvider } from './lib/documentTitle'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
 // (StartPageRedirect), so splitting them would only add a round trip to the first paint.
@@ -77,16 +69,6 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const HealthPage = lazy(() => import('./pages/HealthPage'))
 const ReaderPage = lazy(() => import('./pages/reader/ReaderPage'))
-
-function ShellTitle() {
-  const title = useShellTitleValue()
-  if (!title) return null
-  return (
-    <Text fw={650} fz="md" visibleFrom="sm" truncate className="app-header-title">
-      {title}
-    </Text>
-  )
-}
 
 function NotFoundPage() {
   const { t } = useLingui()
@@ -120,7 +102,7 @@ function NavLinks({
   sections: ReturnType<typeof navSections>
   onNavigate?: () => void
   /** Path → count. A zero or missing entry draws no badge. */
-  badges?: Record<string, number>
+  badges?: Record<string, { count: number; tone?: 'warn' | 'danger' }>
 }) {
   const { pathname } = useLocation()
   const { _ } = useLinguiReact()
@@ -132,7 +114,8 @@ function NavLinks({
             {_(section.label)}
           </Text>
           {section.items.map((item) => {
-            const count = badges?.[item.path] ?? 0
+            const count = badges?.[item.path]?.count ?? 0
+            const tone = badges?.[item.path]?.tone
             return (
               <Link
                 key={item.path}
@@ -144,7 +127,9 @@ function NavLinks({
                 <item.icon size={18} stroke={1.7} className="nav-icon" />
                 {_(item.label)}
                 {count > 0 && (
-                  <span className="nav-count tnum">{count > 99 ? '99+' : count}</span>
+                  <span className="nav-count tnum" data-tone={tone}>
+                    {count > 99 ? '99+' : count}
+                  </span>
                 )}
               </Link>
             )
@@ -152,63 +137,6 @@ function NavLinks({
         </Stack>
       ))}
     </Stack>
-  )
-}
-
-function HealthButton() {
-  const { t } = useLingui()
-  const { data: health } = useHealth()
-  if (!health || health.length === 0) return null
-  const hasError = health.some((h) => h.severity === 'error')
-  return (
-    <Popover width={340} position="bottom-end" withArrow shadow="md">
-      <Popover.Target>
-        <Indicator
-          size={16}
-          color={hasError ? 'var(--danger)' : 'var(--warn)'}
-          label={health.length}
-          withBorder
-          className="count-indicator"
-          data-tone={hasError ? 'danger' : 'warn'}
-        >
-          <ActionIcon
-            variant="subtle"
-            color={hasError ? 'var(--danger)' : 'var(--warn)'}
-            aria-label={t`Health issues`}
-          >
-            <IconAlertTriangle size={19} />
-          </ActionIcon>
-        </Indicator>
-      </Popover.Target>
-      <Popover.Dropdown>
-        <Group gap={6} mb="xs">
-          <IconHeartbeat size={16} />
-          <Text fw={650} size="sm">
-            <Trans>Health</Trans>
-          </Text>
-          <Text component={Link} to="/health" size="sm">
-            <Trans>Open Health</Trans>
-          </Text>
-        </Group>
-        <Stack gap="xs">
-          {health.map((issue, i) => (
-            <Group key={`${issue.type}-${i}`} gap="xs" wrap="nowrap" align="flex-start">
-              <Badge
-                size="xs"
-                color={issue.severity === 'error' ? 'var(--danger)' : 'var(--warn)'}
-                variant="light"
-                mt={2}
-              >
-                {issue.severity === 'error' ? <Trans>Error</Trans> : <Trans>Warning</Trans>}
-              </Badge>
-              <Text size="xs" c="var(--ink-3)">
-                {issue.message}
-              </Text>
-            </Group>
-          ))}
-        </Stack>
-      </Popover.Dropdown>
-    </Popover>
   )
 }
 
@@ -373,6 +301,10 @@ function AppShellRoutes() {
   })
   const allItems: NavItem[] = sections.flatMap((s) => s.items)
   const { data: pendingRequests } = usePendingRequestCount(isAdmin)
+  const { data: health } = useHealth(isAdmin)
+  const healthIssues = health?.length ?? 0
+  const healthTone = health?.some((h) => h.severity === 'error') ? 'danger' : 'warn'
+  const [paletteOpened, { open: openPalette, close: closePalette }] = useDisclosure(false)
 
   useEffect(() => {
     // Send anyone sitting on a page that has just become unavailable back through "/", which
@@ -386,9 +318,8 @@ function AppShellRoutes() {
   }, [discoverAvailable, homeEnabled, location.pathname, navigate])
 
   return (
-    <ShellTitleProvider>
     <AppShell
-      header={{ height: 58 }}
+      header={{ height: { base: 58, sm: 0 } }}
       navbar={{ width: 232, breakpoint: 'sm', collapsed: { mobile: !opened } }}
       padding="lg"
     >
@@ -403,29 +334,26 @@ function AppShellRoutes() {
       >
         <Trans>Skip to content</Trans>
       </a>
-      <AppShell.Header className="app-header">
+      {/* Phone only. On desktop the sidebar carries search, downloads and the bell, so the page
+          starts at the top edge of the window. */}
+      <AppShell.Header className="app-header" hiddenFrom="sm">
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
             <Burger
               opened={opened}
               onClick={toggle}
-              hiddenFrom="sm"
               size="sm"
               aria-label={t`Menu`}
               aria-expanded={opened}
             />
-            <Group gap="sm" wrap="nowrap" hiddenFrom="sm">
-              <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
-                <IconBrandMark />
-              </span>
-            </Group>
-            <ShellTitle />
+            <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
+              <IconBrandMark />
+            </span>
           </Group>
           <Group gap={4} wrap="nowrap" className="app-header-actions">
-            <CommandPalette navItems={allItems} />
+            <CommandPaletteTrigger onOpen={openPalette} variant="icon" />
             <ActivityButton />
             <NotificationBell />
-            {isAdmin && <HealthButton />}
           </Group>
         </Group>
       </AppShell.Header>
@@ -437,7 +365,7 @@ function AppShellRoutes() {
       {opened && <Box className="nav-scrim" hiddenFrom="sm" onClick={close} />}
 
       <AppShell.Navbar className="app-navbar" px={12} pt={16} pb={12}>
-        <Group gap={10} mb={18} px={4} wrap="nowrap">
+        <Group gap={10} mb={14} px={4} wrap="nowrap">
           <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
             <IconBrandMark />
           </span>
@@ -445,15 +373,29 @@ function AppShellRoutes() {
             Maki
           </Text>
         </Group>
-        <AppShell.Section grow component={ScrollArea} type="never">
+        <Box visibleFrom="sm">
+          <CommandPaletteTrigger onOpen={openPalette} />
+        </Box>
+        <AppShell.Section grow component={ScrollArea} type="never" mt={14}>
           <NavLinks
             sections={sections}
             onNavigate={close}
-            badges={{ '/requests': pendingRequests?.count ?? 0 }}
+            badges={{
+              '/requests': { count: pendingRequests?.count ?? 0 },
+              '/health': { count: healthIssues, tone: healthTone },
+            }}
           />
         </AppShell.Section>
         <AppShell.Section>
-          <SidebarFooter onNavigate={close} />
+          <SidebarFooter
+            onNavigate={close}
+            actions={
+              <Group gap={2} wrap="nowrap" visibleFrom="sm">
+                <ActivityButton />
+                <NotificationBell position="top-start" />
+              </Group>
+            }
+          />
         </AppShell.Section>
       </AppShell.Navbar>
 
@@ -523,6 +465,13 @@ function AppShellRoutes() {
         </RouteErrorBoundary>
       </AppShell.Main>
 
+      <CommandPaletteModal
+        navItems={allItems}
+        opened={paletteOpened}
+        onOpen={openPalette}
+        onClose={closePalette}
+      />
+
       {/* Opens itself off the setup flag, latched so a language pick's cache clear can't close it. */}
       {isAdmin && <SetupWizard />}
       {/* Only once the instance is past first-run: the wizard owns the screen while it is up, and
@@ -533,7 +482,6 @@ function AppShellRoutes() {
       {isAdmin && <MetadataDumpProgress />}
       <TipLayer />
     </AppShell>
-    </ShellTitleProvider>
   )
 }
 

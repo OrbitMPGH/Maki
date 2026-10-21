@@ -168,7 +168,6 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
 import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
-import { useShellTitle } from '../lib/shellTitle'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 import { cleanSynopsis } from '../lib/synopsis'
 import { useIncognitoOptions } from '../components/ui/incognito'
@@ -1235,20 +1234,6 @@ function SeriesDetailBody() {
       // renders without its chapter number until something else changes the chapter list's identity.
       [chapters, continueAt?.chapterId, i18n.locale]
   )
-
-  // The top bar takes the series name once the hero heading has scrolled out of view.
-  const [heroTitleHidden, setHeroTitleHidden] = useState(false)
-  const heroTitleShown = series !== undefined
-  useEffect(() => {
-    const el = document.querySelector('.series-hero-title')
-    if (!el) return
-    const observer = new IntersectionObserver(([entry]) => setHeroTitleHidden(!entry.isIntersecting), {
-      rootMargin: '-58px 0px 0px 0px',
-    })
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [heroTitleShown])
-  useShellTitle(heroTitleHidden && series ? series.displayTitle : null)
 
   // Arrived by a dice roll: offer another. Local state so a tab switch, which drops router state,
   // does not take the pill with it.

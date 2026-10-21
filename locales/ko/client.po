@@ -7095,7 +7095,6 @@ msgstr "시대"
 msgid "Erotica"
 msgstr "에로티카"
 
-#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -8337,7 +8336,6 @@ msgstr "포함하지 않음"
 msgid "Have ({downloadedFilterCount})"
 msgstr "보유 ({downloadedFilterCount})"
 
-#: src/App.tsx
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8352,8 +8350,8 @@ msgstr "상태 문제"
 
 #: src/App.tsx
 #, fuzzy
-msgid "Health issues"
-msgstr "상태 문제"
+#~ msgid "Health issues"
+#~ msgstr "상태 문제"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12868,8 +12866,8 @@ msgstr "파일 발견 항목 열기"
 
 #: src/App.tsx
 #, fuzzy
-msgid "Open Health"
-msgstr "상태 페이지 열기"
+#~ msgid "Open Health"
+#~ msgstr "상태 페이지 열기"
 
 #: src/components/import/MihonSummary.tsx
 msgid "Open library"
@@ -20007,7 +20005,6 @@ msgstr "원함 ({wantedFilterCount})"
 msgid "Wanted chapters may be downloaded again by existing automation."
 msgstr "원하는 챕터는 기존 자동화로 다시 다운로드할 수 있습니다."
 
-#: src/App.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Warning"

@@ -7096,7 +7096,6 @@ msgstr "Epoche"
 msgid "Erotica"
 msgstr "Erotik"
 
-#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -8338,7 +8337,6 @@ msgstr "Enthält keines von"
 msgid "Have ({downloadedFilterCount})"
 msgstr "Vorhanden ({downloadedFilterCount})"
 
-#: src/App.tsx
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8353,8 +8351,8 @@ msgstr "Gesundheitsproblem"
 
 #: src/App.tsx
 #, fuzzy
-msgid "Health issues"
-msgstr "Gesundheitsprobleme"
+#~ msgid "Health issues"
+#~ msgstr "Gesundheitsprobleme"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12869,8 +12867,8 @@ msgstr "Dateibefunde öffnen"
 
 #: src/App.tsx
 #, fuzzy
-msgid "Open Health"
-msgstr "Gesundheit öffnen"
+#~ msgid "Open Health"
+#~ msgstr "Gesundheit öffnen"
 
 #: src/components/import/MihonSummary.tsx
 msgid "Open library"
@@ -20008,7 +20006,6 @@ msgstr "Gewünscht ({wantedFilterCount})"
 msgid "Wanted chapters may be downloaded again by existing automation."
 msgstr "Gewünschte Kapitel können durch die bestehende Automatisierung erneut heruntergeladen werden."
 
-#: src/App.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Warning"
