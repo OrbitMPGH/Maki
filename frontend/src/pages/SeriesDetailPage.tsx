@@ -1972,8 +1972,7 @@ function SeriesDetailBody() {
                       <Divider my="md" color="var(--hairline)" />
                     </>
                   )}
-                  <ReleaseOutlookSummary seriesId={seriesId} />
-                  <Divider my="md" color="var(--hairline)" />
+                  <ReleaseOutlookSummary seriesId={seriesId} divided />
                   <Text size="xs" c="var(--ink-3)">
                     {scanning ? (
                         <Group gap={6} component="span" wrap="nowrap">

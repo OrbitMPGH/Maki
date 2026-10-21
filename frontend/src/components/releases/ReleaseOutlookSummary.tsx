@@ -1,4 +1,4 @@
-import { Badge, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
+import { Badge, Divider, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
 import { IconCalendarEvent } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -9,9 +9,15 @@ import { relativeTime } from '../ui/time'
 import { CONFIDENCE_LABEL, REFRESH_TIER_TEXT } from './outlookText'
 
 /** The series page's "Next chapter" block. Renders nothing until the outlook has loaded. */
-export function ReleaseOutlookSummary({ seriesId }: { seriesId: number }) {
+export function ReleaseOutlookSummary({ seriesId, divided }: { seriesId: number; divided?: boolean }) {
   const { data } = useSeriesOutlook(seriesId)
-  return data ? <ReleaseOutlookView outlook={data} /> : null
+  if (!data) return null
+  return (
+    <>
+      <ReleaseOutlookView outlook={data} />
+      {divided && <Divider my="md" color="var(--hairline)" />}
+    </>
+  )
 }
 
 export function ReleaseOutlookView({ outlook }: { outlook: ReleaseOutlookDto }) {
