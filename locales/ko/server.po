@@ -2752,6 +2752,12 @@ msgstr ""
 msgid "error.settings.labelInvalidDeluge"
 msgstr ""
 
+#. Saving a different download client or label while torrents are still downloading through the current one.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: {count, plural, one {# torrent is} other {# torrents are}} still downloading through the current client and label. Let them finish or remove them before changing either.
+msgid "error.settings.downloadClientTorrentsInFlight"
+msgstr ""
+
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Kavita did not respond (check URL/API key)
 #, fuzzy

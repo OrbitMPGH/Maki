@@ -89,6 +89,32 @@ public sealed class DownloadClientSettingsTests : IDisposable
     }
 
     [Theory]
+    [InlineData("transmission", "maki", false)]
+    [InlineData("qbittorrent", "manga", false)]
+    [InlineData("qbittorrent", null, true)]
+    [InlineData("qbittorrent", "maki", true)]
+    public async Task A_kind_or_label_change_is_refused_while_a_torrent_is_downloading(string kind, string? label, bool saves)
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        using (var db = _db.NewContext())
+        {
+            db.DownloadQueue.Add(new Maki.Core.Entities.DownloadQueueItem
+            {
+                SeriesId = seriesId, Protocol = Maki.Core.Entities.AcquisitionProtocol.Torrent,
+                Status = Maki.Core.Entities.QueueStatus.Downloading, Title = "Berserk v01", QueuedAt = DateTime.UtcNow,
+            });
+            db.SaveChanges();
+        }
+
+        var settings = new SettingsService(_db.ScopeFactory());
+
+        var result = await Controller(settings).SetDownloadClient(Request(kind: kind, url: "http://new:8080", label: label), default);
+
+        Assert.Equal(saves, result is OkObjectResult);
+        Assert.Equal(saves ? "http://new:8080" : null, await settings.GetAsync(SettingKeys.DownloadClientUrl));
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("  ")]

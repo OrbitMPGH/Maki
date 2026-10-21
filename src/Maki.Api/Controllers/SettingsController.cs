@@ -1584,6 +1584,18 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.labelInvalidDeluge");
         }
 
+        // The next poll would list through the new driver or label, miss these torrents and fail their rows.
+        var current = await DownloadClientSettingsStore.LoadAsync(settings, ct);
+        if (current.Kind != kind || current.Label != DownloadClientSettingsStore.LabelOrDefault(request.Label))
+        {
+            var downloading = await db.DownloadQueue.CountAsync(
+                q => q.Protocol == AcquisitionProtocol.Torrent && q.Status == QueueStatus.Downloading, ct);
+            if (downloading > 0)
+            {
+                return this.Conflict(localizer, "error.settings.downloadClientTorrentsInFlight", new { count = downloading });
+            }
+        }
+
         await settings.SetAsync(SettingKeys.DownloadClientKind, kind.Key(), ct);
         await settings.SetAsync(SettingKeys.DownloadClientUrl, request.Url, ct);
         await settings.SetAsync(SettingKeys.DownloadClientUsername, request.Username, ct);
