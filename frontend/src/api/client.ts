@@ -178,7 +178,9 @@ export async function trackedFetch(input: string, init: RequestInit): Promise<Re
   try {
     res = await fetch(input, init)
   } catch (err) {
-    setConnectivity('offline')
+    // A cancelled query aborts its fetch, which says nothing about the server.
+    const aborted = init.signal?.aborted || (err instanceof Error && err.name === 'AbortError')
+    if (!aborted) setConnectivity('offline')
     throw err
   }
   setConnectivity(servedOffline(res) || isUnreachable(res) ? 'offline' : 'online')
