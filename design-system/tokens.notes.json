@@ -152,6 +152,7 @@
     "shadow-lg": "Mantine shadow lg: a hovered cover card.",
     "shadow-card": "Resting card shadow where one is used at all.",
     "shadow-raised": "The raised layer: none in dark, a real shadow in light.",
+    "shadow-object": "Objects that sit above the page without a border: the Continue hero and its Next up tray (with a 1px line-soft ring, since the hero's ground is the page's), the series Progress panel, Discover's Also for you, modals and drawers. A lit top edge plus a deep soft drop, so the edge reads on near-black too.",
     "content-wide": "Max width of a standard page (SurfaceFrame wide).",
     "content-prose": "Max width of reading text.",
     "section-space": "Vertical rhythm between editorial sections.",

@@ -114,6 +114,12 @@
   --surface-sunken: var(--app-bg);
   --border-raised: var(--border);
   --shadow-raised: none;
+  /* Depth model: an object (hero, Next up, Progress, modals) is raised with this and no border;
+     everything else sits on the ground and is divided by hairlines, never boxed. */
+  --shadow-object:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    0 22px 48px -20px rgba(0, 0, 0, 0.9);
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -295,6 +301,10 @@
   --shadow-raised:
     0 6px 20px -8px rgba(20, 24, 40, 0.18),
     0 2px 5px -2px rgba(20, 24, 40, 0.1);
+  --shadow-object:
+    0 0 0 1px rgba(20, 24, 40, 0.04),
+    0 2px 6px -2px rgba(20, 24, 40, 0.12),
+    0 18px 40px -16px rgba(20, 24, 40, 0.24);
 }
 /* The resting colour is a dark-theme grey; left alone on white it lands around 2.5:1. */
 [data-theme='light'] .nav-link {
@@ -368,13 +378,19 @@ body {
 /* Overlays sit on the raised layer in both themes. Previously these were dark-only,
    so light overlays fell through to the blanket rule and rendered at the same
    colour as the cards behind them. */
-[data-mantine-color-scheme] .mantine-Modal-content,
-[data-mantine-color-scheme] .mantine-Drawer-content,
 [data-mantine-color-scheme] .mantine-Menu-dropdown,
 [data-mantine-color-scheme] .mantine-Popover-dropdown {
   background-color: var(--surface-raised);
   border: 1px solid var(--border-raised);
   box-shadow: var(--shadow-raised);
+}
+/* Modals and drawers sit over a dimmed page, so they are objects: no border. Menus keep theirs,
+   since they open over covers of any colour. */
+[data-mantine-color-scheme] .mantine-Modal-content,
+[data-mantine-color-scheme] .mantine-Drawer-content {
+  background-color: var(--surface-raised);
+  border: 0;
+  box-shadow: var(--shadow-object);
 }
 [data-mantine-color-scheme] .mantine-Modal-header {
   background-color: var(--surface-raised);
@@ -1943,13 +1959,19 @@ body {
    is keyed to: a column on the hero's right when wide, a row under the actions otherwise. */
 .continue-lead {
   container: continue-lead / inline-size;
+  /* Hero and tray are one object: one faint ring and one shadow around both, no border on either.
+     The ring gives the edge, since the hero's ground is the page's and a shadow barely shows on it. */
+  border-radius: var(--radius-overlay);
+  box-shadow:
+    0 0 0 1px var(--line-soft),
+    var(--shadow-object);
   /* The right column's width. Fixed, because `.reading-weeks` sizes its layout from it. */
   --glance-w: 22.5rem;
 }
 
 /* Next up, joined to the foot of the hero card: the card gives up its bottom corners and the tray
-   carries them, on a ground a step darker than the panels so it reads as the card's lower deck.
-   It keeps a real SectionHeader for the heading and the rail's arrows, set smaller here. */
+   carries them, a step darker than the card so it reads as the card's lower deck, split from it by
+   a hairline. It keeps a real SectionHeader for the heading and the rail's arrows, set smaller here. */
 .continue-lead:has(> .continue-tray) > .continue-hero {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
@@ -1957,8 +1979,7 @@ body {
 .continue-tray {
   --rail-item-w: 142px;
   padding: 14px clamp(20px, 2.6vw, 36px) 10px;
-  border: 1px solid var(--border);
-  border-top: 0;
+  border-top: 1px solid var(--line-soft);
   border-radius: 0 0 var(--radius-overlay) var(--radius-overlay);
   background: color-mix(in srgb, var(--surface) 70%, var(--app-bg));
 }
@@ -1983,6 +2004,11 @@ body {
 /* The choices are full sentences with a count in them, so on a phone they wrap rather than
    losing their ending to Mantine's single-line label. */
 /* --- Home downloading strip --------------------------------------------- */
+/* Rows on the ground under the section rule, closed by a hairline above the queue count. */
+.downloading-strip > .mantine-Stack-root > .mantine-Group-root:last-child {
+  padding-top: var(--mantine-spacing-xs);
+  border-top: 1px solid var(--line-soft);
+}
 /* Title and release label share a line on wider screens, the label capped at half of it. On a
    phone the badge leaves too little room for both, so the label drops under the title. */
 .downloading-strip-name {
@@ -2507,10 +2533,9 @@ body {
 }
 .discover-hero-strip,
 .series-hero-panel {
-  border: 1px solid var(--border);
   border-radius: var(--radius-hero);
   background: var(--surface-2);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-object);
 }
 /* The quiet stand-in for the download button once every wanted chapter is on disk. Button height,
    so the action row keeps its line. */
@@ -8317,7 +8342,6 @@ body.reader-open {
   display: flex;
   min-height: 400px;
   align-items: flex-end;
-  border: 1px solid var(--border);
   border-radius: var(--radius-overlay);
   /* The vertical scrim ends on --app-bg, so the card's ground has to match or the fade lands on
      a visible step. */

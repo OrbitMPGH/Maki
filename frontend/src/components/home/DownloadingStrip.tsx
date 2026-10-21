@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Badge, Button, Group, Paper, Progress, Stack, Text } from '@mantine/core'
+import { Badge, Button, Group, Progress, Stack, Text } from '@mantine/core'
 import { IconChevronRight } from '@tabler/icons-react'
 import { queueStatusVisual, statusToken } from '../ui/status'
 import type { QueueItemDto } from '../../api/types'
@@ -12,7 +12,7 @@ const MAX_ROWS = 5
 /**
  * Compact view of what's downloading right now, with a link to the full Activity page. Home shows
  * this only while something is in flight: the caller drops the whole section when the list is
- * empty, so an idle library doesn't carry a permanently blank panel.
+ * empty, so an idle library doesn't carry a permanently blank list.
  */
 export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
   const renderLabel = useLabel()
@@ -22,7 +22,7 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
   const { length: totalQueued } = items
 
   return (
-    <Paper withBorder radius="lg" p="lg">
+    <div className="downloading-strip">
       <Stack gap="sm">
         {shown.map((q) => {
           const visual = queueStatusVisual(q.status)
@@ -97,6 +97,6 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
           </Button>
         </Group>
       </Stack>
-    </Paper>
+    </div>
   )
 }
