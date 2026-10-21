@@ -214,9 +214,10 @@ public class KomgaController(
 
         if (groups.Count == 1)
         {
-            // Several books share a group only when the chapter is downloaded in several languages.
-            // The first readable one is the read; the others are ticked off with it, silently, and so is
-            // every copy when none can be opened, rather than leaving the chapter unread.
+            // Several books share a group when they share a numberSort: the same chapter in several
+            // languages, or a volume's chapter 0 sorted after higher numbers, which repeats the previous
+            // value. The first readable one is the read; the others are ticked off with it, silently, and
+            // so is every copy when none can be opened, rather than leaving the chapter unread.
             var rest = groups[0];
             foreach (var chapterId in groups[0])
             {
