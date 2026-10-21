@@ -164,30 +164,23 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Se
     }
 
     /// <summary>
-    /// Moves a layout nobody ever touched onto the current shipping order. One that still holds the
-    /// previous default (same order, everything on, no hero flipped, every glance panel on) was never
-    /// arranged by its owner, so it gets the new default; anything else is the owner's own
-    /// arrangement and is left alone. Custom rails stay after the built-in sections.
+    /// Moves a layout still in the previous default order onto the current shipping order. That
+    /// order is the one nobody chose, so only the switches the owner flipped (a section off, a hero
+    /// off, a glance panel off) are theirs, and those travel with each section. A layout in any other
+    /// order is the owner's own arrangement and is left alone. Custom rails stay after the built-in
+    /// sections.
     /// </summary>
     public static IReadOnlyList<PageSection> MigrateHeroFirst(IReadOnlyList<PageSection> stored)
     {
         var builtIn = stored.Where(s => !LayoutRails.TryParse(s.Key, out _)).ToList();
-        if (!builtIn.Select(s => s.Key).SequenceEqual(HomeSections.HeroFirstPredecessor) ||
-            !builtIn.All(Untouched))
+        if (!builtIn.Select(s => s.Key).SequenceEqual(HomeSections.HeroFirstPredecessor))
         {
             return stored;
         }
 
-        var migrated = HomeSections.All
-            .Select(key => new PageSection(key, Enabled: !HomeSections.DefaultOff.Contains(key)))
-            .ToList();
+        var migrated = HomeSections.All.Select(key => builtIn.First(s => s.Key == key)).ToList();
         migrated.AddRange(stored.Where(s => LayoutRails.TryParse(s.Key, out _)));
         return migrated;
-
-        static bool Untouched(PageSection s) =>
-            s.Enabled &&
-            (s.Hero is null || s.Hero == (s.Key == HomeSections.ContinueReading)) &&
-            (s.Panels is null || s.Panels.All(p => p.Enabled));
     }
 
     /// <summary>Reads a stored blob, falling back to the default layout for null/blank/bad JSON.</summary>

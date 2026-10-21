@@ -297,8 +297,36 @@ export default function HomePage() {
       : key === 'jumpback'
         ? heroOn('jumpback') && jumpBackIn.length > 0
         : false
+  // "Next to" means next to a section that actually draws something: Downloading now sits between
+  // the glance and Continue in an older saved order, and says nothing most of the time.
+  const drawsNothing = (key: string) => {
+    switch (key) {
+      case 'downloading':
+        return downloading.length === 0
+      case 'recent':
+        return !recentLoading && !(recent && recent.length > 0)
+      case 'fromanime':
+        return !fromAnimeLoading && !(fromAnime && fromAnime.items.length > 0)
+      case 'recommended':
+        return !recommendations.isLoading && youMightLike.length === 0
+      case 'popular':
+        return !railsLoading && popular.length === 0
+      case 'continue':
+        return !readingLoading && !readingFailed && continueReading.length === 0
+      case 'jumpback':
+        return !readingLoading && !readingFailed && jumpBackIn.length === 0
+      default:
+        return false
+    }
+  }
   const glanceAt = visible.findIndex((s) => s.key === 'glance')
-  const neighbours = glanceAt < 0 ? [] : [visible[glanceAt - 1]?.key, visible[glanceAt + 1]?.key]
+  const neighbours =
+    glanceAt < 0
+      ? []
+      : [
+          visible.slice(0, glanceAt).reverse().find((s) => !drawsNothing(s.key))?.key,
+          visible.slice(glanceAt + 1).find((s) => !drawsNothing(s.key))?.key,
+        ]
   const wantsHero = neighbours.some((k) => k === 'continue' || k === 'jumpback')
   const glanceHost = readingLoading && wantsHero ? 'pending' : (neighbours.find((k) => k && heroReady(k)) ?? null)
   const glanceNode =

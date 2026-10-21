@@ -372,7 +372,7 @@ public class HomeLayoutTests
         var merged = new HomeLayoutSpec(true, PreviousDefault()).Merge();
 
         Assert.Equal(HomeSections.All, merged.Sections!.Select(s => s.Key));
-        Assert.False(merged.Sections!.Single(s => s.Key == HomeSections.Popular).Enabled);
+        Assert.All(merged.Sections!, s => Assert.True(s.Enabled));
     }
 
     [Fact]
@@ -389,19 +389,29 @@ public class HomeLayoutTests
     }
 
     [Fact]
-    public void A_layout_the_owner_arranged_is_left_where_it_is()
+    public void The_move_keeps_the_switches_the_owner_flipped()
+    {
+        var stored = PreviousDefault();
+        stored[3] = stored[3] with { Enabled = false };
+        stored[2] = stored[2] with { Hero = false };
+        stored[7] = stored[7] with { Enabled = false };
+
+        var merged = new HomeLayoutSpec(true, stored).Merge();
+
+        Assert.Equal(HomeSections.All, merged.Sections!.Select(s => s.Key));
+        Assert.False(merged.Sections!.Single(s => s.Key == HomeSections.JumpBackIn).Enabled);
+        Assert.False(merged.Sections!.Single(s => s.Key == HomeSections.ContinueReading).Hero);
+        Assert.False(merged.Sections!.Single(s => s.Key == HomeSections.Recommended).Enabled);
+    }
+
+    [Fact]
+    public void A_layout_in_an_order_the_owner_chose_is_left_where_it_is()
     {
         var reordered = PreviousDefault();
         (reordered[0], reordered[1]) = (reordered[1], reordered[0]);
-        var withOneOff = PreviousDefault();
-        withOneOff[3] = withOneOff[3] with { Enabled = false };
-        var heroFlipped = PreviousDefault();
-        heroFlipped[2] = heroFlipped[2] with { Hero = false };
 
-        foreach (var stored in new[] { reordered, withOneOff, heroFlipped })
-        {
-            var merged = new HomeLayoutSpec(true, stored).Merge();
-            Assert.Equal(stored.Select(s => s.Key), merged.Sections!.Select(s => s.Key));
-        }
+        var merged = new HomeLayoutSpec(true, reordered).Merge();
+
+        Assert.Equal(reordered.Select(s => s.Key), merged.Sections!.Select(s => s.Key));
     }
 }
