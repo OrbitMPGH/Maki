@@ -10,6 +10,7 @@ export interface MihonOutcomeRow extends MihonImportResult {
 
 export function MihonSummary({ results, onReset }: { results: MihonOutcomeRow[]; onReset: () => void }) {
   const created = results.filter((r) => r.outcome === 'created').length
+  const requested = results.filter((r) => r.outcome === 'requested').length
   const existing = results.filter((r) => r.outcome === 'existing').length
   const skipped = results.filter((r) => r.outcome === 'skipped')
   const failed = results.filter((r) => r.outcome === 'failed')
@@ -25,6 +26,11 @@ export function MihonSummary({ results, onReset }: { results: MihonOutcomeRow[];
           <Text size="sm" c="var(--ok)">
             <Plural value={created} one="# series added" other="# series added" />
           </Text>
+          {requested > 0 && (
+            <Text size="sm" c="var(--ok)">
+              <Plural value={requested} one="# sent for approval" other="# sent for approval" />
+            </Text>
+          )}
           <Text size="sm">
             <Plural value={existing} one="# already in the library" other="# already in the library" />
           </Text>
@@ -63,6 +69,14 @@ export function MihonSummary({ results, onReset }: { results: MihonOutcomeRow[];
             </Text>
           )
         })}
+        {requested > 0 && (
+          <Text size="xs" c="var(--ink-3)">
+            <Trans>
+              You can't add series directly, so these were sent to an admin as requests. Tags and read marks are not
+              applied to them.
+            </Trans>
+          </Text>
+        )}
         <Group>
           <Button component={Link} to="/library">
             <Trans>Open library</Trans>

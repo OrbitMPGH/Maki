@@ -48,7 +48,7 @@ export function MihonImport() {
   const partialRef = useRef<{ data: MihonParseResponse; results: Map<number, MihonResolveResult>; offset: number } | null>(
     null,
   )
-  // Bumped to abandon a resolve loop that is still awaiting a batch (cancel, restart or unmount).
+  // Bumped to abandon a resolve or import loop that is still awaiting a batch (cancel, restart or unmount).
   const runRef = useRef(0)
 
   useEffect(
@@ -167,6 +167,11 @@ export function MihonImport() {
 
   const runImport = async (groups: MihonGroup[], options: MihonImportOptions) => {
     const runId = randomUUID()
+    const token = ++runRef.current
+    const refresh = () =>
+      void Promise.all(
+        [['series'], ['tags'], ['chapters']].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      )
     const { applyTags, applyReadState } = options
     const collected: MihonOutcomeRow[] = []
     const titles = new Map(groups.map((g) => [g.providerId, g.title]))
@@ -196,14 +201,16 @@ export function MihonImport() {
           reason,
         }))
       }
+      if (token !== runRef.current) {
+        refresh()
+        return
+      }
       for (const r of results) collected.push({ ...r, title: titles.get(r.providerId) ?? r.providerId })
       setOutcomes([...collected])
       setPhase({ kind: 'importing', done: Math.min(i + batch.length, groups.length), total: groups.length })
     }
     setPhase({ kind: 'done' })
-    void Promise.all(
-      [['series'], ['tags'], ['chapters']].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
-    )
+    refresh()
   }
 
   if (phase.kind === 'review' && parsed) {
@@ -266,7 +273,7 @@ export function MihonImport() {
             </div>
           ) : (
             <Text size="xs" c="var(--ink-3)">
-              <Trans>Keep this tab open until it finishes.</Trans>
+              <Trans>Keep this page open until it finishes. Leaving it stops the import; run it again to carry on.</Trans>
             </Text>
           )}
         </Stack>

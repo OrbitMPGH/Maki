@@ -1,6 +1,7 @@
 using System.Data.Common;
 using Maki.Api.Auth;
 using Maki.Api.Controllers;
+using Maki.Api.Hubs;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
@@ -75,8 +76,12 @@ public sealed class MihonImportServiceTests : IDisposable
             notifications: new RecordingNotifications(), locales: new TestUserLocaleResolver(),
             catalog: new TestLocalizer(), localizer: new TestLocalizer(),
             logger: NullLogger<SeriesCreationService>.Instance);
+        var submitter = new SeriesRequestSubmitter(
+            db, [_metadata], new SilentBroadcaster(), new RecordingInbox(),
+            new RecordingNotifications(), new TestUserLocaleResolver(), new TestLocalizer(),
+            NullLogger<SeriesRequestSubmitter>.Instance);
         var service = new MihonImportService(
-            db, _store, [_metadata], creation, new TagService(db),
+            db, _store, [_metadata], creation, submitter, new TagService(db),
             new ReadingProgressService(db, _gate, NullLogger<ReadingProgressService>.Instance),
             new PendingReadImportService(_db.ScopeFactory(), NullLogger<PendingReadImportService>.Instance),
             user, new TestLocalizer(), NullLogger<MihonImportService>.Instance);
@@ -247,6 +252,47 @@ public sealed class MihonImportServiceTests : IDisposable
         Assert.Equal(MihonImportService.AddedFrom, state.AddedFrom);
         var receipt = db.RecommendationMutationReceipts.IgnoreQueryFilters().Single();
         Assert.Equal(MihonImportService.MutationId(user, "run-1", "101"), receipt.ClientMutationId);
+    }
+
+    [Fact]
+    public async Task Import_files_a_request_instead_of_a_series_without_AddSeries()
+    {
+        const MakiPermission noAdd = MakiPermission.ImportLibrary | MakiPermission.ManageTags;
+        var user = SeedUser(noAdd);
+        var (service, _) = Build(user, noAdd);
+
+        var result = Assert.Single(await service.ImportAsync(Request(Item("101", ["Action"], [3])), default));
+
+        Assert.Equal("requested", result.Outcome);
+        Assert.Null(result.SeriesId);
+        using var db = _db.NewContext();
+        Assert.Empty(db.Series);
+        var request = Assert.Single(db.SeriesRequests.IgnoreQueryFilters());
+        Assert.Equal(user, request.UserId);
+        Assert.Equal(SeriesRequestKind.NewSeries, request.Kind);
+        Assert.Equal("101", request.MetadataProviderId);
+        Assert.Equal(SeriesRequestStatus.Pending, request.Status);
+
+        var (again, _) = Build(user, noAdd);
+        Assert.Equal("requested", Assert.Single(await again.ImportAsync(Request(Item("101")), default)).Outcome);
+        Assert.Single(db.SeriesRequests.IgnoreQueryFilters());
+    }
+
+    [Fact]
+    public async Task Import_without_AddSeries_still_tags_and_marks_a_series_already_in_the_library()
+    {
+        const MakiPermission noAdd = MakiPermission.ImportLibrary | MakiPermission.ManageTags;
+        var user = SeedUser(noAdd);
+        var existing = SeedSeries(101, _rootId);
+        var (service, _) = Build(user, noAdd);
+
+        var result = Assert.Single(await service.ImportAsync(Request(Item("101", ["Action"])), default));
+
+        Assert.Equal("existing", result.Outcome);
+        Assert.Equal(existing, result.SeriesId);
+        using var db = _db.NewContext();
+        Assert.Empty(db.SeriesRequests.IgnoreQueryFilters());
+        Assert.Single(db.SeriesTags.Where(t => t.SeriesId == existing));
     }
 
     [Fact]
@@ -581,9 +627,14 @@ public sealed class MihonImportServiceTests : IDisposable
             var id = Canonical.TryGetValue(providerId, out var canonical) ? canonical : int.Parse(providerId);
             return Task.FromResult<SeriesMetadata?>(new SeriesMetadata
             {
-                ProviderId = id.ToString(), Title = $"Series {id}", MangaBakaId = id, Year = 2020,
+                ProviderId = id.ToString(), Title = $"Series {id}", MangaBakaId = id, Year = 2020, ContentRating = "safe",
             });
         }
+    }
+
+    private sealed class SilentBroadcaster() : EventBroadcaster(null!, null!)
+    {
+        public override Task SeriesRequested(int requestId, string title, string requestedBy) => Task.CompletedTask;
     }
 
     /// <summary>Lands a tag with the same label (other case) just before this context's own insert.</summary>
