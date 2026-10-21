@@ -21,7 +21,7 @@ not a replacement.
 - Series monitoring is only `Series.MonitorNewItems` — there is no separate `Monitored` flag.
 - Settings secrets (qBittorrent, Transmission, Deluge, Kavita, Prowlarr, MAL, tracker tokens) are intentionally plaintext
   in the `AppConfig` table — don't "fix" this without reading why in CLAUDE.md.
-- `ImageSharp` is pinned to 3.1.12 — do not bump to 4.x (paid license required).
+- Images go through `Maki.Core.Images` (`ImageCodec`, `Raster`), never `NetVips.Image` directly. ImageSharp is gone; do not reintroduce it.
 - EF Core migrations auto-apply on startup; never suggest a manual migration step for users.
 - Page requests carry their own `Headers` end-to-end and must be resolved at **download** time, not
   enqueue time (some source URLs are short-lived).
