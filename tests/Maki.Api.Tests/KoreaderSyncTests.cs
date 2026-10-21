@@ -35,6 +35,32 @@ public sealed class KoreaderSyncTests : IDisposable
     {
         public DateTimeOffset Now { get; set; } = now;
         public override DateTimeOffset GetUtcNow() => Now;
+
+        public List<(TimeSpan Due, Action Fire)> Timers { get; } = [];
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            Timers.Add((dueTime, () => callback(state)));
+            return new HeldTimer();
+        }
+
+        /// <summary>Fires every timer set so far, once, as if their delays had passed.</summary>
+        public void FireTimers()
+        {
+            var due = Timers.ToList();
+            Timers.Clear();
+            foreach (var (_, fire) in due)
+            {
+                fire();
+            }
+        }
+
+        private sealed class HeldTimer : ITimer
+        {
+            public bool Change(TimeSpan dueTime, TimeSpan period) => true;
+            public void Dispose() { }
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        }
     }
 
     public KoreaderSyncTests()
@@ -558,6 +584,68 @@ public sealed class KoreaderSyncTests : IDisposable
         await writer.FlushAsync(default);
 
         Assert.True(Progress(chapters[2m])!.Completed);
+    }
+
+    [Fact]
+    public async Task A_write_that_keeps_throwing_is_tried_again_on_a_timer_without_an_index_pass()
+    {
+        var writer = Writer(failures: 4);
+        var (path, chapters) = SeedVolume();
+        await IndexAsync();
+
+        writer.Enqueue(_user, KoreaderDigest.PartialMd5(path), "5", 0.8333, "Kobo", "kobo-1");
+        await writer.FlushAsync(default);
+        Assert.Equal(1, writer.WaitingCount);
+        Assert.Equal(KoreaderPushWriter.RetryFailedAfter, Assert.Single(_clock.Timers).Due);
+
+        _clock.FireTimers();
+        await writer.FlushAsync(default);
+        Assert.Null(Progress(chapters[1m]));
+        Assert.Equal(KoreaderPushWriter.RetryFailedAfter * 2, Assert.Single(_clock.Timers).Due);
+
+        _clock.FireTimers();
+        await writer.FlushAsync(default);
+
+        Assert.True(Progress(chapters[2m])!.Completed);
+        Assert.Equal(0, writer.WaitingCount);
+        Assert.Empty(_clock.Timers);
+    }
+
+    [Fact]
+    public async Task The_timer_gives_up_after_its_rounds_and_a_pass_with_nothing_new_still_retries_the_write()
+    {
+        var writer = Writer(failures: 2 * KoreaderPushWriter.FailedRounds);
+        var (path, chapters) = SeedVolume();
+        await IndexAsync();
+        writer.Enqueue(_user, KoreaderDigest.PartialMd5(path), "5", 0.8333, "Kobo", "kobo-1");
+        await writer.FlushAsync(default);
+
+        for (var round = 1; round < KoreaderPushWriter.FailedRounds; round++)
+        {
+            _clock.FireTimers();
+            await writer.FlushAsync(default);
+        }
+
+        Assert.Empty(_clock.Timers);
+        Assert.Equal(1, writer.WaitingCount);
+
+        Assert.Equal(0, await IndexAsync());
+        writer.RetryWaiting(failedOnly: true);
+        await writer.FlushAsync(default);
+
+        Assert.True(Progress(chapters[2m])!.Completed);
+    }
+
+    [Fact]
+    public async Task A_pass_with_nothing_new_leaves_a_push_that_only_waits_for_its_document()
+    {
+        _writer.Enqueue(_user, new string('c', 32), "1", 0.5, "Kobo", "kobo-1");
+        await _writer.FlushAsync(default);
+
+        _writer.RetryWaiting(failedOnly: true);
+
+        Assert.Equal(1, _writer.WaitingCount);
+        Assert.Empty(_clock.Timers);
     }
 
     [Fact]
