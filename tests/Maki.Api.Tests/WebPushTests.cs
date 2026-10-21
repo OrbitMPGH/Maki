@@ -119,6 +119,22 @@ public sealed class WebPushTests : IDisposable
     }
 
     [Fact]
+    public async Task A_user_keeps_at_most_the_newest_devices_up_to_the_cap()
+    {
+        SeedSubscription(_bob, "https://push.example.com/send/bob");
+        for (var i = 0; i <= PushController.MaxSubscriptionsPerUser; i++)
+        {
+            Assert.IsType<OkObjectResult>(await Controller(_alice).Subscribe(Subscription($"{Endpoint}/{i}"), default));
+        }
+
+        var alice = Rows().Where(r => r.UserId == _alice).Select(r => r.Endpoint).ToList();
+        Assert.Equal(PushController.MaxSubscriptionsPerUser, alice.Count);
+        Assert.DoesNotContain($"{Endpoint}/0", alice);
+        Assert.Contains($"{Endpoint}/{PushController.MaxSubscriptionsPerUser}", alice);
+        Assert.Single(Rows(), r => r.UserId == _bob);
+    }
+
+    [Fact]
     public async Task A_user_cannot_delete_anothers_endpoint()
     {
         SeedSubscription(_bob);

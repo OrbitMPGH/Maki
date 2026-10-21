@@ -40,6 +40,9 @@ public class PushController(
     private const int MaxEndpointLength = 2048;
     private const int MaxUserAgentLength = 256;
 
+    /// <summary>Devices per user. The sender works through a user's rows one at a time, so an unbounded list stalls everyone's pushes.</summary>
+    internal const int MaxSubscriptionsPerUser = 20;
+
     [HttpGet("public-key")]
     public async Task<IActionResult> PublicKey(CancellationToken ct) =>
         Ok(new { publicKey = (await keys.GetAsync(ct)).PublicKey });
@@ -91,6 +94,18 @@ public class PushController(
         row.UserAgent = string.IsNullOrEmpty(userAgent) ? null : userAgent;
         row.FailureCount = 0;
         await db.SaveChangesAsync(ct);
+
+        // The device registering now always stays; the oldest of the others make room.
+        var surplus = await db.PushSubscriptions
+            .Where(s => s.UserId == currentUser.UserId && s.Id != row.Id)
+            .OrderByDescending(s => s.CreatedAt).ThenByDescending(s => s.Id)
+            .Skip(MaxSubscriptionsPerUser - 1)
+            .Select(s => s.Id)
+            .ToListAsync(ct);
+        if (surplus.Count > 0)
+        {
+            await db.PushSubscriptions.Where(s => surplus.Contains(s.Id)).ExecuteDeleteAsync(ct);
+        }
     }
 
     /// <summary>Removes this device. Only the caller's own rows match, and an unknown endpoint is not an error.</summary>
