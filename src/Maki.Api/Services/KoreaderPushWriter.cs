@@ -19,7 +19,9 @@ namespace Maki.Api.Services;
 /// A push for a document no file resolves to yet waits, and is tried again after an index pass adds
 /// document ids (<see cref="RetryWaiting"/>), so a copy taken from the library before the index got to
 /// it keeps its progress. Most waiting pushes are books from somewhere else that never resolve, so
-/// the wait is bounded in count and age, and the user's access is checked again before one is applied.
+/// the wait is bounded in count per user and in age, and the user's access is checked again before one
+/// is applied. A write that throws is tried once more and then waits the same way, since KOReader
+/// already had its 200 and will not send it again. Waiting pushes live in memory: a restart drops them.
 /// </para>
 /// </summary>
 public sealed class KoreaderPushWriter(
@@ -28,7 +30,10 @@ public sealed class KoreaderPushWriter(
     TimeProvider clock,
     ILogger<KoreaderPushWriter> logger) : BackgroundService
 {
+    /// <summary>Waiting pushes kept per user; past it the user's oldest goes.</summary>
     public const int MaxWaiting = 500;
+
+    private const int Attempts = 2;
     public static readonly TimeSpan WaitFor = TimeSpan.FromDays(7);
 
     public sealed record Push(
@@ -131,32 +136,50 @@ public sealed class KoreaderPushWriter(
             }
         }
 
-        try
+        for (var attempt = 1; ; attempt++)
         {
-            await using var scope = scopes.CreateAsyncScope();
-            var services = scope.ServiceProvider;
-            if (await services.GetRequiredService<OpdsAccessService>().ForUserAsync(push.UserId, ct) is not { } access)
+            try
             {
+                await WriteOnceAsync(key, push, ct);
                 return;
             }
-
-            services.GetRequiredService<DataScope>().SetUser(access.UserId, access.AllRootFolders);
-            var written = await services.GetRequiredService<KoreaderSyncService>().PushAsync(push.UserId,
-                push.Document, push.Progress, push.Percentage, push.Device, push.DeviceId, ct);
-            if (written is not null)
+            catch (Exception e) when (e is not OperationCanceledException)
             {
+                if (attempt < Attempts)
+                {
+                    logger.LogDebug(e, "KOReader progress push failed for user {UserId}; trying again", push.UserId);
+                    continue;
+                }
+
+                logger.LogWarning(e, "KOReader progress push failed for user {UserId}; kept for the next index pass",
+                    push.UserId);
+                Wait(key, push);
                 return;
             }
+        }
+    }
 
-            Wait(key, push);
-            var indexer = services.GetRequiredService<KoreaderDocumentIndexer>();
-            await KoreaderDocumentIndexJob.TriggerSoonAsync(schedulerFactory, logger,
-                () => indexer.AnyUnindexedAsync(ct));
-        }
-        catch (Exception e) when (e is not OperationCanceledException)
+    private async Task WriteOnceAsync(Key key, Push push, CancellationToken ct)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var services = scope.ServiceProvider;
+        if (await services.GetRequiredService<OpdsAccessService>().ForUserAsync(push.UserId, ct) is not { } access)
         {
-            logger.LogWarning(e, "KOReader progress push failed for user {UserId}", push.UserId);
+            return;
         }
+
+        services.GetRequiredService<DataScope>().SetUser(access.UserId, access.AllRootFolders);
+        var written = await services.GetRequiredService<KoreaderSyncService>().PushAsync(push.UserId,
+            push.Document, push.Progress, push.Percentage, push.Device, push.DeviceId, ct);
+        if (written is not null)
+        {
+            return;
+        }
+
+        Wait(key, push);
+        var indexer = services.GetRequiredService<KoreaderDocumentIndexer>();
+        await KoreaderDocumentIndexJob.TriggerSoonAsync(schedulerFactory, logger,
+            () => indexer.AnyUnindexedAsync(ct));
     }
 
     private void Wait(Key key, Push push)
@@ -170,9 +193,10 @@ public sealed class KoreaderPushWriter(
             }
 
             _waiting[key] = push;
-            if (_waiting.Count > MaxWaiting)
+            var mine = _waiting.Where(w => w.Key.UserId == key.UserId).ToList();
+            if (mine.Count > MaxWaiting)
             {
-                _waiting.Remove(_waiting.MinBy(w => w.Value.ReceivedAt).Key);
+                _waiting.Remove(mine.MinBy(w => w.Value.ReceivedAt).Key);
             }
         }
     }

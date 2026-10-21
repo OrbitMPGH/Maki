@@ -46,15 +46,17 @@ public sealed class KoreaderSyncTests : IDisposable
         _writer = Writer();
     }
 
-    /// <summary>The push writer over its own scopes, as the host runs it.</summary>
-    private KoreaderPushWriter Writer()
+    /// <summary>The push writer over its own scopes, as the host runs it. The first <paramref name="failures"/> writes throw.</summary>
+    private KoreaderPushWriter Writer(int failures = 0)
     {
         var services = new ServiceCollection();
         services.AddScoped<DataScope>();
         services.AddScoped(sp => new MakiDbContext(_db.Options, sp.GetRequiredService<DataScope>()));
         services.AddScoped(sp => Reader(sp.GetRequiredService<MakiDbContext>()));
-        services.AddScoped(sp => new KoreaderSyncService(sp.GetRequiredService<MakiDbContext>(),
-            sp.GetRequiredService<ReaderService>(), _cache));
+        services.AddScoped(sp => failures-- > 0
+            ? throw new InvalidOperationException("database is locked")
+            : new KoreaderSyncService(sp.GetRequiredService<MakiDbContext>(), sp.GetRequiredService<ReaderService>(),
+                _cache));
         services.AddScoped(sp => new OpdsAccessService(sp.GetRequiredService<MakiDbContext>(), TimeProvider.System));
         services.AddScoped(sp => new KoreaderDocumentIndexer(sp.GetRequiredService<MakiDbContext>(),
             NullLogger<KoreaderDocumentIndexer>.Instance));
@@ -524,6 +526,57 @@ public sealed class KoreaderSyncTests : IDisposable
 
         Assert.All(chapters.Values, id => Assert.Null(Progress(id)));
         Assert.Equal(0, _writer.WaitingCount);
+    }
+
+    [Fact]
+    public async Task A_write_that_throws_once_is_tried_again()
+    {
+        var writer = Writer(failures: 1);
+        var (path, chapters) = SeedVolume();
+        await IndexAsync();
+
+        writer.Enqueue(_user, KoreaderDigest.PartialMd5(path), "5", 0.8333, "Kobo", "kobo-1");
+        await writer.FlushAsync(default);
+
+        Assert.True(Progress(chapters[2m])!.Completed);
+        Assert.Equal(0, writer.WaitingCount);
+    }
+
+    [Fact]
+    public async Task A_write_that_keeps_throwing_waits_for_the_next_pass_instead_of_being_dropped()
+    {
+        var writer = Writer(failures: 2);
+        var (path, chapters) = SeedVolume();
+        await IndexAsync();
+
+        writer.Enqueue(_user, KoreaderDigest.PartialMd5(path), "5", 0.8333, "Kobo", "kobo-1");
+        await writer.FlushAsync(default);
+        Assert.Null(Progress(chapters[1m]));
+        Assert.Equal(1, writer.WaitingCount);
+
+        writer.RetryWaiting();
+        await writer.FlushAsync(default);
+
+        Assert.True(Progress(chapters[2m])!.Completed);
+    }
+
+    [Fact]
+    public async Task One_users_waiting_pushes_never_evict_another_users()
+    {
+        var other = _db.SeedUser("other", MakiPermission.UseOpds, allRootFolders: true);
+        _db.SetUserConfig(other, (SettingKeys.OpdsEnabled, "true"));
+        _writer.Enqueue(other, new string('b', 32), "1", 0.5, "Kobo", "kobo-2");
+        await _writer.FlushAsync(default);
+
+        for (var i = 0; i <= KoreaderPushWriter.MaxWaiting; i++)
+        {
+            _clock.Now += TimeSpan.FromSeconds(1);
+            _writer.Enqueue(_user, i.ToString("x32"), "1", 0.5, "Kobo", "kobo-1");
+        }
+
+        await _writer.FlushAsync(default);
+
+        Assert.Equal(KoreaderPushWriter.MaxWaiting + 1, _writer.WaitingCount);
     }
 
     [Fact]
