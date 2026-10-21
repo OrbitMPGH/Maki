@@ -13,6 +13,7 @@ export declare function PageHeader(props: {
   center?: ReactNode
   /** Smaller title for operational pages. */
   compact?: boolean
+  className?: string
 }): JSX.Element
 
 /** The house panel: bordered Paper, radius lg, padding lg, 1px card shadow. */
@@ -173,6 +174,8 @@ export declare const EngineCard: (props: {
   item: RecommendationItem
   inLibrarySeriesId: number | null
   onOpen: (item: RecommendationItem) => void
+  /** Cover of the library series this pick was seeded from. */
+  seedCoverUrl?: string | null
 }) => JSX.Element
 
 /** List-view card for an owned series. */
