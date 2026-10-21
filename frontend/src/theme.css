@@ -1624,46 +1624,63 @@ body {
   background: transparent;
 }
 
-/* Home's glance: labelled figures. It is a strip by default and a panel floating on the Continue
-   hero when the hero is wide enough to hold it beside the title. `.continue-lead` is the container
-   the hero and the glance are both children of, so the one rule at the bottom of this block is the
-   whole switch.
-
-   The strip is one grid: every figure of every row flows through the same columns, so the cells
-   line up whatever each row holds and nothing can run into its neighbour at any width. */
+/* Home's glance: labelled figures in one raised card, so the numbers read as a section and not as
+   text on the page. The card is a panel floating on the Continue hero when the hero is wide enough
+   to hold it beside the title, and full width above the hero otherwise (see `.continue-lead`).
+   Each row is its own container: five cells that do not fit a row wrap three to a line. */
 .home-glance {
-  container-type: inline-size;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
-  gap: 16px 20px;
-  padding: 16px 0;
-  border-block: 1px solid var(--border);
+  container: home-glance / inline-size;
 }
-.glance-row,
-.glance-figures {
-  display: contents;
+.glance-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: var(--radius-hero);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-card), 0 14px 32px -16px rgba(0, 0, 0, 0.7);
+}
+.glance-row {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
   color: inherit;
   text-decoration: none;
 }
+.glance-row + .glance-row {
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
 .glance-level {
   display: flex;
-  grid-column: 1 / span 2;
   align-items: center;
   gap: 10px;
-}
-/* Each row starts a line of its own. */
-.glance-figures:first-child > .glance-fig:first-child {
-  grid-column-start: 1;
 }
 .glance-level-text {
   display: grid;
   gap: 1px;
+}
+.glance-figures {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
 }
 .glance-fig {
   display: grid;
   align-content: start;
   gap: 4px;
   min-width: 0;
+  padding: 0 12px;
+  border-left: 1px solid var(--border-strong);
+}
+.glance-fig:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.glance-fig:last-child {
+  padding-right: 0;
 }
 .glance-fig-n {
   color: var(--ink-hi);
@@ -1681,6 +1698,45 @@ body {
   color: var(--ink-4);
   font-size: var(--type-micro);
   line-height: 1.25;
+}
+@container (max-width: 30rem) {
+  .glance-figures:has(> :nth-child(5)) {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 12px;
+  }
+  .glance-figures:has(> :nth-child(5)) > .glance-fig:nth-child(3n + 1) {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .glance-figures:has(> :nth-child(5)) > .glance-fig:nth-child(3n) {
+    padding-right: 0;
+  }
+}
+/* Full width with room to spare: the groups side by side, a hairline between. */
+@container home-glance (min-width: 60rem) {
+  .glance-card {
+    flex-direction: row;
+    gap: 0;
+  }
+  .glance-row {
+    flex: 1 1 0;
+    padding: 0 24px;
+  }
+  .glance-row:first-child {
+    padding-left: 0;
+  }
+  .glance-row:last-child {
+    padding-right: 0;
+  }
+  .glance-row.glance-progress {
+    flex-grow: 1.7;
+  }
+  .glance-row + .glance-row {
+    padding-top: 0;
+    border-top: 0;
+    border-left: 1px solid var(--border);
+  }
 }
 
 .continue-lead {
@@ -1702,64 +1758,15 @@ body {
   .continue-lead > .home-glance {
     grid-area: 1 / 1;
   }
-  /* The panel: rows one under another, each row's figures in hairline-separated cells. */
   .continue-lead > .home-glance {
     z-index: 2;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
     align-self: end;
     justify-self: end;
     width: var(--glance-w);
     margin: 0 clamp(20px, 2.6vw, 36px) clamp(20px, 2.6vw, 36px) 0;
-    padding: 16px;
-    border-block: 0;
-    border-radius: var(--radius-hero);
-    background: var(--surface-2);
+  }
+  .continue-lead > .home-glance .glance-card {
     box-shadow: var(--shadow-card), 0 18px 40px -18px rgba(0, 0, 0, 0.8);
-  }
-  .continue-lead > .home-glance .glance-row {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-  .continue-lead > .home-glance .glance-row + .glance-row {
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
-  }
-  .continue-lead > .home-glance .glance-level,
-  .continue-lead > .home-glance .glance-figures:first-child > .glance-fig:first-child {
-    grid-column: auto;
-  }
-  .continue-lead > .home-glance .glance-figures {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
-  }
-  /* Five cells do not fit the panel on one line: three to a row. */
-  .continue-lead > .home-glance .glance-figures:has(> :nth-child(5)) {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    row-gap: 12px;
-  }
-  .continue-lead > .home-glance .glance-fig {
-    padding: 0 12px;
-    border-left: 1px solid var(--border-strong);
-  }
-  .continue-lead > .home-glance .glance-fig:first-child {
-    padding-left: 0;
-    border-left: 0;
-  }
-  .continue-lead > .home-glance .glance-fig:last-child {
-    padding-right: 0;
-  }
-  .continue-lead > .home-glance .glance-figures:has(> :nth-child(5)) > .glance-fig:nth-child(3n + 1) {
-    padding-left: 0;
-    border-left: 0;
-  }
-  .continue-lead > .home-glance .glance-figures:has(> :nth-child(5)) > .glance-fig:nth-child(3n) {
-    padding-right: 0;
   }
   .continue-lead .continue-hero-body {
     padding-right: calc(var(--glance-w) + 2 * clamp(20px, 2.6vw, 36px));

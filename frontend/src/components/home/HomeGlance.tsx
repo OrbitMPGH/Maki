@@ -4,10 +4,10 @@ import type { Icon } from '@tabler/icons-react'
 import { useLingui } from '@lingui/react/macro'
 
 /**
- * Home's row of labelled figures. One component, two forms: a panel floating in the Continue hero
- * (`hosted`, wide screens) and a borderless hairline strip everywhere else. Which one is a CSS
- * container query on `.continue-lead`, so the markup is the same at every width. See `.home-glance`
- * in theme.css.
+ * Home's labelled figures in one raised card. Placed two ways: floating on the right of the Continue
+ * hero (`hosted`, wide screens) or full width above it, where the groups sit side by side when there
+ * is room. Which one is a CSS container query on `.continue-lead`, so the markup is the same at
+ * every width. See `.home-glance` in theme.css.
  */
 export function HomeGlance({ children, hosted }: { children: ReactNode; hosted?: boolean }) {
   const { t } = useLingui()
@@ -15,7 +15,7 @@ export function HomeGlance({ children, hosted }: { children: ReactNode; hosted?:
   return (
     <section className="home-glance" data-hosted={hosted || undefined} aria-labelledby={headingId}>
       <VisuallyHidden id={headingId}>{t`At a glance`}</VisuallyHidden>
-      {children}
+      <div className="glance-card">{children}</div>
     </section>
   )
 }
