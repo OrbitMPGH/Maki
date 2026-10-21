@@ -166,7 +166,7 @@ public sealed record CoReadTuning
     /// </para>
     ///
     /// <para>
-    /// Swept: 0.30 admits enough to replace nearly half the pool (overlap 0.552 against the channel
+    /// First sweep, on the smaller artifact (the default has since moved to 0.60, see below): 0.30 admits enough to replace nearly half the pool (overlap 0.552 against the channel
     /// being off) and drags median popularity rank down with it; 0.80 and above is barely
     /// distinguishable from off. 0.70 keeps overlap at 0.890 at the shipping weight, which is the
     /// "refine rather than replace" line the vote graph's cap was chosen on.
