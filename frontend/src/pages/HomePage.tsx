@@ -23,9 +23,9 @@ import {
   useProgressSummary,
   useHomeReading,
   useHomeRecentlyAdded,
-  useLibraryStats,
   useMetadataSettings,
   useQueue,
+  useReadingHeatmap,
   useRecommendations,
   useRootFolders,
   useSeries,
@@ -33,7 +33,6 @@ import {
   useUiSettings,
   isRailKey,
   railIdOf,
-  type HomeGlancePanel,
   type HomeLayoutKey,
   type HomeReadingItem,
   type HomeSection,
@@ -54,8 +53,7 @@ import { ContinueRail } from '../components/home/ContinueRail'
 import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
 import { AnimeResumeExpandModal, AnimeResumeRail } from '../components/home/AnimeResumeRail'
-import { GlanceFigures, GlanceRow, HomeGlance } from '../components/home/HomeGlance'
-import { ProgressCard } from '../components/home/ProgressCard'
+import { ReadingWeeks } from '../components/home/ReadingWeeks'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
 import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -64,8 +62,6 @@ import { RailSkeleton } from '../components/ui/RailSkeleton'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { isQueueActive } from '../components/ui/status'
-import { formatNumber } from '../format'
-import { obtainedCount } from '../lib/chapterCounts'
 
 /** How many catalogue picks each borrowed Discover rail shows before "Find more". */
 const RAIL_SIZE = 20
@@ -90,7 +86,6 @@ export default function HomePage() {
   const { data: rootFolders } = useRootFolders()
   const { data: ui, isLoading: uiLoading, isError: uiFailed } = useUiSettings()
   const readTracking = useReadTracking()
-  const stats = useLibraryStats()
   const { editing, enter: enterEditing, exit: exitEditing } = useLayoutEditMode()
   const { can } = useAuth()
 
@@ -117,8 +112,6 @@ export default function HomePage() {
   // section (see `reconcileLayout`). A disabled rail must not fetch just because the setting that
   // disables it has not arrived yet.
   const on = (key: HomeSectionKey) => !editing && Boolean(ui) && (sectionOf(key)?.enabled ?? false)
-  const panelOn = (panel: HomeGlancePanel) =>
-    on('glance') && (sectionOf('glance')?.panels?.find((p) => p.key === panel)?.enabled ?? false)
   const heroOn = (key: HomeSectionKey) => sectionOf(key)?.hero ?? HOME_HERO_DEFAULTS[key] ?? false
 
   const needsReading = on('continue') || on('jumpback')
@@ -137,7 +130,9 @@ export default function HomePage() {
   // An empty request object is deliberate: it hits the same server-side cache slot as Discover's
   // default Recommended tab, so this rail can never thrash that shared pool with different seeds.
   const recommendations = useRecommendations({}, needsDiscover && on('recommended'))
-  const { data: progress } = useProgressSummary(undefined, panelOn('progress'))
+  // Fetched in the layout editor too, which says why the glance would be hidden.
+  const { data: progress } = useProgressSummary(undefined, on('glance') || editing)
+  const { data: heatmap } = useReadingHeatmap(undefined, on('glance') && Boolean(progress?.enabled))
 
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -148,23 +143,6 @@ export default function HomePage() {
   const jumpBackIn = reading?.jumpBackIn ?? []
   const downloading = (queue?.items ?? []).filter((q) => isQueueActive(q.status))
 
-  // What is left to read, off the library list that is already loaded.
-  //
-  // `readChapterCount` null means "never tracked" rather than "nothing read", so those series are
-  // left out of every figure here: counting them would report a whole untracked library as unread.
-  const waiting = useMemo(() => {
-    let unread = 0
-    let started = 0
-    let finished = 0
-    for (const s of series ?? []) {
-      const have = obtainedCount(s)
-      if (s.readChapterCount == null || have === 0) continue
-      unread += Math.max(0, have - s.readChapterCount)
-      if (s.readChapterCount >= have) finished++
-      else if (s.readChapterCount > 0) started++
-    }
-    return { unread, started, finished }
-  }, [series])
   const popular = rails?.find((r) => r.key === 'popular')?.items ?? []
   const youMightLike = recommendations.data?.pages[0]?.similar?.slice(0, RAIL_SIZE) ?? []
 
@@ -186,18 +164,17 @@ export default function HomePage() {
             rails={homeRails}
             railLimit={RAIL_SIZE}
             unavailable={(key) =>
-              !discoverAvailable &&
+              key === 'glance'
+                ? !readTracking
+                  ? msg`Needs read tracking: use the reader or connect Kavita.`
+                  : progress && !progress.enabled
+                    ? msg`Hidden while progression is switched off.`
+                    : null
+                : !discoverAvailable &&
               (key === 'recommended' || key === 'popular' || key === 'following' ||
                 (isRailKey(key) && homeRails.find((r) => r.id === railIdOf(key))?.spec.source !== 'library'))
                 ? msg`Needs the local MangaBaka database`
                 : null
-            }
-            panelHint={(_section, panel) =>
-              panel === 'toread' && !readTracking
-                ? msg`Needs read tracking: use the reader or connect Kavita.`
-                : panel === 'progress' && progress && !progress.enabled
-                  ? msg`Hidden while progression is switched off.`
-                  : null
             }
             onExit={exitEditing}
           />
@@ -249,43 +226,6 @@ export default function HomePage() {
     )
   }
 
-  // The panels that are just labelled numbers, one row of the glance each. Switched on and off
-  // separately; the glance itself is a panel in the Continue hero or a strip, see `HomeGlance`.
-  const glanceRows: Partial<Record<string, React.ReactNode>> = {
-    stats: panelOn('stats') && (
-      <GlanceRow key="stats">
-        <GlanceFigures
-          figures={[
-            { label: t`Series`, value: formatNumber(stats.total) },
-            { label: t`Monitored`, value: formatNumber(stats.monitored) },
-            { label: t`On disk`, value: formatNumber(stats.downloaded), tone: 'ok' },
-            { label: t`Missing`, value: formatNumber(stats.missing), tone: 'warn' },
-          ]}
-        />
-      </GlanceRow>
-    ),
-
-    // Nothing at all when the user has switched progression off: the section stays in their layout
-    // list, so turning it back on restores its position.
-    progress: panelOn('progress') && progress?.enabled && <ProgressCard key="progress" summary={progress} />,
-
-    // Only ever with tracking on: without it every downloaded chapter reads as unread, and the
-    // row would tell a Kavita-less library that it has 12,000 chapters waiting.
-    toread: panelOn('toread') && readTracking && (
-      <GlanceRow key="toread">
-        <GlanceFigures
-          figures={[
-            { label: t`Unread`, value: formatNumber(waiting.unread) },
-            { label: t`Started`, value: formatNumber(waiting.started) },
-            { label: t`Finished`, value: formatNumber(waiting.finished), tone: 'ok' },
-          ]}
-        />
-      </GlanceRow>
-    ),
-  }
-
-  const glanceShown = (sectionOf('glance')?.panels ?? []).filter((p) => p.enabled && glanceRows[p.key])
-
   const visible = layout.filter(sectionVisible)
 
   // The glance rides in the Continue hero when it sits right next to it in the saved order and that
@@ -329,11 +269,10 @@ export default function HomePage() {
         ]
   const wantsHero = neighbours.some((k) => k === 'continue' || k === 'jumpback')
   const glanceHost = readingLoading && wantsHero ? 'pending' : (neighbours.find((k) => k && heroReady(k)) ?? null)
+  // Without read tracking every day would read as missed, so the glance waits for it.
   const glanceNode =
-    glanceShown.length > 0 ? (
-      <HomeGlance hosted={glanceHost !== null && glanceHost !== 'pending'}>
-        {glanceShown.map((p) => glanceRows[p.key])}
-      </HomeGlance>
+    readTracking && progress?.enabled && heatmap ? (
+      <ReadingWeeks days={heatmap} summary={progress} hosted={glanceHost !== null && glanceHost !== 'pending'} />
     ) : null
 
   // One node per section key. Rendered in the user's order below; a section with nothing to show

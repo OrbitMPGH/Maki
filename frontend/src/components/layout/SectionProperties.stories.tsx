@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, waitFor, within } from 'storybook/test'
-import { HOME_GLANCE_PANELS } from '../../api/hooks'
 import { customRails, homePage } from '../../../.storybook/mocks/home'
 import { HOME_SECTION_DEFS } from '../home/homeSectionDefs'
+import type { SectionDef } from './pageLayout'
 import { SectionProperties } from './SectionProperties'
 
 const meta = {
@@ -85,16 +85,27 @@ export const HiddenSection: Story = {
   },
 }
 
-export const GlancePanels: Story = {
+// No shipping section has panels any more; the editor still supports them, so these use a made-up one.
+const PANEL_KEYS = ['stats', 'progress', 'toread']
+const panelledDef: SectionDef = {
+  ...HOME_SECTION_DEFS.glance,
+  panels: [
+    { key: 'stats', label: { id: 'story.stats', message: 'Library counts' } },
+    { key: 'progress', label: { id: 'story.progress', message: 'Your progress' } },
+    { key: 'toread', label: { id: 'story.toread', message: 'Waiting to read' } },
+  ],
+}
+
+export const Panels: Story = {
   args: {
     section: {
       key: 'glance',
       enabled: true,
       hero: null,
-      panels: HOME_GLANCE_PANELS.map((key) => ({ key, enabled: key !== 'toread' })),
+      panels: PANEL_KEYS.map((key) => ({ key, enabled: key !== 'toread' })),
     },
     label: 'At a glance',
-    def: HOME_SECTION_DEFS.glance,
+    def: panelledDef,
     panelHint: (_section, panel) => (panel === 'toread' ? { id: 'story.hint', message: 'Needs read tracking: use the reader or connect Kavita.' } : null),
   },
   play: async ({ args, canvasElement, userEvent }) => {
@@ -113,9 +124,9 @@ export const GlancePanels: Story = {
 
 export const AllPanelsOff: Story = {
   args: {
-    section: { key: 'glance', enabled: true, hero: null, panels: HOME_GLANCE_PANELS.map((key) => ({ key, enabled: false })) },
+    section: { key: 'glance', enabled: true, hero: null, panels: PANEL_KEYS.map((key) => ({ key, enabled: false })) },
     label: 'At a glance',
-    def: HOME_SECTION_DEFS.glance,
+    def: panelledDef,
   },
   play: async ({ canvasElement }) => {
     const panel = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'At a glance' })

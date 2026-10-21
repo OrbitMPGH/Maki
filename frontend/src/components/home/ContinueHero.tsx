@@ -13,7 +13,8 @@ import { ReadingRail } from './ReadingRail'
 
 /**
  * The lead for a Home reading section: one hero card for the series in focus, and a Next up strip
- * of posters for the rest of the section under it. Each poster opens its chapter in the reader,
+ * of posters for the rest of the section in a tray joined to the card's foot, so the two read as
+ * one object rather than a hero and one more rail. Each poster opens its chapter in the reader,
  * like every other reading card.
  *
  * The backdrop is `HeroBackdrop`, the same recipe the series page and Discover use.
@@ -29,7 +30,7 @@ export function ContinueHero({
 }: {
   items: HomeReadingItem[]
   rail: ReadingRailKind
-  /** Home's glance, hosted here: a panel on the hero's right on wide screens, a strip above it otherwise. */
+  /** Home's glance (`ReadingWeeks`), drawn inside the hero card: a column on its right when wide, a row under the actions otherwise. */
   glance?: ReactNode
 }) {
   const [lead, ...rest] = items
@@ -37,31 +38,30 @@ export function ContinueHero({
   if (!lead) return null
 
   return (
-    <>
-      <div className="continue-lead">
-        <ContinueHeroCard key={lead.chapterId} item={lead} rail={rail} />
-        {glance}
-      </div>
+    <div className="continue-lead">
+      <ContinueHeroCard key={lead.chapterId} item={lead} rail={rail} glance={glance} />
       {rest.length > 0 && (
-        <>
+        <div className="continue-tray">
           <SectionHeader
             icon={IconPlayerTrackNext}
             title={rail === 'jumpback' ? t`Next to jump back in` : t`Next up`}
             count={rest.length}
           />
           <ReadingRail items={rest} rail={rail} />
-        </>
+        </div>
       )}
-    </>
+    </div>
   )
 }
 
 const ContinueHeroCard = memo(function ContinueHeroCard({
   item,
   rail,
+  glance,
 }: {
   item: HomeReadingItem
   rail: ReadingRailKind
+  glance?: ReactNode
 }) {
   const { t } = useLingui()
   // Kavita-imported rows carry no slice length, so there is no honest fraction to draw.
@@ -148,6 +148,8 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
             <ReadingCardMenu item={item} rail={rail} className="continue-hero-menu" variant="default" size={36} />
           </div>
         </div>
+        {/* Last in the DOM so Resume stays the first tab stop; the grid places it. */}
+        {glance}
       </div>
     </div>
   )

@@ -14,7 +14,7 @@ const DAYS_IN_WEEK = 7
  * history: a relative scale makes a quiet week look identical to a busy one, which is the one thing
  * a contribution grid exists to distinguish.
  */
-function level(chapters: number, seconds: number): number {
+export function heatLevel(chapters: number, seconds: number): number {
   if (chapters === 0 && seconds === 0) return 0
   if (chapters >= 20) return 4
   if (chapters >= 8) return 3
@@ -22,7 +22,7 @@ function level(chapters: number, seconds: number): number {
   return 1
 }
 
-const SHADES = [
+export const HEAT_SHADES = [
   'var(--surface-2, rgba(128,128,128,0.14))',
   'color-mix(in srgb, var(--brand) 25%, transparent)',
   'color-mix(in srgb, var(--brand) 45%, transparent)',
@@ -107,7 +107,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
                           width: 11,
                           height: 11,
                           borderRadius: 'var(--radius-2xs)',
-                          background: SHADES[0],
+                          background: HEAT_SHADES[0],
                           opacity: 0.4,
                         }}
                       />
@@ -132,7 +132,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
                           width: 11,
                           height: 11,
                           borderRadius: 'var(--radius-2xs)',
-                          background: SHADES[level(cell.chapters, cell.seconds)],
+                          background: HEAT_SHADES[heatLevel(cell.chapters, cell.seconds)],
                         }}
                       />
                     </Tooltip>
@@ -147,7 +147,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
         <Text size="xs" c="var(--ink-3)">
           <Trans>Less</Trans>
         </Text>
-        {SHADES.map((shade) => (
+        {HEAT_SHADES.map((shade) => (
           <Box key={shade} style={{ width: 11, height: 11, borderRadius: 'var(--radius-2xs)', background: shade }} />
         ))}
         <Text size="xs" c="var(--ink-3)">

@@ -3,7 +3,7 @@ import {
   IconBell,
   IconBook,
   IconBookmarks,
-  IconChartBar,
+  IconCalendarStats,
   IconDeviceTv,
   IconDownload,
   IconFlame,
@@ -11,8 +11,6 @@ import {
   IconSparkles,
 } from '@tabler/icons-react'
 import {
-  HOME_GLANCE_PANELS,
-  HOME_GLANCE_PANEL_LABELS,
   HOME_HERO_DEFAULTS,
   HOME_SECTIONS,
   HOME_SECTION_LABELS,
@@ -23,16 +21,15 @@ import type { LayoutConfig, SectionRegistry } from '../layout/pageLayout'
 export const HOME_LAYOUT_CONFIG: LayoutConfig = {
   canonical: HOME_SECTIONS,
   heroDefaults: HOME_HERO_DEFAULTS,
-  panels: { glance: HOME_GLANCE_PANELS },
+  panels: {},
   railAnchor: null,
 }
 
 export const HOME_SECTION_DEFS: SectionRegistry = {
   glance: {
-    icon: IconChartBar,
+    icon: IconCalendarStats,
     label: HOME_SECTION_LABELS.glance,
-    description: msg`A row of figures: what is in your library, your reading progress and what is waiting to be read.`,
-    panels: HOME_GLANCE_PANELS.map((key) => ({ key, label: HOME_GLANCE_PANEL_LABELS[key] })),
+    description: msg`Your last five weeks of reading: the days you read, your streak, chapters and time read.`,
   },
   downloading: {
     icon: IconDownload,

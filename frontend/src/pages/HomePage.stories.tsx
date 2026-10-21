@@ -78,7 +78,7 @@ export const CustomRails: Story = {
 
 export const GlanceRidesTheHero: Story = {
   play: async ({ canvas, canvasElement }) => {
-    const glance = await canvas.findByRole('region', { name: 'At a glance' })
+    const glance = await canvas.findByRole('region', { name: 'Last 5 weeks' })
     await waitFor(() => expect(glance).toHaveAttribute('data-hosted'))
     await expect(canvasElement.querySelector('.continue-lead')).toContainElement(glance)
   },
@@ -93,16 +93,19 @@ export const GlanceLastInOrder: Story = {
     ),
   },
   play: async ({ canvas }) => {
-    const glance = await canvas.findByRole('region', { name: 'At a glance' })
+    const glance = await canvas.findByRole('region', { name: 'Last 5 weeks' })
     await expect(glance).not.toHaveAttribute('data-hosted')
   },
 }
 
-export const GlancePanelsPartlyOff: Story = {
-  parameters: { msw: homePage(layout({ panelsOff: ['progress', 'toread'] })) },
+export const GlanceWithStreaksOff: Story = {
+  parameters: {
+    msw: homePage(http.get(api('/progress/summary'), () => HttpResponse.json({ ...progressSummary, showStreaks: false }))),
+  },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Monitored')).toBeVisible()
-    await expect(canvas.queryByText('Unread')).toBeNull()
+    const glance = await canvas.findByRole('region', { name: 'Last 5 weeks' })
+    await expect(within(glance).getByText('Days read')).toBeVisible()
+    await expect(within(glance).queryByLabelText(/day streak/)).toBeNull()
   },
 }
 
@@ -111,8 +114,8 @@ export const ProgressionSwitchedOff: Story = {
     msw: homePage(http.get(api('/progress/summary'), () => HttpResponse.json({ ...progressSummary, enabled: false }))),
   },
   play: async ({ canvas }) => {
-    await canvas.findByText('Monitored')
-    await expect(canvas.queryByText(/day streak/i)).toBeNull()
+    await canvas.findByRole('heading', { level: 3, name: 'Lanterns Over Kasumi' })
+    await expect(canvas.queryByRole('region', { name: 'Last 5 weeks' })).toBeNull()
   },
 }
 
@@ -125,7 +128,7 @@ export const NoReadTracking: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/connect kavita/i)).toBeVisible()
-    await expect(canvas.queryByText('Unread')).toBeNull()
+    await expect(canvas.queryByRole('region', { name: 'Last 5 weeks' })).toBeNull()
   },
 }
 

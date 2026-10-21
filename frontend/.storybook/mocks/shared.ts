@@ -1,7 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import {
   DISCOVER_SECTIONS,
-  HOME_GLANCE_PANELS,
   HOME_HERO_DEFAULTS,
   HOME_SECTIONS,
   type HealthIssue,
@@ -269,7 +268,7 @@ export const uiSettings: UiSettings = {
       key,
       enabled: true,
       hero: key in HOME_HERO_DEFAULTS ? HOME_HERO_DEFAULTS[key] : null,
-      panels: key === 'glance' ? HOME_GLANCE_PANELS.map((p) => ({ key: p, enabled: true })) : null,
+      panels: null,
     })),
   },
   seriesSections: { related: true, similar: true },

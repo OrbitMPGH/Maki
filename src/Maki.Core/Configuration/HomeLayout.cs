@@ -6,8 +6,9 @@ namespace Maki.Core.Configuration;
 public static class HomeSections
 {
     /// <summary>
-    /// The row of labelled numbers at the top: library counts, the reader's progression and what is
-    /// waiting to be read, each a panel of its own (<see cref="HomeGlancePanels"/>).
+    /// The reader's last five weeks: a day grid, the streak and the window's totals, riding in the
+    /// Continue hero when it sits next to it. One card with no panels; it used to hold three
+    /// (<see cref="HomeGlancePanels"/>).
     /// </summary>
     public const string Glance = "glance";
 
@@ -55,9 +56,9 @@ public static class HomeSections
 }
 
 /// <summary>
-/// The panels of <see cref="HomeSections.Glance"/>. The same strings were top-level section keys
-/// before the three shared one section, which is what lets <see cref="HomeLayoutSpec.MigrateGlance"/>
-/// carry a stored layout over as a relabel.
+/// The three panels <see cref="HomeSections.Glance"/> held until it became one card, and before that
+/// three top-level section keys. Kept only so <see cref="HomeLayoutSpec.MigrateGlance"/> and
+/// <see cref="HomeLayoutSpec.MigrateGlancePanels"/> can read layouts stored by either build.
 /// </summary>
 public static class HomeGlancePanels
 {
@@ -100,9 +101,9 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Se
             [HomeSections.ContinueReading] = true,
             [HomeSections.JumpBackIn] = false,
         },
-        new Dictionary<string, IReadOnlyList<string>> { [HomeSections.Glance] = HomeGlancePanels.All },
+        new Dictionary<string, IReadOnlyList<string>>(),
         RailAnchor: null,
-        Upgrade: stored => MigrateHeroFirst(MigrateGlance(stored)),
+        Upgrade: stored => MigrateHeroFirst(MigrateGlancePanels(MigrateGlance(stored))),
         DefaultOff: HomeSections.DefaultOff);
 
     /// <summary>Every known section, in shipping order, all on.</summary>
@@ -164,9 +165,21 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Se
     }
 
     /// <summary>
+    /// A glance stored with every panel switched off showed nothing, so its owner did not want it:
+    /// it comes through as the section switched off. Any other panel flags are dropped by the merge,
+    /// since the section no longer has panels.
+    /// </summary>
+    public static IReadOnlyList<PageSection> MigrateGlancePanels(IReadOnlyList<PageSection> stored) =>
+        stored
+            .Select(s => s.Key == HomeSections.Glance && s.Panels is { Count: > 0 } panels && panels.All(p => !p.Enabled)
+                ? s with { Enabled = false }
+                : s)
+            .ToList();
+
+    /// <summary>
     /// Moves a layout still in the previous default order onto the current shipping order. That
     /// order is the one nobody chose, so only the switches the owner flipped (a section off, a hero
-    /// off, a glance panel off) are theirs, and those travel with each section. A layout in any other
+    /// off) are theirs, and those travel with each section. A layout in any other
     /// order is the owner's own arrangement and is left alone. Custom rails stay after the built-in
     /// sections.
     /// </summary>

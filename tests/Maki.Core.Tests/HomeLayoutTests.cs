@@ -32,15 +32,12 @@ public class HomeLayoutTests
     }
 
     [Fact]
-    public void Default_glance_holds_every_panel_on()
+    public void Default_glance_is_on_with_no_panels()
     {
-        var spec = HomeLayoutSpec.Default;
+        var glance = HomeLayoutSpec.Default.Sections!.Single(s => s.Key == HomeSections.Glance);
 
-        var glance = spec.Sections!.Single(s => s.Key == HomeSections.Glance);
-        Assert.Equal(HomeSections.Glance, glance.Key);
         Assert.True(glance.Enabled);
-        Assert.Equal(HomeGlancePanels.All, glance.Panels!.Select(p => p.Key));
-        Assert.All(glance.Panels!, p => Assert.True(p.Enabled));
+        Assert.Null(glance.Panels);
     }
 
     [Fact]
@@ -265,21 +262,48 @@ public class HomeLayoutTests
     [Fact]
     public void MergePanels_drops_unknown_panels_and_collapses_duplicates()
     {
+        var merged = PageLayouts.MergePanels(
+            [new PagePanel("from-the-future"), new PagePanel("a", Enabled: false), new PagePanel("a", Enabled: true)],
+            ["a", "b"]);
+
+        Assert.Equal(["a", "b"], merged.Select(p => p.Key));
+        Assert.False(merged[0].Enabled);
+        Assert.True(merged[1].Enabled);
+    }
+
+    [Fact]
+    public void Stored_glance_panels_are_dropped()
+    {
         var stored = new HomeLayoutSpec(true, [
             new PageSection(HomeSections.Glance, Panels:
             [
-                new PagePanel("from-the-future"),
                 new PagePanel(HomeGlancePanels.Stats, Enabled: false),
-                new PagePanel(HomeGlancePanels.Stats, Enabled: true),
+                new PagePanel(HomeGlancePanels.Progress),
             ]),
         ]);
 
-        var merged = stored.Merge();
+        var glance = stored.Merge().Sections!.Single(s => s.Key == HomeSections.Glance);
 
-        var panels = merged.Sections!.Single(s => s.Key == HomeSections.Glance).Panels!;
-        Assert.DoesNotContain(panels, p => p.Key == "from-the-future");
-        Assert.Equal(HomeGlancePanels.All, panels.Select(p => p.Key));
-        Assert.False(panels.Single(p => p.Key == HomeGlancePanels.Stats).Enabled);
+        Assert.True(glance.Enabled);
+        Assert.Null(glance.Panels);
+    }
+
+    [Fact]
+    public void A_glance_stored_with_every_panel_off_comes_through_switched_off()
+    {
+        var stored = new HomeLayoutSpec(true, [
+            new PageSection(HomeSections.Glance, Panels:
+            [
+                new PagePanel(HomeGlancePanels.Stats, Enabled: false),
+                new PagePanel(HomeGlancePanels.Progress, Enabled: false),
+                new PagePanel(HomeGlancePanels.ToRead, Enabled: false),
+            ]),
+        ]);
+
+        var glance = stored.Merge().Sections!.Single(s => s.Key == HomeSections.Glance);
+
+        Assert.False(glance.Enabled);
+        Assert.Null(glance.Panels);
     }
 
     // --- MigrateGlance -------------------------------------------------------------------------
@@ -305,15 +329,11 @@ public class HomeLayoutTests
 
         var glance = merged.Sections![1];
         Assert.True(glance.Enabled); // stats and progress were on
-        Assert.Equal(
-            [HomeGlancePanels.ToRead, HomeGlancePanels.Stats, HomeGlancePanels.Progress],
-            glance.Panels!.Select(p => p.Key));
-        Assert.False(glance.Panels!.Single(p => p.Key == HomeGlancePanels.ToRead).Enabled);
-        Assert.True(glance.Panels!.Single(p => p.Key == HomeGlancePanels.Stats).Enabled);
+        Assert.Null(glance.Panels);
     }
 
     [Fact]
-    public void Migration_with_all_legacy_panels_off_turns_the_section_off_and_all_panels_on()
+    public void Migration_with_all_legacy_panels_off_turns_the_section_off()
     {
         var stored = new HomeLayoutSpec(true, [
             new PageSection(HomeGlancePanels.Stats, Enabled: false),
@@ -325,11 +345,10 @@ public class HomeLayoutTests
 
         var glance = merged.Sections!.Single(s => s.Key == HomeSections.Glance);
         Assert.False(glance.Enabled);
-        Assert.All(glance.Panels!, p => Assert.True(p.Enabled));
     }
 
     [Fact]
-    public void Migration_appends_missing_panels_on_when_only_one_legacy_key_was_stored()
+    public void Migration_turns_the_section_on_when_only_one_legacy_key_was_stored()
     {
         var stored = new HomeLayoutSpec(true, [
             new PageSection(HomeGlancePanels.Stats, Enabled: true),
@@ -339,10 +358,6 @@ public class HomeLayoutTests
 
         var glance = merged.Sections!.Single(s => s.Key == HomeSections.Glance);
         Assert.True(glance.Enabled);
-        Assert.Equal(HomeGlancePanels.All, glance.Panels!.Select(p => p.Key));
-        Assert.True(glance.Panels!.Single(p => p.Key == HomeGlancePanels.Stats).Enabled);
-        Assert.True(glance.Panels!.Single(p => p.Key == HomeGlancePanels.Progress).Enabled);
-        Assert.True(glance.Panels!.Single(p => p.Key == HomeGlancePanels.ToRead).Enabled);
     }
 
     [Fact]
@@ -351,7 +366,7 @@ public class HomeLayoutTests
         // Should not happen in practice (a glance section implies migration already ran), but the
         // rule is explicit: a real glance section is never overwritten by leftovers beside it.
         var stored = new HomeLayoutSpec(true, [
-            new PageSection(HomeSections.Glance, Panels: [new PagePanel(HomeGlancePanels.Stats, Enabled: false)]),
+            new PageSection(HomeSections.Glance, Enabled: false),
             new PageSection(HomeGlancePanels.Progress),
         ]);
 
@@ -359,8 +374,7 @@ public class HomeLayoutTests
 
         Assert.Single(merged.Sections!, s => s.Key == HomeSections.Glance);
         Assert.DoesNotContain(merged.Sections!, s => s.Key == HomeGlancePanels.Progress);
-        var glance = merged.Sections!.Single(s => s.Key == HomeSections.Glance);
-        Assert.False(glance.Panels!.Single(p => p.Key == HomeGlancePanels.Stats).Enabled);
+        Assert.False(merged.Sections!.Single(s => s.Key == HomeSections.Glance).Enabled);
     }
 
     private static List<PageSection> PreviousDefault() =>

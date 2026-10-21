@@ -21,8 +21,11 @@ export const Default: Story = {
 }
 
 export const NextUpStrip: Story = {
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('heading', { level: 2, name: 'Next up' })).toBeVisible()
+  play: async ({ canvas, canvasElement }) => {
+    const heading = await canvas.findByRole('heading', { level: 2, name: 'Next up' })
+    await expect(heading).toBeVisible()
+    // Joined to the hero as its lower deck, not a rail of its own after it.
+    await expect(canvasElement.querySelector('.continue-lead > .continue-tray')).toContainElement(heading)
     // The lead is the hero, so the strip holds everyone else and each poster opens the reader.
     await expect(canvas.queryByRole('link', { name: /Ashen Crown Regression/ })).not.toBeNull()
     await expect(canvas.getAllByRole('link', { name: /Lanterns Over Kasumi/ }).length).toBeGreaterThan(0)

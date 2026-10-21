@@ -100,6 +100,11 @@ msgstr "{0, plural, other {#개 챕터 연결 변경}}"
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, other {#개 챕터 선택됨}}"
 
+#. placeholder {0}: weeks.weekChapters
+#: src/components/home/ReadingWeeks.tsx
+msgid "{0, plural, one {# chapter this week} other {# chapters this week}}"
+msgstr ""
+
 #. placeholder {0}: goal.target
 #. placeholder {0}: removed.length
 #. placeholder {0}: selected.size
@@ -632,6 +637,10 @@ msgstr "{chapterCount, plural, other {챕터 #개}}"
 msgid "{chapterMinChip}–{chapterMaxChip} ch."
 msgstr "{chapterMinChip}–{chapterMaxChip}화"
 
+#: src/components/home/ReadingWeeks.tsx
+msgid "{chapters, plural, one {{when}: # chapter} other {{when}: # chapters}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 msgid "{chapters} chapters"
 msgstr ""
@@ -806,6 +815,10 @@ msgstr "{coverFileCount, plural, other {포스터: 파일 #개, {coverBytesLabel
 
 #: src/components/import/MihonSummary.tsx
 msgid "{created, plural, one {# series added} other {# series added}}"
+msgstr ""
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
 msgstr ""
 
 #: src/pages/stats/ActivityFeed.tsx
@@ -1083,8 +1096,8 @@ msgstr "{intoLevel} / {levelSpan} XP, 레벨 {nextLevel}까지"
 
 #: src/components/home/ProgressCard.tsx
 #, fuzzy
-msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
-msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP, 레벨 {nextLevel}까지"
+#~ msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
+#~ msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP, 레벨 {nextLevel}까지"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1186,6 +1199,10 @@ msgstr "{lineLabel} · 클릭하여 접기"
 #, fuzzy
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 msgstr "{linkingTotal, plural, other {시리즈 #개의 소스를 찾고 파일을 연결함}}"
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "{longestStreak, plural, one {Today counts. Best: # day} other {Today counts. Best: # days}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -2216,6 +2233,10 @@ msgstr "{weekday}요일 {hourLabel}: {minutes}분"
 msgid "{weight} total"
 msgstr "{weight} 합계"
 
+#: src/components/home/ReadingWeeks.tsx
+msgid "{when}: nothing read"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{width}px · {bpp} bpp"
@@ -2639,8 +2660,8 @@ msgstr "서재의 세부 주제마다 한 행씩 표시합니다."
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "A row of figures: what is in your library, your reading progress and what is waiting to be read."
-msgstr "라이브러리의 작품, 읽기 진행률, 읽을 작품을 숫자로 보여주는 행입니다."
+#~ msgid "A row of figures: what is in your library, your reading progress and what is waiting to be read."
+#~ msgstr "라이브러리의 작품, 읽기 진행률, 읽을 작품을 숫자로 보여주는 행입니다."
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -2825,8 +2846,8 @@ msgid "achievement, badge, level, xp, streak, goal, leaderboard, gamification, t
 msgstr "업적, 배지, 레벨, XP, 연속 기록, 목표, 순위표, 게임화, 시간대"
 
 #: src/components/home/ProgressCard.tsx
-msgid "Achievements"
-msgstr "업적"
+#~ msgid "Achievements"
+#~ msgstr "업적"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4024,8 +4045,8 @@ msgid "Best quality first compares a source's tier before its measured quality, 
 msgstr "최고 품질 우선은 소스의 측정 품질보다 티어를 먼저 비교하며, 시리즈의 업그레이드 프로필이 티어에 매긴 순서를 따릅니다."
 
 #: src/components/home/ProgressCard.tsx
-msgid "Best streak"
-msgstr "최장 연속 기록"
+#~ msgid "Best streak"
+#~ msgstr "최장 연속 기록"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -4733,6 +4754,7 @@ msgstr "챕터"
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/home/ReadingWeeks.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -4809,8 +4831,8 @@ msgid "Chapters per page"
 msgstr "페이지당 챕터 수"
 
 #: src/components/home/ProgressCard.tsx
-msgid "Chapters read"
-msgstr "읽은 챕터"
+#~ msgid "Chapters read"
+#~ msgstr "읽은 챕터"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -5463,6 +5485,7 @@ msgid "Continue from the anime"
 msgstr "애니메이션 다음부터 읽기"
 
 #: src/api/hooks.ts
+#: src/components/home/ContinueHero.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6089,9 +6112,13 @@ msgstr "대시 (-)"
 msgid "Day by day"
 msgstr "날짜별"
 
+#: src/components/home/ReadingWeeks.tsx
+msgid "day streak"
+msgstr ""
+
 #: src/components/home/ProgressCard.tsx
-msgid "Day streak"
-msgstr "연속 기록 일수"
+#~ msgid "Day streak"
+#~ msgstr "연속 기록 일수"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -6107,6 +6134,10 @@ msgstr "읽은 뒤 경과 일수"
 #, fuzzy
 msgid "Days left"
 msgstr "남은 일수"
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "Days read"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 msgid "Decide later"
@@ -7763,7 +7794,6 @@ msgstr "완독률"
 msgid "Finish setup"
 msgstr "설정 완료"
 
-#: src/pages/HomePage.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -9249,6 +9279,7 @@ msgid "Judge the scans, not the site"
 msgstr "사이트가 아니라 스캔을 평가하세요"
 
 #: src/api/hooks.ts
+#: src/components/home/ContinueHero.tsx
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Jump back in"
@@ -9546,6 +9577,10 @@ msgstr "자동 가져오기 크기 제한보다 큽니다"
 msgid "last {lastSync} · next {nextSync}"
 msgstr "마지막 {lastSync} · 다음 {nextSync}"
 
+#: src/components/home/ReadingWeeks.tsx
+msgid "Last 5 weeks"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Last chapter {last}."
 msgstr ""
@@ -9814,7 +9849,6 @@ msgstr "레벨"
 msgid "Level {currentLevel}"
 msgstr "레벨 {currentLevel}"
 
-#: src/components/home/ProgressCard.tsx
 #: src/components/UserMenu.tsx
 #, fuzzy
 msgid "Level {levelNumber}"
@@ -9851,8 +9885,8 @@ msgstr "라이브러리"
 
 #: src/api/hooks.ts
 #, fuzzy
-msgid "Library counts"
-msgstr "라이브러리 통계"
+#~ msgid "Library counts"
+#~ msgstr "라이브러리 통계"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10773,7 +10807,6 @@ msgstr "누락됨"
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
-#: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Missing"
@@ -10838,7 +10871,6 @@ msgstr "모니터링: {mode}"
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
-#: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -12664,7 +12696,6 @@ msgstr "켬"
 msgid "On another file"
 msgstr "다른 파일에 연결됨"
 
-#: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "On disk"
@@ -13979,6 +14010,10 @@ msgstr "{nextChapterLabel} 읽기"
 msgid "Read a chapter in Maki's reader and it starts tracking. An admin can also connect Kavita in Settings. Downloads and library changes are tracked either way."
 msgstr "Maki 리더에서 챕터를 읽으면 추적을 시작합니다. 관리자는 설정에서 Kavita도 연결할 수 있습니다. 다운로드와 라이브러리 변경은 어느 쪽이든 추적합니다."
 
+#: src/components/home/ReadingWeeks.tsx
+msgid "Read a chapter to start a streak"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Read a few chapters and this fills in."
@@ -14048,6 +14083,12 @@ msgstr "다음 챕터 읽기"
 msgid "Read now"
 msgstr "지금 읽기"
 
+#. placeholder {0}: weeks.daysRead
+#. placeholder {1}: weeks.daysSoFar
+#: src/components/home/ReadingWeeks.tsx
+msgid "Read on {0} of the last {1} days"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Read slowly over a long span"
@@ -14061,6 +14102,10 @@ msgstr ""
 #, fuzzy
 msgid "Read to"
 msgstr "읽기 끝"
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "Read today to keep it going"
+msgstr ""
 
 #: src/lib/documentTitle.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
@@ -16382,7 +16427,6 @@ msgstr "MangaBaka가 이 작품에 연결한 속편, 프리퀄, 스핀오프 및
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
-#: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -17369,7 +17413,6 @@ msgstr "시작 페이지 및 홈"
 msgid "Start reading at ch. {startReadingAt}."
 msgstr "챕터 {startReadingAt}에서 읽기 시작."
 
-#: src/pages/HomePage.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Started"
@@ -18579,6 +18622,7 @@ msgstr "이 작품만"
 msgid "This upgrade was already reverted"
 msgstr "이 업그레이드는 이미 되돌려졌습니다"
 
+#: src/components/home/ReadingWeeks.tsx
 #: src/components/releases/UpcomingView.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -18669,7 +18713,7 @@ msgstr "시간"
 msgid "Time range"
 msgstr "기간"
 
-#: src/components/home/ProgressCard.tsx
+#: src/components/home/ReadingWeeks.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time read"
@@ -19270,7 +19314,6 @@ msgstr "먼저 모든 시리즈에서 고정을 해제하세요"
 msgid "Unrated"
 msgstr "평가 안 됨"
 
-#: src/pages/HomePage.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Unread"
@@ -19982,8 +20025,8 @@ msgstr "먼저 MangaBaka 스냅샷이 다운로드되기를 기다리는 중입�
 
 #: src/api/hooks.ts
 #, fuzzy
-msgid "Waiting to read"
-msgstr "읽기 대기 중"
+#~ msgid "Waiting to read"
+#~ msgstr "읽기 대기 중"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20616,6 +20659,10 @@ msgstr "가장 바쁜 달"
 msgid "Your folder is left alone. New chapters go into a folder Maki names."
 msgstr "기존 폴더는 그대로 둡니다. 새 챕터는 Maki가 이름을 지정한 폴더에 저장됩니다."
 
+#: src/components/home/homeSectionDefs.ts
+msgid "Your last five weeks of reading: the days you read, your streak, chapters and time read."
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Your last request was rejected: {resolutionNote}"
@@ -20679,8 +20726,8 @@ msgstr "내 우선순위 순서"
 
 #: src/api/hooks.ts
 #, fuzzy
-msgid "Your progress"
-msgstr "내 진행 상황"
+#~ msgid "Your progress"
+#~ msgstr "내 진행 상황"
 
 #: src/pages/LibraryPage.tsx
 msgid "Your rating, score, how much you've read"

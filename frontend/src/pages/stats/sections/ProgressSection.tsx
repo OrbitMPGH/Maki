@@ -27,7 +27,7 @@ import {
 import { StatsInsight } from '../StatsSection'
 import type { StatsSectionProps } from './types'
 
-const GOAL_LABELS: Record<ReadingGoal['period'], MessageDescriptor> = {
+export const GOAL_LABELS: Record<ReadingGoal['period'], MessageDescriptor> = {
   Day: msg`Today`,
   Week: msg`This week`,
   Month: msg`This month`,
@@ -35,7 +35,7 @@ const GOAL_LABELS: Record<ReadingGoal['period'], MessageDescriptor> = {
 }
 
 /** Target count, pluralised by metric: "12 / 50 chapters", "1 / 30 minutes". */
-function metricProgress(metric: ReadingGoal['metric'], target: number): string {
+export function metricProgress(metric: ReadingGoal['metric'], target: number): string {
   switch (metric) {
     case 'Chapters':
       return plural(target, { one: '# chapter', other: '# chapters' })

@@ -159,7 +159,7 @@ public sealed class SettingsHomeRailsTests : IDisposable
     }
 
     [Fact]
-    public async Task SetUi_persists_hero_flags_and_panel_order()
+    public async Task SetUi_persists_hero_flags_and_drops_glance_panels()
     {
         var alice = _db.SeedUser("alice");
         var requested = new SettingsController.UiSettings("library", new HomeLayoutSpec(true,
@@ -178,10 +178,8 @@ public sealed class SettingsHomeRailsTests : IDisposable
 
         Assert.False(reread.HomeLayout.Sections!.Single(s => s.Key == HomeSections.ContinueReading).Hero);
         var glance = reread.HomeLayout.Sections!.Single(s => s.Key == HomeSections.Glance);
-        Assert.Equal(
-            [HomeGlancePanels.ToRead, HomeGlancePanels.Progress, HomeGlancePanels.Stats],
-            glance.Panels!.Select(p => p.Key));
-        Assert.False(glance.Panels!.Single(p => p.Key == HomeGlancePanels.Progress).Enabled);
+        Assert.True(glance.Enabled);
+        Assert.Null(glance.Panels);
     }
 
     [Fact]
@@ -202,9 +200,6 @@ public sealed class SettingsHomeRailsTests : IDisposable
 
         var glance = ui.HomeLayout.Sections!.Single(s => s.Key == HomeSections.Glance);
         Assert.True(glance.Enabled);
-        Assert.True(glance.Panels!.Single(p => p.Key == HomeGlancePanels.Stats).Enabled);
-        // progress/toread were never in the legacy blob: appended as missing panels, on.
-        Assert.True(glance.Panels!.Single(p => p.Key == HomeGlancePanels.Progress).Enabled);
-        Assert.True(glance.Panels!.Single(p => p.Key == HomeGlancePanels.ToRead).Enabled);
+        Assert.Null(glance.Panels);
     }
 }

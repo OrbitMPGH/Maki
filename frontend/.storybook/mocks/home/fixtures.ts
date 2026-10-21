@@ -1,4 +1,4 @@
-import { HOME_GLANCE_PANELS, HOME_HERO_DEFAULTS, HOME_SECTIONS } from '../../../src/api/hooks'
+import { HOME_HERO_DEFAULTS, HOME_SECTIONS } from '../../../src/api/hooks'
 import type {
   HomeReadingItem,
   HomeRecentSeriesItem,
@@ -387,7 +387,7 @@ export const progressSummary: ProgressSummary = {
   earned: 14,
   total: 38,
   recent: [],
-  goals: [],
+  goals: [{ id: 1, period: 'Week', metric: 'Chapters', target: 20, progress: 14 }],
 }
 
 export const customRails: CustomRail[] = [
@@ -443,21 +443,19 @@ export interface HomeUiOptions {
   rails?: number[]
   /** Overrides for the hero switch of the reading sections. */
   hero?: { continue?: boolean; jumpback?: boolean }
-  /** Glance panels to switch off. */
-  panelsOff?: string[]
   /** A different section order; unlisted keys keep their shipping order after these. */
   order?: string[]
 }
 
 export function homeUi(options: HomeUiOptions = {}): UiSettings {
-  const { off = [], rails = [], hero = {}, panelsOff = [], order = [] } = options
+  const { off = [], rails = [], hero = {}, order = [] } = options
   const keys = [...order, ...HOME_SECTIONS.filter((k) => !order.includes(k))]
   const sections = [
     ...keys.map((key) => ({
       key,
       enabled: !off.includes(key),
       hero: key in HOME_HERO_DEFAULTS ? (hero[key as 'continue' | 'jumpback'] ?? HOME_HERO_DEFAULTS[key]) : null,
-      panels: key === 'glance' ? HOME_GLANCE_PANELS.map((p) => ({ key: p, enabled: !panelsOff.includes(p) })) : null,
+      panels: null,
     })),
     ...rails.map((id) => ({ key: `rail:${id}`, enabled: true, hero: null, panels: null })),
   ] as HomeSection[]

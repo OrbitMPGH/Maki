@@ -1017,17 +1017,6 @@ export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
   popular: msg`Currently popular`,
 }
 
-/** The panels of the glance section, in the order they ship. Mirrors `HomeGlancePanels.All`. */
-export const HOME_GLANCE_PANELS = ['stats', 'progress', 'toread'] as const
-
-export type HomeGlancePanel = (typeof HOME_GLANCE_PANELS)[number]
-
-export const HOME_GLANCE_PANEL_LABELS: Record<HomeGlancePanel, MessageDescriptor> = {
-  stats: msg`Library counts`,
-  progress: msg`Your progress`,
-  toread: msg`Waiting to read`,
-}
-
 /** Sections that can lead with a hero, and whether they do by default. Mirrors the server. */
 export const HOME_HERO_DEFAULTS: Record<string, boolean> = { continue: true, jumpback: false }
 

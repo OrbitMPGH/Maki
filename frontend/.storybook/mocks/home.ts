@@ -2,6 +2,7 @@ import { http, HttpResponse, type HttpHandler } from 'msw'
 import type { CustomRail, CustomRailSpec } from '../../src/api/customRails'
 import type { HomeReadingResponse, UiSettings } from '../../src/api/hooks'
 import { api } from './api'
+import { heatmapDays } from './insights/stats'
 import {
   animeResumeAllPage,
   animeResumePage,
@@ -41,6 +42,7 @@ export const homeHandlers: HttpHandler[] = [
     return HttpResponse.json(limit > 100 ? animeResumeAllPage : animeResumePage)
   }),
   http.get(api('/progress/summary'), () => HttpResponse.json(progressSummary)),
+  http.get(api('/progress/heatmap'), () => HttpResponse.json(heatmapDays)),
 
   http.get(api('/rails'), ({ request }) => {
     const placement = new URL(request.url).searchParams.get('placement')

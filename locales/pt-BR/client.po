@@ -100,6 +100,11 @@ msgstr "{0, plural, one {# capítulo reassociado} many {# capítulos reassociado
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, one {# capítulo selecionado} many {# capítulos selecionados} other {# capítulos selecionados}}"
 
+#. placeholder {0}: weeks.weekChapters
+#: src/components/home/ReadingWeeks.tsx
+msgid "{0, plural, one {# chapter this week} other {# chapters this week}}"
+msgstr ""
+
 #. placeholder {0}: goal.target
 #. placeholder {0}: removed.length
 #. placeholder {0}: selected.size
@@ -632,6 +637,10 @@ msgstr "{chapterCount, plural, one {# capítulo} many {# capítulos}other {# cap
 msgid "{chapterMinChip}–{chapterMaxChip} ch."
 msgstr "{chapterMinChip}–{chapterMaxChip} cap."
 
+#: src/components/home/ReadingWeeks.tsx
+msgid "{chapters, plural, one {{when}: # chapter} other {{when}: # chapters}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 msgid "{chapters} chapters"
 msgstr ""
@@ -806,6 +815,10 @@ msgstr "{coverFileCount, plural, one {Capas: # arquivo, {coverBytesLabel}} many 
 
 #: src/components/import/MihonSummary.tsx
 msgid "{created, plural, one {# series added} other {# series added}}"
+msgstr ""
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
 msgstr ""
 
 #: src/pages/stats/ActivityFeed.tsx
@@ -1083,8 +1096,8 @@ msgstr "{intoLevel} / {levelSpan} XP até o nível {nextLevel}"
 
 #: src/components/home/ProgressCard.tsx
 #, fuzzy
-msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
-msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP até o nível {nextLevel}"
+#~ msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
+#~ msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP até o nível {nextLevel}"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1186,6 +1199,10 @@ msgstr "{lineLabel} · clique para recolher"
 #, fuzzy
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 msgstr "{linkingTotal, plural, one {Fontes encontradas e arquivos vinculados para # série} many {Fontes encontradas e arquivos vinculados para # séries} other {Fontes encontradas e arquivos vinculados para # séries}}"
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "{longestStreak, plural, one {Today counts. Best: # day} other {Today counts. Best: # days}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -2217,6 +2234,10 @@ msgstr "{weekday} {hourLabel}: {minutes} min"
 msgid "{weight} total"
 msgstr "{weight} no total"
 
+#: src/components/home/ReadingWeeks.tsx
+msgid "{when}: nothing read"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{width}px · {bpp} bpp"
@@ -2640,8 +2661,8 @@ msgstr "Um trilho para cada tema menor da sua biblioteca."
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "A row of figures: what is in your library, your reading progress and what is waiting to be read."
-msgstr "Um resumo de números: o que há na biblioteca, seu progresso de leitura e o que está esperando para ser lido."
+#~ msgid "A row of figures: what is in your library, your reading progress and what is waiting to be read."
+#~ msgstr "Um resumo de números: o que há na biblioteca, seu progresso de leitura e o que está esperando para ser lido."
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -2826,8 +2847,8 @@ msgid "achievement, badge, level, xp, streak, goal, leaderboard, gamification, t
 msgstr "conquista, selo, nível, xp, sequência, objetivo, classificação, gamificação, fuso horário, timezone"
 
 #: src/components/home/ProgressCard.tsx
-msgid "Achievements"
-msgstr "Conquistas"
+#~ msgid "Achievements"
+#~ msgstr "Conquistas"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4025,8 +4046,8 @@ msgid "Best quality first compares a source's tier before its measured quality, 
 msgstr "Melhor qualidade primeiro compara o nível de uma fonte antes da qualidade medida, na ordem em que o perfil de upgrade da série classifica os níveis."
 
 #: src/components/home/ProgressCard.tsx
-msgid "Best streak"
-msgstr "Melhor sequência"
+#~ msgid "Best streak"
+#~ msgstr "Melhor sequência"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -4734,6 +4755,7 @@ msgstr "capítulos"
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/home/ReadingWeeks.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -4810,8 +4832,8 @@ msgid "Chapters per page"
 msgstr "Capítulos por página"
 
 #: src/components/home/ProgressCard.tsx
-msgid "Chapters read"
-msgstr "Capítulos lidos"
+#~ msgid "Chapters read"
+#~ msgstr "Capítulos lidos"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -5464,6 +5486,7 @@ msgid "Continue from the anime"
 msgstr "Continuar a partir do anime"
 
 #: src/api/hooks.ts
+#: src/components/home/ContinueHero.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6090,9 +6113,13 @@ msgstr "Travessão (-)"
 msgid "Day by day"
 msgstr "Dia a dia"
 
+#: src/components/home/ReadingWeeks.tsx
+msgid "day streak"
+msgstr ""
+
 #: src/components/home/ProgressCard.tsx
-msgid "Day streak"
-msgstr "Sequência de dias"
+#~ msgid "Day streak"
+#~ msgstr "Sequência de dias"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -6108,6 +6135,10 @@ msgstr "Dias após a leitura"
 #, fuzzy
 msgid "Days left"
 msgstr "Dias restantes"
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "Days read"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 msgid "Decide later"
@@ -7764,7 +7795,6 @@ msgstr "Taxa de conclusão"
 msgid "Finish setup"
 msgstr "Concluir configuração"
 
-#: src/pages/HomePage.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -9250,6 +9280,7 @@ msgid "Judge the scans, not the site"
 msgstr "Avalie as digitalizações, não o site"
 
 #: src/api/hooks.ts
+#: src/components/home/ContinueHero.tsx
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Jump back in"
@@ -9547,6 +9578,10 @@ msgstr "Maior que o limite de tamanho da obtenção automática"
 msgid "last {lastSync} · next {nextSync}"
 msgstr "último {lastSync} · próximo {nextSync}"
 
+#: src/components/home/ReadingWeeks.tsx
+msgid "Last 5 weeks"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Last chapter {last}."
 msgstr ""
@@ -9815,7 +9850,6 @@ msgstr "Nível"
 msgid "Level {currentLevel}"
 msgstr "Nível {currentLevel}"
 
-#: src/components/home/ProgressCard.tsx
 #: src/components/UserMenu.tsx
 #, fuzzy
 msgid "Level {levelNumber}"
@@ -9852,8 +9886,8 @@ msgstr "Biblioteca"
 
 #: src/api/hooks.ts
 #, fuzzy
-msgid "Library counts"
-msgstr "Contagem da biblioteca"
+#~ msgid "Library counts"
+#~ msgstr "Contagem da biblioteca"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10774,7 +10808,6 @@ msgstr "ausente"
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
-#: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Missing"
@@ -10839,7 +10872,6 @@ msgstr "Monitoramento: {mode}"
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
-#: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -12665,7 +12697,6 @@ msgstr "Ativado"
 msgid "On another file"
 msgstr "Em outro arquivo"
 
-#: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "On disk"
@@ -13980,6 +14011,10 @@ msgstr "Ler {nextChapterLabel}"
 msgid "Read a chapter in Maki's reader and it starts tracking. An admin can also connect Kavita in Settings. Downloads and library changes are tracked either way."
 msgstr "Leia um capítulo no leitor do Maki e ele começa a ser registrado. Um administrador também pode conectar o Kavita em Configurações. Downloads e mudanças na biblioteca são registrados de qualquer forma."
 
+#: src/components/home/ReadingWeeks.tsx
+msgid "Read a chapter to start a streak"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Read a few chapters and this fills in."
@@ -14049,6 +14084,12 @@ msgstr "Ler o próximo capítulo"
 msgid "Read now"
 msgstr "Ler agora"
 
+#. placeholder {0}: weeks.daysRead
+#. placeholder {1}: weeks.daysSoFar
+#: src/components/home/ReadingWeeks.tsx
+msgid "Read on {0} of the last {1} days"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Read slowly over a long span"
@@ -14062,6 +14103,10 @@ msgstr ""
 #, fuzzy
 msgid "Read to"
 msgstr "Lido até"
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "Read today to keep it going"
+msgstr ""
 
 #: src/lib/documentTitle.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
@@ -16383,7 +16428,6 @@ msgstr "Sequências, prequels, spin-offs e histórias paralelas que o MangaBaka 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
-#: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -17370,7 +17414,6 @@ msgstr "Página inicial e Início"
 msgid "Start reading at ch. {startReadingAt}."
 msgstr "Começar a ler no cap. {startReadingAt}."
 
-#: src/pages/HomePage.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Started"
@@ -18580,6 +18623,7 @@ msgstr "somente este título"
 msgid "This upgrade was already reverted"
 msgstr "Este upgrade já foi revertido"
 
+#: src/components/home/ReadingWeeks.tsx
 #: src/components/releases/UpcomingView.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -18670,7 +18714,7 @@ msgstr "Tempo"
 msgid "Time range"
 msgstr "Período"
 
-#: src/components/home/ProgressCard.tsx
+#: src/components/home/ReadingWeeks.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time read"
@@ -19271,7 +19315,6 @@ msgstr "Desafixe-o de todas as séries primeiro"
 msgid "Unrated"
 msgstr "Sem classificação"
 
-#: src/pages/HomePage.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Unread"
@@ -19983,8 +20026,8 @@ msgstr "Aguardando o download do snapshot do MangaBaka primeiro."
 
 #: src/api/hooks.ts
 #, fuzzy
-msgid "Waiting to read"
-msgstr "Aguardando leitura"
+#~ msgid "Waiting to read"
+#~ msgstr "Aguardando leitura"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20617,6 +20660,10 @@ msgstr "Seu mês mais movimentado"
 msgid "Your folder is left alone. New chapters go into a folder Maki names."
 msgstr "Sua pasta não será alterada. Os novos capítulos vão para uma pasta nomeada pelo Maki."
 
+#: src/components/home/homeSectionDefs.ts
+msgid "Your last five weeks of reading: the days you read, your streak, chapters and time read."
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Your last request was rejected: {resolutionNote}"
@@ -20680,8 +20727,8 @@ msgstr "Sua ordem de prioridade"
 
 #: src/api/hooks.ts
 #, fuzzy
-msgid "Your progress"
-msgstr "Seu progresso"
+#~ msgid "Your progress"
+#~ msgstr "Seu progresso"
 
 #: src/pages/LibraryPage.tsx
 msgid "Your rating, score, how much you've read"

@@ -43,6 +43,7 @@ const dateAndTime = cached((l) => new Intl.DateTimeFormat(l, { dateStyle: 'mediu
 const timeOnly = cached((l) => new Intl.DateTimeFormat(l, { timeStyle: 'short' }))
 const shortWeekday = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'short' }))
 const longWeekday = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'long' }))
+const narrowWeekday = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'narrow' }))
 const hourOnly = cached((l) => new Intl.DateTimeFormat(l, { hour: 'numeric', minute: '2-digit' }))
 const weekdayDate = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'short', day: 'numeric', month: 'short' }))
 const weekdayDateTime = cached(
@@ -155,11 +156,11 @@ export function monthName(month: number, style: 'short' | 'long' = 'long'): stri
 }
 
 /** Weekday name with Monday as 0, the order the stats endpoints send weekdays in. */
-export function weekdayName(index: number, style: 'short' | 'long' = 'long'): string {
+export function weekdayName(index: number, style: 'narrow' | 'short' | 'long' = 'long'): string {
   if (!Number.isInteger(index) || index < 0 || index > 6) return ''
   // 1 January 2001 was a Monday.
   const date = new Date(2001, 0, 1 + index)
-  return (style === 'short' ? shortWeekday() : longWeekday()).format(date)
+  return (style === 'narrow' ? narrowWeekday() : style === 'short' ? shortWeekday() : longWeekday()).format(date)
 }
 
 /** An hour of the day, 0-23, as a clock time: "22:00", or "10:00 PM" where that is the convention. */
