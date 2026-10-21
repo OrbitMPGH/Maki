@@ -22,7 +22,8 @@ const HEARTBEAT_MS = 60_000
  * double-counts it. Failures stay silent: losing a position must never interrupt reading.
  *
  * `complete` rides along on every write once set, so a completion never depends on the server
- * deriving it from the page index. The returned `settle` hands off to a caller about to write
+ * deriving it from the page index. `false` is sent too, to stop the server deriving one; leave it
+ * undefined to let it. The returned `settle` hands off to a caller about to write
  * the same chapter itself: it drops the pending write and waits out the one in flight, so two
  * completing writes never race each other into a double completion.
  */
@@ -31,7 +32,7 @@ export function useReaderProgress(
   seriesId: number | undefined,
   page: number,
   pageCount: number,
-  complete: boolean,
+  complete: boolean | undefined,
   enabled: boolean,
   clock: ReadingClock,
   onFlushed?: () => void,
@@ -62,7 +63,7 @@ export function useReaderProgress(
   // or after the final flush and regress the persisted position. Chaining serializes them, so
   // `settle()` draining `inflight.current` waits for every send still queued, in order.
   const send = useCallback(
-    (id: number, series: number, at: number, done: boolean) => {
+    (id: number, series: number, at: number, done: boolean | undefined) => {
       // Seconds are pulled from the clock now, at the moment this send is decided, not once its
       // turn in the chain comes up: waiting would let time banked while queued behind an earlier
       // request bleed into this send instead of a later one.
@@ -70,7 +71,7 @@ export function useReaderProgress(
       const count = latest.current.pageCount
       if (opened.current?.chapterId === id) opened.current.written = true
       inflight.current = inflight.current
-        .then(() => saveProgress(id, series, at, done || undefined, seconds, count))
+        .then(() => saveProgress(id, series, at, done, seconds, count))
         .catch(() => {})
     },
     [clock],
@@ -121,7 +122,7 @@ export function useReaderProgress(
       const seconds = clock.take()
       if (opened.current?.chapterId === id) opened.current.written = true
       const run = () =>
-        flushProgress(id, series, at, done || undefined, seconds, count)
+        flushProgress(id, series, at, done, seconds, count)
           .then(() => {
             // Only now has the write committed, so a refetch started any earlier could read the old state.
             flushedHandler.current?.()

@@ -189,8 +189,10 @@ export default function ReaderPage() {
   const pageNumber = shownTo > page ? `${page + 1}-${shownTo + 1}` : `${page + 1}`
   // The first half of a wide last page is not the end of the chapter: it completes once the second
   // half is up, so until then the position on record stops a page short.
-  const recordedTo =
-    splitting && half === 0 && wide[shownTo] && shownTo >= pageCount - 1 ? Math.max(0, shownTo - 1) : shownTo
+  const heldBack = splitting && half === 0 && wide[shownTo] && shownTo >= pageCount - 1
+  const recordedTo = heldBack ? Math.max(0, shownTo - 1) : shownTo
+  // A one-page chapter has no page before it, so the hold has to be sent as `completed: false`.
+  const holdCompletion = heldBack && recordedTo >= pageCount - 1
 
   const { data: bookmarks } = useBookmarks(chapterId)
   const toggleBookmark = useToggleBookmark(chapterId)
@@ -254,7 +256,7 @@ export default function ReaderPage() {
     manifest?.seriesId,
     finished ? pageCount - 1 : recordedTo,
     pageCount,
-    finished,
+    finished || (holdCompletion ? false : undefined),
     tracking,
     clock,
     onFlushed,
@@ -377,7 +379,8 @@ export default function ReaderPage() {
         // lands, and settle-then-flush stays in order.
         const flushed = (async () => {
           await settleProgress()
-          await flushProgress(leftId, seriesId, at, done || undefined, seconds, pageCount).catch(() => {})
+          const completed = done || (holdCompletion ? false : undefined)
+          await flushProgress(leftId, seriesId, at, completed, seconds, pageCount).catch(() => {})
           invalidateProgress(seriesId)
         })()
         await Promise.race([flushed, new Promise((resolve) => setTimeout(resolve, FLUSH_WAIT_MS))])
@@ -395,6 +398,7 @@ export default function ReaderPage() {
       manifest,
       navigate,
       recordedTo,
+      holdCompletion,
       pageCount,
       queryClient,
       invalidateProgress,
@@ -733,7 +737,7 @@ export default function ReaderPage() {
   // The manifest's read count is a snapshot from when the chapter opened, so finishing this one on
   // screen is added here, on the same condition the server uses. Incognito writes nothing.
   const readingCounted =
-    !incognito && !manifest.completed && (finished || recordedTo >= manifest.pageCount - 1)
+    !incognito && !manifest.completed && (finished || (recordedTo >= manifest.pageCount - 1 && !holdCompletion))
 
   return (
     <div className="reader-root" style={{ background: prefs.background }}>
@@ -744,7 +748,9 @@ export default function ReaderPage() {
         onSeek={seekToPage}
         onPrevChapter={() => void goToChapter(manifest.previousChapterId, false)}
         // Skipping ahead is not finishing: only leaving from the last page counts as read.
-        onNextChapter={() => void goToChapter(manifest.nextChapterId, recordedTo >= manifest.pageCount - 1)}
+        onNextChapter={() =>
+          void goToChapter(manifest.nextChapterId, recordedTo >= manifest.pageCount - 1 && !holdCompletion)
+        }
         prefs={view}
         onPrefs={edit}
         autoLayout={autoVertical}
