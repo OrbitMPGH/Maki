@@ -3230,7 +3230,6 @@ export interface ReleaseDto {
   seeders: number | null
   leechers: number | null
   protocol: string
-  magnetUrl: string | null
   infoUrl: string | null
 }
 

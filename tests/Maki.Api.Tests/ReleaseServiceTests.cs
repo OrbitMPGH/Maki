@@ -419,6 +419,55 @@ public class ReleaseServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_prowlarr_proxy_magnet_stays_out_of_the_response_and_the_grab_hashes_the_fetched_file()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        await ConfigureProwlarr();
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://qbt.test");
+        const string download = "http://prowlarr.test/1/download?apikey=SECRETKEY&link=abc&file=x";
+        const string proxyMagnet = "http://prowlarr.test/1/download?apikey=SECRETKEY&link=mag&file=x";
+        var http = new RoutedFactory(
+            "[{\"guid\":\"http://nyaa.test/1\",\"title\":\"Berserk v01\",\"size\":1000,\"indexer\":\"Nyaa\","
+            + $"\"seeders\":5,\"leechers\":0,\"protocol\":\"torrent\",\"magnetUrl\":\"{proxyMagnet}\","
+            + $"\"downloadUrl\":\"{download}\",\"infoHash\":\"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\",\"infoUrl\":null}}]",
+            TorrentFile);
+        var (controller, torrents, db) = ControllerOver(http);
+        using var _ = db;
+
+        var search = await controller.Search(seriesId, "berserk", torrents, CancellationToken.None);
+
+        var body = Wire(Assert.IsType<OkObjectResult>(search).Value);
+        Assert.DoesNotContain("SECRETKEY", body);
+        Assert.DoesNotContain("apikey", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("magnetUrl", body, StringComparison.OrdinalIgnoreCase);
+
+        var row = Assert.Single(Assert.IsType<ReleaseSearchResponse>(((OkObjectResult)search).Value).Releases);
+        var grab = await controller.Grab(
+            new ReleaseController.GrabRequest(seriesId, new ReleaseController.GrabRelease(row.Guid)),
+            new TestCurrentUser(1), db, CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(grab);
+        Assert.Equal([download], http.Fetched);
+        Assert.Empty(_client.AddedLinks);
+        Assert.Equal("b0d01790a719342ff42de4fd924dea04a8286157", Assert.Single(_client.AddedFiles).Hash);
+    }
+
+    [Fact]
+    public async Task A_magnet_without_a_btih_falls_back_to_the_indexers_infohash()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://qbt.test");
+        var release = new ReleaseDto(
+            "g", "Berserk v01", 1000, "Nyaa", 10, 1, "torrent", DownloadUrl: null, MagnetUrl: "magnet:?dn=x",
+            InfoUrl: null, InfoHash: "0123456789ABCDEF0123456789ABCDEF01234567");
+
+        var item = await Build().GrabAsync(seriesId, release, DownloadOrigin.Manual, null, null);
+
+        Assert.Equal("0123456789abcdef0123456789abcdef01234567",
+            System.Text.Json.JsonSerializer.Deserialize<ReleaseInfo>(item.ReleaseInfoJson!)!.TorrentHash);
+    }
+
+    [Fact]
     public async Task Jackett_search_response_keeps_the_proxy_key_out_of_the_guid_and_the_link()
     {
         var seriesId = _db.SeedSeries("Berserk");

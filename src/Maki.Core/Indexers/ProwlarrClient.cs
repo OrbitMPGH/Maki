@@ -69,12 +69,21 @@ public class ProwlarrClient(IHttpClientFactory httpClientFactory) : ReleaseIndex
             throw new IndexerSearchException("Prowlarr answered with something other than search results", ex);
         }
 
-        return releases
-            .Select(r => new IndexerRelease(
-                r.Guid, r.Title, r.Size, r.Indexer ?? string.Empty, r.Seeders, r.Leechers,
-                r.DownloadUrl, r.MagnetUrl, string.IsNullOrWhiteSpace(r.InfoHash) ? null : r.InfoHash,
-                r.Protocol ?? string.Empty, r.InfoUrl))
-            .ToList();
+        return releases.Select(ToRelease).ToList();
+    }
+
+    /// <summary>
+    /// Prowlarr replaces every magnet with its own proxy link, which carries its API key in the query.
+    /// Only a real <c>magnet:</c> stays a magnet; a proxy link is a download URL, fetched and hashed like one.
+    /// </summary>
+    private static IndexerRelease ToRelease(ProwlarrRelease r)
+    {
+        var magnet = r.MagnetUrl?.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase) == true ? r.MagnetUrl : null;
+        var download = r.DownloadUrl ?? (magnet is null && !string.IsNullOrWhiteSpace(r.MagnetUrl) ? r.MagnetUrl : null);
+        return new IndexerRelease(
+            r.Guid, r.Title, r.Size, r.Indexer ?? string.Empty, r.Seeders, r.Leechers,
+            download, magnet, string.IsNullOrWhiteSpace(r.InfoHash) ? null : r.InfoHash,
+            r.Protocol ?? string.Empty, r.InfoUrl);
     }
 
     /// <summary>All indexers configured in Prowlarr, including their category capabilities.</summary>

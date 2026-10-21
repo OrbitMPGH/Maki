@@ -684,7 +684,6 @@ export const releases: ReleaseRowDto[] = [
     seeders: 58,
     leechers: 3,
     protocol: 'torrent',
-    magnetUrl: 'magnet:?xt=urn:btih:0000',
     infoUrl: 'https://indexer.example/view/1',
     parsed: {
       span: { volumeStart: 1, volumeEnd: 5, chapters: [], wholeSeries: false },
@@ -707,7 +706,6 @@ export const releases: ReleaseRowDto[] = [
     seeders: 4,
     leechers: 0,
     protocol: 'torrent',
-    magnetUrl: null,
     infoUrl: null,
     parsed: {
       span: { volumeStart: null, volumeEnd: null, chapters: [], wholeSeries: true },
@@ -730,7 +728,6 @@ export const releases: ReleaseRowDto[] = [
     seeders: null,
     leechers: null,
     protocol: 'usenet',
-    magnetUrl: null,
     infoUrl: 'https://indexer.example/view/3',
     parsed: {
       span: { volumeStart: 1, volumeEnd: 1, chapters: [], wholeSeries: false },
