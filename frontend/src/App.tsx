@@ -1,7 +1,6 @@
 import {
   ActionIcon,
   AppShell,
-  Badge,
   Box,
   Burger,
   Center,
@@ -34,6 +33,7 @@ import { SetupAccountPage } from './pages/SetupAccountPage'
 import { CommandPaletteModal, CommandPaletteTrigger } from './components/CommandPalette'
 import { IconBrandMark } from './components/IconBrandMark'
 import { NotificationBell } from './components/NotificationBell'
+import { CountIndicator } from './components/ui/CountIndicator'
 import MetadataDumpProgress from './components/MetadataDumpProgress'
 import SetupWizard from './components/SetupWizard'
 import SidebarFooter from './components/layout/SidebarFooter'
@@ -163,38 +163,17 @@ function ActivityButton() {
       }
       withArrow
     >
-      <ActionIcon
-        component={Link}
-        to="/activity"
-        variant="subtle"
-        color="var(--neutral)"
-        aria-label={count > 0 ? t`Activity ${shown}` : t`Activity`}
-        pos="relative"
-        style={{ overflow: 'visible' }}
-      >
-        <IconDownload size={19} />
-        {count > 0 && (
-          <Badge
-            size="xs"
-            variant="filled"
-            color={review > 0 ? 'var(--warn)' : 'brand'}
-            c={review > 0 ? 'var(--warn-on)' : undefined}
-            // A `circle` badge clips 2+ digit counts against its radius; a pill that grows
-            // horizontally (with a floor width so single digits still read as a dot) doesn't.
-            style={{
-              position: 'absolute',
-              top: -6,
-              right: -6,
-              minWidth: 16,
-              padding: '0 4px',
-              pointerEvents: 'none',
-            }}
-            className="tnum"
-          >
-            {shown}
-          </Badge>
-        )}
-      </ActionIcon>
+      <CountIndicator count={count} tone={review > 0 ? 'warn' : 'brand'}>
+        <ActionIcon
+          component={Link}
+          to="/activity"
+          variant="subtle"
+          color="var(--neutral)"
+          aria-label={count > 0 ? t`Activity ${shown}` : t`Activity`}
+        >
+          <IconDownload size={19} />
+        </ActionIcon>
+      </CountIndicator>
     </Tooltip>
   )
 }

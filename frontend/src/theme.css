@@ -1056,9 +1056,19 @@ body {
   background: var(--danger);
   color: var(--danger-on);
 }
+/* Mantine sets the label in 13px body type on a 20px line inside a 16px pill, so one digit sat low in
+   a wide lozenge. Badge type on a line of 1 makes a single digit a circle and centres it. */
 .count-indicator > .mantine-Indicator-indicator {
+  box-sizing: border-box;
+  min-width: 16px;
+  padding-inline: 2px;
+  /* The ring cuts the count off the glyph; Mantine draws it in the body colour, white in light. */
+  border-color: var(--app-bg);
   background-image: none;
   box-shadow: none;
+  font-size: var(--type-badge);
+  font-weight: var(--fw-bold);
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 .count-indicator[data-tone='brand'] > .mantine-Indicator-indicator {

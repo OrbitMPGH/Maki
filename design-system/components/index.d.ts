@@ -79,6 +79,13 @@ export interface DisclosureProps {
 }
 export declare function Disclosure(props: DisclosureProps): JSX.Element
 
+/** The count on an icon button. Hidden at zero, `99+` past 99; the child is the ActionIcon. */
+export declare function CountIndicator(props: {
+  count: number
+  tone?: 'brand' | 'warn' | 'danger'
+  children: ReactNode
+}): JSX.Element
+
 /** A status as a coloured dot and a word. `tone` is a token stem. */
 export declare function StatusDot(
   props: ComponentPropsWithRef<'span'> & { tone: string; live?: boolean },

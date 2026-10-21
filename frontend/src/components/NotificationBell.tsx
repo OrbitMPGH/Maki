@@ -3,7 +3,6 @@ import {
   Anchor,
   Box,
   Group,
-  Indicator,
   Popover,
   ScrollArea,
   Stack,
@@ -22,6 +21,7 @@ import {
   useMarkInboxRead,
   type InboxItem,
 } from '../api/inbox'
+import { CountIndicator } from './ui/CountIndicator'
 import { relativeTime } from './ui/time'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -68,14 +68,7 @@ export function NotificationBell({ position = 'bottom-end' }: { position?: 'bott
           withArrow
           disabled={opened}
         >
-          <Indicator
-            size={16}
-            label={count > 99 ? '99+' : count}
-            disabled={count === 0}
-            withBorder
-            className="count-indicator"
-            data-tone="brand"
-          >
+          <CountIndicator count={count}>
             <ActionIcon
               variant="subtle"
               color="var(--neutral)"
@@ -84,7 +77,7 @@ export function NotificationBell({ position = 'bottom-end' }: { position?: 'bott
             >
               <IconBell size={19} />
             </ActionIcon>
-          </Indicator>
+          </CountIndicator>
         </Tooltip>
       </Popover.Target>
 
