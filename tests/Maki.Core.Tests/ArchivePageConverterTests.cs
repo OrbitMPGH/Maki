@@ -224,4 +224,52 @@ public class ArchivePageConverterTests : IDisposable
             ["Series - c001 (v01) - p000.webp", "Series - c001 (v01) - p001.webp", "Series - c002 (v01) - p002.webp"],
             CbzReader.PageNames(zip));
     }
+
+    [Fact]
+    public async Task An_entry_declaring_more_than_the_health_limit_is_refused_before_it_is_read()
+    {
+        var source = Cbz("ch1.cbz", ("001.jpg", Scan(600, 900, 16).EncodeJpeg(95)));
+        var bytes = File.ReadAllBytes(source);
+        // Past Array.MaxLength but under int.MaxValue: allocating it throws OutOfMemoryException anywhere.
+        const uint declared = 0x7FFFFFF0;
+        PatchUInt32(bytes, [0x50, 0x4B, 0x03, 0x04], 22, declared);
+        PatchUInt32(bytes, [0x50, 0x4B, 0x01, 0x02], 24, declared);
+        File.WriteAllBytes(source, bytes);
+        var target = Path.Combine(_dir, "out.cbz");
+
+        var result = await ArchivePageConverter.ConvertAsync(source, target, Webp, CancellationToken.None);
+
+        Assert.Equal(ArchiveConversionOutcome.Unreadable, result.Outcome);
+        Assert.False(File.Exists(target));
+        Assert.False(File.Exists(target + ".partial"));
+    }
+
+    private static void PatchUInt32(byte[] bytes, byte[] signature, int offset, uint value)
+    {
+        var at = bytes.AsSpan().IndexOf(signature);
+        Assert.True(at >= 0);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(at + offset), value);
+    }
+
+    [Fact]
+    public async Task A_page_over_the_pixel_limit_is_kept_without_being_decoded()
+    {
+        var huge = Scan(600, 900, 17).EncodeJpeg(95);
+        var frame = huge.AsSpan().IndexOf(new byte[] { 0xFF, 0xC0 });
+        if (frame < 0) frame = huge.AsSpan().IndexOf(new byte[] { 0xFF, 0xC2 });
+        Assert.True(frame >= 0);
+        // 8000 by 6000 is inside the per-side limit, but 48 million pixels is over the health scan's.
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(huge.AsSpan(frame + 5), 6000);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(huge.AsSpan(frame + 7), 8000);
+
+        var page = PageConversion.Convert(huge, ".jpg", Webp);
+
+        Assert.Equal(PageSkip.TooLarge, page.Skipped);
+        Assert.Same(huge, page.Bytes);
+
+        var source = Cbz("ch1.cbz", ("001.jpg", Scan(600, 900, 18).EncodeJpeg(95)), ("002.jpg", huge));
+        var result = await ArchivePageConverter.ConvertAsync(source, Path.Combine(_dir, "out.cbz"), Webp, CancellationToken.None);
+        Assert.Equal(ArchiveConversionOutcome.Converted, result.Outcome);
+        Assert.Equal(1, result.Skipped[PageSkip.TooLarge]);
+    }
 }
