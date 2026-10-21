@@ -48,6 +48,13 @@ public class WebPushSender(
     private readonly Channel<WebPushNotification> _queue = Channel.CreateBounded<WebPushNotification>(
         new BoundedChannelOptions(Capacity) { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });
 
+    /// <summary>
+    /// Forgets every device the user subscribed. Called wherever other sessions are revoked: a
+    /// subscription is tied to the browser session, so a revoked device must stop receiving pushes too.
+    /// </summary>
+    public static Task<int> DropSubscriptionsAsync(MakiDbContext db, int userId, CancellationToken ct) =>
+        db.PushSubscriptions.IgnoreQueryFilters().Where(s => s.UserId == userId).ExecuteDeleteAsync(ct);
+
     /// <summary>Queues a push. A full queue drops it: a burst that large is a backlog nobody wants on their lock screen.</summary>
     public virtual void Enqueue(WebPushNotification notification)
     {

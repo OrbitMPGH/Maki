@@ -72,12 +72,28 @@ export async function syncPushSubscription(userId: number): Promise<void> {
   if (syncedUsers.has(userId)) return
   syncedUsers.add(userId)
   try {
-    const subscription = await getPushSubscription()
-    const body = subscription && toSubscriptionBody(subscription)
-    if (!body) return
-    await api<unknown>('/push/subscription', { method: 'POST', body: JSON.stringify(body) })
+    await postThisDevice()
   } catch {
     syncedUsers.delete(userId)
+  }
+}
+
+async function postThisDevice(): Promise<void> {
+  const subscription = await getPushSubscription()
+  const body = subscription && toSubscriptionBody(subscription)
+  if (!body) return
+  await api<unknown>('/push/subscription', { method: 'POST', body: JSON.stringify(body) })
+}
+
+/**
+ * Signing other sessions out drops every subscription the account holds, this device's too. This
+ * device stays signed in, so it registers again at once. Never throws.
+ */
+export async function repostPushSubscription(): Promise<void> {
+  try {
+    await postThisDevice()
+  } catch {
+    // The next page load's sync tries again.
   }
 }
 

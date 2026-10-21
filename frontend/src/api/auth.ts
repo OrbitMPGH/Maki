@@ -4,7 +4,7 @@ import { api, beginSession, invalidateInitialize } from './client'
 import { noteSignedInUser, noteSignedOut } from '../lib/pageState'
 import { useSaveSettingsRecord } from './settingsRecord'
 import { postToWorker } from '../lib/pwa/serviceWorker'
-import { dropPushSubscription } from './push'
+import { dropPushSubscription, repostPushSubscription } from './push'
 
 type SetupDoneHandler = () => void
 let onSetupDone: SetupDoneHandler | null = null
@@ -223,6 +223,7 @@ export function useChangePassword() {
   return useMutation({
     mutationFn: (body: { currentPassword: string; newPassword: string }) =>
       api<void>('/account/password', { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: () => void repostPushSubscription(),
   })
 }
 
@@ -281,6 +282,7 @@ export function useDisableTwoFactor() {
     mutationFn: (password: string) =>
       api<void>('/account/2fa/disable', { method: 'POST', body: JSON.stringify({ password }) }),
     onSuccess: () => {
+      void repostPushSubscription()
       void qc.invalidateQueries({ queryKey: ['account', '2fa'] })
       void qc.invalidateQueries({ queryKey: ME_QUERY_KEY })
     },
@@ -337,6 +339,7 @@ export function useUnlinkOidc() {
 export function useRevokeSessions() {
   return useMutation({
     mutationFn: () => api<void>('/account/sessions/revoke-all', { method: 'POST' }),
+    onSuccess: () => void repostPushSubscription(),
   })
 }
 
@@ -405,10 +408,11 @@ export function useUpdateUser() {
   return useMutation({
     mutationFn: ({ id, ...body }: SaveUserBody & { id: number }) =>
       api<UserSummary>(`/users/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
       void qc.invalidateQueries({ queryKey: ['users'] })
       // The edited account may be the caller's own, and its permissions drive the whole nav.
       void qc.invalidateQueries({ queryKey: ME_QUERY_KEY })
+      if (qc.getQueryData<Me | null>(ME_QUERY_KEY)?.id === id) void repostPushSubscription()
     },
   })
 }

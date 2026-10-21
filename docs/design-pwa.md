@@ -273,7 +273,7 @@ Tests in `Maki.Api.Tests`:
 
 ### SW (`src/sw/push.ts`)
 
-- `push`: parse `{ title, body, url, tag }` and `showNotification` with `icon: /icons/icon-192.png`, `badge: /icons/badge-96.png`, `tag`, `data: { url }`. A subscription is removed on explicit logout, so a push that arrives means the user's own expired session at worst, and the text is shown.
+- `push`: parse `{ title, body, url, tag }` and `showNotification` with `icon: /icons/icon-192.png`, `badge: /icons/badge-96.png`, `tag`, `data: { url }`. A subscription is removed on explicit logout, and every subscription of the user goes when other sessions are revoked (sign out everywhere, password change, 2FA disable, an admin reset or disable), so a push that arrives means the user's own expired session at worst, and the text is shown.
 - `notificationclick`: focus an open client and navigate it to `url`, or `clients.openWindow(url)`.
 
 ### Page
