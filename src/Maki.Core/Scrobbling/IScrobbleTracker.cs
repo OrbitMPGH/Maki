@@ -105,6 +105,14 @@ public interface IScrobbleTracker
     Task<string?> UsernameAsync(int userId, CancellationToken ct = default);
 
     Task<RemoteEntry> GetEntryAsync(int userId, string remoteId, CancellationToken ct = default);
+
+    /// <summary>
+    /// <see cref="GetEntryAsync"/> with <see cref="RemoteEntry.Score"/> filled in. A tracker whose score
+    /// costs extra requests leaves it out of <see cref="GetEntryAsync"/>; only the rating import needs it.
+    /// </summary>
+    Task<RemoteEntry> GetEntryWithScoreAsync(int userId, string remoteId, CancellationToken ct = default) =>
+        GetEntryAsync(userId, remoteId, ct);
+
     /// <param name="keepStatus">
     /// Write progress only and leave the entry's status as it is. Set when the entry is in a state
     /// the internal statuses cannot express (AniList's REPEATING), so a push does not overwrite it.
@@ -131,4 +139,23 @@ public interface IScrobbleTracker
         throw new NotSupportedException($"{Name} cannot list entries");
 
     string EntryUrl(string remoteId);
+}
+
+/// <summary>One progress write handed to <see cref="IBatchScrobbleTracker.UpdateManyAsync"/>.</summary>
+public record ScrobbleWrite(string RemoteId, int Chapter, int Volume, ScrobbleStatus Status, bool KeepStatus = false);
+
+/// <summary>
+/// A tracker that takes several progress writes in one call, for a site that limits how often a
+/// list may be written rather than how much one write may carry.
+/// </summary>
+public interface IBatchScrobbleTracker : IScrobbleTracker
+{
+    int MaxBatch { get; }
+
+    /// <summary>
+    /// Writes <paramref name="writes"/> together. The result has one slot per write: null when it
+    /// went through, otherwise why it did not. Only cancellation is thrown.
+    /// </summary>
+    Task<IReadOnlyList<Exception?>> UpdateManyAsync(
+        int userId, IReadOnlyList<ScrobbleWrite> writes, CancellationToken ct = default);
 }

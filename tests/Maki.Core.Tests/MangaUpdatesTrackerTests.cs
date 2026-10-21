@@ -327,6 +327,30 @@ public class MangaUpdatesTrackerTests
     }
 
     [Fact]
+    public async Task ALoginTimeoutIsAFailedLogin_NotACancellation()
+    {
+        var handler = new Handler()
+            .On(HttpMethod.Put, "/account/login", _ => throw new TaskCanceledException("timed out"));
+        var rig = Build(handler, loggedIn: false);
+
+        Assert.False(await rig.Tracker.AuthenticatedAsync(UserId));
+        Assert.False(await rig.Tracker.AuthenticatedAsync(UserId));
+        Assert.Single(handler.To(HttpMethod.Put, "/account/login"));
+    }
+
+    [Fact]
+    public async Task ACallerCancellationStaysACancellation()
+    {
+        var handler = new Handler()
+            .On(HttpMethod.Put, "/account/login", _ => throw new TaskCanceledException("cancelled"));
+        var rig = Build(handler, loggedIn: false);
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => rig.Tracker.AuthenticatedAsync(UserId, cts.Token));
+    }
+
+    [Fact]
     public async Task NoCredentialsMeansNotAuthenticated_EvenWithAStoredToken()
     {
         var handler = new Handler();
@@ -423,8 +447,8 @@ public class MangaUpdatesTrackerTests
                 """);
         var rig = Build(handler);
 
-        var first = await rig.Tracker.GetEntryAsync(UserId, OnePiece);
-        var second = await rig.Tracker.GetEntryAsync(UserId, OnePiece);
+        var first = await rig.Tracker.GetEntryWithScoreAsync(UserId, OnePiece);
+        var second = await rig.Tracker.GetEntryWithScoreAsync(UserId, OnePiece);
 
         Assert.Equal(7, first.Score);
         Assert.Equal(7, second.Score);
@@ -433,7 +457,36 @@ public class MangaUpdatesTrackerTests
         Assert.DoesNotContain(handler.Requests, r => r.Path.EndsWith("/rating"));
 
         rig.Time.Advance(TimeSpan.FromMinutes(16));
-        await rig.Tracker.GetEntryAsync(UserId, OnePiece);
+        await rig.Tracker.GetEntryWithScoreAsync(UserId, OnePiece);
+        Assert.Equal(2, handler.To(HttpMethod.Post, "/lists/0/search").Count());
+    }
+
+    [Fact]
+    public async Task APlainReadNeverBuildsTheRatingSnapshot()
+    {
+        var handler = Listed(0, chapter: 4);
+
+        var entry = await Build(handler).Tracker.GetEntryAsync(UserId, OnePiece);
+
+        Assert.Equal(4, entry.ProgressChapter);
+        Assert.Null(entry.Score);
+        Assert.DoesNotContain(handler.Requests, r => r.Path.EndsWith("/search"));
+    }
+
+    [Fact]
+    public async Task AFailedRatingSnapshotIsNotRebuiltForAMinute()
+    {
+        var handler = Listed(0, chapter: 4)
+            .On(HttpMethod.Post, "/lists/2/search", """{"status":"exception","reason":"oops"}""",
+                HttpStatusCode.InternalServerError);
+        var rig = Build(handler);
+
+        await rig.Tracker.GetEntryWithScoreAsync(UserId, OnePiece);
+        await rig.Tracker.GetEntryWithScoreAsync(UserId, OnePiece);
+        Assert.Single(handler.To(HttpMethod.Post, "/lists/0/search"));
+
+        rig.Time.Advance(TimeSpan.FromMinutes(2));
+        await rig.Tracker.GetEntryWithScoreAsync(UserId, OnePiece);
         Assert.Equal(2, handler.To(HttpMethod.Post, "/lists/0/search").Count());
     }
 
@@ -444,9 +497,9 @@ public class MangaUpdatesTrackerTests
             .On(HttpMethod.Put, $"/series/{OnePieceId}/rating", """{"status":"success"}""");
         var tracker = Build(handler).Tracker;
 
-        await tracker.GetEntryAsync(UserId, OnePiece);
+        await tracker.GetEntryWithScoreAsync(UserId, OnePiece);
         await tracker.UpdateRatingAsync(UserId, OnePiece, 9);
-        await tracker.GetEntryAsync(UserId, OnePiece);
+        await tracker.GetEntryWithScoreAsync(UserId, OnePiece);
 
         Assert.Equal(2, handler.To(HttpMethod.Post, "/lists/0/search").Count());
     }
@@ -458,7 +511,7 @@ public class MangaUpdatesTrackerTests
             .On(HttpMethod.Post, "/lists/2/search", """{"status":"exception","reason":"oops"}""",
                 HttpStatusCode.InternalServerError);
 
-        var entry = await Build(handler).Tracker.GetEntryAsync(UserId, OnePiece);
+        var entry = await Build(handler).Tracker.GetEntryWithScoreAsync(UserId, OnePiece);
 
         Assert.Equal(ScrobbleStatus.Reading, entry.Status);
         Assert.Equal(4, entry.ProgressChapter);
@@ -469,7 +522,7 @@ public class MangaUpdatesTrackerTests
     public async Task AnUnlistedSeriesDoesNotBuildTheRatingSnapshot()
     {
         var handler = Unlisted();
-        await (Build(handler)).Tracker.GetEntryAsync(UserId, OnePiece);
+        await (Build(handler)).Tracker.GetEntryWithScoreAsync(UserId, OnePiece);
 
         Assert.DoesNotContain(handler.Requests, r => r.Path.EndsWith("/search"));
     }
@@ -543,6 +596,72 @@ public class MangaUpdatesTrackerTests
         await tracker.UpdateAsync(UserId, OnePiece, 7, 0, ScrobbleStatus.Reading, keepStatus: true);
 
         Assert.Contains("\"list_id\":4", Assert.Single(handler.To(HttpMethod.Post, "/lists/series/update")).Body);
+    }
+
+    private static string OtherSlug(int n) => MangaUpdatesIds.ToSlug(OnePieceId + n);
+
+    [Fact]
+    public async Task ManySeriesAreWrittenInOneUpdateCallAndOneAddCall()
+    {
+        var handler = Listed(0)
+            .On(HttpMethod.Post, "/lists/series/update", """{"status":"success"}""")
+            .On(HttpMethod.Post, "/lists/series", """{"status":"success"}""");
+        var view = Build(handler);
+
+        var errors = await view.Tracker.UpdateManyAsync(UserId,
+        [
+            new ScrobbleWrite(OnePiece, 9, 0, ScrobbleStatus.Reading),
+            new ScrobbleWrite(OtherSlug(1), 3, 0, ScrobbleStatus.Reading),
+            new ScrobbleWrite(OtherSlug(2), 0, 0, ScrobbleStatus.PlanToRead),
+        ]);
+
+        Assert.All(errors, Assert.Null);
+        var update = Assert.Single(handler.To(HttpMethod.Post, "/lists/series/update"));
+        Assert.Equal($$$"""[{"series":{"id":{{{OnePieceId}}}},"list_id":0,"status":{"chapter":9}}]""", update.Body);
+        var add = Assert.Single(handler.To(HttpMethod.Post, "/lists/series"));
+        Assert.Equal(
+            $$$"""[{"series":{"id":{{{OnePieceId + 1}}}},"list_id":0,"status":{"chapter":3}},{"series":{"id":{{{OnePieceId + 2}}}},"list_id":1,"status":{"chapter":0}}]""",
+            add.Body);
+        Assert.Equal([MangaUpdatesTracker.WriteSpacing], view.Delays);
+    }
+
+    [Fact]
+    public async Task ARefusedBatchIsRedoneOneSeriesAtATime_SoOneBadEntryFailsAlone()
+    {
+        var bad = OnePieceId + 2;
+        var handler = new Handler()
+            .On(HttpMethod.Post, "/lists/series", request =>
+                request.Content!.ReadAsStringAsync().Result.Contains($"\"id\":{bad}")
+                    ? Json("""{"status":"exception","reason":"bad series"}""", HttpStatusCode.BadRequest)
+                    : Json("""{"status":"success"}"""));
+        var tracker = Build(handler).Tracker;
+
+        var errors = await tracker.UpdateManyAsync(UserId,
+        [
+            new ScrobbleWrite(OtherSlug(1), 3, 0, ScrobbleStatus.Reading),
+            new ScrobbleWrite(OtherSlug(2), 4, 0, ScrobbleStatus.Reading),
+        ]);
+
+        Assert.Null(errors[0]);
+        Assert.IsAssignableFrom<TrackerException>(errors[1]);
+        Assert.Equal(3, handler.To(HttpMethod.Post, "/lists/series").Count());
+    }
+
+    [Fact]
+    public async Task AMalformedIdInABatchFailsThatEntryOnly()
+    {
+        var handler = new Handler().On(HttpMethod.Post, "/lists/series", """{"status":"success"}""");
+        var tracker = Build(handler).Tracker;
+
+        var errors = await tracker.UpdateManyAsync(UserId,
+        [
+            new ScrobbleWrite("not-a-slug", 3, 0, ScrobbleStatus.Reading),
+            new ScrobbleWrite(OtherSlug(1), 3, 0, ScrobbleStatus.Reading),
+        ]);
+
+        Assert.IsType<TrackerEntryNotFoundException>(errors[0]);
+        Assert.Null(errors[1]);
+        Assert.Single(handler.To(HttpMethod.Post, "/lists/series"));
     }
 
     [Fact]

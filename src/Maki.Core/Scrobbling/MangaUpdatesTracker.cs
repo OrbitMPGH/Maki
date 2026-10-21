@@ -21,7 +21,7 @@ public class MangaUpdatesTracker(
     IUserSettingsStore userSettings,
     IScrobbleTokenStore tokens,
     ScrobbleTrackerOptions options,
-    ILogger<MangaUpdatesTracker> logger) : IScrobbleTracker
+    ILogger<MangaUpdatesTracker> logger) : IBatchScrobbleTracker
 {
     public const string HttpClientName = "scrobble";
     private static readonly MediaTypeWithQualityHeaderValue JsonAccept = new("application/json");
@@ -53,6 +53,7 @@ public class MangaUpdatesTracker(
     private static readonly TimeSpan PreconditionRetryDelay = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan SeriesInfoTtl = TimeSpan.FromHours(6);
     private static readonly TimeSpan RatingSnapshotTtl = TimeSpan.FromMinutes(15);
+    private static readonly TimeSpan RatingFailureTtl = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan AuthFailureTtl = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan BlockCooldown = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan MaxInlineWait = TimeSpan.FromSeconds(10);
@@ -92,6 +93,8 @@ public class MangaUpdatesTracker(
     /// may have read the score from before the write.
     /// </summary>
     private readonly ConcurrentDictionary<int, int> _ratingWrites = new();
+
+    private readonly ConcurrentDictionary<int, DateTime> _ratingFailedAt = new();
 
     private DateTime _blockedUntil = DateTime.MinValue;
 
@@ -168,6 +171,7 @@ public class MangaUpdatesTracker(
         _authCache.TryRemove(userId, out _);
         _loggedInAt.TryRemove(userId, out _);
         _ratings.TryRemove(userId, out _);
+        _ratingFailedAt.TryRemove(userId, out _);
         foreach (var key in _listIds.Keys.Where(k => k.UserId == userId).ToList())
         {
             _listIds.TryRemove(key, out _);
@@ -351,6 +355,10 @@ public class MangaUpdatesTracker(
 
                 throw new TrackerException($"MangaUpdates request failed: {e.Message}", e);
             }
+            catch (TaskCanceledException e) when (!ct.IsCancellationRequested)
+            {
+                throw new TrackerException("MangaUpdates request timed out", e);
+            }
 
             using (response)
             {
@@ -475,7 +483,13 @@ public class MangaUpdatesTracker(
             ? id
             : throw new TrackerEntryNotFoundException($"'{remoteId}' is not a MangaUpdates series id");
 
-    public async Task<RemoteEntry> GetEntryAsync(int userId, string remoteId, CancellationToken ct = default)
+    public Task<RemoteEntry> GetEntryAsync(int userId, string remoteId, CancellationToken ct = default) =>
+        ReadEntryAsync(userId, remoteId, withScore: false, ct);
+
+    public Task<RemoteEntry> GetEntryWithScoreAsync(int userId, string remoteId, CancellationToken ct = default) =>
+        ReadEntryAsync(userId, remoteId, withScore: true, ct);
+
+    private async Task<RemoteEntry> ReadEntryAsync(int userId, string remoteId, bool withScore, CancellationToken ct)
     {
         var seriesId = SeriesIdOf(remoteId);
         JsonElement? record = null;
@@ -502,14 +516,16 @@ public class MangaUpdatesTracker(
 
         var progress = entry.TryGetProperty("status", out var s) && s.ValueKind == JsonValueKind.Object ? s : default;
         double? score = null;
-        try
+        if (withScore)
         {
-            score = await RatingAsync(userId, seriesId, ct);
-        }
-        catch (TrackerException e)
-        {
-            // The score only feeds the rating import; a failed snapshot must not fail the push.
-            logger.LogWarning("MangaUpdates rating snapshot failed for user {UserId}: {Error}", userId, e.Message);
+            try
+            {
+                score = await RatingAsync(userId, seriesId, ct);
+            }
+            catch (TrackerException e)
+            {
+                logger.LogWarning("MangaUpdates rating snapshot failed for user {UserId}: {Error}", userId, e.Message);
+            }
         }
 
         return new RemoteEntry(
@@ -578,29 +594,44 @@ public class MangaUpdatesTracker(
     {
         if (!_ratings.TryGetValue(userId, out var snapshot) || Now - snapshot.BuiltAt >= RatingSnapshotTtl)
         {
+            if (_ratingFailedAt.TryGetValue(userId, out var failedAt) && Now - failedAt < RatingFailureTtl)
+            {
+                return null;
+            }
+
             var writesBefore = _ratingWrites.GetValueOrDefault(userId);
             var ratings = new Dictionary<long, double>();
             var seen = new HashSet<long>();
-            foreach (var listId in FixedLists)
+            try
             {
-                await ReadListAsync(userId, listId, result =>
+                foreach (var listId in FixedLists)
                 {
-                    if (!result.TryGetProperty("record", out var record) ||
-                        !record.TryGetProperty("series", out var series) || GetLong(series, "id") is not { } id ||
-                        !seen.Add(id))
+                    await ReadListAsync(userId, listId, result =>
                     {
-                        return false;
-                    }
+                        if (!result.TryGetProperty("record", out var record) ||
+                            !record.TryGetProperty("series", out var series) || GetLong(series, "id") is not { } id ||
+                            !seen.Add(id))
+                        {
+                            return false;
+                        }
 
-                    if (result.TryGetProperty("metadata", out var metadata) &&
-                        GetDouble(metadata, "user_rating") is double rating and > 0)
-                    {
-                        ratings[id] = rating;
-                    }
+                        if (result.TryGetProperty("metadata", out var metadata) &&
+                            GetDouble(metadata, "user_rating") is double rating and > 0)
+                        {
+                            ratings[id] = rating;
+                        }
 
-                    return true;
-                }, ct);
+                        return true;
+                    }, ct);
+                }
             }
+            catch (TrackerException)
+            {
+                _ratingFailedAt[userId] = Now;
+                throw;
+            }
+
+            _ratingFailedAt.TryRemove(userId, out _);
 
             if (_ratingWrites.GetValueOrDefault(userId) != writesBefore)
             {
@@ -614,41 +645,52 @@ public class MangaUpdatesTracker(
         return snapshot.Ratings.TryGetValue(seriesId, out var score) ? score : null;
     }
 
-    public async Task UpdateAsync(
-        int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
-        CancellationToken ct = default, bool keepStatus = false)
+    private async Task<int?> CurrentListAsync(int userId, long seriesId, CancellationToken ct)
     {
-        var seriesId = SeriesIdOf(remoteId);
-        var key = (userId, seriesId);
-        if (!_listIds.TryGetValue(key, out var currentList))
+        if (_listIds.TryGetValue((userId, seriesId), out var cached))
         {
-            try
-            {
-                var record = await RequestAsync(userId, HttpMethod.Get, $"/lists/series/{seriesId}", auth: true, ct: ct);
-                currentList = ListIdOf(record);
-            }
-            catch (TrackerEntryNotFoundException)
-            {
-                currentList = null;
-            }
+            return cached;
         }
 
-        var listId = keepStatus && currentList is { } kept ? kept : InternalToList[status];
+        try
+        {
+            var record = await RequestAsync(userId, HttpMethod.Get, $"/lists/series/{seriesId}", auth: true, ct: ct);
+            return ListIdOf(record);
+        }
+        catch (TrackerEntryNotFoundException)
+        {
+            return null;
+        }
+    }
+
+    private static int TargetList(ScrobbleWrite write, int? currentList) =>
+        write.KeepStatus && currentList is { } kept ? kept : InternalToList[write.Status];
+
+    private static JsonObject ListItem(long seriesId, int listId, int chapter, int volume)
+    {
         var progress = new JsonObject { ["chapter"] = Math.Max(chapter, 0) };
         if (volume > 0)
         {
             progress["volume"] = volume;
         }
 
-        var body = new JsonArray
+        return new JsonObject
         {
-            new JsonObject
-            {
-                ["series"] = new JsonObject { ["id"] = seriesId },
-                ["list_id"] = listId,
-                ["status"] = progress,
-            },
+            ["series"] = new JsonObject { ["id"] = seriesId },
+            ["list_id"] = listId,
+            ["status"] = progress,
         };
+    }
+
+    public async Task UpdateAsync(
+        int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
+        CancellationToken ct = default, bool keepStatus = false)
+    {
+        var seriesId = SeriesIdOf(remoteId);
+        var key = (userId, seriesId);
+        var currentList = await CurrentListAsync(userId, seriesId, ct);
+        var listId = TargetList(new ScrobbleWrite(remoteId, chapter, volume, status, keepStatus), currentList);
+        var body = new JsonArray { ListItem(seriesId, listId, chapter, volume) };
 
         if (currentList is not null)
         {
@@ -673,6 +715,88 @@ public class MangaUpdatesTracker(
         _listIds[key] = listId;
     }
 
+    public int MaxBatch => 25;
+
+    /// <summary>
+    /// Several series in one write call per direction (update for the ones already listed, add for the
+    /// rest), so the five second write gap is paid per batch instead of per series. A refused batch is
+    /// redone one series at a time, so a single bad entry cannot hold the others back.
+    /// </summary>
+    public async Task<IReadOnlyList<Exception?>> UpdateManyAsync(
+        int userId, IReadOnlyList<ScrobbleWrite> writes, CancellationToken ct = default)
+    {
+        var errors = new Exception?[writes.Count];
+        var seriesIds = new long[writes.Count];
+        var listIds = new int[writes.Count];
+        var updates = new List<int>();
+        var adds = new List<int>();
+        for (var i = 0; i < writes.Count; i++)
+        {
+            try
+            {
+                seriesIds[i] = SeriesIdOf(writes[i].RemoteId);
+                var currentList = await CurrentListAsync(userId, seriesIds[i], ct);
+                listIds[i] = TargetList(writes[i], currentList);
+                (currentList is null ? adds : updates).Add(i);
+            }
+            catch (TrackerException e)
+            {
+                errors[i] = e;
+            }
+        }
+
+        await SendBatchAsync("/lists/series/update", updates);
+        await SendBatchAsync("/lists/series", adds);
+        return errors;
+
+        async Task SendBatchAsync(string path, List<int> indexes)
+        {
+            if (indexes.Count == 0)
+            {
+                return;
+            }
+
+            var body = new JsonArray();
+            foreach (var i in indexes)
+            {
+                body.Add(ListItem(seriesIds[i], listIds[i], writes[i].Chapter, writes[i].Volume));
+            }
+
+            try
+            {
+                await ListWriteAsync(userId, () =>
+                    RequestAsync(userId, HttpMethod.Post, path, body, auth: true, ct: ct), ct);
+                foreach (var i in indexes)
+                {
+                    _listIds[(userId, seriesIds[i])] = listIds[i];
+                }
+            }
+            catch (TrackerException e) when (e is TrackerEntryNotFoundException or StatusException { Status: 400 })
+            {
+                logger.LogInformation("MangaUpdates batch write refused, writing one at a time: {Error}", e.Message);
+                foreach (var i in indexes)
+                {
+                    try
+                    {
+                        await UpdateAsync(userId, writes[i].RemoteId, writes[i].Chapter, writes[i].Volume,
+                            writes[i].Status, ct, writes[i].KeepStatus);
+                    }
+                    catch (TrackerException single)
+                    {
+                        errors[i] = single;
+                    }
+                }
+            }
+            catch (TrackerException e)
+            {
+                foreach (var i in indexes)
+                {
+                    errors[i] = e;
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// Ratings are not list writes, so they skip the write gate (a rating push runs beside the tick and
     /// would otherwise queue behind it). A 401 here is MangaUpdates saying the account lacks the role
@@ -695,6 +819,7 @@ public class MangaUpdatesTracker(
 
         _ratingWrites.AddOrUpdate(userId, 1, (_, n) => n + 1);
         _ratings.TryRemove(userId, out _);
+        _ratingFailedAt.TryRemove(userId, out _);
     }
 
     public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(
