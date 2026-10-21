@@ -3819,6 +3819,8 @@ export interface ScrobbleConnection {
   animeList: boolean
   /** Per-tracker: let this service's watched anime steer recommendations. */
   animeSignals: boolean
+  /** Whether this reader has saved sign-in details, for trackers each reader signs in to themselves; null for the rest. */
+  savedDetails?: boolean | null
 }
 
 export interface ScrobbleCandidate {

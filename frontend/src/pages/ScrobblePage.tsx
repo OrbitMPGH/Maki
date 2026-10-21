@@ -86,7 +86,8 @@ function groupBySeries(rows: ScrobbleSyncRow[], connections: ScrobbleConnection[
     }
   >()
   for (const r of rows) {
-    let group = groups.get(r.title)
+    const groupKey = r.seriesId === null ? `title:${r.title}` : `series:${r.seriesId}`
+    let group = groups.get(groupKey)
     if (!group) {
       group = {
         title: r.title,
@@ -97,7 +98,7 @@ function groupBySeries(rows: ScrobbleSyncRow[], connections: ScrobbleConnection[
         outcomes: new Map(),
         failures: [],
       }
-      groups.set(r.title, group)
+      groups.set(groupKey, group)
     }
     if (group.seen.has(r.service)) continue
     group.seen.add(r.service)
@@ -111,7 +112,7 @@ function groupBySeries(rows: ScrobbleSyncRow[], connections: ScrobbleConnection[
     else group.outcomes.set(key, { chapter: r.chapter, volume: r.volume, status: r.status, services: [r.service] })
   }
   // Trackers in the Connections order everywhere, so the same icons sit in the same place row to row.
-  return [...groups.values()].map(({ title, at, seriesId, coverUrl, outcomes, failures }) => {
+  return [...groups.entries()].map(([key, { title, at, seriesId, coverUrl, outcomes, failures }]) => {
     const lines = [...outcomes.values()]
     for (const line of lines) line.services.sort(byOrder)
     lines.sort((a, b) => b.chapter - a.chapter || byOrder(a.services[0], b.services[0]))
@@ -120,7 +121,7 @@ function groupBySeries(rows: ScrobbleSyncRow[], connections: ScrobbleConnection[
       null,
     )
     failures.sort((a, b) => byOrder(a.service, b.service))
-    return { title, at, seriesId, coverUrl, main, others: lines.filter((line) => line !== main), failures }
+    return { key, title, at, seriesId, coverUrl, main, others: lines.filter((line) => line !== main), failures }
   })
 }
 
@@ -293,6 +294,8 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
   const { can } = useAuth()
   const isAdmin = can('Admin')
   const isKavita = connection.service === 'kavita'
+  const ownDetails = connection.savedDetails != null
+  const noDetails = connection.savedDetails === false
 
   const dot = trackerConnectionVisual(connection.connected, connection.configured)
   // Every state that is not connected says what to do next: connect, check the saved details, or
@@ -304,6 +307,8 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
   ) : connection.configured ? (
     isKavita ? (
       <Trans>Can't reach Kavita with the saved address and API key.</Trans>
+    ) : noDetails ? (
+      <Trans>Add your details in Settings.</Trans>
     ) : (
       <Trans>Can't sign in with the saved details.</Trans>
     )
@@ -313,9 +318,9 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
     <Trans>Not set up yet. An admin can add it in Settings.</Trans>
   )
   const settingsLink =
-    isAdmin && !connection.connected && !(connection.configured && connection.oAuth) ? (
+    (isAdmin || ownDetails) && !connection.connected && !(connection.configured && connection.oAuth) ? (
       <Button component={Link} to={isKavita ? KAVITA_SETTINGS : TRACKER_SETTINGS} size="compact-sm" variant="default">
-        {connection.configured ? <Trans>Check in Settings</Trans> : <Trans>Set up in Settings</Trans>}
+        {connection.configured && !noDetails ? <Trans>Check in Settings</Trans> : <Trans>Set up in Settings</Trans>}
       </Button>
     ) : null
 
@@ -623,7 +628,7 @@ export default function ScrobblePage() {
                   </Table.Thead>
                   <Table.Tbody>
                     {groupBySeries(data.recent, data.connections).map((group) => (
-                      <Table.Tr key={group.title}>
+                      <Table.Tr key={group.key}>
                         <Table.Td>
                           <SeriesCell
                             seriesId={group.seriesId}

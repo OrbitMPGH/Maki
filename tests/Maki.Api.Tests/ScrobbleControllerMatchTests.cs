@@ -82,7 +82,7 @@ public sealed class ScrobbleControllerMatchTests : IDisposable
         var result = await Controller(userId).Match(new(7, "mangaupdates", input), default);
 
         var bad = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Contains("error.scrobble.invalidRemoteId", bad.Value!.ToString());
+        Assert.Contains("error.scrobble.invalidMangaUpdatesId", bad.Value!.ToString());
         Assert.Null(MappedRemoteId(userId, "mangaupdates"));
     }
 
@@ -94,6 +94,8 @@ public sealed class ScrobbleControllerMatchTests : IDisposable
         Assert.IsType<OkObjectResult>(await Controller(userId).Match(new(7, "anilist", "30013"), default));
         Assert.Equal("30013", MappedRemoteId(userId, "anilist"));
 
-        Assert.IsType<BadRequestObjectResult>(await Controller(userId).Match(new(8, "anilist", "pb8uwds"), default));
+        var bad = Assert.IsType<BadRequestObjectResult>(
+            await Controller(userId).Match(new(8, "anilist", "pb8uwds"), default));
+        Assert.Contains("error.scrobble.invalidRemoteId", bad.Value!.ToString());
     }
 }
