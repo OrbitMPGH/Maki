@@ -7467,6 +7467,10 @@ msgstr "Orta kalite"
 msgid "Falling means you moved."
 msgstr "Düşüş, hareket ettiğiniz anlamına gelir."
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Fans of"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Fantasy"
@@ -7491,6 +7495,10 @@ msgstr ""
 #, fuzzy
 msgid "Feeling lucky"
 msgstr "Şansımı dene"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Feels like"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -10200,6 +10208,10 @@ msgstr "Yalnızca Main"
 #, fuzzy
 msgid "Main only, no specials"
 msgstr "Yalnızca Main, özel bölüm yok"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Main story of"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -13486,6 +13498,10 @@ msgid "Preparing model…"
 msgstr "Model hazırlanıyor…"
 
 #: src/components/ui/DiscoverRail.tsx
+msgid "Prequel to"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Prequel to {relatedTo}"
 msgstr "{relatedTo} öncesini anlatan seri"
@@ -14437,6 +14453,10 @@ msgstr "ilgili seriler, buna benzer, benzer, öneriler, raylar, devam serileri, 
 
 #: src/components/ReleaseSearchModal.tsx
 msgid "Related series: {relatedTitle}"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to"
 msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
@@ -16342,6 +16362,10 @@ msgid "Sepia"
 msgstr "Sepya"
 
 #: src/components/ui/DiscoverRail.tsx
+msgid "Sequel to"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Sequel to {relatedTo}"
 msgstr "{relatedTo} devam serisi"
@@ -16786,6 +16810,10 @@ msgid "Side interests"
 msgstr "Yan ilgi alanları"
 
 #: src/components/ui/DiscoverRail.tsx
+msgid "Side story of"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Side story of {relatedTo}"
 msgstr "{relatedTo} yan hikâyesi"
@@ -17225,6 +17253,10 @@ msgstr "Özel bölümler 10.5 veya 12.1 gibi ondalıklı bölüm numaralarıdır
 #, fuzzy
 msgid "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
 msgstr "özel bölümler, omake, ondalıklı bölüm numaraları, yeni öğeleri izle, izleme, gizli mod, okuma durumunu gönderme, içerik derecesi, seri ekle"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Spin-off of"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy

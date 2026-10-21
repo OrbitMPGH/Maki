@@ -240,9 +240,9 @@ export const popularPicks: RecommendationItem[] = [
 ]
 
 export const recommendedPicks: RecommendationItem[] = [
-  catalogueItem(1, { relationKind: 'Sequel', relatedToTitle: catalogue[4].title, becauseOfTitle: null }),
+  catalogueItem(1, { relationKind: 'Sequel', relatedToTitle: catalogue[4].title, relatedToId: String(catalogue[4].mangaBakaId), becauseOfTitle: null }),
   catalogueItem(2, { authorMatch: true, becauseOfTitle: null }),
-  catalogueItem(3, { coRead: true, coReadWithTitle: catalogue[1].title, becauseOfTitle: null, authorMatch: false }),
+  catalogueItem(3, { coRead: true, coReadWithTitle: catalogue[1].title, coReadWithId: String(catalogue[1].mangaBakaId), becauseOfTitle: null, authorMatch: false }),
   catalogueItem(4),
   catalogueItem(5, { tasteMatch: true, becauseOfTitle: null, authorMatch: false }),
   catalogueItem(6),

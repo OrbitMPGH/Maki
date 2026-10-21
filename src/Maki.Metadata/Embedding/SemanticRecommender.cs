@@ -202,7 +202,7 @@ public class SemanticRecommender(
     /// margin compares the best seed against the centroid specifically, and a titleless seed
     /// standing in for the centroid there would silently change what the margin means.
     /// </summary>
-    internal sealed record SeedQuery(sbyte[] Packed, float Scale, string? SeedTitle, bool IsCentroid);
+    internal sealed record SeedQuery(sbyte[] Packed, float Scale, string? SeedTitle, bool IsCentroid, long? SeedId = null);
 
     /// <summary>A scored candidate, carrying what hydration would otherwise have to recompute.</summary>
     /// <summary>
@@ -829,7 +829,7 @@ public class SemanticRecommender(
             .ToList();
         if (EmbeddingMath.WeightedMean(weighted) is { } centroid)
         {
-            queries.Add(Pack(centroid, null, isCentroid: true));
+            queries.Add(Pack(centroid, null, null, isCentroid: true));
             if (seedVectors.Count == 1)
             {
                 return queries;
@@ -838,13 +838,13 @@ public class SemanticRecommender(
 
         foreach (var id in PickRepresentativeSeeds(seedVectors, seedWeights, tuning))
         {
-            queries.Add(Pack(seedVectors[id], seedTitles.GetValueOrDefault(id)));
+            queries.Add(Pack(seedVectors[id], seedTitles.GetValueOrDefault(id), id));
         }
 
         return queries;
 
-        static SeedQuery Pack(float[] vector, string? title, bool isCentroid = false) =>
-            new(EmbeddingMath.QuantizeQuery(vector, out var scale), scale, title, isCentroid);
+        static SeedQuery Pack(float[] vector, string? title, long? id, bool isCentroid = false) =>
+            new(EmbeddingMath.QuantizeQuery(vector, out var scale), scale, title, isCentroid, id);
     }
 
     /// <summary>
@@ -2063,8 +2063,11 @@ public class SemanticRecommender(
 
         var ids = winners.Select(w => index.IdAt(w.Row)).ToList();
         var rowById = winners.ToDictionary(w => index.IdAt(w.Row), w => w);
-        var coReadTitles = await SeedTitlesAsync(
-            conn, winners.Where(w => w.CoRead).Select(w => coReadSeedByRow.GetValueOrDefault(w.Row)), ct);
+        var seedRows = await SeedRowsAsync(
+            conn,
+            winners.Where(w => w.CoRead).Select(w => coReadSeedByRow.GetValueOrDefault(w.Row))
+                .Concat(queries.Select(q => q.SeedId ?? 0)),
+            ct);
 
         using var cmd = conn.CreateCommand();
         cmd.CommandText =
@@ -2102,6 +2105,18 @@ public class SemanticRecommender(
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
+                var feelSeed = winner.BestSeedQuery < 0 || winner.Distinctiveness <= cutoff
+                    ? null
+                    : queries[winner.BestSeedQuery];
+                var coReadSeed = winner.CoRead
+                    && coReadSeedByRow.TryGetValue(winner.Row, out var seed)
+                    && seedRows.TryGetValue(seed, out var seedRow)
+                        ? (Id: seed, seedRow.Title, seedRow.Thumb)
+                        : default((long Id, string Title, string? Thumb)?);
+                var feelThumb = feelSeed?.SeedId is { } feelId && seedRows.TryGetValue(feelId, out var feelRow)
+                    ? feelRow.Thumb
+                    : null;
+
                 byId[id] = new MangaBakaRecommendation(
                     id.ToString(CultureInfo.InvariantCulture),
                     GetString(reader, 1) ?? string.Empty,
@@ -2118,19 +2133,19 @@ public class SemanticRecommender(
                     RelatedToTitle: null,
                     // "Feels like X": the individual seed whose query ranked this highest. Null
                     // when the centroid won, which is the honest answer — no one title drove it.
-                    BecauseOfTitle: winner.BestSeedQuery < 0 || winner.Distinctiveness <= cutoff
-                        ? null
-                        : queries[winner.BestSeedQuery].SeedTitle,
+                    BecauseOfTitle: feelSeed?.SeedTitle,
                     ThumbUrl: GetString(reader, 9),
                     ThumbUrlHiDpi: GetString(reader, 10),
                     CoRecommended: winner.CoRecommended,
                     CoRead: winner.CoRead,
                     TasteMatch: winner.TasteMatch,
-                    CoReadWithTitle: winner.CoRead
-                        && coReadSeedByRow.TryGetValue(winner.Row, out var seed)
-                        && coReadTitles.TryGetValue(seed, out var seedTitle)
-                            ? seedTitle
-                            : null);
+                    CoReadWithTitle: coReadSeed?.Title,
+                    BecauseOfId: feelSeed?.SeedTitle is null
+                        ? null
+                        : feelSeed.SeedId?.ToString(CultureInfo.InvariantCulture),
+                    CoReadWithId: coReadSeed?.Id.ToString(CultureInfo.InvariantCulture),
+                    BecauseOfThumbUrl: feelSeed?.SeedTitle is null ? null : feelThumb,
+                    CoReadWithThumbUrl: coReadSeed?.Thumb);
             }
         }
 
@@ -2139,30 +2154,30 @@ public class SemanticRecommender(
         return ids.Select(byId.GetValueOrDefault).OfType<MangaBakaRecommendation>().ToList();
     }
 
-    private static async Task<Dictionary<long, string>> SeedTitlesAsync(
+    private static async Task<Dictionary<long, (string Title, string? Thumb)>> SeedRowsAsync(
         SqliteConnection conn, IEnumerable<long> seedIds, CancellationToken ct)
     {
         var ids = seedIds.Where(id => id > 0).Distinct().ToList();
-        var titles = new Dictionary<long, string>(ids.Count);
+        var rows = new Dictionary<long, (string Title, string? Thumb)>(ids.Count);
         if (ids.Count == 0)
         {
-            return titles;
+            return rows;
         }
 
         using var cmd = conn.CreateCommand();
         cmd.CommandText =
-            $"SELECT id, {MangaBakaLocalStore.DisplayTitleSql("dump.series")} " +
+            $"SELECT id, {MangaBakaLocalStore.DisplayTitleSql("dump.series")}, cover_x250_x1 " +
             $"FROM dump.series WHERE id IN ({string.Join(",", ids)})";
         using var reader = await cmd.ExecuteReaderAsync(ct);
         while (await reader.ReadAsync(ct))
         {
             if (GetString(reader, 1) is { Length: > 0 } title)
             {
-                titles[reader.GetInt64(0)] = title;
+                rows[reader.GetInt64(0)] = (title, GetString(reader, 2));
             }
         }
 
-        return titles;
+        return rows;
     }
 
     /// <summary>

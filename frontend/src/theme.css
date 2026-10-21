@@ -2052,18 +2052,26 @@ body {
   /* Poster at the wider item (2/3) plus the footer and the scrollbar gutter. */
   contain-intrinsic-size: auto 336px;
 }
+/* The footer's content differs per reason (a seed card has no chips), so the item stretches to the
+   row and the footer takes up the difference: every card in a row ends at the same line. */
 .discover-rail[data-engine] .discover-rail-item {
+  display: flex;
   width: var(--rail-item-engine-w, 180px);
 }
 /* The poster keeps the 2/3 ratio; the card is poster + footer, so it cannot also be 2/3. */
 .engine-card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   aspect-ratio: auto;
 }
 .engine-card .cover-poster {
   height: auto;
 }
 .engine-why {
+  container-type: inline-size;
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 5px;
   padding: 8px 10px 9px;
@@ -2084,15 +2092,67 @@ body {
   flex: none;
   margin-top: 1px;
 }
-/* Two lines, and always two lines' worth of room: "Feels like <a long title>" does not fit on one
-   at this width, and a footer that grows with the sentence gives every card in the row a different
-   height. */
+/* Two shapes of about the same height. A sentence reason (author, taste, the anonymous crowd) takes
+   two lines over the matched-tag chips. A reason naming one of the reader's series puts the kind on
+   its own line, so an ellipsis never eats it, and gives the series up to three lines beside its
+   cover; the chips go, since the seed already says why the pick is here. */
 .engine-why-text {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  min-height: calc(2 * 1.25em);
   overflow: hidden;
+}
+.engine-why-seed-row {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  font-size: var(--type-micro);
+  line-height: 1.25;
+}
+.engine-why-seed {
+  flex: none;
+  width: calc(3 * 1.25em * 2 / 3);
+  height: calc(3 * 1.25em);
+  border-radius: 3px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+.engine-why-seed-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.engine-why-kind {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-weight: var(--fw-semibold);
+  color: var(--brand-fg, #b8c1ff);
+}
+.engine-why-kind svg {
+  flex: none;
+}
+.engine-why-kind span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* In a five-column grid the cover leaves too little room for "Side story of", so the icon goes:
+   the label is what must never be cut, and the cover already sets the line apart. */
+@container (max-width: 170px) {
+  .engine-why-seed + .engine-why-seed-body .engine-why-kind svg {
+    display: none;
+  }
+}
+/* Quieter than the poster's own title, which is the pick; this is only the reason for it. */
+.engine-why-seed-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-weight: var(--fw-medium);
+  color: var(--ink-2);
 }
 .engine-why-chips {
   display: flex;

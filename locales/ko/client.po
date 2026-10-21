@@ -7466,6 +7466,10 @@ msgstr "보통 품질"
 msgid "Falling means you moved."
 msgstr "떨어진다는 것은 움직였다는 뜻입니다."
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Fans of"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Fantasy"
@@ -7490,6 +7494,10 @@ msgstr ""
 #, fuzzy
 msgid "Feeling lucky"
 msgstr "운에 맡기기"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Feels like"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -10199,6 +10207,10 @@ msgstr "Main만"
 #, fuzzy
 msgid "Main only, no specials"
 msgstr "Main만, 스페셜 없음"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Main story of"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -13485,6 +13497,10 @@ msgid "Preparing model…"
 msgstr "모델 준비 중…"
 
 #: src/components/ui/DiscoverRail.tsx
+msgid "Prequel to"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Prequel to {relatedTo}"
 msgstr "{relatedTo}의 전일담"
@@ -14436,6 +14452,10 @@ msgstr "관련 시리즈, 이와 비슷한 항목, 유사, 추천, 레일, 속�
 
 #: src/components/ReleaseSearchModal.tsx
 msgid "Related series: {relatedTitle}"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to"
 msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
@@ -16341,6 +16361,10 @@ msgid "Sepia"
 msgstr "세피아"
 
 #: src/components/ui/DiscoverRail.tsx
+msgid "Sequel to"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Sequel to {relatedTo}"
 msgstr "{relatedTo}의 속편"
@@ -16785,6 +16809,10 @@ msgid "Side interests"
 msgstr "세부 관심사"
 
 #: src/components/ui/DiscoverRail.tsx
+msgid "Side story of"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Side story of {relatedTo}"
 msgstr "{relatedTo}의 외전"
@@ -17224,6 +17252,10 @@ msgstr "특별편은 10.5, 12.1처럼 소수점이 있는 챕터입니다. 켜�
 #, fuzzy
 msgid "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
 msgstr "특별편, 오마케, 소수점 챕터, 새 항목 모니터링, 모니터링, 시크릿 모드, 읽기 기록 동기화 안 함, 콘텐츠 등급, 시리즈 추가"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Spin-off of"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy

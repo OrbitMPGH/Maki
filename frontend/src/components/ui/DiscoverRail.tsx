@@ -12,7 +12,7 @@ import {
   IconUsers,
 } from '@tabler/icons-react'
 import type { Icon } from '@tabler/icons-react'
-import type { RecommendationItem } from '../../api/hooks'
+import { useLibraryCoverLookup, type RecommendationItem } from '../../api/hooks'
 import { formatFixedDecimal } from '../../format'
 import { Rail } from './Rail'
 import { t as now } from '@lingui/core/macro'
@@ -291,24 +291,92 @@ export const RecommendationRow = memo(function RecommendationRow({
    cards are wider, and they carry the grounds under the poster instead of squeezed into the scrim
    where the catalogue card's optional reason line lives. */
 
+/** The relation as a label that sits above the related title rather than around it. */
+function relationLabel(kind: string): string {
+  switch (kind) {
+    case 'Sequel':
+      return now`Sequel to`
+    case 'Prequel':
+      return now`Prequel to`
+    case 'Spin-off':
+      return now`Spin-off of`
+    case 'Side story':
+      return now`Side story of`
+    case 'Main story':
+      return now`Main story of`
+    default:
+      return now`Related to`
+  }
+}
+
+type EngineWhy = {
+  Glyph: Icon
+  /** The whole sentence, for the tooltip and for reasons that name no series. */
+  text: string
+  /** Reasons that name one of the reader's series split into the kind and the series itself. */
+  seed?: { label: string; title: string; id: string | null; thumb: string | null }
+}
+
 /** The strongest thing the engine can say about one pick, and the icon that says which kind it is. */
-function engineWhy(item: RecommendationItem): { Glyph: Icon; text: string } {
+function engineWhy(item: RecommendationItem): EngineWhy {
   if (item.relationKind && item.relatedToTitle) {
-    return { Glyph: IconAffiliate, text: relationPhrase(item.relationKind, item.relatedToTitle) }
+    return {
+      Glyph: IconAffiliate,
+      text: relationPhrase(item.relationKind, item.relatedToTitle),
+      seed: {
+        label: relationLabel(item.relationKind),
+        title: item.relatedToTitle,
+        id: item.relatedToId ?? null,
+        thumb: item.relatedToThumbUrl ?? null,
+      },
+    }
   }
   if (item.becauseOfTitle) {
     const { becauseOfTitle } = item
-    return { Glyph: IconSparkles, text: now`Feels like ${becauseOfTitle}` }
+    return {
+      Glyph: IconSparkles,
+      text: now`Feels like ${becauseOfTitle}`,
+      seed: {
+        label: now`Feels like`,
+        title: becauseOfTitle,
+        id: item.becauseOfId ?? null,
+        thumb: item.becauseOfThumbUrl ?? null,
+      },
+    }
   }
   if (item.authorMatch) {
     return { Glyph: IconFeather, text: now`By an author you read` }
   }
   // The crowd signals come after the item-specific ones on purpose: on the cohort rail every pick
   // has `coRead`, and a card repeating its own heading twenty times says nothing.
+  if (item.coRead && item.coReadWithTitle) {
+    return {
+      Glyph: IconUsers,
+      text: coReadPhrase(item),
+      seed: {
+        label: now`Fans of`,
+        title: item.coReadWithTitle,
+        id: item.coReadWithId ?? null,
+        thumb: item.coReadWithThumbUrl ?? null,
+      },
+    }
+  }
   if (item.coRead) return { Glyph: IconUsers, text: coReadPhrase(item) }
   if (item.coRecommended) return { Glyph: IconUsers, text: now`Readers like you also recommended this` }
   if (item.tasteMatch) return { Glyph: IconHeartFilled, text: now`Close to your taste` }
   return { Glyph: IconSparkles, text: now`Similar feel` }
+}
+
+/**
+ * The cover of the series an engine card's reason names: the library's own when the reader owns it,
+ * since that is the cover they know it by, else the catalogue's for a seed picked by hand.
+ */
+export function useSeedCover() {
+  const coverFor = useLibraryCoverLookup()
+  return (item: RecommendationItem) => {
+    const seed = engineWhy(item).seed
+    return seed ? coverFor(seed.id) ?? seed.thumb : null
+  }
 }
 
 /**
@@ -321,14 +389,17 @@ export const EngineCard = memo(function EngineCard({
   item,
   inLibrarySeriesId,
   onOpen,
+  seedCoverUrl,
 }: {
   item: RecommendationItem
   inLibrarySeriesId: number | null
   onOpen: (item: RecommendationItem) => void
+  /** Cover of the library series the reason names. It stays recognisable when a long title is cut off. */
+  seedCoverUrl?: string | null
 }) {
   const { t } = useLingui()
   const owned = inLibrarySeriesId != null
-  const { Glyph, text } = engineWhy(item)
+  const { Glyph, text, seed } = engineWhy(item)
   const { title } = item
   // Tags before genres: "Time Loop" says what a pick is, "Action" says what a third of the
   // catalogue is. Two, because three at this width truncate to "Cl…", "Stud…", "High…".
@@ -378,11 +449,26 @@ export const EngineCard = memo(function EngineCard({
       </div>
 
       <div className="engine-why">
-        <span className="engine-why-line" title={text}>
-          <Glyph size={13} />
-          <span className="engine-why-text">{text}</span>
-        </span>
-        {chips.length > 0 && (
+        {seed ? (
+          <span className="engine-why-seed-row" title={text}>
+            {seedCoverUrl && (
+              <img className="engine-why-seed" src={seedCoverUrl} alt="" loading="lazy" decoding="async" />
+            )}
+            <span className="engine-why-seed-body">
+              <span className="engine-why-kind">
+                <Glyph size={12} />
+                <span>{seed.label}</span>
+              </span>
+              <span className="engine-why-seed-title">{seed.title}</span>
+            </span>
+          </span>
+        ) : (
+          <span className="engine-why-line" title={text}>
+            <Glyph size={13} />
+            <span className="engine-why-text">{text}</span>
+          </span>
+        )}
+        {!seed && chips.length > 0 && (
           <span className="engine-why-chips">
             {chips.map((c) => (
               <span key={c} className="engine-chip" title={c}>
@@ -414,11 +500,17 @@ export function EngineRailRow({
   seriesIdFor: (item: RecommendationItem) => number | null
   onOpen: (item: RecommendationItem) => void
 }) {
+  const seedCover = useSeedCover()
   return (
     <Rail engine>
       {items.map((item) => (
         <div key={item.providerId} className="discover-rail-item">
-          <EngineCard item={item} inLibrarySeriesId={seriesIdFor(item)} onOpen={onOpen} />
+          <EngineCard
+            item={item}
+            inLibrarySeriesId={seriesIdFor(item)}
+            onOpen={onOpen}
+            seedCoverUrl={seedCover(item)}
+          />
         </div>
       ))}
     </Rail>

@@ -694,24 +694,26 @@ public class MangaBakaLocalStore(
         using var conn = Open();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = $"""
-            SELECT {DisplayTitleSql("series")}, {string.Join(", ", kinds.Select(k => k.Column))}
+            SELECT id, {DisplayTitleSql("series")}, cover_x250_x1, {string.Join(", ", kinds.Select(k => k.Column))}
             FROM series WHERE id IN ({string.Join(",", seedIds)})
             """;
 
         // relation id → (kind, which library series it relates to); first mention wins
-        var wanted = new Dictionary<long, (string Kind, string RelatedTo)>();
+        var wanted = new Dictionary<long, (string Kind, string RelatedTo, long RelatedToId, string? RelatedToThumb)>();
         using (var reader = await cmd.ExecuteReaderAsync(ct))
         {
             while (await reader.ReadAsync(ct))
             {
-                var sourceTitle = GetString(reader, 0) ?? string.Empty;
+                var sourceId = reader.GetInt64(0);
+                var sourceTitle = GetString(reader, 1) ?? string.Empty;
+                var sourceThumb = GetString(reader, 2);
                 for (var i = 0; i < kinds.Length; i++)
                 {
-                    foreach (var id in ParseIdArray(GetString(reader, i + 1)))
+                    foreach (var id in ParseIdArray(GetString(reader, i + 3)))
                     {
                         if (!excludeIds.Contains(id))
                         {
-                            wanted.TryAdd(id, (kinds[i].Kind, sourceTitle));
+                            wanted.TryAdd(id, (kinds[i].Kind, sourceTitle, sourceId, sourceThumb));
                         }
                     }
                 }
@@ -768,7 +770,9 @@ public class MangaBakaLocalStore(
                     [], [], false,
                     relation.Kind, relation.RelatedTo,
                     ThumbUrl: GetString(reader, 12),
-                    ThumbUrlHiDpi: GetString(reader, 13)));
+                    ThumbUrlHiDpi: GetString(reader, 13),
+                    RelatedToId: relation.RelatedToId.ToString(CultureInfo.InvariantCulture),
+                    RelatedToThumbUrl: relation.RelatedToThumb));
             }
         }
 

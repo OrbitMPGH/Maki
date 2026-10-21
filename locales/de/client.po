@@ -7467,6 +7467,10 @@ msgstr "Mittlere Qualität"
 msgid "Falling means you moved."
 msgstr "Ein Rückgang bedeutet, dass du dich verändert hast."
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Fans of"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Fantasy"
@@ -7491,6 +7495,10 @@ msgstr ""
 #, fuzzy
 msgid "Feeling lucky"
 msgstr "Glück gehabt"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Feels like"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -10200,6 +10208,10 @@ msgstr "Nur Main"
 #, fuzzy
 msgid "Main only, no specials"
 msgstr "Nur Main, keine Specials"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Main story of"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -13486,6 +13498,10 @@ msgid "Preparing model…"
 msgstr "Modell wird vorbereitet…"
 
 #: src/components/ui/DiscoverRail.tsx
+msgid "Prequel to"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Prequel to {relatedTo}"
 msgstr "Vorgeschichte von {relatedTo}"
@@ -14437,6 +14453,10 @@ msgstr "verwandte Serien, mehr wie dieses, ähnlich, Empfehlungen, Rails, Fortse
 
 #: src/components/ReleaseSearchModal.tsx
 msgid "Related series: {relatedTitle}"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to"
 msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
@@ -16342,6 +16362,10 @@ msgid "Sepia"
 msgstr "Sepia"
 
 #: src/components/ui/DiscoverRail.tsx
+msgid "Sequel to"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Sequel to {relatedTo}"
 msgstr "Fortsetzung von {relatedTo}"
@@ -16786,6 +16810,10 @@ msgid "Side interests"
 msgstr "Nebeninteressen"
 
 #: src/components/ui/DiscoverRail.tsx
+msgid "Side story of"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Side story of {relatedTo}"
 msgstr "Nebengeschichte von {relatedTo}"
@@ -17225,6 +17253,10 @@ msgstr "Specials sind Kapitel mit Dezimalzahl wie 10.5 oder 12.1. Wenn aktiviert
 #, fuzzy
 msgid "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
 msgstr "Specials, Omake, Dezimalkapitel, neue Inhalte überwachen, Überwachung, Inkognito, nicht scrobbeln, Inhaltseinstufung, Serie hinzufügen"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Spin-off of"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy

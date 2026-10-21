@@ -127,6 +127,20 @@ export function useSeriesIdLookup() {
     seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
 }
 
+/** Maps a MangaBaka id to the poster of the library series that owns it, or null. */
+export function useLibraryCoverLookup() {
+  const { data: library } = useSeries()
+  const coverByMangaBaka = useMemo(() => {
+    const map = new Map<number, string>()
+    for (const s of library ?? []) {
+      if (s.mangaBakaId != null && s.coverUrl) map.set(s.mangaBakaId, s.coverUrl)
+    }
+    return map
+  }, [library])
+  return (mangaBakaId: string | null | undefined) =>
+    mangaBakaId ? coverByMangaBaka.get(Number(mangaBakaId)) ?? null : null
+}
+
 // When each series was first seen waiting on its match or link, for the polling backoff below.
 const pendingSince = new Map<number, number>()
 
@@ -206,6 +220,14 @@ export interface RecommendationItem {
   tasteMatch?: boolean
   /** The reader's own title the co-read crowd paired this with. Only set alongside `coRead`. */
   coReadWithTitle?: string | null
+  /** MangaBaka ids of the seeds `relatedToTitle`, `becauseOfTitle` and `coReadWithTitle` name. */
+  relatedToId?: string | null
+  becauseOfId?: string | null
+  coReadWithId?: string | null
+  /** The catalogue's covers for those seeds, for one the reader picked rather than owns. */
+  relatedToThumbUrl?: string | null
+  becauseOfThumbUrl?: string | null
+  coReadWithThumbUrl?: string | null
   /**
    * The same-work component this pick belongs to, or null when it is in no franchise, which is
    * most of the catalogue. Two nulls are unrelated, not siblings. The server already spaces a

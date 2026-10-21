@@ -100,6 +100,7 @@ import {
   DiscoverRailRow,
   EngineCard,
   EngineRailRow,
+  useSeedCover,
   RecommendationCard,
   RecommendationRow,
 } from '../components/ui/DiscoverRail'
@@ -545,6 +546,7 @@ function RecommendedTab() {
   }, [library])
   const seriesIdFor = (item: RecommendationItem) =>
     seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
+  const seedCover = useSeedCover()
 
   const luckyItems = useMemo(() => {
     const seen = new Set<string>()
@@ -816,6 +818,7 @@ function RecommendedTab() {
                   item={item}
                   inLibrarySeriesId={seriesIdFor(item)}
                   onOpen={setDetailItem}
+                  seedCoverUrl={seedCover(item)}
                 />
               ))}
             </SimpleGrid>
@@ -862,6 +865,7 @@ function RecommendedTab() {
                   item={item}
                   inLibrarySeriesId={seriesIdFor(item)}
                   onOpen={setDetailItem}
+                  seedCoverUrl={seedCover(item)}
                 />
               ))}
             </SimpleGrid>

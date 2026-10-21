@@ -6175,6 +6175,10 @@ msgstr "Fair quality"
 msgid "Falling means you moved."
 msgstr "Falling means you moved."
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Fans of"
+msgstr "Fans of"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Fantasy"
 msgstr "Fantasy"
@@ -6195,6 +6199,10 @@ msgstr "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon
 #: src/components/LuckyButton.tsx
 msgid "Feeling lucky"
 msgstr "Feeling lucky"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Feels like"
+msgstr "Feels like"
 
 #: src/components/ui/DiscoverRail.tsx
 msgid "Feels like {becauseOfTitle}"
@@ -8429,6 +8437,10 @@ msgstr "Main only"
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Main only, no specials"
 msgstr "Main only, no specials"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Main story of"
+msgstr "Main story of"
 
 #: src/components/ui/DiscoverRail.tsx
 msgid "Main story of {relatedTo}"
@@ -11148,6 +11160,10 @@ msgid "Preparing model…"
 msgstr "Preparing model…"
 
 #: src/components/ui/DiscoverRail.tsx
+msgid "Prequel to"
+msgstr "Prequel to"
+
+#: src/components/ui/DiscoverRail.tsx
 msgid "Prequel to {relatedTo}"
 msgstr "Prequel to {relatedTo}"
 
@@ -11930,6 +11946,10 @@ msgstr "related series, more like this, similar, recommendations, rails, sequels
 #: src/components/ReleaseSearchModal.tsx
 msgid "Related series: {relatedTitle}"
 msgstr "Related series: {relatedTitle}"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to"
+msgstr "Related to"
 
 #: src/components/ui/DiscoverRail.tsx
 msgid "Related to {relatedTo}"
@@ -13516,6 +13536,10 @@ msgid "Sepia"
 msgstr "Sepia"
 
 #: src/components/ui/DiscoverRail.tsx
+msgid "Sequel to"
+msgstr "Sequel to"
+
+#: src/components/ui/DiscoverRail.tsx
 msgid "Sequel to {relatedTo}"
 msgstr "Sequel to {relatedTo}"
 
@@ -13884,6 +13908,10 @@ msgid "Side interests"
 msgstr "Side interests"
 
 #: src/components/ui/DiscoverRail.tsx
+msgid "Side story of"
+msgstr "Side story of"
+
+#: src/components/ui/DiscoverRail.tsx
 msgid "Side story of {relatedTo}"
 msgstr "Side story of {relatedTo}"
 
@@ -14245,6 +14273,10 @@ msgstr "Specials are decimal chapters like 10.5 or 12.1. When on, they stay list
 #: src/pages/settings/registry.ts
 msgid "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
 msgstr "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Spin-off of"
+msgstr "Spin-off of"
 
 #: src/components/ui/DiscoverRail.tsx
 msgid "Spin-off of {relatedTo}"
