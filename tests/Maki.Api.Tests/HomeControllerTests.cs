@@ -15,6 +15,7 @@ namespace Maki.Api.Tests;
 /// into a bug: tombstones must not hijack Continue reading, a series with nothing left to read
 /// must drop out of Jump back in, and neither rail may consult <see cref="ReadingState"/>.
 /// </summary>
+[Collection(ConfigDirCollection.Name)]
 public class HomeControllerTests : IDisposable
 {
     private static readonly DateTime Base = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
