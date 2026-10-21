@@ -178,6 +178,25 @@ public class ScrobbleServiceTests
     }
 
     [Fact]
+    public async Task NativePassAsync_FlushesABatchTrackerWhoseOldestWriteHasWaitedTooLong()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        foreach (var (title, slug, chapter) in new[] { ("A", "pb8uwds", 1), ("B", "pb8uwdt", 2), ("C", "pb8uwdu", 3) })
+        {
+            SeedReading(db, user, db.SeedSeries(title, configure: s => s.MangaUpdatesId = slug), chapter);
+        }
+
+        var tracker = new FakeBatchTracker();
+        var service = BuildService(db, new FakeUserSettingsStore(db));
+        service.MaxBatchWait = TimeSpan.Zero;
+
+        await service.NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        Assert.Equal([1, 1, 1], tracker.Batches.Select(b => b.Count));
+    }
+
+    [Fact]
     public async Task NativePassAsync_SkipsAMangaUpdatesTrackerForASeriesWithoutASlug()
     {
         using var db = new TestDb();

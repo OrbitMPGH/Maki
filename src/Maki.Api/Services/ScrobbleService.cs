@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Api.Controllers;
@@ -38,6 +39,12 @@ public class ScrobbleService(
     public const int DefaultIntervalMinutes = 30;
 
     private static readonly TimeSpan ReadingToggleRefresh = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// How long a batched write may wait for its batch to fill. The write's plan comes from an entry
+    /// read when it was queued, so this bounds how stale that read is when the write goes out.
+    /// </summary>
+    internal TimeSpan MaxBatchWait { get; set; } = TimeSpan.FromSeconds(60);
 
     /// <summary>Polite pacing between remote API calls.</summary>
     private static readonly TimeSpan Pace = TimeSpan.FromSeconds(1.2);
@@ -413,7 +420,7 @@ public class ScrobbleService(
         var boundarySource = await volumeBoundaries.LoadAsync(userId, allRootFolders, matchedIds, ct);
 
         int updates = 0, errors = 0, skipped = 0, noProgress = 0;
-        var batcher = new WriteBatcher(userId, logger, ct);
+        var batcher = new WriteBatcher(userId, MaxBatchWait, logger, ct);
 
         // The toggles are read once and refreshed every 30 s, so switching one off mid-pass stops
         // its pushes within that window without a settings read per series.
@@ -423,6 +430,7 @@ public class ScrobbleService(
         foreach (var series in seriesList)
         {
             ct.ThrowIfCancellationRequested();
+            await batcher.FlushStaleAsync();
             if (DateTime.UtcNow - readingReadAt > ReadingToggleRefresh)
             {
                 foreach (var tracker in trackers)
@@ -744,11 +752,12 @@ public class ScrobbleService(
         oneShots ??= await FinishedOneShotsAsync(userId, await AllRootFoldersAsync(userId, ct), ct);
 
         int updates = 0, errors = 0, skipped = 0;
-        var batcher = new WriteBatcher(userId, logger, ct);
+        var batcher = new WriteBatcher(userId, MaxBatchWait, logger, ct);
 
         foreach (var row in rows)
         {
             ct.ThrowIfCancellationRequested();
+            await batcher.FlushStaleAsync();
             var chapter = (int)Math.Floor(row.MaxChapter);
             var volume = (int)Math.Floor(row.MaxVolume);
             var finished = oneShots.TryGetValue(row.SeriesId, out var completedLocally);
@@ -761,6 +770,7 @@ public class ScrobbleService(
         foreach (var row in zeroProgress)
         {
             ct.ThrowIfCancellationRequested();
+            await batcher.FlushStaleAsync();
             if (oneShots.TryGetValue(row.SeriesId, out var completedLocally))
             {
                 await PushNativeRowAsync(
@@ -951,18 +961,25 @@ public class ScrobbleService(
 
     /// <summary>
     /// Holds a pass's writes for trackers that take them in bulk and sends them <c>MaxBatch</c> at a
-    /// time, then once more at the end of the pass. Each write's continuation runs after its batch, with
-    /// the reason it failed or null, so state and counts are only recorded for what was actually sent.
+    /// time, when the oldest has waited <c>maxWait</c> (checked by the pass between series), and once
+    /// more at the end of the pass. Each write's continuation runs after its batch, with the reason it
+    /// failed or null, so state and counts are only recorded for what was actually sent.
     /// </summary>
-    private sealed class WriteBatcher(int userId, ILogger logger, CancellationToken ct)
+    private sealed class WriteBatcher(int userId, TimeSpan maxWait, ILogger logger, CancellationToken ct)
     {
         private readonly Dictionary<IBatchScrobbleTracker, List<(ScrobbleWrite Write, Func<Exception?, Task> Complete)>> _queues = [];
+        private readonly Dictionary<IBatchScrobbleTracker, long> _oldest = [];
 
         public async Task QueueAsync(IBatchScrobbleTracker tracker, ScrobbleWrite write, Func<Exception?, Task> complete)
         {
             if (!_queues.TryGetValue(tracker, out var queue))
             {
                 _queues[tracker] = queue = [];
+            }
+
+            if (queue.Count == 0)
+            {
+                _oldest[tracker] = Stopwatch.GetTimestamp();
             }
 
             queue.Add((write, complete));
@@ -977,6 +994,17 @@ public class ScrobbleService(
             foreach (var tracker in _queues.Keys.ToList())
             {
                 await FlushAsync(tracker);
+            }
+        }
+
+        public async Task FlushStaleAsync()
+        {
+            foreach (var (tracker, queue) in _queues.ToList())
+            {
+                if (queue.Count > 0 && Stopwatch.GetElapsedTime(_oldest[tracker]) >= maxWait)
+                {
+                    await FlushAsync(tracker);
+                }
             }
         }
 
