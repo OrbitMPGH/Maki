@@ -40,6 +40,13 @@ public class PageConversionService(
 {
     public const string TrashPrefix = "conv-";
 
+    internal Func<string, string, bool> Hardlink { get; init; } = FileLinker.TryHardlink;
+
+    internal Action<string, string> MoveOver { get; init; } = (from, to) => File.Move(from, to, overwrite: true);
+
+    internal Func<string, string, PageConversionSettings, CancellationToken, Task<ArchiveConversionResult>> Converter { get; init; } =
+        ArchivePageConverter.ConvertAsync;
+
     public async Task<FileConversion> ConvertAsync(int fileId, PageConversionSettings settings, CancellationToken ct)
     {
         var row = await db.ChapterFiles.IgnoreQueryFilters().AsNoTracking()
@@ -82,15 +89,31 @@ public class PageConversionService(
         var before = new FileInfo(path);
         var (length, written) = (before.Length, before.LastWriteTimeUtc);
         var tmp = Path.Combine(row.Root, ".maki", "tmp", $"{TrashPrefix}{fileId.ToString(CultureInfo.InvariantCulture)}.cbz");
+        // Windows refuses to rename an open file or move the folder it is in, and a conversion can take
+        // minutes, so there it reads a copy rather than holding the library file.
+        var source = OperatingSystem.IsWindows() ? Path.ChangeExtension(tmp, ".source.cbz") : path;
         ArchiveConversionResult result;
         try
         {
-            result = await ArchivePageConverter.ConvertAsync(path, tmp, settings, ct);
+            if (source != path)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(source)!);
+                File.Copy(path, source, overwrite: true);
+            }
+
+            result = await Converter(source, tmp, settings, ct);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             logger.LogDebug(ex, "Could not convert {Path}", path);
             return new FileConversion(FileConversionStatus.Failed);
+        }
+        finally
+        {
+            if (source != path)
+            {
+                TryDelete(source);
+            }
         }
 
         if (result.Outcome != ArchiveConversionOutcome.Converted)
@@ -135,10 +158,10 @@ public class PageConversionService(
     }
 
     /// <summary>
-    /// Puts the original into the trash and the converted copy at its path. A hardlink into the trash
-    /// first, then a rename over the original, keeps the library path filled at every step; where the
-    /// filesystem has no hardlinks the original is moved out and the copy moved in, and moved back on a
-    /// failure.
+    /// Puts the original into the trash and the converted copy at its path: a hardlink (or, where the
+    /// filesystem has none, a copy) into the trash first, then a rename over the original, so the
+    /// library path holds a whole archive at every step. Moving the original out instead would leave
+    /// the path empty whenever moving a file back in failed too.
     /// </summary>
     private bool Swap(string root, ChapterFile file, string path, string converted)
     {
@@ -148,34 +171,24 @@ public class PageConversionService(
         var trash = LibraryPaths.Resolve(root, trashRelative)!;
         try
         {
-            if (FileLinker.TryHardlink(path, trash))
+            if (!Hardlink(path, trash))
             {
-                try
-                {
-                    File.Move(converted, path, overwrite: true);
-                }
-                catch
-                {
-                    TryDelete(trash);
-                    throw;
-                }
+                File.Copy(path, trash);
             }
-            else
+
+            try
             {
-                File.Move(path, trash);
-                try
-                {
-                    File.Move(converted, path);
-                }
-                catch
-                {
-                    File.Move(trash, path);
-                    throw;
-                }
+                MoveOver(converted, path);
+            }
+            // A share can report a failure for a rename that happened (an NFS retransmit).
+            catch (Exception ex) when ((ex is IOException or UnauthorizedAccessException) && SameVolumeMove.Landed(converted, path))
+            {
+                logger.LogDebug(ex, "Replacing {Path} reported a failure but the converted copy is in place", path);
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            TryDelete(trash);
             logger.LogWarning(ex, "Could not replace {Path} with its converted copy; left as it was", path);
             return false;
         }
