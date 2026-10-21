@@ -397,6 +397,14 @@ public class TorrentUpgradeService(
                     logger.LogInformation("Volume search grabbed '{Release}' for '{Title}'", grab.Release.Title, series.Title);
                     return new SeriesVolumeSearchResult(true, result.Releases.Count, item.Id, null, null);
                 }
+                catch (TorrentClientException ex) when (ex.Failure == TorrentClientFailure.HeldOutsideLabel)
+                {
+                    // The user's client setup, not an outage and not a bad release: retrying tomorrow
+                    // would refuse the same upload again, so the series waits out the normal interval.
+                    logger.LogWarning("Could not grab '{Release}' for '{Title}': {Reason}. Move it to Maki's category or remove it from the client",
+                        grab.Release.Title, series.Title, ex.Message);
+                    return new SeriesVolumeSearchResult(true, result.Releases.Count, null, null, VolumeSearchReasons.GrabFailed);
+                }
                 catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or TaskCanceledException
                                                && !ct.IsCancellationRequested)
                 {
