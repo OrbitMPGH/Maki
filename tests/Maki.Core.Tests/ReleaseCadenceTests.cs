@@ -37,6 +37,31 @@ public class ReleaseCadenceTests
     }
 
     [Fact]
+    public void Too_few_releases_to_test_the_window_is_unknown_rather_than_irregular()
+    {
+        var releases = Every(7, 5);
+
+        var estimate = ReleaseCadence.Estimate(releases, releases[^1].AddDays(1));
+
+        Assert.Equal(CadenceState.Unknown, estimate.State);
+        Assert.Null(estimate.WindowStart);
+        Assert.Equal(7, estimate.Interval);
+    }
+
+    [Fact]
+    public void A_daily_series_gets_a_window_instead_of_reading_as_irregular()
+    {
+        var releases = Every(1, 12);
+        var last = releases[^1];
+
+        var estimate = ReleaseCadence.Estimate(releases, last.AddHours(6));
+
+        Assert.Equal(CadenceState.Expected, estimate.State);
+        Assert.Equal(last, estimate.WindowStart);
+        Assert.Equal(last.AddDays(2), estimate.WindowEnd);
+    }
+
+    [Fact]
     public void A_same_day_batch_counts_as_one_release()
     {
         var releases = Every(7, 8).SelectMany(d => new[] { d, d.AddMinutes(3), d.AddHours(1) }).ToList();
