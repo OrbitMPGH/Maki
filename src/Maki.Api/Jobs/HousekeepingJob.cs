@@ -15,6 +15,8 @@ public class HousekeepingJob(
     /// <summary>Most in-app notifications kept per user, read or not. Well past what anyone scrolls.</summary>
     private const int InboxCap = 200;
 
+    private static readonly string[] TmpPatterns = ["*.cbz", "*.cbz.partial", "*.cbz.converted", "*.cbz.converted.partial"];
+
     /// <summary>
     /// Failed rows that are not waiting on a retry. A failure stamps neither <c>CompletedAt</c> nor
     /// resets <c>QueuedAt</c>, so a chapter that failed once and is parked behind a backoff or an
@@ -77,8 +79,8 @@ public class HousekeepingJob(
             }
         }
 
-        // Packaged chapters, and their .partial files from a kill mid-write, left in a library share's
-        // .maki/tmp by an item that was cleared or whose process died mid-import. Named after the queue row, so one still active is left alone.
+        // Packaged chapters, their converted copies, and the .partial files of both from a kill mid-write,
+        // left in a library share's .maki/tmp by an item that was cleared or whose process died mid-import. Named after the queue row, so one still active is left alone.
         var tmpCutoff = DateTime.UtcNow.AddDays(-1);
         var liveTmp = (await db.DownloadQueue
                 .Where(q => q.Status != QueueStatus.Completed &&
@@ -98,7 +100,7 @@ public class HousekeepingJob(
 
             try
             {
-                foreach (var file in Directory.GetFiles(tmpDir, "*.cbz").Concat(Directory.GetFiles(tmpDir, "*.cbz.partial")))
+                foreach (var file in TmpPatterns.SelectMany(pattern => Directory.GetFiles(tmpDir, pattern)))
                 {
                     if (ct.IsCancellationRequested)
                     {

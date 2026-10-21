@@ -75,15 +75,20 @@ public class UpgradeTrashTests : IDisposable
     {
         var tmp = Path.Combine(_world.Library, ".maki", "tmp");
         Directory.CreateDirectory(tmp);
-        var stale = Path.Combine(tmp, "9001.cbz.partial");
+        string[] stale = [Path.Combine(tmp, "9001.cbz.partial"), Path.Combine(tmp, "9003.cbz.converted"),
+            Path.Combine(tmp, "9004.cbz.converted.partial")];
         var fresh = Path.Combine(tmp, "9002.cbz.partial");
-        File.WriteAllBytes(stale, [1]);
+        foreach (var file in stale)
+        {
+            File.WriteAllBytes(file, [1]);
+            File.SetLastWriteTimeUtc(file, DateTime.UtcNow.AddDays(-3));
+        }
+
         File.WriteAllBytes(fresh, [1]);
-        File.SetLastWriteTimeUtc(stale, DateTime.UtcNow.AddDays(-3));
 
         await HousekeepAsync();
 
-        Assert.False(File.Exists(stale));
+        Assert.All(stale, file => Assert.False(File.Exists(file)));
         Assert.True(File.Exists(fresh));
     }
 
