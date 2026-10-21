@@ -107,10 +107,18 @@ public class HousekeepingJob(
                         return;
                     }
 
-                    if (File.GetLastWriteTimeUtc(file) < tmpCutoff &&
-                        !liveTmp.Contains(Path.GetFileName(file).Split('.')[0]))
+                    try
                     {
-                        File.Delete(file);
+                        if (File.GetLastWriteTimeUtc(file) < tmpCutoff &&
+                            !liveTmp.Contains(Path.GetFileName(file).Split('.')[0]))
+                        {
+                            File.Delete(file);
+                        }
+                    }
+                    // One file still held open must not keep the rest of the folder from being swept.
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        logger.LogDebug(ex, "Could not delete {File}", file);
                     }
                 }
             }

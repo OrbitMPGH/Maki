@@ -106,6 +106,9 @@ public class PageConversionService(
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(source)!);
                 File.Copy(path, source, overwrite: true);
+                // The copy keeps the library file's write time, which the housekeeping tmp sweep would
+                // read as a day-old leftover and delete mid-conversion.
+                File.SetLastWriteTimeUtc(source, DateTime.UtcNow);
             }
 
             result = await Converter(source, tmp, settings, ct);

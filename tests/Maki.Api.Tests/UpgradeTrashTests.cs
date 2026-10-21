@@ -93,6 +93,27 @@ public class UpgradeTrashTests : IDisposable
     }
 
     [Fact]
+    public async Task A_tmp_file_that_cannot_be_deleted_does_not_stop_the_rest_of_the_sweep()
+    {
+        var tmp = Path.Combine(_world.Library, ".maki", "tmp");
+        Directory.CreateDirectory(tmp);
+        var held = Path.Combine(tmp, "conv-8001.source.cbz");
+        var stale = Path.Combine(tmp, "9001.cbz.partial");
+        foreach (var file in new[] { held, stale })
+        {
+            File.WriteAllBytes(file, [1]);
+            File.SetLastWriteTimeUtc(file, DateTime.UtcNow.AddDays(-3));
+        }
+
+        using (new FileStream(held, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            await HousekeepAsync();
+        }
+
+        Assert.False(File.Exists(stale));
+    }
+
+    [Fact]
     public async Task A_retention_of_zero_purges_everything_on_the_next_run()
     {
         SeedTrash("1-new.cbz", ageDays: 0);

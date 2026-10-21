@@ -448,6 +448,32 @@ public sealed class PageConversionTests : IDisposable
         Assert.Empty(TmpFiles());
     }
 
+    [Fact]
+    public async Task The_windows_source_copy_is_stamped_fresh_so_the_tmp_sweep_leaves_it()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var (_, fileId, path) = JpegChapter(1);
+        File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddDays(-30));
+        DateTime? copyWritten = null;
+
+        using (var db = _world.Db.NewContext())
+        {
+            var service = Service(db, converter: (source, target, settings, ct) =>
+            {
+                Assert.NotEqual(path, source);
+                copyWritten = File.GetLastWriteTimeUtc(source);
+                return ArchivePageConverter.ConvertAsync(source, target, settings, ct);
+            });
+            Assert.Equal(FileConversionStatus.Converted, (await service.ConvertAsync(fileId, Webp, CancellationToken.None)).Status);
+        }
+
+        Assert.True(copyWritten > DateTime.UtcNow.AddHours(-1));
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
