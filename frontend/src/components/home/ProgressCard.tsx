@@ -1,38 +1,17 @@
-import { Group, RingProgress, Stack, Text } from '@mantine/core'
+import { RingProgress, Text } from '@mantine/core'
 import { IconFlame, IconTrophy } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { ProgressSummary } from '../../api/hooks'
 import { formatNumber, formatReadingTime } from '../../format'
 import { Trans, useLingui } from '@lingui/react/macro'
-
-function Figure({
-  value,
-  label,
-  icon: FigIcon,
-}: {
-  value: string | number
-  label: string
-  icon?: typeof IconFlame
-}) {
-  return (
-    <div className="hero-stat">
-      <span className="hero-stat-n tnum">
-        {FigIcon && (
-          <FigIcon size={14} style={{ color: 'var(--brand)', marginRight: 4, verticalAlign: -1 }} />
-        )}
-        {value}
-      </span>
-      <span className="hero-stat-l">{label}</span>
-    </div>
-  )
-}
+import { GlanceFigures, type GlanceFigure } from './HomeGlance'
 
 /**
- * Home's progression figures, matching the Stats page's Progress section so the same numbers read
- * the same in both places. The whole group links to Stats for the full picture.
+ * Home's progression row, matching the Stats page's Progress section so the same numbers read the
+ * same in both places. The whole row links to Stats for the full picture.
  *
- * Deliberately without a card of its own: it is one half of Home's glance strip, which supplies
- * the border and the padding for both halves. See `.home-glance` in theme.css.
+ * A row of the glance, not a card: `HomeGlance` supplies the surface. The ring is the XP bar, and
+ * the sidebar footer already has its own, so there is no bar under the level.
  */
 export function ProgressCard({ summary }: { summary: ProgressSummary }) {
   const { t } = useLingui()
@@ -42,15 +21,28 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
   const levelSpanFormatted = formatNumber(levelSpan)
   const nextLevel = levelNumber + 1
 
+  const figures: GlanceFigure[] = [
+    { value: formatNumber(summary.chaptersRead), label: t`Chapters read` },
+    { value: formatReadingTime(summary.readingSeconds), label: t`Time read` },
+    ...(summary.showStreaks
+      ? [
+          { value: summary.currentStreak, label: t`Day streak`, icon: IconFlame },
+          { value: summary.longestStreak, label: t`Best streak` },
+        ]
+      : []),
+    { value: `${summary.earned}/${summary.total}`, label: t`Achievements`, icon: IconTrophy },
+  ]
+
   return (
     // A plain Link rather than a Mantine element with `component`: the polymorphic prop types do
     // not carry react-router's `to` through, and this element only needs to be a flex row.
-    <Link to="/stats?section=progress" className="home-glance-progress">
-      <Group gap={10} wrap="nowrap">
+    <Link to="/stats?section=progress" className="glance-row glance-progress">
+      <div className="glance-level">
         <RingProgress
           size={38}
           thickness={4}
           roundCaps
+          aria-hidden
           sections={[{ value: level.progress * 100, color: 'var(--brand)' }]}
           label={
             <Text ta="center" fw={700} fz="var(--type-micro)" className="figure" c="var(--ink-hi)">
@@ -58,7 +50,7 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
             </Text>
           }
         />
-        <Stack gap={0}>
+        <div className="glance-level-text">
           <Text fw={700} fz="var(--type-meta)" c="var(--ink-hi)">
             <Trans>Level {levelNumber}</Trans>
           </Text>
@@ -67,27 +59,9 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
               {intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}
             </Trans>
           </Text>
-          <div className="home-glance-xp" aria-hidden>
-            <div style={{ width: `${Math.min(100, Math.max(0, level.progress * 100))}%` }} />
-          </div>
-        </Stack>
-      </Group>
-
-      <div className="hero-stats">
-        <Figure value={formatNumber(summary.chaptersRead)} label={t`Chapters read`} />
-        <Figure value={formatReadingTime(summary.readingSeconds)} label={t`Time read`} />
-        {summary.showStreaks && (
-          <>
-            <Figure value={summary.currentStreak} label={t`Day streak`} icon={IconFlame} />
-            <Figure value={summary.longestStreak} label={t`Best streak`} />
-          </>
-        )}
-        <Figure
-          value={`${summary.earned}/${summary.total}`}
-          label={t`Achievements`}
-          icon={IconTrophy}
-        />
+        </div>
       </div>
+      <GlanceFigures figures={figures} />
     </Link>
   )
 }

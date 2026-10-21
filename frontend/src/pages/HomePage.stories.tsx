@@ -26,7 +26,7 @@ const layout = (options: Parameters<typeof homeUi>[0]) => http.get(api('/setting
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('heading', { level: 2, name: /continue reading/i })).toBeVisible()
+    await expect(await canvas.findByText('Continue reading')).toBeVisible()
     await expect(await canvas.findByRole('heading', { level: 2, name: /recently added/i })).toBeVisible()
     await expect(await canvas.findByRole('heading', { level: 2, name: /you might like/i })).toBeVisible()
     await expect(await canvas.findByRole('heading', { level: 2, name: /currently popular/i })).toBeVisible()
@@ -62,7 +62,7 @@ export const DownloadingBacklog: Story = {
 export const NothingDownloading: Story = {
   parameters: { msw: homePage(http.get(api('/queue'), () => HttpResponse.json(queuePage([failedItem])))) },
   play: async ({ canvas }) => {
-    await canvas.findByRole('heading', { level: 2, name: /continue reading/i })
+    await canvas.findByText('Continue reading')
     await expect(canvas.queryByRole('heading', { level: 2, name: /downloading now/i })).toBeNull()
   },
 }
@@ -76,6 +76,14 @@ export const CustomRails: Story = {
   },
 }
 
+export const GlanceRidesTheHero: Story = {
+  play: async ({ canvas, canvasElement }) => {
+    const glance = await canvas.findByRole('region', { name: 'At a glance' })
+    await waitFor(() => expect(glance).toHaveAttribute('data-hosted'))
+    await expect(canvasElement.querySelector('.continue-lead')).toContainElement(glance)
+  },
+}
+
 export const GlanceLastInOrder: Story = {
   parameters: {
     msw: homePage(
@@ -83,6 +91,10 @@ export const GlanceLastInOrder: Story = {
         order: ['continue', 'downloading', 'jumpback', 'fromanime', 'recent', 'following', 'recommended', 'popular', 'glance'],
       }),
     ),
+  },,
+  play: async ({ canvas }) => {
+    const glance = await canvas.findByRole('region', { name: 'At a glance' })
+    await expect(glance).not.toHaveAttribute('data-hosted')
   },
 }
 
@@ -202,7 +214,7 @@ export const WithoutLocalDatabase: Story = {
 export const AsReader: Story = {
   parameters: { auth: 'reader' },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('heading', { level: 2, name: /continue reading/i })).toBeVisible()
+    await expect(await canvas.findByText('Continue reading')).toBeVisible()
   },
 }
 
@@ -229,7 +241,7 @@ export const OpenLayoutEditor: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Edit layout' }))
     await expect(await canvas.findByText('Editing layout')).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Cancel' }))
-    await expect(await canvas.findByRole('heading', { level: 2, name: /continue reading/i })).toBeVisible()
+    await expect(await canvas.findByText('Continue reading')).toBeVisible()
   },
 }
 

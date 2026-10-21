@@ -1,7 +1,6 @@
 import { Fragment, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Box, Button, Group, Paper } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { Box, Button, Group } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import {
@@ -55,6 +54,7 @@ import { ContinueRail } from '../components/home/ContinueRail'
 import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
 import { AnimeResumeExpandModal, AnimeResumeRail } from '../components/home/AnimeResumeRail'
+import { GlanceFigures, GlanceRow, HomeGlance } from '../components/home/HomeGlance'
 import { ProgressCard } from '../components/home/ProgressCard'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
 import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
@@ -93,7 +93,6 @@ export default function HomePage() {
   const stats = useLibraryStats()
   const { editing, enter: enterEditing, exit: exitEditing } = useLayoutEditMode()
   const { can } = useAuth()
-  const phone = useMediaQuery('(max-width: 47.9375em)') ?? false
 
   // Opposite default to the nav's in App.tsx on purpose: there, assuming "available" while the
   // settings load stops the Discover tab flickering in and out. Here it would fire two requests
@@ -250,39 +249,64 @@ export default function HomePage() {
     )
   }
 
-  // The panels that are just labelled numbers. Each is its own bordered panel, switched on and off
-  // separately, but they share one wrapping row rather than each taking a heading and the full
-  // page width: see `.home-glance`.
-  const glancePanels: Partial<Record<string, React.ReactNode>> = {
+  // The panels that are just labelled numbers, one row of the glance each. Switched on and off
+  // separately; the glance itself is a panel in the Continue hero or a strip, see `HomeGlance`.
+  const glanceRows: Partial<Record<string, React.ReactNode>> = {
     stats: panelOn('stats') && (
-      <GlancePanel key="stats">
-        <LibraryFigure label={t`Series`} value={stats.total} />
-        <LibraryFigure label={t`Monitored`} value={stats.monitored} />
-        <LibraryFigure label={t`On disk`} value={stats.downloaded} tone="ok" />
-        <LibraryFigure label={t`Missing`} value={stats.missing} tone="warn" />
-      </GlancePanel>
+      <GlanceRow key="stats">
+        <GlanceFigures
+          figures={[
+            { label: t`Series`, value: formatNumber(stats.total) },
+            { label: t`Monitored`, value: formatNumber(stats.monitored) },
+            { label: t`On disk`, value: formatNumber(stats.downloaded), tone: 'ok' },
+            { label: t`Missing`, value: formatNumber(stats.missing), tone: 'warn' },
+          ]}
+        />
+      </GlanceRow>
     ),
 
     // Nothing at all when the user has switched progression off: the section stays in their layout
     // list, so turning it back on restores its position.
-    progress: panelOn('progress') && progress?.enabled && (
-      <GlancePanel key="progress" wide>
-        <ProgressCard summary={progress} />
-      </GlancePanel>
-    ),
+    progress: panelOn('progress') && progress?.enabled && <ProgressCard key="progress" summary={progress} />,
 
     // Only ever with tracking on: without it every downloaded chapter reads as unread, and the
-    // panel would tell a Kavita-less library that it has 12,000 chapters waiting.
+    // row would tell a Kavita-less library that it has 12,000 chapters waiting.
     toread: panelOn('toread') && readTracking && (
-      <GlancePanel key="toread">
-        <LibraryFigure label={t`Unread`} value={waiting.unread} />
-        <LibraryFigure label={t`Started`} value={waiting.started} />
-        <LibraryFigure label={t`Finished`} value={waiting.finished} tone="ok" />
-      </GlancePanel>
+      <GlanceRow key="toread">
+        <GlanceFigures
+          figures={[
+            { label: t`Unread`, value: formatNumber(waiting.unread) },
+            { label: t`Started`, value: formatNumber(waiting.started) },
+            { label: t`Finished`, value: formatNumber(waiting.finished), tone: 'ok' },
+          ]}
+        />
+      </GlanceRow>
     ),
   }
 
-  const glanceShown = (sectionOf('glance')?.panels ?? []).filter((p) => p.enabled && glancePanels[p.key])
+  const glanceShown = (sectionOf('glance')?.panels ?? []).filter((p) => p.enabled && glanceRows[p.key])
+
+  const visible = layout.filter(sectionVisible)
+
+  // The glance rides in the Continue hero when it sits right next to it in the saved order and that
+  // section is showing a hero. Anywhere else it is a strip at its own slot. While the reading data
+  // loads it waits instead of appearing at its slot and then jumping into the hero.
+  const heroReady = (key: string) =>
+    key === 'continue'
+      ? heroOn('continue') && continueReading.length > 0
+      : key === 'jumpback'
+        ? heroOn('jumpback') && jumpBackIn.length > 0
+        : false
+  const glanceAt = visible.findIndex((s) => s.key === 'glance')
+  const neighbours = glanceAt < 0 ? [] : [visible[glanceAt - 1]?.key, visible[glanceAt + 1]?.key]
+  const wantsHero = neighbours.some((k) => k === 'continue' || k === 'jumpback')
+  const glanceHost = readingLoading && wantsHero ? 'pending' : (neighbours.find((k) => k && heroReady(k)) ?? null)
+  const glanceNode =
+    glanceShown.length > 0 ? (
+      <HomeGlance hosted={glanceHost !== null && glanceHost !== 'pending'}>
+        {glanceShown.map((p) => glanceRows[p.key])}
+      </HomeGlance>
+    ) : null
 
   // One node per section key. Rendered in the user's order below; a section with nothing to show
   // yields null and takes up no space, exactly as when it is switched off.
@@ -293,8 +317,15 @@ export default function HomePage() {
       <ReadingErrorPrompt onRetry={() => void refetchReading()} />
     ) : continueReading.length > 0 ? (
       <>
-        <SectionHeader icon={IconPlayerPlay} title={t`Continue reading`} count={continueReading.length} />
-        <ReadingSection items={continueReading} rail="continue" hero={heroOn('continue')} />
+        {!heroOn('continue') && (
+          <SectionHeader icon={IconPlayerPlay} title={t`Continue reading`} count={continueReading.length} />
+        )}
+        <ReadingSection
+          items={continueReading}
+          rail="continue"
+          hero={heroOn('continue')}
+          glance={glanceHost === 'continue' ? glanceNode : undefined}
+        />
       </>
     ) : (
       // Only nudge when there is genuinely nothing to resume *and* nothing to jump back into,
@@ -327,8 +358,15 @@ export default function HomePage() {
     ) : (
       jumpBackIn.length > 0 && (
         <>
-          <SectionHeader icon={IconBook} title={t`Jump back in`} count={jumpBackIn.length} />
-          <ReadingSection items={jumpBackIn} rail="jumpback" hero={heroOn('jumpback')} />
+          {!heroOn('jumpback') && (
+            <SectionHeader icon={IconBook} title={t`Jump back in`} count={jumpBackIn.length} />
+          )}
+          <ReadingSection
+            items={jumpBackIn}
+            rail="jumpback"
+            hero={heroOn('jumpback')}
+            glance={glanceHost === 'jumpback' ? glanceNode : undefined}
+          />
         </>
       )
     ),
@@ -395,14 +433,9 @@ export default function HomePage() {
       )
     ),
 
-    glance: glanceShown.length > 0 && (
-      <div className="home-glance" style={{ marginTop: 'var(--mantine-spacing-xl)' }}>
-        {glanceShown.map((p) => glancePanels[p.key])}
-      </div>
-    ),
+    glance: glanceHost === null ? glanceNode : null,
   }
 
-  const visible = phone ? glanceAfterContinue(layout.filter(sectionVisible)) : layout.filter(sectionVisible)
 
   // A custom rail's key only names it; the rail itself comes from the rails list. One whose source
   // is the catalogue waits on the local database like the borrowed Discover rails above.
@@ -449,63 +482,22 @@ export default function HomePage() {
   )
 }
 
-/**
- * On a phone the glance row fills the first screen by itself, so there it follows Continue reading
- * instead of leading. Only the rendered order changes; the saved layout is left alone.
- */
-function glanceAfterContinue<T extends { key: string }>(sections: T[]): T[] {
-  const glance = sections.findIndex((s) => s.key === 'glance')
-  const resume = sections.findIndex((s) => s.key === 'continue')
-  if (glance < 0 || resume < 0 || glance > resume) return sections
-  const rest = sections.filter((_, i) => i !== glance)
-  rest.splice(resume, 0, sections[glance])
-  return rest
-}
-
 /** A reading list as a hero with a Next up strip under it, or as a plain rail. */
 function ReadingSection({
   items,
   rail,
   hero,
+  glance,
 }: {
   items: HomeReadingItem[]
   rail: ReadingRailKind
   hero: boolean
+  glance?: React.ReactNode
 }) {
-  return hero ? <ContinueHero items={items} rail={rail} /> : <ContinueRail items={items} rail={rail} />
-}
-
-/** One panel on the glance row: a border, a padding, and a row of figures. */
-function GlancePanel({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
-  return (
-    <Paper withBorder radius="lg" className={wide ? 'home-glance-panel home-glance-wide' : 'home-glance-panel'}>
-      {wide ? children : <div className="home-figures">{children}</div>}
-    </Paper>
-  )
-}
-
-/**
- * One number on the glance row. The same hairline-separated figures the series band and the
- * Discover modal use, rather than a row of bordered tiles: none of these is a state anyone acts
- * on, so only the ones that carry a judgement take a colour.
- */
-function LibraryFigure({
-  label,
-  value,
-  tone,
-}: {
-  label: string
-  value: number
-  /** A status token name (`ok`, `warn`, `danger`); omitted leaves the figure at `--ink-hi`. */
-  tone?: 'ok' | 'warn' | 'danger'
-}) {
-  return (
-    <div className="home-figure">
-      <span className="hero-stat-n tnum" style={tone ? { color: `var(--${tone})` } : undefined}>
-        {formatNumber(value)}
-      </span>
-      <span className="hero-stat-l">{label}</span>
-    </div>
+  return hero ? (
+    <ContinueHero items={items} rail={rail} glance={glance} />
+  ) : (
+    <ContinueRail items={items} rail={rail} />
   )
 }
 

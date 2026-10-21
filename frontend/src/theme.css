@@ -1624,206 +1624,140 @@ body {
   background: transparent;
 }
 
+/* Home's glance: rows of labelled figures. It is a strip by default (hairlines above and below, no
+   box) and becomes a panel floating on the Continue hero when the hero is wide enough to hold it
+   beside the title. `.continue-lead` is the container the hero and the glance are both children of,
+   so the one rule at the bottom of this block is the whole switch. */
 .home-glance {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mantine-spacing-md);
-}
-.home-glance-panel {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 12px 16px;
+  gap: 14px;
+  padding: 14px 0;
+  border-block: 1px solid var(--border);
 }
-/* One step down from the series band's figures: the glance is a summary, not the page's subject. */
-.home-glance .hero-stat-n {
-  font-size: var(--type-section);
-}
-.home-glance .hero-stat-l {
-  font-size: var(--type-micro);
-}
-
-/* A page header with something between the title and the actions (Home's glance). When the middle
-   fits there at its natural width the three share one row, so the content below starts higher;
-   otherwise it drops to its own full-width row. `PageHeader` measures which and sets
-   `data-inline`. The wrapper stays a container so the glance panels' own queries resolve to it. */
-.page-header-wrap {
-  container: page-header / inline-size;
-  margin-bottom: var(--mantine-spacing-lg);
-}
-.page-header-split {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'title actions'
-    'center center';
-  align-items: end;
-  column-gap: var(--mantine-spacing-lg);
-  row-gap: var(--mantine-spacing-xl);
-}
-.page-header-split > .page-header-title {
-  grid-area: title;
-}
-.page-header-split > .page-header-center {
-  grid-area: center;
-  min-width: 0;
-}
-.page-header-split > .page-header-actions {
-  grid-area: actions;
-}
-.page-header-split[data-inline] {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas: 'title center actions';
-  align-items: center;
-  column-gap: var(--mantine-spacing-md);
-}
-/* The description would double the title's width for one line of flavour; the row needs it more. */
-.page-header-split[data-inline] > .page-header-title .mantine-Text-root {
-  display: none;
-}
-/* Edit layout keeps its icon and tooltip and gives its label's width to the glance. */
-[data-inline] .page-header-actions .home-edit-layout {
-  padding-inline: 0;
-  width: var(--button-height);
-}
-[data-inline] .page-header-actions .home-edit-layout .mantine-Button-label {
-  display: none;
-}
-[data-inline] .page-header-actions .home-edit-layout .mantine-Button-section {
-  margin: 0;
-}
-/* The glance at title height: tighter panels, smaller figures, every panel one row wide and only
-   as wide as its figures, the group packed against the actions. */
-[data-inline] > .page-header-center {
+.glance-row {
   display: flex;
-  justify-content: flex-end;
-}
-[data-inline] .page-header-center .home-glance {
-  flex: none;
-  flex-wrap: nowrap;
-  gap: 8px;
-}
-[data-inline] .page-header-center .home-glance > .home-glance-panel {
-  flex: none;
-  container-type: normal;
-}
-[data-inline] .page-header-center .home-glance-panel {
-  padding: 6px 12px;
-}
-[data-inline] .page-header-center .home-glance-progress,
-[data-inline] .page-header-center .home-glance .hero-stats {
-  flex-wrap: nowrap;
-}
-[data-inline] .page-header-center .home-glance .hero-stats {
-  --hero-stat-pad: 10px;
-}
-[data-inline] .page-header-center .home-glance-progress .mantine-Text-root {
-  white-space: nowrap;
-}
-[data-inline] .page-header-center .home-figures {
-  grid-auto-columns: auto;
-}
-[data-inline] .page-header-center .home-figure {
-  padding-right: 10px;
-}
-[data-inline] .page-header-center .home-figure + .home-figure {
-  padding-left: 10px;
-}
-[data-inline] .page-header-center .home-glance .hero-stat-n {
-  font-size: var(--type-body);
-}
-[data-inline] .page-header-center .home-glance .hero-stat-l {
-  white-space: nowrap;
-}
-.home-glance > * {
-  flex: 1 1 250px;
-  min-width: 0;
-}
-/* Progression carries a ring and five figures where the others carry three, so it asks for more of
-   the row before anything wraps. */
-.home-glance > .home-glance-wide {
-  flex: 1.7 1 430px;
-}
-/* The progression half links to Stats as one target, the way its card used to. */
-.home-glance-progress {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--mantine-spacing-md);
+  align-items: center;
+  gap: 12px 24px;
+  min-width: 0;
   color: inherit;
   text-decoration: none;
 }
-.home-glance-xp {
-  height: 4px;
-  margin-top: 4px;
-  overflow: hidden;
-  border-radius: 2px;
-  background: var(--border-strong);
+.glance-level {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
 }
-.home-glance-xp > div {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--brand);
-}
-/* Tighter than the series band's, where the same figures have a whole band to spread across. */
-.home-glance .hero-stats {
-  --hero-stat-pad: 14px;
-}
-
-/* A panel's figures. One row that never wraps, so the hairline between two numbers can never end
-   up hanging at the start of a wrapped line; a panel narrower than its figures shrinks the columns
-   instead, which the short labels take without complaint. */
-.home-figures {
+.glance-level-text {
   display: grid;
+  gap: 1px;
+}
+.glance-figures {
+  display: grid;
+  flex: 1 1 18rem;
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
-}
-.home-figure {
-  display: grid;
-  gap: 2px;
   min-width: 0;
-  padding-right: 14px;
 }
-.home-figure:last-child {
-  padding-right: 0;
-}
-.home-figure + .home-figure {
-  padding-left: 14px;
+.glance-fig {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 0 14px;
   border-left: 1px solid var(--border-strong);
 }
-/* Too narrow for one row, the shrinking columns ran the labels into each other. Two
-   columns instead, with the hairline only between the pair on each line. Four figures need more
-   room than three, hence the two thresholds. */
-.home-glance > :not(.home-glance-wide) {
-  container-type: inline-size;
+.glance-fig:first-child {
+  padding-left: 0;
+  border-left: 0;
 }
-@container (max-width: 23rem) {
-  .home-figures:has(> :nth-child(4)) {
+.glance-fig:last-child {
+  padding-right: 0;
+}
+.glance-fig-n {
+  color: var(--ink-hi);
+  font-size: var(--type-section);
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  white-space: nowrap;
+}
+.glance-fig-icon {
+  margin-right: 4px;
+  vertical-align: -1px;
+  color: var(--brand);
+}
+.glance-fig-l {
+  color: var(--ink-4);
+  font-size: var(--type-micro);
+  line-height: 1.25;
+}
+/* Five cells do not fit a phone or the panel on one line: three to a row, the hairline only
+   between the cells that share one. */
+@container (max-width: 26rem) {
+  .glance-figures:has(> :nth-child(5)) {
     grid-auto-flow: row;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    row-gap: var(--mantine-spacing-sm);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 12px;
   }
-  .home-figures:has(> :nth-child(4)) > .home-figure:nth-child(odd) {
+  .glance-figures:has(> :nth-child(5)) > .glance-fig:nth-child(3n + 1) {
     padding-left: 0;
     border-left: 0;
   }
-  .home-figures:has(> :nth-child(4)) > .home-figure:nth-child(even) {
+  .glance-figures:has(> :nth-child(5)) > .glance-fig:nth-child(3n) {
     padding-right: 0;
   }
 }
-@container (max-width: 14rem) {
-  .home-figures {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    row-gap: var(--mantine-spacing-sm);
+
+.continue-lead {
+  container: continue-lead / inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: var(--mantine-spacing-md);
+  /* One figure for the panel's width and the room the hero reserves for it. */
+  --glance-w: clamp(21.5rem, 30%, 25rem);
+}
+.continue-lead > .home-glance {
+  grid-row: 1;
+}
+.continue-lead > .continue-hero {
+  grid-row: 2;
+}
+@container continue-lead (min-width: 62rem) {
+  .continue-lead > .continue-hero,
+  .continue-lead > .home-glance {
+    grid-area: 1 / 1;
   }
-  .home-figures > .home-figure:nth-child(odd) {
-    padding-left: 0;
-    border-left: 0;
+  .continue-lead > .home-glance {
+    z-index: 2;
+    align-self: end;
+    justify-self: end;
+    width: var(--glance-w);
+    margin: 0 clamp(20px, 2.6vw, 36px) clamp(20px, 2.6vw, 36px) 0;
+    padding: 16px;
+    gap: 14px;
+    border-block: 0;
+    border-radius: var(--radius-hero);
+    background: var(--surface-2);
+    box-shadow: var(--shadow-card), 0 18px 40px -18px rgba(0, 0, 0, 0.8);
   }
-  .home-figures > .home-figure:nth-child(even) {
-    padding-right: 0;
+  .continue-lead > .home-glance .glance-row {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .continue-lead > .home-glance .glance-figures {
+    flex: none;
+  }
+  .continue-lead > .home-glance .glance-row + .glance-row {
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .continue-lead .continue-hero-body {
+    padding-right: calc(var(--glance-w) + 2 * clamp(20px, 2.6vw, 36px));
   }
 }
 
@@ -8264,6 +8198,15 @@ body.reader-open {
   border-radius: 50%;
   background: var(--brand);
 }
+.continue-hero-eyebrow-when {
+  color: var(--ink-3);
+  font-weight: var(--fw-medium);
+}
+.continue-hero-eyebrow-when::before {
+  content: '·';
+  margin-right: 9px;
+  color: var(--ink-4);
+}
 .continue-hero-title {
   display: -webkit-box;
   overflow: hidden;
@@ -8337,9 +8280,30 @@ body.reader-open {
   .continue-hero {
     min-height: 0;
   }
+  /* The poster beside the title and the action row under both: the copy's children join the body's
+     grid, with the buttons spanning it. Stacking the poster above cost a screen of phone. */
   .continue-hero-body {
-    flex-direction: column;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    column-gap: 14px;
+    align-items: end;
+  }
+  .continue-hero-poster {
+    width: 112px;
+    grid-row: 1 / span 6;
+    align-self: start;
+  }
+  .continue-hero-eyebrow-when {
+    display: none;
+  }
+  .continue-hero-copy {
+    display: contents;
+  }
+  .continue-hero-title {
+    font-size: 1.75rem;
+  }
+  .continue-hero-actions {
+    grid-column: 1 / -1;
   }
 }
 

@@ -1,4 +1,4 @@
-import { memo, type CSSProperties } from 'react'
+import { memo, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@mantine/core'
 import { IconPlayerPlay, IconPlayerTrackNext } from '@tabler/icons-react'
@@ -22,19 +22,32 @@ function accentStyle(item: HomeReadingItem): CSSProperties | undefined {
   return item.coverAccent ? ({ '--series-accent': item.coverAccent } as CSSProperties) : undefined
 }
 
-export function ContinueHero({ items, rail }: { items: HomeReadingItem[]; rail: ReadingRailKind }) {
+export function ContinueHero({
+  items,
+  rail,
+  glance,
+}: {
+  items: HomeReadingItem[]
+  rail: ReadingRailKind
+  /** Home's glance, hosted here: a panel on the hero's right on wide screens, a strip above it otherwise. */
+  glance?: ReactNode
+}) {
   const [lead, ...rest] = items
   const { t } = useLingui()
   if (!lead) return null
 
   return (
     <>
-      <ContinueHeroCard key={lead.chapterId} item={lead} rail={rail} />
+      <div className="continue-lead">
+        <ContinueHeroCard key={lead.chapterId} item={lead} rail={rail} />
+        {glance}
+      </div>
       {rest.length > 0 && (
         <>
           <SectionHeader
             icon={IconPlayerTrackNext}
             title={rail === 'jumpback' ? t`Next to jump back in` : t`Next up`}
+            count={rest.length}
           />
           <ReadingRail items={rest} rail={rail} />
         </>
@@ -82,11 +95,14 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
         </Link>
 
         <div className="continue-hero-copy">
-          {lastRead && (
-            <div className="continue-hero-eyebrow">
-              <Trans>Last read {lastRead}</Trans>
-            </div>
-          )}
+          <div className="continue-hero-eyebrow">
+            <span>{rail === 'jumpback' ? <Trans>Jump back in</Trans> : <Trans>Continue reading</Trans>}</span>
+            {lastRead && (
+              <span className="continue-hero-eyebrow-when">
+                <Trans>Last read {lastRead}</Trans>
+              </span>
+            )}
+          </div>
 
           <h3 className="continue-hero-title">
             <Link to={`/series/${item.seriesId}`}>{seriesTitle}</Link>

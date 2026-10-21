@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect } from 'storybook/test'
-import { Button, SegmentedControl } from '@mantine/core'
+import { Button } from '@mantine/core'
 import { IconPlus } from '@tabler/icons-react'
 import { PageHeader } from './PageHeader'
 
@@ -26,12 +26,4 @@ export const Default: Story = {
 
 export const Compact: Story = {
   args: { title: 'Activity', compact: true },
-}
-
-export const WithCenter: Story = {
-  args: {
-    title: 'Stats',
-    center: <SegmentedControl data={['30 days', '90 days', 'All time']} />,
-    actions: <Button variant="default">Export</Button>,
-  },
 }
