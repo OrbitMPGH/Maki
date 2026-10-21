@@ -89,11 +89,16 @@ public sealed class DownloadClientSettingsTests : IDisposable
     }
 
     [Theory]
-    [InlineData("transmission", "maki", false)]
-    [InlineData("qbittorrent", "manga", false)]
-    [InlineData("qbittorrent", null, true)]
-    [InlineData("qbittorrent", "maki", true)]
-    public async Task A_kind_or_label_change_is_refused_while_a_torrent_is_downloading(string kind, string? label, bool saves)
+    [InlineData("transmission", "maki", false, Maki.Core.Entities.QueueStatus.Downloading)]
+    [InlineData("qbittorrent", "manga", false, Maki.Core.Entities.QueueStatus.Downloading)]
+    [InlineData("qbittorrent", null, true, Maki.Core.Entities.QueueStatus.Downloading)]
+    [InlineData("qbittorrent", "maki", true, Maki.Core.Entities.QueueStatus.Downloading)]
+    [InlineData("transmission", "maki", false, Maki.Core.Entities.QueueStatus.AwaitingImport)]
+    [InlineData("qbittorrent", "manga", false, Maki.Core.Entities.QueueStatus.Importing)]
+    [InlineData("transmission", "maki", true, Maki.Core.Entities.QueueStatus.Completed)]
+    [InlineData("transmission", "maki", true, Maki.Core.Entities.QueueStatus.Failed)]
+    public async Task A_kind_or_label_change_is_refused_while_a_torrent_is_in_flight(
+        string kind, string? label, bool saves, Maki.Core.Entities.QueueStatus status)
     {
         var seriesId = _db.SeedSeries("Berserk");
         using (var db = _db.NewContext())
@@ -101,7 +106,7 @@ public sealed class DownloadClientSettingsTests : IDisposable
             db.DownloadQueue.Add(new Maki.Core.Entities.DownloadQueueItem
             {
                 SeriesId = seriesId, Protocol = Maki.Core.Entities.AcquisitionProtocol.Torrent,
-                Status = Maki.Core.Entities.QueueStatus.Downloading, Title = "Berserk v01", QueuedAt = DateTime.UtcNow,
+                Status = status, Title = "Berserk v01", QueuedAt = DateTime.UtcNow,
             });
             db.SaveChanges();
         }
