@@ -32,6 +32,8 @@ public class TorrentInfoHashTests
     [InlineData("<html>Not found</html>")]
     [InlineData("d8:announce15:http://t.test/ae")]
     [InlineData("d4:infod4:name99:shorte")]
+    [InlineData("d4:info2147483640:abce")]
+    [InlineData("d2147483640:abce")]
     public void Anything_that_is_not_a_torrent_file_has_no_hash(string body)
     {
         Assert.Null(TorrentInfoHash.FromTorrentFile(Encoding.ASCII.GetBytes(body)));
