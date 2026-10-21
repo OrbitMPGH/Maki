@@ -4134,8 +4134,8 @@ msgstr "Parcourez ou recherchez MangaBaka et demandez un titre à un administrat
 
 #: src/pages/AddSeriesPage.tsx
 #, fuzzy
-msgid "Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest."
-msgstr "Parcourez ou recherchez MangaBaka, choisissez un titre et son emplacement, puis Maki s'occupe du reste."
+#~ msgid "Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest."
+#~ msgstr "Parcourez ou recherchez MangaBaka, choisissez un titre et son emplacement, puis Maki s'occupe du reste."
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -4160,8 +4160,8 @@ msgstr "Parcourir le catalogue"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
-msgid "Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
-msgstr "Parcourez le catalogue MangaBaka ou obtenez des recommandations personnalisées selon le style de votre bibliothèque."
+#~ msgid "Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
+#~ msgstr "Parcourez le catalogue MangaBaka ou obtenez des recommandations personnalisées selon le style de votre bibliothèque."
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -7253,8 +7253,8 @@ msgstr "Chaque série a une affiche."
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Every series Maki watches: cover art, download progress and status at a glance."
-msgstr "Chaque série suivie par Maki : illustration de couverture, progression du téléchargement et statut en un coup d'œil."
+#~ msgid "Every series Maki watches: cover art, download progress and status at a glance."
+#~ msgstr "Chaque série suivie par Maki : illustration de couverture, progression du téléchargement et statut en un coup d'œil."
 
 #: src/api/queue.ts
 #, fuzzy
@@ -10081,8 +10081,8 @@ msgstr "Répertorié"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
-msgid "Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
-msgstr "File de téléchargement en direct : les pages sont récupérées, validées et assemblées en fichiers CBZ deux à deux."
+#~ msgid "Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
+#~ msgstr "File de téléchargement en direct : les pages sont récupérées, validées et assemblées en fichiers CBZ deux à deux."
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/CreatorPage.tsx
@@ -20138,8 +20138,8 @@ msgstr "Point de départ d'une série lorsqu'elle est ajoutée ou importée. Les
 
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
-msgid "What happened in your library while you were away."
-msgstr "Ce qui s'est passé dans votre bibliothèque pendant votre absence."
+#~ msgid "What happened in your library while you were away."
+#~ msgstr "Ce qui s'est passé dans votre bibliothèque pendant votre absence."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -20202,8 +20202,8 @@ msgstr "Ce que vous lisez, regroupé"
 
 #: src/pages/StatsPage.tsx
 #, fuzzy
-msgid "What you read, when you read it, and what the library holds."
-msgstr "Ce que vous lisez, quand vous le lisez et ce que contient la bibliothèque."
+#~ msgid "What you read, when you read it, and what the library holds."
+#~ msgstr "Ce que vous lisez, quand vous le lisez et ce que contient la bibliothèque."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -20642,13 +20642,13 @@ msgstr "Votre {label}"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Your account and how Maki looks."
-msgstr "Votre compte et l'apparence de Maki."
+#~ msgid "Your account and how Maki looks."
+#~ msgstr "Votre compte et l'apparence de Maki."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Your account and preferences, then everything about this Maki instance."
-msgstr "Votre compte et vos préférences, puis tout ce qui concerne cette instance de Maki."
+#~ msgid "Your account and preferences, then everything about this Maki instance."
+#~ msgstr "Votre compte et vos préférences, puis tout ce qui concerne cette instance de Maki."
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy

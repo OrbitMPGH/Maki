@@ -110,7 +110,6 @@ export default function StatsPage() {
 
       <PageHeader
         title={<Trans>Stats</Trans>}
-        description={t`What you read, when you read it, and what the library holds.`}
         actions={
           <>
             {isAdmin && users && users.length > 1 && (

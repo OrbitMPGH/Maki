@@ -3420,8 +3420,8 @@ msgid "Browse or search MangaBaka and ask an admin for a title. You can ask for 
 msgstr "Browse or search MangaBaka and ask an admin for a title. You can ask for a chapter range too."
 
 #: src/pages/AddSeriesPage.tsx
-msgid "Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest."
-msgstr "Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest."
+#~ msgid "Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest."
+#~ msgstr "Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest."
 
 #: src/components/CatalogueRules.tsx
 msgid "Browse tags"
@@ -3441,8 +3441,8 @@ msgid "Browse the catalogue"
 msgstr "Browse the catalogue"
 
 #: src/pages/DiscoverPage.tsx
-msgid "Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
-msgstr "Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
+#~ msgid "Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
+#~ msgstr "Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
 
 #: src/components/CatalogueBrowser.tsx
 msgid "Browsing the catalogue"
@@ -6006,8 +6006,8 @@ msgid "Every series has a poster."
 msgstr "Every series has a poster."
 
 #: src/pages/LibraryPage.tsx
-msgid "Every series Maki watches: cover art, download progress and status at a glance."
-msgstr "Every series Maki watches: cover art, download progress and status at a glance."
+#~ msgid "Every series Maki watches: cover art, download progress and status at a glance."
+#~ msgstr "Every series Maki watches: cover art, download progress and status at a glance."
 
 #: src/api/queue.ts
 msgid "Every source failed for this chapter"
@@ -8338,8 +8338,8 @@ msgid "Listed"
 msgstr "Listed"
 
 #: src/pages/ActivityPage.tsx
-msgid "Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
-msgstr "Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
+#~ msgid "Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
+#~ msgstr "Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/CreatorPage.tsx
@@ -16653,8 +16653,8 @@ msgid "What a series starts with when it is added or imported. Series already in
 msgstr "What a series starts with when it is added or imported. Series already in the library keep their own settings."
 
 #: src/pages/NotificationsPage.tsx
-msgid "What happened in your library while you were away."
-msgstr "What happened in your library while you were away."
+#~ msgid "What happened in your library while you were away."
+#~ msgstr "What happened in your library while you were away."
 
 #: src/components/SetupWizard.tsx
 msgid "What happens to a series folder you already have when you import it into Maki."
@@ -16705,8 +16705,8 @@ msgid "What you read, grouped"
 msgstr "What you read, grouped"
 
 #: src/pages/StatsPage.tsx
-msgid "What you read, when you read it, and what the library holds."
-msgstr "What you read, when you read it, and what the library holds."
+#~ msgid "What you read, when you read it, and what the library holds."
+#~ msgstr "What you read, when you read it, and what the library holds."
 
 #: src/pages/discover/TasteTab.tsx
 msgid "What you've read"
@@ -17065,12 +17065,12 @@ msgid "Your {label}"
 msgstr "Your {label}"
 
 #: src/pages/SettingsPage.tsx
-msgid "Your account and how Maki looks."
-msgstr "Your account and how Maki looks."
+#~ msgid "Your account and how Maki looks."
+#~ msgstr "Your account and how Maki looks."
 
 #: src/pages/SettingsPage.tsx
-msgid "Your account and preferences, then everything about this Maki instance."
-msgstr "Your account and preferences, then everything about this Maki instance."
+#~ msgid "Your account and preferences, then everything about this Maki instance."
+#~ msgstr "Your account and preferences, then everything about this Maki instance."
 
 #: src/pages/rewind/slides.tsx
 msgid "Your busiest month"

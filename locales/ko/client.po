@@ -4133,8 +4133,8 @@ msgstr "MangaBaka를 탐색하거나 검색하여 제목을 관리자에게 요�
 
 #: src/pages/AddSeriesPage.tsx
 #, fuzzy
-msgid "Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest."
-msgstr "MangaBaka를 탐색하거나 검색하고 제목을 선택한 다음 저장 위치를 정하면 Maki가 나머지를 처리합니다."
+#~ msgid "Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest."
+#~ msgstr "MangaBaka를 탐색하거나 검색하고 제목을 선택한 다음 저장 위치를 정하면 Maki가 나머지를 처리합니다."
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -4159,8 +4159,8 @@ msgstr "카탈로그 탐색"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
-msgid "Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
-msgstr "MangaBaka 카탈로그를 탐색하거나 라이브러리의 취향을 바탕으로 맞춤 추천을 받으세요."
+#~ msgid "Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
+#~ msgstr "MangaBaka 카탈로그를 탐색하거나 라이브러리의 취향을 바탕으로 맞춤 추천을 받으세요."
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -7252,8 +7252,8 @@ msgstr "모든 시리즈에 포스터가 있습니다."
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Every series Maki watches: cover art, download progress and status at a glance."
-msgstr "Maki가 추적하는 모든 시리즈: 표지, 다운로드 진행률 및 상태를 한눈에 확인합니다."
+#~ msgid "Every series Maki watches: cover art, download progress and status at a glance."
+#~ msgstr "Maki가 추적하는 모든 시리즈: 표지, 다운로드 진행률 및 상태를 한눈에 확인합니다."
 
 #: src/api/queue.ts
 #, fuzzy
@@ -10080,8 +10080,8 @@ msgstr "목록에 있음"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
-msgid "Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
-msgstr "실시간 다운로드 대기열: 페이지를 가져오고 검증한 후 한 번에 두 개씩 CBZ 파일로 패키징합니다."
+#~ msgid "Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
+#~ msgstr "실시간 다운로드 대기열: 페이지를 가져오고 검증한 후 한 번에 두 개씩 CBZ 파일로 패키징합니다."
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/CreatorPage.tsx
@@ -20137,8 +20137,8 @@ msgstr "시리즈를 추가하거나 가져올 때의 시작 설정입니다. �
 
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
-msgid "What happened in your library while you were away."
-msgstr "자리를 비운 동안 라이브러리에서 발생한 일입니다."
+#~ msgid "What happened in your library while you were away."
+#~ msgstr "자리를 비운 동안 라이브러리에서 발생한 일입니다."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -20201,8 +20201,8 @@ msgstr "읽은 내용, 그룹별"
 
 #: src/pages/StatsPage.tsx
 #, fuzzy
-msgid "What you read, when you read it, and what the library holds."
-msgstr "읽은 내용과 읽은 시간, 라이브러리에 있는 항목을 확인합니다."
+#~ msgid "What you read, when you read it, and what the library holds."
+#~ msgstr "읽은 내용과 읽은 시간, 라이브러리에 있는 항목을 확인합니다."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -20641,13 +20641,13 @@ msgstr "내 {label}"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Your account and how Maki looks."
-msgstr "계정 및 Maki의 모양입니다."
+#~ msgid "Your account and how Maki looks."
+#~ msgstr "계정 및 Maki의 모양입니다."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Your account and preferences, then everything about this Maki instance."
-msgstr "내 계정과 환경설정, 그리고 이 Maki 인스턴스에 관한 모든 것입니다."
+#~ msgid "Your account and preferences, then everything about this Maki instance."
+#~ msgstr "내 계정과 환경설정, 그리고 이 Maki 인스턴스에 관한 모든 것입니다."
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy

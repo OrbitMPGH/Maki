@@ -1159,12 +1159,13 @@ export default function LibraryPage() {
       <PageHeader
         className="library-page-header"
         title={t`Library`}
-        description={t`Every series Maki watches: cover art, download progress and status at a glance.`}
         actions={
           showChrome && !selectMode ? (
             <>
               <Button
                 variant="default"
+                className="library-select-button"
+                aria-label={t`Select`}
                 leftSection={<IconListCheck size={16} />}
                 onClick={() => setSelectMode(true)}
               >

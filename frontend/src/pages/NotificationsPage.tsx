@@ -142,7 +142,6 @@ export default function NotificationsPage() {
       <PageHeader
         compact
         title={t`Notifications`}
-        description={t`What happened in your library while you were away.`}
         actions={
           <>
             <Tooltip label={t`Notification settings`} withArrow>

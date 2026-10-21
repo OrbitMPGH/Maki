@@ -402,7 +402,6 @@ export default function ActivityPage() {
       <PageHeader
         compact
         title={t`Activity`}
-        description={t`Live download queue: pages are fetched, validated and packaged into CBZ files two at a time.`}
         actions={
           canManageQueue ? (
             <Group gap="xs">

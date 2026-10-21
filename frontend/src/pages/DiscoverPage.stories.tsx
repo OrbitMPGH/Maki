@@ -124,8 +124,10 @@ export const ExpandedRail: Story = {
 }
 
 export const EditLayout: Story = {
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Edit layout' }))
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'More options' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Edit layout' }))
     await waitFor(() => expect(canvas.getByRole('tab', { name: 'Recommended' })).toBeDisabled())
   },
 }

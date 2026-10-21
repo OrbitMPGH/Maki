@@ -10,6 +10,7 @@ import {
   Collapse,
   Group,
   Loader,
+  Menu,
   Modal,
   MultiSelect,
   RangeSlider,
@@ -124,7 +125,9 @@ import { usePageState } from '../lib/pageState'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import {
   DensityControl,
+  DensityMenuItems,
   POSTER_COLS_BY_DENSITY,
+  ToolbarMenuButton,
   ViewPrefsControls,
   useDensityPref,
   useViewPrefs,
@@ -1592,17 +1595,9 @@ export default function DiscoverPage() {
     <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
         title={t`Discover`}
-        description={t`Browse the MangaBaka catalogue, or get personalised picks from your library's feel.`}
         actions={
           active === 'browse' && !editing ? (
-            <Group gap="xs" wrap="wrap">
-              <Button variant="default" leftSection={<IconLayoutDashboard size={16} />} onClick={enterEditing}>
-                <Trans>Edit layout</Trans>
-              </Button>
-              <DensityControl
-                value={browseDensity.density}
-                onChange={browseDensity.setDensity}
-              />
+            <Group gap="xs" wrap="nowrap">
               <Tooltip label={t`Refresh the catalogue`} withArrow>
                 <ActionIcon
                   variant="subtle"
@@ -1615,6 +1610,18 @@ export default function DiscoverPage() {
                   <IconRefresh size={18} />
                 </ActionIcon>
               </Tooltip>
+              <Menu position="bottom-end" withinPortal>
+                <Menu.Target>
+                  <ToolbarMenuButton size="lg" />
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item leftSection={<IconLayoutDashboard size={14} />} onClick={enterEditing}>
+                    <Trans>Edit layout</Trans>
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <DensityMenuItems value={browseDensity.density} onChange={browseDensity.setDensity} />
+                </Menu.Dropdown>
+              </Menu>
             </Group>
           ) : undefined
         }

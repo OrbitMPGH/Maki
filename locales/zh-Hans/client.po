@@ -4133,8 +4133,8 @@ msgstr "浏览或搜索 MangaBaka，并向管理员请求某个标题。你也�
 
 #: src/pages/AddSeriesPage.tsx
 #, fuzzy
-msgid "Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest."
-msgstr "浏览或搜索 MangaBaka，选择一个标题和存放位置，剩下的交给 Maki。"
+#~ msgid "Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest."
+#~ msgstr "浏览或搜索 MangaBaka，选择一个标题和存放位置，剩下的交给 Maki。"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -4159,8 +4159,8 @@ msgstr "浏览目录"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
-msgid "Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
-msgstr "浏览 MangaBaka 目录，或根据资料库的风格获取个性化推荐。"
+#~ msgid "Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
+#~ msgstr "浏览 MangaBaka 目录，或根据资料库的风格获取个性化推荐。"
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -7252,8 +7252,8 @@ msgstr "每个系列都有海报。"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Every series Maki watches: cover art, download progress and status at a glance."
-msgstr "Maki 监控的每个系列：封面图、下载进度和状态一目了然。"
+#~ msgid "Every series Maki watches: cover art, download progress and status at a glance."
+#~ msgstr "Maki 监控的每个系列：封面图、下载进度和状态一目了然。"
 
 #: src/api/queue.ts
 #, fuzzy
@@ -10080,8 +10080,8 @@ msgstr "已列出"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
-msgid "Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
-msgstr "实时下载队列：页面会被获取、验证，然后每次两个打包成 CBZ 文件。"
+#~ msgid "Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
+#~ msgstr "实时下载队列：页面会被获取、验证，然后每次两个打包成 CBZ 文件。"
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/CreatorPage.tsx
@@ -20137,8 +20137,8 @@ msgstr "系列在添加或导入时的初始设置。资料库中已有的系列
 
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
-msgid "What happened in your library while you were away."
-msgstr "你离开期间资料库中发生的事情。"
+#~ msgid "What happened in your library while you were away."
+#~ msgstr "你离开期间资料库中发生的事情。"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -20201,8 +20201,8 @@ msgstr "你阅读的内容，按组显示"
 
 #: src/pages/StatsPage.tsx
 #, fuzzy
-msgid "What you read, when you read it, and what the library holds."
-msgstr "你读了什么、何时阅读，以及资料库中有什么。"
+#~ msgid "What you read, when you read it, and what the library holds."
+#~ msgstr "你读了什么、何时阅读，以及资料库中有什么。"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -20641,13 +20641,13 @@ msgstr "你的 {label}"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Your account and how Maki looks."
-msgstr "你的账户和 Maki 的外观。"
+#~ msgid "Your account and how Maki looks."
+#~ msgstr "你的账户和 Maki 的外观。"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Your account and preferences, then everything about this Maki instance."
-msgstr "你的账户和偏好设置，然后是这个 Maki 实例的全部设置。"
+#~ msgid "Your account and preferences, then everything about this Maki instance."
+#~ msgstr "你的账户和偏好设置，然后是这个 Maki 实例的全部设置。"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy

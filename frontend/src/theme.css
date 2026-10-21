@@ -7929,24 +7929,18 @@ body.reader-open {
   .library-toolbar {
     gap: 0.5rem;
   }
-  /* The title shares its row with Select and Add series, the sentence runs full width under both,
-     so the first covers start higher on a phone. */
+  /* The title shares its row with Select and Add series, so the first covers start higher on a phone. */
   .library-page-header {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    row-gap: 2px;
   }
-  .library-page-header > .mantine-Stack-root {
-    display: contents;
+  /* Select keeps only its icon here, or the title runs under it at 375px. */
+  .library-select-button .mantine-Button-label {
+    display: none;
   }
-  .library-page-header > .mantine-Stack-root > .mantine-Text-root {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-  .library-page-header > .mantine-Group-root {
-    grid-column: 2;
-    grid-row: 1;
+  .library-select-button .mantine-Button-section {
+    margin-inline-end: 0;
   }
   /* One row: search, the filter button, the dice and the menu. Sort, view and density live in the
      menu here, so the first cover starts right under the bar. */

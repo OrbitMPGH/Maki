@@ -247,11 +247,6 @@ export default function SettingsPage() {
       <PageHeader
         compact
         title={t`Settings`}
-        description={
-          isAdmin
-            ? t`Your account and preferences, then everything about this Maki instance.`
-            : t`Your account and how Maki looks.`
-        }
         actions={
           isAdmin && (
             <Button
