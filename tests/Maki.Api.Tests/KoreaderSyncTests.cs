@@ -268,6 +268,26 @@ public sealed class KoreaderSyncTests : IDisposable
     }
 
     [Fact]
+    public async Task A_push_past_a_watched_chapter_turns_it_into_a_read()
+    {
+        var (path, chapters) = SeedVolume();
+        await IndexAsync();
+        await using (var db = _db.NewContext(_user))
+        {
+            await Reader(db).MarkWatchedAsync([chapters[1m], chapters[2m]], default);
+        }
+
+        await Pushed(_token, Body(KoreaderDigest.PartialMd5(path), "5", 0.8333));
+
+        Assert.All([chapters[1m], chapters[2m]], id =>
+        {
+            var row = Progress(id)!;
+            Assert.True(row.Completed);
+            Assert.False(row.Watched);
+        });
+    }
+
+    [Fact]
     public async Task The_last_page_completes_a_single_chapter_file()
     {
         var (path, chapters) = SeedFile(SeedSeries("Solo"), "Solo.cbz", ["001.jpg", "002.jpg", "003.jpg"], 7m);
