@@ -12,6 +12,7 @@ using Maki.Core.Storage;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -511,5 +512,37 @@ public sealed class PageConversionTests : IDisposable
         }
 
         Assert.Empty(TmpFiles());
+    }
+
+    [Fact]
+    public async Task A_file_that_throws_is_counted_as_failed_and_the_pass_goes_on_to_the_next()
+    {
+        EnableConversion();
+        var (_, throwing, _) = JpegChapter(1);
+        var (_, next, _) = JpegChapter(2);
+        var settings = new SettingsService(_world.Db.ScopeFactory());
+        var services = new ServiceCollection();
+        services.AddScoped(_ => new MakiDbContext(new DbContextOptionsBuilder<MakiDbContext>(_world.Db.Options)
+            .AddInterceptors(new FailingSave(throwing)).Options));
+        services.AddScoped(sp => Service(sp.GetRequiredService<MakiDbContext>()));
+        var worker = new PageConversionWorker(services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(),
+            settings, NullLogger<PageConversionWorker>.Instance) { DelayBetweenFiles = TimeSpan.Zero };
+
+        await worker.StartPassAsync(CancellationToken.None);
+        await worker.RunPassAsync(CancellationToken.None);
+
+        Assert.Equal("jpg", Row(next).OriginalImageFormat);
+        var snapshot = await worker.SnapshotAsync(CancellationToken.None);
+        Assert.Equal(PageConversionPassState.Idle, snapshot.State);
+        Assert.Equal((1, 1), (snapshot.Pass!.Converted, snapshot.Pass.Failed));
+    }
+
+    private sealed class FailingSave(int fileId) : SaveChangesInterceptor
+    {
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            eventData.Context!.ChangeTracker.Entries<ChapterFile>().Any(e => e.Entity.Id == fileId && e.State == EntityState.Modified)
+                ? throw new DbUpdateException("the database refused the save")
+                : base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 }

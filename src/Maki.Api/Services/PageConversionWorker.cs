@@ -179,9 +179,20 @@ public class PageConversionWorker(
                         _currentFile = file.RelativePath;
                     }
 
-                    using var fileScope = scopes.CreateScope();
-                    var result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
-                        .ConvertAsync(file.Id, options, ct);
+                    FileConversion result;
+                    try
+                    {
+                        using var fileScope = scopes.CreateScope();
+                        result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
+                            .ConvertAsync(file.Id, options, ct);
+                    }
+                    // One file that throws every time must not restart the pass on it forever.
+                    catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+                    {
+                        logger.LogError(ex, "Could not convert the pages of {Path}", file.RelativePath);
+                        result = new FileConversion(FileConversionStatus.Failed);
+                    }
+
                     Count(result);
 
                     if (DelayBetweenFiles > TimeSpan.Zero)
