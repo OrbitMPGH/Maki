@@ -228,8 +228,9 @@ public sealed class ControllerAuthorizationInventoryTests
 
     /// <summary>
     /// Sign-in, OIDC and OAuth callbacks, the OPDS feed (its path token authenticates it), the Komga
-    /// API (KomgaAuthFilter authenticates every action with the same token) and KOReader sync (the
-    /// same token, as the username).
+    /// API (KomgaAuthFilter authenticates every action with the same token), KOReader sync (the
+    /// same token, as the username) and the sign-in page's cover mosaic (off unless an admin turns it
+    /// on, Safe-rated covers only, blurred on the server).
     /// </summary>
     private static readonly string[] Anonymous =
     [
@@ -289,6 +290,7 @@ public sealed class ControllerAuthorizationInventoryTests
         "OpdsController.SeriesChapters",
         "OpdsController.SeriesList",
         "ScrobbleController.OAuthCallback",
+        "SignInArtController.Mosaic",
     ];
 
     /// <summary>

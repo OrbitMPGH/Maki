@@ -13,6 +13,8 @@ paths:
   - "src/Maki.Api/Hubs/**"
   - "src/Maki.Core/Security/**"
   - "src/Maki.Api/Controllers/Settings*.cs"
+  - "src/Maki.Api/Controllers/SignIn*.cs"
+  - "src/Maki.Api/Services/SignIn*.cs"
   - "src/Maki.Core/Sources/CoverHostPolicy.cs"
   - "src/Maki.Sources/Suwayomi/**"
   - "src/Maki.Data/Identity/**"
@@ -40,6 +42,7 @@ paths:
 - **`MAKI_ALLOW_LOCAL_LOGIN=1` is the OIDC break-glass** — must stay an env var (a UI-reachable value would be no escape hatch if the provider is down). Admins are always exempt from `oidconly`.
 - **`UseStaticFiles` runs before `UseAuthentication` — don't move it.** `/assets/index-*.js` matches no endpoint (`MapFallbackToFile` excludes anything with a file extension) so it'd fall under the fail-closed `FallbackPolicy` and 401 for signed-out users, leaving a blank unrecoverable login page.
 - **Every auth cookie follows `auth.requirehttps`, not just the session cookie.** The two-factor, remember-me and external schemes, the OIDC correlation/nonce cookies take `SecurePolicy` from `AuthRuntimeOptions`; the hand-built `XSRF-TOKEN` and `Maki.OidcLinkIntent` cookies use `AuthRuntimeOptions.UseSecureCookie`. The antiforgery cookie must **not** be forced Secure: `DefaultAntiforgery` throws on any non-HTTPS request when it is, which 500s every authorized GET in that same setup.
+- **The sign-in cover mosaic is the one anonymous view of the library** (`SignInArtController.Mosaic`, `SignInMosaicService`, setting `signin.covermosaic`, off by default, read per request so no restart). Only series rated `safe` are drawn (an unrated one is not assumed safe), across every root folder through `IgnoreQueryFilters` since nobody is signed in, and the covers are blurred on the server into one WebP so no clear cover or title leaves the instance. `initialize.json` carries `signInCovers`; the image 404s below `MinCovers` and the page keeps its own generated art. Do not swap the server blur for a CSS one: the clear covers would then reach the browser.
 - **`ControllerAuthorizationInventoryTests` pins who reaches every controller action.** A new mutating action with no permission policy, a new `[AllowAnonymous]` action, a `SettingsController` action whose policy is not exactly `Policies.Admin` (unless listed with its policy), or a new endpoint mapped outside the controllers (minimal APIs, the hub, the SPA fallback) fails it until the action is read and added to the list in the test.
 - **`GET settings/scrobble` never returns the Kitsu password, the MangaUpdates password or the MangaBaka token**, only `kitsuPasswordSet`, `mangaUpdatesPasswordSet` and `mangaBakaTokenSet`. A null value on `PUT` means unchanged, an empty string clears it.
 - **A restore carries API key revocations forward.** `BackupService.CarryRevocationsForward` revokes, in the staged `maki.db`, every key (matched by `KeyHash`) that the live database revoked after the backup's `CreatedUtc`. Passwords, SSO links and other account changes still revert with the backup, which the restore dialog says.

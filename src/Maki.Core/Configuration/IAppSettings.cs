@@ -95,6 +95,12 @@ public static class SettingKeys
     /// </summary>
     public const string MonitoringDefaultMode = "monitoring.defaultmode";
 
+    /// <summary>
+    /// "true" shows a blurred mosaic of Safe-rated covers behind the sign-in card, to anyone who can
+    /// reach the page. Off unless set. Not under <c>auth.*</c>: it is read per request, no restart.
+    /// </summary>
+    public const string SignInCoverMosaic = "signin.covermosaic";
+
     /// <summary>"true" deletes read chapter files for every series left on Default. Off unless set.</summary>
     public const string ReadFileCleanupEnabled = "cleanup.readfiles.enabled";
 

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith } from '../../.storybook/mocks/api'
+import { invalidateInitialize } from '../api/client'
 import { LoginPage } from './LoginPage'
 
 const meta = {
@@ -14,9 +15,12 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     // The SSO button only appears once /initialize.json (MSW) has answered.
     await expect(await canvas.findByRole('link', { name: /continue with authentik/i })).toBeVisible()
+    // No library art unless an admin opted in: the generated band and the mascot at size.
+    await expect(canvasElement.querySelector('.auth-band-covers')).toBeNull()
+    await expect(canvasElement.querySelector('.auth-frame')).toHaveAttribute('data-art', 'shapes')
   },
 }
 
@@ -48,5 +52,30 @@ export const SsoFailed: Story = {
   parameters: { router: { initialEntries: ['/?ssoError=access_denied'] } },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('alert')).toBeVisible()
+  },
+}
+
+/** An admin switched on the cover mosaic: once it loads it replaces the shapes, and the tagline goes. */
+export const WithLibraryCovers: Story = {
+  parameters: {
+    msw: [
+      http.get('/initialize.json', () =>
+        HttpResponse.json({
+          apiRoot: '/api/v1',
+          setupNeeded: false,
+          signInCovers: true,
+          oidc: { enabled: true, displayName: 'Authentik', localLoginRestricted: false },
+        }),
+      ),
+    ],
+  },
+  // The bootstrap is cached per page load, so this story re-reads it and leaves it unread for the next.
+  beforeEach: () => {
+    invalidateInitialize()
+    return () => invalidateInitialize()
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await waitFor(() => expect(canvasElement.querySelector('.auth-frame')).toHaveAttribute('data-art', 'covers'))
+    await expect(canvas.queryByText('Self-hosted manga library and downloader.')).not.toBeVisible()
   },
 }

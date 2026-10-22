@@ -15,7 +15,9 @@ import {
   useOidcSettings,
   useSaveOidcSettings,
   useSaveSecuritySettings,
+  useSaveSignInPageSettings,
   useSecuritySettings,
+  useSignInPageSettings,
   type OidcSettings,
   type SecuritySettings,
 } from '../../api/auth'
@@ -24,7 +26,7 @@ import { t as now } from '@lingui/core/macro'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { useCopyText } from '../ui/useCopyText'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import { useSliceSync } from '../../pages/settings/sharedRecord'
+import { savedToast, useSliceSync } from '../../pages/settings/sharedRecord'
 import { SettingsNumberInput } from './SettingsNumberInput'
 
 /**
@@ -113,6 +115,41 @@ export function SecuritySection() {
           onChange={(v) => setDraft({ ...draft, sessionDays: v })}
         />
       </Group>
+    </SettingsSection>
+  )
+}
+
+/**
+ * What a signed-out visitor sees behind the sign-in form. Unlike the cards above it applies at once:
+ * the page asks for the mosaic on every load.
+ */
+export function SignInPageSection() {
+  const { t } = useLingui()
+  const { data } = useSignInPageSettings()
+  const save = useSaveSignInPageSettings()
+  const [coverMosaic, setCoverMosaic] = useState(false)
+  const [discarded, discard] = useReducer((n: number) => n + 1, 0)
+
+  useSliceSync(data, (slice) => setCoverMosaic(slice.coverMosaic), discarded)
+
+  if (!data) return null
+
+  return (
+    <SettingsSection
+      id="signin-page"
+      title={<Trans>Sign-in page</Trans>}
+      description={<Trans>What people see behind the sign-in form before they have signed in.</Trans>}
+      dirty={coverMosaic !== data.coverMosaic}
+      saving={save.isPending}
+      onDiscard={discard}
+      onSave={() => save.mutate({ coverMosaic }, { onSuccess: savedToast })}
+    >
+      <Switch
+        label={t`Show covers from the library`}
+        description={t`Up to 24 covers rated Safe, blurred into one image, shown to anyone who can open the sign-in page. Off: Maki's own art, and nothing from the library.`}
+        checked={coverMosaic}
+        onChange={(e) => setCoverMosaic(e.currentTarget.checked)}
+      />
     </SettingsSection>
   )
 }

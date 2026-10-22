@@ -47,6 +47,8 @@ export const settingsHandlers: HttpHandler[] = [
   http.delete(api('/users/:id/oidc'), ok),
   http.get(api('/settings/security'), () => HttpResponse.json(d.securitySettings)),
   putEcho('/settings/security'),
+  http.get(api('/settings/signin'), () => HttpResponse.json({ coverMosaic: false })),
+  putEcho('/settings/signin'),
   http.get(api('/settings/oidc'), () => HttpResponse.json(d.oidcSettings)),
   putEcho('/settings/oidc'),
 

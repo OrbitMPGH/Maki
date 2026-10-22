@@ -181,6 +181,7 @@ public class SettingsController(
         int VolumeSearchesPerRun = 10,
         int ProposalExpiryDays = 30);
     public record ReadFileCleanupSettings(bool Enabled, int Days, bool KeepLast);
+    public record SignInPageSettings(bool CoverMosaic);
     public record BackupSettings(int Retention, bool? Scheduled = null);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -1094,6 +1095,19 @@ public class SettingsController(
             ScoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true",
             AdaptiveRefresh = await AdaptiveRefreshAsync(ct)
         });
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("signin")]
+    public async Task<IActionResult> GetSignInPage(CancellationToken ct) =>
+        Ok(new SignInPageSettings(await settings.GetAsync(SettingKeys.SignInCoverMosaic, ct) == "true"));
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("signin")]
+    public async Task<IActionResult> SetSignInPage([FromBody] SignInPageSettings request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.SignInCoverMosaic, request.CoverMosaic ? "true" : "false", ct);
+        return await GetSignInPage(ct);
     }
 
     [Authorize(Policy = Policies.Admin)]

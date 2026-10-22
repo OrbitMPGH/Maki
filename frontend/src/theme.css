@@ -3304,7 +3304,67 @@ body {
   align-items: flex-end;
   background: var(--app-bg);
 }
+/* The page's one cinematic band (see AuthFrame): tilted cover shapes in the accent colour, or the
+   admin's opt-in mosaic of Safe-rated covers, already blurred by the server. It fills the top of
+   the window and is gone before it reaches the wordmark and the card. */
+.auth-band {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 38%, transparent 82%);
+  mask-image: linear-gradient(to bottom, black 0%, black 38%, transparent 82%);
+}
+/* Rewind's intro vocabulary: a grid of covers turned a few degrees. */
+.auth-band-shapes,
+.auth-band-covers {
+  position: absolute;
+  top: -22%;
+  left: -12%;
+  width: 124%;
+  transform: rotate(-9deg);
+  transition: opacity var(--dur-slow) var(--ease);
+}
+.auth-band-shapes {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 16px;
+  filter: blur(11px) saturate(1.2);
+  opacity: 0.85;
+}
+.auth-band-shapes > span {
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius-cover);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--brand) var(--shade), var(--app-bg)),
+    color-mix(in srgb, var(--brand) calc(var(--shade) / 3), var(--app-bg))
+  );
+}
+/* The mosaic is only three rows deep, so its own bottom edge fades out too, or a narrow window shows
+   it as a hard diagonal above the wordmark. */
+.auth-band-covers {
+  opacity: 0;
+  -webkit-mask-image: linear-gradient(to bottom, black 45%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 45%, transparent 100%);
+}
+.auth-frame[data-art='covers'] .auth-band-covers {
+  opacity: 0.6;
+}
+.auth-frame[data-art='covers'] .auth-band-shapes {
+  opacity: 0;
+}
+/* Light falls from the top right, away from the card, so the form never sits on bright art. */
+.auth-band-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 85% 0%, transparent 0%, color-mix(in srgb, var(--app-bg) 45%, transparent) 70%),
+    linear-gradient(to bottom, color-mix(in srgb, var(--app-bg) 15%, transparent), color-mix(in srgb, var(--app-bg) 60%, transparent));
+}
 .auth-content {
+  position: relative;
+  z-index: 1;
   width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) min(420px, 100%);
@@ -3338,6 +3398,20 @@ body {
   color: var(--ink-3);
   font-size: var(--type-subhead);
 }
+/* The covers say what Maki is. Without them, the mascot says it at size. */
+.auth-frame[data-art='covers'] .auth-tagline {
+  display: none;
+}
+.auth-frame[data-art='shapes'] .auth-brand-mark {
+  width: 132px;
+  height: 132px;
+  margin-bottom: 28px;
+  border-radius: 34px;
+}
+.auth-frame[data-art='shapes'] .auth-brand-mark svg {
+  width: 104px;
+  height: 104px;
+}
 .auth-column {
   display: grid;
   gap: var(--mantine-spacing-md);
@@ -3345,6 +3419,10 @@ body {
 }
 .auth-panel {
   animation: auth-panel-in 0.3s var(--ease) both;
+}
+/* Opaque, so the form reads the same over any art. */
+[data-mantine-color-scheme] .auth-panel {
+  background: var(--surface-2);
 }
 .auth-panel-title {
   font-size: var(--type-feature);
@@ -3389,6 +3467,17 @@ body {
   }
   .auth-identity {
     padding-bottom: 0;
+  }
+}
+/* Phones: fewer, larger covers, so the band still reads as books rather than a texture. */
+@media (max-width: 47.99em) {
+  .auth-band-shapes {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+  .auth-band-covers {
+    left: -70%;
+    width: 250%;
   }
 }
 

@@ -1,7 +1,7 @@
 import type { StorybookConfig } from '@storybook/react-vite';
 import type { Plugin } from 'vite';
 
-const IMAGE_ROUTE = /^\/(mock\/|api\/v1\/mediacover\/|api\/v1\/reader\/chapter\/[^/]+\/(page|thumb)\/)/;
+const IMAGE_ROUTE = /^\/(mock\/|api\/v1\/mediacover\/|api\/v1\/signin\/mosaic\.webp|api\/v1\/reader\/chapter\/[^/]+\/(page|thumb)\/)/;
 
 // msw's Service Worker answers <img> requests in a normal browser. Where none can register,
 // preview.tsx mocks by patching fetch and XHR instead, which images never use, so they reach this

@@ -9,6 +9,11 @@ interface InitializeInfo {
   /** True while the account the multi-user migration created has never been claimed. */
   setupNeeded: boolean
   /**
+   * An admin chose to show a blurred mosaic of Safe-rated covers behind the sign-in card. The image
+   * can still 404 (too few covers), and the page then keeps its own art.
+   */
+  signInCovers: boolean
+  /**
    * Enough to draw the login page and no more. The issuer, client id and secret stay behind the
    * admin settings endpoint; this one is anonymous.
    */

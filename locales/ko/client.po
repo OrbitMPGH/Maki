@@ -10141,6 +10141,11 @@ msgstr "잠금 기간(분)"
 msgid "lockout, failed attempts, session lifetime"
 msgstr "계정 잠금, 실패 횟수, 세션 수명"
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "login page, background, covers, mosaic, wallpaper"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "longest {longestSitting}"
@@ -16752,6 +16757,10 @@ msgstr "전체 보기"
 #~ msgid "Show all {0}"
 #~ msgstr ""
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Show covers from the library"
+msgstr ""
+
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Show fewer"
@@ -16918,6 +16927,11 @@ msgstr "로그인"
 #, fuzzy
 msgid "Sign-in failed"
 msgstr "로그인 실패"
+
+#: src/components/settings/SecuritySection.tsx
+#: src/pages/settings/registry.ts
+msgid "Sign-in page"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
@@ -19456,6 +19470,10 @@ msgstr "다음 항목"
 msgid "Up to {max}"
 msgstr "최대 {max}개"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Up to 24 covers rated Safe, blurred into one image, shown to anyone who can open the sign-in page. Off: Maki's own art, and nothing from the library."
+msgstr ""
+
 #: src/api/requests.ts
 #, fuzzy
 msgid "up to ch. {end}"
@@ -20181,6 +20199,10 @@ msgstr "나중에 출시되는 챕터에 적용되는 내용"
 #, fuzzy
 msgid "What lands in your bell. Only affects you. Alerts to Discord and other apps are set up by an admin under Integrations."
 msgstr "알림 벨에 들어오는 항목입니다. 나에게만 적용됩니다. Discord 등 다른 앱으로의 알림은 관리자가 통합에서 설정합니다."
+
+#: src/components/settings/SecuritySection.tsx
+msgid "What people see behind the sign-in form before they have signed in."
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy

@@ -463,6 +463,22 @@ export function useSaveSecuritySettings() {
   return useSaveSettingsRecord<SecuritySettings>(['settings', 'security'], '/settings/security')
 }
 
+export interface SignInPageSettings {
+  /** A blurred mosaic of Safe-rated covers behind the sign-in card, seen by anyone who can reach it. */
+  coverMosaic: boolean
+}
+
+export function useSignInPageSettings() {
+  return useQuery({
+    queryKey: ['settings', 'signin'],
+    queryFn: () => api<SignInPageSettings>('/settings/signin'),
+  })
+}
+
+export function useSaveSignInPageSettings() {
+  return useSaveSettingsRecord<SignInPageSettings>(['settings', 'signin'], '/settings/signin')
+}
+
 export interface OidcSettings {
   enabled: boolean
   authority: string

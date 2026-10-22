@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api, failWith } from '../../../.storybook/mocks/api'
 import { oidcSettings, securitySettings } from '../../../.storybook/mocks/settings/data'
-import { NetworkSection, OidcSection, SecuritySection } from './SecuritySection'
+import { NetworkSection, OidcSection, SecuritySection, SignInPageSection } from './SecuritySection'
 
 const meta = {
   component: SecuritySection,
@@ -91,6 +91,23 @@ export const NetworkEditShowsSave: Story = {
     const proxies = await canvas.findByRole('textbox', { name: /^Trusted proxies/ })
     await waitFor(() => expect(proxies).toHaveValue('172.18.0.0/16'))
     await userEvent.type(proxies, ', 10.0.0.5')
+    await expect(await canvas.findByText('Unsaved')).toBeVisible()
+  },
+}
+
+export const SignInPage: Story = {
+  render: () => <SignInPageSection />,
+  play: async ({ canvas }) => {
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /^Show covers from the library/ })).not.toBeChecked())
+  },
+}
+
+export const SignInPageTurnOnCovers: Story = {
+  render: () => <SignInPageSection />,
+  play: async ({ canvas, userEvent }) => {
+    const toggle = await canvas.findByRole('switch', { name: /^Show covers from the library/ })
+    await waitFor(() => expect(toggle).not.toBeChecked())
+    await userEvent.click(toggle)
     await expect(await canvas.findByText('Unsaved')).toBeVisible()
   },
 }

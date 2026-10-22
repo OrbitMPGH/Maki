@@ -298,6 +298,7 @@ export const sharedHandlers = [
     HttpResponse.json({
       apiRoot: '/api/v1',
       setupNeeded: false,
+      signInCovers: false,
       oidc: { enabled: true, displayName: 'Authentik', localLoginRestricted: false },
     }),
   ),

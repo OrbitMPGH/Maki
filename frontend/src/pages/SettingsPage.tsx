@@ -12,7 +12,7 @@ import { ApiKeysSection, SignInSection } from '../components/settings/AccountSec
 import { NotificationPrefsSection } from '../components/settings/NotificationPrefsSection'
 import { PushNotificationsSection } from '../components/settings/PushNotificationsSection'
 import { OfflineReadingSection } from '../components/settings/OfflineReadingSection'
-import { NetworkSection, OidcSection, SecuritySection } from '../components/settings/SecuritySection'
+import { NetworkSection, OidcSection, SecuritySection, SignInPageSection } from '../components/settings/SecuritySection'
 import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
 import { ProgressSection } from '../components/settings/ProgressSection'
@@ -122,6 +122,7 @@ function useSectionNodes(): Record<string, ReactNode> {
 
       users: <UsersSection />,
       security: <SecuritySection />,
+      'signin-page': <SignInPageSection />,
       oidc: <OidcSection />,
 
       network: <NetworkSection />,

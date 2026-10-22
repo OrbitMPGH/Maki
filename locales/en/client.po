@@ -8390,6 +8390,11 @@ msgstr "Lockout duration (minutes)"
 msgid "lockout, failed attempts, session lifetime"
 msgstr "lockout, failed attempts, session lifetime"
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "login page, background, covers, mosaic, wallpaper"
+msgstr "login page, background, covers, mosaic, wallpaper"
+
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "longest {longestSitting}"
 msgstr "longest {longestSitting}"
@@ -13871,6 +13876,10 @@ msgstr "Show all"
 #~ msgid "Show all {0}"
 #~ msgstr "Show all {0}"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Show covers from the library"
+msgstr "Show covers from the library"
+
 #: src/components/TagBuckets.tsx
 msgid "Show fewer"
 msgstr "Show fewer"
@@ -14009,6 +14018,11 @@ msgstr "Sign-in"
 #: src/api/ssoErrors.ts
 msgid "Sign-in failed"
 msgstr "Sign-in failed"
+
+#: src/components/settings/SecuritySection.tsx
+#: src/pages/settings/registry.ts
+msgid "Sign-in page"
+msgstr "Sign-in page"
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
@@ -16102,6 +16116,10 @@ msgstr "Up next"
 msgid "Up to {max}"
 msgstr "Up to {max}"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Up to 24 covers rated Safe, blurred into one image, shown to anyone who can open the sign-in page. Off: Maki's own art, and nothing from the library."
+msgstr "Up to 24 covers rated Safe, blurred into one image, shown to anyone who can open the sign-in page. Off: Maki's own art, and nothing from the library."
+
 #: src/api/requests.ts
 msgid "up to ch. {end}"
 msgstr "up to ch. {end}"
@@ -16694,6 +16712,10 @@ msgstr "What happens to chapters released later"
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "What lands in your bell. Only affects you. Alerts to Discord and other apps are set up by an admin under Integrations."
 msgstr "What lands in your bell. Only affects you. Alerts to Discord and other apps are set up by an admin under Integrations."
+
+#: src/components/settings/SecuritySection.tsx
+msgid "What people see behind the sign-in form before they have signed in."
+msgstr "What people see behind the sign-in form before they have signed in."
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "What picking this profile does, shown in the profile list."

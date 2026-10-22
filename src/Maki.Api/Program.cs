@@ -190,6 +190,7 @@ try
     builder.Services.AddSingleton(SearchTuning.Default.Catalogue);
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
     builder.Services.AddSingleton<CoverService>();
+    builder.Services.AddSingleton<SignInMosaicService>();
     builder.Services.AddSingleton<CoverAccentCache>();
     // Seed weights derived from reading behaviour, for the seeds a user never rated. Same shape as
     // SearchTuning below: the constants live in one record so distribution/eval-reco.cs can sweep
@@ -1706,9 +1707,12 @@ try
     // Pre-authentication bootstrap for the SPA. Carries no secret: it used to hand the instance API
     // key to any anonymous caller, which made the key check decorative — anyone who could reach the
     // page could read the credential that guarded it.
-    app.MapGet("/initialize.json", async (MakiDbContext db, CancellationToken ct) => Results.Json(new
+    app.MapGet("/initialize.json", async (MakiDbContext db, IAppSettings settings, CancellationToken ct) => Results.Json(new
     {
         apiRoot = "/api/v1",
+        // Whether to ask for the blurred cover mosaic behind the sign-in card. The image itself
+        // decides the rest: it 404s when too few Safe-rated covers exist.
+        signInCovers = await settings.GetAsync(SettingKeys.SignInCoverMosaic, ct) == "true",
         // True while the placeholder account the migration created is unclaimed, which is what sends
         // both a fresh install and an upgraded single-user one through first-run setup.
         setupNeeded = await db.Users.AnyAsync(u => u.PendingSetup, ct),

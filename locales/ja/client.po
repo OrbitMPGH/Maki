@@ -10141,6 +10141,11 @@ msgstr "ロックアウト期間（分）"
 msgid "lockout, failed attempts, session lifetime"
 msgstr "ロックアウト, 失敗回数, セッション期間, lockout, failed attempts, session lifetime"
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "login page, background, covers, mosaic, wallpaper"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "longest {longestSitting}"
@@ -16752,6 +16757,10 @@ msgstr "すべて表示"
 #~ msgid "Show all {0}"
 #~ msgstr ""
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Show covers from the library"
+msgstr ""
+
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Show fewer"
@@ -16918,6 +16927,11 @@ msgstr "サインイン"
 #, fuzzy
 msgid "Sign-in failed"
 msgstr "サインインに失敗しました"
+
+#: src/components/settings/SecuritySection.tsx
+#: src/pages/settings/registry.ts
+msgid "Sign-in page"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
@@ -19456,6 +19470,10 @@ msgstr "次に読む"
 msgid "Up to {max}"
 msgstr "最大 {max} 件"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Up to 24 covers rated Safe, blurred into one image, shown to anyone who can open the sign-in page. Off: Maki's own art, and nothing from the library."
+msgstr ""
+
 #: src/api/requests.ts
 #, fuzzy
 msgid "up to ch. {end}"
@@ -20181,6 +20199,10 @@ msgstr "後から公開された章の扱い"
 #, fuzzy
 msgid "What lands in your bell. Only affects you. Alerts to Discord and other apps are set up by an admin under Integrations."
 msgstr "通知ベルに届く内容です。あなただけに影響します。Discordやその他のアプリへの通知は、管理者が連携の下で設定します。"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "What people see behind the sign-in form before they have signed in."
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
