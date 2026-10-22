@@ -486,42 +486,9 @@ body {
   background-color: var(--app-bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* index.html asks for viewport-fit=cover. iPadOS draws the page under its status bar whatever the
-     status-bar meta says, so a pinned toolbar used to leave a band of faded covers above it. Taking
-     the whole screen makes that band ours: the shell starts below it and body::before fills it. */
+  /* index.html asks for viewport-fit=cover, so the page runs edge to edge and pads itself with the
+     safe-area insets wherever a device reports them. */
   --safe-top: env(safe-area-inset-top, 0px);
-  --top-band: 0px;
-}
-/* Starts well above the viewport: iPadOS reports no inset yet still paints the page above the
-   viewport's top edge, blurred, behind the status bar. A fixed strip reaching up there covers it. */
-body::before {
-  content: '';
-  position: fixed;
-  top: -120px;
-  left: 0;
-  right: 0;
-  z-index: 102;
-  height: calc(120px + var(--safe-top) + var(--top-band));
-  /* The sidebar's hairline, carried through the band so it doesn't stop short of the top. */
-  background:
-    linear-gradient(
-      to right,
-      transparent calc(var(--app-shell-navbar-offset, 0px) - 1px),
-      var(--border) 0 var(--app-shell-navbar-offset, 0px),
-      transparent 0
-    ),
-    var(--app-bg);
-  pointer-events: none;
-}
-/* iOS Safari tints the status bar solid only while a fixed element touches the top edge of the
-   viewport, and blurs the top of the page otherwise. The collapsed header is one; the sidebar
-   layout has none, and Safari doesn't look again when the layout switches. So on iOS the strip
-   reaches a little way into the viewport in every layout, under the header and over the sidebar's
-   empty top padding, and pinned bars stop below it. */
-@supports (-webkit-touch-callout: none) {
-  body {
-    --top-band: 12px;
-  }
 }
 .mantine-Modal-content[data-full-screen],
 .mantine-Drawer-content {
@@ -742,8 +709,6 @@ body::before {
    is the offset Mantine would have used. */
 .mantine-AppShell-root {
   --app-shell-header-offset: calc(var(--app-shell-header-height, 0rem) + var(--safe-top));
-  /* Where sticky bars stop: under the header, or under the iOS top band where there is none. */
-  --app-top: calc(max(var(--app-shell-header-height, 0rem), var(--top-band)) + var(--safe-top));
 }
 .mantine-AppShell-main {
   padding-inline-start: max(
@@ -753,14 +718,35 @@ body::before {
   padding-inline-end: calc(var(--app-shell-padding) + env(safe-area-inset-right, 0px));
   padding-bottom: calc(var(--app-shell-padding) + env(safe-area-inset-bottom, 0px));
 }
+/* The installed iOS app scrolls <main> rather than the document (lib/pageScroll.ts), so nothing
+   ever scrolls up behind the status bar. Sticky bars inside stick to <main>'s top edge, which is
+   the window's. Only while the shell is up: the sign-in and setup pages scroll as usual. */
+html[data-scroll='inner']:has(.mantine-AppShell-root),
+html[data-scroll='inner']:has(.mantine-AppShell-root) body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+/* A scroller's top padding would also push every sticky bar down by that much, so the page's top
+   padding becomes a spacer instead. */
+html[data-scroll='inner'] .mantine-AppShell-main {
+  height: 100dvh;
+  padding-top: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+html[data-scroll='inner'] .mantine-AppShell-main::before {
+  content: '';
+  display: block;
+  height: calc(var(--app-shell-header-offset, 0rem) + var(--app-shell-padding));
+}
+html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
+  height: var(--app-shell-header-offset, 0rem);
+}
 .app-navbar {
   padding: 16px 12px max(12px, env(safe-area-inset-bottom, 0px));
   padding-inline-start: max(12px, env(safe-area-inset-left, 0px));
   background: transparent;
   border-right: 1px solid var(--border);
-}
-.mantine-AppShell-header.app-header {
-  z-index: 103;
 }
 .app-header {
   top: var(--safe-top);
@@ -4388,7 +4374,7 @@ body::before {
   /* Clears whatever header there is (none on desktop, the burger bar on mobile), plus real air.
      The inline padding is deliberately generous: the poster hard against the rail was the single
      thing that most made this band read as unfinished. */
-  padding: max(var(--app-shell-header-offset, 0px), calc(28px + var(--top-band, 0px))) clamp(24px, 3.6vw, 64px) 0;
+  padding: max(var(--app-shell-header-offset, 0px), 28px) clamp(24px, 3.6vw, 64px) 0;
 }
 /* Inline-flex and `fit-content` so the target is the arrow and the word, not the full width of
    the hero: a link as wide as the band sends a stray click halfway across the page back to it. */
@@ -5995,7 +5981,7 @@ body.column-resizing * {
 }
 .stats-section {
   min-width: 0;
-  scroll-margin-top: calc(var(--app-top, 58px) + 3.5rem);
+  scroll-margin-top: calc(var(--app-shell-header-offset, 58px) + 3.5rem);
 }
 .stats-section > .section-header {
   margin-top: 0;
@@ -6023,7 +6009,7 @@ body.column-resizing * {
    background rather than a blur: content scrolls under it on every frame. */
 .stats-rail {
   position: sticky;
-  top: var(--app-top, 58px);
+  top: var(--app-shell-header-offset, 58px);
   z-index: 20;
   display: flex;
   flex-wrap: wrap;
@@ -6069,7 +6055,7 @@ body.column-resizing * {
     padding-block: 4px 8px;
   }
   .stats-section {
-    scroll-margin-top: calc(var(--app-top, 58px) + 6.5rem);
+    scroll-margin-top: calc(var(--app-shell-header-offset, 58px) + 6.5rem);
   }
 }
 .stats-rail-link {
@@ -8218,7 +8204,7 @@ body.reader-open {
 }
 .settings-section[data-dirty] .settings-section-head {
   position: sticky;
-  top: var(--app-top, 58px);
+  top: var(--app-shell-header-offset, 58px);
   z-index: 3;
   background: var(--app-bg);
 }
@@ -8253,7 +8239,7 @@ body.reader-open {
 }
 .settings-index {
   position: sticky;
-  top: calc(var(--app-top, 0px) + var(--mantine-spacing-md));
+  top: calc(var(--app-shell-header-offset, 0px) + var(--mantine-spacing-md));
   display: grid;
   border-left: 1px solid var(--border);
 }
@@ -8295,7 +8281,7 @@ body.reader-open {
   }
   .settings-jump {
     position: sticky;
-    top: var(--app-top, 0px);
+    top: var(--app-shell-header-offset, 0px);
     z-index: 4;
     display: flex;
     align-items: center;
@@ -8304,10 +8290,10 @@ body.reader-open {
     border-bottom: 1px solid var(--hairline);
   }
   .settings-layout:has(> .settings-jump) .settings-section[data-dirty] .settings-section-head {
-    top: calc(var(--app-top, 0px) + var(--settings-jump-h));
+    top: calc(var(--app-shell-header-offset, 0px) + var(--settings-jump-h));
   }
   .settings-layout:has(> .settings-jump) .settings-entry {
-    scroll-margin-top: calc(var(--app-top, 0px) + var(--settings-jump-h) + 16px);
+    scroll-margin-top: calc(var(--app-shell-header-offset, 0px) + var(--settings-jump-h) + 16px);
   }
 }
 .settings-jump-button {
@@ -8463,7 +8449,7 @@ body.reader-open {
   /* Pins under the app header while the grid scrolls. The strip slides away under the header so only
      the toolbar stays; its height is measured into --library-strip-h. */
   position: sticky;
-  top: calc(var(--app-top, 58px) - var(--library-strip-h, 0px));
+  top: calc(var(--app-shell-header-offset, 58px) - var(--library-strip-h, 0px));
   z-index: 20;
 }
 .figure-strip.library-index-metrics {
@@ -8608,7 +8594,7 @@ body.reader-open {
      toolbar rather than a card floating over the covers. */
   .mantine-Paper-root.library-index {
     position: sticky;
-    top: var(--app-top, 58px);
+    top: var(--app-shell-header-offset, 58px);
     z-index: 20;
     margin-inline: calc(-1 * var(--mantine-spacing-lg));
     border-width: 0 0 1px;
@@ -8695,7 +8681,7 @@ body.reader-open {
    time. The app header is only there on phones; everywhere else the variable is 0. */
 .series-detail-chapter-head[data-sticky] {
   position: sticky;
-  top: var(--app-top, 0px);
+  top: var(--app-shell-header-offset, 0px);
   z-index: 20;
   padding-block: 12px;
   margin-block: -12px;
@@ -8705,7 +8691,7 @@ body.reader-open {
    page ground so rows don't show through while it is pinned. */
 [data-mantine-color-scheme] .series-detail-chapter-selection {
   position: sticky;
-  top: var(--app-top, 0px);
+  top: var(--app-shell-header-offset, 0px);
   z-index: 20;
   border-left: 2px solid var(--brand);
   border-right: 0;
@@ -10009,7 +9995,7 @@ body.reader-open {
 /* Page layout editor (Home, Discover): compact section cards dragged by a grip. */
 .layout-edit-bar {
   position: sticky;
-  top: calc(var(--app-top, 0px) + var(--mantine-spacing-sm));
+  top: calc(var(--app-shell-header-offset, 0px) + var(--mantine-spacing-sm));
   z-index: 5;
   display: flex;
   align-items: center;

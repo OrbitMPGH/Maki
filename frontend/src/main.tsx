@@ -11,6 +11,8 @@ import '@mantine/notifications/styles.css'
 import '@fontsource-variable/onest'
 import '@fontsource-variable/bricolage-grotesque/opsz.css'
 import './theme.css'
+// Before App: decides whether the window or the shell's <main> scrolls.
+import './lib/pageScroll'
 import { AppThemeProvider } from './theme-context'
 import { AppI18nProvider } from './i18n-context'
 import { i18n, loadLocale, resolveInitialLocale } from './i18n'

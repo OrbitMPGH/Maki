@@ -3,8 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- viewport-fit=cover: iPadOS draws the page under its status bar regardless of the meta below,
-         so theme.css takes the whole screen and pads with the safe-area insets itself. -->
+    <!-- viewport-fit=cover: theme.css pads with the safe-area insets itself. iPadOS draws scrolled
+         content under its status bar regardless of the meta below; lib/pageScroll.ts deals with
+         that in the installed app. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Maki</title>
     <meta
@@ -23,7 +24,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- `black`, not `black-translucent`: an iPhone keeps an opaque bar above the page and reports
-         a zero top inset. iPadOS ignores it, which is what the safe-area padding is for. -->
+         a zero top inset. iPadOS ignores it. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <!-- External rather than inline: the CSP's script-src is 'self'. Runs before first paint. -->
     <script src="/theme-init.js"></script>

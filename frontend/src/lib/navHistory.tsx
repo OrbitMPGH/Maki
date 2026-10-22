@@ -14,6 +14,7 @@ import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { pageTitle } from '../nav'
 import { SCROLL_PREFIX, onTabStateCleared } from './pageState'
+import { onPageScroll, pageScrollTop, scrollPageTo } from './pageScroll'
 
 /**
  * One entry of the in-app history stack, mirroring what the browser is holding.
@@ -253,7 +254,7 @@ export function ScrollMemory() {
   useLayoutEffect(() => {
     if (pathRef.current === location.pathname) return
     pathRef.current = location.pathname
-    if (navigationType !== 'POP') window.scrollTo(0, 0)
+    if (navigationType !== 'POP') scrollPageTo(0)
   }, [location.pathname, navigationType])
 
   // Recorded continuously rather than on unmount: a POP unmounts the old page *after* the router
@@ -265,13 +266,13 @@ export function ScrollMemory() {
       frame = requestAnimationFrame(() => {
         frame = 0
         try {
-          sessionStorage.setItem(slotRef.current, String(window.scrollY))
+          sessionStorage.setItem(slotRef.current, String(pageScrollTop()))
         } catch { /* private mode or a full quota; scroll memory is not worth failing over */ }
       })
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
+    const unlisten = onPageScroll(onScroll)
     return () => {
-      window.removeEventListener('scroll', onScroll)
+      unlisten()
       if (frame) cancelAnimationFrame(frame)
     }
   }, [])
@@ -295,10 +296,10 @@ export function ScrollMemory() {
 
     const deadline = performance.now() + RESTORE_WINDOW_MS
     frame = requestAnimationFrame(function step() {
-      window.scrollTo(0, target)
+      scrollPageTo(target)
       // Landed, or out of patience: the document may simply never get that tall again, if rows
       // were deleted or filtered away while we were gone.
-      if (Math.abs(window.scrollY - target) < 2 || performance.now() > deadline) {
+      if (Math.abs(pageScrollTop() - target) < 2 || performance.now() > deadline) {
         stop()
         return
       }
