@@ -1272,6 +1272,12 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 /* Arriving from the command palette: the tab switches and the page scrolls, so without a marker
    there is nothing to say which of a dozen cards was the one asked for. Outline rather than a
    background change, so it reads over any card's own surface. */
+/* A menu capped at the screen by the size middleware scrolls inside rather than off the edge. */
+.menu-dropdown-scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .settings-flash {
   border-radius: var(--mantine-radius-md);
   animation: settings-flash 1.8s var(--ease);

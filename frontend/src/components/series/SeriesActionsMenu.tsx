@@ -133,6 +133,8 @@ export function SeriesActionsMenu({
         upgradeProfiles.find((p) => p.id === upgradeProfileId)?.name ?? instanceDefaultLabel
 
     return (
+        // Taller than a phone screen, so it opens toward the roomier side, stops at the screen edge
+        // and scrolls inside. Scrolling the page instead would hide it once the button left view.
         <Menu
             position="bottom-end"
             width={264}
@@ -140,6 +142,8 @@ export function SeriesActionsMenu({
             shadow="md"
             opened={opened}
             onChange={setOpened}
+            middlewares={{ flip: { fallbackStrategy: 'bestFit' }, shift: true, size: { padding: 8 } }}
+            classNames={{ dropdown: 'menu-dropdown-scroll' }}
         >
             <Menu.Target>
                 <ActionIcon
@@ -192,7 +196,7 @@ export function SeriesActionsMenu({
                             </>
                         )}
                         {canCleanUpReadFiles && (
-                            <Menu.Sub>
+                            <Menu.Sub floatingStrategy="fixed">
                                 <Menu.Sub.Target>
                                     <Menu.Sub.Item
                                         leftSection={<IconTrashX size={16} />}
@@ -248,7 +252,7 @@ export function SeriesActionsMenu({
                 <Menu.Label><Trans>Automation</Trans></Menu.Label>
 
                 {canEdit && (
-                    <Menu.Sub>
+                    <Menu.Sub floatingStrategy="fixed">
                         <Menu.Sub.Target>
                             <Menu.Sub.Item
                                 leftSection={<IconEye size={16} />}
@@ -276,7 +280,7 @@ export function SeriesActionsMenu({
                 )}
 
                 {canEdit && (
-                    <Menu.Sub>
+                    <Menu.Sub floatingStrategy="fixed">
                         <Menu.Sub.Target>
                             <Menu.Sub.Item
                                 leftSection={<IconEyeOff size={16} />}
@@ -305,7 +309,7 @@ export function SeriesActionsMenu({
                     </Menu.Sub>
                 )}
 
-                <Menu.Sub>
+                <Menu.Sub floatingStrategy="fixed">
                     <Menu.Sub.Target>
                         <Menu.Sub.Item
                             leftSection={<IconBell size={16} />}
@@ -334,7 +338,7 @@ export function SeriesActionsMenu({
                 </Menu.Sub>
 
                 {canEdit && (
-                    <Menu.Sub>
+                    <Menu.Sub floatingStrategy="fixed">
                         <Menu.Sub.Target>
                             <Menu.Sub.Item
                                 leftSection={<IconSparkles size={16} />}
