@@ -88,7 +88,11 @@
      off-scale value. */
   --type-display: clamp(2rem, 5vw, 4rem);
   --type-route: clamp(2rem, 3vw, 2.8rem);
+  /* A page title is a label for where you are, so it stays one clear step over the section titles
+     under it and no more; the hero title is the subject. */
+  --type-page-title: 1.7rem;
   --type-feature: clamp(1.25rem, 1.8vw, 1.625rem);
+  --type-section-title: 1.375rem;
   --type-figure: 1.3125rem;
   --type-section: 1.125rem;
   --type-subhead: 1rem;
@@ -148,6 +152,11 @@
   font-family: var(--font-display);
   font-weight: var(--fw-bold);
   letter-spacing: -0.025em;
+}
+
+.page-header .mantine-Title-root {
+  font-size: var(--type-page-title);
+  line-height: 1.15;
 }
 
 .cover-title,
@@ -2024,6 +2033,14 @@ body {
 .continue-tray .section-header-title {
   font-family: inherit;
   font-size: var(--type-meta);
+  letter-spacing: 0;
+}
+.continue-tray .section-header-count {
+  margin-left: -2px;
+  color: var(--ink-4);
+  font-family: inherit;
+  font-size: var(--type-meta);
+  font-weight: inherit;
   letter-spacing: 0;
 }
 .continue-tray .section-header-icon svg {
@@ -4740,18 +4757,21 @@ body {
   overflow: hidden;
   color: var(--ink-hi);
   font-family: var(--font-display);
-  font-size: 1.3rem;
+  font-size: var(--type-section-title);
   font-weight: var(--fw-bold);
-  line-height: 1.25;
+  line-height: 1.2;
   letter-spacing: -0.02em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* A figure, not a caption: the count is what tells a section title from the page title above it. */
 .section-header-count {
   flex-shrink: 0;
-  margin-left: -2px;
-  color: var(--ink-4);
-  font-size: var(--type-meta);
+  color: var(--ink-3);
+  font-family: var(--font-display);
+  font-size: var(--type-subhead);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 .section-header-rule {

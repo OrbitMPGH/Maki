@@ -125,14 +125,16 @@
     "dark-8": "Mantine dark[8], the near-black elevation ramp. Prefer the semantic surface and ink tokens.",
     "dark-9": "Mantine dark[9], the near-black elevation ramp. Prefer the semantic surface and ink tokens.",
     "type-display": "Hero titles.",
-    "type-route": "Route titles.",
+    "type-route": "Large route titles: the first-run setup steps.",
+    "type-page-title": "PageHeader titles. One clear step over type-section-title and no more: a page title names where you are, the hero title is the subject.",
     "type-feature": "Compact page titles, feature headings.",
+    "type-section-title": "SectionHeader titles over a rail or grid.",
     "type-figure": "Figure-strip counts.",
     "type-section": "Empty-state titles, panel headings.",
-    "type-subhead": "Subheads.",
+    "type-subhead": "Subheads, and the SectionHeader count as a display-face figure.",
     "type-body": "Body copy, inputs and tables (Mantine sm follows it).",
     "type-meta": "Labels over figures, chips, status words, operational table cells (Mantine xs follows it).",
-    "type-micro": "The floor for anything read: cover counts, table headers, section-header counts, timestamps, the sidebar group labels.",
+    "type-micro": "The floor for anything read: cover counts, table headers, timestamps, the sidebar group labels.",
     "type-label": "Sentence-case labels and cover badges. The same size as type-meta.",
     "type-badge": "Badge text only, the one tier under the micro floor.",
     "radius-2xs": "Tiny marks: heatmap cells, reader strip thumbnails, bookmark flags, focus rings on thin lines.",
@@ -268,21 +270,21 @@
           },
           {
             "name": "page-title",
-            "fontSize": "1.9rem",
-            "lineHeight": 1.2,
+            "lineHeight": 1.15,
             "fontWeight": 700,
             "letterSpacing": "-0.025em",
             "sample": "Downloads",
-            "usage": "PageHeader title: h1 size in the display face at 700."
+            "usage": "PageHeader title in the display face at 700.",
+            "fontSizeVar": "type-page-title"
           },
           {
             "name": "section-title",
-            "fontSize": "1.3rem",
-            "lineHeight": 1.25,
+            "lineHeight": 1.2,
             "fontWeight": 700,
             "letterSpacing": "-0.02em",
             "sample": "Jump back in",
-            "usage": "SectionHeader title above a rail or grid."
+            "usage": "SectionHeader title above a rail or grid.",
+            "fontSizeVar": "type-section-title"
           },
           {
             "name": "wordmark",

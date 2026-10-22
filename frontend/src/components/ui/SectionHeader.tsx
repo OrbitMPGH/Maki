@@ -28,7 +28,7 @@ export function SectionHeader({
     <div className="section-header">
       <span className="section-header-lead">
         <span className="section-header-icon" aria-hidden>
-          <SectionIcon size={19} stroke={1.9} />
+          <SectionIcon size={21} stroke={1.9} />
         </span>
         <Title order={2} className="section-header-title">
           {title}
