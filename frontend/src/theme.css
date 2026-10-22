@@ -710,13 +710,26 @@ body {
 .mantine-AppShell-root {
   --app-shell-header-offset: calc(var(--app-shell-header-height, 0rem) + var(--safe-top));
 }
+/* Wide windows leave a widening margin on the right so the last column isn't jammed against the
+   scrollbar. It ramps from the plain page padding around 1330px up to 10rem. Bleeding bands give
+   back --page-gutter-start/-end rather than the shell padding. */
 .mantine-AppShell-main {
+  --page-gutter-start: var(--app-shell-padding);
+  --page-gutter-end: max(var(--app-shell-padding), min((100vw - 75rem) * 0.15, 10rem));
   padding-inline-start: max(
-    calc(var(--app-shell-navbar-offset, 0rem) + var(--app-shell-padding)),
-    calc(env(safe-area-inset-left, 0px) + var(--app-shell-padding))
+    calc(var(--app-shell-navbar-offset, 0rem) + var(--page-gutter-start)),
+    calc(env(safe-area-inset-left, 0px) + var(--page-gutter-start))
   );
-  padding-inline-end: calc(var(--app-shell-padding) + env(safe-area-inset-right, 0px));
+  padding-inline-end: calc(var(--page-gutter-end) + env(safe-area-inset-right, 0px));
   padding-bottom: calc(var(--app-shell-padding) + env(safe-area-inset-bottom, 0px));
+}
+/* With the sidebar folded into the top bar nothing sits on the left, so the gutter goes both sides. */
+.nav-collapsed .mantine-AppShell-main {
+  --page-gutter-start: var(--page-gutter-end);
+}
+/* Capped pages centre their column, and the uneven gutter would push it off centre. */
+.mantine-AppShell-main:has(.surface-frame--wide) {
+  --page-gutter-end: var(--app-shell-padding);
 }
 /* The installed iOS app scrolls <main> rather than the document (lib/pageScroll.ts), so nothing
    ever scrolls up behind the status bar. Sticky bars inside stick to <main>'s top edge, which is
@@ -2932,6 +2945,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   min-height: 360px;
   padding: clamp(28px, 4vw, 54px);
   margin: calc(var(--app-shell-padding, 1rem) * -1);
+  margin-inline: calc(var(--page-gutter-start, var(--app-shell-padding, 1rem)) * -1)
+    calc(var(--page-gutter-end, var(--app-shell-padding, 1rem)) * -1);
   margin-bottom: var(--mantine-spacing-xl);
   background: var(--surface);
 }
@@ -2962,6 +2977,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
    padding back on three sides or it reads as a card with art in it. */
 .discover-hero.series-hero[data-compact] {
   margin: calc(var(--app-shell-padding, 1rem) * -1);
+  margin-inline: calc(var(--page-gutter-start, var(--app-shell-padding, 1rem)) * -1)
+    calc(var(--page-gutter-end, var(--app-shell-padding, 1rem)) * -1);
   margin-bottom: var(--mantine-spacing-xl);
   border-radius: 0;
 }
@@ -4317,6 +4334,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   overflow: clip;
   isolation: isolate;
   margin: calc(var(--app-shell-padding, 1rem) * -1);
+  margin-inline: calc(var(--page-gutter-start, var(--app-shell-padding, 1rem)) * -1)
+    calc(var(--page-gutter-end, var(--app-shell-padding, 1rem)) * -1);
   margin-bottom: 0;
   min-height: 452px;
   display: flex;
@@ -10365,7 +10384,14 @@ tr:hover .mono-value-copy {
 .lucky-pill {
   position: fixed;
   z-index: 100;
-  left: calc(50% + var(--app-shell-navbar-offset, 0px) / 2);
+  left: calc(
+    50% +
+      (
+        var(--app-shell-navbar-offset, 0px) + var(--page-gutter-start, 0px) -
+          var(--page-gutter-end, 0px)
+      ) /
+      2
+  );
   bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px));
   transform: translateX(-50%);
   display: flex;
