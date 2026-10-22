@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
   Alert,
-  Anchor,
   Badge,
   Box,
   Button,
@@ -83,6 +82,7 @@ import { useLabel } from '../i18n-context'
 import { pressable } from '../lib/pressable'
 import { SOURCE_ICONS } from '../sourceIcons'
 import { useSourceLabel } from '../sourceLabels'
+import { MonoValue } from './ui/MonoValue'
 
 const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
   TitleSearch: msg`Title search`,
@@ -505,15 +505,11 @@ export function SourceMappingsSection({
                         </Tooltip>}
                       </Group>
                       <Group gap={6} wrap="nowrap" miw={0}>
-                        {m.url ? (
-                          <Anchor href={m.url} target="_blank" size="xs" ff="monospace" className="mono-id" title={m.sourceSeriesId}>
-                            {m.sourceSeriesId}
-                          </Anchor>
-                        ) : (
-                          <Text size="xs" ff="monospace" className="mono-id" title={m.sourceSeriesId}>
-                            {m.sourceSeriesId}
-                          </Text>
-                        )}
+                        <MonoValue
+                          value={m.sourceSeriesId}
+                          href={m.url ?? undefined}
+                          fz="var(--mantine-font-size-xs)"
+                        />
                         <Text size="xs" c="var(--ink-3)" aria-hidden>·</Text>
                         {m.lastError ? (
                           <Tooltip label={m.lastError} withArrow>

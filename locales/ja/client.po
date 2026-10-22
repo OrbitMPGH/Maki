@@ -5562,6 +5562,7 @@ msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
+#: src/components/ui/MonoValue.tsx
 #, fuzzy
 msgid "Copied"
 msgstr "コピー済み"
@@ -5571,6 +5572,10 @@ msgstr "コピー済み"
 #, fuzzy
 msgid "Copy"
 msgstr "コピー"
+
+#: src/components/ui/MonoValue.tsx
+msgid "Copy {whole}"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy API key"
@@ -6460,6 +6465,7 @@ msgstr "保存先のルートフォルダー"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "リンク解除されたCBZは、削除を選ばない限りFilesセクションに残ります。"
 
+#: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Details"
@@ -8531,6 +8537,10 @@ msgstr "進捗の記録がオフの間は非表示です。"
 #, fuzzy
 msgid "Hide affected series"
 msgstr "影響のあるシリーズを非表示"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Hide details"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

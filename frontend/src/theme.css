@@ -7935,16 +7935,66 @@ body.reader-open {
   --mantine-font-size-xs: var(--type-micro);
 }
 
-/* A source's own series id: a slug, a number or a UUID. Kept to one line; the full id is in the
-   title and behind the link. */
-.mono-id {
-  display: inline-block;
+/* MonoValue: a file name, path or id on one line that gives up its middle, never its end. */
+.mono-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   min-width: 0;
   max-width: 100%;
+  vertical-align: bottom;
+}
+.mono-value-text {
+  display: inline-flex;
+  min-width: 0;
+  font-family: var(--mantine-font-family-monospace);
+  white-space: nowrap;
+  color: inherit;
+}
+a.mono-value-text {
+  color: var(--brand);
+  text-decoration: none;
+}
+a.mono-value-text:hover {
+  text-decoration: underline;
+}
+/* The head gives way first. It keeps six characters while a tail sits beside it, so a name never
+   collapses to its tags. The tail never shrinks (a shared shrink hands it a fraction of a pixel,
+   which is enough to ellipsize it); it is capped at what the head leaves instead. */
+.mono-value-head {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  vertical-align: bottom;
+}
+.mono-value-head[data-split] {
+  min-width: 6ch;
+}
+.mono-value-tail {
+  flex-shrink: 0;
+  max-width: calc(100% - 6ch);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mono-value-tip {
+  font-family: var(--mantine-font-family-monospace);
+  overflow-wrap: anywhere;
+}
+/* The copy button shows on the row or value it belongs to, so a table of paths is not a column of
+   identical icons. Touch screens have no hover, so it stays. */
+.mono-value-copy {
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+.mono-value:hover .mono-value-copy,
+.mono-value:focus-within .mono-value-copy,
+tr:hover .mono-value-copy {
+  opacity: 1;
+}
+@media (hover: none) {
+  .mono-value-copy {
+    opacity: 1;
+  }
 }
 
 .sources-table th,
@@ -9406,10 +9456,34 @@ body.reader-open {
 .scrobble-recent-table td {
   vertical-align: top;
 }
+.scrobble-result-cell {
+  container-type: inline-size;
+}
 .scrobble-result {
   display: grid;
   grid-template-columns: 13.5rem minmax(0, 1fr);
   gap: 6px 16px;
+}
+/* Stacks on the cell's own width rather than the viewport's, since the sidebar and the series
+   column decide how much the result gets. */
+@container (max-width: 30rem) {
+  .scrobble-result {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 2px;
+  }
+  .scrobble-exceptions {
+    row-gap: 6px;
+    margin-top: 4px;
+  }
+  /* One column: the rule moves to the whole exception, which now stacks what over who. */
+  .scrobble-result-line[data-exception] {
+    padding-left: 10px;
+    border-left: 2px solid var(--border-strong);
+  }
+  .scrobble-result-line[data-exception] .scrobble-result-what {
+    padding-left: 0;
+    border-left: 0;
+  }
 }
 /* Subgrid lines, so every line's columns line up with the main line's. */
 .scrobble-result-line,
@@ -9456,9 +9530,12 @@ body.reader-open {
   border-radius: 50%;
   background: var(--surface-2);
 }
-.scrobble-result-reason {
-  flex: 1 1 8rem;
-  min-width: 0;
+.scrobble-result-detail {
+  grid-column: 1 / -1;
+  margin: 2px 0 4px;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--type-micro);
+  color: var(--ink-3);
   overflow-wrap: anywhere;
 }
 .scrobble-tracker-icon {
@@ -9529,23 +9606,6 @@ body.reader-open {
   }
   .scrobble-recent-table thead th:nth-child(1) {
     width: 36%;
-  }
-  .scrobble-result {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: 2px;
-  }
-  .scrobble-exceptions {
-    row-gap: 6px;
-    margin-top: 4px;
-  }
-  /* One column: the rule moves to the whole exception, which now stacks what over who. */
-  .scrobble-result-line[data-exception] {
-    padding-left: 10px;
-    border-left: 2px solid var(--border-strong);
-  }
-  .scrobble-result-line[data-exception] .scrobble-result-what {
-    padding-left: 0;
-    border-left: 0;
   }
   /* Service and timestamp are recoverable from the row itself; series, progress
      and status are what the table is read for. */

@@ -5562,6 +5562,7 @@ msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
+#: src/components/ui/MonoValue.tsx
 #, fuzzy
 msgid "Copied"
 msgstr "복사됨"
@@ -5571,6 +5572,10 @@ msgstr "복사됨"
 #, fuzzy
 msgid "Copy"
 msgstr "복사"
+
+#: src/components/ui/MonoValue.tsx
+msgid "Copy {whole}"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy API key"
@@ -6460,6 +6465,7 @@ msgstr "대상 루트 폴더"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "분리된 CBZ는 삭제하도록 선택하지 않는 한 파일 섹션에 유지됩니다."
 
+#: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Details"
@@ -8531,6 +8537,10 @@ msgstr "진행 상황 추적이 꺼져 있으면 숨겨집니다."
 #, fuzzy
 msgid "Hide affected series"
 msgstr "영향을 받는 시리즈 숨기기"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Hide details"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

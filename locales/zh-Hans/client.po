@@ -5562,6 +5562,7 @@ msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
+#: src/components/ui/MonoValue.tsx
 #, fuzzy
 msgid "Copied"
 msgstr "已复制"
@@ -5571,6 +5572,10 @@ msgstr "已复制"
 #, fuzzy
 msgid "Copy"
 msgstr "复制"
+
+#: src/components/ui/MonoValue.tsx
+msgid "Copy {whole}"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy API key"
@@ -6460,6 +6465,7 @@ msgstr "目标根文件夹"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "已取消关联的 CBZ 会保留在文件部分，除非你选择删除它们。"
 
+#: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Details"
@@ -8531,6 +8537,10 @@ msgstr "进度跟踪关闭时隐藏。"
 #, fuzzy
 msgid "Hide affected series"
 msgstr "隐藏受影响的作品"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Hide details"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

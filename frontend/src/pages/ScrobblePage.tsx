@@ -261,25 +261,48 @@ function RecentSyncResult({
             )
           })}
           {failures.map((r) => (
-            <li key={r.service} className="scrobble-result-line" data-exception>
-              <span className="scrobble-result-what">
-                <Text span size="sm" fw={600} c="var(--danger)">
-                  <Trans>Not updated</Trans>
-                </Text>
-              </span>
-              <span className="scrobble-result-who">
-                <TrackerMarks services={[r.service]} connections={connections} />
-                {/* The tracker's own words: English and technical, so they follow the plain
-                    statement rather than replace it. */}
-                <Text span size="sm" c="var(--ink-3)" className="scrobble-result-reason">
-                  {serviceLabel(connections, r.service)}: {r.error}
-                </Text>
-              </span>
-            </li>
+            <FailureLine key={r.service} service={r.service} error={r.error ?? ''} connections={connections} />
           ))}
         </ul>
       )}
     </div>
+  )
+}
+
+/**
+ * A sync a tracker refused. The tracker's own message is English, technical and often long (an HTTP
+ * verb and path, a timestamp), so it waits behind Details instead of filling the row.
+ */
+function FailureLine({
+  service,
+  error,
+  connections,
+}: {
+  service: string
+  error: string
+  connections: ScrobbleConnection[]
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <li className="scrobble-result-line" data-exception>
+      <span className="scrobble-result-what">
+        <Text span size="sm" fw={600} c="var(--danger)">
+          <Trans>Not updated</Trans>
+        </Text>
+      </span>
+      <span className="scrobble-result-who">
+        <TrackerMarks services={[service]} connections={connections} />
+        <Text span size="sm" c="var(--ink-3)">
+          {serviceLabel(connections, service)}
+        </Text>
+        {error && (
+          <Button size="compact-xs" variant="subtle" color="var(--neutral)" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+            {open ? <Trans>Hide details</Trans> : <Trans>Details</Trans>}
+          </Button>
+        )}
+      </span>
+      {open && <p className="scrobble-result-detail">{error}</p>}
+    </li>
   )
 }
 
@@ -638,7 +661,9 @@ export default function ScrobblePage() {
                           />
                         </Table.Td>
                         <Table.Td>
-                          <RecentSyncResult group={group} connections={data.connections} />
+                          <div className="scrobble-result-cell">
+                            <RecentSyncResult group={group} connections={data.connections} />
+                          </div>
                         </Table.Td>
                         <Table.Td data-priority="low">
                           <Text size="sm" c="var(--ink-3)">

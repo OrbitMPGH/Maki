@@ -224,3 +224,19 @@ export declare function SurfaceFrame(props: ComponentPropsWithRef<'div'> & {
 
 /** A panel-table outline while rows load. */
 export declare function TableSkeleton(props: { columns: number; rows?: number }): JSX.Element
+
+/**
+ * A file name, path or id on one line. Too long for its column, it loses its middle, keeping the
+ * start and the extension; the full value is in a tooltip and, with `copy`, behind a copy button.
+ */
+export declare function MonoValue(props: {
+  value: string
+  /** Tooltip and copy value when the label is shorter, e.g. a file name standing for its path. */
+  full?: string
+  href?: string
+  copy?: boolean
+  /** Stops a table column collapsing to the tail. */
+  minWidth?: CSSProperties['minWidth']
+  fz?: CSSProperties['fontSize']
+  c?: CSSProperties['color']
+}): JSX.Element

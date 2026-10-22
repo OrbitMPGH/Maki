@@ -4619,6 +4619,7 @@ msgstr "Convert library"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
+#: src/components/ui/MonoValue.tsx
 msgid "Copied"
 msgstr "Copied"
 
@@ -4626,6 +4627,10 @@ msgstr "Copied"
 #: src/components/settings/SecuritySection.tsx
 msgid "Copy"
 msgstr "Copy"
+
+#: src/components/ui/MonoValue.tsx
+msgid "Copy {whole}"
+msgstr "Copy {whole}"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy API key"
@@ -5354,6 +5359,7 @@ msgstr "Destination root folder"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "Detached CBZs stay in the Files section unless you choose to delete them."
 
+#: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Details"
 msgstr "Details"
@@ -7063,6 +7069,10 @@ msgstr "Hidden while progression is switched off."
 #: src/pages/HealthPage.tsx
 msgid "Hide affected series"
 msgstr "Hide affected series"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Hide details"
+msgstr "Hide details"
 
 #: src/components/CatalogueRules.tsx
 msgid "Hide everywhere on Discover"

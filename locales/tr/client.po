@@ -5563,6 +5563,7 @@ msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
+#: src/components/ui/MonoValue.tsx
 #, fuzzy
 msgid "Copied"
 msgstr "Kopyalandı"
@@ -5572,6 +5573,10 @@ msgstr "Kopyalandı"
 #, fuzzy
 msgid "Copy"
 msgstr "Kopyala"
+
+#: src/components/ui/MonoValue.tsx
+msgid "Copy {whole}"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy API key"
@@ -6461,6 +6466,7 @@ msgstr "Hedef kök klasör"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "Ayrılan CBZ'ler, silmeyi seçmediğiniz sürece Dosyalar bölümünde kalır."
 
+#: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Details"
@@ -8532,6 +8538,10 @@ msgstr "İlerleme takibi kapalıyken gizlenir."
 #, fuzzy
 msgid "Hide affected series"
 msgstr "Etkilenen serileri gizle"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Hide details"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

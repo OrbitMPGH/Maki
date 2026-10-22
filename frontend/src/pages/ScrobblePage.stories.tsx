@@ -36,14 +36,16 @@ export const Default: Story = {
  * tracker that lags or failed is listed under it with what differs.
  */
 export const RecentSyncsGroupedByResult: Story = {
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
     const table = (await canvas.findByRole('columnheader', { name: 'Result' })).closest('table')!
     await waitFor(() => expect(within(table).getAllByRole('row')).toHaveLength(6))
     const [lanterns, summer, ironPetal, clockwork, ninth] = within(table).getAllByRole('row').slice(1).map((r) => within(r))
     await expect(lanterns.getByText('4 trackers')).toBeVisible()
     await expect(lanterns.getByRole('img', { name: 'MangaUpdates' })).toBeVisible()
     await expect(lanterns.getByText('Not updated')).toBeVisible()
-    await expect(lanterns.getByText(/Kitsu answered 429: slow down./)).toBeVisible()
+    await expect(lanterns.queryByText(/Kitsu answered 429: slow down./)).toBeNull()
+    await userEvent.click(lanterns.getByRole('button', { name: 'Details' }))
+    await expect(await lanterns.findByText(/Kitsu answered 429: slow down./)).toBeVisible()
     await expect(summer.getByText('All 5 trackers')).toBeVisible()
     await expect(summer.queryByRole('listitem')).toBeNull()
     await expect(ironPetal.getByText('2 trackers')).toBeVisible()

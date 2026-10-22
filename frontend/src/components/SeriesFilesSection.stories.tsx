@@ -3,6 +3,7 @@ import { expect, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
 import { chaptersFor, filesFor, seriesMsw } from '../../.storybook/mocks/series'
+import { monoText } from '../../.storybook/monoText'
 import { SeriesFilesSection } from './SeriesFilesSection'
 
 const meta = {
@@ -17,7 +18,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText(/Bonus booklet/)).toBeVisible()
+    await expect(await canvas.findByText(monoText(/Bonus booklet/))).toBeVisible()
     await expect(await canvas.findByText('Vol.3')).toBeVisible()
   },
 }
@@ -76,7 +77,7 @@ export const Scanning: Story = {
 export const Reader: Story = {
   parameters: { auth: 'reader', msw: seriesMsw() },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText(/Bonus booklet/)).toBeVisible()
+    await expect(await canvas.findByText(monoText(/Bonus booklet/))).toBeVisible()
     await expect(canvas.queryByRole('button', { name: 'Relink files' })).toBeNull()
   },
 }

@@ -161,6 +161,7 @@ import {
   seriesStatusVisual,
 } from '../components/ui/status'
 import { readStored, writeStored } from '../components/ui/viewPrefs'
+import { MonoValue } from '../components/ui/MonoValue'
 import { useColumnWidths } from '../lib/useColumnWidths'
 import { useStableActions } from '../lib/useStableActions'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
@@ -2061,9 +2062,7 @@ function SeriesDetailBody() {
                     )}
                     {series.rootFolderPath && (
                         <RecordRow label={t`Folder`}>
-                          <Text size="sm" c="var(--ink-3)" ff="monospace" style={{ wordBreak: 'break-all' }}>
-                            {series.rootFolderPath}
-                          </Text>
+                          <MonoValue value={series.rootFolderPath} copy c="var(--ink-3)" />
                         </RecordRow>
                     )}
                   </div>

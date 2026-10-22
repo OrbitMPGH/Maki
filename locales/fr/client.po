@@ -5563,6 +5563,7 @@ msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
+#: src/components/ui/MonoValue.tsx
 #, fuzzy
 msgid "Copied"
 msgstr "Copié"
@@ -5572,6 +5573,10 @@ msgstr "Copié"
 #, fuzzy
 msgid "Copy"
 msgstr "Copier"
+
+#: src/components/ui/MonoValue.tsx
+msgid "Copy {whole}"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy API key"
@@ -6461,6 +6466,7 @@ msgstr "Dossier racine de destination"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "Les CBZ détachés restent dans la section Fichiers, sauf si vous choisissez de les supprimer."
 
+#: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Details"
@@ -8532,6 +8538,10 @@ msgstr "Masqué lorsque le suivi de la progression est désactivé."
 #, fuzzy
 msgid "Hide affected series"
 msgstr "Masquer les séries concernées"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Hide details"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

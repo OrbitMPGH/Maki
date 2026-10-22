@@ -67,6 +67,7 @@ import { Panel } from '../components/ui/Panel'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
+import { MonoValue } from '../components/ui/MonoValue'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
 import { useLabel } from '../i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -548,8 +549,9 @@ export default function HealthPage() {
             ) : (
               <>
                 <Panel p={0} className="table-panel">
-                  <Table.ScrollContainer minWidth={720}>
-                    <Table highlightOnHover className="panel-table">
+                  <Table.ScrollContainer minWidth={880}>
+                    {/* Fixed, so the archive path takes what the other columns leave and loses its middle. */}
+                    <Table highlightOnHover className="panel-table" layout="fixed">
                       <Table.Thead>
                         <Table.Tr>
                           <Table.Th w={40}>
@@ -573,16 +575,16 @@ export default function HealthPage() {
                           <Table.Th>
                             <Trans>Archive</Trans>
                           </Table.Th>
-                          <Table.Th>
+                          <Table.Th w={90}>
                             <Trans>Size</Trans>
                           </Table.Th>
-                          <Table.Th>
+                          <Table.Th w={120}>
                             <Trans>Analysis</Trans>
                           </Table.Th>
-                          <Table.Th>
+                          <Table.Th w={200}>
                             <Trans>Findings</Trans>
                           </Table.Th>
-                          <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
+                          <Table.Th w={100}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                         </Table.Tr>
                       </Table.Thead>
                       <Table.Tbody>
@@ -604,9 +606,7 @@ export default function HealthPage() {
                               />
                             </Table.Td>
                             <Table.Td>
-                              <Text fz="var(--type-meta)" ff="monospace" style={{ overflowWrap: 'anywhere' }}>
-                                {file.relativePath}
-                              </Text>
+                              <MonoValue value={file.relativePath} copy fz="var(--type-meta)" />
                               <Text size="xs" c="var(--ink-3)">
                                 {file.analyzedAt ? formatDateTime(file.analyzedAt) : <Trans>Not analyzed</Trans>}
                               </Text>
@@ -1233,8 +1233,8 @@ function FileReview({
           <div className="health-review">
             <div className="health-review-column">
               <Panel p="md">
-                <Text fw={600} ff="monospace" style={{ overflowWrap: 'anywhere' }}>
-                  {data.file.relativePath}
+                <Text fw={600} component="div">
+                  <MonoValue value={data.file.relativePath} copy />
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt={4}>
                   {bytes(data.file.size, t`Missing`)} · <Plural value={pageCount} one="# page" other="# pages" /> ·{' '}
@@ -1847,8 +1847,8 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
             <div className="health-review-column">
               <Panel p="md">
                 <Status value={data.operation.status} />
-                <Text fw={600} mt="sm" ff="monospace" style={{ overflowWrap: 'anywhere' }}>
-                  {data.file.relativePath}
+                <Text fw={600} mt="sm" component="div">
+                  <MonoValue value={data.file.relativePath} copy />
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt={4}>
                   {bytes(data.file.size, t`Missing`)} ·{' '}

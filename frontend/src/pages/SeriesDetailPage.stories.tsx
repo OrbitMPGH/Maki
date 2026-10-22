@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
 import { animeResume, providerDetail, seriesDto, seriesMsw, torrentProposal } from '../../.storybook/mocks/series'
 import SeriesDetailPage from './SeriesDetailPage'
+import { monoText } from '../../.storybook/monoText'
 
 const at = (id: number, query = '') => ({ router: { path: '/series/:id', initialEntries: [`/series/${id}${query}`] } })
 
@@ -76,7 +77,7 @@ export const SelectModeBulkBar: Story = {
 export const FilesTab: Story = {
   parameters: at(1, '?tab=files'),
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText(/Bonus booklet/)).toBeVisible()
+    await expect(await canvas.findByText(monoText(/Bonus booklet/))).toBeVisible()
   },
 }
 

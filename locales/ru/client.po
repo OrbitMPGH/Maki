@@ -5563,6 +5563,7 @@ msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
+#: src/components/ui/MonoValue.tsx
 #, fuzzy
 msgid "Copied"
 msgstr "Скопировано"
@@ -5572,6 +5573,10 @@ msgstr "Скопировано"
 #, fuzzy
 msgid "Copy"
 msgstr "Копировать"
+
+#: src/components/ui/MonoValue.tsx
+msgid "Copy {whole}"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy API key"
@@ -6461,6 +6466,7 @@ msgstr "Корневая папка назначения"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "Отдельные CBZ остаются в разделе «Файлы», пока вы не выберете их удаление."
 
+#: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Details"
@@ -8532,6 +8538,10 @@ msgstr "Скрыто, пока отслеживание прогресса вы�
 #, fuzzy
 msgid "Hide affected series"
 msgstr "Скрыть затронутые серии"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Hide details"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

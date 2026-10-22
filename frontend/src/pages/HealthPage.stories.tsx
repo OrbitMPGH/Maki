@@ -14,6 +14,7 @@ import {
   warningChecks,
 } from '../../.storybook/mocks/operations/health'
 import { AfterSignIn } from '../../.storybook/AfterSignIn'
+import { monoText } from '../../.storybook/monoText'
 import HealthPage from './HealthPage'
 
 const meta = {
@@ -151,7 +152,7 @@ export const RebuildImageCache: Story = {
 export const FilesTab: Story = {
   parameters: tab('files'),
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Lanterns Over Kasumi/Lanterns Over Kasumi - Ch.57.cbz')).toBeVisible()
+    await expect(await canvas.findByText(monoText('Lanterns Over Kasumi/Lanterns Over Kasumi - Ch.57.cbz'))).toBeVisible()
     await waitFor(() => expect(canvas.getAllByText('Not linked').length).toBeGreaterThan(0))
   },
 }
@@ -160,8 +161,8 @@ export const FilesSearch: Story = {
   parameters: tab('files'),
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByRole('textbox', { name: 'Search file paths' }), 'Starlit')
-    await waitFor(() => expect(canvas.queryByText(/Lanterns Over Kasumi\/Lanterns/)).not.toBeInTheDocument())
-    await expect(await canvas.findByText('Starlit Ferry/Starlit Ferry - Ch.4.cbz')).toBeVisible()
+    await waitFor(() => expect(canvas.queryByText(monoText(/Lanterns Over Kasumi\/Lanterns/))).not.toBeInTheDocument())
+    await expect(await canvas.findByText(monoText('Starlit Ferry/Starlit Ferry - Ch.4.cbz'))).toBeVisible()
   },
 }
 
