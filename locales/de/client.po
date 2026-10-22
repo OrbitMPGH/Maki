@@ -5202,6 +5202,10 @@ msgstr "Einklappen"
 msgid "Collapse {lineLabel}"
 msgstr "{lineLabel} einklappen"
 
+#: src/App.tsx
+msgid "Collapse sidebar"
+msgstr ""
+
 #: src/nav.ts
 #, fuzzy
 msgid "Collection"
@@ -9366,6 +9370,10 @@ msgstr "Weiter bearbeiten"
 #, fuzzy
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "Die manuelle Priorität behalten, aber neu nummerieren, damit sie der gemessenen Reihenfolge folgt."
+
+#: src/App.tsx
+msgid "Keep sidebar open"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy

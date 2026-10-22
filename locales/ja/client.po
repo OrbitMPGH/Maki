@@ -5201,6 +5201,10 @@ msgstr "折りたたむ"
 msgid "Collapse {lineLabel}"
 msgstr "{lineLabel}を折りたたむ"
 
+#: src/App.tsx
+msgid "Collapse sidebar"
+msgstr ""
+
 #: src/nav.ts
 #, fuzzy
 msgid "Collection"
@@ -9365,6 +9369,10 @@ msgstr "編集を続ける"
 #, fuzzy
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "手動の優先度は維持し、測定した順序に合わせて番号を振り直します。"
+
+#: src/App.tsx
+msgid "Keep sidebar open"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy

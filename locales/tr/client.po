@@ -5202,6 +5202,10 @@ msgstr "Daralt"
 msgid "Collapse {lineLabel}"
 msgstr "{lineLabel} daralt"
 
+#: src/App.tsx
+msgid "Collapse sidebar"
+msgstr ""
+
 #: src/nav.ts
 #, fuzzy
 msgid "Collection"
@@ -9366,6 +9370,10 @@ msgstr "Düzenlemeye devam et"
 #, fuzzy
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "Elle önceliği koru, ancak ölçülen sırayı izleyecek şekilde yeniden numaralandır."
+
+#: src/App.tsx
+msgid "Keep sidebar open"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy

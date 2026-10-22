@@ -5201,6 +5201,10 @@ msgstr "접기"
 msgid "Collapse {lineLabel}"
 msgstr "{lineLabel} 접기"
 
+#: src/App.tsx
+msgid "Collapse sidebar"
+msgstr ""
+
 #: src/nav.ts
 #, fuzzy
 msgid "Collection"
@@ -9365,6 +9369,10 @@ msgstr "계속 편집"
 #, fuzzy
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "수동 우선순위를 유지하되, 측정된 순서에 맞게 번호를 다시 매깁니다."
+
+#: src/App.tsx
+msgid "Keep sidebar open"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy

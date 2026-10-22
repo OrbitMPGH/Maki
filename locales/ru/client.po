@@ -5202,6 +5202,10 @@ msgstr "Свернуть"
 msgid "Collapse {lineLabel}"
 msgstr "Свернуть {lineLabel}"
 
+#: src/App.tsx
+msgid "Collapse sidebar"
+msgstr ""
+
 #: src/nav.ts
 #, fuzzy
 msgid "Collection"
@@ -9366,6 +9370,10 @@ msgstr "Продолжить редактирование"
 #, fuzzy
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "Сохранить ручной приоритет, но перенумеровать его по измеренному порядку."
+
+#: src/App.tsx
+msgid "Keep sidebar open"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy

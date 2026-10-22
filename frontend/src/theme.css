@@ -434,6 +434,23 @@ body {
    colour as the cards behind them. */
 [data-mantine-color-scheme] .mantine-Menu-dropdown,
 [data-mantine-color-scheme] .mantine-Popover-dropdown {
+  /* index.html asks for viewport-fit=cover. iPadOS draws the page under its status bar whatever the
+     status-bar meta says, so a pinned toolbar used to leave a band of faded covers above it. Taking
+     the whole screen makes that band ours: the shell starts below it and body::before fills it. */
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 100;
+  height: var(--safe-top);
+  background: var(--app-bg);
+  pointer-events: none;
+}
+.mantine-Modal-content[data-full-screen],
+.mantine-Drawer-content {
+  border-top: var(--safe-top) solid transparent;
   background-color: var(--surface-raised);
   border: 1px solid var(--border-raised);
   box-shadow: var(--shadow-raised);
@@ -645,14 +662,35 @@ body {
     margin-inline: 2px;
   }
 }
+/* Everything Mantine positions off the header offset (navbar, main, hero bands) and every sticky
+   bar below drops by the status bar this way. The header itself is never collapsed, so its height
+   is the offset Mantine would have used. */
+.mantine-AppShell-root {
+  --app-shell-header-offset: calc(var(--app-shell-header-height, 0rem) + var(--safe-top));
+}
+.mantine-AppShell-main {
+  padding-inline-start: max(
+    calc(var(--app-shell-navbar-offset, 0rem) + var(--app-shell-padding)),
+    calc(env(safe-area-inset-left, 0px) + var(--app-shell-padding))
+  );
+  padding-inline-end: calc(var(--app-shell-padding) + env(safe-area-inset-right, 0px));
+  padding-bottom: calc(var(--app-shell-padding) + env(safe-area-inset-bottom, 0px));
+}
 
+  padding: 16px 12px max(12px, env(safe-area-inset-bottom, 0px));
+  padding-inline-start: max(12px, env(safe-area-inset-left, 0px));
 /* Popovers carry a fixed pixel width (the inbox bell is 380, health is 340), which Mantine writes
    as an inline `width`, so only a max-width can rein it in. On a 375px phone the bell's dropdown
    ends up wider than the screen: Floating UI shoves it as far left as it can and the header row
    still runs under the right edge, taking "Mark all read" with it. Scoped to mobile, and a
+  top: var(--safe-top);
    max-width, so it is a no-op wherever the popover already fits. */
 @media (max-width: 47.9375em) {
   .mantine-Popover-dropdown {
+.app-header-row {
+  padding-inline: max(var(--mantine-spacing-md), env(safe-area-inset-left, 0px))
+    max(var(--mantine-spacing-md), env(safe-area-inset-right, 0px));
+}
     max-width: calc(100vw - 1.5rem);
   }
 }
@@ -690,6 +728,37 @@ body {
 
 .brand-mark {
   display: grid;
+/* A collapsed sidebar on a wider screen (App.tsx) is the phone layout at any width: the same
+   header, the same drawer. Tablets are touch screens too, so the targets stay thumb-sized. */
+.mantine-AppShell-root.nav-collapsed {
+  --app-shell-navbar-width: min(272px, 82vw);
+}
+.nav-collapsed .app-navbar {
+  background: var(--surface-2);
+  box-shadow: 12px 0 32px -16px rgba(0, 0, 0, 0.8);
+}
+[data-theme='light'] .nav-collapsed .app-navbar {
+  background: var(--surface);
+}
+.nav-collapsed .app-header .mantine-Burger-root {
+  width: 44px;
+  height: 44px;
+  padding: 13px;
+}
+.nav-collapsed .app-header-actions .mantine-ActionIcon-root {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+.nav-collapsed .app-header-actions .command-palette-trigger {
+  width: 40px;
+  height: 40px;
+  margin-inline: 2px;
+}
+.nav-collapse-toggle {
+  margin-inline-start: auto;
+}
   place-items: center;
   flex-shrink: 0;
   width: 40px;
@@ -5768,7 +5837,7 @@ body.column-resizing * {
 }
 .stats-section {
   min-width: 0;
-  scroll-margin-top: calc(var(--app-shell-header-height, 58px) + 3.5rem);
+  scroll-margin-top: calc(var(--app-shell-header-offset, 58px) + 3.5rem);
 }
 .stats-section > .section-header {
   margin-top: 0;
@@ -5796,7 +5865,7 @@ body.column-resizing * {
    background rather than a blur: content scrolls under it on every frame. */
 .stats-rail {
   position: sticky;
-  top: var(--app-shell-header-height, 58px);
+  top: var(--app-shell-header-offset, 58px);
   z-index: 20;
   display: flex;
   flex-wrap: wrap;
@@ -5842,7 +5911,7 @@ body.column-resizing * {
     padding-block: 4px 8px;
   }
   .stats-section {
-    scroll-margin-top: calc(var(--app-shell-header-height, 58px) + 6.5rem);
+    scroll-margin-top: calc(var(--app-shell-header-offset, 58px) + 6.5rem);
   }
 }
 .stats-rail-link {
@@ -6356,7 +6425,7 @@ body.column-resizing * {
 
 .rewind-progress {
   position: absolute;
-  top: 16px;
+  top: calc(16px + var(--safe-top));
   left: 16px;
   right: 104px;
   display: flex;
@@ -6389,7 +6458,7 @@ body.column-resizing * {
 
 .rewind-controls {
   position: absolute;
-  top: 10px;
+  top: calc(10px + var(--safe-top));
   right: 12px;
   display: flex;
   gap: 4px;
@@ -6575,7 +6644,7 @@ body.reader-open {
 }
 .reader-preview-body {
   position: absolute;
-  inset: 56px 0 0;
+  inset: calc(56px + var(--safe-top)) 0 0;
   overflow: auto;
 }
 /* A page's outline while the chapter loads. Its own colours: the reader is always dark, and the
@@ -6719,7 +6788,7 @@ body.reader-open {
 .reader-next-chapter-hint {
   position: fixed;
   left: 50%;
-  bottom: 32px;
+  bottom: calc(32px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   z-index: var(--reader-overlay-z-index);
   display: flex;
@@ -6787,7 +6856,7 @@ body.reader-open {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 56px;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   z-index: 2;
   opacity: 0;
   pointer-events: none;
@@ -6815,12 +6884,20 @@ body.reader-open {
   background: none;
   cursor: pointer;
   line-height: 0;
+/* The bars grow into the status bar and home indicator areas rather than sitting under them. */
+.reader-bar {
+  padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+}
 }
 .reader-strip-item[data-current='true'] {
+  height: calc(56px + var(--safe-top));
+  padding-top: var(--safe-top);
   border-color: var(--brand);
 }
 .reader-strip-item[data-bookmarked='true']::after {
   content: '';
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   position: absolute;
   top: 3px;
   left: 3px;
@@ -7983,7 +8060,7 @@ body.reader-open {
 }
 .settings-section[data-dirty] .settings-section-head {
   position: sticky;
-  top: var(--app-shell-header-height, 58px);
+  top: var(--app-shell-header-offset, 58px);
   z-index: 3;
   background: var(--app-bg);
 }
@@ -8018,7 +8095,7 @@ body.reader-open {
 }
 .settings-index {
   position: sticky;
-  top: calc(var(--app-shell-header-height, 0px) + var(--mantine-spacing-md));
+  top: calc(var(--app-shell-header-offset, 0px) + var(--mantine-spacing-md));
   display: grid;
   border-left: 1px solid var(--border);
 }
@@ -8060,7 +8137,7 @@ body.reader-open {
   }
   .settings-jump {
     position: sticky;
-    top: var(--app-shell-header-height, 0px);
+    top: var(--app-shell-header-offset, 0px);
     z-index: 4;
     display: flex;
     align-items: center;
@@ -8069,10 +8146,10 @@ body.reader-open {
     border-bottom: 1px solid var(--hairline);
   }
   .settings-section[data-dirty] .settings-section-head {
-    top: calc(var(--app-shell-header-height, 0px) + var(--settings-jump-h));
+    top: calc(var(--app-shell-header-offset, 0px) + var(--settings-jump-h));
   }
   .settings-entry {
-    scroll-margin-top: calc(var(--app-shell-header-height, 0px) + var(--settings-jump-h) + 16px);
+    scroll-margin-top: calc(var(--app-shell-header-offset, 0px) + var(--settings-jump-h) + 16px);
   }
 }
 .settings-jump-button {
@@ -8228,7 +8305,7 @@ body.reader-open {
   /* Pins under the app header while the grid scrolls. The strip slides away under the header so only
      the toolbar stays; its height is measured into --library-strip-h. */
   position: sticky;
-  top: calc(var(--app-shell-header-height, 58px) - var(--library-strip-h, 0px));
+  top: calc(var(--app-shell-header-offset, 58px) - var(--library-strip-h, 0px));
   z-index: 20;
 }
 .figure-strip.library-index-metrics {
@@ -8373,7 +8450,7 @@ body.reader-open {
      toolbar rather than a card floating over the covers. */
   .mantine-Paper-root.library-index {
     position: sticky;
-    top: var(--app-shell-header-height, 58px);
+    top: var(--app-shell-header-offset, 58px);
     z-index: 20;
     margin-inline: calc(-1 * var(--mantine-spacing-lg));
     border-width: 0 0 1px;
@@ -8460,7 +8537,7 @@ body.reader-open {
    time. The app header is only there on phones; everywhere else the variable is 0. */
 .series-detail-chapter-head[data-sticky] {
   position: sticky;
-  top: var(--app-shell-header-height, 0px);
+  top: var(--app-shell-header-offset, 0px);
   z-index: 20;
   padding-block: 12px;
   margin-block: -12px;
@@ -8470,7 +8547,7 @@ body.reader-open {
    page ground so rows don't show through while it is pinned. */
 [data-mantine-color-scheme] .series-detail-chapter-selection {
   position: sticky;
-  top: var(--app-shell-header-height, 0px);
+  top: var(--app-shell-header-offset, 0px);
   z-index: 20;
   border-left: 2px solid var(--brand);
   border-right: 0;
@@ -9774,7 +9851,7 @@ body.reader-open {
 /* Page layout editor (Home, Discover): compact section cards dragged by a grip. */
 .layout-edit-bar {
   position: sticky;
-  top: calc(var(--app-shell-header-height, 0px) + var(--mantine-spacing-sm));
+  top: calc(var(--app-shell-header-offset, 0px) + var(--mantine-spacing-sm));
   z-index: 5;
   display: flex;
   align-items: center;

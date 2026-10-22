@@ -12,8 +12,13 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { IconArrowLeft, IconDownload } from '@tabler/icons-react'
-import { lazy, Suspense, useEffect } from 'react'
+import {
+  IconArrowLeft,
+  IconDownload,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
+} from '@tabler/icons-react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
   useHealth,
@@ -69,6 +74,16 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const HealthPage = lazy(() => import('./pages/HealthPage'))
 const ReaderPage = lazy(() => import('./pages/reader/ReaderPage'))
+
+const NAV_COLLAPSED_KEY = 'sidebar-collapsed'
+
+function readNavCollapsed(): boolean {
+  try {
+    return localStorage.getItem(NAV_COLLAPSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 
 function NotFoundPage() {
   const { t } = useLingui()
@@ -249,6 +264,20 @@ function AppShellRoutes() {
   const location = useLocation()
   const navigate = useNavigate()
   const [opened, { toggle, close }] = useDisclosure()
+  // Per device rather than per account: the same person wants the column on a desktop monitor and
+  // the room on a tablet.
+  const [navCollapsed, setNavCollapsed] = useState(readNavCollapsed)
+  const toggleNavCollapsed = () => {
+    const next = !navCollapsed
+    setNavCollapsed(next)
+    close()
+    try {
+      if (next) localStorage.setItem(NAV_COLLAPSED_KEY, '1')
+      else localStorage.removeItem(NAV_COLLAPSED_KEY)
+    } catch {
+      /* private mode: collapsed for this visit only */
+    }
+  }
   const { data: setup } = useSetupStatus()
   const { data: metadata, isError: metadataFailed } = useMetadataSettings()
   const { data: ui } = useUiSettings()
@@ -298,9 +327,12 @@ function AppShellRoutes() {
 
   return (
     <AppShell
-      header={{ height: { base: 58, sm: 0 } }}
-      navbar={{ width: 232, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      header={{ height: navCollapsed ? 58 : { base: 58, sm: 0 } }}
+      // Collapsed means the phone layout at every width: a breakpoint no screen reaches keeps
+      // Mantine in its mobile mode, where the navbar is an overlay and the page keeps its width.
+      navbar={{ width: 232, breakpoint: navCollapsed ? 100000 : 'sm', collapsed: { mobile: !opened } }}
       padding="lg"
+      className={navCollapsed ? 'nav-collapsed' : undefined}
     >
       {/* Focuses rather than following the hash, which the router would keep in the URL. */}
       <a
@@ -313,10 +345,10 @@ function AppShellRoutes() {
       >
         <Trans>Skip to content</Trans>
       </a>
-      {/* Phone only. On desktop the sidebar carries search, downloads and the bell, so the page
-          starts at the top edge of the window. */}
-      <AppShell.Header className="app-header" hiddenFrom="sm">
-        <Group h="100%" px="md" justify="space-between" wrap="nowrap">
+      {/* Phone, or a collapsed sidebar. Otherwise the sidebar carries search, downloads and the
+          bell, so the page starts at the top edge of the window. */}
+      <AppShell.Header className="app-header" hiddenFrom={navCollapsed ? undefined : 'sm'}>
+        <Group h="100%" className="app-header-row" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
             <Burger
               opened={opened}
@@ -341,9 +373,11 @@ function AppShellRoutes() {
           one there is nowhere to tap to dismiss it except the burger. `hiddenFrom` rather than a
           media query so it can never appear over the desktop layout, where the navbar is a
           column and nothing is covered. */}
-      {opened && <Box className="nav-scrim" hiddenFrom="sm" onClick={close} />}
+      {opened && (
+        <Box className="nav-scrim" hiddenFrom={navCollapsed ? undefined : 'sm'} onClick={close} />
+      )}
 
-      <AppShell.Navbar className="app-navbar" px={12} pt={16} pb={12}>
+      <AppShell.Navbar className="app-navbar">
         <Group gap={10} mb={14} px={4} wrap="nowrap">
           <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
             <IconBrandMark />
@@ -351,10 +385,24 @@ function AppShellRoutes() {
           <Text fz="var(--type-section)" lh={1} c="var(--ink-hi)" className="brand-wordmark">
             Maki
           </Text>
+          <Tooltip label={navCollapsed ? t`Keep sidebar open` : t`Collapse sidebar`} withArrow>
+            <ActionIcon
+              visibleFrom="sm"
+              variant="subtle"
+              color="var(--neutral)"
+              className="nav-collapse-toggle"
+              onClick={toggleNavCollapsed}
+              aria-label={navCollapsed ? t`Keep sidebar open` : t`Collapse sidebar`}
+            >
+              {navCollapsed ? <IconLayoutSidebarLeftExpand size={19} /> : <IconLayoutSidebarLeftCollapse size={19} />}
+            </ActionIcon>
+          </Tooltip>
         </Group>
-        <Box visibleFrom="sm">
-          <CommandPaletteTrigger onOpen={openPalette} />
-        </Box>
+        {!navCollapsed && (
+          <Box visibleFrom="sm">
+            <CommandPaletteTrigger onOpen={openPalette} />
+          </Box>
+        )}
         <AppShell.Section grow component={ScrollArea} type="never" mt={14}>
           <NavLinks
             sections={sections}
@@ -369,10 +417,12 @@ function AppShellRoutes() {
           <SidebarFooter
             onNavigate={close}
             actions={
-              <Group gap={2} wrap="nowrap" visibleFrom="sm">
-                <ActivityButton />
-                <NotificationBell position="top-start" />
-              </Group>
+              navCollapsed ? undefined : (
+                <Group gap={2} wrap="nowrap" visibleFrom="sm">
+                  <ActivityButton />
+                  <NotificationBell position="top-start" />
+                </Group>
+              )
             }
           />
         </AppShell.Section>

@@ -4314,6 +4314,10 @@ msgstr "Collapse"
 msgid "Collapse {lineLabel}"
 msgstr "Collapse {lineLabel}"
 
+#: src/App.tsx
+msgid "Collapse sidebar"
+msgstr "Collapse sidebar"
+
 #: src/nav.ts
 msgid "Collection"
 msgstr "Collection"
@@ -7745,6 +7749,10 @@ msgstr "Keep editing"
 #: src/components/SourceMeasurePanel.tsx
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "Keep manual priority, but renumber it to follow the measured order."
+
+#: src/App.tsx
+msgid "Keep sidebar open"
+msgstr "Keep sidebar open"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Keep taking better scoring copies once the cutoff is reached, until a file scores this much. 0 stops at the cutoff. Set it very high to never stop."

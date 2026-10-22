@@ -5201,6 +5201,10 @@ msgstr "收起"
 msgid "Collapse {lineLabel}"
 msgstr "收起 {lineLabel}"
 
+#: src/App.tsx
+msgid "Collapse sidebar"
+msgstr ""
+
 #: src/nav.ts
 #, fuzzy
 msgid "Collection"
@@ -9365,6 +9369,10 @@ msgstr "继续编辑"
 #, fuzzy
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "保留手动优先级，但按实测顺序重新编号。"
+
+#: src/App.tsx
+msgid "Keep sidebar open"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy

@@ -5202,6 +5202,10 @@ msgstr "Zwiń"
 msgid "Collapse {lineLabel}"
 msgstr "Zwiń {lineLabel}"
 
+#: src/App.tsx
+msgid "Collapse sidebar"
+msgstr ""
+
 #: src/nav.ts
 #, fuzzy
 msgid "Collection"
@@ -9366,6 +9370,10 @@ msgstr "Kontynuuj edycję"
 #, fuzzy
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "Zachowaj priorytet ręczny, ale ponumeruj go zgodnie ze zmierzoną kolejnością."
+
+#: src/App.tsx
+msgid "Keep sidebar open"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy

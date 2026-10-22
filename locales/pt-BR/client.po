@@ -5202,6 +5202,10 @@ msgstr "Recolher"
 msgid "Collapse {lineLabel}"
 msgstr "Recolher {lineLabel}"
 
+#: src/App.tsx
+msgid "Collapse sidebar"
+msgstr ""
+
 #: src/nav.ts
 #, fuzzy
 msgid "Collection"
@@ -9366,6 +9370,10 @@ msgstr "Continuar editando"
 #, fuzzy
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "Manter a prioridade manual, mas renumerá-la para seguir a ordem medida."
+
+#: src/App.tsx
+msgid "Keep sidebar open"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
