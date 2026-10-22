@@ -9028,11 +9028,9 @@ tr:hover .mono-value-copy {
 .inbox-record:last-child {
   border-bottom: 0;
 }
-.inbox-record[data-read='false'] {
-  background: color-mix(in srgb, var(--brand-glow) 24%, transparent);
-}
-/* The bell's row has no record around it, so it carries the edge itself. The dropdown skips the
-   unread wash: on a short list, colour on most rows reads as an error state. */
+/* Unread is the accent edge and a bold title, nothing else: a tinted row read as an error state
+   under a red-leaning accent, and severity already has its icon. The bell's row has no record
+   around it, so it carries the edge itself. */
 .inbox-record,
 .inbox-row[data-read] {
   border-left: 2px solid transparent;

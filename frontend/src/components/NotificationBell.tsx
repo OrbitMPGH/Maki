@@ -175,7 +175,8 @@ function NotificationRow({
 export function LevelIcon({ level }: { level: InboxItem['level'] }) {
   if (level === 'error') return <IconAlertTriangle size={15} color="var(--danger)" />
   if (level === 'warning') return <IconAlertTriangle size={15} color="var(--warn)" />
-  return <IconCircleCheck size={15} color="var(--mantine-color-brand-6)" />
+  // Neutral, not the accent: under a red-leaning accent a brand-coloured tick reads as an error.
+  return <IconCircleCheck size={15} color="var(--ink-3)" />
 }
 
 /**

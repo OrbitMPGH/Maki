@@ -82,11 +82,17 @@ public static class InboxEventTypes
         type is InboxEventType.DownloadFailed or InboxEventType.UpgradeRestoreFailed;
 
     /// <summary>
-    /// Events that are off unless the user turns them on. Only one so far: a finished source match
-    /// already redraws the series' Sources card live, so an inbox row for it is a second copy of
-    /// something the user is looking at.
+    /// Events that are off unless the user turns them on. A finished source match already redraws
+    /// the series' Sources card live, so an inbox row for it is a second copy of something the user
+    /// is looking at. A backup is plumbing: one lands on every upgrade with a migration, and in the
+    /// bell they crowd out the chapters the bell is for. Settings > System lists every backup.
+    /// <para>
+    /// Only reaches a user with no stored value for the type; anyone who saved their preferences
+    /// before a type joined this list keeps the value they saved.
+    /// </para>
     /// </summary>
-    public static bool DefaultsOff(InboxEventType type) => type is InboxEventType.SourceMatchFinished;
+    public static bool DefaultsOff(InboxEventType type) =>
+        type is InboxEventType.SourceMatchFinished or InboxEventType.BackupFinished;
 
     /// <summary>
     /// Events a stored preference can never switch off. An alert that a password, second factor or
