@@ -306,6 +306,51 @@
   --border: color-mix(in srgb, #303030 96%, var(--brand));
   --border-strong: color-mix(in srgb, #3e3e3e 96%, var(--brand));
 }
+/* Tinted black, but toward the cover on screen: the series page and Home's hero set --ground-tint
+   from their cover (lib/coverTint.ts), and every other page falls back to the accent. Registered
+   so the whole ground eases from one cover to the next instead of jumping. The mix is stronger
+   than tinted's because a cover's colour is pinned to a mid lightness, below most accents. */
+@property --ground-tint {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #000000;
+}
+:root[data-ground='cover'] {
+  --ground-tint: var(--brand);
+  --app-bg: color-mix(in srgb, #0b0b0b 93%, var(--ground-tint));
+  --surface: color-mix(in srgb, #1b1b1b 94%, var(--ground-tint));
+  --surface-2: color-mix(in srgb, #222222 94%, var(--ground-tint));
+  --surface-hover: color-mix(in srgb, #282828 94%, var(--ground-tint));
+  --border: color-mix(in srgb, #303030 93%, var(--ground-tint));
+  --border-strong: color-mix(in srgb, #3e3e3e 93%, var(--ground-tint));
+  transition: --ground-tint 0.8s var(--ease);
+}
+/* Mantine's own surfaces (inputs, menus) read its dark scale, which JS can only mix toward the
+   accent. Pointing the scale at the tokens keeps them on the cover's ground. */
+:root[data-ground='cover'][data-mantine-color-scheme='dark'] {
+  --mantine-color-dark-4: var(--border);
+  --mantine-color-dark-5: var(--surface-2);
+  --mantine-color-dark-6: var(--surface);
+  --mantine-color-dark-7: var(--app-bg);
+}
+/* True black for OLED screens. Nothing lifts off black, so depth is drawn with lines: cards sit on
+   the same black as the body, raised objects trade their shadow for an outline, the borders carry
+   a trace of the accent, and covers get a brighter rim. */
+:root[data-ground='ink'] {
+  --app-bg: #000000;
+  --surface: #000000;
+  --surface-2: #0b0b0b;
+  --surface-hover: #141414;
+  --border: color-mix(in srgb, #2a2a2a 88%, var(--brand));
+  --border-strong: color-mix(in srgb, #3c3c3c 85%, var(--brand));
+  --surface-raised: #000000;
+  --shadow-card: none;
+  --shadow-object: 0 0 0 1px var(--border-strong);
+  --shadow-cover: none;
+  --shadow-cover-hover: none;
+  --cover-rim: rgba(255, 255, 255, 0.16);
+  --cover-rim-hover: rgba(255, 255, 255, 0.3);
+}
 
 /* --- Light theme --------------------------------------------------------- */
 :root[data-theme='light'] {
@@ -359,6 +404,58 @@
     0 0 0 1px rgba(20, 24, 40, 0.04),
     0 2px 6px -2px rgba(20, 24, 40, 0.12),
     0 18px 40px -16px rgba(20, 24, 40, 0.24);
+}
+/* Paper: the light theme printed rather than lit. Warm stock instead of blue-white, ink with a brown
+   cast, a faint grain on the page, and depth from a pressed edge instead of a cast shadow. The stock
+   takes 4% of the accent the way Tinted black does. */
+:root[data-theme='light'][data-ground='paper'] {
+  --app-bg: color-mix(in srgb, #efe9dd 96%, var(--brand));
+  --surface: #fbf8f1;
+  --surface-2: #f6f1e7;
+  --surface-hover: #ebe4d6;
+  --border: #e0d8c8;
+  --border-strong: #c9bfac;
+  --ink-hi: #1d1812;
+  --ink: #2c261f;
+  --ink-2: #453d33;
+  --ink-3: #4e463b;
+  --ink-4: #675e52;
+  --neutral: #675e52;
+  --surface-raised: #fbf8f1;
+  --surface-sunken: #e9e2d4;
+  --shadow-card: 0 1px 0 rgba(70, 52, 30, 0.08);
+  --shadow-raised: 0 0 0 1px rgba(70, 52, 30, 0.06), 0 1px 0 rgba(70, 52, 30, 0.1);
+  --shadow-object: 0 0 0 1px rgba(70, 52, 30, 0.1), 0 2px 0 rgba(70, 52, 30, 0.07);
+  --shadow-cover: 0 1px 0 rgba(70, 52, 30, 0.18), 0 8px 16px -12px rgba(70, 52, 30, 0.45);
+  --shadow-cover-hover: 0 2px 0 rgba(70, 52, 30, 0.16), 0 14px 24px -14px rgba(70, 52, 30, 0.5);
+  --cover-rim: rgba(70, 52, 30, 0.16);
+  --cover-rim-hover: rgba(70, 52, 30, 0.26);
+  /* The stock is darker than Light's ground, which pulls these just under 4.5:1. */
+  --ok: #207132;
+  --warn: #825c00;
+  --danger: #b83029;
+  --suggestive: #5d6716;
+}
+:root[data-theme='light'][data-ground='paper'][data-accent='blush'] {
+  --brand-fg: #a63d60;
+}
+:root[data-theme='light'][data-ground='paper'][data-accent='emerald'] {
+  --brand-fg: #117549;
+}
+:root[data-ground='paper'][data-mantine-color-scheme='light'] {
+  --mantine-color-body: var(--surface);
+  --mantine-color-default: var(--surface);
+  --mantine-color-default-hover: var(--surface-hover);
+  --mantine-color-default-border: var(--border);
+}
+:root[data-theme='light'][data-ground='paper'] {
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .27 0 0 0 0 .2 0 0 0 0 .12 0 0 0 .14 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* The hero band's scrims end on a flat --app-bg, so without its own grain the band stops on a
+   visible seam where it meets the page. Its canvas layer sits over the art and scrims. */
+:root[data-theme='light'][data-ground='paper'] body,
+:root[data-theme='light'][data-ground='paper'] .series-hero::after {
+  background-image: var(--paper-grain);
 }
 /* The resting colour is a dark-theme grey; left alone on white it lands around 2.5:1. */
 [data-theme='light'] .nav-link {

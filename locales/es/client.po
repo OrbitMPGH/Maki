@@ -5875,6 +5875,10 @@ msgstr "Cuenta ambos interruptores: el vínculo por serie y el interruptor globa
 msgid "counts toward your taste"
 msgstr "cuenta para tus gustos"
 
+#: src/theme-context.tsx
+msgid "Cover tint"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Covers chapters Maki doesn't know about"
@@ -12707,6 +12711,7 @@ msgstr "Más antiguos primero"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "OLED black"
 msgstr "Negro OLED"
@@ -13193,6 +13198,10 @@ msgstr "Páginas coincidentes"
 #, fuzzy
 msgid "Panels"
 msgstr "Paneles"
+
+#: src/theme-context.tsx
+msgid "Paper"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy

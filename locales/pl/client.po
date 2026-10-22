@@ -5875,6 +5875,10 @@ msgstr "Liczy oba przełączniki: powiązanie dla serii i globalny przełącznik
 msgid "counts toward your taste"
 msgstr "wpływa na Twój gust"
 
+#: src/theme-context.tsx
+msgid "Cover tint"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Covers chapters Maki doesn't know about"
@@ -12707,6 +12711,7 @@ msgstr "Od najstarszych"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "OLED black"
 msgstr "Czerń OLED"
@@ -13193,6 +13198,10 @@ msgstr "Dopasowane strony"
 #, fuzzy
 msgid "Panels"
 msgstr "Panele"
+
+#: src/theme-context.tsx
+msgid "Paper"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy

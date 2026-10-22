@@ -5875,6 +5875,10 @@ msgstr "Her iki anahtarı da sayar: seri bazlı bağlantı ve genel kaynak açma
 msgid "counts toward your taste"
 msgstr "zevk profilinize katkı sağlar"
 
+#: src/theme-context.tsx
+msgid "Cover tint"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Covers chapters Maki doesn't know about"
@@ -12707,6 +12711,7 @@ msgstr "Önce en eski"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "OLED black"
 msgstr "OLED siyahı"
@@ -13193,6 +13198,10 @@ msgstr "Eşleşen sayfalar"
 #, fuzzy
 msgid "Panels"
 msgstr "Paneller"
+
+#: src/theme-context.tsx
+msgid "Paper"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy

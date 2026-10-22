@@ -203,8 +203,29 @@ const tintedBase: MantineColorsTuple = [
   '#040404',
 ]
 
+// OLED black: the body and cards are both true black, so only the elevated step lifts at all.
+const ink: MantineColorsTuple = [
+  '#c7cad4',
+  '#a9adba',
+  '#8b90a0',
+  '#5d6373',
+  '#2a2a2a',
+  '#0b0b0b',
+  '#000000',
+  '#000000',
+  '#000000',
+  '#000000',
+]
+
 /** Selectable surface ramps; the CSS-variable side lives in theme.css under [data-ground]. */
-export const grounds: Record<string, MantineColorsTuple> = { night: dark, charcoal, moss, tinted: tintedBase }
+export const grounds: Record<string, MantineColorsTuple> = {
+  night: dark,
+  charcoal,
+  moss,
+  tinted: tintedBase,
+  cover: tintedBase,
+  ink,
+}
 
 function mixHex(a: string, b: string, t: number): string {
   const parse = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
@@ -226,8 +247,11 @@ export function accentSwatch(key: keyof typeof accents): string {
  */
 export function groundRamp(ground: keyof typeof grounds, accent: MantineColorsTuple): MantineColorsTuple {
   const base = grounds[ground] ?? dark
-  if (ground !== 'tinted') return base
   const hex = accent[Math.min(primaryShades.get(accent)?.dark ?? 5, 5)]
+  // OLED black's borders carry the accent, as theme.css does. Cover tint mixes toward the cover in
+  // CSS and remaps Mantine's scale onto those tokens there, so this is only its first paint.
+  if (ground === 'ink') return base.map((c, i) => (i === 4 ? mixHex(c, hex, 0.12) : c)) as unknown as MantineColorsTuple
+  if (ground !== 'tinted' && ground !== 'cover') return base
   return base.map((c, i) => (i >= 4 ? mixHex(c, hex, 0.04) : c)) as unknown as MantineColorsTuple
 }
 

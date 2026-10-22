@@ -5874,6 +5874,10 @@ msgstr "두 스위치 모두 집계합니다: 시리즈별 링크와 전역 소�
 msgid "counts toward your taste"
 msgstr "취향에 반영됨"
 
+#: src/theme-context.tsx
+msgid "Cover tint"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Covers chapters Maki doesn't know about"
@@ -12706,6 +12710,7 @@ msgstr "오래된 순"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "OLED black"
 msgstr "OLED 블랙"
@@ -13192,6 +13197,10 @@ msgstr "일치한 페이지"
 #, fuzzy
 msgid "Panels"
 msgstr "패널"
+
+#: src/theme-context.tsx
+msgid "Paper"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy

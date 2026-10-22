@@ -4870,6 +4870,10 @@ msgstr "Counts both switches: the per-series link and the global source toggle"
 msgid "counts toward your taste"
 msgstr "counts toward your taste"
 
+#: src/theme-context.tsx
+msgid "Cover tint"
+msgstr "Cover tint"
+
 #: src/api/upgrades.ts
 msgid "Covers chapters Maki doesn't know about"
 msgstr "Covers chapters Maki doesn't know about"
@@ -10519,6 +10523,7 @@ msgstr "Oldest first"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/theme-context.tsx
 msgid "OLED black"
 msgstr "OLED black"
 
@@ -10920,6 +10925,10 @@ msgstr "Pages matched"
 #: src/components/layout/SectionProperties.tsx
 msgid "Panels"
 msgstr "Panels"
+
+#: src/theme-context.tsx
+msgid "Paper"
+msgstr "Paper"
 
 #: src/components/SeriesFilesSection.tsx
 msgid "Parsed"

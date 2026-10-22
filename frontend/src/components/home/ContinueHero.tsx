@@ -5,6 +5,7 @@ import { IconPlayerPlay, IconPlayerTrackNext } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HomeReadingItem } from '../../api/hooks'
+import { useCoverTint } from '../../lib/coverTint'
 import { HeroBackdrop } from '../series/HeroBackdrop'
 import { SectionHeader } from '../ui/SectionHeader'
 import { relativeTime } from '../ui/time'
@@ -41,6 +42,7 @@ export function ContinueHero({
 }) {
   const [lead, ...rest] = items
   const { t } = useLingui()
+  useCoverTint(lead?.coverUrl)
   if (!lead) return null
 
   if (queue === 'beside') {

@@ -47,7 +47,22 @@ export const BACKGROUNDS: BackgroundOption[] = [
   { id: 'night', label: msg`Night`, scheme: 'dark', ground: 'night', swatch: () => '#161922' },
   { id: 'charcoal', label: msg`Charcoal`, scheme: 'dark', ground: 'charcoal', swatch: () => '#181818' },
   { id: 'moss', label: msg`Moss`, scheme: 'dark', ground: 'moss', swatch: () => '#1b1e1b' },
+  {
+    id: 'cover',
+    label: msg`Cover tint`,
+    scheme: 'dark',
+    ground: 'cover',
+    swatch: () => 'linear-gradient(135deg, #3a2420 0 33%, #1f2a3a 33% 66%, #23331f 66%)',
+  },
+  { id: 'oled', label: msg`OLED black`, scheme: 'dark', ground: 'ink', swatch: () => '#000000' },
   { id: 'light', label: msg`Light`, scheme: 'light', ground: 'tinted', swatch: () => '#f4f5fa' },
+  {
+    id: 'paper',
+    label: msg`Paper`,
+    scheme: 'light',
+    ground: 'paper',
+    swatch: (accentHex) => `color-mix(in srgb, #efe9dd 96%, ${accentHex})`,
+  },
   {
     id: 'system',
     label: msg`Match system`,

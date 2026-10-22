@@ -5874,6 +5874,10 @@ msgstr "两个开关都会计入：按系列的链接开关和全局来源开关
 msgid "counts toward your taste"
 msgstr "计入你的品味"
 
+#: src/theme-context.tsx
+msgid "Cover tint"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Covers chapters Maki doesn't know about"
@@ -12706,6 +12710,7 @@ msgstr "最早优先"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "OLED black"
 msgstr "OLED 黑色"
@@ -13192,6 +13197,10 @@ msgstr "匹配的页面"
 #, fuzzy
 msgid "Panels"
 msgstr "面板"
+
+#: src/theme-context.tsx
+msgid "Paper"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy

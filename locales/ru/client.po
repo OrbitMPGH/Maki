@@ -5875,6 +5875,10 @@ msgstr "Учитывает оба переключателя: связь сер�
 msgid "counts toward your taste"
 msgstr "учитывается в ваших вкусах"
 
+#: src/theme-context.tsx
+msgid "Cover tint"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Covers chapters Maki doesn't know about"
@@ -12707,6 +12711,7 @@ msgstr "Сначала старые"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "OLED black"
 msgstr "Чёрный OLED"
@@ -13193,6 +13198,10 @@ msgstr "Страницы сопоставлены"
 #, fuzzy
 msgid "Panels"
 msgstr "Панели"
+
+#: src/theme-context.tsx
+msgid "Paper"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy

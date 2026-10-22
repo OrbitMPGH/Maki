@@ -5874,6 +5874,10 @@ msgstr "シリーズごとのリンクとグローバルソース切り替えの
 msgid "counts toward your taste"
 msgstr "好みに反映される"
 
+#: src/theme-context.tsx
+msgid "Cover tint"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Covers chapters Maki doesn't know about"
@@ -12706,6 +12710,7 @@ msgstr "古い順"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "OLED black"
 msgstr "OLEDブラック"
@@ -13192,6 +13197,10 @@ msgstr "一致したページ"
 #, fuzzy
 msgid "Panels"
 msgstr "パネル"
+
+#: src/theme-context.tsx
+msgid "Paper"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
