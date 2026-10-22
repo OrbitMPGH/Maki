@@ -1350,6 +1350,13 @@ body::before {
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
+/* The header's buttons grow to 44px on phones and with the sidebar collapsed, which carried a
+   corner-anchored badge 8px off the glyph. Anchored to the middle instead, it stays on the 19px
+   glyph's corner at any button size. */
+.app-header-actions .count-indicator > .mantine-Indicator-indicator {
+  top: calc(50% - 9px);
+  right: calc(50% - 9px);
+}
 .count-indicator[data-tone='brand'] > .mantine-Indicator-indicator {
   background: var(--mantine-primary-color-filled);
   color: var(--mantine-primary-color-contrast);
