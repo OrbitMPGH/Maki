@@ -18,6 +18,7 @@ export const DISCOVER_LAYOUT_CONFIG: LayoutConfig = {
   canonical: DISCOVER_SECTIONS,
   heroDefaults: {},
   panels: {},
+  options: {},
   railAnchor: 'trending',
 }
 

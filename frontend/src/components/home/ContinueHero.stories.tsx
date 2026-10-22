@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
-import { continueReading, jumpBackIn } from '../../../.storybook/mocks/home'
+import { continueReading, jumpBackIn, progressSummary } from '../../../.storybook/mocks/home'
+import { heatmapDays } from '../../../.storybook/mocks/insights/stats'
 import { ContinueHero } from './ContinueHero'
+import { ReadingWeeks } from './ReadingWeeks'
 
 const meta = {
   component: ContinueHero,
@@ -66,5 +68,28 @@ export const MenuInHero: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'More options for Lanterns Over Kasumi' }))
     const body = within(canvasElement.ownerDocument.body)
     await waitFor(() => expect(body.getByRole('menuitem', { name: 'Open series' })).toBeVisible())
+  },
+}
+
+/** The hybrid: the glance in the hero's right column and a Next up list in a card beside the hero, no tray. */
+export const QueueBeside: Story = {
+  args: { items: [...continueReading, ...jumpBackIn], queue: 'beside' },
+  render: (args) => <ContinueHero {...args} glance={<ReadingWeeks days={heatmapDays} summary={progressSummary} hosted />} />,
+  play: async ({ canvas, canvasElement }) => {
+    const list = await canvas.findByRole('region', { name: 'Next up' })
+    const glance = await canvas.findByRole('region', { name: 'Last 5 weeks' })
+    await expect(canvasElement.querySelector('.continue-hero')).toContainElement(glance)
+    // Beside the hero, not inside it.
+    await expect(canvasElement.querySelector('.continue-hero')).not.toContainElement(list)
+    await expect(canvasElement.querySelector('.continue-lead')).toContainElement(list)
+    await expect(canvasElement.querySelector('.continue-tray')).toBeNull()
+    await expect(within(list).getByRole('link', { name: /Ashen Crown Regression/ })).toBeVisible()
+  },
+}
+
+export const QueueBesideWithoutGlance: Story = {
+  args: { queue: 'beside' },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('region', { name: 'Next up' })).toBeVisible()
   },
 }

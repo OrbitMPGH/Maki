@@ -1773,6 +1773,7 @@ msgid "{unreadChapters, plural, one {# new} other {# new}}"
 msgstr "{unreadChapters, plural, one {# new} other {# new}}"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/NextUpList.tsx
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# unread} other {# unread}}"
 
@@ -3047,7 +3048,6 @@ msgstr "Ask to keep them"
 msgid "Assign"
 msgstr "Assign"
 
-#: src/api/hooks.ts
 #: src/components/discover/DiscoverGlance.tsx
 msgid "At a glance"
 msgstr "At a glance"
@@ -9267,6 +9267,10 @@ msgstr "Needs read tracking: use the reader or connect Kavita."
 msgid "Needs review"
 msgstr "Needs review"
 
+#: src/components/layout/SectionProperties.tsx
+msgid "Needs the hero."
+msgstr "Needs the hero."
+
 #: src/pages/HomePage.tsx
 msgid "Needs the local MangaBaka database"
 msgstr "Needs the local MangaBaka database"
@@ -9446,12 +9450,18 @@ msgid "Next tier at {nextValue}"
 msgstr "Next tier at {nextValue}"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/NextUpList.tsx
 msgid "Next to jump back in"
 msgstr "Next to jump back in"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/NextUpList.tsx
 msgid "Next up"
 msgstr "Next up"
+
+#: src/components/home/homeSectionDefs.ts
+msgid "Next up beside the hero"
+msgstr "Next up beside the hero"
 
 #: src/components/home/ContinueHero.tsx
 #~ msgid "Next up to jump back in"
@@ -12598,6 +12608,7 @@ msgid "Result"
 msgstr "Result"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/settings/PageConversionSection.tsx
@@ -13911,8 +13922,12 @@ msgid "Show the Home page"
 msgstr "Show the Home page"
 
 #: src/components/layout/SectionProperties.tsx
-msgid "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
-msgstr "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
+#~ msgid "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
+#~ msgstr "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Show the most recent series as a large card, with the rest in a tray of posters under it, instead of a plain row."
+msgstr "Show the most recent series as a large card, with the rest in a tray of posters under it, instead of a plain row."
 
 #: src/pages/CreatorPage.tsx
 msgid "Show their newest titles in a rail on Home and Discover"
@@ -14385,6 +14400,7 @@ msgstr "Standardize ComicInfo.xml inside the imported files (recommended)"
 msgid "Star on GitHub"
 msgstr "Star on GitHub"
 
+#: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
 msgid "Start"
 msgstr "Start"
@@ -14862,6 +14878,10 @@ msgstr "The current feed URL stops working immediately. Every app using it needs
 msgid "The current file moves to trash rather than being deleted outright, so this can be undone from Activity if the new copy turns out worse."
 msgstr "The current file moves to trash rather than being deleted outright, so this can be undone from Activity if the new copy turns out worse."
 
+#: src/components/home/homeSectionDefs.ts
+msgid "The days you read, your streak, chapters and time read, as a card in the hero."
+msgstr "The days you read, your streak, chapters and time read, as a card in the hero."
+
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
 msgstr "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
@@ -15022,6 +15042,10 @@ msgstr "The repair is no longer accepting candidates"
 #: src/pages/RequestsPage.tsx
 msgid "The request for {removingTitle} is removed. This can't be undone."
 msgstr "The request for {removingTitle} is removed. This can't be undone."
+
+#: src/components/home/homeSectionDefs.ts
+msgid "The rest of the section as a list beside the hero, instead of a tray of posters under it."
+msgstr "The rest of the section as a list beside the hero, instead of a tray of posters under it."
 
 #: src/components/SourceCompareModal.tsx
 msgid "The same chapter as each source scans it, heaviest first. Drag the columns so your favourite is first, then save: that becomes the order chapters download in for this series."
@@ -17081,8 +17105,12 @@ msgid "Your folder is left alone. New chapters go into a folder Maki names."
 msgstr "Your folder is left alone. New chapters go into a folder Maki names."
 
 #: src/components/home/homeSectionDefs.ts
-msgid "Your last five weeks of reading: the days you read, your streak, chapters and time read."
-msgstr "Your last five weeks of reading: the days you read, your streak, chapters and time read."
+msgid "Your last five weeks"
+msgstr "Your last five weeks"
+
+#: src/components/home/homeSectionDefs.ts
+#~ msgid "Your last five weeks of reading: the days you read, your streak, chapters and time read."
+#~ msgstr "Your last five weeks of reading: the days you read, your streak, chapters and time read."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Your last request was rejected: {resolutionNote}"

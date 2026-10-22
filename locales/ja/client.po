@@ -2126,6 +2126,7 @@ msgid "{unreadChapters, plural, one {# new} other {# new}}"
 msgstr "{unreadChapters, plural, other {新着#件}}"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/NextUpList.tsx
 #, fuzzy
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, other {#章未読}}"
@@ -3679,7 +3680,6 @@ msgstr ""
 msgid "Assign"
 msgstr "割り当て"
 
-#: src/api/hooks.ts
 #: src/components/discover/DiscoverGlance.tsx
 #, fuzzy
 msgid "At a glance"
@@ -11200,6 +11200,10 @@ msgstr "読書の記録が必要です。リーダーを使うかKavitaを接続
 msgid "Needs review"
 msgstr "レビューが必要"
 
+#: src/components/layout/SectionProperties.tsx
+msgid "Needs the hero."
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Needs the local MangaBaka database"
@@ -11417,11 +11421,17 @@ msgid "Next tier at {nextValue}"
 msgstr "{nextValue}で次の段階"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/NextUpList.tsx
 msgid "Next to jump back in"
 msgstr ""
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/NextUpList.tsx
 msgid "Next up"
+msgstr ""
+
+#: src/components/home/homeSectionDefs.ts
+msgid "Next up beside the hero"
 msgstr ""
 
 #: src/components/home/ContinueHero.tsx
@@ -15232,6 +15242,7 @@ msgid "Result"
 msgstr ""
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/settings/PageConversionSection.tsx
@@ -16803,7 +16814,11 @@ msgid "Show the Home page"
 msgstr "ホーム画面を表示"
 
 #: src/components/layout/SectionProperties.tsx
-msgid "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
+#~ msgid "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
+#~ msgstr ""
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Show the most recent series as a large card, with the rest in a tray of posters under it, instead of a plain row."
 msgstr ""
 
 #: src/pages/CreatorPage.tsx
@@ -17377,6 +17392,7 @@ msgstr "インポートしたファイル内のComicInfo.xmlを標準化（推�
 msgid "Star on GitHub"
 msgstr "GitHub でスターを付ける"
 
+#: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
 #, fuzzy
 msgid "Start"
@@ -17950,6 +17966,10 @@ msgstr "現在のフィードURLはすぐに使えなくなります。利用中
 msgid "The current file moves to trash rather than being deleted outright, so this can be undone from Activity if the new copy turns out worse."
 msgstr "現在のファイルは完全に削除されず、ゴミ箱に移動します。新しいコピーのほうが悪かった場合は、「アクティビティ」から元に戻せます。"
 
+#: src/components/home/homeSectionDefs.ts
+msgid "The days you read, your streak, chapters and time read, as a card in the hero."
+msgstr ""
+
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
 msgid "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
@@ -18146,6 +18166,10 @@ msgstr "この修復は候補を受け付けなくなりました"
 #, fuzzy
 msgid "The request for {removingTitle} is removed. This can't be undone."
 msgstr "{removingTitle}のリクエストが削除されます。この操作は取り消せません。"
+
+#: src/components/home/homeSectionDefs.ts
+msgid "The rest of the section as a list beside the hero, instead of a tray of posters under it."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -20660,8 +20684,12 @@ msgid "Your folder is left alone. New chapters go into a folder Maki names."
 msgstr "既存フォルダーはそのまま残します。新しい章はMakiが名前を付けたフォルダーに入ります。"
 
 #: src/components/home/homeSectionDefs.ts
-msgid "Your last five weeks of reading: the days you read, your streak, chapters and time read."
+msgid "Your last five weeks"
 msgstr ""
+
+#: src/components/home/homeSectionDefs.ts
+#~ msgid "Your last five weeks of reading: the days you read, your streak, chapters and time read."
+#~ msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy

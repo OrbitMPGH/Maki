@@ -1,4 +1,4 @@
-import { HOME_HERO_DEFAULTS, HOME_SECTIONS } from '../../../src/api/hooks'
+import { HOME_HERO_DEFAULTS, HOME_SECTIONS, HOME_SECTION_OPTIONS } from '../../../src/api/hooks'
 import type {
   HomeReadingItem,
   HomeRecentSeriesItem,
@@ -445,10 +445,12 @@ export interface HomeUiOptions {
   hero?: { continue?: boolean; jumpback?: boolean }
   /** A different section order; unlisted keys keep their shipping order after these. */
   order?: string[]
+  /** Overrides for the reading sections' own switches, e.g. `{ continue: { glance: false } }`. */
+  options?: Record<string, Record<string, boolean>>
 }
 
 export function homeUi(options: HomeUiOptions = {}): UiSettings {
-  const { off = [], rails = [], hero = {}, order = [] } = options
+  const { off = [], rails = [], hero = {}, order = [], options: switches = {} } = options
   const keys = [...order, ...HOME_SECTIONS.filter((k) => !order.includes(k))]
   const sections = [
     ...keys.map((key) => ({
@@ -456,8 +458,9 @@ export function homeUi(options: HomeUiOptions = {}): UiSettings {
       enabled: !off.includes(key),
       hero: key in HOME_HERO_DEFAULTS ? (hero[key as 'continue' | 'jumpback'] ?? HOME_HERO_DEFAULTS[key]) : null,
       panels: null,
+      options: key in HOME_SECTION_OPTIONS ? { ...HOME_SECTION_OPTIONS[key], ...(switches[key] ?? {}) } : null,
     })),
-    ...rails.map((id) => ({ key: `rail:${id}`, enabled: true, hero: null, panels: null })),
+    ...rails.map((id) => ({ key: `rail:${id}`, enabled: true, hero: null, panels: null, options: null })),
   ] as HomeSection[]
   return { ...uiSettings, homeLayout: { enabled: true, sections } }
 }

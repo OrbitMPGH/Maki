@@ -19,6 +19,7 @@ import { useHomeFromAnime } from '../api/animeResume'
 import { useAuth } from '../auth/AuthProvider'
 import {
   HOME_HERO_DEFAULTS,
+  HOME_SECTION_OPTIONS,
   useDiscover,
   useProgressSummary,
   useHomeReading,
@@ -48,7 +49,7 @@ import { HOME_LAYOUT_CONFIG, HOME_SECTION_DEFS } from '../components/home/homeSe
 import { useReadTracking } from '../api/reader'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { FollowingRail } from '../components/discover/FollowingRail'
-import { ContinueHero } from '../components/home/ContinueHero'
+import { ContinueHero, type HeroQueue } from '../components/home/ContinueHero'
 import { ContinueRail } from '../components/home/ContinueRail'
 import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
@@ -113,6 +114,11 @@ export default function HomePage() {
   // disables it has not arrived yet.
   const on = (key: HomeSectionKey) => !editing && Boolean(ui) && (sectionOf(key)?.enabled ?? false)
   const heroOn = (key: HomeSectionKey) => sectionOf(key)?.hero ?? HOME_HERO_DEFAULTS[key] ?? false
+  const optionOn = (key: HomeSectionKey, option: string) =>
+    sectionOf(key)?.options?.[option] ?? HOME_SECTION_OPTIONS[key]?.[option] ?? false
+  const queueOf = (key: HomeSectionKey): HeroQueue => (optionOn(key, 'nextUpBeside') ? 'beside' : 'tray')
+  // The glance is Continue reading's own switch, so it costs no request while that section is off.
+  const glanceOn = on('continue') && optionOn('continue', 'glance')
 
   const needsReading = on('continue') || on('jumpback')
   const needsDiscover = discoverAvailable && hasLibrary
@@ -131,8 +137,8 @@ export default function HomePage() {
   // default Recommended tab, so this rail can never thrash that shared pool with different seeds.
   const recommendations = useRecommendations({}, needsDiscover && on('recommended'))
   // Fetched in the layout editor too, which says why the glance would be hidden.
-  const { data: progress } = useProgressSummary(undefined, on('glance') || editing)
-  const { data: heatmap } = useReadingHeatmap(undefined, on('glance') && Boolean(progress?.enabled))
+  const { data: progress } = useProgressSummary(undefined, glanceOn || editing)
+  const { data: heatmap } = useReadingHeatmap(undefined, glanceOn && Boolean(progress?.enabled))
 
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -164,16 +170,19 @@ export default function HomePage() {
             rails={homeRails}
             railLimit={RAIL_SIZE}
             unavailable={(key) =>
-              key === 'glance'
+              !discoverAvailable &&
+              (key === 'recommended' || key === 'popular' || key === 'following' ||
+                (isRailKey(key) && homeRails.find((r) => r.id === railIdOf(key))?.spec.source !== 'library'))
+                ? msg`Needs the local MangaBaka database`
+                : null
+            }
+            optionHint={(key, option) =>
+              key === 'continue' && option === 'glance'
                 ? !readTracking
                   ? msg`Needs read tracking: use the reader or connect Kavita.`
                   : progress && !progress.enabled
                     ? msg`Hidden while progression is switched off.`
                     : null
-                : !discoverAvailable &&
-              (key === 'recommended' || key === 'popular' || key === 'following' ||
-                (isRailKey(key) && homeRails.find((r) => r.id === railIdOf(key))?.spec.source !== 'library'))
-                ? msg`Needs the local MangaBaka database`
                 : null
             }
             onExit={exitEditing}
@@ -228,51 +237,11 @@ export default function HomePage() {
 
   const visible = layout.filter(sectionVisible)
 
-  // The glance rides in the Continue hero when it sits right next to it in the saved order and that
-  // section is showing a hero. Anywhere else it is a strip at its own slot. While the reading data
-  // loads it waits instead of appearing at its slot and then jumping into the hero.
-  const heroReady = (key: string) =>
-    key === 'continue'
-      ? heroOn('continue') && continueReading.length > 0
-      : key === 'jumpback'
-        ? heroOn('jumpback') && jumpBackIn.length > 0
-        : false
-  // "Next to" means next to a section that actually draws something: Downloading now sits between
-  // the glance and Continue in an older saved order, and says nothing most of the time.
-  const drawsNothing = (key: string) => {
-    switch (key) {
-      case 'downloading':
-        return downloading.length === 0
-      case 'recent':
-        return !recentLoading && !(recent && recent.length > 0)
-      case 'fromanime':
-        return !fromAnimeLoading && !(fromAnime && fromAnime.items.length > 0)
-      case 'recommended':
-        return !recommendations.isLoading && youMightLike.length === 0
-      case 'popular':
-        return !railsLoading && popular.length === 0
-      case 'continue':
-        return !readingLoading && !readingFailed && continueReading.length === 0
-      case 'jumpback':
-        return !readingLoading && !readingFailed && jumpBackIn.length === 0
-      default:
-        return false
-    }
-  }
-  const glanceAt = visible.findIndex((s) => s.key === 'glance')
-  const neighbours =
-    glanceAt < 0
-      ? []
-      : [
-          visible.slice(0, glanceAt).reverse().find((s) => !drawsNothing(s.key))?.key,
-          visible.slice(glanceAt + 1).find((s) => !drawsNothing(s.key))?.key,
-        ]
-  const wantsHero = neighbours.some((k) => k === 'continue' || k === 'jumpback')
-  const glanceHost = readingLoading && wantsHero ? 'pending' : (neighbours.find((k) => k && heroReady(k)) ?? null)
-  // Without read tracking every day would read as missed, so the glance waits for it.
+  // The glance belongs to Continue reading: in its hero when that draws one, a strip at its slot
+  // otherwise. Without read tracking every day would read as missed, so it waits for that.
   const glanceNode =
-    readTracking && progress?.enabled && heatmap ? (
-      <ReadingWeeks days={heatmap} summary={progress} hosted={glanceHost !== null && glanceHost !== 'pending'} />
+    glanceOn && readTracking && progress?.enabled && heatmap ? (
+      <ReadingWeeks days={heatmap} summary={progress} hosted={heroOn('continue') && continueReading.length > 0} />
     ) : null
 
   // One node per section key. Rendered in the user's order below; a section with nothing to show
@@ -284,6 +253,8 @@ export default function HomePage() {
       <ReadingErrorPrompt onRetry={() => void refetchReading()} />
     ) : continueReading.length > 0 ? (
       <>
+        {/* Without a hero to ride in, the glance is a strip above the rail. */}
+        {!heroOn('continue') && glanceNode}
         {!heroOn('continue') && (
           <SectionHeader icon={IconPlayerPlay} title={t`Continue reading`} count={continueReading.length} />
         )}
@@ -291,13 +262,17 @@ export default function HomePage() {
           items={continueReading}
           rail="continue"
           hero={heroOn('continue')}
-          glance={glanceHost === 'continue' ? glanceNode : undefined}
+          glance={heroOn('continue') ? glanceNode : undefined}
+          queue={queueOf('continue')}
         />
       </>
     ) : (
-      // Only nudge when there is genuinely nothing to resume *and* nothing to jump back into,
-      // otherwise a user mid-way through their library gets told to start reading.
-      jumpBackIn.length === 0 && <StartReadingPrompt tracking={readTracking} />
+      <>
+        {glanceNode}
+        {/* Only nudge when there is genuinely nothing to resume *and* nothing to jump back into,
+            otherwise a user mid-way through their library gets told to start reading. */}
+        {jumpBackIn.length === 0 && <StartReadingPrompt tracking={readTracking} />}
+      </>
     ),
 
     downloading: downloading.length > 0 && (
@@ -332,7 +307,7 @@ export default function HomePage() {
             items={jumpBackIn}
             rail="jumpback"
             hero={heroOn('jumpback')}
-            glance={glanceHost === 'jumpback' ? glanceNode : undefined}
+            queue={queueOf('jumpback')}
           />
         </>
       )
@@ -399,8 +374,6 @@ export default function HomePage() {
         </>
       )
     ),
-
-    glance: glanceHost === null ? glanceNode : null,
   }
 
 
@@ -455,14 +428,16 @@ function ReadingSection({
   rail,
   hero,
   glance,
+  queue,
 }: {
   items: HomeReadingItem[]
   rail: ReadingRailKind
   hero: boolean
   glance?: React.ReactNode
+  queue: HeroQueue
 }) {
   return hero ? (
-    <ContinueHero items={items} rail={rail} glance={glance} />
+    <ContinueHero items={items} rail={rail} glance={glance} queue={queue} />
   ) : (
     <ContinueRail items={items} rail={rail} />
   )

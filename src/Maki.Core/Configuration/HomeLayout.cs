@@ -6,9 +6,11 @@ namespace Maki.Core.Configuration;
 public static class HomeSections
 {
     /// <summary>
-    /// The reader's last five weeks: a day grid, the streak and the window's totals, riding in the
-    /// Continue hero when it sits next to it. One card with no panels; it used to hold three
-    /// (<see cref="HomeGlancePanels"/>).
+    /// A retired section key. The reader's last five weeks used to be a section of its own, first
+    /// with three panels (<see cref="HomeGlancePanels"/>), then as one card riding in the Continue
+    /// hero when it sat next to it. It is now <see cref="HomeHeroOptions.Glance"/>, a switch on
+    /// Continue reading; the key is kept so <see cref="HomeLayoutSpec.MigrateGlanceIntoContinue"/>
+    /// can read layouts stored by either build.
     /// </summary>
     public const string Glance = "glance";
 
@@ -31,7 +33,7 @@ public static class HomeSections
     /// </summary>
     public static readonly string[] All =
     [
-        ContinueReading, Glance, JumpBackIn, FromAnime, RecentlyAdded, Downloading, Following, Recommended, Popular
+        ContinueReading, JumpBackIn, FromAnime, RecentlyAdded, Downloading, Following, Recommended, Popular
     ];
 
     /// <summary>
@@ -40,10 +42,14 @@ public static class HomeSections
     /// </summary>
     public static readonly string[] DefaultOff = [Recommended, Popular];
 
-    /// <summary>The shipping order before Home opened on its hero, which <see cref="HomeLayoutSpec.MigrateHeroFirst"/> recognises.</summary>
+    /// <summary>
+    /// The shipping order before Home opened on its hero, which <see cref="HomeLayoutSpec.MigrateHeroFirst"/>
+    /// recognises. Without <see cref="Glance"/>, which led that order: it has been folded into
+    /// Continue reading by the time the move runs.
+    /// </summary>
     internal static readonly string[] HeroFirstPredecessor =
     [
-        Glance, Downloading, ContinueReading, JumpBackIn, FromAnime, RecentlyAdded, Following, Recommended, Popular
+        Downloading, ContinueReading, JumpBackIn, FromAnime, RecentlyAdded, Following, Recommended, Popular
     ];
 
     public static bool IsValid(string? key) => key is not null && All.Contains(key);
@@ -53,6 +59,28 @@ public static class HomeSections
     public static string RailKey(int id) => LayoutRails.Key(id);
 
     public static bool TryParseRail(string? key, out int id) => LayoutRails.TryParse(key, out id);
+}
+
+/// <summary>The switches on the reading sections that lead with a hero (<see cref="PageSection.Options"/>).</summary>
+public static class HomeHeroOptions
+{
+    /// <summary>
+    /// The reader's last five weeks, as a card in the hero's right column. Continue reading only:
+    /// one glance per page, and that section leads it.
+    /// </summary>
+    public const string Glance = "glance";
+
+    /// <summary>
+    /// Next up as a list in a card beside the hero, at the hero's height, instead of a tray of
+    /// posters under it. Off by default: the tray shows covers, which is how readers pick a series.
+    /// </summary>
+    public const string NextUpBeside = "nextUpBeside";
+
+    public static readonly IReadOnlyDictionary<string, bool> ContinueDefaults =
+        new Dictionary<string, bool> { [Glance] = true, [NextUpBeside] = false };
+
+    public static readonly IReadOnlyDictionary<string, bool> JumpBackDefaults =
+        new Dictionary<string, bool> { [NextUpBeside] = false };
 }
 
 /// <summary>
@@ -86,8 +114,8 @@ public static class HomeGlancePanels
 /// drops the tab, <c>/home</c> redirects to the library, and "/" can no longer resolve there.
 /// </para>
 /// <para>
-/// A build older than <see cref="HomeSections.Glance"/> drops that key as unknown and re-appends
-/// the three old panel keys, on. That is the whole downgrade story.
+/// A build that still had the glance as a section drops the Continue options as unknown JSON and
+/// re-appends its own glance key, on. That is the whole downgrade story.
 /// </para>
 /// </summary>
 public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Sections = null)
@@ -103,8 +131,13 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Se
         },
         new Dictionary<string, IReadOnlyList<string>>(),
         RailAnchor: null,
-        Upgrade: stored => MigrateHeroFirst(MigrateGlancePanels(MigrateGlance(stored))),
-        DefaultOff: HomeSections.DefaultOff);
+        Upgrade: stored => MigrateHeroFirst(MigrateGlanceIntoContinue(MigrateGlancePanels(MigrateGlance(stored)))),
+        DefaultOff: HomeSections.DefaultOff,
+        Options: new Dictionary<string, IReadOnlyDictionary<string, bool>>
+        {
+            [HomeSections.ContinueReading] = HomeHeroOptions.ContinueDefaults,
+            [HomeSections.JumpBackIn] = HomeHeroOptions.JumpBackDefaults,
+        });
 
     /// <summary>Every known section, in shipping order, all on.</summary>
     public static HomeLayoutSpec Default => new HomeLayoutSpec().Merge([]);
@@ -175,6 +208,35 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Se
                 ? s with { Enabled = false }
                 : s)
             .ToList();
+
+    /// <summary>
+    /// Folds a stored glance section into Continue reading's <see cref="HomeHeroOptions.Glance"/>
+    /// switch, carrying its on/off flag, and drops the section. Its position is forgotten: the glance
+    /// now lives in the Continue hero wherever that sits. With no Continue section stored the flag
+    /// has nowhere to go and the default (on) applies when the merge appends one.
+    /// </summary>
+    public static IReadOnlyList<PageSection> MigrateGlanceIntoContinue(IReadOnlyList<PageSection> stored)
+    {
+        var glance = stored.FirstOrDefault(s => s.Key == HomeSections.Glance);
+        if (glance is null)
+        {
+            return stored;
+        }
+
+        return stored
+            .Where(s => s.Key != HomeSections.Glance)
+            .Select(s => s.Key == HomeSections.ContinueReading
+                ? s with { Options = WithOption(s.Options, HomeHeroOptions.Glance, glance.Enabled) }
+                : s)
+            .ToList();
+    }
+
+    private static Dictionary<string, bool> WithOption(IReadOnlyDictionary<string, bool>? options, string key, bool value)
+    {
+        var next = options is null ? new Dictionary<string, bool>() : new Dictionary<string, bool>(options);
+        next[key] = value;
+        return next;
+    }
 
     /// <summary>
     /// Moves a layout still in the previous default order onto the current shipping order. That

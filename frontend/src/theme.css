@@ -1987,15 +1987,17 @@ body {
   border-bottom-right-radius: 0;
 }
 .continue-tray {
-  --rail-item-w: 142px;
-  padding: 14px clamp(20px, 2.6vw, 36px) 10px;
+  /* Smaller than the page's rails: the queue, not the shelf. Any narrower and a "Vol.6 Ch.43" pill
+     clips against the menu button's corner. */
+  --rail-item-w: 132px;
+  padding: 10px clamp(20px, 2.6vw, 36px) 8px;
   border-top: 1px solid var(--line-soft);
   border-radius: 0 0 var(--radius-overlay) var(--radius-overlay);
   background: color-mix(in srgb, var(--surface) 70%, var(--app-bg));
 }
 .continue-tray .section-header {
-  min-height: 24px;
-  margin: 0 0 10px;
+  min-height: 22px;
+  margin: 0 0 8px;
 }
 .continue-tray .section-header-title {
   font-family: inherit;
@@ -2008,6 +2010,233 @@ body {
 }
 .continue-tray .section-header-rule {
   background: transparent;
+}
+
+/* Next up as a card beside the hero instead of a tray under it, at the hero's height and no more
+   (`contain: size`), so the list scrolls inside it and the block stays as short as the hero alone.
+   The ring and shadow move from the pair to the hero; the list is a raised card like the glance. */
+.continue-lead[data-queue='beside'] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(290px, 24%, 340px);
+  gap: var(--mantine-spacing-md);
+  border-radius: 0;
+  box-shadow: none;
+}
+.continue-lead[data-queue='beside'][data-solo] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.continue-lead[data-queue='beside'] > .continue-hero {
+  box-shadow:
+    0 0 0 1px var(--line-soft),
+    var(--shadow-object);
+}
+.continue-lead[data-queue='beside'] > .next-up {
+  align-self: stretch;
+  contain: size;
+}
+/* Stacked: the list goes under the hero at full width and shows every row. A media query, since
+   `.continue-lead` is the container and cannot query itself. */
+@media (max-width: 56.25em) {
+  .continue-lead[data-queue='beside'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .continue-lead[data-queue='beside'] > .next-up {
+    contain: none;
+  }
+  .continue-lead[data-queue='beside'] .next-up-list {
+    overflow: visible;
+  }
+}
+
+.next-up {
+  --queue-fade-start: 0px;
+  --queue-fade-end: 0px;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  padding: 10px 6px 4px 12px;
+  border-radius: var(--radius-hero);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-card), 0 18px 40px -18px rgba(0, 0, 0, 0.8);
+}
+.next-up-head {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 6px 8px 2px;
+}
+.next-up-title {
+  margin: 0;
+  color: var(--ink-hi);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+}
+.next-up-count {
+  color: var(--ink-4);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+}
+.next-up-list {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 6px 6px 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.next-up-list[data-fade-start] {
+  --queue-fade-start: 24px;
+}
+.next-up-list[data-fade-end] {
+  --queue-fade-end: 40px;
+}
+.next-up-list[data-fade-start],
+.next-up-list[data-fade-end] {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 var(--queue-fade-start),
+    #000 calc(100% - var(--queue-fade-end)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 var(--queue-fade-start),
+    #000 calc(100% - var(--queue-fade-end)),
+    transparent
+  );
+}
+.next-up-row {
+  --tile-accent: var(--brand);
+  --tile-accent-fg: var(--brand-fg);
+  display: grid;
+  flex: none;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px 4px 4px;
+  border-radius: var(--radius-thumb);
+  color: inherit;
+  text-decoration: none;
+  transition: background var(--dur-base) var(--ease);
+}
+.next-up-row.has-accent {
+  --tile-accent: var(--series-accent);
+  --tile-accent-fg: color-mix(in oklab, var(--series-accent) 68%, white);
+}
+:root[data-theme='light'] .next-up-row.has-accent {
+  --tile-accent-fg: color-mix(in oklab, var(--series-accent) 82%, black);
+}
+.next-up-row:hover {
+  background: var(--surface-hover);
+}
+.next-up-row:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+.next-up-thumb {
+  display: block;
+  overflow: hidden;
+  width: 30px;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--mantine-radius-xs);
+  background: var(--surface-hover);
+}
+.next-up-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.next-up-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.next-up-name {
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-strong);
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.next-up-meta {
+  display: flex;
+  gap: 6px;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: var(--type-badge);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.next-up-meta > * + *::before {
+  content: '·';
+  margin-right: 6px;
+}
+.next-up-progress {
+  display: flex;
+  min-height: 8px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+.next-up-bar {
+  overflow: hidden;
+  flex: 1 1 auto;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ink-3) 24%, transparent);
+}
+.next-up-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tile-accent);
+}
+.next-up-unread {
+  margin-left: auto;
+  color: var(--tile-accent-fg);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+/* The play mark says the row opens the reader, as the pill's glyph does on a card. Shown on hover
+   and focus; always on touch. */
+.next-up-play {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--brand-on);
+  background: var(--brand);
+  opacity: 0;
+  transform: scale(0.9);
+  transition:
+    opacity var(--dur-base) var(--ease),
+    transform var(--dur-base) var(--ease);
+}
+.next-up-row:hover .next-up-play,
+.next-up-row:focus-visible .next-up-play {
+  opacity: 1;
+  transform: none;
+}
+@media (hover: none) {
+  .next-up-play {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* --- Import review ------------------------------------------------------- */
@@ -8350,7 +8579,8 @@ body.reader-open {
      art escapes the card's rounded corners. */
   isolation: isolate;
   display: flex;
-  min-height: 400px;
+  /* The poster and the glance column both end just under this; the rest was dead art. */
+  min-height: 380px;
   align-items: flex-end;
   border-radius: var(--radius-overlay);
   /* The vertical scrim ends on --app-bg, so the card's ground has to match or the fade lands on
@@ -8534,6 +8764,26 @@ body.reader-open {
     grid-template-columns: auto minmax(0, 1fr) var(--glance-w);
   }
   .continue-hero-body > .home-glance {
+    grid-column: 3;
+    grid-row: 1;
+    margin-top: 0;
+  }
+  /* With Next up beside it the hero is narrower than its container; the glance's column waits for
+     the wider query below. */
+  .continue-lead[data-queue='beside'] .continue-hero-body {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .continue-lead[data-queue='beside'] .continue-hero-body > .home-glance {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    margin-top: 22px;
+  }
+}
+@container continue-lead (min-width: 84rem) {
+  .continue-lead[data-queue='beside'] .continue-hero-body {
+    grid-template-columns: auto minmax(0, 1fr) var(--glance-w);
+  }
+  .continue-lead[data-queue='beside'] .continue-hero-body > .home-glance {
     grid-column: 3;
     grid-row: 1;
     margin-top: 0;

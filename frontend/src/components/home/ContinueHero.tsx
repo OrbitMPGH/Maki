@@ -8,8 +8,12 @@ import type { HomeReadingItem } from '../../api/hooks'
 import { HeroBackdrop } from '../series/HeroBackdrop'
 import { SectionHeader } from '../ui/SectionHeader'
 import { relativeTime } from '../ui/time'
+import { NextUpList } from './NextUpList'
 import { ReadingCardMenu, type ReadingRailKind } from './ReadingCardMenu'
 import { ReadingRail } from './ReadingRail'
+
+/** Where the rest of the section goes: a tray of posters under the hero, or a list in a card beside it. */
+export type HeroQueue = 'tray' | 'beside'
 
 /**
  * The lead for a Home reading section: one hero card for the series in focus, and a Next up strip
@@ -27,15 +31,26 @@ export function ContinueHero({
   items,
   rail,
   glance,
+  queue = 'tray',
 }: {
   items: HomeReadingItem[]
   rail: ReadingRailKind
   /** Home's glance (`ReadingWeeks`), drawn inside the hero card: a column on its right when wide, a row under the actions otherwise. */
   glance?: ReactNode
+  queue?: HeroQueue
 }) {
   const [lead, ...rest] = items
   const { t } = useLingui()
   if (!lead) return null
+
+  if (queue === 'beside') {
+    return (
+      <div className="continue-lead" data-queue="beside" data-solo={rest.length === 0 || undefined}>
+        <ContinueHeroCard key={lead.chapterId} item={lead} rail={rail} glance={glance} />
+        {rest.length > 0 && <NextUpList items={rest} rail={rail} />}
+      </div>
+    )
+  }
 
   return (
     <div className="continue-lead">

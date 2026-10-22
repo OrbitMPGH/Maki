@@ -987,7 +987,6 @@ export function useHomeRecentlyAdded(limit = 12, enabled = true) {
 /** Home section keys, in the order they ship. Mirrors `HomeSections.All` on the server exactly. */
 export const HOME_SECTIONS = [
   'continue',
-  'glance',
   'jumpback',
   'fromanime',
   'recent',
@@ -1006,7 +1005,6 @@ export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
  * here would be stuck in whichever language was active at that moment. Render with `useLabel()`.
  */
 export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
-  glance: msg`At a glance`,
   continue: msg`Continue reading`,
   downloading: msg`Downloading now`,
   recent: msg`Recently added`,
@@ -1019,6 +1017,16 @@ export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
 
 /** Sections that can lead with a hero, and whether they do by default. Mirrors the server. */
 export const HOME_HERO_DEFAULTS: Record<string, boolean> = { continue: true, jumpback: false }
+
+/**
+ * The reading sections' own switches and their defaults. Mirrors `HomeHeroOptions` on the server.
+ * `glance` is the last five weeks as a card in the Continue hero; `nextUpBeside` puts the rest of a
+ * hero section in a list beside the hero instead of a tray of posters under it.
+ */
+export const HOME_SECTION_OPTIONS: Record<string, Record<string, boolean>> = {
+  continue: { glance: true, nextUpBeside: false },
+  jumpback: { nextUpBeside: false },
+}
 
 /** Discover Browse tab section keys, in the order they ship. Mirrors `DiscoverSections.All`. */
 export const DISCOVER_SECTIONS = [
@@ -1074,6 +1082,8 @@ export interface PageSection<K extends string = string> {
   hero?: boolean | null
   /** The parts of a multi-panel section, in order. Null elsewhere. */
   panels?: LayoutPanel[] | null
+  /** The section's own switches, keyed by option name. Set on sections that have any, null elsewhere. */
+  options?: Record<string, boolean> | null
 }
 
 export type HomeSection = PageSection<HomeSectionKey>

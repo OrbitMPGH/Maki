@@ -2127,6 +2127,7 @@ msgid "{unreadChapters, plural, one {# new} other {# new}}"
 msgstr "{unreadChapters, plural, one {# новая} few {# новые} many {# новых} other {# новых}}"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/NextUpList.tsx
 #, fuzzy
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# непрочитанная} few {# непрочитанных} many {# непрочитанных} other {# непрочитанных}}"
@@ -3680,7 +3681,6 @@ msgstr ""
 msgid "Assign"
 msgstr "Назначить"
 
-#: src/api/hooks.ts
 #: src/components/discover/DiscoverGlance.tsx
 #, fuzzy
 msgid "At a glance"
@@ -11201,6 +11201,10 @@ msgstr "Нужно отслеживать чтение: пользуйтесь �
 msgid "Needs review"
 msgstr "Требует проверки"
 
+#: src/components/layout/SectionProperties.tsx
+msgid "Needs the hero."
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Needs the local MangaBaka database"
@@ -11418,11 +11422,17 @@ msgid "Next tier at {nextValue}"
 msgstr "Следующий уровень на {nextValue}"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/NextUpList.tsx
 msgid "Next to jump back in"
 msgstr ""
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/NextUpList.tsx
 msgid "Next up"
+msgstr ""
+
+#: src/components/home/homeSectionDefs.ts
+msgid "Next up beside the hero"
 msgstr ""
 
 #: src/components/home/ContinueHero.tsx
@@ -15233,6 +15243,7 @@ msgid "Result"
 msgstr ""
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/settings/PageConversionSection.tsx
@@ -16804,7 +16815,11 @@ msgid "Show the Home page"
 msgstr "Показывать страницу «Главная»"
 
 #: src/components/layout/SectionProperties.tsx
-msgid "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
+#~ msgid "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
+#~ msgstr ""
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Show the most recent series as a large card, with the rest in a tray of posters under it, instead of a plain row."
 msgstr ""
 
 #: src/pages/CreatorPage.tsx
@@ -17378,6 +17393,7 @@ msgstr "Стандартизировать ComicInfo.xml в импортиров
 msgid "Star on GitHub"
 msgstr "Поставить звезду на GitHub"
 
+#: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
 #, fuzzy
 msgid "Start"
@@ -17951,6 +17967,10 @@ msgstr "Текущий URL ленты сразу перестанет работ
 msgid "The current file moves to trash rather than being deleted outright, so this can be undone from Activity if the new copy turns out worse."
 msgstr "Текущий файл перемещается в корзину, а не удаляется сразу, поэтому в разделе «Активность» это можно отменить, если новая копия окажется хуже."
 
+#: src/components/home/homeSectionDefs.ts
+msgid "The days you read, your streak, chapters and time read, as a card in the hero."
+msgstr ""
+
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
 msgid "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
@@ -18147,6 +18167,10 @@ msgstr "Ремонт больше не принимает кандидатов"
 #, fuzzy
 msgid "The request for {removingTitle} is removed. This can't be undone."
 msgstr "Запрос для {removingTitle} будет удалён. Это действие нельзя отменить."
+
+#: src/components/home/homeSectionDefs.ts
+msgid "The rest of the section as a list beside the hero, instead of a tray of posters under it."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -20661,8 +20685,12 @@ msgid "Your folder is left alone. New chapters go into a folder Maki names."
 msgstr "Исходная папка останется без изменений. Новые главы попадут в папку, которую назовёт Maki."
 
 #: src/components/home/homeSectionDefs.ts
-msgid "Your last five weeks of reading: the days you read, your streak, chapters and time read."
+msgid "Your last five weeks"
 msgstr ""
+
+#: src/components/home/homeSectionDefs.ts
+#~ msgid "Your last five weeks of reading: the days you read, your streak, chapters and time read."
+#~ msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy

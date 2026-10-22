@@ -21,11 +21,17 @@ public record PagePanel(string Key, bool Enabled = true);
 /// hero default; <see cref="PageLayouts.Merge"/> resolves it to a value there and to null elsewhere.
 /// </param>
 /// <param name="Panels">The parts of a multi-panel section, in the user's order. Null elsewhere.</param>
+/// <param name="Options">
+/// The section's own switches, keyed by option name: how it draws itself rather than whether it is
+/// drawn. Only on sections whose definition lists options; <see cref="PageLayouts.Merge"/> fills
+/// in the defaults there and sets null elsewhere.
+/// </param>
 public record PageSection(
     string Key,
     bool Enabled = true,
     bool? Hero = null,
-    IReadOnlyList<PagePanel>? Panels = null);
+    IReadOnlyList<PagePanel>? Panels = null,
+    IReadOnlyDictionary<string, bool>? Options = null);
 
 /// <summary>What one page knows about its sections, which is everything <see cref="PageLayouts.Merge"/> needs.</summary>
 /// <param name="Keys">Every built-in section, in the order the page ships in.</param>
@@ -37,13 +43,15 @@ public record PageSection(
 /// </param>
 /// <param name="Upgrade">Rewrites a layout stored by an older build before anything else runs.</param>
 /// <param name="DefaultOff">Sections that start switched off wherever a layout has not placed them yet.</param>
+/// <param name="Options">Sections with switches of their own, and each switch's default.</param>
 public sealed record PageLayoutDefinition(
     IReadOnlyList<string> Keys,
     IReadOnlyDictionary<string, bool> HeroDefaults,
     IReadOnlyDictionary<string, IReadOnlyList<string>> Panels,
     string? RailAnchor = null,
     Func<IReadOnlyList<PageSection>, IReadOnlyList<PageSection>>? Upgrade = null,
-    IReadOnlyCollection<string>? DefaultOff = null);
+    IReadOnlyCollection<string>? DefaultOff = null,
+    IReadOnlyDictionary<string, IReadOnlyDictionary<string, bool>>? Options = null);
 
 /// <summary>A custom rail's key in a page layout: <c>rail:{id}</c>.</summary>
 public static class LayoutRails
@@ -81,8 +89,8 @@ public static class PageLayouts
     /// <list type="bullet">
     /// <item>keys this build does not know, and rails that no longer exist, are dropped;</item>
     /// <item>duplicates collapse to their first occurrence;</item>
-    /// <item>hero flags and panels are filled in from the definition where missing, and removed
-    /// where the section has none;</item>
+    /// <item>hero flags, panels and options are filled in from the definition where missing, and
+    /// removed where the section has none;</item>
     /// <item>built-in sections the layout has never seen are appended, on unless the definition
     /// lists them in <see cref="PageLayoutDefinition.DefaultOff"/>: the user's own order is the
     /// thing worth preserving, and a new section has no business jumping above it;</item>
@@ -159,7 +167,23 @@ public static class PageLayouts
     {
         Hero = def.HeroDefaults.TryGetValue(section.Key, out var hero) ? section.Hero ?? hero : null,
         Panels = def.Panels.TryGetValue(section.Key, out var panels) ? MergePanels(section.Panels, panels) : null,
+        Options = def.Options is not null && def.Options.TryGetValue(section.Key, out var options)
+            ? MergeOptions(section.Options, options)
+            : null,
     };
+
+    /// <summary>A section's options in the definition's order: the stored value where there is one, else the default. Unknown keys are dropped.</summary>
+    public static Dictionary<string, bool> MergeOptions(
+        IReadOnlyDictionary<string, bool>? stored, IReadOnlyDictionary<string, bool> defaults)
+    {
+        var merged = new Dictionary<string, bool>(defaults.Count);
+        foreach (var (key, fallback) in defaults)
+        {
+            merged[key] = stored is not null && stored.TryGetValue(key, out var value) ? value : fallback;
+        }
+
+        return merged;
+    }
 
     /// <summary>A section's panels with unknown ones dropped, duplicates collapsed and missing ones appended, on.</summary>
     public static List<PagePanel> MergePanels(IReadOnlyList<PagePanel>? stored, IReadOnlyList<string> canonical)

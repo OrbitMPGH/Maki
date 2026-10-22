@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, waitFor, within } from 'storybook/test'
+import { IconCalendarStats } from '@tabler/icons-react'
 import { customRails, homePage } from '../../../.storybook/mocks/home'
 import { HOME_SECTION_DEFS } from '../home/homeSectionDefs'
 import type { SectionDef } from './pageLayout'
@@ -9,7 +10,7 @@ const meta = {
   component: SectionProperties,
   tags: ['ai-generated'],
   args: {
-    section: { key: 'continue', enabled: true, hero: true, panels: null },
+    section: { key: 'continue', enabled: true, hero: true, panels: null, options: { glance: true, nextUpBeside: false } },
     index: 2,
     total: 9,
     label: 'Continue reading',
@@ -78,17 +79,44 @@ export const LastSection: Story = {
 }
 
 export const HiddenSection: Story = {
-  args: { section: { key: 'continue', enabled: false, hero: false, panels: null } },
+  args: { section: { key: 'continue', enabled: false, hero: false, panels: null, options: { glance: true, nextUpBeside: false } } },
   play: async ({ canvasElement }) => {
     const panel = await drawer(canvasElement)
     await waitFor(() => expect(within(panel).getByRole('switch', { name: 'Show this section' })).not.toBeChecked())
   },
 }
 
+/** Continue reading's own switches: the glance, with a hint when it cannot show, and Next up beside the hero. */
+export const HeroOptions: Story = {
+  args: {
+    optionHint: (_section, option) =>
+      option === 'glance' ? { id: 'story.hint', message: 'Needs read tracking: use the reader or connect Kavita.' } : null,
+  },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const panel = await drawer(canvasElement)
+    await expect(await within(panel).findByText(/Needs read tracking/)).toBeVisible()
+    await waitFor(() => expect(within(panel).getByRole('switch', { name: /^Your last five weeks/ })).toBeChecked())
+    await userEvent.click(await within(panel).findByRole('switch', { name: /^Next up beside the hero/ }))
+    await waitFor(() => expect(args.onChange).toHaveBeenCalledWith({ options: { glance: true, nextUpBeside: true } }))
+  },
+}
+
+/** Without the hero the beside switch has nothing to do, so it waits. */
+export const HeroOptionsWithoutAHero: Story = {
+  args: { section: { key: 'continue', enabled: true, hero: false, panels: null, options: { glance: true, nextUpBeside: false } } },
+  play: async ({ canvasElement }) => {
+    const panel = await drawer(canvasElement)
+    await waitFor(() => expect(within(panel).getByRole('switch', { name: /^Next up beside the hero/ })).toBeDisabled())
+    await expect(await within(panel).findByText('Needs the hero.')).toBeVisible()
+    await waitFor(() => expect(within(panel).getByRole('switch', { name: /^Your last five weeks/ })).toBeEnabled())
+  },
+}
+
 // No shipping section has panels any more; the editor still supports them, so these use a made-up one.
 const PANEL_KEYS = ['stats', 'progress', 'toread']
 const panelledDef: SectionDef = {
-  ...HOME_SECTION_DEFS.glance,
+  icon: IconCalendarStats,
+  label: { id: 'story.glance', message: 'At a glance' },
   panels: [
     { key: 'stats', label: { id: 'story.stats', message: 'Library counts' } },
     { key: 'progress', label: { id: 'story.progress', message: 'Your progress' } },
@@ -136,7 +164,7 @@ export const AllPanelsOff: Story = {
 
 export const CustomRailSection: Story = {
   args: {
-    section: { key: 'rail:3', enabled: true, hero: null, panels: null },
+    section: { key: 'rail:3', enabled: true, hero: null, panels: null, options: null },
     label: 'Top rated romance',
     def: undefined,
     rail: customRails[2],
