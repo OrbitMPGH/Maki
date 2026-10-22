@@ -3212,6 +3212,14 @@ msgstr "Tüm bulgular"
 msgid "All libraries"
 msgstr "Tüm kitaplıklar"
 
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "All of it <0>{oneDemographic}</0>."
+msgstr ""
+
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "All of it came out in the <0>{oneEra}</0>."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "All optional. Maki downloads from its own sources without any of these. Open one to fill it in."
@@ -7363,6 +7371,10 @@ msgstr "Katalogdaki tüm başlıkları zaten kitaplığınızda."
 msgid "Everything you own"
 msgstr "Sahip olduğunuz her şey"
 
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "Everything you read was <0>{oneType}</0>."
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Everything you started, you kept reading."
@@ -8250,6 +8262,10 @@ msgstr "Diğer kişilere kendi hesaplarını, kitaplık erişimlerini ve okuma g
 msgid "Give up on a chapter after (minutes)"
 msgstr "Bir bölümden şu kadar dakika sonra vazgeç"
 
+#: src/pages/ActivityPage.tsx
+msgid "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Go to library"
@@ -8352,6 +8368,10 @@ msgstr "Gruplar kasıtlı olarak örtüşür, bu yüzden bir seri birden fazlas�
 #, fuzzy
 msgid "Growth"
 msgstr "Büyüme"
+
+#: src/pages/stats/sections/LibrarySection.tsx
+msgid "Growth, composition and sources fill in once you add a series."
+msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -12137,6 +12157,10 @@ msgstr "Bağlı değil."
 msgid "Not enough genre data yet"
 msgstr "Henüz yeterli tür verisi yok"
 
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "Not enough reading yet to say what your taste is. This fills in after a few series."
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Not enough release history for an estimate yet."
 msgstr ""
@@ -12352,6 +12376,10 @@ msgstr "Bu seriden hiçbir şey gelmez. Yöneticiler yine de indirme hataların�
 msgid "Nothing has been changed. This is what importing would do."
 msgstr "Hiçbir şey değiştirilmedi. İçe aktarmanın yapacağı işlem budur."
 
+#: src/pages/ActivityPage.tsx
+msgid "Nothing has needed an upgrade yet. Files the upgrader replaces show up here."
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -12382,6 +12410,10 @@ msgstr "Dosyadaki hiçbir bilgi bu bölümleri açıklamıyor, bu yüzden mevcut
 #, fuzzy
 msgid "Nothing in the history yet."
 msgstr "Geçmişte henüz bir şey yok."
+
+#: src/pages/stats/sections/LibrarySection.tsx
+msgid "Nothing in the library yet."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16741,6 +16773,10 @@ msgstr "Kur"
 msgid "Set up in Settings"
 msgstr ""
 
+#: src/pages/ActivityPage.tsx
+msgid "Set up quality profiles"
+msgstr ""
+
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Set up the Kavita connection above to pick libraries."
@@ -19673,6 +19709,10 @@ msgstr "yükseltme, kalite profili, varsayılan profil, otomatik yükseltmeler"
 #, fuzzy
 msgid "Upgrades"
 msgstr "Yükseltmeler"
+
+#: src/pages/ActivityPage.tsx
+msgid "Upgrades are not set up yet"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy

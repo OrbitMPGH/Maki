@@ -233,7 +233,38 @@ export const UpgradesNothingYet: Story = {
     ],
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('No upgrades yet')).toBeVisible()
+    await expect(await canvas.findByText('Every file meets its cutoff')).toBeVisible()
+    await expect(canvas.queryByText('Recent upgrades')).toBeNull()
+  },
+}
+
+/** A fresh instance: never scanned, no quality profile, nothing upgraded. */
+export const UpgradesFreshInstance: Story = {
+  parameters: {
+    ...upgradesTab,
+    msw: [
+      http.get(api('/upgrades/summary'), () =>
+        HttpResponse.json({
+          ...upgradesSummary,
+          profilesConfigured: false,
+          lastScanDate: null,
+          lastVolumeSearchDate: null,
+          trashBytes: 0,
+          trashFiles: 0,
+        }),
+      ),
+      http.get(api('/upgrades/proposals'), () => HttpResponse.json([])),
+      http.get(api('/upgrades/history'), () => HttpResponse.json(upgradeHistoryPage([]))),
+      http.get(api('/upgrades/cutoff-unmet'), () =>
+        HttpResponse.json({ rows: [], total: 0, page: 1, pageSize: 25 }),
+      ),
+      http.get(api('/settings/upgrades'), () => HttpResponse.json(upgradeSettings)),
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Upgrades are not set up yet')).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: 'Set up quality profiles' })).toBeVisible()
+    await expect(canvas.queryByText('Cutoff unmet')).toBeNull()
   },
 }
 

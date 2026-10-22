@@ -3211,6 +3211,14 @@ msgstr "所有发现"
 msgid "All libraries"
 msgstr "所有图书馆"
 
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "All of it <0>{oneDemographic}</0>."
+msgstr ""
+
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "All of it came out in the <0>{oneEra}</0>."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "All optional. Maki downloads from its own sources without any of these. Open one to fill it in."
@@ -7362,6 +7370,10 @@ msgstr "他们在目录中的所有作品都已在你的资料库中。"
 msgid "Everything you own"
 msgstr "你拥有的全部内容"
 
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "Everything you read was <0>{oneType}</0>."
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Everything you started, you kept reading."
@@ -8249,6 +8261,10 @@ msgstr "为其他人创建账户，并设置资料库访问权限和阅读历史
 msgid "Give up on a chapter after (minutes)"
 msgstr "在（分钟）后放弃章节"
 
+#: src/pages/ActivityPage.tsx
+msgid "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Go to library"
@@ -8351,6 +8367,10 @@ msgstr "分组有意重叠，因此一个系列可以属于多个分组。"
 #, fuzzy
 msgid "Growth"
 msgstr "增长"
+
+#: src/pages/stats/sections/LibrarySection.tsx
+msgid "Growth, composition and sources fill in once you add a series."
+msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -12136,6 +12156,10 @@ msgstr "未连接。"
 msgid "Not enough genre data yet"
 msgstr "类型数据还不够"
 
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "Not enough reading yet to say what your taste is. This fills in after a few series."
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Not enough release history for an estimate yet."
 msgstr ""
@@ -12351,6 +12375,10 @@ msgstr "不接收此系列的任何内容。管理员仍会收到下载失败通
 msgid "Nothing has been changed. This is what importing would do."
 msgstr "尚未做任何更改。这是导入会执行的操作。"
 
+#: src/pages/ActivityPage.tsx
+msgid "Nothing has needed an upgrade yet. Files the upgrader replaces show up here."
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -12381,6 +12409,10 @@ msgstr "文件中没有信息可以确定这些章节，因此保留当前关联
 #, fuzzy
 msgid "Nothing in the history yet."
 msgstr "历史中暂无内容。"
+
+#: src/pages/stats/sections/LibrarySection.tsx
+msgid "Nothing in the library yet."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16740,6 +16772,10 @@ msgstr "设置"
 msgid "Set up in Settings"
 msgstr ""
 
+#: src/pages/ActivityPage.tsx
+msgid "Set up quality profiles"
+msgstr ""
+
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Set up the Kavita connection above to pick libraries."
@@ -19672,6 +19708,10 @@ msgstr "升级，质量配置，默认配置，自动升级"
 #, fuzzy
 msgid "Upgrades"
 msgstr "升级"
+
+#: src/pages/ActivityPage.tsx
+msgid "Upgrades are not set up yet"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy

@@ -3211,6 +3211,14 @@ msgstr "모든 발견 항목"
 msgid "All libraries"
 msgstr "모든 라이브러리"
 
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "All of it <0>{oneDemographic}</0>."
+msgstr ""
+
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "All of it came out in the <0>{oneEra}</0>."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "All optional. Maki downloads from its own sources without any of these. Open one to fill it in."
@@ -7362,6 +7370,10 @@ msgstr "카탈로그에 있는 이들의 작품이 모두 라이브러리에 있
 msgid "Everything you own"
 msgstr "내가 소유한 모든 항목"
 
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "Everything you read was <0>{oneType}</0>."
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Everything you started, you kept reading."
@@ -8249,6 +8261,10 @@ msgstr "다른 사람에게 각자의 계정, 라이브러리 접근 권한, 읽
 msgid "Give up on a chapter after (minutes)"
 msgstr "챕터 포기 시간(분)"
 
+#: src/pages/ActivityPage.tsx
+msgid "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Go to library"
@@ -8351,6 +8367,10 @@ msgstr "그룹은 의도적으로 겹치므로 하나의 시리즈가 여러 그
 #, fuzzy
 msgid "Growth"
 msgstr "성장"
+
+#: src/pages/stats/sections/LibrarySection.tsx
+msgid "Growth, composition and sources fill in once you add a series."
+msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -12136,6 +12156,10 @@ msgstr "연결되지 않았습니다."
 msgid "Not enough genre data yet"
 msgstr "아직 장르 데이터가 충분하지 않습니다"
 
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "Not enough reading yet to say what your taste is. This fills in after a few series."
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Not enough release history for an estimate yet."
 msgstr ""
@@ -12351,6 +12375,10 @@ msgstr "이 시리즈의 항목이 없습니다. 관리자는 여전히 다운�
 msgid "Nothing has been changed. This is what importing would do."
 msgstr "아무것도 바뀌지 않았습니다. 가져오면 이렇게 됩니다."
 
+#: src/pages/ActivityPage.tsx
+msgid "Nothing has needed an upgrade yet. Files the upgrader replaces show up here."
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -12381,6 +12409,10 @@ msgstr "파일에서 이 챕터를 확인할 수 없어 현재 연결을 신뢰�
 #, fuzzy
 msgid "Nothing in the history yet."
 msgstr "아직 기록이 없습니다."
+
+#: src/pages/stats/sections/LibrarySection.tsx
+msgid "Nothing in the library yet."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16740,6 +16772,10 @@ msgstr "설정"
 msgid "Set up in Settings"
 msgstr ""
 
+#: src/pages/ActivityPage.tsx
+msgid "Set up quality profiles"
+msgstr ""
+
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Set up the Kavita connection above to pick libraries."
@@ -19672,6 +19708,10 @@ msgstr "업그레이드, 품질 프로필, 기본 프로필, 자동 업그레이
 #, fuzzy
 msgid "Upgrades"
 msgstr "업그레이드"
+
+#: src/pages/ActivityPage.tsx
+msgid "Upgrades are not set up yet"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy

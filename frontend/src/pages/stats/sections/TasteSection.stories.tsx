@@ -1,8 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect } from 'storybook/test'
-import { http } from 'msw'
+import { http, HttpResponse } from 'msw'
 import { api, neverResolve } from '../../../../.storybook/mocks/api'
-import { activityHandler, insightsHandler, sectionProps, standingHandler } from '../../../../.storybook/mocks/insights'
+import {
+  activityHandler,
+  insightsFor,
+  insightsHandler,
+  sectionProps,
+  standingHandler,
+} from '../../../../.storybook/mocks/insights'
 import TasteSection from './TasteSection'
 
 const meta = {
@@ -36,9 +42,36 @@ export const Default: Story = {
 export const NewReader: Story = {
   parameters: { msw: [activityHandler('sparse'), insightsHandler('sparse'), standingHandler('sparse')] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Not enough genre data yet')).toBeVisible()
-    await expect(await canvas.findByText('No repeat creators yet')).toBeVisible()
-    await expect(await canvas.findByText('Rate a few series to compare yourself with the crowd.')).toBeVisible()
+    await expect(await canvas.findByText(/Not enough reading yet to say what your taste is/)).toBeVisible()
+    await expect(canvas.queryByText('Lean')).toBeNull()
+  },
+}
+
+/** A month of one kind of manga: type, demographic and era each have a single value. */
+export const SingleValues: Story = {
+  parameters: {
+    msw: [
+      activityHandler(),
+      http.get(api('/stats/insights'), ({ request }) => {
+        const params = new URL(request.url).searchParams
+        const base = insightsFor(params.get('from') ?? '2026-09-20', params.get('to') ?? '2026-10-19', 'rich')
+        return HttpResponse.json({
+          ...base,
+          taste: {
+            ...base.taste,
+            types: [{ name: 'Manga', count: 84 }],
+            demographics: [{ name: 'Shounen', count: 84 }],
+            eras: [{ decade: 2020, chapters: 84 }],
+          },
+        })
+      }),
+      standingHandler(),
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/Everything you read was/)).toBeVisible()
+    await expect(canvas.queryByText('Type mix')).toBeNull()
+    await expect(canvas.queryByText('Era')).toBeNull()
   },
 }
 

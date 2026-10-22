@@ -2666,6 +2666,14 @@ msgstr "All findings"
 msgid "All libraries"
 msgstr "All libraries"
 
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "All of it <0>{oneDemographic}</0>."
+msgstr "All of it <0>{oneDemographic}</0>."
+
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "All of it came out in the <0>{oneEra}</0>."
+msgstr "All of it came out in the <0>{oneEra}</0>."
+
 #: src/components/SetupWizard.tsx
 msgid "All optional. Maki downloads from its own sources without any of these. Open one to fill it in."
 msgstr "All optional. Maki downloads from its own sources without any of these. Open one to fill it in."
@@ -6105,6 +6113,10 @@ msgstr "Everything they have in the catalogue is already in your library."
 msgid "Everything you own"
 msgstr "Everything you own"
 
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "Everything you read was <0>{oneType}</0>."
+msgstr "Everything you read was <0>{oneType}</0>."
+
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Everything you started, you kept reading."
 msgstr "Everything you started, you kept reading."
@@ -6835,6 +6847,10 @@ msgstr "Give others their own account, library access and reading history."
 msgid "Give up on a chapter after (minutes)"
 msgstr "Give up on a chapter after (minutes)"
 
+#: src/pages/ActivityPage.tsx
+msgid "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
+msgstr "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
+
 #: src/pages/DiscoverPage.tsx
 msgid "Go to library"
 msgstr "Go to library"
@@ -6917,6 +6933,10 @@ msgstr "Groups overlap on purpose, so one series can belong to several of them."
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Growth"
 msgstr "Growth"
+
+#: src/pages/stats/sections/LibrarySection.tsx
+msgid "Growth, composition and sources fill in once you add a series."
+msgstr "Growth, composition and sources fill in once you add a series."
 
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "h"
@@ -10052,6 +10072,10 @@ msgstr "Not connected."
 msgid "Not enough genre data yet"
 msgstr "Not enough genre data yet"
 
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "Not enough reading yet to say what your taste is. This fills in after a few series."
+msgstr "Not enough reading yet to say what your taste is. This fills in after a few series."
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Not enough release history for an estimate yet."
 msgstr "Not enough release history for an estimate yet."
@@ -10231,6 +10255,10 @@ msgstr "Nothing from this series. Admins still get download failures."
 msgid "Nothing has been changed. This is what importing would do."
 msgstr "Nothing has been changed. This is what importing would do."
 
+#: src/pages/ActivityPage.tsx
+msgid "Nothing has needed an upgrade yet. Files the upgrader replaces show up here."
+msgstr "Nothing has needed an upgrade yet. Files the upgrader replaces show up here."
+
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/RequestsPage.tsx
 msgid "Nothing here"
@@ -10255,6 +10283,10 @@ msgstr "Nothing in the file explains these chapters, so the link you have today 
 #: src/pages/HealthPage.tsx
 msgid "Nothing in the history yet."
 msgstr "Nothing in the history yet."
+
+#: src/pages/stats/sections/LibrarySection.tsx
+msgid "Nothing in the library yet."
+msgstr "Nothing in the library yet."
 
 #: src/pages/ActivityPage.tsx
 msgid "Nothing in the queue"
@@ -13878,6 +13910,10 @@ msgstr "Set up"
 msgid "Set up in Settings"
 msgstr "Set up in Settings"
 
+#: src/pages/ActivityPage.tsx
+msgid "Set up quality profiles"
+msgstr "Set up quality profiles"
+
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Set up the Kavita connection above to pick libraries."
 msgstr "Set up the Kavita connection above to pick libraries."
@@ -16299,6 +16335,10 @@ msgstr "upgrade, quality profile, default profile, automatic upgrades"
 #: src/pages/ActivityPage.tsx
 msgid "Upgrades"
 msgstr "Upgrades"
+
+#: src/pages/ActivityPage.tsx
+msgid "Upgrades are not set up yet"
+msgstr "Upgrades are not set up yet"
 
 #: src/api/upgrades.ts
 msgid "Upgrades are off for this profile"

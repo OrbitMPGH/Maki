@@ -155,6 +155,20 @@ export default function LibrarySection({ range }: StatsSectionProps) {
     value: s.count,
   }))
 
+  if (seriesCount === 0) {
+    return (
+      <>
+        <StatsInsight>
+          <Trans>Nothing in the library yet.</Trans>{' '}
+          <span className="stats-insight-dim">
+            <Trans>Growth, composition and sources fill in once you add a series.</Trans>
+          </span>
+        </StatsInsight>
+        <TotalsTiles totals={stats.totals} />
+      </>
+    )
+  }
+
   return (
     <>
       <StatsInsight>

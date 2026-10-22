@@ -114,6 +114,36 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
   }
 
   const ratings = standing?.ratings ?? null
+
+  const nothingYet =
+    !!taste &&
+    !!activity &&
+    standing !== undefined &&
+    taste.lean.length === 0 &&
+    !ratings &&
+    typeItems.length === 0 &&
+    demographicItems.length === 0 &&
+    eraTotal === 0 &&
+    (standing.creators ?? []).length === 0 &&
+    activity.topTags.length === 0
+  if (nothingYet) {
+    return (
+      <StatsInsight>
+        <span className="stats-insight-dim">
+          <Trans>Not enough reading yet to say what your taste is. This fills in after a few series.</Trans>
+        </span>
+      </StatsInsight>
+    )
+  }
+
+  // A chart with one value says the same thing a bar at 100% would, so it becomes a sentence.
+  const oneType = taste && typeItems.length === 1 ? typeItems[0].label : null
+  const oneDemographic = taste && demographicItems.length === 1 ? demographicItems[0].label : null
+  const oneEra = taste && eras.length === 1 && eraTotal > 0 ? eras[0].title : null
+  const showTypes = !oneType
+  const showDemographics = !oneDemographic
+  const showEra = !oneEra
+  const smallPanels = (showTypes || showDemographics ? 1 : 0) + (showEra ? 1 : 0) + 1
   // Judged on the value as printed, so a gap that rounds to 0.0 reads as "the same", not "0.0 above".
   const meanGapRounded = ratings ? Math.round(ratings.meanGap * 10) / 10 : 0
   const meanGapKind = meanGapRounded > 0 ? 'above' : meanGapRounded < 0 ? 'below' : 'same'
@@ -121,7 +151,31 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
 
   return (
     <>
-      {insight && <StatsInsight>{insight}</StatsInsight>}
+      {(insight || oneType || oneDemographic || oneEra) && (
+        <StatsInsight>
+          {insight}
+          {insight && (oneType || oneDemographic || oneEra) && ' '}
+          <span className="stats-insight-dim">
+            {oneType && (
+              <Trans>
+                Everything you read was <em>{oneType}</em>.
+              </Trans>
+            )}
+            {oneType && (oneDemographic || oneEra) && ' '}
+            {oneDemographic && (
+              <Trans>
+                All of it <em>{oneDemographic}</em>.
+              </Trans>
+            )}
+            {oneDemographic && oneEra && ' '}
+            {oneEra && (
+              <Trans>
+                All of it came out in the <em>{oneEra}</em>.
+              </Trans>
+            )}
+          </span>
+        </StatsInsight>
+      )}
 
       <div className="stats-grid-main">
         <Panel p="md">
@@ -198,50 +252,68 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
         </Panel>
       </div>
 
-      <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
-        <Panel p="md">
-          <div className="stats-panel-title">
-            <Trans>Type mix</Trans>
-          </div>
-          {!taste ? (
-            <ChartSkeleton h={120} />
-          ) : typeItems.length === 0 ? (
-            <EmptyState compact mood="asleep" title={t`No type data yet`} />
-          ) : (
-            <SplitBar items={typeItems} />
-          )}
-          <Text size="sm" fw={650} mt="md" mb={4}>
-            <Trans>Demographic</Trans>
-          </Text>
-          {!taste ? (
-            <ChartSkeleton h={120} />
-          ) : demographicItems.length === 0 ? (
-            <EmptyState compact mood="asleep" title={t`No demographic data yet`} />
-          ) : (
-            <SplitBar items={demographicItems} />
-          )}
-        </Panel>
-
-        <Panel p="md">
-          <div className="stats-panel-title">
-            <Trans>Era</Trans>
-          </div>
-          {!taste ? (
-            <ChartSkeleton h={140} />
-          ) : eraTotal === 0 ? (
-            <EmptyState compact mood="asleep" title={t`No release-year data yet`} />
-          ) : (
-            <div className="stats-hist">
-              {eras.map((e) => (
-                <div className="stats-hist-col" key={e.key}>
-                  <span className="stats-hist-value">{e.value}</span>
-                  <span className="stats-hist-bar" style={{ height: `${Math.max(2, e.barPct * 0.65)}%` }} />
-                  <span className="stats-hist-label">{e.title}</span>
+      <SimpleGrid cols={{ base: 1, md: smallPanels }} spacing="lg">
+        {(showTypes || showDemographics) && (
+          <Panel p="md">
+            {showTypes && (
+              <>
+                <div className="stats-panel-title">
+                  <Trans>Type mix</Trans>
                 </div>
-              ))}
+                {!taste ? (
+                  <ChartSkeleton h={120} />
+                ) : typeItems.length === 0 ? (
+                  <EmptyState compact mood="asleep" title={t`No type data yet`} />
+                ) : (
+                  <SplitBar items={typeItems} />
+                )}
+              </>
+            )}
+            {showDemographics && (
+              <>
+                {showTypes ? (
+                  <Text size="sm" fw={650} mt="md" mb={4}>
+                    <Trans>Demographic</Trans>
+                  </Text>
+                ) : (
+                  <div className="stats-panel-title">
+                    <Trans>Demographic</Trans>
+                  </div>
+                )}
+                {!taste ? (
+                  <ChartSkeleton h={120} />
+                ) : demographicItems.length === 0 ? (
+                  <EmptyState compact mood="asleep" title={t`No demographic data yet`} />
+                ) : (
+                  <SplitBar items={demographicItems} />
+                )}
+              </>
+            )}
+          </Panel>
+        )}
+
+        {showEra && (
+          <Panel p="md">
+            <div className="stats-panel-title">
+              <Trans>Era</Trans>
             </div>
-          )}
-        </Panel>
+            {!taste ? (
+              <ChartSkeleton h={140} />
+            ) : eraTotal === 0 ? (
+              <EmptyState compact mood="asleep" title={t`No release-year data yet`} />
+            ) : (
+              <div className="stats-hist">
+                {eras.map((e) => (
+                  <div className="stats-hist-col" key={e.key}>
+                    <span className="stats-hist-value">{e.value}</span>
+                    <span className="stats-hist-bar" style={{ height: `${Math.max(2, e.barPct * 0.65)}%` }} />
+                    <span className="stats-hist-label">{e.title}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+        )}
 
         <Panel p="md">
           <div className="stats-panel-title">

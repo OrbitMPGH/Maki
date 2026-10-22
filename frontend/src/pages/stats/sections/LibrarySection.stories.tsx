@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, waitFor } from 'storybook/test'
+import { expect } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import '@mantine/charts/styles.css'
 import { api, failWith, neverResolve } from '../../../../.storybook/mocks/api'
@@ -50,8 +50,9 @@ export const ReaderRequests: Story = {
 export const EmptyLibrary: Story = {
   parameters: { msw: [libraryHandler('empty'), libraryGrowthHandler('empty')] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Nothing to show yet.')).toBeVisible()
-    await waitFor(() => expect(canvas.getAllByText('Nothing downloaded yet.').length).toBeGreaterThan(0))
+    await expect(await canvas.findByText('Nothing in the library yet.', { exact: false })).toBeVisible()
+    await expect(await canvas.findByText('Disk used')).toBeVisible()
+    await expect(canvas.queryByText('Growth')).toBeNull()
   },
 }
 
