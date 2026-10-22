@@ -69,9 +69,6 @@ export const CoverCard = memo(function CoverCard({
     readTracking,
   )
   const { readChapterCount } = series
-  // Nothing listed and nothing on disk: the caption has nothing to say, so it stays empty (but keeps
-  // its height, or this card's title would sit lower than its neighbours').
-  const nothingListed = total === 0 && have === 0
   // No total at all means no source has listed a chapter yet; "0 of ?" left that to be guessed.
   const countLabel =
     total > 0
@@ -178,7 +175,7 @@ export const CoverCard = memo(function CoverCard({
           </div>
         </div>
 
-        <div className="cover-meta" data-nothing-listed={nothingListed || undefined}>
+        <div className="cover-meta">
           {/* The tooltip stays the canonical title, so the name the folder on disk and search
               use is still reachable when a language preference has moved the label off it. */}
           <span className="cover-title" title={series.title}>

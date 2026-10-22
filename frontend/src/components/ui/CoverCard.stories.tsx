@@ -89,8 +89,7 @@ export const NoChaptersListed: Story = {
     series: { ...graveRobber, totalChapters: null, wantedChapterCount: 0, knownChapterCount: 0, chapterFileCount: 0, readChapterCount: null },
   },
   play: async ({ canvas }) => {
-    // Nothing to say, so the caption keeps its space but shows nothing.
-    await expect(await canvas.findByText('No chapters listed')).not.toBeVisible()
+    await expect(await canvas.findByText('No chapters listed')).toBeVisible()
   },
 }
 

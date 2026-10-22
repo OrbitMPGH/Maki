@@ -1733,11 +1733,6 @@ body::before {
 .cover-title + .cover-row {
   margin-top: 5px;
 }
-/* No source has listed a chapter and nothing is on disk: the title alone, with the bar and count
-   line kept as space so the title lines up with its neighbours'. */
-.cover-meta[data-nothing-listed] > :not(.cover-title) {
-  visibility: hidden;
-}
 .cover-row > [data-nothing-wanted] {
   color: rgba(255, 255, 255, 0.5);
 }

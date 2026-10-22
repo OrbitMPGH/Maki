@@ -8,6 +8,6 @@ The poster card for the library grid: cover art is the hero, with a bottom scrim
 
 **Hover-only chips:** the eye-off (not monitored) and the muted bell sit beside the status disc and fade in (`dur-base`, `ease`) on hover or keyboard focus on devices with a real pointer, and are always visible on touch. The status disc, read ring and download disc never hide. Only the small chips animate opacity; the card itself gets no extra layer.
 
-**Bottom:** title in white, `body` size at 650, clamped to two lines; a 4px bar in `brand` (`ok` when complete); the count at `micro` size, tabular. When no source has listed a chapter and nothing is on disk, the bar and count are hidden but keep their space, so the title lines up with its neighbours'.
+**Bottom:** title in white, `body` size at 650, clamped to two lines; a 4px bar in `brand` (`ok` when complete); the count at `micro` size, tabular. When no source has listed a chapter and nothing is on disk, the bar stays empty and the count says "No chapters listed", so the card keeps the same shape as its neighbours.
 
 **The consumer provides:** a `series`, `selectMode`, `selected`, `readTracking`, `onToggle(id)`. Built from plain elements and CSS instead of Mantine components on purpose: a grid mounts hundreds of these, so keep it cheap (no `backdrop-filter` on badges, no per-card Tooltip).
