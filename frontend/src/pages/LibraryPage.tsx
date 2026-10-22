@@ -1171,7 +1171,13 @@ export default function LibraryPage() {
               >
                 <Trans>Select</Trans>
               </Button>
-              <Button component={Link} to="/add" leftSection={<IconPlus size={16} />}>
+              <Button
+                component={Link}
+                to="/add"
+                className="library-add-button"
+                aria-label={can('AddSeries') ? t`Add series` : t`Request series`}
+                leftSection={<IconPlus size={16} />}
+              >
                 {can('AddSeries') ? <Trans>Add series</Trans> : <Trans>Request series</Trans>}
               </Button>
             </>

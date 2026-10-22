@@ -9318,6 +9318,10 @@ msgstr "Siteyi değil, taramaları değerlendirin"
 msgid "Jump back in"
 msgstr "Kaldığınız yerden devam edin"
 
+#: src/components/settings/SettingsIndex.tsx
+msgid "Jump to a section"
+msgstr ""
+
 #: src/components/CommandPalette.tsx
 #, fuzzy
 msgid "Jump to a series, page or setting…"

@@ -137,7 +137,7 @@ export function seriesDto(id: number, overrides: Partial<SeriesDto> = {}): Serie
       { title: entry.title, language: 'en' },
       { title: entry.nativeTitle, language: entry.type === 'Manhwa' ? 'ko' : entry.type === 'Manhua' ? 'zh' : 'ja' },
     ],
-    status: entry.status.toLowerCase(),
+    status: entry.status,
     type: entry.type.toLowerCase(),
     overview: entry.synopsis,
     year: entry.year,

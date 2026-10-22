@@ -607,45 +607,47 @@ function ApiKeysCard() {
       </Group>
 
       {fullKeys && fullKeys.length > 0 && (
-        <Table className="panel-table ops-table" mt="xs">
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th><Trans>Name</Trans></Table.Th>
-              <Table.Th><Trans>Prefix</Trans></Table.Th>
-              <Table.Th><Trans>Last used</Trans></Table.Th>
-              <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {fullKeys.map((key) => (
-              <Table.Tr key={key.id} opacity={key.revokedAt ? 0.5 : 1}>
-                <Table.Td>{key.name}</Table.Td>
-                <Table.Td>
-                  <Code>{key.prefix}…</Code>
-                </Table.Td>
-                <Table.Td c="var(--ink-3)">
-                  {key.lastUsedAt ? formatDateTime(key.lastUsedAt) : <Trans>never</Trans>}
-                </Table.Td>
-                <Table.Td ta="right">
-                  {key.revokedAt ? (
-                    <Text size="xs" c="var(--ink-3)">
-                      <Trans>revoked</Trans>
-                    </Text>
-                  ) : (
-                    <Button
-                      size="compact-xs"
-                      variant="subtle"
-                      color="var(--danger)"
-                      onClick={() => setRevoking(key)}
-                    >
-                      <Trans>Revoke</Trans>
-                    </Button>
-                  )}
-                </Table.Td>
+        <Table.ScrollContainer minWidth={420} mt="xs">
+          <Table className="panel-table ops-table">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th><Trans>Name</Trans></Table.Th>
+                <Table.Th><Trans>Prefix</Trans></Table.Th>
+                <Table.Th><Trans>Last used</Trans></Table.Th>
+                <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
               </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+            </Table.Thead>
+            <Table.Tbody>
+              {fullKeys.map((key) => (
+                <Table.Tr key={key.id} opacity={key.revokedAt ? 0.5 : 1}>
+                  <Table.Td>{key.name}</Table.Td>
+                  <Table.Td>
+                    <Code>{key.prefix}…</Code>
+                  </Table.Td>
+                  <Table.Td c="var(--ink-3)">
+                    {key.lastUsedAt ? formatDateTime(key.lastUsedAt) : <Trans>never</Trans>}
+                  </Table.Td>
+                  <Table.Td ta="right">
+                    {key.revokedAt ? (
+                      <Text size="xs" c="var(--ink-3)">
+                        <Trans>revoked</Trans>
+                      </Text>
+                    ) : (
+                      <Button
+                        size="compact-xs"
+                        variant="subtle"
+                        color="var(--danger)"
+                        onClick={() => setRevoking(key)}
+                      >
+                        <Trans>Revoke</Trans>
+                      </Button>
+                    )}
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       )}
 
       <Modal

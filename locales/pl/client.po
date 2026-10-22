@@ -9318,6 +9318,10 @@ msgstr "Oceniaj skany, a nie źródło"
 msgid "Jump back in"
 msgstr "Wróć do czytania"
 
+#: src/components/settings/SettingsIndex.tsx
+msgid "Jump to a section"
+msgstr ""
+
 #: src/components/CommandPalette.tsx
 #, fuzzy
 msgid "Jump to a series, page or setting…"

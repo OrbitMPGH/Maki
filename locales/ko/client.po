@@ -9317,6 +9317,10 @@ msgstr "사이트가 아니라 스캔을 평가하세요"
 msgid "Jump back in"
 msgstr "다시 읽기 시작"
 
+#: src/components/settings/SettingsIndex.tsx
+msgid "Jump to a section"
+msgstr ""
+
 #: src/components/CommandPalette.tsx
 #, fuzzy
 msgid "Jump to a series, page or setting…"

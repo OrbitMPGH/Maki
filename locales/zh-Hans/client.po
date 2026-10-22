@@ -9317,6 +9317,10 @@ msgstr "评价扫描质量，不要评价网站"
 msgid "Jump back in"
 msgstr "继续回来阅读"
 
+#: src/components/settings/SettingsIndex.tsx
+msgid "Jump to a section"
+msgstr ""
+
 #: src/components/CommandPalette.tsx
 #, fuzzy
 msgid "Jump to a series, page or setting…"

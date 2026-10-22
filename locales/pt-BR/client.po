@@ -9318,6 +9318,10 @@ msgstr "Avalie as digitalizações, não o site"
 msgid "Jump back in"
 msgstr "Voltar ao ponto"
 
+#: src/components/settings/SettingsIndex.tsx
+msgid "Jump to a section"
+msgstr ""
+
 #: src/components/CommandPalette.tsx
 #, fuzzy
 msgid "Jump to a series, page or setting…"

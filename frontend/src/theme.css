@@ -8322,6 +8322,10 @@ body.reader-open {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.settings-jump-current[data-none] {
+  color: var(--ink-3);
+  font-weight: var(--fw-medium);
+}
 .settings-jump-chevron {
   flex-shrink: 0;
   margin-left: auto;
@@ -8644,6 +8648,15 @@ body.reader-open {
   }
   .library-saved-filters > * {
     flex-shrink: 0;
+  }
+}
+/* Below 360px the add button goes the same way, or the title runs under both. */
+@media (max-width: 22.5em) {
+  .library-add-button .mantine-Button-label {
+    display: none;
+  }
+  .library-add-button .mantine-Button-section {
+    margin-inline-end: 0;
   }
 }
 

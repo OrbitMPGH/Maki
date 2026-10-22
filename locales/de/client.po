@@ -9318,6 +9318,10 @@ msgstr "Bewerte die Scans, nicht die Website"
 msgid "Jump back in"
 msgstr "Wieder einsteigen"
 
+#: src/components/settings/SettingsIndex.tsx
+msgid "Jump to a section"
+msgstr ""
+
 #: src/components/CommandPalette.tsx
 #, fuzzy
 msgid "Jump to a series, page or setting…"

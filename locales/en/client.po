@@ -7712,6 +7712,10 @@ msgstr "Judge the scans, not the site"
 msgid "Jump back in"
 msgstr "Jump back in"
 
+#: src/components/settings/SettingsIndex.tsx
+msgid "Jump to a section"
+msgstr "Jump to a section"
+
 #: src/components/CommandPalette.tsx
 msgid "Jump to a series, page or setting…"
 msgstr "Jump to a series, page or setting…"
