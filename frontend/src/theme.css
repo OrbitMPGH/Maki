@@ -77,6 +77,7 @@
   --radius-chip: 7px;
   --radius-thumb: 8px;
   --radius-card: 10px;
+  --radius-cover: 7px;
   --radius-hero: 12px;
   /* Bars, badges and anything whose ends should be fully round, whatever its height. */
   --radius-pill: 999px;
@@ -122,6 +123,10 @@
     0 22px 48px -20px rgba(0, 0, 0, 0.9);
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-cover: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 22px -12px rgba(0, 0, 0, 0.85);
+  --shadow-cover-hover: 0 2px 4px rgba(0, 0, 0, 0.4), 0 20px 34px -14px rgba(0, 0, 0, 0.9);
+  --cover-rim: rgba(255, 255, 255, 0.09);
+  --cover-rim-hover: rgba(255, 255, 255, 0.18);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-fast: 0.12s;
   --dur-base: 0.15s;
@@ -295,6 +300,10 @@
   --tier-5: #5b4bab;
   --tier-6: #a83660;
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
+  --shadow-cover: 0 1px 2px rgba(20, 24, 40, 0.14), 0 10px 22px -12px rgba(20, 24, 40, 0.4);
+  --shadow-cover-hover: 0 2px 4px rgba(20, 24, 40, 0.12), 0 20px 34px -14px rgba(20, 24, 40, 0.45);
+  --cover-rim: rgba(20, 24, 40, 0.1);
+  --cover-rim-hover: rgba(20, 24, 40, 0.18);
   --surface-raised: #ffffff;
   --surface-sunken: #eceef6;
   --border-raised: var(--border);
@@ -1096,13 +1105,16 @@ body {
 }
 
 /* --- Cover / poster cards ------------------------------------------------ */
+/* A book, not a tile: a translucent rim instead of an opaque border, so it vanishes over bright art
+   and only shows where the scrimmed foot meets an equally dark page, plus a shadow underneath. */
 .cover-card {
   position: relative;
   display: block;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-cover);
   overflow: hidden;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--cover-rim);
+  box-shadow: var(--shadow-cover);
   text-decoration: none;
   color: inherit;
   /* A library of a few hundred posters is the heaviest thing the app paints. This lets the
@@ -1122,8 +1134,8 @@ body {
 }
 .cover-card:hover {
   transform: translateY(-4px);
-  border-color: var(--border-strong);
-  box-shadow: var(--mantine-shadow-lg);
+  border-color: var(--cover-rim-hover);
+  box-shadow: var(--shadow-cover-hover);
 }
 .cover-card[data-selected='true'] {
   border-color: var(--brand);
@@ -1344,7 +1356,8 @@ body {
 .cover-state[data-tone='info'] {
   --tone: var(--info);
 }
-/* Publication status, top-right: a disc filled in the status colour (CoverCard sets --tone). */
+/* Publication status, top-right: a disc filled in the status colour (CoverCard sets --tone). Not
+   monitored dims it instead of adding a second mark; the eye-off still shows on hover. */
 .cover-state[data-tone='status'] {
   width: 24px;
   height: 24px;
@@ -1353,6 +1366,10 @@ body {
     0 0 0 1.5px rgba(6, 7, 11, 0.45),
     0 2px 6px rgba(0, 0, 0, 0.35);
   color: var(--tone-on, #fff);
+}
+.cover-state[data-tone='status'][data-unmonitored] {
+  opacity: 0.55;
+  filter: saturate(0.4);
 }
 /* The light theme's status colours are tuned for a pale ground; these sit on a dark disc. */
 [data-theme='light'] .cover-state:not([data-tone='status']),
@@ -1438,6 +1455,11 @@ body {
 }
 .cover-title + .cover-row {
   margin-top: 5px;
+}
+/* No source has listed a chapter and nothing is on disk: the title alone, with the bar and count
+   line kept as space so the title lines up with its neighbours'. */
+.cover-meta[data-nothing-listed] > :not(.cover-title) {
+  visibility: hidden;
 }
 .cover-row > [data-nothing-wanted] {
   color: rgba(255, 255, 255, 0.5);
@@ -1588,8 +1610,8 @@ body {
   gap: 14px;
   overflow-x: auto;
   overflow-y: hidden;
-  margin: -6px -6px 0;
-  padding: 6px 6px 8px;
+  margin: -6px -6px -12px;
+  padding: 6px 6px 20px;
   scroll-padding-inline: 30px;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
@@ -1597,7 +1619,7 @@ body {
   /* Poster height at the 150px item every surface but Discover uses (2/3 ratio) plus the gutters.
      `auto` keeps the real measurement once a rail has been on screen; this is only the first
      guess, so Discover's wider steps cost nothing more than a slightly stale one. */
-  contain-intrinsic-size: auto 239px;
+  contain-intrinsic-size: auto 251px;
 }
 .discover-rail-item {
   flex: 0 0 auto;
@@ -2319,7 +2341,17 @@ body {
   color: #fff;
   background: rgba(6, 7, 11, 0.62);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-  transition: transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
+  transition: opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
+}
+/* The chapter pill is the card's mark; the button waits for hover, like the Jump back in menu. */
+@media (hover: hover) and (pointer: fine) {
+  .home-read-button {
+    opacity: 0;
+  }
+  .reading-card:hover > .home-read-button,
+  .home-read-button:focus-visible {
+    opacity: 1;
+  }
 }
 .home-read-button::before {
   content: '';
@@ -2372,8 +2404,8 @@ body {
 }
 .reading-card:hover > .cover-card {
   transform: translateY(-4px);
-  border-color: var(--border-strong);
-  box-shadow: var(--mantine-shadow-lg);
+  border-color: var(--cover-rim-hover);
+  box-shadow: var(--shadow-cover-hover);
 }
 .reading-card-menu {
   position: absolute;

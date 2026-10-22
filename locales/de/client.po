@@ -1858,6 +1858,10 @@ msgstr "{staleChapters, plural, one {# heruntergeladenes Kapitel stammt von eine
 msgid "{start} to {end}"
 msgstr "{start} bis {end}"
 
+#: src/components/ui/CoverCard.tsx
+msgid "{statusLabel}, not monitored"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "{stopKind, select, early {When you stop, it is usually early in, around {stopPointPct} of the way through.} midway {When you stop, it is usually midway in, around {stopPointPct} of the way through.} late {When you stop, it is usually late in, around {stopPointPct} of the way through.} other {}}"
@@ -10870,7 +10874,6 @@ msgstr "Auf neue Kapitel überwachen"
 msgid "Monitor: {mode}"
 msgstr "Überwachung: {mode}"
 
-#: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx

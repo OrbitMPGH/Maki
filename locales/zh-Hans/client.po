@@ -1857,6 +1857,10 @@ msgstr "{staleChapters, plural, other {# 个已下载章节来自其他来源。
 msgid "{start} to {end}"
 msgstr "{start} 至 {end}"
 
+#: src/components/ui/CoverCard.tsx
+msgid "{statusLabel}, not monitored"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "{stopKind, select, early {When you stop, it is usually early in, around {stopPointPct} of the way through.} midway {When you stop, it is usually midway in, around {stopPointPct} of the way through.} late {When you stop, it is usually late in, around {stopPointPct} of the way through.} other {}}"
@@ -10869,7 +10873,6 @@ msgstr "监视新章节"
 msgid "Monitor: {mode}"
 msgstr "监控：{mode}"
 
-#: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx

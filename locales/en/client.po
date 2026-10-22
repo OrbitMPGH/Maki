@@ -1555,6 +1555,10 @@ msgstr "{staleChapters, plural, one {# downloaded chapter came from another sour
 msgid "{start} to {end}"
 msgstr "{start} to {end}"
 
+#: src/components/ui/CoverCard.tsx
+msgid "{statusLabel}, not monitored"
+msgstr "{statusLabel}, not monitored"
+
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "{stopKind, select, early {When you stop, it is usually early in, around {stopPointPct} of the way through.} midway {When you stop, it is usually midway in, around {stopPointPct} of the way through.} late {When you stop, it is usually late in, around {stopPointPct} of the way through.} other {}}"
 msgstr "{stopKind, select, early {When you stop, it is usually early in, around {stopPointPct} of the way through.} midway {When you stop, it is usually midway in, around {stopPointPct} of the way through.} late {When you stop, it is usually late in, around {stopPointPct} of the way through.} other {}}"
@@ -8993,7 +8997,6 @@ msgstr "Monitor for new chapters"
 msgid "Monitor: {mode}"
 msgstr "Monitor: {mode}"
 
-#: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx

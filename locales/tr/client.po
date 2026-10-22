@@ -1858,6 +1858,10 @@ msgstr "{staleChapters, plural, one {İndirilen # bölüm başka bir kaynaktan g
 msgid "{start} to {end}"
 msgstr "{start} ile {end} arası"
 
+#: src/components/ui/CoverCard.tsx
+msgid "{statusLabel}, not monitored"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "{stopKind, select, early {When you stop, it is usually early in, around {stopPointPct} of the way through.} midway {When you stop, it is usually midway in, around {stopPointPct} of the way through.} late {When you stop, it is usually late in, around {stopPointPct} of the way through.} other {}}"
@@ -10870,7 +10874,6 @@ msgstr "Yeni bölümleri izle"
 msgid "Monitor: {mode}"
 msgstr "İzleme: {mode}"
 
-#: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx

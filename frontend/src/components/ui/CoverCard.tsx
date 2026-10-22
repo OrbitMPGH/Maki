@@ -2,9 +2,7 @@ import { memo } from 'react'
 import {
   IconBellOff,
   IconCheck,
-  IconClock,
   IconDownload,
-  IconEye,
   IconEyeOff,
   IconPlayerPause,
   IconPlayerPlay,
@@ -71,6 +69,9 @@ export const CoverCard = memo(function CoverCard({
     readTracking,
   )
   const { readChapterCount } = series
+  // Nothing listed and nothing on disk: the caption has nothing to say, so it stays empty (but keeps
+  // its height, or this card's title would sit lower than its neighbours').
+  const nothingListed = total === 0 && have === 0
   // No total at all means no source has listed a chapter yet; "0 of ?" left that to be guessed.
   const countLabel =
     total > 0
@@ -86,10 +87,14 @@ export const CoverCard = memo(function CoverCard({
     : total === 0
       ? t`No source has listed this series' chapters yet, so there is no total to count against.`
       : undefined
-  const downloadTip = download ? renderLabel(download.label) : null
+  // Only a download in progress earns the corner, and it stands in for the read ring until it ends.
+  // Queued is a list-view and series-page fact.
+  const downloading = series.downloadingCount > 0
+  const downloadTip = downloading && download ? renderLabel(download.label) : null
   const readTip = unread === 0 ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
-  const monitoredTip = series.monitored ? t`Monitored` : t`Not monitored`
+  const notMonitoredTip = t`Not monitored`
   const mutedTip = t`Notifications muted`
+  const statusTip = series.monitored ? statusLabel : t`${statusLabel}, not monitored`
 
   return (
     <Link
@@ -115,7 +120,7 @@ export const CoverCard = memo(function CoverCard({
 
         <div className="cover-corners">
           <div className="cover-corner cover-corner-left">
-            {readPct !== null && readPct > 0 && (
+            {!downloading && readPct !== null && readPct > 0 && (
               <span
                 className="cover-ring"
                 data-complete={unread === 0 || undefined}
@@ -128,33 +133,24 @@ export const CoverCard = memo(function CoverCard({
               </span>
             )}
             {downloadTip && (
-              <span
-                className="cover-state"
-                data-tone={series.downloadingCount > 0 ? 'info' : undefined}
-                data-tip={downloadTip}
-                role="img"
-                aria-label={downloadTip}
-              >
-                {series.downloadingCount > 0 ? (
-                  <IconDownload size={13} stroke={2} />
-                ) : (
-                  <IconClock size={13} stroke={2} />
-                )}
+              <span className="cover-state" data-tone="info" data-tip={downloadTip} role="img" aria-label={downloadTip}>
+                <IconDownload size={13} stroke={2} />
               </span>
             )}
           </div>
 
           <div className="cover-corner cover-corner-right">
-            {/* Monitor state on every card: a subtle eye when watched, a clear eye-off when not. */}
-            <span
-              className="cover-badge cover-badge-circle"
-              data-dim={series.monitored || undefined}
-              data-tip={monitoredTip}
-              role="img"
-              aria-label={monitoredTip}
-            >
-              {series.monitored ? <IconEye size={15} /> : <IconEyeOff size={15} />}
-            </span>
+            {/* Only the exception: monitored is the normal case, and a mark for it is noise. */}
+            {!series.monitored && (
+              <span
+                className="cover-badge cover-badge-circle"
+                data-tip={notMonitoredTip}
+                role="img"
+                aria-label={notMonitoredTip}
+              >
+                <IconEyeOff size={15} />
+              </span>
+            )}
             {/* Only when muted: the other three modes are the normal case and would be noise. */}
             {series.notificationMode === 'Muted' && (
               <span
@@ -171,9 +167,10 @@ export const CoverCard = memo(function CoverCard({
             <span
               className="cover-state"
               data-tone="status"
-              data-tip={statusLabel}
+              data-unmonitored={!series.monitored || undefined}
+              data-tip={statusTip}
               role="img"
-              aria-label={statusLabel}
+              aria-label={statusTip}
               style={{ '--tone': statusColor(status.color), '--tone-on': statusOnColor(status.color) } as React.CSSProperties}
             >
               <StatusGlyph size={13} stroke={2} />
@@ -181,7 +178,7 @@ export const CoverCard = memo(function CoverCard({
           </div>
         </div>
 
-        <div className="cover-meta">
+        <div className="cover-meta" data-nothing-listed={nothingListed || undefined}>
           {/* The tooltip stays the canonical title, so the name the folder on disk and search
               use is still reachable when a language preference has moved the label off it. */}
           <span className="cover-title" title={series.title}>

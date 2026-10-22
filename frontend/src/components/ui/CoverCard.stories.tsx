@@ -45,6 +45,8 @@ export const DownloadingAndBehind: Story = {
   args: { series: ironPetal },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('60 of 88')).toBeVisible()
+    // The download holds the corner until it ends; the read ring waits.
+    await expect(canvas.queryByRole('img', { name: /downloaded read$/ })).toBeNull()
   },
 }
 
@@ -52,6 +54,7 @@ export const NotMonitored: Story = {
   args: { series: neon },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('img', { name: 'Not monitored' })).toBeInTheDocument()
+    await expect(await canvas.findByRole('img', { name: /, not monitored$/ })).toHaveAttribute('data-unmonitored')
   },
 }
 
@@ -86,7 +89,8 @@ export const NoChaptersListed: Story = {
     series: { ...graveRobber, totalChapters: null, wantedChapterCount: 0, knownChapterCount: 0, chapterFileCount: 0, readChapterCount: null },
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('No chapters listed')).toBeVisible()
+    // Nothing to say, so the caption keeps its space but shows nothing.
+    await expect(await canvas.findByText('No chapters listed')).not.toBeVisible()
   },
 }
 
