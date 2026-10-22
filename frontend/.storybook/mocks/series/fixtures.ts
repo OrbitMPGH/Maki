@@ -494,7 +494,7 @@ export const scrobble: SeriesScrobbleDto = {
       url: 'https://anilist.example/manga/104512',
       chapter: 131,
       volume: 14,
-      status: 'CURRENT',
+      status: 'reading',
       syncedAt: hoursAgo(6),
       error: null,
       reviewReason: null,

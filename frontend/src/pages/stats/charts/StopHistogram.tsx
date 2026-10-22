@@ -32,11 +32,9 @@ export function StopHistogram({
               }}
             />
             <span className="stats-hist-label">{formatPercent(i / buckets.length)}</span>
-            {isMedian && (
-              <span style={{ color: 'var(--warn)', fontSize: 'var(--type-micro)', fontWeight: 'var(--fw-bold)' }}>
-                {t`Median`}
-              </span>
-            )}
+            {/* Every column keeps the line, so the axis labels stay level and the word, wider than
+                one column on a phone, spills into the empty space under its neighbours. */}
+            {medianIndex !== null && <span className="stats-hist-note">{isMedian && t`Median`}</span>}
           </div>
         )
       })}

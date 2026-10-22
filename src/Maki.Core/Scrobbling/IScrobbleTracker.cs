@@ -52,7 +52,17 @@ public record RemoteListEntry(
 /// <summary>A search result offered for matching.</summary>
 public record ScrobbleCandidate(string Id, string Title, IReadOnlyList<string> AltTitles, string Url);
 
-public class TrackerException(string message, Exception? inner = null) : Exception(message, inner);
+public class TrackerException(string message, Exception? inner = null) : Exception(message, inner)
+{
+    /// <summary>
+    /// "12 min" or "3 h" for a tracker's back-off. The message lands in the sync table as the
+    /// failure's detail, where a UTC timestamp said when in a zone the reader is not in.
+    /// </summary>
+    public static string HowLong(TimeSpan left) =>
+        left.TotalMinutes < 120
+            ? $"{Math.Max(1, (int)Math.Ceiling(left.TotalMinutes))} min"
+            : $"{(int)Math.Ceiling(left.TotalHours)} h";
+}
 
 /// <summary>
 /// The remote id no longer resolves on the tracker (a deleted or merged entry — AniList

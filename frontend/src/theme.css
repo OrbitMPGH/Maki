@@ -1502,6 +1502,11 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .cover-corner-right {
   margin-left: auto;
 }
+/* Select mode puts its checkbox in the top-left corner; the ring and download state move over
+   beside it rather than sit underneath. */
+.cover-check ~ .cover-corners .cover-corner-left {
+  margin-left: 26px;
+}
 .cover-badge {
   display: inline-flex;
   align-items: center;
@@ -6377,6 +6382,16 @@ body.column-resizing * {
   font-weight: var(--fw-bold);
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+.stats-hist-note {
+  display: flex;
+  justify-content: center;
+  min-height: calc(var(--type-micro) * 1.4);
+  color: var(--warn);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+  white-space: nowrap;
 }
 .stats-hist-label {
   padding-top: 4px;

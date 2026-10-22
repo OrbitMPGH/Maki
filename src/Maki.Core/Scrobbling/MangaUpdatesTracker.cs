@@ -990,7 +990,8 @@ public class MangaUpdatesTracker(
         var until = _blockedUntil;
         if (Now < until)
         {
-            throw new TrackerException($"MangaUpdates is backed off until {until:u} after an upstream block");
+            throw new TrackerException(
+                $"MangaUpdates is backed off for another {TrackerException.HowLong(until - Now)} after an upstream block");
         }
     }
 
@@ -1004,7 +1005,7 @@ public class MangaUpdatesTracker(
         }
 
         logger.LogWarning("{Reason}; skipping MangaUpdates until {Until:u}", reason, _blockedUntil);
-        return new TrackerException($"{reason}; backing off until {_blockedUntil:u}");
+        return new TrackerException($"{reason}; backing off for {TrackerException.HowLong(_blockedUntil - Now)}");
     }
 
     private static long? GetLong(JsonElement element, string name) =>

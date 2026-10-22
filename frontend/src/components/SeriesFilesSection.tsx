@@ -113,7 +113,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
         <Table.Th w={90}><Trans>Parsed</Trans></Table.Th>
         <Table.Th w={130}><Trans>Status</Trans></Table.Th>
         <Table.Th w={150}><Trans>Mapped to</Trans></Table.Th>
-        <Table.Th w={90}><Trans>Size</Trans></Table.Th>
+        <Table.Th w={100}><Trans>Size</Trans></Table.Th>
         <Table.Th w={160}><Trans>Quality</Trans></Table.Th>
         {!selectMode && <Table.Th w={40 + (canLink ? 36 : 0) + (canDownload ? 36 : 0)}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>}
       </Table.Tr>
@@ -342,7 +342,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           )}
                         </Table.Td>
                         <Table.Td>
-                          <Text size="sm" c="var(--ink-3)" className="tnum">
+                          <Text size="sm" c="var(--ink-3)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
                             {formatBytes(f.size)}
                           </Text>
                         </Table.Td>

@@ -11141,6 +11141,10 @@ msgstr "Paused"
 msgid "Paused because page conversion was switched off."
 msgstr "Paused because page conversion was switched off."
 
+#: src/components/ui/status.tsx
+msgid "Paused or dropped"
+msgstr "Paused or dropped"
+
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Paused: converting the next file would leave less than 1 GB free on the library drive."
 msgstr "Paused: converting the next file would leave less than 1 GB free on the library drive."

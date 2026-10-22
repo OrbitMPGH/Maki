@@ -747,7 +747,8 @@ public class KitsuTracker(
         var until = _blockedUntil;
         if (DateTime.UtcNow < until)
         {
-            throw new TrackerException($"Kitsu is backed off until {until:u} after an upstream block");
+            throw new TrackerException(
+                $"Kitsu is backed off for another {TrackerException.HowLong(until - DateTime.UtcNow)} after an upstream block");
         }
     }
 
@@ -766,7 +767,7 @@ public class KitsuTracker(
         }
 
         logger.LogWarning("{Reason}; skipping Kitsu until {Until:u}", reason, _blockedUntil);
-        return new TrackerException($"{reason}; backing off until {_blockedUntil:u}");
+        return new TrackerException($"{reason}; backing off for {TrackerException.HowLong(_blockedUntil - DateTime.UtcNow)}");
     }
 
     private static int? GetInt(JsonElement element, string name) =>
