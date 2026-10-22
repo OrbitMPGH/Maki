@@ -835,6 +835,10 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   height: 40px;
   margin-inline: 2px;
 }
+.nav-collapsed .app-header-actions .mantine-ActionIcon-root svg {
+  width: 23px;
+  height: 23px;
+}
 .nav-collapse-toggle {
   margin-inline-start: auto;
 }
@@ -1367,6 +1371,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .app-header-actions .count-indicator > .mantine-Indicator-indicator {
   top: calc(50% - 9px);
   right: calc(50% - 9px);
+}
+.nav-collapsed .app-header-actions .count-indicator > .mantine-Indicator-indicator {
+  --indicator-size: 20px;
+  min-width: 20px;
+  padding-inline: 4px;
+  font-size: var(--type-micro);
+  top: calc(50% - 11px);
+  right: calc(50% - 11px);
 }
 .count-indicator[data-tone='brand'] > .mantine-Indicator-indicator {
   background: var(--mantine-primary-color-filled);
