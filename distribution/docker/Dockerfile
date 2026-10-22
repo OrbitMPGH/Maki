@@ -43,16 +43,18 @@ COPY tests/ tests/
 # Maki.Api embeds locales/*/server.po as resources; see the EmbeddedResource item in Maki.Api.csproj.
 COPY locales/ locales/
 
-# .dockerignore excludes .git, so the version cannot be derived from a tag in here — CI computes it
-# from the ref and passes it down. A plain `docker build` gets the -dev default from
-# Directory.Build.props, which is the intended tell for an unofficial image.
-ARG VERSION
-ARG SOURCE_COMMIT
-
 # src/ is copied above, so this layer reruns on every code change; the mount is what makes that cheap.
 # publish needs the same mount because it reads the packages from that folder.
 RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages \
     dotnet restore src/Maki.Api/Maki.Api.csproj
+
+# .dockerignore excludes .git, so the version cannot be derived from a tag in here — CI computes it
+# from the ref and passes it down. A plain `docker build` gets the -dev default from
+# Directory.Build.props, which is the intended tell for an unofficial image. A declared build arg is
+# part of the cache key of every RUN after it, and every nightly passes a new version, so declare
+# these as late as possible in each stage.
+ARG VERSION
+ARG SOURCE_COMMIT
 # PlaywrightPlatform=all is not a recognized platform keyword in Microsoft.Playwright.targets, so
 # it hits that target's fallback branch and copies every node/<platform> driver folder instead of
 # just the host's. Needed because this publish runs once on $BUILDPLATFORM (native) but its output
@@ -109,13 +111,6 @@ RUN case "$TARGETARCH" in \
 
 # ---- Runtime ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
-ARG VERSION
-ARG SOURCE_COMMIT
-LABEL org.opencontainers.image.title="Maki" \
-      org.opencontainers.image.description="Manga collection manager for the *arr ecosystem" \
-      org.opencontainers.image.source="https://github.com/Orbit/Maki" \
-      org.opencontainers.image.version="${VERSION}" \
-      org.opencontainers.image.revision="${SOURCE_COMMIT}"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends gosu curl \
@@ -178,5 +173,14 @@ EXPOSE 8990
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s \
     CMD p=$(grep -ioE '"port"[[:space:]]*:[[:space:]]*[0-9]+' /config/config.json 2>/dev/null | grep -oE '[0-9]+$'); \
         curl -f "http://localhost:${p:-8990}/initialize.json" || exit 1
+
+# Last, so a new version only changes this metadata layer; see ARG VERSION in the backend stage.
+ARG VERSION
+ARG SOURCE_COMMIT
+LABEL org.opencontainers.image.title="Maki" \
+      org.opencontainers.image.description="Manga collection manager for the *arr ecosystem" \
+      org.opencontainers.image.source="https://github.com/Orbit/Maki" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${SOURCE_COMMIT}"
 
 ENTRYPOINT ["/entrypoint.sh"]
