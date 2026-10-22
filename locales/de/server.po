@@ -1401,6 +1401,12 @@ msgstr ""
 msgid "error.release.downloadClientRejected"
 msgstr ""
 
+#. A qBittorrent duplicate upload of a torrent the user keeps in another category.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+#. English: The download client already has this torrent in another category or label. Move it to Maki's, or remove it, and grab again.
+msgid "error.release.downloadClientHeldOutsideLabel"
+msgstr ""
+
 #. The download client did not answer, or answered with something that was not its API.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 #. English: The download client did not respond. Check its URL in Settings → Downloads.
@@ -1568,6 +1574,11 @@ msgstr "Pfad ist erforderlich"
 #, fuzzy
 msgid "error.scrobble.aniListNotConfigured"
 msgstr "Lege zuerst die AniList-Client-ID und das Client-Geheimnis in den Einstellungen fest"
+
+#: src/Maki.Api/Controllers/ScrobbleController.cs
+#. English: paste the mangaupdates.com/series link, or the id from the end of it
+msgid "error.scrobble.invalidMangaUpdatesId"
+msgstr ""
 
 #: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: expected a numeric id or a series URL for that service
@@ -2744,6 +2755,12 @@ msgstr ""
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Deluge labels can only use letters, digits, dot, dash and underscore
 msgid "error.settings.labelInvalidDeluge"
+msgstr ""
+
+#. Saving a different download client or label while torrents are still downloading or waiting to import through the current one.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: {count, plural, one {# torrent is} other {# torrents are}} still downloading or waiting to import through the current client and label. Let them finish or remove them before changing either.
+msgid "error.settings.downloadClientTorrentsInFlight"
 msgstr ""
 
 #: src/Maki.Api/Controllers/SettingsController.cs

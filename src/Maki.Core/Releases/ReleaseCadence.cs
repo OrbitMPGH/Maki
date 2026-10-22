@@ -94,10 +94,12 @@ public static class ReleaseCadence
         var confidence = (hits + 1.0) / (tested + 2.0);
         var last = times[^1];
         // A window wider than two thirds of the cycle says no more than the cycle itself does.
-        var state = interval > MaxIntervalDays || tested < MinChecked || confidence < MinConfidence ||
-                    halfWidth > interval / 3
-            ? CadenceState.Irregular
-            : CadenceState.Expected;
+        // The one-day floor on the window is not a wandering rhythm, so a daily series is not held to it.
+        var state = tested < MinChecked
+            ? CadenceState.Unknown
+            : interval > MaxIntervalDays || confidence < MinConfidence || halfWidth > Math.Max(1, interval / 3)
+                ? CadenceState.Irregular
+                : CadenceState.Expected;
 
         DateTime? start = null, end = null;
         if (state == CadenceState.Expected)

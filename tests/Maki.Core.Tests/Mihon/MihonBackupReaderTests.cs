@@ -148,6 +148,27 @@ public class MihonBackupReaderTests
     }
 
     [Fact]
+    public void A_flood_of_empty_manga_records_is_refused()
+    {
+        var flood = new byte[(MihonBackupReader.MaxMangaRecords + 1) * 2];
+        for (var i = 0; i < flood.Length; i += 2)
+        {
+            flood[i] = 0x0A;
+        }
+
+        Assert.Equal(MihonBackupFailure.TooLarge, Fails(Gzip(flood)));
+    }
+
+    [Fact]
+    public void Manga_without_a_title_are_dropped_and_counted_as_skipped()
+    {
+        var result = Read(Backup(new ProtoWriter(), Manga("Kept"), new ProtoWriter().Varint(1, 5)));
+
+        Assert.Equal("Kept", Assert.Single(result.Manga).Title);
+        Assert.Equal(2, result.SkippedNonLibrary);
+    }
+
+    [Fact]
     public void Decompression_is_capped()
     {
         var data = Backup(Manga("Berserk", m => m.String(5, new string('x', 20_000))));

@@ -93,6 +93,45 @@ public class QBittorrentClientTests
         Assert.Null(await new QBittorrentClient(new RecordingHandler()).AddAsync(Settings(), "http://indexer.test/1.torrent"));
     }
 
+    private sealed class DuplicateHandler(string existing) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            var response = path.EndsWith("/auth/login") ? new HttpResponseMessage(HttpStatusCode.NoContent)
+                : path.EndsWith("/torrents/add") ? new HttpResponseMessage(HttpStatusCode.Conflict)
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(existing) };
+            return Task.FromResult(response);
+        }
+    }
+
+    private static string Existing(string category) =>
+        $$"""[{"hash":"abc","name":"x","state":"stalledUP","progress":1.0,"content_path":"/dl/x","added_on":1700000000,"category":"{{category}}"}]""";
+
+    [Fact]
+    public async Task A_duplicate_upload_in_makis_category_counts_as_added()
+    {
+        await new QBittorrentClient(new DuplicateHandler(Existing("maki"))).AddFileAsync(Settings(), [1, 2, 3], "abc");
+    }
+
+    [Fact]
+    public async Task A_duplicate_upload_in_another_category_fails_the_grab()
+    {
+        var ex = await Assert.ThrowsAsync<TorrentClientException>(() =>
+            new QBittorrentClient(new DuplicateHandler(Existing("manga"))).AddFileAsync(Settings(), [1, 2, 3], "abc"));
+
+        Assert.Equal(TorrentClientFailure.HeldOutsideLabel, ex.Failure);
+    }
+
+    [Fact]
+    public async Task A_refused_upload_the_client_does_not_have_is_rejected()
+    {
+        var ex = await Assert.ThrowsAsync<TorrentClientException>(() =>
+            new QBittorrentClient(new DuplicateHandler("[]")).AddFileAsync(Settings(), [1, 2, 3], "abc"));
+
+        Assert.Equal(TorrentClientFailure.Rejected, ex.Failure);
+    }
+
     [Fact]
     public async Task An_unreachable_client_fails_as_unreachable()
     {

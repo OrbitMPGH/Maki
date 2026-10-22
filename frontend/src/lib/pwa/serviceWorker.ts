@@ -32,7 +32,28 @@ export function registerServiceWorker(currentUser: () => number | null | undefin
     console.error('Service worker registration failed', err)
   })
   void container.ready.then(repost)
-  container.addEventListener('controllerchange', repost)
+  container.addEventListener('controllerchange', () => {
+    repost()
+    void warmBootstrap(currentUser())
+  })
+}
+
+/**
+ * On the first visit the page's bootstrap requests go out before the worker controls it, so neither
+ * is cached and the next offline launch shows the login form. Once the worker takes control, both
+ * are fetched again through it.
+ */
+async function warmBootstrap(userId: number | null | undefined): Promise<void> {
+  try {
+    const res = await fetch('/initialize.json', { cache: 'no-cache' })
+    if (!res.ok || userId === null) return
+    const { apiRoot } = (await res.json()) as { apiRoot?: unknown }
+    if (typeof apiRoot !== 'string') return
+    const me = await fetch(`${apiRoot}/auth/me`, { credentials: 'same-origin' })
+    await me.body?.cancel()
+  } catch {
+    // Unreachable right now; the next controlled load caches both.
+  }
 }
 
 /**

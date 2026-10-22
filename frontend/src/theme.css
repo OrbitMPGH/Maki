@@ -8290,7 +8290,7 @@ body.reader-open {
   .settings-index {
     display: none;
   }
-  .settings-surface {
+  .settings-layout:has(> .settings-jump) {
     --settings-jump-h: 52px;
   }
   .settings-jump {
@@ -8303,10 +8303,10 @@ body.reader-open {
     background: var(--app-bg);
     border-bottom: 1px solid var(--hairline);
   }
-  .settings-section[data-dirty] .settings-section-head {
+  .settings-layout:has(> .settings-jump) .settings-section[data-dirty] .settings-section-head {
     top: calc(var(--app-top, 0px) + var(--settings-jump-h));
   }
-  .settings-entry {
+  .settings-layout:has(> .settings-jump) .settings-entry {
     scroll-margin-top: calc(var(--app-top, 0px) + var(--settings-jump-h) + 16px);
   }
 }

@@ -403,6 +403,11 @@ public class UpgradeRevertService(MakiDbContext db, ReaderArchiveCache archives,
         }
 
         await db.SaveChangesAsync(CancellationToken.None);
+        foreach (var (detail, file) in created)
+        {
+            await KoreaderDocumentIndexer.RestoreAsync(db, file.Id, detail.KoreaderDocuments, logger, CancellationToken.None);
+        }
+
         logger.LogInformation("Reverted torrent replacement {Group}: {Files} file(s) restored (user {User})",
             groupId, plans.Count, userId);
         return (rows, UpgradeRevertError.None);

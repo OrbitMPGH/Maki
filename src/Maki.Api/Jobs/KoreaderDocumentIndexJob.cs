@@ -7,7 +7,8 @@ namespace Maki.Api.Jobs;
 /// Digests chapter files for KOReader's progress sync (<see cref="KoreaderDocumentIndexer"/>). Runs on
 /// a timer, and a sync for a document nobody recognises fires it early when some file has never been
 /// indexed, so a file copied to the device some other way resolves on a later sync. Pushes that were
-/// waiting for a document id are tried again once a pass has added some.
+/// waiting for a document id are tried again once a pass has added some, and pushes whose write threw
+/// after every pass.
 /// </summary>
 [DisallowConcurrentExecution]
 public class KoreaderDocumentIndexJob(KoreaderDocumentIndexer indexer, KoreaderPushWriter pushes) : IJob
@@ -19,10 +20,8 @@ public class KoreaderDocumentIndexJob(KoreaderDocumentIndexer indexer, KoreaderP
 
     public async Task Execute(IJobExecutionContext context)
     {
-        if (await indexer.RunAsync(context.CancellationToken) > 0)
-        {
-            pushes.RetryWaiting();
-        }
+        var added = await indexer.RunAsync(context.CancellationToken);
+        pushes.RetryWaiting(failedOnly: added == 0);
     }
 
     /// <summary>

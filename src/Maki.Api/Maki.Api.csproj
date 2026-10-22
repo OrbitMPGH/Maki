@@ -82,8 +82,8 @@
 
   <ItemGroup Condition="'$(BuildFrontendInDebug)' == 'true'">
     <Content Remove="wwwroot\**" />
-    <FrontendInput Include="$(FrontendDir)src\**;$(FrontendDir)public\**;$(LocalesDir)*\client.po" />
-    <FrontendInput Include="$(FrontendDir)index.html;$(FrontendDir)package-lock.json;$(FrontendDir)vite.config.ts;$(FrontendDir)lingui.config.js" />
+    <FrontendInput Include="$(FrontendDir)src\**;$(FrontendDir)public\**;$(FrontendDir)vite\**;$(LocalesDir)*\client.po" Exclude="$(FrontendDir)src\**\*.stories.tsx" />
+    <FrontendInput Include="$(FrontendDir)index.html;$(FrontendDir)package-lock.json;$(FrontendDir)vite.config.ts;$(FrontendDir)lingui.config.js;$(FrontendDir)tsconfig*.json" />
   </ItemGroup>
 
   <Target Name="BuildFrontend" BeforeTargets="BeforeBuild" Condition="'$(BuildFrontendInDebug)' == 'true'" Inputs="@(FrontendInput)" Outputs="$(SpaOutDir)index.html">

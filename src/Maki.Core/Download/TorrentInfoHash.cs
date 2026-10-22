@@ -94,7 +94,7 @@ public static partial class TorrentInfoHash
         }
 
         var start = pos + colon + 1;
-        if (start + length > data.Length)
+        if (length > data.Length - start)
         {
             return null;
         }

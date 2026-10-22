@@ -199,7 +199,8 @@ public static class ImageCodec
             return null;
         }
 
-        if (Math.Max(loaded.Width, loaded.Height) > PageConversion.MaxEdge)
+        if (Math.Max(loaded.Width, loaded.Height) > PageConversion.MaxEdge ||
+            (long)loaded.Width * loaded.Height > Reading.ArchiveHealthAnalyzer.MaxPixels)
         {
             skipped = PageSkip.TooLarge;
             return null;

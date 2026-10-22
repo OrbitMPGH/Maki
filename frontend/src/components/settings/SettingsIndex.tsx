@@ -13,6 +13,13 @@ import { scrollBehavior } from '../../lib/scrollBehavior'
  */
 function useActiveEntry(entries: SettingsEntry[], top: number, bottom: () => string) {
   const [active, setActive] = useState(entries[0]?.id)
+  const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight)
+
+  useEffect(() => {
+    const onResize = () => setViewportHeight(window.innerHeight)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   useEffect(() => {
     const elements = entries
@@ -36,7 +43,7 @@ function useActiveEntry(entries: SettingsEntry[], top: number, bottom: () => str
     elements.forEach((el) => observer.observe(el))
     return () => observer.disconnect()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries])
+  }, [entries, viewportHeight])
 
   return [active, setActive] as const
 }

@@ -41,6 +41,21 @@ public class KoreaderDigestTests
         Assert.Equal(Md5(expected), KoreaderDigest.PartialMd5(new MemoryStream(bytes)));
     }
 
+    /// <summary>
+    /// Fixed values, not recomputed here. They come from util.partialMD5 transliterated line for line
+    /// (LuaJIT's 32-bit lshift with the count taken mod 32, a nil read ending the loop) and run over
+    /// bytes i % 251. Changing the offsets, the sample size or the first offset breaks this.
+    /// </summary>
+    [Fact]
+    public void Matches_fixed_vectors_of_koreaders_algorithm()
+    {
+        var bytes = Enumerable.Range(0, 300_000).Select(i => (byte)(i % 251)).ToArray();
+
+        Assert.Equal("c43e7af7c64be64ff8765e78ee771294", KoreaderDigest.PartialMd5(new MemoryStream(bytes)));
+        Assert.Equal("7496cac5ac164e11c6798f950cbaa0c5", KoreaderDigest.PartialMd5(new MemoryStream(bytes[..700])));
+        Assert.Equal("d41d8cd98f00b204e9800998ecf8427e", KoreaderDigest.PartialMd5(new MemoryStream()));
+    }
+
     [Fact]
     public void A_file_name_digest_is_the_md5_of_its_utf8_name()
     {

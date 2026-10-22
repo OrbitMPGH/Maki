@@ -229,9 +229,11 @@ public class UsersController(
         var revokeSessions = user.Disabled != wasDisabled
             || !string.IsNullOrEmpty(request.Password)
             || (!user.Permissions.Grants(MakiPermission.Admin) && (before & ~user.Permissions) != 0);
+        IReadOnlyList<PushDevice>? devices = null;
         if (revokeSessions)
         {
             await userManager.UpdateSecurityStampAsync(user);
+            devices = await WebPushSender.DropSubscriptionsAsync(db, user.Id, ct);
         }
 
         await transaction.CommitAsync(ct);
@@ -265,19 +267,19 @@ public class UsersController(
         {
             if (!string.IsNullOrEmpty(request.Password))
             {
-                await alerts.RaiseAsync(user.Id, AccountSecurityAlerts.PasswordReset, ct: ct);
+                await alerts.RaiseAsync(user.Id, AccountSecurityAlerts.PasswordReset, ct: ct, devices: devices);
             }
 
             if (user.Permissions != before)
             {
-                await alerts.RaiseAsync(user.Id, AccountSecurityAlerts.PermissionsChanged, ct: ct);
+                await alerts.RaiseAsync(user.Id, AccountSecurityAlerts.PermissionsChanged, ct: ct, devices: devices);
             }
 
             var foldersChanged = allFoldersBefore != user.AllRootFolders
                 || (!user.AllRootFolders && grantsBefore is not null && !grantsBefore.SetEquals(rootFolderIds));
             if (foldersChanged)
             {
-                await alerts.RaiseAsync(user.Id, AccountSecurityAlerts.FolderAccessChanged, ct: ct);
+                await alerts.RaiseAsync(user.Id, AccountSecurityAlerts.FolderAccessChanged, ct: ct, devices: devices);
             }
         }
 
@@ -340,13 +342,14 @@ public class UsersController(
         await userManager.SetTwoFactorEnabledAsync(user, false);
         await userManager.ResetAuthenticatorKeyAsync(user);
         await TotpReplayGuard.ClearAsync(userManager, user);
+        var devices = await WebPushSender.DropSubscriptionsAsync(db, user.Id, ct);
         await EventsHub.DisconnectUserAsync(hub, user.Id);
 
         await auditLog.LogAsync(AuthEventType.TwoFactorDisabled, currentUser.UserName, currentUser.UserId,
             HttpContext, detail: $"reset two-factor for \"{user.UserName}\"", ct: ct);
         if (alerts is not null)
         {
-            await alerts.RaiseAsync(user.Id, AccountSecurityAlerts.TwoFactorReset, ct: ct);
+            await alerts.RaiseAsync(user.Id, AccountSecurityAlerts.TwoFactorReset, ct: ct, devices: devices);
         }
 
         logger.LogInformation("Two-factor reset for {UserName} by {Admin}", user.UserName, currentUser.UserName);

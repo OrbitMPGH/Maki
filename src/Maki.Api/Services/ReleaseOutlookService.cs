@@ -30,8 +30,8 @@ public class ReleaseOutlookService(
         }
 
         var disabled = await availability.DisabledAsync(ct);
-        var refreshable = await RefreshMonitoredSeriesJob.RefreshableSeriesIdsAsync(db, disabled, ct);
-        var outlooks = await BuildAsync([series], refreshable.ToHashSet(), disabled, ct);
+        var refreshing = await RefreshMonitoredSeriesJob.Refreshable(db, disabled).AnyAsync(s => s.Id == seriesId, ct);
+        var outlooks = await BuildAsync([series], refreshing ? [seriesId] : [], disabled, ct);
         return outlooks[seriesId];
     }
 

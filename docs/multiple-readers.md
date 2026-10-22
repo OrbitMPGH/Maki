@@ -6,7 +6,7 @@ is shared: one copy of the files, one set of series and chapters, so a second re
 - **Per user:** read state and resume position, bookmarks, ratings, reader defaults and per-series
   overrides, saved filters, start page, Home layout, title language, series-page rails,
   content-rating ceiling, OPDS feed, and the tracker accounts (AniList, MyAnimeList, Kitsu,
-  MangaBaka) your progress is sent to. Ratings land on *your* tracker profile.
+  MangaUpdates, MangaBaka) your progress is sent to. Ratings land on *your* tracker profile.
 - **Shared, admin-only:** root folders, download clients and indexers, sources and their
   priority, metadata and recommendation settings, notifications, backups, and tracker app
   registrations. The client ID and secret are shared, but each person connects their own account.

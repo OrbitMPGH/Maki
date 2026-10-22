@@ -89,6 +89,37 @@ public sealed class DownloadClientSettingsTests : IDisposable
     }
 
     [Theory]
+    [InlineData("transmission", "maki", false, Maki.Core.Entities.QueueStatus.Downloading)]
+    [InlineData("qbittorrent", "manga", false, Maki.Core.Entities.QueueStatus.Downloading)]
+    [InlineData("qbittorrent", null, true, Maki.Core.Entities.QueueStatus.Downloading)]
+    [InlineData("qbittorrent", "maki", true, Maki.Core.Entities.QueueStatus.Downloading)]
+    [InlineData("transmission", "maki", false, Maki.Core.Entities.QueueStatus.AwaitingImport)]
+    [InlineData("qbittorrent", "manga", false, Maki.Core.Entities.QueueStatus.Importing)]
+    [InlineData("transmission", "maki", true, Maki.Core.Entities.QueueStatus.Completed)]
+    [InlineData("transmission", "maki", true, Maki.Core.Entities.QueueStatus.Failed)]
+    public async Task A_kind_or_label_change_is_refused_while_a_torrent_is_in_flight(
+        string kind, string? label, bool saves, Maki.Core.Entities.QueueStatus status)
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        using (var db = _db.NewContext())
+        {
+            db.DownloadQueue.Add(new Maki.Core.Entities.DownloadQueueItem
+            {
+                SeriesId = seriesId, Protocol = Maki.Core.Entities.AcquisitionProtocol.Torrent,
+                Status = status, Title = "Berserk v01", QueuedAt = DateTime.UtcNow,
+            });
+            db.SaveChanges();
+        }
+
+        var settings = new SettingsService(_db.ScopeFactory());
+
+        var result = await Controller(settings).SetDownloadClient(Request(kind: kind, url: "http://new:8080", label: label), default);
+
+        Assert.Equal(saves, result is OkObjectResult);
+        Assert.Equal(saves ? "http://new:8080" : null, await settings.GetAsync(SettingKeys.DownloadClientUrl));
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("  ")]

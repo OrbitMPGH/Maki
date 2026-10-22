@@ -12,8 +12,9 @@ using Quartz;
 namespace Maki.Api.Jobs;
 
 /// <summary>
-/// Periodically refreshes chapter lists and queues downloads for new monitored chapters. Series
-/// are shuffled so one slow or broken source doesn't always starve the same tail of the library.
+/// Periodically refreshes chapter lists and queues downloads for new monitored chapters. Only
+/// series that are due are synced, most overdue first, so one slow or broken source doesn't keep
+/// starving the same tail of the library.
 /// <para>
 /// Only a series that is <see cref="SeriesStatus.Completed"/> <em>and</em> already has every
 /// chapter MangaBaka knows about is skipped — there is nothing left for it to discover. Anything
@@ -248,7 +249,7 @@ public class RefreshMonitoredSeriesJob(
         return due.OrderBy(s => s.NextCheckAt ?? DateTime.MinValue).Select(s => s.Id).ToList();
     }
 
-    private static IQueryable<Series> Refreshable(MakiDbContext db, List<string> disabledSources) =>
+    internal static IQueryable<Series> Refreshable(MakiDbContext db, List<string> disabledSources) =>
         db.Series
             .Where(s => s.SourceMappings.Any(m => m.Enabled && !disabledSources.Contains(m.SourceName)))
             .Where(s => s.PendingImportLink == PendingImportLink.None)

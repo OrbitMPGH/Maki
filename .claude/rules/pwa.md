@@ -26,6 +26,7 @@ Design and rationale: `docs/design-pwa.md`. Push server side is in `stats-notifi
 
 ## Service worker
 
+- The page's bootstrap requests on a first visit go out before the worker controls it. `registerServiceWorker` re-fetches `/initialize.json` and `auth/me` on `controllerchange` so both are cached for the next offline launch; a new boot-critical request needs the same.
 - Hand-rolled, built by `vite/sw-plugin.ts` as a nested build in `closeBundle` into `dist/sw.js` (IIFE, unhashed, `no-cache`). `precompress()` must stay after it in the plugin array or `sw.js.br` is missing.
 - Navigations are network-first, so `skipWaiting` plus `clients.claim` is safe. Do not switch the shell to cache-first: an old `index.html` would point at deleted chunk hashes.
 - Never `respondWith` for `/signalr/*`, `/api/v1/opds/*`, or non-GET requests other than the progress PUT. Never store a non-200, or HTML from an `/api/` path (the SPA fallback answers unknown `/api/` paths with 200 HTML).

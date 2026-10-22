@@ -12,6 +12,7 @@ using Maki.Core.Storage;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -71,10 +72,25 @@ public sealed class PageConversionTests : IDisposable
         return (chapterId, fileId!.Value, path);
     }
 
-    private PageConversionService Service(MakiDbContext db) => new(db, _world.Archives,
-        new KavitaScanService(new KavitaClient(new StubHttpClientFactory("{}")), _world.Settings, _world.Db.ScopeFactory(),
-            NullLogger<KavitaScanService>.Instance),
-        NullLogger<PageConversionService>.Instance);
+    private PageConversionService Service(MakiDbContext db, Func<string, string, bool>? hardlink = null,
+        Action<string, string>? moveOver = null,
+        Func<string, string, PageConversionSettings, CancellationToken, Task<ArchiveConversionResult>>? converter = null,
+        Func<string, long?>? freeSpace = null) =>
+        new(db, _world.Archives,
+            new KavitaScanService(new KavitaClient(new StubHttpClientFactory("{}")), _world.Settings, _world.Db.ScopeFactory(),
+                NullLogger<KavitaScanService>.Instance),
+            NullLogger<PageConversionService>.Instance)
+        {
+            Hardlink = hardlink ?? FileLinker.TryHardlink,
+            MoveOver = moveOver ?? ((from, to) => File.Move(from, to, overwrite: true)),
+            Converter = converter ?? ArchivePageConverter.ConvertAsync,
+            FreeSpace = freeSpace ?? DiskSpace.AvailableFor
+        };
+
+    private string[] TmpFiles() =>
+        Directory.Exists(Path.Combine(_world.Library, ".maki", "tmp"))
+            ? Directory.GetFiles(Path.Combine(_world.Library, ".maki", "tmp"))
+            : [];
 
     private async Task<FileConversion> ConvertAsync(int fileId)
     {
@@ -408,5 +424,181 @@ public sealed class PageConversionTests : IDisposable
         Assert.Equal((null, 0L, (DateTime?)null), (row.OriginalImageFormat, row.ConversionSavedBytes, row.ConversionCheckedAtUtc));
         var before = QualitySnapshot.Parse(Assert.Single(_world.Db.NewContext().UpgradeHistory.ToList()).BeforeJson)!;
         Assert.Equal(("jpg", "webp"), (before.ImageFormat, before.StoredImageFormat));
+    }
+
+    [Fact]
+    public async Task Without_hardlinks_the_original_is_copied_into_the_trash_and_the_copy_renamed_over_it()
+    {
+        var (_, fileId, path) = JpegChapter(1);
+        var originalHash = Hash(path);
+
+        using (var db = _world.Db.NewContext())
+        {
+            var result = await Service(db, hardlink: (_, _) => false).ConvertAsync(fileId, Webp, CancellationToken.None);
+            Assert.Equal(FileConversionStatus.Converted, result.Status);
+        }
+
+        Assert.Equal(originalHash, Hash(Assert.Single(TrashedOriginals())));
+        Assert.Equal(new FileInfo(path).Length, Row(fileId).Size);
+        using (var zip = ZipFile.OpenRead(path))
+        {
+            Assert.All(Maki.Core.Reading.CbzReader.PageNames(zip), n => Assert.EndsWith(".webp", n));
+        }
+
+        Assert.Empty(TmpFiles());
+    }
+
+    [Fact]
+    public async Task The_windows_source_copy_is_stamped_fresh_so_the_tmp_sweep_leaves_it()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var (_, fileId, path) = JpegChapter(1);
+        File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddDays(-30));
+        DateTime? copyWritten = null;
+
+        using (var db = _world.Db.NewContext())
+        {
+            var service = Service(db, converter: (source, target, settings, ct) =>
+            {
+                Assert.NotEqual(path, source);
+                copyWritten = File.GetLastWriteTimeUtc(source);
+                return ArchivePageConverter.ConvertAsync(source, target, settings, ct);
+            });
+            Assert.Equal(FileConversionStatus.Converted, (await service.ConvertAsync(fileId, Webp, CancellationToken.None)).Status);
+        }
+
+        Assert.True(copyWritten > DateTime.UtcNow.AddHours(-1));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Without_room_for_the_trash_copy_the_file_is_skipped_before_it_is_encoded(bool hardlinks)
+    {
+        var (_, fileId, path) = JpegChapter(1);
+        var originalHash = Hash(path);
+        var encoded = false;
+
+        using (var db = _world.Db.NewContext())
+        {
+            var service = Service(db, hardlink: hardlinks ? null : (_, _) => false, freeSpace: _ => 1024,
+                converter: (source, target, settings, ct) =>
+                {
+                    encoded = true;
+                    return ArchivePageConverter.ConvertAsync(source, target, settings, ct);
+                });
+            var result = await service.ConvertAsync(fileId, Webp, CancellationToken.None);
+            Assert.Equal(hardlinks ? FileConversionStatus.Converted : FileConversionStatus.Failed, result.Status);
+        }
+
+        Assert.Equal(hardlinks, encoded);
+        Assert.Equal(hardlinks, originalHash != Hash(path));
+        Assert.Equal(hardlinks, TrashedOriginals().Length == 1);
+        Assert.Equal(hardlinks, Row(fileId).ConversionCheckedAtUtc is not null);
+        Assert.Empty(TmpFiles());
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_rename_that_fails_leaves_the_original_in_place_and_nothing_in_the_trash(bool hardlinks)
+    {
+        var (_, fileId, path) = JpegChapter(1);
+        var before = Row(fileId);
+        var originalHash = Hash(path);
+
+        using (var db = _world.Db.NewContext())
+        {
+            var service = Service(db, hardlink: hardlinks ? null : (_, _) => false,
+                moveOver: (_, _) => throw new IOException("the share went away"));
+            Assert.Equal(FileConversionStatus.Failed, (await service.ConvertAsync(fileId, Webp, CancellationToken.None)).Status);
+        }
+
+        Assert.Equal(originalHash, Hash(path));
+        Assert.Empty(TrashedOriginals());
+        var after = Row(fileId);
+        Assert.Equal((before.Size, before.ImageFormat), (after.Size, after.ImageFormat));
+        Assert.Null(after.ConversionCheckedAtUtc);
+        Assert.Empty(TmpFiles());
+    }
+
+    [Fact]
+    public async Task A_rename_that_reports_a_failure_but_happened_is_recorded_as_converted()
+    {
+        var (_, fileId, path) = JpegChapter(1);
+
+        using (var db = _world.Db.NewContext())
+        {
+            var service = Service(db, hardlink: (_, _) => false, moveOver: (from, to) =>
+            {
+                File.Move(from, to, overwrite: true);
+                throw new IOException("a retransmitted rename");
+            });
+            Assert.Equal(FileConversionStatus.Converted, (await service.ConvertAsync(fileId, Webp, CancellationToken.None)).Status);
+        }
+
+        var row = Row(fileId);
+        Assert.Equal(new FileInfo(path).Length, row.Size);
+        Assert.Equal("webp", row.ImageFormat);
+        Assert.Single(TrashedOriginals());
+    }
+
+    [Fact]
+    public async Task The_library_file_can_be_renamed_while_its_pages_are_being_converted()
+    {
+        var (_, fileId, path) = JpegChapter(1);
+
+        using (var db = _world.Db.NewContext())
+        {
+            var service = Service(db, converter: async (source, target, settings, ct) =>
+            {
+                using (ZipFile.OpenRead(source))
+                {
+                    File.Move(path, path + ".renamed");
+                    File.Move(path + ".renamed", path);
+                }
+
+                return await ArchivePageConverter.ConvertAsync(source, target, settings, ct);
+            });
+            Assert.Equal(FileConversionStatus.Converted, (await service.ConvertAsync(fileId, Webp, CancellationToken.None)).Status);
+        }
+
+        Assert.Empty(TmpFiles());
+    }
+
+    [Fact]
+    public async Task A_file_that_throws_is_counted_as_failed_and_the_pass_goes_on_to_the_next()
+    {
+        EnableConversion();
+        var (_, throwing, _) = JpegChapter(1);
+        var (_, next, _) = JpegChapter(2);
+        var settings = new SettingsService(_world.Db.ScopeFactory());
+        var services = new ServiceCollection();
+        services.AddScoped(_ => new MakiDbContext(new DbContextOptionsBuilder<MakiDbContext>(_world.Db.Options)
+            .AddInterceptors(new FailingSave(throwing)).Options));
+        services.AddScoped(sp => Service(sp.GetRequiredService<MakiDbContext>()));
+        var worker = new PageConversionWorker(services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(),
+            settings, NullLogger<PageConversionWorker>.Instance) { DelayBetweenFiles = TimeSpan.Zero };
+
+        await worker.StartPassAsync(CancellationToken.None);
+        await worker.RunPassAsync(CancellationToken.None);
+
+        Assert.Equal("jpg", Row(next).OriginalImageFormat);
+        var snapshot = await worker.SnapshotAsync(CancellationToken.None);
+        Assert.Equal(PageConversionPassState.Idle, snapshot.State);
+        Assert.Equal((1, 1), (snapshot.Pass!.Converted, snapshot.Pass.Failed));
+    }
+
+    private sealed class FailingSave(int fileId) : SaveChangesInterceptor
+    {
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            eventData.Context!.ChangeTracker.Entries<ChapterFile>().Any(e => e.Entity.Id == fileId && e.State == EntityState.Modified)
+                ? throw new DbUpdateException("the database refused the save")
+                : base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 }

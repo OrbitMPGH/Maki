@@ -77,12 +77,17 @@ public class InboxService(
         });
     }
 
+    /// <param name="pushDevices">
+    /// For a <see cref="InboxAudienceKind.User"/> audience: the devices to push to instead of the
+    /// user's current subscriptions, for an alert about a revocation that just forgot them.
+    /// </param>
     public virtual async Task RaiseAsync(
-        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default)
+        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default,
+        IReadOnlyList<PushDevice>? pushDevices = null)
     {
         try
         {
-            await RaiseOrThrowAsync(type, message, audience, ct);
+            await RaiseOrThrowAsync(type, message, audience, ct, pushDevices);
         }
         catch (Exception ex)
         {
@@ -95,7 +100,8 @@ public class InboxService(
     /// before it records that the work is done.
     /// </summary>
     public virtual async Task RaiseOrThrowAsync(
-        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default)
+        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default,
+        IReadOnlyList<PushDevice>? pushDevices = null)
     {
         if (type == InboxEventType.Unknown)
         {
@@ -216,7 +222,8 @@ public class InboxService(
                 if (PushPrefs.Parse(pushByUser.GetValueOrDefault(row.UserId)).Contains(type))
                 {
                     push.Enqueue(new WebPushNotification(row.UserId, title, body, row.Url ?? "/notifications",
-                        row.SeriesId is { } pushSeries ? $"series-{pushSeries}" : null));
+                        row.SeriesId is { } pushSeries ? $"series-{pushSeries}" : null,
+                        audience.Kind == InboxAudienceKind.User ? pushDevices : null));
                 }
 
                 await events.InboxNotification(

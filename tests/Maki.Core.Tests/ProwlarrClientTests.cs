@@ -52,6 +52,28 @@ public class ProwlarrClientTests
             "https://nyaa.si/view/1"), release);
     }
 
+    private const string DownloadLink = "http://prowlarr.test:9696/3/download?link=x";
+    private const string ProxyMagnet = "http://prowlarr.test:9696/3/download?apikey=pkey&link=m";
+
+    [Theory]
+    [InlineData(DownloadLink, ProxyMagnet, DownloadLink, null)]
+    [InlineData(null, ProxyMagnet, ProxyMagnet, null)]
+    [InlineData(DownloadLink, "magnet:?xt=urn:btih:abc", DownloadLink, "magnet:?xt=urn:btih:abc")]
+    public async Task Only_a_real_magnet_stays_a_magnet_and_a_proxy_link_is_a_download_url(
+        string? downloadUrl, string magnetUrl, string expectedDownload, string? expectedMagnet)
+    {
+        var download = downloadUrl is null ? "null" : $"\"{downloadUrl}\"";
+        var handler = new RecordingHandler($$"""
+            [{"guid":"g1","title":"Berserk v01","size":10,"indexer":"Nyaa","downloadUrl":{{download}},
+              "magnetUrl":"{{magnetUrl}}","protocol":"torrent"}]
+            """);
+
+        var release = Assert.Single(await new ProwlarrClient(new Factory(handler)).SearchAsync(Settings(), "berserk"));
+
+        Assert.Equal(expectedDownload, release.DownloadUrl);
+        Assert.Equal(expectedMagnet, release.MagnetUrl);
+    }
+
     [Fact]
     public async Task A_non_json_answer_is_a_failed_search()
     {

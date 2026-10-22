@@ -58,7 +58,8 @@ public class KoreaderSyncService(MakiDbContext db, ReaderService reader, IMemory
         var rows = await RowsAsync(doc, ct);
         foreach (var slice in doc.Slices)
         {
-            var completed = rows.FirstOrDefault(r => r.ChapterId == slice.Chapter.Id) is { Completed: true };
+            // A watched chapter is ticked off, not read: reaching past it is the genuine read.
+            var completed = rows.FirstOrDefault(r => r.ChapterId == slice.Chapter.Id) is { Completed: true, Watched: false };
             if (WriteFor(slice.StartPage, slice.PageCount, doc.SharedWhole(slice), page, doc.PageCount, completed) is { } write)
             {
                 await reader.SaveProgressAsync(slice, write.PageIndex, write.Completed, ReaderService.TimeReport.None, ct);

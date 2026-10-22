@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Api.Controllers;
@@ -38,6 +39,12 @@ public class ScrobbleService(
     public const int DefaultIntervalMinutes = 30;
 
     private static readonly TimeSpan ReadingToggleRefresh = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// How long a batched write may wait for its batch to fill. The write's plan comes from an entry
+    /// read when it was queued, so this bounds how stale that read is when the write goes out.
+    /// </summary>
+    internal TimeSpan MaxBatchWait { get; set; } = TimeSpan.FromSeconds(60);
 
     /// <summary>Polite pacing between remote API calls.</summary>
     private static readonly TimeSpan Pace = TimeSpan.FromSeconds(1.2);
@@ -413,6 +420,7 @@ public class ScrobbleService(
         var boundarySource = await volumeBoundaries.LoadAsync(userId, allRootFolders, matchedIds, ct);
 
         int updates = 0, errors = 0, skipped = 0, noProgress = 0;
+        var batcher = new WriteBatcher(userId, MaxBatchWait, logger, ct);
 
         // The toggles are read once and refreshed every 30 s, so switching one off mid-pass stops
         // its pushes within that window without a settings read per series.
@@ -422,6 +430,7 @@ public class ScrobbleService(
         foreach (var series in seriesList)
         {
             ct.ThrowIfCancellationRequested();
+            await batcher.FlushStaleAsync();
             if (DateTime.UtcNow - readingReadAt > ReadingToggleRefresh)
             {
                 foreach (var tracker in trackers)
@@ -615,41 +624,59 @@ public class ScrobbleService(
                     continue;
                 }
 
+                var target = new PushTarget(series.Id, localSeries?.Id, title);
+                async Task FailedAsync(Exception e)
+                {
+                    if (e is TrackerEntryNotFoundException)
+                    {
+                        // The remote id is dead (AniList entry deleted/merged). Drop the stale mapping so
+                        // the next sync re-matches by title, instead of hard-erroring on it every pass.
+                        await DeleteMappingAsync(userId, series.Id, tracker.Name, ct);
+                        await AddKeyedLogAsync(userId, "info", tracker.Name, title,
+                            "scrobble.log.remoteEntryGone", new { remote = remoteId }, ct);
+                        logger.LogInformation(
+                            "Cleared stale {Service} mapping for '{Title}' (remote id {RemoteId} not found)",
+                            tracker.Name, title, remoteId);
+                        return;
+                    }
+
+                    errors++;
+                    logger.LogWarning("Update failed for '{Title}' on {Service}: {Error}",
+                        title, tracker.Name, e.Message);
+                    await AddLogAsync(userId, "error", tracker.Name, title, e.Message, ct);
+                    await SaveStateAsync(userId, target, tracker.Name, 0, 0, "", e.Message, ct);
+                }
+
                 try
                 {
-                    var changed = await PushAsync(userId, tracker, remoteId,
-                        new PushTarget(series.Id, localSeries?.Id, title), chapter, volume,
-                        fallbackStatus, ct, finished, completedLocally);
+                    var changed = await PushAsync(userId, tracker, remoteId, target, chapter, volume,
+                        fallbackStatus, ct, finished, completedLocally,
+                        batcher, async error =>
+                        {
+                            if (error is null)
+                            {
+                                updates++;
+                            }
+                            else
+                            {
+                                await FailedAsync(error);
+                            }
+                        });
                     if (changed)
                     {
                         updates++;
                     }
                 }
-                catch (TrackerEntryNotFoundException)
-                {
-                    // The remote id is dead (AniList entry deleted/merged). Drop the stale mapping so
-                    // the next sync re-matches by title, instead of hard-erroring on it every pass.
-                    await DeleteMappingAsync(userId, series.Id, tracker.Name, ct);
-                    await AddKeyedLogAsync(userId, "info", tracker.Name, title,
-                        "scrobble.log.remoteEntryGone", new { remote = remoteId }, ct);
-                    logger.LogInformation(
-                        "Cleared stale {Service} mapping for '{Title}' (remote id {RemoteId} not found)",
-                        tracker.Name, title, remoteId);
-                }
                 catch (Exception e)
                 {
-                    errors++;
-                    logger.LogWarning("Update failed for '{Title}' on {Service}: {Error}",
-                        title, tracker.Name, e.Message);
-                    await AddLogAsync(userId, "error", tracker.Name, title, e.Message, ct);
-                    await SaveStateAsync(userId, new PushTarget(series.Id, localSeries?.Id, title),
-                        tracker.Name, 0, 0, "", e.Message, ct);
+                    await FailedAsync(e);
                 }
 
                 await Task.Delay(PaceFor(tracker), ct);
             }
         }
 
+        await batcher.FlushAsync();
         return new PassCounts(updates, skipped, errors, noProgress);
     }
 
@@ -725,15 +752,17 @@ public class ScrobbleService(
         oneShots ??= await FinishedOneShotsAsync(userId, await AllRootFoldersAsync(userId, ct), ct);
 
         int updates = 0, errors = 0, skipped = 0;
+        var batcher = new WriteBatcher(userId, MaxBatchWait, logger, ct);
 
         foreach (var row in rows)
         {
             ct.ThrowIfCancellationRequested();
+            await batcher.FlushStaleAsync();
             var chapter = (int)Math.Floor(row.MaxChapter);
             var volume = (int)Math.Floor(row.MaxVolume);
             var finished = oneShots.TryGetValue(row.SeriesId, out var completedLocally);
             await PushNativeRowAsync(userId, row, chapter, volume, null, trackers, ct, Counters,
-                finished, completedLocally);
+                finished, completedLocally, batcher);
         }
 
         // A one-shot never raises MaxChapter, so a finished one sits here with the unstarted series.
@@ -741,18 +770,21 @@ public class ScrobbleService(
         foreach (var row in zeroProgress)
         {
             ct.ThrowIfCancellationRequested();
+            await batcher.FlushStaleAsync();
             if (oneShots.TryGetValue(row.SeriesId, out var completedLocally))
             {
                 await PushNativeRowAsync(
                     userId, row, 0, 0, planToRead ? ScrobbleStatus.PlanToRead : null, trackers, ct, Counters,
-                    finished: true, completedLocally);
+                    finished: true, completedLocally, batcher);
             }
             else if (planToRead)
             {
-                await PushNativeRowAsync(userId, row, 0, 0, ScrobbleStatus.PlanToRead, trackers, ct, Counters);
+                await PushNativeRowAsync(
+                    userId, row, 0, 0, ScrobbleStatus.PlanToRead, trackers, ct, Counters, batcher: batcher);
             }
         }
 
+        await batcher.FlushAsync();
         return new PassCounts(updates, skipped, errors);
 
         void Counters(bool wasUpdate, bool wasSkipped, bool wasError)
@@ -767,7 +799,7 @@ public class ScrobbleService(
     private async Task PushNativeRowAsync(
         int userId, NativeProgress row, int chapter, int volume, ScrobbleStatus? fallbackStatus,
         List<IScrobbleTracker> trackers, CancellationToken ct, Action<bool, bool, bool> report,
-        bool finished = false, bool completedLocally = false)
+        bool finished = false, bool completedLocally = false, WriteBatcher? batcher = null)
     {
         foreach (var tracker in trackers)
         {
@@ -799,22 +831,38 @@ public class ScrobbleService(
             }
 
             var target = new PushTarget(null, row.SeriesId, row.Title);
-            try
-            {
-                if (await PushAsync(
-                        userId, tracker, remoteId, target, chapter, volume, fallbackStatus, ct, finished,
-                        completedLocally))
-                {
-                    report(true, false, false);
-                }
-            }
-            catch (Exception e)
+            async Task FailedAsync(Exception e)
             {
                 report(false, false, true);
                 logger.LogWarning("Native update failed for '{Title}' on {Service}: {Error}",
                     row.Title, tracker.Name, e.Message);
                 await AddLogAsync(userId, "error", tracker.Name, row.Title, e.Message, ct);
                 await SaveStateAsync(userId, target, tracker.Name, 0, 0, "", e.Message, ct);
+            }
+
+            try
+            {
+                if (await PushAsync(
+                        userId, tracker, remoteId, target, chapter, volume, fallbackStatus, ct, finished,
+                        completedLocally, batcher,
+                        async error =>
+                        {
+                            if (error is null)
+                            {
+                                report(true, false, false);
+                            }
+                            else
+                            {
+                                await FailedAsync(error);
+                            }
+                        }))
+                {
+                    report(true, false, false);
+                }
+            }
+            catch (Exception e)
+            {
+                await FailedAsync(e);
             }
 
             await Task.Delay(PaceFor(tracker), ct);
@@ -837,7 +885,7 @@ public class ScrobbleService(
     private async Task<bool> PushAsync(
         int userId, IScrobbleTracker tracker, string remoteId, PushTarget target,
         int chapter, int volume, ScrobbleStatus? fallbackStatus, CancellationToken ct, bool finished = false,
-        bool completedLocally = false)
+        bool completedLocally = false, WriteBatcher? batcher = null, Func<Exception?, Task>? onQueued = null)
     {
         var title = target.Title;
         var entry = await tracker.GetEntryAsync(userId, remoteId, ct);
@@ -858,7 +906,38 @@ public class ScrobbleService(
 
         // A re-read stays a re-read: only progress is written, not the Reading status it maps to.
         var keepStatus = entry.Repeating && plan.PushStatus == ScrobbleStatus.Reading;
+        if (batcher is not null && onQueued is not null && tracker is IBatchScrobbleTracker batchTracker)
+        {
+            await batcher.QueueAsync(batchTracker,
+                new ScrobbleWrite(remoteId, plan.Chapter, plan.Volume, plan.PushStatus, keepStatus),
+                async error =>
+                {
+                    if (error is null)
+                    {
+                        try
+                        {
+                            await CompletePushAsync(userId, tracker, target, plan, ct);
+                        }
+                        catch (Exception e)
+                        {
+                            error = e;
+                        }
+                    }
+
+                    await onQueued(error);
+                });
+            return false;
+        }
+
         await tracker.UpdateAsync(userId, remoteId, plan.Chapter, plan.Volume, plan.PushStatus, ct, keepStatus);
+        await CompletePushAsync(userId, tracker, target, plan, ct);
+        return true;
+    }
+
+    private async Task CompletePushAsync(
+        int userId, IScrobbleTracker tracker, PushTarget target, ScrobblePlan plan, CancellationToken ct)
+    {
+        var title = target.Title;
         await SaveStateAsync(userId, target, tracker.Name, plan.Chapter, plan.Volume,
             StatusName(plan.RecordStatus), null, ct);
 
@@ -878,7 +957,88 @@ public class ScrobbleService(
         }
         logger.LogInformation("Updated '{Title}' on {Service}: ch {Chapter} vol {Volume} ({Status})",
             title, tracker.Name, plan.Chapter, plan.Volume, StatusName(plan.PushStatus));
-        return true;
+    }
+
+    /// <summary>
+    /// Holds a pass's writes for trackers that take them in bulk and sends them <c>MaxBatch</c> at a
+    /// time, when the oldest has waited <c>maxWait</c> (checked by the pass between series), and once
+    /// more at the end of the pass. Each write's continuation runs after its batch, with the reason it
+    /// failed or null, so state and counts are only recorded for what was actually sent.
+    /// </summary>
+    private sealed class WriteBatcher(int userId, TimeSpan maxWait, ILogger logger, CancellationToken ct)
+    {
+        private readonly Dictionary<IBatchScrobbleTracker, List<(ScrobbleWrite Write, Func<Exception?, Task> Complete)>> _queues = [];
+        private readonly Dictionary<IBatchScrobbleTracker, long> _oldest = [];
+
+        public async Task QueueAsync(IBatchScrobbleTracker tracker, ScrobbleWrite write, Func<Exception?, Task> complete)
+        {
+            if (!_queues.TryGetValue(tracker, out var queue))
+            {
+                _queues[tracker] = queue = [];
+            }
+
+            if (queue.Count == 0)
+            {
+                _oldest[tracker] = Stopwatch.GetTimestamp();
+            }
+
+            queue.Add((write, complete));
+            if (queue.Count >= tracker.MaxBatch)
+            {
+                await FlushAsync(tracker);
+            }
+        }
+
+        public async Task FlushAsync()
+        {
+            foreach (var tracker in _queues.Keys.ToList())
+            {
+                await FlushAsync(tracker);
+            }
+        }
+
+        public async Task FlushStaleAsync()
+        {
+            foreach (var (tracker, queue) in _queues.ToList())
+            {
+                if (queue.Count > 0 && Stopwatch.GetElapsedTime(_oldest[tracker]) >= maxWait)
+                {
+                    await FlushAsync(tracker);
+                }
+            }
+        }
+
+        private async Task FlushAsync(IBatchScrobbleTracker tracker)
+        {
+            var batch = _queues[tracker].ToList();
+            _queues[tracker].Clear();
+            if (batch.Count == 0)
+            {
+                return;
+            }
+
+            IReadOnlyList<Exception?> results;
+            try
+            {
+                results = await tracker.UpdateManyAsync(userId, batch.Select(b => b.Write).ToList(), ct);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                results = batch.Select(_ => (Exception?)e).ToList();
+            }
+
+            for (var i = 0; i < batch.Count; i++)
+            {
+                try
+                {
+                    await batch[i].Complete(results[i]);
+                }
+                catch (Exception e) when (e is not OperationCanceledException)
+                {
+                    logger.LogWarning("Recording a {Service} update failed: {Error}", tracker.Name, e.Message);
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -1029,7 +1189,7 @@ public class ScrobbleService(
                 {
                     try
                     {
-                        var entry = await tracker.GetEntryAsync(userId, remoteId, CancellationToken.None);
+                        var entry = await tracker.GetEntryWithScoreAsync(userId, remoteId, CancellationToken.None);
                         if (entry.Score is { } score && score != localRating)
                         {
                             local.Add(new RatingImportItem(seriesId, title, localRating, score));

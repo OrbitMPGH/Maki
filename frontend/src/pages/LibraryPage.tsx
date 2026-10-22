@@ -745,8 +745,8 @@ export default function LibraryPage() {
       if (contentRatingFilter.length > 0) parts.push(label(contentRatingOptions, contentRatingFilter))
       const chapters = range(chapterMin ?? 0, chapterMax ?? 0)
       if (chapterMin != null && chapterMax != null) parts.push(t`${chapters} chapters`)
-      else if (chapterMin != null) parts.push(t`At least ${chapterMin} chapters`)
-      else if (chapterMax != null) parts.push(t`At most ${chapterMax} chapters`)
+      else if (chapterMin != null) parts.push(plural(chapterMin, { one: 'At least # chapter', other: 'At least # chapters' }))
+      else if (chapterMax != null) parts.push(plural(chapterMax, { one: 'At most # chapter', other: 'At most # chapters' }))
     } else if (group === 'tags') {
       if (untaggedOnly) parts.push(t`Untagged only`)
       else {
@@ -2297,7 +2297,10 @@ export default function LibraryPage() {
           title={t`No matches`}
           description={t`No series match the current filter. Try clearing the search or status filter.`}
           actionLabel={t`Clear all filters`}
-          onAction={() => applySpec(DEFAULT_SPEC, null)}
+          onAction={() => {
+            applySpec(DEFAULT_SPEC, null)
+            setOnDeviceOnly(false)
+          }}
         />
       )}
       {/* Both views render a slice, not the whole filtered set, once the library is big enough to

@@ -538,6 +538,14 @@ msgstr "{cellDate}: nothing read"
 msgid "{chapterCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapterCount, plural, one {# chapter} other {# chapters}}"
 
+#: src/pages/LibraryPage.tsx
+msgid "{chapterMax, plural, one {At most # chapter} other {At most # chapters}}"
+msgstr "{chapterMax, plural, one {At most # chapter} other {At most # chapters}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{chapterMin, plural, one {At least # chapter} other {At least # chapters}}"
+msgstr "{chapterMin, plural, one {At least # chapter} other {At least # chapters}}"
+
 #: src/pages/DiscoverPage.tsx
 msgid "{chapterMinChip}–{chapterMaxChip} ch."
 msgstr "{chapterMinChip}–{chapterMaxChip} ch."
@@ -1348,6 +1356,10 @@ msgstr "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 #: src/pages/ActivityPage.tsx
 msgid "{replacedFiles, plural, one {Replaces # file} other {Replaces # files}}"
 msgstr "{replacedFiles, plural, one {Replaces # file} other {Replaces # files}}"
+
+#: src/components/import/MihonSummary.tsx
+msgid "{requested, plural, one {# sent for approval} other {# sent for approval}}"
+msgstr "{requested, plural, one {# sent for approval} other {# sent for approval}}"
 
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "{requestsOpen} open"
@@ -2521,6 +2533,10 @@ msgstr "Add unread series as plan-to-read"
 msgid "Add user"
 msgstr "Add user"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Add your details in Settings."
+msgstr "Add your details in Settings."
+
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Added"
@@ -3061,8 +3077,8 @@ msgid "At cutoff"
 msgstr "At cutoff"
 
 #: src/pages/LibraryPage.tsx
-msgid "At least {chapterMin} chapters"
-msgstr "At least {chapterMin} chapters"
+#~ msgid "At least {chapterMin} chapters"
+#~ msgstr "At least {chapterMin} chapters"
 
 #: src/pages/SetupAccountPage.tsx
 msgid "At least {MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements."
@@ -3083,8 +3099,8 @@ msgid "At least one language must stay enabled."
 msgstr "At least one language must stay enabled."
 
 #: src/pages/LibraryPage.tsx
-msgid "At most {chapterMax} chapters"
-msgstr "At most {chapterMax} chapters"
+#~ msgid "At most {chapterMax} chapters"
+#~ msgstr "At most {chapterMax} chapters"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "At this many or fewer downloaded chapters ahead of where you are, Maki fetches more."
@@ -7791,8 +7807,12 @@ msgid "Keep the screen awake while reading"
 msgstr "Keep the screen awake while reading"
 
 #: src/components/import/MihonImport.tsx
-msgid "Keep this tab open until it finishes."
-msgstr "Keep this tab open until it finishes."
+msgid "Keep this page open until it finishes. Leaving it stops the import; run it again to carry on."
+msgstr "Keep this page open until it finishes. Leaving it stops the import; run it again to carry on."
+
+#: src/components/import/MihonImport.tsx
+#~ msgid "Keep this tab open until it finishes."
+#~ msgstr "Keep this tab open until it finishes."
 
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Keep upcoming chapters"
@@ -17040,6 +17060,14 @@ msgstr "You can keep browsing while it looks."
 #: src/components/ImportReviewModal.tsx
 msgid "You can undo this from Activity."
 msgstr "You can undo this from Activity."
+
+#: src/components/import/MihonSummary.tsx
+msgid "You can't add series directly, so these were sent to an admin as requests. Tags and read marks are not applied to them."
+msgstr "You can't add series directly, so these were sent to an admin as requests. Tags and read marks are not applied to them."
+
+#: src/components/import/MihonReview.tsx
+msgid "You can't add series directly. New ones are sent to an admin as requests, and tags and read marks are only applied to series already in the library."
+msgstr "You can't add series directly. New ones are sent to an admin as requests, and tags and read marks are only applied to series already in the library."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "You can't add series yourself. An admin decides where it lands and what gets downloaded."

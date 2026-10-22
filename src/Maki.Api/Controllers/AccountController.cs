@@ -3,6 +3,7 @@ using System.Text.Encodings.Web;
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Localization;
+using Maki.Api.Services;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -43,8 +44,9 @@ public class AccountController(
 {
     private const int RecoveryCodeCount = 8;
 
-    private Task AlertAsync(int userId, string key, CancellationToken ct, string? name = null) =>
-        alerts?.RaiseAsync(userId, key, name, ct) ?? Task.CompletedTask;
+    private Task AlertAsync(
+        int userId, string key, CancellationToken ct, string? name = null, IReadOnlyList<PushDevice>? devices = null) =>
+        alerts?.RaiseAsync(userId, key, name, ct, devices) ?? Task.CompletedTask;
 
     private async Task<MakiUser?> LoadAsync() =>
         await userManager.FindByIdAsync(currentUser.UserId.ToString());
@@ -78,14 +80,18 @@ public class AccountController(
     /// <summary>
     /// A stamp rotation kills the other devices' cookies at the next stamp check, but a socket that
     /// is already open authenticated only at its handshake and would keep receiving this user's
-    /// events. This device's client reconnects with its refreshed cookie.
+    /// events, and a push subscription would keep receiving pushes. This device's client reconnects
+    /// with its refreshed cookie and re-posts its own subscription. Returns the devices it forgot.
     /// </summary>
-    private async Task DropLiveConnectionsAsync(int userId)
+    private async Task<IReadOnlyList<PushDevice>> DropLiveConnectionsAsync(int userId)
     {
+        var devices = await WebPushSender.DropSubscriptionsAsync(db, userId, HttpContext.RequestAborted);
         if (hub is not null)
         {
             await EventsHub.DisconnectUserAsync(hub, userId);
         }
+
+        return devices;
     }
 
     /// <summary>
@@ -147,9 +153,9 @@ public class AccountController(
         // including the one making this request. Re-issuing it here keeps the user signed in on this
         // device while every other session dies, which is the behaviour a password change should have.
         await signInManager.RefreshSignInAsync(user);
-        await DropLiveConnectionsAsync(user.Id);
+        var devices = await DropLiveConnectionsAsync(user.Id);
         await auditLog.LogAsync(AuthEventType.PasswordChanged, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
-        await AlertAsync(user.Id, AccountSecurityAlerts.PasswordChanged, ct);
+        await AlertAsync(user.Id, AccountSecurityAlerts.PasswordChanged, ct, devices: devices);
         return NoContent();
     }
 
@@ -329,9 +335,9 @@ public class AccountController(
         await userManager.ResetAuthenticatorKeyAsync(user);
         await TotpReplayGuard.ClearAsync(userManager, user);
         await signInManager.RefreshSignInAsync(user);
-        await DropLiveConnectionsAsync(user.Id);
+        var devices = await DropLiveConnectionsAsync(user.Id);
         await auditLog.LogAsync(AuthEventType.TwoFactorDisabled, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
-        await AlertAsync(user.Id, AccountSecurityAlerts.TwoFactorDisabled, ct);
+        await AlertAsync(user.Id, AccountSecurityAlerts.TwoFactorDisabled, ct, devices: devices);
         return NoContent();
     }
 

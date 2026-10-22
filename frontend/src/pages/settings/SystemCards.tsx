@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../../lib/updateSkip'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -627,6 +628,7 @@ export function ImageCacheSection() {
  */
 export function HealthSettingsSection() {
   const { t } = useLingui()
+  const qc = useQueryClient()
   const { data } = useHealthData<HealthOptions>('/options')
   const save = useHealthAction()
   const [draft, setDraft] = useState<HealthOptions | null>(null)
@@ -653,6 +655,7 @@ export function HealthSettingsSection() {
           { path: '/options', method: 'PUT', body: value },
           {
             onSuccess: () => {
+              qc.setQueryData(['health-workspace', '/options'], value)
               setDraft(null)
               notifications.show({ message: now`Saved`, color: 'var(--ok)' })
             },

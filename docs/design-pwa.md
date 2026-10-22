@@ -68,7 +68,7 @@ build({
 
 The page tells the SW. `noteSignedInUser` and `noteSignedOut` in `frontend/src/lib/pageState.ts` are the points all sign-in paths (password, 2FA, setup, SSO return) and explicit sign-out reach. They post `{ type: 'user', userId }` and `{ type: 'user', userId: null }`. The SW writes it to `session.current`. As a cross-check, a live 200 from `GET /api/v1/auth/me` passing through the SW also sets `userId`.
 
-`postToWorker` awaits `navigator.serviceWorker.ready` and posts to `registration.active`, so a message sent while the SW is still installing (first visit, password sign-in) is not lost. `registerServiceWorker` also re-posts the current user, read from the `me` query, once `ready` resolves and on every `controllerchange`.
+`postToWorker` awaits `navigator.serviceWorker.ready` and posts to `registration.active`, so a message sent while the SW is still installing (first visit, password sign-in) is not lost. `registerServiceWorker` also re-posts the current user, read from the `me` query, once `ready` resolves and on every `controllerchange`. On `controllerchange` it also fetches `/initialize.json` and, unless the user is known to be signed out, `auth/me` through the worker: on the first visit both went out before the worker controlled the page, so without this neither is cached and the next offline launch shows the login form.
 
 - `userId` null: the SW serves nothing user-specific from cache and stores nothing user-specific.
 - A 401 from any `/api/v1/*` request clears `userId`. Caches stay. This is not redundant with the page: the unauthorized handler in `AuthProvider` calls neither page helper. A session that expires while the reader is away must not destroy saved chapters or queued progress.
@@ -83,7 +83,7 @@ Only same-origin requests are considered. Everything not listed passes through u
 | Request | Strategy | Cache |
 |---|---|---|
 | Navigation whose path does not start with `/api/`, `/signalr`, `/swagger` | Network raced against 5 s. Rejected fetch, 502, 504 or timeout: the precached `/index.html`. | shell |
-| Precached URL | Cache first, network on miss | shell |
+| Precached URL | Cache first, store on miss (an entry that failed during install) | shell |
 | Other `/assets/*` (locale catalogs) | Cache first, store on miss (hashed, so safe). `activate` deletes every entry not in `__CATALOGS__`, the current build's catalog URLs | assets |
 | `/source-icons/*` | Cache first, store on miss, cap 500 entries | meta |
 | `/initialize.json` | Network first, cache fallback | meta |
@@ -273,7 +273,7 @@ Tests in `Maki.Api.Tests`:
 
 ### SW (`src/sw/push.ts`)
 
-- `push`: parse `{ title, body, url, tag }` and `showNotification` with `icon: /icons/icon-192.png`, `badge: /icons/badge-96.png`, `tag`, `data: { url }`. A subscription is removed on explicit logout, so a push that arrives means the user's own expired session at worst, and the text is shown.
+- `push`: parse `{ title, body, url, tag }` and `showNotification` with `icon: /icons/icon-192.png`, `badge: /icons/badge-96.png`, `tag`, `data: { url }`. A subscription is removed on explicit logout, and every subscription of the user goes when other sessions are revoked (sign out everywhere, password change, 2FA disable, an admin reset or disable), so a push that arrives means the user's own expired session at worst, and the text is shown.
 - `notificationclick`: focus an open client and navigate it to `url`, or `clients.openWindow(url)`.
 
 ### Page

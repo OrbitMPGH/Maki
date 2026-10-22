@@ -35,6 +35,32 @@ public sealed class KoreaderSyncTests : IDisposable
     {
         public DateTimeOffset Now { get; set; } = now;
         public override DateTimeOffset GetUtcNow() => Now;
+
+        public List<(TimeSpan Due, Action Fire)> Timers { get; } = [];
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            Timers.Add((dueTime, () => callback(state)));
+            return new HeldTimer();
+        }
+
+        /// <summary>Fires every timer set so far, once, as if their delays had passed.</summary>
+        public void FireTimers()
+        {
+            var due = Timers.ToList();
+            Timers.Clear();
+            foreach (var (_, fire) in due)
+            {
+                fire();
+            }
+        }
+
+        private sealed class HeldTimer : ITimer
+        {
+            public bool Change(TimeSpan dueTime, TimeSpan period) => true;
+            public void Dispose() { }
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        }
     }
 
     public KoreaderSyncTests()
@@ -46,15 +72,17 @@ public sealed class KoreaderSyncTests : IDisposable
         _writer = Writer();
     }
 
-    /// <summary>The push writer over its own scopes, as the host runs it.</summary>
-    private KoreaderPushWriter Writer()
+    /// <summary>The push writer over its own scopes, as the host runs it. The first <paramref name="failures"/> writes throw.</summary>
+    private KoreaderPushWriter Writer(int failures = 0)
     {
         var services = new ServiceCollection();
         services.AddScoped<DataScope>();
         services.AddScoped(sp => new MakiDbContext(_db.Options, sp.GetRequiredService<DataScope>()));
         services.AddScoped(sp => Reader(sp.GetRequiredService<MakiDbContext>()));
-        services.AddScoped(sp => new KoreaderSyncService(sp.GetRequiredService<MakiDbContext>(),
-            sp.GetRequiredService<ReaderService>(), _cache));
+        services.AddScoped(sp => failures-- > 0
+            ? throw new InvalidOperationException("database is locked")
+            : new KoreaderSyncService(sp.GetRequiredService<MakiDbContext>(), sp.GetRequiredService<ReaderService>(),
+                _cache));
         services.AddScoped(sp => new OpdsAccessService(sp.GetRequiredService<MakiDbContext>(), TimeProvider.System));
         services.AddScoped(sp => new KoreaderDocumentIndexer(sp.GetRequiredService<MakiDbContext>(),
             NullLogger<KoreaderDocumentIndexer>.Instance));
@@ -265,6 +293,26 @@ public sealed class KoreaderSyncTests : IDisposable
         Assert.False(current.Completed);
         Assert.Equal(1, current.PageIndex);
         Assert.Equal(2, ChaptersRead().Count);
+    }
+
+    [Fact]
+    public async Task A_push_past_a_watched_chapter_turns_it_into_a_read()
+    {
+        var (path, chapters) = SeedVolume();
+        await IndexAsync();
+        await using (var db = _db.NewContext(_user))
+        {
+            await Reader(db).MarkWatchedAsync([chapters[1m], chapters[2m]], default);
+        }
+
+        await Pushed(_token, Body(KoreaderDigest.PartialMd5(path), "5", 0.8333));
+
+        Assert.All([chapters[1m], chapters[2m]], id =>
+        {
+            var row = Progress(id)!;
+            Assert.True(row.Completed);
+            Assert.False(row.Watched);
+        });
     }
 
     [Fact]
@@ -504,6 +552,135 @@ public sealed class KoreaderSyncTests : IDisposable
 
         Assert.All(chapters.Values, id => Assert.Null(Progress(id)));
         Assert.Equal(0, _writer.WaitingCount);
+    }
+
+    [Fact]
+    public async Task A_write_that_throws_once_is_tried_again()
+    {
+        var writer = Writer(failures: 1);
+        var (path, chapters) = SeedVolume();
+        await IndexAsync();
+
+        writer.Enqueue(_user, KoreaderDigest.PartialMd5(path), "5", 0.8333, "Kobo", "kobo-1");
+        await writer.FlushAsync(default);
+
+        Assert.True(Progress(chapters[2m])!.Completed);
+        Assert.Equal(0, writer.WaitingCount);
+    }
+
+    [Fact]
+    public async Task A_write_that_keeps_throwing_waits_for_the_next_pass_instead_of_being_dropped()
+    {
+        var writer = Writer(failures: 2);
+        var (path, chapters) = SeedVolume();
+        await IndexAsync();
+
+        writer.Enqueue(_user, KoreaderDigest.PartialMd5(path), "5", 0.8333, "Kobo", "kobo-1");
+        await writer.FlushAsync(default);
+        Assert.Null(Progress(chapters[1m]));
+        Assert.Equal(1, writer.WaitingCount);
+
+        writer.RetryWaiting();
+        await writer.FlushAsync(default);
+
+        Assert.True(Progress(chapters[2m])!.Completed);
+    }
+
+    [Fact]
+    public async Task A_write_that_keeps_throwing_is_tried_again_on_a_timer_without_an_index_pass()
+    {
+        var writer = Writer(failures: 4);
+        var (path, chapters) = SeedVolume();
+        await IndexAsync();
+
+        writer.Enqueue(_user, KoreaderDigest.PartialMd5(path), "5", 0.8333, "Kobo", "kobo-1");
+        await writer.FlushAsync(default);
+        Assert.Equal(1, writer.WaitingCount);
+        Assert.Equal(KoreaderPushWriter.RetryFailedAfter, Assert.Single(_clock.Timers).Due);
+
+        _clock.FireTimers();
+        await writer.FlushAsync(default);
+        Assert.Null(Progress(chapters[1m]));
+        Assert.Equal(KoreaderPushWriter.RetryFailedAfter * 2, Assert.Single(_clock.Timers).Due);
+
+        _clock.FireTimers();
+        await writer.FlushAsync(default);
+
+        Assert.True(Progress(chapters[2m])!.Completed);
+        Assert.Equal(0, writer.WaitingCount);
+        Assert.Empty(_clock.Timers);
+    }
+
+    [Fact]
+    public async Task The_timer_gives_up_after_its_rounds_and_a_pass_with_nothing_new_still_retries_the_write()
+    {
+        var writer = Writer(failures: 2 * KoreaderPushWriter.FailedRounds);
+        var (path, chapters) = SeedVolume();
+        await IndexAsync();
+        writer.Enqueue(_user, KoreaderDigest.PartialMd5(path), "5", 0.8333, "Kobo", "kobo-1");
+        await writer.FlushAsync(default);
+
+        for (var round = 1; round < KoreaderPushWriter.FailedRounds; round++)
+        {
+            _clock.FireTimers();
+            await writer.FlushAsync(default);
+        }
+
+        Assert.Empty(_clock.Timers);
+        Assert.Equal(1, writer.WaitingCount);
+
+        Assert.Equal(0, await IndexAsync());
+        writer.RetryWaiting(failedOnly: true);
+        await writer.FlushAsync(default);
+
+        Assert.True(Progress(chapters[2m])!.Completed);
+    }
+
+    [Fact]
+    public async Task A_pass_with_nothing_new_leaves_a_push_that_only_waits_for_its_document()
+    {
+        _writer.Enqueue(_user, new string('c', 32), "1", 0.5, "Kobo", "kobo-1");
+        await _writer.FlushAsync(default);
+
+        _writer.RetryWaiting(failedOnly: true);
+
+        Assert.Equal(1, _writer.WaitingCount);
+        Assert.Empty(_clock.Timers);
+    }
+
+    [Fact]
+    public async Task One_users_waiting_pushes_never_evict_another_users()
+    {
+        var other = _db.SeedUser("other", MakiPermission.UseOpds, allRootFolders: true);
+        _db.SetUserConfig(other, (SettingKeys.OpdsEnabled, "true"));
+        _writer.Enqueue(other, new string('b', 32), "1", 0.5, "Kobo", "kobo-2");
+        await _writer.FlushAsync(default);
+
+        for (var i = 0; i <= KoreaderPushWriter.MaxWaiting; i++)
+        {
+            _clock.Now += TimeSpan.FromSeconds(1);
+            _writer.Enqueue(_user, i.ToString("x32"), "1", 0.5, "Kobo", "kobo-1");
+        }
+
+        await _writer.FlushAsync(default);
+
+        Assert.Equal(KoreaderPushWriter.MaxWaiting + 1, _writer.WaitingCount);
+    }
+
+    [Fact]
+    public async Task A_new_write_time_over_the_same_bytes_restamps_the_row_it_already_has()
+    {
+        var (path, _) = SeedFile(SeedSeries("Touched"), "Touched.cbz", ["001.jpg", "002.jpg"], 1m);
+        await IndexAsync();
+        File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddHours(1));
+
+        await IndexAsync();
+
+        var info = new FileInfo(path);
+        using var db = _db.NewContext();
+        var binary = Assert.Single(db.KoreaderDocuments.Where(d => d.Kind == KoreaderDigestKind.Binary).ToList());
+        Assert.Equal(KoreaderDigest.PartialMd5(path), binary.Digest);
+        Assert.Equal(ReaderService.ArchiveVersionOf(info.Length, info.LastWriteTimeUtc.Ticks), binary.FileVersion);
     }
 
     [Fact]

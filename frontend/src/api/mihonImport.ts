@@ -71,7 +71,7 @@ export interface MihonImportRequest {
 
 export interface MihonImportResult {
   providerId: string
-  outcome: 'created' | 'existing' | 'skipped' | 'failed'
+  outcome: 'created' | 'requested' | 'existing' | 'skipped' | 'failed'
   seriesId: number | null
   /** Localized by the server. */
   reason: string | null

@@ -1,7 +1,7 @@
 import { Anchor, Text } from '@mantine/core'
 import { Trans } from '@lingui/react/macro'
 
-const PROXY_DOCS = 'https://github.com/OrbitMPGH/Maki#exposing-maki-to-the-internet'
+const PROXY_DOCS = 'https://github.com/OrbitMPGH/Maki/blob/main/docs/exposing-to-the-internet.md'
 
 /** Shown in place of the offline and push cards when the page is not in a secure context. */
 export function SecureContextNote() {

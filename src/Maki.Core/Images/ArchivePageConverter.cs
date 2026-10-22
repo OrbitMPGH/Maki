@@ -12,7 +12,7 @@ public enum ArchiveConversionOutcome
     /// <summary>No page got enough smaller, or the file as a whole would not shrink enough.</summary>
     NotSmaller,
 
-    /// <summary>A page did not decode or an entry failed its checksum; the file is the health scan's business.</summary>
+    /// <summary>A page did not decode, an entry failed its checksum or declared more than the health scan allows; the file is the health scan's business.</summary>
     Unreadable,
 
     /// <summary>The new extensions would reorder the pages or collide with another entry.</summary>
@@ -55,6 +55,7 @@ public static class ArchivePageConverter
         var renamed = new Dictionary<string, string>(StringComparer.Ordinal);
         var converted = 0;
         var kept = 0;
+        var expanded = 0L;
 
         ArchiveConversionResult Result(ArchiveConversionOutcome outcome, long resultBytes = 0) => new(
             outcome, sourceBytes, resultBytes, converted, kept, PageConversion.ResolveFormat(sourceFormats),
@@ -84,7 +85,8 @@ public static class ArchivePageConverter
                         continue;
                     }
 
-                    var bytes = ReadAll(entry);
+                    expanded += entry.Length;
+                    var bytes = ReadAll(entry, expanded);
                     var name = entry.FullName;
                     var level = CompressionLevel.Optimal;
                     if (pages.Contains(name))
@@ -171,11 +173,12 @@ public static class ArchivePageConverter
 
     /// <summary>
     /// Reads an entry to the end, so the zip's checksum is checked, into a buffer of exactly the size
-    /// its header declares.
+    /// its header declares. The health scan's limits are checked before allocating, since the header
+    /// of an imported archive can declare anything.
     /// </summary>
-    private static byte[] ReadAll(ZipArchiveEntry entry)
+    private static byte[] ReadAll(ZipArchiveEntry entry, long expanded)
     {
-        if (entry.Length > int.MaxValue)
+        if (entry.Length > ArchiveHealthAnalyzer.MaxEntryBytes || expanded > ArchiveHealthAnalyzer.MaxExpandedBytes)
         {
             throw new InvalidDataException($"{entry.FullName} is too large to convert");
         }

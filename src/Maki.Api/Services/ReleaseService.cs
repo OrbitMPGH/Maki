@@ -40,14 +40,13 @@ public record ReleaseResultDto(
     int? Seeders,
     int? Leechers,
     string Protocol,
-    string? MagnetUrl,
     string? InfoUrl,
     string? InfoHash,
     Dtos.ReleaseParsedDto? Parsed)
 {
     public static ReleaseResultDto From(ReleaseDto release, Dtos.ReleaseParsedDto? parsed) => new(
         IndexerLinks.WithoutApiKey(release.Guid)!, release.Title, release.Size, release.Indexer, release.Seeders,
-        release.Leechers, release.Protocol, release.MagnetUrl, IndexerLinks.WithoutApiKey(release.InfoUrl),
+        release.Leechers, release.Protocol, IndexerLinks.WithoutApiKey(release.InfoUrl),
         release.InfoHash, parsed);
 }
 
@@ -174,7 +173,7 @@ public class ReleaseService(
         var driver = torrentClients.For(client.Kind);
         if (release.MagnetUrl is { } magnet)
         {
-            return await driver.AddAsync(client, magnet, ct) ?? TorrentInfoHash.FromMagnet(magnet);
+            return await driver.AddAsync(client, magnet, ct) ?? TorrentInfoHash.FromMagnet(magnet) ?? NormalizedInfoHash(release.InfoHash);
         }
 
         var url = release.DownloadUrl!;
@@ -195,7 +194,8 @@ public class ReleaseService(
 
         if (link?.Magnet is { } redirected)
         {
-            return await driver.AddAsync(client, redirected, ct) ?? TorrentInfoHash.FromMagnet(redirected);
+            return await driver.AddAsync(client, redirected, ct) ?? TorrentInfoHash.FromMagnet(redirected)
+                ?? NormalizedInfoHash(release.InfoHash);
         }
 
         if (link?.File is { } file && TorrentInfoHash.FromTorrentFile(file) is { } hash)

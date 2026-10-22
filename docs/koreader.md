@@ -38,7 +38,7 @@ What happens with a pushed page:
   retry queue.
 - A page pushed for a file Maki hasn't recognised yet, such as one you copied over before the
   background pass got to it, is kept for up to a week and applied once the pass has recorded the
-  file.
+  file. It is only kept in memory, so restarting Maki drops it; push again from KOReader afterwards.
 
 ## How a file is recognised
 

@@ -1,9 +1,8 @@
 import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
+import { showcaseConfigDir } from './config.mjs'
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const configDir = process.env.MAKI_CONFIG_DIR ?? join(root, '.screenshots')
+const configDir = showcaseConfigDir()
 const base = process.env.MAKI_URL ?? 'http://localhost:8990'
 const { apiKey } = JSON.parse(readFileSync(join(configDir, 'credentials.json'), 'utf8'))
 const headers = { 'Content-Type': 'application/json', 'X-Api-Key': apiKey }

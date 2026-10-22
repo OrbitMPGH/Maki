@@ -147,6 +147,25 @@ public sealed class KomgaControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_page_number_far_past_the_end_is_an_empty_page()
+    {
+        var seeded = SeedSeries("Far", 1m);
+        var (userId, _) = SeedReader();
+        var controller = Controller(userId);
+
+        var series = Assert.IsType<KomgaPage<KomgaSeries>>(Ok(await controller.Series(
+            null, null, null, null, null, null, null, null, null, page: 2_200_000, size: 1000)));
+        var books = Assert.IsType<KomgaPage<KomgaBook>>(Ok(await controller.Books(
+            null, null, null, null, page: 2_200_000, size: 1000)));
+        var seriesBooks = Assert.IsType<KomgaPage<KomgaBook>>(Ok(await controller.SeriesBooks(
+            seeded.SeriesId.ToString(), null, null, page: 2_200_000, size: 1000)));
+
+        Assert.Empty(series.Content);
+        Assert.Empty(books.Content);
+        Assert.Empty(seriesBooks.Content);
+    }
+
+    [Fact]
     public async Task Books_come_in_reading_order_with_their_number_and_page_count()
     {
         var seeded = SeedSeries("Ordered", 2m, 1m, 1.5m);

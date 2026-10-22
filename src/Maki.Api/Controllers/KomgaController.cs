@@ -78,7 +78,7 @@ public class KomgaController(
         Ok(await catalog.SeriesAsync(
             new KomgaSeriesQuery(search, Ids(libraryId), Values(readStatus), Values(status), Values(genre),
                 Values(tag), Values(publisher), author, sort?.FirstOrDefault()),
-            Math.Max(0, page), PageSize(size, unpaged), ct));
+            PageNumber(page), PageSize(size, unpaged), ct));
 
     [HttpGet("v1/series/new")]
     public Task<IActionResult> NewSeries(
@@ -96,7 +96,7 @@ public class KomgaController(
     private async Task<IActionResult> SortedSeries(
         string[]? libraryId, string sort, int page, int? size, bool unpaged, CancellationToken ct) =>
         Ok(await catalog.SeriesAsync(new KomgaSeriesQuery(LibraryIds: Ids(libraryId), Sort: sort),
-            Math.Max(0, page), PageSize(size, unpaged), ct));
+            PageNumber(page), PageSize(size, unpaged), ct));
 
     [HttpGet("v1/series/{id}")]
     public async Task<IActionResult> OneSeries(string id, CancellationToken ct) =>
@@ -131,7 +131,7 @@ public class KomgaController(
         }
 
         var books = await catalog.SeriesBooksAsync(
-            seriesId, Values(readStatus), sort?.FirstOrDefault(), Math.Max(0, page), PageSize(size, unpaged), ct);
+            seriesId, Values(readStatus), sort?.FirstOrDefault(), PageNumber(page), PageSize(size, unpaged), ct);
         return books is null ? NotFound() : Ok(books);
     }
 
@@ -214,9 +214,10 @@ public class KomgaController(
 
         if (groups.Count == 1)
         {
-            // Several books share a group only when the chapter is downloaded in several languages.
-            // The first readable one is the read; the others are ticked off with it, silently, and so is
-            // every copy when none can be opened, rather than leaving the chapter unread.
+            // Several books share a group when they share a numberSort: the same chapter in several
+            // languages, or a volume's chapter 0 sorted after higher numbers, which repeats the previous
+            // value. The first readable one is the read; the others are ticked off with it, silently, and
+            // so is every copy when none can be opened, rather than leaving the chapter unread.
             var rest = groups[0];
             foreach (var chapterId in groups[0])
             {
@@ -250,20 +251,20 @@ public class KomgaController(
         CancellationToken ct = default) =>
         Ok(await catalog.BooksAsync(
             new KomgaBookQuery(search, Ids(libraryId), Values(readStatus), sort?.FirstOrDefault()),
-            Math.Max(0, page), PageSize(size, unpaged) ?? MaxPageSize, ct));
+            PageNumber(page), PageSize(size, unpaged) ?? MaxPageSize, ct));
 
     [HttpGet("v1/books/latest")]
     public async Task<IActionResult> LatestBooks(
         [FromQuery(Name = "library_id")] string[]? libraryId, [FromQuery] int page = 0, [FromQuery] int? size = null,
         [FromQuery] bool unpaged = false, CancellationToken ct = default) =>
         Ok(await catalog.BooksAsync(new KomgaBookQuery(LibraryIds: Ids(libraryId), Sort: "createdDate,desc"),
-            Math.Max(0, page), PageSize(size, unpaged) ?? MaxPageSize, ct));
+            PageNumber(page), PageSize(size, unpaged) ?? MaxPageSize, ct));
 
     [HttpGet("v1/books/ondeck")]
     public async Task<IActionResult> OnDeck(
         [FromQuery] int page = 0, [FromQuery] int? size = null, [FromQuery] bool unpaged = false,
         CancellationToken ct = default) =>
-        Ok(await catalog.OnDeckAsync(Math.Max(0, page), PageSize(size, unpaged), ct));
+        Ok(await catalog.OnDeckAsync(PageNumber(page), PageSize(size, unpaged), ct));
 
     [HttpGet("v1/books/{id}")]
     public async Task<IActionResult> Book(string id, CancellationToken ct) =>
@@ -429,7 +430,7 @@ public class KomgaController(
             authors = authors.Where(a => a.Name.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
-        return Ok(KomgaPage<KomgaAuthor>.Of(authors, Math.Max(0, page), PageSize(size, unpaged)));
+        return Ok(KomgaPage<KomgaAuthor>.Of(authors, PageNumber(page), PageSize(size, unpaged)));
     }
 
     /// <summary>Maki has no collections or read lists; Komga clients list them, so they get none.</summary>
@@ -541,6 +542,9 @@ public class KomgaController(
 
     private static int? PageSize(int? size, bool unpaged) =>
         unpaged ? null : Math.Clamp(size ?? DefaultPageSize, 1, MaxPageSize);
+
+    // Capped so page times size cannot wrap past int.MaxValue into a negative offset, which reads as 0.
+    private static int PageNumber(int page) => Math.Clamp(page, 0, int.MaxValue / MaxPageSize);
 
     /// <summary>Komga takes a list either repeated or comma-separated, and clients use both.</summary>
     private static List<string>? Values(string[]? raw) =>

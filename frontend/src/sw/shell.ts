@@ -65,7 +65,9 @@ async function cacheFirst(event: FetchEvent, cacheName: string, keep: boolean, c
 
 /** Static files the shell owns. Undefined when the request is not one of them. */
 export function shellRoute(event: FetchEvent, url: URL): Promise<Response> | undefined {
-  if (isPrecached(url)) return cacheFirst(event, SHELL, false)
+  // A precache entry that failed during install is stored on its first miss, or it stays missing
+  // offline until the next build.
+  if (isPrecached(url)) return cacheFirst(event, SHELL, true)
   if (url.pathname.startsWith('/assets/')) return cacheFirst(event, cacheNames.assets, true)
   if (url.pathname.startsWith('/source-icons/')) return cacheFirst(event, cacheNames.meta, true, SOURCE_ICON_CAP)
   if (url.pathname === '/initialize.json') return initialize(event)

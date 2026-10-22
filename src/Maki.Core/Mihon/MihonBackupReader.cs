@@ -10,6 +10,8 @@ public static class MihonBackupReader
 {
     public const long DefaultMaxBytes = 256L * 1024 * 1024;
 
+    public const int MaxMangaRecords = 100_000;
+
     private const int SyncMyAnimeList = 1;
     private const int SyncAniList = 2;
     private const int SyncKitsu = 3;
@@ -123,6 +125,11 @@ public static class MihonBackupReader
             switch (field)
             {
                 case 1:
+                    if (mangaRanges.Count >= MaxMangaRecords)
+                    {
+                        throw new MihonBackupException(MihonBackupFailure.TooLarge, "The backup has too many manga.");
+                    }
+
                     mangaRanges.Add(reader.ReadRange());
                     break;
                 case 2:
@@ -227,7 +234,7 @@ public static class MihonBackupReader
             }
         }
 
-        if (!favourite)
+        if (!favourite || string.IsNullOrWhiteSpace(title))
         {
             return null;
         }

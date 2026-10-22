@@ -138,7 +138,7 @@
 - **Notifications.** Outbound events (new chapters, download results, health warnings, and more)
   go to Discord, Telegram, Slack, Notifiarr, ntfy, Gotify, Pushover, Apprise, or a plain webhook.
   Connections can be scoped to user tags so each person only hears about their own series.
-- **Interface.** Eleven UI languages, four accent colors (Indigo, Rose, Emerald, Amber), and a
-  light theme alongside the default dark one.
+- **Interface.** Eleven UI languages, five accent colors and several dark and light
+  backgrounds.
 - **REST API.** Available at `/api/v1` with `X-Api-Key` auth. Swagger is served at `/swagger`
   when running in the Development environment.

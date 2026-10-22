@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Maki.Api.Localization;
+using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Maki.Core.Mihon;
 using Maki.Core.Scrobbling;
@@ -65,7 +66,7 @@ public record MihonImportRequest(
     bool ApplyReadState,
     List<MihonImportItem>? Items);
 
-/// <param name="Outcome"><c>created</c>, <c>existing</c>, <c>skipped</c> or <c>failed</c>.</param>
+/// <param name="Outcome"><c>created</c>, <c>requested</c> (filed for admin approval, no series yet), <c>existing</c>, <c>skipped</c> or <c>failed</c>.</param>
 /// <param name="Reason">Localized; set for skipped and failed items, and for an add whose tags or read marks failed.</param>
 public record MihonImportResult(string ProviderId, string Outcome, int? SeriesId, string? Reason);
 
@@ -76,6 +77,7 @@ public class MihonImportService(
     MangaBakaLocalStore store,
     IEnumerable<IMetadataProvider> metadataProviders,
     SeriesCreationService creation,
+    SeriesRequestSubmitter requests,
     TagService tags,
     ReadingProgressService progress,
     PendingReadImportService pendingReads,
@@ -271,40 +273,57 @@ public class MihonImportService(
             return Failed("error.series.metadataNotFound");
         }
 
-        var result = await creation.CreateAsync(
-            item.ProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct,
-            deferSourceMatching: true,
-            matchLane: SourceMatchLane.Background,
-            attributedUserId: currentUser.UserId,
-            addedFrom: AddedFrom,
-            clientMutationId: MutationId(currentUser.UserId, request.RunId, item.ProviderId));
-
         int seriesId;
         string title;
         string outcome;
-        if (result.Series is { } created)
+        if (!currentUser.Has(MakiPermission.AddSeries))
         {
-            (seriesId, title, outcome) = (created.Id, created.Title, "created");
-        }
-        else if (result.Error == SeriesCreationError.AlreadyInLibrary && result.ExistingSeriesId is { } existingId)
-        {
-            if (await VisibleCopyAsync(existingId, ct) is not { } visible)
+            var (filed, existingId) = await RequestAsync(item.ProviderId, ct);
+            if (filed is not null)
             {
-                return new MihonImportResult(item.ProviderId, "skipped", null, localizer.Get("error.mihon.inLibraryElsewhere"));
+                return filed;
+            }
+
+            if (await VisibleCopyAsync(existingId!.Value, ct) is not { } visible)
+            {
+                return Skipped("error.mihon.inLibraryElsewhere");
             }
 
             (seriesId, title, outcome) = (visible.Id, visible.Title, "existing");
         }
         else
         {
-            return result.Error switch
+            var result = await creation.CreateAsync(
+                item.ProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct,
+                deferSourceMatching: true,
+                matchLane: SourceMatchLane.Background,
+                attributedUserId: currentUser.UserId,
+                addedFrom: AddedFrom,
+                clientMutationId: MutationId(currentUser.UserId, request.RunId, item.ProviderId));
+
+            if (result.Series is { } created)
             {
-                SeriesCreationError.OperationResultGone =>
-                    new MihonImportResult(item.ProviderId, "skipped", null, localizer.Get("error.series.addResultGone")),
-                SeriesCreationError.MutationIdReused => Failed("error.series.mutationIdReused"),
-                SeriesCreationError.RootFolderNotFound => Failed("error.series.rootFolderNotFound"),
-                _ => Failed("error.series.metadataNotFound"),
-            };
+                (seriesId, title, outcome) = (created.Id, created.Title, "created");
+            }
+            else if (result.Error == SeriesCreationError.AlreadyInLibrary && result.ExistingSeriesId is { } existingId)
+            {
+                if (await VisibleCopyAsync(existingId, ct) is not { } visible)
+                {
+                    return Skipped("error.mihon.inLibraryElsewhere");
+                }
+
+                (seriesId, title, outcome) = (visible.Id, visible.Title, "existing");
+            }
+            else
+            {
+                return result.Error switch
+                {
+                    SeriesCreationError.OperationResultGone => Skipped("error.series.addResultGone"),
+                    SeriesCreationError.MutationIdReused => Failed("error.series.mutationIdReused"),
+                    SeriesCreationError.RootFolderNotFound => Failed("error.series.rootFolderNotFound"),
+                    _ => Failed("error.series.metadataNotFound"),
+                };
+            }
         }
 
         string? reason = null;
@@ -330,6 +349,35 @@ public class MihonImportService(
         return new MihonImportResult(item.ProviderId, outcome, seriesId, reason);
 
         MihonImportResult Failed(string key) => new(item.ProviderId, "failed", null, localizer.Get(key));
+
+        MihonImportResult Skipped(string key) => new(item.ProviderId, "skipped", null, localizer.Get(key));
+    }
+
+    /// <summary>For a caller without AddSeries: files a request for admin approval, or names the series that already exists.</summary>
+    private async Task<(MihonImportResult? Result, int? ExistingId)> RequestAsync(string providerId, CancellationToken ct)
+    {
+        var request = new SeriesRequest
+        {
+            UserId = currentUser.UserId,
+            Kind = SeriesRequestKind.NewSeries,
+            Status = SeriesRequestStatus.Pending,
+            Created = DateTime.UtcNow,
+        };
+
+        if (await requests.FillNewSeriesAsync(request, providerId, ct, currentUser.MaxContentRating) is { } failed)
+        {
+            return failed.Error switch
+            {
+                SeriesRequestSubmitError.SeriesAlreadyExists => (null, failed.ExistingSeriesId),
+                SeriesRequestSubmitError.ContentRatingTooHigh => (Failed("error.requests.contentRating"), null),
+                _ => (Failed("error.series.metadataNotFound"), null),
+            };
+        }
+
+        await requests.SubmitAsync(request, currentUser.UserName, ct);
+        return (new MihonImportResult(providerId, "requested", null, null), null);
+
+        MihonImportResult Failed(string key) => new(providerId, "failed", null, localizer.Get(key));
     }
 
     /// <summary>Creation reports the first copy with filters off, which may be one this caller cannot see.</summary>

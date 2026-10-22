@@ -61,6 +61,7 @@ export function MihonReview({
   const label = useLabel()
   const { can } = useAuth()
   const canTag = can('ManageTags')
+  const canAdd = can('AddSeries')
   const { data: rootFolders } = useRootFolders()
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [monitored, setMonitored] = useState(true)
@@ -223,6 +224,14 @@ export function MihonReview({
           <Plural value={groups.length} one="Import # series" other="Import # series" />
         </Button>
       </Group>
+      {!canAdd && (
+        <Text size="xs" c="var(--ink-3)">
+          <Trans>
+            You can't add series directly. New ones are sent to an admin as requests, and tags and read marks are only
+            applied to series already in the library.
+          </Trans>
+        </Text>
+      )}
       {counts.inLibrary > 0 && (
         <Text size="xs" c="var(--ink-3)">
           <Trans>
