@@ -8,7 +8,10 @@
 FROM --platform=$BUILDPLATFORM node:24-alpine AS frontend
 WORKDIR /src/frontend
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+# The cache mounts here and on the restore below keep downloaded packages on the build machine
+# between builds, so a lockfile change only fetches what changed. CI's gha cache does not carry
+# them, which only costs it the download it did anyway.
+RUN --mount=type=cache,id=maki-npm,target=/root/.npm npm ci
 COPY frontend/ ./
 # The message catalogs live at the repo root, not under frontend/, because the API embeds the same
 # files. lingui.config.js reaches ../locales, and src/i18n.ts imports each catalog through the
@@ -46,12 +49,16 @@ COPY locales/ locales/
 ARG VERSION
 ARG SOURCE_COMMIT
 
-RUN dotnet restore src/Maki.Api/Maki.Api.csproj
+# src/ is copied above, so this layer reruns on every code change; the mount is what makes that cheap.
+# publish needs the same mount because it reads the packages from that folder.
+RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages \
+    dotnet restore src/Maki.Api/Maki.Api.csproj
 # PlaywrightPlatform=all is not a recognized platform keyword in Microsoft.Playwright.targets, so
 # it hits that target's fallback branch and copies every node/<platform> driver folder instead of
 # just the host's. Needed because this publish runs once on $BUILDPLATFORM (native) but its output
 # is copied into both the linux/amd64 and linux/arm64 runtime stages below.
-RUN dotnet publish src/Maki.Api/Maki.Api.csproj -c Release -o /app/publish /p:UseAppHost=false /p:PlaywrightPlatform=all \
+RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages \
+    dotnet publish src/Maki.Api/Maki.Api.csproj -c Release -o /app/publish /p:UseAppHost=false /p:PlaywrightPlatform=all \
       ${VERSION:+/p:Version=$VERSION} \
       ${VERSION:+/p:InformationalVersion=$VERSION${SOURCE_COMMIT:++$SOURCE_COMMIT}}
 # Same check for the other half of the catalogs: the EmbeddedResource item names each one
@@ -89,13 +96,16 @@ RUN case "$TARGETARCH" in \
 # PlaywrightPlatform=all above also copied a Node driver for every OS (~440 MB), of which this arch
 # runs one. types/ and lib/vite/ only serve codegen, the trace viewer and the HTML report. The chmod
 # belongs here too: done in the runtime stage, it would copy the whole node binary into a new layer.
+# The driver then moves out of /app so the runtime stage can copy it, and install the browser, before
+# the rest of the app; see the comment there.
 RUN case "$TARGETARCH" in \
       amd64) node=linux-x64 ;; \
       arm64) node=linux-arm64 ;; \
     esac \
     && find /app/.playwright/node -mindepth 1 -maxdepth 1 -type d ! -name "$node" -exec rm -rf {} + \
     && chmod a+rx /app/.playwright/node/"$node"/node \
-    && rm -rf /app/.playwright/package/types /app/.playwright/package/lib/vite
+    && rm -rf /app/.playwright/package/types /app/.playwright/package/lib/vite \
+    && mkdir /driver && mv /app/.playwright /driver/
 
 # ---- Runtime ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
@@ -112,10 +122,11 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY --from=trimmed-publish /app ./
-COPY --from=frontend /src/frontend/dist ./wwwroot/
-COPY distribution/docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Only the Playwright driver comes in before the browser install. BuildKit keys a COPY on file
+# content, and the driver is the same bytes until the Microsoft.Playwright package is bumped, so the
+# install below stays cached across code changes. Copying the whole app first made every build
+# download the browser again.
+COPY --from=trimmed-publish /driver/ ./
 
 # MangaFire's vrf request signature and TopManhua's image CDN only answer a real browser, so install
 # one for Playwright. We only ever launch headless, so install the ~100 MB chromium-headless-shell rather
@@ -133,6 +144,11 @@ RUN NODE_ARCH="$([ "$(uname -m)" = "aarch64" ] && echo linux-arm64 || echo linux
     && find /ms-playwright -path '*/locales/*.pak' ! -name 'en-US.pak' -delete \
     && chmod -R a+rX /ms-playwright \
     && rm -rf /var/lib/apt/lists/*
+
+COPY distribution/docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+COPY --from=trimmed-publish /app ./
+COPY --from=frontend /src/frontend/dist ./wwwroot/
 
 # The runtime maps JIT-generated code twice, so a page is never both writable and executable: the
 # executable view is what runs, a separate writable view is what the JIT writes through. It is
