@@ -9,7 +9,7 @@ import { useAuth } from '../../auth/AuthProvider'
 import { useLabel } from '../../i18n-context'
 import {
   INBOX_ADMIN_ONLY,
-  INBOX_CATEGORIES,
+  visibleInboxCategories,
   INBOX_TYPE_DESCRIPTIONS,
   INBOX_TYPE_LABELS,
   type InboxEventType,
@@ -180,7 +180,7 @@ function PushControls() {
 
 function PushFilter() {
   const renderLabel = useLabel()
-  const { can } = useAuth()
+  const { can, singleUser } = useAuth()
   const isAdmin = can('Admin')
   const { data: prefs } = usePushPrefs()
   const save = useSavePushPrefs()
@@ -188,7 +188,7 @@ function PushFilter() {
   if (!prefs) return null
 
   const selected = save.isPending && save.variables ? save.variables : prefs.types
-  const categories = INBOX_CATEGORIES.filter((c) => !c.adminOnly || isAdmin)
+  const categories = visibleInboxCategories(isAdmin, singleUser)
 
   function setType(type: InboxEventType, on: boolean) {
     save.mutate(on ? [...selected.filter((s) => s !== type), type] : selected.filter((s) => s !== type))

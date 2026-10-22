@@ -281,7 +281,7 @@ function AppShellRoutes() {
   const { data: setup } = useSetupStatus()
   const { data: metadata, isError: metadataFailed } = useMetadataSettings()
   const { data: ui } = useUiSettings()
-  const { can } = useAuth()
+  const { can, singleUser } = useAuth()
   const { t } = useLingui()
   // localStorage decided the first paint; the stored preference is what follows the user here.
   useLanguageSync(ui?.language)
@@ -305,13 +305,13 @@ function AppShellRoutes() {
     canTrack,
     // An admin works the queue; anyone who has to ask for a series or a download wants to see what
     // happened to what they asked for. Someone holding both permissions never files one.
-    requestsVisible: isAdmin || !canAdd || !can('DownloadChapters'),
+    requestsVisible: !singleUser && (isAdmin || !canAdd || !can('DownloadChapters')),
   })
   const allItems: NavItem[] = sections.flatMap((s) => s.items)
   // The places someone reads from, in the collapsed header, so the drawer is only for the rest.
   const quickItems = allItems.filter((i) => ['/home', '/library', '/discover'].includes(i.path))
   const { _ } = useLinguiReact()
-  const { data: pendingRequests } = usePendingRequestCount(isAdmin)
+  const { data: pendingRequests } = usePendingRequestCount(isAdmin && !singleUser)
   const { data: health } = useHealth(isAdmin)
   const healthIssues = health?.length ?? 0
   const healthTone = health?.some((h) => h.severity === 'error') ? 'danger' : 'warn'

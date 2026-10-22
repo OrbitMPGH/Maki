@@ -1962,6 +1962,12 @@ msgstr "Auf dem Server ist etwas schiefgelaufen. Details stehen im Serverprotoko
 msgid "error.settings.unknownStartPage"
 msgstr "Unbekannte Startseite: {page}"
 
+#. Shown when an admin turns single-user mode on while a second account is still enabled.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Single-user mode needs exactly one enabled account. Disable or delete the others first.
+msgid "error.settings.singleUserNeedsOneAccount"
+msgstr ""
+
 #. English: Unknown folder naming mode: {mode}
 #, fuzzy
 msgid "error.settings.unknownFolderNamingMode"

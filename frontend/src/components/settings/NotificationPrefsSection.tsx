@@ -2,7 +2,7 @@ import { Divider, Group, SegmentedControl, Stack, Switch, Text } from '@mantine/
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import {
   INBOX_ADMIN_ONLY,
-  INBOX_CATEGORIES,
+  visibleInboxCategories,
   INBOX_TYPE_DESCRIPTIONS,
   INBOX_TYPE_LABELS,
   useInboxPrefs,
@@ -25,7 +25,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 export function NotificationPrefsSection() {
   const { t } = useLingui()
   const renderLabel = useLabel()
-  const { can } = useAuth()
+  const { can, singleUser } = useAuth()
   const isAdmin = can('Admin')
   const seriesDefaultOptions = useSeriesDefaultOptions()
 
@@ -36,7 +36,7 @@ export function NotificationPrefsSection() {
     return null
   }
 
-  const categories = INBOX_CATEGORIES.filter((c) => !c.adminOnly || isAdmin)
+  const categories = visibleInboxCategories(isAdmin, singleUser)
 
   function setType(type: InboxEventType, enabled: boolean) {
     save.mutate({ types: { [type]: enabled } })

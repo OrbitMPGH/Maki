@@ -6950,6 +6950,10 @@ msgid "Earned"
 msgstr "Obtido"
 
 #: src/pages/stats/AchievementGrid.tsx
+msgid "Earned by the library itself, not by your reading."
+msgstr ""
+
+#: src/pages/stats/AchievementGrid.tsx
 #, fuzzy
 msgid "Earned by the library itself, so everyone on this instance shares them."
 msgstr "Conquistado pela própria biblioteca, então todos nesta instância compartilham as conquistas."
@@ -8562,6 +8566,10 @@ msgstr "Ocultar este e sua franquia"
 #, fuzzy
 msgid "Hide this title"
 msgstr "Ocultar este título"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Hides Requests, the reader picker and leaderboard on Stats, and other controls for sharing the instance. Adding a second user switches to multi-user mode."
+msgstr ""
 
 #: src/components/releases/outlookText.ts
 msgid "High confidence"
@@ -11137,6 +11145,10 @@ msgstr "Mover para cima na fila"
 msgid "moves onto a volume"
 msgstr "passa a fazer parte de um volume"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
+msgstr ""
+
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Muted"
@@ -12668,6 +12680,10 @@ msgstr ""
 #, fuzzy
 msgid "Off for this series"
 msgstr "Desligado para esta série"
+
+#: src/components/settings/ProgressSection.tsx
+msgid "Off hides the Home section, the all-time tab on Stats and unlock notifications."
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -17079,6 +17095,10 @@ msgstr "Login único removido da sua conta"
 #, fuzzy
 msgid "Single sign-on saved. Restart Maki to apply it."
 msgstr "Login único salvo. Reinicie o Maki para aplicá-lo."
+
+#: src/components/settings/UsersSection.tsx
+msgid "Single-user mode"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

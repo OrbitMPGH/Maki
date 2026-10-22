@@ -1381,6 +1381,11 @@ msgstr "Something went wrong on the server. Details are in the server log."
 msgid "error.settings.unknownStartPage"
 msgstr "Unknown start page: {page}"
 
+#. Shown when an admin turns single-user mode on while a second account is still enabled.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.singleUserNeedsOneAccount"
+msgstr "Single-user mode needs exactly one enabled account. Disable or delete the others first."
+
 msgid "error.settings.unknownFolderNamingMode"
 msgstr "Unknown folder naming mode: {mode}"
 

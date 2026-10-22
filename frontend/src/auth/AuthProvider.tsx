@@ -11,6 +11,8 @@ interface AuthState {
   setupNeeded: boolean
   /** Admin satisfies every permission, since the server already expands it into `permissionNames`. */
   can: (permission: Permission) => boolean
+  /** One enabled account and the mode left on: hide what only makes sense with several people. */
+  singleUser: boolean
   /** Signed-in state unknown: the server is unreachable and this device holds no copy of it. */
   offline: boolean
   /** Asks the server who is signed in again, for the offline screen. */
@@ -76,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading: setupNeeded === null || (setupNeeded === false && isLoading && !isFetched),
       setupNeeded: setupNeeded === true,
       can: (permission) => me?.permissionNames.includes(permission) ?? false,
+      singleUser: me?.singleUser ?? false,
       offline,
       retry: () => void refetch(),
     }),

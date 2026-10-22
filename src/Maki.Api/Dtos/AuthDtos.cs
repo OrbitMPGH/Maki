@@ -39,7 +39,8 @@ public record MeDto(
     IReadOnlyList<int> RootFolderIds,
     bool TwoFactorEnabled,
     bool OidcLinked,
-    string? OidcUserName);
+    string? OidcUserName,
+    bool SingleUser);
 
 public record UserSummaryDto(
     int Id,

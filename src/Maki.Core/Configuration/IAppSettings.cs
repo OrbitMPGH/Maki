@@ -101,6 +101,12 @@ public static class SettingKeys
     /// </summary>
     public const string SignInCoverMosaic = "signin.covermosaic";
 
+    /// <summary>
+    /// "false" keeps the multi-user surfaces (Requests, reader pickers, leaderboard) on an instance
+    /// with one account. On unless set. Ignored while more than one account is enabled.
+    /// </summary>
+    public const string SingleUserMode = "instance.singleusermode";
+
     /// <summary>"true" deletes read chapter files for every series left on Default. Off unless set.</summary>
     public const string ReadFileCleanupEnabled = "cleanup.readfiles.enabled";
 

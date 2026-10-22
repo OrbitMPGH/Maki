@@ -24,6 +24,7 @@ import {
 } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { Achievement } from '../../api/hooks'
+import { useAuth } from '../../auth/AuthProvider'
 import { formatNumber, formatReadingTime } from '../../format'
 
 /** Server icon keys (`AchievementCatalog.cs`) mapped to the closest Tabler glyph. No literal owl icon
@@ -235,6 +236,7 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
 export function AchievementGrid({ achievements }: { achievements: Achievement[] }) {
   const reader = sortAchievements(achievements.filter((a) => a.track === 'Reader'))
   const library = sortAchievements(achievements.filter((a) => a.track === 'Library'))
+  const { singleUser } = useAuth()
 
   return (
     <Stack gap="lg">
@@ -258,7 +260,11 @@ export function AchievementGrid({ achievements }: { achievements: Achievement[] 
               multi-user instance everybody sees the same numbers here, and presenting them beside
               the reading badges without saying so would read as a claim about the viewer. */}
           <Text size="sm" c="var(--ink-3)">
-            <Trans>Earned by the library itself, so everyone on this instance shares them.</Trans>
+            {singleUser ? (
+              <Trans>Earned by the library itself, not by your reading.</Trans>
+            ) : (
+              <Trans>Earned by the library itself, so everyone on this instance shares them.</Trans>
+            )}
           </Text>
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">
             {library.map((a) => (

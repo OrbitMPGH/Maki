@@ -69,6 +69,7 @@ public class AuthController(
     public async Task<IActionResult> Me(
         [FromHeader(Name = "X-Maki-TimeZone")] string? timeZone,
         [FromServices] IUserSettingsStore userSettings,
+        [FromServices] IAppSettings appSettings,
         CancellationToken ct)
     {
         var user = await db.Users.AsNoTracking()
@@ -89,7 +90,8 @@ public class AuthController(
 
         var oidcLogin = await OidcLoginAsync(user);
         return Ok(UserDtoMapper.ToMe(
-            user, await RootFolderIdsAsync(user, ct), oidcLogin is not null, oidcLogin?.ProviderDisplayName));
+            user, await RootFolderIdsAsync(user, ct), oidcLogin is not null, oidcLogin?.ProviderDisplayName,
+            await SingleUserMode.IsOnAsync(db, appSettings, ct)));
     }
 
     private const string UnknownName = "?";
@@ -737,7 +739,8 @@ public class AuthController(
 
         var oidcLogin = await OidcLoginAsync(user);
         return UserDtoMapper.ToMe(
-            user, await RootFolderIdsAsync(user, ct), oidcLogin is not null, oidcLogin?.ProviderDisplayName);
+            user, await RootFolderIdsAsync(user, ct), oidcLogin is not null, oidcLogin?.ProviderDisplayName,
+            await SingleUserMode.IsOnAsync(db, HttpContext.RequestServices?.GetService<IAppSettings>(), ct));
     }
 
     private async Task<IReadOnlyList<int>> RootFolderIdsAsync(MakiUser user, CancellationToken ct) =>

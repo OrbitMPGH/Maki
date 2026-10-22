@@ -22,8 +22,10 @@ import {
   useCreateUser,
   useDeleteUser,
   useResetUserTwoFactor,
+  useSetUserMode,
   useUnlinkUserOidc,
   useUpdateUser,
+  useUserMode,
   useUsers,
   type Permission,
   type SaveUserBody,
@@ -87,6 +89,36 @@ const BIT: Record<Permission, number> = {
   ImportLibrary: 1 << 11,
 }
 
+/**
+ * Single-user mode hides Requests, the Stats reader picker and the leaderboard. Kept beside the user
+ * list so whoever is about to add a second account sees that those exist, and that adding one turns
+ * them back on.
+ */
+function UserModeSwitch() {
+  const { t } = useLinguiMacro()
+  const { data: mode } = useUserMode()
+  const save = useSetUserMode()
+
+  if (!mode) return null
+
+  const checked = save.isPending && save.variables !== undefined ? save.variables : mode.singleUser
+
+  return (
+    <Switch
+      mb="md"
+      checked={checked}
+      disabled={!mode.available || save.isPending}
+      onChange={(e) => save.mutate(e.currentTarget.checked)}
+      label={t`Single-user mode`}
+      description={
+        mode.available
+          ? t`Hides Requests, the reader picker and leaderboard on Stats, and other controls for sharing the instance. Adding a second user switches to multi-user mode.`
+          : t`Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back.`
+      }
+    />
+  )
+}
+
 export function UsersSection() {
   const renderLabel = useLabel()
   const { data: users } = useUsers()
@@ -112,6 +144,7 @@ export function UsersSection() {
       }
       panelProps={{ p: 'md' }}
     >
+      <UserModeSwitch />
 
       <Table.ScrollContainer minWidth={576}>
         <Table className="panel-table ops-table">

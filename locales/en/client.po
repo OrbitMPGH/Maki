@@ -5764,6 +5764,10 @@ msgid "Earned"
 msgstr "Earned"
 
 #: src/pages/stats/AchievementGrid.tsx
+msgid "Earned by the library itself, not by your reading."
+msgstr "Earned by the library itself, not by your reading."
+
+#: src/pages/stats/AchievementGrid.tsx
 msgid "Earned by the library itself, so everyone on this instance shares them."
 msgstr "Earned by the library itself, so everyone on this instance shares them."
 
@@ -7087,6 +7091,10 @@ msgstr "Hide this and its franchise"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Hide this title"
 msgstr "Hide this title"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Hides Requests, the reader picker and leaderboard on Stats, and other controls for sharing the instance. Adding a second user switches to multi-user mode."
+msgstr "Hides Requests, the reader picker and leaderboard on Stats, and other controls for sharing the instance. Adding a second user switches to multi-user mode."
 
 #: src/components/releases/outlookText.ts
 msgid "High confidence"
@@ -9223,6 +9231,10 @@ msgstr "Move up in queue"
 msgid "moves onto a volume"
 msgstr "moves onto a volume"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
+msgstr "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
+
 #: src/components/ui/seriesNotifications.ts
 msgid "Muted"
 msgstr "Muted"
@@ -10490,6 +10502,10 @@ msgstr "Off for this device. Turning it on asks your browser for permission."
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Off for this series"
 msgstr "Off for this series"
+
+#: src/components/settings/ProgressSection.tsx
+msgid "Off hides the Home section, the all-time tab on Stats and unlock notifications."
+msgstr "Off hides the Home section, the all-time tab on Stats and unlock notifications."
 
 #: src/components/settings/ProgressSection.tsx
 msgid "Off hides the Home section, the all-time tab on Stats, unlock notifications, and removes you from the leaderboard."
@@ -14153,6 +14169,10 @@ msgstr "Single sign-on removed from your account"
 #: src/components/settings/SecuritySection.tsx
 msgid "Single sign-on saved. Restart Maki to apply it."
 msgstr "Single sign-on saved. Restart Maki to apply it."
+
+#: src/components/settings/UsersSection.tsx
+msgid "Single-user mode"
+msgstr "Single-user mode"
 
 #: src/pages/HealthPage.tsx
 msgid "Sits in <0>{seriesTitle}</0> and parses to {chapterCount, plural, one {1 chapter} other {# chapters}} in it."

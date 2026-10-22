@@ -22,6 +22,7 @@ import { useLingui } from '@lingui/react'
 import { Trans, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { useAuth } from '../../auth/AuthProvider'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 
@@ -92,6 +93,7 @@ export function ProgressSection() {
   const save = useSaveProgressSettings()
   const saveGoal = useSaveReadingGoal()
   const deleteGoal = useDeleteReadingGoal()
+  const { singleUser } = useAuth()
 
   const [period, setPeriod] = useState<ReadingGoal['period']>('Day')
   const [metric, setMetric] = useState<ReadingGoal['metric']>('Chapters')
@@ -135,7 +137,11 @@ export function ProgressSection() {
           checked={settings.enabled}
           onChange={(e) => patch({ enabled: e.currentTarget.checked })}
           label={t`Track progress and achievements`}
-          description={t`Off hides the Home section, the all-time tab on Stats, unlock notifications, and removes you from the leaderboard.`}
+          description={
+            singleUser
+              ? t`Off hides the Home section, the all-time tab on Stats and unlock notifications.`
+              : t`Off hides the Home section, the all-time tab on Stats, unlock notifications, and removes you from the leaderboard.`
+          }
         />
 
         <Switch
@@ -146,13 +152,15 @@ export function ProgressSection() {
           description={t`One missed day a week is forgiven, and today never breaks a streak.`}
         />
 
-        <Switch
-          checked={settings.showOnLeaderboard}
-          onChange={(e) => patch({ showOnLeaderboard: e.currentTarget.checked })}
-          disabled={!settings.enabled}
-          label={t`Compare with other users on this instance`}
-          description={t`Shows your name, level, chapters read and streak to everyone who also opted in. Never anything about which series you read.`}
-        />
+        {!singleUser && (
+          <Switch
+            checked={settings.showOnLeaderboard}
+            onChange={(e) => patch({ showOnLeaderboard: e.currentTarget.checked })}
+            disabled={!settings.enabled}
+            label={t`Compare with other users on this instance`}
+            description={t`Shows your name, level, chapters read and streak to everyone who also opted in. Never anything about which series you read.`}
+          />
+        )}
 
         <Select
           label={t`Time zone`}

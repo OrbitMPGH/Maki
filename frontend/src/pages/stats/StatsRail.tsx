@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { UnstyledButton } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
+import { useAuth } from '../../auth/AuthProvider'
 import { useLabel } from '../../i18n-context'
 import { scrollBehavior } from '../../lib/scrollBehavior'
 import {
@@ -19,6 +20,7 @@ import {
  */
 export function StatsRail({ end }: { end?: ReactNode }) {
   const { t } = useLingui()
+  const { singleUser } = useAuth()
   const renderLabel = useLabel()
   const [searchParams, setSearchParams] = useSearchParams()
   const [active, setActive] = useState<StatsSectionKey>(() => {
@@ -118,7 +120,7 @@ export function StatsRail({ end }: { end?: ReactNode }) {
           >
             <SectionIcon size={15} stroke={1.8} aria-hidden />
             {renderLabel(s.label)}
-            {s.railChip && <span className="stats-rail-chip">{renderLabel(s.railChip)}</span>}
+            {s.railChip && !singleUser && <span className="stats-rail-chip">{renderLabel(s.railChip)}</span>}
           </UnstyledButton>
         )
       })}
