@@ -128,12 +128,13 @@ function PushControls() {
 
   function test() {
     sendTest.mutate(undefined, {
-      onSuccess: ({ sent, failed }) => {
+      onSuccess: ({ sent, failed, error }) => {
         if (sent > 0) {
           notifications.show({ message: t`Test notification sent.`, color: 'var(--ok)' })
         } else if (failed > 0) {
           notifications.show({
-            message: t`The push service did not accept the test notification.`,
+            title: t`The push service did not accept the test notification.`,
+            message: error ?? '',
             color: 'var(--danger)',
           })
         }

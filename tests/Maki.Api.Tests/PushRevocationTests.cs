@@ -95,7 +95,7 @@ public sealed class PushRevocationTests : IDisposable
         var service = new StubPushService(HttpStatusCode.Created);
         var sender = new WebPushSender(_db.ScopeFactory(), service, new WebPushKeys(new FakeAppSettings()), _clock,
             NullLogger<WebPushSender>.Instance);
-        var (sent, failed) = await sender.SendAsync(notification, default);
+        var (sent, failed, _) = await sender.SendAsync(notification, default);
         Assert.Equal(0, failed);
         Assert.Equal(sent, service.Requests.Count);
         return service.Requests.Select(r => r.RequestUri!.ToString()).Order().ToArray();

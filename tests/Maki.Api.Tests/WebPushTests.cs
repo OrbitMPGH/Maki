@@ -162,7 +162,7 @@ public sealed class WebPushTests : IDisposable
 
         var result = Assert.IsType<OkObjectResult>(await Controller(_alice, service).Test(default));
 
-        Assert.Equal("{ sent = 1, failed = 0 }", result.Value!.ToString());
+        Assert.Equal("{ sent = 1, failed = 0, error =  }", result.Value!.ToString());
         Assert.Equal(Endpoint, Assert.Single(service.Requests).RequestUri!.ToString());
     }
 
@@ -213,14 +213,17 @@ public sealed class WebPushTests : IDisposable
         SeedSubscription(_alice);
         var service = new StubPushService(HttpStatusCode.Created);
 
-        var (sent, failed) = await Sender(service).SendAsync(
+        var (sent, failed, _) = await Sender(service).SendAsync(
             new WebPushNotification(_alice, "Title", "Body", "/series/4", "series-4"), default);
 
         Assert.Equal((1, 0), (sent, failed));
         var request = Assert.Single(service.Requests);
         Assert.Equal("vapid", request.Headers.Authorization!.Scheme);
         Assert.Equal("86400", request.Headers.GetValues("TTL").Single());
-        Assert.Equal("series-4", request.Headers.GetValues("Topic").Single());
+        var topic = request.Headers.GetValues("Topic").Single();
+        Assert.Matches("^[0-9a-f]{32}$", topic);
+        Assert.Equal(WebPushSender.TopicFor("series-4"), topic);
+        Assert.NotEqual(WebPushSender.TopicFor("series-5"), topic);
         Assert.Equal("aes128gcm", request.Content!.Headers.ContentEncoding.Single());
         Assert.Equal(T0.UtcDateTime, Assert.Single(Rows()).LastSuccessAt);
     }
@@ -232,7 +235,7 @@ public sealed class WebPushTests : IDisposable
     {
         SeedSubscription(_alice);
 
-        var (sent, failed) = await Sender(new StubPushService(status)).SendAsync(
+        var (sent, failed, _) = await Sender(new StubPushService(status)).SendAsync(
             new WebPushNotification(_alice, "Title", "Body", "/", null), default);
 
         Assert.Equal((0, 1), (sent, failed));
@@ -254,6 +257,17 @@ public sealed class WebPushTests : IDisposable
 
         await sender.SendAsync(push, default);
         Assert.Empty(Rows());
+    }
+
+    [Fact]
+    public async Task A_refusal_reports_the_push_services_reason()
+    {
+        SeedSubscription(_alice);
+        var service = new StubPushService(HttpStatusCode.Forbidden, """{"reason":"BadJwtToken"}""");
+
+        var result = await Sender(service).SendAsync(new WebPushNotification(_alice, "Title", "Body", "/", null), default);
+
+        Assert.Equal((0, 1, "403 BadJwtToken"), result);
     }
 
     [Fact]
@@ -343,7 +357,7 @@ internal sealed class RecordingPushSender(IServiceScopeFactory scopeFactory)
 }
 
 /// <summary>A push service that answers every request with one status, and an <see cref="IHttpClientFactory"/> over it.</summary>
-internal sealed class StubPushService(HttpStatusCode status) : HttpMessageHandler, IHttpClientFactory
+internal sealed class StubPushService(HttpStatusCode status, string? body = null) : HttpMessageHandler, IHttpClientFactory
 {
     public List<HttpRequestMessage> Requests { get; } = [];
 
@@ -352,6 +366,12 @@ internal sealed class StubPushService(HttpStatusCode status) : HttpMessageHandle
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
         Requests.Add(request);
-        return Task.FromResult(new HttpResponseMessage(status));
+        var response = new HttpResponseMessage(status);
+        if (body is not null)
+        {
+            response.Content = new StringContent(body);
+        }
+
+        return Task.FromResult(response);
     }
 }

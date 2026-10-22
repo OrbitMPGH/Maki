@@ -57,7 +57,7 @@ export function useUnsubscribePush() {
 
 export function useSendPushTest() {
   return useMutation({
-    mutationFn: () => api<{ sent: number; failed: number }>('/push/test', { method: 'POST' }),
+    mutationFn: () => api<{ sent: number; failed: number; error: string | null }>('/push/test', { method: 'POST' }),
   })
 }
 

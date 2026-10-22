@@ -129,13 +129,13 @@ public class PushController(
             return this.NotFoundMessage(localizer, "error.push.noSubscription");
         }
 
-        var (sent, failed) = await sender.SendAsync(new WebPushNotification(
+        var (sent, failed, error) = await sender.SendAsync(new WebPushNotification(
             currentUser.UserId,
             localizer.Get("inbox.pushTest.title"),
             localizer.Get("inbox.pushTest.body"),
             "/settings",
             "push-test"), ct);
-        return Ok(new { sent, failed });
+        return Ok(new { sent, failed, error });
     }
 
     [HttpGet("prefs")]

@@ -1,4 +1,6 @@
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
 using Lib.Net.Http.WebPush;
@@ -12,7 +14,7 @@ namespace Maki.Api.Services;
 /// <summary>
 /// One push for one user, already rendered in their language. <paramref name="Url"/> is the in-app
 /// path a click opens; <paramref name="Tag"/> collapses repeats (<c>series-{id}</c>) on the device and,
-/// as the push Topic, at the push service while the device is offline. <paramref name="Devices"/>, when
+/// hashed into the push Topic, at the push service while the device is offline. <paramref name="Devices"/>, when
 /// set, is sent to instead of the user's stored subscriptions: an alert about a revocation goes to the
 /// devices that revocation just forgot.
 /// </summary>
@@ -93,9 +95,10 @@ public class WebPushSender(
 
     /// <summary>
     /// Sends now, to every subscription the user holds, or to <see cref="WebPushNotification.Devices"/>
-    /// when the push names them. Returns how many took it and how many did not.
+    /// when the push names them. Returns how many took it, how many did not, and why the last refusal
+    /// happened, for the settings card's test button.
     /// </summary>
-    public async Task<(int Sent, int Failed)> SendAsync(WebPushNotification notification, CancellationToken ct)
+    public async Task<(int Sent, int Failed, string? Error)> SendAsync(WebPushNotification notification, CancellationToken ct)
     {
         // An unrestricted scope, so any user's rows load and delete without a filter bypass.
         using var scope = scopeFactory.CreateScope();
@@ -107,7 +110,7 @@ public class WebPushSender(
             ?? subscriptions.Select(s => new PushDevice(s.Endpoint, s.P256dh, s.Auth)).ToList();
         if (devices.Count == 0)
         {
-            return (0, 0);
+            return (0, 0, null);
         }
 
         var (publicKey, privateKey) = await keys.GetAsync(ct);
@@ -124,6 +127,7 @@ public class WebPushSender(
         var now = time.GetUtcNow().UtcDateTime;
         var sent = 0;
         var failed = 0;
+        string? error = null;
         for (var i = 0; i < devices.Count; i++)
         {
             // Null for a device a revocation already forgot: there is no row left to keep score on.
@@ -134,7 +138,7 @@ public class WebPushSender(
             var message = new PushMessage(payload)
             {
                 TimeToLive = TimeToLiveSeconds,
-                Topic = notification.Tag,
+                Topic = TopicFor(notification.Tag),
                 Urgency = PushMessageUrgency.Normal,
             };
 
@@ -151,7 +155,8 @@ public class WebPushSender(
             }
             catch (PushServiceClientException e) when (e.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone)
             {
-                logger.LogDebug("Push subscription {Id} is gone ({Status}), removing it", subscription?.Id, (int)e.StatusCode);
+                error = Describe(e);
+                logger.LogDebug("Push subscription {Id} is gone ({Error}), removing it", subscription?.Id, error);
                 if (subscription is not null)
                 {
                     db.PushSubscriptions.Remove(subscription);
@@ -161,7 +166,8 @@ public class WebPushSender(
             }
             catch (Exception e) when (!ct.IsCancellationRequested)
             {
-                logger.LogDebug(e, "Push to subscription {Id} failed", subscription?.Id);
+                error = Describe(e);
+                logger.LogDebug(e, "Push to subscription {Id} failed: {Error}", subscription?.Id, error);
                 if (subscription is not null && ++subscription.FailureCount >= MaxFailures)
                 {
                     db.PushSubscriptions.Remove(subscription);
@@ -172,6 +178,49 @@ public class WebPushSender(
         }
 
         await db.SaveChangesAsync(ct);
-        return (sent, failed);
+        return (sent, failed, error);
+    }
+
+    /// <summary>
+    /// The tag as a Topic Apple accepts. Apple answers <c>BadWebPushTopic</c> to <c>push-test</c>, which
+    /// RFC 8030 allows, so the tag goes out as 32 hex characters: within every reading of the rule, and
+    /// one tag still maps to one topic.
+    /// </summary>
+    internal static string? TopicFor(string? tag) =>
+        tag is null ? null : Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(tag)))[..32];
+
+    /// <summary>
+    /// The push service's own reason, which the exception message leaves out: Apple answers
+    /// <c>{"reason":"BadJwtToken"}</c>, Mozilla <c>{"message":...}</c>, FCM plain text.
+    /// </summary>
+    internal static string Describe(Exception e)
+    {
+        if (e is not PushServiceClientException push)
+        {
+            return e.Message;
+        }
+
+        var status = (int)push.StatusCode;
+        var body = push.Body?.Trim();
+        if (string.IsNullOrEmpty(body))
+        {
+            return $"{status} {push.Message}";
+        }
+
+        try
+        {
+            using var json = JsonDocument.Parse(body);
+            if (json.RootElement.ValueKind == JsonValueKind.Object &&
+                (json.RootElement.TryGetProperty("reason", out var reason) || json.RootElement.TryGetProperty("message", out reason)) &&
+                reason.ValueKind == JsonValueKind.String)
+            {
+                return $"{status} {reason.GetString()}";
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        return $"{status} {(body.Length > 200 ? body[..200] : body)}";
     }
 }
