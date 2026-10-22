@@ -133,10 +133,10 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
   }
 
   return (
-    <div>
+    <div className="series-machine">
       <Group justify="space-between" wrap="wrap" gap="sm" mb="sm">
         <Group gap="xs" align="baseline">
-          <Title order={3}><Trans>Scrobbling</Trans></Title>
+          <Title order={3} fz="var(--type-subhead)"><Trans>Scrobbling</Trans></Title>
           {!data.matched && (
             <Text size="sm" c="var(--ink-3)">
               <Trans>not yet synced</Trans>

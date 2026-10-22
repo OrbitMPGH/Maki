@@ -248,7 +248,7 @@ export function SourceMappingsSection({
       <Group justify="space-between">
         <Group gap={8}>
           <IconPlugConnected size={18} style={{ opacity: 0.7 }} />
-          <Title order={3} size="h4"><Trans>Sources</Trans></Title>
+          <Title order={3} size="h4" fz="var(--type-subhead)"><Trans>Sources</Trans></Title>
         </Group>
         {/* Both held while auto-matching runs: (SeriesId, SourceName) is unique, so a hand-linked
             source that the matcher is about to add itself fails its whole batch of mappings. */}

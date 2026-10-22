@@ -5167,6 +5167,15 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   flex-shrink: 0;
   white-space: nowrap;
 }
+/* The list reads as a table of contents: the number in the display face, the date set flush
+   against the end of the title column. */
+.chapter-table .chapter-number {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+.chapter-table .chapter-released {
+  text-align: end;
+}
 .chapter-table thead th {
   position: relative;
 }
@@ -5278,108 +5287,108 @@ body.column-resizing * {
   box-shadow: inset 3px 0 0 var(--brand);
 }
 
-/* On narrow screens each chapter is a two-line list row inside the panel: switch, number, title
-   and actions on top, then date, source and status wrapping underneath. The cells stay the same so
-   every action survives; `order` plus a full-width ::before is what forces the line break. */
-@media (max-width: 47.99em) {
-  .chapter-table,
-  .chapter-table tbody {
-    display: block;
-    width: 100%;
-  }
-  .chapter-table thead {
-    display: none;
-  }
-  .chapter-table tbody tr {
-    --chapter-lead: 34px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 8px;
-    /* The switch hangs out into this padding, so every wrapped line lines up under the number. */
-    padding: 8px 6px 8px calc(10px + var(--chapter-lead) + 8px);
-    border-bottom: 1px solid var(--hairline);
-    box-shadow: inset 3px 0 0 var(--chapter-accent, transparent);
-  }
-  [data-mantine-color-scheme='dark'] .chapter-table tbody tr:hover {
-    background-image: linear-gradient(color-mix(in srgb, white 2%, transparent), color-mix(in srgb, white 2%, transparent));
-  }
-  [data-mantine-color-scheme='dark'] .chapter-table tbody tr:hover > td {
-    background-color: transparent;
-  }
-  .chapter-table tbody tr:last-child {
-    border-bottom: 0;
-  }
-  .chapter-table tbody tr::before {
-    content: '';
-    order: 2;
-    flex-basis: 100%;
-    height: 0;
-  }
-  .chapter-table tbody tr.chapter-row-selected {
-    --chapter-accent: var(--brand);
-  }
-  .chapter-table tbody td {
-    display: block;
-    width: auto !important;
-    height: auto;
-    min-width: 0;
-    padding: 0 !important;
-    border: 0 !important;
-    box-shadow: none !important;
-  }
-  .chapter-table tbody td:nth-child(1) {
-    order: 1;
-    flex: 0 0 var(--chapter-lead);
-    margin-inline-start: calc(-1 * (var(--chapter-lead) + 8px));
-  }
-  .chapter-table tbody td:nth-child(2) {
-    order: 1;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .chapter-table tbody td:nth-child(3) {
-    order: 1;
-    flex: 1 1 0;
-  }
-  .chapter-table tbody td:nth-child(7) {
-    order: 1;
-    margin-inline-start: auto;
-  }
-  .chapter-table tbody td:nth-child(4),
-  .chapter-table tbody td:nth-child(5),
-  .chapter-table tbody td:nth-child(6) {
-    order: 3;
-  }
-  .chapter-table .chapter-source-empty {
-    display: none;
-  }
-  .chapter-table tbody td:nth-child(5) > div {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  /* A folded span's summary and progress bar need the full second line, and its two empty
-     cells would otherwise add gaps to it. */
-  .chapter-table tbody tr.chapter-span-row td:empty {
-    display: none;
-  }
-  .chapter-table tbody tr.chapter-span-row td:nth-child(3),
-  .chapter-table tbody tr.chapter-span-row td:nth-child(6) {
-    order: 3;
-    flex: 1 1 100%;
-  }
-  .chapter-table .chapter-cell {
-    padding-inline-end: 0 !important;
-  }
-  .chapter-table .chapter-span-markers {
-    position: static;
-    min-width: 0;
-  }
-  .chapter-span-overlay {
-    display: none;
-  }
+/* When the panel is narrower than the columns need (a phone, the 800px pane, a laptop with the
+   sidebar open), each chapter becomes a two-line list row instead of a table that scrolls the title
+   down to a few characters: switch, number, title and actions on top, then date, source and status
+   wrapping underneath. SeriesDetailPage measures the panel and sets the class. The cells stay the
+   same so every action survives; `order` plus a full-width ::before is what forces the line break. */
+.chapter-rows-list .chapter-table,
+.chapter-rows-list .chapter-table tbody {
+  display: block;
+  width: 100%;
+}
+.chapter-rows-list .chapter-table thead {
+  display: none;
+}
+.chapter-rows-list .chapter-table tbody tr {
+  --chapter-lead: 34px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  /* The switch hangs out into this padding, so every wrapped line lines up under the number. */
+  padding: 8px 6px 8px calc(10px + var(--chapter-lead) + 8px);
+  border-bottom: 1px solid var(--hairline);
+  box-shadow: inset 3px 0 0 var(--chapter-accent, transparent);
+}
+[data-mantine-color-scheme='dark'] .chapter-rows-list .chapter-table tbody tr:hover {
+  background-image: linear-gradient(color-mix(in srgb, white 2%, transparent), color-mix(in srgb, white 2%, transparent));
+}
+[data-mantine-color-scheme='dark'] .chapter-rows-list .chapter-table tbody tr:hover > td {
+  background-color: transparent;
+}
+.chapter-rows-list .chapter-table tbody tr:last-child {
+  border-bottom: 0;
+}
+.chapter-rows-list .chapter-table tbody tr::before {
+  content: '';
+  order: 2;
+  flex-basis: 100%;
+  height: 0;
+}
+.chapter-rows-list .chapter-table tbody tr.chapter-row-selected {
+  --chapter-accent: var(--brand);
+}
+.chapter-rows-list .chapter-table tbody td {
+  display: block;
+  width: auto !important;
+  height: auto;
+  min-width: 0;
+  padding: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.chapter-rows-list .chapter-table tbody td:nth-child(1) {
+  order: 1;
+  flex: 0 0 var(--chapter-lead);
+  margin-inline-start: calc(-1 * (var(--chapter-lead) + 8px));
+}
+.chapter-rows-list .chapter-table tbody td:nth-child(2) {
+  order: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chapter-rows-list .chapter-table tbody td:nth-child(3) {
+  order: 1;
+  flex: 1 1 0;
+}
+.chapter-rows-list .chapter-table tbody td:nth-child(7) {
+  order: 1;
+  margin-inline-start: auto;
+}
+.chapter-rows-list .chapter-table tbody td:nth-child(4),
+.chapter-rows-list .chapter-table tbody td:nth-child(5),
+.chapter-rows-list .chapter-table tbody td:nth-child(6) {
+  order: 3;
+}
+.chapter-rows-list .chapter-table .chapter-source-empty {
+  display: none;
+}
+.chapter-rows-list .chapter-table tbody td:nth-child(5) > div {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+/* A folded span's summary and progress bar need the full second line, and its two empty
+   cells would otherwise add gaps to it. */
+.chapter-rows-list .chapter-table tbody tr.chapter-span-row td:empty {
+  display: none;
+}
+.chapter-rows-list .chapter-table tbody tr.chapter-span-row td:nth-child(3),
+.chapter-rows-list .chapter-table tbody tr.chapter-span-row td:nth-child(6) {
+  order: 3;
+  flex: 1 1 100%;
+}
+.chapter-rows-list .chapter-table .chapter-cell {
+  padding-inline-end: 0 !important;
+}
+.chapter-rows-list .chapter-table .chapter-span-markers {
+  position: static;
+  min-width: 0;
+}
+.chapter-rows-list .chapter-span-overlay {
+  display: none;
 }
 
 /* --- Stat tiles ---------------------------------------------------------- */
@@ -7514,6 +7523,14 @@ body.reader-open {
   color: var(--ink-3);
 }
 
+/* The machine half of the series page (Sources, Metadata, Scrobbling) sits one type step under the
+   reading half, so its tables stop outweighing the synopsis. Portalled menus and tooltips are
+   outside the scope and keep their size. */
+.series-machine {
+  --mantine-font-size-sm: var(--type-meta);
+  --mantine-font-size-xs: var(--type-micro);
+}
+
 /* A source's own series id: a slug, a number or a UUID. Kept to one line; the full id is in the
    title and behind the link. */
 .mono-id {
@@ -8252,25 +8269,31 @@ body.reader-open {
   background: var(--surface-2);
 }
 
+.series-detail-chapter-head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 .series-detail-chapter-toolbar {
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
 }
-/* Long chapter lists: Select (and then the selection actions) stay pinned under the header so
-   picking rows far down never means scrolling back up. Only one of the two is sticky at a time. */
-.series-detail-chapter-toolbar[data-sticky] {
+/* Long chapter lists: the toolbar and search (and then the selection actions) stay pinned to the
+   top so picking rows far down never means scrolling back up. Only one of the two is sticky at a
+   time. The app header is only there on phones; everywhere else the variable is 0. */
+.series-detail-chapter-head[data-sticky] {
   position: sticky;
-  top: var(--app-shell-header-height, 58px);
+  top: var(--app-shell-header-height, 0px);
   z-index: 20;
-  padding-top: 12px;
-  margin-top: -12px;
+  padding-block: 12px;
+  margin-block: -12px;
   background: var(--app-bg);
 }
 /* Scheme prefix so the tint outranks the blanket Paper surface rule. The tint is layered over the
    page ground so rows don't show through while it is pinned. */
 [data-mantine-color-scheme] .series-detail-chapter-selection {
   position: sticky;
-  top: var(--app-shell-header-height, 58px);
+  top: var(--app-shell-header-height, 0px);
   z-index: 20;
   border-left: 2px solid var(--brand);
   border-right: 0;

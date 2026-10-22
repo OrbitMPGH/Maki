@@ -175,7 +175,7 @@ export const ChapterRow = memo(function ChapterRow({
                   </LightBadge>
                 </HoverTooltip>
             )}
-            <LightText fw={600} className="tnum chapter-label">
+            <LightText fw={600} className="tnum chapter-label chapter-number">
               {c.isOneShot || c.number === null
                   ? chapterLabel(c)
                   : c.fileVolume !== null
@@ -241,7 +241,7 @@ export const ChapterRow = memo(function ChapterRow({
             {c.title}
           </LightText>
         </Table.Td>
-        <Table.Td>
+        <Table.Td className="chapter-released">
           <LightText c="var(--ink-3)" className="tnum chapter-label">
             {c.releaseDate ? formatCalendarDate(c.releaseDate) : '-'}
           </LightText>
@@ -643,7 +643,7 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
             >
               {span.label}
             </Badge>
-            <Text size="sm" fw={600} className="tnum chapter-label">
+            <Text size="sm" fw={600} className="tnum chapter-label chapter-number">
               {spanRangeLabel(span)}
             </Text>
           </Group>
@@ -753,7 +753,7 @@ export function ChapterRowSkeletons({ count }: { count: number }) {
         <Table.Td><Skeleton h={16} w={30} radius="xl" /></Table.Td>
         <Table.Td><Skeleton h={14} w={72} /></Table.Td>
         <Table.Td><Skeleton h={14} w="60%" /></Table.Td>
-        <Table.Td><Skeleton h={14} w={78} /></Table.Td>
+        <Table.Td className="chapter-released"><Skeleton h={14} w={78} ml="auto" /></Table.Td>
         <Table.Td><Skeleton h={18} w={64} radius="sm" /></Table.Td>
         <Table.Td><Skeleton h={18} w={92} radius="sm" /></Table.Td>
         <Table.Td><Skeleton h={18} w={52} ml="auto" /></Table.Td>

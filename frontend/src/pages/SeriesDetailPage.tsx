@@ -219,11 +219,11 @@ const CHAPTER_COLUMNS = {
   status: { width: 240, min: 140 },
 }
 // The Wanted and actions columns hold fixed-size controls, and Title takes whatever is left, down
-// to this much before the table scrolls sideways instead.
+// to this much before the rows turn into two-line list rows instead.
 const CHAPTER_WANTED_COLUMN_WIDTH = 80
 const CHAPTER_ACTIONS_COLUMN_WIDTH = 124
 const CHAPTER_FIXED_COLUMNS_WIDTH = CHAPTER_WANTED_COLUMN_WIDTH + CHAPTER_ACTIONS_COLUMN_WIDTH
-const CHAPTER_TITLE_MIN_WIDTH = 110
+const CHAPTER_TITLE_MIN_WIDTH = 220
 const chapterTableMinWidthFor = (widths: Record<keyof typeof CHAPTER_COLUMNS, number>) =>
   CHAPTER_FIXED_COLUMNS_WIDTH + CHAPTER_TITLE_MIN_WIDTH + Object.values(widths).reduce((sum, w) => sum + w, 0)
 
@@ -878,6 +878,16 @@ function SeriesDetailBody() {
    * lines only appeared if the page was loaded straight into Chapters.
    */
   const [chapterTable, setChapterTable] = useState<HTMLDivElement | null>(null)
+  const [chapterPanelWidth, setChapterPanelWidth] = useState(0)
+  useEffect(() => {
+    if (!chapterTable) return
+    const observer = new ResizeObserver(([entry]) => setChapterPanelWidth(entry.contentRect.width))
+    observer.observe(chapterTable)
+    return () => observer.disconnect()
+  }, [chapterTable])
+  // Two-line rows whenever the panel can't hold every column at its set width. A scrolling table
+  // squeezed Title to a few characters and pushed the switch and actions out of view.
+  const chapterRowsAsList = isMobile || (chapterPanelWidth > 0 && chapterPanelWidth < chapterTableMinWidth)
   const [spanLines, setSpanLines] = useState<
       { key: string; label: string; top: number; height: number; left: number; openStart: boolean; openEnded: boolean }[]
   >([])
@@ -1918,7 +1928,7 @@ function SeriesDetailBody() {
               </Panel>
 
               <div className="series-split-row">
-                <Panel className="series-detail-source-panel">
+                <Panel className="series-detail-source-panel series-machine">
                   {series.numberingClash && (
                       <Alert
                           mb="md"
@@ -1993,9 +2003,9 @@ function SeriesDetailBody() {
                     )}
                   </Text>
                 </Panel>
-                <Panel className="series-detail-metadata-panel">
+                <Panel className="series-detail-metadata-panel series-machine">
                   <Group justify="space-between" align="baseline" mb="sm" wrap="nowrap">
-                    <Title order={2} size="h3" fz="var(--type-section)">
+                    <Title order={2} size="h3" fz="var(--type-subhead)">
                       <Trans>Metadata</Trans>
                     </Title>
                     <Anchor component="button" type="button" size="xs" c="var(--ink-3)" onClick={() => setMetadataHistoryOpen(true)}>
@@ -2221,106 +2231,106 @@ function SeriesDetailBody() {
 
         <Tabs.Panel value="chapters">
           <Stack className="series-detail-chapters" gap="lg">
-            {/* Chapters */}
-            <Group
-                className="series-detail-chapter-toolbar"
-                data-sticky={selectMode ? undefined : true}
-                justify="space-between"
-                wrap="wrap"
-                gap="sm"
-            >
-              <Group gap="xs" align="baseline">
-                <Title order={2} size="h3"><Trans>Chapters</Trans></Title>
-                {chapters && (
-                    <Text size="sm" c="var(--ink-3)" className="tnum">
-                      {progress.have}/{progress.total}
-                    </Text>
-                )}
-                {chapters && readTracking && progress.have > 0 && (
-                    <Badge size="sm" variant="light" color="var(--ok)" className="tnum">
-                      <Trans>{readFilterCount} read</Trans>
-                    </Badge>
+            <div className="series-detail-chapter-head" data-sticky={selectMode ? undefined : true}>
+              <Group
+                  className="series-detail-chapter-toolbar"
+                  justify="space-between"
+                  wrap="wrap"
+                  gap="sm"
+              >
+                <Group gap="xs" align="baseline">
+                  <Title order={2} size="h3"><Trans>Chapters</Trans></Title>
+                  {chapters && (
+                      <Text size="sm" c="var(--ink-3)" className="tnum">
+                        {progress.have}/{progress.total}
+                      </Text>
+                  )}
+                  {chapters && readTracking && progress.have > 0 && (
+                      <Badge size="sm" variant="light" color="var(--ok)" className="tnum">
+                        <Trans>{readFilterCount} read</Trans>
+                      </Badge>
+                  )}
+                </Group>
+                {chapters && chapters.length > 0 && (
+                    <Group gap="xs" wrap="wrap">
+                      {isMobile ? (
+                          <Select
+                              size="xs"
+                              aria-label={t`Filter chapters`}
+                              data={chapterFilterData}
+                              value={chapterFilter}
+                              onChange={(value) => value && setChapterFilter(value)}
+                              allowDeselect={false}
+                              w={150}
+                          />
+                      ) : (
+                          <SegmentedControl
+                              aria-label={t`Filter chapters`}
+                              size="xs"
+                              value={chapterFilter}
+                              onChange={setChapterFilter}
+                              data={chapterFilterData}
+                          />
+                      )}
+                      <Tooltip label={chapterSort === 'asc' ? t`Oldest first` : t`Newest first`} withArrow>
+                        <ActionIcon
+                            size="input-xs"
+                            variant="default"
+                            aria-label={chapterSort === 'asc' ? t`Sort newest first` : t`Sort oldest first`}
+                            onClick={toggleChapterSort}
+                        >
+                          {chapterSort === 'asc'
+                              ? <IconSortAscendingNumbers size={16} />
+                              : <IconSortDescendingNumbers size={16} />}
+                        </ActionIcon>
+                      </Tooltip>
+                      <Select
+                          size="xs"
+                          aria-label={t`Chapters per page`}
+                          data={chapterPageSizeOptions}
+                          value={chapterPageSizePreference}
+                          onChange={setChapterPageSize}
+                          allowDeselect={false}
+                          w={isMobile ? 100 : 108}
+                      />
+                      {!selectMode && (
+                          <Button
+                              size="xs"
+                              variant="default"
+                              leftSection={<IconListCheck size={14} />}
+                              onClick={() => setSelectMode(true)}
+                          >
+                            <Trans>Select</Trans>
+                          </Button>
+                      )}
+                    </Group>
                 )}
               </Group>
-              {chapters && chapters.length > 0 && (
-                  <Group gap="xs" wrap="wrap">
-                    {isMobile ? (
-                        <Select
-                            size="xs"
-                            aria-label={t`Filter chapters`}
-                            data={chapterFilterData}
-                            value={chapterFilter}
-                            onChange={(value) => value && setChapterFilter(value)}
-                            allowDeselect={false}
-                            w={150}
-                        />
-                    ) : (
-                        <SegmentedControl
-                            aria-label={t`Filter chapters`}
-                            size="xs"
-                            value={chapterFilter}
-                            onChange={setChapterFilter}
-                            data={chapterFilterData}
-                        />
-                    )}
-                    <Tooltip label={chapterSort === 'asc' ? t`Oldest first` : t`Newest first`} withArrow>
-                      <ActionIcon
-                          size="input-xs"
-                          variant="default"
-                          aria-label={chapterSort === 'asc' ? t`Sort newest first` : t`Sort oldest first`}
-                          onClick={toggleChapterSort}
-                      >
-                        {chapterSort === 'asc'
-                            ? <IconSortAscendingNumbers size={16} />
-                            : <IconSortDescendingNumbers size={16} />}
-                      </ActionIcon>
-                    </Tooltip>
-                    <Select
-                        size="xs"
-                        aria-label={t`Chapters per page`}
-                        data={chapterPageSizeOptions}
-                        value={chapterPageSizePreference}
-                        onChange={setChapterPageSize}
-                        allowDeselect={false}
-                        w={isMobile ? 100 : 108}
-                    />
-                    {!selectMode && (
-                        <Button
-                            size="xs"
-                            variant="default"
-                            leftSection={<IconListCheck size={14} />}
-                            onClick={() => setSelectMode(true)}
-                        >
-                          <Trans>Select</Trans>
-                        </Button>
-                    )}
-                  </Group>
-              )}
-            </Group>
 
-            {chapters && chapters.length > 0 && (
-                <TextInput
-                    size="sm"
-                    value={chapterSearch}
-                    onChange={(event) => setChapterSearch(event.currentTarget.value)}
-                    leftSection={<IconSearch size={16} />}
-                    rightSection={
-                      chapterSearch ? (
-                          <ActionIcon
-                              size="sm"
-                              variant="subtle"
-                              color="var(--neutral)"
-                              aria-label={t`Clear chapter search`}
-                              onClick={() => setChapterSearch('')}
-                          >
-                            <IconX size={14} />
-                          </ActionIcon>
-                      ) : null
-                    }
-                    placeholder={t`Search by chapter number or title`}
-                    aria-label={t`Search chapters`}
-                />
-            )}
+              {chapters && chapters.length > 0 && (
+                  <TextInput
+                      size="sm"
+                      value={chapterSearch}
+                      onChange={(event) => setChapterSearch(event.currentTarget.value)}
+                      leftSection={<IconSearch size={16} />}
+                      rightSection={
+                        chapterSearch ? (
+                            <ActionIcon
+                                size="sm"
+                                variant="subtle"
+                                color="var(--neutral)"
+                                aria-label={t`Clear chapter search`}
+                                onClick={() => setChapterSearch('')}
+                            >
+                              <IconX size={14} />
+                            </ActionIcon>
+                        ) : null
+                      }
+                      placeholder={t`Search by chapter number or title`}
+                      aria-label={t`Search chapters`}
+                  />
+              )}
+            </div>
 
             {/* Two closed issues came from people who had a file on disk and could not find how to
                 tell Maki which chapters it holds. Point at it from the tab they were looking at. */}
@@ -2684,13 +2694,18 @@ function SeriesDetailBody() {
                 </Text>
             ) : (
                 <Stack gap="sm">
-                  <Paper className="series-detail-chapter-table" withBorder radius="lg" style={{ overflow: 'hidden' }}>
+                  <Paper
+                      className={chapterRowsAsList ? 'series-detail-chapter-table chapter-rows-list' : 'series-detail-chapter-table'}
+                      withBorder
+                      radius="lg"
+                      style={{ overflow: 'hidden' }}
+                  >
                     <Box
                         pos="relative"
                         ref={setChapterTable}
                         style={{ '--chapter-marker-slot': `${markerSlot}px` } as React.CSSProperties}
                     >
-                      <Table.ScrollContainer minWidth={isMobile ? 0 : chapterTableMinWidth}>
+                      <Table.ScrollContainer minWidth={chapterRowsAsList ? 0 : chapterTableMinWidth}>
                         <Table
                             className="chapter-table"
                             highlightOnHover
@@ -2709,7 +2724,7 @@ function SeriesDetailBody() {
                                     browser squeezing Title when the other columns grow. */}
                                 <Box miw={CHAPTER_TITLE_MIN_WIDTH - 32}><Trans>Title</Trans></Box>
                               </Table.Th>
-                              <Table.Th w={chapterColumnWidths.released}>
+                              <Table.Th w={chapterColumnWidths.released} className="chapter-released">
                                 <Trans>Released</Trans>
                                 <div {...chapterColumnHandle('released', 'start')} aria-label={t`Resize Released column`} />
                               </Table.Th>
