@@ -15120,6 +15120,11 @@ msgstr "Solicitações"
 msgid "Requests filed from the Request series page and from series pages show up here."
 msgstr "Solicitações feitas na página Solicitar série e nas páginas das séries aparecem aqui."
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "requests, request, single user, multi user, multi-user, household, family, sharing, leaderboard, reader picker"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Require HTTPS"
@@ -17097,6 +17102,7 @@ msgid "Single sign-on saved. Restart Maki to apply it."
 msgstr "Login único salvo. Reinicie o Maki para aplicá-lo."
 
 #: src/components/settings/UsersSection.tsx
+#: src/pages/settings/registry.ts
 msgid "Single-user mode"
 msgstr ""
 

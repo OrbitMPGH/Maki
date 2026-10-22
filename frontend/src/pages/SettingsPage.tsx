@@ -169,7 +169,10 @@ export default function SettingsPage() {
     const want = fromTarget ?? (tabParam ? (SETTINGS_TAB_ALIASES[tabParam] ?? tabParam) : null)
     return tabs.some((x) => x.key === want) ? want! : (tabs[0]?.key ?? 'account')
   }
-  const tabEntries = useMemo(() => visible.filter((e) => e.tab === activeTab), [visible, activeTab])
+  const tabEntries = useMemo(
+    () => visible.filter((e) => e.tab === activeTab && !e.within),
+    [visible, activeTab],
+  )
   // The tab rail scrolls sideways on a phone; the open tab is brought into view, not left off the edge.
   const tabListRef = useRef<HTMLDivElement>(null)
   useEffect(() => {

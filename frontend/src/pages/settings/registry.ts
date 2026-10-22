@@ -55,6 +55,11 @@ export interface SettingsEntry {
   /** Instance configuration: the server rejects these for a non-admin, so they are not rendered. */
   admin?: boolean
   permission?: Permission
+  /**
+   * Search only: a control inside another entry's card, which the palette lists by its own name.
+   * The page and the jump list skip it; the control carries the `setting-{id}` anchor itself.
+   */
+  within?: string
 }
 
 export const SETTINGS_TABS: SettingsTab[] = [
@@ -523,6 +528,17 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     admin: true,
     keywords: msg({
       message: `accounts, permissions, disable user, add user, admin`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'user-mode',
+    tab: 'users',
+    title: msg`Single-user mode`,
+    admin: true,
+    within: 'users',
+    keywords: msg({
+      message: `requests, request, single user, multi user, multi-user, household, family, sharing, leaderboard, reader picker`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },

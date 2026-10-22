@@ -1291,6 +1291,12 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     box-shadow: 0 0 0 2px var(--brand);
   }
 }
+/* A single control the palette can land on inside a card: room around it so the flash outline
+   does not sit on the switch's own edge. */
+.settings-inline-target {
+  margin: -6px -8px var(--mantine-spacing-md);
+  padding: 6px 8px;
+}
 .nav-section-label {
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);

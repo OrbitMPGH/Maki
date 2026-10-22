@@ -15119,6 +15119,11 @@ msgstr "요청"
 msgid "Requests filed from the Request series page and from series pages show up here."
 msgstr "요청 시리즈 페이지와 시리즈 페이지에서 제출한 요청이 여기에 표시됩니다."
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "requests, request, single user, multi user, multi-user, household, family, sharing, leaderboard, reader picker"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Require HTTPS"
@@ -17096,6 +17101,7 @@ msgid "Single sign-on saved. Restart Maki to apply it."
 msgstr "싱글 사인온이 저장되었습니다. 적용하려면 Maki를 다시 시작하세요."
 
 #: src/components/settings/UsersSection.tsx
+#: src/pages/settings/registry.ts
 msgid "Single-user mode"
 msgstr ""
 

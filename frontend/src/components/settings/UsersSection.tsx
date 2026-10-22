@@ -99,23 +99,26 @@ function UserModeSwitch() {
   const { data: mode } = useUserMode()
   const save = useSetUserMode()
 
-  if (!mode) return null
+  const checked = save.isPending && save.variables !== undefined ? save.variables : mode?.singleUser
 
-  const checked = save.isPending && save.variables !== undefined ? save.variables : mode.singleUser
-
+  // The wrapper is there before the mode loads and stays the same element after, so a palette deep
+  // link finds it on arrival and its flash class is not wiped when the switch fills in.
   return (
-    <Switch
-      mb="md"
-      checked={checked}
-      disabled={!mode.available || save.isPending}
-      onChange={(e) => save.mutate(e.currentTarget.checked)}
-      label={t`Single-user mode`}
-      description={
-        mode.available
-          ? t`Hides Requests, the reader picker and leaderboard on Stats, and other controls for sharing the instance. Adding a second user switches to multi-user mode.`
-          : t`Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back.`
-      }
-    />
+    <div id="setting-user-mode" className="settings-inline-target">
+      {mode && (
+        <Switch
+          checked={checked}
+          disabled={!mode.available || save.isPending}
+          onChange={(e) => save.mutate(e.currentTarget.checked)}
+          label={t`Single-user mode`}
+          description={
+            mode.available
+              ? t`Hides Requests, the reader picker and leaderboard on Stats, and other controls for sharing the instance. Adding a second user switches to multi-user mode.`
+              : t`Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back.`
+          }
+        />
+      )}
+    </div>
   )
 }
 
