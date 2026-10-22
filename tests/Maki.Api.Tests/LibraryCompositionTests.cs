@@ -1,4 +1,6 @@
+using Maki.Api.Dtos;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Data;
@@ -21,9 +23,28 @@ public sealed class LibraryCompositionTests : IDisposable
 
     private static readonly DateTime T0 = new(2026, 9, 24, 0, 0, 0, DateTimeKind.Utc);
 
+    private sealed class NoSettings : IUserSettingsStore
+    {
+        public Task<string?> GetAsync(int userId, string key, CancellationToken ct = default) =>
+            Task.FromResult<string?>(null);
+
+        public Task SetAsync(int userId, string key, string? value, CancellationToken ct = default) =>
+            Task.CompletedTask;
+    }
+
     private LibraryCompositionService Service(
         MakiDbContext db, int userId = Owner, MakiPermission permissions = MakiPermission.Admin) =>
-        new(db, new TestCurrentUser(userId, permissions: permissions), new MemoryCache(new MemoryCacheOptions()));
+        new(db, new TestCurrentUser(userId, permissions: permissions), new MemoryCache(new MemoryCacheOptions()),
+            new NoSettings());
+
+    private static DateTime Utc(int year, int month, int day, int hour = 0) =>
+        new(year, month, day, hour, 0, 0, DateTimeKind.Utc);
+
+    private async Task<IReadOnlyList<LibraryGrowthDto>> Growth(DateOnly from, DateOnly to, int utcOffsetMinutes = 0)
+    {
+        using var db = _db.NewContext(Owner);
+        return await Service(db).GetGrowthAsync(from, to, utcOffsetMinutes, CancellationToken.None);
+    }
 
     /// <summary>Adds a downloaded chapter with a backing file, and returns the file's series.</summary>
     private void SeedFile(int seriesId, string source, long size, DateTime? added = null)
@@ -74,7 +95,7 @@ public sealed class LibraryCompositionTests : IDisposable
         Assert.Equal(0, stats.Totals.SeriesCount);
         Assert.Equal(0, stats.Totals.TotalBytes);
         Assert.Empty(stats.BySource);
-        Assert.Empty(stats.Growth);
+        Assert.Empty(await Growth(new DateOnly(2026, 1, 1), new DateOnly(2026, 3, 31)));
     }
 
     [Fact]
@@ -113,20 +134,69 @@ public sealed class LibraryCompositionTests : IDisposable
     }
 
     [Fact]
-    public async Task GrowthAccumulatesMonthByMonth()
+    public async Task GrowthAccumulatesMonthByMonthIncludingEmptyMonths()
     {
-        _db.SeedSeries("A", configure: s => s.Added = new DateTime(2026, 1, 5, 0, 0, 0, DateTimeKind.Utc));
-        _db.SeedSeries("B", configure: s => s.Added = new DateTime(2026, 1, 20, 0, 0, 0, DateTimeKind.Utc));
-        _db.SeedSeries("C", configure: s => s.Added = new DateTime(2026, 3, 2, 0, 0, 0, DateTimeKind.Utc));
+        _db.SeedSeries("A", configure: s => s.Added = Utc(2026, 1, 5));
+        _db.SeedSeries("B", configure: s => s.Added = Utc(2026, 1, 20));
+        _db.SeedSeries("C", configure: s => s.Added = Utc(2026, 3, 2));
 
-        using var db = _db.NewContext(Owner);
-        var stats = await Service(db).GetAsync(CancellationToken.None);
+        var growth = await Growth(new DateOnly(2026, 1, 1), new DateOnly(2026, 3, 31));
 
-        Assert.Equal(["2026-01", "2026-03"], stats.Growth.Select(g => g.Bucket));
-        Assert.Equal(2, stats.Growth[0].SeriesAdded);
-        Assert.Equal(2, stats.Growth[0].Cumulative);
-        Assert.Equal(1, stats.Growth[1].SeriesAdded);
-        Assert.Equal(3, stats.Growth[1].Cumulative);
+        Assert.Equal(["2026-01", "2026-02", "2026-03"], growth.Select(g => g.Bucket));
+        Assert.Equal([2, 0, 1], growth.Select(g => g.SeriesAdded));
+        Assert.Equal([2, 2, 3], growth.Select(g => g.Cumulative));
+    }
+
+    [Fact]
+    public async Task GrowthTracksBytesByWhenEachFileWasAdded()
+    {
+        var a = _db.SeedSeries("A", configure: s => s.Added = Utc(2026, 1, 5));
+        SeedFile(a, "MangaDex", 100, Utc(2026, 1, 6));
+        SeedFile(a, "MangaDex", 300, Utc(2026, 2, 10));
+        SeedFile(a, "MangaDex", 50, Utc(2026, 2, 28, 23));
+
+        var growth = await Growth(new DateOnly(2026, 1, 1), new DateOnly(2026, 3, 31));
+
+        Assert.Equal([100L, 350L, 0L], growth.Select(g => g.BytesAdded));
+        Assert.Equal([100L, 450L, 450L], growth.Select(g => g.CumulativeBytes));
+    }
+
+    [Fact]
+    public async Task ShortWindowsGoByDayAndStartFromWhatCameBefore()
+    {
+        var a = _db.SeedSeries("A", configure: s => s.Added = Utc(2025, 12, 1));
+        SeedFile(a, "MangaDex", 1_000, Utc(2025, 12, 2));
+        SeedFile(a, "MangaDex", 50, Utc(2026, 1, 2, 12));
+        // After the window, so it must not count anywhere.
+        SeedFile(a, "MangaDex", 7, Utc(2026, 1, 4, 12));
+
+        var growth = await Growth(new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 3));
+
+        Assert.Equal(["2026-01-01", "2026-01-02", "2026-01-03"], growth.Select(g => g.Bucket));
+        Assert.All(growth, g => Assert.Equal(1, g.Cumulative));
+        Assert.Equal([1_000L, 1_050L, 1_050L], growth.Select(g => g.CumulativeBytes));
+    }
+
+    [Fact]
+    public async Task GrowthSkipsTheEmptyStretchBeforeTheLibraryExisted()
+    {
+        _db.SeedSeries("A", configure: s => s.Added = Utc(2026, 1, 5));
+
+        var growth = await Growth(new DateOnly(2024, 1, 1), new DateOnly(2026, 2, 28));
+
+        Assert.Equal(["2026-01", "2026-02"], growth.Select(g => g.Bucket));
+    }
+
+    [Fact]
+    public async Task GrowthBucketsInTheCallersCalendar()
+    {
+        var a = _db.SeedSeries("A", configure: s => s.Added = Utc(2025, 12, 1));
+        // 23:00 UTC on the 1st is the 2nd at UTC+2 (getTimezoneOffset() reports -120 there).
+        SeedFile(a, "MangaDex", 10, Utc(2026, 1, 1, 23));
+
+        var growth = await Growth(new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 2), utcOffsetMinutes: -120);
+
+        Assert.Equal([0L, 10L], growth.Select(g => g.BytesAdded));
     }
 
     [Fact]

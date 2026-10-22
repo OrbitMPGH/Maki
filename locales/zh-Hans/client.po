@@ -6562,6 +6562,10 @@ msgid "Discover and offline search are available now."
 msgstr "发现和离线搜索现在可用。"
 
 #: src/pages/stats/sections/LibrarySection.tsx
+msgid "Disk size"
+msgstr ""
+
+#: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Disk used"
 msgstr "磁盘使用量"

@@ -230,6 +230,11 @@ export function formatDayBucket(bucket: string): string {
   return dayAndMonth().format(new Date(year, month - 1, day))
 }
 
+/** Either stats bucket shape: "2026-03" as a month, "2026-03-14" as a day. */
+export function formatStatsBucket(bucket: string): string {
+  return bucket.split('-').length === 2 ? formatMonthBucket(bucket) : formatDayBucket(bucket)
+}
+
 /**
  * Reading time as a person would say it: "4h 20m", "35m", "48s". Minutes are dropped once the
  * figure is whole hours, because "12h 0m" reads like a stopwatch rather than an answer.

@@ -5435,6 +5435,10 @@ msgid "Discover and offline search are available now."
 msgstr "Discover and offline search are available now."
 
 #: src/pages/stats/sections/LibrarySection.tsx
+msgid "Disk size"
+msgstr "Disk size"
+
+#: src/pages/stats/sections/LibrarySection.tsx
 msgid "Disk used"
 msgstr "Disk used"
 

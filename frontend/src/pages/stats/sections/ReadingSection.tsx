@@ -18,13 +18,12 @@ import { Panel } from '../../../components/ui/Panel'
 import { SectionHeader } from '../../../components/ui/SectionHeader'
 import {
   formatCalendarDate,
-  formatDayBucket,
   formatHour,
-  formatMonthBucket,
   formatNumber,
   formatPercent,
   formatReadingTime,
   formatSignedPercent,
+  formatStatsBucket,
 } from '../../../format'
 import { ActivityFeed } from '../ActivityFeed'
 import { ReadTrackingEmpty } from '../ReadTrackingEmpty'
@@ -34,11 +33,6 @@ import { RankList } from '../RankList'
 import { delta, type DateRange } from '../StatsRange'
 import { StatsInsight } from '../StatsSection'
 import type { StatsSectionProps } from './types'
-
-/** "2026-03" → "Mar 26"; "2026-03-14" → "14 Mar" or "Mar 14". */
-function bucketLabel(bucket: string): string {
-  return bucket.split('-').length === 2 ? formatMonthBucket(bucket) : formatDayBucket(bucket)
-}
 
 /** Inclusive day count of a local-date range, for "12 of 30 days active". */
 function daysInRange({ from, to }: DateRange): number {
@@ -225,7 +219,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
   ]
 
   const timelineData = activity.timeline.map((p) => ({
-    bucket: bucketLabel(p.bucket),
+    bucket: formatStatsBucket(p.bucket),
     Chapters: p.chaptersRead,
     Hours: Math.round((p.readingSeconds / 3600) * 10) / 10,
   }))

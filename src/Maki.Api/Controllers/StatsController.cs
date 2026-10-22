@@ -151,4 +151,20 @@ public class StatsController(
     {
         return Ok(await library.GetAsync(ct));
     }
+
+    /// <summary>
+    /// Series count and disk use over an inclusive local-date range, by day or month. Windowed, so
+    /// it is its own call rather than part of <see cref="Library"/>, which stays window-free.
+    /// </summary>
+    [HttpGet("library/growth")]
+    public async Task<IActionResult> LibraryGrowth(
+        [FromQuery] DateOnly from, [FromQuery] DateOnly to, [FromQuery] int utcOffsetMinutes, CancellationToken ct)
+    {
+        if (InvalidWindow(from, to, utcOffsetMinutes) is { } invalid)
+        {
+            return invalid;
+        }
+
+        return Ok(await library.GetGrowthAsync(from, to, utcOffsetMinutes, ct));
+    }
 }

@@ -6563,6 +6563,10 @@ msgid "Discover and offline search are available now."
 msgstr "Descobrir e a pesquisa offline estão disponíveis agora."
 
 #: src/pages/stats/sections/LibrarySection.tsx
+msgid "Disk size"
+msgstr ""
+
+#: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Disk used"
 msgstr "Espaço usado no disco"

@@ -5,6 +5,7 @@ import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
 import {
   activityHandler,
   insightsHandler,
+  libraryGrowthHandler,
   libraryHandler,
   progressSummaryNewcomer,
   progressSummaryOff,
@@ -112,6 +113,7 @@ export const NewReader: Story = {
       insightsHandler('sparse'),
       standingHandler('sparse'),
       libraryHandler('empty'),
+      libraryGrowthHandler('empty'),
       yearsHandler([2026]),
     ],
   },

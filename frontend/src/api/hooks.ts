@@ -4490,11 +4490,13 @@ export interface SourceUsage {
   bytes: number
 }
 
-/** bucket is "yyyy-MM" (UTC); cumulative is the library size at the end of that month. */
+/** bucket is a local "yyyy-MM-dd" or "yyyy-MM"; the cumulative fields are the library at the end of it. */
 export interface LibraryGrowth {
   bucket: string
   seriesAdded: number
   cumulative: number
+  bytesAdded: number
+  cumulativeBytes: number
 }
 
 export interface SeriesSize {
@@ -4511,7 +4513,6 @@ export interface LibraryComposition {
   byStatus: NamedCount[]
   bySource: SourceUsage[]
   topGenres: NamedCount[]
-  growth: LibraryGrowth[]
   largest: SeriesSize[]
   /** "unknown" for series with no rating. */
   byContentRating: NamedCount[]
@@ -4528,6 +4529,20 @@ export function useLibraryComposition(enabled = true) {
     queryFn: () => api<LibraryComposition>('/stats/library'),
     enabled,
     staleTime: 60_000,
+  })
+}
+
+/** Series count and disk use over an inclusive local-date window, by day or month like the activity timeline. */
+export function useLibraryGrowth(from: string, to: string, enabled = true) {
+  return useQuery({
+    queryKey: ['stats', 'library', 'growth', from, to],
+    queryFn: () =>
+      api<LibraryGrowth[]>(
+        `/stats/library/growth?from=${from}&to=${to}&utcOffsetMinutes=${new Date().getTimezoneOffset()}`,
+      ),
+    enabled,
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
   })
 }
 

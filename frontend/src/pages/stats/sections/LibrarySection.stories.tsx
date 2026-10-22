@@ -3,7 +3,7 @@ import { expect, waitFor } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import '@mantine/charts/styles.css'
 import { api, failWith, neverResolve } from '../../../../.storybook/mocks/api'
-import { libraryFor, libraryHandler, sectionProps } from '../../../../.storybook/mocks/insights'
+import { libraryFor, libraryGrowthHandler, libraryHandler, sectionProps } from '../../../../.storybook/mocks/insights'
 import LibrarySection from './LibrarySection'
 
 const meta = {
@@ -48,10 +48,20 @@ export const ReaderRequests: Story = {
 }
 
 export const EmptyLibrary: Story = {
-  parameters: { msw: [libraryHandler('empty')] },
+  parameters: { msw: [libraryHandler('empty'), libraryGrowthHandler('empty')] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Nothing to show yet.')).toBeVisible()
     await waitFor(() => expect(canvas.getAllByText('Nothing downloaded yet.').length).toBeGreaterThan(0))
+  },
+}
+
+/** Twelve months goes by month; the default 30 day window goes by day. */
+export const TwelveMonths: Story = {
+  args: {
+    range: { from: '2025-10-20', to: '2026-10-19' },
+    previous: { from: '2024-10-20', to: '2025-10-19' },
+    preset: '12m',
+    windowLabel: 'the last 12 months',
   },
 }
 
