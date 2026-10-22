@@ -203,7 +203,6 @@ export function ScrobbleSection() {
         {isAdmin && (
           <SettingsNumberInput
             mt="xs"
-            w={220}
             label={t`Sync interval (minutes)`}
             description={t`How often progress and ratings are pushed, from both Kavita and the built-in reader.`}
             min={5}

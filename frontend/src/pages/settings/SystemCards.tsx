@@ -238,7 +238,6 @@ export function BackupSection() {
           max={50}
           value={retention}
           onChange={setRetention}
-          w={220}
         />
       </Stack>
 

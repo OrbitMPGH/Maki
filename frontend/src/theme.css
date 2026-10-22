@@ -9556,6 +9556,64 @@ tr:hover .mono-value-copy {
 
 /* Activity log: one line per event, time then tracker then what happened. A warning or error is
    marked by a rule down the left edge rather than colouring the text. */
+/* Settings > Notifications: one row per event, a column each for the bell and push. */
+.notify-matrix {
+  width: 100%;
+  border-collapse: collapse;
+}
+.notify-matrix thead th {
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
+  text-align: left;
+  padding: 0 0 6px;
+}
+.notify-matrix th[scope='row'] {
+  font-weight: normal;
+  text-align: left;
+  padding: 7px 12px 7px 0;
+}
+.notify-matrix tbody tr + tr > * {
+  border-top: 1px solid var(--border);
+}
+.notify-matrix-category th {
+  padding: 16px 0 4px;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
+  text-align: left;
+}
+.notify-matrix .notify-matrix-check {
+  width: 4.5rem;
+  text-align: center;
+  vertical-align: middle;
+}
+.notify-matrix-check .mantine-Checkbox-root {
+  display: inline-flex;
+}
+.notify-matrix-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+/* A row of fields with a button at its end. Outside a settings card hints sit above the inputs and
+   the row aligns bottoms; inside one they sit below, so the row aligns tops and the button drops by
+   one label line to meet the inputs. */
+.settings-field-action {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-md);
+}
+.settings-section .settings-field-row {
+  align-items: flex-start;
+}
+.settings-section .settings-field-row > .settings-field-action {
+  margin-top: calc(1.55rem * var(--mantine-scale));
+}
+/* One width for every settings number field; the label and hint keep the full column. */
+.settings-number-field {
+  max-width: 12rem;
+}
 .health-op-head {
   display: flex;
   flex-direction: column;

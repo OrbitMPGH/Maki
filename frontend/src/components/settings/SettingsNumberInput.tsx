@@ -35,6 +35,7 @@ export function SettingsNumberInput({ value, onChange, min, max, settle, onBlur,
     <NumberInput
       allowDecimal={false}
       {...rest}
+      classNames={{ wrapper: 'settings-number-field' }}
       min={min}
       max={max}
       clampBehavior="blur"

@@ -786,7 +786,6 @@ export function RecycleBinSection() {
             max={365}
             value={retention ?? days}
             onChange={setRetentionDraft}
-            w={260}
           />
         )}
         {entries.length === 0 ? (

@@ -146,7 +146,7 @@ function ConnectionFieldRow({
   children?: ReactNode
 }) {
   return (
-    <Group align="flex-end" wrap="wrap">
+    <Group align="flex-end" wrap="wrap" className="settings-field-row">
       {form.fields.map((f) =>
         f.options ? (
           <Select
@@ -184,10 +184,12 @@ function ConnectionFieldRow({
           />
         ),
       )}
-      <Button variant="default" loading={form.testing} onClick={form.test}>
-        <Trans>Test</Trans>
-      </Button>
-      {children}
+      <div className="settings-field-action">
+        <Button variant="default" loading={form.testing} onClick={form.test}>
+          <Trans>Test</Trans>
+        </Button>
+        {children}
+      </div>
     </Group>
   )
 }

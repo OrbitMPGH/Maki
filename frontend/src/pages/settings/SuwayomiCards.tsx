@@ -71,7 +71,7 @@ export function SuwayomiCard() {
       onDiscard={discard}
     >
       <Stack gap="sm">
-        <Group align="flex-end" wrap="wrap">
+        <Group align="flex-end" wrap="wrap" className="settings-field-row">
           <TextInput
             autoComplete="off"
             label={t`URL`}
@@ -96,7 +96,7 @@ export function SuwayomiCard() {
           />
         </Group>
         {authMode !== 'none' && (
-          <Group align="flex-end" wrap="wrap">
+          <Group align="flex-end" wrap="wrap" className="settings-field-row">
             <TextInput
               autoComplete="off"
               label={t`Username`}

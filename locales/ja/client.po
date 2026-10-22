@@ -1141,6 +1141,14 @@ msgstr "{label} - ページ{pageNumber}"
 msgid "{label} already has a file. Compare the two before deciding: importing this archive links it alongside the existing one, it does not replace it. To swap them, delete the file you do not want first."
 msgstr "{label}にはすでにファイルがあります。決める前に比較してください。このアーカイブをインポートすると既存ファイルと並んでリンクされ、置き換えにはなりません。入れ替えるには不要なファイルを先に削除してください。"
 
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "{label} as a push notification"
+msgstr ""
+
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "{label} in the bell"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "{label} mixes languages, and Suwayomi does not say which one a chapter is in. Every chapter from it is filed under the language you pick here."
@@ -3601,8 +3609,8 @@ msgid "Applies to chapters released later."
 msgstr "後で公開された章に適用"
 
 #: src/components/settings/PushNotificationsSection.tsx
-msgid "Applies to every device signed in as you. Turning a type off here only stops the push, it still lands in your bell."
-msgstr ""
+#~ msgid "Applies to every device signed in as you. Turning a type off here only stops the push, it still lands in your bell."
+#~ msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -4054,6 +4062,10 @@ msgstr "Makiをインターネットに公開する前に"
 msgid "Behind (missing chapters)"
 msgstr "遅れ（不足している章）"
 
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Bell"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -4215,8 +4227,8 @@ msgstr "内蔵"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Bulk new chapters"
-msgstr "新着章の一括保留"
+#~ msgid "Bulk new chapters"
+#~ msgstr "新着章の一括保留"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -7214,6 +7226,10 @@ msgstr "Escで閉じる"
 msgid "Estimated"
 msgstr "推定"
 
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Event"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Events"
@@ -9906,7 +9922,6 @@ msgstr "左から右"
 msgid "Length, year and rating"
 msgstr ""
 
-#: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
@@ -10999,7 +11014,6 @@ msgstr "監視：{modeLabel}"
 msgid "Month"
 msgstr "月"
 
-#: src/components/settings/SettingsHelp.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
@@ -12645,7 +12659,11 @@ msgid "Notifications muted"
 msgstr "通知をミュート中"
 
 #: src/components/settings/PushNotificationsSection.tsx
-msgid "Notifications on this device, even when Maki is closed."
+#~ msgid "Notifications on this device, even when Maki is closed."
+#~ msgstr ""
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Notifications on this device, even when Maki is closed. Which events push is picked in the Notifications table above."
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -13859,6 +13877,14 @@ msgstr "新しいイメージを取得してコンテナを再作成"
 #, fuzzy
 msgid "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you can't add series yourself. Connect trackers on the Scrobble page first. Needs the local MangaBaka database."
 msgstr "トラッカーのリストを定期的に取り込み、一致するシリーズをライブラリに追加します。自分でシリーズを追加できない場合は、リクエストとして登録します。先にScrobbleページでトラッカーを接続してください。ローカルのMangaBakaデータベースが必要です。"
+
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Push"
+msgstr ""
+
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Push applies to every device signed in as you, once it is turned on in Push notifications below. An event can push without landing in the bell."
+msgstr ""
 
 #: src/components/settings/PushNotificationsSection.tsx
 #: src/pages/settings/registry.ts
@@ -15417,8 +15443,8 @@ msgstr "{retryCount}回再試行 - 次の試行{nextAttemptTime}"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Retries"
-msgstr "再試行回数"
+#~ msgid "Retries"
+#~ msgstr "再試行回数"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
@@ -17755,8 +17781,8 @@ msgstr "連続記録"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Stuck downloads"
-msgstr "停止したダウンロード"
+#~ msgid "Stuck downloads"
+#~ msgstr "停止したダウンロード"
 
 #: src/components/CreditPicker.tsx
 #, fuzzy
@@ -20401,8 +20427,8 @@ msgid "What to pause"
 msgstr "一時停止する対象"
 
 #: src/components/settings/PushNotificationsSection.tsx
-msgid "What to push"
-msgstr ""
+#~ msgid "What to push"
+#~ msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy

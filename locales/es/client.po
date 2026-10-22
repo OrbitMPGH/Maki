@@ -1141,6 +1141,14 @@ msgstr "{label} - página {pageNumber}"
 msgid "{label} already has a file. Compare the two before deciding: importing this archive links it alongside the existing one, it does not replace it. To swap them, delete the file you do not want first."
 msgstr "{label} ya tiene un archivo. Compara ambos antes de decidir: importar este archivo lo vincula junto al existente, no lo reemplaza. Para cambiarlos, elimina primero el archivo que no quieras."
 
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "{label} as a push notification"
+msgstr ""
+
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "{label} in the bell"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "{label} mixes languages, and Suwayomi does not say which one a chapter is in. Every chapter from it is filed under the language you pick here."
@@ -3602,8 +3610,8 @@ msgid "Applies to chapters released later."
 msgstr "Se aplica a los capítulos publicados más tarde."
 
 #: src/components/settings/PushNotificationsSection.tsx
-msgid "Applies to every device signed in as you. Turning a type off here only stops the push, it still lands in your bell."
-msgstr ""
+#~ msgid "Applies to every device signed in as you. Turning a type off here only stops the push, it still lands in your bell."
+#~ msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -4055,6 +4063,10 @@ msgstr "Antes de exponer Maki a internet"
 msgid "Behind (missing chapters)"
 msgstr "Detrás (capítulos que faltan)"
 
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Bell"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -4216,8 +4228,8 @@ msgstr "Integrada"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Bulk new chapters"
-msgstr "Muchos capítulos nuevos de golpe"
+#~ msgid "Bulk new chapters"
+#~ msgstr "Muchos capítulos nuevos de golpe"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -7215,6 +7227,10 @@ msgstr "Esc cierra"
 msgid "Estimated"
 msgstr "Estimado"
 
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Event"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Events"
@@ -9907,7 +9923,6 @@ msgstr "De izquierda a derecha"
 msgid "Length, year and rating"
 msgstr ""
 
-#: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
@@ -11000,7 +11015,6 @@ msgstr "Supervisión: {modeLabel}"
 msgid "Month"
 msgstr "Mes"
 
-#: src/components/settings/SettingsHelp.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
@@ -12646,7 +12660,11 @@ msgid "Notifications muted"
 msgstr "Notificaciones silenciadas"
 
 #: src/components/settings/PushNotificationsSection.tsx
-msgid "Notifications on this device, even when Maki is closed."
+#~ msgid "Notifications on this device, even when Maki is closed."
+#~ msgstr ""
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Notifications on this device, even when Maki is closed. Which events push is picked in the Notifications table above."
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -13860,6 +13878,14 @@ msgstr "descarga la imagen nueva y vuelve a crear el contenedor"
 #, fuzzy
 msgid "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you can't add series yourself. Connect trackers on the Scrobble page first. Needs the local MangaBaka database."
 msgstr "Descarga tus listas de rastreadores según un horario y añade a la biblioteca las series que coincidan, o envía solicitudes cuando no puedes añadir series tú mismo. Conecta primero los rastreadores en la página de Scrobble. Necesita la base de datos local de MangaBaka."
+
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Push"
+msgstr ""
+
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Push applies to every device signed in as you, once it is turned on in Push notifications below. An event can push without landing in the bell."
+msgstr ""
 
 #: src/components/settings/PushNotificationsSection.tsx
 #: src/pages/settings/registry.ts
@@ -15418,8 +15444,8 @@ msgstr "Reintentado {retryCount}x - próximo intento {nextAttemptTime}"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Retries"
-msgstr "Reintentos"
+#~ msgid "Retries"
+#~ msgstr "Reintentos"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
@@ -17756,8 +17782,8 @@ msgstr "Racha"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Stuck downloads"
-msgstr "Descargas atascadas"
+#~ msgid "Stuck downloads"
+#~ msgstr "Descargas atascadas"
 
 #: src/components/CreditPicker.tsx
 #, fuzzy
@@ -20402,8 +20428,8 @@ msgid "What to pause"
 msgstr "Qué pausar"
 
 #: src/components/settings/PushNotificationsSection.tsx
-msgid "What to push"
-msgstr ""
+#~ msgid "What to push"
+#~ msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy

@@ -972,6 +972,14 @@ msgstr "{label} - page {pageNumber}"
 msgid "{label} already has a file. Compare the two before deciding: importing this archive links it alongside the existing one, it does not replace it. To swap them, delete the file you do not want first."
 msgstr "{label} already has a file. Compare the two before deciding: importing this archive links it alongside the existing one, it does not replace it. To swap them, delete the file you do not want first."
 
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "{label} as a push notification"
+msgstr "{label} as a push notification"
+
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "{label} in the bell"
+msgstr "{label} in the bell"
+
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "{label} mixes languages, and Suwayomi does not say which one a chapter is in. Every chapter from it is filed under the language you pick here."
 msgstr "{label} mixes languages, and Suwayomi does not say which one a chapter is in. Every chapter from it is filed under the language you pick here."
@@ -2988,8 +2996,8 @@ msgid "Applies to chapters released later."
 msgstr "Applies to chapters released later."
 
 #: src/components/settings/PushNotificationsSection.tsx
-msgid "Applies to every device signed in as you. Turning a type off here only stops the push, it still lands in your bell."
-msgstr "Applies to every device signed in as you. Turning a type off here only stops the push, it still lands in your bell."
+#~ msgid "Applies to every device signed in as you. Turning a type off here only stops the push, it still lands in your bell."
+#~ msgstr "Applies to every device signed in as you. Turning a type off here only stops the push, it still lands in your bell."
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Applies to torrent grabs and reviewed imports. Off keeps the release's own file name, which often says more than the format can. Series imported from disk keep their file names either way."
@@ -3361,6 +3369,10 @@ msgstr "Before exposing Maki to the internet"
 msgid "Behind (missing chapters)"
 msgstr "Behind (missing chapters)"
 
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Bell"
+msgstr "Bell"
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "bell, inbox, alerts, toast, in-app notifications, new chapters, achievements, level up"
@@ -3493,8 +3505,8 @@ msgid "Built in"
 msgstr "Built in"
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Bulk new chapters"
-msgstr "Bulk new chapters"
+#~ msgid "Bulk new chapters"
+#~ msgstr "Bulk new chapters"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "Busiest day"
@@ -5986,6 +5998,10 @@ msgstr "Esc closes"
 msgid "Estimated"
 msgstr "Estimated"
 
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Event"
+msgstr "Event"
+
 #: src/components/NotificationsSection.tsx
 msgid "Events"
 msgstr "Events"
@@ -8212,7 +8228,6 @@ msgstr "Left to right"
 msgid "Length, year and rating"
 msgstr "Length, year and rating"
 
-#: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 msgid "Less"
@@ -9119,7 +9134,6 @@ msgstr "Monitoring: {modeLabel}"
 msgid "Month"
 msgstr "Month"
 
-#: src/components/settings/SettingsHelp.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
@@ -10482,8 +10496,12 @@ msgid "Notifications muted"
 msgstr "Notifications muted"
 
 #: src/components/settings/PushNotificationsSection.tsx
-msgid "Notifications on this device, even when Maki is closed."
-msgstr "Notifications on this device, even when Maki is closed."
+#~ msgid "Notifications on this device, even when Maki is closed."
+#~ msgstr "Notifications on this device, even when Maki is closed."
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Notifications on this device, even when Maki is closed. Which events push is picked in the Notifications table above."
+msgstr "Notifications on this device, even when Maki is closed. Which events push is picked in the Notifications table above."
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Notifications: {notificationMode}"
@@ -11487,6 +11505,14 @@ msgstr "pull the new image and recreate the container"
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you can't add series yourself. Connect trackers on the Scrobble page first. Needs the local MangaBaka database."
 msgstr "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you can't add series yourself. Connect trackers on the Scrobble page first. Needs the local MangaBaka database."
+
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Push"
+msgstr "Push"
+
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Push applies to every device signed in as you, once it is turned on in Push notifications below. An event can push without landing in the bell."
+msgstr "Push applies to every device signed in as you, once it is turned on in Push notifications below. An event can push without landing in the bell."
 
 #: src/components/settings/PushNotificationsSection.tsx
 #: src/pages/settings/registry.ts
@@ -12777,8 +12803,8 @@ msgid "Retried {retryCount}x - next attempt {nextAttemptTime}"
 msgstr "Retried {retryCount}x - next attempt {nextAttemptTime}"
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Retries"
-msgstr "Retries"
+#~ msgid "Retries"
+#~ msgstr "Retries"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
@@ -14731,8 +14757,8 @@ msgid "Streak"
 msgstr "Streak"
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Stuck downloads"
-msgstr "Stuck downloads"
+#~ msgid "Stuck downloads"
+#~ msgstr "Stuck downloads"
 
 #: src/components/CreditPicker.tsx
 msgid "Studio"
@@ -16908,8 +16934,8 @@ msgid "What to pause"
 msgstr "What to pause"
 
 #: src/components/settings/PushNotificationsSection.tsx
-msgid "What to push"
-msgstr "What to push"
+#~ msgid "What to push"
+#~ msgstr "What to push"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "What you read"

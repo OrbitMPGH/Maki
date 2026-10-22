@@ -1,24 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Button, Checkbox, Divider, Group, Stack, Switch, Text } from '@mantine/core'
+import { Alert, Button, Group, Stack, Switch, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useQueryClient } from '@tanstack/react-query'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { SecureContextNote } from './SecureContextNote'
-import { useAuth } from '../../auth/AuthProvider'
-import { useLabel } from '../../i18n-context'
-import {
-  INBOX_ADMIN_ONLY,
-  visibleInboxCategories,
-  INBOX_TYPE_DESCRIPTIONS,
-  INBOX_TYPE_LABELS,
-  type InboxEventType,
-} from '../../api/inbox'
 import {
   pushPublicKeyQuery,
   toSubscriptionBody,
-  usePushPrefs,
-  useSavePushPrefs,
   useSendPushTest,
   useSubscribePush,
   useUnsubscribePush,
@@ -43,7 +32,12 @@ export function PushNotificationsSection() {
     <SettingsSection
       id="push-notifications"
       title={<Trans>Push notifications</Trans>}
-      description={<Trans>Notifications on this device, even when Maki is closed.</Trans>}
+      description={
+        <Trans>
+          Notifications on this device, even when Maki is closed. Which events push is picked in the
+          Notifications table above.
+        </Trans>
+      }
     >
       {!supported ? (
         <SecureContextNote />
@@ -172,64 +166,6 @@ function PushControls() {
           </Button>
         </Group>
       )}
-      <Divider />
-      <PushFilter />
-    </Stack>
-  )
-}
-
-function PushFilter() {
-  const renderLabel = useLabel()
-  const { can, singleUser } = useAuth()
-  const isAdmin = can('Admin')
-  const { data: prefs } = usePushPrefs()
-  const save = useSavePushPrefs()
-
-  if (!prefs) return null
-
-  const selected = save.isPending && save.variables ? save.variables : prefs.types
-  const categories = visibleInboxCategories(isAdmin, singleUser)
-
-  function setType(type: InboxEventType, on: boolean) {
-    save.mutate(on ? [...selected.filter((s) => s !== type), type] : selected.filter((s) => s !== type))
-  }
-
-  return (
-    <Stack gap="md">
-      <div>
-        <Text size="sm" fw={500}>
-          <Trans>What to push</Trans>
-        </Text>
-        <Text size="xs" c="var(--ink-3)">
-          <Trans>
-            Applies to every device signed in as you. Turning a type off here only stops the push, it
-            still lands in your bell.
-          </Trans>
-        </Text>
-      </div>
-      {categories.map((category) => (
-        <div key={category.id}>
-          <Text size="xs" fw={600} c="var(--ink-3)" mb="xs">
-            {renderLabel(category.label)}
-          </Text>
-          <Stack gap="xs">
-            {category.types
-              .filter((type) => isAdmin || !INBOX_ADMIN_ONLY.includes(type))
-              .map((type) => {
-                const description = INBOX_TYPE_DESCRIPTIONS[type]
-                return (
-                  <Checkbox
-                    key={type}
-                    label={renderLabel(INBOX_TYPE_LABELS[type])}
-                    description={description && renderLabel(description)}
-                    checked={selected.includes(type)}
-                    onChange={(e) => setType(type, e.currentTarget.checked)}
-                  />
-                )
-              })}
-          </Stack>
-        </div>
-      ))}
     </Stack>
   )
 }
