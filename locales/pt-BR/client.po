@@ -13885,6 +13885,10 @@ msgstr "Na fila para download"
 msgid "Queued upgrade from {winnerSource}"
 msgstr "Upgrade de {winnerSource} colocado na fila"
 
+#: src/App.tsx
+msgid "Quick links"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Quiet for longer than its usual rhythm, so there is no estimate."
 msgstr ""

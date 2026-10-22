@@ -13885,6 +13885,10 @@ msgstr "İndirme için kuyruğa alındı"
 msgid "Queued upgrade from {winnerSource}"
 msgstr "{winnerSource} kaynağından yükseltme kuyruğa alındı"
 
+#: src/App.tsx
+msgid "Quick links"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Quiet for longer than its usual rhythm, so there is no estimate."
 msgstr ""

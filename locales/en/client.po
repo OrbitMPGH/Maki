@@ -11492,6 +11492,10 @@ msgstr "Queued for download"
 msgid "Queued upgrade from {winnerSource}"
 msgstr "Queued upgrade from {winnerSource}"
 
+#: src/App.tsx
+msgid "Quick links"
+msgstr "Quick links"
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Quiet for longer than its usual rhythm, so there is no estimate."
 msgstr "Quiet for longer than its usual rhythm, so there is no estimate."

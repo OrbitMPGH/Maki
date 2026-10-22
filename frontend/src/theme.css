@@ -486,6 +486,27 @@ body {
   background-color: var(--app-bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* index.html asks for viewport-fit=cover. iPadOS draws the page under its status bar whatever the
+     status-bar meta says, so a pinned toolbar used to leave a band of faded covers above it. Taking
+     the whole screen makes that band ours: the shell starts below it and body::before fills it. */
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+/* Starts well above the viewport: iPadOS reports no inset yet still paints the page above the
+   viewport's top edge, blurred, behind the status bar. A fixed strip reaching up there covers it. */
+body::before {
+  content: '';
+  position: fixed;
+  top: -120px;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: calc(120px + var(--safe-top));
+  background: var(--app-bg);
+  pointer-events: none;
+}
+.mantine-Modal-content[data-full-screen],
+.mantine-Drawer-content {
+  border-top: var(--safe-top) solid transparent;
 }
 
 :root[data-mantine-color-scheme='dark'],
@@ -531,23 +552,6 @@ body {
    colour as the cards behind them. */
 [data-mantine-color-scheme] .mantine-Menu-dropdown,
 [data-mantine-color-scheme] .mantine-Popover-dropdown {
-  /* index.html asks for viewport-fit=cover. iPadOS draws the page under its status bar whatever the
-     status-bar meta says, so a pinned toolbar used to leave a band of faded covers above it. Taking
-     the whole screen makes that band ours: the shell starts below it and body::before fills it. */
-  --safe-top: env(safe-area-inset-top, 0px);
-}
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0 0 auto;
-  z-index: 100;
-  height: var(--safe-top);
-  background: var(--app-bg);
-  pointer-events: none;
-}
-.mantine-Modal-content[data-full-screen],
-.mantine-Drawer-content {
-  border-top: var(--safe-top) solid transparent;
   background-color: var(--surface-raised);
   border: 1px solid var(--border-raised);
   box-shadow: var(--shadow-raised);
@@ -714,13 +718,34 @@ body::before {
 /* --- App shell ----------------------------------------------------------- */
 /* The sidebar has no ground of its own on desktop: the body shows through and only the hairline
    separates it from the page. */
+/* Everything Mantine positions off the header offset (navbar, main, hero bands) and every sticky
+   bar below drops by the status bar this way. The header itself is never collapsed, so its height
+   is the offset Mantine would have used. */
+.mantine-AppShell-root {
+  --app-shell-header-offset: calc(var(--app-shell-header-height, 0rem) + var(--safe-top));
+}
+.mantine-AppShell-main {
+  padding-inline-start: max(
+    calc(var(--app-shell-navbar-offset, 0rem) + var(--app-shell-padding)),
+    calc(env(safe-area-inset-left, 0px) + var(--app-shell-padding))
+  );
+  padding-inline-end: calc(var(--app-shell-padding) + env(safe-area-inset-right, 0px));
+  padding-bottom: calc(var(--app-shell-padding) + env(safe-area-inset-bottom, 0px));
+}
 .app-navbar {
+  padding: 16px 12px max(12px, env(safe-area-inset-bottom, 0px));
+  padding-inline-start: max(12px, env(safe-area-inset-left, 0px));
   background: transparent;
   border-right: 1px solid var(--border);
 }
 .app-header {
+  top: var(--safe-top);
   background: var(--app-bg);
   border-bottom: 1px solid var(--border);
+}
+.app-header-row {
+  padding-inline: max(var(--mantine-spacing-md), env(safe-area-inset-left, 0px))
+    max(var(--mantine-spacing-md), env(safe-area-inset-right, 0px));
 }
 
 /* Below Mantine's `sm` breakpoint the navbar stops being a column and becomes an overlay drawer,
@@ -759,35 +784,76 @@ body::before {
     margin-inline: 2px;
   }
 }
-/* Everything Mantine positions off the header offset (navbar, main, hero bands) and every sticky
-   bar below drops by the status bar this way. The header itself is never collapsed, so its height
-   is the offset Mantine would have used. */
-.mantine-AppShell-root {
-  --app-shell-header-offset: calc(var(--app-shell-header-height, 0rem) + var(--safe-top));
+/* A collapsed sidebar on a wider screen (App.tsx) is the phone layout at any width: the same
+   header, the same drawer. Tablets are touch screens too, so the targets stay thumb-sized. */
+.mantine-AppShell-root.nav-collapsed {
+  --app-shell-navbar-width: min(272px, 82vw);
 }
-.mantine-AppShell-main {
-  padding-inline-start: max(
-    calc(var(--app-shell-navbar-offset, 0rem) + var(--app-shell-padding)),
-    calc(env(safe-area-inset-left, 0px) + var(--app-shell-padding))
-  );
-  padding-inline-end: calc(var(--app-shell-padding) + env(safe-area-inset-right, 0px));
-  padding-bottom: calc(var(--app-shell-padding) + env(safe-area-inset-bottom, 0px));
+.nav-collapsed .app-navbar {
+  background: var(--surface-2);
+  box-shadow: 12px 0 32px -16px rgba(0, 0, 0, 0.8);
+}
+[data-theme='light'] .nav-collapsed .app-navbar {
+  background: var(--surface);
+}
+.nav-collapsed .app-header .mantine-Burger-root {
+  width: 44px;
+  height: 44px;
+  padding: 13px;
+}
+.nav-collapsed .app-header-actions .mantine-ActionIcon-root {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+.nav-collapsed .app-header-actions .command-palette-trigger-icon {
+  width: 40px;
+  height: 40px;
+  margin-inline: 2px;
+}
+.nav-collapse-toggle {
+  margin-inline-start: auto;
+}
+.app-header-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-base) var(--ease),
+    color var(--dur-base) var(--ease);
+}
+.app-header-link:hover {
+  background: var(--surface-hover);
+  color: var(--ink-hi);
+}
+.app-header-link[data-active='true'] {
+  background: color-mix(in srgb, var(--brand) 13%, transparent);
+  color: var(--ink-hi);
+}
+.app-header-link[data-active='true'] svg {
+  color: var(--brand-fg);
+}
+.app-header-search .command-palette-trigger {
+  width: clamp(180px, 22vw, 260px);
+  height: 40px;
 }
 
-  padding: 16px 12px max(12px, env(safe-area-inset-bottom, 0px));
-  padding-inline-start: max(12px, env(safe-area-inset-left, 0px));
 /* Popovers carry a fixed pixel width (the inbox bell is 380, health is 340), which Mantine writes
    as an inline `width`, so only a max-width can rein it in. On a 375px phone the bell's dropdown
    ends up wider than the screen: Floating UI shoves it as far left as it can and the header row
    still runs under the right edge, taking "Mark all read" with it. Scoped to mobile, and a
-  top: var(--safe-top);
    max-width, so it is a no-op wherever the popover already fits. */
 @media (max-width: 47.9375em) {
   .mantine-Popover-dropdown {
-.app-header-row {
-  padding-inline: max(var(--mantine-spacing-md), env(safe-area-inset-left, 0px))
-    max(var(--mantine-spacing-md), env(safe-area-inset-right, 0px));
-}
     max-width: calc(100vw - 1.5rem);
   }
 }
@@ -825,37 +891,6 @@ body::before {
 
 .brand-mark {
   display: grid;
-/* A collapsed sidebar on a wider screen (App.tsx) is the phone layout at any width: the same
-   header, the same drawer. Tablets are touch screens too, so the targets stay thumb-sized. */
-.mantine-AppShell-root.nav-collapsed {
-  --app-shell-navbar-width: min(272px, 82vw);
-}
-.nav-collapsed .app-navbar {
-  background: var(--surface-2);
-  box-shadow: 12px 0 32px -16px rgba(0, 0, 0, 0.8);
-}
-[data-theme='light'] .nav-collapsed .app-navbar {
-  background: var(--surface);
-}
-.nav-collapsed .app-header .mantine-Burger-root {
-  width: 44px;
-  height: 44px;
-  padding: 13px;
-}
-.nav-collapsed .app-header-actions .mantine-ActionIcon-root {
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  min-height: 44px;
-}
-.nav-collapsed .app-header-actions .command-palette-trigger {
-  width: 40px;
-  height: 40px;
-  margin-inline: 2px;
-}
-.nav-collapse-toggle {
-  margin-inline-start: auto;
-}
   place-items: center;
   flex-shrink: 0;
   width: 40px;
@@ -6936,12 +6971,20 @@ body.reader-open {
   opacity: 1;
   pointer-events: auto;
 }
+/* The bars grow into the status bar and home indicator areas rather than sitting under them. */
+.reader-bar {
+  padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+}
 .reader-bar-top {
   top: 0;
+  height: calc(56px + var(--safe-top));
+  padding-top: var(--safe-top);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .reader-bar-bottom {
   bottom: 0;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 .reader-bar .mantine-Text-root {
@@ -6981,20 +7024,12 @@ body.reader-open {
   background: none;
   cursor: pointer;
   line-height: 0;
-/* The bars grow into the status bar and home indicator areas rather than sitting under them. */
-.reader-bar {
-  padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
-}
 }
 .reader-strip-item[data-current='true'] {
-  height: calc(56px + var(--safe-top));
-  padding-top: var(--safe-top);
   border-color: var(--brand);
 }
 .reader-strip-item[data-bookmarked='true']::after {
   content: '';
-  height: calc(56px + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
   position: absolute;
   top: 3px;
   left: 3px;

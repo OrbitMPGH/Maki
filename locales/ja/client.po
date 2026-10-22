@@ -13884,6 +13884,10 @@ msgstr "ダウンロードのキューに追加済み"
 msgid "Queued upgrade from {winnerSource}"
 msgstr "{winnerSource}からのアップグレードをキューに追加しました"
 
+#: src/App.tsx
+msgid "Quick links"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Quiet for longer than its usual rhythm, so there is no estimate."
 msgstr ""

@@ -13884,6 +13884,10 @@ msgstr "다운로드 대기열에 추가됨"
 msgid "Queued upgrade from {winnerSource}"
 msgstr "{winnerSource}에서 업그레이드를 대기열에 추가함"
 
+#: src/App.tsx
+msgid "Quick links"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Quiet for longer than its usual rhythm, so there is no estimate."
 msgstr ""

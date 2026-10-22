@@ -13884,6 +13884,10 @@ msgstr "已加入下载队列"
 msgid "Queued upgrade from {winnerSource}"
 msgstr "已将来自 {winnerSource} 的升级加入队列"
 
+#: src/App.tsx
+msgid "Quick links"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Quiet for longer than its usual rhythm, so there is no estimate."
 msgstr ""

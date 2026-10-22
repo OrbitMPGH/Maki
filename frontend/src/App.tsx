@@ -308,6 +308,9 @@ function AppShellRoutes() {
     requestsVisible: isAdmin || !canAdd || !can('DownloadChapters'),
   })
   const allItems: NavItem[] = sections.flatMap((s) => s.items)
+  // The places someone reads from, in the collapsed header, so the drawer is only for the rest.
+  const quickItems = allItems.filter((i) => ['/home', '/library', '/discover'].includes(i.path))
+  const { _ } = useLinguiReact()
   const { data: pendingRequests } = usePendingRequestCount(isAdmin)
   const { data: health } = useHealth(isAdmin)
   const healthIssues = health?.length ?? 0
@@ -360,9 +363,32 @@ function AppShellRoutes() {
             <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
               <IconBrandMark />
             </span>
+            {navCollapsed && (
+              <Group component="nav" gap={4} wrap="nowrap" visibleFrom="sm" aria-label={t`Quick links`}>
+                {quickItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className="app-header-link"
+                    data-active={isActive(item, location.pathname)}
+                  >
+                    <item.icon size={18} stroke={1.7} />
+                    {_(item.label)}
+                  </Link>
+                ))}
+              </Group>
+            )}
           </Group>
           <Group gap={4} wrap="nowrap" className="app-header-actions">
-            <CommandPaletteTrigger onOpen={openPalette} variant="icon" />
+            {/* A tablet has the room for the full field; a phone keeps the icon. */}
+            {navCollapsed && (
+              <Box visibleFrom="sm" className="app-header-search">
+                <CommandPaletteTrigger onOpen={openPalette} />
+              </Box>
+            )}
+            <Box hiddenFrom={navCollapsed ? 'sm' : undefined}>
+              <CommandPaletteTrigger onOpen={openPalette} variant="icon" />
+            </Box>
             <ActivityButton />
             <NotificationBell />
           </Group>

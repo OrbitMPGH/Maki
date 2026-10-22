@@ -13885,6 +13885,10 @@ msgstr "Mis en file pour téléchargement"
 msgid "Queued upgrade from {winnerSource}"
 msgstr "Mise à niveau mise en file depuis {winnerSource}"
 
+#: src/App.tsx
+msgid "Quick links"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Quiet for longer than its usual rhythm, so there is no estimate."
 msgstr ""
