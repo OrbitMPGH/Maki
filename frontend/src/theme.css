@@ -183,7 +183,7 @@
 /* --- Selectable accents -------------------------------------------------- */
 /* The Mantine `brand` colour is swapped in JS (theme-context); these keep the custom
    CSS tokens (glows, nav rail, brand mark) in sync so accent changes are visible app-wide.
-   Indigo is the default and lives in :root. */
+   Indigo lives in :root as the reference values; the default accent is set in theme-context. */
 :root[data-accent='blush'] {
   --brand: #ee7fa4;
   --brand-hover: #e86d96;
@@ -230,6 +230,42 @@
   --brand-on: #1f1600;
   --brand-glow: rgba(240, 173, 20, 0.3);
   --brand-fg: #ffdf85;
+}
+:root[data-accent='vermilion'] {
+  --brand: #ef5634;
+  --brand-hover: #d43d1f;
+  --brand-on: #ffffff;
+  --brand-glow: rgba(239, 86, 52, 0.3);
+  --brand-fg: #ffb8a5;
+}
+:root[data-theme='light'][data-accent='vermilion'] {
+  --brand-fg: #b03018;
+  --brand-fg-on-art: #ffb8a5;
+}
+:root[data-accent='teal'] {
+  --brand: #17ab9d;
+  --brand-hover: #0e8f84;
+  --brand-on: #04201d;
+  --brand-glow: rgba(23, 171, 157, 0.3);
+  --brand-fg: #8fe5da;
+}
+:root[data-theme='light'][data-accent='teal'] {
+  --brand: #0b766d;
+  --brand-hover: #0a5e58;
+  --brand-on: #ffffff;
+  --brand-fg: #0a5e58;
+  --brand-fg-on-art: #8fe5da;
+}
+:root[data-accent='plum'] {
+  --brand: #b84cbc;
+  --brand-hover: #9e3aa3;
+  --brand-on: #ffffff;
+  --brand-glow: rgba(184, 76, 188, 0.32);
+  --brand-fg: #e6b0e6;
+}
+:root[data-theme='light'][data-accent='plum'] {
+  --brand-fg: #832e88;
+  --brand-fg-on-art: #e6b0e6;
 }
 
 /* --- Selectable backgrounds ---------------------------------------------- */

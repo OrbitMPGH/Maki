@@ -11135,6 +11135,10 @@ msgstr "Play Rewind"
 msgid "Play the {rewindYear} retrospective"
 msgstr "Play the {rewindYear} retrospective"
 
+#: src/theme-context.tsx
+msgid "Plum"
+msgstr "Plum"
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Points added to a file's score for each quality format it matches. 0 means the format isn't scored by this profile."
 msgstr "Points added to a file's score for each quality format it matches. 0 means the format isn't scored by this profile."
@@ -14756,6 +14760,10 @@ msgstr "Tap zones (click the page edges to turn), paged layouts only"
 msgid "Taste"
 msgstr "Taste"
 
+#: src/theme-context.tsx
+msgid "Teal"
+msgstr "Teal"
+
 #: src/components/NotificationsSection.tsx
 msgid "Team channel"
 msgstr "Team channel"
@@ -16437,6 +16445,10 @@ msgstr "Verify scan {scanId}: {scanStatus}"
 #: src/pages/HealthPage.tsx
 msgid "Verify this file"
 msgstr "Verify this file"
+
+#: src/theme-context.tsx
+msgid "Vermilion"
+msgstr "Vermilion"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Version"

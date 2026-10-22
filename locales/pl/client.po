@@ -13454,6 +13454,10 @@ msgstr "Odtwórz Rewind"
 msgid "Play the {rewindYear} retrospective"
 msgstr "Odtwórz podsumowanie {rewindYear}"
 
+#: src/theme-context.tsx
+msgid "Plum"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Points added to a file's score for each quality format it matches. 0 means the format isn't scored by this profile."
@@ -17816,6 +17820,10 @@ msgstr "Strefy dotyku (kliknij krawędź strony, aby ją przewrócić), tylko w 
 msgid "Taste"
 msgstr "Gust"
 
+#: src/theme-context.tsx
+msgid "Teal"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Team channel"
@@ -19864,6 +19872,10 @@ msgstr "Skanowanie weryfikujące {scanId}: {scanStatus}"
 #, fuzzy
 msgid "Verify this file"
 msgstr "Zweryfikuj ten plik"
+
+#: src/theme-context.tsx
+msgid "Vermilion"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy

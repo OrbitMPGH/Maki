@@ -13453,6 +13453,10 @@ msgstr "播放 Rewind"
 msgid "Play the {rewindYear} retrospective"
 msgstr "播放 {rewindYear} 年回顾"
 
+#: src/theme-context.tsx
+msgid "Plum"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Points added to a file's score for each quality format it matches. 0 means the format isn't scored by this profile."
@@ -17815,6 +17819,10 @@ msgstr "点击区域（点击页面边缘翻页），仅适用于分页布局"
 msgid "Taste"
 msgstr "品味"
 
+#: src/theme-context.tsx
+msgid "Teal"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Team channel"
@@ -19863,6 +19871,10 @@ msgstr "验证扫描 {scanId}：{scanStatus}"
 #, fuzzy
 msgid "Verify this file"
 msgstr "验证此文件"
+
+#: src/theme-context.tsx
+msgid "Vermilion"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy

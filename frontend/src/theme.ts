@@ -25,7 +25,7 @@ const ModalPassthrough = ({ children }: { children?: ReactNode }) => children
  *
  * Content-first, cinematic dark UI for a self-hosted collection manager. The
  * dark scale is overridden to a cohesive near-black elevation ramp so every
- * Mantine surface picks up the look for free; `brand` (indigo/periwinkle by default) is
+ * Mantine surface picks up the look for free; `brand` (blush by default) is
  * the single accent. Semantic status hues live in ./components/ui/status.tsx.
  */
 
@@ -94,8 +94,56 @@ const amber: MantineColorsTuple = [
   '#674709',
 ]
 
+const vermilion: MantineColorsTuple = [
+  '#fff0eb',
+  '#ffdcd2',
+  '#ffb8a5',
+  '#ff9174',
+  '#fb6e4c',
+  '#ef5634',
+  '#d43d1f',
+  '#b03018',
+  '#8c2714',
+  '#6e2011',
+]
+
+const teal: MantineColorsTuple = [
+  '#e3fbf8',
+  '#c3f2ec',
+  '#8fe5da',
+  '#57d4c6',
+  '#2dc2b3',
+  '#17ab9d',
+  '#0e8f84',
+  '#0b766d',
+  '#0a5e58',
+  '#094b47',
+]
+
+const plum: MantineColorsTuple = [
+  '#fbeefb',
+  '#f3d8f3',
+  '#e6b0e6',
+  '#d888d9',
+  '#c965cc',
+  '#b84cbc',
+  '#9e3aa3',
+  '#832e88',
+  '#69256e',
+  '#521d57',
+]
+
 /** Selectable accent palettes; the CSS-variable side lives in theme.css under [data-accent]. */
-export const accents: Record<string, MantineColorsTuple> = { indigo: brand, blush, rose, emerald, amber }
+export const accents: Record<string, MantineColorsTuple> = {
+  indigo: brand,
+  blush,
+  rose,
+  emerald,
+  amber,
+  vermilion,
+  teal,
+  plum,
+}
 
 // Near-black elevation ramp. 7 = app body, 6 = cards, 5 = elevated (modals),
 // 4 = borders, 2 = dimmed text, 0 = primary text. `night` is the base ramp (`tinted` is the
@@ -185,9 +233,14 @@ export function groundRamp(ground: keyof typeof grounds, accent: MantineColorsTu
 
 // Rose's shade 5 only reaches 4:1 under white text; one shade down clears 4.5:1.
 // Blush fills at shade 4 in dark with dark text; light takes shade 6 with white.
+// Vermilion and plum fill one shade down for white text; teal fills at 5 with dark text in dark and
+// needs shade 7 for white text in light.
 const primaryShades = new Map<MantineColorsTuple, { light: number; dark: number }>([
   [rose, { light: 6, dark: 6 }],
   [blush, { light: 6, dark: 4 }],
+  [vermilion, { light: 6, dark: 6 }],
+  [teal, { light: 7, dark: 5 }],
+  [plum, { light: 6, dark: 6 }],
 ])
 
 /**

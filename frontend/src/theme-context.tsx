@@ -63,6 +63,9 @@ export const ACCENTS: AccentOption[] = [
   { id: 'blush', label: msg`Blush`, swatch: accentSwatch('blush') },
   { id: 'emerald', label: msg`Emerald`, swatch: accentSwatch('emerald') },
   { id: 'amber', label: msg`Amber`, swatch: accentSwatch('amber') },
+  { id: 'vermilion', label: msg`Vermilion`, swatch: accentSwatch('vermilion') },
+  { id: 'teal', label: msg`Teal`, swatch: accentSwatch('teal') },
+  { id: 'plum', label: msg`Plum`, swatch: accentSwatch('plum') },
 ]
 
 const BACKGROUND_KEY = 'maki-background'
@@ -72,7 +75,7 @@ const LEGACY_KEY = 'maki-theme'
 
 // Nothing stored means the user never picked, so they follow the defaults. Stored ids are kept.
 const DEFAULT_BACKGROUND = 'tinted'
-const DEFAULT_ACCENT: AccentOption['id'] = 'indigo'
+const DEFAULT_ACCENT: AccentOption['id'] = 'blush'
 
 // A returning user keeps exactly what they had: the old presets all sat on the night ground.
 const LEGACY_PRESETS: Record<string, [background: string, accent: AccentOption['id']]> = {
@@ -149,7 +152,7 @@ function backgroundFor(id: string): BackgroundOption {
 }
 
 function accentFor(id: string): AccentOption {
-  return ACCENTS.find((a) => a.id === id) ?? ACCENTS[0]
+  return ACCENTS.find((a) => a.id === id) ?? ACCENTS.find((a) => a.id === DEFAULT_ACCENT) ?? ACCENTS[0]
 }
 
 interface ThemeContextValue {
