@@ -2,6 +2,7 @@ using Maki.Api.Localization;
 using System.Text.Json;
 using System.Security.Cryptography;
 using Maki.Api.Auth;
+using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -78,7 +79,10 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     /// An operation as the page reads it: same fields, with <c>error</c> worded in the caller's own
     /// language. A row with no key predates this and keeps the English it was written with.
     /// </summary>
-    private object Rendered(HealthOperation op) => new
+    private object Rendered(HealthOperation op) => Rendered(op, null, null, null);
+
+    /// <summary>The row plus what it acts on, so the Repairs list can name the file and series instead of an id.</summary>
+    private object Rendered(HealthOperation op, string? relativePath, Series? series, string? titleLanguage) => new
     {
         op.Id,
         op.Kind,
@@ -91,6 +95,10 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         Error = op.ErrorKey is { Length: > 0 } ? localizer.Get(op.ErrorKey, HealthMonitor.HealthParams(op.ErrorParamsJson)) : op.Error,
         op.CreatedAt,
         op.FinishedAt,
+        RelativePath = relativePath,
+        SeriesId = series?.Id,
+        SeriesTitle = series is null ? null : SeriesDto.DisplayTitleFor(series, titleLanguage),
+        CoverUrl = series is null ? null : SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.LastMetadataRefresh),
     };
 
     /// <summary>
@@ -471,12 +479,26 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     { await operations.ApplyAsync(id, request.Version, request.Confirmed, request.ResetPositions, ct); return Ok(new { applied = true }); });
 
     [HttpGet("operations")]
-    public async Task<IActionResult> Operations([FromQuery] int page = 1, CancellationToken ct = default) => Ok(new
+    public async Task<IActionResult> Operations([FromServices] IUserSettings userSettings, [FromQuery] int page = 1, CancellationToken ct = default)
     {
-        total = await db.HealthOperations.CountAsync(ct),
-        items = (await db.HealthOperations.OrderByDescending(o => o.Id).Skip((Math.Max(1, page) - 1) * 30).Take(30).ToListAsync(ct))
-            .Select(Rendered)
-    });
+        var rows = await db.HealthOperations.OrderByDescending(o => o.Id).Skip((Math.Max(1, page) - 1) * 30).Take(30).ToListAsync(ct);
+        var fileIds = rows.Select(o => o.FileId).Distinct().ToList();
+        var files = await db.HealthFiles.AsNoTracking().Where(f => fileIds.Contains(f.Id))
+            .Select(f => new { f.Id, f.RelativePath, f.SeriesId }).ToDictionaryAsync(f => f.Id, ct);
+        var seriesIds = files.Values.Where(f => f.SeriesId != null).Select(f => f.SeriesId!.Value).Distinct().ToList();
+        var series = await db.Series.AsNoTracking().Where(s => seriesIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, ct);
+        var titleLanguage = await userSettings.GetAsync(SettingKeys.UiTitleLanguage, ct);
+        return Ok(new
+        {
+            total = await db.HealthOperations.CountAsync(ct),
+            items = rows.Select(op =>
+            {
+                var file = files.GetValueOrDefault(op.FileId);
+                var owner = file?.SeriesId is { } id ? series.GetValueOrDefault(id) : null;
+                return Rendered(op, file?.RelativePath, owner, titleLanguage);
+            }),
+        });
+    }
     [HttpGet("operations/{id:int}")]
     public async Task<IActionResult> Operation(int id, CancellationToken ct)
     {

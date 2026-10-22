@@ -21,13 +21,14 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(await canvas.findByRole('heading', { name: 'Scrobble' })).toBeVisible()
-    await expect(await canvas.findByText('maki_reads')).toBeVisible()
     await expect(await canvas.findByRole('heading', { name: 'Needs review' })).toBeVisible()
     await expect(await canvas.findByRole('heading', { name: 'Recent syncs' })).toBeVisible()
     await expect(await canvas.findByRole('heading', { name: 'Activity log' })).toBeVisible()
     await expect(await canvas.findByText('Not updated')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: /^AniList\W+Connected$/ }))
+    await expect(await within(canvasElement.ownerDocument.body).findByText('maki_reads')).toBeVisible()
   },
 }
 
@@ -59,12 +60,17 @@ export const RecentSyncsGroupedByResult: Story = {
 /** One tracker connected, one waiting for sign-in, one rejecting the saved details, two not set up. */
 export const MixedConnections: Story = {
   parameters: { msw: scrobbleHandlers(scrobbleStatusMixed) },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Not connected yet.')).toBeVisible()
-    await expect(await canvas.findByText("Can't sign in with the saved details.")).toBeVisible()
-    await waitFor(() => expect((canvas.getAllByText('Not set up yet.')).length).toBe(2))
-    await expect(await canvas.findByRole('button', { name: 'Connect' })).toBeVisible()
-    await expect(await canvas.findByRole('button', { name: 'Disconnect' })).toBeVisible()
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: /\W+Not connected$/ })).toHaveLength(2))
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: /\W+Not configured$/ })).toHaveLength(2))
+    await userEvent.click(await canvas.findByRole('button', { name: /^MyAnimeList\W+Not connected$/ }))
+    await expect(await body.findByText('Not connected yet.')).toBeVisible()
+    await expect(await body.findByRole('button', { name: 'Connect' })).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: /^Kitsu\W+Not connected$/ }))
+    await expect(await body.findByText("Can't sign in with the saved details.")).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: /^AniList\W+Connected$/ }))
+    await expect(await body.findByRole('button', { name: 'Disconnect' })).toBeVisible()
   },
 }
 
@@ -99,7 +105,9 @@ export const SyncRunning: Story = {
 
 export const SyncNow: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Sync now' }))
+    const sync = await canvas.findByRole('button', { name: 'Sync now' })
+    await waitFor(() => expect(sync).toHaveAttribute('aria-disabled', 'false'))
+    await userEvent.click(sync)
     await waitFor(() => expect((within(canvasElement.ownerDocument.body).getAllByText('Sync started.')).length).toBeGreaterThan(0))
   },
 }
@@ -150,19 +158,26 @@ export const OAuthFailed: Story = {
   },
 }
 
-/** A non-admin cannot set trackers up, so the cards say who can. */
+/** A non-admin cannot set trackers up, so a tracker that is not set up says who can. */
 export const ReaderView: Story = {
   parameters: { auth: 'reader', msw: scrobbleHandlers(scrobbleStatusMixed) },
-  play: async ({ canvas }) => {
-    await waitFor(() => expect((canvas.getAllByText('Not set up yet. An admin can add it in Settings.')).length).toBe(2))
-    await expect(canvas.queryByRole('link', { name: 'Set up in Settings' })).toBeNull()
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const [unset] = await canvas.findAllByRole('button', { name: /\W+Not configured$/ })
+    await userEvent.click(unset)
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByText('Not set up yet. An admin can add it in Settings.')).toBeVisible()
+    await expect(body.queryByRole('link', { name: 'Set up in Settings' })).toBeNull()
+    await expect(canvas.queryByRole('link', { name: 'Set up trackers' })).toBeNull()
   },
 }
 
 export const AdminSeesSetupLinks: Story = {
   parameters: { msw: scrobbleHandlers(scrobbleStatusMixed) },
-  play: async ({ canvas }) => {
-    await waitFor(() => expect((canvas.getAllByRole('link', { name: 'Set up in Settings' })).length).toBe(2))
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(await canvas.findByRole('link', { name: 'Set up trackers' })).toBeVisible()
+    const [unset] = await canvas.findAllByRole('button', { name: /\W+Not configured$/ })
+    await userEvent.click(unset)
+    await expect(await within(canvasElement.ownerDocument.body).findByRole('link', { name: 'Set up in Settings' })).toBeVisible()
   },
 }
 

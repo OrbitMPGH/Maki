@@ -627,8 +627,16 @@ msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, one {# ch.} other {# ch.}}"
 
 #: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# deletion} other {# deletions}}"
+msgstr "{count, plural, one {# deletion} other {# deletions}}"
+
+#: src/pages/HealthPage.tsx
 msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
 msgstr "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# replacement} other {# replacements}}"
+msgstr "{count, plural, one {# replacement} other {# replacements}}"
 
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {# series is failing to refresh from its source} other {# series are failing to refresh from their sources}}"
@@ -5335,8 +5343,12 @@ msgid "Deleting files needs the Delete series permission"
 msgstr "Deleting files needs the Delete series permission"
 
 #: src/pages/HealthPage.tsx
-msgid "Deletion review #{opId}"
-msgstr "Deletion review #{opId}"
+msgid "Deletion"
+msgstr "Deletion"
+
+#: src/pages/HealthPage.tsx
+#~ msgid "Deletion review #{opId}"
+#~ msgstr "Deletion review #{opId}"
 
 #: src/components/NotificationsSection.tsx
 msgid "Delivers without a notification sound."
@@ -5979,8 +5991,8 @@ msgid "Events"
 msgstr "Events"
 
 #: src/pages/ScrobblePage.tsx
-msgid "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
-msgstr "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+#~ msgid "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+#~ msgstr "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
 
 #: src/components/ui/seriesNotifications.ts
 msgid "Every chapter"
@@ -12489,8 +12501,12 @@ msgstr "Replaced files are kept this long before being purged. 0 purges on the n
 #~ msgstr "Replaced files go to the trash folder until housekeeping purges them, and can be reverted from Activity."
 
 #: src/pages/HealthPage.tsx
-msgid "Replacement #{opId}"
-msgstr "Replacement #{opId}"
+msgid "Replacement"
+msgstr "Replacement"
+
+#: src/pages/HealthPage.tsx
+#~ msgid "Replacement #{opId}"
+#~ msgstr "Replacement #{opId}"
 
 #: src/components/ImportReviewModal.tsx
 #~ msgid "replaces {replacedFileName}"
@@ -13709,6 +13725,10 @@ msgstr "Send test"
 msgid "Sends grabbed releases to your torrent client. Finished torrents import into the library automatically. Fill the path mapping only if the client reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
 msgstr "Sends grabbed releases to your torrent client. Finished torrents import into the library automatically. Fill the path mapping only if the client reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
 
+#: src/pages/ScrobblePage.tsx
+msgid "Sends what you read to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Progress on a tracker is never lowered."
+msgstr "Sends what you read to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Progress on a tracker is never lowered."
+
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
 msgid "Sent to the download client: {title}"
@@ -13918,6 +13938,10 @@ msgstr "Set up quality profiles"
 msgid "Set up the Kavita connection above to pick libraries."
 msgstr "Set up the Kavita connection above to pick libraries."
 
+#: src/pages/ScrobblePage.tsx
+msgid "Set up trackers"
+msgstr "Set up trackers"
+
 #: src/components/settings/AccountSection.tsx
 msgid "Set up two-factor authentication"
 msgstr "Set up two-factor authentication"
@@ -13996,11 +14020,16 @@ msgstr "Show all"
 #~ msgid "Show all {0}"
 #~ msgstr "Show all {0}"
 
+#: src/pages/HealthPage.tsx
+msgid "Show all {count}"
+msgstr "Show all {count}"
+
 #: src/components/settings/SecuritySection.tsx
 msgid "Show covers from the library"
 msgstr "Show covers from the library"
 
 #: src/components/TagBuckets.tsx
+#: src/pages/HealthPage.tsx
 msgid "Show fewer"
 msgstr "Show fewer"
 

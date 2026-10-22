@@ -116,6 +116,11 @@ export interface HealthOperation {
   version: string
   error?: string
   createdAt: string
+  /** What the operation acts on; the list endpoint fills these, the detail endpoint leaves them null. */
+  relativePath?: string | null
+  seriesId?: number | null
+  seriesTitle?: string | null
+  coverUrl?: string | null
 }
 
 export interface OperationDetail {

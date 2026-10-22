@@ -7954,7 +7954,7 @@ body.reader-open {
   display: inline-flex;
   min-width: 0;
   font-family: var(--mantine-font-family-monospace);
-  white-space: nowrap;
+  white-space: pre;
   color: inherit;
 }
 a.mono-value-text {
@@ -9556,6 +9556,56 @@ tr:hover .mono-value-copy {
 
 /* Activity log: one line per event, time then tracker then what happened. A warning or error is
    marked by a rule down the left edge rather than colouring the text. */
+.health-op-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-md) var(--mantine-spacing-xs);
+}
+.health-op-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.health-op-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--mantine-spacing-md);
+  padding: 8px var(--mantine-spacing-md);
+  border-top: 1px solid var(--border);
+}
+.health-op-more {
+  padding: 6px var(--mantine-spacing-md) 10px;
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 600px) {
+  .health-op-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .health-op-when {
+    display: none;
+  }
+}
+.scrobble-connections {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--mantine-spacing-xs);
+}
+.scrobble-connection {
+  gap: 6px;
+}
+.scrobble-connection-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+.scrobble-connections-setup {
+  margin-left: 4px;
+}
 .scrobble-log {
   margin: 0;
   padding: 4px 0;

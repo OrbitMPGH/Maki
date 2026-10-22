@@ -68,6 +68,7 @@ import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
 import { MonoValue } from '../components/ui/MonoValue'
+import { SeriesCell } from '../components/SeriesCell'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
 import { useLabel } from '../i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -653,33 +654,9 @@ export default function HealthPage() {
 
         <Tabs.Panel value="repairs">
           <Stack>
-            {operations.data?.items.map((op) => {
-              const { id: opId, kind: opKind } = op
-              return (
-                <Panel p="md" key={op.id}>
-                  <Group justify="space-between">
-                    <div>
-                      <Group>
-                        <Text fw={600}>
-                          {opKind === 'delete' ? (
-                            <Trans>Deletion review #{opId}</Trans>
-                          ) : (
-                            <Trans>Replacement #{opId}</Trans>
-                          )}
-                        </Text>
-                        <Status value={op.status} />
-                      </Group>
-                      <Text size="sm" c="var(--ink-3)">
-                        {op.error ?? formatDateTime(op.createdAt)}
-                      </Text>
-                    </div>
-                    <Button variant="default" onClick={() => setOperationId(op.id)}>
-                      <Trans>Review</Trans>
-                    </Button>
-                  </Group>
-                </Panel>
-              )
-            })}
+            {groupOperations(operations.data?.items ?? []).map((group) => (
+              <OperationGroup key={group[0].id} operations={group} onReview={setOperationId} />
+            ))}
             {operations.data?.items.length === 0 && (
               <Text c="var(--ink-3)">
                 <Trans>No repairs or deletions requested.</Trans>
@@ -1754,6 +1731,90 @@ function CompareArchives({
             come back to compare them.
           </Trans>
         </Alert>
+      )}
+    </Panel>
+  )
+}
+
+/**
+ * Operations of one kind that ended the same way, in list order. A bulk delete the filesystem
+ * refused leaves thirty identical rows; as one group they read as the single problem they are.
+ */
+function groupOperations(items: HealthOperation[]): HealthOperation[][] {
+  const groups = new Map<string, HealthOperation[]>()
+  for (const op of items) {
+    const key = `${op.kind}|${op.status}|${op.error ?? ''}`
+    const group = groups.get(key)
+    if (group) group.push(op)
+    else groups.set(key, [op])
+  }
+  return [...groups.values()]
+}
+
+const GROUP_PREVIEW = 3
+
+function OperationGroup({ operations, onReview }: { operations: HealthOperation[]; onReview: (id: number) => void }) {
+  const [expanded, setExpanded] = useState(false)
+  const [first] = operations
+  const count = operations.length
+  const shown = expanded ? operations : operations.slice(0, GROUP_PREVIEW)
+  return (
+    <Panel p={0} className="health-op-group">
+      <div className="health-op-head">
+        <Group gap="sm">
+          <Text fw={650}>
+            {first.kind === 'delete' ? (
+              count === 1 ? (
+                <Trans>Deletion</Trans>
+              ) : (
+                <Plural value={count} one="# deletion" other="# deletions" />
+              )
+            ) : count === 1 ? (
+              <Trans>Replacement</Trans>
+            ) : (
+              <Plural value={count} one="# replacement" other="# replacements" />
+            )}
+          </Text>
+          <Status value={first.status} />
+        </Group>
+        {first.error && (
+          <Text size="sm" c="var(--ink-3)">
+            {first.error}
+          </Text>
+        )}
+      </div>
+      <ul className="health-op-rows">
+        {shown.map((op) => {
+          const fileName = op.relativePath?.split('/').pop() ?? null
+          return (
+            <li key={op.id} className="health-op-row">
+              <SeriesCell
+                seriesId={op.seriesId ?? null}
+                title={op.seriesTitle ?? fileName ?? `#${op.fileId}`}
+                coverUrl={op.coverUrl ?? null}
+                detail={
+                  op.seriesTitle && fileName && op.relativePath ? (
+                    <MonoValue value={fileName} full={op.relativePath} fz="var(--type-meta)" c="var(--ink-3)" />
+                  ) : undefined
+                }
+                small
+              />
+              <Text size="xs" c="var(--ink-3)" className="health-op-when">
+                {formatDateTime(op.createdAt)}
+              </Text>
+              <Button size="compact-sm" variant="default" onClick={() => onReview(op.id)}>
+                <Trans>Review</Trans>
+              </Button>
+            </li>
+          )
+        })}
+      </ul>
+      {count > GROUP_PREVIEW && (
+        <div className="health-op-more">
+          <Button size="compact-sm" variant="subtle" color="var(--neutral)" onClick={() => setExpanded((e) => !e)}>
+            {expanded ? <Trans>Show fewer</Trans> : <Trans>Show all {count}</Trans>}
+          </Button>
+        </div>
       )}
     </Panel>
   )

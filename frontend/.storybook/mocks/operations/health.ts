@@ -13,7 +13,7 @@ import type {
   OperationDetail,
   SourceFailures,
 } from '../../../src/api/health'
-import { api, daysAgo, hoursAgo, minutesAgo } from '../api'
+import { api, cover, daysAgo, hoursAgo, minutesAgo } from '../api'
 
 const check = (id: string, category: string, status: string, message: string, over: Partial<HealthCheck> = {}): HealthCheck => ({
   id,
@@ -228,15 +228,23 @@ export const unlinkedUnrecognized: FileDetail = {
   match: { recognized: false, labelKind: 'unrecognized', chapters: [], counterparts: [] },
 }
 
-const operation = (id: number, fileId: number, kind: string, status: string, over: Partial<HealthOperation> = {}): HealthOperation => ({
-  id,
-  fileId,
-  kind,
-  status,
-  version: `ov${id}`,
-  createdAt: hoursAgo(id * 2),
-  ...over,
-})
+const operation = (id: number, fileId: number, kind: string, status: string, over: Partial<HealthOperation> = {}): HealthOperation => {
+  const target = healthFiles.find((f) => f.id === fileId)
+  const seriesTitle = target?.seriesId ? target.relativePath.split('/')[0] : null
+  return {
+    id,
+    fileId,
+    kind,
+    status,
+    version: `ov${id}`,
+    createdAt: hoursAgo(id * 2),
+    relativePath: target?.relativePath ?? null,
+    seriesId: target?.seriesId ?? null,
+    seriesTitle,
+    coverUrl: target?.seriesId ? cover(target.seriesId) : null,
+    ...over,
+  }
+}
 
 export const operations: HealthOperation[] = [
   operation(1, 1, 'repair', 'review'),
@@ -244,6 +252,26 @@ export const operations: HealthOperation[] = [
   operation(3, 3, 'repair', 'running'),
   operation(4, 5, 'delete', 'completed'),
   operation(5, 2, 'repair', 'failed', { error: 'No source had a candidate for chapter 4' }),
+]
+
+const failedDeletionSeries = ['Lanterns Over Kasumi', 'The Ninth Kitchen', 'Snowfield Letters', 'Ashen Crown Regression', 'Iron Petal Academy']
+
+/** A bulk delete that the filesystem refused thirty times, plus two replacements waiting for review. */
+export const manyFailedDeletions: HealthOperation[] = [
+  operation(32, 1, 'repair', 'review'),
+  operation(31, 3, 'repair', 'review'),
+  ...Array.from({ length: 30 }, (_, i) => {
+    const title = failedDeletionSeries[i % failedDeletionSeries.length]
+    const seriesId = (i % failedDeletionSeries.length) + 1
+    return operation(30 - i, 200 + i, 'delete', 'failed', {
+      error: 'File deletion failed; file links retained',
+      relativePath: `${title}/${title} - Ch.${40 + i}.cbz`,
+      seriesId,
+      seriesTitle: title,
+      coverUrl: cover(seriesId),
+      createdAt: hoursAgo(3),
+    })
+  }),
 ]
 
 export const operationDetails: Record<number, OperationDetail> = {

@@ -6,6 +6,7 @@ import type { FileDetail } from '../api/health'
 import {
   errorChecks,
   groupedChecks,
+  manyFailedDeletions,
   overview,
   runningScan,
   unlinkedNoSeries,
@@ -275,9 +276,28 @@ export const ReviewLoadFailed: Story = {
 export const RepairsTab: Story = {
   parameters: tab('repairs'),
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Replacement #1')).toBeVisible()
-    await expect(await canvas.findByText('Deletion review #2')).toBeVisible()
+    await expect(await canvas.findByText('Lanterns Over Kasumi')).toBeVisible()
+    await expect(await canvas.findByText('The Ninth Kitchen')).toBeVisible()
     await expect(await canvas.findByText('No source had a candidate for chapter 4')).toBeVisible()
+  },
+}
+
+/** Thirty deletions that failed the same way, as a bulk delete leaves them. */
+export const RepairsManyFailures: Story = {
+  parameters: {
+    ...tab('repairs'),
+    msw: [
+      http.get(api('/health/operations'), () =>
+        HttpResponse.json({ items: manyFailedDeletions, total: manyFailedDeletions.length }),
+      ),
+    ],
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('30 deletions')).toBeVisible()
+    await expect(await canvas.findByText('2 replacements')).toBeVisible()
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Review' })).toHaveLength(5))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Show all 30' }))
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Review' })).toHaveLength(32))
   },
 }
 

@@ -735,7 +735,15 @@ msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, other {# 章}}"
 
 #: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# deletion} other {# deletions}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# replacement} other {# replacements}}"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -6433,9 +6441,13 @@ msgid "Deleting files needs the Delete series permission"
 msgstr "删除文件需要“删除系列”权限"
 
 #: src/pages/HealthPage.tsx
+msgid "Deletion"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "Deletion review #{opId}"
-msgstr "删除审核 #{opId}"
+#~ msgid "Deletion review #{opId}"
+#~ msgstr "删除审核 #{opId}"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -7208,8 +7220,8 @@ msgid "Events"
 msgstr "事件"
 
 #: src/pages/ScrobblePage.tsx
-msgid "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
-msgstr ""
+#~ msgid "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+#~ msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -15069,9 +15081,13 @@ msgstr "被替换的文件会保留这么长时间，之后才会被清除。0 �
 #~ msgstr "被替换的文件会先放入回收站文件夹，直到定期清理将其清除，期间可以在“活动”中还原。"
 
 #: src/pages/HealthPage.tsx
+msgid "Replacement"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "Replacement #{opId}"
-msgstr "替换 #{opId}"
+#~ msgid "Replacement #{opId}"
+#~ msgstr "替换 #{opId}"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -16533,6 +16549,10 @@ msgstr ""
 msgid "Sends grabbed releases to your torrent client. Finished torrents import into the library automatically. Fill the path mapping only if the client reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
 msgstr ""
 
+#: src/pages/ScrobblePage.tsx
+msgid "Sends what you read to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Progress on a tracker is never lowered."
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
 msgid "Sent to the download client: {title}"
@@ -16781,6 +16801,10 @@ msgstr ""
 msgid "Set up the Kavita connection above to pick libraries."
 msgstr "先在上方设置 Kavita 连接，然后选择图书馆。"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Set up trackers"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Set up two-factor authentication"
@@ -16877,11 +16901,16 @@ msgstr "显示全部"
 #~ msgid "Show all {0}"
 #~ msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Show all {count}"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 msgid "Show covers from the library"
 msgstr ""
 
 #: src/components/TagBuckets.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show fewer"
 msgstr "显示更少"
