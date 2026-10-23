@@ -66,6 +66,22 @@ public class ContinueReadingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_volume_only_entry_read_mid_series_is_not_the_readers_place()
+    {
+        var seriesId = _db.SeedSeries();
+        var first = Seed(seriesId, 1, 1);
+        Seed(seriesId, 2, 1);
+        Seed(seriesId, 3, null);
+        Seed(seriesId, 4, null);
+        Seed(seriesId, 5, null);
+        Seed(seriesId, 9, 3);
+        Seed(seriesId, 10, 3);
+        Read(seriesId, Seed(seriesId, 0, 2));
+
+        Assert.Equal(first, await Next(seriesId));
+    }
+
+    [Fact]
     public async Task Another_languages_copy_of_the_last_read_chapter_is_not_next()
     {
         var seriesId = _db.SeedSeries();

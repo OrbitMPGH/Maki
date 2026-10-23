@@ -89,7 +89,8 @@ public class ContinueReadingService(MakiDbContext db)
             // moves it, and neither does a lone read far ahead (a misclick, a Kavita mark): with
             // 1-10 read and 50 marked, Read offers 11, not 51. A real jump ahead takes over once
             // the chapter after it is read. With no such chapter, the furthest read whole-numbered
-            // chapter is the place, so someone who started at 100 is offered 101.
+            // chapter is the place, so someone who started at 100 is offered 101. A volume-only
+            // entry (number 0) is placed by estimate and is never the place.
             static bool Whole(decimal? number) => number is { } n && n >= 0 && n % 1 == 0;
             bool FollowsARead(int index)
             {
@@ -111,7 +112,7 @@ public class ContinueReadingService(MakiDbContext db)
             for (var i = ordered.Count - 1; i >= 0; i--)
             {
                 var c = ordered[i];
-                if (!Whole(c.Number) || !IsRead(c.Id, c.Number, c.Volume))
+                if (!Whole(c.Number) || c.Number == 0 || !IsRead(c.Id, c.Number, c.Volume))
                 {
                     continue;
                 }
