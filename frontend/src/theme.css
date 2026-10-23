@@ -1662,7 +1662,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   --tone: var(--info);
 }
 /* Publication status, top-right: a disc filled in the status colour (CoverCard sets --tone). Not
-   monitored dims it instead of adding a second mark; the eye-off still shows on hover. */
+   monitored hollows it to a ring instead of adding a second mark; the eye-off still shows on hover. */
 .cover-state[data-tone='status'] {
   width: 24px;
   height: 24px;
@@ -1673,8 +1673,11 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--tone-on, #fff);
 }
 .cover-state[data-tone='status'][data-unmonitored] {
-  opacity: 0.55;
-  filter: saturate(0.4);
+  background: rgba(6, 7, 11, 0.62);
+  box-shadow:
+    inset 0 0 0 1.5px var(--tone),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+  color: var(--tone);
 }
 /* The light theme's status colours are tuned for a pale ground; these sit on a dark disc. */
 [data-theme='light'] .cover-state:not([data-tone='status']),
@@ -1993,6 +1996,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: var(--surface-2);
   box-shadow: var(--shadow-card), 0 18px 40px -18px rgba(0, 0, 0, 0.8);
 }
+.reading-weeks[data-loading] :is(.reading-weeks-head, .reading-weeks-weekday, .reading-weeks-figures, .reading-weeks-week) {
+  visibility: hidden;
+}
 .reading-weeks-head {
   grid-area: head;
   display: flex;
@@ -2069,6 +2075,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 .reading-weeks-day[data-future] {
   background: color-mix(in srgb, var(--surface-hover) 45%, transparent);
+}
+.reading-weeks-day[data-empty] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink-3) 45%, transparent);
 }
 .reading-weeks-day[data-today] {
   box-shadow: inset 0 0 0 1.5px var(--brand-fg);
@@ -2225,6 +2234,16 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     clip-path: inset(50%);
     white-space: nowrap;
   }
+  /* The heading holds the link to Stats, so keyboard focus must not land on a control nobody can see. */
+  .reading-weeks-heading:focus-within {
+    position: static;
+    order: 0;
+    flex: 1 1 100%;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
   .reading-weeks-streak {
     order: 1;
     gap: 6px;
@@ -2289,8 +2308,10 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 /* The glance rides inside the Continue hero card, a grid item of `.continue-hero-body`, so the hero
    grows with it and it can never sit on the poster. `.continue-lead` is the container its placement
    is keyed to: a column on the hero's right when wide, a row under the actions otherwise. */
-.continue-lead {
+.continue-section {
   container: continue-lead / inline-size;
+}
+.continue-lead {
   /* Hero and tray are one object: one faint ring and one shadow around both, no border on either.
      The ring gives the edge, since the hero's ground is the page's and a shadow barely shows on it. */
   border-radius: var(--radius-overlay);
@@ -3663,7 +3684,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .auth-frame[data-art='covers'] .auth-band-covers {
   opacity: 0.6;
 }
-.auth-frame[data-art='covers'] .auth-band-shapes {
+.auth-frame[data-art='covers'] .auth-band-shapes,
+.auth-frame[data-art='pending'] .auth-band-shapes {
   opacity: 0;
 }
 /* Light falls from the top right, away from the card, so the form never sits on bright art. */
@@ -3687,6 +3709,12 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .auth-identity {
   min-width: 0;
   padding-bottom: 6px;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+/* Until the art is known the mascot and tagline are not drawn: the two modes size them
+   differently, and the card sits at the bottom, so it does not move when they appear. */
+.auth-frame[data-art='pending'] .auth-identity {
+  opacity: 0;
 }
 .auth-brand-mark {
   width: 56px;
@@ -5725,8 +5753,15 @@ body.column-resizing * {
   box-shadow: inset 3px 0 0 var(--brand);
 }
 
-/* When the panel is narrower than the columns need (a phone, the 800px pane, a laptop with the
-   sidebar open), each chapter becomes a two-line list row instead of a table that scrolls the title
+/* A panel a little narrower than the default columns (a laptop with the sidebar open) drops the
+   Released column before it falls back to list rows. By position, so folded span rows lose their
+   matching empty cell. */
+.chapter-rows-compact .chapter-table :is(th, td):nth-child(4) {
+  display: none;
+}
+
+/* When the panel is narrower than the columns need even without Released (a phone, the 800px
+   pane, a small laptop with the sidebar open), each chapter becomes a two-line list row instead of a table that scrolls the title
    down to a few characters: switch, number, title and actions on top, then date, source and status
    wrapping underneath. SeriesDetailPage measures the panel and sets the class. The cells stay the
    same so every action survives; `order` plus a full-width ::before is what forces the line break. */
@@ -5735,8 +5770,15 @@ body.column-resizing * {
   display: block;
   width: 100%;
 }
+/* Visually hidden rather than display:none, so the column names stay with the table for screen
+   readers. The page drops the resize handles in this mode, so nothing in it takes focus. */
 .chapter-rows-list .chapter-table thead {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .chapter-rows-list .chapter-table tbody tr {
   --chapter-lead: 34px;
@@ -8010,6 +8052,12 @@ a.mono-value-text {
 a.mono-value-text:hover {
   text-decoration: underline;
 }
+span.mono-value-text:focus-visible,
+.mapped-to-label:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 1px;
+  border-radius: var(--radius-2xs);
+}
 /* The head gives way first. It keeps six characters while a tail sits beside it, so a name never
    collapses to its tags. The tail never shrinks (a shared shrink hands it a fraction of a pixel,
    which is enough to ellipsize it); it is capped at what the head leaves instead. */
@@ -9138,10 +9186,16 @@ tr:hover .mono-value-copy {
   padding: clamp(20px, 2.6vw, 36px);
   animation: continue-hero-in 0.4s var(--ease) both;
 }
-/* The glance, until the hero is wide enough for a column of it: a row of its own under the actions. */
+/* The glance has two homes (`ContinueHero` renders it in both and one is always `display: none`):
+   in the hero as a column on its right when wide, or as a row under the actions on a phone, and
+   otherwise as its own raised card under the whole lead (`.continue-glance-below`). */
 .continue-hero-body > .home-glance {
+  display: none;
   grid-column: 1 / -1;
   margin-top: 22px;
+}
+.continue-glance-below {
+  margin-top: var(--mantine-spacing-md);
 }
 @keyframes continue-hero-in {
   from {
@@ -9298,28 +9352,29 @@ tr:hover .mono-value-copy {
   margin-top: 20px;
 }
 
-/* Wide: the glance is a card in a column of its own on the right. */
+/* Wide: the glance is a card in a column of its own on the right. With Next up beside it the hero
+   is narrower than its container, so the glance stays under the lead until the wider query below. */
 @container continue-lead (min-width: 62rem) {
-  .continue-hero-body {
+  .continue-lead:not([data-queue='beside']) .continue-hero-body {
     grid-template-columns: auto minmax(0, 1fr) var(--glance-w);
   }
-  .continue-hero-body > .home-glance {
+  .continue-lead:not([data-queue='beside']) .continue-hero-body > .home-glance {
+    display: block;
     grid-column: 3;
     grid-row: 1;
     margin-top: 0;
   }
-  /* With Next up beside it the hero is narrower than its container; the glance's column waits for
-     the wider query below. */
-  .continue-lead[data-queue='beside'] .continue-hero-body {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-  .continue-lead[data-queue='beside'] .continue-hero-body > .home-glance {
-    grid-column: 1 / -1;
-    grid-row: auto;
-    margin-top: 22px;
+  .continue-section:not([data-queue='beside']) > .continue-glance-below {
+    display: none;
   }
 }
 @container continue-lead (min-width: 84rem) {
+  .continue-section[data-queue='beside'] > .continue-glance-below {
+    display: none;
+  }
+  .continue-lead[data-queue='beside'] .continue-hero-body > .home-glance {
+    display: block;
+  }
   .continue-lead[data-queue='beside'] .continue-hero-body {
     grid-template-columns: auto minmax(0, 1fr) var(--glance-w);
   }
@@ -9338,6 +9393,12 @@ tr:hover .mono-value-copy {
   .continue-hero-body {
     grid-template-columns: 112px minmax(0, 1fr);
     column-gap: 14px;
+  }
+  .continue-hero-body > .home-glance {
+    display: block;
+  }
+  .continue-glance-below {
+    display: none;
   }
   .continue-hero-poster {
     width: 112px;
@@ -9635,14 +9696,25 @@ tr:hover .mono-value-copy {
 .notify-matrix-check .mantine-Checkbox-root {
   display: inline-flex;
 }
+.notify-matrix-hit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.notify-matrix-hit[data-disabled] {
+  cursor: not-allowed;
+}
 .notify-matrix-head {
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
 /* A row of fields with a button at its end. Outside a settings card hints sit above the inputs and
-   the row aligns bottoms; inside one they sit below, so the row aligns tops and the button drops by
-   one label line to meet the inputs. */
+   the row aligns bottoms; inside one they sit below, so the row aligns tops and the button's own
+   invisible label (see FieldAction) puts it level with the inputs. */
 .settings-field-action {
   display: flex;
   align-items: center;
@@ -9651,8 +9723,10 @@ tr:hover .mono-value-copy {
 .settings-section .settings-field-row {
   align-items: flex-start;
 }
-.settings-section .settings-field-row > .settings-field-action {
-  margin-top: calc(1.55rem * var(--mantine-scale));
+.panel-table .sticky-end-cell {
+  position: sticky;
+  right: 0;
+  background: var(--surface);
 }
 /* One width for every settings number field; the label and hint keep the full column. */
 .settings-number-field {
@@ -9704,6 +9778,17 @@ tr:hover .mono-value-copy {
   height: 7px;
   border-radius: 50%;
   flex: none;
+}
+.scrobble-connection-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-3);
+}
+@media (pointer: coarse) {
+  .scrobble-connection {
+    min-height: 44px;
+  }
 }
 .scrobble-connections-setup {
   margin-left: 4px;
