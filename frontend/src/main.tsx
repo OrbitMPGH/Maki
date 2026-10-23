@@ -105,9 +105,11 @@ const queryClient = new QueryClient({
   },
   // Background refetches fail silently by design: a toast on every poll while the API is down
   // would bury the app. Only surface a query error when there's no data to fall back on.
+  // Offline, every read the device holds no copy of fails the same way, and polls repeat it; the
+  // offline banner already says so, and the page shows its own empty state. Actions still toast.
   queryCache: new QueryCache({
     onError: (error, query) => {
-      if (query.state.data === undefined) reportError(error, query.meta)
+      if (query.state.data === undefined && !isOfflineUnavailable(error)) reportError(error, query.meta)
     },
   }),
   mutationCache: new MutationCache({
