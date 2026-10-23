@@ -1364,6 +1364,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-weight: var(--fw-bold);
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  /* Mantine draws the count as the button's sibling, so without this a press on it hits nothing. */
+  pointer-events: none;
 }
 /* The header's buttons grow to 44px on phones and with the sidebar collapsed, which carried a
    corner-anchored badge 8px off the glyph. Anchored to the middle instead, it stays on the 19px
