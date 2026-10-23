@@ -1054,7 +1054,6 @@ function FeedExpandModal({
           >{rail?.title}</Text>
         </Group>
       }
-      styles={{ body: { paddingTop: 'var(--mantine-spacing-md)' } }}
     >
       <Panel p="md" mb="md">
         <Stack gap="md">

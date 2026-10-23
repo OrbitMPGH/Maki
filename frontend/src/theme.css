@@ -9478,6 +9478,11 @@ tr:hover .mono-value-copy {
   min-height: 0;
   overflow-y: auto;
 }
+/* Mantine zeroes the body's top padding under a header, which assumes the two run together. Ours
+   is ruled off by a hairline, so the body needs its own top padding back. */
+.utility-modal-header + .utility-modal-body {
+  padding-top: var(--mb-padding, var(--mantine-spacing-md));
+}
 [data-mantine-color-scheme] .utility-modal-content[data-full-screen] {
   border: 0;
 }
