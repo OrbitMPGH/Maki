@@ -10,9 +10,14 @@ const FIT_CLASS: Record<ReaderFit, string> = {
   original: 'reader-fit-original',
 }
 
-// Pixels of downward scroll (wheel delta / touch drag) needed at the bottom to trigger the next
-// chapter. Sized for a couple of scroll-wheel notches, not a long hold.
-const PAST_END_THRESHOLD = 1000
+// Pixels of wheel delta needed at the bottom to trigger the next chapter. Sized for a couple of
+// scroll-wheel notches, not a long hold.
+const PAST_END_WHEEL = 1000
+// A finger drag moves by real screen pixels and only counts once the strip is already at the
+// bottom, so a wheel-sized distance took two or three full swipes on a phone. One deliberate pull
+// of about a quarter of the screen does it instead, with a floor for short landscape screens.
+const PAST_END_TOUCH_SHARE = 0.25
+const PAST_END_TOUCH_MIN = 140
 // How close to the true bottom counts as "at the bottom": scrollHeight/clientHeight are
 // fractional in some browsers, so an exact `=== ` check misses by sub-pixel amounts.
 const BOTTOM_EPSILON = 2
@@ -154,8 +159,8 @@ export default function ContinuousView({
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
   const sentinel = useRef<HTMLDivElement>(null)
-  // Mirrors `pastEndProgress` state without the render lag, so consecutive wheel/touch events in
-  // the same frame accumulate correctly instead of each reading a stale 0.
+  // Mirrors `pastEndProgress` state (0 to 1) without the render lag, so consecutive wheel/touch
+  // events in the same frame accumulate correctly instead of each reading a stale 0.
   const progress = useRef(0)
   const [pastEndProgress, setPastEndProgress] = useState(0)
   // The last chapter's counterpart to `pastEndProgress`: shown under the same conditions, but it
@@ -291,7 +296,8 @@ export default function ContinuousView({
       setPastEndProgress(0)
     }
 
-    const advance = (delta: number) => {
+    // `delta` is in pixels, `distance` how many of them this input needs for a full meter.
+    const advance = (delta: number, distance: number) => {
       clearTimeout(idle)
       if (delta <= 0 || !atBottom()) {
         setAtLibraryEnd(false)
@@ -307,9 +313,9 @@ export default function ContinuousView({
         setAtLibraryEnd(true)
         return
       }
-      progress.current = Math.min(PAST_END_THRESHOLD, progress.current + delta)
-      setPastEndProgress(progress.current / PAST_END_THRESHOLD)
-      if (progress.current >= PAST_END_THRESHOLD) {
+      progress.current = Math.min(1, progress.current + delta / distance)
+      setPastEndProgress(progress.current)
+      if (progress.current >= 1) {
         decay()
         onPastEnd()
         return
@@ -323,7 +329,7 @@ export default function ContinuousView({
 
     const onWheel = (event: WheelEvent) => {
       abandonSeek()
-      advance(event.deltaY)
+      advance(event.deltaY, PAST_END_WHEEL)
     }
 
     let touchY: number | null = null
@@ -334,7 +340,7 @@ export default function ContinuousView({
     const onTouchMove = (event: TouchEvent) => {
       const y = event.touches[0]?.clientY
       if (y == null || touchY == null) return
-      advance(touchY - y)
+      advance(touchY - y, Math.max(PAST_END_TOUCH_MIN, scroller.clientHeight * PAST_END_TOUCH_SHARE))
       touchY = y
     }
     const onTouchEnd = () => {

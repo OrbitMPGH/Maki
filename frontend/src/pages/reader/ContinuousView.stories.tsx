@@ -53,6 +53,28 @@ export const ResumesPartWayDown: Story = {
   },
 }
 
+/** At the bottom, the next chapter takes one pull of about a quarter of the screen, not a wheel-sized drag. */
+export const TouchPullOpensNextChapter: Story = {
+  play: async ({ canvasElement, args }) => {
+    const scroller = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    await waitFor(() => expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight * 2))
+    scroller.scrollTop = scroller.scrollHeight
+    await waitFor(() =>
+      expect(scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight).toBeLessThan(2),
+    )
+
+    const touch = (y: number) => new Touch({ identifier: 1, target: scroller, clientX: 100, clientY: y })
+    const pull = Math.ceil(Math.max(140, scroller.clientHeight * 0.25))
+    const start = scroller.clientHeight - 20
+    scroller.dispatchEvent(new TouchEvent('touchstart', { touches: [touch(start)], bubbles: true }))
+    // Half a pull fills half the meter and does not navigate yet.
+    scroller.dispatchEvent(new TouchEvent('touchmove', { touches: [touch(start - pull / 2)], bubbles: true }))
+    await expect(args.onPastEnd).not.toHaveBeenCalled()
+    scroller.dispatchEvent(new TouchEvent('touchmove', { touches: [touch(start - pull)], bubbles: true }))
+    await waitFor(() => expect(args.onPastEnd).toHaveBeenCalledTimes(1))
+  },
+}
+
 export const LastChapter: Story = {
   args: { hasNext: false, page: 11, seekVersion: 1 },
 }
