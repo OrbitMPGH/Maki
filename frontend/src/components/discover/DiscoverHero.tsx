@@ -126,7 +126,8 @@ export function DiscoverHero({
   const [paused, setPaused] = useState(false)
   const [autoRotate, setAutoRotate] = useState(true)
   const [heroEl, setHeroEl] = useState<HTMLDivElement | null>(null)
-  const halted = paused || !useWatched(heroEl)
+  const watched = useWatched(heroEl)
+  const halted = paused || !watched
   const reducedMotion = useReducedMotion()
   // Called up here, unconditionally, rather than after the `if (!item) return null` below: both are
   // hooks, and the rule holds even though `item` is never actually undefined once Discover is the
