@@ -21,6 +21,18 @@ const PAST_END_TOUCH_MIN = 140
 // Wheel events this soon after a finger lifts belong to the same gesture, for a browser that
 // reports a touch scroll both ways.
 const WHEEL_AFTER_TOUCH_MS = 600
+
+/** A loaded page's natural size, which unloaded pages borrow as their placeholder shape. */
+interface PageShape {
+  width: number
+  /** Height over width. */
+  aspect: number
+}
+
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b)
+  return sorted[Math.floor(sorted.length / 2)]
+}
 // How close to the true bottom counts as "at the bottom": scrollHeight/clientHeight are
 // fractional in some browsers, so an exact `=== ` check misses by sub-pixel amounts.
 const BOTTOM_EPSILON = 2
@@ -180,10 +192,19 @@ export default function ContinuousView({
   // Set by the sentinel effect below; image load handlers re-run it once a page settles.
   const reportEnd = useRef<() => void>(() => {})
 
+  // Unloaded pages take the median shape of the pages loaded so far, so the strip is close to its
+  // real length long before most pages arrive: the scrollbar says where you are and dragging it
+  // does not chase a strip that grows under it. Chapters nearly always use one page size, so after
+  // the first page the estimate is usually exact. Until then the CSS placeholder holds the room.
+  const samples = useRef<{ widths: number[]; aspects: number[] }>({ widths: [], aspects: [] })
+  const [shape, setShape] = useState<PageShape | null>(null)
+
   useEffect(() => {
     progress.current = 0
     setPastEndProgress(0)
     setAtLibraryEnd(false)
+    samples.current = { widths: [], aspects: [] }
+    setShape(null)
   }, [urls])
 
   // Pages before the seek target whose load can still shift the target's offset. Re-scroll keeps
@@ -213,6 +234,16 @@ export default function ContinuousView({
 
   const onPageSettled = useCallback((index: number, element: HTMLImageElement) => {
     element.dataset.loaded = 'true'
+    if (element.naturalWidth > 0 && element.naturalHeight > 0) {
+      const { widths, aspects } = samples.current
+      widths.push(element.naturalWidth)
+      aspects.push(element.naturalHeight / element.naturalWidth)
+      const next = { width: median(widths), aspect: median(aspects) }
+      // Only a real change re-renders: each load of a same-sized page leaves the medians alone.
+      setShape((prev) =>
+        prev && prev.width === next.width && Math.abs(prev.aspect - next.aspect) < 0.005 ? prev : next,
+      )
+    }
     reportEnd.current()
     if (!settling.current.delete(index)) return
     pages.current[seekTarget.current]?.scrollIntoView({ block: 'start' })
@@ -412,7 +443,14 @@ export default function ContinuousView({
         // Only a deliberate zoom past 100% is allowed to make a page wider than the strip; see
         // the width clamp in theme.css.
         data-zoomed={fit === 'original' && scale > 100}
-        style={{ gap: `${gap}px` }}
+        data-shaped={shape ? true : undefined}
+        style={{
+          gap: `${gap}px`,
+          ...(shape && {
+            '--page-aspect': String(shape.aspect),
+            '--page-width': `${shape.width}px`,
+          }),
+        } as React.CSSProperties}
       >
         {urls.map((src, index) => (
           <StripPage

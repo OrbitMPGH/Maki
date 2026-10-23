@@ -7072,6 +7072,20 @@ body.reader-open {
 .reader-continuous .reader-page:not([data-loaded]) {
   min-height: 60dvh;
 }
+/* Once a page has loaded, the rest borrow its shape (ContinuousView sets --page-aspect and
+   --page-width from the pages so far), so the strip is close to its real length before they load
+   and the scrollbar stays put. Fit-height pages are a viewport tall whatever their shape. */
+.reader-continuous[data-shaped] .reader-page:not([data-loaded]) {
+  min-height: 0;
+  aspect-ratio: 1 / var(--page-aspect);
+}
+.reader-continuous[data-shaped] .reader-fit-original:not([data-loaded]) {
+  width: min(var(--page-width), 100%);
+}
+.reader-continuous[data-shaped] .reader-fit-height:not([data-loaded]) {
+  height: 100dvh;
+  aspect-ratio: auto;
+}
 
 .reader-page {
   display: block;

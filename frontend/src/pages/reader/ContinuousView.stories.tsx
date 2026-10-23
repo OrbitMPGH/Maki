@@ -42,6 +42,23 @@ export const Strip: Story = {
   },
 }
 
+/**
+ * Pages that have not loaded borrow the shape of the ones that have, so the strip is about its
+ * real length early and the scrollbar does not run away as images arrive.
+ */
+export const UnloadedPagesBorrowTheLoadedShape: Story = {
+  play: async ({ canvasElement }) => {
+    const pages = () => [...canvasElement.querySelectorAll<HTMLImageElement>('img.reader-page')]
+    await waitFor(() => expect(pages()[0]).toHaveAttribute('data-loaded'))
+    await waitFor(() => expect(canvasElement.querySelector('.reader-continuous')).toHaveAttribute('data-shaped'))
+    const last = pages().at(-1)!
+    await expect(last).not.toHaveAttribute('data-loaded')
+    await waitFor(() =>
+      expect(Math.abs(last.offsetHeight - pages()[0].offsetHeight)).toBeLessThan(pages()[0].offsetHeight * 0.02),
+    )
+  },
+}
+
 export const WithGapBetweenPages: Story = {
   args: { gap: 24 },
 }
