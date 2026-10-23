@@ -11383,6 +11383,10 @@ msgstr "pull the latest code and rebuild"
 msgid "pull the new image and recreate the container"
 msgstr "pull the new image and recreate the container"
 
+#: src/pages/reader/ContinuousView.tsx
+msgid "Pull up for next chapter"
+msgstr "Pull up for next chapter"
+
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you can't add series yourself. Connect trackers on the Scrobble page first. Needs the local MangaBaka database."
 msgstr "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you can't add series yourself. Connect trackers on the Scrobble page first. Needs the local MangaBaka database."
@@ -12075,6 +12079,10 @@ msgstr "Related to your seeds"
 #: src/pages/settings/DownloadCards.tsx
 msgid "Release checks per scan"
 msgstr "Release checks per scan"
+
+#: src/pages/reader/ContinuousView.tsx
+msgid "Release for next chapter"
+msgstr "Release for next chapter"
 
 #: src/api/upgrades.ts
 msgid "Release name matches (regex)"

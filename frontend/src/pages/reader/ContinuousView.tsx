@@ -18,6 +18,9 @@ const PAST_END_WHEEL = 1000
 // of about a quarter of the screen does it instead, with a floor for short landscape screens.
 const PAST_END_TOUCH_SHARE = 0.25
 const PAST_END_TOUCH_MIN = 140
+// Wheel events this soon after a finger lifts belong to the same gesture, for a browser that
+// reports a touch scroll both ways.
+const WHEEL_AFTER_TOUCH_MS = 600
 // How close to the true bottom counts as "at the bottom": scrollHeight/clientHeight are
 // fractional in some browsers, so an exact `=== ` check misses by sub-pixel amounts.
 const BOTTOM_EPSILON = 2
@@ -163,6 +166,8 @@ export default function ContinuousView({
   // events in the same frame accumulate correctly instead of each reading a stale 0.
   const progress = useRef(0)
   const [pastEndProgress, setPastEndProgress] = useState(0)
+  // A finger is pulling the meter, which fills by distance and moves on only on release.
+  const [pulling, setPulling] = useState(false)
   // The last chapter's counterpart to `pastEndProgress`: shown under the same conditions, but it
   // only ever says the strip has run out, so nothing accumulates and nothing fires.
   const [atLibraryEnd, setAtLibraryEnd] = useState(false)
@@ -279,9 +284,9 @@ export default function ContinuousView({
   }, [urls, onPageChange])
 
   // The bottom-of-strip "scroll for next chapter" meter. `.reader-surface` clamps scrollTop at
-  // the true max (there's no native overscroll to detect), so instead this reads wheel/touch
-  // deltas directly and only counts them while already at the bottom, the same way Kavita's
-  // reader does it.
+  // the true max (there's no native overscroll to detect), so instead this reads wheel deltas and
+  // finger positions directly and only counts them while already at the bottom, the same way
+  // Kavita's reader does it.
   useEffect(() => {
     if (urls.length === 0) return
     const scroller = container.current?.parentElement
@@ -327,36 +332,75 @@ export default function ContinuousView({
     // not yank them back to where the resume landed.
     const abandonSeek = () => settling.current.clear()
 
+    // Touch is pull and release. Safari on iPad delivers a scrolling finger's moves late and in
+    // bursts, so a meter that summed them crawled, then filled on the burst at release and changed
+    // chapter unasked. Here the meter follows how far the finger is from where the strip hit the
+    // bottom, so a late event still shows the true pull, and only letting go with it full moves on.
+    let touching = false
+    let touchEndedAt = 0
+    let pullFrom: number | null = null
+    const touchDistance = () => Math.max(PAST_END_TOUCH_MIN, scroller.clientHeight * PAST_END_TOUCH_SHARE)
+
     const onWheel = (event: WheelEvent) => {
       abandonSeek()
+      if (touching || performance.now() - touchEndedAt < WHEEL_AFTER_TOUCH_MS) return
       advance(event.deltaY, PAST_END_WHEEL)
     }
 
-    let touchY: number | null = null
     const onTouchStart = (event: TouchEvent) => {
       abandonSeek()
-      touchY = event.touches[0]?.clientY ?? null
+      clearTimeout(idle)
+      touching = true
+      const y = event.touches[0]?.clientY
+      pullFrom = y != null && atBottom() ? y : null
+      setPulling(true)
     }
     const onTouchMove = (event: TouchEvent) => {
       const y = event.touches[0]?.clientY
-      if (y == null || touchY == null) return
-      advance(touchY - y, Math.max(PAST_END_TOUCH_MIN, scroller.clientHeight * PAST_END_TOUCH_SHARE))
-      touchY = y
+      if (y == null) return
+      if (!atBottom()) {
+        pullFrom = null
+        setAtLibraryEnd(false)
+        if (progress.current !== 0) decay()
+        return
+      }
+      pullFrom ??= y
+      const pull = pullFrom - y
+      if (pull <= 0) {
+        if (progress.current !== 0) decay()
+        return
+      }
+      if (!hasNext) {
+        setAtLibraryEnd(true)
+        return
+      }
+      progress.current = Math.min(1, pull / touchDistance())
+      setPastEndProgress(progress.current)
     }
-    const onTouchEnd = () => {
-      touchY = null
+    const endTouch = (release: boolean) => {
+      const full = release && hasNext && progress.current >= 1
+      touching = false
+      touchEndedAt = performance.now()
+      pullFrom = null
+      setPulling(false)
+      if (progress.current !== 0) decay()
+      if (full) onPastEnd()
     }
+    const onTouchEnd = () => endTouch(true)
+    const onTouchCancel = () => endTouch(false)
 
     scroller.addEventListener('wheel', onWheel, { passive: true })
     scroller.addEventListener('touchstart', onTouchStart, { passive: true })
     scroller.addEventListener('touchmove', onTouchMove, { passive: true })
     scroller.addEventListener('touchend', onTouchEnd, { passive: true })
+    scroller.addEventListener('touchcancel', onTouchCancel, { passive: true })
     return () => {
       clearTimeout(idle)
       scroller.removeEventListener('wheel', onWheel)
       scroller.removeEventListener('touchstart', onTouchStart)
       scroller.removeEventListener('touchmove', onTouchMove)
       scroller.removeEventListener('touchend', onTouchEnd)
+      scroller.removeEventListener('touchcancel', onTouchCancel)
     }
   }, [urls, hasNext, onPastEnd])
 
@@ -388,7 +432,20 @@ export default function ContinuousView({
       </div>
       {(pastEndProgress > 0 || atLibraryEnd) && (
         <div className={`reader-next-chapter-hint${atLibraryEnd ? ' is-end' : ''}`}>
-          <span>{atLibraryEnd ? <Trans>No more chapters</Trans> : (pastEndLabel ?? <Trans>Scroll for next chapter</Trans>)}</span>
+          <span>
+            {atLibraryEnd ? (
+              <Trans>No more chapters</Trans>
+            ) : (
+              pastEndLabel ??
+              (!pulling ? (
+                <Trans>Scroll for next chapter</Trans>
+              ) : pastEndProgress >= 1 ? (
+                <Trans>Release for next chapter</Trans>
+              ) : (
+                <Trans>Pull up for next chapter</Trans>
+              ))
+            )}
+          </span>
           <div className="reader-next-chapter-bar">
             {!atLibraryEnd && (
               <div

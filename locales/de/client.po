@@ -13725,6 +13725,10 @@ msgstr "neuesten Code abrufen und neu erstellen"
 msgid "pull the new image and recreate the container"
 msgstr "neues Image abrufen und den Container neu erstellen"
 
+#: src/pages/reader/ContinuousView.tsx
+msgid "Pull up for next chapter"
+msgstr ""
+
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you can't add series yourself. Connect trackers on the Scrobble page first. Needs the local MangaBaka database."
@@ -14557,6 +14561,10 @@ msgstr "Mit deinen Ausgangstiteln verbunden"
 #, fuzzy
 msgid "Release checks per scan"
 msgstr "Veröffentlichungsprüfungen pro Scan"
+
+#: src/pages/reader/ContinuousView.tsx
+msgid "Release for next chapter"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy

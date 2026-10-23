@@ -13724,6 +13724,10 @@ msgstr "최신 코드를 가져와 다시 빌드"
 msgid "pull the new image and recreate the container"
 msgstr "새 이미지를 가져와 컨테이너를 다시 생성"
 
+#: src/pages/reader/ContinuousView.tsx
+msgid "Pull up for next chapter"
+msgstr ""
+
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you can't add series yourself. Connect trackers on the Scrobble page first. Needs the local MangaBaka database."
@@ -14556,6 +14560,10 @@ msgstr "내 시드와 관련됨"
 #, fuzzy
 msgid "Release checks per scan"
 msgstr "스캔당 릴리스 확인 수"
+
+#: src/pages/reader/ContinuousView.tsx
+msgid "Release for next chapter"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
