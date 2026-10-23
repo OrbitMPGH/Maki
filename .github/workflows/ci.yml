@@ -36,15 +36,12 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      # Chromium only; the browser binary is not in the npm cache. Its system packages come from the
-      # runner's apt mirror, which now and then stalls on one download indefinitely: the read timeout
-      # turns that into a retry, and a step of its own keeps a slow install out of the stories' budget.
+      # Chromium only; the browser binary is not in the npm cache. No --with-deps: ubuntu-latest already
+      # carries every library Chromium links against, and what that flag adds is 26 MB of optional CJK
+      # and fallback fonts from the runner's apt mirror, which has run slow enough to time the job out.
       - name: Install Chromium for Storybook
-        timeout-minutes: 6
-        run: |
-          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' \
-            | sudo tee /etc/apt/apt.conf.d/80-ci-retries
-          npx playwright install --with-deps chromium
+        timeout-minutes: 4
+        run: npx playwright install chromium
 
       # Every story renders under the app's real providers against the MSW mocks in .storybook/mocks,
       # and a story whose component calls an endpoint nothing mocks fails, so a new API call has to
