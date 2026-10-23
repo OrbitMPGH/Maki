@@ -2967,6 +2967,15 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   position: relative;
   z-index: 1;
 }
+/* The slot a tab portals its toolbar into; its buttons sit in the header's row as siblings. */
+.discover-tab-tools {
+  display: contents;
+}
+/* The tab row already spaces the page from what follows, so the rail-scale margin above a first
+   section header would double it. */
+.discover-tab-body > .section-header:not(.section-header ~ .section-header) {
+  margin-top: 0;
+}
 
 /* Initial Discover paint follows the current feature band instead of dropping straight into a
    generic poster grid. The geometry stays local because the real hero owns richer shared rules. */
@@ -2976,11 +2985,10 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   align-items: center;
   gap: clamp(28px, 4vw, 64px);
   min-height: 360px;
-  padding: clamp(28px, 4vw, 54px);
-  margin: calc(var(--app-shell-padding, 1rem) * -1);
-  margin-inline: calc(var(--page-gutter-start, var(--app-shell-padding, 1rem)) * -1)
-    calc(var(--page-gutter-end, var(--app-shell-padding, 1rem)) * -1);
-  margin-bottom: var(--mantine-spacing-xl);
+  padding: 28px clamp(20px, 2.6vw, 36px) 26px;
+  margin: 0 0 var(--mantine-spacing-xl);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-hero);
   background: var(--surface);
 }
 .discover-loading-feature {
@@ -3005,15 +3013,12 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: var(--surface-2);
 }
 
-/* Compact metrics, but the full band's bleed. [data-compact] zeroes the negative margin because
-   the modal's band sits inside a card with its own edges; on a page the band has to give the shell
-   padding back on three sides or it reads as a card with art in it. */
+/* Held inside the page gutters with its own outline, like the taste strip under it. Only the series
+   page's band bleeds to the window edges. */
 .discover-hero.series-hero[data-compact] {
-  margin: calc(var(--app-shell-padding, 1rem) * -1);
-  margin-inline: calc(var(--page-gutter-start, var(--app-shell-padding, 1rem)) * -1)
-    calc(var(--page-gutter-end, var(--app-shell-padding, 1rem)) * -1);
-  margin-bottom: var(--mantine-spacing-xl);
-  border-radius: 0;
+  margin: 0 0 var(--mantine-spacing-xl);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-hero);
 }
 /* The modal's band reserves 46px above the content for its floating close button. The page's band
    has no such button, and that clearance reads as a gap between the tabs and the pick. */

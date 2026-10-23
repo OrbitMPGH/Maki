@@ -2,6 +2,7 @@
 import { errorText } from '../api/errorText'
 import '@mantine/charts/styles.css'
 import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ActionIcon,
@@ -247,8 +248,11 @@ function DiscoverGenreSkeleton() {
   )
 }
 
-/** The recommendation engine: Maki's library-driven "more like what you own" picks. */
-function RecommendedTab({ prefs }: { prefs: ViewPrefs }) {
+/**
+ * The recommendation engine: Maki's library-driven "more like what you own" picks. Its toolbar
+ * portals into `toolsTarget`, a slot in the page header, rather than taking a row of its own.
+ */
+function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget: HTMLElement | null }) {
   const renderLabel = useLabel()
   const { t, i18n } = useLingui()
   const { data: library } = useSeries()
@@ -600,29 +604,33 @@ function RecommendedTab({ prefs }: { prefs: ViewPrefs }) {
   const minRatingDisplay = formatFixedDecimal(minRating, 1)
 
   return (
-    <>
-      <Group justify="flex-end" mb="md">
-        <ViewModeToggle value={prefs.viewMode} onChange={prefs.setViewMode} />
-        <Button
-          variant={isCustomized ? 'light' : 'default'}
-          leftSection={<IconAdjustmentsHorizontal size={16} />}
-          onClick={() => setCustomizeOpen((o) => !o)}
-        >
-          {isCustomized ? <Trans>Customized</Trans> : <Trans>Customize</Trans>}
-        </Button>
-        <LuckyButton
-          candidates={luckyPool}
-          onPick={(key) => setDetailItem(luckyItems.find((item) => item.providerId === key) ?? null)}
-        />
-        <Button
-          variant="default"
-          leftSection={<IconRefresh size={16} />}
-          loading={isFetching}
-          onClick={() => apply(true)}
-        >
-          <Trans>Refresh</Trans>
-        </Button>
-      </Group>
+    <div className="discover-tab-body">
+      {toolsTarget &&
+        createPortal(
+          <>
+            <ViewModeToggle value={prefs.viewMode} onChange={prefs.setViewMode} />
+            <Button
+              variant={isCustomized ? 'light' : 'default'}
+              leftSection={<IconAdjustmentsHorizontal size={16} />}
+              onClick={() => setCustomizeOpen((o) => !o)}
+            >
+              {isCustomized ? <Trans>Customized</Trans> : <Trans>Customize</Trans>}
+            </Button>
+            <LuckyButton
+              candidates={luckyPool}
+              onPick={(key) => setDetailItem(luckyItems.find((item) => item.providerId === key) ?? null)}
+            />
+            <Button
+              variant="default"
+              leftSection={<IconRefresh size={16} />}
+              loading={isFetching}
+              onClick={() => apply(true)}
+            >
+              <Trans>Refresh</Trans>
+            </Button>
+          </>,
+          toolsTarget,
+        )}
 
       <Collapse expanded={customizeOpen}>
         <Panel p="md" mb="md" className="discover-recommended-customize">
@@ -912,7 +920,7 @@ function RecommendedTab({ prefs }: { prefs: ViewPrefs }) {
         onClose={() => setDetailItem(null)}
         onReroll={luckyItems.length > 1 ? rerollDetail : undefined}
       />
-    </>
+    </div>
   )
 }
 
@@ -1607,6 +1615,7 @@ export default function DiscoverPage() {
   useState(migrateBrowseDensity)
   const viewPrefs = useViewPrefs('discover')
   const showTools = (active === 'browse' && !editing) || active === 'recommended'
+  const [tabTools, setTabTools] = useState<HTMLDivElement | null>(null)
 
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
@@ -1614,7 +1623,8 @@ export default function DiscoverPage() {
         title={t`Discover`}
         actions={
           showTools ? (
-            <Group gap="xs" wrap="nowrap">
+            <Group gap="xs" wrap="wrap" justify="flex-end">
+              <div ref={setTabTools} className="discover-tab-tools" />
               {active === 'browse' && (
                 <Tooltip label={t`Refresh the catalogue`} withArrow>
                   <ActionIcon
@@ -1671,7 +1681,7 @@ export default function DiscoverPage() {
       </Tabs>
 
       {active === 'recommended' ? (
-        <RecommendedTab prefs={viewPrefs} />
+        <RecommendedTab prefs={viewPrefs} toolsTarget={tabTools} />
       ) : active === 'taste' ? (
         <Suspense fallback={<Loader />}>
           <TasteTab />

@@ -581,7 +581,7 @@ export function TasteTab() {
 
   if (nothingAtAll) {
     return (
-      <Stack gap="md">
+      <Stack gap="md" className="discover-tab-body">
       <Alert color="var(--neutral)" icon={<IconAlertCircle size={16} />} title={t`Nothing to profile yet`}>
         <Trans>Read a few chapters and this fills in.</Trans>
       </Alert>
@@ -605,7 +605,7 @@ export function TasteTab() {
     : ''
 
   return (
-    <Stack gap="md">
+    <Stack gap="md" className="discover-tab-body">
       <SignalsCard />
 
       {behaviour && behaviour.chaptersRead > 0 && (
