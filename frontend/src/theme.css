@@ -2623,42 +2623,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 /* --- Import review ------------------------------------------------------- */
 /* The choices are full sentences with a count in them, so on a phone they wrap rather than
    losing their ending to Mantine's single-line label. */
-/* --- Home downloading strip --------------------------------------------- */
-/* Rows on the ground under the section rule, closed by a hairline above the queue count. */
-.downloading-strip > .mantine-Stack-root > .mantine-Group-root:last-child {
-  padding-top: var(--mantine-spacing-xs);
-  border-top: 1px solid var(--line-soft);
-}
-/* Title and release label share a line on wider screens, the label capped at half of it. On a
-   phone the badge leaves too little room for both, so the label drops under the title. */
-.downloading-strip-name {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  align-items: baseline;
-  gap: var(--mantine-spacing-sm);
-}
-.downloading-strip-title {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.downloading-strip-label {
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 50%;
-}
-@media (max-width: 47.99em) {
-  .downloading-strip-name {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-  }
-  .downloading-strip-label {
-    max-width: none;
-    font-size: var(--mantine-font-size-xs);
-  }
-}
-
 /* --- Home dashboard rails ------------------------------------------------ */
 /* How far into the current chapter you are. Same geometry as .cover-bar so a Continue-reading
    card and a library card line up, but its own class: this measures pages within one chapter,
@@ -5234,6 +5198,90 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   .section-header-arrows,
   .section-header-end:not(:has(> .section-header-action)) {
     display: none;
+  }
+}
+
+/* A label after the title, set by `SectionTagContext` (Home's catalogue rails in the tagged draft). */
+.section-header-tag {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand-fg);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-semibold);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+/* --- Home zones (draft) ----------------------------------------------------
+   Gathers Home's catalogue sections under one heading, after the library ones. `break` is a
+   heading on a full-width rule; `well` puts the whole zone in an outlined, faintly tinted well. */
+.home-zone-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.home-zone-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand-fg);
+}
+.home-zone-text {
+  flex: 1;
+  min-width: 0;
+}
+.home-zone-title {
+  margin: 0;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-page-title);
+  font-weight: var(--fw-bold);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+.home-zone-sub {
+  margin: 4px 0 0;
+  color: var(--ink-3);
+  font-size: var(--type-body);
+}
+.home-zone-action {
+  flex-shrink: 0;
+}
+.home-zone-head + .section-header,
+.home-zone-head + * > .section-header:first-child {
+  margin-top: 30px;
+}
+.home-zone[data-variant='break'] {
+  margin-top: 76px;
+  padding-top: 30px;
+  border-top: 1px solid var(--border-strong);
+}
+.home-zone[data-variant='well'] {
+  margin-top: 56px;
+  padding: 24px 24px 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-hero);
+  background: color-mix(in srgb, var(--brand) 4%, var(--surface-sunken));
+}
+@media (max-width: 36em) {
+  .home-zone-head {
+    flex-wrap: wrap;
+  }
+  .home-zone-icon {
+    display: none;
+  }
+  .home-zone-action {
+    margin-left: auto;
+  }
+  .home-zone[data-variant='well'] {
+    padding: 18px 14px 20px;
   }
 }
 

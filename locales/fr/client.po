@@ -1597,8 +1597,8 @@ msgstr "{reasonText} - {measurement}"
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
-msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
-msgstr "{remaining, plural, one {# de plus dans la file} many {# de plus dans la file} other {# de plus dans la file}}"
+#~ msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
+#~ msgstr "{remaining, plural, one {# de plus dans la file} many {# de plus dans la file} other {# de plus dans la file}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2052,8 +2052,8 @@ msgstr "{totalCount, plural, one {{visibleCount} sur # série correspond} many {
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
-msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
-msgstr "{totalQueued, plural, one {# dans la file} many {# dans la file} other {# dans la file}}"
+#~ msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
+#~ msgstr "{totalQueued, plural, one {# dans la file} many {# dans la file} other {# dans la file}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4780,8 +4780,8 @@ msgstr "Chapitres téléchargés automatiquement"
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Chapters downloading right now. Only shows while something is."
-msgstr "Chapitres en cours de téléchargement. Cette section ne s'affiche que lorsqu'il y en a."
+#~ msgid "Chapters downloading right now. Only shows while something is."
+#~ msgstr "Chapitres en cours de téléchargement. Cette section ne s'affiche que lorsqu'il y en a."
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6704,7 +6704,6 @@ msgstr "Dossier de téléchargement inaccessible depuis Maki"
 msgid "Download path not accessible from Maki: {path}"
 msgstr "Dossier de téléchargement inaccessible depuis Maki : {path}"
 
-#: src/components/home/DownloadingStrip.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -6778,8 +6777,8 @@ msgstr "Téléchargement de la base de données des métadonnées"
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Downloading now"
-msgstr "Téléchargement en cours"
+#~ msgid "Downloading now"
+#~ msgstr "Téléchargement en cours"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -12067,6 +12066,14 @@ msgstr ""
 msgid "Not imported"
 msgstr "Non importé"
 
+#: src/pages/HomePage.tsx
+msgid "Not in your library"
+msgstr ""
+
+#: src/components/home/HomeZones.tsx
+msgid "Not in your library yet"
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
@@ -12889,6 +12896,10 @@ msgstr "Ouvrez un chapitre et il apparaîtra ici, prêt à reprendre."
 msgid "Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are."
 msgstr "Ouvrez n'importe quel chapitre dans le lecteur intégré ou connectez Kavita, et Maki commencera à suivre votre progression."
 
+#: src/components/home/HomeZones.tsx
+msgid "Open Discover"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Open entry"
@@ -13391,6 +13402,10 @@ msgstr "Suggestions basées sur les séries que vous avez lues le plus récemmen
 #, fuzzy
 msgid "Picks for you, ranked the same way as the Recommended tab with these settings."
 msgstr "Des suggestions pour vous, classées comme dans l'onglet Recommandé avec ces réglages."
+
+#: src/components/home/HomeZones.tsx
+msgid "Picks from the catalogue. Open one to read more about it or add it."
+msgstr ""
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
@@ -19859,8 +19874,8 @@ msgstr "Voir {title}"
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
-msgid "View activity"
-msgstr "Voir l'activité"
+#~ msgid "View activity"
+#~ msgstr "Voir l'activité"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx

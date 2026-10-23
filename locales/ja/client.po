@@ -1597,8 +1597,8 @@ msgstr "{reasonText} - {measurement}"
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
-msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
-msgstr "{remaining, plural, other {キューにさらに#件}}"
+#~ msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
+#~ msgstr "{remaining, plural, other {キューにさらに#件}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2051,8 +2051,8 @@ msgstr "{totalCount, plural, other {#件のシリーズのうち{visibleCount}�
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
-msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
-msgstr "{totalQueued, plural, other {キューに#件}}"
+#~ msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
+#~ msgstr "{totalQueued, plural, other {キューに#件}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4779,8 +4779,8 @@ msgstr "章を自動ダウンロード"
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Chapters downloading right now. Only shows while something is."
-msgstr "現在ダウンロード中の章です。ダウンロード中のものがあるときだけ表示します。"
+#~ msgid "Chapters downloading right now. Only shows while something is."
+#~ msgstr "現在ダウンロード中の章です。ダウンロード中のものがあるときだけ表示します。"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6703,7 +6703,6 @@ msgstr "Makiからダウンロード先にアクセスできません"
 msgid "Download path not accessible from Maki: {path}"
 msgstr "Makiからダウンロード先にアクセスできません：{path}"
 
-#: src/components/home/DownloadingStrip.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -6777,8 +6776,8 @@ msgstr "メタデータデータベースをダウンロード中"
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Downloading now"
-msgstr "現在ダウンロード中"
+#~ msgid "Downloading now"
+#~ msgstr "現在ダウンロード中"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -12066,6 +12065,14 @@ msgstr ""
 msgid "Not imported"
 msgstr "未インポート"
 
+#: src/pages/HomePage.tsx
+msgid "Not in your library"
+msgstr ""
+
+#: src/components/home/HomeZones.tsx
+msgid "Not in your library yet"
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
@@ -12888,6 +12895,10 @@ msgstr "章を開くとここに表示され、続きから読めます。"
 msgid "Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are."
 msgstr "内蔵リーダーで章を開くかKavitaに接続すると、Makiが読書位置の追跡を始めます。"
 
+#: src/components/home/HomeZones.tsx
+msgid "Open Discover"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Open entry"
@@ -13390,6 +13401,10 @@ msgstr "最近読んだシリーズに基づくおすすめです。"
 #, fuzzy
 msgid "Picks for you, ranked the same way as the Recommended tab with these settings."
 msgstr "これらの設定を使い、「おすすめ」タブと同じ方法で並べたおすすめです。"
+
+#: src/components/home/HomeZones.tsx
+msgid "Picks from the catalogue. Open one to read more about it or add it."
+msgstr ""
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
@@ -19858,8 +19873,8 @@ msgstr "{title}を表示"
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
-msgid "View activity"
-msgstr "アクティビティを表示"
+#~ msgid "View activity"
+#~ msgstr "アクティビティを表示"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx

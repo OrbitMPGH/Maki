@@ -13,14 +13,24 @@ namespace Maki.Core.Tests;
 public class HomeLayoutTests
 {
     [Fact]
-    public void Default_has_every_section_in_shipping_order_with_discovery_off()
+    public void Default_has_every_section_in_shipping_order_all_on()
     {
         var spec = HomeLayoutSpec.Default;
 
         Assert.True(spec.Enabled);
         Assert.Equal(HomeSections.All, spec.Sections!.Select(s => s.Key));
-        Assert.All(spec.Sections!, s => Assert.Equal(!HomeSections.DefaultOff.Contains(s.Key), s.Enabled));
-        Assert.Equal([HomeSections.Recommended, HomeSections.Popular], HomeSections.DefaultOff);
+        Assert.All(spec.Sections!, s => Assert.True(s.Enabled));
+    }
+
+    [Fact]
+    public void Default_ships_the_library_rails_then_the_catalogue_ones_with_popular_last()
+    {
+        Assert.Equal(
+            [
+                HomeSections.ContinueReading, HomeSections.JumpBackIn, HomeSections.RecentlyAdded,
+                HomeSections.Recommended, HomeSections.FromAnime, HomeSections.Following, HomeSections.Popular,
+            ],
+            HomeLayoutSpec.Default.Sections!.Select(s => s.Key));
     }
 
     [Fact]
@@ -31,7 +41,7 @@ public class HomeLayoutTests
         Assert.Equal(HomeSections.ContinueReading, keys[0]);
         Assert.Equal(HomeSections.JumpBackIn, keys[1]);
         Assert.DoesNotContain(HomeSections.Glance, keys);
-        Assert.True(keys.IndexOf(HomeSections.Downloading) > keys.IndexOf(HomeSections.RecentlyAdded));
+        Assert.DoesNotContain(HomeSections.Downloading, keys);
     }
 
     [Fact]
@@ -124,11 +134,9 @@ public class HomeLayoutTests
         Assert.Equal(HomeSections.JumpBackIn, merged.Sections![0].Key);
         Assert.Equal(HomeSections.ContinueReading, merged.Sections[1].Key);
         Assert.False(merged.Sections[1].Enabled);
-        // ...and everything new lands after it, on unless it ships off, rather than jumping to its canonical slot.
+        // ...and everything new lands after it, on, rather than jumping to its canonical slot.
         Assert.Equal(HomeSections.All.Length, merged.Sections.Count);
-        Assert.All(
-            merged.Sections.Skip(2),
-            s => Assert.Equal(!HomeSections.DefaultOff.Contains(s.Key), s.Enabled));
+        Assert.All(merged.Sections.Skip(2), s => Assert.True(s.Enabled));
     }
 
     [Fact]
@@ -145,7 +153,8 @@ public class HomeLayoutTests
 
         var merged = stored.Merge();
 
-        var appended = merged.Sections!.Skip(stored.Sections!.Count).ToList();
+        var storedKeys = stored.Sections!.Select(s => s.Key).ToHashSet();
+        var appended = merged.Sections!.Where(s => !storedKeys.Contains(s.Key)).ToList();
         var fromAnime = Assert.Single(appended, s => s.Key == HomeSections.FromAnime);
         Assert.True(fromAnime.Enabled);
         Assert.Null(fromAnime.Hero);
@@ -154,11 +163,21 @@ public class HomeLayoutTests
     }
 
     [Fact]
-    public void From_anime_ships_right_after_jump_back_in()
+    public void A_stored_downloading_section_is_dropped_and_the_rest_keep_their_order()
     {
-        var keys = HomeLayoutSpec.Default.Sections!.Select(s => s.Key).ToList();
+        var stored = new HomeLayoutSpec(true, [
+            new PageSection(HomeSections.Popular),
+            new PageSection(HomeSections.Downloading),
+            new PageSection(HomeSections.ContinueReading, Enabled: false),
+        ]);
 
-        Assert.Equal(keys.IndexOf(HomeSections.JumpBackIn) + 1, keys.IndexOf(HomeSections.FromAnime));
+        var merged = stored.Merge();
+
+        Assert.DoesNotContain(merged.Sections!, s => s.Key == HomeSections.Downloading);
+        Assert.Equal(HomeSections.Popular, merged.Sections![0].Key);
+        Assert.Equal(HomeSections.ContinueReading, merged.Sections[1].Key);
+        Assert.False(merged.Sections[1].Enabled);
+        Assert.Equal(HomeSections.All.Length, merged.Sections.Count);
     }
 
     [Fact]
@@ -327,7 +346,7 @@ public class HomeLayoutTests
     public void A_stored_glance_section_becomes_continues_glance_switch_and_is_dropped()
     {
         var stored = new HomeLayoutSpec(true, [
-            new PageSection(HomeSections.Downloading),
+            new PageSection(HomeSections.RecentlyAdded),
             new PageSection(HomeSections.Glance, Enabled: false),
             new PageSection(HomeSections.ContinueReading),
         ]);
@@ -335,7 +354,7 @@ public class HomeLayoutTests
         var merged = stored.Merge();
 
         Assert.DoesNotContain(merged.Sections!, s => s.Key == HomeSections.Glance);
-        Assert.Equal(HomeSections.Downloading, merged.Sections![0].Key);
+        Assert.Equal(HomeSections.RecentlyAdded, merged.Sections![0].Key);
         Assert.Equal(HomeSections.ContinueReading, merged.Sections[1].Key);
         Assert.False(GlanceOf(merged));
     }
@@ -454,7 +473,22 @@ public class HomeLayoutTests
     }
 
     private static List<PageSection> PreviousDefault() =>
-        HomeSections.HeroFirstPredecessor.Select(key => new PageSection(key)).ToList();
+        HomeSections.ShippingOrderPredecessors[0].Select(key => new PageSection(key)).ToList();
+
+    [Fact]
+    public void The_hero_first_default_moves_to_the_new_order_without_downloading()
+    {
+        var stored = HomeSections.ShippingOrderPredecessors[1]
+            .Select(key => new PageSection(key, Enabled: key is not HomeSections.Recommended and not HomeSections.Popular))
+            .ToList();
+
+        var merged = new HomeLayoutSpec(true, stored).Merge();
+
+        Assert.Equal(HomeSections.All, merged.Sections!.Select(s => s.Key));
+        // Switches travel: discovery stored off stays off, as any other switch would.
+        Assert.False(merged.Sections!.Single(s => s.Key == HomeSections.Recommended).Enabled);
+        Assert.False(merged.Sections!.Single(s => s.Key == HomeSections.Popular).Enabled);
+    }
 
     [Fact]
     public void A_layout_still_on_the_previous_default_moves_to_the_new_one()
@@ -528,6 +562,8 @@ public class HomeLayoutTests
 
         var merged = new HomeLayoutSpec(true, reordered).Merge();
 
-        Assert.Equal(reordered.Select(s => s.Key), merged.Sections!.Select(s => s.Key));
+        Assert.Equal(
+            reordered.Select(s => s.Key).Where(k => k != HomeSections.Downloading),
+            merged.Sections!.Select(s => s.Key));
     }
 }

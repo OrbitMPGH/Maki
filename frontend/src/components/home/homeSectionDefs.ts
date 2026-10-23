@@ -4,7 +4,6 @@ import {
   IconBook,
   IconBookmarks,
   IconDeviceTv,
-  IconDownload,
   IconFlame,
   IconPlayerPlay,
   IconSparkles,
@@ -35,11 +34,6 @@ const nextUpBeside: SectionOptionDef = {
 }
 
 export const HOME_SECTION_DEFS: SectionRegistry = {
-  downloading: {
-    icon: IconDownload,
-    label: HOME_SECTION_LABELS.downloading,
-    description: msg`Chapters downloading right now. Only shows while something is.`,
-  },
   continue: {
     icon: IconPlayerPlay,
     label: HOME_SECTION_LABELS.continue,

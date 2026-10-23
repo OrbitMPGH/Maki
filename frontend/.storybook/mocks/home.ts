@@ -9,14 +9,11 @@ import {
   catalogueItem,
   continueReading,
   customRails,
-  downloadingItems,
-  failedItem,
   homeUi,
   jumpBackIn,
   librarySeries,
   popularPicks,
   progressSummary,
-  queuePage,
   railItems,
   recentlyAdded,
   recommendationsResult,
@@ -74,7 +71,6 @@ export const homeHandlers: HttpHandler[] = [
  */
 export const homePageHandlers: HttpHandler[] = [
   http.get(api('/series'), () => HttpResponse.json(librarySeries)),
-  http.get(api('/queue'), () => HttpResponse.json(queuePage([...downloadingItems.slice(0, 3), failedItem]))),
   http.get(api('/reader/used'), () => HttpResponse.json({ used: true })),
   http.get(api('/rootfolder'), () =>
     HttpResponse.json([{ id: 1, path: '/library', freeSpace: 412_000_000_000, accessible: true }]),

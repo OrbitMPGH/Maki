@@ -2,14 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
-import {
-  downloadingItems,
-  failedItem,
-  homePage,
-  homeUi,
-  progressSummary,
-  queuePage,
-} from '../../.storybook/mocks/home'
+import { homePage, homeUi, progressSummary } from '../../.storybook/mocks/home'
 import { metadataSettings } from '../../.storybook/mocks/shared'
 import HomePage from './HomePage'
 
@@ -33,6 +26,41 @@ export const Default: Story = {
   },
 }
 
+/**
+ * Draft: telling what you can read now from what you would have to add. The catalogue sections
+ * (Continue from the anime, Following, You might like, Currently popular, catalogue custom rails)
+ * move after the library ones under a heading on a full-width rule.
+ */
+export const SeparationBreak: Story = {
+  args: { separation: 'break' },
+  play: async ({ canvas }) => {
+    const zone = await canvas.findByRole('region', { name: 'Not in your library yet' })
+    const picks = await canvas.findByRole('heading', { level: 2, name: /you might like/i })
+    await waitFor(() => expect(zone).toContainElement(picks))
+    await expect(zone).not.toContainElement(await canvas.findByRole('heading', { level: 2, name: /recently added/i }))
+  },
+}
+
+/** Draft: the same grouping, with the catalogue zone in an outlined, faintly tinted well. */
+export const SeparationWell: Story = {
+  args: { separation: 'well' },
+  play: async ({ canvas }) => {
+    const zone = await canvas.findByRole('region', { name: 'Not in your library yet' })
+    const popular = await canvas.findByRole('heading', { level: 2, name: /currently popular/i })
+    await waitFor(() => expect(zone).toContainElement(popular))
+  },
+}
+
+/** Draft: no regrouping, the user's order stands; each catalogue section's header carries a label. */
+export const SeparationTagged: Story = {
+  args: { separation: 'tagged' },
+  play: async ({ canvas }) => {
+    await canvas.findByRole('heading', { level: 2, name: /currently popular/i })
+    await waitFor(() => expect(canvas.getAllByText('Not in your library').length).toBeGreaterThanOrEqual(3))
+    await expect(canvas.queryByRole('region', { name: 'Not in your library yet' })).toBeNull()
+  },
+}
+
 export const ReadingSectionsAsRails: Story = {
   parameters: { msw: homePage(layout({ hero: { continue: false, jumpback: false } })) },
   play: async ({ canvas }) => {
@@ -46,24 +74,6 @@ export const JumpBackInHero: Story = {
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.getByRole('heading', { level: 2, name: 'Next up' })).toBeVisible())
     await waitFor(() => expect(canvas.getByRole('heading', { level: 2, name: 'Next to jump back in' })).toBeVisible())
-  },
-}
-
-export const DownloadingBacklog: Story = {
-  parameters: {
-    msw: homePage(http.get(api('/queue'), () => HttpResponse.json(queuePage([...downloadingItems, failedItem])))),
-  },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('heading', { level: 2, name: /downloading now/i })).toBeVisible()
-    await expect(await canvas.findByText(/3 more in the queue/i)).toBeVisible()
-  },
-}
-
-export const NothingDownloading: Story = {
-  parameters: { msw: homePage(http.get(api('/queue'), () => HttpResponse.json(queuePage([failedItem])))) },
-  play: async ({ canvas }) => {
-    await canvas.findByText('Continue reading')
-    await expect(canvas.queryByRole('heading', { level: 2, name: /downloading now/i })).toBeNull()
   },
 }
 
@@ -226,7 +236,7 @@ export const LibraryFailed: Story = {
 export const EverySectionOff: Story = {
   parameters: {
     msw: homePage(
-      layout({ off: ['downloading', 'continue', 'jumpback', 'fromanime', 'recent', 'following', 'recommended', 'popular'] }),
+      layout({ off: ['continue', 'jumpback', 'recent', 'recommended', 'fromanime', 'following', 'popular'] }),
     ),
   },
   play: async ({ canvas }) => {

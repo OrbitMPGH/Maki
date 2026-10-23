@@ -1597,8 +1597,8 @@ msgstr "{reasonText} - {measurement}"
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
-msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
-msgstr "{remaining, plural, other {대기열에 #개 더 있음}}"
+#~ msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
+#~ msgstr "{remaining, plural, other {대기열에 #개 더 있음}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2051,8 +2051,8 @@ msgstr "{totalCount, plural, other {시리즈 #개 중 {visibleCount}개 일치}
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
-msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
-msgstr "{totalQueued, plural, other {대기열에 #개}}"
+#~ msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
+#~ msgstr "{totalQueued, plural, other {대기열에 #개}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4779,8 +4779,8 @@ msgstr "자동으로 다운로드한 챕터"
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Chapters downloading right now. Only shows while something is."
-msgstr "현재 다운로드 중인 챕터입니다. 다운로드가 진행 중일 때만 표시됩니다."
+#~ msgid "Chapters downloading right now. Only shows while something is."
+#~ msgstr "현재 다운로드 중인 챕터입니다. 다운로드가 진행 중일 때만 표시됩니다."
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6703,7 +6703,6 @@ msgstr "Maki에서 다운로드 경로에 접근할 수 없습니다"
 msgid "Download path not accessible from Maki: {path}"
 msgstr "Maki에서 다운로드 경로에 접근할 수 없습니다: {path}"
 
-#: src/components/home/DownloadingStrip.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -6777,8 +6776,8 @@ msgstr "메타데이터 데이터베이스 다운로드 중"
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Downloading now"
-msgstr "지금 다운로드 중"
+#~ msgid "Downloading now"
+#~ msgstr "지금 다운로드 중"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -12066,6 +12065,14 @@ msgstr ""
 msgid "Not imported"
 msgstr "가져오지 않음"
 
+#: src/pages/HomePage.tsx
+msgid "Not in your library"
+msgstr ""
+
+#: src/components/home/HomeZones.tsx
+msgid "Not in your library yet"
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
@@ -12888,6 +12895,10 @@ msgstr "챕터를 열면 여기 표시되어 이어서 읽을 수 있습니다."
 msgid "Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are."
 msgstr "내장 리더에서 아무 챕터나 열거나 Kavita를 연결하면 Maki가 현재 위치 추적을 시작합니다."
 
+#: src/components/home/HomeZones.tsx
+msgid "Open Discover"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Open entry"
@@ -13390,6 +13401,10 @@ msgstr "최근에 읽은 시리즈를 바탕으로 추천합니다."
 #, fuzzy
 msgid "Picks for you, ranked the same way as the Recommended tab with these settings."
 msgstr "이 설정을 기준으로 추천 탭과 같은 방식으로 순위를 매긴 추천 작품입니다."
+
+#: src/components/home/HomeZones.tsx
+msgid "Picks from the catalogue. Open one to read more about it or add it."
+msgstr ""
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
@@ -19858,8 +19873,8 @@ msgstr "{title} 보기"
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
-msgid "View activity"
-msgstr "활동 보기"
+#~ msgid "View activity"
+#~ msgstr "활동 보기"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx

@@ -991,11 +991,10 @@ export function useHomeRecentlyAdded(limit = HOME_RAIL_LIMIT, enabled = true) {
 export const HOME_SECTIONS = [
   'continue',
   'jumpback',
-  'fromanime',
   'recent',
-  'downloading',
-  'following',
   'recommended',
+  'fromanime',
+  'following',
   'popular',
 ] as const
 
@@ -1009,7 +1008,6 @@ export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
  */
 export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
   continue: msg`Continue reading`,
-  downloading: msg`Downloading now`,
   recent: msg`Recently added`,
   jumpback: msg`Jump back in`,
   fromanime: msg`Continue from the anime`,

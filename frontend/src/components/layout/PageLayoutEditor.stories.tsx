@@ -55,7 +55,7 @@ export const KeyboardReorder: Story = {
     const grip = await canvas.findByRole('button', { name: 'Move Jump back in' })
     grip.focus()
     await userEvent.keyboard('{ArrowDown}')
-    await waitFor(() => expect(canvas.getByText('Jump back in moved to position 3 of 11')).toBeInTheDocument())
+    await waitFor(() => expect(canvas.getByText('Jump back in moved to position 3 of 10')).toBeInTheDocument())
   },
 }
 

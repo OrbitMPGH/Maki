@@ -15,6 +15,11 @@ public static class HomeSections
     public const string Glance = "glance";
 
     public const string ContinueReading = "continue";
+
+    /// <summary>
+    /// A retired section key: the queue strip Home showed while chapters downloaded. Kept only so
+    /// <see cref="ShippingOrderPredecessors"/> can name the orders that held it; the merge drops it.
+    /// </summary>
     public const string Downloading = "downloading";
     public const string RecentlyAdded = "recent";
     public const string JumpBackIn = "jumpback";
@@ -33,23 +38,20 @@ public static class HomeSections
     /// </summary>
     public static readonly string[] All =
     [
-        ContinueReading, JumpBackIn, FromAnime, RecentlyAdded, Downloading, Following, Recommended, Popular
+        ContinueReading, JumpBackIn, RecentlyAdded, Recommended, FromAnime, Following, Popular
     ];
 
     /// <summary>
-    /// Discovery lives on Discover. Home ships without these two and a reader can still switch them
-    /// on in the layout editor.
+    /// Earlier shipping orders, which <see cref="HomeLayoutSpec.MigrateShippingOrder"/> recognises.
+    /// Without <see cref="Glance"/>, which led the oldest: it has been folded into Continue reading by
+    /// the time the move runs.
     /// </summary>
-    public static readonly string[] DefaultOff = [Recommended, Popular];
-
-    /// <summary>
-    /// The shipping order before Home opened on its hero, which <see cref="HomeLayoutSpec.MigrateHeroFirst"/>
-    /// recognises. Without <see cref="Glance"/>, which led that order: it has been folded into
-    /// Continue reading by the time the move runs.
-    /// </summary>
-    internal static readonly string[] HeroFirstPredecessor =
+    internal static readonly string[][] ShippingOrderPredecessors =
     [
-        Downloading, ContinueReading, JumpBackIn, FromAnime, RecentlyAdded, Following, Recommended, Popular
+        // Before Home opened on its hero.
+        [Downloading, ContinueReading, JumpBackIn, FromAnime, RecentlyAdded, Following, Recommended, Popular],
+        // Hero first, with discovery shipping switched off.
+        [ContinueReading, JumpBackIn, FromAnime, RecentlyAdded, Downloading, Following, Recommended, Popular],
     ];
 
     public static bool IsValid(string? key) => key is not null && All.Contains(key);
@@ -131,8 +133,7 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Se
         },
         new Dictionary<string, IReadOnlyList<string>>(),
         RailAnchor: null,
-        Upgrade: stored => MigrateHeroFirst(MigrateGlanceIntoContinue(MigrateGlancePanels(MigrateGlance(stored)))),
-        DefaultOff: HomeSections.DefaultOff,
+        Upgrade: stored => MigrateShippingOrder(MigrateGlanceIntoContinue(MigrateGlancePanels(MigrateGlance(stored)))),
         Options: new Dictionary<string, IReadOnlyDictionary<string, bool>>
         {
             [HomeSections.ContinueReading] = HomeHeroOptions.ContinueDefaults,
@@ -239,16 +240,17 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Se
     }
 
     /// <summary>
-    /// Moves a layout still in the previous default order onto the current shipping order. That
-    /// order is the one nobody chose, so only the switches the owner flipped (a section off, a hero
-    /// off) are theirs, and those travel with each section. A layout in any other
-    /// order is the owner's own arrangement and is left alone. Custom rails stay after the built-in
-    /// sections.
+    /// Moves a layout still in an earlier default order onto the current shipping order. That
+    /// order is the one nobody chose, so only the switches stored with it (a section off, a hero
+    /// off) are kept, and those travel with each section; a section the current order no longer
+    /// has is dropped. A layout in any other order is the owner's own arrangement and is left
+    /// alone. Custom rails stay after the built-in sections.
     /// </summary>
-    public static IReadOnlyList<PageSection> MigrateHeroFirst(IReadOnlyList<PageSection> stored)
+    public static IReadOnlyList<PageSection> MigrateShippingOrder(IReadOnlyList<PageSection> stored)
     {
         var builtIn = stored.Where(s => !LayoutRails.TryParse(s.Key, out _)).ToList();
-        if (!builtIn.Select(s => s.Key).SequenceEqual(HomeSections.HeroFirstPredecessor))
+        var keys = builtIn.Select(s => s.Key).ToList();
+        if (!HomeSections.ShippingOrderPredecessors.Any(order => keys.SequenceEqual(order)))
         {
             return stored;
         }

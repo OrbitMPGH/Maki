@@ -7,7 +7,6 @@ import {
   IconBook,
   IconBookmarks,
   IconDeviceTv,
-  IconDownload,
   IconFlame,
   IconFolderDown,
   IconLayoutDashboard,
@@ -25,7 +24,6 @@ import {
   useHomeReading,
   useHomeRecentlyAdded,
   useMetadataSettings,
-  useQueue,
   useReadingHeatmap,
   useRecommendations,
   useRootFolders,
@@ -52,7 +50,7 @@ import { FollowingRail } from '../components/discover/FollowingRail'
 import { ContinueHero, type HeroQueue } from '../components/home/ContinueHero'
 import { ContinueRail } from '../components/home/ContinueRail'
 import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
-import { DownloadingStrip } from '../components/home/DownloadingStrip'
+import { DiscoverZone, type HomeSeparation } from '../components/home/HomeZones'
 import { AnimeResumeExpandModal, AnimeResumeRail } from '../components/home/AnimeResumeRail'
 import { ReadingWeeks, ReadingWeeksPlaceholder, rollingWeeks } from '../components/home/ReadingWeeks'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
@@ -60,9 +58,8 @@ import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RailSkeleton } from '../components/ui/RailSkeleton'
-import { SectionHeader } from '../components/ui/SectionHeader'
+import { SectionHeader, SectionTagContext } from '../components/ui/SectionHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
-import { isQueueActive } from '../components/ui/status'
 
 /** How many catalogue picks each borrowed Discover rail shows before "Find more". */
 const RAIL_SIZE = 20
@@ -80,7 +77,10 @@ function FindMore() {
   )
 }
 
-export default function HomePage() {
+/** Sections that only ever show series already in the library. Everything else draws on the catalogue. */
+const LIBRARY_SECTIONS: HomeSectionKey[] = ['continue', 'jumpback', 'recent']
+
+export default function HomePage({ separation = 'none' }: { separation?: HomeSeparation }) {
   const { t } = useLingui()
   const { data: series, isLoading: seriesLoading, isError: seriesFailed, refetch: refetchSeries } = useSeries()
   const { data: metadata } = useMetadataSettings()
@@ -131,7 +131,6 @@ export default function HomePage() {
   } = useHomeReading(undefined, needsReading)
   const { data: recent, isLoading: recentLoading } = useHomeRecentlyAdded(undefined, on('recent'))
   const { data: fromAnime, isLoading: fromAnimeLoading } = useHomeFromAnime(on('fromanime'))
-  const { data: queue } = useQueue(1, 200, on('downloading'), true)
   const { data: rails, isLoading: railsLoading } = useDiscover(0, needsDiscover && on('popular'))
   // An empty request object is deliberate: it hits the same server-side cache slot as Discover's
   // default Recommended tab, so this rail can never thrash that shared pool with different seeds.
@@ -147,7 +146,6 @@ export default function HomePage() {
 
   const continueReading = reading?.continueReading ?? []
   const jumpBackIn = reading?.jumpBackIn ?? []
-  const downloading = (queue?.items ?? []).filter((q) => isQueueActive(q.status))
 
   const popular = rails?.find((r) => r.key === 'popular')?.items ?? []
   const youMightLike = recommendations.data?.pages[0]?.similar?.slice(0, RAIL_SIZE) ?? []
@@ -289,13 +287,6 @@ export default function HomePage() {
       </>
     ),
 
-    downloading: downloading.length > 0 && (
-      <>
-        <SectionHeader icon={IconDownload} title={t`Downloading now`} count={downloading.length} />
-        <DownloadingStrip items={downloading} />
-      </>
-    ),
-
     recent: recentLoading ? (
       <RailSkeleton />
     ) : (
@@ -400,6 +391,39 @@ export default function HomePage() {
     return <CustomRailSection rail={rail} limit={RAIL_SIZE} onOpen={setDetailItem} />
   }
 
+  const inLibraryZone = (key: HomeLayoutKey) =>
+    isRailKey(key)
+      ? homeRails?.find((r) => r.id === railIdOf(key))?.spec.source === 'library'
+      : LIBRARY_SECTIONS.includes(key)
+
+  const rendered = visible.map((s) => ({ key: s.key, node: renderSection(s.key), library: inLibraryZone(s.key) }))
+  const plain = (r: (typeof rendered)[number]) => <Fragment key={r.key}>{r.node}</Fragment>
+  const catalogue = rendered.filter((r) => !r.library)
+
+  const body =
+    separation === 'tagged' ? (
+      rendered.map((r) =>
+        r.library ? (
+          plain(r)
+        ) : (
+          <SectionTagContext.Provider key={r.key} value={t`Not in your library`}>
+            {r.node}
+          </SectionTagContext.Provider>
+        ),
+      )
+    ) : separation === 'break' || separation === 'well' ? (
+      <>
+        {rendered.filter((r) => r.library).map(plain)}
+        {catalogue.some((r) => r.node) && (
+          <DiscoverZone variant={separation} discoverLink={discoverAvailable}>
+            {catalogue.map(plain)}
+          </DiscoverZone>
+        )}
+      </>
+    ) : (
+      rendered.map(plain)
+    )
+
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       {homeTitle}
@@ -411,7 +435,7 @@ export default function HomePage() {
           onAction={enterEditing}
         />
       ) : (
-        visible.map((s) => <Fragment key={s.key}>{renderSection(s.key)}</Fragment>)
+        body
       )}
 
       <Group justify="center" gap="xs" mt="xl">

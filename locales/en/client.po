@@ -1349,8 +1349,8 @@ msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
 
 #: src/components/home/DownloadingStrip.tsx
-msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
-msgstr "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
+#~ msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
+#~ msgstr "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -1720,8 +1720,8 @@ msgid "{totalCount, plural, one {{visibleCount} of # series match} other {{visib
 msgstr "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
 
 #: src/components/home/DownloadingStrip.tsx
-msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
-msgstr "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
+#~ msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
+#~ msgstr "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
 
 #: src/pages/LibraryPage.tsx
 msgid "{totalSeries, plural, one {# series} other {# series}}"
@@ -3962,8 +3962,8 @@ msgid "Chapters downloaded automatically"
 msgstr "Chapters downloaded automatically"
 
 #: src/components/home/homeSectionDefs.ts
-msgid "Chapters downloading right now. Only shows while something is."
-msgstr "Chapters downloading right now. Only shows while something is."
+#~ msgid "Chapters downloading right now. Only shows while something is."
+#~ msgstr "Chapters downloading right now. Only shows while something is."
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Chapters known"
@@ -5560,7 +5560,6 @@ msgstr "Download path not accessible from Maki"
 msgid "Download path not accessible from Maki: {path}"
 msgstr "Download path not accessible from Maki: {path}"
 
-#: src/components/home/DownloadingStrip.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -5621,8 +5620,8 @@ msgstr "Downloading metadata database"
 
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
-msgid "Downloading now"
-msgstr "Downloading now"
+#~ msgid "Downloading now"
+#~ msgstr "Downloading now"
 
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Downloading…"
@@ -10000,6 +9999,14 @@ msgstr "Not found"
 msgid "Not imported"
 msgstr "Not imported"
 
+#: src/pages/HomePage.tsx
+msgid "Not in your library"
+msgstr "Not in your library"
+
+#: src/components/home/HomeZones.tsx
+msgid "Not in your library yet"
+msgstr "Not in your library yet"
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
@@ -10685,6 +10692,10 @@ msgstr "Open a chapter and it will show up here, ready to resume."
 msgid "Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are."
 msgstr "Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are."
 
+#: src/components/home/HomeZones.tsx
+msgid "Open Discover"
+msgstr "Open Discover"
+
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Open entry"
 msgstr "Open entry"
@@ -11104,6 +11115,10 @@ msgstr "Picks based on the series you read most recently."
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Picks for you, ranked the same way as the Recommended tab with these settings."
 msgstr "Picks for you, ranked the same way as the Recommended tab with these settings."
+
+#: src/components/home/HomeZones.tsx
+msgid "Picks from the catalogue. Open one to read more about it or add it."
+msgstr "Picks from the catalogue. Open one to read more about it or add it."
 
 #: src/components/home/homeSectionDefs.ts
 msgid "Picks from the recommender, based on your whole library."
@@ -16465,8 +16480,8 @@ msgid "View {title}"
 msgstr "View {title}"
 
 #: src/components/home/DownloadingStrip.tsx
-msgid "View activity"
-msgstr "View activity"
+#~ msgid "View activity"
+#~ msgstr "View activity"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
