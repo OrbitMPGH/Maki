@@ -36,15 +36,23 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+      # Chromium only; the browser binary is not in the npm cache. Its system packages come from the
+      # runner's apt mirror, which now and then stalls on one download indefinitely: the read timeout
+      # turns that into a retry, and a step of its own keeps a slow install out of the stories' budget.
+      - name: Install Chromium for Storybook
+        timeout-minutes: 6
+        run: |
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' \
+            | sudo tee /etc/apt/apt.conf.d/80-ci-retries
+          npx playwright install --with-deps chromium
+
       # Every story renders under the app's real providers against the MSW mocks in .storybook/mocks,
       # and a story whose component calls an endpoint nothing mocks fails, so a new API call has to
-      # bring its mock along. Chromium only; the browser binary is not in the npm cache.
+      # bring its mock along.
       - name: Storybook stories render and pass their play functions
         # A story that wedges its page never times out inside the browser; fail here, not at the job cap.
         timeout-minutes: 10
-        run: |
-          npx playwright install --with-deps chromium
-          npm run test-storybook
+        run: npm run test-storybook
 
       # Self-hosters open the app over plain HTTP on a LAN address, where crypto.randomUUID and
       # navigator.clipboard are undefined. It works on localhost, so it only surfaces after release.
