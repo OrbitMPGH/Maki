@@ -1647,6 +1647,7 @@ export default function DiscoverPage() {
     <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
         title={t`Discover`}
+        className="discover-page-header"
         actions={
           showTools ? (
             <Group gap="xs" wrap="wrap" justify="flex-end">

@@ -2999,6 +2999,12 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
    (.discover-rail, .discover-rail-item) are shared with Home, the series page's related rows and
    two more surfaces, so nothing here touches them. */
 
+/* The header's buttons (44px) show on Discover and Recommended only. Without them the row shrank to
+   the title's height and the tabs and everything under them jumped 13px up on Your Taste, so the
+   row keeps their height on every tab. */
+.discover-page-header {
+  min-height: 44px;
+}
 /* The full-bleed hero reaches into the tab row's bottom margin. Keep the controls above that
    overlap so their whole visible area remains clickable. */
 .discover-page-tabs {
