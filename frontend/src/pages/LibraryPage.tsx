@@ -437,11 +437,8 @@ export default function LibraryPage() {
   // Offline, what this device can open leads and the rest is dimmed; online nothing changes.
   const isOffline = useConnectivity() === 'offline'
   const availableOffline = useOfflineAvailableSeriesIds(isOffline)
-  const offlineOf = (id: number): OfflineAvailability | undefined => {
-    if (!isOffline) return undefined
-    if (!availableOffline.has(id)) return 'unavailable'
-    return offlineSeries.has(id) ? 'saved' : undefined
-  }
+  const offlineOf = (id: number): OfflineAvailability | undefined =>
+    !isOffline ? undefined : availableOffline.has(id) ? 'saved' : 'unavailable'
   const [tagManagerOpen, setTagManagerOpen] = useState(false)
   const [tagModalOpen, setTagModalOpen] = useState(false)
   const [tagsToAdd, setTagsToAdd] = useState<string[]>([])
