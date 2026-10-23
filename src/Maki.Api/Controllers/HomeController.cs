@@ -84,14 +84,20 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     private const int RecentProgressScan = 2000;
 
     /// <summary>
+    /// Most cards one rail returns. The rails scroll, so this is a safety ceiling rather than a
+    /// layout choice; the scans above bound what there is to show long before it in practice.
+    /// </summary>
+    public const int MaxRailItems = 100;
+
+    /// <summary>
     /// The two reading rails. "Continue reading" is series with a chapter part-way through;
     /// "Jump back in" is series last touched by a <em>finished</em> chapter that still have
     /// something left to read, minus anything already in the first rail.
     /// </summary>
     [HttpGet("reading")]
-    public async Task<IActionResult> Reading([FromQuery] int limit = 12, CancellationToken ct = default)
+    public async Task<IActionResult> Reading([FromQuery] int limit = MaxRailItems, CancellationToken ct = default)
     {
-        limit = Math.Clamp(limit, 1, 40);
+        limit = Math.Clamp(limit, 1, MaxRailItems);
 
         // One bounded, index-ordered pass over the newest progress rows, grouped in memory. Both
         // rails are "most recently touched first", so the newest RecentProgressScan rows contain
@@ -326,9 +332,9 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     /// </para>
     /// </summary>
     [HttpGet("recently-added")]
-    public async Task<IActionResult> RecentlyAdded([FromQuery] int limit = 12, CancellationToken ct = default)
+    public async Task<IActionResult> RecentlyAdded([FromQuery] int limit = MaxRailItems, CancellationToken ct = default)
     {
-        limit = Math.Clamp(limit, 1, 40);
+        limit = Math.Clamp(limit, 1, MaxRailItems);
 
         var recentFiles = await db.ChapterFiles
             .AsNoTracking()

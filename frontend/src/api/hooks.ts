@@ -932,6 +932,9 @@ export interface HomeRecentSeriesItem {
   readChapterId: number | null
 }
 
+/** Most cards a Home rail asks for: the server's `HomeController.MaxRailItems`. The rails scroll. */
+export const HOME_RAIL_LIMIT = 100
+
 /**
  * Home's two reading rails.
  *
@@ -939,7 +942,7 @@ export interface HomeRecentSeriesItem {
  * nothing; without it, coming back from `/read/:id` shows the resume page the rail was built with
  * rather than where you actually stopped.
  */
-export function useHomeReading(limit = 12, enabled = true) {
+export function useHomeReading(limit = HOME_RAIL_LIMIT, enabled = true) {
   return useQuery({
     queryKey: ['home', 'reading', limit],
     queryFn: () => api<HomeReadingResponse>(`/home/reading?limit=${limit}`),
@@ -975,7 +978,7 @@ export function useHideHomeReading() {
 }
 
 /** Series that recently gained chapter files. Invalidated live by the `chapterImported` event. */
-export function useHomeRecentlyAdded(limit = 12, enabled = true) {
+export function useHomeRecentlyAdded(limit = HOME_RAIL_LIMIT, enabled = true) {
   return useQuery({
     queryKey: ['home', 'recently-added', limit],
     queryFn: () => api<HomeRecentSeriesItem[]>(`/home/recently-added?limit=${limit}`),
