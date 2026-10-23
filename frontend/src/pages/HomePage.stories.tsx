@@ -259,7 +259,7 @@ export const WithoutLocalDatabase: Story = {
   parameters: {
     msw: homePage(
       layout({ rails: [1, 2, 3] }),
-      http.get(api('/settings/metadata'), () => HttpResponse.json({ ...metadataSettings, useLocalDb: false, dumpPresent: false })),
+      http.get(api('/settings/metadata'), () => HttpResponse.json({ ...metadataSettings, dumpPresent: false })),
     ),
   },
   play: async ({ canvas }) => {

@@ -90,7 +90,6 @@ public class MangaBakaDumpServiceTests : IDisposable
         // The installed copy is queryable through the FTS index the service built.
         var store = new MangaBakaLocalStore(
             new MangaBakaDumpOptions(installedPath, _workDir),
-            _settings,
             NullLogger<MangaBakaLocalStore>.Instance);
         var results = await store.SearchAsync("one piece", ContentRating.Pornographic);
         Assert.Equal("377", Assert.Single(results).ProviderId);

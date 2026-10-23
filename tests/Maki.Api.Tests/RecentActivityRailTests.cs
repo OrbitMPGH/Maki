@@ -78,7 +78,7 @@ public class RecentActivityRailTests : IDisposable
     /// <c>GetRelatedAsync</c> always sets; null leaves it unattributed.
     /// </summary>
     private sealed class RelatingStore(int relations, string? relatedTo = null) : MangaBakaLocalStore(
-        new MangaBakaDumpOptions("", ""), new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance)
+        new MangaBakaDumpOptions("", ""), NullLogger<MangaBakaLocalStore>.Instance)
     {
         public override Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(true);
 

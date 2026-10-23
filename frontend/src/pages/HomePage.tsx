@@ -106,7 +106,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   // Opposite default to the nav's in App.tsx on purpose: there, assuming "available" while the
   // settings load stops the Discover tab flickering in and out. Here it would fire two requests
   // that 400 on an install with no local MangaBaka database, and both surface as error toasts.
-  const discoverAvailable = Boolean(metadata?.useLocalDb && metadata?.dumpPresent)
+  const discoverAvailable = Boolean(metadata?.dumpPresent)
   const hasLibrary = (series?.length ?? 0) > 0
 
   const { data: homeRails, isError: railsFailed } = useCustomRails('home')

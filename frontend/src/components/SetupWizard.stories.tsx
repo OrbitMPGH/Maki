@@ -112,11 +112,9 @@ export const DiscoveryStep: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const body = bodyOf(canvasElement)
     await openStep(body, userEvent, 2)
-    const local = await body.findByRole('switch', { name: 'Keep a local copy of MangaBaka' })
-    await waitFor(() => expect(local).toBeChecked())
-    await userEvent.click(local)
-    await waitFor(() => expect(body.getByRole('switch', { name: 'Keep a local copy of MangaBaka' })).not.toBeChecked())
-    await expect(await body.findByText('API only')).toBeVisible()
+    await expect(await body.findByText('Metadata database ready')).toBeVisible()
+    await expect(await body.findByText('Database ready')).toBeVisible()
+    await expect(body.queryByRole('switch', { name: /local copy/i })).toBeNull()
   },
 }
 
@@ -224,8 +222,22 @@ export const FinishAllSet: Story = {
   },
 }
 
+/** The database is required, so Finish and the next-step cards wait for it; Skip still leaves. */
+export const FinishWaitsForDatabase: Story = {
+  beforeEach: wizard({ folders: [rootFolderFixtures[0]], dump: downloadingDump }),
+  play: async ({ canvasElement, userEvent }) => {
+    const body = bodyOf(canvasElement)
+    await openStep(body, userEvent, 5)
+    await waitFor(() => expect(body.getByRole('button', { name: 'Finish setup' })).toBeDisabled())
+    await expect(await body.findByText('Waiting for the metadata database.')).toBeVisible()
+    await waitFor(() => expect(body.getByRole('button', { name: /Add a series/ })).toBeDisabled())
+    await userEvent.click(await body.findByRole('button', { name: 'See progress' }))
+    await expect(await body.findByRole('progressbar', { name: 'Downloading metadata database' })).toBeVisible()
+  },
+}
+
 export const FinishSetup: Story = {
-  beforeEach: wizard({ folders: [rootFolderFixtures[0]] }),
+  beforeEach: wizard({ folders: [rootFolderFixtures[0]], metadata: { dumpPresent: true } }),
   play: async ({ canvasElement, userEvent }) => {
     const body = bodyOf(canvasElement)
     await openStep(body, userEvent, 5)

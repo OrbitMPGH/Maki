@@ -37,7 +37,7 @@ public class AnimeSignalSyncTests : IDisposable
         _fixture.ScopeFactory(),
         new FakeAnimeSignalSources(source),
         new MangaBakaLocalStore(
-            new MangaBakaDumpOptions("", Path.GetTempPath()), new FakeAppSettings(),
+            new MangaBakaDumpOptions("", Path.GetTempPath()),
             NullLogger<MangaBakaLocalStore>.Instance),
         new FakeAppSettings(),
         new FakeUserSettingsStore(_fixture),
@@ -245,7 +245,7 @@ public class AnimeSignalSyncTests : IDisposable
             _fixture.ScopeFactory(),
             sources,
             new MangaBakaLocalStore(
-                new MangaBakaDumpOptions("", Path.GetTempPath()), new FakeAppSettings(),
+                new MangaBakaDumpOptions("", Path.GetTempPath()),
                 NullLogger<MangaBakaLocalStore>.Instance),
             new FakeAppSettings(),
             new FakeUserSettingsStore(_fixture),
@@ -275,7 +275,7 @@ public class AnimeSignalSyncTests : IDisposable
             _fixture.ScopeFactory(),
             new FakeAnimeSignalSources(source),
             new MangaBakaLocalStore(
-                new MangaBakaDumpOptions("", Path.GetTempPath()), appSettings,
+                new MangaBakaDumpOptions("", Path.GetTempPath()),
                 NullLogger<MangaBakaLocalStore>.Instance),
             appSettings,
             new FakeUserSettingsStore(_fixture),

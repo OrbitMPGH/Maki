@@ -27,7 +27,7 @@ public class TasteProfileServiceTests : IDisposable
     /// A store with no dump on disk, answering only the profile query, from what the test seeded.
     /// </summary>
     private sealed class FakeStore(IReadOnlyDictionary<long, MangaBakaProfileRow> rows) : MangaBakaLocalStore(
-        new MangaBakaDumpOptions("", ""), new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance)
+        new MangaBakaDumpOptions("", ""), NullLogger<MangaBakaLocalStore>.Instance)
     {
         public override Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(true);
 

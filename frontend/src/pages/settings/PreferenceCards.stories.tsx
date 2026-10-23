@@ -109,7 +109,7 @@ export const HomeWithoutLocalDatabase: Story = {
   parameters: {
     msw: settingsMsw(
       http.get(api('/settings/metadata'), () =>
-        HttpResponse.json({ useLocalDb: false, dumpPresent: false, dumpSizeBytes: null, dumpRefreshedAt: null }),
+        HttpResponse.json({ dumpPresent: false, dumpSizeBytes: null, dumpRefreshedAt: null }),
       ),
     ),
   },

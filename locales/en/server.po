@@ -451,7 +451,7 @@ msgstr "This folder already belongs to another series in the library"
 
 #: src/Maki.Api/Services/LibraryImportResolver.cs
 msgid "error.libraryImport.idNeedsDump"
-msgstr "AniList and MyAnimeList ids are looked up in the local MangaBaka database, which is not downloaded yet. Paste a MangaBaka id or link instead."
+msgstr "Ids are looked up in the local MangaBaka database, which is not downloaded yet. Try again once it is installed."
 
 #: src/Maki.Api/Services/LibraryImportResolver.cs
 msgid "error.libraryImport.idNotFound"
@@ -3638,7 +3638,7 @@ msgstr "{series} is monitored but has no enabled sources"
 
 #: src/Maki.Api/Services/HealthCheckService.cs
 msgid "health.issue.dumpMissing"
-msgstr "The MangaBaka local database has not been downloaded, so metadata comes from the rate-limited API"
+msgstr "The local MangaBaka database has not been downloaded, so Maki stays closed to everyone until it is. Check the download in Settings → Library → Metadata database."
 
 #: src/Maki.Api/Services/HealthCheckService.cs
 msgid "health.issue.dumpStale"

@@ -569,7 +569,7 @@ public sealed class MihonImportServiceTests : IDisposable
         new(id, title, null, 2020, SeriesStatus.Ongoing, null, null);
 
     private sealed class FakeStore() : MangaBakaLocalStore(
-        new MangaBakaDumpOptions("", Path.GetTempPath()), new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance)
+        new MangaBakaDumpOptions("", Path.GetTempPath()), NullLogger<MangaBakaLocalStore>.Instance)
     {
         public bool Available { get; set; } = true;
         public Dictionary<long, long> AniList { get; } = [];

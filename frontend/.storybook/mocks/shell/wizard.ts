@@ -115,8 +115,7 @@ export function wizardHandlers(options: WizardOptions = {}): HttpHandler[] {
   }
   let discover: DiscoverSettings = { maxContentRating: 'erotica' }
   let monitoring: MonitoringSettings = { unmonitorSpecials: false, defaultMode: 'All' }
-  let metadata: MetadataSettings = {
-    useLocalDb: true,
+  const metadata: MetadataSettings = {
     dumpPresent: false,
     dumpSizeBytes: null,
     dumpRefreshedAt: null,
@@ -173,10 +172,7 @@ export function wizardHandlers(options: WizardOptions = {}): HttpHandler[] {
     }),
 
     http.get(api('/settings/metadata'), () => HttpResponse.json(metadata)),
-    http.put(api('/settings/metadata'), async ({ request }) => {
-      metadata = { ...metadata, ...((await request.json()) as Partial<MetadataSettings>) }
-      return HttpResponse.json(metadata)
-    }),
+    http.post(api('/settings/metadata/refresh'), () => HttpResponse.json({ started: true, alreadyRunning: false })),
     http.get(api('/settings/metadata/dump-progress'), () => HttpResponse.json(options.dump ?? idleDump)),
 
     http.get(api('/settings/recommendations'), () => HttpResponse.json(recommendations)),

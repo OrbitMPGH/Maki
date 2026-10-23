@@ -1,8 +1,16 @@
 import { useEffect, useRef } from 'react'
-import { Group, Progress, Stack, Text } from '@mantine/core'
+import { Button, Group, Progress, Stack, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useQueryClient } from '@tanstack/react-query'
-import { DUMP_PROGRESS_KEY, useDumpProgress, type DumpProgress } from '../api/hooks'
+import { IconCheck } from '@tabler/icons-react'
+import { Trans } from '@lingui/react/macro'
+import {
+  DUMP_PROGRESS_KEY,
+  useDumpProgress,
+  useRefreshMetadataDump,
+  type DumpProgress,
+  type MetadataSettings,
+} from '../api/hooks'
 import { useHubEvent } from '../api/signalr'
 import { formatBytes, formatPercent, formatReadingTime } from '../format'
 import { msg, t as now } from '@lingui/core/macro'
@@ -90,6 +98,57 @@ export function DumpProgressBar({ progress }: { progress: DumpProgress }) {
 }
 
 /**
+ * Where the required database stands, for an admin who can act on it: ready, the live bar, or the
+ * failure with a retry. Shared by the setup guide and the gate in front of the app. While nothing
+ * is on disk every phase is shown, the checksum check included, since that is the download starting.
+ */
+export function MetadataDumpStatus({
+  metadata,
+  progress,
+}: {
+  metadata: MetadataSettings | undefined
+  progress: DumpProgress | undefined
+}) {
+  const refresh = useRefreshMetadataDump()
+  const queryClient = useQueryClient()
+
+  if (metadata?.dumpPresent) {
+    return (
+      <Group gap={6} wrap="nowrap">
+        <IconCheck size={16} color="var(--ok)" />
+        <Text size="sm">
+          <Trans>Metadata database ready</Trans>
+        </Text>
+      </Group>
+    )
+  }
+
+  if (progress?.running) return <DumpProgressBar progress={progress} />
+
+  const retry = () =>
+    refresh.mutate(undefined, {
+      onSuccess: () => void queryClient.invalidateQueries({ queryKey: DUMP_PROGRESS_KEY }),
+    })
+
+  return (
+    <Stack gap="xs" align="flex-start">
+      {progress?.lastError ? (
+        <Text size="sm" c="var(--danger)">
+          <Trans>The download failed: {progress.lastError}</Trans>
+        </Text>
+      ) : (
+        <Text size="sm" c="var(--ink-3)">
+          <Trans>The download has not started yet.</Trans>
+        </Text>
+      )}
+      <Button variant="default" size="xs" loading={refresh.isPending} onClick={retry}>
+        {progress?.lastError ? <Trans>Try again</Trans> : <Trans>Start now</Trans>}
+      </Button>
+    </Stack>
+  )
+}
+
+/**
  * The live dump-download toast, mounted once for admins.
  *
  * <p>Renders nothing: it owns a notification rather than a piece of the page, so the progress
@@ -101,7 +160,7 @@ export function DumpProgressBar({ progress }: { progress: DumpProgress }) {
  * mid-download. Dismissing it is remembered for that run only, keyed on when the run started, so
  * the next push doesn't drag it back.</p>
  */
-export default function MetadataDumpProgress() {
+export default function MetadataDumpProgress({ quiet = false }: { quiet?: boolean }) {
   const queryClient = useQueryClient()
   const { data: progress } = useDumpProgress()
   const dismissedRun = useRef<string | null>(null)
@@ -109,10 +168,15 @@ export default function MetadataDumpProgress() {
 
   useHubEvent<DumpProgress>('dumpProgress', (payload) => {
     queryClient.setQueryData(DUMP_PROGRESS_KEY, payload)
+    // dumpPresent has just flipped: the gate in front of the app and the nav's Discover tab wait on it.
+    if (!payload.running && payload.lastInstalled) {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'metadata'], exact: true })
+    }
   })
 
   useEffect(() => {
-    if (!progress) return
+    // The setup guide and the gate draw this progress themselves.
+    if (!progress || quiet) return
 
     const runKey = progress.startedAt ?? 'unknown'
 
@@ -173,15 +237,13 @@ export default function MetadataDumpProgress() {
         color: 'var(--ok)',
         autoClose: 8000,
         withCloseButton: true,
-        message: `${now`Metadata database ready.`} ${now`Discover and offline search are available now.`}`,
+        message: now`Metadata database updated.`,
       })
-      // dumpPresent has just flipped, and the nav gates the Discover tab on it.
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'metadata'] })
       return
     }
 
     notifications.hide(TOAST_ID)
-  }, [progress, queryClient])
+  }, [progress, quiet])
 
   return null
 }

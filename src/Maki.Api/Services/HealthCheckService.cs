@@ -34,7 +34,6 @@ public record HealthIssue(
 /// </summary>
 public class HealthCheckService(
     MakiDbContext db,
-    IAppSettings settings,
     SourceAvailability sourceAvailability,
     SourceRegistry sources,
     MangaBakaDumpService mangaBakaDump)
@@ -98,20 +97,17 @@ public class HealthCheckService(
                 new { series = series.Title }, series.Id));
         }
 
-        if (await settings.GetAsync(SettingKeys.MangaBakaUseLocalDb, ct) != "false")
+        var dump = await mangaBakaDump.GetStatusAsync(ct);
+        using var process = System.Diagnostics.Process.GetCurrentProcess();
+        var uptime = DateTime.UtcNow - process.StartTime.ToUniversalTime();
+        if (!dump.Present && uptime > TimeSpan.FromHours(1))
         {
-            var dump = await mangaBakaDump.GetStatusAsync(ct);
-            using var process = System.Diagnostics.Process.GetCurrentProcess();
-            var uptime = DateTime.UtcNow - process.StartTime.ToUniversalTime();
-            if (!dump.Present && uptime > TimeSpan.FromHours(1))
-            {
-                issues.Add(new HealthIssue("mangaBakaDump", "warning", "health.issue.dumpMissing"));
-            }
-            else if (dump.Present && dump.RefreshedAt < DateTime.UtcNow.AddHours(-72))
-            {
-                issues.Add(new HealthIssue("mangaBakaDump", "warning", "health.issue.dumpStale",
-                    new { at = dump.RefreshedAt }));
-            }
+            issues.Add(new HealthIssue("mangaBakaDump", "warning", "health.issue.dumpMissing"));
+        }
+        else if (dump.Present && dump.RefreshedAt < DateTime.UtcNow.AddHours(-72))
+        {
+            issues.Add(new HealthIssue("mangaBakaDump", "warning", "health.issue.dumpStale",
+                new { at = dump.RefreshedAt }));
         }
 
         return issues;

@@ -72,7 +72,7 @@ function StartPageSelect() {
   const { data: ui } = useUiSettings()
   const patch = useUiPatch()
   const { data: metadata } = useMetadataSettings()
-  const discoverAvailable = Boolean(metadata?.useLocalDb && metadata?.dumpPresent)
+  const discoverAvailable = Boolean(metadata?.dumpPresent)
   const homeEnabled = ui?.homeLayout.enabled ?? true
 
   return (
@@ -261,7 +261,7 @@ export function HomeSectionsSection() {
   const { data: metadata } = useMetadataSettings()
   const patch = useUiPatch()
   const homeEnabled = ui?.homeLayout.enabled ?? true
-  const discoverAvailable = Boolean(metadata?.useLocalDb && metadata?.dumpPresent)
+  const discoverAvailable = Boolean(metadata?.dumpPresent)
 
   return (
     <SettingsSection

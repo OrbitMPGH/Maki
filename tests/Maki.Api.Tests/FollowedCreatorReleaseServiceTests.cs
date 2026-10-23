@@ -43,7 +43,7 @@ public sealed class FollowedCreatorReleaseServiceTests : IDisposable
             _db.ScopeFactory(),
             _settings,
             new CatalogueIndexCache(options, NullLogger<CatalogueIndexCache>.Instance),
-            new MangaBakaLocalStore(options, _settings, NullLogger<MangaBakaLocalStore>.Instance),
+            new MangaBakaLocalStore(options, NullLogger<MangaBakaLocalStore>.Instance),
             _inbox,
             TimeProvider.System,
             NullLogger<FollowedCreatorReleaseService>.Instance);

@@ -120,21 +120,6 @@ try
 
     builder.Services.AddScoped<BackupService>();
 
-    // MangaBaka: uncached requests are limited to 30/min (search) and 120/min (lookup).
-    // Replenish smoothly (1 token / 2 s = 30/min) instead of in per-minute chunks, and
-    // keep the client timeout well above the worst queue wait — library scans fire one
-    // search per folder and the queue delay counts toward the HttpClient timeout.
-    var mangaBakaLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(2), burst: 10);
-    builder.Services.AddHttpClient(MangaBakaProvider.HttpClientName, client =>
-        {
-            client.BaseAddress = new Uri("https://api.mangabaka.org/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
-            client.Timeout = TimeSpan.FromMinutes(3);
-        })
-        // Retry outside the limiter, so every attempt takes its own token.
-        .AddHttpMessageHandler(() => new TransientRetryHandler())
-        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaBakaLimiter));
-
     builder.Services.AddHttpClient("covers", client =>
         {
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
@@ -1171,13 +1156,18 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
             .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
-        // Stable job key so the settings endpoint can trigger a refresh on demand.
+        // Stable job key so the settings endpoint can trigger a refresh on demand. Without a dump
+        // the SPA is gated, so a missing one starts downloading right away instead of at +2 minutes.
+        // MAKI_DUMP_BOOT_DOWNLOAD=0 keeps the +2 minutes, so test hosts on an empty config dir
+        // never start a 350 MB transfer.
+        var downloadAtBoot = !File.Exists(paths.MangaBakaDbPath) &&
+                             Environment.GetEnvironmentVariable("MAKI_DUMP_BOOT_DOWNLOAD") != "0";
         q.AddJob<Maki.Api.Jobs.MangaBakaDumpRefreshJob>(j => j
             .WithIdentity(Maki.Api.Jobs.MangaBakaDumpRefreshJob.Key));
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.MangaBakaDumpRefreshJob.Key)
             .WithIdentity("mangabaka-dump-trigger")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
+            .StartAt(downloadAtBoot ? DateTimeOffset.UtcNow.AddSeconds(5) : DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Prebuilt embedding index. Runs before the local indexer's trigger so a fresh install

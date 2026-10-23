@@ -76,7 +76,7 @@ export const CopyOfExistingRail: Story = {
 export const WithoutLocalDatabase: Story = {
   parameters: {
     msw: homePage(
-      http.get(api('/settings/metadata'), () => HttpResponse.json({ ...metadataSettings, useLocalDb: false, dumpPresent: false })),
+      http.get(api('/settings/metadata'), () => HttpResponse.json({ ...metadataSettings, dumpPresent: false })),
     ),
   },
   play: async ({ canvasElement }) => {

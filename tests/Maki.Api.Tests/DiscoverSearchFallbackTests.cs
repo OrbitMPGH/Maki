@@ -61,7 +61,7 @@ public sealed class DiscoverSearchFallbackTests : IDisposable
             .AddSeries(3, "Berserk Deluxe", year: 2019, type: "manhwa", genresJson: """["Action"]""")
             .BuildSearchIndex();
         var options = new MangaBakaDumpOptions(_dump.Path, Path.GetTempPath());
-        var store = new MangaBakaLocalStore(options, new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance);
+        var store = new MangaBakaLocalStore(options, NullLogger<MangaBakaLocalStore>.Instance);
         var embedding = new EmbeddingOptions("", "", "", EmbeddingModelProfile.Base);
         _dumpOptions = options;
         if (vectorIndex)

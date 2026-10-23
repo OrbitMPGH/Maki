@@ -52,7 +52,7 @@ internal sealed class FakeReleases() : ReleaseService(null!, null!, null!, null!
 
 /// <summary>A dump that is not installed, except for the related titles a test hands it.</summary>
 internal sealed class FakeRelatedTitles() : MangaBakaLocalStore(new MangaBakaDumpOptions("", Path.GetTempPath()),
-    new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance)
+    NullLogger<MangaBakaLocalStore>.Instance)
 {
     public Dictionary<long, IReadOnlyList<string>> Related { get; } = [];
 

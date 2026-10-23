@@ -33,7 +33,7 @@ public class AnimeSignalSeedTests : IDisposable
         return new SeedWeightService(
             new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings(),
             new MangaBakaLocalStore(
-                new MangaBakaDumpOptions(_dump.Path, Path.GetTempPath()), new FakeAppSettings(),
+                new MangaBakaDumpOptions(_dump.Path, Path.GetTempPath()),
                 NullLogger<MangaBakaLocalStore>.Instance));
     }
 

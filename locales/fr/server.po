@@ -634,10 +634,10 @@ msgid "error.libraryImport.folderOwnedByOtherSeries"
 msgstr "Ce dossier appartient déjà à une autre série de la bibliothèque"
 
 #: src/Maki.Api/Services/LibraryImportResolver.cs
-#. English: AniList and MyAnimeList ids are looked up in the local MangaBaka database, which is not downloaded yet. Paste a MangaBaka id or link instead.
+#. English: Ids are looked up in the local MangaBaka database, which is not downloaded yet. Try again once it is installed.
 #, fuzzy
 msgid "error.libraryImport.idNeedsDump"
-msgstr "Les identifiants AniList et MyAnimeList sont recherchés dans la base locale MangaBaka, qui n'est pas encore téléchargée. Collez plutôt un identifiant ou un lien MangaBaka."
+msgstr ""
 
 #: src/Maki.Api/Services/LibraryImportResolver.cs
 #. English: No MangaBaka series has that id
@@ -5102,10 +5102,10 @@ msgid "health.issue.noSourceMappings"
 msgstr "{series} est suivie mais n'a aucune source activée"
 
 #: src/Maki.Api/Services/HealthCheckService.cs
-#. English: The MangaBaka local database has not been downloaded, so metadata comes from the rate-limited API
+#. English: The local MangaBaka database has not been downloaded, so Maki stays closed to everyone until it is. Check the download in Settings → Library → Metadata database.
 #, fuzzy
 msgid "health.issue.dumpMissing"
-msgstr "La base de données locale MangaBaka n'a pas été téléchargée, les métadonnées proviennent donc de l'API limitée par le débit"
+msgstr ""
 
 #: src/Maki.Api/Services/HealthCheckService.cs
 #. English: The MangaBaka local database is out of date, last refreshed {at}. The refresh may be failing.

@@ -2795,11 +2795,6 @@ msgstr "残り約{hourPhrase} {restPhrase}"
 msgid "About {readingTime}"
 msgstr "読書時間：約{readingTime}"
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "About 3 GB on disk, refreshed nightly. Search and imports become instant instead of rate-limited, and Discover needs it. Downloads in the background once setup is done."
-msgstr "約3 GBの容量を使い、毎晩更新されます。検索とインポートがレート制限を受けずにすぐ完了し、「見つける」にも必要です。セットアップ完了後、バックグラウンドでダウンロードします。"
-
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "about a minute left"
@@ -3533,11 +3528,6 @@ msgstr "APIキー, api key, token, トークン"
 #, fuzzy
 msgid "API keys"
 msgstr "APIキー"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "API only"
-msgstr "APIのみ"
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -6071,6 +6061,10 @@ msgstr "ページを暗くします（％）。"
 msgid "Dash (-)"
 msgstr "ダッシュ（-）"
 
+#: src/components/SetupWizard.tsx
+msgid "Database ready"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Day by day"
@@ -6504,11 +6498,6 @@ msgstr "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, 
 msgid "Discover"
 msgstr "見つける"
 
-#: src/components/MetadataDumpProgress.tsx
-#, fuzzy
-msgid "Discover and offline search are available now."
-msgstr "「見つける」とオフライン検索を利用できます。"
-
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Disk size"
 msgstr ""
@@ -6745,6 +6734,7 @@ msgstr "{source}からダウンロード済み"
 msgid "Downloaded the prebuilt index"
 msgstr "事前構築インデックスをダウンロード済み"
 
+#: src/components/SetupWizard.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8147,6 +8137,10 @@ msgstr "ドイツ語"
 msgid "Gets past Cloudflare for sources like MangaFire. Without it those sources are skipped."
 msgstr "MangaFireなどのソースでCloudflareを回避します。設定しないと、それらのソースはスキップされます。"
 
+#: src/pages/MetadataGatePage.tsx
+msgid "Getting the metadata database ready"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Girls Love"
@@ -9294,11 +9288,6 @@ msgstr "Kavita、トラッカーのアカウントとインポートリスト、
 msgid "Kavita's reading belongs to another Maki account. An admin can change that under Integrations."
 msgstr "Kavitaの読書は別のMakiアカウントに紐付いています。管理者は連携の下でこれを変更できます。"
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Keep a local copy of MangaBaka"
-msgstr "MangaBakaのローカルコピーを保持"
-
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Keep as is"
@@ -10062,14 +10051,8 @@ msgid "Loading…"
 msgstr "読み込み中…"
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Local database"
-msgstr "ローカルデータベース"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Local MangaBaka database downloads once you finish"
-msgstr "セットアップ完了後にMangaBakaのローカルデータベースをダウンロードします"
+msgid "Local MangaBaka database"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10273,6 +10256,10 @@ msgstr "適用のためMakiを再起動しています。しばらくしてか�
 
 #: src/pwa/offlineChapters.ts
 msgid "Maki is using {used} of {quota} here. Remove some saved chapters and try again."
+msgstr ""
+
+#: src/pages/MetadataGatePage.tsx
+msgid "Maki keeps a local copy of the MangaBaka database for search, adding series and Discover. It is about a 350 MB download and 3.5 GB on disk, and Maki opens as soon as it is installed."
 msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
@@ -10665,9 +10652,12 @@ msgid "Metadata database download failed:"
 msgstr "メタデータデータベースのダウンロードに失敗："
 
 #: src/components/MetadataDumpProgress.tsx
-#, fuzzy
-msgid "Metadata database ready."
-msgstr "メタデータデータベースの準備完了。"
+msgid "Metadata database ready"
+msgstr ""
+
+#: src/components/MetadataDumpProgress.tsx
+msgid "Metadata database updated."
+msgstr ""
 
 #: src/components/series/MetadataHistoryModal.tsx
 #, fuzzy
@@ -10688,11 +10678,6 @@ msgstr "メタデータの更新"
 #, fuzzy
 msgid "Metadata saved"
 msgstr "メタデータを保存しました"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Metadata straight from the MangaBaka API"
-msgstr "MangaBaka APIから直接取得したメタデータ"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -12603,11 +12588,6 @@ msgstr "読書時間の"
 msgid "Off"
 msgstr "オフ"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Off answers from the API instead and turns Discover off. The copy on disk is kept and still refreshed."
-msgstr "オフにすると、代わりにAPIから応答を受け、「見つける」もオフになります。ディスク上のコピーは残り、引き続き更新されます。"
-
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches."
@@ -14221,6 +14201,10 @@ msgstr ""
 #, fuzzy
 msgid "Reading"
 msgstr "読書中"
+
+#: src/pages/MetadataGatePage.tsx
+msgid "Reading apps connected over OPDS, Komga or KOReader keep working in the meantime."
+msgstr ""
 
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
@@ -16235,6 +16219,10 @@ msgstr "巻リリースを検索"
 msgid "Search volumes now"
 msgstr "今すぐ巻を検索"
 
+#: src/components/SetupWizard.tsx
+msgid "Search, adding series, imports and Discover all read from it. About a 350 MB download and 3.5 GB on disk, refreshed nightly. It is already downloading, and setup finishes once it is in."
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "searched as “{cleanedTitle}”"
@@ -16284,6 +16272,7 @@ msgid "See all notifications"
 msgstr "すべての通知を見る"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/SetupWizard.tsx
 msgid "See progress"
 msgstr ""
 
@@ -16538,9 +16527,8 @@ msgid "Series in your library you haven't started are added to your lists as pla
 msgstr "ライブラリにある、まだ読み始めていないシリーズは「読む予定」としてリストに追加されます。リストに既にある項目は変更されません。"
 
 #: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Series metadata comes from MangaBaka. A local copy, about 3.5 GB and refreshed from the nightly dump, lets search and imports skip the API's rate limit, and Discover needs it. The API is used until the first download finishes."
-msgstr "シリーズのメタデータはMangaBakaから取得します。約3.5 GBのローカルコピーは毎晩のダンプから更新され、検索とインポートがAPIのレート制限を回避できるようにします。「見つける」にも必要です。最初のダウンロードが終わるまでは、APIを使います。"
+msgid "Series metadata comes from a local copy of the MangaBaka database, about 3.5 GB and refreshed from the nightly dump. Search, adding series, imports and Discover all read from it."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16934,6 +16922,7 @@ msgid "Sign in with a password"
 msgstr "パスワードでサインイン"
 
 #: src/components/UserMenu.tsx
+#: src/pages/MetadataGatePage.tsx
 #, fuzzy
 msgid "Sign out"
 msgstr "サインアウト"
@@ -17451,6 +17440,10 @@ msgstr "「{seriesTitle}」の{chapterLabel}を読む"
 #, fuzzy
 msgid "Start chapter"
 msgstr "読む"
+
+#: src/components/MetadataDumpProgress.tsx
+msgid "Start now"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -18022,6 +18015,11 @@ msgstr "すべてのシリーズイベントの既定値です（新しい章、
 msgid "The download client reports an error on this torrent"
 msgstr ""
 
+#. placeholder {0}: progress.lastError
+#: src/components/MetadataDumpProgress.tsx
+msgid "The download failed: {0}"
+msgstr ""
+
 #: src/api/queue.ts
 msgid "The download is no longer in the download client"
 msgstr ""
@@ -18030,6 +18028,10 @@ msgstr ""
 #, fuzzy
 msgid "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
 msgstr "ダウンロードキュー、Smart Download、ソースと言語、torrentクライアント、ファイルをいつ置き換えるかを決める品質ルール。"
+
+#: src/components/MetadataDumpProgress.tsx
+msgid "The download starts on its own a few seconds after Maki starts."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -18130,6 +18132,10 @@ msgstr "ライブラリフォルダーを利用できません。ドライブま
 #, fuzzy
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
 msgstr "リンクされたファイルはまだ棚卸しされていないため、ページを表示できません。ファイルをスキャンしてから戻り、比較してください。"
+
+#: src/components/SetupWizard.tsx
+msgid "The local MangaBaka database is still downloading. Setup finishes once it is in."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -18262,6 +18268,10 @@ msgstr "その後シリーズが削除されたため、取り消す内容はあ
 #, fuzzy
 msgid "the series' sources"
 msgstr "シリーズのソース"
+
+#: src/pages/MetadataGatePage.tsx
+msgid "The server is downloading it now. This page opens Maki by itself when it is done."
+msgstr ""
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -19073,6 +19083,7 @@ msgstr "短い、または別のクエリを試してください。"
 
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
+#: src/components/MetadataDumpProgress.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
@@ -19705,11 +19716,6 @@ msgstr "好みに使用"
 msgid "Use OPDS"
 msgstr "OPDSを使用"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Use the local MangaBaka database"
-msgstr "ローカルのMangaBakaデータベースを使う"
-
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Use this copy"
@@ -20093,6 +20099,10 @@ msgstr "待機中"
 #, fuzzy
 msgid "Waiting for the MangaBaka snapshot to download first."
 msgstr "先にMangaBakaスナップショットがダウンロードされるのを待っています。"
+
+#: src/components/SetupWizard.tsx
+msgid "Waiting for the metadata database."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

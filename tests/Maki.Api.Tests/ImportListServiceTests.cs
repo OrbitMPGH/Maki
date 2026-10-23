@@ -628,7 +628,7 @@ public class ImportListServiceTests : IDisposable
     }
 
     private sealed class FakeStore() : MangaBakaLocalStore(
-        new MangaBakaDumpOptions("", Path.GetTempPath()), new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance)
+        new MangaBakaDumpOptions("", Path.GetTempPath()), NullLogger<MangaBakaLocalStore>.Instance)
     {
         public Dictionary<long, long> AniList { get; } = [];
         public Dictionary<string, long> MangaUpdates { get; } = [];

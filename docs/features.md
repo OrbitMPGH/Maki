@@ -14,7 +14,8 @@
   shifted.
 - **Local metadata.** A local copy of the [MangaBaka](https://mangabaka.org) database gives
   instant search with no API rate limits, and links each series to its MyAnimeList, AniList,
-  MangaUpdates, and Kitsu IDs.
+  MangaUpdates, and Kitsu IDs. It is required: Maki downloads it on first start and opens once
+  it is installed.
 - **Torrents alongside scrapers.** Search releases through Prowlarr or Jackett and send them to qBittorrent, Transmission and Deluge.
   Maki imports each one when it finishes, repacking anything that is not already CBZ.
 - **Built for a household.** Per-user history, preferences, tracker accounts, and library access
@@ -68,8 +69,9 @@
   categorized tags, alternate titles, creators, per-source ratings, and MyAnimeList reviews.
 - **Metadata.** One MangaBaka search identifies a series and brings along its MyAnimeList,
   AniList, MangaUpdates, and Kitsu IDs. The local
-  [MangaBaka dump](https://mangabaka.org/data/database) (nightly snapshot, about 3 GB on disk)
-  makes metadata search and library imports instant. MangaBaka-original data is
+  [MangaBaka dump](https://mangabaka.org/data/database) (nightly snapshot, about a 350 MB
+  download and 3.5 GB on disk) answers every metadata lookup, so search and library imports are
+  instant. A series MangaBaka added after the latest snapshot shows up with the next one. MangaBaka-original data is
   [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
 ## Stats

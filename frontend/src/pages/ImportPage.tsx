@@ -129,7 +129,7 @@ export default function ImportPage() {
   const { t } = useLingui()
   const { data: metadata } = useMetadataSettings()
   const [searchParams, setSearchParams] = useSearchParams()
-  const mihonAvailable = Boolean(metadata?.useLocalDb && metadata?.dumpPresent)
+  const mihonAvailable = Boolean(metadata?.dumpPresent)
   const mihonMode = mihonAvailable && searchParams.get('mode') === MIHON_MODE
 
   return (

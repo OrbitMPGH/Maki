@@ -27,7 +27,7 @@ internal static class AnimeResumeFixture
             progress, InertKavitaPusher.For(scopes), new ReadingSessionService(context),
             NullLogger<ReaderService>.Instance);
         var dump = new MangaBakaDumpOptions(dumpPath ?? "", Path.GetTempPath());
-        var store = new MangaBakaLocalStore(dump, new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance);
+        var store = new MangaBakaLocalStore(dump, NullLogger<MangaBakaLocalStore>.Instance);
         var signals = new AnimeSignalSyncService(
             scopes,
             new AnimeSignalSources(null!, null!),

@@ -2796,11 +2796,6 @@ msgstr "noch etwa {hourPhrase} {restPhrase} übrig"
 msgid "About {readingTime}"
 msgstr "Über {readingTime}"
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "About 3 GB on disk, refreshed nightly. Search and imports become instant instead of rate-limited, and Discover needs it. Downloads in the background once setup is done."
-msgstr "Etwa 3 GB Speicherplatz, wird jede Nacht aktualisiert. Suche und Importe werden sofort statt gedrosselt ausgeführt, und Entdecken benötigt die Datenbank. Der Download läuft nach der Einrichtung im Hintergrund."
-
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "about a minute left"
@@ -3534,11 +3529,6 @@ msgstr "API-Schlüssel, Token"
 #, fuzzy
 msgid "API keys"
 msgstr "API-Schlüssel"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "API only"
-msgstr "Nur API"
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -6072,6 +6062,10 @@ msgstr "Dunkelt die Seiten ab, in Prozent."
 msgid "Dash (-)"
 msgstr "Bindestrich (-)"
 
+#: src/components/SetupWizard.tsx
+msgid "Database ready"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Day by day"
@@ -6505,11 +6499,6 @@ msgstr "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, 
 msgid "Discover"
 msgstr "Entdecken"
 
-#: src/components/MetadataDumpProgress.tsx
-#, fuzzy
-msgid "Discover and offline search are available now."
-msgstr "Entdecken und die Offline-Suche sind jetzt verfügbar."
-
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Disk size"
 msgstr ""
@@ -6746,6 +6735,7 @@ msgstr "Von {source} heruntergeladen"
 msgid "Downloaded the prebuilt index"
 msgstr "Vorgefertigten Index heruntergeladen"
 
+#: src/components/SetupWizard.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8148,6 +8138,10 @@ msgstr "Deutsch"
 msgid "Gets past Cloudflare for sources like MangaFire. Without it those sources are skipped."
 msgstr "Umgeht Cloudflare für Quellen wie MangaFire. Ohne dieses Tool werden diese Quellen übersprungen."
 
+#: src/pages/MetadataGatePage.tsx
+msgid "Getting the metadata database ready"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Girls Love"
@@ -9295,11 +9289,6 @@ msgstr "Kavita, Tracker-Konten und Importlisten sowie Warnungen an Chat- und Pus
 msgid "Kavita's reading belongs to another Maki account. An admin can change that under Integrations."
 msgstr "Das Lesen in Kavita gehört zu einem anderen Maki-Konto. Ein Administrator kann das unter Integrationen ändern."
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Keep a local copy of MangaBaka"
-msgstr "Lokale Kopie von MangaBaka behalten"
-
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Keep as is"
@@ -10063,14 +10052,8 @@ msgid "Loading…"
 msgstr "Wird geladen…"
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Local database"
-msgstr "Lokale Datenbank"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Local MangaBaka database downloads once you finish"
-msgstr "Die lokale MangaBaka-Datenbank wird nach Abschluss heruntergeladen"
+msgid "Local MangaBaka database"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10274,6 +10257,10 @@ msgstr "Maki wird neu gestartet, um die Änderung anzuwenden. In Kürze neu lade
 
 #: src/pwa/offlineChapters.ts
 msgid "Maki is using {used} of {quota} here. Remove some saved chapters and try again."
+msgstr ""
+
+#: src/pages/MetadataGatePage.tsx
+msgid "Maki keeps a local copy of the MangaBaka database for search, adding series and Discover. It is about a 350 MB download and 3.5 GB on disk, and Maki opens as soon as it is installed."
 msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
@@ -10666,9 +10653,12 @@ msgid "Metadata database download failed:"
 msgstr "Download der Metadaten-Datenbank fehlgeschlagen:"
 
 #: src/components/MetadataDumpProgress.tsx
-#, fuzzy
-msgid "Metadata database ready."
-msgstr "Metadaten-Datenbank bereit."
+msgid "Metadata database ready"
+msgstr ""
+
+#: src/components/MetadataDumpProgress.tsx
+msgid "Metadata database updated."
+msgstr ""
 
 #: src/components/series/MetadataHistoryModal.tsx
 #, fuzzy
@@ -10689,11 +10679,6 @@ msgstr "Metadaten-Aktualisierung"
 #, fuzzy
 msgid "Metadata saved"
 msgstr "Metadaten gespeichert"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Metadata straight from the MangaBaka API"
-msgstr "Metadaten direkt von der MangaBaka-API"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -12604,11 +12589,6 @@ msgstr "der Lesezeit"
 msgid "Off"
 msgstr "Aus"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Off answers from the API instead and turns Discover off. The copy on disk is kept and still refreshed."
-msgstr "Aus liefert stattdessen die API und schaltet Entdecken aus. Die Kopie auf der Festplatte bleibt erhalten und wird weiterhin aktualisiert."
-
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches."
@@ -14222,6 +14202,10 @@ msgstr ""
 #, fuzzy
 msgid "Reading"
 msgstr "Lesen"
+
+#: src/pages/MetadataGatePage.tsx
+msgid "Reading apps connected over OPDS, Komga or KOReader keep working in the meantime."
+msgstr ""
 
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
@@ -16236,6 +16220,10 @@ msgstr "Band-Releases suchen"
 msgid "Search volumes now"
 msgstr "Jetzt Bände suchen"
 
+#: src/components/SetupWizard.tsx
+msgid "Search, adding series, imports and Discover all read from it. About a 350 MB download and 3.5 GB on disk, refreshed nightly. It is already downloading, and setup finishes once it is in."
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "searched as “{cleanedTitle}”"
@@ -16285,6 +16273,7 @@ msgid "See all notifications"
 msgstr "Alle Benachrichtigungen anzeigen"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/SetupWizard.tsx
 msgid "See progress"
 msgstr ""
 
@@ -16539,9 +16528,8 @@ msgid "Series in your library you haven't started are added to your lists as pla
 msgstr "Serien deiner Bibliothek, die du noch nicht begonnen hast, werden als „Lesen geplant“ zu deinen Listen hinzugefügt. Einträge, die schon auf deinen Listen stehen, werden nie geändert."
 
 #: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Series metadata comes from MangaBaka. A local copy, about 3.5 GB and refreshed from the nightly dump, lets search and imports skip the API's rate limit, and Discover needs it. The API is used until the first download finishes."
-msgstr "Serien-Metadaten stammen von MangaBaka. Eine lokale Kopie von etwa 3,5 GB, die aus dem nächtlichen Dump aktualisiert wird, lässt Suche und Importe das Ratenlimit der API umgehen, und Entdecken braucht sie. Bis der erste Download abgeschlossen ist, wird die API verwendet."
+msgid "Series metadata comes from a local copy of the MangaBaka database, about 3.5 GB and refreshed from the nightly dump. Search, adding series, imports and Discover all read from it."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16935,6 +16923,7 @@ msgid "Sign in with a password"
 msgstr "Mit Passwort anmelden"
 
 #: src/components/UserMenu.tsx
+#: src/pages/MetadataGatePage.tsx
 #, fuzzy
 msgid "Sign out"
 msgstr "Abmelden"
@@ -17452,6 +17441,10 @@ msgstr "Mit {seriesTitle}, {chapterLabel} starten"
 #, fuzzy
 msgid "Start chapter"
 msgstr "Kapitel starten"
+
+#: src/components/MetadataDumpProgress.tsx
+msgid "Start now"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -18023,6 +18016,11 @@ msgstr "Der Standard für jedes Serienereignis: neue Kapitel, Downloads, Upgrade
 msgid "The download client reports an error on this torrent"
 msgstr ""
 
+#. placeholder {0}: progress.lastError
+#: src/components/MetadataDumpProgress.tsx
+msgid "The download failed: {0}"
+msgstr ""
+
 #: src/api/queue.ts
 msgid "The download is no longer in the download client"
 msgstr ""
@@ -18031,6 +18029,10 @@ msgstr ""
 #, fuzzy
 msgid "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
 msgstr "Die Download-Warteschlange, Smart Download, Quellen und Sprachen, die Torrent-Clients und die Qualitätsregeln, die bestimmen, wann eine Datei ersetzt wird."
+
+#: src/components/MetadataDumpProgress.tsx
+msgid "The download starts on its own a few seconds after Maki starts."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -18131,6 +18133,10 @@ msgstr "Der Bibliotheksordner ist nicht verfügbar. Prüfe, ob sein Laufwerk ode
 #, fuzzy
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
 msgstr "Die verknüpfte Datei wurde noch nicht erfasst, daher können ihre Seiten nicht angezeigt werden. Führe Dateien scannen aus und komm dann zum Vergleichen zurück."
+
+#: src/components/SetupWizard.tsx
+msgid "The local MangaBaka database is still downloading. Setup finishes once it is in."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -18263,6 +18269,10 @@ msgstr "Die Serie wurde seitdem entfernt, daher gibt es nichts rückgängig zu m
 #, fuzzy
 msgid "the series' sources"
 msgstr "die Quellen der Serie"
+
+#: src/pages/MetadataGatePage.tsx
+msgid "The server is downloading it now. This page opens Maki by itself when it is done."
+msgstr ""
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -19074,6 +19084,7 @@ msgstr "Versuche eine kürzere oder alternative Suchanfrage."
 
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
+#: src/components/MetadataDumpProgress.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
@@ -19706,11 +19717,6 @@ msgstr "Für den Geschmack verwenden"
 msgid "Use OPDS"
 msgstr "OPDS verwenden"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Use the local MangaBaka database"
-msgstr "Die lokale MangaBaka-Datenbank verwenden"
-
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Use this copy"
@@ -20094,6 +20100,10 @@ msgstr "Wartet"
 #, fuzzy
 msgid "Waiting for the MangaBaka snapshot to download first."
 msgstr "Warten, bis der MangaBaka-Schnappschuss zuerst heruntergeladen wurde."
+
+#: src/components/SetupWizard.tsx
+msgid "Waiting for the metadata database."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

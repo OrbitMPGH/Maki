@@ -18,7 +18,7 @@ import {
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
 } from '@tabler/icons-react'
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
   useHealth,
@@ -36,6 +36,7 @@ import { OfflineStartPage } from './auth/OfflineStartPage'
 import { OfflineBanner } from './components/OfflineBanner'
 import { OfflineSync } from './pwa/OfflineSync'
 import { SetupAccountPage } from './pages/SetupAccountPage'
+import MetadataGatePage from './pages/MetadataGatePage'
 import { CommandPaletteModal, CommandPaletteTrigger } from './components/CommandPalette'
 import { IconBrandMark } from './components/IconBrandMark'
 import { NotificationBell } from './components/NotificationBell'
@@ -254,19 +255,39 @@ function AuthGate() {
       <LiveEvents />
       <OfflineSync />
       <DocumentTitle />
-      {inReader ? (
-        <RouteErrorBoundary>
-          <Suspense fallback={<RouteFallback />}>
-            <Routes>
-              <Route path="/read/:chapterId" element={<ReaderPage />} />
-            </Routes>
-          </Suspense>
-        </RouteErrorBoundary>
-      ) : (
-        <AppShellRoutes />
-      )}
+      <MetadataGate>
+        {inReader ? (
+          <RouteErrorBoundary>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route path="/read/:chapterId" element={<ReaderPage />} />
+              </Routes>
+            </Suspense>
+          </RouteErrorBoundary>
+        ) : (
+          <AppShellRoutes />
+        )}
+      </MetadataGate>
     </DocumentTitleProvider>
   )
+}
+
+/**
+ * Holds the app back until the local MangaBaka database is installed, since nothing falls back to
+ * the API any more. An admin still in the setup guide is let through: the guide owns the screen,
+ * shows the download, and its Finish waits for it. A failed or loading query lets the app through
+ * like the other shell flags do, so an offline start still reaches saved chapters.
+ */
+function MetadataGate({ children }: { children: ReactNode }) {
+  const { can } = useAuth()
+  const isAdmin = can('Admin')
+  const { data: metadata } = useMetadataSettings()
+  const { data: setup } = useSetupStatus()
+
+  if (metadata?.dumpPresent !== false) return children
+  if (isAdmin && setup === undefined) return <RouteFallback />
+  if (isAdmin && !setup?.completed) return children
+  return <MetadataGatePage />
 }
 
 function LiveEvents() {
@@ -364,7 +385,7 @@ function AppShellRoutes() {
   // on every visit. HomePage takes the opposite default for its own data, see the note there.
   // A failed settings request counts as unavailable, so the start page falls through to Home or the
   // library instead of waiting on an answer that is not coming.
-  const discoverAvailable = metadata ? metadata.useLocalDb && metadata.dumpPresent : !metadataFailed
+  const discoverAvailable = metadata ? metadata.dumpPresent : !metadataFailed
   const homeEnabled = ui ? ui.homeLayout.enabled : true
   const isAdmin = can('Admin')
   const canAdd = can('AddSeries')
@@ -632,7 +653,7 @@ function AppShellRoutes() {
       {setup?.completed && <LanguageAnnouncementModal />}
       {setup?.completed && <AppearanceAnnouncementModal />}
       {/* Owns a toast, not a piece of the page, so it sits outside Main and renders nothing. */}
-      {isAdmin && <MetadataDumpProgress />}
+      {isAdmin && <MetadataDumpProgress quiet={!setup?.completed} />}
       <TipLayer />
     </AppShell>
   )

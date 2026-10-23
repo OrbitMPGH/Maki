@@ -2796,11 +2796,6 @@ msgstr "yaklaşık {hourPhrase} {restPhrase} kaldı"
 msgid "About {readingTime}"
 msgstr "Yaklaşık {readingTime}"
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "About 3 GB on disk, refreshed nightly. Search and imports become instant instead of rate-limited, and Discover needs it. Downloads in the background once setup is done."
-msgstr "Diskte yaklaşık 3 GB yer kaplar ve her gece yenilenir. Arama ve içe aktarma hız sınırına takılmadan anında tamamlanır; Keşfet de bu veritabanını kullanır. Kurulum bitince arka planda indirilir."
-
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "about a minute left"
@@ -3534,11 +3529,6 @@ msgstr "api anahtarı, token"
 #, fuzzy
 msgid "API keys"
 msgstr "API anahtarları"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "API only"
-msgstr "Yalnızca API"
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -6072,6 +6062,10 @@ msgstr "Sayfaları yüzde olarak karartır."
 msgid "Dash (-)"
 msgstr "Tire (-)"
 
+#: src/components/SetupWizard.tsx
+msgid "Database ready"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Day by day"
@@ -6505,11 +6499,6 @@ msgstr "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, 
 msgid "Discover"
 msgstr "Keşfet"
 
-#: src/components/MetadataDumpProgress.tsx
-#, fuzzy
-msgid "Discover and offline search are available now."
-msgstr "Keşfet ve çevrimdışı arama artık kullanılabilir."
-
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Disk size"
 msgstr ""
@@ -6746,6 +6735,7 @@ msgstr "{source} kaynağından indirildi"
 msgid "Downloaded the prebuilt index"
 msgstr "Hazır dizin indirildi"
 
+#: src/components/SetupWizard.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8148,6 +8138,10 @@ msgstr "Almanca"
 msgid "Gets past Cloudflare for sources like MangaFire. Without it those sources are skipped."
 msgstr "MangaFire gibi kaynaklar için Cloudflare denetimini aşar. Bu olmadan bu kaynaklar atlanır."
 
+#: src/pages/MetadataGatePage.tsx
+msgid "Getting the metadata database ready"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Girls Love"
@@ -9295,11 +9289,6 @@ msgstr "Kavita, izleyici hesapları ve içe aktarma listeleri ile sohbet ve anl�
 msgid "Kavita's reading belongs to another Maki account. An admin can change that under Integrations."
 msgstr "Kavita okuması başka bir Maki hesabına ait. Bir yönetici bunu Entegrasyonlar altında değiştirebilir."
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Keep a local copy of MangaBaka"
-msgstr "MangaBaka'nın yerel bir kopyasını tutun"
-
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Keep as is"
@@ -10063,14 +10052,8 @@ msgid "Loading…"
 msgstr "Yükleniyor…"
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Local database"
-msgstr "Yerel veritabanı"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Local MangaBaka database downloads once you finish"
-msgstr "Yerel MangaBaka veritabanı, kurulumu bitirdiğinizde indirilir"
+msgid "Local MangaBaka database"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10274,6 +10257,10 @@ msgstr "Maki bunu uygulamak için yeniden başlıyor. Birazdan yeniden yükleyin
 
 #: src/pwa/offlineChapters.ts
 msgid "Maki is using {used} of {quota} here. Remove some saved chapters and try again."
+msgstr ""
+
+#: src/pages/MetadataGatePage.tsx
+msgid "Maki keeps a local copy of the MangaBaka database for search, adding series and Discover. It is about a 350 MB download and 3.5 GB on disk, and Maki opens as soon as it is installed."
 msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
@@ -10666,9 +10653,12 @@ msgid "Metadata database download failed:"
 msgstr "Meta veri veritabanı indirmesi başarısız oldu:"
 
 #: src/components/MetadataDumpProgress.tsx
-#, fuzzy
-msgid "Metadata database ready."
-msgstr "Meta veri veritabanı hazır."
+msgid "Metadata database ready"
+msgstr ""
+
+#: src/components/MetadataDumpProgress.tsx
+msgid "Metadata database updated."
+msgstr ""
 
 #: src/components/series/MetadataHistoryModal.tsx
 #, fuzzy
@@ -10689,11 +10679,6 @@ msgstr "Meta veri yenileme"
 #, fuzzy
 msgid "Metadata saved"
 msgstr "Meta veri kaydedildi"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Metadata straight from the MangaBaka API"
-msgstr "Doğrudan MangaBaka API'sinden üst veriler"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -12604,11 +12589,6 @@ msgstr "okuma süresinin"
 msgid "Off"
 msgstr "Kapalı"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Off answers from the API instead and turns Discover off. The copy on disk is kept and still refreshed."
-msgstr "Kapalıyken yanıt API'den gelir ve Keşfet kapanır. Diskteki kopya tutulur ve yine de yenilenir."
-
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches."
@@ -14222,6 +14202,10 @@ msgstr ""
 #, fuzzy
 msgid "Reading"
 msgstr "Okuyor"
+
+#: src/pages/MetadataGatePage.tsx
+msgid "Reading apps connected over OPDS, Komga or KOReader keep working in the meantime."
+msgstr ""
 
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
@@ -16236,6 +16220,10 @@ msgstr "Cilt sürümlerini ara"
 msgid "Search volumes now"
 msgstr "Ciltleri şimdi ara"
 
+#: src/components/SetupWizard.tsx
+msgid "Search, adding series, imports and Discover all read from it. About a 350 MB download and 3.5 GB on disk, refreshed nightly. It is already downloading, and setup finishes once it is in."
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "searched as “{cleanedTitle}”"
@@ -16285,6 +16273,7 @@ msgid "See all notifications"
 msgstr "Tüm bildirimleri gör"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/SetupWizard.tsx
 msgid "See progress"
 msgstr ""
 
@@ -16539,9 +16528,8 @@ msgid "Series in your library you haven't started are added to your lists as pla
 msgstr "Kitaplığınızdaki henüz başlamadığınız seriler, okumayı planlıyorum olarak listelerinize eklenir. Listelerinizde zaten bulunan girdiler hiçbir zaman değiştirilmez."
 
 #: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Series metadata comes from MangaBaka. A local copy, about 3.5 GB and refreshed from the nightly dump, lets search and imports skip the API's rate limit, and Discover needs it. The API is used until the first download finishes."
-msgstr "Seri meta verisi MangaBaka'dan gelir. Yaklaşık 3,5 GB olan ve gece dökümünden yenilenen yerel kopya, aramaların ve içe aktarmaların API hız sınırını atlamasını sağlar; Keşfet de buna ihtiyaç duyar. İlk indirme bitene kadar API kullanılır."
+msgid "Series metadata comes from a local copy of the MangaBaka database, about 3.5 GB and refreshed from the nightly dump. Search, adding series, imports and Discover all read from it."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16935,6 +16923,7 @@ msgid "Sign in with a password"
 msgstr "Parolayla oturum aç"
 
 #: src/components/UserMenu.tsx
+#: src/pages/MetadataGatePage.tsx
 #, fuzzy
 msgid "Sign out"
 msgstr "Oturumu kapat"
@@ -17452,6 +17441,10 @@ msgstr "Başlat: {seriesTitle}, {chapterLabel}"
 #, fuzzy
 msgid "Start chapter"
 msgstr "Bölümü başlat"
+
+#: src/components/MetadataDumpProgress.tsx
+msgid "Start now"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -18023,6 +18016,11 @@ msgstr "Her seri olayı için varsayılan: yeni bölümler, indirmeler, yükselt
 msgid "The download client reports an error on this torrent"
 msgstr ""
 
+#. placeholder {0}: progress.lastError
+#: src/components/MetadataDumpProgress.tsx
+msgid "The download failed: {0}"
+msgstr ""
+
 #: src/api/queue.ts
 msgid "The download is no longer in the download client"
 msgstr ""
@@ -18031,6 +18029,10 @@ msgstr ""
 #, fuzzy
 msgid "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
 msgstr "İndirme kuyruğu, Smart Download, kaynaklar ve diller, torrent istemcileri ve bir dosyanın ne zaman değiştirileceğini belirleyen kalite kuralları."
+
+#: src/components/MetadataDumpProgress.tsx
+msgid "The download starts on its own a few seconds after Maki starts."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -18131,6 +18133,10 @@ msgstr "Kitaplık klasörü kullanılamıyor, sürücüsünün veya paylaşımı
 #, fuzzy
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
 msgstr "Bağlı dosyanın henüz envanteri çıkarılmadı, bu yüzden sayfaları gösterilemiyor. Dosyaları Tara'yı çalıştırın, sonra karşılaştırmak için geri dönün."
+
+#: src/components/SetupWizard.tsx
+msgid "The local MangaBaka database is still downloading. Setup finishes once it is in."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -18263,6 +18269,10 @@ msgstr "Seri o zamandan beri kaldırıldı, geri alınacak bir şey yok."
 #, fuzzy
 msgid "the series' sources"
 msgstr "serinin kaynakları"
+
+#: src/pages/MetadataGatePage.tsx
+msgid "The server is downloading it now. This page opens Maki by itself when it is done."
+msgstr ""
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -19074,6 +19084,7 @@ msgstr "Daha kısa veya alternatif bir sorgu deneyin."
 
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
+#: src/components/MetadataDumpProgress.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
@@ -19706,11 +19717,6 @@ msgstr "Zevk profili için kullan"
 msgid "Use OPDS"
 msgstr "OPDS kullanır"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Use the local MangaBaka database"
-msgstr "Yerel MangaBaka veritabanını kullan"
-
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Use this copy"
@@ -20094,6 +20100,10 @@ msgstr "Bekliyor"
 #, fuzzy
 msgid "Waiting for the MangaBaka snapshot to download first."
 msgstr "Önce MangaBaka anlık görüntüsünün indirilmesi bekleniyor."
+
+#: src/components/SetupWizard.tsx
+msgid "Waiting for the metadata database."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

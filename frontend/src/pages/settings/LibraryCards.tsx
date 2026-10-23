@@ -43,7 +43,6 @@ import {
   useRecommendationIndex,
   useRefreshMetadataDump,
   useRootFolders,
-  useSaveMetadataSettings,
   useSaveMonitoringSettings,
   useSetEmbeddingModel,
   useRenameManySeries,
@@ -181,10 +180,8 @@ export function RootFoldersSection() {
 }
 
 export function MetadataSection() {
-  const { t } = useLingui()
   const { data: settings } = useMetadataSettings()
   const { data: progress } = useDumpProgress()
-  const save = useSaveMetadataSettings()
   const refresh = useRefreshMetadataDump()
   // "checking" is the six-hourly checksum request; showing a bar for it would flash a download
   // that isn't happening. The toast applies the same rule, see MetadataDumpProgress.
@@ -201,21 +198,13 @@ export function MetadataSection() {
       title={<Trans>Metadata database</Trans>}
       description={
         <Trans>
-          Series metadata comes from MangaBaka. A local copy, about 3.5 GB and refreshed from the
-          nightly dump, lets search and imports skip the API's rate limit, and Discover needs it.
-          The API is used until the first download finishes.
+          Series metadata comes from a local copy of the MangaBaka database, about 3.5 GB and
+          refreshed from the nightly dump. Search, adding series, imports and Discover all read
+          from it.
         </Trans>
       }
     >
       <Stack gap="sm">
-        <Switch
-          label={t`Use the local MangaBaka database`}
-          description={t`Off answers from the API instead and turns Discover off. The copy on disk is kept and still refreshed.`}
-          checked={settings?.useLocalDb ?? true}
-          onChange={(e) =>
-            save.mutate(e.currentTarget.checked)
-          }
-        />
         {downloading && progress && <DumpProgressBar progress={progress} />}
         {!downloading && lastError && (
           <Text size="sm" c="var(--danger)">

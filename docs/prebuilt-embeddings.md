@@ -28,8 +28,8 @@ The GPU is still worth having on the *one* machine that generates the artifact, 
 
 ## Non-goals
 
-- Replacing local indexing. It stays as the fallback for air-gapped installs, users on the
-  MangaBaka API instead of the local dump, and any incompatible or unreachable artifact.
+- Replacing local indexing. It stays as the fallback for installs that can't reach the release
+  artifact, and for any incompatible artifact.
 - Shipping anything user-specific. The artifact is derived public data, nothing else.
 - Bundling the file into the Docker image (see below).
 

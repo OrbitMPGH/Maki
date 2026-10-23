@@ -88,8 +88,7 @@ public class SettingsController(
     public record IndexerConnection(string? Backend, string? Url, string? ApiKey);
     public record DownloadClientSettings(
         string? Kind, string? Url, string? Username, string? Password, string? Label, string? PathMapFrom, string? PathMapTo);
-    public record MetadataSettings(bool UseLocalDb);
-    public record MetadataSettingsResponse(bool UseLocalDb, bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
+    public record MetadataSettingsResponse(bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
     /// <summary>Both fields optional on PUT: a null leaves that setting as it is.</summary>
     public record MonitoringSettings(bool? UnmonitorSpecials, string? DefaultMode = null);
     /// <param name="IncognitoByRating">
@@ -924,13 +923,10 @@ public class SettingsController(
     }
 
     /// <summary>
-    /// Marks the guide finished (or re-opens it). Finishing it also kicks the MangaBaka dump
-    /// download when there is nothing on disk yet: Discover, search and library imports are all
-    /// waiting on that ~350 MB transfer, and the scheduled trigger fires two minutes after startup
-    /// and then only every six hours — so an instance whose first minutes went on creating the
-    /// admin account and picking a root folder would otherwise sit idle with no metadata. The job
-    /// disallows concurrent execution, but a trigger while one is already running still queues a
-    /// second pass, hence the guard rather than an unconditional trigger.
+    /// Marks the guide finished (or re-opens it). A missing dump already starts downloading at boot;
+    /// finishing kicks it again in case that run failed, since the SPA stays gated without it and
+    /// the schedule only retries every six hours. The job disallows concurrent execution, but a
+    /// trigger while one is already running still queues a second pass, hence the guard.
     /// </summary>
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("setup")]
@@ -1850,17 +1846,8 @@ public class SettingsController(
     [HttpGet("metadata")]
     public async Task<IActionResult> GetMetadata(CancellationToken ct)
     {
-        var useLocalDb = await settings.GetAsync(SettingKeys.MangaBakaUseLocalDb, ct) != "false";
         var status = await mangaBakaDump.GetStatusAsync(ct);
-        return Ok(new MetadataSettingsResponse(useLocalDb, status.Present, status.SizeBytes, status.RefreshedAt));
-    }
-
-    [Authorize(Policy = Policies.Admin)]
-    [HttpPut("metadata")]
-    public async Task<IActionResult> SetMetadata([FromBody] MetadataSettings request, CancellationToken ct)
-    {
-        await settings.SetAsync(SettingKeys.MangaBakaUseLocalDb, request.UseLocalDb ? "true" : "false", ct);
-        return await GetMetadata(ct);
+        return Ok(new MetadataSettingsResponse(status.Present, status.SizeBytes, status.RefreshedAt));
     }
 
     [Authorize(Policy = Policies.Admin)]

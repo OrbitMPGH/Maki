@@ -9,11 +9,9 @@ namespace Maki.Metadata.Tests;
 public class MangaBakaLocalStoreTests : IDisposable
 {
     private readonly DumpDbBuilder _db = new();
-    private readonly FakeAppSettings _settings = new();
 
     private MangaBakaLocalStore Store => new(
         new MangaBakaDumpOptions(_db.Path, Path.GetTempPath()),
-        _settings,
         NullLogger<MangaBakaLocalStore>.Instance);
 
     /// <summary>
@@ -28,7 +26,6 @@ public class MangaBakaLocalStoreTests : IDisposable
 
         return new MangaBakaLocalStore(
             dumpOptions,
-            _settings,
             NullLogger<MangaBakaLocalStore>.Instance,
             cache,
             options ?? CatalogueOptions.Default);
@@ -590,17 +587,12 @@ public class MangaBakaLocalStoreTests : IDisposable
     }
 
     [Fact]
-    public async Task IsAvailable_depends_on_file_and_setting()
+    public async Task IsAvailable_depends_on_the_file()
     {
         Assert.True(await Store.IsAvailableAsync());
 
-        _settings.Values[SettingKeys.MangaBakaUseLocalDb] = "false";
-        Assert.False(await Store.IsAvailableAsync());
-
-        _settings.Values[SettingKeys.MangaBakaUseLocalDb] = "true";
         var missingFile = new MangaBakaLocalStore(
             new MangaBakaDumpOptions(Path.Combine(Path.GetTempPath(), "does-not-exist.db"), Path.GetTempPath()),
-            _settings,
             NullLogger<MangaBakaLocalStore>.Instance);
         Assert.False(await missingFile.IsAvailableAsync());
     }
@@ -657,10 +649,11 @@ public class MangaBakaLocalStoreTests : IDisposable
     [Fact]
     public async Task RelatedTitles_is_empty_without_the_dump()
     {
-        SeedDressUpDarling();
-        _settings.Values[SettingKeys.MangaBakaUseLocalDb] = "false";
+        var missingFile = new MangaBakaLocalStore(
+            new MangaBakaDumpOptions(Path.Combine(Path.GetTempPath(), "does-not-exist.db"), Path.GetTempPath()),
+            NullLogger<MangaBakaLocalStore>.Instance);
 
-        Assert.Empty(await Store.GetRelatedTitlesAsync(4323));
+        Assert.Empty(await missingFile.GetRelatedTitlesAsync(4323));
     }
 
     // --- typo tolerance ---------------------------------------------------------------------
@@ -687,7 +680,7 @@ public class MangaBakaLocalStoreTests : IDisposable
         var dumpOptions = new MangaBakaDumpOptions(_db.Path, Path.GetTempPath());
         var cache = new CatalogueIndexCache(dumpOptions, NullLogger<CatalogueIndexCache>.Instance);
         var store = new MangaBakaLocalStore(
-            dumpOptions, _settings, NullLogger<MangaBakaLocalStore>.Instance, cache, CatalogueOptions.Default);
+            dumpOptions, NullLogger<MangaBakaLocalStore>.Instance, cache, CatalogueOptions.Default);
 
         var cold = await store.SearchWithCorrectionAsync("berserck", ContentRating.Pornographic);
 
@@ -1157,7 +1150,6 @@ public class MangaBakaLocalStoreTests : IDisposable
         // A store pointed at nothing: the short-circuit is what keeps an empty library from throwing.
         var missingFile = new MangaBakaLocalStore(
             new MangaBakaDumpOptions(Path.Combine(Path.GetTempPath(), "nope.db"), Path.GetTempPath()),
-            _settings,
             NullLogger<MangaBakaLocalStore>.Instance);
 
         Assert.Empty(await missingFile.GetProfileRowsAsync([]));

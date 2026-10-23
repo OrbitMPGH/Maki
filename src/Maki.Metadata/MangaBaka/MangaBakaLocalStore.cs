@@ -37,7 +37,6 @@ public sealed record TitleSearchOutcome(
 /// </param>
 public class MangaBakaLocalStore(
     MangaBakaDumpOptions options,
-    IAppSettings settings,
     ILogger<MangaBakaLocalStore> logger,
     CatalogueIndexCache? catalogue = null,
     CatalogueOptions? catalogueOptions = null)
@@ -59,16 +58,9 @@ public class MangaBakaLocalStore(
     /// </summary>
     private const int MaxInlineIds = 10_000;
 
-    public virtual async Task<bool> IsAvailableAsync(CancellationToken ct = default)
-    {
-        if (!File.Exists(options.DatabasePath))
-        {
-            return false;
-        }
-
-        var enabled = await settings.GetAsync(SettingKeys.MangaBakaUseLocalDb, ct);
-        return !string.Equals(enabled, "false", StringComparison.OrdinalIgnoreCase);
-    }
+    /// <summary>False only until the first download installs the dump; the SPA stays gated until then.</summary>
+    public virtual Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
+        Task.FromResult(File.Exists(options.DatabasePath));
 
     /// <summary>
     /// Title search, reporting the spelling it fell back on when the query as typed found next to

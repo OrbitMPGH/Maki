@@ -278,7 +278,6 @@ export const uiSettings: UiSettings = {
 }
 
 export const metadataSettings: MetadataSettings = {
-  useLocalDb: true,
   dumpPresent: true,
   dumpSizeBytes: 1_842_000_000,
   dumpRefreshedAt: '2026-10-12T03:00:00Z',

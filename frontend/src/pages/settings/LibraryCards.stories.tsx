@@ -93,7 +93,7 @@ export const Metadata: Story = {
   render: () => <MetadataSection />,
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/Snapshot on disk: 1.7 GB/)).toBeVisible()
-    await waitFor(() => expect(canvas.getByRole('switch', { name: /^Use the local MangaBaka database/ })).toBeChecked())
+    await expect(canvas.queryByRole('switch', { name: /local MangaBaka database/ })).toBeNull()
   },
 }
 
@@ -113,7 +113,7 @@ export const MetadataNoSnapshotYet: Story = {
   parameters: {
     msw: settingsMsw(
       http.get(api('/settings/metadata'), () =>
-        HttpResponse.json({ useLocalDb: true, dumpPresent: false, dumpSizeBytes: null, dumpRefreshedAt: null }),
+        HttpResponse.json({ dumpPresent: false, dumpSizeBytes: null, dumpRefreshedAt: null }),
       ),
     ),
   },

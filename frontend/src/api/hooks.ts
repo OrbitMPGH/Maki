@@ -3326,7 +3326,6 @@ export function useGrabRelease() {
 }
 
 export interface MetadataSettings {
-  useLocalDb: boolean
   dumpPresent: boolean
   dumpSizeBytes: number | null
   dumpRefreshedAt: string | null
@@ -3339,6 +3338,9 @@ export function useMetadataSettings() {
     // The shell reads a failure here as "Discover is unavailable", so a failed load heals when the
     // user comes back to the tab (and when the live connection returns) instead of sticking.
     refetchOnWindowFocus: (query) => query.state.status === 'error',
+    // The SPA is gated until the dump is installed, and only admins get the hub's install push, so
+    // everyone else polls their way through the gate.
+    refetchInterval: (query) => (query.state.data?.dumpPresent === false ? 5000 : false),
   })
 }
 
@@ -3372,20 +3374,6 @@ export function useDumpProgress(enabled = true) {
     queryFn: () => api<DumpProgress>('/settings/metadata/dump-progress'),
     enabled,
     refetchInterval: (query) => (query.state.data?.running ? 5000 : false),
-  })
-}
-
-export function useSaveMetadataSettings() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (useLocalDb: boolean) =>
-      api<MetadataSettings>('/settings/metadata', {
-        method: 'PUT',
-        body: JSON.stringify({ useLocalDb }),
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'metadata'] })
-    },
   })
 }
 

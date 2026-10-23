@@ -133,9 +133,6 @@ export const settingsHandlers: HttpHandler[] = [
   http.post(api('/settings/recommendations/model'), () => HttpResponse.json({ model: 'base', switching: false, reason: 'Already using base.' })),
   http.post(api('/settings/recommendations/build'), () => HttpResponse.json({ started: true })),
   http.get(api('/settings/metadata/dump-progress'), () => HttpResponse.json(d.dumpProgressIdle)),
-  http.put(api('/settings/metadata'), async ({ request }) =>
-    HttpResponse.json({ useLocalDb: true, dumpPresent: true, dumpSizeBytes: 1_842_000_000, dumpRefreshedAt: '2026-10-12T03:00:00Z', ...((await request.json()) as object) }),
-  ),
   http.post(api('/settings/metadata/refresh'), () => HttpResponse.json({ started: true, alreadyRunning: false })),
   http.get(api('/pageconversion'), () => HttpResponse.json(d.pageConversionIdle)),
   http.put(api('/pageconversion/settings'), async ({ request }) =>

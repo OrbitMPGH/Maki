@@ -2795,11 +2795,6 @@ msgstr "还剩约 {hourPhrase} {restPhrase}"
 msgid "About {readingTime}"
 msgstr "约 {readingTime}"
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "About 3 GB on disk, refreshed nightly. Search and imports become instant instead of rate-limited, and Discover needs it. Downloads in the background once setup is done."
-msgstr "占用约 3 GB 磁盘空间，每晚更新。搜索和导入不再受速率限制，可以立即完成；“发现”也需要它。设置完成后会在后台下载。"
-
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "about a minute left"
@@ -3533,11 +3528,6 @@ msgstr "API 密钥、令牌"
 #, fuzzy
 msgid "API keys"
 msgstr "API 密钥"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "API only"
-msgstr "仅 API"
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -6071,6 +6061,10 @@ msgstr "压暗页面，单位为百分比。"
 msgid "Dash (-)"
 msgstr "短横线（-）"
 
+#: src/components/SetupWizard.tsx
+msgid "Database ready"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Day by day"
@@ -6504,11 +6498,6 @@ msgstr "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, 
 msgid "Discover"
 msgstr "发现"
 
-#: src/components/MetadataDumpProgress.tsx
-#, fuzzy
-msgid "Discover and offline search are available now."
-msgstr "发现和离线搜索现在可用。"
-
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Disk size"
 msgstr ""
@@ -6745,6 +6734,7 @@ msgstr "已从 {source} 下载"
 msgid "Downloaded the prebuilt index"
 msgstr "已下载预构建索引"
 
+#: src/components/SetupWizard.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8147,6 +8137,10 @@ msgstr "德语"
 msgid "Gets past Cloudflare for sources like MangaFire. Without it those sources are skipped."
 msgstr "用于访问 MangaFire 等受 Cloudflare 保护的来源。未配置时会跳过这些来源。"
 
+#: src/pages/MetadataGatePage.tsx
+msgid "Getting the metadata database ready"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Girls Love"
@@ -9294,11 +9288,6 @@ msgstr "Kavita、追踪器账户和导入列表，以及发送到聊天和推送
 msgid "Kavita's reading belongs to another Maki account. An admin can change that under Integrations."
 msgstr "Kavita 的阅读记录属于另一个 Maki 账户。管理员可以在「集成」中更改。"
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Keep a local copy of MangaBaka"
-msgstr "在本地保存 MangaBaka 数据副本"
-
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Keep as is"
@@ -10062,14 +10051,8 @@ msgid "Loading…"
 msgstr "加载中……"
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Local database"
-msgstr "本地数据库"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Local MangaBaka database downloads once you finish"
-msgstr "完成设置后开始下载本地 MangaBaka 数据库"
+msgid "Local MangaBaka database"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10273,6 +10256,10 @@ msgstr "Maki 正在重启以应用更改。稍后重新加载。"
 
 #: src/pwa/offlineChapters.ts
 msgid "Maki is using {used} of {quota} here. Remove some saved chapters and try again."
+msgstr ""
+
+#: src/pages/MetadataGatePage.tsx
+msgid "Maki keeps a local copy of the MangaBaka database for search, adding series and Discover. It is about a 350 MB download and 3.5 GB on disk, and Maki opens as soon as it is installed."
 msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
@@ -10665,9 +10652,12 @@ msgid "Metadata database download failed:"
 msgstr "元数据数据库下载失败："
 
 #: src/components/MetadataDumpProgress.tsx
-#, fuzzy
-msgid "Metadata database ready."
-msgstr "元数据数据库已就绪。"
+msgid "Metadata database ready"
+msgstr ""
+
+#: src/components/MetadataDumpProgress.tsx
+msgid "Metadata database updated."
+msgstr ""
 
 #: src/components/series/MetadataHistoryModal.tsx
 #, fuzzy
@@ -10688,11 +10678,6 @@ msgstr "元数据刷新"
 #, fuzzy
 msgid "Metadata saved"
 msgstr "元数据已保存"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Metadata straight from the MangaBaka API"
-msgstr "直接从 MangaBaka API 获取元数据"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -12603,11 +12588,6 @@ msgstr "阅读时间的"
 msgid "Off"
 msgstr "关闭"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Off answers from the API instead and turns Discover off. The copy on disk is kept and still refreshed."
-msgstr "关闭后，Discover 将改从 API 获取内容，并随之关闭。磁盘上的副本会保留，并且仍会刷新。"
-
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches."
@@ -14221,6 +14201,10 @@ msgstr ""
 #, fuzzy
 msgid "Reading"
 msgstr "阅读"
+
+#: src/pages/MetadataGatePage.tsx
+msgid "Reading apps connected over OPDS, Komga or KOReader keep working in the meantime."
+msgstr ""
 
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
@@ -16235,6 +16219,10 @@ msgstr "搜索卷资源"
 msgid "Search volumes now"
 msgstr "立即搜索卷"
 
+#: src/components/SetupWizard.tsx
+msgid "Search, adding series, imports and Discover all read from it. About a 350 MB download and 3.5 GB on disk, refreshed nightly. It is already downloading, and setup finishes once it is in."
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "searched as “{cleanedTitle}”"
@@ -16284,6 +16272,7 @@ msgid "See all notifications"
 msgstr "查看所有通知"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/SetupWizard.tsx
 msgid "See progress"
 msgstr ""
 
@@ -16538,9 +16527,8 @@ msgid "Series in your library you haven't started are added to your lists as pla
 msgstr "资料库中你尚未开始阅读的系列会被加入你的列表，状态为「计划阅读」。已在列表中的条目不会被更改。"
 
 #: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Series metadata comes from MangaBaka. A local copy, about 3.5 GB and refreshed from the nightly dump, lets search and imports skip the API's rate limit, and Discover needs it. The API is used until the first download finishes."
-msgstr "系列元数据来自 MangaBaka。本地副本约 3.5 GB，每晚从数据转储更新，搜索和导入可以绕过 API 的速率限制，Discover 也需要它。在第一次下载完成之前，会使用 API。"
+msgid "Series metadata comes from a local copy of the MangaBaka database, about 3.5 GB and refreshed from the nightly dump. Search, adding series, imports and Discover all read from it."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16934,6 +16922,7 @@ msgid "Sign in with a password"
 msgstr "使用密码登录"
 
 #: src/components/UserMenu.tsx
+#: src/pages/MetadataGatePage.tsx
 #, fuzzy
 msgid "Sign out"
 msgstr "退出登录"
@@ -17451,6 +17440,10 @@ msgstr "开始阅读 {seriesTitle}，{chapterLabel}"
 #, fuzzy
 msgid "Start chapter"
 msgstr "开始阅读本章"
+
+#: src/components/MetadataDumpProgress.tsx
+msgid "Start now"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -18022,6 +18015,11 @@ msgstr "每个系列事件的默认设置：新章节、下载、升级。任何
 msgid "The download client reports an error on this torrent"
 msgstr ""
 
+#. placeholder {0}: progress.lastError
+#: src/components/MetadataDumpProgress.tsx
+msgid "The download failed: {0}"
+msgstr ""
+
 #: src/api/queue.ts
 msgid "The download is no longer in the download client"
 msgstr ""
@@ -18030,6 +18028,10 @@ msgstr ""
 #, fuzzy
 msgid "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
 msgstr "下载队列、Smart 下载、来源与语言、种子客户端，以及决定何时替换文件的质量规则。"
+
+#: src/components/MetadataDumpProgress.tsx
+msgid "The download starts on its own a few seconds after Maki starts."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -18130,6 +18132,10 @@ msgstr "资料库文件夹不可用，请检查其所在磁盘或共享是否已
 #, fuzzy
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
 msgstr "关联文件尚未盘点，因此无法显示其页面。运行“扫描文件”，然后回来进行比较。"
+
+#: src/components/SetupWizard.tsx
+msgid "The local MangaBaka database is still downloading. Setup finishes once it is in."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -18262,6 +18268,10 @@ msgstr "系列之后已被移除，没有可撤销的内容。"
 #, fuzzy
 msgid "the series' sources"
 msgstr "系列的来源"
+
+#: src/pages/MetadataGatePage.tsx
+msgid "The server is downloading it now. This page opens Maki by itself when it is done."
+msgstr ""
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -19073,6 +19083,7 @@ msgstr "尝试更短或不同的查询。"
 
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
+#: src/components/MetadataDumpProgress.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
@@ -19705,11 +19716,6 @@ msgstr "用于品味"
 msgid "Use OPDS"
 msgstr "使用 OPDS"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Use the local MangaBaka database"
-msgstr "使用本地 MangaBaka 数据库"
-
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Use this copy"
@@ -20093,6 +20099,10 @@ msgstr "等待中"
 #, fuzzy
 msgid "Waiting for the MangaBaka snapshot to download first."
 msgstr "正在等待 MangaBaka 快照先完成下载。"
+
+#: src/components/SetupWizard.tsx
+msgid "Waiting for the metadata database."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

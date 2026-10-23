@@ -4314,9 +4314,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: color-mix(in srgb, var(--surface) 50%, transparent);
   transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
 }
-.setup-next-card:hover {
+.setup-next-card:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--brand) 55%, var(--border));
   background: color-mix(in srgb, var(--brand) 6%, transparent);
+}
+.setup-next-card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .setup-footer {
