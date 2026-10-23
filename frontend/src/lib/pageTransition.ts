@@ -1,6 +1,7 @@
 import { useLayoutEffect } from 'react'
 import { UNSAFE_createBrowserHistory, useLocation } from 'react-router-dom'
 import { holdTint, tintSettled } from './coverTint'
+import { motionEnabled, motionPace, prefersReducedMotion } from './motionPrefs'
 import { pageScroller } from './pageScroll'
 
 /**
@@ -19,7 +20,8 @@ import { pageScroller } from './pageScroll'
  * flight is a copy of the cover laid out in the page itself (see flyCover).
  *
  * Only a change of path animates. Filters, tabs and modals ride on search and state, and those
- * stay instant. `localStorage['page-transition'] = 'off'` turns it off, for comparing.
+ * stay instant. Both the fade and the flying cover can be switched off per device under Settings >
+ * Appearance (lib/motionPrefs.ts).
  */
 
 export const appHistory = UNSAFE_createBrowserHistory({ v5Compat: true })
@@ -30,12 +32,7 @@ const COMMIT_TIMEOUT_MS = 400
 
 const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)'
 
-function disabled(): boolean {
-  try {
-    if (localStorage.getItem('page-transition') === 'off') return true
-  } catch { /* storage blocked; animate as usual */ }
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
+const disabled = () => !motionEnabled('pageTransitions') || prefersReducedMotion()
 
 // The reader pages between chapters with its own motion, and a fade on top of it reads as lag.
 const isReader = (path: string) => path.startsWith('/read/')
@@ -140,7 +137,7 @@ function rise(fade: boolean) {
     fade
       ? [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }]
       : [{ transform: 'translateY(6px)' }, { transform: 'none' }],
-    { duration: 320, easing: EASE },
+    { duration: 250 * motionPace(), easing: EASE },
   )
 }
 
@@ -202,13 +199,13 @@ function flyCover(
     target.style.removeProperty('visibility')
     if (restorePosition) scroller.style.removeProperty('position')
     // The card underneath carries its title and badges, which the copy doesn't; a short fade hands over.
-    ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140, easing: 'ease-out' }).finished.finally(() => ghost.remove())
+    ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140 * motionPace(), easing: 'ease-out' }).finished.finally(() => ghost.remove())
   }
   return {
     decoded: ghost.decode().catch(() => {}),
     start: () => {
       ghost.style.transform = 'none'
-      ghost.animate([{ transform: launch }, { transform: 'none' }], { duration: 440, easing: EASE }).finished.finally(end)
+      ghost.animate([{ transform: launch }, { transform: 'none' }], { duration: 440 * motionPace(), easing: EASE }).finished.finally(end)
     },
     cancel: () => {
       ghost.remove()
@@ -240,7 +237,12 @@ appHistory.listen = (listener) =>
 
     const opening = seriesId(to)
     const leaving = seriesId(from)
-    const outgoing = opening ? clickedCover(opening) : leaving ? heroPoster() : null
+    // The cross-fade's length lives in theme.css, keyed off this.
+    const root = document.documentElement
+    if (motionEnabled('fastMotion')) root.dataset.motion = 'fast'
+    else delete root.dataset.motion
+    const morph = motionEnabled('coverMorph')
+    const outgoing = !morph ? null : opening ? clickedCover(opening) : leaving ? heroPoster() : null
     const fromRect = outgoing?.getBoundingClientRect()
     let flight: ReturnType<typeof flyCover> = null
     let settled = 0

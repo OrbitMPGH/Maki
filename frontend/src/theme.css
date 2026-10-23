@@ -734,8 +734,12 @@ body {
 /* Page changes cross-fade (lib/pageTransition.ts). Old and new share one timing, which keeps the
    sidebar and header, identical on both sides, perfectly still while the content swaps. */
 ::view-transition-group(root) {
-  animation-duration: 0.26s;
+  animation-duration: 0.2s;
   animation-timing-function: var(--ease);
+}
+/* "Faster animations" under Settings > Appearance; the script scales the rise and the cover to match. */
+:root[data-motion='fast']::view-transition-group(root) {
+  animation-duration: 0.11s;
 }
 /* Laid out for real while a page transition captures the new page (settleLayout in
    lib/pageTransition.ts); their guessed heights otherwise shift everything below them afterwards. */

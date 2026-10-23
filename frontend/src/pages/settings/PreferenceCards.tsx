@@ -17,6 +17,7 @@ import {
   type UiSettings,
 } from '../../api/hooks'
 import { AppearancePicker } from '../../components/AppearancePicker'
+import { prefersReducedMotion, useMotionPref } from '../../lib/motionPrefs'
 
 export function DiscoverSection() {
   const { data: settings } = useDiscoverSettings()
@@ -323,8 +324,57 @@ export function AppearanceSection() {
         </Trans>
       }
     >
-      <AppearancePicker />
+      <Stack gap={14}>
+        <AppearancePicker />
+        <MotionSwitches />
+      </Stack>
     </SettingsSection>
+  )
+}
+
+/** The cover only flies inside a page transition, and fast mode only paces those two, so both grey
+ * out when transitions are off. */
+function MotionSwitches() {
+  const { t } = useLingui()
+  const [transitions, setTransitions] = useMotionPref('pageTransitions')
+  const [covers, setCovers] = useMotionPref('coverMorph')
+  const [fast, setFast] = useMotionPref('fastMotion')
+  const reduced = prefersReducedMotion()
+
+  return (
+    <div>
+      <span className="appearance-picker-label">
+        <Trans>Motion</Trans>
+      </span>
+      <Stack gap="sm">
+        <Switch
+          checked={transitions && !reduced}
+          disabled={reduced}
+          onChange={(e) => setTransitions(e.currentTarget.checked)}
+          label={t`Page transitions`}
+          description={t`Fade from one page to the next instead of switching instantly.`}
+        />
+        <Switch
+          checked={transitions && covers && !reduced}
+          disabled={reduced || !transitions}
+          onChange={(e) => setCovers(e.currentTarget.checked)}
+          label={t`Moving covers`}
+          description={t`Opening a series grows its cover into the series page, and going back shrinks it into place. Needs page transitions.`}
+        />
+        <Switch
+          checked={transitions && fast && !reduced}
+          disabled={reduced || !transitions}
+          onChange={(e) => setFast(e.currentTarget.checked)}
+          label={t`Faster animations`}
+          description={t`Page transitions and moving covers take about half as long.`}
+        />
+        {reduced && (
+          <Text size="sm" c="dimmed">
+            <Trans>Your device asks for reduced motion, so these stay off.</Trans>
+          </Text>
+        )}
+      </Stack>
+    </div>
   )
 }
 

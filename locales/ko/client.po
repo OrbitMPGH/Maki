@@ -7368,6 +7368,10 @@ msgstr "<0/>(으)로 연결될 것으로 예상됨"
 msgid "Extra files Maki writes next to the chapters so Kavita and Komga name and group them the way Maki does."
 msgstr "Kavita와 Komga가 Maki와 같은 방식으로 이름을 붙이고 묶을 수 있도록, Maki가 챕터 옆에 쓰는 추가 파일입니다."
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Fade from one page to the next instead of switching instantly."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
@@ -7462,6 +7466,10 @@ msgstr ""
 #, fuzzy
 msgid "Fantasy"
 msgstr "판타지"
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Faster animations"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -10961,6 +10969,10 @@ msgstr "선호도가 높은 언어가 먼저 표시됩니다. Maki는 새 시리
 msgid "Most read"
 msgstr "가장 많이 읽음"
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Motion"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -11042,6 +11054,10 @@ msgstr "대기열에서 위로 이동"
 #, fuzzy
 msgid "moves onto a volume"
 msgstr "권 파일로 이동"
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Moving covers"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
@@ -12962,6 +12978,10 @@ msgstr "이제부터 이 필터로 검색 열기"
 msgid "Open webtoon chapters in Continuous layout"
 msgstr ""
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Opening a series grows its cover into the series page, and going back shrinks it into place. Needs page transitions."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
@@ -13117,6 +13137,14 @@ msgstr "페이지 썸네일"
 #, fuzzy
 msgid "Page tolerance %"
 msgstr "페이지 허용 오차 %"
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Page transitions"
+msgstr ""
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Page transitions and moving covers take about half as long."
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy
@@ -18366,8 +18394,18 @@ msgstr "2단계 인증이 꺼지고 인증 앱이 초기화되어, 다시 설정
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system"
-msgstr "테마, 다크 모드, 라이트 모드, 강조 색상, 색상, 시스템과 일치, 자동, 시스템 설정 따르기"
+#~ msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system"
+#~ msgstr "테마, 다크 모드, 라이트 모드, 강조 색상, 색상, 시스템과 일치, 자동, 시스템 설정 따르기"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, faster animations, speed, reduce motion"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+#~ msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, reduce motion"
+#~ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20685,6 +20723,14 @@ msgstr "내 {label}"
 #, fuzzy
 msgid "Your busiest month"
 msgstr "가장 바쁜 달"
+
+#: src/pages/settings/PreferenceCards.tsx
+#~ msgid "Your device asks for reduced motion, so both stay off."
+#~ msgstr ""
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Your device asks for reduced motion, so these stay off."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy

@@ -7369,6 +7369,10 @@ msgstr "ожидается привязка как <0/>"
 msgid "Extra files Maki writes next to the chapters so Kavita and Komga name and group them the way Maki does."
 msgstr "Дополнительные файлы, которые Maki записывает рядом с главами, чтобы Kavita и Komga называли и группировали их так же, как Maki."
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Fade from one page to the next instead of switching instantly."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
@@ -7463,6 +7467,10 @@ msgstr ""
 #, fuzzy
 msgid "Fantasy"
 msgstr "Фэнтези"
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Faster animations"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -10962,6 +10970,10 @@ msgstr "Сначала укажите наиболее предпочтител�
 msgid "Most read"
 msgstr "Больше всего прочитано"
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Motion"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -11043,6 +11055,10 @@ msgstr "Переместить вверх в очереди"
 #, fuzzy
 msgid "moves onto a volume"
 msgstr "перемещается в том"
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Moving covers"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
@@ -12963,6 +12979,10 @@ msgstr "В дальнейшем открывать поиск с этими фи
 msgid "Open webtoon chapters in Continuous layout"
 msgstr ""
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Opening a series grows its cover into the series page, and going back shrinks it into place. Needs page transitions."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
@@ -13118,6 +13138,14 @@ msgstr "Миниатюры страниц"
 #, fuzzy
 msgid "Page tolerance %"
 msgstr "Допуск по страницам, %"
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Page transitions"
+msgstr ""
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Page transitions and moving covers take about half as long."
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy
@@ -18367,8 +18395,18 @@ msgstr "Второй фактор выключен, приложение-аут�
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system"
-msgstr "тема, тёмная тема, светлая тема, цветовой акцент, цвет, использовать настройки системы, автоматически, следовать настройкам системы"
+#~ msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system"
+#~ msgstr "тема, тёмная тема, светлая тема, цветовой акцент, цвет, использовать настройки системы, автоматически, следовать настройкам системы"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, faster animations, speed, reduce motion"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+#~ msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, reduce motion"
+#~ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20686,6 +20724,14 @@ msgstr "Ваш {label}"
 #, fuzzy
 msgid "Your busiest month"
 msgstr "Ваш самый активный месяц"
+
+#: src/pages/settings/PreferenceCards.tsx
+#~ msgid "Your device asks for reduced motion, so both stay off."
+#~ msgstr ""
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Your device asks for reduced motion, so these stay off."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
