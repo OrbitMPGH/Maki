@@ -111,3 +111,21 @@ export const SelectMode: Story = {
 export const Selected: Story = {
   args: { selectMode: true, selected: true },
 }
+
+/** Offline, with chapters saved on this device: a device mark joins the left corner. */
+export const SavedOffline: Story = {
+  args: { offline: 'saved' },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('img', { name: 'Saved on this device' })).toBeInTheDocument()
+  },
+}
+
+/** Offline, and this device holds no copy of the series page: dimmed, and the count row says why. */
+export const UnavailableOffline: Story = {
+  args: { offline: 'unavailable' },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Not available offline')).toBeVisible()
+    await expect(canvas.queryByText('11 new')).toBeNull()
+    await waitFor(() => expect(canvas.getByRole('link')).toHaveAttribute('data-offline', 'unavailable'))
+  },
+}

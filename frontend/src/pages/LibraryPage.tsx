@@ -89,7 +89,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import type { LibraryFilterSpec, SavedFilterDto, SeriesDto } from '../api/types'
 import { PosterSkeletons } from '../components/CatalogueBrowser'
 import { TYPE_LABELS, TYPE_OPTIONS } from '../components/CatalogueFilters'
-import { CoverCard } from '../components/ui/CoverCard'
+import { CoverCard, type OfflineAvailability } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Disclosure } from '../components/ui/Disclosure'
@@ -113,7 +113,8 @@ import {
 } from '../components/ui/viewPrefs'
 import { seriesStatusVisual } from '../components/ui/status'
 import { formatNumber } from '../format'
-import { useOfflineSeriesIds } from '../pwa/offlineChapters'
+import { useOfflineAvailableSeriesIds, useOfflineSeriesIds } from '../pwa/offlineChapters'
+import { useConnectivity } from '../lib/connectivity'
 
 const SORT_VALUES = ['added', 'title', 'incomplete', 'status', 'read', 'rating', 'downloaded'] as const
 
@@ -433,6 +434,14 @@ export default function LibraryPage() {
   const [onDeviceOnly, setOnDeviceOnly] = usePageState(`${MEM}:on-device`, false)
   const offlineSeries = useOfflineSeriesIds()
   const onDevice = onDeviceOnly && offlineSeries.size > 0
+  // Offline, what this device can open leads and the rest is dimmed; online nothing changes.
+  const isOffline = useConnectivity() === 'offline'
+  const availableOffline = useOfflineAvailableSeriesIds(isOffline)
+  const offlineOf = (id: number): OfflineAvailability | undefined => {
+    if (!isOffline) return undefined
+    if (!availableOffline.has(id)) return 'unavailable'
+    return offlineSeries.has(id) ? 'saved' : undefined
+  }
   const [tagManagerOpen, setTagManagerOpen] = useState(false)
   const [tagModalOpen, setTagModalOpen] = useState(false)
   const [tagsToAdd, setTagsToAdd] = useState<string[]>([])
@@ -539,6 +548,10 @@ export default function LibraryPage() {
       })
     }
     list.sort(compareSeries(sort, sortDir))
+    if (isOffline) {
+      // A stable partition, so the chosen sort still orders each half.
+      list = [...list.filter((s) => availableOffline.has(s.id)), ...list.filter((s) => !availableOffline.has(s.id))]
+    }
     return list
   }, [
     series, debouncedQuery, statusFilter, typeFilter, tagFilter, tagMatch, genreFilter, genreMatch,
@@ -546,7 +559,7 @@ export default function LibraryPage() {
     metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, sortDir, contentRatingFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
     chapterMin, chapterMax, chapterMode, qualityProfileFilter, ratingState, ratingRange, communityRange,
-    onDevice, offlineSeries,
+    onDevice, offlineSeries, isOffline, availableOffline,
   ])
 
   // Hidden when nothing carries a score (no dump, or no MangaBaka links), unless a saved filter
@@ -2323,6 +2336,7 @@ export default function LibraryPage() {
                 selected={selected.has(s.id)}
                 readTracking={readTracking}
                 onToggle={toggle}
+                offline={offlineOf(s.id)}
               />
             ))}
             {!selectMode && (series?.length ?? 0) < 12 && (
@@ -2349,6 +2363,7 @@ export default function LibraryPage() {
                 readTracking={readTracking}
                 density={density}
                 onToggle={toggle}
+                offline={offlineOf(s.id)}
               />
             ))}
           </Stack>

@@ -174,6 +174,17 @@ export const NotFound: Story = {
   },
 }
 
+/** Offline, and this device holds no copy of the series: not gone, just out of reach. */
+export const OfflineNotSaved: Story = {
+  parameters: {
+    msw: seriesMsw(http.get(api('/series/:id'), () => failWith(503, 'Not available offline', 'offline.unavailable'))),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('heading', { level: 1, name: 'Not available offline' })).toBeVisible()
+    await expect(canvas.queryByText('Series not found')).toBeNull()
+  },
+}
+
 export const ServerError: Story = {
   parameters: {
     msw: seriesMsw(http.get(api('/series/:id'), () => failWith(500))),

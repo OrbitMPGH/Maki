@@ -1691,6 +1691,24 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .cover-state[data-tone='info'] {
   --tone: var(--info);
 }
+.cover-state[data-tone='saved'] {
+  --tone: var(--brand-fg);
+}
+/* Offline, a series this device cannot open: the art greys and fades, the text keeps its contrast
+   (it is still a link) and the count row or badge says why. */
+.cover-card[data-offline='unavailable'] .cover-poster img,
+.cover-card[data-offline='unavailable'] .cover-placeholder,
+.series-row[data-offline='unavailable'] .row-cover {
+  filter: grayscale(1);
+  opacity: 0.35;
+}
+.cover-card[data-offline='unavailable'] .cover-corners {
+  filter: grayscale(1);
+}
+.series-row [data-offline-badge='saved'] {
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand-fg);
+}
 /* Publication status, top-right: a disc filled in the status colour (CoverCard sets --tone). Not
    monitored hollows it to a ring instead of adding a second mark; the eye-off still shows on hover. */
 .cover-state[data-tone='status'] {

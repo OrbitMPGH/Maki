@@ -2,6 +2,7 @@ import { memo } from 'react'
 import {
   IconBellOff,
   IconCheck,
+  IconDeviceMobileCheck,
   IconDownload,
   IconEyeOff,
   IconPlayerPause,
@@ -15,6 +16,9 @@ import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusVisual, st
 import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
+
+/** What a library entry offers while the server is out of reach. */
+export type OfflineAvailability = 'saved' | 'unavailable'
 
 /** Glyphs for the status chip; anything else falls back to the icon `seriesStatusVisual` picks. */
 const STATUS_GLYPH: Record<string, Icon> = {
@@ -44,10 +48,16 @@ export const CoverCard = memo(function CoverCard({
   selected,
   readTracking,
   onToggle,
+  offline,
 }: {
   series: SeriesDto
   selectMode: boolean
   selected: boolean
+  /**
+   * Only while offline: `saved` marks a series with chapters on this device, `unavailable` one whose
+   * page this device holds no copy of, which is dimmed and says so in place of its chapter count.
+   */
+  offline?: OfflineAvailability
   /**
    * Whether read progress is meaningful: Kavita is connected, or the built-in reader has been
    * used. Hides the read ring otherwise, so a stale ReadingState row from a Kavita connection
@@ -76,6 +86,7 @@ export const CoverCard = memo(function CoverCard({
       : have > 0
         ? plural(have, { one: '# chapter', other: '# chapters' })
         : t`No chapters listed`
+  const savedTip = t`Saved on this device`
   const countTip = nothingWanted
     ? plural(total, {
         one: '# chapter listed, none wanted, nothing will download',
@@ -98,6 +109,7 @@ export const CoverCard = memo(function CoverCard({
       to={`/series/${series.id}`}
       className="cover-card"
       data-selected={selected || undefined}
+      data-offline={offline}
       role={selectMode ? 'checkbox' : undefined}
       aria-checked={selectMode ? selected : undefined}
       onClick={(e) => {
@@ -138,10 +150,14 @@ export const CoverCard = memo(function CoverCard({
             />
           </div>
           <div className="cover-row">
-            <span data-nothing-wanted={nothingWanted || undefined} data-tip={countTip}>
-              {countLabel}
-            </span>
-            {unread !== null && unread > 0 && (
+            {offline === 'unavailable' ? (
+              <span>{t`Not available offline`}</span>
+            ) : (
+              <span data-nothing-wanted={nothingWanted || undefined} data-tip={countTip}>
+                {countLabel}
+              </span>
+            )}
+            {offline !== 'unavailable' && unread !== null && unread > 0 && (
               <span className="cover-new">{plural(unread, { one: '# new', other: '# new' })}</span>
             )}
           </div>
@@ -149,6 +165,11 @@ export const CoverCard = memo(function CoverCard({
 
         <div className="cover-corners">
           <div className="cover-corner cover-corner-left">
+            {offline === 'saved' && (
+              <span className="cover-state" data-tone="saved" data-tip={savedTip} role="img" aria-label={savedTip}>
+                <IconDeviceMobileCheck size={13} stroke={2} />
+              </span>
+            )}
             {!downloading && readPct !== null && readPct > 0 && (
               <span
                 className="cover-ring"

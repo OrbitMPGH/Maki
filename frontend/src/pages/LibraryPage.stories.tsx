@@ -1,8 +1,10 @@
+import { useEffect } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent as userEventApi, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
 import { libraryHandlers, seedLibraryPrefs } from '../../.storybook/mocks/library'
+import { getConnectivity, onConnectivityChange, setConnectivity } from '../lib/connectivity'
 import LibraryPage from './LibraryPage'
 
 const meta = {
@@ -42,6 +44,31 @@ export const Grid: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })).toBeVisible()
     await expect(await canvas.findByText('14 series')).toBeVisible()
+  },
+}
+
+// Every API response flips connectivity back to online, so the offline story pins it while mounted.
+function ForceOffline({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    const pin = () => {
+      if (getConnectivity() === 'online') setConnectivity('offline')
+    }
+    pin()
+    const stop = onConnectivityChange(pin)
+    return () => {
+      stop()
+      setConnectivity('online')
+    }
+  }, [])
+  return <>{children}</>
+}
+
+/** Offline with nothing on this device: every card is dimmed and says it is not available. */
+export const OfflineNothingSaved: Story = {
+  decorators: [(Story) => <ForceOffline><Story /></ForceOffline>],
+  play: async ({ canvas }) => {
+    await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })
+    await waitFor(() => expect(canvas.getAllByText('Not available offline').length).toBeGreaterThan(5))
   },
 }
 

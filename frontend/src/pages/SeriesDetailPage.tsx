@@ -114,7 +114,7 @@ import {
   useVolumeSearch,
 } from '../api/upgrades'
 import type { UpgradeScanResultDto } from '../api/upgrades'
-import { ApiError } from '../api/client'
+import { ApiError, isOfflineUnavailable } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
 import { useDocumentTitle } from '../lib/documentTitle'
@@ -386,7 +386,7 @@ function SeriesDetailBody() {
     setSearchParams(next, { replace: true })
   }
   const isMobile = useMediaQuery('(max-width: 47.99em)')
-  const { data: series, isLoading } = useSeriesDetail(seriesId)
+  const { data: series, isLoading, error: seriesError } = useSeriesDetail(seriesId)
   // So that a series reached from another one (Similar, Related) offers a back link that names it
   // rather than the generic "Series".
   usePageLabel(series?.title)
@@ -1359,6 +1359,23 @@ function SeriesDetailBody() {
         <SurfaceFrame width="full" pageStyle="editorial">
           <SeriesHeroSkeleton />
           {luckyPill}
+        </SurfaceFrame>
+    )
+  }
+
+  // Offline the series is not gone, this device just holds no copy of its page.
+  if (!series && isOfflineUnavailable(seriesError)) {
+    return (
+        <SurfaceFrame width="full" pageStyle="editorial">
+          <EmptyState
+              art="offline"
+              headingOrder={1}
+              title={t`Not available offline`}
+              description={t`This series isn't saved on this device. It opens again as soon as Maki can reach the server.`}
+              actionLabel={t`Back to library`}
+              actionTo="/library"
+              actionIcon={<IconArrowLeft size={16} />}
+          />
         </SurfaceFrame>
     )
   }

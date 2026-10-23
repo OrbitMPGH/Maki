@@ -1,14 +1,15 @@
 import { t } from '@lingui/core/macro'
 import { notifications } from '@mantine/notifications'
 import { useMemo, useSyncExternalStore } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { api, ApiError, apiWithOrigin, getInitialize, isOfflineUnavailable, trackedFetch, UnauthorizedError } from '../api/client'
 import type { HomeReadingResponse } from '../api/hooks'
 import { pageUrl, type ChapterProgressDto, type ReaderManifest } from '../api/reader'
 import type { ChapterDto } from '../api/types'
 import { formatBytes } from '../format'
 import { getConnectivity } from '../lib/connectivity'
-import { cacheDeleteWhere, cacheMatch, cachePut, deleteCache } from '../lib/pwa/cache'
-import { pwaSupported } from '../lib/pwa/serviceWorker'
+import { cacheDeleteWhere, cacheMatch, cachePut, cacheUrls, deleteCache } from '../lib/pwa/cache'
+import { pwaSupported, workerControlsPage } from '../lib/pwa/serviceWorker'
 import { estimate, requestPersistence } from '../lib/pwa/storage'
 import { cacheNames, OFFLINE_CODE, OFFLINE_HEADER, type OfflineChapter } from './contract'
 import {
@@ -110,6 +111,37 @@ export function useOfflineSeriesIds(): ReadonlySet<number> {
     for (const record of records.values()) if (record.state !== 'error') ids.add(record.seriesId)
     return ids
   }, [records])
+}
+
+const SERIES_PAGE = /\/series\/(\d+)$/
+const NO_SERIES: ReadonlySet<number> = new Set()
+
+/**
+ * Series whose page this device can show without the server: saved chapters, plus any series page
+ * the worker kept from an earlier visit. Empty when no worker answers this tab, since then nothing
+ * stored can be served. Read only while `enabled`, which callers tie to being offline.
+ */
+export function useOfflineAvailableSeriesIds(enabled: boolean): ReadonlySet<number> {
+  const saved = useOfflineSeriesIds()
+  const { userId } = useOfflineChapters()
+  const controlled = enabled && workerControlsPage()
+  const { data: cached } = useQuery({
+    queryKey: ['offline', 'cached-series', userId],
+    queryFn: async () => {
+      const ids = new Set<number>()
+      for (const url of await cacheUrls(cacheNames.data(userId!))) {
+        const match = SERIES_PAGE.exec(new URL(url).pathname)
+        if (match) ids.add(Number(match[1]))
+      }
+      return ids
+    },
+    enabled: controlled && userId !== null,
+    staleTime: 0,
+  })
+  return useMemo(
+    () => (controlled ? new Set([...saved, ...(cached ?? [])]) : NO_SERIES),
+    [controlled, saved, cached],
+  )
 }
 
 let loadingFor: number | null = null

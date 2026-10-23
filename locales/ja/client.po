@@ -12004,7 +12004,10 @@ msgid "Not analyzed"
 msgstr "未分析"
 
 #: src/api/client.ts
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
 #: src/pages/reader/ReaderPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Not available offline"
 msgstr ""
 
@@ -15756,6 +15759,8 @@ msgid "Saved filters"
 msgstr "保存済みフィルター"
 
 #: src/components/home/OfflineHome.tsx
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Saved on this device"
 msgstr ""
@@ -18611,6 +18616,10 @@ msgstr ""
 #, fuzzy
 msgid "This series isn't eligible for a volume search"
 msgstr "このシリーズは巻の検索の対象外です"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "This series isn't saved on this device. It opens again as soon as Maki can reach the server."
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
