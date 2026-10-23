@@ -275,15 +275,12 @@ function LiveEvents() {
 function AppShellRoutes() {
   const location = useLocation()
   const navigate = useNavigate()
-  const [pinned, { toggle: togglePinned, close: closePinned }] = useDisclosure()
+  const [pinned, { open: openPinned, close: closePinned }] = useDisclosure()
   // A mouse resting on the burger opens the drawer without pinning it, and leaving the burger and
   // the drawer closes it again. Touch and keyboard never peek: a tap fires pointerenter too, and
   // would open the drawer only for the click that follows to close it.
   const [peeking, setPeeking] = useState(false)
   const peekTimer = useRef(0)
-  // Set when a click closes a peeked drawer, so the pointer still resting on the burger does not
-  // reopen it at once.
-  const peekSuppressed = useRef(false)
   // How the drawer last opened, which picks its transition: a peek fades in where it stands, a
   // press slides the whole drawer in.
   const [reveal, setReveal] = useState<'hover' | 'press'>('press')
@@ -293,17 +290,19 @@ function AppShellRoutes() {
     setPeeking(false)
     closePinned()
   }
+  // A mouse always enters the burger before it clicks it, so the click lands on a drawer the hover
+  // already opened. Closing it then would flash the drawer open and shut; the click pins it instead,
+  // and a second click closes it.
   const toggle = () => {
-    if (opened) {
-      peekSuppressed.current = peeking
+    if (pinned) close()
+    else {
+      if (!peeking) setReveal('press')
       close()
-    } else {
-      setReveal('press')
-      togglePinned()
+      openPinned()
     }
   }
   const peekEnter = (e: React.PointerEvent) => {
-    if (e.pointerType !== 'mouse' || peekSuppressed.current) return
+    if (e.pointerType !== 'mouse') return
     window.clearTimeout(peekTimer.current)
     if (!opened) setReveal('hover')
     setPeeking(true)
@@ -449,10 +448,7 @@ function AppShellRoutes() {
               opened={opened}
               onClick={toggle}
               onPointerEnter={peekEnter}
-              onPointerLeave={(e) => {
-                peekSuppressed.current = false
-                peekLeave(e)
-              }}
+              onPointerLeave={peekLeave}
               size="sm"
               aria-label={t`Menu`}
               aria-expanded={opened}
