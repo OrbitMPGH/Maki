@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { MantineThemeProvider } from '@mantine/core'
 import { Notifications, notifications } from '@mantine/notifications'
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, type MemoryRouterProps, Route, Routes } from 'react-router-dom'
 import { ApiError } from '../src/api/client'
 import { AppThemeProvider } from '../src/theme-context'
 import { AppI18nProvider } from '../src/i18n-context'
@@ -33,7 +33,7 @@ export function StoryProviders({
   realMotion,
 }: {
   children: ReactNode
-  router?: { path?: string; initialEntries?: string[] }
+  router?: { path?: string; initialEntries?: MemoryRouterProps['initialEntries'] }
   realMotion?: boolean
 }) {
   const [client] = useState(

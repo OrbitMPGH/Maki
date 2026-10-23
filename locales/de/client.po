@@ -18325,8 +18325,8 @@ msgstr "Der Upgrade-Scan konnte nicht ausgeführt werden. Details stehen im Serv
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
-msgid "The whole catalogue"
-msgstr "Gesamter Katalog"
+#~ msgid "The whole catalogue"
+#~ msgstr "Gesamter Katalog"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy

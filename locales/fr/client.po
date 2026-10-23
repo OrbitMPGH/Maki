@@ -18325,8 +18325,8 @@ msgstr "L'analyse des mises à niveau n'a pas pu s'exécuter. Le journal du serv
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
-msgid "The whole catalogue"
-msgstr "Tout le catalogue"
+#~ msgid "The whole catalogue"
+#~ msgstr "Tout le catalogue"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy

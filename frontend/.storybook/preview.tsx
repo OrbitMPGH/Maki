@@ -10,6 +10,7 @@ import '../src/theme.css'
 import { ACCENTS, BACKGROUNDS } from '../src/theme-context'
 import { loadLocale, SUPPORTED_LOCALES, type LocaleCode } from '../src/i18n'
 import { StoryProviders } from './StoryProviders'
+import type { MemoryRouterProps } from 'react-router-dom'
 import { NOW, readerMe, signedInAs } from './mocks/api'
 import { defaultHandlers, unmockedRequests } from './mocks'
 
@@ -25,7 +26,7 @@ import { defaultHandlers, unmockedRequests } from './mocks'
  */
 declare module 'storybook/internal/csf' {
   interface Parameters {
-    router?: { path?: string; initialEntries?: string[] }
+    router?: { path?: string; initialEntries?: MemoryRouterProps['initialEntries'] }
     auth?: 'admin' | 'reader' | 'signedOut'
     allowUnmocked?: boolean
     realMotion?: boolean

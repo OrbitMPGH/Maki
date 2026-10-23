@@ -18325,8 +18325,8 @@ msgstr "A verificação de upgrades não pôde ser executada. O log do servidor 
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
-msgid "The whole catalogue"
-msgstr "O catálogo inteiro"
+#~ msgid "The whole catalogue"
+#~ msgstr "O catálogo inteiro"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy

@@ -15206,8 +15206,8 @@ msgid "The upgrade scan could not run. The server log has the details."
 msgstr "The upgrade scan could not run. The server log has the details."
 
 #: src/pages/DiscoverPage.tsx
-msgid "The whole catalogue"
-msgstr "The whole catalogue"
+#~ msgid "The whole catalogue"
+#~ msgstr "The whole catalogue"
 
 #: src/pages/ImportPage.tsx
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."

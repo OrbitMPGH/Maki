@@ -84,8 +84,15 @@ const PAGE_SIZE = 60
 /** Ceiling on how far Load more will page, matching the server's own clamp. */
 const MAX_BROWSE = 600
 
+/** A browse to open on instead of whatever was there last, e.g. a Discover feed's Show more. */
+export interface CatalogueSeed {
+  sort: BrowseSort
+  filters: RecommendationFilters
+  openFilters?: boolean
+}
+
 /**
- * The catalogue, searchable and browsable, shared by Discover, Add series and the creator page.
+ * The catalogue, searchable and browsable, shared by Add series and the creator page.
  *
  * <p>
  * It renders browse results when the box is empty and search results when it is not, which is what
@@ -95,13 +102,14 @@ const MAX_BROWSE = 600
  * </p>
  *
  * <p>
- * Discover passes its curated rails as `idle` and keeps them; everywhere else the empty box shows
- * the filtered catalogue by popularity.
+ * A host can pass its own rails as `idle` and keep them; otherwise the empty box shows the filtered
+ * catalogue by popularity.
  * </p>
  */
 export function CatalogueBrowser({
   scope,
   seededQuery,
+  seededBrowse,
   placeholder,
   idle,
   showSaveDefault = true,
@@ -112,6 +120,8 @@ export function CatalogueBrowser({
   scope: string
   /** Starting query, e.g. the `?q=` the command palette sends to the Add page. */
   seededQuery?: string | null
+  /** Replaces the query, sort and filters once, when it changes. The saved default is skipped. */
+  seededBrowse?: CatalogueSeed | null
   placeholder?: string
   /** Shown instead of browse results while the box is empty. Discover passes its rails. */
   idle?: ReactNode
@@ -189,6 +199,18 @@ export function CatalogueBrowser({
     setApplied(filters)
     setHydrated(true)
   }, [hydrated, defaultsLoaded, defaultsFailed, savedDefaults, hydrateFilters, setApplied, setHydrated])
+
+  // After the default above, so a default landing in the same commit is overwritten, not the seed.
+  useEffect(() => {
+    if (!seededBrowse) return
+    setQuery('')
+    hydrateFilters(seededBrowse.filters)
+    setApplied(seededBrowse.filters)
+    setSort(seededBrowse.sort)
+    setPages(1)
+    if (seededBrowse.openFilters) setFiltersOpen(true)
+    setHydrated(true)
+  }, [seededBrowse, setQuery, hydrateFilters, setApplied, setSort, setPages, setFiltersOpen, setHydrated])
 
   const appliedCount = Object.keys(applied).length
   const filters = appliedCount > 0 ? applied : undefined

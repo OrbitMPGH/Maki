@@ -18324,8 +18324,8 @@ msgstr "アップグレードスキャンを実行できませんでした。詳
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
-msgid "The whole catalogue"
-msgstr "カタログ全体"
+#~ msgid "The whole catalogue"
+#~ msgstr "カタログ全体"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy

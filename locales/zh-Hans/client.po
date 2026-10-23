@@ -18324,8 +18324,8 @@ msgstr "升级扫描无法运行。详情请查看服务器日志。"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
-msgid "The whole catalogue"
-msgstr "整个目录"
+#~ msgid "The whole catalogue"
+#~ msgstr "整个目录"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy

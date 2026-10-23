@@ -106,7 +106,7 @@ import {
   RecommendationCard,
   RecommendationRow,
 } from '../components/ui/DiscoverRail'
-import { PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
+import { type CatalogueSeed, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { FilterMatchCount, TermFilters, useRuleChips, useTermFilters } from '../components/CatalogueRules'
 import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
@@ -1139,6 +1139,31 @@ function FeedExpandModal({
   )
 }
 
+/**
+ * The catalogue feeds whose Show more is the Add page: each is a sort, plus the rail's own type or
+ * genre. Null keeps the modal: Trending has no sort to match, and the personalised, cohort,
+ * following and custom rails page endpoints of their own.
+ */
+function catalogueSeedFor(rail: DiscoverRail): CatalogueSeed | null {
+  if (rail.seedIds?.length || rail.key.startsWith(CUSTOM_RAIL_PREFIX) || rail.key === FOLLOWING_RAIL_KEY) return null
+  switch (rail.feed) {
+    case 'Popular':
+      return { sort: 'popular', filters: {} }
+    case 'TopRated':
+      return { sort: 'rating', filters: {} }
+    case 'New':
+      return { sort: 'newest', filters: {} }
+    case 'PopularManhwa':
+      return { sort: 'popular', filters: { types: ['manhwa'] } }
+    case 'PopularManhua':
+      return { sort: 'popular', filters: { types: ['manhua'] } }
+    case 'GenreSpotlight':
+      return rail.genre ? { sort: 'popular', filters: { genres: [rail.genre] } } : null
+    default:
+      return null
+  }
+}
+
 /** Catalogue browse: Popular / New / Trending / … rails, independent of the library. */
 function DiscoverBrowseTab({
   refreshNonce,
@@ -1236,6 +1261,12 @@ function DiscoverBrowseTab({
     setExpandedRail(expandFollowing)
     navigate(location.pathname, { replace: true, state: null })
   }, [expandFollowing, navigate, location.pathname])
+
+  const showMore = (rail: DiscoverRail) => {
+    const seed = catalogueSeedFor(rail)
+    if (seed) navigate('/add', { state: { catalogueSeed: seed } })
+    else setExpandedRail(rail)
+  }
 
   const recommendFrom = useCallback(
     (item: RecommendationItem) =>
@@ -1489,12 +1520,8 @@ function DiscoverBrowseTab({
               size="xs"
               leftSection={<IconAdjustmentsHorizontal size={14} />}
               onClick={() =>
-                setExpandedRail({
-                  key: 'catalogue',
-                  title: t`The whole catalogue`,
-                  feed: 'Popular',
-                  genre: null,
-                  items: [],
+                navigate('/add', {
+                  state: { catalogueSeed: { sort: 'popular', filters: {}, openFilters: true } satisfies CatalogueSeed },
                 })
               }
             >
@@ -1516,7 +1543,7 @@ function DiscoverBrowseTab({
               cols={density.cols}
               seriesIdFor={seriesIdFor}
               onOpen={setDetailItem}
-              onShowMore={setExpandedRail}
+              onShowMore={showMore}
             />
           ) : (
             <EmptyState
@@ -1531,7 +1558,7 @@ function DiscoverBrowseTab({
       genreRails && genreRails.length > 0 ? (
         <div>
           <SectionHeader icon={IconLayoutGrid} title={t`Every genre`} count={genreRails.length} />
-          <DiscoverGenreWall rails={genreRails} onOpen={setExpandedRail} />
+          <DiscoverGenreWall rails={genreRails} onOpen={showMore} />
         </div>
       ) : genresFetching ? (
         <DiscoverGenreSkeleton />

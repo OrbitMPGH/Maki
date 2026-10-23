@@ -18324,8 +18324,8 @@ msgstr "업그레이드 스캔을 실행하지 못했습니다. 자세한 내용
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
-msgid "The whole catalogue"
-msgstr "전체 카탈로그"
+#~ msgid "The whole catalogue"
+#~ msgstr "전체 카탈로그"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy

@@ -18325,8 +18325,8 @@ msgstr "Nie udało się uruchomić skanu ulepszeń. Szczegóły są w logu serwe
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
-msgid "The whole catalogue"
-msgstr "Cały katalog"
+#~ msgid "The whole catalogue"
+#~ msgstr "Cały katalog"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
