@@ -7,24 +7,80 @@ import { IconBrandMark } from '../IconBrandMark'
 /** Accent strength of each shape in the band: fixed, so the art is the same on every visit. */
 const SHAPES = Array.from({ length: 50 }, (_, i) => 10 + ((i * 37) % 62))
 
+type ArtMode = 'pending' | 'shapes' | 'covers'
+
+const ART_KEY = 'auth-art'
+
+/** How long the frame waits for the bootstrap to answer before it paints its own art. */
+const ART_PENDING_MS = 1500
+
+function readArt(): ArtMode {
+  try {
+    const stored = localStorage.getItem(ART_KEY)
+    if (stored === 'shapes' || stored === 'covers') return stored
+  } catch {
+    /* private mode: the first paint waits for the server */
+  }
+  return 'pending'
+}
+
+function writeArt(mode: 'shapes' | 'covers') {
+  try {
+    localStorage.setItem(ART_KEY, mode)
+  } catch {
+    /* private mode: remembered for this visit only */
+  }
+}
+
 /**
- * The library mosaic's address when an admin has switched it on, else null. Null on any failure
- * too: an offline start or a broken bootstrap still gets the page's own art.
+ * Which art the band shows. Starts from the last answer so a returning visitor paints the right
+ * mode at once; a first visit holds at "pending" (neither art, no identity block) until the
+ * bootstrap and, when covers are on, the mosaic have answered, so the layout never jumps from one mode to the other.
+ * Any failure, an offline start included, falls back to the page's own art without being
+ * remembered.
  */
-function useCoverMosaicUrl(): string | null {
-  const [url, setUrl] = useState<string | null>(null)
+function useAuthArt() {
+  const [mode, setMode] = useState<ArtMode>(readArt)
+  const [mosaicUrl, setMosaicUrl] = useState<string | null>(null)
+
   useEffect(() => {
     let live = true
+    let coversExpected = false
     getInitialize()
       .then((init) => {
-        if (live && init.signInCovers) setUrl(`${init.apiRoot}/signin/mosaic.webp`)
+        if (!live) return
+        if (init.signInCovers) {
+          coversExpected = true
+          setMosaicUrl(`${init.apiRoot}/signin/mosaic.webp`)
+        } else {
+          setMode('shapes')
+          writeArt('shapes')
+        }
       })
-      .catch(() => {})
+      .catch(() => {
+        if (live) setMode('shapes')
+      })
+    const timer = window.setTimeout(() => {
+      if (!coversExpected) setMode((m) => (m === 'pending' ? 'shapes' : m))
+    }, ART_PENDING_MS)
     return () => {
       live = false
+      window.clearTimeout(timer)
     }
   }, [])
-  return url
+
+  return {
+    mode,
+    mosaicUrl,
+    onCoversLoad: () => {
+      setMode('covers')
+      writeArt('covers')
+    },
+    onCoversError: () => {
+      setMode('shapes')
+      writeArt('shapes')
+    },
+  }
 }
 
 /**
@@ -34,7 +90,7 @@ function useCoverMosaicUrl(): string | null {
  * at size: nobody is signed in, and fetching covers anonymously would show what the instance holds
  * to anyone who can reach the form. An admin can opt in to a mosaic of Safe-rated covers, which the
  * server blurs into one image; it replaces the shapes once it has loaded, and the tagline goes,
- * since the covers say it.
+ * since the covers say it. Until the mode is known (see {@link useAuthArt}) neither is painted.
  */
 export function AuthFrame({
   title,
@@ -48,11 +104,10 @@ export function AuthFrame({
   footer?: ReactNode
 }) {
   const { t } = useLingui()
-  const mosaicUrl = useCoverMosaicUrl()
-  const [covers, setCovers] = useState(false)
+  const { mode, mosaicUrl, onCoversLoad, onCoversError } = useAuthArt()
 
   return (
-    <div className="auth-frame" data-art={covers ? 'covers' : 'shapes'}>
+    <div className="auth-frame" data-art={mode}>
       <div className="auth-band" aria-hidden>
         <div className="auth-band-shapes">
           {SHAPES.map((shade, i) => (
@@ -65,8 +120,8 @@ export function AuthFrame({
             src={mosaicUrl}
             alt=""
             decoding="async"
-            onLoad={() => setCovers(true)}
-            onError={() => setCovers(false)}
+            onLoad={onCoversLoad}
+            onError={onCoversError}
           />
         )}
         <div className="auth-band-scrim" />

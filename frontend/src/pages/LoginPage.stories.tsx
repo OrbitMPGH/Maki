@@ -9,6 +9,13 @@ const meta = {
   component: LoginPage,
   tags: ['ai-generated'],
   parameters: { layout: 'fullscreen', auth: 'signedOut', router: { initialEntries: ['/'] } },
+  beforeEach: () => {
+    try {
+      localStorage.removeItem('auth-art')
+    } catch {
+      /* storage unavailable */
+    }
+  },
 } satisfies Meta<typeof LoginPage>
 
 export default meta

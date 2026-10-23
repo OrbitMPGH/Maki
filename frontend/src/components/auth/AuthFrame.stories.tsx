@@ -7,6 +7,13 @@ const meta = {
   component: AuthFrame,
   tags: ['ai-generated'],
   parameters: { layout: 'fullscreen', auth: 'signedOut' },
+  beforeEach: () => {
+    try {
+      localStorage.removeItem('auth-art')
+    } catch {
+      /* storage unavailable */
+    }
+  },
   args: {
     title: 'Sign in',
     children: (
@@ -24,7 +31,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('heading', { level: 1, name: 'Maki' })).toBeVisible()
+    await waitFor(async () => expect(await canvas.findByRole('heading', { level: 1, name: 'Maki' })).toBeVisible())
     await expect(await canvas.findByText('Self-hosted manga library and downloader.')).toBeVisible()
     await expect(await canvas.findByRole('heading', { level: 2, name: 'Sign in' })).toBeVisible()
   },

@@ -27,7 +27,7 @@ public class SignInArtController(SignInMosaicService mosaic) : ControllerBase
 
         // Short, so switching the setting off takes effect within minutes even in a browser that
         // kept the image; the ETag makes the revalidations cheap.
-        Response.Headers.CacheControl = "public, max-age=300";
+        Response.Headers.CacheControl = "private, max-age=300";
         return File(image.Webp, "image/webp", lastModified: null, entityTag: new EntityTagHeaderValue($"\"{image.ETag}\""));
     }
 }

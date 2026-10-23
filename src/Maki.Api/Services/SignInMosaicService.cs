@@ -43,6 +43,7 @@ public sealed class SignInMosaicService(
 
     private readonly SemaphoreSlim _gate = new(1, 1);
     private SignInMosaic? _cached;
+    private string? _failedEtag;
 
     /// <summary>Null when the setting is off or too few Safe-rated covers exist.</summary>
     public async Task<SignInMosaic?> GetAsync(CancellationToken ct)
@@ -72,6 +73,11 @@ public sealed class SignInMosaicService(
             return _cached;
         }
 
+        if (_failedEtag == etag)
+        {
+            return null;
+        }
+
         await _gate.WaitAsync(ct);
         try
         {
@@ -80,12 +86,27 @@ public sealed class SignInMosaicService(
                 return _cached;
             }
 
-            var webp = await Task.Run(() => Render(files), ct);
+            if (_failedEtag == etag)
+            {
+                return null;
+            }
+
+            // Not cancellable: the gate is held until the render ends, so a dropped request cannot
+            // leave a half-written cache or start a second render beside this one.
+            var webp = await Task.Run(() => Render(files));
+            if (webp is null)
+            {
+                _failedEtag = etag;
+                logger.LogWarning("Too many sign-in cover mosaic covers could not be read; drawing nothing until the library changes");
+                return null;
+            }
+
             _cached = new SignInMosaic(webp, etag);
             return _cached;
         }
         catch (VipsException ex)
         {
+            _failedEtag = etag;
             logger.LogWarning(ex, "Could not build the sign-in cover mosaic");
             return null;
         }
@@ -95,10 +116,16 @@ public sealed class SignInMosaicService(
         }
     }
 
-    /// <summary>The newest Safe-rated series that have a poster, across every root folder.</summary>
+    /// <summary>
+    /// The newest Safe-rated series that have a poster, from root folders every account can see.
+    /// A grant row lets a restricted user into a folder, so a folder some restricted account has no
+    /// grant for is hidden from them and left out for an anonymous visitor too.
+    /// </summary>
     internal static Task<List<int>> PickAsync(MakiDbContext db, CancellationToken ct) =>
         db.Series.IgnoreQueryFilters()
-            .Where(s => s.ContentRating == "safe" && s.CoverPath != null)
+            .Where(s => s.ContentRating == "safe" && s.CoverPath != null
+                && !db.Users.Any(u => !u.AllRootFolders
+                    && !db.UserRootFolders.Any(g => g.UserId == u.Id && g.RootFolderId == s.RootFolderId)))
             .OrderByDescending(s => s.Added)
             .Select(s => s.Id)
             .Take(MaxCovers)
@@ -106,16 +133,28 @@ public sealed class SignInMosaicService(
 
     /// <summary>
     /// The covers as tiles in a grid with transparent gaps, blurred as one image, as WebP with alpha
-    /// so the page's own ground shows between them in either theme.
+    /// so the page's own ground shows between them in either theme. A cover that cannot be read is
+    /// left out; null when fewer than <see cref="MinCovers"/> tiles are left.
     /// </summary>
-    internal static byte[] Render(IReadOnlyList<string> files, double blurSigma = BlurSigma)
+    internal static byte[]? Render(IReadOnlyList<string> files, double blurSigma = BlurSigma)
     {
         var tiles = new List<VipsImage>(files.Count);
         try
         {
             foreach (var file in files)
             {
-                tiles.Add(Tile(file));
+                try
+                {
+                    tiles.Add(Tile(file));
+                }
+                catch (VipsException)
+                {
+                }
+            }
+
+            if (tiles.Count < MinCovers)
+            {
+                return null;
             }
 
             using var grid = VipsImage.Arrayjoin([.. tiles], across: Columns, shim: Gap, background: [0, 0, 0, 0]);
@@ -141,7 +180,8 @@ public sealed class SignInMosaicService(
             crop: Enums.Interesting.Centre);
         using var srgb = thumb.Colourspace(Enums.Interpretation.Srgb);
         using var opaque = srgb.HasAlpha() ? srgb.Flatten(background: [0, 0, 0]) : srgb.Copy();
-        return opaque.Bandjoin(255);
+        using var withAlpha = opaque.Bandjoin(255);
+        return withAlpha.CopyMemory();
     }
 
     private static string Tag(IEnumerable<string> files)
