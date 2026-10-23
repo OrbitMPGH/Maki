@@ -20,7 +20,7 @@ import { useLabel } from '../../i18n-context'
 import { formatFixedDecimal } from '../../format'
 
 /** How long one pick holds the band before the next takes it. */
-const ROTATE_MS = 7000
+const ROTATE_MS = 5000
 
 /**
  * How many picks the list carries. The list is the tallest thing in the band, so this number is
@@ -64,6 +64,30 @@ function useTitleFit(title: string | undefined) {
 }
 
 /**
+ * Whether the band is on screen in a visible tab. The rotation holds otherwise, so someone who
+ * scrolls back up or returns to the tab finds the pick they left.
+ */
+function useWatched(el: HTMLElement | null) {
+  const [inView, setInView] = useState(true)
+  const [tabVisible, setTabVisible] = useState(() => document.visibilityState === 'visible')
+  useEffect(() => {
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setInView(entry.intersectionRatio >= 0.3),
+      { threshold: 0.3 },
+    )
+    observer.observe(el)
+    const onVisibility = () => setTabVisible(document.visibilityState === 'visible')
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      observer.disconnect()
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [el])
+  return inView && tabVisible
+}
+
+/**
  * The Discover page's opening band: one pick at full size, the rest in a vertical list beside it.
  *
  * <p>
@@ -101,6 +125,8 @@ export function DiscoverHero({
   const [activeIndex, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
   const [autoRotate, setAutoRotate] = useState(true)
+  const [heroEl, setHeroEl] = useState<HTMLDivElement | null>(null)
+  const halted = paused || !useWatched(heroEl)
   const reducedMotion = useReducedMotion()
   // Called up here, unconditionally, rather than after the `if (!item) return null` below: both are
   // hooks, and the rule holds even though `item` is never actually undefined once Discover is the
@@ -122,11 +148,11 @@ export function DiscoverHero({
   }, [])
 
   useEffect(() => {
-    if (!canAutoRotate || paused) return
+    if (!canAutoRotate || halted) return
 
     const id = window.setTimeout(() => setActive((n) => (n + 1) % picks.length), ROTATE_MS)
     return () => window.clearTimeout(id)
-  }, [active, canAutoRotate, paused, picks.length])
+  }, [active, canAutoRotate, halted, picks.length])
 
   if (!item) return null
 
@@ -165,6 +191,7 @@ export function DiscoverHero({
 
   return (
     <Box
+      ref={setHeroEl}
       className="series-hero discover-hero"
       data-compact
       data-auto-rotating={canAutoRotate ? 'true' : undefined}
@@ -395,7 +422,7 @@ export function DiscoverHero({
                         <span className="discover-hero-strip-match">{matches.join(' · ')}</span>
                       )}
                     </span>
-                    {n === active && canAutoRotate && !paused && (
+                    {n === active && canAutoRotate && !halted && (
                       <span className="discover-hero-strip-progress" aria-hidden>
                         <span key={item.providerId} />
                       </span>
