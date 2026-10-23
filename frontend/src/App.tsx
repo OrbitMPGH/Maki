@@ -284,6 +284,9 @@ function AppShellRoutes() {
   // Set when a click closes a peeked drawer, so the pointer still resting on the burger does not
   // reopen it at once.
   const peekSuppressed = useRef(false)
+  // How the drawer last opened, which picks its transition: a peek fades in where it stands, a
+  // press slides the whole drawer in.
+  const [reveal, setReveal] = useState<'hover' | 'press'>('press')
   const opened = pinned || peeking
   const close = () => {
     window.clearTimeout(peekTimer.current)
@@ -294,17 +297,21 @@ function AppShellRoutes() {
     if (opened) {
       peekSuppressed.current = peeking
       close()
-    } else togglePinned()
+    } else {
+      setReveal('press')
+      togglePinned()
+    }
   }
   const peekEnter = (e: React.PointerEvent) => {
     if (e.pointerType !== 'mouse' || peekSuppressed.current) return
     window.clearTimeout(peekTimer.current)
+    if (!opened) setReveal('hover')
     setPeeking(true)
   }
   // The delay carries the pointer across the gap between the burger and the drawer below it. The
   // drawer's user and help menus open in portals outside it, so the peek holds while one is open.
   const endPeek = () => {
-    if (document.querySelector('[data-menu-dropdown], .mantine-Popover-dropdown')) {
+    if (navbarRef.current?.querySelector('[aria-expanded="true"]')) {
       peekTimer.current = window.setTimeout(endPeek, 250)
     } else setPeeking(false)
   }
@@ -451,20 +458,6 @@ function AppShellRoutes() {
               aria-expanded={opened}
               aria-controls="app-navbar"
             />
-            {navCollapsed && (
-              <Tooltip label={t`Keep sidebar open`} withArrow>
-                <ActionIcon
-                  visibleFrom="sm"
-                  variant="subtle"
-                  color="var(--neutral)"
-                  size={44}
-                  onClick={toggleNavCollapsed}
-                  aria-label={t`Keep sidebar open`}
-                >
-                  <IconLayoutSidebarLeftExpand size={23} />
-                </ActionIcon>
-              </Tooltip>
-            )}
             <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
               <IconBrandMark />
             </span>
@@ -513,6 +506,8 @@ function AppShellRoutes() {
         id="app-navbar"
         className="app-navbar"
         inert={drawerClosed}
+        data-reveal={navCollapsed || phone ? reveal : undefined}
+        data-open={opened || undefined}
         onPointerEnter={peeking ? peekEnter : undefined}
         onPointerLeave={peeking ? peekLeave : undefined}
       >
