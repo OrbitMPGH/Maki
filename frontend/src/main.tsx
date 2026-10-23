@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Notifications, notifications } from '@mantine/notifications'
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter } from 'react-router-dom'
+import { unstable_HistoryRouter as HistoryRouter } from 'react-router-dom'
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 // Bundled rather than linked from a font CDN: a self-hosted instance may have no internet, and
@@ -14,6 +14,7 @@ import './theme.css'
 // Before App: decides whether the window or the shell's <main> scrolls.
 import './lib/pageScroll'
 import './lib/coverFallback'
+import { appHistory, PageTransitionCommit } from './lib/pageTransition'
 import { AppThemeProvider } from './theme-context'
 import { AppI18nProvider } from './i18n-context'
 import { i18n, loadLocale, resolveInitialLocale } from './i18n'
@@ -149,9 +150,10 @@ createRoot(document.getElementById('root')!).render(
             one of them rendered behind it: the action worked, said so, and the reader saw nothing. */}
         <Notifications autoClose={6000} zIndex={2000} />
         <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
+          <HistoryRouter history={appHistory}>
+            <PageTransitionCommit />
             <App />
-          </BrowserRouter>
+          </HistoryRouter>
         </QueryClientProvider>
       </AppThemeProvider>
     </AppI18nProvider>

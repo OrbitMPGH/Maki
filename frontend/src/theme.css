@@ -731,6 +731,12 @@ body {
 .mantine-AppShell-main:has(.surface-frame--wide) {
   --page-gutter-end: var(--app-shell-padding);
 }
+/* Page changes cross-fade (lib/pageTransition.ts). Old and new share one timing, which keeps the
+   sidebar and header, identical on both sides, perfectly still while the content swaps. */
+::view-transition-group(root) {
+  animation-duration: 0.26s;
+  animation-timing-function: var(--ease);
+}
 /* The padding changes with the page (the rule above, the series hero's top), and Mantine animates
    it, so leaving Settings drew the next page wide and then squeezed it into its gutters. Only
    folding or unfolding the sidebar animates it now. */
