@@ -30,7 +30,7 @@
   through the series you are, and time-remaining estimates are based on comparable chapters.
 - **Reading profiles.** Per-user defaults for page fit, direction, and mode by series type, with
   per-series overrides on top.
-- **Home.** **Continue reading**, **Recently added**, **Downloading now**, **Progress**, and other
+- **Home.** **Continue reading**, **Jump back in**, **Recently added**, **You might like**, and other
   rails, drag-reorderable and switchable per user.
 - **Scrobbling.** Sends read progress to AniList, MyAnimeList, Kitsu, MangaBaka, and
   MangaUpdates, whether the reading happened in Maki, over OPDS, in KOReader, or in Kavita. Your lists on those trackers can also be

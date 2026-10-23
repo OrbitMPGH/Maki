@@ -48,7 +48,7 @@ COPY locales/ locales/
 RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages \
     dotnet restore src/Maki.Api/Maki.Api.csproj
 
-# .dockerignore excludes .git, so the version cannot be derived from a tag in here — CI computes it
+# .dockerignore excludes .git, so the version cannot be derived from a tag in here. CI computes it
 # from the ref and passes it down. A plain `docker build` gets the -dev default from
 # Directory.Build.props, which is the intended tell for an unofficial image. A declared build arg is
 # part of the cache key of every RUN after it, and every nightly passes a new version, so declare

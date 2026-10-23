@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
 import { animeResume, providerDetail, seriesDto, seriesMsw, torrentProposal } from '../../.storybook/mocks/series'
 import SeriesDetailPage from './SeriesDetailPage'
+import { monoText } from '../../.storybook/monoText'
 
 const at = (id: number, query = '') => ({ router: { path: '/series/:id', initialEntries: [`/series/${id}${query}`] } })
 
@@ -76,7 +77,7 @@ export const SelectModeBulkBar: Story = {
 export const FilesTab: Story = {
   parameters: at(1, '?tab=files'),
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText(/Bonus booklet/)).toBeVisible()
+    await expect(await canvas.findByText(monoText(/Bonus booklet/))).toBeVisible()
   },
 }
 
@@ -170,6 +171,17 @@ export const NotFound: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Series not found')).toBeVisible()
     await expect(await canvas.findByRole('link', { name: /back to library/i })).toBeVisible()
+  },
+}
+
+/** Offline, and this device holds no copy of the series: not gone, just out of reach. */
+export const OfflineNotSaved: Story = {
+  parameters: {
+    msw: seriesMsw(http.get(api('/series/:id'), () => failWith(503, 'Not available offline', 'offline.unavailable'))),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('heading', { level: 1, name: 'Not available offline' })).toBeVisible()
+    await expect(canvas.queryByText('Series not found')).toBeNull()
   },
 }
 

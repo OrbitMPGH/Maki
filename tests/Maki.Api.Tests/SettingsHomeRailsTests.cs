@@ -159,13 +159,14 @@ public sealed class SettingsHomeRailsTests : IDisposable
     }
 
     [Fact]
-    public async Task SetUi_persists_hero_flags_and_panel_order()
+    public async Task SetUi_persists_hero_flags_and_options_and_folds_a_glance_section_into_continue()
     {
         var alice = _db.SeedUser("alice");
         var requested = new SettingsController.UiSettings("library", new HomeLayoutSpec(true,
         [
-            new PageSection(HomeSections.ContinueReading, Hero: false),
-            new PageSection(HomeSections.Glance, Panels:
+            new PageSection(HomeSections.ContinueReading, Hero: false,
+                Options: new Dictionary<string, bool> { [HomeHeroOptions.NextUpBeside] = true }),
+            new PageSection(HomeSections.Glance, Enabled: false, Panels:
             [
                 new PagePanel(HomeGlancePanels.ToRead),
                 new PagePanel(HomeGlancePanels.Progress, Enabled: false),
@@ -176,16 +177,16 @@ public sealed class SettingsHomeRailsTests : IDisposable
         await Controller(alice).SetUi(requested, CancellationToken.None);
         var reread = Body(await Controller(alice).GetUi(CancellationToken.None));
 
-        Assert.False(reread.HomeLayout.Sections!.Single(s => s.Key == HomeSections.ContinueReading).Hero);
-        var glance = reread.HomeLayout.Sections!.Single(s => s.Key == HomeSections.Glance);
-        Assert.Equal(
-            [HomeGlancePanels.ToRead, HomeGlancePanels.Progress, HomeGlancePanels.Stats],
-            glance.Panels!.Select(p => p.Key));
-        Assert.False(glance.Panels!.Single(p => p.Key == HomeGlancePanels.Progress).Enabled);
+        var cont = reread.HomeLayout.Sections!.Single(s => s.Key == HomeSections.ContinueReading);
+        Assert.False(cont.Hero);
+        Assert.True(cont.Options![HomeHeroOptions.NextUpBeside]);
+        Assert.False(cont.Options[HomeHeroOptions.Glance]);
+        Assert.DoesNotContain(reread.HomeLayout.Sections!, s => s.Key == HomeSections.Glance);
+        Assert.All(reread.HomeLayout.Sections!, s => Assert.Null(s.Panels));
     }
 
     [Fact]
-    public async Task GetUi_migrates_a_stored_legacy_home_blob_into_glance()
+    public async Task GetUi_migrates_a_stored_legacy_home_blob_into_continues_glance_switch()
     {
         var alice = _db.SeedUser("alice");
         // What a pre-glance build stored: stats/continue/progress/toread as top-level sections.
@@ -196,15 +197,10 @@ public sealed class SettingsHomeRailsTests : IDisposable
 
         var keys = ui.HomeLayout.Sections!.Select(s => s.Key).ToList();
         Assert.DoesNotContain("stats", keys);
-        Assert.Contains(HomeSections.Glance, keys);
-        // The legacy key's own position (before continue) is where glance lands.
-        Assert.True(keys.IndexOf(HomeSections.Glance) < keys.IndexOf(HomeSections.ContinueReading));
+        Assert.DoesNotContain(HomeSections.Glance, keys);
 
-        var glance = ui.HomeLayout.Sections!.Single(s => s.Key == HomeSections.Glance);
-        Assert.True(glance.Enabled);
-        Assert.True(glance.Panels!.Single(p => p.Key == HomeGlancePanels.Stats).Enabled);
-        // progress/toread were never in the legacy blob: appended as missing panels, on.
-        Assert.True(glance.Panels!.Single(p => p.Key == HomeGlancePanels.Progress).Enabled);
-        Assert.True(glance.Panels!.Single(p => p.Key == HomeGlancePanels.ToRead).Enabled);
+        var cont = ui.HomeLayout.Sections!.Single(s => s.Key == HomeSections.ContinueReading);
+        Assert.True(cont.Options![HomeHeroOptions.Glance]);
+        Assert.Null(cont.Panels);
     }
 }

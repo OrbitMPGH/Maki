@@ -6,7 +6,7 @@ import { api } from '../../../.storybook/mocks/api'
 import { PushNotificationsSection } from './PushNotificationsSection'
 
 // Whether the card shows its controls or a fallback depends on the browser the story runs in, so
-// the stories assert on what is stable: the heading, and the filter once the controls are there.
+// the stories assert on what is stable: the heading. Which events push is the Notifications table.
 const meta = {
   component: PushNotificationsSection,
   tags: ['ai-generated'],
@@ -33,7 +33,7 @@ export const Reader: Story = {
   parameters: { auth: 'reader' },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Push notifications' })).toBeVisible()
-    await expect(canvas.queryByRole('checkbox', { name: 'Health issue' })).toBeNull()
+    await expect(canvas.queryByRole('checkbox')).toBeNull()
   },
 }
 

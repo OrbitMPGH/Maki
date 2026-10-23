@@ -3,7 +3,7 @@ import { useEffect, useReducer, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
-import { Button, Checkbox, Group, MultiSelect, Select, Stack, Switch, Text } from '@mantine/core'
+import { Button, Checkbox, Group, MultiSelect, Select, SimpleGrid, Stack, Switch, Text } from '@mantine/core'
 import { IconAdjustments } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { SettingsSection } from './SettingsSection'
@@ -287,72 +287,57 @@ export function DownloadQueueSection() {
         )
       }}
     >
-      <SettingsNumberInput
-        label={t`Concurrent chapter downloads`}
-        description={t`More isn't always faster: tripping a site's rate limit pauses that source for a while.`}
-        min={1}
-        max={8}
-        value={concurrentChapters}
-        onChange={setConcurrentChapters}
-        w={220}
-        mb="md"
-      />
-      <Text fw={500} size="sm" mb={4}>
-        <Trans>Retries</Trans>
-      </Text>
-      <SettingsHelp mb="xs">
-        <Trans>
-          Failed downloads retry on a growing backoff (5m, 10m, 20m, ...). 0 turns automatic retry
-          off. Manual retries from Activity don't count.
-        </Trans>
-      </SettingsHelp>
-      <SettingsNumberInput
-        label={t`Retry a failed download up to (attempts)`}
-        min={0}
-        max={20}
-        value={retryAttempts}
-        onChange={setRetryAttempts}
-        w={220}
-        mb="md"
-      />
-      <Text fw={500} size="sm" mb={4}>
-        <Trans>Stuck downloads</Trans>
-      </Text>
-      <SettingsHelp mb="xs">
-        <Trans>
-          A chapter that never finishes holds a worker and can stall the whole queue. Past this
-          many minutes it is marked failed and retried like any other failure. 0 means no limit.
-        </Trans>
-      </SettingsHelp>
-      <SettingsNumberInput
-        label={t`Give up on a chapter after (minutes)`}
-        min={0}
-        max={1440}
-        value={itemTimeoutMinutes}
-        onChange={setItemTimeoutMinutes}
-        settle={clampItemTimeout}
-        w={220}
-        mb="md"
-      />
-      <Text fw={500} size="sm" mb={4}>
-        <Trans>Bulk new chapters</Trans>
-      </Text>
-      <SettingsHelp mb="xs">
-        <Trans>
-          When a refresh finds more new chapters for a series than this, none of them are queued.
-          That usually means a source renumbered or backfilled its list, not a real release. They
-          stay wanted, so you can download them from the series page. 0 means always queue.
-        </Trans>
-      </SettingsHelp>
-      <SettingsNumberInput
-        label={t`Don't auto-queue more than (chapters)`}
-        min={0}
-        max={1000}
-        value={bulkHoldThreshold}
-        onChange={setBulkHoldThreshold}
-        w={220}
-        mb="md"
-      />
+      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" verticalSpacing="lg" mb="lg">
+        <SettingsNumberInput
+          label={t`Concurrent chapter downloads`}
+          description={t`More isn't always faster: tripping a site's rate limit pauses that source for a while.`}
+          min={1}
+          max={8}
+          value={concurrentChapters}
+          onChange={setConcurrentChapters}
+        />
+        <SettingsNumberInput
+          label={t`Retry a failed download up to (attempts)`}
+          description={
+            <Trans>
+              Failed downloads retry on a growing backoff (5m, 10m, 20m, ...). 0 turns automatic retry
+              off. Manual retries from Activity don't count.
+            </Trans>
+          }
+          min={0}
+          max={20}
+          value={retryAttempts}
+          onChange={setRetryAttempts}
+        />
+        <SettingsNumberInput
+          label={t`Give up on a chapter after (minutes)`}
+          description={
+            <Trans>
+              A chapter that never finishes holds a worker and can stall the whole queue. Past this
+              many minutes it is marked failed and retried like any other failure. 0 means no limit.
+            </Trans>
+          }
+          min={0}
+          max={1440}
+          value={itemTimeoutMinutes}
+          onChange={setItemTimeoutMinutes}
+          settle={clampItemTimeout}
+        />
+        <SettingsNumberInput
+          label={t`Don't auto-queue more than (chapters)`}
+          description={
+            <Trans>
+              When a refresh finds more new chapters for a series than this, none of them are queued.
+              That usually means a source renumbered or backfilled its list, not a real release. They
+              stay wanted, so you can download them from the series page. 0 means always queue.
+            </Trans>
+          }
+          min={0}
+          max={1000}
+          value={bulkHoldThreshold}
+          onChange={setBulkHoldThreshold}
+        />
+      </SimpleGrid>
       <Switch
         label={t`Check quiet series less often`}
         description={t`A series is checked every 30 minutes for a few hours after a new chapter, every 2 hours while chapters keep coming, every 6 hours after two quiet weeks and once a day after two quiet months. A new chapter puts it straight back on the fast checks. Off checks every series every 30 minutes.`}
@@ -412,7 +397,7 @@ export function SmartDownloadSection() {
         )
       }
     >
-      <Group align="flex-end">
+      <Group align="flex-end" className="settings-field-row">
         <SettingsNumberInput
           label={t`Fetch more when unread chapters drop to`}
           description={t`At this many or fewer downloaded chapters ahead of where you are, Maki fetches more.`}
@@ -420,7 +405,6 @@ export function SmartDownloadSection() {
           max={10}
           value={smartDownloadChaptersLeft}
           onChange={setSmartDownloadChaptersLeft}
-          w={220}
         />
         <SettingsNumberInput
           label={t`Chapters to fetch each time`}
@@ -428,7 +412,6 @@ export function SmartDownloadSection() {
           max={20}
           value={smartDownloadChapters}
           onChange={setSmartDownloadChapters}
-          w={220}
         />
       </Group>
     </SettingsSection>
@@ -489,7 +472,6 @@ export function ReadFileCleanupSection() {
           max={365}
           value={days}
           onChange={setDays}
-          w={220}
         />
         <Switch
           label={t`Keep each reader's last read chapter`}
@@ -706,7 +688,6 @@ export function UpgradeScanSection() {
         max={365}
         value={trashRetentionDays}
         onChange={setTrashRetentionDays}
-        w={260}
         mb="md"
       />
       <Switch

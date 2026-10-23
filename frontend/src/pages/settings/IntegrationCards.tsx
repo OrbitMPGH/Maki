@@ -203,7 +203,6 @@ export function ScrobbleSection() {
         {isAdmin && (
           <SettingsNumberInput
             mt="xs"
-            w={220}
             label={t`Sync interval (minutes)`}
             description={t`How often progress and ratings are pushed, from both Kavita and the built-in reader.`}
             min={5}
@@ -412,9 +411,14 @@ function ImportListInstanceControls({ form: { data, form, set } }: { form: Retur
  */
 function KavitaOwnerField() {
   const { t } = useLingui()
+  const { me, singleUser } = useAuth()
   const { data: bound } = useKavitaUser()
   const { data: users } = useUsers()
   const save = useSetKavitaUser()
+
+  // With one account there is nobody else to attribute the reading to. Still shown when it points
+  // at some other, now disabled, account, since that is a setting worth being able to clear.
+  if (singleUser && (bound?.userId == null || bound.userId === me?.id)) return null
 
   const options = (users ?? [])
     .filter((u) => !u.disabled && !u.pendingSetup)

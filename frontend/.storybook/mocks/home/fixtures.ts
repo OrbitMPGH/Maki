@@ -1,4 +1,4 @@
-import { HOME_GLANCE_PANELS, HOME_HERO_DEFAULTS, HOME_SECTIONS } from '../../../src/api/hooks'
+import { HOME_HERO_DEFAULTS, HOME_SECTIONS, HOME_SECTION_OPTIONS } from '../../../src/api/hooks'
 import type {
   HomeReadingItem,
   HomeRecentSeriesItem,
@@ -10,7 +10,7 @@ import type {
 } from '../../../src/api/hooks'
 import type { CustomRail, CustomRailItems } from '../../../src/api/customRails'
 import type { HomeAnimeResumeItem, HomeAnimeResumePage } from '../../../src/api/animeResume'
-import type { QueueHistoryDto, QueueItemDto, SeriesDto } from '../../../src/api/types'
+import type { SeriesDto } from '../../../src/api/types'
 import { cover, daysAgo, hoursAgo, minutesAgo } from '../api'
 import { catalogue, uiSettings, type CatalogueEntry } from '../shared'
 
@@ -312,68 +312,6 @@ export const animeResumeAll: HomeAnimeResumeItem[] = [
 export const animeResumePage: HomeAnimeResumePage = { items: animeResumeItems, total: animeResumeAll.length }
 export const animeResumeAllPage: HomeAnimeResumePage = { items: animeResumeAll, total: animeResumeAll.length }
 
-let queueId = 100
-export function queueItem(
-  seriesId: number,
-  chapter: number,
-  status: string,
-  overrides: Partial<QueueItemDto> = {},
-): QueueItemDto {
-  const entry = catalogue.find((s) => s.id === seriesId)!
-  queueId += 1
-  return {
-    id: queueId,
-    chapterId: seriesId * 1000 + chapter,
-    seriesId,
-    seriesTitle: entry.title,
-    releaseTitle: null,
-    chapterTitle: null,
-    chapterVolume: null,
-    chapterNumber: String(chapter),
-    sourceName: entry.source,
-    status,
-    pagesTotal: 24,
-    pagesDone: 0,
-    retryCount: 0,
-    nextAttempt: null,
-    errorKey: null,
-    errorParams: null,
-    errorMessage: null,
-    queuedAt: minutesAgo(12),
-    completedAt: null,
-    origin: 'monitorrefresh',
-    upgrade: null,
-    seriesCoverUrl: `/api/v1/mediacover/${seriesId}/cover.jpg`,
-    ...overrides,
-  }
-}
-
-export const downloadingItems: QueueItemDto[] = [
-  queueItem(3, 61, 'Downloading', { pagesTotal: 28, pagesDone: 17 }),
-  queueItem(3, 62, 'Downloading', { pagesTotal: 31, pagesDone: 4 }),
-  queueItem(9, 23, 'FetchingPages'),
-  queueItem(6, 204, 'Queued'),
-  queueItem(6, 205, 'Queued'),
-  queueItem(1, 143, 'Importing', { pagesTotal: 24, pagesDone: 24 }),
-  queueItem(11, 58, 'RateLimited', { nextAttempt: minutesAgo(-4) }),
-  queueItem(8, 1, 'Queued', {
-    releaseTitle: '[Group] Bluefin Boys Complete Collection v01-v32 [Digital] [1080p] [Dual Audio] [Batch]',
-    chapterNumber: null,
-  }),
-]
-
-export const failedItem = queueItem(12, 76, 'Failed', {
-  errorKey: 'error.download.noMoreSources',
-  completedAt: minutesAgo(90),
-})
-
-export const queuePage = (items: QueueItemDto[]): QueueHistoryDto => ({
-  items,
-  total: items.length,
-  page: 1,
-  pageSize: 200,
-})
-
 export const progressSummary: ProgressSummary = {
   enabled: true,
   showStreaks: true,
@@ -387,7 +325,7 @@ export const progressSummary: ProgressSummary = {
   earned: 14,
   total: 38,
   recent: [],
-  goals: [],
+  goals: [{ id: 1, period: 'Week', metric: 'Chapters', target: 20, progress: 14 }],
 }
 
 export const customRails: CustomRail[] = [
@@ -443,23 +381,24 @@ export interface HomeUiOptions {
   rails?: number[]
   /** Overrides for the hero switch of the reading sections. */
   hero?: { continue?: boolean; jumpback?: boolean }
-  /** Glance panels to switch off. */
-  panelsOff?: string[]
   /** A different section order; unlisted keys keep their shipping order after these. */
   order?: string[]
+  /** Overrides for the reading sections' own switches, e.g. `{ continue: { glance: false } }`. */
+  options?: Record<string, Record<string, boolean>>
 }
 
 export function homeUi(options: HomeUiOptions = {}): UiSettings {
-  const { off = [], rails = [], hero = {}, panelsOff = [], order = [] } = options
+  const { off = [], rails = [], hero = {}, order = [], options: switches = {} } = options
   const keys = [...order, ...HOME_SECTIONS.filter((k) => !order.includes(k))]
   const sections = [
     ...keys.map((key) => ({
       key,
       enabled: !off.includes(key),
       hero: key in HOME_HERO_DEFAULTS ? (hero[key as 'continue' | 'jumpback'] ?? HOME_HERO_DEFAULTS[key]) : null,
-      panels: key === 'glance' ? HOME_GLANCE_PANELS.map((p) => ({ key: p, enabled: !panelsOff.includes(p) })) : null,
+      panels: null,
+      options: key in HOME_SECTION_OPTIONS ? { ...HOME_SECTION_OPTIONS[key], ...(switches[key] ?? {}) } : null,
     })),
-    ...rails.map((id) => ({ key: `rail:${id}`, enabled: true, hero: null, panels: null })),
+    ...rails.map((id) => ({ key: `rail:${id}`, enabled: true, hero: null, panels: null, options: null })),
   ] as HomeSection[]
   return { ...uiSettings, homeLayout: { enabled: true, sections } }
 }

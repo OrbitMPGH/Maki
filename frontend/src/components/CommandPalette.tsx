@@ -19,6 +19,12 @@ interface Props {
   navItems: NavItem[]
 }
 
+interface ModalProps extends Props {
+  opened: boolean
+  onOpen: () => void
+  onClose: () => void
+}
+
 type Result =
   | { kind: 'nav'; key: string; label: string; sub: string; icon: NavItem['icon']; path: string }
   | { kind: 'setting'; key: string; label: string; sub: string; path: string }
@@ -27,8 +33,47 @@ type Result =
 
 const MAX_SERIES_RESULTS = 8
 
+/** The search pill. `icon` is the bare circle the phone's top bar has room for. */
+export function CommandPaletteTrigger({
+  onOpen,
+  variant = 'bar',
+}: {
+  onOpen: () => void
+  variant?: 'bar' | 'icon'
+}) {
+  const isMac = useOs() === 'macos'
+  return (
+    <button
+      type="button"
+      className={
+        variant === 'icon'
+          ? 'command-palette-trigger command-palette-trigger-icon'
+          : 'command-palette-trigger'
+      }
+      onClick={onOpen}
+      aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'}
+    >
+      <IconSearch size={16} stroke={1.8} />
+      <span className="command-palette-trigger-label">
+        <Trans>Search</Trans>
+      </span>
+      {/* The key names themselves, not words: the same two keys whatever the reader speaks. */}
+      <span className="command-palette-trigger-kbd">{isMac ? '⌘ K' : 'Ctrl K'}</span>
+    </button>
+  )
+}
+
 export default function CommandPalette({ navItems }: Props) {
   const [opened, { open, close }] = useDisclosure(false)
+  return (
+    <>
+      <CommandPaletteTrigger onOpen={open} />
+      <CommandPaletteModal navItems={navItems} opened={opened} onOpen={open} onClose={close} />
+    </>
+  )
+}
+
+export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: close }: ModalProps) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(0)
   const navigate = useNavigate()
@@ -44,7 +89,6 @@ export default function CommandPalette({ navItems }: Props) {
   const keyboardMoved = useRef(false)
   const listId = useId()
   const optionId = (i: number) => `${listId}-option-${i}`
-  const isMac = useOs() === 'macos'
   const visibleSettings = useVisibleSettingsEntries()
 
   useHotkeys([['mod+K', open]])
@@ -175,20 +219,6 @@ export default function CommandPalette({ navItems }: Props) {
 
   return (
     <>
-      <button
-        type="button"
-        className="command-palette-trigger"
-        onClick={open}
-        aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'}
-      >
-        <IconSearch size={16} stroke={1.8} />
-        <span className="command-palette-trigger-label">
-          <Trans>Search</Trans>
-        </span>
-        {/* The key names themselves, not words: the same two keys whatever the reader speaks. */}
-        <span className="command-palette-trigger-kbd">{isMac ? '⌘ K' : 'Ctrl K'}</span>
-      </button>
-
       {/* Explicit zIndex: opened globally via the mod+K hotkey, which stays live even while
           another modal is open, so this must render above the highest zIndex any other modal
           in the app uses (DiscoverDetailModal's 1000/1001). */}

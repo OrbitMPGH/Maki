@@ -2,20 +2,18 @@ import { http, HttpResponse, type HttpHandler } from 'msw'
 import type { CustomRail, CustomRailSpec } from '../../src/api/customRails'
 import type { HomeReadingResponse, UiSettings } from '../../src/api/hooks'
 import { api } from './api'
+import { heatmapDays } from './insights/stats'
 import {
   animeResumeAllPage,
   animeResumePage,
   catalogueItem,
   continueReading,
   customRails,
-  downloadingItems,
-  failedItem,
   homeUi,
   jumpBackIn,
   librarySeries,
   popularPicks,
   progressSummary,
-  queuePage,
   railItems,
   recentlyAdded,
   recommendationsResult,
@@ -41,6 +39,7 @@ export const homeHandlers: HttpHandler[] = [
     return HttpResponse.json(limit > 100 ? animeResumeAllPage : animeResumePage)
   }),
   http.get(api('/progress/summary'), () => HttpResponse.json(progressSummary)),
+  http.get(api('/progress/heatmap'), () => HttpResponse.json(heatmapDays)),
 
   http.get(api('/rails'), ({ request }) => {
     const placement = new URL(request.url).searchParams.get('placement')
@@ -72,7 +71,6 @@ export const homeHandlers: HttpHandler[] = [
  */
 export const homePageHandlers: HttpHandler[] = [
   http.get(api('/series'), () => HttpResponse.json(librarySeries)),
-  http.get(api('/queue'), () => HttpResponse.json(queuePage([...downloadingItems.slice(0, 3), failedItem]))),
   http.get(api('/reader/used'), () => HttpResponse.json({ used: true })),
   http.get(api('/rootfolder'), () =>
     HttpResponse.json([{ id: 1, path: '/library', freeSpace: 412_000_000_000, accessible: true }]),

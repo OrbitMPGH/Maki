@@ -26,13 +26,14 @@ export const Short: Story = {
   },
 }
 
-export const LongCollapsedThenExpanded: Story = {
+/** Long help is shown whole: no clamp and no More link. */
+export const Long: Story = {
   args: {
     children:
       'Series metadata comes from a local copy of the catalogue that is refreshed from the nightly dump. It lets search and imports skip the rate limit of the remote API, and Discover needs it. The remote API is used until the first download finishes, so a fresh install works straight away but searches a little slower until the copy lands.',
   },
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'More' }))
-    await expect(await canvas.findByRole('button', { name: 'Less' })).toBeVisible()
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/searches a little slower until the copy lands/)).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: 'More' })).toBeNull()
   },
 }

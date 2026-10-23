@@ -244,14 +244,19 @@ public class KitsuTrackerTests
             });
 
         var kitsu = Build(handler);
-        await Assert.ThrowsAsync<TrackerException>(() => kitsu.GetEntryAsync(MakiUserId, "8"));
+        var first = await Assert.ThrowsAsync<TrackerBackOffException>(() => kitsu.GetEntryAsync(MakiUserId, "8"));
+        Assert.DoesNotMatch(@"\d+ (min|h)|backing off for|another", first.Message);
+        Assert.True(first.Until > DateTimeOffset.UtcNow);
+        Assert.Equal(first.Until, kitsu.BackOffUntil);
 
         var afterFailure = handler.Requests.Count;
 
         // The old code slept 30s and retried the same blocked IP. Now the tracker drops out of the
         // active set entirely and costs the rest of the tick nothing.
         Assert.False(await kitsu.AuthenticatedAsync(MakiUserId));
-        await Assert.ThrowsAsync<TrackerException>(() => kitsu.GetEntryAsync(MakiUserId, "8"));
+        var blocked = await Assert.ThrowsAsync<TrackerBackOffException>(() => kitsu.GetEntryAsync(MakiUserId, "8"));
+        Assert.DoesNotMatch(@"\d+ (min|h)|backing off for|another", blocked.Message);
+        Assert.Equal(first.Until, blocked.Until);
         Assert.Equal(afterFailure, handler.Requests.Count);
     }
 
@@ -270,7 +275,7 @@ public class KitsuTrackerTests
             });
 
         var kitsu = Build(handler);
-        await Assert.ThrowsAsync<TrackerException>(() => kitsu.GetEntryAsync(MakiUserId, "8"));
+        await Assert.ThrowsAnyAsync<TrackerException>(() => kitsu.GetEntryAsync(MakiUserId, "8"));
         Assert.False(await kitsu.AuthenticatedAsync(MakiUserId));
     }
 
@@ -290,7 +295,7 @@ public class KitsuTrackerTests
 
         var kitsu = Build(handler);
         var started = DateTime.UtcNow;
-        await Assert.ThrowsAsync<TrackerException>(() => kitsu.GetEntryAsync(MakiUserId, "8"));
+        await Assert.ThrowsAnyAsync<TrackerException>(() => kitsu.GetEntryAsync(MakiUserId, "8"));
 
         Assert.True(DateTime.UtcNow - started < TimeSpan.FromSeconds(5));
         Assert.False(await kitsu.AuthenticatedAsync(MakiUserId));

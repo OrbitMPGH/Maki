@@ -45,6 +45,8 @@ export const DownloadingAndBehind: Story = {
   args: { series: ironPetal },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('60 of 88')).toBeVisible()
+    // The download holds the corner until it ends; the read ring waits.
+    await expect(canvas.queryByRole('img', { name: /downloaded read$/ })).toBeNull()
   },
 }
 
@@ -52,6 +54,7 @@ export const NotMonitored: Story = {
   args: { series: neon },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('img', { name: 'Not monitored' })).toBeInTheDocument()
+    await expect(await canvas.findByRole('img', { name: /, not monitored$/ })).toHaveAttribute('data-unmonitored')
   },
 }
 
@@ -93,11 +96,36 @@ export const NoChaptersListed: Story = {
 export const SelectMode: Story = {
   args: { selectMode: true },
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('link'))
+    const card = await canvas.findByRole('checkbox')
+    await expect(card).toHaveAttribute('aria-checked', 'false')
+    await userEvent.click(card)
     await waitFor(() => expect(args.onToggle).toHaveBeenCalledWith(1))
+    ;(args.onToggle as ReturnType<typeof fn>).mockClear()
+    card.focus()
+    await userEvent.keyboard(' ')
+    await waitFor(() => expect(args.onToggle).toHaveBeenCalledTimes(1))
+    await expect(args.onToggle).toHaveBeenCalledWith(1)
   },
 }
 
 export const Selected: Story = {
   args: { selectMode: true, selected: true },
+}
+
+/** Offline, with chapters saved on this device: a device mark joins the left corner. */
+export const SavedOffline: Story = {
+  args: { offline: 'saved' },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('img', { name: 'Saved on this device' })).toBeInTheDocument()
+  },
+}
+
+/** Offline, and this device holds no copy of the series page: dimmed, and the count row says why. */
+export const UnavailableOffline: Story = {
+  args: { offline: 'unavailable' },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Not available offline')).toBeVisible()
+    await expect(canvas.queryByText('11 new')).toBeNull()
+    await waitFor(() => expect(canvas.getByRole('link')).toHaveAttribute('data-offline', 'unavailable'))
+  },
 }

@@ -9,10 +9,10 @@ import { scrollBehavior } from '../../lib/scrollBehavior'
 /**
  * Whichever card crosses a band of the viewport from `top` px down, `bottom` short of the end. With
  * none crossing it (a gap between cards, or the page above the first), the last card to start above
- * the band's top, or else the first card.
+ * the band's top, or else `beforeFirst`.
  */
-function useActiveEntry(entries: SettingsEntry[], top: number, bottom: () => string) {
-  const [active, setActive] = useState(entries[0]?.id)
+function useActiveEntry(entries: SettingsEntry[], top: number, bottom: () => string, beforeFirst: string | undefined) {
+  const [active, setActive] = useState(beforeFirst)
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight)
 
   useEffect(() => {
@@ -36,7 +36,7 @@ function useActiveEntry(entries: SettingsEntry[], top: number, bottom: () => str
         const first = entries.find((e) => visible.has(e.id))
         if (first) return setActive(first.id)
         const above = elements.filter((el) => el.getBoundingClientRect().top < top).at(-1)
-        setActive(above ? above.id.slice('setting-'.length) : entries[0]?.id)
+        setActive(above ? above.id.slice('setting-'.length) : beforeFirst)
       },
       { rootMargin: `-${top}px 0px ${bottom()} 0px` },
     )
@@ -61,7 +61,7 @@ export function SettingsIndex({ entries }: { entries: SettingsEntry[] }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
   // A band across the upper part of the screen: the card crossing it is the one being read.
-  const [active, setActive] = useActiveEntry(entries, 80, () => '-55%')
+  const [active, setActive] = useActiveEntry(entries, 80, () => '-55%', entries[0]?.id)
 
   if (entries.length < 2) return null
 
@@ -93,10 +93,11 @@ export function SettingsJump({ entries }: { entries: SettingsEntry[] }) {
   const renderLabel = useLabel()
   // A thin line just under the header and this bar: a tall band named the card above the one being
   // read for as long as its last few lines were still on screen.
-  const [active, setActive] = useActiveEntry(entries, 130, () => `-${Math.max(0, window.innerHeight - 150)}px`)
+  // Above the first card the bar names none: that card's own heading is on screen just below it.
+  const [active, setActive] = useActiveEntry(entries, 130, () => `-${Math.max(0, window.innerHeight - 150)}px`, undefined)
 
   if (entries.length < 2) return null
-  const current = entries.find((e) => e.id === active) ?? entries[0]
+  const current = entries.find((e) => e.id === active)
 
   return (
     <nav className="settings-jump" aria-label={t`Sections on this tab`}>
@@ -104,7 +105,7 @@ export function SettingsJump({ entries }: { entries: SettingsEntry[] }) {
         <Menu.Target>
           <UnstyledButton className="settings-jump-button">
             <IconListDetails size={16} className="settings-jump-icon" aria-hidden />
-            <span className="settings-jump-current">{renderLabel(current.title)}</span>
+            <span className="settings-jump-current" data-none={current ? undefined : true}>{current ? renderLabel(current.title) : t`Jump to a section`}</span>
             <IconChevronDown size={16} className="settings-jump-chevron" aria-hidden />
           </UnstyledButton>
         </Menu.Target>
@@ -112,8 +113,8 @@ export function SettingsJump({ entries }: { entries: SettingsEntry[] }) {
           {entries.map((e) => (
             <Menu.Item
               key={e.id}
-              aria-current={e.id === current.id ? 'location' : undefined}
-              rightSection={e.id === current.id ? <IconCheck size={14} aria-hidden /> : undefined}
+              aria-current={e.id === current?.id ? 'location' : undefined}
+              rightSection={e.id === current?.id ? <IconCheck size={14} aria-hidden /> : undefined}
               onClick={() => {
                 jumpTo(e)
                 setActive(e.id)

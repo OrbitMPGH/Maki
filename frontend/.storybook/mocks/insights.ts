@@ -10,6 +10,7 @@ import {
   insightsFor,
   leaderboard,
   libraryFor,
+  libraryGrowthFor,
   progressSettings,
   progressSummaryRich,
   standingFor,
@@ -45,6 +46,12 @@ export const standingHandler = (kind: StatsKind = 'rich') =>
 
 export const libraryHandler = (kind: 'rich' | 'empty' = 'rich') =>
   http.get(api('/stats/library'), () => HttpResponse.json(libraryFor(kind)))
+
+export const libraryGrowthHandler = (kind: 'rich' | 'empty' = 'rich') =>
+  http.get(api('/stats/library/growth'), ({ request }) => {
+    const { from, to } = range(request)
+    return HttpResponse.json(libraryGrowthFor(from, to, kind))
+  })
 
 export const yearsHandler = (years: number[] = [2024, 2025, 2026]) =>
   http.get(api('/stats/years'), () => HttpResponse.json(years))
@@ -119,6 +126,7 @@ export const insightsHandlers: HttpHandler[] = [
   insightsHandler(),
   standingHandler(),
   libraryHandler(),
+  libraryGrowthHandler(),
 
   http.get(api('/progress/achievements'), () => HttpResponse.json(achievements)),
   http.get(api('/progress/heatmap'), () => HttpResponse.json(heatmapDays)),

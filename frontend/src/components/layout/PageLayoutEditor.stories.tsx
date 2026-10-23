@@ -35,7 +35,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Editing layout')).toBeVisible()
-    await expect(await canvas.findByRole('button', { name: /Move At a glance/ })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /Move Jump back in/ })).toBeVisible()
     await expect(await canvas.findByText('Unread favourites')).toBeVisible()
     await expect(await canvas.findByText('Hidden')).toBeVisible()
   },
@@ -52,10 +52,10 @@ export const OpenSectionProperties: Story = {
 
 export const KeyboardReorder: Story = {
   play: async ({ canvas, userEvent }) => {
-    const grip = await canvas.findByRole('button', { name: 'Move At a glance' })
+    const grip = await canvas.findByRole('button', { name: 'Move Jump back in' })
     grip.focus()
     await userEvent.keyboard('{ArrowDown}')
-    await waitFor(() => expect(canvas.getByText('At a glance moved to position 2 of 12')).toBeInTheDocument())
+    await waitFor(() => expect(canvas.getByText('Jump back in moved to position 3 of 10')).toBeInTheDocument())
   },
 }
 

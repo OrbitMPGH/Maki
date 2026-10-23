@@ -70,6 +70,39 @@ button, input, select, textarea { font: inherit; }
 }
 .mk-badge[data-variant='filled'] { color: var(--primary-on); background: var(--tone, var(--primary)); }
 
+/* --- CountIndicator (Mantine Indicator in the app) ---------------------------- */
+.mk-count-host {
+  position: relative;
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  color: var(--neutral);
+}
+.mk-count-host > svg { width: 19px; height: 19px; }
+.mk-count {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  box-sizing: border-box;
+  display: inline-grid;
+  min-width: 16px;
+  height: 16px;
+  place-items: center;
+  padding-inline: 2px;
+  border: 2px solid var(--app-bg);
+  border-radius: var(--radius-pill);
+  transform: translate(50%, -50%);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary-on);
+  background: var(--primary);
+}
+.mk-count[data-tone='warn'] { color: var(--warn-on); background: var(--warn); }
+.mk-count[data-tone='danger'] { color: var(--danger-on); background: var(--danger); }
+
 /* --- PageHeader (Mantine Group, Title and Text in the app) ----------------- */
 .page-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; }
 .page-header-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }

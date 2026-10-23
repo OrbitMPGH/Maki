@@ -28,6 +28,7 @@ export function SectionProperties({
   def,
   rail,
   panelHint,
+  optionHint,
   onChange,
   onMove,
   onClose,
@@ -39,6 +40,8 @@ export function SectionProperties({
   def: SectionDef | undefined
   rail: CustomRail | undefined
   panelHint?: (sectionKey: string, panelKey: string) => MessageDescriptor | null
+  /** A hint under one option's switch, e.g. why it would show nothing right now. */
+  optionHint?: (sectionKey: string, optionKey: string) => MessageDescriptor | null
   onChange: (patch: Partial<PageSection>) => void
   onMove: (to: number) => void
   onClose: () => void
@@ -75,11 +78,30 @@ export function SectionProperties({
             {def?.hero && (
               <Switch
                 label={t`Lead with a hero`}
-                description={t`Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row.`}
+                description={t`Show the most recent series as a large card, with the rest in a tray of posters under it, instead of a plain row.`}
                 checked={section.hero ?? false}
                 onChange={(e) => onChange({ hero: e.currentTarget.checked })}
               />
             )}
+
+            {def?.options?.map((option) => {
+              const hint = optionHint?.(section.key, option.key)
+              const waits = option.hero === true && !section.hero
+              return (
+                <Switch
+                  key={option.key}
+                  label={renderLabel(option.label)}
+                  description={
+                    hint ? renderLabel(hint) : waits ? t`Needs the hero.` : option.description ? renderLabel(option.description) : undefined
+                  }
+                  disabled={waits}
+                  checked={section.options?.[option.key] ?? false}
+                  onChange={(e) =>
+                    onChange({ options: { ...(section.options ?? {}), [option.key]: e.currentTarget.checked } })
+                  }
+                />
+              )
+            })}
 
             {section.panels && def?.panels && (
               <Stack gap="xs">

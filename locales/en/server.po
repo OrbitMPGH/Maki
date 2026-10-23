@@ -1381,6 +1381,11 @@ msgstr "Something went wrong on the server. Details are in the server log."
 msgid "error.settings.unknownStartPage"
 msgstr "Unknown start page: {page}"
 
+#. Shown when an admin turns single-user mode on while a second account is still enabled.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.singleUserNeedsOneAccount"
+msgstr "Single-user mode needs exactly one enabled account. Disable or delete the others first."
+
 msgid "error.settings.unknownFolderNamingMode"
 msgstr "Unknown folder naming mode: {mode}"
 
@@ -3276,6 +3281,11 @@ msgstr "Could not read progress: {detail}"
 #: src/Maki.Api/Services/ScrobbleService.cs
 msgid "scrobble.log.matchingFailed"
 msgstr "Could not match this series: {detail}"
+
+#. {service} is the tracker's name. Stored as a key, so the sentence has no duration; the page adds the live countdown.
+#: src/Maki.Api/Services/ScrobbleService.cs
+msgid "scrobble.error.backedOff"
+msgstr "{service} is rate limiting or blocking requests, so syncing to it is paused."
 
 #. {remote} is the tracker's own id for the entry, which has since been deleted or merged there.
 #: src/Maki.Api/Services/ScrobbleService.cs

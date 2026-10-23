@@ -41,6 +41,24 @@ function coverSvg(seed: string) {
   )
 }
 
+/**
+ * The server's sign-in mosaic: 24 covers on an 8-column grid with transparent gaps, blurred as one
+ * image (SignInMosaicService), so the page treats it the same as the real WebP.
+ */
+function mosaicSvg() {
+  const [w, h, gap, cols] = [200, 300, 20, 8]
+  const tiles = Array.from({ length: 24 }, (_, i) => {
+    const hu = hue(String(i + 1))
+    const [x, y] = [(i % cols) * (w + gap), Math.floor(i / cols) * (h + gap)]
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="hsl(${hu},55%,42%)"/><circle cx="${x + 116}" cy="${y + 94}" r="50" fill="hsl(${(hu + 180) % 360},70%,72%)" opacity=".5"/>`
+  }).join('')
+  return svg(
+    `<defs><filter id="b" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="5"/></filter></defs><g filter="url(#b)">${tiles}</g>`,
+    cols * w + (cols - 1) * gap,
+    3 * h + 2 * gap,
+  )
+}
+
 function pageSvg(seed: string, n: string, titleFor: (seed: string) => string) {
   const h = hue(seed)
   const panels = [
@@ -93,6 +111,7 @@ export const imageHandlers = (titleFor: (seed: string) => string = (seed) => see
   // The real cover route, for any fixture that carries a server-shaped coverUrl.
   http.get(api('/mediacover/:id/:file'), ({ params }) => coverSvg(String(params.id))),
   http.get('/mock/cover/:seed', ({ params }) => coverSvg(String(params.seed).replace(/\.svg$/, ''))),
+  http.get(api('/signin/mosaic.webp'), () => mosaicSvg()),
   http.get('/mock/page/:seed/:n', ({ params }) => pageSvg(String(params.seed), String(params.n).replace(/\.svg$/, ''), titleFor)),
   http.get('/mock/spread/:seed/:n', ({ params }) => spreadSvg(String(params.seed), String(params.n).replace(/\.svg$/, ''), titleFor)),
   http.get('/mock/strip/:seed/:n', ({ params }) => stripSvg(String(params.seed), String(params.n).replace(/\.svg$/, ''), titleFor)),

@@ -50,7 +50,7 @@ export const AllSynced: Story = {
   parameters: {
     msw: serving({
       ...scrobble,
-      services: scrobble.services.map((s) => ({ ...s, connected: true, reviewReason: null, reviewCandidates: [], chapter: 131, volume: 14, status: 'CURRENT', syncedAt: '2026-10-19T06:00:00Z' })),
+      services: scrobble.services.map((s) => ({ ...s, connected: true, reviewReason: null, reviewCandidates: [], chapter: 131, volume: 14, status: 'reading', syncedAt: '2026-10-19T06:00:00Z' })),
     }),
   },
 }

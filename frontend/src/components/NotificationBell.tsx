@@ -3,7 +3,6 @@ import {
   Anchor,
   Box,
   Group,
-  Indicator,
   Popover,
   ScrollArea,
   Stack,
@@ -22,17 +21,18 @@ import {
   useMarkInboxRead,
   type InboxItem,
 } from '../api/inbox'
+import { CountIndicator } from './ui/CountIndicator'
 import { relativeTime } from './ui/time'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 
 /**
- * Header bell over the in-app notification inbox.
+ * Bell over the in-app notification inbox.
  * <p>
  * The badge count is its own query so it is live before anything opens the dropdown; the feed is
  * only fetched once the popover is opened, which keeps a page load to one small count request.
  */
-export function NotificationBell() {
+export function NotificationBell({ position = 'bottom-end' }: { position?: 'bottom-end' | 'top-start' }) {
   const { t } = useLingui()
   const [opened, { toggle, close }] = useDisclosure(false)
   const navigate = useNavigate()
@@ -56,9 +56,12 @@ export function NotificationBell() {
   return (
     <Popover
       width={380}
-      position="bottom-end"
+      position={position}
       withArrow
       shadow="md"
+      // The bell lives in the fixed sidebar and header. An absolute dropdown rode the page's scroll
+      // and was pulled back a frame later, so it jittered behind the bell.
+      floatingStrategy="fixed"
       opened={opened}
       onChange={toggle}
     >
@@ -68,23 +71,20 @@ export function NotificationBell() {
           withArrow
           disabled={opened}
         >
-          <Indicator
-            size={16}
-            label={count > 99 ? '99+' : count}
-            disabled={count === 0}
-            withBorder
-            className="count-indicator"
-            data-tone="brand"
-          >
+          <CountIndicator count={count}>
             <ActionIcon
               variant="subtle"
               color="var(--neutral)"
-              aria-label={t`Notifications`}
+              aria-label={
+                count > 0
+                  ? plural(count, { one: 'Notifications, # unread', other: 'Notifications, # unread' })
+                  : t`Notifications`
+              }
               onClick={toggle}
             >
               <IconBell size={19} />
             </ActionIcon>
-          </Indicator>
+          </CountIndicator>
         </Tooltip>
       </Popover.Target>
 
@@ -179,7 +179,8 @@ function NotificationRow({
 export function LevelIcon({ level }: { level: InboxItem['level'] }) {
   if (level === 'error') return <IconAlertTriangle size={15} color="var(--danger)" />
   if (level === 'warning') return <IconAlertTriangle size={15} color="var(--warn)" />
-  return <IconCircleCheck size={15} color="var(--mantine-color-brand-6)" />
+  // Neutral, not the accent: under a red-leaning accent a brand-coloured tick reads as an error.
+  return <IconCircleCheck size={15} color="var(--ink-3)" />
 }
 
 /**

@@ -136,4 +136,36 @@ public class InboxPrefsSpecTests
         Assert.Equal(SeriesNotificationMode.Reading, InboxPrefsSpec.Parse(saved).ResolvedSeriesDefault);
         Assert.Contains("\"seriesDefault\":\"Reading\"", saved);
     }
+
+    [Fact]
+    public void Backups_and_source_matches_default_off()
+    {
+        Assert.True(InboxEventTypes.DefaultsOff(InboxEventType.BackupFinished));
+        Assert.True(InboxEventTypes.DefaultsOff(InboxEventType.SourceMatchFinished));
+        Assert.False(InboxEventTypes.DefaultsOff(InboxEventType.NewChapterAvailable));
+        Assert.False(InboxPrefsSpec.Parse(null).Wants(InboxEventType.BackupFinished));
+    }
+
+    [Fact]
+    public void A_spec_saved_before_backups_went_off_loses_its_stored_true_once()
+    {
+        var stored = """{"types":{"backupFinished":true,"levelUp":false},"toasts":true}""";
+
+        var prefs = InboxPrefsSpec.Parse(stored);
+
+        Assert.False(prefs.Wants(InboxEventType.BackupFinished));
+        Assert.False(prefs.Wants(InboxEventType.LevelUp));
+        Assert.Equal(InboxPrefsSpec.CurrentVersion, prefs.Version);
+    }
+
+    [Fact]
+    public void Turning_backups_on_after_the_one_time_flip_sticks()
+    {
+        var first = InboxPrefsSpec.Parse("""{"types":{"backupFinished":true}}""");
+        var optedIn = first with { Types = new Dictionary<string, bool>(first.Types!) { ["backupFinished"] = true } };
+
+        var reloaded = InboxPrefsSpec.Parse(InboxPrefsSpec.Serialize(optedIn));
+
+        Assert.True(reloaded.Wants(InboxEventType.BackupFinished));
+    }
 }

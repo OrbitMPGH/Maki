@@ -181,6 +181,12 @@ public class SettingsController(
         int VolumeSearchesPerRun = 10,
         int ProposalExpiryDays = 30);
     public record ReadFileCleanupSettings(bool Enabled, int Days, bool KeepLast);
+    public record SignInPageSettings(bool CoverMosaic);
+
+    /// <summary><c>SingleUser</c> is the effective mode, <c>Available</c> whether it can be on right now.</summary>
+    public record UserModeSettings(bool SingleUser, bool Available);
+
+    public record SetUserModeRequest(bool SingleUser);
     public record BackupSettings(int Retention, bool? Scheduled = null);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -1094,6 +1100,37 @@ public class SettingsController(
             ScoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true",
             AdaptiveRefresh = await AdaptiveRefreshAsync(ct)
         });
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("signin")]
+    public async Task<IActionResult> GetSignInPage(CancellationToken ct) =>
+        Ok(new SignInPageSettings(await settings.GetAsync(SettingKeys.SignInCoverMosaic, ct) == "true"));
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("signin")]
+    public async Task<IActionResult> SetSignInPage([FromBody] SignInPageSettings request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.SignInCoverMosaic, request.CoverMosaic ? "true" : "false", ct);
+        return await GetSignInPage(ct);
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("usermode")]
+    public async Task<IActionResult> GetUserMode(CancellationToken ct) => Ok(new UserModeSettings(
+        await SingleUserMode.IsOnAsync(db, settings, ct),
+        await SingleUserMode.EnabledAccountsAsync(db, ct) <= 1));
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("usermode")]
+    public async Task<IActionResult> SetUserMode([FromBody] SetUserModeRequest request, CancellationToken ct)
+    {
+        if (request.SingleUser && await SingleUserMode.EnabledAccountsAsync(db, ct) > 1)
+        {
+            return this.Fail(localizer, "error.settings.singleUserNeedsOneAccount");
+        }
+        await settings.SetAsync(SettingKeys.SingleUserMode, request.SingleUser ? "true" : "false", ct);
+        return await GetUserMode(ct);
     }
 
     [Authorize(Policy = Policies.Admin)]

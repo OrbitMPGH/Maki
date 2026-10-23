@@ -7,6 +7,7 @@ import type {
   HeatmapDay,
   LeaderboardRow,
   LibraryComposition,
+  LibraryGrowth,
   ProgressSettings,
   ProgressSummary,
   ReadingBehaviour,
@@ -397,6 +398,36 @@ export const sourceReliability = [
   { name: 'torrent', completed: 4, failed: 0, medianSecondsToComplete: 1260 },
 ]
 
+/** A point per day up to 62 days, else per month, ending at `to`, like the server. */
+export function libraryGrowthFor(from: string, to: string, kind: 'rich' | 'empty'): LibraryGrowth[] {
+  if (kind === 'empty') return []
+  const start = new Date(`${from}T00:00:00`)
+  const end = new Date(`${to}T00:00:00`)
+  const byDay = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1 <= 62
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const points: LibraryGrowth[] = []
+  let series = 40
+  let bytes = 9_000_000_000
+  const cursor = byDay ? start : new Date(start.getFullYear(), start.getMonth(), 1)
+  for (let i = 0; cursor <= end; i++) {
+    const seriesAdded = byDay ? (noise(i) > 0.8 ? 1 : 0) : 3 + Math.floor(noise(i) * 9)
+    const bytesAdded = Math.round((byDay ? 0.05 : 1.2) * (0.4 + noise(i + 3) * 1.6) * 1_000_000_000)
+    series += seriesAdded
+    bytes += bytesAdded
+    const month = `${cursor.getFullYear()}-${pad(cursor.getMonth() + 1)}`
+    points.push({
+      bucket: byDay ? `${month}-${pad(cursor.getDate())}` : month,
+      seriesAdded,
+      cumulative: series,
+      bytesAdded,
+      cumulativeBytes: bytes,
+    })
+    if (byDay) cursor.setDate(cursor.getDate() + 1)
+    else cursor.setMonth(cursor.getMonth() + 1)
+  }
+  return points
+}
+
 export function libraryFor(kind: 'rich' | 'empty'): LibraryComposition {
   if (kind === 'empty') {
     return {
@@ -405,7 +436,6 @@ export function libraryFor(kind: 'rich' | 'empty'): LibraryComposition {
       byStatus: [],
       bySource: [],
       topGenres: [],
-      growth: [],
       largest: [],
       byContentRating: [],
       sourceReliability: [],
@@ -436,11 +466,6 @@ export function libraryFor(kind: 'rich' | 'empty'): LibraryComposition {
       { name: 'Drama', count: 18 },
       { name: 'Comedy', count: 15 },
     ],
-    growth: Array.from({ length: 12 }, (_, i) => ({
-      bucket: `${2025 + Math.floor((i + 10) / 12)}-${String(((i + 9) % 12) + 1).padStart(2, '0')}`,
-      seriesAdded: 3 + Math.floor(noise(i) * 9),
-      cumulative: 40 + i * 5 + Math.floor(noise(i) * 4),
-    })),
     largest: [
       { ...ref(8), files: 210, bytes: 6_400_000_000 },
       { ...ref(6), files: 203, bytes: 5_100_000_000 },

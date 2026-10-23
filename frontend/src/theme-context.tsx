@@ -47,7 +47,22 @@ export const BACKGROUNDS: BackgroundOption[] = [
   { id: 'night', label: msg`Night`, scheme: 'dark', ground: 'night', swatch: () => '#161922' },
   { id: 'charcoal', label: msg`Charcoal`, scheme: 'dark', ground: 'charcoal', swatch: () => '#181818' },
   { id: 'moss', label: msg`Moss`, scheme: 'dark', ground: 'moss', swatch: () => '#1b1e1b' },
+  {
+    id: 'cover',
+    label: msg`Cover tint`,
+    scheme: 'dark',
+    ground: 'cover',
+    swatch: () => 'linear-gradient(135deg, #3a2420 0 33%, #1f2a3a 33% 66%, #23331f 66%)',
+  },
+  { id: 'oled', label: msg`OLED black`, scheme: 'dark', ground: 'ink', swatch: () => '#000000' },
   { id: 'light', label: msg`Light`, scheme: 'light', ground: 'tinted', swatch: () => '#f4f5fa' },
+  {
+    id: 'paper',
+    label: msg`Paper`,
+    scheme: 'light',
+    ground: 'paper',
+    swatch: (accentHex) => `color-mix(in srgb, #efe9dd 96%, ${accentHex})`,
+  },
   {
     id: 'system',
     label: msg`Match system`,
@@ -63,6 +78,9 @@ export const ACCENTS: AccentOption[] = [
   { id: 'blush', label: msg`Blush`, swatch: accentSwatch('blush') },
   { id: 'emerald', label: msg`Emerald`, swatch: accentSwatch('emerald') },
   { id: 'amber', label: msg`Amber`, swatch: accentSwatch('amber') },
+  { id: 'vermilion', label: msg`Vermilion`, swatch: accentSwatch('vermilion') },
+  { id: 'teal', label: msg`Teal`, swatch: accentSwatch('teal') },
+  { id: 'plum', label: msg`Plum`, swatch: accentSwatch('plum') },
 ]
 
 const BACKGROUND_KEY = 'maki-background'
@@ -72,7 +90,7 @@ const LEGACY_KEY = 'maki-theme'
 
 // Nothing stored means the user never picked, so they follow the defaults. Stored ids are kept.
 const DEFAULT_BACKGROUND = 'tinted'
-const DEFAULT_ACCENT: AccentOption['id'] = 'indigo'
+const DEFAULT_ACCENT: AccentOption['id'] = 'blush'
 
 // A returning user keeps exactly what they had: the old presets all sat on the night ground.
 const LEGACY_PRESETS: Record<string, [background: string, accent: AccentOption['id']]> = {
@@ -149,7 +167,7 @@ function backgroundFor(id: string): BackgroundOption {
 }
 
 function accentFor(id: string): AccentOption {
-  return ACCENTS.find((a) => a.id === id) ?? ACCENTS[0]
+  return ACCENTS.find((a) => a.id === id) ?? ACCENTS.find((a) => a.id === DEFAULT_ACCENT) ?? ACCENTS[0]
 }
 
 interface ThemeContextValue {

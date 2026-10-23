@@ -1,7 +1,8 @@
 import { memo } from 'react'
-import { IconBellOff, IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
+import { IconBellOff, IconCircleCheckFilled, IconDeviceMobileCheck, IconEye, IconEyeOff } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
+import type { OfflineAvailability } from './CoverCard'
 import {
   badgeFill,
   seriesDownloadStateVisual,
@@ -24,6 +25,7 @@ export const SeriesRow = memo(function SeriesRow({
   readTracking,
   density,
   onToggle,
+  offline,
 }: {
   series: SeriesDto
   selectMode: boolean
@@ -32,6 +34,8 @@ export const SeriesRow = memo(function SeriesRow({
   readTracking: boolean
   density: 'compact' | 'default' | 'comfortable'
   onToggle: (id: number) => void
+  /** Same meaning as on `CoverCard`. */
+  offline?: OfflineAvailability
 }) {
   const renderLabel = useLabel()
   const { t } = useLingui()
@@ -55,6 +59,7 @@ export const SeriesRow = memo(function SeriesRow({
       to={`/series/${series.id}`}
       className={`series-row ${density}`}
       data-selected={selected || undefined}
+      data-offline={offline}
       onClick={(e) => {
         if (selectMode) {
           e.preventDefault()
@@ -82,6 +87,17 @@ export const SeriesRow = memo(function SeriesRow({
             {series.displayTitle}
           </span>
           {series.year && <span className="row-year">{series.year}</span>}
+          {offline === 'saved' && (
+            <span className="cover-badge" data-offline-badge="saved" style={{ flexShrink: 0 }}>
+              <IconDeviceMobileCheck size={11} />
+              {t`Saved on this device`}
+            </span>
+          )}
+          {offline === 'unavailable' && (
+            <span className="cover-badge" data-offline-badge="unavailable" style={{ flexShrink: 0 }}>
+              {t`Not available offline`}
+            </span>
+          )}
           <span
             className="cover-badge"
             style={{ ...badgeFill(status.color), flexShrink: 0 }}

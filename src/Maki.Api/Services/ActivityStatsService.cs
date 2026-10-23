@@ -24,7 +24,7 @@ public class ActivityStatsService(
     /// <summary>A series counts as dropped when its reading mark stalled this long.</summary>
     internal static readonly TimeSpan DroppedAfter = TimeSpan.FromDays(60);
 
-    private const int TimelineDayBucketMaxDays = 62;
+    internal const int TimelineDayBucketMaxDays = 62;
 
     /// <summary>
     /// Events for one reader: their own, plus the library-wide ones that belong to nobody.

@@ -3,6 +3,7 @@ import { Button, Group, PasswordInput, Select, Stack, Text, TextInput } from '@m
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { IndexerBackend } from '../../api/hooks'
 import { SaveButton } from './SaveButton'
+import { FieldAction } from './FieldAction'
 import { INDEXER_BACKENDS, useIndexerForm, type IndexerForm as IndexerFormState } from './useIndexerForm'
 
 export function IndexerFieldRow({ form, children }: { form: IndexerFormState; children?: ReactNode }) {
@@ -10,7 +11,7 @@ export function IndexerFieldRow({ form, children }: { form: IndexerFormState; ch
   const placeholder = INDEXER_BACKENDS.find((b) => b.value === form.selected)?.placeholder
   return (
     <Stack gap="xs">
-      <Group align="flex-end" wrap="wrap">
+      <Group align="flex-end" wrap="wrap" className="settings-field-row">
         <Select
           label={t`Indexer`}
           data={INDEXER_BACKENDS.map(({ value, label }) => ({ value, label }))}
@@ -36,10 +37,12 @@ export function IndexerFieldRow({ form, children }: { form: IndexerFormState; ch
           onChange={(e) => form.setApiKey(e.currentTarget.value)}
           style={{ flex: 1, minWidth: 180 }}
         />
-        <Button variant="default" loading={form.testing} disabled={!form.loaded} onClick={form.test}>
-          <Trans>Test</Trans>
-        </Button>
-        {children}
+        <FieldAction>
+          <Button variant="default" loading={form.testing} disabled={!form.loaded} onClick={form.test}>
+            <Trans>Test</Trans>
+          </Button>
+          {children}
+        </FieldAction>
       </Group>
       <Text size="sm" c="var(--ink-3)">
         <Trans>

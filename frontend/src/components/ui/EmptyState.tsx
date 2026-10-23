@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 import { Button, Group, Stack, Text, Title } from '@mantine/core'
-import { IconPlus, IconQuestionMark } from '@tabler/icons-react'
+import { IconCloudOff, IconPlus, IconQuestionMark, type Icon } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import { IconBrandMark } from '../IconBrandMark'
 
-type Art = 'shelf' | 'missing'
+type Art = 'shelf' | 'missing' | 'offline'
 type Mood = 'asleep' | 'asking' | 'pleased'
 
 /**
@@ -14,8 +14,9 @@ type Mood = 'asleep' | 'asking' | 'pleased'
  * should not take the screen.
  *
  * `art` is for when the whole page is empty rather than one section of it (an empty library, a
- * series or route that doesn't exist): centred in the page, over a row of empty cover slots
- * (`shelf`) or a lone blank cover (`missing`), with room for a second action.
+ * series or route that doesn't exist, no connection): centred in the page, over a row of empty cover
+ * slots (`shelf`, or `offline` with a cloud in the middle one) or a lone blank cover (`missing`), with
+ * room for a second action.
  *
  * `mood` puts the mascot beside the text of the inline form (asleep for an empty queue or list,
  * pleased when there is nothing left to deal with, asking when it needs something from you).
@@ -56,7 +57,13 @@ export function EmptyState({
   if (art) {
     return (
       <div className="empty-state empty-state--page">
-        {art === 'shelf' ? <ShelfArt addTo={actionTo} /> : <MissingArt code={code} />}
+        {art === 'missing' ? (
+          <MissingArt code={code} />
+        ) : art === 'offline' ? (
+          <ShelfArt icon={IconCloudOff} />
+        ) : (
+          <ShelfArt addTo={actionTo} icon={IconPlus} />
+        )}
         <Title order={headingOrder} className="empty-state-title">
           {title}
         </Title>
@@ -137,7 +144,7 @@ export function EmptyState({
  * primary action for pointer users; it stays out of the tab order and the accessibility tree
  * because the button below is the same action.
  */
-function ShelfArt({ addTo }: { addTo?: string }) {
+function ShelfArt({ addTo, icon: MiddleIcon }: { addTo?: string; icon: Icon }) {
   const lines = (
     <>
       <span className="empty-shelf-line" />
@@ -148,7 +155,7 @@ function ShelfArt({ addTo }: { addTo?: string }) {
     <>
       <span className="empty-shelf-cover">
         <span className="empty-shelf-plus">
-          <IconPlus size={24} stroke={2} />
+          <MiddleIcon size={24} stroke={2} />
         </span>
       </span>
       {lines}

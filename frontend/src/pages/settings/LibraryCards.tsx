@@ -24,6 +24,7 @@ import { IconRestore, IconTrash } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { SettingsSection } from './SettingsSection'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { MonoValue } from '../../components/ui/MonoValue'
 import { RecommendationModelSwitch } from '../../components/RecommendationModelSwitch'
 import { NamingFormatInput } from '../../components/NamingFormatInput'
 import { CONTENT_RATINGS } from '../../components/ContentRatingCards'
@@ -107,8 +108,8 @@ export function RootFoldersSection() {
             <Table.Tbody>
               {rootFolders.map((f) => (
                 <Table.Tr key={f.id}>
-                  <Table.Td ff="monospace">
-                    {f.path}
+                  <Table.Td>
+                    <MonoValue value={f.path} copy minWidth="10rem" />
                     {!f.accessible && (
                       <Text span c="var(--danger)" size="xs" ml="xs">
                         <Trans>(inaccessible)</Trans>
@@ -785,7 +786,6 @@ export function RecycleBinSection() {
             max={365}
             value={retention ?? days}
             onChange={setRetentionDraft}
-            w={260}
           />
         )}
         {entries.length === 0 ? (

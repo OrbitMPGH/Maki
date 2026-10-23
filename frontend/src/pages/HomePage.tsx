@@ -1,14 +1,12 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Box, Button, Group, Paper, Tooltip } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { Box, Button, Group, Title, VisuallyHidden } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import {
   IconBook,
   IconBookmarks,
   IconDeviceTv,
-  IconDownload,
   IconFlame,
   IconFolderDown,
   IconLayoutDashboard,
@@ -17,16 +15,17 @@ import {
   IconSparkles,
 } from '@tabler/icons-react'
 import { useHomeFromAnime } from '../api/animeResume'
+import { isOfflineUnavailable } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import {
   HOME_HERO_DEFAULTS,
+  HOME_SECTION_OPTIONS,
   useDiscover,
   useProgressSummary,
   useHomeReading,
   useHomeRecentlyAdded,
-  useLibraryStats,
   useMetadataSettings,
-  useQueue,
+  useReadingHeatmap,
   useRecommendations,
   useRootFolders,
   useSeries,
@@ -34,7 +33,6 @@ import {
   useUiSettings,
   isRailKey,
   railIdOf,
-  type HomeGlancePanel,
   type HomeLayoutKey,
   type HomeReadingItem,
   type HomeSection,
@@ -50,22 +48,23 @@ import { HOME_LAYOUT_CONFIG, HOME_SECTION_DEFS } from '../components/home/homeSe
 import { useReadTracking } from '../api/reader'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { FollowingRail } from '../components/discover/FollowingRail'
-import { ContinueHero } from '../components/home/ContinueHero'
+import { ContinueHero, type HeroQueue } from '../components/home/ContinueHero'
 import { ContinueRail } from '../components/home/ContinueRail'
 import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
-import { DownloadingStrip } from '../components/home/DownloadingStrip'
+import { DiscoverZone, type HomeSeparation } from '../components/home/HomeZones'
+import { OfflineHome } from '../components/home/OfflineHome'
 import { AnimeResumeExpandModal, AnimeResumeRail } from '../components/home/AnimeResumeRail'
-import { ProgressCard } from '../components/home/ProgressCard'
+import { ReadingWeeks, ReadingWeeksPlaceholder, rollingWeeks } from '../components/home/ReadingWeeks'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
 import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RailSkeleton } from '../components/ui/RailSkeleton'
-import { SectionHeader } from '../components/ui/SectionHeader'
+import { SectionHeader, SectionTagContext } from '../components/ui/SectionHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
-import { isQueueActive } from '../components/ui/status'
-import { formatNumber } from '../format'
-import { obtainedCount } from '../lib/chapterCounts'
+import { useConnectivity } from '../lib/connectivity'
+import { pwaSupported, workerControlsPage } from '../lib/pwa/serviceWorker'
+import { useOfflineChapters } from '../pwa/offlineChapters'
 
 /** How many catalogue picks each borrowed Discover rail shows before "Find more". */
 const RAIL_SIZE = 20
@@ -83,17 +82,26 @@ function FindMore() {
   )
 }
 
-export default function HomePage() {
+/** Sections that only ever show series already in the library. Everything else draws on the catalogue. */
+const LIBRARY_SECTIONS: HomeSectionKey[] = ['continue', 'jumpback', 'recent']
+
+export default function HomePage({ separation = 'none' }: { separation?: HomeSeparation }) {
   const { t } = useLingui()
-  const { data: series, isLoading: seriesLoading, isError: seriesFailed, refetch: refetchSeries } = useSeries()
+  const {
+    data: series,
+    error: seriesError,
+    isLoading: seriesLoading,
+    isError: seriesFailed,
+    refetch: refetchSeries,
+  } = useSeries()
+  const connectivity = useConnectivity()
+  const { records: offlineRecords } = useOfflineChapters()
   const { data: metadata } = useMetadataSettings()
   const { data: rootFolders } = useRootFolders()
   const { data: ui, isLoading: uiLoading, isError: uiFailed } = useUiSettings()
   const readTracking = useReadTracking()
-  const stats = useLibraryStats()
   const { editing, enter: enterEditing, exit: exitEditing } = useLayoutEditMode()
   const { can } = useAuth()
-  const phone = useMediaQuery('(max-width: 47.9375em)') ?? false
 
   // Opposite default to the nav's in App.tsx on purpose: there, assuming "available" while the
   // settings load stops the Discover tab flickering in and out. Here it would fire two requests
@@ -118,9 +126,12 @@ export default function HomePage() {
   // section (see `reconcileLayout`). A disabled rail must not fetch just because the setting that
   // disables it has not arrived yet.
   const on = (key: HomeSectionKey) => !editing && Boolean(ui) && (sectionOf(key)?.enabled ?? false)
-  const panelOn = (panel: HomeGlancePanel) =>
-    on('glance') && (sectionOf('glance')?.panels?.find((p) => p.key === panel)?.enabled ?? false)
   const heroOn = (key: HomeSectionKey) => sectionOf(key)?.hero ?? HOME_HERO_DEFAULTS[key] ?? false
+  const optionOn = (key: HomeSectionKey, option: string) =>
+    sectionOf(key)?.options?.[option] ?? HOME_SECTION_OPTIONS[key]?.[option] ?? false
+  const queueOf = (key: HomeSectionKey): HeroQueue => (optionOn(key, 'nextUpBeside') ? 'beside' : 'tray')
+  // The glance is Continue reading's own switch, so it costs no request while that section is off.
+  const glanceOn = on('continue') && optionOn('continue', 'glance')
 
   const needsReading = on('continue') || on('jumpback')
   const needsDiscover = discoverAvailable && hasLibrary
@@ -130,77 +141,52 @@ export default function HomePage() {
     isLoading: readingLoading,
     isError: readingFailed,
     refetch: refetchReading,
-  } = useHomeReading(12, needsReading)
-  const { data: recent, isLoading: recentLoading } = useHomeRecentlyAdded(12, on('recent'))
+  } = useHomeReading(undefined, needsReading)
+  const { data: recent, isLoading: recentLoading } = useHomeRecentlyAdded(undefined, on('recent'))
   const { data: fromAnime, isLoading: fromAnimeLoading } = useHomeFromAnime(on('fromanime'))
-  const { data: queue } = useQueue(1, 200, on('downloading'), true)
   const { data: rails, isLoading: railsLoading } = useDiscover(0, needsDiscover && on('popular'))
   // An empty request object is deliberate: it hits the same server-side cache slot as Discover's
   // default Recommended tab, so this rail can never thrash that shared pool with different seeds.
   const recommendations = useRecommendations({}, needsDiscover && on('recommended'))
-  const { data: progress } = useProgressSummary(undefined, panelOn('progress'))
+  // Fetched in the layout editor too, which says why the glance would be hidden.
+  const { data: progress, isLoading: progressLoading } = useProgressSummary(undefined, glanceOn || editing)
+  const { data: heatmap, isLoading: heatmapLoading } = useReadingHeatmap(undefined, glanceOn && Boolean(progress?.enabled))
 
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
   const [fromAnimeExpanded, setFromAnimeExpanded] = useState(false)
   const navigate = useNavigate()
 
+  // The library list is what every section hangs off, so it is the one to retry when the server is back.
+  const wasOffline = useRef(false)
+  useEffect(() => {
+    if (connectivity === 'offline') wasOffline.current = true
+    else if (wasOffline.current) {
+      wasOffline.current = false
+      void refetchSeries()
+    }
+  }, [connectivity, refetchSeries])
+
   const continueReading = reading?.continueReading ?? []
   const jumpBackIn = reading?.jumpBackIn ?? []
-  const downloading = (queue?.items ?? []).filter((q) => isQueueActive(q.status))
 
-  // What is left to read, off the library list that is already loaded.
-  //
-  // `readChapterCount` null means "never tracked" rather than "nothing read", so those series are
-  // left out of every figure here: counting them would report a whole untracked library as unread.
-  const waiting = useMemo(() => {
-    let unread = 0
-    let started = 0
-    let finished = 0
-    for (const s of series ?? []) {
-      const have = obtainedCount(s)
-      if (s.readChapterCount == null || have === 0) continue
-      unread += Math.max(0, have - s.readChapterCount)
-      if (s.readChapterCount >= have) finished++
-      else if (s.readChapterCount > 0) started++
-    }
-    return { unread, started, finished }
-  }, [series])
   const popular = rails?.find((r) => r.key === 'popular')?.items ?? []
   const youMightLike = recommendations.data?.pages[0]?.similar?.slice(0, RAIL_SIZE) ?? []
 
-  const header = (center?: React.ReactNode) => (
-    <PageHeader
-      title={t`Home`}
-      description={t`Pick up where you left off.`}
-      center={center}
-      actions={
-        editing ? undefined : (
-          <>
-            <Tooltip label={t`Edit layout`} withArrow>
-              <Button
-                variant="default"
-                className="home-edit-layout"
-                aria-label={t`Edit layout`}
-                leftSection={<IconLayoutDashboard size={16} />}
-                onClick={enterEditing}
-              >
-                <Trans>Edit layout</Trans>
-              </Button>
-            </Tooltip>
-            <Button component={Link} to="/add" leftSection={<IconPlus size={16} />}>
-              {can('AddSeries') ? <Trans>Add series</Trans> : <Trans>Request series</Trans>}
-            </Button>
-          </>
-        )
-      }
-    />
+  // Home has no visible title row: the sidebar says where you are and the hero says what you are
+  // reading. The h1 stays for screen readers. Editing the layout is a mode with its own exit, so
+  // that one keeps a visible title.
+  const homeTitle = (
+    <VisuallyHidden>
+      <Title order={1}>{t`Home`}</Title>
+    </VisuallyHidden>
   )
+  const editingHeader = <PageHeader title={t`Home`} description={t`Arrange what Home shows.`} />
 
   if (editing) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
-        {header()}
+        {editingHeader}
         {ui && homeRails ? (
           <PageLayoutEditor
             page="home"
@@ -217,12 +203,14 @@ export default function HomePage() {
                 ? msg`Needs the local MangaBaka database`
                 : null
             }
-            panelHint={(_section, panel) =>
-              panel === 'toread' && !readTracking
-                ? msg`Needs read tracking: use the reader or connect Kavita.`
-                : panel === 'progress' && progress && !progress.enabled
-                  ? msg`Hidden while progression is switched off.`
-                  : null
+            optionHint={(key, option) =>
+              key === 'continue' && option === 'glance'
+                ? !readTracking
+                  ? msg`Needs read tracking: use the reader or connect Kavita.`
+                  : progress && !progress.enabled
+                    ? msg`Hidden while progression is switched off.`
+                    : null
+                : null
             }
             onExit={exitEditing}
           />
@@ -233,10 +221,27 @@ export default function HomePage() {
     )
   }
 
-  if (!seriesLoading && seriesFailed) {
+  // A refetch that failed while the list is still in memory is not a failure to load: draw from it.
+  const libraryMissing = !seriesLoading && seriesFailed && !series
+
+  if (libraryMissing && (isOfflineUnavailable(seriesError) || connectivity === 'offline')) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
-        {header()}
+        {homeTitle}
+        <OfflineHome
+          supported={pwaSupported()}
+          controlled={workerControlsPage()}
+          records={offlineRecords}
+          onRetry={() => void refetchSeries()}
+        />
+      </SurfaceFrame>
+    )
+  }
+
+  if (libraryMissing) {
+    return (
+      <SurfaceFrame width="full" pageStyle="editorial">
+        {homeTitle}
         <EmptyState
           title={t`Couldn't load your library`}
           actionLabel={t`Retry`}
@@ -247,10 +252,9 @@ export default function HomePage() {
   }
 
   if (!seriesLoading && !hasLibrary) {
-    // No header actions: the empty state carries "Add series" itself, and there is no layout to edit.
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
-        <PageHeader title={t`Home`} description={t`Pick up where you left off.`} />
+        {homeTitle}
         <EmptyState
           art="shelf"
           title={t`Nothing in your library yet`}
@@ -271,46 +275,26 @@ export default function HomePage() {
   if (uiLoading) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
-        {header()}
+        {homeTitle}
         <RailSkeleton title />
         <RailSkeleton title />
       </SurfaceFrame>
     )
   }
 
-  // The panels that are just labelled numbers. Each is its own bordered panel, switched on and off
-  // separately, but they share one wrapping row rather than each taking a heading and the full
-  // page width: see `.home-glance`.
-  const glancePanels: Partial<Record<string, React.ReactNode>> = {
-    stats: panelOn('stats') && (
-      <GlancePanel key="stats">
-        <LibraryFigure label={t`Series`} value={stats.total} />
-        <LibraryFigure label={t`Monitored`} value={stats.monitored} />
-        <LibraryFigure label={t`On disk`} value={stats.downloaded} tone="ok" />
-        <LibraryFigure label={t`Missing`} value={stats.missing} tone="warn" />
-      </GlancePanel>
-    ),
+  const visible = layout.filter(sectionVisible)
 
-    // Nothing at all when the user has switched progression off: the section stays in their layout
-    // list, so turning it back on restores its position.
-    progress: panelOn('progress') && progress?.enabled && (
-      <GlancePanel key="progress" wide>
-        <ProgressCard summary={progress} />
-      </GlancePanel>
-    ),
-
-    // Only ever with tracking on: without it every downloaded chapter reads as unread, and the
-    // panel would tell a Kavita-less library that it has 12,000 chapters waiting.
-    toread: panelOn('toread') && readTracking && (
-      <GlancePanel key="toread">
-        <LibraryFigure label={t`Unread`} value={waiting.unread} />
-        <LibraryFigure label={t`Started`} value={waiting.started} />
-        <LibraryFigure label={t`Finished`} value={waiting.finished} tone="ok" />
-      </GlancePanel>
-    ),
-  }
-
-  const glanceShown = (sectionOf('glance')?.panels ?? []).filter((p) => p.enabled && glancePanels[p.key])
+  // The glance belongs to Continue reading: in its hero when that draws one, a strip at its slot
+  // otherwise. Without read tracking every day would read as missed, so it waits for that.
+  const glanceHosted = heroOn('continue') && continueReading.length > 0
+  const glanceLoading = glanceOn && readTracking && (progressLoading || (progress?.enabled === true && heatmapLoading))
+  // A brand-new reader would get a card of zeros, so the glance waits for the first day read.
+  const glanceNode =
+    glanceOn && readTracking && progress?.enabled && heatmap && rollingWeeks(heatmap).daysRead > 0 ? (
+      <ReadingWeeks days={heatmap} summary={progress} hosted={glanceHosted} />
+    ) : glanceLoading ? (
+      <ReadingWeeksPlaceholder hosted={glanceHosted} />
+    ) : null
 
   // One node per section key. Rendered in the user's order below; a section with nothing to show
   // yields null and takes up no space, exactly as when it is switched off.
@@ -321,19 +305,25 @@ export default function HomePage() {
       <ReadingErrorPrompt onRetry={() => void refetchReading()} />
     ) : continueReading.length > 0 ? (
       <>
-        <SectionHeader icon={IconPlayerPlay} title={t`Continue reading`} count={continueReading.length} />
-        <ReadingSection items={continueReading} rail="continue" hero={heroOn('continue')} />
+        {/* Without a hero to ride in, the glance is a strip above the rail. */}
+        {!heroOn('continue') && glanceNode}
+        {!heroOn('continue') && (
+          <SectionHeader icon={IconPlayerPlay} title={t`Continue reading`} count={continueReading.length} />
+        )}
+        <ReadingSection
+          items={continueReading}
+          rail="continue"
+          hero={heroOn('continue')}
+          glance={heroOn('continue') ? glanceNode : undefined}
+          queue={queueOf('continue')}
+        />
       </>
     ) : (
-      // Only nudge when there is genuinely nothing to resume *and* nothing to jump back into,
-      // otherwise a user mid-way through their library gets told to start reading.
-      jumpBackIn.length === 0 && <StartReadingPrompt tracking={readTracking} />
-    ),
-
-    downloading: downloading.length > 0 && (
       <>
-        <SectionHeader icon={IconDownload} title={t`Downloading now`} count={downloading.length} />
-        <DownloadingStrip items={downloading} />
+        {glanceNode}
+        {/* Only nudge when there is genuinely nothing to resume *and* nothing to jump back into,
+            otherwise a user mid-way through their library gets told to start reading. */}
+        {jumpBackIn.length === 0 && <StartReadingPrompt tracking={readTracking} />}
       </>
     ),
 
@@ -355,8 +345,15 @@ export default function HomePage() {
     ) : (
       jumpBackIn.length > 0 && (
         <>
-          <SectionHeader icon={IconBook} title={t`Jump back in`} count={jumpBackIn.length} />
-          <ReadingSection items={jumpBackIn} rail="jumpback" hero={heroOn('jumpback')} />
+          {!heroOn('jumpback') && (
+            <SectionHeader icon={IconBook} title={t`Jump back in`} count={jumpBackIn.length} />
+          )}
+          <ReadingSection
+            items={jumpBackIn}
+            rail="jumpback"
+            hero={heroOn('jumpback')}
+            queue={queueOf('jumpback')}
+          />
         </>
       )
     ),
@@ -422,19 +419,8 @@ export default function HomePage() {
         </>
       )
     ),
-
-    glance: glanceShown.length > 0 && (
-      <div className="home-glance" style={{ marginTop: 'var(--mantine-spacing-xl)' }}>
-        {glanceShown.map((p) => glancePanels[p.key])}
-      </div>
-    ),
   }
 
-  const ordered = phone ? glanceAfterContinue(layout.filter(sectionVisible)) : layout.filter(sectionVisible)
-  // A glance that leads the page rides in the header row beside the title, so the first real
-  // section starts higher. Anywhere else in the user's order it stays a section of its own.
-  const glanceLeads = ordered[0]?.key === 'glance' && glanceShown.length > 0
-  const visible = glanceLeads ? ordered.slice(1) : ordered
 
   // A custom rail's key only names it; the rail itself comes from the rails list. One whose source
   // is the catalogue waits on the local database like the borrowed Discover rails above.
@@ -445,13 +431,43 @@ export default function HomePage() {
     return <CustomRailSection rail={rail} limit={RAIL_SIZE} onOpen={setDetailItem} />
   }
 
+  const inLibraryZone = (key: HomeLayoutKey) =>
+    isRailKey(key)
+      ? homeRails?.find((r) => r.id === railIdOf(key))?.spec.source === 'library'
+      : LIBRARY_SECTIONS.includes(key)
+
+  const rendered = visible.map((s) => ({ key: s.key, node: renderSection(s.key), library: inLibraryZone(s.key) }))
+  const plain = (r: (typeof rendered)[number]) => <Fragment key={r.key}>{r.node}</Fragment>
+  const catalogue = rendered.filter((r) => !r.library)
+
+  const body =
+    separation === 'tagged' ? (
+      rendered.map((r) =>
+        r.library ? (
+          plain(r)
+        ) : (
+          <SectionTagContext.Provider key={r.key} value={t`Not in your library`}>
+            {r.node}
+          </SectionTagContext.Provider>
+        ),
+      )
+    ) : separation === 'break' || separation === 'well' ? (
+      <>
+        {rendered.filter((r) => r.library).map(plain)}
+        {catalogue.some((r) => r.node) && (
+          <DiscoverZone variant={separation} discoverLink={discoverAvailable}>
+            {catalogue.map(plain)}
+          </DiscoverZone>
+        )}
+      </>
+    ) : (
+      rendered.map(plain)
+    )
+
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
-      {header(
-        glanceLeads && <div className="home-glance">{glanceShown.map((p) => glancePanels[p.key])}</div>,
-      )}
-
-      {visible.length === 0 && !glanceLeads ? (
+      {homeTitle}
+      {visible.length === 0 ? (
         <EmptyState
           title={t`Every section is switched off`}
           description={t`Home has nothing to show. Turn some sections back on in the layout editor, or switch Home off entirely in Settings.`}
@@ -459,11 +475,19 @@ export default function HomePage() {
           onAction={enterEditing}
         />
       ) : (
-        visible.map((s) => <Fragment key={s.key}>{renderSection(s.key)}</Fragment>)
+        body
       )}
 
-      <Group justify="center" mt="xl">
+      <Group justify="center" gap="xs" mt="xl">
         <AddRailButton placement="home" />
+        <Button
+          variant="subtle"
+          color="gray"
+          leftSection={<IconLayoutDashboard size={16} />}
+          onClick={enterEditing}
+        >
+          <Trans>Edit layout</Trans>
+        </Button>
       </Group>
 
       <DiscoverDetailModal
@@ -477,63 +501,24 @@ export default function HomePage() {
   )
 }
 
-/**
- * On a phone the glance row fills the first screen by itself, so there it follows Continue reading
- * instead of leading. Only the rendered order changes; the saved layout is left alone.
- */
-function glanceAfterContinue<T extends { key: string }>(sections: T[]): T[] {
-  const glance = sections.findIndex((s) => s.key === 'glance')
-  const resume = sections.findIndex((s) => s.key === 'continue')
-  if (glance < 0 || resume < 0 || glance > resume) return sections
-  const rest = sections.filter((_, i) => i !== glance)
-  rest.splice(resume, 0, sections[glance])
-  return rest
-}
-
-/** A reading list as a hero with its Next up list beside it, or as a plain rail. */
+/** A reading list as a hero with a Next up strip under it, or as a plain rail. */
 function ReadingSection({
   items,
   rail,
   hero,
+  glance,
+  queue,
 }: {
   items: HomeReadingItem[]
   rail: ReadingRailKind
   hero: boolean
+  glance?: React.ReactNode
+  queue: HeroQueue
 }) {
-  return hero ? <ContinueHero items={items} rail={rail} /> : <ContinueRail items={items} rail={rail} />
-}
-
-/** One panel on the glance row: a border, a padding, and a row of figures. */
-function GlancePanel({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
-  return (
-    <Paper withBorder radius="lg" className={wide ? 'home-glance-panel home-glance-wide' : 'home-glance-panel'}>
-      {wide ? children : <div className="home-figures">{children}</div>}
-    </Paper>
-  )
-}
-
-/**
- * One number on the glance row. The same hairline-separated figures the series band and the
- * Discover modal use, rather than a row of bordered tiles: none of these is a state anyone acts
- * on, so only the ones that carry a judgement take a colour.
- */
-function LibraryFigure({
-  label,
-  value,
-  tone,
-}: {
-  label: string
-  value: number
-  /** A status token name (`ok`, `warn`, `danger`); omitted leaves the figure at `--ink-hi`. */
-  tone?: 'ok' | 'warn' | 'danger'
-}) {
-  return (
-    <div className="home-figure">
-      <span className="hero-stat-n tnum" style={tone ? { color: `var(--${tone})` } : undefined}>
-        {formatNumber(value)}
-      </span>
-      <span className="hero-stat-l">{label}</span>
-    </div>
+  return hero ? (
+    <ContinueHero items={items} rail={rail} glance={glance} queue={queue} />
+  ) : (
+    <ContinueRail items={items} rail={rail} />
   )
 }
 

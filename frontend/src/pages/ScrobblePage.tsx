@@ -6,16 +6,17 @@ import {
   Box,
   Button,
   Group,
+  Popover,
   ScrollArea,
-  SimpleGrid,
   Skeleton,
   Stack,
   Table,
   Text,
   TextInput,
   Tooltip,
+  VisuallyHidden,
 } from '@mantine/core'
-import { IconHistory, IconListDetails, IconPlugConnected, IconRefresh, IconUserQuestion } from '@tabler/icons-react'
+import { IconHistory, IconListDetails, IconRefresh, IconUserQuestion } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -31,6 +32,7 @@ import { statusToken, trackerConnectionVisual, trackerStatusVisual } from '../co
 import { StatusDot } from '../components/ui/StatusDot'
 import { useLabel } from '../i18n-context'
 import { TagChip } from '../components/ui/TagChip'
+import { relativeTime } from '../components/ui/time'
 import {
   useScrobbleAuthStart,
   useScrobbleDisconnect,
@@ -261,21 +263,7 @@ function RecentSyncResult({
             )
           })}
           {failures.map((r) => (
-            <li key={r.service} className="scrobble-result-line" data-exception>
-              <span className="scrobble-result-what">
-                <Text span size="sm" fw={600} c="var(--danger)">
-                  <Trans>Not updated</Trans>
-                </Text>
-              </span>
-              <span className="scrobble-result-who">
-                <TrackerMarks services={[r.service]} connections={connections} />
-                {/* The tracker's own words: English and technical, so they follow the plain
-                    statement rather than replace it. */}
-                <Text span size="sm" c="var(--ink-3)" className="scrobble-result-reason">
-                  {serviceLabel(connections, r.service)}: {r.error}
-                </Text>
-              </span>
-            </li>
+            <FailureLine key={r.service} service={r.service} error={r.error ?? ''} connections={connections} />
           ))}
         </ul>
       )}
@@ -283,12 +271,72 @@ function RecentSyncResult({
   )
 }
 
+/**
+ * A sync a tracker refused. The tracker's own message is English, technical and often long (an HTTP
+ * verb and path, a timestamp), so it waits behind Details instead of filling the row.
+ */
+function FailureLine({
+  service,
+  error,
+  connections,
+}: {
+  service: string
+  error: string
+  connections: ScrobbleConnection[]
+}) {
+  const [open, setOpen] = useState(false)
+  const backOff = backOffText(connections.find((c) => c.service === service)?.backOffUntil)
+  return (
+    <li className="scrobble-result-line" data-exception>
+      <span className="scrobble-result-what">
+        <Text span size="sm" fw={600} c="var(--danger)">
+          <Trans>Not updated</Trans>
+        </Text>
+      </span>
+      <span className="scrobble-result-who">
+        <TrackerMarks services={[service]} connections={connections} />
+        <Text span size="sm" c="var(--ink-3)">
+          {serviceLabel(connections, service)}
+        </Text>
+        {error && (
+          <Button size="compact-xs" variant="subtle" color="var(--neutral)" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+            {open ? <Trans>Hide details</Trans> : <Trans>Details</Trans>}
+          </Button>
+        )}
+      </span>
+      {open && (
+        <p className="scrobble-result-detail">
+          {error}
+          {backOff && <> {backOff}</>}
+        </p>
+      )}
+    </li>
+  )
+}
+
+/**
+ * When a tracker that is backing off will be tried again, worked out here from the instant the server
+ * sent so the sentence is right however long ago the page loaded. Nothing once the instant has passed.
+ */
+function backOffText(until: string | null | undefined) {
+  if (!until) return null
+  const left = new Date(until).getTime() - Date.now()
+  if (!(left > 0)) return null
+  if (left < 60_000) return <Trans>Rate limited. Retrying soon.</Trans>
+  const time = relativeTime(until)
+  return <Trans>Rate limited. Retrying {time}.</Trans>
+}
+
 /** A tracker's display name from its connection card, falling back to the raw service key. */
 function serviceLabel(connections: ScrobbleConnection[] | undefined, service: string): string {
   return connections?.find((c) => c.service === service)?.label ?? service
 }
 
-function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
+/**
+ * One tracker in the Connections row: its icon, name and state dot. The state in words and what to
+ * do about it (connect, disconnect, check the saved details) open on click, so the row stays one line.
+ */
+function ConnectionChip({ connection }: { connection: ScrobbleConnection }) {
   const authStart = useScrobbleAuthStart()
   const disconnect = useScrobbleDisconnect()
   const { can } = useAuth()
@@ -297,11 +345,15 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
   const ownDetails = connection.savedDetails != null
   const noDetails = connection.savedDetails === false
 
+  const renderLabel = useLabel()
   const dot = trackerConnectionVisual(connection.connected, connection.configured)
   // Every state that is not connected says what to do next: connect, check the saved details, or
   // set the tracker up. Setting one up is an admin job, so a reader is told who can.
+  const backOff = connection.connected ? null : backOffText(connection.backOffUntil)
   const state = connection.connected ? (
     (connection.username ?? <Trans>Connected</Trans>)
+  ) : backOff ? (
+    backOff
   ) : connection.configured && connection.oAuth ? (
     <Trans>Not connected yet.</Trans>
   ) : connection.configured ? (
@@ -318,7 +370,7 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
     <Trans>Not set up yet. An admin can add it in Settings.</Trans>
   )
   const settingsLink =
-    (isAdmin || ownDetails) && !connection.connected && !(connection.configured && connection.oAuth) ? (
+    (isAdmin || ownDetails) && !connection.connected && !backOff && !(connection.configured && connection.oAuth) ? (
       <Button component={Link} to={isKavita ? KAVITA_SETTINGS : TRACKER_SETTINGS} size="compact-sm" variant="default">
         {connection.configured && !noDetails ? <Trans>Check in Settings</Trans> : <Trans>Set up in Settings</Trans>}
       </Button>
@@ -332,52 +384,60 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
     })
   }
 
-  // A column with the buttons pushed to the bottom, so a state that wraps to two lines in one card
-  // does not drop its button below the others in the row.
   return (
-    <Panel p="md" style={{ display: 'flex', flexDirection: 'column' }}>
-      <Group gap="xs" wrap="nowrap">
-        <TrackerIcon service={connection.service} size={16} />
-        <Text fw={700} style={{ flex: 1, minWidth: 0 }}>
-          {connection.label}
-        </Text>
-        <Box
-          w={10}
-          h={10}
-          style={{ flex: 'none', borderRadius: '50%', background: `var(--${statusToken(dot.color)})` }}
-        />
-      </Group>
-      <Text size="sm" c="var(--ink-3)" mt={4} style={{ overflowWrap: 'anywhere' }}>
-        {state}
-      </Text>
-      {connection.oAuth && connection.configured && (
-        <Group mt="auto" pt="sm">
+    <Popover position="bottom-start" shadow="md" withArrow width={280} trapFocus returnFocus>
+      <Popover.Target>
+        <button type="button" className="tag-chip scrobble-connection" data-interactive>
+          <TrackerIcon service={connection.service} size={14} />
+          <span>{connection.label}</span>
+          <span
+            className="scrobble-connection-dot"
+            style={{ background: `var(--${statusToken(dot.color)})` }}
+            aria-hidden
+          />
           {connection.connected ? (
-            <Button
-              size="compact-sm"
-              variant="subtle"
-              color="var(--neutral)"
-              className="scrobble-disconnect"
-              loading={disconnect.isPending}
-              onClick={() =>
-                disconnect.mutate(connection.service)
-              }
-            >
-              <Trans>Disconnect</Trans>
-            </Button>
+            <VisuallyHidden>: {renderLabel(dot.label)}</VisuallyHidden>
           ) : (
-            <Button size="compact-sm" loading={authStart.isPending} onClick={connect}>
-              <Trans>Connect</Trans>
-            </Button>
+            <span className="scrobble-connection-state">
+              <dot.Icon size={13} color={`var(--${statusToken(dot.color)})`} aria-hidden />
+              {renderLabel(dot.label)}
+            </span>
           )}
-        </Group>
-      )}
-      {settingsLink && (
-        <Group mt="auto" pt="sm">
-          {settingsLink}
-        </Group>
-      )}
-    </Panel>
+        </button>
+      </Popover.Target>
+      <Popover.Dropdown>
+        <Text size="sm" c="var(--ink-3)" style={{ overflowWrap: 'anywhere' }}>
+          {state}
+        </Text>
+        {connection.oAuth && connection.configured && (
+          <Group mt="auto" pt="sm">
+            {connection.connected ? (
+              <Button
+                size="compact-sm"
+                variant="subtle"
+                color="var(--neutral)"
+                className="scrobble-disconnect"
+                loading={disconnect.isPending}
+                onClick={() =>
+                  disconnect.mutate(connection.service)
+                }
+              >
+                <Trans>Disconnect</Trans>
+              </Button>
+            ) : (
+              <Button size="compact-sm" loading={authStart.isPending} onClick={connect}>
+                <Trans>Connect</Trans>
+              </Button>
+            )}
+          </Group>
+        )}
+        {settingsLink && (
+          <Group mt="auto" pt="sm">
+            {settingsLink}
+          </Group>
+        )}
+      </Popover.Dropdown>
+    </Popover>
   )
 }
 
@@ -476,6 +536,8 @@ export default function ScrobblePage() {
   const { data, error, isRefetching, refetch } = useScrobbleStatus()
   const syncNow = useScrobbleSyncNow()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { can } = useAuth()
+  const isAdmin = can('Admin')
 
   // Surface the OAuth redirect result once, then clean the URL.
   useEffect(() => {
@@ -503,14 +565,9 @@ export default function ScrobblePage() {
       title={t`Scrobble`}
       description={
         <Trans>
-          Every <Plural value={intervalMinutes} one="# minute" other="# minutes" />, sends what you have
-          read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is
-          connected. Remote progress is never lowered and completed entries are never demoted. Trackers are
-          set up in{' '}
-          <Anchor component={Link} to={TRACKER_SETTINGS} underline="always">
-            Settings
-          </Anchor>
-          .
+          Sends what you read to your trackers every{' '}
+          <Plural value={intervalMinutes} one="# minute" other="# minutes" />. Progress on a tracker is never
+          lowered.
         </Trans>
       }
       actions={
@@ -576,15 +633,18 @@ export default function ScrobblePage() {
         </Alert>
       )}
 
-      <Stack gap="xl" mt="xs">
-        <Stack gap="sm">
-          <SectionHeader icon={IconPlugConnected} title={t`Connections`} />
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
-            {data
-              ? data.connections.map((c) => <ConnectionCard key={c.service} connection={c} />)
-              : Array.from({ length: 6 }, (_, i) => <Skeleton key={i} h={96} aria-hidden />)}
-          </SimpleGrid>
-        </Stack>
+      <div className="scrobble-connections" role="group" aria-label={t`Connections`}>
+        {data
+          ? data.connections.map((c) => <ConnectionChip key={c.service} connection={c} />)
+          : Array.from({ length: 6 }, (_, i) => <Skeleton key={i} h={28} w={110} radius="xl" aria-hidden />)}
+        {isAdmin && (
+          <Anchor component={Link} to={TRACKER_SETTINGS} size="sm" className="scrobble-connections-setup">
+            <Trans>Set up trackers</Trans>
+          </Anchor>
+        )}
+      </div>
+
+      <Stack gap="xl" mt="lg">
 
         <Stack gap="sm">
           <SectionHeader
@@ -638,7 +698,9 @@ export default function ScrobblePage() {
                           />
                         </Table.Td>
                         <Table.Td>
-                          <RecentSyncResult group={group} connections={data.connections} />
+                          <div className="scrobble-result-cell">
+                            <RecentSyncResult group={group} connections={data.connections} />
+                          </div>
                         </Table.Td>
                         <Table.Td data-priority="low">
                           <Text size="sm" c="var(--ink-3)">

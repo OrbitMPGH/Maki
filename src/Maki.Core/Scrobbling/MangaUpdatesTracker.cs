@@ -98,6 +98,9 @@ public class MangaUpdatesTracker(
 
     private DateTime _blockedUntil = DateTime.MinValue;
 
+    public DateTimeOffset? BackOffUntil =>
+        _blockedUntil > Now ? new DateTimeOffset(_blockedUntil, TimeSpan.Zero) : null;
+
     private sealed record SeriesInfo(string Title, bool? Completed, int? LatestChapter);
 
     /// <summary>A non-success answer, kept apart so callers can tell a validation 400 from the rest.</summary>
@@ -990,7 +993,8 @@ public class MangaUpdatesTracker(
         var until = _blockedUntil;
         if (Now < until)
         {
-            throw new TrackerException($"MangaUpdates is backed off until {until:u} after an upstream block");
+            throw new TrackerBackOffException(
+                "MangaUpdates is backed off after an upstream block", new DateTimeOffset(until, TimeSpan.Zero));
         }
     }
 
@@ -1004,7 +1008,7 @@ public class MangaUpdatesTracker(
         }
 
         logger.LogWarning("{Reason}; skipping MangaUpdates until {Until:u}", reason, _blockedUntil);
-        return new TrackerException($"{reason}; backing off until {_blockedUntil:u}");
+        return new TrackerBackOffException($"{reason}; backing off", new DateTimeOffset(_blockedUntil, TimeSpan.Zero));
     }
 
     private static long? GetLong(JsonElement element, string name) =>

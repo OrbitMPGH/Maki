@@ -11,9 +11,10 @@ import type {
   HealthOverview,
   HealthScan,
   OperationDetail,
+  OperationGroup,
   SourceFailures,
 } from '../../../src/api/health'
-import { api, daysAgo, hoursAgo, minutesAgo } from '../api'
+import { api, cover, daysAgo, hoursAgo, minutesAgo } from '../api'
 
 const check = (id: string, category: string, status: string, message: string, over: Partial<HealthCheck> = {}): HealthCheck => ({
   id,
@@ -228,15 +229,23 @@ export const unlinkedUnrecognized: FileDetail = {
   match: { recognized: false, labelKind: 'unrecognized', chapters: [], counterparts: [] },
 }
 
-const operation = (id: number, fileId: number, kind: string, status: string, over: Partial<HealthOperation> = {}): HealthOperation => ({
-  id,
-  fileId,
-  kind,
-  status,
-  version: `ov${id}`,
-  createdAt: hoursAgo(id * 2),
-  ...over,
-})
+const operation = (id: number, fileId: number, kind: string, status: string, over: Partial<HealthOperation> = {}): HealthOperation => {
+  const target = healthFiles.find((f) => f.id === fileId)
+  const seriesTitle = target?.seriesId ? target.relativePath.split('/')[0] : null
+  return {
+    id,
+    fileId,
+    kind,
+    status,
+    version: `ov${id}`,
+    createdAt: hoursAgo(id * 2),
+    relativePath: target?.relativePath ?? null,
+    seriesId: target?.seriesId ?? null,
+    seriesTitle,
+    coverUrl: target?.seriesId ? cover(target.seriesId) : null,
+    ...over,
+  }
+}
 
 export const operations: HealthOperation[] = [
   operation(1, 1, 'repair', 'review'),
@@ -245,6 +254,50 @@ export const operations: HealthOperation[] = [
   operation(4, 5, 'delete', 'completed'),
   operation(5, 2, 'repair', 'failed', { error: 'No source had a candidate for chapter 4' }),
 ]
+
+const failedDeletionSeries = ['Lanterns Over Kasumi', 'The Ninth Kitchen', 'Snowfield Letters', 'Ashen Crown Regression', 'Iron Petal Academy']
+
+/** A bulk delete that the filesystem refused a hundred times, plus two replacements waiting for review. */
+export const manyFailedDeletions: HealthOperation[] = [
+  operation(102, 1, 'repair', 'review'),
+  operation(101, 3, 'repair', 'review'),
+  ...Array.from({ length: 100 }, (_, i) => {
+    const title = failedDeletionSeries[i % failedDeletionSeries.length]
+    const seriesId = (i % failedDeletionSeries.length) + 1
+    return operation(100 - i, 200 + i, 'delete', 'failed', {
+      error: 'File deletion failed; file links retained',
+      relativePath: `${title}/${title} - Ch.${40 + i}.cbz`,
+      seriesId,
+      seriesTitle: title,
+      coverUrl: cover(seriesId),
+      createdAt: hoursAgo(3),
+    })
+  }),
+]
+
+/** What HealthController.Operations does: one group per kind, status and error, newest first, three rows each. */
+export const groupOperations = (items: HealthOperation[]): { items: OperationGroup[]; total: number } => {
+  const groups = new Map<string, HealthOperation[]>()
+  for (const op of [...items].sort((a, b) => b.id - a.id)) {
+    const key = `${op.kind}|${op.status}|${op.error ?? ''}`
+    groups.set(key, [...(groups.get(key) ?? []), op])
+  }
+  const list = [...groups].map(([key, rows]) => ({
+    key,
+    kind: rows[0].kind,
+    status: rows[0].status,
+    error: rows[0].error ?? null,
+    count: rows.length,
+    rows: rows.slice(0, 3),
+  }))
+  return { items: list, total: list.length }
+}
+
+/** The rows behind one group key, as `/operations/group` serves them. */
+export const groupRows = (items: HealthOperation[], key: string, take: number) => {
+  const rows = items.filter((op) => `${op.kind}|${op.status}|${op.error ?? ''}` === key).sort((a, b) => b.id - a.id)
+  return { items: rows.slice(0, take), total: rows.length }
+}
 
 export const operationDetails: Record<number, OperationDetail> = {
   1: {
@@ -360,7 +413,11 @@ export const healthHandlers = [
     HttpResponse.json(fileDetails[Number(params.id)] ?? fileDetails[1]),
   ),
   http.get(api('/health/files/:id/pages/:n'), ({ params }) => pageRedirect(`file-${params.id}`, String(params.n))),
-  http.get(api('/health/operations'), () => HttpResponse.json({ items: operations, total: operations.length })),
+  http.get(api('/health/operations'), () => HttpResponse.json(groupOperations(operations))),
+  http.get(api('/health/operations/group'), ({ request }) => {
+    const url = new URL(request.url)
+    return HttpResponse.json(groupRows(operations, url.searchParams.get('key') ?? '', Number(url.searchParams.get('take') ?? 30)))
+  }),
   http.get(api('/health/operations/:id'), ({ params }) =>
     HttpResponse.json(operationDetails[Number(params.id)] ?? operationDetails[1]),
   ),

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -161,11 +161,15 @@ function pendingPollInterval(id: number, pending: boolean): number | false {
   return waited < 60_000 ? 3000 : waited < 5 * 60_000 ? 15_000 : 60_000
 }
 
+const seriesDetailQuery = (id: number) => ({
+  queryKey: ['series', id],
+  queryFn: () => api<SeriesDto>(`/series/${id}`),
+  meta: { inlineNotFound: true },
+})
+
 export function useSeriesDetail(id: number) {
   return useQuery({
-    queryKey: ['series', id],
-    queryFn: () => api<SeriesDto>(`/series/${id}`),
-    meta: { inlineNotFound: true },
+    ...seriesDetailQuery(id),
     // Background source matching ends with a `sourceMatchFinished` push. A dropped hub connection
     // would otherwise leave the Sources card spinning with nothing to end it, so poll while, and
     // only while, there is something to wait for.
@@ -175,6 +179,48 @@ export function useSeriesDetail(id: number) {
         Boolean(query.state.data?.sourceMatchPending || query.state.data?.importLinkPending),
       ),
   })
+}
+
+/**
+ * Fetches a series when the pointer settles on a link to it, or presses one, so its page opens with
+ * the data already there and the cover morph into its poster isn't held back waiting on it. The
+ * short delay keeps a mouse sweeping across the library grid from requesting every cover it passes.
+ */
+export function usePrefetchSeriesOnHover() {
+  const queryClient = useQueryClient()
+  useEffect(() => {
+    let timer = 0
+    const idOf = (target: EventTarget | null) => {
+      const link = target instanceof Element ? target.closest('a[href^="/series/"]') : null
+      const id = link && /^\/series\/(\d+)$/.exec(link.getAttribute('href') ?? '')?.[1]
+      return link && id ? { link, id: Number(id) } : null
+    }
+    const prefetch = (id: number) =>
+      void queryClient.prefetchQuery({ ...seriesDetailQuery(id), staleTime: 30_000 })
+    const onOver = (e: PointerEvent) => {
+      const hit = idOf(e.target)
+      if (!hit || (e.relatedTarget instanceof Node && hit.link.contains(e.relatedTarget))) return
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => prefetch(hit.id), 80)
+    }
+    const onOut = (e: PointerEvent) => {
+      const hit = idOf(e.target)
+      if (hit && !(e.relatedTarget instanceof Node && hit.link.contains(e.relatedTarget))) window.clearTimeout(timer)
+    }
+    const onDown = (e: PointerEvent) => {
+      const hit = idOf(e.target)
+      if (hit) prefetch(hit.id)
+    }
+    document.addEventListener('pointerover', onOver, { passive: true })
+    document.addEventListener('pointerout', onOut, { passive: true })
+    document.addEventListener('pointerdown', onDown, { passive: true })
+    return () => {
+      window.clearTimeout(timer)
+      document.removeEventListener('pointerover', onOver)
+      document.removeEventListener('pointerout', onOut)
+      document.removeEventListener('pointerdown', onDown)
+    }
+  }, [queryClient])
 }
 
 export function useMetadataSearch(query: string) {
@@ -932,6 +978,9 @@ export interface HomeRecentSeriesItem {
   readChapterId: number | null
 }
 
+/** Most cards a Home rail asks for: the server's `HomeController.MaxRailItems`. The rails scroll. */
+export const HOME_RAIL_LIMIT = 100
+
 /**
  * Home's two reading rails.
  *
@@ -939,7 +988,7 @@ export interface HomeRecentSeriesItem {
  * nothing; without it, coming back from `/read/:id` shows the resume page the rail was built with
  * rather than where you actually stopped.
  */
-export function useHomeReading(limit = 12, enabled = true) {
+export function useHomeReading(limit = HOME_RAIL_LIMIT, enabled = true) {
   return useQuery({
     queryKey: ['home', 'reading', limit],
     queryFn: () => api<HomeReadingResponse>(`/home/reading?limit=${limit}`),
@@ -975,7 +1024,7 @@ export function useHideHomeReading() {
 }
 
 /** Series that recently gained chapter files. Invalidated live by the `chapterImported` event. */
-export function useHomeRecentlyAdded(limit = 12, enabled = true) {
+export function useHomeRecentlyAdded(limit = HOME_RAIL_LIMIT, enabled = true) {
   return useQuery({
     queryKey: ['home', 'recently-added', limit],
     queryFn: () => api<HomeRecentSeriesItem[]>(`/home/recently-added?limit=${limit}`),
@@ -986,14 +1035,12 @@ export function useHomeRecentlyAdded(limit = 12, enabled = true) {
 
 /** Home section keys, in the order they ship. Mirrors `HomeSections.All` on the server exactly. */
 export const HOME_SECTIONS = [
-  'glance',
-  'downloading',
   'continue',
   'jumpback',
-  'fromanime',
   'recent',
-  'following',
   'recommended',
+  'fromanime',
+  'following',
   'popular',
 ] as const
 
@@ -1006,9 +1053,7 @@ export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
  * here would be stuck in whichever language was active at that moment. Render with `useLabel()`.
  */
 export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
-  glance: msg`At a glance`,
   continue: msg`Continue reading`,
-  downloading: msg`Downloading now`,
   recent: msg`Recently added`,
   jumpback: msg`Jump back in`,
   fromanime: msg`Continue from the anime`,
@@ -1017,19 +1062,18 @@ export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
   popular: msg`Currently popular`,
 }
 
-/** The panels of the glance section, in the order they ship. Mirrors `HomeGlancePanels.All`. */
-export const HOME_GLANCE_PANELS = ['stats', 'progress', 'toread'] as const
-
-export type HomeGlancePanel = (typeof HOME_GLANCE_PANELS)[number]
-
-export const HOME_GLANCE_PANEL_LABELS: Record<HomeGlancePanel, MessageDescriptor> = {
-  stats: msg`Library counts`,
-  progress: msg`Your progress`,
-  toread: msg`Waiting to read`,
-}
-
 /** Sections that can lead with a hero, and whether they do by default. Mirrors the server. */
 export const HOME_HERO_DEFAULTS: Record<string, boolean> = { continue: true, jumpback: false }
+
+/**
+ * The reading sections' own switches and their defaults. Mirrors `HomeHeroOptions` on the server.
+ * `glance` is the last five weeks as a card in the Continue hero; `nextUpBeside` puts the rest of a
+ * hero section in a list beside the hero instead of a tray of posters under it.
+ */
+export const HOME_SECTION_OPTIONS: Record<string, Record<string, boolean>> = {
+  continue: { glance: true, nextUpBeside: false },
+  jumpback: { nextUpBeside: false },
+}
 
 /** Discover Browse tab section keys, in the order they ship. Mirrors `DiscoverSections.All`. */
 export const DISCOVER_SECTIONS = [
@@ -1085,6 +1129,8 @@ export interface PageSection<K extends string = string> {
   hero?: boolean | null
   /** The parts of a multi-panel section, in order. Null elsewhere. */
   panels?: LayoutPanel[] | null
+  /** The section's own switches, keyed by option name. Set on sections that have any, null elsewhere. */
+  options?: Record<string, boolean> | null
 }
 
 export type HomeSection = PageSection<HomeSectionKey>
@@ -2646,11 +2692,12 @@ export interface HealthIssue {
   message: string
 }
 
-export function useHealth() {
+export function useHealth(enabled = true) {
   return useQuery({
     queryKey: ['health'],
     queryFn: () => api<HealthIssue[]>('/system/health'),
     refetchInterval: 60_000,
+    enabled,
   })
 }
 
@@ -3820,6 +3867,8 @@ export interface ScrobbleConnection {
   animeSignals: boolean
   /** Whether this reader has saved sign-in details, for trackers each reader signs in to themselves; null for the rest. */
   savedDetails?: boolean | null
+  /** When a tracker that is refusing calls will be tried again; null or past when it is not backing off. */
+  backOffUntil?: string | null
 }
 
 export interface ScrobbleCandidate {
@@ -4491,11 +4540,13 @@ export interface SourceUsage {
   bytes: number
 }
 
-/** bucket is "yyyy-MM" (UTC); cumulative is the library size at the end of that month. */
+/** bucket is a local "yyyy-MM-dd" or "yyyy-MM"; the cumulative fields are the library at the end of it. */
 export interface LibraryGrowth {
   bucket: string
   seriesAdded: number
   cumulative: number
+  bytesAdded: number
+  cumulativeBytes: number
 }
 
 export interface SeriesSize {
@@ -4512,7 +4563,6 @@ export interface LibraryComposition {
   byStatus: NamedCount[]
   bySource: SourceUsage[]
   topGenres: NamedCount[]
-  growth: LibraryGrowth[]
   largest: SeriesSize[]
   /** "unknown" for series with no rating. */
   byContentRating: NamedCount[]
@@ -4529,6 +4579,20 @@ export function useLibraryComposition(enabled = true) {
     queryFn: () => api<LibraryComposition>('/stats/library'),
     enabled,
     staleTime: 60_000,
+  })
+}
+
+/** Series count and disk use over an inclusive local-date window, by day or month like the activity timeline. */
+export function useLibraryGrowth(from: string, to: string, enabled = true) {
+  return useQuery({
+    queryKey: ['stats', 'library', 'growth', from, to],
+    queryFn: () =>
+      api<LibraryGrowth[]>(
+        `/stats/library/growth?from=${from}&to=${to}&utcOffsetMinutes=${new Date().getTimezoneOffset()}`,
+      ),
+    enabled,
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
   })
 }
 

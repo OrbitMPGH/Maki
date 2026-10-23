@@ -48,6 +48,20 @@ export const BrowsingTheCatalogue: Story = {
   },
 }
 
+// Discover's Manhwa feed hands its Show more over as router state: the type filter arrives applied.
+export const FromDiscoverFeed: Story = {
+  parameters: {
+    router: {
+      path: '/add',
+      initialEntries: [{ pathname: '/add', state: { catalogueSeed: { sort: 'popular', filters: { types: ['manhwa'] } } } }],
+    },
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('button', { name: 'Filters (1)' })).toBeVisible()
+    await expect(await canvas.findByText('Browsing the catalogue')).toBeVisible()
+  },
+}
+
 export const SearchResults: Story = {
   parameters: at('/add?q=Lanterns'),
   play: async ({ canvas }) => {

@@ -2,6 +2,7 @@ using Maki.Api.Localization;
 using System.Text.Json;
 using System.Security.Cryptography;
 using Maki.Api.Auth;
+using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -78,7 +79,13 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     /// An operation as the page reads it: same fields, with <c>error</c> worded in the caller's own
     /// language. A row with no key predates this and keeps the English it was written with.
     /// </summary>
-    private object Rendered(HealthOperation op) => new
+    private object Rendered(HealthOperation op) => Rendered(op, null, null, null);
+
+    private string? RenderedError(string? key, string? paramsJson, string? stored) =>
+        key is { Length: > 0 } ? localizer.Get(key, HealthMonitor.HealthParams(paramsJson)) : stored;
+
+    /// <summary>The row plus what it acts on, so the Repairs list can name the file and series instead of an id.</summary>
+    private object Rendered(HealthOperation op, string? relativePath, Series? series, string? titleLanguage) => new
     {
         op.Id,
         op.Kind,
@@ -88,9 +95,13 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         op.SourceMappingId,
         op.UserId,
         op.JournalJson,
-        Error = op.ErrorKey is { Length: > 0 } ? localizer.Get(op.ErrorKey, HealthMonitor.HealthParams(op.ErrorParamsJson)) : op.Error,
+        Error = RenderedError(op.ErrorKey, op.ErrorParamsJson, op.Error),
         op.CreatedAt,
         op.FinishedAt,
+        RelativePath = relativePath,
+        SeriesId = series?.Id,
+        SeriesTitle = series is null ? null : SeriesDto.DisplayTitleFor(series, titleLanguage),
+        CoverUrl = series is null ? null : SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.LastMetadataRefresh),
     };
 
     /// <summary>
@@ -470,13 +481,102 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         ConflictGuard($"operation {id}", async () =>
     { await operations.ApplyAsync(id, request.Version, request.Confirmed, request.ResetPositions, ct); return Ok(new { applied = true }); });
 
+    private const int OperationGroupPage = 30;
+    private const int OperationGroupPreview = 3;
+    private const int OperationGroupRowsMax = 500;
+
+    /// <summary>
+    /// Repair operations grouped by kind, status and error, newest group first, paged over groups.
+    /// A bulk delete the filesystem refused is one group however many files it covered; each group
+    /// carries its total and its newest few rows, and <c>operations/group</c> serves the rest.
+    /// </summary>
     [HttpGet("operations")]
-    public async Task<IActionResult> Operations([FromQuery] int page = 1, CancellationToken ct = default) => Ok(new
+    public async Task<IActionResult> Operations([FromServices] IUserSettings userSettings, [FromQuery] int page = 1, CancellationToken ct = default)
     {
-        total = await db.HealthOperations.CountAsync(ct),
-        items = (await db.HealthOperations.OrderByDescending(o => o.Id).Skip((Math.Max(1, page) - 1) * 30).Take(30).ToListAsync(ct))
-            .Select(Rendered)
-    });
+        var keys = db.HealthOperations.AsNoTracking()
+            .Select(o => new { o.Kind, o.Status, o.ErrorKey, o.ErrorParamsJson, o.Error });
+        var groups = await db.HealthOperations.AsNoTracking()
+            .GroupBy(o => new { o.Kind, o.Status, o.ErrorKey, o.ErrorParamsJson, o.Error })
+            .Select(g => new { g.Key.Kind, g.Key.Status, g.Key.ErrorKey, g.Key.ErrorParamsJson, g.Key.Error, Count = g.Count(), Newest = g.Max(o => o.Id) })
+            .OrderByDescending(g => g.Newest)
+            .Skip((Math.Max(1, page) - 1) * OperationGroupPage).Take(OperationGroupPage)
+            .ToListAsync(ct);
+
+        var previews = new List<List<HealthOperation>>(groups.Count);
+        foreach (var g in groups)
+        {
+            var key = new OperationGroupKey(g.Kind, g.Status, g.ErrorKey, g.ErrorParamsJson, g.Error);
+            previews.Add(await key.Apply(db.HealthOperations.AsNoTracking()).OrderByDescending(o => o.Id).Take(OperationGroupPreview).ToListAsync(ct));
+        }
+
+        var rendered = await RenderedOperationsAsync(previews.SelectMany(p => p).ToList(), userSettings, ct);
+        var items = new List<object>(groups.Count);
+        var offset = 0;
+        for (var i = 0; i < groups.Count; i++)
+        {
+            var g = groups[i];
+            items.Add(new
+            {
+                Key = g.Newest.ToString(),
+                g.Kind,
+                g.Status,
+                Error = RenderedError(g.ErrorKey, g.ErrorParamsJson, g.Error),
+                g.Count,
+                Rows = rendered.GetRange(offset, previews[i].Count),
+            });
+            offset += previews[i].Count;
+        }
+
+        return Ok(new { total = await keys.Distinct().CountAsync(ct), items });
+    }
+
+    /// <summary>One group's rows, newest first: what "Show all" on a group loads.</summary>
+    [HttpGet("operations/group")]
+    public async Task<IActionResult> OperationGroup([FromServices] IUserSettings userSettings, [FromQuery] string key, [FromQuery] int take = OperationGroupPage, CancellationToken ct = default)
+    {
+        var group = await OperationGroupKey.ResolveAsync(db, key, ct);
+        if (group is null) return BadRequest();
+        var query = group.Apply(db.HealthOperations.AsNoTracking());
+        var rows = await query.OrderByDescending(o => o.Id).Take(Math.Clamp(take, 1, OperationGroupRowsMax)).ToListAsync(ct);
+        return Ok(new { total = await query.CountAsync(ct), items = await RenderedOperationsAsync(rows, userSettings, ct) });
+    }
+
+    private async Task<List<object>> RenderedOperationsAsync(List<HealthOperation> rows, IUserSettings userSettings, CancellationToken ct)
+    {
+        var fileIds = rows.Select(o => o.FileId).Distinct().ToList();
+        var files = await db.HealthFiles.AsNoTracking().Where(f => fileIds.Contains(f.Id))
+            .Select(f => new { f.Id, f.RelativePath, f.SeriesId }).ToDictionaryAsync(f => f.Id, ct);
+        var seriesIds = files.Values.Where(f => f.SeriesId != null).Select(f => f.SeriesId!.Value).Distinct().ToList();
+        var series = await db.Series.AsNoTracking().Where(s => seriesIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, ct);
+        var titleLanguage = await userSettings.GetAsync(SettingKeys.UiTitleLanguage, ct);
+        return rows.Select(op =>
+        {
+            var file = files.GetValueOrDefault(op.FileId);
+            var owner = file?.SeriesId is { } id ? series.GetValueOrDefault(id) : null;
+            return Rendered(op, file?.RelativePath, owner, titleLanguage);
+        }).ToList();
+    }
+
+    /// <summary>
+    /// What makes two operations the same problem. The client holds only the id of the group's
+    /// newest operation and the server reads the fields back from that row, so a long legacy
+    /// <c>Error</c> never rides in the URL.
+    /// </summary>
+    private sealed record OperationGroupKey(string Kind, string Status, string? ErrorKey, string? ErrorParamsJson, string? Error)
+    {
+        public IQueryable<HealthOperation> Apply(IQueryable<HealthOperation> source) =>
+            source.Where(o => o.Kind == Kind && o.Status == Status && o.ErrorKey == ErrorKey
+                && o.ErrorParamsJson == ErrorParamsJson && o.Error == Error);
+
+        public static async Task<OperationGroupKey?> ResolveAsync(MakiDbContext db, string? key, CancellationToken ct)
+        {
+            if (!int.TryParse(key, out var id)) return null;
+            return await db.HealthOperations.AsNoTracking().Where(o => o.Id == id)
+                .Select(o => new OperationGroupKey(o.Kind, o.Status, o.ErrorKey, o.ErrorParamsJson, o.Error))
+                .FirstOrDefaultAsync(ct);
+        }
+    }
+
     [HttpGet("operations/{id:int}")]
     public async Task<IActionResult> Operation(int id, CancellationToken ct)
     {

@@ -77,6 +77,7 @@ function RegionPage({
           src={src}
           alt={alt}
           className="reader-region-image"
+          data-no-cover-fallback
           style={{
             left: `${(-region.x / region.w) * 100}%`,
             top: `${(-region.y / region.h) * 100}%`,
@@ -168,6 +169,7 @@ function PagedPage({
       <img
         ref={setRef}
         src={url}
+        data-no-cover-fallback
         alt={alt}
         className={className}
         style={{ ...style, filter: tone, ...(state === 'ready' && !shaped ? undefined : { display: 'none' }) }}

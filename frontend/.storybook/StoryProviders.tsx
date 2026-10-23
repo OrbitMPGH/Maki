@@ -2,13 +2,12 @@ import { useState, type ReactNode } from 'react'
 import { MantineThemeProvider } from '@mantine/core'
 import { Notifications, notifications } from '@mantine/notifications'
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, type MemoryRouterProps, Route, Routes } from 'react-router-dom'
 import { ApiError } from '../src/api/client'
 import { AppThemeProvider } from '../src/theme-context'
 import { AppI18nProvider } from '../src/i18n-context'
 import { AuthProvider } from '../src/auth/AuthProvider'
 import { NavHistoryProvider } from '../src/lib/navHistory'
-import { ShellTitleProvider } from '../src/lib/shellTitle'
 import { DocumentTitleProvider } from '../src/lib/documentTitle'
 
 // Mantine's Transition waits two animation frames plus its duration before a modal, drawer or menu
@@ -34,7 +33,7 @@ export function StoryProviders({
   realMotion,
 }: {
   children: ReactNode
-  router?: { path?: string; initialEntries?: string[] }
+  router?: { path?: string; initialEntries?: MemoryRouterProps['initialEntries'] }
   realMotion?: boolean
 }) {
   const [client] = useState(
@@ -67,9 +66,7 @@ export function StoryProviders({
             <MemoryRouter initialEntries={router?.initialEntries ?? (router?.path ? [router.path] : ['/'])}>
               <AuthProvider>
                 <NavHistoryProvider>
-                  <ShellTitleProvider>
-                    <DocumentTitleProvider>{content}</DocumentTitleProvider>
-                  </ShellTitleProvider>
+                  <DocumentTitleProvider>{content}</DocumentTitleProvider>
                 </NavHistoryProvider>
               </AuthProvider>
             </MemoryRouter>

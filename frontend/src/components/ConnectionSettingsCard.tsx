@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { Button, Group, PasswordInput, Select, TextInput } from '@mantine/core'
 import { SettingsSection } from '../pages/settings/SettingsSection'
 import { SaveButton } from './settings/SaveButton'
+import { FieldAction } from './settings/FieldAction'
 import { notifications } from '@mantine/notifications'
 import { Trans } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -146,7 +147,7 @@ function ConnectionFieldRow({
   children?: ReactNode
 }) {
   return (
-    <Group align="flex-end" wrap="wrap">
+    <Group align="flex-end" wrap="wrap" className="settings-field-row">
       {form.fields.map((f) =>
         f.options ? (
           <Select
@@ -184,10 +185,12 @@ function ConnectionFieldRow({
           />
         ),
       )}
-      <Button variant="default" loading={form.testing} onClick={form.test}>
-        <Trans>Test</Trans>
-      </Button>
-      {children}
+      <FieldAction>
+        <Button variant="default" loading={form.testing} onClick={form.test}>
+          <Trans>Test</Trans>
+        </Button>
+        {children}
+      </FieldAction>
     </Group>
   )
 }

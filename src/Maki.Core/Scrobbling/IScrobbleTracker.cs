@@ -55,6 +55,16 @@ public record ScrobbleCandidate(string Id, string Title, IReadOnlyList<string> A
 public class TrackerException(string message, Exception? inner = null) : Exception(message, inner);
 
 /// <summary>
+/// The tracker is refusing calls for a while (rate limit, upstream block). The message carries no
+/// duration, since it is stored and read later; <see cref="Until"/> is the instant to render
+/// relative to.
+/// </summary>
+public class TrackerBackOffException(string message, DateTimeOffset until) : TrackerException(message)
+{
+    public DateTimeOffset Until { get; } = until;
+}
+
+/// <summary>
 /// The remote id no longer resolves on the tracker (a deleted or merged entry — AniList
 /// answers such ids with an HTTP 404 "Not Found."). Signals the scrobble loop to drop the
 /// stale mapping and re-match, rather than logging the same hard error every sync.
@@ -95,6 +105,10 @@ public interface IScrobbleTracker
     /// <summary>Stable lowercase key persisted in mappings/sync state ("anilist", "mal", "mangabaka").</summary>
     string Name { get; }
     string Label { get; }
+
+    /// <summary>When the tracker is backed off until, or null when it is not backing off.</summary>
+    DateTimeOffset? BackOffUntil => null;
+
     /// <summary>True when the tracker uses OAuth (needs a Connect/Disconnect flow in the UI).</summary>
     bool UsesOAuth { get; }
 

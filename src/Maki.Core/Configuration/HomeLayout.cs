@@ -6,12 +6,20 @@ namespace Maki.Core.Configuration;
 public static class HomeSections
 {
     /// <summary>
-    /// The row of labelled numbers at the top: library counts, the reader's progression and what is
-    /// waiting to be read, each a panel of its own (<see cref="HomeGlancePanels"/>).
+    /// A retired section key. The reader's last five weeks used to be a section of its own, first
+    /// with three panels (<see cref="HomeGlancePanels"/>), then as one card riding in the Continue
+    /// hero when it sat next to it. It is now <see cref="HomeHeroOptions.Glance"/>, a switch on
+    /// Continue reading; the key is kept so <see cref="HomeLayoutSpec.MigrateGlanceIntoContinue"/>
+    /// can read layouts stored by either build.
     /// </summary>
     public const string Glance = "glance";
 
     public const string ContinueReading = "continue";
+
+    /// <summary>
+    /// A retired section key: the queue strip Home showed while chapters downloaded. Kept only so
+    /// <see cref="ShippingOrderPredecessors"/> can name the orders that held it; the merge drops it.
+    /// </summary>
     public const string Downloading = "downloading";
     public const string RecentlyAdded = "recent";
     public const string JumpBackIn = "jumpback";
@@ -30,7 +38,20 @@ public static class HomeSections
     /// </summary>
     public static readonly string[] All =
     [
-        Glance, Downloading, ContinueReading, JumpBackIn, FromAnime, RecentlyAdded, Following, Recommended, Popular
+        ContinueReading, JumpBackIn, RecentlyAdded, Recommended, FromAnime, Following, Popular
+    ];
+
+    /// <summary>
+    /// Earlier shipping orders, which <see cref="HomeLayoutSpec.MigrateShippingOrder"/> recognises.
+    /// Without <see cref="Glance"/>, which led the oldest: it has been folded into Continue reading by
+    /// the time the move runs.
+    /// </summary>
+    internal static readonly string[][] ShippingOrderPredecessors =
+    [
+        // Before Home opened on its hero.
+        [Downloading, ContinueReading, JumpBackIn, FromAnime, RecentlyAdded, Following, Recommended, Popular],
+        // Hero first, with discovery shipping switched off.
+        [ContinueReading, JumpBackIn, FromAnime, RecentlyAdded, Downloading, Following, Recommended, Popular],
     ];
 
     public static bool IsValid(string? key) => key is not null && All.Contains(key);
@@ -42,10 +63,32 @@ public static class HomeSections
     public static bool TryParseRail(string? key, out int id) => LayoutRails.TryParse(key, out id);
 }
 
+/// <summary>The switches on the reading sections that lead with a hero (<see cref="PageSection.Options"/>).</summary>
+public static class HomeHeroOptions
+{
+    /// <summary>
+    /// The reader's last five weeks, as a card in the hero's right column. Continue reading only:
+    /// one glance per page, and that section leads it.
+    /// </summary>
+    public const string Glance = "glance";
+
+    /// <summary>
+    /// Next up as a list in a card beside the hero, at the hero's height, instead of a tray of
+    /// posters under it. Off by default: the tray shows covers, which is how readers pick a series.
+    /// </summary>
+    public const string NextUpBeside = "nextUpBeside";
+
+    public static readonly IReadOnlyDictionary<string, bool> ContinueDefaults =
+        new Dictionary<string, bool> { [Glance] = true, [NextUpBeside] = false };
+
+    public static readonly IReadOnlyDictionary<string, bool> JumpBackDefaults =
+        new Dictionary<string, bool> { [NextUpBeside] = false };
+}
+
 /// <summary>
-/// The panels of <see cref="HomeSections.Glance"/>. The same strings were top-level section keys
-/// before the three shared one section, which is what lets <see cref="HomeLayoutSpec.MigrateGlance"/>
-/// carry a stored layout over as a relabel.
+/// The three panels <see cref="HomeSections.Glance"/> held until it became one card, and before that
+/// three top-level section keys. Kept only so <see cref="HomeLayoutSpec.MigrateGlance"/> and
+/// <see cref="HomeLayoutSpec.MigrateGlancePanels"/> can read layouts stored by either build.
 /// </summary>
 public static class HomeGlancePanels
 {
@@ -73,8 +116,8 @@ public static class HomeGlancePanels
 /// drops the tab, <c>/home</c> redirects to the library, and "/" can no longer resolve there.
 /// </para>
 /// <para>
-/// A build older than <see cref="HomeSections.Glance"/> drops that key as unknown and re-appends
-/// the three old panel keys, on. That is the whole downgrade story.
+/// A build that still had the glance as a section drops the Continue options as unknown JSON and
+/// re-appends its own glance key, on. That is the whole downgrade story.
 /// </para>
 /// </summary>
 public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Sections = null)
@@ -88,9 +131,14 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Se
             [HomeSections.ContinueReading] = true,
             [HomeSections.JumpBackIn] = false,
         },
-        new Dictionary<string, IReadOnlyList<string>> { [HomeSections.Glance] = HomeGlancePanels.All },
+        new Dictionary<string, IReadOnlyList<string>>(),
         RailAnchor: null,
-        Upgrade: MigrateGlance);
+        Upgrade: stored => MigrateShippingOrder(MigrateGlanceIntoContinue(MigrateGlancePanels(MigrateGlance(stored)))),
+        Options: new Dictionary<string, IReadOnlyDictionary<string, bool>>
+        {
+            [HomeSections.ContinueReading] = HomeHeroOptions.ContinueDefaults,
+            [HomeSections.JumpBackIn] = HomeHeroOptions.JumpBackDefaults,
+        });
 
     /// <summary>Every known section, in shipping order, all on.</summary>
     public static HomeLayoutSpec Default => new HomeLayoutSpec().Merge([]);
@@ -147,6 +195,68 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Se
             }
         }
 
+        return migrated;
+    }
+
+    /// <summary>
+    /// A glance stored with every panel switched off showed nothing, so its owner did not want it:
+    /// it comes through as the section switched off. Any other panel flags are dropped by the merge,
+    /// since the section no longer has panels.
+    /// </summary>
+    public static IReadOnlyList<PageSection> MigrateGlancePanels(IReadOnlyList<PageSection> stored) =>
+        stored
+            .Select(s => s.Key == HomeSections.Glance && s.Panels is { Count: > 0 } panels && panels.All(p => !p.Enabled)
+                ? s with { Enabled = false }
+                : s)
+            .ToList();
+
+    /// <summary>
+    /// Folds a stored glance section into Continue reading's <see cref="HomeHeroOptions.Glance"/>
+    /// switch, carrying its on/off flag, and drops the section. Its position is forgotten: the glance
+    /// now lives in the Continue hero wherever that sits. With no Continue section stored the flag
+    /// has nowhere to go and the default (on) applies when the merge appends one.
+    /// </summary>
+    public static IReadOnlyList<PageSection> MigrateGlanceIntoContinue(IReadOnlyList<PageSection> stored)
+    {
+        var glance = stored.FirstOrDefault(s => s.Key == HomeSections.Glance);
+        if (glance is null)
+        {
+            return stored;
+        }
+
+        return stored
+            .Where(s => s.Key != HomeSections.Glance)
+            .Select(s => s.Key == HomeSections.ContinueReading
+                ? s with { Options = WithOption(s.Options, HomeHeroOptions.Glance, glance.Enabled) }
+                : s)
+            .ToList();
+    }
+
+    private static Dictionary<string, bool> WithOption(IReadOnlyDictionary<string, bool>? options, string key, bool value)
+    {
+        var next = options is null ? new Dictionary<string, bool>() : new Dictionary<string, bool>(options);
+        next[key] = value;
+        return next;
+    }
+
+    /// <summary>
+    /// Moves a layout still in an earlier default order onto the current shipping order. That
+    /// order is the one nobody chose, so only the switches stored with it (a section off, a hero
+    /// off) are kept, and those travel with each section; a section the current order no longer
+    /// has is dropped. A layout in any other order is the owner's own arrangement and is left
+    /// alone. Custom rails stay after the built-in sections.
+    /// </summary>
+    public static IReadOnlyList<PageSection> MigrateShippingOrder(IReadOnlyList<PageSection> stored)
+    {
+        var builtIn = stored.Where(s => !LayoutRails.TryParse(s.Key, out _)).ToList();
+        var keys = builtIn.Select(s => s.Key).ToList();
+        if (!HomeSections.ShippingOrderPredecessors.Any(order => keys.SequenceEqual(order)))
+        {
+            return stored;
+        }
+
+        var migrated = HomeSections.All.Select(key => builtIn.First(s => s.Key == key)).ToList();
+        migrated.AddRange(stored.Where(s => LayoutRails.TryParse(s.Key, out _)));
         return migrated;
     }
 

@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Notifications, notifications } from '@mantine/notifications'
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter } from 'react-router-dom'
+import { unstable_HistoryRouter as HistoryRouter } from 'react-router-dom'
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 // Bundled rather than linked from a font CDN: a self-hosted instance may have no internet, and
@@ -11,6 +11,11 @@ import '@mantine/notifications/styles.css'
 import '@fontsource-variable/onest'
 import '@fontsource-variable/bricolage-grotesque/opsz.css'
 import './theme.css'
+// Before App: decides whether the window or the shell's <main> scrolls.
+import './lib/pageScroll'
+import './lib/coverFallback'
+import { appHistory, PageTransitionCommit } from './lib/pageTransition'
+import { preloadingRoutes } from './lib/routePreload'
 import { AppThemeProvider } from './theme-context'
 import { AppI18nProvider } from './i18n-context'
 import { i18n, loadLocale, resolveInitialLocale } from './i18n'
@@ -27,6 +32,7 @@ syncSkeletonPulses()
 // index.html and chunks come down together. The timestamp guard stops a reload loop when the
 // chunks are genuinely unreachable; the route error boundary then shows a message instead.
 window.addEventListener('vite:preloadError', (event) => {
+  if (preloadingRoutes()) return
   const key = 'maki.chunk-reload'
   let last = 0
   try {
@@ -102,9 +108,11 @@ const queryClient = new QueryClient({
   },
   // Background refetches fail silently by design: a toast on every poll while the API is down
   // would bury the app. Only surface a query error when there's no data to fall back on.
+  // Offline, every read the device holds no copy of fails the same way, and polls repeat it; the
+  // offline banner already says so, and the page shows its own empty state. Actions still toast.
   queryCache: new QueryCache({
     onError: (error, query) => {
-      if (query.state.data === undefined) reportError(error, query.meta)
+      if (query.state.data === undefined && !isOfflineUnavailable(error)) reportError(error, query.meta)
     },
   }),
   mutationCache: new MutationCache({
@@ -144,9 +152,10 @@ createRoot(document.getElementById('root')!).render(
             one of them rendered behind it: the action worked, said so, and the reader saw nothing. */}
         <Notifications autoClose={6000} zIndex={2000} />
         <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
+          <HistoryRouter history={appHistory}>
+            <PageTransitionCommit />
             <App />
-          </BrowserRouter>
+          </HistoryRouter>
         </QueryClientProvider>
       </AppThemeProvider>
     </AppI18nProvider>

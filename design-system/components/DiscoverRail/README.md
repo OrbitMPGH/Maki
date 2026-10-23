@@ -2,7 +2,7 @@
 
 A horizontal rail of catalogue poster cards (`DiscoverRailRow` of `RecommendationCard`s), for MangaBaka items the reader may not own yet.
 
-Cards are 150px wide (`--rail-item-w`), scroll-snapped, `spacing-md` apart, built on the `CoverCard` shell: 2:3 poster, bottom scrim with the title and a sub-line (year, status, chapter count in `micro`). A black rating pill sits top left with a star in `rating`.
+Cards are 150px wide (`--rail-item-w`), scroll-snapped, `spacing-md` apart, built on the `CoverCard` shell: 2:3 poster, bottom scrim with the title and a sub-line (year, status, chapter count in `micro`). A black rating pill sits top left with a star in `rating`, on series not yet in the library; an owned card shows only its check top right.
 
 **The corner says what a tap does.** Owned: a persistent 44px `ok` circle with an `ok-on` check ("In library"). Not owned: a `primary` plus in `primary-on` that appears on hover or focus ("View & add"), always visible on touch. The whole poster is one button, so a card is one keyboard stop with a 2px `brand` focus outline around the card.
 

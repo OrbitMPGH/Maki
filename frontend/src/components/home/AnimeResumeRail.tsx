@@ -73,7 +73,6 @@ export function AnimeResumeExpandModal({
           </Text>
         </Group>
       }
-      styles={{ body: { paddingTop: 'var(--mantine-spacing-md)' } }}
     >
       {isError ? (
         <EmptyState title={t`Couldn't load this rail`} actionLabel={t`Retry`} onAction={() => void refetch()} />

@@ -6,6 +6,9 @@ import type { FileDetail } from '../api/health'
 import {
   errorChecks,
   groupedChecks,
+  groupOperations,
+  groupRows,
+  manyFailedDeletions,
   overview,
   runningScan,
   unlinkedNoSeries,
@@ -14,6 +17,7 @@ import {
   warningChecks,
 } from '../../.storybook/mocks/operations/health'
 import { AfterSignIn } from '../../.storybook/AfterSignIn'
+import { monoText } from '../../.storybook/monoText'
 import HealthPage from './HealthPage'
 
 const meta = {
@@ -151,7 +155,7 @@ export const RebuildImageCache: Story = {
 export const FilesTab: Story = {
   parameters: tab('files'),
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Lanterns Over Kasumi/Lanterns Over Kasumi - Ch.57.cbz')).toBeVisible()
+    await expect(await canvas.findByText(monoText('Lanterns Over Kasumi/Lanterns Over Kasumi - Ch.57.cbz'))).toBeVisible()
     await waitFor(() => expect(canvas.getAllByText('Not linked').length).toBeGreaterThan(0))
   },
 }
@@ -160,8 +164,8 @@ export const FilesSearch: Story = {
   parameters: tab('files'),
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByRole('textbox', { name: 'Search file paths' }), 'Starlit')
-    await waitFor(() => expect(canvas.queryByText(/Lanterns Over Kasumi\/Lanterns/)).not.toBeInTheDocument())
-    await expect(await canvas.findByText('Starlit Ferry/Starlit Ferry - Ch.4.cbz')).toBeVisible()
+    await waitFor(() => expect(canvas.queryByText(monoText(/Lanterns Over Kasumi\/Lanterns/))).not.toBeInTheDocument())
+    await expect(await canvas.findByText(monoText('Starlit Ferry/Starlit Ferry - Ch.4.cbz'))).toBeVisible()
   },
 }
 
@@ -274,9 +278,32 @@ export const ReviewLoadFailed: Story = {
 export const RepairsTab: Story = {
   parameters: tab('repairs'),
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Replacement #1')).toBeVisible()
-    await expect(await canvas.findByText('Deletion review #2')).toBeVisible()
+    await expect(await canvas.findByText('Lanterns Over Kasumi')).toBeVisible()
+    await expect(await canvas.findByText('The Ninth Kitchen')).toBeVisible()
     await expect(await canvas.findByText('No source had a candidate for chapter 4')).toBeVisible()
+  },
+}
+
+/** A hundred deletions that failed the same way, as a bulk delete leaves them: one group, however many pages of rows. */
+export const RepairsManyFailures: Story = {
+  parameters: {
+    ...tab('repairs'),
+    msw: [
+      http.get(api('/health/operations'), () => HttpResponse.json(groupOperations(manyFailedDeletions))),
+      http.get(api('/health/operations/group'), ({ request }) => {
+        const url = new URL(request.url)
+        return HttpResponse.json(
+          groupRows(manyFailedDeletions, url.searchParams.get('key') ?? '', Number(url.searchParams.get('take') ?? 30)),
+        )
+      }),
+    ],
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('100 deletions')).toBeVisible()
+    await expect(await canvas.findByText('2 replacements')).toBeVisible()
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Review' })).toHaveLength(5))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Show all 100 operations' }))
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Review' })).toHaveLength(102))
   },
 }
 
@@ -290,9 +317,10 @@ export const RepairsEmpty: Story = {
 export const ReviewReplacement: Story = {
   parameters: tab('repairs'),
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[0])
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' })).at(-1)!)
     const body = within(canvasElement.ownerDocument.body)
-    const dialog = await body.findByRole('dialog', { name: 'Operation #1' })
+    const dialog = await body.findByRole('dialog', { name: 'Review operation' })
+    await expect(await within(dialog).findByText('Operation')).toBeVisible()
     const apply = await within(dialog).findByRole('button', { name: 'Apply replacement' })
     await waitFor(() => expect(apply).toBeDisabled())
     await userEvent.click(await within(dialog).findByRole('checkbox', { name: 'I approve applying these replacement files.' }))
@@ -304,9 +332,9 @@ export const ReviewReplacement: Story = {
 export const ReviewDeletion: Story = {
   parameters: tab('repairs'),
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[1])
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' })).at(-2)!)
     const body = within(canvasElement.ownerDocument.body)
-    const dialog = await body.findByRole('dialog', { name: 'Operation #2' })
+    const dialog = await body.findByRole('dialog', { name: 'Review operation' })
     await waitFor(async () => expect(await within(dialog).findByText(/already gone from disk/)).toBeVisible())
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Cancel operation' })).toBeVisible())
   },

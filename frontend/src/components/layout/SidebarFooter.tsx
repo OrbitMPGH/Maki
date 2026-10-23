@@ -28,7 +28,14 @@ function readStarDismissed(): boolean {
   }
 }
 
-export default function SidebarFooter({ onNavigate }: { onNavigate?: () => void }) {
+export default function SidebarFooter({
+  onNavigate,
+  actions,
+}: {
+  onNavigate?: () => void
+  /** Icon buttons drawn beside the account row. */
+  actions?: ReactNode
+}) {
   const { t } = useLingui()
   const { data: version } = useAppVersion()
   // Only an admin can act on an update, so only an admin is told about one.
@@ -57,7 +64,10 @@ export default function SidebarFooter({ onNavigate }: { onNavigate?: () => void 
 
   return (
     <div className="nav-footer">
-      <UserMenu onNavigate={onNavigate} />
+      <div className="nav-footer-account">
+        <UserMenu onNavigate={onNavigate} />
+        {actions}
+      </div>
 
       {showUpdate && latestVersion ? (
         <div className="nav-footer-notice">

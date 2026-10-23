@@ -9,8 +9,6 @@ export declare function PageHeader(props: {
   title: ReactNode
   description?: ReactNode
   actions?: ReactNode
-  /** Between title and actions on one row when wide; its own row underneath when not. Home's glance only. */
-  center?: ReactNode
   /** Smaller title for operational pages. */
   compact?: boolean
   className?: string
@@ -79,6 +77,13 @@ export interface DisclosureProps {
   children: ReactNode
 }
 export declare function Disclosure(props: DisclosureProps): JSX.Element
+
+/** The count on an icon button. Hidden at zero, `99+` past 99; the child is the ActionIcon. */
+export declare function CountIndicator(props: {
+  count: number
+  tone?: 'brand' | 'warn' | 'danger'
+  children: ReactNode
+}): JSX.Element
 
 /** A status as a coloured dot and a word. `tone` is a token stem. */
 export declare function StatusDot(
@@ -217,3 +222,19 @@ export declare function SurfaceFrame(props: ComponentPropsWithRef<'div'> & {
 
 /** A panel-table outline while rows load. */
 export declare function TableSkeleton(props: { columns: number; rows?: number }): JSX.Element
+
+/**
+ * A file name, path or id on one line. Too long for its column, it loses its middle, keeping the
+ * start and the extension; the full value is in a tooltip and, with `copy`, behind a copy button.
+ */
+export declare function MonoValue(props: {
+  value: string
+  /** Tooltip and copy value when the label is shorter, e.g. a file name standing for its path. */
+  full?: string
+  href?: string
+  copy?: boolean
+  /** Stops a table column collapsing to the tail. */
+  minWidth?: CSSProperties['minWidth']
+  fz?: CSSProperties['fontSize']
+  c?: CSSProperties['color']
+}): JSX.Element

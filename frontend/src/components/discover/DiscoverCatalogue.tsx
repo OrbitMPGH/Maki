@@ -29,7 +29,7 @@ export function DiscoverCatalogue({
   cols: Record<string, number>
   seriesIdFor: (item: RecommendationItem) => number | null
   onOpen: (item: RecommendationItem) => void
-  /** Opens the selected feed in Discover's filterable full catalogue view. */
+  /** Shows the selected feed in full, sorted and filtered, on the Add page. */
   onShowMore: (rail: DiscoverRail) => void
 }) {
   const { t } = useLingui()

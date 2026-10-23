@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
-import { Box, Group, Text, Title, Tooltip } from '@mantine/core'
+import { Box, Group, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import type { HeatmapDay } from '../../api/hooks'
 import { Panel } from '../../components/ui/Panel'
 import { formatDate, monthName } from '../../format'
@@ -14,7 +15,7 @@ const DAYS_IN_WEEK = 7
  * history: a relative scale makes a quiet week look identical to a busy one, which is the one thing
  * a contribution grid exists to distinguish.
  */
-function level(chapters: number, seconds: number): number {
+export function heatLevel(chapters: number, seconds: number): number {
   if (chapters === 0 && seconds === 0) return 0
   if (chapters >= 20) return 4
   if (chapters >= 8) return 3
@@ -22,7 +23,7 @@ function level(chapters: number, seconds: number): number {
   return 1
 }
 
-const SHADES = [
+export const HEAT_SHADES = [
   'var(--surface-2, rgba(128,128,128,0.14))',
   'color-mix(in srgb, var(--brand) 25%, transparent)',
   'color-mix(in srgb, var(--brand) 45%, transparent)',
@@ -30,13 +31,17 @@ const SHADES = [
   'var(--brand)',
 ]
 
+// Level 0 sits on the card's own ground in several backgrounds, so the fill alone is about 1.05:1.
+// The ring follows the ink colour, which every ground and the light themes redefine.
+const EMPTY_RING = 'inset 0 0 0 1px color-mix(in srgb, var(--ink-3) 45%, transparent)'
+
 /**
  * A GitHub-style year of reading. Columns are weeks, rows are weekdays starting Monday, with the
  * grid ending on the current week so today sits in the last column.
  */
 export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
   const { i18n, t } = useLingui()
-  const { columns, monthLabels, todayKey } = useMemo(() => {
+  const { columns, monthLabels, todayKey, daysSoFar, daysRead, chaptersRead } = useMemo(() => {
     const byDate = new Map(days.map((d) => [d.date.slice(0, 10), d]))
 
     const today = new Date()
@@ -49,6 +54,10 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
     const cols: { date: string; chapters: number; seconds: number }[][] = []
     const labels: { index: number; label: string }[] = []
     let lastMonth = -1
+    const todayIso = isoDate(today)
+    let past = 0
+    let read = 0
+    let chapters = 0
 
     for (let w = 0; w < WEEKS; w++) {
       const column: { date: string; chapters: number; seconds: number }[] = []
@@ -58,6 +67,11 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
         const key = isoDate(cell)
         const found = byDate.get(key)
         column.push({ date: key, chapters: found?.chapters ?? 0, seconds: found?.seconds ?? 0 })
+        if (key <= todayIso) {
+          past++
+          if (found && (found.chapters > 0 || found.seconds > 0)) read++
+          chapters += found?.chapters ?? 0
+        }
 
         if (d === 0 && cell.getMonth() !== lastMonth) {
           lastMonth = cell.getMonth()
@@ -68,7 +82,14 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
       cols.push(column)
     }
 
-    return { columns: cols, monthLabels: labels, todayKey: isoDate(today) }
+    return {
+      columns: cols,
+      monthLabels: labels,
+      todayKey: todayIso,
+      daysSoFar: past,
+      daysRead: read,
+      chaptersRead: chapters,
+    }
     // monthName is locale-bound: without i18n.locale here, a language switch would leave the
     // previous language's month names cached until days changed too.
   }, [days, i18n.locale])
@@ -78,6 +99,10 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
       <Title order={3} size="h4" mb="xs">
         <Trans>Reading days</Trans>
       </Title>
+      <VisuallyHidden>
+        {t`Read on ${daysRead} of the last ${daysSoFar} days.`}{' '}
+        {plural(chaptersRead, { one: '# chapter in total.', other: '# chapters in total.' })}
+      </VisuallyHidden>
       <Box style={{ overflowX: 'auto' }} role="region" aria-label={t`Reading days`} tabIndex={0}>
         <Box style={{ minWidth: WEEKS * 14 }}>
           <Box style={{ display: 'flex', gap: 3, marginBottom: 4, paddingLeft: 0 }}>
@@ -97,7 +122,9 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
                   // Appending a local time-of-day avoids the bare "yyyy-MM-dd" being read as UTC
                   // midnight, which would shift the printed date back a day west of UTC.
                   const cellDate = formatDate(`${cell.date}T00:00:00`)
-                  const nothingRead = cell.chapters === 0 && cell.seconds === 0
+                  const chapters = cell.chapters
+                  const nothingRead = chapters === 0 && cell.seconds === 0
+                  const level = heatLevel(cell.chapters, cell.seconds)
                   // The last column runs to Sunday; days that have not happened are not missed days.
                   if (cell.date > todayKey) {
                     return (
@@ -107,7 +134,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
                           width: 11,
                           height: 11,
                           borderRadius: 'var(--radius-2xs)',
-                          background: SHADES[0],
+                          background: HEAT_SHADES[0],
                           opacity: 0.4,
                         }}
                       />
@@ -121,18 +148,28 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
                           <Trans>{cellDate}: nothing read</Trans>
                         ) : (
                           <Trans>
-                            {cellDate}: <Plural value={cell.chapters} one="# chapter" other="# chapters" />
+                            {cellDate}: <Plural value={chapters} one="# chapter" other="# chapters" />
                           </Trans>
                         )
                       }
                       withArrow
                     >
                       <Box
+                        role="img"
+                        aria-label={
+                          nothingRead
+                            ? t`${cellDate}: nothing read`
+                            : plural(chapters, {
+                                one: `${cellDate}: # chapter`,
+                                other: `${cellDate}: # chapters`,
+                              })
+                        }
                         style={{
                           width: 11,
                           height: 11,
                           borderRadius: 'var(--radius-2xs)',
-                          background: SHADES[level(cell.chapters, cell.seconds)],
+                          background: HEAT_SHADES[level],
+                          boxShadow: level === 0 ? EMPTY_RING : undefined,
                         }}
                       />
                     </Tooltip>
@@ -147,8 +184,18 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
         <Text size="xs" c="var(--ink-3)">
           <Trans>Less</Trans>
         </Text>
-        {SHADES.map((shade) => (
-          <Box key={shade} style={{ width: 11, height: 11, borderRadius: 'var(--radius-2xs)', background: shade }} />
+        {HEAT_SHADES.map((shade) => (
+          <Box
+            key={shade}
+            aria-hidden
+            style={{
+              width: 11,
+              height: 11,
+              borderRadius: 'var(--radius-2xs)',
+              background: shade,
+              boxShadow: shade === HEAT_SHADES[0] ? EMPTY_RING : undefined,
+            }}
+          />
         ))}
         <Text size="xs" c="var(--ink-3)">
           <Trans>More</Trans>

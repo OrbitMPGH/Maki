@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Api.Controllers;
+using Maki.Api.Localization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Kavita;
@@ -643,8 +644,7 @@ public class ScrobbleService(
                     errors++;
                     logger.LogWarning("Update failed for '{Title}' on {Service}: {Error}",
                         title, tracker.Name, e.Message);
-                    await AddLogAsync(userId, "error", tracker.Name, title, e.Message, ct);
-                    await SaveStateAsync(userId, target, tracker.Name, 0, 0, "", e.Message, ct);
+                    await RecordFailureAsync(userId, target, tracker, title, e, ct);
                 }
 
                 try
@@ -836,8 +836,7 @@ public class ScrobbleService(
                 report(false, false, true);
                 logger.LogWarning("Native update failed for '{Title}' on {Service}: {Error}",
                     row.Title, tracker.Name, e.Message);
-                await AddLogAsync(userId, "error", tracker.Name, row.Title, e.Message, ct);
-                await SaveStateAsync(userId, target, tracker.Name, 0, 0, "", e.Message, ct);
+                await RecordFailureAsync(userId, target, tracker, row.Title, e, ct);
             }
 
             try
@@ -1763,6 +1762,30 @@ public class ScrobbleService(
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         return await db.SeriesScrobbleStates.AsNoTracking()
             .FirstOrDefaultAsync(s => s.UserId == userId && s.SeriesId == seriesId && s.Service == service, ct);
+    }
+
+    /// <summary>
+    /// Stored in a sync row's error column when the tracker is backing off. The status endpoint
+    /// swaps it for the translated sentence, and the client adds the live countdown.
+    /// </summary>
+    public const string BackedOffErrorKey = "scrobble.error.backedOff";
+
+    /// <summary>A stored sync error as the reader should see it: the back-off marker becomes a sentence.</summary>
+    public static string? RenderError(string? error, string trackerLabel, ILocalizer localizer) =>
+        error == BackedOffErrorKey ? localizer.Get(BackedOffErrorKey, new { service = trackerLabel }) : error;
+
+    private async Task RecordFailureAsync(
+        int userId, PushTarget target, IScrobbleTracker tracker, string title, Exception e, CancellationToken ct)
+    {
+        if (e is TrackerBackOffException)
+        {
+            await AddKeyedLogAsync(userId, "error", tracker.Name, title, BackedOffErrorKey, new { service = tracker.Label }, ct);
+            await SaveStateAsync(userId, target, tracker.Name, 0, 0, "", BackedOffErrorKey, ct);
+            return;
+        }
+
+        await AddLogAsync(userId, "error", tracker.Name, title, e.Message, ct);
+        await SaveStateAsync(userId, target, tracker.Name, 0, 0, "", e.Message, ct);
     }
 
     /// <summary>Records a push result in whichever state table the target names.</summary>

@@ -165,7 +165,8 @@ export const RecommendationCard = memo(function RecommendationCard({
         )}
         <div className="cover-scrim" />
 
-        {item.rating != null && <RatingChip rating={item.rating} />}
+        {/* Owned: the check holds the poster, and the rating, there to help pick, steps aside. */}
+        {item.rating != null && !owned && <RatingChip rating={item.rating} />}
 
         {owned ? (
           <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
@@ -428,7 +429,7 @@ export const EngineCard = memo(function EngineCard({
         )}
         <div className="cover-scrim" />
 
-        {item.rating != null && <RatingChip rating={item.rating} />}
+        {item.rating != null && !owned && <RatingChip rating={item.rating} />}
 
         {owned ? (
           <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">

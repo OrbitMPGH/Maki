@@ -52,6 +52,8 @@ export interface PageLayoutEditorProps {
   unavailable?: (key: string) => MessageDescriptor | null
   /** A hint under one panel's switch, e.g. why it stays empty. */
   panelHint?: (sectionKey: string, panelKey: string) => MessageDescriptor | null
+  /** A hint under one option's switch, e.g. why it would show nothing right now. */
+  optionHint?: (sectionKey: string, optionKey: string) => MessageDescriptor | null
   onExit: () => void
 }
 
@@ -73,6 +75,7 @@ export function PageLayoutEditor({
   preview,
   unavailable,
   panelHint,
+  optionHint,
   onExit,
 }: PageLayoutEditorProps) {
   const { t } = useLingui()
@@ -220,6 +223,7 @@ export function PageLayoutEditor({
         def={selectedSection ? registry[selectedSection.key] : undefined}
         rail={selectedSection && isRailKey(selectedSection.key) ? railById.get(railIdOf(selectedSection.key)) : undefined}
         panelHint={panelHint}
+        optionHint={optionHint}
         onChange={(patch) =>
           selectedSection &&
           setDraft(sections.map((s) => (s.key === selectedSection.key ? { ...s, ...patch } : s)))

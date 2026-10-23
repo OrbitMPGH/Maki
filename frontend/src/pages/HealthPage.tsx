@@ -57,6 +57,7 @@ import {
   type HealthOverview,
   type MatchCounterpart,
   type OperationDetail,
+  type OperationGroup as OperationGroupData,
   type SourceFailures,
   type UnlinkedMatch,
 } from '../api/health'
@@ -67,6 +68,8 @@ import { Panel } from '../components/ui/Panel'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
+import { MonoValue } from '../components/ui/MonoValue'
+import { SeriesCell } from '../components/SeriesCell'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
 import { useLabel } from '../i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -219,10 +222,10 @@ export default function HealthPage() {
     tab === 'files',
     scanning ? 5000 : false,
   )
-  const operations = useHealthData<{ items: HealthOperation[]; total: number }>(
+  const operations = useHealthData<{ items: OperationGroupData[]; total: number }>(
     `/operations?page=${repairPage}`,
     tab === 'repairs',
-    (data) => (data?.items.some((o) => RUNNING_STATES.includes(o.status)) ? 5000 : false),
+    (data) => (data?.items.some((g) => RUNNING_STATES.includes(g.status)) ? 5000 : false),
   )
   const history = useHealthData<{
     items: { id: number; createdAt: string; kind: string; message: string }[]
@@ -548,8 +551,9 @@ export default function HealthPage() {
             ) : (
               <>
                 <Panel p={0} className="table-panel">
-                  <Table.ScrollContainer minWidth={720}>
-                    <Table highlightOnHover className="panel-table">
+                  <Table.ScrollContainer minWidth={880}>
+                    {/* Fixed, so the archive path takes what the other columns leave and loses its middle. */}
+                    <Table highlightOnHover className="panel-table" layout="fixed">
                       <Table.Thead>
                         <Table.Tr>
                           <Table.Th w={40}>
@@ -573,16 +577,16 @@ export default function HealthPage() {
                           <Table.Th>
                             <Trans>Archive</Trans>
                           </Table.Th>
-                          <Table.Th>
+                          <Table.Th w={90}>
                             <Trans>Size</Trans>
                           </Table.Th>
-                          <Table.Th>
+                          <Table.Th w={120}>
                             <Trans>Analysis</Trans>
                           </Table.Th>
-                          <Table.Th>
+                          <Table.Th w={200}>
                             <Trans>Findings</Trans>
                           </Table.Th>
-                          <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
+                          <Table.Th w={100}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                         </Table.Tr>
                       </Table.Thead>
                       <Table.Tbody>
@@ -604,9 +608,7 @@ export default function HealthPage() {
                               />
                             </Table.Td>
                             <Table.Td>
-                              <Text fz="var(--type-meta)" ff="monospace" style={{ overflowWrap: 'anywhere' }}>
-                                {file.relativePath}
-                              </Text>
+                              <MonoValue value={file.relativePath} copy fz="var(--type-meta)" />
                               <Text size="xs" c="var(--ink-3)">
                                 {file.analyzedAt ? formatDateTime(file.analyzedAt) : <Trans>Not analyzed</Trans>}
                               </Text>
@@ -653,33 +655,9 @@ export default function HealthPage() {
 
         <Tabs.Panel value="repairs">
           <Stack>
-            {operations.data?.items.map((op) => {
-              const { id: opId, kind: opKind } = op
-              return (
-                <Panel p="md" key={op.id}>
-                  <Group justify="space-between">
-                    <div>
-                      <Group>
-                        <Text fw={600}>
-                          {opKind === 'delete' ? (
-                            <Trans>Deletion review #{opId}</Trans>
-                          ) : (
-                            <Trans>Replacement #{opId}</Trans>
-                          )}
-                        </Text>
-                        <Status value={op.status} />
-                      </Group>
-                      <Text size="sm" c="var(--ink-3)">
-                        {op.error ?? formatDateTime(op.createdAt)}
-                      </Text>
-                    </div>
-                    <Button variant="default" onClick={() => setOperationId(op.id)}>
-                      <Trans>Review</Trans>
-                    </Button>
-                  </Group>
-                </Panel>
-              )
-            })}
+            {operations.data?.items.map((group) => (
+              <OperationGroup key={group.key} group={group} onReview={setOperationId} />
+            ))}
             {operations.data?.items.length === 0 && (
               <Text c="var(--ink-3)">
                 <Trans>No repairs or deletions requested.</Trans>
@@ -1233,8 +1211,8 @@ function FileReview({
           <div className="health-review">
             <div className="health-review-column">
               <Panel p="md">
-                <Text fw={600} ff="monospace" style={{ overflowWrap: 'anywhere' }}>
-                  {data.file.relativePath}
+                <Text fw={600} component="div">
+                  <MonoValue value={data.file.relativePath} copy />
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt={4}>
                   {bytes(data.file.size, t`Missing`)} · <Plural value={pageCount} one="# page" other="# pages" /> ·{' '}
@@ -1759,6 +1737,88 @@ function CompareArchives({
   )
 }
 
+/** The most rows HealthController serves for one group. */
+const GROUP_ROWS_MAX = 500
+
+/**
+ * Operations of one kind that ended the same way, grouped by the server so the count is the whole
+ * group, not what fits on a page. A bulk delete the filesystem refused reads as the single
+ * problem it is. The newest rows come with the group; Show all loads the rest.
+ */
+function OperationGroup({ group, onReview }: { group: OperationGroupData; onReview: (id: number) => void }) {
+  const [expanded, setExpanded] = useState(false)
+  const all = useHealthData<{ items: HealthOperation[]; total: number }>(
+    `/operations/group?key=${encodeURIComponent(group.key)}&take=${Math.min(group.count, GROUP_ROWS_MAX)}`,
+    expanded,
+  )
+  const count = group.count
+  const shown = expanded && all.data ? all.data.items : group.rows
+  return (
+    <Panel p={0} className="health-op-group">
+      <div className="health-op-head">
+        <Group gap="sm">
+          <Text fw={650}>
+            {group.kind === 'delete' ? (
+              count === 1 ? (
+                <Trans>Deletion</Trans>
+              ) : (
+                <Plural value={count} one="# deletion" other="# deletions" />
+              )
+            ) : count === 1 ? (
+              <Trans>Replacement</Trans>
+            ) : (
+              <Plural value={count} one="# replacement" other="# replacements" />
+            )}
+          </Text>
+          <Status value={group.status} />
+        </Group>
+        {group.error && (
+          <Text size="sm" c="var(--ink-3)">
+            {group.error}
+          </Text>
+        )}
+      </div>
+      <ul className="health-op-rows">
+        {shown.map((op) => {
+          const fileName = op.relativePath?.split('/').pop() ?? null
+          return (
+            <li key={op.id} className="health-op-row">
+              <SeriesCell
+                seriesId={op.seriesId ?? null}
+                title={op.seriesTitle ?? fileName ?? `#${op.fileId}`}
+                coverUrl={op.coverUrl ?? null}
+                detail={
+                  op.seriesTitle && fileName && op.relativePath ? (
+                    <MonoValue value={fileName} full={op.relativePath} fz="var(--type-meta)" c="var(--ink-3)" />
+                  ) : undefined
+                }
+                small
+              />
+              <Text size="xs" c="var(--ink-3)" className="health-op-when">
+                {formatDateTime(op.createdAt)}
+              </Text>
+              <Button size="compact-sm" variant="default" onClick={() => onReview(op.id)}>
+                <Trans>Review</Trans>
+              </Button>
+            </li>
+          )
+        })}
+      </ul>
+      {count > group.rows.length && (
+        <div className="health-op-more">
+          <Button size="compact-sm" variant="subtle" color="var(--neutral)" onClick={() => setExpanded((e) => !e)}>
+            {expanded ? (
+              <Trans>Show fewer</Trans>
+            ) : (
+              <Plural value={count} one="Show all # operation" other="Show all # operations" />
+            )}
+          </Button>
+        </div>
+      )}
+    </Panel>
+  )
+}
+
 function OperationReview({ id, close }: { id: number; close: () => void }) {
   const { t } = useLingui()
   const { data, error } = useHealthData<OperationDetail>(`/operations/${id}`, true, (detail) =>
@@ -1774,7 +1834,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
     <Modal
       opened
       onClose={close}
-      title={t`Operation #${id}`}
+      title={t`Review operation`}
       size="min(1060px, 94vw)"
       centered
     >
@@ -1847,8 +1907,11 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
             <div className="health-review-column">
               <Panel p="md">
                 <Status value={data.operation.status} />
-                <Text fw={600} mt="sm" ff="monospace" style={{ overflowWrap: 'anywhere' }}>
-                  {data.file.relativePath}
+                <Text size="xs" c="var(--ink-3)" mt="xs" component="div">
+                  <Trans>Operation</Trans> <MonoValue value={String(id)} copy />
+                </Text>
+                <Text fw={600} mt="sm" component="div">
+                  <MonoValue value={data.file.relativePath} copy />
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt={4}>
                   {bytes(data.file.size, t`Missing`)} ·{' '}

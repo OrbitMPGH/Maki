@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useState } from 'react'
+import { onPageScroll, pageScrollTop, pageViewportHeight } from '../../lib/pageScroll'
 
 /**
  * Row windowing for the library's grid and list views.
@@ -114,15 +115,16 @@ export function useWindowedRows(count: number, enabled: boolean): WindowedRows {
     const lastIndex = Math.max(0, Math.ceil(count / metrics.perRow) - 1)
     // The wrapper's top edge is where row 0 starts and does not move when the padding inside it
     // changes, unlike the inner grid's, which is why the ref goes on the wrapper.
-    const top = wrapper.getBoundingClientRect().top + window.scrollY
+    const scrollTop = pageScrollTop()
+    const top = wrapper.getBoundingClientRect().top + scrollTop
     const first = Math.min(
-      Math.max(0, Math.floor((window.scrollY - top) / stride) - OVERSCAN_ROWS),
+      Math.max(0, Math.floor((scrollTop - top) / stride) - OVERSCAN_ROWS),
       lastIndex,
     )
     const last = Math.min(
       Math.max(
         first,
-        Math.ceil((window.scrollY + window.innerHeight - top) / stride) + OVERSCAN_ROWS,
+        Math.ceil((scrollTop + pageViewportHeight() - top) / stride) + OVERSCAN_ROWS,
       ),
       lastIndex,
     )
@@ -154,12 +156,12 @@ export function useWindowedRows(count: number, enabled: boolean): WindowedRows {
     const observer = new ResizeObserver(onResize)
     observer.observe(container)
 
-    window.addEventListener('scroll', onScroll, { passive: true })
+    const unlisten = onPageScroll(onScroll)
     window.addEventListener('resize', onResize)
     return () => {
       if (frame) cancelAnimationFrame(frame)
       observer.disconnect()
-      window.removeEventListener('scroll', onScroll)
+      unlisten()
       window.removeEventListener('resize', onResize)
     }
   }, [enabled, wrapper, container, measure, recompute])

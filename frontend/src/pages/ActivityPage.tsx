@@ -287,6 +287,15 @@ export default function ActivityPage() {
   // The proposals list is small, unlike the cutoff evaluation behind the summary, so the tab badge
   // can be live while Queue is showing.
   const { data: proposals } = useTorrentProposals(undefined, canDownload)
+  // One fact gets one state: with nothing upgraded and nothing waiting, the two empty sections
+  // collapse into the line that says why.
+  const nothingUpgraded = upgradeHistory?.total === 0 && (proposals?.length ?? 0) === 0
+  const upgradesUnset =
+    nothingUpgraded &&
+    upgradesSummary?.profilesConfigured === false &&
+    !upgradesSummary.lastScanDate &&
+    upgradesSummary.trashFiles === 0
+  const upgradesQuiet = nothingUpgraded && upgradesSummary?.profilesConfigured === true && cutoffUnmet?.total === 0
   const pendingProposals = proposals?.length ?? 0
 
   const runUpgradeScan = () =>
@@ -402,7 +411,6 @@ export default function ActivityPage() {
       <PageHeader
         compact
         title={t`Activity`}
-        description={t`Live download queue: pages are fetched, validated and packaged into CBZ files two at a time.`}
         actions={
           canManageQueue ? (
             <Group gap="xs">
@@ -868,6 +876,17 @@ export default function ActivityPage() {
             ) : (
               <TableSkeleton columns={6} rows={4} />
             )
+          ) : upgradeHistoryQuery.isPending ? (
+            <TableSkeleton columns={6} rows={4} />
+          ) : upgradesUnset ? (
+            <EmptyState
+              compact
+              mood="asking"
+              title={t`Upgrades are not set up yet`}
+              description={t`Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here.`}
+              actionLabel={isAdmin ? t`Set up quality profiles` : undefined}
+              actionTo={isAdmin ? '/settings?tab=downloads&s=profiles' : undefined}
+            />
           ) : (
             <Stack gap="xl">
               <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
@@ -936,6 +955,16 @@ export default function ActivityPage() {
                 </Stack>
               )}
 
+              {upgradesQuiet && (
+                <EmptyState
+                  compact
+                  mood="pleased"
+                  title={t`Every file meets its cutoff`}
+                  description={t`Nothing has needed an upgrade yet. Files the upgrader replaces show up here.`}
+                />
+              )}
+
+              {!upgradesQuiet && (
               <Stack gap="sm">
                 <SectionHeader icon={IconSparkles} title={t`Recent upgrades`} count={upgradeHistory?.total} />
                 {!upgradeHistory ? (
@@ -1115,7 +1144,9 @@ export default function ActivityPage() {
                   </>
                 )}
               </Stack>
+              )}
 
+              {!upgradesQuiet && (
               <Stack gap="sm">
                 <SectionHeader
                   icon={IconTarget}
@@ -1213,6 +1244,7 @@ export default function ActivityPage() {
                   </>
                 )}
               </Stack>
+              )}
             </Stack>
           )}
         </Tabs.Panel>

@@ -94,3 +94,18 @@ export const SelectMode: Story = {
 export const Selected: Story = {
   args: { selectMode: true, selected: true },
 }
+
+export const SavedOffline: Story = {
+  args: { offline: 'saved' },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Saved on this device')).toBeVisible()
+  },
+}
+
+export const UnavailableOffline: Story = {
+  args: { offline: 'unavailable' },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Not available offline')).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('link')).toHaveAttribute('data-offline', 'unavailable'))
+  },
+}

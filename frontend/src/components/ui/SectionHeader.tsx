@@ -1,5 +1,10 @@
+import { createContext, useContext } from 'react'
 import { Title } from '@mantine/core'
 import type { Icon } from '@tabler/icons-react'
+import { formatNumber } from '../../format'
+
+/** A short label drawn after the title of every header under the provider. */
+export const SectionTagContext = createContext<string | null>(null)
 
 /**
  * The heading above a rail or grid: an accent icon, the title, an optional count, a rule running to
@@ -24,16 +29,18 @@ export function SectionHeader({
   action?: React.ReactNode
   chevron?: boolean
 }) {
+  const tag = useContext(SectionTagContext)
   return (
     <div className="section-header">
       <span className="section-header-lead">
         <span className="section-header-icon" aria-hidden>
-          <SectionIcon size={19} stroke={1.9} />
+          <SectionIcon size={21} stroke={1.9} />
         </span>
         <Title order={2} className="section-header-title">
           {title}
         </Title>
-        {count != null && <span className="section-header-count tnum">{count}</span>}
+        {count != null && <span className="section-header-count tnum">{formatNumber(count)}</span>}
+        {tag && <span className="section-header-tag">{tag}</span>}
       </span>
       <span className="section-header-rule" aria-hidden />
       <div className="section-header-end">

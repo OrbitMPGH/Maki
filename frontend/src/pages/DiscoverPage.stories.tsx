@@ -124,8 +124,10 @@ export const ExpandedRail: Story = {
 }
 
 export const EditLayout: Story = {
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Edit layout' }))
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'More options' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Edit layout' }))
     await waitFor(() => expect(canvas.getByRole('tab', { name: 'Recommended' })).toBeDisabled())
   },
 }
@@ -215,5 +217,15 @@ export const YourTasteEmpty: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Nothing to profile yet', {}, { timeout: 8000 })).toBeVisible()
+  },
+}
+
+export const RecommendedDensityMenu: Story = {
+  parameters: { router: route('/discover/recommended') },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'More options' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('menuitem', { name: 'Compact' })).toBeVisible()
+    await expect(body.queryByRole('menuitem', { name: 'Edit layout' })).toBeNull()
   },
 }

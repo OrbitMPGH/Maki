@@ -121,7 +121,6 @@ function QualityInput({
         max={100}
         value={settings.avifQuality}
         onChange={(avifQuality) => onChange({ avifQuality })}
-        w={260}
       />
     )
   }
@@ -135,7 +134,6 @@ function QualityInput({
       max={100}
       value={settings.webpQuality}
       onChange={(webpQuality) => onChange({ webpQuality })}
-      w={260}
     />
   )
 }

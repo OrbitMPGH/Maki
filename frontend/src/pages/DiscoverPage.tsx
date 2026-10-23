@@ -2,6 +2,7 @@
 import { errorText } from '../api/errorText'
 import '@mantine/charts/styles.css'
 import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ActionIcon,
@@ -10,6 +11,7 @@ import {
   Collapse,
   Group,
   Loader,
+  Menu,
   Modal,
   MultiSelect,
   RangeSlider,
@@ -104,7 +106,7 @@ import {
   RecommendationCard,
   RecommendationRow,
 } from '../components/ui/DiscoverRail'
-import { PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
+import { type CatalogueSeed, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { FilterMatchCount, TermFilters, useRuleChips, useTermFilters } from '../components/CatalogueRules'
 import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
@@ -124,14 +126,33 @@ import { usePageState } from '../lib/pageState'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import {
   DensityControl,
+  DensityMenuItems,
   POSTER_COLS_BY_DENSITY,
-  ViewPrefsControls,
+  ToolbarMenuButton,
+  ViewModeToggle,
+  readStored,
   useDensityPref,
+  writeStored,
   useViewPrefs,
+  type ViewPrefs,
   type Density,
   type DensityPref,
 } from '../components/ui/viewPrefs'
 import { formatFixedDecimal } from '../format'
+
+const DENSITY_VALUES: readonly Density[] = ['compact', 'default', 'comfortable']
+
+function migrateBrowseDensity() {
+  try {
+    if (localStorage.getItem('discover-density') !== null) return
+    const old = readStored('discover-browse-density', DENSITY_VALUES, 'default')
+    if (localStorage.getItem('discover-browse-density') === null) return
+    writeStored('discover-density', old)
+    localStorage.removeItem('discover-browse-density')
+  } catch {
+    /* storage unavailable: nothing to carry over */
+  }
+}
 
 /**
  * Where the Recommended panel is remembered between visits. Its own key rather than the route,
@@ -227,13 +248,15 @@ function DiscoverGenreSkeleton() {
   )
 }
 
-/** The recommendation engine: Maki's library-driven "more like what you own" picks. */
-function RecommendedTab() {
+/**
+ * The recommendation engine: Maki's library-driven "more like what you own" picks. Its toolbar
+ * portals into `toolsTarget`, a slot in the page header, rather than taking a row of its own.
+ */
+function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget: HTMLElement | null }) {
   const renderLabel = useLabel()
   const { t, i18n } = useLingui()
   const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
-  const prefs = useViewPrefs('discover')
   const { viewMode, density } = prefs
 
   // --- customization controls ---
@@ -581,29 +604,33 @@ function RecommendedTab() {
   const minRatingDisplay = formatFixedDecimal(minRating, 1)
 
   return (
-    <>
-      <Group justify="flex-end" mb="md">
-        <ViewPrefsControls prefs={prefs} />
-        <Button
-          variant={isCustomized ? 'light' : 'default'}
-          leftSection={<IconAdjustmentsHorizontal size={16} />}
-          onClick={() => setCustomizeOpen((o) => !o)}
-        >
-          {isCustomized ? <Trans>Customized</Trans> : <Trans>Customize</Trans>}
-        </Button>
-        <LuckyButton
-          candidates={luckyPool}
-          onPick={(key) => setDetailItem(luckyItems.find((item) => item.providerId === key) ?? null)}
-        />
-        <Button
-          variant="default"
-          leftSection={<IconRefresh size={16} />}
-          loading={isFetching}
-          onClick={() => apply(true)}
-        >
-          <Trans>Refresh</Trans>
-        </Button>
-      </Group>
+    <div className="discover-tab-body">
+      {toolsTarget &&
+        createPortal(
+          <>
+            <ViewModeToggle value={prefs.viewMode} onChange={prefs.setViewMode} />
+            <Button
+              variant={isCustomized ? 'light' : 'default'}
+              leftSection={<IconAdjustmentsHorizontal size={16} />}
+              onClick={() => setCustomizeOpen((o) => !o)}
+            >
+              {isCustomized ? <Trans>Customized</Trans> : <Trans>Customize</Trans>}
+            </Button>
+            <LuckyButton
+              candidates={luckyPool}
+              onPick={(key) => setDetailItem(luckyItems.find((item) => item.providerId === key) ?? null)}
+            />
+            <Button
+              variant="default"
+              leftSection={<IconRefresh size={16} />}
+              loading={isFetching}
+              onClick={() => apply(true)}
+            >
+              <Trans>Refresh</Trans>
+            </Button>
+          </>,
+          toolsTarget,
+        )}
 
       <Collapse expanded={customizeOpen}>
         <Panel p="md" mb="md" className="discover-recommended-customize">
@@ -893,7 +920,7 @@ function RecommendedTab() {
         onClose={() => setDetailItem(null)}
         onReroll={luckyItems.length > 1 ? rerollDetail : undefined}
       />
-    </>
+    </div>
   )
 }
 
@@ -1027,7 +1054,6 @@ function FeedExpandModal({
           >{rail?.title}</Text>
         </Group>
       }
-      styles={{ body: { paddingTop: 'var(--mantine-spacing-md)' } }}
     >
       <Panel p="md" mb="md">
         <Stack gap="md">
@@ -1110,6 +1136,31 @@ function FeedExpandModal({
       )}
     </Modal>
   )
+}
+
+/**
+ * The catalogue feeds whose Show more is the Add page: each is a sort, plus the rail's own type or
+ * genre. Null keeps the modal: Trending has no sort to match, and the personalised, cohort,
+ * following and custom rails page endpoints of their own.
+ */
+function catalogueSeedFor(rail: DiscoverRail): CatalogueSeed | null {
+  if (rail.seedIds?.length || rail.key.startsWith(CUSTOM_RAIL_PREFIX) || rail.key === FOLLOWING_RAIL_KEY) return null
+  switch (rail.feed) {
+    case 'Popular':
+      return { sort: 'popular', filters: {} }
+    case 'TopRated':
+      return { sort: 'rating', filters: {} }
+    case 'New':
+      return { sort: 'newest', filters: {} }
+    case 'PopularManhwa':
+      return { sort: 'popular', filters: { types: ['manhwa'] } }
+    case 'PopularManhua':
+      return { sort: 'popular', filters: { types: ['manhua'] } }
+    case 'GenreSpotlight':
+      return rail.genre ? { sort: 'popular', filters: { genres: [rail.genre] } } : null
+    default:
+      return null
+  }
 }
 
 /** Catalogue browse: Popular / New / Trending / … rails, independent of the library. */
@@ -1209,6 +1260,12 @@ function DiscoverBrowseTab({
     setExpandedRail(expandFollowing)
     navigate(location.pathname, { replace: true, state: null })
   }, [expandFollowing, navigate, location.pathname])
+
+  const showMore = (rail: DiscoverRail) => {
+    const seed = catalogueSeedFor(rail)
+    if (seed) navigate('/add', { state: { catalogueSeed: seed } })
+    else setExpandedRail(rail)
+  }
 
   const recommendFrom = useCallback(
     (item: RecommendationItem) =>
@@ -1462,12 +1519,8 @@ function DiscoverBrowseTab({
               size="xs"
               leftSection={<IconAdjustmentsHorizontal size={14} />}
               onClick={() =>
-                setExpandedRail({
-                  key: 'catalogue',
-                  title: t`The whole catalogue`,
-                  feed: 'Popular',
-                  genre: null,
-                  items: [],
+                navigate('/add', {
+                  state: { catalogueSeed: { sort: 'popular', filters: {}, openFilters: true } satisfies CatalogueSeed },
                 })
               }
             >
@@ -1489,7 +1542,7 @@ function DiscoverBrowseTab({
               cols={density.cols}
               seriesIdFor={seriesIdFor}
               onOpen={setDetailItem}
-              onShowMore={setExpandedRail}
+              onShowMore={showMore}
             />
           ) : (
             <EmptyState
@@ -1504,7 +1557,7 @@ function DiscoverBrowseTab({
       genreRails && genreRails.length > 0 ? (
         <div>
           <SectionHeader icon={IconLayoutGrid} title={t`Every genre`} count={genreRails.length} />
-          <DiscoverGenreWall rails={genreRails} onOpen={setExpandedRail} />
+          <DiscoverGenreWall rails={genreRails} onOpen={showMore} />
         </div>
       ) : genresFetching ? (
         <DiscoverGenreSkeleton />
@@ -1582,39 +1635,53 @@ export default function DiscoverPage() {
   const refreshRails = useCallback(() => setRefreshNonce((n) => n + 1), [])
   const { editing, enter: enterEditing, exit: exitEditing } = useLayoutEditMode(active === 'browse')
 
-  // One density for the whole Discover tab, up here for the same reason as the refresh action: the
-  // control belongs in the page header. Its own scope rather than `discover`, which the Recommended
-  // tab already owns through `useViewPrefs` - two states over one key would go stale against each
-  // other, since only one tab is mounted at a time.
-  const browseDensity = useDensityPref('discover-browse')
+  // One view mode and density for Discover's two poster tabs, up here so the page header's menu
+  // is the only control for it. Only one of the tabs is mounted at a time, so sharing the state is
+  // safe.
+  useState(migrateBrowseDensity)
+  const viewPrefs = useViewPrefs('discover')
+  const showTools = (active === 'browse' && !editing) || active === 'recommended'
+  const [tabTools, setTabTools] = useState<HTMLDivElement | null>(null)
 
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
         title={t`Discover`}
-        description={t`Browse the MangaBaka catalogue, or get personalised picks from your library's feel.`}
+        className="discover-page-header"
         actions={
-          active === 'browse' && !editing ? (
-            <Group gap="xs" wrap="wrap">
-              <Button variant="default" leftSection={<IconLayoutDashboard size={16} />} onClick={enterEditing}>
-                <Trans>Edit layout</Trans>
-              </Button>
-              <DensityControl
-                value={browseDensity.density}
-                onChange={browseDensity.setDensity}
-              />
-              <Tooltip label={t`Refresh the catalogue`} withArrow>
-                <ActionIcon
-                  variant="subtle"
-                  color="var(--neutral)"
-                  size="lg"
-                  loading={railsFetching}
-                  onClick={refreshRails}
-                  aria-label={t`Refresh the catalogue`}
-                >
-                  <IconRefresh size={18} />
-                </ActionIcon>
-              </Tooltip>
+          showTools ? (
+            <Group gap="xs" wrap="wrap" justify="flex-end">
+              <div ref={setTabTools} className="discover-tab-tools" />
+              {active === 'browse' && (
+                <Tooltip label={t`Refresh the catalogue`} withArrow>
+                  <ActionIcon
+                    variant="subtle"
+                    color="var(--neutral)"
+                    size={44}
+                    loading={railsFetching}
+                    onClick={refreshRails}
+                    aria-label={t`Refresh the catalogue`}
+                  >
+                    <IconRefresh size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
+              <Menu position="bottom-end" withinPortal>
+                <Menu.Target>
+                  <ToolbarMenuButton size={44} />
+                </Menu.Target>
+                <Menu.Dropdown>
+                  {active === 'browse' && (
+                    <>
+                      <Menu.Item leftSection={<IconLayoutDashboard size={14} />} onClick={enterEditing}>
+                        <Trans>Edit layout</Trans>
+                      </Menu.Item>
+                      <Menu.Divider />
+                    </>
+                  )}
+                  <DensityMenuItems value={viewPrefs.density} onChange={viewPrefs.setDensity} />
+                </Menu.Dropdown>
+              </Menu>
             </Group>
           ) : undefined
         }
@@ -1641,7 +1708,7 @@ export default function DiscoverPage() {
       </Tabs>
 
       {active === 'recommended' ? (
-        <RecommendedTab />
+        <RecommendedTab prefs={viewPrefs} toolsTarget={tabTools} />
       ) : active === 'taste' ? (
         <Suspense fallback={<Loader />}>
           <TasteTab />
@@ -1650,7 +1717,7 @@ export default function DiscoverPage() {
         <DiscoverBrowseTab
           refreshNonce={refreshNonce}
           onRefresh={refreshRails}
-          density={browseDensity}
+          density={viewPrefs}
           editing={editing}
           onExitEditing={exitEditing}
         />

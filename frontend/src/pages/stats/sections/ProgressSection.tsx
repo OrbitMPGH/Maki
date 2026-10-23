@@ -15,6 +15,7 @@ import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useAchievements, useProgressSummary, useLeaderboard } from '../../../api/hooks'
+import { useAuth } from '../../../auth/AuthProvider'
 import type { ReadingGoal } from '../../../api/hooks'
 import { Panel } from '../../../components/ui/Panel'
 import { formatNumber } from '../../../format'
@@ -27,7 +28,7 @@ import {
 import { StatsInsight } from '../StatsSection'
 import type { StatsSectionProps } from './types'
 
-const GOAL_LABELS: Record<ReadingGoal['period'], MessageDescriptor> = {
+export const GOAL_LABELS: Record<ReadingGoal['period'], MessageDescriptor> = {
   Day: msg`Today`,
   Week: msg`This week`,
   Month: msg`This month`,
@@ -35,7 +36,7 @@ const GOAL_LABELS: Record<ReadingGoal['period'], MessageDescriptor> = {
 }
 
 /** Target count, pluralised by metric: "12 / 50 chapters", "1 / 30 minutes". */
-function metricProgress(metric: ReadingGoal['metric'], target: number): string {
+export function metricProgress(metric: ReadingGoal['metric'], target: number): string {
   switch (metric) {
     case 'Chapters':
       return plural(target, { one: '# chapter', other: '# chapters' })
@@ -81,7 +82,9 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
   const { data: achievements } = useAchievements(userId, summary?.enabled !== false)
   // Only meaningful for your own view: the endpoint answers about who opted in, not about whoever
   // an admin is currently looking at.
-  const { data: leaderboard } = useLeaderboard(!userId)
+  const { singleUser } = useAuth()
+  const showLeaderboard = !userId && !singleUser
+  const { data: leaderboard } = useLeaderboard(showLeaderboard)
 
   const insight = useMemo(() => {
     if (!summary || !summary.enabled) return null
@@ -182,7 +185,6 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
   const nextLevel = level.level + 1
   const intoLevel = formatNumber(level.intoLevel)
   const levelSpan = formatNumber(level.levelSpan)
-  const showLeaderboard = !userId
   const streak = summary.currentStreak
   const best = summary.longestStreak
   const total = formatNumber(summary.total)

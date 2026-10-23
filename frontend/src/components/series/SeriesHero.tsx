@@ -31,6 +31,7 @@ import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
 import { useBackTarget } from '../../lib/navHistory'
+import { useCoverTint } from '../../lib/coverTint'
 import {HeroBackdrop} from './HeroBackdrop'
 import { MetadataLock } from './EditMetadataModal'
 import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
@@ -76,6 +77,7 @@ export function SeriesHero({
     // fallback for a series opened cold, from a bookmark or a fresh tab.
     const back = useBackTarget(LIBRARY_FALLBACK)
     const label = useLabel()
+    useCoverTint(series.coverUrl)
 
     /**
      * How far the linked sources fall short of the chapter count MangaBaka reports.

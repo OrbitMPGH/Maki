@@ -238,7 +238,6 @@ export function BackupSection() {
           max={50}
           value={retention}
           onChange={setRetention}
-          w={220}
         />
       </Stack>
 
@@ -634,7 +633,6 @@ export function HealthSettingsSection() {
   const [draft, setDraft] = useState<HealthOptions | null>(null)
   const value = draft ?? data
   const update = (patch: Partial<HealthOptions>) => value && setDraft({ ...value, ...patch })
-  const below = ['label', 'input', 'description', 'error'] as ('label' | 'input' | 'description' | 'error')[]
 
   return (
     <SettingsSection
@@ -679,7 +677,6 @@ export function HealthSettingsSection() {
             <SettingsNumberInput
               label={t`Daily scan hour`}
               description={t`0 to 23.`}
-              inputWrapperOrder={below}
               min={0}
               max={23}
               value={value.scanHour}
@@ -688,14 +685,12 @@ export function HealthSettingsSection() {
             <TextInput
               label={t`Timezone`}
               description={t`Empty uses the server's timezone.`}
-              inputWrapperOrder={below}
               value={value.timeZone ?? ''}
               onChange={(e) => update({ timeZone: e.currentTarget.value || null })}
             />
             <SettingsNumberInput
               label={t`Pages decoded at once`}
               description={t`0 picks a number for this machine. Raise it to scan faster, lower it to leave the CPU alone.`}
-              inputWrapperOrder={below}
               min={0}
               max={32}
               value={value.scanWorkers}

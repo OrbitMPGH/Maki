@@ -8,7 +8,7 @@ import type { ChapterDto } from '../api/types'
 import { formatBytes } from '../format'
 import { getConnectivity } from '../lib/connectivity'
 import { cacheDeleteWhere, cacheMatch, cachePut, deleteCache } from '../lib/pwa/cache'
-import { pwaSupported } from '../lib/pwa/serviceWorker'
+import { pwaSupported, workerControlsPage } from '../lib/pwa/serviceWorker'
 import { estimate, requestPersistence } from '../lib/pwa/storage'
 import { cacheNames, OFFLINE_CODE, OFFLINE_HEADER, type OfflineChapter } from './contract'
 import {
@@ -110,6 +110,18 @@ export function useOfflineSeriesIds(): ReadonlySet<number> {
     for (const record of records.values()) if (record.state !== 'error') ids.add(record.seriesId)
     return ids
   }, [records])
+}
+
+const NO_SERIES: ReadonlySet<number> = new Set()
+
+/**
+ * Series worth opening without the server: the ones with chapters saved on this device. A series
+ * page the worker kept from an earlier visit opens too, but there is nothing in it to read, so it
+ * does not count. Empty when no worker answers this tab, since then nothing stored can be served.
+ */
+export function useOfflineAvailableSeriesIds(enabled: boolean): ReadonlySet<number> {
+  const saved = useOfflineSeriesIds()
+  return enabled && workerControlsPage() ? saved : NO_SERIES
 }
 
 let loadingFor: number | null = null
