@@ -508,6 +508,7 @@ export function SourceMappingsSection({
                         <MonoValue
                           value={m.sourceSeriesId}
                           href={m.url ?? undefined}
+                          copy
                           fz="var(--mantine-font-size-xs)"
                         />
                         <Text size="xs" c="var(--ink-3)" aria-hidden>·</Text>

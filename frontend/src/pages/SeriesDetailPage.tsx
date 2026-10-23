@@ -1,6 +1,6 @@
 import { errorText } from '../api/errorText'
 import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, FormEvent, ReactNode } from 'react'
+import type { CSSProperties, FormEvent, ReactNode, RefObject } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { msg, plural, t as staticT } from '@lingui/core/macro'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
@@ -162,7 +162,7 @@ import {
 } from '../components/ui/status'
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { MonoValue } from '../components/ui/MonoValue'
-import { useColumnWidths } from '../lib/useColumnWidths'
+import { useColumnWidths, type ColumnSpec } from '../lib/useColumnWidths'
 import { useStableActions } from '../lib/useStableActions'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -225,8 +225,49 @@ const CHAPTER_WANTED_COLUMN_WIDTH = 80
 const CHAPTER_ACTIONS_COLUMN_WIDTH = 124
 const CHAPTER_FIXED_COLUMNS_WIDTH = CHAPTER_WANTED_COLUMN_WIDTH + CHAPTER_ACTIONS_COLUMN_WIDTH
 const CHAPTER_TITLE_MIN_WIDTH = 220
-const chapterTableMinWidthFor = (widths: Record<keyof typeof CHAPTER_COLUMNS, number>) =>
-  CHAPTER_FIXED_COLUMNS_WIDTH + CHAPTER_TITLE_MIN_WIDTH + Object.values(widths).reduce((sum, w) => sum + w, 0)
+type ChapterColumn = keyof typeof CHAPTER_COLUMNS
+const CHAPTER_COLUMN_KEYS = Object.keys(CHAPTER_COLUMNS) as ChapterColumn[]
+const CHAPTER_COLUMN_MAX = 640
+/**
+ * Full shows every column, compact sheds Released, list turns rows into two-line list rows. Released
+ * goes first because it is the one column nothing on the page acts on: Source and Status are what
+ * downloads and upgrades are decided from, and the actions need the room.
+ */
+type ChapterLayout = 'full' | 'compact' | 'list'
+const CHAPTER_SHED_COLUMN: ChapterColumn = 'released'
+const shownChapterColumns = (layout: ChapterLayout) =>
+  layout === 'compact' ? CHAPTER_COLUMN_KEYS.filter((key) => key !== CHAPTER_SHED_COLUMN) : CHAPTER_COLUMN_KEYS
+const chapterTableMinWidthFor = (widths: Record<ChapterColumn, number>, layout: ChapterLayout) =>
+  CHAPTER_FIXED_COLUMNS_WIDTH + CHAPTER_TITLE_MIN_WIDTH + shownChapterColumns(layout).reduce((sum, key) => sum + widths[key], 0)
+// Off the default widths, never the dragged ones: a column dragged wide used to tip the table into
+// list rows, which have no header to drag it back from.
+const CHAPTER_DEFAULT_WIDTHS = Object.fromEntries(
+    CHAPTER_COLUMN_KEYS.map((key) => [key, CHAPTER_COLUMNS[key].width]),
+) as Record<ChapterColumn, number>
+const CHAPTER_FULL_MIN_WIDTH = chapterTableMinWidthFor(CHAPTER_DEFAULT_WIDTHS, 'full')
+const CHAPTER_COMPACT_MIN_WIDTH = chapterTableMinWidthFor(CHAPTER_DEFAULT_WIDTHS, 'compact')
+const chapterLayoutFor = (panelWidth: number): ChapterLayout =>
+  panelWidth === 0 || panelWidth >= CHAPTER_FULL_MIN_WIDTH ? 'full' : panelWidth >= CHAPTER_COMPACT_MIN_WIDTH ? 'compact' : 'list'
+
+type ChapterColumnRoom = { panel: number; layout: ChapterLayout; widths: Record<ChapterColumn, number> | null }
+/**
+ * Column specs whose max is whatever the panel has left once every other shown column has its
+ * width, so a drag can't push the table wider than the panel. Read at drag time from `room`, which
+ * the page keeps current without re-rendering on every pixel of a window resize.
+ */
+const chapterColumnSpecsWithin = (room: RefObject<ChapterColumnRoom>) =>
+  Object.fromEntries(
+      CHAPTER_COLUMN_KEYS.map((key): [ChapterColumn, ColumnSpec] => [key, {
+        ...CHAPTER_COLUMNS[key],
+        get max() {
+          const { panel, layout, widths } = room.current
+          if (panel === 0 || layout === 'list' || !widths) return CHAPTER_COLUMN_MAX
+          const others = shownChapterColumns(layout).reduce((sum, k) => (k === key ? sum : sum + widths[k]), 0)
+          const left = Math.floor(panel - CHAPTER_FIXED_COLUMNS_WIDTH - CHAPTER_TITLE_MIN_WIDTH - others)
+          return Math.min(CHAPTER_COLUMN_MAX, Math.max(CHAPTER_COLUMNS[key].min, left))
+        },
+      }]),
+  ) as Record<ChapterColumn, ColumnSpec>
 
 /**
  * Descriptors, not strings: this table is built once when the module loads, so a rendered string
@@ -573,20 +614,21 @@ function SeriesDetailBody() {
     setChapterSortState(next)
     writeStored(CHAPTER_SORT_STORAGE_KEY, next)
   }
+  const chapterColumnRoom = useRef<ChapterColumnRoom>({ panel: 0, layout: 'full', widths: null })
+  const [chapterColumnSpecs] = useState(() => chapterColumnSpecsWithin(chapterColumnRoom))
   const { widths: chapterColumnWidths, handleProps: chapterColumnHandle } = useColumnWidths(
       CHAPTER_COLUMNS_STORAGE_KEY,
-      CHAPTER_COLUMNS,
+      chapterColumnSpecs,
       (widths, key, shift) => {
         // Mid-drag nothing renders, so the table's min-width and the season lines are moved by
         // hand. The lines sit at the Chapter cell's end, so they shift by exactly what it grew.
         chapterTable
             ?.querySelector<HTMLElement>('.mantine-TableScrollContainer-scrollContainer')
-            ?.style.setProperty('--table-min-width', `${chapterTableMinWidthFor(widths)}px`)
+            ?.style.setProperty('--table-min-width', `${chapterTableMinWidthFor(widths, chapterColumnRoom.current.layout)}px`)
         const overlay = chapterTable?.querySelector<HTMLElement>('.chapter-span-overlay')
         if (overlay) overlay.style.transform = key === 'chapter' && shift ? `translateX(${shift}px)` : ''
       },
   )
-  const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths)
   const [chapterSearch, setChapterSearch] = useState('')
   const [chapterPageSizePreference, setChapterPageSizePreference] = useState<ChapterPageSize>(() =>
       readStored(CHAPTER_PAGE_SIZE_STORAGE_KEY, CHAPTER_PAGE_SIZES, '50'),
@@ -879,16 +921,28 @@ function SeriesDetailBody() {
    * lines only appeared if the page was loaded straight into Chapters.
    */
   const [chapterTable, setChapterTable] = useState<HTMLDivElement | null>(null)
-  const [chapterPanelWidth, setChapterPanelWidth] = useState(0)
+  // Only the layout is state, so a window resize re-renders the page when it crosses a threshold
+  // rather than on every pixel. The width itself goes to the column specs' drag limits.
+  const [chapterLayoutByWidth, setChapterLayoutByWidth] = useState<ChapterLayout>('full')
   useEffect(() => {
     if (!chapterTable) return
-    const observer = new ResizeObserver(([entry]) => setChapterPanelWidth(entry.contentRect.width))
+    const observer = new ResizeObserver(([entry]) => {
+      chapterColumnRoom.current.panel = entry.contentRect.width
+      setChapterLayoutByWidth(chapterLayoutFor(entry.contentRect.width))
+    })
     observer.observe(chapterTable)
     return () => observer.disconnect()
   }, [chapterTable])
-  // Two-line rows whenever the panel can't hold every column at its set width. A scrolling table
-  // squeezed Title to a few characters and pushed the switch and actions out of view.
-  const chapterRowsAsList = isMobile || (chapterPanelWidth > 0 && chapterPanelWidth < chapterTableMinWidth)
+  // A panel that can't hold the default columns first drops Released, then turns rows into two-line
+  // list rows. A scrolling table squeezed Title to a few characters and pushed the switch and
+  // actions out of view.
+  const chapterLayout: ChapterLayout = isMobile ? 'list' : chapterLayoutByWidth
+  const chapterRowsAsList = chapterLayout === 'list'
+  const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths, chapterLayout)
+  useLayoutEffect(() => {
+    chapterColumnRoom.current.layout = chapterLayout
+    chapterColumnRoom.current.widths = chapterColumnWidths
+  }, [chapterLayout, chapterColumnWidths])
   const [spanLines, setSpanLines] = useState<
       { key: string; label: string; top: number; height: number; left: number; openStart: boolean; openEnded: boolean }[]
   >([])
@@ -1142,7 +1196,34 @@ function SeriesDetailBody() {
       observer.disconnect()
       viewport?.removeEventListener('scroll', measure)
     }
-  }, [chapterTable, animeSpans, foldedSpans, shownRows, markerSlot, chapterSort, chapterColumnWidths])
+  }, [chapterTable, animeSpans, foldedSpans, shownRows, markerSlot, chapterSort, chapterColumnWidths, chapterLayout])
+
+  // On a phone only the toolbar stays pinned; the search scrolls away with the page, or the two
+  // together cover a third of the screen.
+  const chapterSearchInput = chapters && chapters.length > 0 && (
+      <TextInput
+          size="sm"
+          mt={isMobile ? -8 : undefined}
+          value={chapterSearch}
+          onChange={(event) => setChapterSearch(event.currentTarget.value)}
+          leftSection={<IconSearch size={16} />}
+          rightSection={
+            chapterSearch ? (
+                <ActionIcon
+                    size="sm"
+                    variant="subtle"
+                    color="var(--neutral)"
+                    aria-label={t`Clear chapter search`}
+                    onClick={() => setChapterSearch('')}
+                >
+                  <IconX size={14} />
+                </ActionIcon>
+            ) : null
+          }
+          placeholder={t`Search by chapter number or title`}
+          aria-label={t`Search chapters`}
+      />
+  )
 
   const setChaptersState = useSetChaptersState(seriesId)
 
@@ -2305,30 +2386,9 @@ function SeriesDetailBody() {
                 )}
               </Group>
 
-              {chapters && chapters.length > 0 && (
-                  <TextInput
-                      size="sm"
-                      value={chapterSearch}
-                      onChange={(event) => setChapterSearch(event.currentTarget.value)}
-                      leftSection={<IconSearch size={16} />}
-                      rightSection={
-                        chapterSearch ? (
-                            <ActionIcon
-                                size="sm"
-                                variant="subtle"
-                                color="var(--neutral)"
-                                aria-label={t`Clear chapter search`}
-                                onClick={() => setChapterSearch('')}
-                            >
-                              <IconX size={14} />
-                            </ActionIcon>
-                        ) : null
-                      }
-                      placeholder={t`Search by chapter number or title`}
-                      aria-label={t`Search chapters`}
-                  />
-              )}
+              {!isMobile && chapterSearchInput}
             </div>
+            {isMobile && chapterSearchInput}
 
             {/* Two closed issues came from people who had a file on disk and could not find how to
                 tell Maki which chapters it holds. Point at it from the tab they were looking at. */}
@@ -2693,7 +2753,7 @@ function SeriesDetailBody() {
             ) : (
                 <Stack gap="sm">
                   <Paper
-                      className={chapterRowsAsList ? 'series-detail-chapter-table chapter-rows-list' : 'series-detail-chapter-table'}
+                      className={`series-detail-chapter-table chapter-rows-${chapterLayout}`}
                       withBorder
                       radius="lg"
                       style={{ overflow: 'hidden' }}
@@ -2715,7 +2775,9 @@ function SeriesDetailBody() {
                               <Table.Th w={CHAPTER_WANTED_COLUMN_WIDTH}><Trans>Wanted</Trans></Table.Th>
                               <Table.Th w={chapterColumnWidths.chapter}>
                                 <Trans>Chapter</Trans>
-                                <div {...chapterColumnHandle('chapter')} aria-label={t`Resize Chapter column`} />
+                                {!chapterRowsAsList && (
+                                    <div {...chapterColumnHandle('chapter')} aria-label={t`Resize Chapter column`} />
+                                )}
                               </Table.Th>
                               <Table.Th>
                                 {/* Less the cell's padding. The table's min-width alone doesn't stop the
@@ -2724,15 +2786,21 @@ function SeriesDetailBody() {
                               </Table.Th>
                               <Table.Th w={chapterColumnWidths.released} className="chapter-released">
                                 <Trans>Released</Trans>
-                                <div {...chapterColumnHandle('released', 'start')} aria-label={t`Resize Released column`} />
+                                {!chapterRowsAsList && (
+                                    <div {...chapterColumnHandle('released', 'start')} aria-label={t`Resize Released column`} />
+                                )}
                               </Table.Th>
                               <Table.Th w={chapterColumnWidths.source}>
                                 <Trans>Source</Trans>
-                                <div {...chapterColumnHandle('source', 'start')} aria-label={t`Resize Source column`} />
+                                {!chapterRowsAsList && (
+                                    <div {...chapterColumnHandle('source', 'start')} aria-label={t`Resize Source column`} />
+                                )}
                               </Table.Th>
                               <Table.Th w={chapterColumnWidths.status}>
                                 <Trans>Status</Trans>
-                                <div {...chapterColumnHandle('status', 'start')} aria-label={t`Resize Status column`} />
+                                {!chapterRowsAsList && (
+                                    <div {...chapterColumnHandle('status', 'start')} aria-label={t`Resize Status column`} />
+                                )}
                               </Table.Th>
                               <Table.Th w={CHAPTER_ACTIONS_COLUMN_WIDTH}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                             </Table.Tr>

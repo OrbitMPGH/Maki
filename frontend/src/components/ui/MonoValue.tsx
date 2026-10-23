@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties } from 'react'
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { IconCheck, IconCopy } from '@tabler/icons-react'
 import { useLingui } from '@lingui/react/macro'
@@ -21,6 +21,25 @@ export function splitForTruncation(value: string): [head: string, tail: string] 
   const keep = ext ? ext.length + 8 : 6
   if (value.length <= Math.max(keep + 4, 16)) return [value, '']
   return [value.slice(0, -keep), value.slice(-keep)]
+}
+
+// One observer for every value on the page: a file table holds hundreds of them.
+const clipWatchers = new WeakMap<Element, () => void>()
+let clipObserver: ResizeObserver | undefined
+function watchSize(el: Element, onResize: () => void) {
+  if (typeof ResizeObserver === 'undefined') {
+    onResize()
+    return () => {}
+  }
+  clipObserver ??= new ResizeObserver((entries) => {
+    for (const entry of entries) clipWatchers.get(entry.target)?.()
+  })
+  clipWatchers.set(el, onResize)
+  clipObserver.observe(el)
+  return () => {
+    clipObserver?.unobserve(el)
+    clipWatchers.delete(el)
+  }
 }
 
 /**
@@ -51,15 +70,22 @@ export function MonoValue({
   const { copied, copy: copyValue } = useCopyText()
   const headRef = useRef<HTMLSpanElement>(null)
   const [opened, setOpened] = useState(false)
+  const [clipped, setClipped] = useState(false)
   const whole = full ?? value
   const [head, tail] = splitForTruncation(value)
+  // Clipped, or standing for something longer: only then is there anything to reveal, and only then
+  // does the value take focus, so keyboard and touch users can get at it too.
+  const hidesSome = whole !== value || clipped
 
-  const show = () => {
+  useLayoutEffect(() => {
     const el = headRef.current
-    const tailEl = el?.nextElementSibling
-    const clipped = (e: Element | null | undefined) => !!e && e.scrollWidth > e.clientWidth
-    setOpened(whole !== value || clipped(el) || clipped(tailEl))
-  }
+    const box = el?.parentElement
+    if (!el || !box) return
+    const over = (e: Element | null) => !!e && e.scrollWidth > e.clientWidth
+    return watchSize(box, () => setClipped(over(el) || over(el.nextElementSibling)))
+  }, [value])
+
+  const show = () => setOpened(hidesSome)
   const hide = () => setOpened(false)
 
   const text = (
@@ -88,7 +114,15 @@ export function MonoValue({
             {text}
           </a>
         ) : (
-          <span className="mono-value-text" onMouseEnter={show} onMouseLeave={hide}>
+          <span
+            className="mono-value-text"
+            tabIndex={hidesSome ? 0 : undefined}
+            title={hidesSome && !opened ? whole : undefined}
+            onMouseEnter={show}
+            onMouseLeave={hide}
+            onFocus={show}
+            onBlur={hide}
+          >
             {text}
           </span>
         )}

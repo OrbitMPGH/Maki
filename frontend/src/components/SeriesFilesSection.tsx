@@ -40,6 +40,10 @@ function mappedLabel(file: SeriesFileDto): string {
 }
 
 const hasLinks = (file: SeriesFileDto) => file.mappedChapters.length > 0 || file.status === 'linked'
+const MAPPED_TOOLTIP_EVENTS = { hover: true, focus: true, touch: true }
+// The fixed columns take 742px; this leaves the file name about 140px, so a phone sees it and the
+// parsed label before the table scrolls.
+const FILE_TABLE_MIN_WIDTH = 880
 
 export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const { t } = useLingui()
@@ -179,7 +183,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             <VisuallyHidden role="status">
               <Trans>Scanning folder…</Trans>
             </VisuallyHidden>
-            <Table.ScrollContainer minWidth={1100}>
+            <Table.ScrollContainer minWidth={FILE_TABLE_MIN_WIDTH}>
               <Table className="panel-table ops-table" layout="fixed" aria-busy>
                 {tableHead}
                 <Table.Tbody>
@@ -255,7 +259,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
           )}
 
           <Panel p={0} className="table-panel" mt="sm">
-            <Table.ScrollContainer minWidth={1100}>
+            <Table.ScrollContainer minWidth={FILE_TABLE_MIN_WIDTH}>
               {/* Fixed, so the file name takes what the other columns leave and loses its middle
                   rather than pushing them into wrapping. */}
               <Table className="panel-table ops-table" layout="fixed" highlightOnHover>
@@ -321,8 +325,9 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                               withArrow
                               multiline
                               maw={360}
+                              events={MAPPED_TOOLTIP_EVENTS}
                             >
-                              <Text size="sm" className="tnum" truncate="end">
+                              <Text size="sm" className="tnum mapped-to-label" truncate="end" tabIndex={0}>
                                 {mappedLabel(f)}
                               </Text>
                             </Tooltip>
@@ -335,8 +340,14 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             >
                               <Trans>Link chapters</Trans>
                             </Button>
+                          ) : hasLinks(f) ? (
+                            <Tooltip label={mappedLabel(f)} withArrow multiline maw={360} events={MAPPED_TOOLTIP_EVENTS}>
+                              <Text size="sm" className="tnum mapped-to-label" truncate="end" tabIndex={0}>
+                                {mappedLabel(f)}
+                              </Text>
+                            </Tooltip>
                           ) : (
-                            <Text size="sm" c={hasLinks(f) ? undefined : 'var(--ink-3)'} className="tnum" truncate="end">
+                            <Text size="sm" c="var(--ink-3)" className="tnum" truncate="end">
                               {mappedLabel(f)}
                             </Text>
                           )}
