@@ -4478,9 +4478,11 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   position: relative;
   width: 100%;
   /* Clears whatever header there is (none on desktop, the burger bar on mobile), plus real air.
-     The inline padding is deliberately generous: the poster hard against the rail was the single
-     thing that most made this band read as unfinished. */
-  padding: max(var(--app-shell-header-offset, 0px), 28px) clamp(24px, 3.6vw, 64px) 0;
+     The inline padding is the gutter the band bled past, so the poster and the Progress panel line
+     up with the panels under the band. */
+  padding: max(var(--app-shell-header-offset, 0px), 28px)
+    var(--page-gutter-end, var(--app-shell-padding, 1rem)) 0
+    var(--page-gutter-start, var(--app-shell-padding, 1rem));
 }
 /* Inline-flex and `fit-content` so the target is the arrow and the word, not the full width of
    the hero: a link as wide as the band sends a stray click halfway across the page back to it. */
