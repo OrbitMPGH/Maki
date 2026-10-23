@@ -226,6 +226,17 @@ export const EmptyLibraryAsReader: Story = {
   },
 }
 
+/** The server is out of reach and the library list never made it onto this device. */
+export const OfflineWithoutLibrary: Story = {
+  parameters: {
+    msw: homePage(http.get(api('/series'), () => failWith(503, 'Not available offline', 'offline.unavailable'))),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('heading', { level: 2, name: "You're offline" })).toBeVisible()
+    await expect(canvas.queryByText(/couldn't load your library/i)).toBeNull()
+  },
+}
+
 export const LibraryFailed: Story = {
   parameters: { msw: homePage(http.get(api('/series'), () => failWith(500))) },
   play: async ({ canvas }) => {

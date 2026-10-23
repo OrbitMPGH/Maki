@@ -12,6 +12,14 @@ export function pwaSupported(): boolean {
   }
 }
 
+/**
+ * Whether a worker answers this tab's requests. False after a hard reload, which bypasses it, and
+ * always on the dev server, which never registers one: saved chapters cannot be served then.
+ */
+export function workerControlsPage(): boolean {
+  return pwaSupported() && navigator.serviceWorker.controller !== null
+}
+
 let registered = false
 
 /**

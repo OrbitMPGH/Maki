@@ -744,6 +744,10 @@ msgstr ""
 msgid "{count, plural, one {# replacement} other {# replacements}}"
 msgstr ""
 
+#: src/components/home/OfflineHome.tsx
+msgid "{count, plural, one {# saved} other {# saved}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {# series is failing to refresh from its source} other {# series are failing to refresh from their sources}}"
 msgstr ""
@@ -779,6 +783,10 @@ msgstr ""
 #, fuzzy
 msgid "{count, plural, one {# unread} other {# unread}}"
 msgstr "{count, plural, one {# non lu} many {# non lus} other {# non lus}}"
+
+#: src/components/home/OfflineHome.tsx
+msgid "{count, plural, one {A chapter is saved on this device, but this tab can't open it right now. That usually follows a hard reload: reload the page normally and it will be ready to read.} other {# chapters are saved on this device, but this tab can't open them right now. That usually follows a hard reload: reload the page normally and they will be ready to read.}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -1595,6 +1603,11 @@ msgstr "{reason} : {detail}"
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
 
+#: src/components/home/DownloadingStrip.tsx
+#, fuzzy
+#~ msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
+#~ msgstr "{remaining, plural, one {# de plus dans la file} many {# de plus dans la file} other {# de plus dans la file}}"
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -2044,6 +2057,11 @@ msgstr ""
 #, fuzzy
 msgid "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
 msgstr "{totalCount, plural, one {{visibleCount} sur # série correspond} many {{visibleCount} sur # séries correspondent} other {{visibleCount} sur # séries correspondent}}"
+
+#: src/components/home/DownloadingStrip.tsx
+#, fuzzy
+#~ msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
+#~ msgstr "{totalQueued, plural, one {# dans la file} many {# dans la file} other {# dans la file}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4768,6 +4786,11 @@ msgstr "Les chapitres déjà listés conservent le réglage que vous leur avez a
 msgid "Chapters downloaded automatically"
 msgstr "Chapitres téléchargés automatiquement"
 
+#: src/components/home/homeSectionDefs.ts
+#, fuzzy
+#~ msgid "Chapters downloading right now. Only shows while something is."
+#~ msgstr "Chapitres en cours de téléchargement. Cette section ne s'affiche que lorsqu'il y en a."
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapters known"
@@ -6758,6 +6781,12 @@ msgstr "Téléchargement de la couverture"
 #, fuzzy
 msgid "Downloading metadata database"
 msgstr "Téléchargement de la base de données des métadonnées"
+
+#: src/api/hooks.ts
+#: src/pages/HomePage.tsx
+#, fuzzy
+#~ msgid "Downloading now"
+#~ msgstr "Téléchargement en cours"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -10237,6 +10266,10 @@ msgstr "Maki demande à Kavita d'analyser une série après la modification de s
 msgid "Maki can't reach the server, and nothing is saved on this device yet. Once the connection is back, sign in and save chapters for offline reading."
 msgstr ""
 
+#: src/components/home/OfflineHome.tsx
+msgid "Maki can't reach the server. Home comes back as soon as it does."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Maki can't reach this folder"
@@ -10271,6 +10304,7 @@ msgid "Maki's interface is now translated into {languageCount} languages. Pick y
 msgstr "L'interface de Maki est maintenant traduite en {languageCount} langues. Choisissez la vôtre ici, ou changez-la à tout moment dans Paramètres, Langue."
 
 #: src/components/discover/FollowingRail.tsx
+#: src/components/home/OfflineHome.tsx
 #, fuzzy
 msgid "Manage"
 msgstr "Gérer"
@@ -12294,6 +12328,10 @@ msgstr "Rien dans votre bibliothèque pour le moment"
 msgid "Nothing is renamed and everything stays in the folder you had."
 msgstr "Aucun renommage n'est effectué et tout reste dans le dossier actuel."
 
+#: src/components/home/OfflineHome.tsx
+msgid "Nothing is saved on this device yet. Once you're back online, save chapters from a series page and they'll be here to read without a connection."
+msgstr ""
+
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
 msgstr ""
@@ -12617,6 +12655,7 @@ msgstr "Désactivé : seules les séries activées depuis leur propre menu sont 
 msgid "Official"
 msgstr "Officiel"
 
+#: src/components/home/OfflineHome.tsx
 #: src/components/OfflineBanner.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/settings/registry.ts
@@ -14580,6 +14619,7 @@ msgstr "Réassocier les fichiers"
 msgid "Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand."
 msgstr "La réassociation lit chaque fichier de volume pour trouver les chapitres qu'il contient. Vous pouvez associer manuellement tout élément impossible à placer."
 
+#: src/components/home/OfflineHome.tsx
 #: src/components/RouteErrorBoundary.tsx
 #, fuzzy
 msgid "Reload"
@@ -15716,6 +15756,7 @@ msgstr ""
 msgid "Saved filters"
 msgstr "Filtres enregistrés"
 
+#: src/components/home/OfflineHome.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Saved on this device"
 msgstr ""
@@ -18169,6 +18210,10 @@ msgstr "Les mêmes compteurs que ceux affichés par la page Statistiques, conser
 msgid "The sample download failed"
 msgstr "Le téléchargement de l'échantillon a échoué"
 
+#: src/components/home/OfflineHome.tsx
+msgid "The saved chapters wouldn't open"
+msgstr ""
+
 #: src/components/import/IgnoredFoldersModal.tsx
 #, fuzzy
 msgid "The scan skips these folders without searching for them."
@@ -18367,6 +18412,10 @@ msgstr "Ces fichiers ne peuvent pas aller dans la corbeille. Vous pouvez les sup
 #, fuzzy
 msgid "These rules need the rules view. Remove some to switch back."
 msgstr "Ces règles nécessitent l'affichage des règles. Supprimez-en quelques-unes pour revenir en arrière."
+
+#: src/components/home/OfflineHome.tsx
+msgid "They are still on this device. Reload the page, or remove and save them again once you're back online."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -19001,6 +19050,7 @@ msgid "Try a shorter or alternative query."
 msgstr "Essayez une requête plus courte ou différente."
 
 #: src/auth/OfflineStartPage.tsx
+#: src/components/home/OfflineHome.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
@@ -19851,6 +19901,11 @@ msgstr "Voir"
 msgid "View {title}"
 msgstr "Voir {title}"
 
+#: src/components/home/DownloadingStrip.tsx
+#, fuzzy
+#~ msgid "View activity"
+#~ msgstr "Voir l'activité"
+
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -20202,6 +20257,10 @@ msgstr "Nouveautés"
 #, fuzzy
 msgid "What's new in v{version}"
 msgstr "Nouveautés de la version v{version}"
+
+#: src/components/home/OfflineHome.tsx
+msgid "What's new on the server can wait. These chapters are saved on this device and ready to read."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/ScrobblePage.tsx
@@ -20614,6 +20673,7 @@ msgid "You're caught up"
 msgstr "Vous êtes à jour"
 
 #: src/auth/OfflineStartPage.tsx
+#: src/components/home/OfflineHome.tsx
 msgid "You're offline"
 msgstr ""
 

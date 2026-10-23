@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Box, Button, Group, Title, VisuallyHidden } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -15,6 +15,7 @@ import {
   IconSparkles,
 } from '@tabler/icons-react'
 import { useHomeFromAnime } from '../api/animeResume'
+import { isOfflineUnavailable } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import {
   HOME_HERO_DEFAULTS,
@@ -51,6 +52,7 @@ import { ContinueHero, type HeroQueue } from '../components/home/ContinueHero'
 import { ContinueRail } from '../components/home/ContinueRail'
 import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
 import { DiscoverZone, type HomeSeparation } from '../components/home/HomeZones'
+import { OfflineHome } from '../components/home/OfflineHome'
 import { AnimeResumeExpandModal, AnimeResumeRail } from '../components/home/AnimeResumeRail'
 import { ReadingWeeks, ReadingWeeksPlaceholder, rollingWeeks } from '../components/home/ReadingWeeks'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
@@ -60,6 +62,9 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { RailSkeleton } from '../components/ui/RailSkeleton'
 import { SectionHeader, SectionTagContext } from '../components/ui/SectionHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { useConnectivity } from '../lib/connectivity'
+import { pwaSupported, workerControlsPage } from '../lib/pwa/serviceWorker'
+import { useOfflineChapters } from '../pwa/offlineChapters'
 
 /** How many catalogue picks each borrowed Discover rail shows before "Find more". */
 const RAIL_SIZE = 20
@@ -82,7 +87,15 @@ const LIBRARY_SECTIONS: HomeSectionKey[] = ['continue', 'jumpback', 'recent']
 
 export default function HomePage({ separation = 'none' }: { separation?: HomeSeparation }) {
   const { t } = useLingui()
-  const { data: series, isLoading: seriesLoading, isError: seriesFailed, refetch: refetchSeries } = useSeries()
+  const {
+    data: series,
+    error: seriesError,
+    isLoading: seriesLoading,
+    isError: seriesFailed,
+    refetch: refetchSeries,
+  } = useSeries()
+  const connectivity = useConnectivity()
+  const { records: offlineRecords } = useOfflineChapters()
   const { data: metadata } = useMetadataSettings()
   const { data: rootFolders } = useRootFolders()
   const { data: ui, isLoading: uiLoading, isError: uiFailed } = useUiSettings()
@@ -144,6 +157,16 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   const [fromAnimeExpanded, setFromAnimeExpanded] = useState(false)
   const navigate = useNavigate()
 
+  // The library list is what every section hangs off, so it is the one to retry when the server is back.
+  const wasOffline = useRef(false)
+  useEffect(() => {
+    if (connectivity === 'offline') wasOffline.current = true
+    else if (wasOffline.current) {
+      wasOffline.current = false
+      void refetchSeries()
+    }
+  }, [connectivity, refetchSeries])
+
   const continueReading = reading?.continueReading ?? []
   const jumpBackIn = reading?.jumpBackIn ?? []
 
@@ -198,7 +221,24 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
     )
   }
 
-  if (!seriesLoading && seriesFailed) {
+  // A refetch that failed while the list is still in memory is not a failure to load: draw from it.
+  const libraryMissing = !seriesLoading && seriesFailed && !series
+
+  if (libraryMissing && (isOfflineUnavailable(seriesError) || connectivity === 'offline')) {
+    return (
+      <SurfaceFrame width="full" pageStyle="editorial">
+        {homeTitle}
+        <OfflineHome
+          supported={pwaSupported()}
+          controlled={workerControlsPage()}
+          records={offlineRecords}
+          onRetry={() => void refetchSeries()}
+        />
+      </SurfaceFrame>
+    )
+  }
+
+  if (libraryMissing) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
         {homeTitle}
