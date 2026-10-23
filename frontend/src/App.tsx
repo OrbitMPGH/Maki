@@ -11,14 +11,14 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core'
-import { useDisclosure } from '@mantine/hooks'
+import { useDisclosure, useMediaQuery } from '@mantine/hooks'
 import {
   IconArrowLeft,
   IconDownload,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
 } from '@tabler/icons-react'
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
   useHealth,
@@ -50,6 +50,7 @@ import { EmptyState } from './components/ui/EmptyState'
 import { RouteErrorBoundary } from './components/RouteErrorBoundary'
 import { useLanguageSync } from './i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, type NavItem } from './nav'
 import { DocumentTitle, DocumentTitleProvider } from './lib/documentTitle'
@@ -163,7 +164,18 @@ function ActivityButton() {
   // own, this does not, and the count is the only thing telling anyone it is there.
   const review = summary?.awaitingImport ?? 0
   const count = review > 0 ? review : active
-  const shown = count > 99 ? '99+' : count
+  const accessibleName =
+    review > 0
+      ? plural(review, {
+          one: 'Activity, # download waiting for an import decision',
+          other: 'Activity, # downloads waiting for an import decision',
+        })
+      : active > 0
+        ? plural(active, {
+            one: 'Activity, # download in progress',
+            other: 'Activity, # downloads in progress',
+          })
+        : t`Activity`
   return (
     <Tooltip
       label={
@@ -184,7 +196,7 @@ function ActivityButton() {
           to="/activity"
           variant="subtle"
           color="var(--neutral)"
-          aria-label={count > 0 ? t`Activity ${shown}` : t`Activity`}
+          aria-label={accessibleName}
         >
           <IconDownload size={19} />
         </ActionIcon>
@@ -278,6 +290,13 @@ function AppShellRoutes() {
       /* private mode: collapsed for this visit only */
     }
   }
+  const phone = useMediaQuery('(max-width: 47.9375em)', false, { getInitialValueInEffect: false })
+  // The navbar is a column on desktop and a drawer on phones and when collapsed; only the drawer
+  // can be closed, and a closed one is only translated off-screen, so it has to be taken out of
+  // the tab order explicitly.
+  const drawerClosed = (navCollapsed || phone) && !opened
+  const navbarRef = useRef<HTMLDivElement>(null)
+  const burgerRef = useRef<HTMLButtonElement>(null)
   const { data: setup } = useSetupStatus()
   const { data: metadata, isError: metadataFailed } = useMetadataSettings()
   const { data: ui } = useUiSettings()
@@ -328,6 +347,19 @@ function AppShellRoutes() {
     }
   }, [discoverAvailable, homeEnabled, location.pathname, navigate])
 
+  useEffect(() => {
+    if (!opened) return
+    const navbar = navbarRef.current
+    navbar?.querySelector<HTMLElement>('a[href], button:not([disabled])')?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      close()
+      if (navbar?.contains(document.activeElement)) burgerRef.current?.focus()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [opened, close])
+
   return (
     <AppShell
       header={{ height: navCollapsed ? 58 : { base: 58, sm: 0 } }}
@@ -354,12 +386,28 @@ function AppShellRoutes() {
         <Group h="100%" className="app-header-row" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
             <Burger
+              ref={burgerRef}
               opened={opened}
               onClick={toggle}
               size="sm"
               aria-label={t`Menu`}
               aria-expanded={opened}
+              aria-controls="app-navbar"
             />
+            {navCollapsed && (
+              <Tooltip label={t`Keep sidebar open`} withArrow>
+                <ActionIcon
+                  visibleFrom="sm"
+                  variant="subtle"
+                  color="var(--neutral)"
+                  size={44}
+                  onClick={toggleNavCollapsed}
+                  aria-label={t`Keep sidebar open`}
+                >
+                  <IconLayoutSidebarLeftExpand size={23} />
+                </ActionIcon>
+              </Tooltip>
+            )}
             <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
               <IconBrandMark />
             </span>
@@ -403,7 +451,7 @@ function AppShellRoutes() {
         <Box className="nav-scrim" hiddenFrom={navCollapsed ? undefined : 'sm'} onClick={close} />
       )}
 
-      <AppShell.Navbar className="app-navbar">
+      <AppShell.Navbar ref={navbarRef} id="app-navbar" className="app-navbar" inert={drawerClosed}>
         <Group gap={10} mb={14} px={4} wrap="nowrap">
           <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
             <IconBrandMark />

@@ -85,9 +85,13 @@ export function useCoverTint(coverUrl: string | null | undefined) {
       if (tint) root.style.setProperty(PROPERTY, tint)
       else root.style.removeProperty(PROPERTY)
     }
+    img.onerror = () => {
+      if (id === owner) root.style.removeProperty(PROPERTY)
+    }
     img.src = coverUrl
     return () => {
       img.onload = null
+      img.onerror = null
       // Deferred so moving from one series to the next goes straight from cover to cover
       // instead of dipping back to the accent in between.
       window.setTimeout(() => {

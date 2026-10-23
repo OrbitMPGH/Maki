@@ -4,6 +4,7 @@ paths:
   - "frontend/src/pwa/**"
   - "frontend/src/lib/pwa/**"
   - "frontend/src/lib/connectivity.ts"
+  - "frontend/src/lib/pageScroll.ts"
   - "frontend/vite/sw-plugin.ts"
   - "frontend/tsconfig.sw.json"
   - "frontend/src/components/settings/OfflineReadingSection.tsx"

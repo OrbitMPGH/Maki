@@ -3,6 +3,8 @@ paths:
   - "frontend/src/theme.css"
   - "frontend/src/theme.ts"
   - "frontend/src/theme-context.tsx"
+  - "frontend/src/lib/coverTint.ts"
+  - "frontend/public/theme-init.js"
   - "frontend/src/components/ui/**"
   - "design-system/**"
   - "scripts/design-system/**"

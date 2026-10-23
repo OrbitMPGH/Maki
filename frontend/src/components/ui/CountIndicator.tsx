@@ -7,7 +7,8 @@ import type { IndicatorProps } from '@mantine/core'
  * The unread or in-progress count on an icon button: one pill shape, size and placement for every
  * icon that carries a number, hidden at zero. The offset tucks it onto the glyph's corner rather
  * than the button's, so it never pokes past the row it sits in. It sits inside Tooltip and
- * Popover.Target, so the ref and the props they inject pass through to the Indicator.
+ * Popover.Target, so the ref and the props they inject pass through to the Indicator. The number is
+ * hidden from assistive tech: the button inside carries the count in its own accessible name.
  */
 export const CountIndicator = forwardRef<
   HTMLDivElement,
@@ -24,7 +25,7 @@ export const CountIndicator = forwardRef<
       offset={5}
       withBorder
       {...rest}
-      label={count > 99 ? '99+' : count}
+      label={<span aria-hidden="true">{count > 99 ? '99+' : count}</span>}
       disabled={count <= 0}
       className={className ? `count-indicator ${className}` : 'count-indicator'}
       data-tone={tone}

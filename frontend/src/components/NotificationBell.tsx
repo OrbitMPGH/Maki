@@ -75,7 +75,11 @@ export function NotificationBell({ position = 'bottom-end' }: { position?: 'bott
             <ActionIcon
               variant="subtle"
               color="var(--neutral)"
-              aria-label={t`Notifications`}
+              aria-label={
+                count > 0
+                  ? plural(count, { one: 'Notifications, # unread', other: 'Notifications, # unread' })
+                  : t`Notifications`
+              }
               onClick={toggle}
             >
               <IconBell size={19} />

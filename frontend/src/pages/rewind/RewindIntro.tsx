@@ -88,12 +88,18 @@ export function RewindIntro({
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose, next, prev])
 
-  // Lock page scroll while the overlay is up.
+  // Lock page scroll while the overlay is up. In the installed iOS app the shell's <main> is the
+  // scroller (lib/pageScroll.ts), so it is locked too.
   useEffect(() => {
     const previous = document.body.style.overflow
     document.body.style.overflow = 'hidden'
+    const inner =
+      document.documentElement.dataset.scroll === 'inner' ? document.getElementById('main') : null
+    const previousInner = inner?.style.overflow ?? ''
+    if (inner) inner.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = previous
+      if (inner) inner.style.overflow = previousInner
     }
   }, [])
 
