@@ -211,7 +211,15 @@ public class QueueController(
                     Title = q.Chapter.Title,
                     IsOneShot = q.Chapter.IsOneShot,
                 },
-            q.Series == null ? null : new Series { Id = q.Series.Id, Title = q.Series.Title },
+            q.Series == null
+                ? null
+                : new Series
+                {
+                    Id = q.Series.Id,
+                    Title = q.Series.Title,
+                    CoverPath = q.Series.CoverPath,
+                    LastMetadataRefresh = q.Series.LastMetadataRefresh,
+                },
             q.SourceMapping != null
                 ? q.SourceMapping.SourceName
                 : q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?"));
