@@ -79,15 +79,21 @@ export function ReadingWeeks({
   days,
   summary,
   hosted,
+  loading,
 }: {
   days: HeatmapDay[]
   summary: ProgressSummary
   hosted?: boolean
+  /** Same markup with the content hidden, held in the slot while the real data loads so the hero does not grow when it lands. */
+  loading?: boolean
 }) {
   const { t, i18n } = useLingui()
   const renderLabel = useLabel()
   const headingId = useId()
-  const weeks = useMemo(() => rollingWeeks(days), [days])
+  const today = dayKey(new Date())
+  // Keyed on the day so a page left open overnight rolls its window over on the next render.
+  const weeks = useMemo(() => rollingWeeks(days, new Date(`${today}T00:00:00`)), [days, today])
+  const { daysRead, daysSoFar, weekChapters } = weeks
   const weekdays = useMemo(() => Array.from({ length: 7 }, (_, i) => weekdayName(i, 'narrow')), [i18n.locale])
 
   const { currentStreak, longestStreak, showStreaks } = summary
@@ -101,7 +107,13 @@ export function ReadingWeeks({
         : t`Read today to keep it going`
 
   return (
-    <section className="home-glance reading-weeks" data-hosted={hosted || undefined} aria-labelledby={headingId}>
+    <section
+      className="home-glance reading-weeks"
+      data-hosted={hosted || undefined}
+      data-loading={loading || undefined}
+      aria-hidden={loading || undefined}
+      aria-labelledby={loading ? undefined : headingId}
+    >
       <div className="reading-weeks-card">
         <div className="reading-weeks-head">
           <div className="reading-weeks-heading">
@@ -120,6 +132,7 @@ export function ReadingWeeks({
           </div>
           {showStreaks && (
             <span
+              role="img"
               className="reading-weeks-streak tnum"
               data-lit={weeks.readToday || undefined}
               aria-label={plural(currentStreak, { one: '# day streak', other: '# day streak' })}
@@ -136,7 +149,7 @@ export function ReadingWeeks({
         <div
           className="reading-weeks-grid"
           role="img"
-          aria-label={t`Read on ${weeks.daysRead} of the last ${weeks.daysSoFar} days`}
+          aria-label={t`Read on ${daysRead} of the last ${daysSoFar} days`}
         >
           {weekdays.map((letter, i) => (
             <span key={`d${i}`} className="reading-weeks-weekday" aria-hidden>
@@ -148,30 +161,31 @@ export function ReadingWeeks({
             const level = cell.future ? 0 : heatLevel(cell.chapters, cell.seconds)
             const shade = level > 0 ? HEAT_SHADES[level] : undefined
             const mark = cell.today ? String(Number(cell.date.slice(8))) : cell.monthStart ? monthName(cell.monthStart, 'short') : null
-            const dot = (
-              <span
-                key={cell.date}
-                className="reading-weeks-day"
-                data-today={cell.today || undefined}
-                data-future={cell.future || undefined}
-                style={shade ? { background: shade } : undefined}
-              >
-                {mark}
-              </span>
-            )
-            if (cell.future) return dot
-            const when = formatDate(`${cell.date}T00:00:00`)
+            if (cell.future) {
+              return (
+                <span key={cell.date} className="reading-weeks-day" data-future>
+                  {mark}
+                </span>
+              )
+            }
+            const cellDate = formatDate(`${cell.date}T00:00:00`)
             const chapters = cell.chapters
+            const label =
+              chapters === 0 && cell.seconds === 0
+                ? t`${cellDate}: nothing read`
+                : plural(chapters, { one: `${cellDate}: # chapter`, other: `${cellDate}: # chapters` })
             return (
-              <Tooltip
-                key={cell.date}
-                label={
-                  chapters === 0 && cell.seconds === 0
-                    ? t`${when}: nothing read`
-                    : plural(chapters, { one: `${when}: # chapter`, other: `${when}: # chapters` })
-                }
-              >
-                {dot}
+              <Tooltip key={cell.date} label={label}>
+                <span
+                  role="img"
+                  aria-label={label}
+                  className="reading-weeks-day"
+                  data-today={cell.today || undefined}
+                  data-empty={level === 0 || undefined}
+                  style={shade ? { background: shade } : undefined}
+                >
+                  {mark}
+                </span>
               </Tooltip>
             )
           })}
@@ -192,8 +206,8 @@ export function ReadingWeeks({
           </div>
           <div className="reading-weeks-fig">
             <span className="reading-weeks-n figure tnum">
-              {formatNumber(weeks.daysRead)}
-              <small>/{formatNumber(weeks.daysSoFar)}</small>
+              {formatNumber(daysRead)}
+              <small>/{formatNumber(daysSoFar)}</small>
             </span>
             <span className="reading-weeks-l">
               <Trans>Days read</Trans>
@@ -203,7 +217,7 @@ export function ReadingWeeks({
 
         {!goal && (
           <span className="reading-weeks-week tnum">
-            {plural(weeks.weekChapters, { one: '# chapter this week', other: '# chapters this week' })}
+            {plural(weekChapters, { one: '# chapter this week', other: '# chapters this week' })}
           </span>
         )}
 
@@ -217,7 +231,8 @@ export function ReadingWeeks({
               role="progressbar"
               aria-valuemin={0}
               aria-valuemax={goal.target}
-              aria-valuenow={goal.progress}
+              aria-valuenow={Math.min(goal.progress, goal.target)}
+              aria-valuetext={`${formatNumber(goal.progress)} / ${metricProgress(goal.metric, goal.target)}`}
               aria-label={renderLabel(GOAL_LABELS[goal.period])}
             >
               <span style={{ width: `${goalDone * 100}%` }} data-done={goalDone >= 1 || undefined} />
@@ -227,4 +242,25 @@ export function ReadingWeeks({
       </div>
     </section>
   )
+}
+
+const PLACEHOLDER_SUMMARY: ProgressSummary = {
+  enabled: true,
+  showStreaks: true,
+  level: { level: 1, xp: 0, intoLevel: 0, levelSpan: 1, nextLevelXp: 1, progress: 0 },
+  chaptersRead: 0,
+  readingSeconds: 0,
+  seriesFinished: 0,
+  daysRead: 0,
+  currentStreak: 0,
+  longestStreak: 0,
+  earned: 0,
+  total: 0,
+  recent: [],
+  goals: [],
+}
+
+/** Holds the glance's slot at its height while the summary and heatmap load. */
+export function ReadingWeeksPlaceholder({ hosted }: { hosted?: boolean }) {
+  return <ReadingWeeks days={[]} summary={PLACEHOLDER_SUMMARY} hosted={hosted} loading />
 }

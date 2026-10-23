@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Box, Button, Group } from '@mantine/core'
+import { Box, Button, Group, Title, VisuallyHidden } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import {
@@ -54,7 +54,7 @@ import { ContinueRail } from '../components/home/ContinueRail'
 import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
 import { AnimeResumeExpandModal, AnimeResumeRail } from '../components/home/AnimeResumeRail'
-import { ReadingWeeks } from '../components/home/ReadingWeeks'
+import { ReadingWeeks, ReadingWeeksPlaceholder, rollingWeeks } from '../components/home/ReadingWeeks'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
 import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -137,8 +137,8 @@ export default function HomePage() {
   // default Recommended tab, so this rail can never thrash that shared pool with different seeds.
   const recommendations = useRecommendations({}, needsDiscover && on('recommended'))
   // Fetched in the layout editor too, which says why the glance would be hidden.
-  const { data: progress } = useProgressSummary(undefined, glanceOn || editing)
-  const { data: heatmap } = useReadingHeatmap(undefined, glanceOn && Boolean(progress?.enabled))
+  const { data: progress, isLoading: progressLoading } = useProgressSummary(undefined, glanceOn || editing)
+  const { data: heatmap, isLoading: heatmapLoading } = useReadingHeatmap(undefined, glanceOn && Boolean(progress?.enabled))
 
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -152,8 +152,14 @@ export default function HomePage() {
   const popular = rails?.find((r) => r.key === 'popular')?.items ?? []
   const youMightLike = recommendations.data?.pages[0]?.similar?.slice(0, RAIL_SIZE) ?? []
 
-  // Home has no title row: the sidebar says where you are and the hero says what you are reading.
-  // Editing the layout is a mode with its own exit, so that one keeps a title.
+  // Home has no visible title row: the sidebar says where you are and the hero says what you are
+  // reading. The h1 stays for screen readers. Editing the layout is a mode with its own exit, so
+  // that one keeps a visible title.
+  const homeTitle = (
+    <VisuallyHidden>
+      <Title order={1}>{t`Home`}</Title>
+    </VisuallyHidden>
+  )
   const editingHeader = <PageHeader title={t`Home`} description={t`Arrange what Home shows.`} />
 
   if (editing) {
@@ -197,6 +203,7 @@ export default function HomePage() {
   if (!seriesLoading && seriesFailed) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
+        {homeTitle}
         <EmptyState
           title={t`Couldn't load your library`}
           actionLabel={t`Retry`}
@@ -209,6 +216,7 @@ export default function HomePage() {
   if (!seriesLoading && !hasLibrary) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
+        {homeTitle}
         <EmptyState
           art="shelf"
           title={t`Nothing in your library yet`}
@@ -229,6 +237,7 @@ export default function HomePage() {
   if (uiLoading) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
+        {homeTitle}
         <RailSkeleton title />
         <RailSkeleton title />
       </SurfaceFrame>
@@ -239,9 +248,14 @@ export default function HomePage() {
 
   // The glance belongs to Continue reading: in its hero when that draws one, a strip at its slot
   // otherwise. Without read tracking every day would read as missed, so it waits for that.
+  const glanceHosted = heroOn('continue') && continueReading.length > 0
+  const glanceLoading = glanceOn && readTracking && (progressLoading || (progress?.enabled === true && heatmapLoading))
+  // A brand-new reader would get a card of zeros, so the glance waits for the first day read.
   const glanceNode =
-    glanceOn && readTracking && progress?.enabled && heatmap ? (
-      <ReadingWeeks days={heatmap} summary={progress} hosted={heroOn('continue') && continueReading.length > 0} />
+    glanceOn && readTracking && progress?.enabled && heatmap && rollingWeeks(heatmap).daysRead > 0 ? (
+      <ReadingWeeks days={heatmap} summary={progress} hosted={glanceHosted} />
+    ) : glanceLoading ? (
+      <ReadingWeeksPlaceholder hosted={glanceHosted} />
     ) : null
 
   // One node per section key. Rendered in the user's order below; a section with nothing to show
@@ -388,6 +402,7 @@ export default function HomePage() {
 
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
+      {homeTitle}
       {visible.length === 0 ? (
         <EmptyState
           title={t`Every section is switched off`}

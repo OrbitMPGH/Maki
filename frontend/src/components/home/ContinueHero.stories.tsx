@@ -17,7 +17,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('heading', { level: 3, name: 'Lanterns Over Kasumi' })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { level: 2, name: 'Lanterns Over Kasumi' })).toBeVisible()
     await waitFor(() => expect(canvas.getByRole('progressbar', { name: 'Reading progress' })).toHaveAttribute('aria-valuenow', '12'))
   },
 }
@@ -71,14 +71,14 @@ export const MenuInHero: Story = {
   },
 }
 
-/** The hybrid: the glance in the hero's right column and a Next up list in a card beside the hero, no tray. */
+/** The hybrid: a Next up list in a card beside the hero, no tray, and the glance in the hero's right column or under the lead by width. */
 export const QueueBeside: Story = {
   args: { items: [...continueReading, ...jumpBackIn], queue: 'beside' },
   render: (args) => <ContinueHero {...args} glance={<ReadingWeeks days={heatmapDays} summary={progressSummary} hosted />} />,
   play: async ({ canvas, canvasElement }) => {
     const list = await canvas.findByRole('region', { name: 'Next up' })
     const glance = await canvas.findByRole('region', { name: 'Last 5 weeks' })
-    await expect(canvasElement.querySelector('.continue-hero')).toContainElement(glance)
+    await expect(canvasElement.querySelector('.continue-section')).toContainElement(glance)
     // Beside the hero, not inside it.
     await expect(canvasElement.querySelector('.continue-hero')).not.toContainElement(list)
     await expect(canvasElement.querySelector('.continue-lead')).toContainElement(list)

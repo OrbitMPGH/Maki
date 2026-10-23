@@ -80,19 +80,37 @@ export const GlanceRidesTheHero: Story = {
   play: async ({ canvas, canvasElement }) => {
     const glance = await canvas.findByRole('region', { name: 'Last 5 weeks' })
     await waitFor(() => expect(glance).toHaveAttribute('data-hosted'))
-    await expect(canvasElement.querySelector('.continue-lead')).toContainElement(glance)
+    await expect(canvasElement.querySelector('.continue-section')).toContainElement(glance)
   },
 }
 
-/** The "Next up beside the hero" switch: the glance in the hero, the list in a card beside it, nothing under the card. */
+/** The "Next up beside the hero" switch: the list in a card beside the hero, no tray; the glance sits in or under the hero by width. */
 export const NextUpBesideTheHero: Story = {
   parameters: { msw: homePage(layout({ options: { continue: { nextUpBeside: true } } })) },
   play: async ({ canvas, canvasElement }) => {
     const list = await canvas.findByRole('region', { name: 'Next up' })
     const glance = await canvas.findByRole('region', { name: 'Last 5 weeks' })
     await expect(canvasElement.querySelector('.continue-lead')).toContainElement(list)
-    await expect(canvasElement.querySelector('.continue-hero')).toContainElement(glance)
+    await expect(canvasElement.querySelector('.continue-section')).toContainElement(glance)
     await expect(canvasElement.querySelector('.continue-tray')).toBeNull()
+  },
+}
+
+/** The glance belongs to Continue reading, so switching that section off takes it along. */
+export const GlanceGoneWithContinueOff: Story = {
+  parameters: { msw: homePage(layout({ off: ['continue'], options: { continue: { glance: true } } })) },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('heading', { level: 2, name: /recently added/i })).toBeVisible()
+    await expect(canvas.queryByRole('region', { name: 'Last 5 weeks' })).toBeNull()
+  },
+}
+
+/** Nothing read in the last five weeks: no card of zeros above the hero. */
+export const GlanceHiddenUntilFirstDayRead: Story = {
+  parameters: { msw: homePage(http.get(api('/progress/heatmap'), () => HttpResponse.json([]))) },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('heading', { level: 2, name: 'Lanterns Over Kasumi' })).toBeVisible()
+    await expect(canvas.queryByRole('region', { name: 'Last 5 weeks' })).toBeNull()
   },
 }
 
@@ -100,7 +118,7 @@ export const NextUpBesideTheHero: Story = {
 export const GlanceSwitchedOff: Story = {
   parameters: { msw: homePage(layout({ options: { continue: { glance: false } } })) },
   play: async ({ canvas }) => {
-    await canvas.findByRole('heading', { level: 3, name: 'Lanterns Over Kasumi' })
+    await canvas.findByRole('heading', { level: 2, name: 'Lanterns Over Kasumi' })
     await expect(canvas.queryByRole('region', { name: 'Last 5 weeks' })).toBeNull()
   },
 }
@@ -131,7 +149,7 @@ export const ProgressionSwitchedOff: Story = {
     msw: homePage(http.get(api('/progress/summary'), () => HttpResponse.json({ ...progressSummary, enabled: false }))),
   },
   play: async ({ canvas }) => {
-    await canvas.findByRole('heading', { level: 3, name: 'Lanterns Over Kasumi' })
+    await canvas.findByRole('heading', { level: 2, name: 'Lanterns Over Kasumi' })
     await expect(canvas.queryByRole('region', { name: 'Last 5 weeks' })).toBeNull()
   },
 }
@@ -208,7 +226,7 @@ export const LibraryFailed: Story = {
 export const EverySectionOff: Story = {
   parameters: {
     msw: homePage(
-      layout({ off: ['glance', 'downloading', 'continue', 'jumpback', 'fromanime', 'recent', 'following', 'recommended', 'popular'] }),
+      layout({ off: ['downloading', 'continue', 'jumpback', 'fromanime', 'recent', 'following', 'recommended', 'popular'] }),
     ),
   },
   play: async ({ canvas }) => {

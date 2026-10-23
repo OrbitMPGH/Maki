@@ -36,7 +36,11 @@ export function ContinueHero({
 }: {
   items: HomeReadingItem[]
   rail: ReadingRailKind
-  /** Home's glance (`ReadingWeeks`), drawn inside the hero card: a column on its right when wide, a row under the actions otherwise. */
+  /**
+   * Home's glance (`ReadingWeeks`). Rendered twice and placed by width (see `.continue-glance-below`
+   * in theme.css): inside the hero as a column on its right when wide or a row under the actions on a
+   * phone, and as a raised card under the lead in between.
+   */
   glance?: ReactNode
   queue?: HeroQueue
 }) {
@@ -45,28 +49,32 @@ export function ContinueHero({
   useCoverTint(lead?.coverUrl)
   if (!lead) return null
 
-  if (queue === 'beside') {
-    return (
+  const lane =
+    queue === 'beside' ? (
       <div className="continue-lead" data-queue="beside" data-solo={rest.length === 0 || undefined}>
         <ContinueHeroCard key={lead.chapterId} item={lead} rail={rail} glance={glance} />
         {rest.length > 0 && <NextUpList items={rest} rail={rail} />}
       </div>
+    ) : (
+      <div className="continue-lead">
+        <ContinueHeroCard key={lead.chapterId} item={lead} rail={rail} glance={glance} />
+        {rest.length > 0 && (
+          <div className="continue-tray">
+            <SectionHeader
+              icon={IconPlayerTrackNext}
+              title={rail === 'jumpback' ? t`Next to jump back in` : t`Next up`}
+              count={rest.length}
+            />
+            <ReadingRail items={rest} rail={rail} />
+          </div>
+        )}
+      </div>
     )
-  }
 
   return (
-    <div className="continue-lead">
-      <ContinueHeroCard key={lead.chapterId} item={lead} rail={rail} glance={glance} />
-      {rest.length > 0 && (
-        <div className="continue-tray">
-          <SectionHeader
-            icon={IconPlayerTrackNext}
-            title={rail === 'jumpback' ? t`Next to jump back in` : t`Next up`}
-            count={rest.length}
-          />
-          <ReadingRail items={rest} rail={rail} />
-        </div>
-      )}
+    <div className="continue-section" data-queue={queue}>
+      {lane}
+      {glance && <div className="continue-glance-below">{glance}</div>}
     </div>
   )
 }
@@ -121,9 +129,9 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
             )}
           </div>
 
-          <h3 className="continue-hero-title">
+          <h2 className="continue-hero-title">
             <Link to={`/series/${item.seriesId}`}>{seriesTitle}</Link>
-          </h3>
+          </h2>
 
           <div className="continue-hero-chapter tnum">
             <span>{chapterLabel}</span>

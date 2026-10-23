@@ -50,7 +50,7 @@ export function NextUpList({ items, rail }: { items: HomeReadingItem[]; rail: Re
   return (
     <section className="next-up" aria-label={rail === 'jumpback' ? t`Next to jump back in` : t`Next up`}>
       <div className="next-up-head">
-        <h3 className="next-up-title">{rail === 'jumpback' ? <Trans>Next to jump back in</Trans> : <Trans>Next up</Trans>}</h3>
+        <h2 className="next-up-title">{rail === 'jumpback' ? <Trans>Next to jump back in</Trans> : <Trans>Next up</Trans>}</h2>
         <span className="next-up-count tnum">{items.length}</span>
       </div>
       <div
