@@ -4365,10 +4365,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .app-main-hero {
   padding-top: var(--app-shell-header-offset, 0rem);
 }
-/* Discover's browse tab puts an ordinary `PageHeader` here instead of a hero band, so it needs its page padding back. */
-.app-main-hero .page-header {
-  margin-top: var(--mantine-spacing-lg);
-}
 
 /* --- Series hero ---------------------------------------------------------- */
 /* A full-bleed band, not a card: it gives back the main column's padding on three sides and the

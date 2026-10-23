@@ -275,7 +275,45 @@ function LiveEvents() {
 function AppShellRoutes() {
   const location = useLocation()
   const navigate = useNavigate()
-  const [opened, { toggle, close }] = useDisclosure()
+  const [pinned, { toggle: togglePinned, close: closePinned }] = useDisclosure()
+  // A mouse resting on the burger opens the drawer without pinning it, and leaving the burger and
+  // the drawer closes it again. Touch and keyboard never peek: a tap fires pointerenter too, and
+  // would open the drawer only for the click that follows to close it.
+  const [peeking, setPeeking] = useState(false)
+  const peekTimer = useRef(0)
+  // Set when a click closes a peeked drawer, so the pointer still resting on the burger does not
+  // reopen it at once.
+  const peekSuppressed = useRef(false)
+  const opened = pinned || peeking
+  const close = () => {
+    window.clearTimeout(peekTimer.current)
+    setPeeking(false)
+    closePinned()
+  }
+  const toggle = () => {
+    if (opened) {
+      peekSuppressed.current = peeking
+      close()
+    } else togglePinned()
+  }
+  const peekEnter = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse' || peekSuppressed.current) return
+    window.clearTimeout(peekTimer.current)
+    setPeeking(true)
+  }
+  // The delay carries the pointer across the gap between the burger and the drawer below it. The
+  // drawer's user and help menus open in portals outside it, so the peek holds while one is open.
+  const endPeek = () => {
+    if (document.querySelector('[data-menu-dropdown], .mantine-Popover-dropdown')) {
+      peekTimer.current = window.setTimeout(endPeek, 250)
+    } else setPeeking(false)
+  }
+  const peekLeave = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse') return
+    window.clearTimeout(peekTimer.current)
+    peekTimer.current = window.setTimeout(endPeek, 250)
+  }
+  useEffect(() => () => window.clearTimeout(peekTimer.current), [])
   // Per device rather than per account: the same person wants the column on a desktop monitor and
   // the room on a tablet.
   const [navCollapsed, setNavCollapsed] = useState(readNavCollapsed)
@@ -347,18 +385,24 @@ function AppShellRoutes() {
     }
   }, [discoverAvailable, homeEnabled, location.pathname, navigate])
 
+  // Focus moves in only for a drawer someone asked for; a peek under a passing mouse must not take it.
+  useEffect(() => {
+    if (pinned) navbarRef.current?.querySelector<HTMLElement>('a[href], button:not([disabled])')?.focus()
+  }, [pinned])
+
   useEffect(() => {
     if (!opened) return
     const navbar = navbarRef.current
-    navbar?.querySelector<HTMLElement>('a[href], button:not([disabled])')?.focus()
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return
-      close()
+      window.clearTimeout(peekTimer.current)
+      setPeeking(false)
+      closePinned()
       if (navbar?.contains(document.activeElement)) burgerRef.current?.focus()
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [opened, close])
+  }, [opened, closePinned])
 
   return (
     <AppShell
@@ -389,6 +433,11 @@ function AppShellRoutes() {
               ref={burgerRef}
               opened={opened}
               onClick={toggle}
+              onPointerEnter={peekEnter}
+              onPointerLeave={(e) => {
+                peekSuppressed.current = false
+                peekLeave(e)
+              }}
               size="sm"
               aria-label={t`Menu`}
               aria-expanded={opened}
@@ -447,11 +496,18 @@ function AppShellRoutes() {
           one there is nowhere to tap to dismiss it except the burger. `hiddenFrom` rather than a
           media query so it can never appear over the desktop layout, where the navbar is a
           column and nothing is covered. */}
-      {opened && (
+      {pinned && (
         <Box className="nav-scrim" hiddenFrom={navCollapsed ? undefined : 'sm'} onClick={close} />
       )}
 
-      <AppShell.Navbar ref={navbarRef} id="app-navbar" className="app-navbar" inert={drawerClosed}>
+      <AppShell.Navbar
+        ref={navbarRef}
+        id="app-navbar"
+        className="app-navbar"
+        inert={drawerClosed}
+        onPointerEnter={peeking ? peekEnter : undefined}
+        onPointerLeave={peeking ? peekLeave : undefined}
+      >
         <Group gap={10} mb={14} px={4} wrap="nowrap">
           <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
             <IconBrandMark />
@@ -502,18 +558,9 @@ function AppShellRoutes() {
         </AppShell.Section>
       </AppShell.Navbar>
 
-      {/* Zeroes the shell padding for the pages whose hero band bleeds to the window edges: the
-          series page and Discover's browse tab. Written as "Discover, but not its other two tabs"
-          rather than "/discover exactly", because DiscoverPage falls back to the browse tab for any
-          unrecognised :tab: a stale /discover/genres link lands on the band and has to bleed like
-          the canonical URL does. Recommended and Your Taste have no band and keep their padding. */}
+      {/* Zeroes the shell padding on the series page, whose hero band bleeds to the window edges. */}
       <AppShell.Main
-        className={
-          /^\/series\/\d+(?:\/|$)/.test(location.pathname) ||
-          /^\/discover(?!\/(?:recommended|taste)(?:\/|$))/.test(location.pathname)
-            ? 'app-main-hero'
-            : undefined
-        }
+        className={/^\/series\/\d+(?:\/|$)/.test(location.pathname) ? 'app-main-hero' : undefined}
         id="main"
         tabIndex={-1}
       >
