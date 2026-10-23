@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { Button, Group, PasswordInput, Select, TextInput } from '@mantine/core'
 import { SettingsSection } from '../pages/settings/SettingsSection'
 import { SaveButton } from './settings/SaveButton'
+import { FieldAction } from './settings/FieldAction'
 import { notifications } from '@mantine/notifications'
 import { Trans } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -184,12 +185,12 @@ function ConnectionFieldRow({
           />
         ),
       )}
-      <div className="settings-field-action">
+      <FieldAction>
         <Button variant="default" loading={form.testing} onClick={form.test}>
           <Trans>Test</Trans>
         </Button>
         {children}
-      </div>
+      </FieldAction>
     </Group>
   )
 }

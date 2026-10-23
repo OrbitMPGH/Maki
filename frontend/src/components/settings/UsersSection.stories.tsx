@@ -54,6 +54,27 @@ export const LoadFailed: Story = {
   },
 }
 
+export const SingleUserModeLocked: Story = {
+  play: async ({ canvas }) => {
+    const mode = await canvas.findByRole('switch', { name: /^Single-user mode/ })
+    await waitFor(() => expect(mode).toBeDisabled())
+    await expect(await canvas.findByText(/Multi-user mode is on because more than one account is enabled/)).toBeVisible()
+  },
+}
+
+export const SingleUserModeSwitchedOn: Story = {
+  parameters: {
+    msw: settingsMsw(http.get(api('/settings/usermode'), () => HttpResponse.json({ singleUser: false, available: true }))),
+  },
+  play: async ({ canvas, userEvent }) => {
+    const mode = await canvas.findByRole('switch', { name: /^Single-user mode/ })
+    await waitFor(() => expect(mode).toBeEnabled())
+    await expect(mode).not.toBeChecked()
+    await userEvent.click(mode)
+    await waitFor(() => expect(mode).toBeChecked())
+  },
+}
+
 export const AddUser: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Add user' }))

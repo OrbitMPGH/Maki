@@ -35,7 +35,7 @@ export function PushNotificationsSection() {
       description={
         <Trans>
           Notifications on this device, even when Maki is closed. Which events push is picked in the
-          Notifications table above.
+          Notifications table above, and only events that also land in the bell can push.
         </Trans>
       }
     >

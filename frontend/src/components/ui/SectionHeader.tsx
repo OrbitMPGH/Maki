@@ -1,5 +1,6 @@
 import { Title } from '@mantine/core'
 import type { Icon } from '@tabler/icons-react'
+import { formatNumber } from '../../format'
 
 /**
  * The heading above a rail or grid: an accent icon, the title, an optional count, a rule running to
@@ -33,7 +34,7 @@ export function SectionHeader({
         <Title order={2} className="section-header-title">
           {title}
         </Title>
-        {count != null && <span className="section-header-count tnum">{count}</span>}
+        {count != null && <span className="section-header-count tnum">{formatNumber(count)}</span>}
       </span>
       <span className="section-header-rule" aria-hidden />
       <div className="section-header-end">

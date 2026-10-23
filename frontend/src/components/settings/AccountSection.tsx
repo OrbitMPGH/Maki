@@ -614,7 +614,7 @@ function ApiKeysCard() {
                 <Table.Th><Trans>Name</Trans></Table.Th>
                 <Table.Th><Trans>Prefix</Trans></Table.Th>
                 <Table.Th><Trans>Last used</Trans></Table.Th>
-                <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
+                <Table.Th className="sticky-end-cell"><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -627,7 +627,7 @@ function ApiKeysCard() {
                   <Table.Td c="var(--ink-3)">
                     {key.lastUsedAt ? formatDateTime(key.lastUsedAt) : <Trans>never</Trans>}
                   </Table.Td>
-                  <Table.Td ta="right">
+                  <Table.Td ta="right" className="sticky-end-cell">
                     {key.revokedAt ? (
                       <Text size="xs" c="var(--ink-3)">
                         <Trans>revoked</Trans>

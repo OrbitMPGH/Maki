@@ -1,9 +1,10 @@
-import { useEffect, useReducer, useState } from 'react'
+import { useEffect, useReducer, useState, type ReactNode } from 'react'
 import {
   Alert,
   Button,
   Code,
   Group,
+  Skeleton,
   Stack,
   Switch,
   Text,
@@ -77,7 +78,7 @@ export function SecuritySection() {
     sessionDays: s.sessionDays,
   }))
 
-  if (!draft) return null
+  if (!draft) return <SecurityCardShell id="security" title={<Trans>Sign-in policy</Trans>} />
 
   return (
     <SettingsSection
@@ -119,9 +120,18 @@ export function SecuritySection() {
   )
 }
 
+/** The card's frame while its record loads, so a deep link has a target to scroll to. */
+function SecurityCardShell({ id, title }: { id: string; title: ReactNode }) {
+  return (
+    <SettingsSection id={id} title={title}>
+      <Skeleton height={36} radius="md" />
+    </SettingsSection>
+  )
+}
+
 /**
- * What a signed-out visitor sees behind the sign-in form. Unlike the cards above it applies at once:
- * the page asks for the mosaic on every load.
+ * What a signed-out visitor sees behind the sign-in form. Saved with the card's Save button like the
+ * rest of this file, and read on every load of the sign-in page.
  */
 export function SignInPageSection() {
   const { t } = useLingui()
@@ -132,7 +142,7 @@ export function SignInPageSection() {
 
   useSliceSync(data, (slice) => setCoverMosaic(slice.coverMosaic), discarded)
 
-  if (!data) return null
+  if (!data) return <SecurityCardShell id="signin-page" title={<Trans>Sign-in page</Trans>} />
 
   return (
     <SettingsSection
@@ -146,7 +156,7 @@ export function SignInPageSection() {
     >
       <Switch
         label={t`Show covers from the library`}
-        description={t`Up to 24 covers rated Safe, blurred into one image, shown to anyone who can open the sign-in page. Off: Maki's own art, and nothing from the library.`}
+        description={t`Up to 24 covers rated Safe from folders every account can see, blurred into one image, shown to anyone who can open the sign-in page. Off: Maki's own art, and nothing from the library.`}
         checked={coverMosaic}
         onChange={(e) => setCoverMosaic(e.currentTarget.checked)}
       />
@@ -164,7 +174,7 @@ export function NetworkSection() {
   }))
   const [confirmingHttps, setConfirmingHttps] = useState(false)
 
-  if (!draft) return null
+  if (!draft) return <SecurityCardShell id="network" title={<Trans>Network</Trans>} />
 
   // Sign-in is refused over plain HTTP once this is on, so switching it on from an http page that
   // is not loopback locks the admin out of this very address after the restart.

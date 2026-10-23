@@ -3,6 +3,7 @@ import { Button, Group, PasswordInput, Select, Stack, Text, TextInput } from '@m
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { IndexerBackend } from '../../api/hooks'
 import { SaveButton } from './SaveButton'
+import { FieldAction } from './FieldAction'
 import { INDEXER_BACKENDS, useIndexerForm, type IndexerForm as IndexerFormState } from './useIndexerForm'
 
 export function IndexerFieldRow({ form, children }: { form: IndexerFormState; children?: ReactNode }) {
@@ -36,12 +37,12 @@ export function IndexerFieldRow({ form, children }: { form: IndexerFormState; ch
           onChange={(e) => form.setApiKey(e.currentTarget.value)}
           style={{ flex: 1, minWidth: 180 }}
         />
-        <div className="settings-field-action">
+        <FieldAction>
           <Button variant="default" loading={form.testing} disabled={!form.loaded} onClick={form.test}>
             <Trans>Test</Trans>
           </Button>
           {children}
-        </div>
+        </FieldAction>
       </Group>
       <Text size="sm" c="var(--ink-3)">
         <Trans>

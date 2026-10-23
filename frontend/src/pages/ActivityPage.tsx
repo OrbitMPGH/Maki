@@ -876,6 +876,8 @@ export default function ActivityPage() {
             ) : (
               <TableSkeleton columns={6} rows={4} />
             )
+          ) : upgradeHistoryQuery.isPending ? (
+            <TableSkeleton columns={6} rows={4} />
           ) : upgradesUnset ? (
             <EmptyState
               compact

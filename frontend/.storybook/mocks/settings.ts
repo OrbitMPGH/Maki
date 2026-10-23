@@ -49,6 +49,10 @@ export const settingsHandlers: HttpHandler[] = [
   putEcho('/settings/security'),
   http.get(api('/settings/signin'), () => HttpResponse.json({ coverMosaic: false })),
   http.get(api('/settings/usermode'), () => HttpResponse.json({ singleUser: false, available: false })),
+  http.put(api('/settings/usermode'), async ({ request }) => {
+    const { singleUser } = (await request.json()) as { singleUser: boolean }
+    return HttpResponse.json({ singleUser, available: true })
+  }),
   putEcho('/settings/signin'),
   http.get(api('/settings/oidc'), () => HttpResponse.json(d.oidcSettings)),
   putEcho('/settings/oidc'),

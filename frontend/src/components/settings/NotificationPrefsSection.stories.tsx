@@ -64,6 +64,18 @@ export const TogglePushForAnEvent: Story = {
   },
 }
 
+/** The server only pushes rows it wrote to the bell, so Push is off and locked while Bell is off. */
+export const PushNeedsTheBell: Story = {
+  play: async ({ canvas, userEvent }) => {
+    const bell = await canvas.findByRole('checkbox', { name: 'New chapters available in the bell' })
+    const push = canvas.getByRole('checkbox', { name: 'New chapters available as a push notification' })
+    await waitFor(() => expect(push).toBeChecked())
+    await userEvent.click(bell)
+    await waitFor(() => expect(push).toBeDisabled())
+    await expect(push).not.toBeChecked()
+  },
+}
+
 export const SeriesDefaultReading: Story = {
   parameters: {
     msw: settingsMsw(

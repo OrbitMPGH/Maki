@@ -22,7 +22,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
  * <p>
  * Not to be confused with the Discord & webhooks card on the Integrations tab, which manages the
  * instance-wide Discord and webhook connections. Those are admin-only and unaffected by anything
- * here — the two systems are deliberately separate so a chat channel isn't flooded with one
+ * here. The two systems are deliberately separate so a chat channel isn't flooded with one
  * person's achievements.
  */
 export function NotificationPrefsSection() {
@@ -116,7 +116,7 @@ export function NotificationPrefsSection() {
         {categories.map((category) => (
           <tbody key={category.id}>
             <tr className="notify-matrix-category">
-              <th scope="colgroup" colSpan={3}>
+              <th scope="rowgroup" colSpan={3}>
                 {renderLabel(category.label)}
               </th>
             </tr>
@@ -127,6 +127,7 @@ export function NotificationPrefsSection() {
               .map((type) => {
                 const label = renderLabel(INBOX_TYPE_LABELS[type])
                 const description = INBOX_TYPE_DESCRIPTIONS[type]
+                const bellOn = prefs.types[type] ?? true
                 return (
                   <tr key={type}>
                     <th scope="row">
@@ -138,19 +139,23 @@ export function NotificationPrefsSection() {
                       )}
                     </th>
                     <td className="notify-matrix-check">
-                      <Checkbox
-                        aria-label={t`${label} in the bell`}
-                        checked={prefs.types[type] ?? true}
-                        onChange={(e) => setType(type, e.currentTarget.checked)}
-                      />
+                      <label className="notify-matrix-hit">
+                        <Checkbox
+                          aria-label={t`${label} in the bell`}
+                          checked={bellOn}
+                          onChange={(e) => setType(type, e.currentTarget.checked)}
+                        />
+                      </label>
                     </td>
                     <td className="notify-matrix-check">
-                      <Checkbox
-                        aria-label={t`${label} as a push notification`}
-                        checked={pushed.includes(type)}
-                        disabled={!pushPrefs}
-                        onChange={(e) => setPush(type, e.currentTarget.checked)}
-                      />
+                      <label className="notify-matrix-hit" data-disabled={!pushPrefs || !bellOn || undefined}>
+                        <Checkbox
+                          aria-label={t`${label} as a push notification`}
+                          checked={bellOn && pushed.includes(type)}
+                          disabled={!pushPrefs || !bellOn}
+                          onChange={(e) => setPush(type, e.currentTarget.checked)}
+                        />
+                      </label>
                     </td>
                   </tr>
                 )
@@ -161,7 +166,8 @@ export function NotificationPrefsSection() {
       <Text size="xs" c="var(--ink-3)" mt="sm">
         <Trans>
           Push applies to every device signed in as you, once it is turned on in Push notifications
-          below. An event can push without landing in the bell.
+          below. Only events that also land in the bell can push, so Push is unavailable while Bell
+          is off.
         </Trans>
       </Text>
     </SettingsSection>
