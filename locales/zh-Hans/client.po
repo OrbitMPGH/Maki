@@ -1595,11 +1595,6 @@ msgstr "{reason}：{detail}"
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
 
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
-#~ msgstr "{remaining, plural, other {队列中还有 # 个}}"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -2048,11 +2043,6 @@ msgstr ""
 #, fuzzy
 msgid "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
 msgstr "{totalCount, plural, other {{visibleCount}/# 个系列符合条件}}"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
-#~ msgstr "{totalQueued, plural, other {队列中有 # 个}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4777,11 +4767,6 @@ msgstr "已经列出的章节会保留你为它们设置的内容。"
 msgid "Chapters downloaded automatically"
 msgstr "章节已自动下载"
 
-#: src/components/home/homeSectionDefs.ts
-#, fuzzy
-#~ msgid "Chapters downloading right now. Only shows while something is."
-#~ msgstr "正在下载的章节。仅在有下载任务时显示。"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapters known"
@@ -6772,12 +6757,6 @@ msgstr "正在下载封面"
 #, fuzzy
 msgid "Downloading metadata database"
 msgstr "正在下载元数据数据库"
-
-#: src/api/hooks.ts
-#: src/pages/HomePage.tsx
-#, fuzzy
-#~ msgid "Downloading now"
-#~ msgstr "正在下载"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -19870,11 +19849,6 @@ msgstr "视图"
 #, fuzzy
 msgid "View {title}"
 msgstr "查看 {title}"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "View activity"
-#~ msgstr "查看活动"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx

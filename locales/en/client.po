@@ -1348,10 +1348,6 @@ msgstr "{reason}: {detail}"
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
 
-#: src/components/home/DownloadingStrip.tsx
-#~ msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
-#~ msgstr "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
-
 #: src/pages/SeriesDetailPage.tsx
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -1718,10 +1714,6 @@ msgstr "{totalChecks, plural, one {Turn on Show passing to see the # check.} oth
 #: src/pages/LibraryPage.tsx
 msgid "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
 msgstr "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
-
-#: src/components/home/DownloadingStrip.tsx
-#~ msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
-#~ msgstr "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
 
 #: src/pages/LibraryPage.tsx
 msgid "{totalSeries, plural, one {# series} other {# series}}"
@@ -3961,10 +3953,6 @@ msgstr "Chapters already listed keep whatever you set on them."
 msgid "Chapters downloaded automatically"
 msgstr "Chapters downloaded automatically"
 
-#: src/components/home/homeSectionDefs.ts
-#~ msgid "Chapters downloading right now. Only shows while something is."
-#~ msgstr "Chapters downloading right now. Only shows while something is."
-
 #: src/pages/SeriesDetailPage.tsx
 msgid "Chapters known"
 msgstr "Chapters known"
@@ -5617,11 +5605,6 @@ msgstr "Downloading cover"
 #: src/components/MetadataDumpProgress.tsx
 msgid "Downloading metadata database"
 msgstr "Downloading metadata database"
-
-#: src/api/hooks.ts
-#: src/pages/HomePage.tsx
-#~ msgid "Downloading now"
-#~ msgstr "Downloading now"
 
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Downloading…"
@@ -16478,10 +16461,6 @@ msgstr "View"
 #: src/components/ui/DiscoverRail.tsx
 msgid "View {title}"
 msgstr "View {title}"
-
-#: src/components/home/DownloadingStrip.tsx
-#~ msgid "View activity"
-#~ msgstr "View activity"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx

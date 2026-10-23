@@ -1595,11 +1595,6 @@ msgstr "{reason}：{detail}"
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
 
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
-#~ msgstr "{remaining, plural, other {キューにさらに#件}}"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -2048,11 +2043,6 @@ msgstr ""
 #, fuzzy
 msgid "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
 msgstr "{totalCount, plural, other {#件のシリーズのうち{visibleCount}件が一致}}"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
-#~ msgstr "{totalQueued, plural, other {キューに#件}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4777,11 +4767,6 @@ msgstr "すでに一覧にある章は、設定した内容を保持します。
 msgid "Chapters downloaded automatically"
 msgstr "章を自動ダウンロード"
 
-#: src/components/home/homeSectionDefs.ts
-#, fuzzy
-#~ msgid "Chapters downloading right now. Only shows while something is."
-#~ msgstr "現在ダウンロード中の章です。ダウンロード中のものがあるときだけ表示します。"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapters known"
@@ -6772,12 +6757,6 @@ msgstr "表紙をダウンロード中"
 #, fuzzy
 msgid "Downloading metadata database"
 msgstr "メタデータデータベースをダウンロード中"
-
-#: src/api/hooks.ts
-#: src/pages/HomePage.tsx
-#, fuzzy
-#~ msgid "Downloading now"
-#~ msgstr "現在ダウンロード中"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -19870,11 +19849,6 @@ msgstr "表示"
 #, fuzzy
 msgid "View {title}"
 msgstr "{title}を表示"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "View activity"
-#~ msgstr "アクティビティを表示"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx

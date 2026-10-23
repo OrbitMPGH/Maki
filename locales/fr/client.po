@@ -1595,11 +1595,6 @@ msgstr "{reason} : {detail}"
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
 
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
-#~ msgstr "{remaining, plural, one {# de plus dans la file} many {# de plus dans la file} other {# de plus dans la file}}"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -2049,11 +2044,6 @@ msgstr ""
 #, fuzzy
 msgid "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
 msgstr "{totalCount, plural, one {{visibleCount} sur # série correspond} many {{visibleCount} sur # séries correspondent} other {{visibleCount} sur # séries correspondent}}"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
-#~ msgstr "{totalQueued, plural, one {# dans la file} many {# dans la file} other {# dans la file}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4778,11 +4768,6 @@ msgstr "Les chapitres déjà listés conservent le réglage que vous leur avez a
 msgid "Chapters downloaded automatically"
 msgstr "Chapitres téléchargés automatiquement"
 
-#: src/components/home/homeSectionDefs.ts
-#, fuzzy
-#~ msgid "Chapters downloading right now. Only shows while something is."
-#~ msgstr "Chapitres en cours de téléchargement. Cette section ne s'affiche que lorsqu'il y en a."
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapters known"
@@ -6773,12 +6758,6 @@ msgstr "Téléchargement de la couverture"
 #, fuzzy
 msgid "Downloading metadata database"
 msgstr "Téléchargement de la base de données des métadonnées"
-
-#: src/api/hooks.ts
-#: src/pages/HomePage.tsx
-#, fuzzy
-#~ msgid "Downloading now"
-#~ msgstr "Téléchargement en cours"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -19871,11 +19850,6 @@ msgstr "Voir"
 #, fuzzy
 msgid "View {title}"
 msgstr "Voir {title}"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "View activity"
-#~ msgstr "Voir l'activité"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
