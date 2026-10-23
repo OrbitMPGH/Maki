@@ -98,8 +98,16 @@ export const CoverCard = memo(function CoverCard({
       to={`/series/${series.id}`}
       className="cover-card"
       data-selected={selected || undefined}
+      role={selectMode ? 'checkbox' : undefined}
+      aria-checked={selectMode ? selected : undefined}
       onClick={(e) => {
         if (selectMode) {
+          e.preventDefault()
+          onToggle(series.id)
+        }
+      }}
+      onKeyDown={(e) => {
+        if (selectMode && e.key === ' ') {
           e.preventDefault()
           onToggle(series.id)
         }
@@ -113,7 +121,31 @@ export const CoverCard = memo(function CoverCard({
         )}
         <div className="cover-scrim" />
 
-        {selectMode && <span className="cover-check" data-checked={selected || undefined} />}
+        {selectMode && <span className="cover-check" data-checked={selected || undefined} aria-hidden />}
+
+        {/* Ahead of the corner marks in the DOM so the link's accessible name starts with the title. */}
+        <div className="cover-meta">
+          {/* The tooltip stays the canonical title, so the name the folder on disk and search
+              use is still reachable when a language preference has moved the label off it. */}
+          <span className="cover-title" title={series.title}>
+            {series.displayTitle}
+          </span>
+          <div className="cover-bar">
+            <div
+              className="cover-bar-fill"
+              data-complete={complete || undefined}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <div className="cover-row">
+            <span data-nothing-wanted={nothingWanted || undefined} data-tip={countTip}>
+              {countLabel}
+            </span>
+            {unread !== null && unread > 0 && (
+              <span className="cover-new">{plural(unread, { one: '# new', other: '# new' })}</span>
+            )}
+          </div>
+        </div>
 
         <div className="cover-corners">
           <div className="cover-corner cover-corner-left">
@@ -172,29 +204,6 @@ export const CoverCard = memo(function CoverCard({
             >
               <StatusGlyph size={13} stroke={2} />
             </span>
-          </div>
-        </div>
-
-        <div className="cover-meta">
-          {/* The tooltip stays the canonical title, so the name the folder on disk and search
-              use is still reachable when a language preference has moved the label off it. */}
-          <span className="cover-title" title={series.title}>
-            {series.displayTitle}
-          </span>
-          <div className="cover-bar">
-            <div
-              className="cover-bar-fill"
-              data-complete={complete || undefined}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <div className="cover-row">
-            <span data-nothing-wanted={nothingWanted || undefined} data-tip={countTip}>
-              {countLabel}
-            </span>
-            {unread !== null && unread > 0 && (
-              <span className="cover-new">{plural(unread, { one: '# new', other: '# new' })}</span>
-            )}
           </div>
         </div>
       </div>

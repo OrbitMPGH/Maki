@@ -32,7 +32,9 @@ async function enterSelectMode(canvas: Canvas, userEvent: UserEvent, waitFor = /
 
 async function pick(canvas: Canvas, userEvent: UserEvent, ...titles: string[]) {
   for (const title of titles) {
-    await userEvent.click(await canvas.findByRole('link', { name: new RegExp(title) }))
+    // Cover cards are checkboxes while selecting; list rows stay links.
+    const name = new RegExp(title)
+    await userEvent.click(canvas.queryByRole('checkbox', { name }) ?? (await canvas.findByRole('link', { name })))
   }
 }
 

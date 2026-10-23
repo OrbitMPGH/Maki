@@ -21,7 +21,7 @@
     "ink-4": "Tertiary text: timestamps, zero counts, the sidebar group labels. Reads 4.5:1 on surface in both schemes (4.54:1 in dark).",
     "brand": "The single accent: progress fills, selected borders, focus outlines, unread badges. Blush by default. A fill and border colour, not body text; brand-fg is the text form.",
     "brand-hover": "Hover state for fills in brand.",
-    "brand-on": "Text and icons on a brand fill where the fill is brand itself (the play corner). Near-black on dark Blush (8.9:1), white on Light Blush (4.7:1); Emerald and Amber flip to near-black. White on Indigo brand is only 3.5:1, so anything carrying small text sits on the Mantine primary fill with primary-on instead.",
+    "brand-on": "Text and icons on a brand fill where the fill is brand itself (the play corner). Near-black on dark Blush (6.85:1), white on Light Blush (4.7:1); Emerald and Amber flip to near-black. White on Indigo brand is only 3.5:1, so anything carrying small text sits on the Mantine primary fill with primary-on instead.",
     "brand-fg": "Brand-tinted text and icons on the surfaces: section-header icons and counts, engine reasons, links in prose, and every Mantine Anchor. Blush reads 10.3:1 on dark surface, Light uses a deeper blush (5.7:1, 4.9:1 on its own 10% tint). On cover art use brand-fg-on-art.",
     "brand-fg-on-art": "Brand-tinted text over cover art under the dark scrim (Discover reason lines, the Resume label on Home cards). The scrim stays dark in Light, so Light keeps the pale blush here.",
     "brand-glow": "Text selection, the unread inbox tint and the ring on the active import step. Never a text colour, and not a halo: selected cards take a 1px brand ring only.",

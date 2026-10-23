@@ -96,8 +96,15 @@ export const NoChaptersListed: Story = {
 export const SelectMode: Story = {
   args: { selectMode: true },
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('link'))
+    const card = await canvas.findByRole('checkbox')
+    await expect(card).toHaveAttribute('aria-checked', 'false')
+    await userEvent.click(card)
     await waitFor(() => expect(args.onToggle).toHaveBeenCalledWith(1))
+    ;(args.onToggle as ReturnType<typeof fn>).mockClear()
+    card.focus()
+    await userEvent.keyboard(' ')
+    await waitFor(() => expect(args.onToggle).toHaveBeenCalledTimes(1))
+    await expect(args.onToggle).toHaveBeenCalledWith(1)
   },
 }
 
