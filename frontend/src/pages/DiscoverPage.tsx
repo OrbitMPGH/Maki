@@ -128,13 +128,30 @@ import {
   DensityMenuItems,
   POSTER_COLS_BY_DENSITY,
   ToolbarMenuButton,
-  ViewPrefsControls,
+  ViewModeToggle,
+  readStored,
   useDensityPref,
+  writeStored,
   useViewPrefs,
+  type ViewPrefs,
   type Density,
   type DensityPref,
 } from '../components/ui/viewPrefs'
 import { formatFixedDecimal } from '../format'
+
+const DENSITY_VALUES: readonly Density[] = ['compact', 'default', 'comfortable']
+
+function migrateBrowseDensity() {
+  try {
+    if (localStorage.getItem('discover-density') !== null) return
+    const old = readStored('discover-browse-density', DENSITY_VALUES, 'default')
+    if (localStorage.getItem('discover-browse-density') === null) return
+    writeStored('discover-density', old)
+    localStorage.removeItem('discover-browse-density')
+  } catch {
+    /* storage unavailable: nothing to carry over */
+  }
+}
 
 /**
  * Where the Recommended panel is remembered between visits. Its own key rather than the route,
@@ -231,12 +248,11 @@ function DiscoverGenreSkeleton() {
 }
 
 /** The recommendation engine: Maki's library-driven "more like what you own" picks. */
-function RecommendedTab() {
+function RecommendedTab({ prefs }: { prefs: ViewPrefs }) {
   const renderLabel = useLabel()
   const { t, i18n } = useLingui()
   const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
-  const prefs = useViewPrefs('discover')
   const { viewMode, density } = prefs
 
   // --- customization controls ---
@@ -586,7 +602,7 @@ function RecommendedTab() {
   return (
     <>
       <Group justify="flex-end" mb="md">
-        <ViewPrefsControls prefs={prefs} />
+        <ViewModeToggle value={prefs.viewMode} onChange={prefs.setViewMode} />
         <Button
           variant={isCustomized ? 'light' : 'default'}
           leftSection={<IconAdjustmentsHorizontal size={16} />}
@@ -1585,41 +1601,48 @@ export default function DiscoverPage() {
   const refreshRails = useCallback(() => setRefreshNonce((n) => n + 1), [])
   const { editing, enter: enterEditing, exit: exitEditing } = useLayoutEditMode(active === 'browse')
 
-  // One density for the whole Discover tab, up here for the same reason as the refresh action: the
-  // control belongs in the page header. Its own scope rather than `discover`, which the Recommended
-  // tab already owns through `useViewPrefs` - two states over one key would go stale against each
-  // other, since only one tab is mounted at a time.
-  const browseDensity = useDensityPref('discover-browse')
+  // One view mode and density for Discover's two poster tabs, up here so the page header's menu
+  // is the only control for it. Only one of the tabs is mounted at a time, so sharing the state is
+  // safe.
+  useState(migrateBrowseDensity)
+  const viewPrefs = useViewPrefs('discover')
+  const showTools = (active === 'browse' && !editing) || active === 'recommended'
 
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
         title={t`Discover`}
         actions={
-          active === 'browse' && !editing ? (
+          showTools ? (
             <Group gap="xs" wrap="nowrap">
-              <Tooltip label={t`Refresh the catalogue`} withArrow>
-                <ActionIcon
-                  variant="subtle"
-                  color="var(--neutral)"
-                  size="lg"
-                  loading={railsFetching}
-                  onClick={refreshRails}
-                  aria-label={t`Refresh the catalogue`}
-                >
-                  <IconRefresh size={18} />
-                </ActionIcon>
-              </Tooltip>
+              {active === 'browse' && (
+                <Tooltip label={t`Refresh the catalogue`} withArrow>
+                  <ActionIcon
+                    variant="subtle"
+                    color="var(--neutral)"
+                    size={44}
+                    loading={railsFetching}
+                    onClick={refreshRails}
+                    aria-label={t`Refresh the catalogue`}
+                  >
+                    <IconRefresh size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
               <Menu position="bottom-end" withinPortal>
                 <Menu.Target>
-                  <ToolbarMenuButton size="lg" />
+                  <ToolbarMenuButton size={44} />
                 </Menu.Target>
                 <Menu.Dropdown>
-                  <Menu.Item leftSection={<IconLayoutDashboard size={14} />} onClick={enterEditing}>
-                    <Trans>Edit layout</Trans>
-                  </Menu.Item>
-                  <Menu.Divider />
-                  <DensityMenuItems value={browseDensity.density} onChange={browseDensity.setDensity} />
+                  {active === 'browse' && (
+                    <>
+                      <Menu.Item leftSection={<IconLayoutDashboard size={14} />} onClick={enterEditing}>
+                        <Trans>Edit layout</Trans>
+                      </Menu.Item>
+                      <Menu.Divider />
+                    </>
+                  )}
+                  <DensityMenuItems value={viewPrefs.density} onChange={viewPrefs.setDensity} />
                 </Menu.Dropdown>
               </Menu>
             </Group>
@@ -1648,7 +1671,7 @@ export default function DiscoverPage() {
       </Tabs>
 
       {active === 'recommended' ? (
-        <RecommendedTab />
+        <RecommendedTab prefs={viewPrefs} />
       ) : active === 'taste' ? (
         <Suspense fallback={<Loader />}>
           <TasteTab />
@@ -1657,7 +1680,7 @@ export default function DiscoverPage() {
         <DiscoverBrowseTab
           refreshNonce={refreshNonce}
           onRefresh={refreshRails}
-          density={browseDensity}
+          density={viewPrefs}
           editing={editing}
           onExitEditing={exitEditing}
         />

@@ -219,3 +219,13 @@ export const YourTasteEmpty: Story = {
     await expect(await canvas.findByText('Nothing to profile yet', {}, { timeout: 8000 })).toBeVisible()
   },
 }
+
+export const RecommendedDensityMenu: Story = {
+  parameters: { router: route('/discover/recommended') },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'More options' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('menuitem', { name: 'Compact' })).toBeVisible()
+    await expect(body.queryByRole('menuitem', { name: 'Edit layout' })).toBeNull()
+  },
+}
