@@ -22,20 +22,20 @@ const inner = detectInnerScroll()
 if (inner) document.documentElement.dataset.scroll = 'inner'
 
 /** The scrolling <main>, or null when the window scrolls (or the shell isn't mounted). */
-function scroller(): HTMLElement | null {
+export function pageScroller(): HTMLElement | null {
   return inner ? document.getElementById('main') : null
 }
 
 export function pageScrollTop(): number {
-  return scroller()?.scrollTop ?? window.scrollY
+  return pageScroller()?.scrollTop ?? window.scrollY
 }
 
 export function pageViewportHeight(): number {
-  return scroller()?.clientHeight ?? window.innerHeight
+  return pageScroller()?.clientHeight ?? window.innerHeight
 }
 
 export function scrollPageTo(top: number): void {
-  const el = scroller()
+  const el = pageScroller()
   if (el) el.scrollTo(0, top)
   else window.scrollTo(0, top)
 }
@@ -46,7 +46,7 @@ export function scrollPageTo(top: number): void {
  */
 export function onPageScroll(listener: () => void): () => void {
   const handler = (e: Event) => {
-    const el = scroller()
+    const el = pageScroller()
     if (el ? e.target === el : e.target === document) listener()
   }
   window.addEventListener('scroll', handler, { capture: true, passive: true })

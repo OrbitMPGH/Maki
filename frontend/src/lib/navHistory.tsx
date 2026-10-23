@@ -295,6 +295,9 @@ export function ScrollMemory() {
     for (const ev of USER_SCROLL_EVENTS) window.addEventListener(ev, stop, { passive: true })
 
     const deadline = performance.now() + RESTORE_WINDOW_MS
+    // Once straight away too. A page change waits inside a view transition (lib/pageTransition.ts),
+    // where no frame runs until the new page is captured, and it should be captured scrolled.
+    scrollPageTo(target)
     frame = requestAnimationFrame(function step() {
       scrollPageTo(target)
       // Landed, or out of patience: the document may simply never get that tall again, if rows

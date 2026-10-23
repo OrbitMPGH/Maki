@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useLayoutEffect } from 'react'
 import { useThemeChoice } from '../theme-context'
 
 /**
@@ -69,33 +69,115 @@ function sampleTint(img: HTMLImageElement): string | null {
   return toHex(hue, Math.min(0.75, Math.max(0.45, sat)), 0.55)
 }
 
+const EASE_MS = 800
+// theme.css's --ease, kept here rather than read back, since any read of the root's style while it is
+// changing restyles the whole page on the spot.
+const EASING = 'cubic-bezier(0.16, 1, 0.3, 1)'
+const ACCENT = 'var(--brand)'
+/** What the property holds now: the last value written, or the accent when it is unset. */
+let current = ACCENT
+let clock: Animation | null = null
+let frame = 0
+
+/**
+ * Set by lib/pageTransition.ts while a page transition prepares the new page. A tint change then is
+ * written at once: the transition's cross-fade blends the old page's ground into the new one on the
+ * GPU, where easing it here would restyle the whole page on every frame (about 33ms a frame on
+ * Discover, which read as a stutter).
+ */
+let held = false
+export function holdTint(on: boolean) {
+  held = on
+}
+
+let settling: Promise<void> = Promise.resolve()
+/** Resolves once the cover the current page asked for has been sampled and its tint written. */
+export const tintSettled = () => settling
+
+/**
+ * Eases the ground to `tint`, or back to the accent for null. Scripted rather than a CSS transition
+ * on the property: while Chrome animates a custom property it can paint what depends on it from the
+ * fallback, so on some GPUs default buttons drew in the primary pink and pill borders in the text
+ * colour for the length of the ease, with every computed value correct. Written frame by frame, the
+ * tint stays an ordinary property.
+ *
+ * It still eases like the transition did: the blend is the same oklab mix, and the progress comes
+ * from an animation with no target, which moves nothing but runs the easing on the document
+ * timeline. Nothing is read back from the page, so each frame costs one restyle and no more.
+ */
+function easeTint(tint: string | null) {
+  const root = document.documentElement
+  clock?.cancel()
+  cancelAnimationFrame(frame)
+  const from = current
+  const to = tint ?? ACCENT
+  const write = (value: string) => {
+    current = value
+    if (value === ACCENT) root.style.removeProperty(PROPERTY)
+    else root.style.setProperty(PROPERTY, value)
+  }
+  if (held || from === to || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return write(to)
+
+  const timer = new Animation(new KeyframeEffect(null, null, { duration: EASE_MS, easing: EASING }))
+  clock = timer
+  timer.finished.then(
+    () => {
+      if (clock !== timer) return
+      cancelAnimationFrame(frame)
+      write(to)
+    },
+    () => {},
+  )
+  const step = () => {
+    if (clock !== timer || timer.playState === 'finished') return
+    const p = timer.effect?.getComputedTiming().progress
+    if (p != null) write(`color-mix(in oklab, ${from}, ${to} ${(p * 100).toFixed(2)}%)`)
+    frame = requestAnimationFrame(step)
+  }
+  // Started from a frame rather than mid-task, where the page that set the tint is usually still
+  // mounting.
+  frame = requestAnimationFrame(() => {
+    if (clock !== timer) return
+    timer.play()
+    step()
+  })
+}
+
 export function useCoverTint(coverUrl: string | null | undefined) {
   const { background } = useThemeChoice()
   const active = background === 'cover'
 
-  useEffect(() => {
+  // A layout effect so a page transition preparing this page sees the cover on its way during the
+  // commit itself, rather than whenever React gets round to passive effects.
+  useLayoutEffect(() => {
     if (!active || !coverUrl) return
     const id = ++owner
-    const root = document.documentElement
+    let done!: () => void
+    settling = new Promise<void>((resolve) => (done = resolve))
     const img = new Image()
     img.decoding = 'async'
     img.onload = () => {
-      if (id !== owner) return
-      const tint = sampleTint(img)
-      if (tint) root.style.setProperty(PROPERTY, tint)
-      else root.style.removeProperty(PROPERTY)
+      if (id === owner) easeTint(sampleTint(img))
+      done()
     }
     img.onerror = () => {
-      if (id === owner) root.style.removeProperty(PROPERTY)
+      if (id === owner) easeTint(null)
+      done()
     }
     img.src = coverUrl
     return () => {
       img.onload = null
       img.onerror = null
-      // Deferred so moving from one series to the next goes straight from cover to cover
-      // instead of dipping back to the accent in between.
+      done()
+      // Inside a page transition only the captured result shows, so the accent can go in now and the
+      // next cover over it. Otherwise deferred, so moving from one series to the next goes straight
+      // from cover to cover instead of dipping back to the accent in between.
+      if (held) {
+        if (id === owner) easeTint(null)
+        return
+      }
       window.setTimeout(() => {
-        if (id === owner) root.style.removeProperty(PROPERTY)
+        if (id === owner) easeTint(null)
       }, 400)
     }
   }, [active, coverUrl])

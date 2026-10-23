@@ -308,8 +308,9 @@
 }
 /* Tinted black, but toward the cover on screen: the series page and Home's hero set --ground-tint
    from their cover (lib/coverTint.ts), and every other page falls back to the accent. Registered
-   so the whole ground eases from one cover to the next instead of jumping. The mix is stronger
-   than tinted's because a cover's colour is pinned to a mid lightness, below most accents. */
+   so it computes to a plain colour the script can ease from one cover to the next; it is not a CSS
+   transition, which Chrome painted wrongly (see easeTint). The mix is stronger than tinted's
+   because a cover's colour is pinned to a mid lightness, below most accents. */
 @property --ground-tint {
   syntax: '<color>';
   inherits: true;
@@ -323,7 +324,6 @@
   --surface-hover: color-mix(in srgb, #282828 94%, var(--ground-tint));
   --border: color-mix(in srgb, #303030 93%, var(--ground-tint));
   --border-strong: color-mix(in srgb, #3e3e3e 93%, var(--ground-tint));
-  transition: --ground-tint 0.8s var(--ease);
 }
 /* Mantine's own surfaces (inputs, menus) read its dark scale, which JS can only mix toward the
    accent. Pointing the scale at the tokens keeps them on the cover's ground. */
@@ -736,6 +736,22 @@ body {
 ::view-transition-group(root) {
   animation-duration: 0.26s;
   animation-timing-function: var(--ease);
+}
+/* Laid out for real while a page transition captures the new page (settleLayout in
+   lib/pageTransition.ts); their guessed heights otherwise shift everything below them afterwards. */
+html[data-page-settling] :is(.discover-rail, .series-row) {
+  content-visibility: visible;
+}
+/* The copy of a cover flying into the series poster or back into its card (lib/pageTransition.ts).
+   z-index 1 keeps it over the page's content and under the top bar and sticky toolbars. */
+.cover-ghost {
+  position: absolute;
+  z-index: 1;
+  object-fit: cover;
+  transform-origin: 0 0;
+  box-shadow: var(--shadow-cover);
+  pointer-events: none;
+  will-change: transform;
 }
 /* The padding changes with the page (the rule above, the series hero's top), and Mantine animates
    it, so leaving Settings drew the next page wide and then squeezed it into its gutters. Only

@@ -15,6 +15,7 @@ import './theme.css'
 import './lib/pageScroll'
 import './lib/coverFallback'
 import { appHistory, PageTransitionCommit } from './lib/pageTransition'
+import { preloadingRoutes } from './lib/routePreload'
 import { AppThemeProvider } from './theme-context'
 import { AppI18nProvider } from './i18n-context'
 import { i18n, loadLocale, resolveInitialLocale } from './i18n'
@@ -31,6 +32,7 @@ syncSkeletonPulses()
 // index.html and chunks come down together. The timestamp guard stops a reload loop when the
 // chunks are genuinely unreachable; the route error boundary then shows a message instead.
 window.addEventListener('vite:preloadError', (event) => {
+  if (preloadingRoutes()) return
   const key = 'maki.chunk-reload'
   let last = 0
   try {

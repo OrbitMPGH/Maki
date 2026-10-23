@@ -18,11 +18,12 @@ import {
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
 } from '@tabler/icons-react'
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
   useHealth,
   useMetadataSettings,
+  usePrefetchSeriesOnHover,
   useQueueSummary,
   useSetupStatus,
   useUiSettings,
@@ -54,6 +55,7 @@ import { plural } from '@lingui/core/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, type NavItem } from './nav'
 import { DocumentTitle, DocumentTitleProvider } from './lib/documentTitle'
+import { lazyRoute, preloadRoutes } from './lib/routePreload'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
 // (StartPageRedirect), so splitting them would only add a round trip to the first paint.
 import HomePage from './pages/HomePage'
@@ -62,19 +64,19 @@ import LibraryPage from './pages/LibraryPage'
 // Everything else is reached by a navigation, so it can arrive as its own chunk instead of riding
 // in the initial bundle. Stats in particular pulls @mantine/charts and recharts, and Settings and
 // Discover are the two largest pages in the app, and none of which someone landing on Home needs.
-const SeriesDetailPage = lazy(() => import('./pages/SeriesDetailPage'))
-const AddSeriesPage = lazy(() => import('./pages/AddSeriesPage'))
-const CreatorPage = lazy(() => import('./pages/CreatorPage'))
-const ActivityPage = lazy(() => import('./pages/ActivityPage'))
-const RequestsPage = lazy(() => import('./pages/RequestsPage'))
-const DiscoverPage = lazy(() => import('./pages/DiscoverPage'))
-const ImportPage = lazy(() => import('./pages/ImportPage'))
-const ScrobblePage = lazy(() => import('./pages/ScrobblePage'))
-const StatsPage = lazy(() => import('./pages/StatsPage'))
-const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
-const SettingsPage = lazy(() => import('./pages/SettingsPage'))
-const HealthPage = lazy(() => import('./pages/HealthPage'))
-const ReaderPage = lazy(() => import('./pages/reader/ReaderPage'))
+const SeriesDetailPage = lazyRoute(() => import('./pages/SeriesDetailPage'))
+const AddSeriesPage = lazyRoute(() => import('./pages/AddSeriesPage'))
+const CreatorPage = lazyRoute(() => import('./pages/CreatorPage'))
+const ActivityPage = lazyRoute(() => import('./pages/ActivityPage'))
+const RequestsPage = lazyRoute(() => import('./pages/RequestsPage'))
+const DiscoverPage = lazyRoute(() => import('./pages/DiscoverPage'))
+const ImportPage = lazyRoute(() => import('./pages/ImportPage'))
+const ScrobblePage = lazyRoute(() => import('./pages/ScrobblePage'))
+const StatsPage = lazyRoute(() => import('./pages/StatsPage'))
+const NotificationsPage = lazyRoute(() => import('./pages/NotificationsPage'))
+const SettingsPage = lazyRoute(() => import('./pages/SettingsPage'))
+const HealthPage = lazyRoute(() => import('./pages/HealthPage'))
+const ReaderPage = lazyRoute(() => import('./pages/reader/ReaderPage'))
 
 const NAV_COLLAPSED_KEY = 'sidebar-collapsed'
 
@@ -275,6 +277,8 @@ function LiveEvents() {
 function AppShellRoutes() {
   const location = useLocation()
   const navigate = useNavigate()
+  usePrefetchSeriesOnHover()
+  useEffect(() => preloadRoutes(), [])
   const [pinned, { open: openPinned, close: closePinned }] = useDisclosure()
   // A mouse resting on the burger opens the drawer without pinning it, and leaving the burger and
   // the drawer closes it again. Touch and keyboard never peek: a tap fires pointerenter too, and

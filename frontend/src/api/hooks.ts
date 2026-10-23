@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -161,11 +161,15 @@ function pendingPollInterval(id: number, pending: boolean): number | false {
   return waited < 60_000 ? 3000 : waited < 5 * 60_000 ? 15_000 : 60_000
 }
 
+const seriesDetailQuery = (id: number) => ({
+  queryKey: ['series', id],
+  queryFn: () => api<SeriesDto>(`/series/${id}`),
+  meta: { inlineNotFound: true },
+})
+
 export function useSeriesDetail(id: number) {
   return useQuery({
-    queryKey: ['series', id],
-    queryFn: () => api<SeriesDto>(`/series/${id}`),
-    meta: { inlineNotFound: true },
+    ...seriesDetailQuery(id),
     // Background source matching ends with a `sourceMatchFinished` push. A dropped hub connection
     // would otherwise leave the Sources card spinning with nothing to end it, so poll while, and
     // only while, there is something to wait for.
@@ -175,6 +179,48 @@ export function useSeriesDetail(id: number) {
         Boolean(query.state.data?.sourceMatchPending || query.state.data?.importLinkPending),
       ),
   })
+}
+
+/**
+ * Fetches a series when the pointer settles on a link to it, or presses one, so its page opens with
+ * the data already there and the cover morph into its poster isn't held back waiting on it. The
+ * short delay keeps a mouse sweeping across the library grid from requesting every cover it passes.
+ */
+export function usePrefetchSeriesOnHover() {
+  const queryClient = useQueryClient()
+  useEffect(() => {
+    let timer = 0
+    const idOf = (target: EventTarget | null) => {
+      const link = target instanceof Element ? target.closest('a[href^="/series/"]') : null
+      const id = link && /^\/series\/(\d+)$/.exec(link.getAttribute('href') ?? '')?.[1]
+      return link && id ? { link, id: Number(id) } : null
+    }
+    const prefetch = (id: number) =>
+      void queryClient.prefetchQuery({ ...seriesDetailQuery(id), staleTime: 30_000 })
+    const onOver = (e: PointerEvent) => {
+      const hit = idOf(e.target)
+      if (!hit || (e.relatedTarget instanceof Node && hit.link.contains(e.relatedTarget))) return
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => prefetch(hit.id), 80)
+    }
+    const onOut = (e: PointerEvent) => {
+      const hit = idOf(e.target)
+      if (hit && !(e.relatedTarget instanceof Node && hit.link.contains(e.relatedTarget))) window.clearTimeout(timer)
+    }
+    const onDown = (e: PointerEvent) => {
+      const hit = idOf(e.target)
+      if (hit) prefetch(hit.id)
+    }
+    document.addEventListener('pointerover', onOver, { passive: true })
+    document.addEventListener('pointerout', onOut, { passive: true })
+    document.addEventListener('pointerdown', onDown, { passive: true })
+    return () => {
+      window.clearTimeout(timer)
+      document.removeEventListener('pointerover', onOver)
+      document.removeEventListener('pointerout', onOut)
+      document.removeEventListener('pointerdown', onDown)
+    }
+  }, [queryClient])
 }
 
 export function useMetadataSearch(query: string) {
