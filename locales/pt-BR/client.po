@@ -1603,11 +1603,6 @@ msgstr "{reason}: {detail}"
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
 
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
-#~ msgstr "{remaining, plural, one {# a mais na fila} many {# a mais na fila}other {# a mais na fila}}"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -2057,11 +2052,6 @@ msgstr ""
 #, fuzzy
 msgid "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
 msgstr "{totalCount, plural, one {{visibleCount} de # série corresponde} many {{visibleCount} de # séries correspondem} other {{visibleCount} de # séries correspondem}}"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
-#~ msgstr "{totalQueued, plural, one {# na fila} many {# na fila}other {# na fila}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4786,11 +4776,6 @@ msgstr "Capítulos já listados mantêm o que você definiu neles."
 msgid "Chapters downloaded automatically"
 msgstr "Capítulos baixados automaticamente"
 
-#: src/components/home/homeSectionDefs.ts
-#, fuzzy
-#~ msgid "Chapters downloading right now. Only shows while something is."
-#~ msgstr "Capítulos baixando neste momento. Só aparece enquanto houver algum download."
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapters known"
@@ -6781,12 +6766,6 @@ msgstr "Baixando capa"
 #, fuzzy
 msgid "Downloading metadata database"
 msgstr "Baixando banco de dados de metadados"
-
-#: src/api/hooks.ts
-#: src/pages/HomePage.tsx
-#, fuzzy
-#~ msgid "Downloading now"
-#~ msgstr "Baixando agora"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -19909,11 +19888,6 @@ msgstr "Visualização"
 #, fuzzy
 msgid "View {title}"
 msgstr "Ver {title}"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "View activity"
-#~ msgstr "Ver atividade"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx

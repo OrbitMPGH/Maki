@@ -1603,11 +1603,6 @@ msgstr "{reason}: {detail}"
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
 
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
-#~ msgstr "{remaining, plural, one {в очереди ещё # элемент} few {в очереди ещё # элемента} many {в очереди ещё # элементов} other {в очереди ещё # элемента}}"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -2057,11 +2052,6 @@ msgstr ""
 #, fuzzy
 msgid "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
 msgstr "{totalCount, plural, one {{visibleCount} из # серии подходит} few {{visibleCount} из # серий подходят} many {{visibleCount} из # серий подходят} other {{visibleCount} из # серии подходит}}"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
-#~ msgstr "{totalQueued, plural, one {# в очереди} few {# в очереди} many {# в очереди} other {# в очереди}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4786,11 +4776,6 @@ msgstr "Уже перечисленные главы сохраняют зада
 msgid "Chapters downloaded automatically"
 msgstr "Главы загружены автоматически"
 
-#: src/components/home/homeSectionDefs.ts
-#, fuzzy
-#~ msgid "Chapters downloading right now. Only shows while something is."
-#~ msgstr "Главы, которые загружаются сейчас. Показывается, только пока идёт загрузка."
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapters known"
@@ -6781,12 +6766,6 @@ msgstr "Загрузка обложки"
 #, fuzzy
 msgid "Downloading metadata database"
 msgstr "Загрузка базы данных метаданных"
-
-#: src/api/hooks.ts
-#: src/pages/HomePage.tsx
-#, fuzzy
-#~ msgid "Downloading now"
-#~ msgstr "Сейчас загружается"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -19909,11 +19888,6 @@ msgstr "Вид"
 #, fuzzy
 msgid "View {title}"
 msgstr "Просмотреть {title}"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "View activity"
-#~ msgstr "Просмотреть активность"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx

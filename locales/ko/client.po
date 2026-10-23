@@ -1603,11 +1603,6 @@ msgstr "{reason}: {detail}"
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
 
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
-#~ msgstr "{remaining, plural, other {대기열에 #개 더 있음}}"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -2056,11 +2051,6 @@ msgstr ""
 #, fuzzy
 msgid "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
 msgstr "{totalCount, plural, other {시리즈 #개 중 {visibleCount}개 일치}}"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
-#~ msgstr "{totalQueued, plural, other {대기열에 #개}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4785,11 +4775,6 @@ msgstr "이미 목록에 있는 챕터는 설정한 값을 유지합니다."
 msgid "Chapters downloaded automatically"
 msgstr "자동으로 다운로드한 챕터"
 
-#: src/components/home/homeSectionDefs.ts
-#, fuzzy
-#~ msgid "Chapters downloading right now. Only shows while something is."
-#~ msgstr "현재 다운로드 중인 챕터입니다. 다운로드가 진행 중일 때만 표시됩니다."
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapters known"
@@ -6780,12 +6765,6 @@ msgstr "표지 다운로드 중"
 #, fuzzy
 msgid "Downloading metadata database"
 msgstr "메타데이터 데이터베이스 다운로드 중"
-
-#: src/api/hooks.ts
-#: src/pages/HomePage.tsx
-#, fuzzy
-#~ msgid "Downloading now"
-#~ msgstr "지금 다운로드 중"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -19908,11 +19887,6 @@ msgstr "보기"
 #, fuzzy
 msgid "View {title}"
 msgstr "{title} 보기"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "View activity"
-#~ msgstr "활동 보기"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx

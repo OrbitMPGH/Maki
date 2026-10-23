@@ -1603,11 +1603,6 @@ msgstr "{reason}: {detail}"
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
 
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
-#~ msgstr "{remaining, plural, one {noch # in der Warteschlange} other {noch # in der Warteschlange}}"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -2057,11 +2052,6 @@ msgstr ""
 #, fuzzy
 msgid "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
 msgstr "{totalCount, plural, one {{visibleCount} von # Serie passt} other {{visibleCount} von # Serien passen}}"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
-#~ msgstr "{totalQueued, plural, one {# in der Warteschlange} other {# in der Warteschlange}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4786,11 +4776,6 @@ msgstr "Bereits aufgelistete Kapitel behalten die jeweilige Einstellung."
 msgid "Chapters downloaded automatically"
 msgstr "Kapitel automatisch heruntergeladen"
 
-#: src/components/home/homeSectionDefs.ts
-#, fuzzy
-#~ msgid "Chapters downloading right now. Only shows while something is."
-#~ msgstr "Kapitel, die gerade heruntergeladen werden. Wird nur angezeigt, solange etwas heruntergeladen wird."
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapters known"
@@ -6781,12 +6766,6 @@ msgstr "Cover wird heruntergeladen"
 #, fuzzy
 msgid "Downloading metadata database"
 msgstr "Metadaten-Datenbank wird heruntergeladen"
-
-#: src/api/hooks.ts
-#: src/pages/HomePage.tsx
-#, fuzzy
-#~ msgid "Downloading now"
-#~ msgstr "Wird gerade heruntergeladen"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -19909,11 +19888,6 @@ msgstr "Ansehen"
 #, fuzzy
 msgid "View {title}"
 msgstr "{title} anzeigen"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "View activity"
-#~ msgstr "Aktivität anzeigen"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx

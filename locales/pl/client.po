@@ -1603,11 +1603,6 @@ msgstr "{reason}: {detail}"
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
 
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
-#~ msgstr "{remaining, plural, one {jeszcze # w kolejce} few {jeszcze # w kolejce} many {jeszcze # w kolejce} other {jeszcze # w kolejce}}"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -2057,11 +2052,6 @@ msgstr ""
 #, fuzzy
 msgid "{totalCount, plural, one {{visibleCount} of # series match} other {{visibleCount} of # series match}}"
 msgstr "{totalCount, plural, one {{visibleCount} z # serii pasuje} few {{visibleCount} z # serii pasuje} many {{visibleCount} z # serii pasuje} other {{visibleCount} z # serii pasuje}}"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "{totalQueued, plural, one {# in the queue} other {# in the queue}}"
-#~ msgstr "{totalQueued, plural, one {# w kolejce} few {# w kolejce} many {# w kolejce} other {# w kolejce}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4786,11 +4776,6 @@ msgstr "Rozdziały już wymienione zachowują to, co dla nich ustawiono."
 msgid "Chapters downloaded automatically"
 msgstr "Rozdziały pobrane automatycznie"
 
-#: src/components/home/homeSectionDefs.ts
-#, fuzzy
-#~ msgid "Chapters downloading right now. Only shows while something is."
-#~ msgstr "Rozdziały pobierane teraz. Sekcja pojawia się tylko wtedy, gdy coś jest pobierane."
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapters known"
@@ -6781,12 +6766,6 @@ msgstr "Pobieranie okładki"
 #, fuzzy
 msgid "Downloading metadata database"
 msgstr "Pobieranie bazy danych metadanych"
-
-#: src/api/hooks.ts
-#: src/pages/HomePage.tsx
-#, fuzzy
-#~ msgid "Downloading now"
-#~ msgstr "Obecnie pobierane"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -19909,11 +19888,6 @@ msgstr "Widok"
 #, fuzzy
 msgid "View {title}"
 msgstr "Zobacz {title}"
-
-#: src/components/home/DownloadingStrip.tsx
-#, fuzzy
-#~ msgid "View activity"
-#~ msgstr "Zobacz aktywność"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
