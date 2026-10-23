@@ -18323,11 +18323,6 @@ msgstr "La copia de este archivo en la papelera ya no está"
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "No se pudo ejecutar el análisis de mejoras. El registro del servidor tiene los detalles."
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-#~ msgid "The whole catalogue"
-#~ msgstr "Todo el catálogo"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."

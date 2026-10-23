@@ -18322,11 +18322,6 @@ msgstr "이 파일의 휴지통 사본이 없습니다"
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "업그레이드 스캔을 실행하지 못했습니다. 자세한 내용은 서버 로그에 있습니다."
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-#~ msgid "The whole catalogue"
-#~ msgstr "전체 카탈로그"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."

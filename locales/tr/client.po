@@ -18323,11 +18323,6 @@ msgstr "Bu dosyanın çöpe atılan kopyası artık yok"
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "Yükseltme taraması çalıştırılamadı. Ayrıntılar sunucu günlüğünde."
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-#~ msgid "The whole catalogue"
-#~ msgstr "Tüm katalog"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."

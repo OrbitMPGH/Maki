@@ -18322,11 +18322,6 @@ msgstr "このファイルのゴミ箱のコピーがありません"
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "アップグレードスキャンを実行できませんでした。詳細はサーバーログを確認してください。"
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-#~ msgid "The whole catalogue"
-#~ msgstr "カタログ全体"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."

@@ -18322,11 +18322,6 @@ msgstr "此文件在回收站中的副本已不存在"
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "升级扫描无法运行。详情请查看服务器日志。"
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-#~ msgid "The whole catalogue"
-#~ msgstr "整个目录"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."

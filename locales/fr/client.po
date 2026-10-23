@@ -18323,11 +18323,6 @@ msgstr "La copie de ce fichier mise à la corbeille a disparu"
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "L'analyse des mises à niveau n'a pas pu s'exécuter. Le journal du serveur donne les détails."
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-#~ msgid "The whole catalogue"
-#~ msgstr "Tout le catalogue"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."

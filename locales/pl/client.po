@@ -18323,11 +18323,6 @@ msgstr "Kopii tego pliku z kosza już nie ma"
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "Nie udało się uruchomić skanu ulepszeń. Szczegóły są w logu serwera."
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-#~ msgid "The whole catalogue"
-#~ msgstr "Cały katalog"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."

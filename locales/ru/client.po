@@ -18323,11 +18323,6 @@ msgstr "Копии этого файла в корзине больше нет"
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "Проверку улучшений не удалось выполнить. Подробности в журнале сервера."
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-#~ msgid "The whole catalogue"
-#~ msgstr "Весь каталог"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."

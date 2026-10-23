@@ -18323,11 +18323,6 @@ msgstr "Die Papierkorb-Kopie dieser Datei ist nicht mehr da"
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "Der Upgrade-Scan konnte nicht ausgeführt werden. Details stehen im Serverprotokoll."
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-#~ msgid "The whole catalogue"
-#~ msgstr "Gesamter Katalog"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."
