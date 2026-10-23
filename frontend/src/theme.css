@@ -731,6 +731,15 @@ body {
 .mantine-AppShell-main:has(.surface-frame--wide) {
   --page-gutter-end: var(--app-shell-padding);
 }
+/* The padding changes with the page (the rule above, the series hero's top), and Mantine animates
+   it, so leaving Settings drew the next page wide and then squeezed it into its gutters. Only
+   folding or unfolding the sidebar animates it now. */
+.mantine-AppShell-root .mantine-AppShell-main {
+  transition-property: none;
+}
+.mantine-AppShell-root[data-nav-moving] .mantine-AppShell-main {
+  transition-property: padding;
+}
 /* The installed iOS app scrolls <main> rather than the document (lib/pageScroll.ts), so nothing
    ever scrolls up behind the status bar. Sticky bars inside stick to <main>'s top edge, which is
    the window's. Only while the shell is up: the sign-in and setup pages scroll as usual. */
@@ -4359,9 +4368,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   }
 }
 
-/* Same padding transition as the redesign: the hero moves up by the shell's page
-   padding, and returning to the library restores it. Mantine animates padding on
-   AppShell.Main. Keep the header offset because dev has a fixed desktop header. */
+/* The hero moves up by the shell's page padding. Keep the header offset because dev has a fixed
+   desktop header. */
 .app-main-hero {
   padding-top: var(--app-shell-header-offset, 0rem);
 }

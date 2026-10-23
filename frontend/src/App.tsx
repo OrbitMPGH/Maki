@@ -317,9 +317,16 @@ function AppShellRoutes() {
   // Per device rather than per account: the same person wants the column on a desktop monitor and
   // the room on a tablet.
   const [navCollapsed, setNavCollapsed] = useState(readNavCollapsed)
+  // The page's padding animates only while the sidebar folds or unfolds; see `[data-nav-moving]`.
+  const [navMoving, setNavMoving] = useState(false)
+  const navMovingTimer = useRef(0)
+  useEffect(() => () => window.clearTimeout(navMovingTimer.current), [])
   const toggleNavCollapsed = () => {
     const next = !navCollapsed
     setNavCollapsed(next)
+    setNavMoving(true)
+    window.clearTimeout(navMovingTimer.current)
+    navMovingTimer.current = window.setTimeout(() => setNavMoving(false), 400)
     close()
     try {
       if (next) localStorage.setItem(NAV_COLLAPSED_KEY, '1')
@@ -412,6 +419,7 @@ function AppShellRoutes() {
       navbar={{ width: 232, breakpoint: navCollapsed ? 100000 : 'sm', collapsed: { mobile: !opened } }}
       padding="lg"
       className={navCollapsed ? 'nav-collapsed' : undefined}
+      data-nav-moving={navMoving || undefined}
     >
       {/* Focuses rather than following the hash, which the router would keep in the URL. */}
       <a
