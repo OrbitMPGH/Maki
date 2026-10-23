@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Group, SegmentedControl, SimpleGrid, Skeleton, Stack, Text } from '@mantine/core'
-import { AreaChart } from '@mantine/charts'
+import { AreaChart, BarChart } from '@mantine/charts'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { useLibraryComposition, useLibraryGrowth } from '../../../api/hooks'
@@ -57,10 +57,10 @@ function TotalsTiles({ totals }: { totals?: LibraryCompositionTotals }) {
 
 /**
  * What the collection is made of, as opposed to what anyone read. Not per-user, so this section
- * ignores the reader picker — root-folder visibility is applied server-side. Only Growth follows
+ * ignores the reader picker, since root-folder visibility is applied server-side. Only Growth follows
  * the window; the rest describes the library as it is now.
  */
-export default function LibrarySection({ range }: StatsSectionProps) {
+export default function LibrarySection({ range, windowLabel }: StatsSectionProps) {
   const { t, i18n } = useLingui()
   const nameLabel = useNameLabel()
   const { data: stats, isLoading, isError, refetch } = useLibraryComposition()
@@ -193,7 +193,7 @@ export default function LibrarySection({ range }: StatsSectionProps) {
 
         <div className="stats-grid-main">
           <Panel p="md">
-            <Group justify="space-between" align="flex-start" mb="sm">
+            <Group justify="space-between" align="flex-start" mb="xs">
               <p className="stats-panel-title">{t`Growth`}</p>
               <SegmentedControl
                 aria-label={t`Growth`}
@@ -206,24 +206,41 @@ export default function LibrarySection({ range }: StatsSectionProps) {
                 ]}
               />
             </Group>
+            <p className="stats-panel-sub">{t`Follows ${windowLabel}. The rest of this tab covers the whole library.`}</p>
             {growthLoading && !growth ? (
               <ChartSkeleton h={240} />
             ) : growthData.length > 0 ? (
-              <AreaChart
-                h={240}
-                data={growthData}
-                dataKey="bucket"
-                curveType="monotone"
-                withGradient
-                withLegend
-                tickLine="none"
-                gridAxis="y"
-                valueFormatter={growthMetric === 'size' ? formatBytes : undefined}
-                series={[
-                  { name: 'Total', label: t`Total`, color: 'var(--brand)' },
-                  { name: 'Added', label: t`Added`, color: 'var(--ok)' },
-                ]}
-              />
+              <>
+                <Text size="xs" fw={600} c="var(--ink-3)" mb={4}>
+                  {t`Total`}
+                </Text>
+                <AreaChart
+                  h={170}
+                  data={growthData}
+                  dataKey="bucket"
+                  curveType="monotone"
+                  withGradient
+                  withXAxis={false}
+                  tickLine="none"
+                  gridAxis="y"
+                  yAxisProps={{ width: 64 }}
+                  valueFormatter={growthMetric === 'size' ? formatBytes : undefined}
+                  series={[{ name: 'Total', label: t`Total`, color: 'var(--brand)' }]}
+                />
+                <Text size="xs" fw={600} c="var(--ink-3)" mt="xs" mb={4}>
+                  {t`Added`}
+                </Text>
+                <BarChart
+                  h={110}
+                  data={growthData}
+                  dataKey="bucket"
+                  tickLine="none"
+                  gridAxis="y"
+                  yAxisProps={{ width: 64 }}
+                  valueFormatter={growthMetric === 'size' ? formatBytes : undefined}
+                  series={[{ name: 'Added', label: t`Added`, color: 'var(--ok)' }]}
+                />
+              </>
             ) : (
               <Text c="var(--ink-3)" size="sm">
                 {t`Nothing to show yet.`}

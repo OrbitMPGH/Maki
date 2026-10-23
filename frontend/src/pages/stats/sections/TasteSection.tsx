@@ -17,6 +17,10 @@ import { GENRE_LABELS, TYPE_LABELS, useNameLabel } from '../labels'
 import { StatsInsight } from '../StatsSection'
 import type { StatsSectionProps } from './types'
 
+function isUnknownName(name: string): boolean {
+  return name === '' || name.toLowerCase() === 'unknown'
+}
+
 /** "1980" -> "80s", "2000" -> "00s". */
 function decadeLabel(decade: number): string {
   return String(decade % 100).padStart(2, '0')
@@ -62,10 +66,12 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
     () =>
       (taste?.types ?? []).map((item) => ({
         key: item.name,
-        label: label(TYPE_LABELS, item.name),
+        label: item.name ? label(TYPE_LABELS, item.name) : t`Unspecified`,
         value: item.count,
+        known: !isUnknownName(item.name),
       })),
-    [taste, label],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [taste, label, i18n.locale],
   )
 
   const demographicItems = useMemo(
@@ -74,6 +80,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
         key: item.name || '__none',
         label: item.name || t`Unspecified`,
         value: item.count,
+        known: !isUnknownName(item.name),
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [taste, i18n.locale],
@@ -90,6 +97,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
         const decade = e.decade !== null ? decadeLabel(e.decade) : ''
         return {
           key: e.decade === null ? 'unknown' : String(e.decade),
+          known: e.decade !== null,
           title: e.decade === null ? t`Unknown` : t`${decade}s`,
           value: total > 0 ? formatPercent(e.chapters / total) : '-',
           barPct: (e.chapters / maxChapters) * 100,
@@ -115,7 +123,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
 
   const ratings = standing?.ratings ?? null
 
-  const nothingYet =
+  const quiet =
     !!taste &&
     !!activity &&
     standing !== undefined &&
@@ -126,23 +134,30 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
     eraTotal === 0 &&
     (standing.creators ?? []).length === 0 &&
     activity.topTags.length === 0
-  if (nothingYet) {
+  if (quiet) {
+    const hasHistory = (standing?.behaviour.chaptersRead ?? 0) > 0 || (standing?.seriesFullyRead ?? 0) > 0
     return (
       <StatsInsight>
         <span className="stats-insight-dim">
-          <Trans>Not enough reading yet to say what your taste is. This fills in after a few series.</Trans>
+          {hasHistory ? (
+            <Trans>Nothing read in this window. Pick a wider range to see your taste.</Trans>
+          ) : (
+            <Trans>Not enough reading yet to say what your taste is. This fills in after a few series.</Trans>
+          )}
         </span>
       </StatsInsight>
     )
   }
 
   // A chart with one value says the same thing a bar at 100% would, so it becomes a sentence.
-  const oneType = taste && typeItems.length === 1 ? typeItems[0].label : null
-  const oneDemographic = taste && demographicItems.length === 1 ? demographicItems[0].label : null
-  const oneEra = taste && eras.length === 1 && eraTotal > 0 ? eras[0].title : null
-  const showTypes = !oneType
-  const showDemographics = !oneDemographic
-  const showEra = !oneEra
+  // A lone Unknown or Unspecified bucket stays a panel: "Everything you read was Unspecified" says nothing.
+  const oneType = taste && typeItems.length === 1 && typeItems[0].known ? typeItems[0].label : null
+  const oneDemographic =
+    taste && demographicItems.length === 1 && demographicItems[0].known ? demographicItems[0].label : null
+  const oneEra = taste && eras.length === 1 && eraTotal > 0 && eras[0].known ? eras[0].title : null
+  const showTypes = oneType === null
+  const showDemographics = oneDemographic === null
+  const showEra = oneEra === null
   const smallPanels = (showTypes || showDemographics ? 1 : 0) + (showEra ? 1 : 0) + 1
   // Judged on the value as printed, so a gap that rounds to 0.0 reads as "the same", not "0.0 above".
   const meanGapRounded = ratings ? Math.round(ratings.meanGap * 10) / 10 : 0
@@ -151,26 +166,26 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
 
   return (
     <>
-      {(insight || oneType || oneDemographic || oneEra) && (
+      {(insight || oneType !== null || oneDemographic !== null || oneEra !== null) && (
         <StatsInsight>
           {insight}
-          {insight && (oneType || oneDemographic || oneEra) && ' '}
+          {insight && (oneType !== null || oneDemographic !== null || oneEra !== null) && ' '}
           <span className="stats-insight-dim">
-            {oneType && (
+            {oneType !== null && (
               <Trans>
                 Everything you read was <em>{oneType}</em>.
               </Trans>
             )}
-            {oneType && (oneDemographic || oneEra) && ' '}
-            {oneDemographic && (
+            {oneType !== null && (oneDemographic !== null || oneEra !== null) && ' '}
+            {oneDemographic !== null && (
               <Trans>
-                All of it <em>{oneDemographic}</em>.
+                Everything you read is in the <em>{oneDemographic}</em> demographic.
               </Trans>
             )}
-            {oneDemographic && oneEra && ' '}
-            {oneEra && (
+            {oneDemographic !== null && oneEra !== null && ' '}
+            {oneEra !== null && (
               <Trans>
-                All of it came out in the <em>{oneEra}</em>.
+                Everything you read came out in the <em>{oneEra}</em>.
               </Trans>
             )}
           </span>
