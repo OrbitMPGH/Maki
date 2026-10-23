@@ -18394,19 +18394,8 @@ msgstr "Drugi składnik zostanie wyłączony, a aplikacja uwierzytelniająca zre
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-#~ msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system"
-#~ msgstr "motyw, tryb ciemny, tryb jasny, kolor akcentu, kolor, dopasuj do systemu, automatycznie, użyj ustawień systemu"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, faster animations, speed, reduce motion"
 msgstr ""
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#~ msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, reduce motion"
-#~ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20724,10 +20713,6 @@ msgstr "Twój {label}"
 #, fuzzy
 msgid "Your busiest month"
 msgstr "Twój najbardziej pracowity miesiąc"
-
-#: src/pages/settings/PreferenceCards.tsx
-#~ msgid "Your device asks for reduced motion, so both stay off."
-#~ msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Your device asks for reduced motion, so these stay off."

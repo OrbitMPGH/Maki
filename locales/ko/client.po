@@ -18393,19 +18393,8 @@ msgstr "2단계 인증이 꺼지고 인증 앱이 초기화되어, 다시 설정
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-#~ msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system"
-#~ msgstr "테마, 다크 모드, 라이트 모드, 강조 색상, 색상, 시스템과 일치, 자동, 시스템 설정 따르기"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, faster animations, speed, reduce motion"
 msgstr ""
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#~ msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, reduce motion"
-#~ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20723,10 +20712,6 @@ msgstr "내 {label}"
 #, fuzzy
 msgid "Your busiest month"
 msgstr "가장 바쁜 달"
-
-#: src/pages/settings/PreferenceCards.tsx
-#~ msgid "Your device asks for reduced motion, so both stay off."
-#~ msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Your device asks for reduced motion, so these stay off."

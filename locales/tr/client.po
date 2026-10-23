@@ -18394,19 +18394,8 @@ msgstr "İkinci faktörleri kapatıldı ve kimlik doğrulayıcı sıfırlandı; 
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-#~ msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system"
-#~ msgstr "tema, koyu tema, açık tema, vurgu rengi, renk, sistemle eşleştir, otomatik, sistem temasını kullan"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, faster animations, speed, reduce motion"
 msgstr ""
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#~ msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, reduce motion"
-#~ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20724,10 +20713,6 @@ msgstr "{label}'niz"
 #, fuzzy
 msgid "Your busiest month"
 msgstr "En yoğun ayınız"
-
-#: src/pages/settings/PreferenceCards.tsx
-#~ msgid "Your device asks for reduced motion, so both stay off."
-#~ msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Your device asks for reduced motion, so these stay off."

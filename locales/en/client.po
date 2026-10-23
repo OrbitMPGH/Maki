@@ -15278,18 +15278,8 @@ msgstr "Their second factor is turned off and the authenticator reset, so a pass
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#~ msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system"
-#~ msgstr "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, faster animations, speed, reduce motion"
 msgstr "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, faster animations, speed, reduce motion"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#~ msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, reduce motion"
-#~ msgstr "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, reduce motion"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "There is no safe automatic merge."
@@ -17194,10 +17184,6 @@ msgstr "Your {label}"
 #: src/pages/rewind/slides.tsx
 msgid "Your busiest month"
 msgstr "Your busiest month"
-
-#: src/pages/settings/PreferenceCards.tsx
-#~ msgid "Your device asks for reduced motion, so both stay off."
-#~ msgstr "Your device asks for reduced motion, so both stay off."
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Your device asks for reduced motion, so these stay off."
