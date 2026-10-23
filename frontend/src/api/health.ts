@@ -123,6 +123,17 @@ export interface HealthOperation {
   coverUrl?: string | null
 }
 
+/** One kind of operation that ended one way: the total, and the newest few rows. */
+export interface OperationGroup {
+  /** Opaque; pass to `/operations/group` to load the rest of the rows. */
+  key: string
+  kind: string
+  status: string
+  error?: string | null
+  count: number
+  rows: HealthOperation[]
+}
+
 export interface OperationDetail {
   operation: HealthOperation
   file: HealthFile

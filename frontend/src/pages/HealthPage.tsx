@@ -57,6 +57,7 @@ import {
   type HealthOverview,
   type MatchCounterpart,
   type OperationDetail,
+  type OperationGroup as OperationGroupData,
   type SourceFailures,
   type UnlinkedMatch,
 } from '../api/health'
@@ -221,10 +222,10 @@ export default function HealthPage() {
     tab === 'files',
     scanning ? 5000 : false,
   )
-  const operations = useHealthData<{ items: HealthOperation[]; total: number }>(
+  const operations = useHealthData<{ items: OperationGroupData[]; total: number }>(
     `/operations?page=${repairPage}`,
     tab === 'repairs',
-    (data) => (data?.items.some((o) => RUNNING_STATES.includes(o.status)) ? 5000 : false),
+    (data) => (data?.items.some((g) => RUNNING_STATES.includes(g.status)) ? 5000 : false),
   )
   const history = useHealthData<{
     items: { id: number; createdAt: string; kind: string; message: string }[]
@@ -654,8 +655,8 @@ export default function HealthPage() {
 
         <Tabs.Panel value="repairs">
           <Stack>
-            {groupOperations(operations.data?.items ?? []).map((group) => (
-              <OperationGroup key={group[0].id} operations={group} onReview={setOperationId} />
+            {operations.data?.items.map((group) => (
+              <OperationGroup key={group.key} group={group} onReview={setOperationId} />
             ))}
             {operations.data?.items.length === 0 && (
               <Text c="var(--ink-3)">
@@ -1736,34 +1737,28 @@ function CompareArchives({
   )
 }
 
+/** The most rows HealthController serves for one group. */
+const GROUP_ROWS_MAX = 500
+
 /**
- * Operations of one kind that ended the same way, in list order. A bulk delete the filesystem
- * refused leaves thirty identical rows; as one group they read as the single problem they are.
+ * Operations of one kind that ended the same way, grouped by the server so the count is the whole
+ * group, not what fits on a page. A bulk delete the filesystem refused reads as the single
+ * problem it is. The newest rows come with the group; Show all loads the rest.
  */
-function groupOperations(items: HealthOperation[]): HealthOperation[][] {
-  const groups = new Map<string, HealthOperation[]>()
-  for (const op of items) {
-    const key = `${op.kind}|${op.status}|${op.error ?? ''}`
-    const group = groups.get(key)
-    if (group) group.push(op)
-    else groups.set(key, [op])
-  }
-  return [...groups.values()]
-}
-
-const GROUP_PREVIEW = 3
-
-function OperationGroup({ operations, onReview }: { operations: HealthOperation[]; onReview: (id: number) => void }) {
+function OperationGroup({ group, onReview }: { group: OperationGroupData; onReview: (id: number) => void }) {
   const [expanded, setExpanded] = useState(false)
-  const [first] = operations
-  const count = operations.length
-  const shown = expanded ? operations : operations.slice(0, GROUP_PREVIEW)
+  const all = useHealthData<{ items: HealthOperation[]; total: number }>(
+    `/operations/group?key=${encodeURIComponent(group.key)}&take=${Math.min(group.count, GROUP_ROWS_MAX)}`,
+    expanded,
+  )
+  const count = group.count
+  const shown = expanded && all.data ? all.data.items : group.rows
   return (
     <Panel p={0} className="health-op-group">
       <div className="health-op-head">
         <Group gap="sm">
           <Text fw={650}>
-            {first.kind === 'delete' ? (
+            {group.kind === 'delete' ? (
               count === 1 ? (
                 <Trans>Deletion</Trans>
               ) : (
@@ -1775,11 +1770,11 @@ function OperationGroup({ operations, onReview }: { operations: HealthOperation[
               <Plural value={count} one="# replacement" other="# replacements" />
             )}
           </Text>
-          <Status value={first.status} />
+          <Status value={group.status} />
         </Group>
-        {first.error && (
+        {group.error && (
           <Text size="sm" c="var(--ink-3)">
-            {first.error}
+            {group.error}
           </Text>
         )}
       </div>
@@ -1809,10 +1804,14 @@ function OperationGroup({ operations, onReview }: { operations: HealthOperation[
           )
         })}
       </ul>
-      {count > GROUP_PREVIEW && (
+      {count > group.rows.length && (
         <div className="health-op-more">
           <Button size="compact-sm" variant="subtle" color="var(--neutral)" onClick={() => setExpanded((e) => !e)}>
-            {expanded ? <Trans>Show fewer</Trans> : <Trans>Show all {count}</Trans>}
+            {expanded ? (
+              <Trans>Show fewer</Trans>
+            ) : (
+              <Plural value={count} one="Show all # operation" other="Show all # operations" />
+            )}
           </Button>
         </div>
       )}
@@ -1835,7 +1834,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
     <Modal
       opened
       onClose={close}
-      title={t`Operation #${id}`}
+      title={t`Review operation`}
       size="min(1060px, 94vw)"
       centered
     >
@@ -1908,6 +1907,9 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
             <div className="health-review-column">
               <Panel p="md">
                 <Status value={data.operation.status} />
+                <Text size="xs" c="var(--ink-3)" mt="xs" component="div">
+                  <Trans>Operation</Trans> <MonoValue value={String(id)} copy />
+                </Text>
                 <Text fw={600} mt="sm" component="div">
                   <MonoValue value={data.file.relativePath} copy />
                 </Text>

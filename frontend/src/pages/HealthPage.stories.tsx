@@ -6,6 +6,8 @@ import type { FileDetail } from '../api/health'
 import {
   errorChecks,
   groupedChecks,
+  groupOperations,
+  groupRows,
   manyFailedDeletions,
   overview,
   runningScan,
@@ -282,22 +284,26 @@ export const RepairsTab: Story = {
   },
 }
 
-/** Thirty deletions that failed the same way, as a bulk delete leaves them. */
+/** A hundred deletions that failed the same way, as a bulk delete leaves them: one group, however many pages of rows. */
 export const RepairsManyFailures: Story = {
   parameters: {
     ...tab('repairs'),
     msw: [
-      http.get(api('/health/operations'), () =>
-        HttpResponse.json({ items: manyFailedDeletions, total: manyFailedDeletions.length }),
-      ),
+      http.get(api('/health/operations'), () => HttpResponse.json(groupOperations(manyFailedDeletions))),
+      http.get(api('/health/operations/group'), ({ request }) => {
+        const url = new URL(request.url)
+        return HttpResponse.json(
+          groupRows(manyFailedDeletions, url.searchParams.get('key') ?? '', Number(url.searchParams.get('take') ?? 30)),
+        )
+      }),
     ],
   },
   play: async ({ canvas, userEvent }) => {
-    await expect(await canvas.findByText('30 deletions')).toBeVisible()
+    await expect(await canvas.findByText('100 deletions')).toBeVisible()
     await expect(await canvas.findByText('2 replacements')).toBeVisible()
     await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Review' })).toHaveLength(5))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Show all 30' }))
-    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Review' })).toHaveLength(32))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Show all 100 operations' }))
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Review' })).toHaveLength(102))
   },
 }
 
@@ -311,9 +317,10 @@ export const RepairsEmpty: Story = {
 export const ReviewReplacement: Story = {
   parameters: tab('repairs'),
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[0])
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' })).at(-1)!)
     const body = within(canvasElement.ownerDocument.body)
-    const dialog = await body.findByRole('dialog', { name: 'Operation #1' })
+    const dialog = await body.findByRole('dialog', { name: 'Review operation' })
+    await expect(await within(dialog).findByText('Operation')).toBeVisible()
     const apply = await within(dialog).findByRole('button', { name: 'Apply replacement' })
     await waitFor(() => expect(apply).toBeDisabled())
     await userEvent.click(await within(dialog).findByRole('checkbox', { name: 'I approve applying these replacement files.' }))
@@ -325,9 +332,9 @@ export const ReviewReplacement: Story = {
 export const ReviewDeletion: Story = {
   parameters: tab('repairs'),
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[1])
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' })).at(-2)!)
     const body = within(canvasElement.ownerDocument.body)
-    const dialog = await body.findByRole('dialog', { name: 'Operation #2' })
+    const dialog = await body.findByRole('dialog', { name: 'Review operation' })
     await waitFor(async () => expect(await within(dialog).findByText(/already gone from disk/)).toBeVisible())
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Cancel operation' })).toBeVisible())
   },
