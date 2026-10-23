@@ -106,8 +106,20 @@ const preview: Preview = {
       // msw looks. Probed up front because a failed `worker.start()` leaves WebSocket patched and
       // cannot be started again. Images never go through fetch; main.ts serves those.
       if ('serviceWorker' in navigator) {
+        const sw = navigator.serviceWorker
         try {
-          await navigator.serviceWorker.register('/mockServiceWorker.js')
+          await sw.register('/mockServiceWorker.js')
+          // msw reloads the page if its worker is registered but not yet in control. On a fresh
+          // profile (every CI run) this registration is still installing when msw looks, and the
+          // reload kills whichever test file is running ("The iframe was reloaded during a test").
+          // The timeout covers a page that will never be controlled (a hard reload), where msw's
+          // own reload is the way out.
+          if (!sw.controller) {
+            await Promise.race([
+              new Promise((resolve) => sw.addEventListener('controllerchange', resolve, { once: true })),
+              new Promise((resolve) => setTimeout(resolve, 5000)),
+            ])
+          }
         } catch (error) {
           console.warn('[msw] Service Worker unavailable, mocking in the page instead.', error)
           delete (Navigator.prototype as { serviceWorker?: unknown }).serviceWorker
