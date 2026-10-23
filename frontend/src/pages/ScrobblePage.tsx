@@ -32,6 +32,7 @@ import { statusToken, trackerConnectionVisual, trackerStatusVisual } from '../co
 import { StatusDot } from '../components/ui/StatusDot'
 import { useLabel } from '../i18n-context'
 import { TagChip } from '../components/ui/TagChip'
+import { relativeTime } from '../components/ui/time'
 import {
   useScrobbleAuthStart,
   useScrobbleDisconnect,
@@ -284,6 +285,7 @@ function FailureLine({
   connections: ScrobbleConnection[]
 }) {
   const [open, setOpen] = useState(false)
+  const backOff = backOffText(connections.find((c) => c.service === service)?.backOffUntil)
   return (
     <li className="scrobble-result-line" data-exception>
       <span className="scrobble-result-what">
@@ -302,9 +304,27 @@ function FailureLine({
           </Button>
         )}
       </span>
-      {open && <p className="scrobble-result-detail">{error}</p>}
+      {open && (
+        <p className="scrobble-result-detail">
+          {error}
+          {backOff && <> {backOff}</>}
+        </p>
+      )}
     </li>
   )
+}
+
+/**
+ * When a tracker that is backing off will be tried again, worked out here from the instant the server
+ * sent so the sentence is right however long ago the page loaded. Nothing once the instant has passed.
+ */
+function backOffText(until: string | null | undefined) {
+  if (!until) return null
+  const left = new Date(until).getTime() - Date.now()
+  if (!(left > 0)) return null
+  if (left < 60_000) return <Trans>Rate limited. Retrying soon.</Trans>
+  const time = relativeTime(until)
+  return <Trans>Rate limited. Retrying {time}.</Trans>
 }
 
 /** A tracker's display name from its connection card, falling back to the raw service key. */
@@ -329,8 +349,11 @@ function ConnectionChip({ connection }: { connection: ScrobbleConnection }) {
   const dot = trackerConnectionVisual(connection.connected, connection.configured)
   // Every state that is not connected says what to do next: connect, check the saved details, or
   // set the tracker up. Setting one up is an admin job, so a reader is told who can.
+  const backOff = connection.connected ? null : backOffText(connection.backOffUntil)
   const state = connection.connected ? (
     (connection.username ?? <Trans>Connected</Trans>)
+  ) : backOff ? (
+    backOff
   ) : connection.configured && connection.oAuth ? (
     <Trans>Not connected yet.</Trans>
   ) : connection.configured ? (
@@ -347,7 +370,7 @@ function ConnectionChip({ connection }: { connection: ScrobbleConnection }) {
     <Trans>Not set up yet. An admin can add it in Settings.</Trans>
   )
   const settingsLink =
-    (isAdmin || ownDetails) && !connection.connected && !(connection.configured && connection.oAuth) ? (
+    (isAdmin || ownDetails) && !connection.connected && !backOff && !(connection.configured && connection.oAuth) ? (
       <Button component={Link} to={isKavita ? KAVITA_SETTINGS : TRACKER_SETTINGS} size="compact-sm" variant="default">
         {connection.configured && !noDetails ? <Trans>Check in Settings</Trans> : <Trans>Set up in Settings</Trans>}
       </Button>
@@ -362,17 +385,24 @@ function ConnectionChip({ connection }: { connection: ScrobbleConnection }) {
   }
 
   return (
-    <Popover position="bottom-start" shadow="md" withArrow width={280}>
+    <Popover position="bottom-start" shadow="md" withArrow width={280} trapFocus returnFocus>
       <Popover.Target>
         <button type="button" className="tag-chip scrobble-connection" data-interactive>
           <TrackerIcon service={connection.service} size={14} />
           <span>{connection.label}</span>
-          <VisuallyHidden>: {renderLabel(dot.label)}</VisuallyHidden>
           <span
             className="scrobble-connection-dot"
             style={{ background: `var(--${statusToken(dot.color)})` }}
             aria-hidden
           />
+          {connection.connected ? (
+            <VisuallyHidden>: {renderLabel(dot.label)}</VisuallyHidden>
+          ) : (
+            <span className="scrobble-connection-state">
+              <dot.Icon size={13} color={`var(--${statusToken(dot.color)})`} aria-hidden />
+              {renderLabel(dot.label)}
+            </span>
+          )}
         </button>
       </Popover.Target>
       <Popover.Dropdown>

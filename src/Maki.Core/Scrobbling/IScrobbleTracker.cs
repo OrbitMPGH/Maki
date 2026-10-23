@@ -52,16 +52,16 @@ public record RemoteListEntry(
 /// <summary>A search result offered for matching.</summary>
 public record ScrobbleCandidate(string Id, string Title, IReadOnlyList<string> AltTitles, string Url);
 
-public class TrackerException(string message, Exception? inner = null) : Exception(message, inner)
+public class TrackerException(string message, Exception? inner = null) : Exception(message, inner);
+
+/// <summary>
+/// The tracker is refusing calls for a while (rate limit, upstream block). The message carries no
+/// duration, since it is stored and read later; <see cref="Until"/> is the instant to render
+/// relative to.
+/// </summary>
+public class TrackerBackOffException(string message, DateTimeOffset until) : TrackerException(message)
 {
-    /// <summary>
-    /// "12 min" or "3 h" for a tracker's back-off. The message lands in the sync table as the
-    /// failure's detail, where a UTC timestamp said when in a zone the reader is not in.
-    /// </summary>
-    public static string HowLong(TimeSpan left) =>
-        left.TotalMinutes < 120
-            ? $"{Math.Max(1, (int)Math.Ceiling(left.TotalMinutes))} min"
-            : $"{(int)Math.Ceiling(left.TotalHours)} h";
+    public DateTimeOffset Until { get; } = until;
 }
 
 /// <summary>
@@ -105,6 +105,10 @@ public interface IScrobbleTracker
     /// <summary>Stable lowercase key persisted in mappings/sync state ("anilist", "mal", "mangabaka").</summary>
     string Name { get; }
     string Label { get; }
+
+    /// <summary>When the tracker is backed off until, or null when it is not backing off.</summary>
+    DateTimeOffset? BackOffUntil => null;
+
     /// <summary>True when the tracker uses OAuth (needs a Connect/Disconnect flow in the UI).</summary>
     bool UsesOAuth { get; }
 

@@ -160,6 +160,28 @@ public class ScrobbleServiceTests
     }
 
     [Fact]
+    public async Task NativePassAsync_StoresABackOffAsAKey_NotAsAComputedDuration()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var bad = db.SeedSeries("Bad", configure: s => s.MangaUpdatesId = "pb8uwdt");
+        SeedReading(db, user, bad, 5);
+
+        var tracker = new FakeBatchTracker { FailFor = "pb8uwdt", BackOff = true };
+
+        await BuildService(db, new FakeUserSettingsStore(db))
+            .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        using var read = db.NewContext();
+        var error = read.SeriesScrobbleStates.AsNoTracking().Single(x => x.SeriesId == bad).Error;
+        Assert.Equal(ScrobbleService.BackedOffErrorKey, error);
+        Assert.Equal(
+            "scrobble.error.backedOff(service=MangaUpdates)",
+            ScrobbleService.RenderError(error, "MangaUpdates", new TestLocalizer()));
+        Assert.Equal("refused", ScrobbleService.RenderError("refused", "MangaUpdates", new TestLocalizer()));
+    }
+
+    [Fact]
     public async Task NativePassAsync_FlushesABatchTrackerWhenItsBatchIsFull()
     {
         using var db = new TestDb();
@@ -700,6 +722,7 @@ public class ScrobbleServiceTests
         public string Label => "MangaUpdates";
         public bool UsesOAuth => false;
         public int MaxBatch => Limit;
+        public bool BackOff { get; init; }
 
         public Task<bool> ConfiguredAsync(CancellationToken ct = default) => Task.FromResult(true);
         public Task<bool> AuthenticatedAsync(int userId, CancellationToken ct = default) => Task.FromResult(true);
@@ -722,7 +745,7 @@ public class ScrobbleServiceTests
         {
             Batches.Add([.. writes]);
             return Task.FromResult<IReadOnlyList<Exception?>>(
-                [.. writes.Select(w => w.RemoteId == FailFor ? new TrackerException("refused") : (Exception?)null)]);
+                [.. writes.Select(w => w.RemoteId == FailFor ? (BackOff ? new TrackerBackOffException("backed off", DateTimeOffset.UtcNow.AddMinutes(30)) : new TrackerException("refused")) : (Exception?)null)]);
         }
 
         public Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default) =>

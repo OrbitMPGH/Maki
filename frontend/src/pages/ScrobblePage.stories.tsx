@@ -4,6 +4,7 @@ import { http } from 'msw'
 import { api, failWith, minutesAgo, neverResolve } from '../../.storybook/mocks/api'
 import {
   scrobbleStatus,
+  scrobbleStatusBackedOff,
   scrobbleStatusDisconnected,
   scrobbleHandlers,
   scrobbleStatusMixed,
@@ -71,6 +72,15 @@ export const MixedConnections: Story = {
     await expect(await body.findByText("Can't sign in with the saved details.")).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: /^AniList\W+Connected$/ }))
     await expect(await body.findByRole('button', { name: 'Disconnect' })).toBeVisible()
+  },
+}
+
+/** A rate limited tracker says when it will be tried again, measured from the instant the server sent. */
+export const TrackerBackedOff: Story = {
+  parameters: { msw: scrobbleHandlers(scrobbleStatusBackedOff) },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /^Kitsu\W+Not connected$/ }))
+    await expect(await within(canvasElement.ownerDocument.body).findByText(/^Rate limited\. Retrying in \d+ hours\.$/)).toBeVisible()
   },
 }
 

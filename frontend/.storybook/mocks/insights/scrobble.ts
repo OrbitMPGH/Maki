@@ -130,6 +130,17 @@ export const scrobbleStatusDisconnected: ScrobbleStatus = {
   nextSyncAt: null,
 }
 
+/** Kitsu is rate limited for another 30 minutes: its chip says when it is retried, and the failed sync row repeats it under Details. */
+export const scrobbleStatusBackedOff: ScrobbleStatus = {
+  ...scrobbleStatus,
+  connections: connectedConnections.map((c) =>
+    c.service === 'kitsu' ? { ...c, connected: false, backOffUntil: hoursAgo(-3) } : c,
+  ),
+  recent: recentSyncs.map((r) =>
+    r.service === 'kitsu' && r.error ? { ...r, error: 'Kitsu is rate limiting or blocking requests, so syncing to it is paused.' } : r,
+  ),
+}
+
 export const scrobbleStatusMixed: ScrobbleStatus = { ...scrobbleStatus, connections: mixedConnections }
 
 export const importItems: RatingImportState['items'] = [

@@ -73,6 +73,9 @@ public class KitsuTracker(
     /// </summary>
     private DateTime _blockedUntil = DateTime.MinValue;
 
+    public DateTimeOffset? BackOffUntil =>
+        _blockedUntil > DateTime.UtcNow ? new DateTimeOffset(_blockedUntil, TimeSpan.Zero) : null;
+
     /// <summary>
     /// How long to stay off Kitsu after a challenge. A managed challenge is a JS interstitial aimed
     /// at the source IP's recent behaviour, not a transient blip, so retrying it seconds later just
@@ -747,8 +750,7 @@ public class KitsuTracker(
         var until = _blockedUntil;
         if (DateTime.UtcNow < until)
         {
-            throw new TrackerException(
-                $"Kitsu is backed off for another {TrackerException.HowLong(until - DateTime.UtcNow)} after an upstream block");
+            throw new TrackerBackOffException("Kitsu is backed off after an upstream block", new DateTimeOffset(until, TimeSpan.Zero));
         }
     }
 
@@ -767,7 +769,7 @@ public class KitsuTracker(
         }
 
         logger.LogWarning("{Reason}; skipping Kitsu until {Until:u}", reason, _blockedUntil);
-        return new TrackerException($"{reason}; backing off for {TrackerException.HowLong(_blockedUntil - DateTime.UtcNow)}");
+        return new TrackerBackOffException($"{reason}; backing off", new DateTimeOffset(_blockedUntil, TimeSpan.Zero));
     }
 
     private static int? GetInt(JsonElement element, string name) =>

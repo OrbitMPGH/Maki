@@ -46,6 +46,10 @@ public class ScrobbleController(
     /// cannot, and a switch on those would be a control with nothing behind it.
     /// </param>
     /// <param name="AnimeSignals">The per-tracker anime-taste toggle. Meaningless when <paramref name="AnimeList"/> is false.</param>
+    /// <param name="BackOffUntil">
+    /// When a tracker that is refusing calls will be tried again, or null. The client renders the
+    /// remaining time itself, so the answer is right however long the page has been open.
+    /// </param>
     /// <param name="SavedDetails">
     /// For a tracker each reader signs in to with their own details (MangaBaka, MangaUpdates): whether
     /// this reader has saved any. Null for the rest. Those trackers are always "configured", so without
@@ -53,7 +57,8 @@ public class ScrobbleController(
     /// </param>
     public record ConnectionDto(
         string Service, string Label, bool Configured, bool Connected, string? Username, bool OAuth,
-        bool SyncReading, bool SyncRatings, bool AnimeList, bool AnimeSignals, bool? SavedDetails = null);
+        bool SyncReading, bool SyncRatings, bool AnimeList, bool AnimeSignals, bool? SavedDetails = null,
+        DateTimeOffset? BackOffUntil = null);
 
     public record MatchRequest(int KavitaSeriesId, string Service, string RemoteId);
     public record IgnoreRequest(int KavitaSeriesId, string Service);
@@ -90,7 +95,8 @@ public class ScrobbleController(
                 await scrobbler.SyncRatingsEnabledAsync(UserId, tracker.Name, ct),
                 AnimeList: tracker is IAnimeListSource,
                 AnimeSignals: await animeSources.EnabledForAsync(UserId, tracker.Name, ct),
-                SavedDetails: await SavedDetailsAsync(tracker.Name, ct)));
+                SavedDetails: await SavedDetailsAsync(tracker.Name, ct),
+                BackOffUntil: tracker.BackOffUntil));
         }
 
         var lastSync = await scrobbler.LastSyncAtAsync(ct);
@@ -138,7 +144,8 @@ public class ScrobbleController(
                 r.Volume,
                 r.Status,
                 r.At,
-                r.Error,
+                Error = ScrobbleService.RenderError(
+                    r.Error, scrobbler.Trackers.FirstOrDefault(t => t.Name == r.Service)?.Label ?? r.Service, localizer),
                 SeriesId = series?.Id,
                 CoverUrl = series is null ? null : SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.Refreshed),
             };

@@ -815,11 +815,15 @@ public class MangaUpdatesTrackerTests
             });
         var tracker = (Build(handler)).Tracker;
 
-        await Assert.ThrowsAnyAsync<TrackerException>(() => tracker.GetEntryAsync(UserId, OnePiece));
+        var first = await Assert.ThrowsAsync<TrackerBackOffException>(() => tracker.GetEntryAsync(UserId, OnePiece));
+        Assert.DoesNotMatch(@"\d+ (min|h)|backing off for|another", first.Message);
+        Assert.Equal(first.Until, tracker.BackOffUntil);
         var after = handler.Requests.Count;
 
         Assert.False(await tracker.AuthenticatedAsync(UserId));
-        await Assert.ThrowsAnyAsync<TrackerException>(() => tracker.GetEntryAsync(UserId, OnePiece));
+        var blocked = await Assert.ThrowsAsync<TrackerBackOffException>(() => tracker.GetEntryAsync(UserId, OnePiece));
+        Assert.DoesNotMatch(@"\d+ (min|h)|backing off for|another", blocked.Message);
+        Assert.Equal(first.Until, blocked.Until);
         Assert.Equal(after, handler.Requests.Count);
     }
 }

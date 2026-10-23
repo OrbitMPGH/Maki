@@ -3820,6 +3820,8 @@ export interface ScrobbleConnection {
   animeSignals: boolean
   /** Whether this reader has saved sign-in details, for trackers each reader signs in to themselves; null for the rest. */
   savedDetails?: boolean | null
+  /** When a tracker that is refusing calls will be tried again; null or past when it is not backing off. */
+  backOffUntil?: string | null
 }
 
 export interface ScrobbleCandidate {
