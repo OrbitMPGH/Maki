@@ -73,6 +73,7 @@ const StripPage = memo(function StripPage({
       <img
         ref={setRef}
         data-page={index}
+        data-no-cover-fallback
         src={url}
         alt={t`${label} - page ${pageNumber}`}
         className={`reader-page ${FIT_CLASS[fit]}`}

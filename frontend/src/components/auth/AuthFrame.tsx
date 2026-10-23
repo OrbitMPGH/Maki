@@ -117,6 +117,7 @@ export function AuthFrame({
         {mosaicUrl && (
           <img
             className="auth-band-covers"
+            data-no-cover-fallback
             src={mosaicUrl}
             alt=""
             decoding="async"
