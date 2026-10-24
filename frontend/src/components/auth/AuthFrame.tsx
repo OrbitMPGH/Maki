@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Paper, Text, Title } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
 import { getInitialize } from '../../api/client'
@@ -13,6 +13,9 @@ const ART_KEY = 'auth-art'
 
 /** How long the frame waits for the bootstrap to answer before it paints its own art. */
 const ART_PENDING_MS = 1500
+
+/** How long it then waits for the mosaic image once the bootstrap has said covers are on. */
+const ART_COVERS_MS = 5000
 
 function readArt(): ArtMode {
   try {
@@ -35,50 +38,66 @@ function writeArt(mode: 'shapes' | 'covers') {
 /**
  * Which art the band shows. Starts from the last answer so a returning visitor paints the right
  * mode at once; a first visit holds at "pending" (neither art, no identity block) until the
- * bootstrap and, when covers are on, the mosaic have answered, so the layout never jumps from one mode to the other.
- * Any failure, an offline start included, falls back to the page's own art without being
- * remembered.
+ * bootstrap and, when covers are on, the mosaic have answered, so the layout never jumps from one
+ * mode to the other. Waiting is bounded: past the timeouts the page's own art shows. Once shapes
+ * have been painted in this visit the mosaic is remembered for the next one but never swapped in,
+ * and a failed mosaic load falls back to shapes without being remembered.
  */
 function useAuthArt() {
   const [mode, setMode] = useState<ArtMode>(readArt)
   const [mosaicUrl, setMosaicUrl] = useState<string | null>(null)
+  const shapesShown = useRef(mode === 'shapes')
+
+  const showShapes = useCallback(() => {
+    setMode((m) => {
+      if (m === 'pending') shapesShown.current = true
+      return m === 'pending' ? 'shapes' : m
+    })
+  }, [])
 
   useEffect(() => {
     let live = true
     let coversExpected = false
+    const timers: number[] = []
     getInitialize()
       .then((init) => {
         if (!live) return
         if (init.signInCovers) {
           coversExpected = true
           setMosaicUrl(`${init.apiRoot}/signin/mosaic.webp`)
+          timers.push(window.setTimeout(showShapes, ART_COVERS_MS))
         } else {
+          shapesShown.current = true
           setMode('shapes')
           writeArt('shapes')
         }
       })
       .catch(() => {
-        if (live) setMode('shapes')
+        if (!live) return
+        shapesShown.current = true
+        setMode('shapes')
       })
-    const timer = window.setTimeout(() => {
-      if (!coversExpected) setMode((m) => (m === 'pending' ? 'shapes' : m))
-    }, ART_PENDING_MS)
+    timers.push(
+      window.setTimeout(() => {
+        if (!coversExpected) showShapes()
+      }, ART_PENDING_MS),
+    )
     return () => {
       live = false
-      window.clearTimeout(timer)
+      timers.forEach((id) => window.clearTimeout(id))
     }
-  }, [])
+  }, [showShapes])
 
   return {
     mode,
     mosaicUrl,
     onCoversLoad: () => {
-      setMode('covers')
       writeArt('covers')
+      if (!shapesShown.current) setMode('covers')
     },
     onCoversError: () => {
+      shapesShown.current = true
       setMode('shapes')
-      writeArt('shapes')
     },
   }
 }
