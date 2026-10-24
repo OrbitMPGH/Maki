@@ -13971,6 +13971,10 @@ msgstr "Show less"
 msgid "Show more"
 msgstr "Show more"
 
+#: src/pages/HealthPage.tsx
+msgid "Show newest {max} of {count}"
+msgstr "Show newest {max} of {count}"
+
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Show on"
 msgstr "Show on"

@@ -16806,6 +16806,10 @@ msgstr "덜 보기"
 msgid "Show more"
 msgstr "더 보기"
 
+#: src/pages/HealthPage.tsx
+msgid "Show newest {max} of {count}"
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Show on"
