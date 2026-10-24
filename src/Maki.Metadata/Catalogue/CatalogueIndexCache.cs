@@ -40,6 +40,9 @@ public sealed class CatalogueIndexCache(
     private readonly LoadFailureMemo _failed = new();
     private readonly SharedBuild<CacheEntry> _builds = new();
 
+    /// <summary>Test hook: runs inside a build once the credit index is read, before the term index.</summary>
+    internal Action? AfterCreditsBuiltForTest { get; set; }
+
     /// <summary>Whether the artifact is currently in memory, for the memory diagnostics.</summary>
     public bool IsLoaded => _entry is not null;
 
@@ -254,6 +257,7 @@ public sealed class CatalogueIndexCache(
             conn.Open();
 
             var credits = CreditIndex.Build(conn, logger, ct);
+            AfterCreditsBuiltForTest?.Invoke();
             var terms = FuzzyTermIndex.Build(conn, MangaBakaDumpService.SearchTableName, logger, ct);
             return new CatalogueIndexes(credits, terms);
         }

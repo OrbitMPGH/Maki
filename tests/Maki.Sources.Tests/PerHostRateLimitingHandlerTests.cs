@@ -12,12 +12,13 @@ public class PerHostRateLimitingHandlerTests
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
     }
 
-    private static HttpClient Client() =>
-        new(new PerHostRateLimitingHandler(new HostRateLimiters(
-            () => RateLimitingHandler.TokenBucket(1, TimeSpan.FromHours(1))))
-        {
-            InnerHandler = new OkHandler()
-        });
+    // One request an hour, so a second request to the same host stays queued for the whole test.
+    private readonly HostRateLimiters _limiters = new(() => RateLimitingHandler.TokenBucket(1, TimeSpan.FromHours(1)));
+
+    private HttpClient Client() =>
+        new(new PerHostRateLimitingHandler(_limiters) { InnerHandler = new OkHandler() });
+
+    private long QueuedOn(string host) => _limiters.For(host).GetStatistics()!.CurrentQueuedCount;
 
     [Fact]
     public async Task A_spent_budget_on_one_host_does_not_delay_another_host()
@@ -26,10 +27,11 @@ public class PerHostRateLimitingHandlerTests
         await client.GetAsync("https://a.example/one");
 
         var queuedOnA = client.GetAsync("https://a.example/two");
-        var onB = client.GetAsync("https://b.example/one");
+        using var onB = await client.GetAsync("https://b.example/one").WaitAsync(TimeSpan.FromSeconds(10));
 
-        Assert.Same(onB, await Task.WhenAny(queuedOnA, onB, Task.Delay(TimeSpan.FromSeconds(5))));
+        Assert.Equal(HttpStatusCode.OK, onB.StatusCode);
         Assert.False(queuedOnA.IsCompleted);
+        Assert.Equal(1, QueuedOn("a.example"));
     }
 
     [Fact]
@@ -40,7 +42,7 @@ public class PerHostRateLimitingHandlerTests
 
         var second = client.GetAsync("https://A.example/two");
 
-        await Task.Delay(200);
+        Assert.Equal(1, QueuedOn("a.example"));
         Assert.False(second.IsCompleted);
     }
 }
