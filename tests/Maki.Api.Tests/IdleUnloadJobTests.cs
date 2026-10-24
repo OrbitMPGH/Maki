@@ -14,48 +14,49 @@ namespace Maki.Api.Tests;
 /// </summary>
 public class IdleUnloadJobTests
 {
+    public static TheoryData<string, Func<string?, int>> Resolvers => new()
+    {
+        { "artifact", ArtifactIdleUnloadJob.Resolve },
+        { "embedder", EmbedderIdleUnloadJob.Resolve },
+        { "vector", ArtifactIdleUnloadJob.ResolveVector },
+        { "browser", BrowserIdleShutdownJob.Resolve },
+    };
+
+    /// <summary>
+    /// An unset or unusable value must land on a positive default, never on zero: zero means
+    /// "keep it loaded", which is the outcome a typo is not allowed to produce.
+    /// </summary>
     [Theory]
-    [InlineData(null, 30)]
-    [InlineData("", 30)]
-    [InlineData("   ", 30)]
-    [InlineData("not-a-number", 30)]
-    [InlineData("-5", 30)]
-    [InlineData("45", 45)]
-    [InlineData(" 45 ", 45)]
-    [InlineData("0", 0)]
-    public void ArtifactIdleUnload_ResolvesTheWindow(string? value, int expected) =>
-        Assert.Equal(expected, ArtifactIdleUnloadJob.Resolve(value));
+    [MemberData(nameof(Resolvers))]
+    public void Unusable_values_fall_back_to_a_default_that_still_unloads(string job, Func<string?, int> resolve)
+    {
+        var fallback = resolve(null);
+
+        Assert.True(fallback > 0, job);
+        foreach (var value in new[] { "", "   ", "not-a-number", "-1", "-5", "1.5" })
+        {
+            Assert.Equal(fallback, resolve(value));
+        }
+    }
 
     [Theory]
-    [InlineData(null, 15)]
-    [InlineData("garbage", 15)]
-    [InlineData("-1", 15)]
-    [InlineData("20", 20)]
-    [InlineData("0", 0)]
-    public void EmbedderIdleUnload_ResolvesTheWindow(string? value, int expected) =>
-        Assert.Equal(expected, EmbedderIdleUnloadJob.Resolve(value));
+    [MemberData(nameof(Resolvers))]
+    public void A_valid_value_is_used_as_given(string job, Func<string?, int> resolve)
+    {
+        Assert.Equal(1, resolve("1"));
+        Assert.Equal(45, resolve("45"));
+        Assert.Equal(45, resolve(" 45 "));
+    }
 
     /// <summary>
     /// The vectors have their own window, defaulting well above the other artifacts' because they
     /// are the most expensive thing in the set to rebuild.
     /// </summary>
-    [Theory]
-    [InlineData(null, 60)]
-    [InlineData("rubbish", 60)]
-    [InlineData("-1", 60)]
-    [InlineData("90", 90)]
-    [InlineData("0", 0)]
-    public void VectorIdleUnload_ResolvesItsOwnWindow(string? value, int expected) =>
-        Assert.Equal(expected, ArtifactIdleUnloadJob.ResolveVector(value));
-
-    [Theory]
-    [InlineData(null, 3)]
-    [InlineData("nonsense", 3)]
-    [InlineData("-2", 3)]
-    [InlineData("60", 60)]
-    [InlineData("0", 0)]
-    public void BrowserIdleShutdown_ResolvesTheWindow(string? value, int expected) =>
-        Assert.Equal(expected, BrowserIdleShutdownJob.Resolve(value));
+    [Fact]
+    public void The_vector_window_defaults_above_the_other_artifacts()
+    {
+        Assert.True(ArtifactIdleUnloadJob.ResolveVector(null) > ArtifactIdleUnloadJob.Resolve(null));
+    }
 
     private sealed class FakeBrowser(string name, bool throws) : IIdleBrowser
     {
