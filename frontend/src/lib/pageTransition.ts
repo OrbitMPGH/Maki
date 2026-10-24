@@ -17,7 +17,8 @@ import { pageScroller } from './pageScroll'
  * Opening a series from a cover grows that cover into the series page's poster, and going back
  * shrinks the poster into the same cover if it is on screen. The pairing is found in the DOM (the
  * clicked link's image, the visible link to that series) rather than wired into each card, and the
- * flight is a copy of the cover laid out in the page itself (see flyCover).
+ * flight is a copy of the cover laid out in the page itself (see flyCover). A cover that is not a
+ * link to its series takes `data-series-cover={id}` to join in.
  *
  * Only a change of path animates. Filters, tabs and modals ride on search and state, and those
  * stay instant. Both the fade and the flying cover can be switched off per device under Settings >
@@ -42,12 +43,11 @@ const seriesId = (path: string) => /^\/series\/(\d+)\/?$/.exec(path)?.[1] ?? nul
 let shownPath = appHistory.location.pathname
 let settle: (() => void) | null = null
 
-let lastClick: { link: HTMLAnchorElement; at: number } | null = null
+let lastClick: { target: Element; at: number } | null = null
 document.addEventListener(
   'click',
   (e) => {
-    const link = (e.target as Element | null)?.closest?.('a[href]')
-    lastClick = link instanceof HTMLAnchorElement ? { link, at: performance.now() } : null
+    lastClick = e.target instanceof Element ? { target: e.target, at: performance.now() } : null
   },
   true,
 )
@@ -61,8 +61,8 @@ function onScreen(el: Element): boolean {
  * The box a cover inside `link` occupies: the nearest clipping ancestor with rounded corners, which
  * is the card's visible shape rather than its image, whose hover zoom overflows it.
  */
-function coverIn(link: HTMLAnchorElement): HTMLElement | null {
-  const img = link.querySelector('img')
+function coverIn(link: HTMLElement): HTMLElement | null {
+  const img = link instanceof HTMLImageElement ? link : link.querySelector('img')
   if (!img) return null
   let fallback: HTMLElement | null = null
   for (let el: HTMLElement | null = img.parentElement; el && link.contains(el); el = el.parentElement) {
@@ -74,25 +74,46 @@ function coverIn(link: HTMLAnchorElement): HTMLElement | null {
   return fallback ?? img
 }
 
-function linkedCover(id: string): HTMLElement | null {
-  for (const link of document.querySelectorAll<HTMLAnchorElement>(`a[href="/series/${id}"]`)) {
-    const cover = coverIn(link)
+const linkPath = (el: Element) => (el instanceof HTMLAnchorElement ? new URL(el.href).pathname : '')
+
+/**
+ * Links to the series page (search and hash aside), plus covers marked `data-series-cover` for the
+ * places whose cover is not one: a thumbnail beside a title link, a cover that opens the reader.
+ */
+function coversFor(id: string, within: ParentNode): HTMLElement[] {
+  const els = within.querySelectorAll<HTMLElement>(`a[href^="/series/${id}"], [data-series-cover="${id}"]`)
+  return [...els].filter((el) => el.dataset.seriesCover === id || seriesId(linkPath(el)) === id)
+}
+
+function visibleCover(els: HTMLElement[]): HTMLElement | null {
+  for (const el of els) {
+    const cover = coverIn(el)
     if (cover && onScreen(cover)) return cover
   }
   return null
 }
+
+const linkedCover = (id: string) => visibleCover(coversFor(id, document))
 
 function heroPoster(): HTMLImageElement | null {
   const img = document.querySelector<HTMLImageElement>('img.series-hero-poster')
   return img && onScreen(img) ? img : null
 }
 
-/** The cover to grow from when leaving for `/series/id`: the one just clicked, if it has one. */
+/**
+ * The cover to grow from when leaving for `/series/id`: the one just clicked, or the cover for that
+ * series nearest the click, which covers a title link beside its thumbnail, an "Open series" button
+ * or menu item, and rows that navigate from script.
+ */
 function clickedCover(id: string): HTMLElement | null {
   if (!lastClick || performance.now() - lastClick.at > 1000) return null
-  if (seriesId(new URL(lastClick.link.href).pathname) !== id) return null
-  const cover = coverIn(lastClick.link)
-  return cover && onScreen(cover) ? cover : null
+  const link = lastClick.target.closest('a[href]')
+  if (link && seriesId(linkPath(link)) !== id) return null
+  for (let el = lastClick.target.parentElement; el; el = el.parentElement) {
+    const cover = visibleCover(coversFor(id, el))
+    if (cover) return cover
+  }
+  return null
 }
 
 // No animation frame runs while the update callback is pending, so waits inside it use timers.

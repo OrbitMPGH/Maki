@@ -106,6 +106,7 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
         <Link
           to={`/read/${item.chapterId}`}
           className="continue-hero-poster"
+          data-series-cover={item.seriesId}
           aria-label={
             started
               ? t`Resume ${seriesTitle}, ${chapterLabel}`

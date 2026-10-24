@@ -37,7 +37,7 @@ export function MidwayList({ items, emptyText }: { items: MidwaySeriesDto[]; emp
         const pct = total > 0 ? (item.read / total) * 100 : 0
         return (
           <li className="stats-row" key={item.seriesId}>
-            <SeriesThumb url={item.coverUrl} alt={item.title} />
+            <SeriesThumb url={item.coverUrl} alt={item.title} seriesId={item.seriesId} />
             <div style={{ minWidth: 0 }}>
               <div className="stats-row-title">
                 <SeriesLink id={item.seriesId} title={item.title} />

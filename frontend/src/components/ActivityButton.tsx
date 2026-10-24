@@ -186,7 +186,7 @@ function ActivityRow({
   return (
     <UnstyledButton onClick={onOpen} px="sm" py={8} className="inbox-row">
       <Group gap="xs" wrap="nowrap" align="flex-start">
-        <Box className="inbox-cover" mt={2} style={{ width: 26, height: 38 }}>
+        <Box className="inbox-cover" data-series-cover={item.seriesId} mt={2} style={{ width: 26, height: 38 }}>
           {item.seriesCoverUrl && <img src={item.seriesCoverUrl} alt="" loading="lazy" decoding="async" />}
         </Box>
         <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>

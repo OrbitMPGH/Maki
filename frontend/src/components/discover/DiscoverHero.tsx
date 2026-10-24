@@ -229,6 +229,7 @@ export function DiscoverHero({
               <button
                 type="button"
                 className="discover-hero-poster"
+                data-series-cover={ownedSeriesId ?? undefined}
                 onClick={() => onOpen(item)}
                 aria-label={t`View ${title}`}
               >

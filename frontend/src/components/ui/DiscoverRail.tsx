@@ -235,7 +235,7 @@ export const RecommendationRow = memo(function RecommendationRow({
         }
       }}
     >
-      <div className="row-cover" style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}>
+      <div className="row-cover" data-series-cover={inLibrarySeriesId ?? undefined} style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}>
         {posterUrl(item) ? (
           <img
             src={posterUrl(item) ?? undefined}
