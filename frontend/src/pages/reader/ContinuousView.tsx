@@ -21,6 +21,8 @@ const PAST_END_TOUCH_MIN = 140
 // Wheel events this soon after a finger lifts belong to the same gesture, for a browser that
 // reports a touch scroll both ways.
 const WHEEL_AFTER_TOUCH_MS = 600
+/** A touch that has gone this long without an event is taken as lost, so the wheel works again. */
+const TOUCH_STALE_MS = 3000
 
 /** A loaded page's natural size, which unloaded pages borrow as their placeholder shape. */
 interface PageShape {
@@ -369,12 +371,16 @@ export default function ContinuousView({
     // bottom, so a late event still shows the true pull, and only letting go with it full moves on.
     let touching = false
     let touchEndedAt = 0
+    let touchSeenAt = 0
+    // A second finger turns the gesture into a pinch, which must never fill the meter.
+    let multiTouch = false
     let pullFrom: number | null = null
     const touchDistance = () => Math.max(PAST_END_TOUCH_MIN, scroller.clientHeight * PAST_END_TOUCH_SHARE)
 
     const onWheel = (event: WheelEvent) => {
       abandonSeek()
-      if (touching || performance.now() - touchEndedAt < WHEEL_AFTER_TOUCH_MS) return
+      const now = performance.now()
+      if ((touching && now - touchSeenAt < TOUCH_STALE_MS) || now - touchEndedAt < WHEEL_AFTER_TOUCH_MS) return
       advance(event.deltaY, PAST_END_WHEEL)
     }
 
@@ -382,11 +388,21 @@ export default function ContinuousView({
       abandonSeek()
       clearTimeout(idle)
       touching = true
+      touchSeenAt = performance.now()
+      if (event.touches.length > 1) multiTouch = true
       const y = event.touches[0]?.clientY
-      pullFrom = y != null && atBottom() ? y : null
+      pullFrom = y != null && !multiTouch && atBottom() ? y : null
+      if (multiTouch && progress.current !== 0) decay()
       setPulling(true)
     }
     const onTouchMove = (event: TouchEvent) => {
+      touchSeenAt = performance.now()
+      if (event.touches.length > 1) multiTouch = true
+      if (multiTouch) {
+        pullFrom = null
+        if (progress.current !== 0) decay()
+        return
+      }
       const y = event.touches[0]?.clientY
       if (y == null) return
       if (!atBottom()) {
@@ -409,22 +425,35 @@ export default function ContinuousView({
       setPastEndProgress(progress.current)
     }
     const endTouch = (release: boolean) => {
-      const full = release && hasNext && progress.current >= 1
+      const full = release && !multiTouch && hasNext && progress.current >= 1
       touching = false
+      multiTouch = false
       touchEndedAt = performance.now()
       pullFrom = null
       setPulling(false)
       if (progress.current !== 0) decay()
       if (full) onPastEnd()
     }
-    const onTouchEnd = () => endTouch(true)
+    // A finger lifted while another is still down is not the end of the gesture.
+    const onTouchEnd = (event: TouchEvent) => {
+      if (event.touches.length === 0) endTouch(true)
+    }
     const onTouchCancel = () => endTouch(false)
+    // The end of a touch never arrives when the page loses focus mid-gesture.
+    const onLostFocus = () => {
+      if (touching) endTouch(false)
+    }
+    const onVisibility = () => {
+      if (document.hidden) onLostFocus()
+    }
 
     scroller.addEventListener('wheel', onWheel, { passive: true })
     scroller.addEventListener('touchstart', onTouchStart, { passive: true })
     scroller.addEventListener('touchmove', onTouchMove, { passive: true })
     scroller.addEventListener('touchend', onTouchEnd, { passive: true })
     scroller.addEventListener('touchcancel', onTouchCancel, { passive: true })
+    window.addEventListener('blur', onLostFocus)
+    document.addEventListener('visibilitychange', onVisibility)
     return () => {
       clearTimeout(idle)
       scroller.removeEventListener('wheel', onWheel)
@@ -432,6 +461,8 @@ export default function ContinuousView({
       scroller.removeEventListener('touchmove', onTouchMove)
       scroller.removeEventListener('touchend', onTouchEnd)
       scroller.removeEventListener('touchcancel', onTouchCancel)
+      window.removeEventListener('blur', onLostFocus)
+      document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [urls, hasNext, onPastEnd])
 
