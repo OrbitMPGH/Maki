@@ -3,6 +3,8 @@ import type { ChapterProgressDto } from '../../api/reader'
 import type { ChapterDto } from '../../api/types'
 
 export function chapterLabel(c: ChapterDto): string {
+  // A volume entry: a volume file on disk standing in for chapters no source lists.
+  if (!c.isOneShot && c.number === null && c.volume !== null) return staticT`Vol.${c.volume}`
   if (c.isOneShot || c.number === null) return c.title ?? staticT`One-shot`
   // Prefer the volume the backing file actually is; fall back to metadata volume.
   const volNum = c.fileVolume ?? (c.volume !== null ? String(c.volume) : null)

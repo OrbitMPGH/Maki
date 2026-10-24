@@ -19887,6 +19887,12 @@ msgid "Vol. {volume}"
 msgstr "第 {volume} 卷"
 
 #. placeholder {0}: c.volume
+#: src/components/LinkFileToChaptersModal.tsx
+#: src/components/series/chapterTable.ts
+msgid "Vol.{0}"
+msgstr ""
+
+#. placeholder {0}: c.volume
 #. placeholder {1}: c.number
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy

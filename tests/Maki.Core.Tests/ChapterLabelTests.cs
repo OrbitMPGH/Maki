@@ -19,6 +19,10 @@ public class ChapterLabelTests
     }
 
     [Fact]
+    public void A_volume_entry_is_labelled_by_its_volume() =>
+        Assert.Equal("Vol.4", ChapterLabel.For(null, 4, null, false));
+
+    [Fact]
     public void The_decimal_separator_ignores_the_process_culture()
     {
         var previous = CultureInfo.CurrentCulture;

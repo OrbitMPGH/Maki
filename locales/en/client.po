@@ -16232,6 +16232,12 @@ msgid "Vol. {volume}"
 msgstr "Vol. {volume}"
 
 #. placeholder {0}: c.volume
+#: src/components/LinkFileToChaptersModal.tsx
+#: src/components/series/chapterTable.ts
+msgid "Vol.{0}"
+msgstr "Vol.{0}"
+
+#. placeholder {0}: c.volume
 #. placeholder {1}: c.number
 #: src/components/LinkFileToChaptersModal.tsx
 msgid "Vol.{0} Ch.{1}"

@@ -72,6 +72,14 @@ public class Chapter
     /// <summary>The file was deleted on purpose and nothing has replaced it.</summary>
     public static bool IsRemoved(Chapter c) => c.ChapterFileId == null && c.FileRemovedAt != null;
 
+    /// <summary>
+    /// A whole volume standing in for its chapters: a volume file on disk with no chapter markers in
+    /// its pages, in a series no source lists chapters for (<c>ChapterFromFilesService</c>). No number
+    /// and not a one-shot, so source sync never matches it; the chapters a source lists later take its
+    /// file and its reads over.
+    /// </summary>
+    public static bool IsVolumeEntry(Chapter c) => c.Number is null && !c.IsOneShot && c.Volume is not null;
+
     /// <summary>A special is a decimal-numbered chapter (10.5 omake etc.); one-shots are not specials.</summary>
     public static bool IsSpecial(decimal? number) => number is { } n && n % 1 != 0;
 

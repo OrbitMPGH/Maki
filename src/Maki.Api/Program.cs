@@ -889,6 +889,7 @@ try
     builder.Services.AddScoped<LibraryImportResolver>();
     builder.Services.AddScoped<LibraryImportUndoService>();
     builder.Services.AddScoped<CbzLinkService>();
+    builder.Services.AddScoped<ChapterFromFilesService>();
     builder.Services.AddScoped<FileRelinkPlanner>();
     builder.Services.AddSingleton<ChapterFileQualityService>();
     builder.Services.AddScoped<ChapterFileMeasureService>();

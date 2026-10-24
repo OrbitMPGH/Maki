@@ -26,7 +26,8 @@ public class ChapterSyncService(
     IAppSettings appSettings,
     ILogger<ChapterSyncService> logger,
     AnimeResumePendingService? animeResumePending = null,
-    PendingReadImportService? pendingReadImports = null)
+    PendingReadImportService? pendingReadImports = null,
+    CbzLinkService? cbzLinks = null)
 {
     /// <returns>Ids of newly discovered chapters.</returns>
     public Task<List<int>> SyncSeriesAsync(int seriesId, CancellationToken ct = default) =>
@@ -254,6 +255,15 @@ public class ChapterSyncService(
         if (newChapters.Count > 0 && pendingReadImports is not null)
         {
             await pendingReadImports.ApplyAsync(seriesId, ct);
+        }
+
+        // A volume entry's file belongs to the chapters a source has just listed for that volume.
+        // Handed over here rather than at the next rescan, or the monitored refresh queues them for
+        // download while their file is on disk.
+        if (newChapters.Count > 0 && cbzLinks is not null && existing.Any(Chapter.IsVolumeEntry))
+        {
+            var withRoot = await db.Series.Include(s => s.RootFolder).FirstAsync(s => s.Id == seriesId, ct);
+            await cbzLinks.RescanSeriesAsync(withRoot, ct);
         }
 
         return newChapters.Select(c => c.Id).ToList();
