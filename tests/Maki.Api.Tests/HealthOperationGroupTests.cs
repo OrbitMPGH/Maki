@@ -116,10 +116,11 @@ public sealed class HealthOperationGroupTests : IDisposable
 
         Assert.IsType<BadRequestResult>(await controller.OperationGroup(new NoUserSettings(), "not-a-key", 30, default));
         Assert.IsType<BadRequestResult>(await controller.OperationGroup(new NoUserSettings(), "999999", 30, default));
+        Assert.IsType<BadRequestResult>(await controller.OperationGroup(new NoUserSettings(), "", 30, default));
     }
 
     [Fact]
-    public async Task A_long_legacy_error_does_not_lengthen_the_key()
+    public async Task A_long_legacy_error_travels_as_a_prefix_and_still_finds_its_group()
     {
         using var db = fixture.NewContext();
         var error = new string('x', 20_000);
@@ -132,8 +133,48 @@ public sealed class HealthOperationGroupTests : IDisposable
         var key = group.GetProperty("key").GetString()!;
         var all = Body(await controller.OperationGroup(new NoUserSettings(), key, 100, default));
 
-        Assert.True(key.Length < 20);
+        Assert.True(key.Length < 4_000);
         Assert.Equal(4, all.GetProperty("total").GetInt32());
         Assert.All(all.GetProperty("items").EnumerateArray(), r => Assert.Equal(error, r.GetProperty("error").GetString()));
+    }
+
+    private static async Task<string> FailedKey(HealthController controller) =>
+        Body(await controller.Operations(new NoUserSettings(), 1, default))
+            .GetProperty("items").EnumerateArray()
+            .Single(g => g.GetProperty("status").GetString() == "failed").GetProperty("key").GetString()!;
+
+    [Fact]
+    public async Task A_groups_key_survives_operations_joining_and_leaving_it()
+    {
+        using var db = fixture.NewContext();
+        await Seed(db, 3, "delete", "failed", "health.operation.error.deleteFailed");
+        var controller = Controller(db);
+        var before = await FailedKey(controller);
+
+        await Seed(db, 2, "delete", "failed", "health.operation.error.deleteFailed");
+        Assert.Equal(before, await FailedKey(controller));
+
+        var newest = db.HealthOperations.Where(o => o.Status == "failed").OrderByDescending(o => o.Id).First();
+        db.HealthOperations.Remove(newest);
+        await db.SaveChangesAsync();
+        Assert.Equal(before, await FailedKey(controller));
+
+        var all = Body(await controller.OperationGroup(new NoUserSettings(), before, 100, default));
+        Assert.Equal(4, all.GetProperty("total").GetInt32());
+    }
+
+    [Fact]
+    public async Task A_key_still_resolves_after_its_newest_row_is_purged()
+    {
+        using var db = fixture.NewContext();
+        await Seed(db, 3, "delete", "failed", "health.operation.error.deleteFailed");
+        var controller = Controller(db);
+        var key = await FailedKey(controller);
+
+        db.HealthOperations.RemoveRange(db.HealthOperations.Where(o => o.Status == "failed").OrderByDescending(o => o.Id).Take(2));
+        await db.SaveChangesAsync();
+
+        var all = Body(await controller.OperationGroup(new NoUserSettings(), key, 100, default));
+        Assert.Equal(1, all.GetProperty("total").GetInt32());
     }
 }

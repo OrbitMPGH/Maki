@@ -12,6 +12,7 @@ using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Controllers;
@@ -505,7 +506,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         var previews = new List<List<HealthOperation>>(groups.Count);
         foreach (var g in groups)
         {
-            var key = new OperationGroupKey(g.Kind, g.Status, g.ErrorKey, g.ErrorParamsJson, g.Error);
+            var key = OperationGroupKey.From(g.Kind, g.Status, g.ErrorKey, g.ErrorParamsJson, g.Error);
             previews.Add(await key.Apply(db.HealthOperations.AsNoTracking()).OrderByDescending(o => o.Id).Take(OperationGroupPreview).ToListAsync(ct));
         }
 
@@ -517,7 +518,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             var g = groups[i];
             items.Add(new
             {
-                Key = g.Newest.ToString(),
+                Key = OperationGroupKey.From(g.Kind, g.Status, g.ErrorKey, g.ErrorParamsJson, g.Error).Encode(),
                 g.Kind,
                 g.Status,
                 Error = RenderedError(g.ErrorKey, g.ErrorParamsJson, g.Error),
@@ -534,7 +535,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     [HttpGet("operations/group")]
     public async Task<IActionResult> OperationGroup([FromServices] IUserSettings userSettings, [FromQuery] string key, [FromQuery] int take = OperationGroupPage, CancellationToken ct = default)
     {
-        var group = await OperationGroupKey.ResolveAsync(db, key, ct);
+        var group = OperationGroupKey.Decode(key);
         if (group is null) return BadRequest();
         var query = group.Apply(db.HealthOperations.AsNoTracking());
         var rows = await query.OrderByDescending(o => o.Id).Take(Math.Clamp(take, 1, OperationGroupRowsMax)).ToListAsync(ct);
@@ -558,22 +559,47 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     }
 
     /// <summary>
-    /// What makes two operations the same problem. The client holds only the id of the group's
-    /// newest operation and the server reads the fields back from that row, so a long legacy
-    /// <c>Error</c> never rides in the URL.
+    /// What makes two operations the same problem. The key the client holds is these five fields,
+    /// base64url encoded, so it stays the same while operations join or leave the group. A legacy
+    /// <c>Error</c> longer than <see cref="ErrorPrefixMax"/> travels as its prefix and its length so
+    /// the URL stays short.
     /// </summary>
-    private sealed record OperationGroupKey(string Kind, string Status, string? ErrorKey, string? ErrorParamsJson, string? Error)
+    private sealed record OperationGroupKey(string Kind, string Status, string? ErrorKey, string? ErrorParamsJson, string? Error, int? ErrorLength = null)
     {
-        public IQueryable<HealthOperation> Apply(IQueryable<HealthOperation> source) =>
-            source.Where(o => o.Kind == Kind && o.Status == Status && o.ErrorKey == ErrorKey
-                && o.ErrorParamsJson == ErrorParamsJson && o.Error == Error);
+        private const int ErrorPrefixMax = 1500;
 
-        public static async Task<OperationGroupKey?> ResolveAsync(MakiDbContext db, string? key, CancellationToken ct)
+        private sealed record Wire(string K, string S, string? Ek, string? Ep, string? E, int? L);
+
+        public static OperationGroupKey From(string kind, string status, string? errorKey, string? errorParamsJson, string? error) =>
+            error is { Length: > ErrorPrefixMax }
+                ? new(kind, status, errorKey, errorParamsJson, error[..ErrorPrefixMax], error.Length)
+                : new(kind, status, errorKey, errorParamsJson, error);
+
+        public string Encode() =>
+            WebEncoders.Base64UrlEncode(JsonSerializer.SerializeToUtf8Bytes(new Wire(Kind, Status, ErrorKey, ErrorParamsJson, Error, ErrorLength)));
+
+        public IQueryable<HealthOperation> Apply(IQueryable<HealthOperation> source)
         {
-            if (!int.TryParse(key, out var id)) return null;
-            return await db.HealthOperations.AsNoTracking().Where(o => o.Id == id)
-                .Select(o => new OperationGroupKey(o.Kind, o.Status, o.ErrorKey, o.ErrorParamsJson, o.Error))
-                .FirstOrDefaultAsync(ct);
+            source = source.Where(o => o.Kind == Kind && o.Status == Status && o.ErrorKey == ErrorKey && o.ErrorParamsJson == ErrorParamsJson);
+            if (ErrorLength is not { } length) return source.Where(o => o.Error == Error);
+            var prefix = Error!;
+            return source.Where(o => o.Error != null && o.Error.Length == length && o.Error.StartsWith(prefix));
+        }
+
+        public static OperationGroupKey? Decode(string? key)
+        {
+            if (string.IsNullOrEmpty(key)) return null;
+            try
+            {
+                var wire = JsonSerializer.Deserialize<Wire>(WebEncoders.Base64UrlDecode(key));
+                if (wire is null || string.IsNullOrEmpty(wire.K) || string.IsNullOrEmpty(wire.S)) return null;
+                if (wire.L is not null && (wire.E is null || wire.L <= wire.E.Length)) return null;
+                return new(wire.K, wire.S, wire.Ek, wire.Ep, wire.E, wire.L);
+            }
+            catch (Exception ex) when (ex is FormatException or JsonException)
+            {
+                return null;
+            }
         }
     }
 
