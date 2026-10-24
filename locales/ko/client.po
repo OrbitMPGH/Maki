@@ -112,8 +112,9 @@ msgstr "{0, plural, other {#개를 옮길 수 없음 (잠겨 있거나 권한이
 
 #. placeholder {0}: failed.length
 #: src/components/import/MihonSummary.tsx
+#, fuzzy
 msgid "{0, plural, one {# failed} other {# failed}}"
-msgstr ""
+msgstr "{0, plural, other {#개 실패}}"
 
 #. placeholder {0}: r.failed
 #: src/components/RelinkFilesModal.tsx
@@ -157,8 +158,9 @@ msgstr "{0, plural, other {#개 파일}}"
 #. placeholder {0}: groupCounts[group]
 #: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "{0, plural, one {# filter active} other {# filters active}}"
-msgstr ""
+msgstr "{0, plural, other {필터 #개 적용됨}}"
 
 #. placeholder {0}: ignoredFolders?.length ?? 0
 #: src/pages/ImportPage.tsx
@@ -186,8 +188,9 @@ msgstr "{0, plural, other {#개 유지됨}}"
 
 #. placeholder {0}: rows.length
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "{0, plural, one {# manga in your Mihon library.} other {# manga in your Mihon library.}}"
-msgstr ""
+msgstr "{0, plural, other {Mihon 라이브러리의 만화 #개.}}"
 
 #. placeholder {0}: items.length
 #: src/components/CatalogueBrowser.tsx
@@ -209,8 +212,9 @@ msgstr "{0, plural, other {같은 볼륨 파일에 있는 챕터 #개도 함께 
 
 #. placeholder {0}: unresolved.length
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "{0, plural, one {# needs attention} other {# need attention}}"
-msgstr ""
+msgstr "{0, plural, other {#개 확인 필요}}"
 
 #. placeholder {0}: panel.pageCount
 #: src/components/SourceCompareModal.tsx
@@ -252,13 +256,15 @@ msgstr "{0, plural, other {완결된 시리즈 #개}}"
 
 #. placeholder {0}: withProblems.length
 #: src/components/import/MihonSummary.tsx
+#, fuzzy
 msgid "{0, plural, one {# series had problems applying tags or read marks} other {# series had problems applying tags or read marks}}"
-msgstr ""
+msgstr "{0, plural, other {시리즈 #개에서 태그 또는 읽음 표시를 적용하지 못했습니다}}"
 
 #. placeholder {0}: skipped.length
 #: src/components/import/MihonSummary.tsx
+#, fuzzy
 msgid "{0, plural, one {# skipped} other {# skipped}}"
-msgstr ""
+msgstr "{0, plural, other {#개 건너뜀}}"
 
 #. placeholder {0}: active.items.length
 #. placeholder {0}: items.length
@@ -332,8 +338,9 @@ msgstr "{0, plural, other {읽은 내용을 반영해 가중치를 적용한 전
 
 #. placeholder {0}: groups.length
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "{0, plural, one {Import # series} other {Import # series}}"
-msgstr ""
+msgstr "{0, plural, other {시리즈 #개 가져오기}}"
 
 #. placeholder {0}: r.updated
 #: src/pages/SeriesDetailPage.tsx
@@ -433,8 +440,9 @@ msgstr "{0, plural, other {복원하고 챕터 #개에 연결함}}"
 
 #. placeholder {0}: selectable.length
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "{0, plural, one {Select all # in this view} other {Select all # in this view}}"
-msgstr ""
+msgstr "{0, plural, other {이 보기의 #개 모두 선택}}"
 
 #. placeholder {0}: entries.length
 #: src/pages/stats/ActivityFeed.tsx
@@ -444,8 +452,9 @@ msgstr "{0, plural, other {전체 #개 표시}}"
 
 #. placeholder {0}: parsed.skippedNonLibrary
 #: src/components/import/MihonImport.tsx
+#, fuzzy
 msgid "{0, plural, one {This backup has no manga in the library. # manga that is not in the library was skipped.} other {This backup has no manga in the library. # manga that are not in the library were skipped.}}"
-msgstr ""
+msgstr "{0, plural, other {이 백업에는 라이브러리에 있는 만화가 없습니다. 라이브러리에 없는 만화 #개를 건너뛰었습니다.}}"
 
 #. placeholder {0}: selected.size
 #: src/components/SeriesFilesSection.tsx
@@ -473,8 +482,9 @@ msgstr "{0, plural, other {원하는 챕터 #개}}"
 
 #. placeholder {0}: -diff
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "{0, plural, other {# ahead}}"
-msgstr ""
+msgstr "{0, plural, other {#챕터 앞섬}}"
 
 #. placeholder {0}: percent(item.measure)
 #: src/pages/discover/TasteTab.tsx
@@ -494,8 +504,9 @@ msgid "{abs} pt"
 msgstr "{abs}점"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "{acknowledged, plural, one {# acknowledged} other {# acknowledged}}"
-msgstr ""
+msgstr "{acknowledged, plural, other {#개 확인됨}}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -509,8 +520,9 @@ msgid "{active, plural, one {# download in progress} other {# downloads in progr
 msgstr "{active, plural, other {다운로드 #개 진행 중}}"
 
 #: src/App.tsx
+#, fuzzy
 msgid "{active, plural, one {Activity, # download in progress} other {Activity, # downloads in progress}}"
-msgstr ""
+msgstr "{active, plural, other {활동, 다운로드 #개 진행 중}}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -543,12 +555,14 @@ msgid "{alt}, page {page}"
 msgstr "{alt}, 페이지 {page}"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
+#, fuzzy
 msgid "{announcedBy} has it scheduled for {announced}"
-msgstr ""
+msgstr "{announcedBy}이(가) {announced}로 예정해 두었습니다."
 
 #: src/components/releases/UpcomingView.tsx
+#, fuzzy
 msgid "{announcedBy} has it scheduled for {when}"
-msgstr ""
+msgstr "{announcedBy}이(가) {when}로 예정해 두었습니다."
 
 #: src/components/RatingImportModal.tsx
 #, fuzzy
@@ -611,8 +625,9 @@ msgid "{busiestShareLabel} of your time"
 msgstr "시간 중 {busiestShareLabel}"
 
 #: src/pages/stats/ReadingHeatmap.tsx
+#, fuzzy
 msgid "{cellDate}: {chapters, plural, one {# chapter} other {# chapters}}"
-msgstr ""
+msgstr "{cellDate}: {chapters, plural, other {챕터 #개}}"
 
 #: src/components/home/ReadingWeeks.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
@@ -626,12 +641,14 @@ msgid "{chapterCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapterCount, plural, other {챕터 #개}}"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "{chapterMax, plural, one {At most # chapter} other {At most # chapters}}"
-msgstr ""
+msgstr "{chapterMax, plural, other {최대 챕터 #개}}"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "{chapterMin, plural, one {At least # chapter} other {At least # chapters}}"
-msgstr ""
+msgstr "{chapterMin, plural, other {최소 챕터 #개}}"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -640,12 +657,14 @@ msgstr "{chapterMinChip}–{chapterMaxChip}화"
 
 #: src/components/home/ReadingWeeks.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
+#, fuzzy
 msgid "{chapters, plural, one {{cellDate}: # chapter} other {{cellDate}: # chapters}}"
-msgstr ""
+msgstr "{chapters, plural, other {{cellDate}: 챕터 #개}}"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "{chapters} chapters"
-msgstr ""
+msgstr "챕터 {chapters}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -673,12 +692,14 @@ msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read 
 msgstr "{seriesMatched, plural, other {시리즈 #개}}에서 {chaptersMarked, plural, other {챕터 #개}}를 읽음으로 표시함, {seriesUnmatched, plural, other {Kavita 시리즈 #개}}는 일치하지 않음"
 
 #: src/components/CatalogueFilters.tsx
+#, fuzzy
 msgid "{chaptersMin}–{chaptersMax} chapters"
-msgstr ""
+msgstr "챕터 {chaptersMin}–{chaptersMax}"
 
 #: src/pages/stats/ReadingHeatmap.tsx
+#, fuzzy
 msgid "{chaptersRead, plural, one {# chapter in total.} other {# chapters in total.}}"
-msgstr ""
+msgstr "{chaptersRead, plural, other {총 챕터 #개.}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -716,16 +737,19 @@ msgid "{connectedCount, plural, one {# connected} other {# connected}}"
 msgstr "{connectedCount, plural, other {#개 연결됨}}"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "{converted} converted ({saved} saved), {unchanged} left as they were, {hardlinked} hardlinked, {failed} passed over for now."
-msgstr ""
+msgstr "{converted}개 변환됨 ({saved} 절약), {unchanged}개는 그대로 둠, {hardlinked}개는 하드링크됨, {failed}개는 지금 건너뜀."
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "{convertedFiles, plural, one {# file converted so far, {saved} saved.} other {# files converted so far, {saved} saved.}}"
-msgstr ""
+msgstr "{convertedFiles, plural, other {지금까지 파일 #개 변환됨, {saved} 절약.}}"
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "{count, plural, =2 {Both trackers} other {All # trackers}}"
-msgstr ""
+msgstr "{count, plural, =2 {트래커 둘 다} other {트래커 전체 #개}}"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -733,24 +757,29 @@ msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, other {#화}}"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "{count, plural, one {# deletion} other {# deletions}}"
-msgstr ""
+msgstr "{count, plural, other {삭제 #건}}"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
-msgstr ""
+msgstr "{count, plural, other {활성화된 소스가 없는 모니터링 시리즈가 #개 있습니다}}"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "{count, plural, one {# replacement} other {# replacements}}"
-msgstr ""
+msgstr "{count, plural, other {교체 #건}}"
 
 #: src/components/home/OfflineHome.tsx
+#, fuzzy
 msgid "{count, plural, one {# saved} other {# saved}}"
-msgstr ""
+msgstr "{count, plural, other {#개 저장됨}}"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "{count, plural, one {# series is failing to refresh from its source} other {# series are failing to refresh from their sources}}"
-msgstr ""
+msgstr "{count, plural, other {소스에서 새로 고치지 못하는 시리즈가 #개 있습니다}}"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -758,12 +787,14 @@ msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr "{count, plural, other {#개 시리즈 일치}}"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "{count, plural, one {# source is no longer installed in Suwayomi} other {# sources are no longer installed in Suwayomi}}"
-msgstr ""
+msgstr "{count, plural, other {Suwayomi에 더 이상 설치되지 않은 소스가 #개 있습니다}}"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "{count, plural, one {# source looks unstable} other {# sources look unstable}}"
-msgstr ""
+msgstr "{count, plural, other {불안정해 보이는 소스가 #개 있습니다}}"
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -776,8 +807,9 @@ msgid "{count, plural, one {# title} other {# titles}}"
 msgstr "{count, plural, other {작품 #개}}"
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "{count, plural, one {# tracker} other {# trackers}}"
-msgstr ""
+msgstr "{count, plural, other {트래커 #개}}"
 
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -785,8 +817,9 @@ msgid "{count, plural, one {# unread} other {# unread}}"
 msgstr "{count, plural, other {읽지 않음 #개}}"
 
 #: src/components/home/OfflineHome.tsx
+#, fuzzy
 msgid "{count, plural, one {A chapter is saved on this device, but this tab can't open it right now. That usually follows a hard reload: reload the page normally and it will be ready to read.} other {# chapters are saved on this device, but this tab can't open them right now. That usually follows a hard reload: reload the page normally and they will be ready to read.}}"
-msgstr ""
+msgstr "{count, plural, other {이 기기에 저장된 챕터 #개를 이 탭에서는 지금 열 수 없습니다. 보통 강력새로고침 뒤에 생기는 문제입니다. 페이지를 일반적으로 새로고침하면 바로 읽을 수 있습니다.}}"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -809,12 +842,14 @@ msgid "{count, plural, one {Median of # measured chapter: {width}px wide, {bpp} 
 msgstr "{count, plural, other {측정한 챕터 #개의 중앙값: 너비 {width}px, 픽셀당 {bpp}비트 (JPG 환산).}}"
 
 #: src/components/NotificationBell.tsx
+#, fuzzy
 msgid "{count, plural, one {Notifications, # unread} other {Notifications, # unread}}"
-msgstr ""
+msgstr "{count, plural, other {알림, 읽지 않음 #개}}"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "{count, plural, one {Saving # chapter for offline} other {Saving # chapters for offline}}"
-msgstr ""
+msgstr "{count, plural, other {오프라인용으로 챕터 #개 저장 중}}"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -822,16 +857,19 @@ msgid "{count, plural, one {Show # affected series} other {Show # affected serie
 msgstr "{count, plural, other {영향을 받는 #개 시리즈 표시}}"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "{count, plural, one {Show # check} other {Show all # checks}}"
-msgstr ""
+msgstr "{count, plural, other {확인 항목 #개 모두 보기}}"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "{count, plural, one {Show all # operation} other {Show all # operations}}"
-msgstr ""
+msgstr "{count, plural, other {작업 #개 모두 보기}}"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "{count, plural, one {The next unread chapter} other {The next # unread chapters}}"
-msgstr ""
+msgstr "{count, plural, other {다음 읽지 않은 챕터 #개}}"
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -844,12 +882,14 @@ msgid "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {
 msgstr "{coverFileCount, plural, other {포스터: 파일 #개, {coverBytesLabel}}}"
 
 #: src/components/import/MihonSummary.tsx
+#, fuzzy
 msgid "{created, plural, one {# series added} other {# series added}}"
-msgstr ""
+msgstr "{created, plural, other {시리즈 #개 추가됨}}"
 
 #: src/components/home/ReadingWeeks.tsx
+#, fuzzy
 msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
-msgstr ""
+msgstr "{currentStreak, plural, other {#일 연속 기록}}"
 
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
@@ -862,12 +902,14 @@ msgid "{days, plural, one {Deleted files, removed chapters and series deleted wi
 msgstr "{days, plural, other {삭제된 파일, 제거된 챕터, 파일과 함께 삭제된 시리즈는 여기서 #일 동안 기다린 뒤 영구 삭제됩니다. 복원하면 파일이 원래 위치로 돌아갑니다.}}"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "{days, plural, one {The originals ({trash}) wait in the upgrade trash for # day, then are deleted.} other {The originals ({trash}) wait in the upgrade trash for # days, then are deleted.}}"
-msgstr ""
+msgstr "{days, plural, other {원본({trash})은 업그레이드 휴지통에서 #일 동안 보관된 뒤 삭제됩니다.}}"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
+#, fuzzy
 msgid "{days, plural, one {Usually every day.} other {Usually every # days.}}"
-msgstr ""
+msgstr "{days, plural, other {보통 #일마다.}}"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -890,8 +932,9 @@ msgid "{deletingSeriesCount, plural, one {It is removed from # series. This cann
 msgstr "{deletingSeriesCount, plural, other {시리즈 #개에서 제거됩니다. 되돌릴 수 없습니다.}}"
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "{diff, plural, other {# behind}}"
-msgstr ""
+msgstr "{diff, plural, other {#챕터 뒤처짐}}"
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -899,12 +942,14 @@ msgid "{done} of {probes} chapter samples. The order below updates once it finis
 msgstr "챕터 샘플 {probes}개 중 {done}개 완료. 끝나면 아래 순서가 업데이트됩니다."
 
 #: src/components/import/MihonImport.tsx
+#, fuzzy
 msgid "{done} of {total}"
-msgstr ""
+msgstr "{done}/{total}"
 
 #: src/components/import/MihonImport.tsx
+#, fuzzy
 msgid "{done} of {total} matched before this stopped. Retry to carry on, or review what matched so far. The rest will show as not found, and you can match them by hand."
-msgstr ""
+msgstr "중단되기 전에 {done}/{total}개가 일치했습니다. 다시 시도해 계속하거나, 지금까지 일치한 항목을 검토하세요. 나머지는 찾을 수 없음으로 표시되며, 직접 일치시킬 수 있습니다."
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -952,8 +997,9 @@ msgid "{eta} left"
 msgstr "{eta} 남음"
 
 #: src/components/import/MihonSummary.tsx
+#, fuzzy
 msgid "{existing, plural, one {# already in the library} other {# already in the library}}"
-msgstr ""
+msgstr "{existing, plural, other {라이브러리에 이미 있음 #개}}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1057,12 +1103,14 @@ msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, other {#개 허용됨}}"
 
 #: src/components/ui/CoverCard.tsx
+#, fuzzy
 msgid "{have, plural, one {# chapter} other {# chapters}}"
-msgstr ""
+msgstr "{have, plural, other {챕터 #개}}"
 
 #: src/components/ui/CoverCard.tsx
+#, fuzzy
 msgid "{have} of {total}"
-msgstr ""
+msgstr "{have}/{total}"
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -1075,12 +1123,14 @@ msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} li
 msgstr "{haveCount} / {totalCount, plural, other {# 챕터}} 목록에 있지만, 원하는 챕터는 없음"
 
 #: src/components/series/SeriesHero.tsx
+#, fuzzy
 msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
-msgstr ""
+msgstr "{haveCount} / {totalCount, plural, other {원하는 챕터 #개}}"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
+#, fuzzy
 msgid "{hits} of the last {checked} chapters came out inside the window drawn for them."
-msgstr ""
+msgstr "최근 챕터 {checked}개 중 {hits}개가 그 챕터들에 그려진 범위 안에서 나왔습니다."
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -1093,12 +1143,14 @@ msgid "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgstr "{hours, plural, other {약 #시간 남음}}"
 
 #: src/pages/ImportPage.tsx
+#, fuzzy
 msgid "{importedCount, plural, one {# imported} other {# imported}}"
-msgstr ""
+msgstr "{importedCount, plural, other {#개 가져옴}}"
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "{importedCount, plural, one {Import # file} other {Import # files}}"
-msgstr ""
+msgstr "{importedCount, plural, other {파일 #개 가져오기}}"
 
 #: src/sourceLabels.ts
 #, fuzzy
@@ -1147,12 +1199,14 @@ msgid "{label} already has a file. Compare the two before deciding: importing th
 msgstr "{label}에 이미 파일이 있습니다. 결정하기 전에 두 파일을 비교하세요. 이 보관 파일을 가져오면 기존 파일과 함께 연결되며, 기존 파일을 대체하지 않습니다. 교체하려면 원하지 않는 파일을 먼저 삭제하세요."
 
 #: src/components/settings/NotificationPrefsSection.tsx
+#, fuzzy
 msgid "{label} as a push notification"
-msgstr ""
+msgstr "{label}을(를) 푸시 알림으로"
 
 #: src/components/settings/NotificationPrefsSection.tsx
+#, fuzzy
 msgid "{label} in the bell"
-msgstr ""
+msgstr "{label}을(를) 벨에 표시"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -1230,8 +1284,9 @@ msgid "{linkingTotal, plural, one {Sources found and files linked for # series} 
 msgstr "{linkingTotal, plural, other {시리즈 #개의 소스를 찾고 파일을 연결함}}"
 
 #: src/components/home/ReadingWeeks.tsx
+#, fuzzy
 msgid "{longestStreak, plural, one {Today counts. Best: # day} other {Today counts. Best: # days}}"
-msgstr ""
+msgstr "{longestStreak, plural, other {오늘도 집계됩니다. 최고 기록: #일}}"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -1375,8 +1430,9 @@ msgid "{n}s"
 msgstr "{n}초"
 
 #: src/pages/settings/DownloadCards.tsx
+#, fuzzy
 msgid "{name} (disabled in {backendName})"
-msgstr ""
+msgstr "{name} ({backendName}에서 꺼짐)"
 
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
@@ -1384,8 +1440,9 @@ msgid "{name} {year}"
 msgstr "{name} {year}"
 
 #: src/components/settings/useIndexerForm.ts
+#, fuzzy
 msgid "{name} is reachable"
-msgstr ""
+msgstr "{name}에 연결할 수 있습니다"
 
 #: src/components/QueuePause.tsx
 #, fuzzy
@@ -1434,8 +1491,9 @@ msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent cha
 msgstr "{newChapterCount, plural, other {최근 챕터 파일 #개}}"
 
 #: src/components/series/SeriesHero.tsx
+#, fuzzy
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
-msgstr ""
+msgstr "{notWanted, plural, other {목록에 #개 더, 원하지 않음}}"
 
 #: src/components/series/SeriesHero.tsx
 #: src/components/TagBuckets.tsx
@@ -1472,20 +1530,24 @@ msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it
 msgstr "{pending, plural, other {원하는 챕터가 #개 더 있습니다. 다운로드되면 여기에 표시됩니다.}}"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "{pending, plural, one {Paused, # file left to check.} other {Paused, # files left to check.}}"
-msgstr ""
+msgstr "{pending, plural, other {일시 정지됨, 확인할 파일 #개 남음.}}"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "{pendingFiles, plural, one {# file has not been checked yet.} other {# files have not been checked yet.}}"
-msgstr ""
+msgstr "{pendingFiles, plural, other {아직 확인하지 않은 파일이 #개 있습니다.}}"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "{pendingFiles, plural, one {# file has not been checked. Choose a format to convert it.} other {# files have not been checked. Choose a format to convert them.}}"
-msgstr ""
+msgstr "{pendingFiles, plural, other {아직 확인하지 않은 파일이 #개 있습니다. 변환할 형식을 고르세요.}}"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "{pendingFiles, plural, one {Converting, # file left to check.} other {Converting, # files left to check.}}"
-msgstr ""
+msgstr "{pendingFiles, plural, other {변환 중, 확인할 파일 #개 남음.}}"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -1538,8 +1600,9 @@ msgid "{ratioValue} more than the MangaBaka catalogue carries, weighted toward t
 msgstr "MangaBaka 카탈로그에 있는 항목보다 {ratioValue}개 더 많으며, 더 많은 사람이 읽은 제목에 가중치를 둡니다"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "{read}% read"
-msgstr ""
+msgstr "{read}% 읽음"
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -1548,8 +1611,9 @@ msgid "{readChapterCount} of {have} downloaded read"
 msgstr "{have}개 다운로드된 챕터 중 {readChapterCount}개 읽음"
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "{readCount, plural, one {# chapter read} other {# chapters read}}"
-msgstr ""
+msgstr "{readCount, plural, other {챕터 #개 읽음}}"
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -1609,8 +1673,9 @@ msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}
 msgstr "{remainingChapters, plural, other {챕터 #개 남음}}"
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "{renamed, plural, one {Renamed # series, {failedCount} failed} other {Renamed # series, {failedCount} failed}}"
-msgstr ""
+msgstr "{renamed, plural, other {시리즈 #개 이름 변경됨, {failedCount}개 실패}}"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -1623,8 +1688,9 @@ msgid "{replacedFiles, plural, one {Replaces # file} other {Replaces # files}}"
 msgstr "{replacedFiles, plural, other {파일 #개 교체}}"
 
 #: src/components/import/MihonSummary.tsx
+#, fuzzy
 msgid "{requested, plural, one {# sent for approval} other {# sent for approval}}"
-msgstr ""
+msgstr "{requested, plural, other {승인 요청 #개 전송됨}}"
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -1657,8 +1723,9 @@ msgid "{review, plural, one {# download waiting for an import decision} other {#
 msgstr "{review, plural, other {가져오기 결정 대기 중인 다운로드 #개}}"
 
 #: src/App.tsx
+#, fuzzy
 msgid "{review, plural, one {Activity, # download waiting for an import decision} other {Activity, # downloads waiting for an import decision}}"
-msgstr ""
+msgstr "{review, plural, other {활동, 가져오기 결정을 기다리는 다운로드 #개}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1681,8 +1748,9 @@ msgid "{searchCap}+ matches"
 msgstr "{searchCap}개 이상 일치"
 
 #: src/pages/ImportPage.tsx
+#, fuzzy
 msgid "{selectedCount, plural, one {# folder selected} other {# folders selected}}"
-msgstr ""
+msgstr "{selectedCount, plural, other {폴더 #개 선택됨}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1802,8 +1870,9 @@ msgid "{shown, plural, one {Showing the first # result. Search to narrow it down
 msgstr "{shown, plural, other {첫 결과 #개를 표시합니다. 검색으로 범위를 좁히세요.}}"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "{shownCount, plural, one {Show # series} other {Show # series}}"
-msgstr ""
+msgstr "{shownCount, plural, other {시리즈 #개 보기}}"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -1816,8 +1885,9 @@ msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}}
 msgstr "{size, plural, other {시리즈 #개, 이 보기의 {shareLabel}, {coherenceWord}}}"
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "{skippedNonLibrary, plural, one {# manga that is not in the library was skipped.} other {# manga that are not in the library were skipped.}}"
-msgstr ""
+msgstr "{skippedNonLibrary, plural, other {라이브러리에 없는 만화 #개를 건너뛰었습니다.}}"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -1875,8 +1945,9 @@ msgid "{start} to {end}"
 msgstr "{start} ~ {end}"
 
 #: src/components/ui/CoverCard.tsx
+#, fuzzy
 msgid "{statusLabel}, not monitored"
-msgstr ""
+msgstr "{statusLabel}, 모니터링하지 않음"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -1954,8 +2025,9 @@ msgid "{title} is reachable"
 msgstr "{title}에 연결할 수 있음"
 
 #: src/components/import/MihonSummary.tsx
+#, fuzzy
 msgid "{title}: {reason}"
-msgstr ""
+msgstr "{title}: {reason}"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -2044,8 +2116,9 @@ msgid "{totalChapters} ch."
 msgstr "{totalChapters}화"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "{totalChecks, plural, one {Turn on Show passing to see the # check.} other {Turn on Show passing to see all # checks.}}"
-msgstr ""
+msgstr "{totalChecks, plural, other {통과 항목 표시를 켜면 확인 항목 #개를 모두 볼 수 있습니다.}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -2063,8 +2136,9 @@ msgid "{totalSeriesShown, plural, one {{shownCount} of # series shown.} other {{
 msgstr "{totalSeriesShown, plural, other {시리즈 #개 중 {shownCount}개를 표시합니다.}}"
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "{trashedCount, plural, one {# file goes to the trash} other {# files go to the trash}}"
-msgstr ""
+msgstr "{trashedCount, plural, other {파일 #개가 휴지통으로 이동합니다}}"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -2158,8 +2232,9 @@ msgid "{unsavedCount, plural, one {A card on this page has changes that are not 
 msgstr "{unsavedCount, plural, other {이 페이지의 카드 #개에 저장되지 않은 변경 사항이 있습니다. 나가면 변경 사항이 사라집니다.}}"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "{unsent, plural, one {# reading position has not reached the server yet and will be lost.} other {# reading positions have not reached the server yet and will be lost.}}"
-msgstr ""
+msgstr "{unsent, plural, other {서버에 아직 전송되지 않은 읽기 위치가 #개 있으며, 이 위치들은 사라집니다.}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -2182,8 +2257,9 @@ msgid "{upgradeCount, plural, one {Replaces # file} other {Replaces # files}}"
 msgstr "{upgradeCount, plural, other {파일 #개 교체}}"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "{used} of {quota} used"
-msgstr ""
+msgstr "{used}/{quota} 사용됨"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -2241,8 +2317,9 @@ msgid "{watchedCount} watched"
 msgstr "{watchedCount}개 시청함"
 
 #: src/components/home/ReadingWeeks.tsx
+#, fuzzy
 msgid "{weekChapters, plural, one {# chapter this week} other {# chapters this week}}"
-msgstr ""
+msgstr "{weekChapters, plural, other {이번 주 챕터 #개}}"
 
 #: src/pages/stats/charts/HourMatrix.tsx
 #, fuzzy
@@ -2424,12 +2501,14 @@ msgid "0 deletes them for good on the next housekeeping pass."
 msgstr "0이면 다음 정리 작업에서 바로 영구 삭제합니다."
 
 #: src/pages/settings/SystemCards.tsx
+#, fuzzy
 msgid "0 picks a number for this machine. Raise it to scan faster, lower it to leave the CPU alone."
-msgstr ""
+msgstr "0이면 이 기기에 맞는 값을 자동으로 고릅니다. 스캔을 더 빠르게 하려면 올리고, CPU 부담을 줄이려면 낮추세요."
 
 #: src/pages/settings/SystemCards.tsx
+#, fuzzy
 msgid "0 to 23."
-msgstr ""
+msgstr "0부터 23까지."
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -2437,8 +2516,9 @@ msgid "1 (lowest) to 5 (highest)."
 msgstr "1 (최저)부터 5 (최고)까지."
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "1 to 100, higher keeps more detail. Default {fallback}."
-msgstr ""
+msgstr "1~100, 높을수록 세부 묘사가 유지됩니다. 기본값 {fallback}."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -2688,12 +2768,14 @@ msgid "a second copy of another comic in the folder, which is used instead"
 msgstr "폴더 안에 있는 다른 만화의 두 번째 사본이며, 이 사본이 대신 사용됩니다"
 
 #: src/pages/settings/DownloadCards.tsx
+#, fuzzy
 msgid "A series is checked every 30 minutes for a few hours after a new chapter, every 2 hours while chapters keep coming, every 6 hours after two quiet weeks and once a day after two quiet months. A new chapter puts it straight back on the fast checks. Off checks every series every 30 minutes."
-msgstr ""
+msgstr "새 챕터가 나온 뒤 몇 시간 동안은 시리즈를 30분마다 확인합니다. 챕터가 계속 나오는 동안에는 2시간마다, 2주 동안 조용하면 6시간마다, 두 달 동안 조용하면 하루에 한 번 확인합니다. 새 챕터가 나오면 다시 빠른 확인으로 돌아갑니다. 끄면 모든 시리즈를 30분마다 확인합니다."
 
 #: src/components/releases/UpcomingView.tsx
+#, fuzzy
 msgid "A series shows up here once its chapters come out on a steady enough rhythm, or when its source announces the next one."
-msgstr ""
+msgstr "시리즈는 챕터가 일정한 간격으로 나오거나, 소스가 다음 챕터를 미리 발표하면 여기에 표시됩니다."
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -2858,8 +2940,9 @@ msgid "Acknowledge"
 msgstr "확인"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "Acknowledge all"
-msgstr ""
+msgstr "모두 확인"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2883,8 +2966,9 @@ msgstr "액션"
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
+#, fuzzy
 msgid "Actions"
-msgstr ""
+msgstr "작업"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -3015,8 +3099,9 @@ msgid "Add to library"
 msgstr "라이브러리에 추가"
 
 #: src/components/discover/DiscoverHero.tsx
+#, fuzzy
 msgid "Add to library: {title}"
-msgstr ""
+msgstr "라이브러리에 추가: {title}"
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -3034,8 +3119,9 @@ msgid "Add user"
 msgstr "사용자 추가"
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Add your details in Settings."
-msgstr ""
+msgstr "설정에서 정보를 입력하세요."
 
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -3085,8 +3171,9 @@ msgid "Adds chapters you don't have yet"
 msgstr "아직 없는 챕터를 추가합니다"
 
 #: src/pages/ImportPage.tsx
+#, fuzzy
 msgid "Adds the manga in your Mihon library to Maki. Each one is matched to MangaBaka, its categories can become tags, and chapters you have read can be marked as read."
-msgstr ""
+msgstr "Mihon 라이브러리의 만화를 Maki에 추가합니다. 각 작품은 MangaBaka와 일치시키며, 카테고리는 태그가 될 수 있고, 읽은 챕터는 읽음으로 표시할 수 있습니다."
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -3420,8 +3507,9 @@ msgstr "AniList"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "anilist, myanimelist, mal, mangabaka, kitsu, mangaupdates, mu, trackers, oauth, client id, client secret, sync interval, plan to read"
-msgstr ""
+msgstr "anilist, myanimelist, mal, mangabaka, kitsu, mangaupdates, mu, 트래커, oauth, client id, client secret, 동기화 간격, 읽을 예정"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -3457,8 +3545,9 @@ msgid "Anime you've watched"
 msgstr "시청한 애니메이션"
 
 #: src/components/releases/UpcomingView.tsx
+#, fuzzy
 msgid "Announced by the source"
-msgstr ""
+msgstr "소스가 발표함"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3514,8 +3603,9 @@ msgid "API key"
 msgstr "API 키"
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "API key copied"
-msgstr ""
+msgstr "API 키를 복사했습니다"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -3575,8 +3665,9 @@ msgid "Apply {selectedCount}"
 msgstr "선택한 {selectedCount}개 적용"
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "Apply categories as tags"
-msgstr ""
+msgstr "카테고리를 태그로 적용"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -3634,8 +3725,9 @@ msgid "Archives inventoried"
 msgstr "보관 파일 확인 완료"
 
 #: src/pages/HomePage.tsx
+#, fuzzy
 msgid "Arrange what Home shows."
-msgstr ""
+msgstr "홈에 표시할 항목을 정리하세요."
 
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -3660,8 +3752,9 @@ msgid "Ask or suggest"
 msgstr "요청 또는 제안"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Ask to keep them"
-msgstr ""
+msgstr "보관 여부 묻기"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -3674,8 +3767,9 @@ msgid "At a glance"
 msgstr "한눈에 보기"
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "At cutoff"
-msgstr ""
+msgstr "품질 기준 도달"
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -3798,12 +3892,14 @@ msgid "Automation"
 msgstr "자동화"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "AVIF"
-msgstr ""
+msgstr "AVIF"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "AVIF quality"
-msgstr ""
+msgstr "AVIF 품질"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -3999,8 +4095,9 @@ msgid "Behind (missing chapters)"
 msgstr "뒤처짐 (누락된 챕터)"
 
 #: src/components/settings/NotificationPrefsSection.tsx
+#, fuzzy
 msgid "Bell"
-msgstr ""
+msgstr "벨"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -4039,8 +4136,9 @@ msgid "Biggest on disk"
 msgstr "디스크 사용량이 가장 큼"
 
 #: src/components/settings/PushNotificationsSection.tsx
+#, fuzzy
 msgid "Blocked for Maki in your browser settings. Allow notifications there, then come back."
-msgstr ""
+msgstr "브라우저 설정에서 Maki의 알림이 차단되어 있습니다. 거기서 알림을 허용한 뒤 돌아오세요."
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4069,8 +4167,9 @@ msgid "Bookmarks"
 msgstr "책갈피"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#, fuzzy
 msgid "Bookmarks need a connection"
-msgstr ""
+msgstr "북마크는 연결이 필요합니다"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -4093,8 +4192,9 @@ msgid "Boys Love"
 msgstr "보이즈 러브"
 
 #: src/pages/ImportPage.tsx
+#, fuzzy
 msgid "Brings series folders Maki doesn't know yet into the library."
-msgstr ""
+msgstr "Maki가 아직 모르는 시리즈 폴더를 라이브러리로 가져옵니다."
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4200,8 +4300,9 @@ msgid "C:\\Manga or /library"
 msgstr "C:\\Manga 또는 /library"
 
 #: src/pages/settings/SystemCards.tsx
+#, fuzzy
 msgid "Cache progress"
-msgstr ""
+msgstr "캐시 진행 상황"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -4214,8 +4315,9 @@ msgid "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync 
 msgstr "지금은 Kavita에 연결할 수 없습니다. Maki가 계속 재시도하며, Scrobble 동기화가 나중에 따라잡습니다."
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Can't reach Kavita with the saved address and API key."
-msgstr ""
+msgstr "저장된 주소와 API 키로는 Kavita에 연결할 수 없습니다."
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -4223,8 +4325,9 @@ msgid "Can't read this download"
 msgstr "이 다운로드를 읽을 수 없음"
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Can't sign in with the saved details."
-msgstr ""
+msgstr "저장된 정보로는 로그인할 수 없습니다."
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/import/MihonImport.tsx
@@ -4335,8 +4438,9 @@ msgid "Categories"
 msgstr "카테고리"
 
 #: src/components/settings/downloadClientFields.ts
+#, fuzzy
 msgid "Category or label given to torrents Maki adds. Defaults to maki. Deluge lowercases it and allows only letters, digits, dot, dash and underscore."
-msgstr ""
+msgstr "Maki가 추가하는 토렌트에 붙이는 카테고리 또는 라벨입니다. 기본값은 maki입니다. Deluge는 소문자로만 쓰며 문자, 숫자, 점, 대시, 밑줄만 허용합니다."
 
 #: src/components/discover/DiscoverSeedStrip.tsx
 #, fuzzy
@@ -4366,16 +4470,18 @@ msgstr "챕터 {maxChapter}"
 #. placeholder {0}: o.chapter
 #. placeholder {0}: outcome.chapter
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "ch. {0}"
-msgstr ""
+msgstr "챕터 {0}"
 
 #. placeholder {0}: o.chapter
 #. placeholder {0}: outcome.chapter
 #. placeholder {1}: o.volume
 #. placeholder {1}: outcome.volume
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "ch. {0} · vol. {1}"
-msgstr ""
+msgstr "챕터 {0} · 권 {1}"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -4440,8 +4546,9 @@ msgid "Ch. {label}: {detail}"
 msgstr "챕터 {label}: {detail}"
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "Ch. {label}: {stateText}"
-msgstr ""
+msgstr "챕터 {label}: {stateText}"
 
 #: src/components/ChapterMapParts.tsx
 #, fuzzy
@@ -4538,8 +4645,9 @@ msgid "Change"
 msgstr "변경"
 
 #: src/components/SourceMappingsSection.tsx
+#, fuzzy
 msgid "Change chapter languages for {sourceName}"
-msgstr ""
+msgstr "{sourceName}의 챕터 언어 변경"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -4613,8 +4721,9 @@ msgstr "챕터"
 
 #. placeholder {0}: record.chapterId
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Chapter {0}"
-msgstr ""
+msgstr "챕터 {0}"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4751,8 +4860,9 @@ msgid "Chapters {winnerDisplayName} doesn't carry are left alone, as are files i
 msgstr "{winnerDisplayName}에 없는 챕터는 그대로 두며, 디스크에서 가져온 파일도 마찬가지입니다."
 
 #: src/components/QueuePause.tsx
+#, fuzzy
 msgid "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
-msgstr ""
+msgstr "이미 다운로드 중인 챕터는 끝까지 받습니다. 다운로드 클라이언트에 넘어간 토렌트는 계속 받습니다."
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -4786,8 +4896,9 @@ msgid "Chapters read in this series"
 msgstr "이 시리즈에서 읽은 챕터"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Chapters saved on this device, to read without a connection."
-msgstr ""
+msgstr "이 기기에 저장된 챕터입니다. 연결 없이 읽을 수 있습니다."
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -4800,8 +4911,9 @@ msgid "Chapters to fetch each time"
 msgstr "매번 가져올 챕터 수"
 
 #: src/components/CatalogueFilters.tsx
+#, fuzzy
 msgid "Chapters, year, minimum rating"
-msgstr ""
+msgstr "챕터, 연도, 최소 평점"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -4839,8 +4951,9 @@ msgid "Check for updates"
 msgstr "업데이트 확인"
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Check in Settings"
-msgstr ""
+msgstr "설정에서 확인"
 
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -4849,8 +4962,9 @@ msgid "Check now"
 msgstr "지금 확인"
 
 #: src/pages/settings/DownloadCards.tsx
+#, fuzzy
 msgid "Check quiet series less often"
-msgstr ""
+msgstr "조용한 시리즈는 덜 자주 확인"
 
 #: src/api/inbox.ts
 #, fuzzy
@@ -4858,32 +4972,39 @@ msgid "Checked after each nightly catalogue update. Follow someone from their cr
 msgstr "매일 밤 카탈로그가 업데이트될 때마다 확인합니다. 창작자 페이지에서 팔로우할 수 있습니다."
 
 #: src/components/releases/outlookText.ts
+#, fuzzy
 msgid "Checked every 2 hours while chapters keep coming."
-msgstr ""
+msgstr "챕터가 계속 나오는 동안에는 2시간마다 확인합니다."
 
 #: src/components/releases/outlookText.ts
+#, fuzzy
 msgid "Checked every 30 minutes for a few hours after a new chapter."
-msgstr ""
+msgstr "새 챕터가 나온 뒤 몇 시간 동안은 30분마다 확인합니다."
 
 #: src/components/releases/outlookText.ts
+#, fuzzy
 msgid "Checked every 30 minutes."
-msgstr ""
+msgstr "30분마다 확인합니다."
 
 #: src/components/releases/outlookText.ts
+#, fuzzy
 msgid "Checked every 6 hours after two weeks without a chapter."
-msgstr ""
+msgstr "2주 동안 챕터가 없으면 6시간마다 확인합니다."
 
 #: src/components/releases/outlookText.ts
+#, fuzzy
 msgid "Checked every 6 hours until it has some release history."
-msgstr ""
+msgstr "릴리스 기록이 쌓일 때까지 6시간마다 확인합니다."
 
 #: src/components/releases/outlookText.ts
+#, fuzzy
 msgid "Checked once a day while it is quiet."
-msgstr ""
+msgstr "조용한 동안에는 하루에 한 번 확인합니다."
 
 #: src/components/releases/outlookText.ts
+#, fuzzy
 msgid "Checked right after the announced time."
-msgstr ""
+msgstr "발표된 시간 직후에 확인합니다."
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -4907,12 +5028,14 @@ msgid "Chinese"
 msgstr "중국어"
 
 #: src/components/import/MihonImport.tsx
+#, fuzzy
 msgid "Choose a .tachibk file"
-msgstr ""
+msgstr ".tachibk 파일 선택"
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "Choose a match"
-msgstr ""
+msgstr "일치 항목 선택"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -4920,8 +5043,9 @@ msgid "Choose a root folder"
 msgstr "루트 폴더 선택"
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "Choose Register / Login. The username is your OPDS token, the part of the feed URL after <0>{feedPath}</0>. Type anything as the password; Maki doesn't use it."
-msgstr ""
+msgstr "등록 / 로그인을 고르세요. 사용자 이름은 OPDS 토큰이며, 피드 URL에서 <0>{feedPath}</0> 뒤에 오는 부분입니다. 비밀번호에는 아무거나 입력하세요. Maki는 이를 사용하지 않습니다."
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5056,8 +5180,9 @@ msgid "click one to keep it where it is"
 msgstr "그대로 둘 챕터를 클릭하세요"
 
 #: src/components/settings/downloadClientFields.ts
+#, fuzzy
 msgid "Client"
-msgstr ""
+msgstr "클라이언트"
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -5144,8 +5269,9 @@ msgid "Collapse {lineLabel}"
 msgstr "{lineLabel} 접기"
 
 #: src/App.tsx
+#, fuzzy
 msgid "Collapse sidebar"
-msgstr ""
+msgstr "사이드바 접기"
 
 #: src/nav.ts
 #, fuzzy
@@ -5153,8 +5279,9 @@ msgid "Collection"
 msgstr "컬렉션"
 
 #: src/components/TagManagerModal.tsx
+#, fuzzy
 msgid "Colour {c}"
-msgstr ""
+msgstr "색상 {c}"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -5315,8 +5442,9 @@ msgid "Connect {label} on the Scrobble page to import from it."
 msgstr "Scrobble 페이지에서 {label}을(를) 연결하면 가져올 수 있습니다."
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Connect a tracker first"
-msgstr ""
+msgstr "먼저 트래커를 연결하세요"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -5339,8 +5467,9 @@ msgid "Connect one on the Scrobble page."
 msgstr "Scrobble 페이지에서 연결하세요."
 
 #: src/components/settings/UsersSection.tsx
+#, fuzzy
 msgid "Connect their own AniList, MAL, Kitsu or MangaUpdates account"
-msgstr ""
+msgstr "각자 AniList, MAL, Kitsu 또는 MangaUpdates 계정을 연결합니다"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -5449,8 +5578,9 @@ msgid "Continue reading {nextChapter}"
 msgstr "{nextChapter}을(를) 계속 읽기"
 
 #: src/components/import/MihonImport.tsx
+#, fuzzy
 msgid "Continue to review with what resolved"
-msgstr ""
+msgstr "해결된 항목으로 검토 계속"
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -5480,12 +5610,14 @@ msgid "Continuous vertical (webtoon)"
 msgstr "연속 세로 (웹툰)"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#, fuzzy
 msgid "Continuous, because this chapter's pages are very tall."
-msgstr ""
+msgstr "이 챕터의 페이지가 매우 길어서 연속 보기를 사용합니다."
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "Convert library"
-msgstr ""
+msgstr "라이브러리 변환"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -5501,12 +5633,14 @@ msgid "Copy"
 msgstr "복사"
 
 #: src/components/ui/MonoValue.tsx
+#, fuzzy
 msgid "Copy {whole}"
-msgstr ""
+msgstr "{whole} 복사"
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "Copy API key"
-msgstr ""
+msgstr "API 키 복사"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -5519,12 +5653,14 @@ msgid "Copy feed URL"
 msgstr "피드 URL 복사"
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "Copy server address"
-msgstr ""
+msgstr "서버 주소 복사"
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "Copy sync server address"
-msgstr ""
+msgstr "동기화 서버 주소 복사"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -5604,8 +5740,9 @@ msgid "Could not load anime signals: {reason}"
 msgstr "애니메이션 신호를 불러오지 못했습니다: {reason}"
 
 #: src/pages/settings/DownloadCards.tsx
+#, fuzzy
 msgid "Could not load indexers from {backendName}: {indexersErrorMessage}"
-msgstr ""
+msgstr "{backendName}에서 인덱서를 불러올 수 없습니다: {indexersErrorMessage}"
 
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
@@ -5823,8 +5960,9 @@ msgid "counts toward your taste"
 msgstr "취향에 반영됨"
 
 #: src/theme-context.tsx
+#, fuzzy
 msgid "Cover tint"
-msgstr ""
+msgstr "커버 틴트"
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -5922,8 +6060,9 @@ msgid "Creators you return to"
 msgstr "다시 찾는 작가"
 
 #: src/components/CatalogueFilters.tsx
+#, fuzzy
 msgid "Creators, type, status, content rating"
-msgstr ""
+msgstr "작가, 유형, 연재 상태, 콘텐츠 등급"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -5932,12 +6071,14 @@ msgstr "작가 후기 페이지와 다음 챕터의 첫 페이지는 서로 비�
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#, fuzzy
 msgid "Crop borders"
-msgstr ""
+msgstr "여백 자르기"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Crop borders on or off"
-msgstr ""
+msgstr "여백 자르기 켜기 또는 끄기"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -6063,8 +6204,9 @@ msgid "Dash (-)"
 msgstr "대시 (-)"
 
 #: src/components/SetupWizard.tsx
+#, fuzzy
 msgid "Database ready"
-msgstr ""
+msgstr "데이터베이스 준비됨"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -6072,8 +6214,9 @@ msgid "Day by day"
 msgstr "날짜별"
 
 #: src/components/home/ReadingWeeks.tsx
+#, fuzzy
 msgid "day streak"
-msgstr ""
+msgstr "일 연속 기록"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -6091,12 +6234,14 @@ msgid "Days left"
 msgstr "남은 일수"
 
 #: src/components/home/ReadingWeeks.tsx
+#, fuzzy
 msgid "Days read"
-msgstr ""
+msgstr "읽은 날"
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "Decide later"
-msgstr ""
+msgstr "나중에 결정"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -6347,8 +6492,9 @@ msgid "Deleting files needs the Delete series permission"
 msgstr "파일을 삭제하려면 시리즈 삭제 권한이 필요합니다"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "Deletion"
-msgstr ""
+msgstr "삭제"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -6500,8 +6646,9 @@ msgid "Discover"
 msgstr "탐색"
 
 #: src/pages/stats/sections/LibrarySection.tsx
+#, fuzzy
 msgid "Disk size"
-msgstr ""
+msgstr "디스크 크기"
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -6644,13 +6791,15 @@ msgstr "챕터 다운로드"
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "Download client"
-msgstr ""
+msgstr "다운로드 클라이언트"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping"
-msgstr ""
+msgstr "다운로드 클라이언트, 토렌트 클라이언트, qBittorrent, Transmission, Deluge, 라벨, 카테고리, 경로 매핑"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -6658,12 +6807,14 @@ msgid "Download failed"
 msgstr "다운로드 실패"
 
 #: src/components/CatalogueBrowser.tsx
+#, fuzzy
 msgid "Download failed: {detail}"
-msgstr ""
+msgstr "다운로드 실패: {detail}"
 
 #: src/components/CatalogueBrowser.tsx
+#, fuzzy
 msgid "Download index"
-msgstr ""
+msgstr "검색 인덱스 다운로드"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6689,8 +6840,9 @@ msgstr "Maki에서 다운로드 경로에 접근할 수 없습니다: {path}"
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/ActivityPage.tsx
+#, fuzzy
 msgid "Download progress"
-msgstr ""
+msgstr "다운로드 진행 상황"
 
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
@@ -6798,8 +6950,9 @@ msgid "Downloads try the best-scoring source first. Priority only breaks ties."
 msgstr "다운로드는 점수가 가장 높은 소스를 먼저 시도합니다. 우선순위는 동점일 때만 적용됩니다."
 
 #: src/components/SetupWizard.tsx
+#, fuzzy
 msgid "Downloads what the indexer finds. Finished torrents import into the library on their own. Fill the path mapping only if the client sees paths Maki can't, as in Docker."
-msgstr ""
+msgstr "인덱서가 찾은 릴리스를 다운로드합니다. 완료된 토렌트는 자동으로 라이브러리에 가져옵니다. 클라이언트가 Maki가 접근할 수 없는 경로를 보는 경우에만 경로 매핑을 입력하세요. Docker에서 실행할 때가 여기에 해당합니다."
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -6833,16 +6986,19 @@ msgid "Each account has its own login, permissions, content rating and reading h
 msgstr "각 계정에는 별도의 로그인, 권한, 콘텐츠 등급 및 읽기 기록이 있습니다."
 
 #: src/components/releases/UpcomingView.tsx
+#, fuzzy
 msgid "Each bar spans the days a chapter is likely, worked out from the series' own release history, so it is a span and never a promise. The percentage is how often its recent chapters came out inside the span drawn for them. A diamond marks a day the source itself announced."
-msgstr ""
+msgstr "각 막대는 시리즈 자체의 릴리스 기록으로 계산한, 챕터가 나올 가능성이 높은 기간을 나타냅니다. 이는 기간이며 약속이 아닙니다. 백분율은 최근 챕터들이 그 챕터에 그려진 기간 안에서 나온 빈도입니다. 마름모는 소스가 직접 발표한 날짜를 뜻합니다."
 
 #: src/components/SourceMappingsSection.tsx
+#, fuzzy
 msgid "Each language adds its own chapter rows and files."
-msgstr ""
+msgstr "언어마다 별도의 챕터 행과 파일을 추가합니다."
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "Each Mihon category becomes a tag on the series. Manga in Mihon's Default category get no tag."
-msgstr ""
+msgstr "Mihon의 각 카테고리는 시리즈의 태그가 됩니다. Mihon의 기본 카테고리에 있는 만화에는 태그가 붙지 않습니다."
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -6856,8 +7012,9 @@ msgid "Earned"
 msgstr "획득"
 
 #: src/pages/stats/AchievementGrid.tsx
+#, fuzzy
 msgid "Earned by the library itself, not by your reading."
-msgstr ""
+msgstr "읽기가 아니라 라이브러리 자체로 얻는 업적입니다."
 
 #: src/pages/stats/AchievementGrid.tsx
 #, fuzzy
@@ -6972,8 +7129,9 @@ msgid "Empty the recycle bin?"
 msgstr "휴지통을 비울까요?"
 
 #: src/pages/settings/SystemCards.tsx
+#, fuzzy
 msgid "Empty uses the server's timezone."
-msgstr ""
+msgstr "비워 두면 서버의 시간대를 사용합니다."
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -7049,8 +7207,9 @@ msgid "Enter one of your recovery codes"
 msgstr "복구 코드 중 하나를 입력하세요"
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "Enter the API key in the app, or any username with the API key as the password."
-msgstr ""
+msgstr "앱에 API 키를 입력하거나, 아무 사용자 이름이나 쓰고 비밀번호에 API 키를 입력하세요."
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -7096,8 +7255,9 @@ msgid "Estimated"
 msgstr "추정"
 
 #: src/components/settings/NotificationPrefsSection.tsx
+#, fuzzy
 msgid "Event"
-msgstr ""
+msgstr "이벤트"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -7140,8 +7300,9 @@ msgid "Every file already meets the cutoff"
 msgstr "모든 파일이 이미 컷오프를 충족합니다"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "Every file has been checked."
-msgstr ""
+msgstr "모든 파일을 확인했습니다."
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -7170,8 +7331,9 @@ msgid "Every notification goes, read and unread. This can't be undone."
 msgstr "읽음 여부와 관계없이 모든 알림이 삭제됩니다. 되돌릴 수 없습니다."
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "Every reader Maki works with opens it: browsers, Kavita, Komga, KOReader, Mihon and Panels. Saves most on PNG pages and on JPEG pages a source saved at high quality."
-msgstr ""
+msgstr "Maki와 함께 쓰는 모든 리더가 이 형식을 열 수 있습니다: 브라우저, Kavita, Komga, KOReader, Mihon, Panels. PNG 페이지와 소스가 고품질로 저장한 JPEG 페이지에서 용량을 가장 많이 줄입니다."
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -7204,8 +7366,9 @@ msgid "Every source that isn't linked yet is searched again for each series, whi
 msgstr "아직 연결되지 않은 모든 소스는 각 시리즈마다 다시 검색됩니다. 시리즈를 추가한 뒤 소스가 해당 제목을 가져온 경우 이 작업을 수행할 가치가 있습니다."
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Every unread chapter is already on this device"
-msgstr ""
+msgstr "읽지 않은 챕터가 모두 이 기기에 이미 있습니다"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -7240,8 +7403,9 @@ msgid "Everything else"
 msgstr "그 외 모든 항목"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "Everything is passing"
-msgstr ""
+msgstr "모든 항목이 통과했습니다"
 
 #: src/components/discover/FollowingRail.tsx
 #, fuzzy
@@ -7254,16 +7418,19 @@ msgid "Everything you own"
 msgstr "내가 소유한 모든 항목"
 
 #: src/pages/stats/sections/TasteSection.tsx
+#, fuzzy
 msgid "Everything you read came out in the <0>{oneEra}</0>."
-msgstr ""
+msgstr "읽은 작품은 모두 <0>{oneEra}</0> 시대에 나왔습니다."
 
 #: src/pages/stats/sections/TasteSection.tsx
+#, fuzzy
 msgid "Everything you read is in the <0>{oneDemographic}</0> demographic."
-msgstr ""
+msgstr "읽은 작품은 모두 <0>{oneDemographic}</0> 대상 독자층입니다."
 
 #: src/pages/stats/sections/TasteSection.tsx
+#, fuzzy
 msgid "Everything you read was <0>{oneType}</0>."
-msgstr ""
+msgstr "읽은 작품은 모두 <0>{oneType}</0> 유형입니다."
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -7321,8 +7488,9 @@ msgid "Existing folders on import"
 msgstr "가져올 때 기존 폴더 처리"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "Existing library"
-msgstr ""
+msgstr "기존 라이브러리"
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -7360,8 +7528,9 @@ msgid "Extra files Maki writes next to the chapters so Kavita and Komga name and
 msgstr "Kavita와 Komga가 Maki와 같은 방식으로 이름을 붙이고 묶을 수 있도록, Maki가 챕터 옆에 쓰는 추가 파일입니다."
 
 #: src/pages/settings/PreferenceCards.tsx
+#, fuzzy
 msgid "Fade from one page to the next instead of switching instantly."
-msgstr ""
+msgstr "즉시 전환하지 않고 한 페이지에서 다음 페이지로 페이드합니다."
 
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
@@ -7450,8 +7619,9 @@ msgid "Falling means you moved."
 msgstr "떨어진다는 것은 움직였다는 뜻입니다."
 
 #: src/components/ui/DiscoverRail.tsx
+#, fuzzy
 msgid "Fans of"
-msgstr ""
+msgstr "팬이 좋아하는"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -7459,8 +7629,9 @@ msgid "Fantasy"
 msgstr "판타지"
 
 #: src/pages/settings/PreferenceCards.tsx
+#, fuzzy
 msgid "Faster animations"
-msgstr ""
+msgstr "빠른 애니메이션"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -7474,8 +7645,9 @@ msgstr "피드 URL 복사됨"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress, komga, tachimanga, api key"
-msgstr ""
+msgstr "피드 URL, 카탈로그, catalogue, catalog, 패널, panels, chunky, koreader, tachiyomi, mihon, 스트리밍, streaming, 토큰, token, 진행 상황 추적, track progress, komga, tachimanga, API 키, api key"
 
 #: src/components/LuckyButton.tsx
 #, fuzzy
@@ -7483,8 +7655,9 @@ msgid "Feeling lucky"
 msgstr "운에 맡기기"
 
 #: src/components/ui/DiscoverRail.tsx
+#, fuzzy
 msgid "Feels like"
-msgstr ""
+msgstr "비슷한 느낌"
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -7533,8 +7706,9 @@ msgstr "페이지 가져오는 중…"
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
+#, fuzzy
 msgid "Fewest chapters"
-msgstr ""
+msgstr "챕터 적은 순"
 
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/settings/LibraryCards.tsx
@@ -7591,8 +7765,9 @@ msgid "Files"
 msgstr "파일"
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "Files in this download"
-msgstr ""
+msgstr "이 다운로드의 파일"
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
@@ -7626,8 +7801,9 @@ msgid "Filter by finding"
 msgstr "발견 항목으로 필터"
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "Filter by match status"
-msgstr ""
+msgstr "일치 상태로 필터링"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7892,8 +8068,9 @@ msgid "Folder path"
 msgstr "폴더 경로"
 
 #: src/pages/ImportPage.tsx
+#, fuzzy
 msgid "Folders"
-msgstr ""
+msgstr "폴더"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -7921,8 +8098,9 @@ msgid "Following"
 msgstr "팔로우 중"
 
 #: src/pages/stats/sections/LibrarySection.tsx
+#, fuzzy
 msgid "Follows {windowLabel}. The rest of this tab covers the whole library."
-msgstr ""
+msgstr "{windowLabel} 기간을 따릅니다. 이 탭의 나머지는 라이브러리 전체를 다룹니다."
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -7935,12 +8113,14 @@ msgid "For 1 hour"
 msgstr "1시간 동안"
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "For apps that only connect to a Komga server, like the Mihon Komga extension and Tachimanga. Reading progress syncs both ways; in Mihon, turn on the Komga tracker."
-msgstr ""
+msgstr "Mihon의 Komga 확장 기능, Tachimanga처럼 Komga 서버에만 연결하는 앱용입니다. 읽기 진행 상황은 양방향으로 동기화됩니다. Mihon에서는 Komga 트래커를 켜세요."
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "For each series you are reading, saves the next unread chapters while online and removes them once read. Chapters you save yourself stay until you remove them."
-msgstr ""
+msgstr "읽고 있는 각 시리즈에 대해 온라인일 때 다음 읽지 않은 챕터를 저장하고, 읽으면 삭제합니다. 직접 저장한 챕터는 직접 삭제할 때까지 남습니다."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -7953,8 +8133,9 @@ msgid "For readers like Komga and Kavita that pick up a poster from the folder. 
 msgstr "폴더에서 포스터를 가져오는 Komga, Kavita 같은 리더 앱용입니다. 켜면 바로 실행됩니다."
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "Format"
-msgstr ""
+msgstr "형식"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -7999,8 +8180,9 @@ msgid "From"
 msgstr "출처"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "From {origins}"
-msgstr ""
+msgstr "{origins}에서"
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -8091,8 +8273,9 @@ msgid "Fully read owned"
 msgstr "소유한 작품을 모두 읽음"
 
 #: src/components/releases/UpcomingView.tsx
+#, fuzzy
 msgid "Further out"
-msgstr ""
+msgstr "더 먼 시점"
 
 #: src/api/queue.ts
 #, fuzzy
@@ -8139,8 +8322,9 @@ msgid "Gets past Cloudflare for sources like MangaFire. Without it those sources
 msgstr "MangaFire 같은 소스의 Cloudflare 확인을 통과합니다. 이 기능이 없으면 해당 소스는 건너뜁니다."
 
 #: src/pages/MetadataGatePage.tsx
+#, fuzzy
 msgid "Getting the metadata database ready"
-msgstr ""
+msgstr "메타데이터 데이터베이스를 준비하는 중"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -8169,8 +8353,9 @@ msgid "Give up on a chapter after (minutes)"
 msgstr "챕터 포기 시간(분)"
 
 #: src/pages/ActivityPage.tsx
+#, fuzzy
 msgid "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
-msgstr ""
+msgstr "시리즈에 품질 프로필을 지정하면, Maki가 기준에 못 미치는 파일을 교체하고 모든 교체 내역을 여기에 표시합니다."
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -8276,8 +8461,9 @@ msgid "Growth"
 msgstr "성장"
 
 #: src/pages/stats/sections/LibrarySection.tsx
+#, fuzzy
 msgid "Growth, composition and sources fill in once you add a series."
-msgstr ""
+msgstr "시리즈를 추가하면 성장, 구성, 소스 정보가 채워집니다."
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -8358,8 +8544,9 @@ msgstr "상태 설정"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "health, scan, verify, reconciliation, scan hour, timezone, low disk, disk space, threshold, stale backup"
-msgstr ""
+msgstr "상태, 스캔, verify, reconciliation, 스캔 시각, 시간대, 디스크 부족, 디스크 공간, 임계값, 오래된 백업"
 
 #: src/components/NotificationsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -8403,8 +8590,9 @@ msgid "Here is what Maki starts with. You can come back to this guide from the t
 msgstr "Maki의 기본 설정입니다. 나중에 설정 상단에서 이 가이드로 돌아올 수 있습니다."
 
 #: src/components/layout/PageLayoutEditor.tsx
+#, fuzzy
 msgid "Hero"
-msgstr ""
+msgstr "히어로"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
@@ -8461,8 +8649,9 @@ msgid "Hide affected series"
 msgstr "영향을 받는 시리즈 숨기기"
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Hide details"
-msgstr ""
+msgstr "세부 정보 숨기기"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -8485,8 +8674,9 @@ msgid "Hide source text"
 msgstr "소스 텍스트 숨기기"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "Hide the list"
-msgstr ""
+msgstr "목록 숨기기"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -8499,12 +8689,14 @@ msgid "Hide this title"
 msgstr "이 작품 숨기기"
 
 #: src/components/settings/UsersSection.tsx
+#, fuzzy
 msgid "Hides Requests, the reader picker and leaderboard on Stats, and other controls for sharing the instance. Adding a second user switches to multi-user mode."
-msgstr ""
+msgstr "요청, 리더 선택기, 통계의 리더보드와 인스턴스 공유 관련 기타 컨트롤을 숨깁니다. 두 번째 사용자를 추가하면 다중 사용자 모드로 전환됩니다."
 
 #: src/components/releases/outlookText.ts
+#, fuzzy
 msgid "High confidence"
-msgstr ""
+msgstr "높은 신뢰도"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -8589,8 +8781,9 @@ msgid "Hover a cell for its number."
 msgstr "숫자를 보려면 셀 위에 마우스를 올리세요."
 
 #: src/pages/settings/DownloadCards.tsx
+#, fuzzy
 msgid "How chapters from scraper sources move through the queue. Torrents are handled by the download client below."
-msgstr ""
+msgstr "스크레이퍼 소스의 챕터가 대기열을 거치는 방식입니다. 토렌트는 아래의 다운로드 클라이언트가 처리합니다."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8663,8 +8856,9 @@ msgid "How the built-in reader opens a series. A profile applies automatically t
 msgstr "내장 리더가 시리즈를 여는 방식입니다. 프로필은 적용 대상 시리즈 유형에 자동으로 적용되며, 나머지는 기본값을 씁니다. 시리즈에 프로필을 고정하거나 리더 안에서 설정을 바꿀 수도 있습니다."
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "How to import"
-msgstr ""
+msgstr "가져오는 방법"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8786,8 +8980,9 @@ msgstr "가져오기"
 
 #. placeholder {0}: file.fileName
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "Import {0}"
-msgstr ""
+msgstr "{0} 가져오기"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -8795,8 +8990,9 @@ msgid "Import {folderName}"
 msgstr "{folderName} 가져오기"
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "Import {title}"
-msgstr ""
+msgstr "{title} 가져오기"
 
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -8805,8 +9001,9 @@ msgid "Import a folder"
 msgstr "폴더 가져오기"
 
 #: src/components/import/MihonSummary.tsx
+#, fuzzy
 msgid "Import another backup"
-msgstr ""
+msgstr "다른 백업 가져오기"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8824,8 +9021,9 @@ msgid "Import entries with status"
 msgstr "상태가 있는 항목 가져오기"
 
 #: src/components/import/MihonSummary.tsx
+#, fuzzy
 msgid "Import finished"
-msgstr ""
+msgstr "가져오기 완료"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -8844,8 +9042,9 @@ msgstr "목록 가져오기 완료"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "import list, anilist, mal, kitsu, mangaupdates, mu, tracker, auto add"
-msgstr ""
+msgstr "가져오기 목록, anilist, mal, kitsu, mangaupdates, mu, 트래커, tracker, 자동 추가, auto add"
 
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/registry.ts
@@ -8954,8 +9153,9 @@ msgid "Importing"
 msgstr "가져오는 중"
 
 #: src/pages/ImportPage.tsx
+#, fuzzy
 msgid "Importing…"
-msgstr ""
+msgstr "가져오는 중…"
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -8971,8 +9171,9 @@ msgid "In library"
 msgstr "라이브러리에 있음"
 
 #: src/components/import/MihonImport.tsx
+#, fuzzy
 msgid "In Mihon, open More > Settings > Data and storage > Create backup, then choose the .tachibk file it makes. Only manga in your library are imported."
-msgstr ""
+msgstr "Mihon에서 더보기 > 설정 > 데이터 및 저장공간 > 백업 만들기를 연 뒤, 만들어진 .tachibk 파일을 고르세요. 라이브러리에 있는 만화만 가져옵니다."
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -9100,13 +9301,15 @@ msgid "Indexer"
 msgstr "인덱서"
 
 #: src/api/upgrades.ts
+#, fuzzy
 msgid "Indexer search failed"
-msgstr ""
+msgstr "인덱서 검색 실패"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "indexer, prowlarr, jackett, torrent search, api key, releases, indexers, torznab, categories"
-msgstr ""
+msgstr "인덱서, prowlarr, jackett, 토렌트 검색, API 키, 릴리스, 인덱서, torznab, 카테고리"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -9157,8 +9360,9 @@ msgid "Invite people"
 msgstr "사용자 초대"
 
 #: src/components/settings/PushNotificationsSection.tsx
+#, fuzzy
 msgid "iPhone and iPad only deliver push notifications to apps added to the home screen. Add Maki to your home screen, open it from there, and come back to this card."
-msgstr ""
+msgstr "iPhone과 iPad는 홈 화면에 추가한 앱에만 푸시 알림을 보냅니다. Maki를 홈 화면에 추가하고 거기서 연 뒤 이 카드로 돌아오세요."
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -9218,8 +9422,9 @@ msgid "Josei"
 msgstr "여성향"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "JPEG pages become the chosen format and PNG pages become lossless WebP, so line art keeps every pixel. WebP and AVIF pages, animations, pages under 16 KB and pages over 16,383 pixels on a side stay as they are, and so does any page or file that would not come out at least 5% smaller. Files hardlinked to a torrent client's copy are skipped, since converting them would use more disk, not less. Upgrades and quality scores still see the size and format each chapter was downloaded in."
-msgstr ""
+msgstr "JPEG 페이지는 선택한 형식으로 바뀌고, PNG 페이지는 무손실 WebP로 바뀌어 선화의 모든 픽셀이 유지됩니다. WebP와 AVIF 페이지, 애니메이션, 16KB 미만 페이지, 한 변이 16,383픽셀을 넘는 페이지는 그대로 둡니다. 5% 이상 작아지지 않는 페이지나 파일도 그대로 둡니다. 토렌트 클라이언트 사본과 하드링크된 파일은 변환하면 디스크 사용량이 늘어나므로 건너뜁니다. 업그레이드와 품질 점수는 여전히 각 챕터가 다운로드된 크기와 형식을 기준으로 판단합니다."
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -9239,8 +9444,9 @@ msgid "Jump back in"
 msgstr "다시 읽기 시작"
 
 #: src/components/settings/SettingsIndex.tsx
+#, fuzzy
 msgid "Jump to a section"
-msgstr ""
+msgstr "섹션으로 이동"
 
 #: src/components/CommandPalette.tsx
 #, fuzzy
@@ -9315,8 +9521,9 @@ msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "수동 우선순위를 유지하되, 측정된 순서에 맞게 번호를 다시 매깁니다."
 
 #: src/App.tsx
+#, fuzzy
 msgid "Keep sidebar open"
-msgstr ""
+msgstr "사이드바 열어 두기"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -9354,12 +9561,14 @@ msgid "Keep the screen awake while reading"
 msgstr "읽는 동안 화면 켜짐 유지"
 
 #: src/components/import/MihonImport.tsx
+#, fuzzy
 msgid "Keep this page open until it finishes. Leaving it stops the import; run it again to carry on."
-msgstr ""
+msgstr "끝날 때까지 이 페이지를 열어 두세요. 페이지를 떠나면 가져오기가 멈추며, 다시 실행하면 이어서 진행합니다."
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Keep upcoming chapters"
-msgstr ""
+msgstr "다음 챕터 유지"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -9377,8 +9586,9 @@ msgid "Keeps this series out of tracker pushes, and out of stats entirely on Ful
 msgstr "이 시리즈를 트래커 전송에서 제외하며, 전체에서는 통계에서도 완전히 제외합니다."
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "kept"
-msgstr ""
+msgstr "유지됨"
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -9417,26 +9627,31 @@ msgid "Kinds"
 msgstr "종류"
 
 #: src/components/import/mihonRows.ts
+#, fuzzy
 msgid "Kitsu"
-msgstr ""
+msgstr "Kitsu"
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "Komga-compatible API"
-msgstr ""
+msgstr "Komga 호환 API"
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "KOReader can send back how far you read in chapters it downloaded from Maki, even when you read them offline, and pick up where you stopped here. Those pages count toward your library, Rewind and trackers."
-msgstr ""
+msgstr "KOReader는 Maki에서 받은 챕터를 오프라인에서 읽은 경우에도 어디까지 읽었는지 되돌려 보내고, 여기서 멈춘 자리부터 이어 읽을 수 있게 합니다. 이 페이지는 라이브러리, Rewind, 트래커에 반영됩니다."
 
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "KOReader progress sync"
-msgstr ""
+msgstr "KOReader 진행 상황 동기화"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "koreader, kosync, progress sync, sync server, offline, ereader, kobo, kindle, read progress"
-msgstr ""
+msgstr "koreader, kosync, 진행 상황 동기화, progress sync, 동기화 서버, sync server, 오프라인, offline, ereader, kobo, kindle, 읽기 진행 상황, read progress"
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -9445,8 +9660,9 @@ msgid "Korean"
 msgstr "한국어"
 
 #: src/components/settings/downloadClientFields.ts
+#, fuzzy
 msgid "Label"
-msgstr ""
+msgstr "라벨"
 
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SetupWizard.tsx
@@ -9534,12 +9750,14 @@ msgid "last {lastSync} · next {nextSync}"
 msgstr "마지막 {lastSync} · 다음 {nextSync}"
 
 #: src/components/home/ReadingWeeks.tsx
+#, fuzzy
 msgid "Last 5 weeks"
-msgstr ""
+msgstr "최근 5주"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
+#, fuzzy
 msgid "Last chapter {last}."
-msgstr ""
+msgstr "마지막 챕터 {last}."
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -9593,12 +9811,14 @@ msgid "Last partial scan: {partialScanError}"
 msgstr "마지막 부분 스캔: {partialScanError}"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "Last pass, finished {finished}:"
-msgstr ""
+msgstr "지난 작업, 완료 {finished}:"
 
 #: src/components/home/ContinueHero.tsx
+#, fuzzy
 msgid "Last read {lastRead}"
-msgstr ""
+msgstr "마지막 읽기 {lastRead}"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -9685,8 +9905,9 @@ msgid "Layout saved"
 msgstr "레이아웃 저장됨"
 
 #: src/components/layout/SectionProperties.tsx
+#, fuzzy
 msgid "Lead with a hero"
-msgstr ""
+msgstr "히어로로 시작"
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -9765,8 +9986,9 @@ msgid "Left to right"
 msgstr "왼쪽에서 오른쪽"
 
 #: src/components/CatalogueFilters.tsx
+#, fuzzy
 msgid "Length, year and rating"
-msgstr ""
+msgstr "길이, 연도, 평점"
 
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
@@ -9845,8 +10067,9 @@ msgstr "라이브러리 폴더"
 
 #: src/pages/settings/registry.ts
 #: src/pages/settings/SystemCards.tsx
+#, fuzzy
 msgid "Library health"
-msgstr ""
+msgstr "라이브러리 상태"
 
 #: src/api/inbox.ts
 #, fuzzy
@@ -9871,12 +10094,14 @@ msgstr "밝은"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
+#, fuzzy
 msgid "Likely {range}"
-msgstr ""
+msgstr "예상 {range}"
 
 #: src/components/releases/UpcomingView.tsx
+#, fuzzy
 msgid "Likely {range}. {confidence}: {hits} of the last {checked} came out inside their window."
-msgstr ""
+msgstr "예상 {range}. {confidence}: 최근 {checked}개 중 {hits}개가 예상 기간 안에서 나왔습니다."
 
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
@@ -10042,8 +10267,9 @@ msgid "Loading chapters…"
 msgstr "챕터 불러오는 중…"
 
 #: src/components/CatalogueBrowser.tsx
+#, fuzzy
 msgid "loading search by meaning, title matches for now"
-msgstr ""
+msgstr "의미 검색을 불러오는 중, 지금은 제목 일치만 사용"
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
@@ -10052,8 +10278,9 @@ msgid "Loading…"
 msgstr "로드 중…"
 
 #: src/components/SetupWizard.tsx
+#, fuzzy
 msgid "Local MangaBaka database"
-msgstr ""
+msgstr "로컬 MangaBaka 데이터베이스"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10078,8 +10305,9 @@ msgstr "계정 잠금, 실패 횟수, 세션 수명"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "login page, background, covers, mosaic, wallpaper"
-msgstr ""
+msgstr "로그인 페이지, 배경, 표지, 커버, 모자이크, 벽지, login page, background, covers, mosaic, wallpaper"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -10102,8 +10330,9 @@ msgid "Looking up chapters…"
 msgstr "챕터 조회 중…"
 
 #: src/pages/settings/DownloadCards.tsx
+#, fuzzy
 msgid "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs an indexer and a download client, and runs an hour after the daily scan."
-msgstr ""
+msgstr "프로필이 권 단위를 목표로 하는 시리즈에 대해, 단일 챕터 파일을 대체할 수 있는 토렌트 권 묶음을 찾습니다. 인덱서와 다운로드 클라이언트가 필요하며, 매일 스캔한 뒤 한 시간 후에 실행됩니다."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10116,8 +10345,9 @@ msgid "loose page images"
 msgstr "낱장 페이지 이미지"
 
 #: src/components/releases/outlookText.ts
+#, fuzzy
 msgid "Low confidence"
-msgstr ""
+msgstr "낮은 신뢰도"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -10189,8 +10419,9 @@ msgid "Main only, no specials"
 msgstr "Main만, 스페셜 없음"
 
 #: src/components/ui/DiscoverRail.tsx
+#, fuzzy
 msgid "Main story of"
-msgstr ""
+msgstr "본편"
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -10233,12 +10464,14 @@ msgid "Maki asks Kavita to scan a series after its files change, then pushes its
 msgstr "Maki는 파일이 바뀌면 Kavita에 시리즈 스캔을 요청한 뒤 포스터, 연결, 상태를 보냅니다. Kavita에서 설정한 표지는 유지됩니다. API 키는 Kavita의 사용자 설정, 3rd Party Clients에 있습니다."
 
 #: src/auth/OfflineStartPage.tsx
+#, fuzzy
 msgid "Maki can't reach the server, and nothing is saved on this device yet. Once the connection is back, sign in and save chapters for offline reading."
-msgstr ""
+msgstr "Maki가 서버에 연결할 수 없고, 이 기기에는 아직 저장된 항목이 없습니다. 연결이 돌아오면 로그인한 뒤 오프라인 읽기용 챕터를 저장하세요."
 
 #: src/components/home/OfflineHome.tsx
+#, fuzzy
 msgid "Maki can't reach the server. Home comes back as soon as it does."
-msgstr ""
+msgstr "Maki가 서버에 연결할 수 없습니다. 연결되면 홈이 바로 돌아옵니다."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10256,12 +10489,14 @@ msgid "Maki is restarting to apply it. Reload in a moment."
 msgstr "Maki를 적용하기 위해 다시 시작하는 중입니다. 잠시 후 다시 로드하세요."
 
 #: src/pwa/offlineChapters.ts
+#, fuzzy
 msgid "Maki is using {used} of {quota} here. Remove some saved chapters and try again."
-msgstr ""
+msgstr "이 기기에서 Maki가 {used}/{quota}를 사용 중입니다. 저장된 챕터 일부를 지우고 다시 시도하세요."
 
 #: src/pages/MetadataGatePage.tsx
+#, fuzzy
 msgid "Maki keeps a local copy of the MangaBaka database for search, adding series and Discover. It is about a 350 MB download and 3.5 GB on disk, and Maki opens as soon as it is installed."
-msgstr ""
+msgstr "Maki는 검색, 시리즈 추가, 탐색을 위해 MangaBaka 데이터베이스의 로컬 사본을 보관합니다. 다운로드는 약 350MB이고 디스크에서는 3.5GB를 차지합니다. 설치가 끝나면 Maki가 바로 열립니다."
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -10269,8 +10504,9 @@ msgid "Maki speaks your language"
 msgstr "Maki가 이제 당신의 언어를 지원합니다"
 
 #: src/components/QueuePause.tsx
+#, fuzzy
 msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to the download client keep downloading."
-msgstr ""
+msgstr "Maki가 새 다운로드를 시작하지 않습니다. 이미 받는 중인 챕터는 끝나고, 대기열에서 아무것도 지워지지 않습니다. 다운로드 클라이언트에 넘어간 토렌트는 계속 받습니다."
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -10332,8 +10568,9 @@ msgid "MangaBaka aggregate score"
 msgstr "MangaBaka 통합 점수"
 
 #: src/components/import/mihonRows.ts
+#, fuzzy
 msgid "MangaBaka id"
-msgstr ""
+msgstr "MangaBaka ID"
 
 #: src/components/import/ImportMatchFinder.tsx
 #, fuzzy
@@ -10405,8 +10642,9 @@ msgid "Mark chapters read in Kavita too"
 msgstr "Kavita에서도 챕터를 읽음으로 표시"
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "Mark chapters read in Mihon as read"
-msgstr ""
+msgstr "Mihon에서 읽은 챕터를 읽음으로 표시"
 
 #: src/components/series/AnimeResumeCallout.tsx
 #, fuzzy
@@ -10470,8 +10708,9 @@ msgid "Match"
 msgstr "일치"
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "Match for {title}"
-msgstr ""
+msgstr "{title}의 일치 항목"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10494,8 +10733,9 @@ msgid "Match the series already in your library folders."
 msgstr "라이브러리 폴더에 이미 있는 시리즈를 연결합니다."
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "Matched"
-msgstr ""
+msgstr "일치함"
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -10513,8 +10753,9 @@ msgid "Matching the remaining sources…"
 msgstr "남은 소스 일치 중…"
 
 #: src/components/import/MihonImport.tsx
+#, fuzzy
 msgid "Matching your library to MangaBaka"
-msgstr ""
+msgstr "라이브러리를 MangaBaka와 일치시키는 중"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -10582,8 +10823,9 @@ msgid "Measuring {done}/{planned}"
 msgstr "측정 중 {done}/{planned}"
 
 #: src/components/SourceMeasurePanel.tsx
+#, fuzzy
 msgid "Measuring progress"
-msgstr ""
+msgstr "진행 상황 측정 중"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -10611,8 +10853,9 @@ msgid "Median wait"
 msgstr "중앙 대기 시간"
 
 #: src/components/releases/outlookText.ts
+#, fuzzy
 msgid "Medium confidence"
-msgstr ""
+msgstr "보통 신뢰도"
 
 #: src/App.tsx
 #, fuzzy
@@ -10653,12 +10896,14 @@ msgid "Metadata database download failed:"
 msgstr "메타데이터 데이터베이스 다운로드 실패:"
 
 #: src/components/MetadataDumpProgress.tsx
+#, fuzzy
 msgid "Metadata database ready"
-msgstr ""
+msgstr "메타데이터 데이터베이스 준비됨"
 
 #: src/components/MetadataDumpProgress.tsx
+#, fuzzy
 msgid "Metadata database updated."
-msgstr ""
+msgstr "메타데이터 데이터베이스를 업데이트했습니다."
 
 #: src/components/series/MetadataHistoryModal.tsx
 #, fuzzy
@@ -10687,12 +10932,14 @@ msgstr "중간쯤"
 
 #: src/components/import/MihonImport.tsx
 #: src/pages/ImportPage.tsx
+#, fuzzy
 msgid "Mihon backup"
-msgstr ""
+msgstr "Mihon 백업"
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "Mihon title"
-msgstr ""
+msgstr "Mihon 제목"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10716,8 +10963,9 @@ msgstr "최소 페이지 수"
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
+#, fuzzy
 msgid "Minimum rating"
-msgstr ""
+msgstr "최소 평점"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -10790,8 +11038,9 @@ msgid "Mixed"
 msgstr "혼합"
 
 #: src/components/RecommendationModelSwitch.tsx
+#, fuzzy
 msgid "Model download progress"
-msgstr ""
+msgstr "모델 다운로드 진행 상황"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -10834,12 +11083,14 @@ msgid "Monitoring"
 msgstr "모니터링"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Monitoring and sources"
-msgstr ""
+msgstr "모니터링과 소스"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Monitoring, quality profile, completeness, sources"
-msgstr ""
+msgstr "모니터링, 품질 프로필, 완성도, 소스"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10897,8 +11148,9 @@ msgid "More of this"
 msgstr "이 항목 더 보기"
 
 #: src/components/ui/viewPrefs.tsx
+#, fuzzy
 msgid "More options"
-msgstr ""
+msgstr "더 많은 옵션"
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
@@ -10906,8 +11158,9 @@ msgid "More options for {seriesTitle}"
 msgstr "{seriesTitle}의 추가 옵션"
 
 #: src/components/QueueActions.tsx
+#, fuzzy
 msgid "More queue actions"
-msgstr ""
+msgstr "대기열의 다른 작업"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -10926,8 +11179,9 @@ msgstr "모스"
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
+#, fuzzy
 msgid "Most chapters"
-msgstr ""
+msgstr "챕터 많은 순"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10956,8 +11210,9 @@ msgid "Most read"
 msgstr "가장 많이 읽음"
 
 #: src/pages/settings/PreferenceCards.tsx
+#, fuzzy
 msgid "Motion"
-msgstr ""
+msgstr "모션"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -11042,12 +11297,14 @@ msgid "moves onto a volume"
 msgstr "권 파일로 이동"
 
 #: src/pages/settings/PreferenceCards.tsx
+#, fuzzy
 msgid "Moving covers"
-msgstr ""
+msgstr "표지 이동 효과"
 
 #: src/components/settings/UsersSection.tsx
+#, fuzzy
 msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
-msgstr ""
+msgstr "계정이 둘 이상 켜져 있어 다중 사용자 모드가 켜져 있습니다. 다른 계정을 끄거나 삭제하면 되돌아갑니다."
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -11162,8 +11419,9 @@ msgid "Needs review"
 msgstr "검토 필요"
 
 #: src/components/layout/SectionProperties.tsx
+#, fuzzy
 msgid "Needs the hero."
-msgstr ""
+msgstr "히어로가 필요합니다."
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -11220,8 +11478,9 @@ msgid "Never upgrades"
 msgstr "업그레이드하지 않음"
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "new"
-msgstr ""
+msgstr "신규"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/settings/AccountSection.tsx
@@ -11314,8 +11573,9 @@ msgid "New series defaults"
 msgstr "새 시리즈 기본값"
 
 #: src/components/import/MihonSummary.tsx
+#, fuzzy
 msgid "New series find their sources in the background. Chapters you read in Mihon are marked as soon as the series has a chapter list."
-msgstr ""
+msgstr "새 시리즈는 백그라운드에서 소스를 찾습니다. Mihon에서 읽은 챕터는 시리즈에 챕터 목록이 생기는 즉시 표시됩니다."
 
 #: src/api/inbox.ts
 #, fuzzy
@@ -11362,8 +11622,9 @@ msgid "Next chapter"
 msgstr "다음 챕터"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
+#, fuzzy
 msgid "Next check {next}."
-msgstr ""
+msgstr "다음 확인 {next}."
 
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/theme-context.tsx
@@ -11383,21 +11644,25 @@ msgstr "{nextValue}에서 다음 등급"
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
+#, fuzzy
 msgid "Next to jump back in"
-msgstr ""
+msgstr "다시 이어 읽을 다음 항목"
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
+#, fuzzy
 msgid "Next up"
-msgstr ""
+msgstr "다음 항목"
 
 #: src/components/home/homeSectionDefs.ts
+#, fuzzy
 msgid "Next up beside the hero"
-msgstr ""
+msgstr "히어로 옆에 다음 항목"
 
 #: src/components/releases/UpcomingView.tsx
+#, fuzzy
 msgid "Next week"
-msgstr ""
+msgstr "다음 주"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -11471,8 +11736,9 @@ msgstr "확인된 챕터 없음."
 
 #: src/components/series/SeriesHero.tsx
 #: src/components/ui/CoverCard.tsx
+#, fuzzy
 msgid "No chapters listed"
-msgstr ""
+msgstr "등록된 챕터가 없습니다"
 
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
@@ -11572,12 +11838,14 @@ msgid "No index yet, the prebuilt vectors download automatically."
 msgstr "아직 인덱스가 없습니다. 사전 제작 벡터가 자동으로 다운로드됩니다."
 
 #: src/api/upgrades.ts
+#, fuzzy
 msgid "No indexer is configured"
-msgstr ""
+msgstr "인덱서가 설정되어 있지 않습니다"
 
 #: src/pages/settings/DownloadCards.tsx
+#, fuzzy
 msgid "No indexers configured in {backendName}."
-msgstr ""
+msgstr "{backendName}에 설정된 인덱서가 없습니다."
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -11620,8 +11888,9 @@ msgid "No match"
 msgstr "일치 없음"
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "No match found."
-msgstr ""
+msgstr "일치하는 항목을 찾지 못했습니다."
 
 #: src/components/CatalogueBrowser.tsx
 #: src/components/CatalogueRules.tsx
@@ -11810,8 +12079,9 @@ msgstr "첫 챕터를 제공할 수 있는 소스가 없습니다."
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
+#, fuzzy
 msgid "No source has listed this series' chapters yet, so there is no total to count against."
-msgstr ""
+msgstr "아직 어떤 소스도 이 시리즈의 챕터를 나열하지 않아서, 기준으로 삼을 총계가 없습니다."
 
 #: src/api/queue.ts
 #, fuzzy
@@ -11937,8 +12207,9 @@ msgid "None linked"
 msgstr "연결된 항목 없음"
 
 #: src/components/ui/SeriesRow.tsx
+#, fuzzy
 msgid "None listed"
-msgstr ""
+msgstr "나열된 항목 없음"
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -11956,8 +12227,9 @@ msgid "none yet"
 msgstr "아직 없음"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Not {excluded}"
-msgstr ""
+msgstr "{excluded} 제외"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -11989,12 +12261,14 @@ msgstr "분석되지 않음"
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/reader/ReaderPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Not available offline"
-msgstr ""
+msgstr "오프라인에서는 사용할 수 없음"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
+#, fuzzy
 msgid "Not checked for new chapters: it is finished and complete, or has no source switched on."
-msgstr ""
+msgstr "새 챕터를 확인하지 않습니다. 완결되었거나, 켜져 있는 소스가 없습니다."
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -12013,8 +12287,9 @@ msgid "Not connected"
 msgstr "연결되지 않음"
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Not connected yet."
-msgstr ""
+msgstr "아직 연결되지 않았습니다."
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
@@ -12022,8 +12297,9 @@ msgid "Not connected."
 msgstr "연결되지 않았습니다."
 
 #: src/components/SetupWizard.tsx
+#, fuzzy
 msgid "Not downloaded yet"
-msgstr ""
+msgstr "아직 다운로드하지 않음"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -12031,16 +12307,19 @@ msgid "Not enough genre data yet"
 msgstr "아직 장르 데이터가 충분하지 않습니다"
 
 #: src/pages/stats/sections/TasteSection.tsx
+#, fuzzy
 msgid "Not enough reading yet to say what your taste is. This fills in after a few series."
-msgstr ""
+msgstr "취향을 말할 만큼 읽지 않았습니다. 몇 개 시리즈를 읽으면 채워집니다."
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
+#, fuzzy
 msgid "Not enough release history for an estimate yet."
-msgstr ""
+msgstr "예측하기에는 아직 릴리스 기록이 부족합니다."
 
 #: src/pwa/offlineChapters.ts
+#, fuzzy
 msgid "Not enough space on this device"
-msgstr ""
+msgstr "이 기기의 공간이 부족합니다"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -12058,8 +12337,9 @@ msgid "Not for me"
 msgstr "취향 아님"
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "Not found"
-msgstr ""
+msgstr "찾을 수 없음"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12067,12 +12347,14 @@ msgid "Not imported"
 msgstr "가져오지 않음"
 
 #: src/pages/HomePage.tsx
+#, fuzzy
 msgid "Not in your library"
-msgstr ""
+msgstr "라이브러리에 없음"
 
 #: src/components/home/HomeZones.tsx
+#, fuzzy
 msgid "Not in your library yet"
-msgstr ""
+msgstr "아직 라이브러리에 없음"
 
 #: src/components/LinkChaptersModal.tsx
 #: src/components/ui/status.tsx
@@ -12145,8 +12427,9 @@ msgstr "샘플링되지 않음: 이 소스의 최근 챕터는 더 높은 점수
 
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Not saved"
-msgstr ""
+msgstr "저장되지 않음"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12159,12 +12442,14 @@ msgid "Not set"
 msgstr "설정되지 않음"
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Not set up yet."
-msgstr ""
+msgstr "아직 설정되지 않았습니다."
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Not set up yet. An admin can add it in Settings."
-msgstr ""
+msgstr "아직 설정되지 않았습니다. 관리자가 설정에서 추가할 수 있습니다."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -12177,8 +12462,9 @@ msgid "Not this anime?"
 msgstr "이 애니메이션이 아닌가요?"
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Not updated"
-msgstr ""
+msgstr "업데이트되지 않음"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -12258,8 +12544,9 @@ msgid "Nothing has been changed. This is what importing would do."
 msgstr "아무것도 바뀌지 않았습니다. 가져오면 이렇게 됩니다."
 
 #: src/pages/ActivityPage.tsx
+#, fuzzy
 msgid "Nothing has needed an upgrade yet. Files the upgrader replaces show up here."
-msgstr ""
+msgstr "아직 업그레이드가 필요한 항목이 없습니다. 업그레이더가 교체한 파일이 여기에 표시됩니다."
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/RequestsPage.tsx
@@ -12293,8 +12580,9 @@ msgid "Nothing in the history yet."
 msgstr "아직 기록이 없습니다."
 
 #: src/pages/stats/sections/LibrarySection.tsx
+#, fuzzy
 msgid "Nothing in the library yet."
-msgstr ""
+msgstr "라이브러리에 아직 아무것도 없습니다."
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -12302,8 +12590,9 @@ msgid "Nothing in the queue"
 msgstr "대기열에 아무것도 없습니다"
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "Nothing in this view."
-msgstr ""
+msgstr "이 보기에는 항목이 없습니다."
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -12316,12 +12605,14 @@ msgid "Nothing is renamed and everything stays in the folder you had."
 msgstr "이름을 변경하지 않고 모든 항목을 기존 폴더에 둡니다."
 
 #: src/components/home/OfflineHome.tsx
+#, fuzzy
 msgid "Nothing is saved on this device yet. Once you're back online, save chapters from a series page and they'll be here to read without a connection."
-msgstr ""
+msgstr "이 기기에는 아직 저장된 항목이 없습니다. 온라인으로 돌아오면 시리즈 페이지에서 챕터를 저장하세요. 저장한 챕터는 연결 없이 여기서 읽을 수 있습니다."
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
-msgstr ""
+msgstr "이 기기에는 아직 저장된 항목이 없습니다. 챕터나 시리즈의 “오프라인용 저장”을 사용하세요."
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -12329,8 +12620,9 @@ msgid "Nothing is sent to it any more. This can't be undone."
 msgstr "더 이상 아무것도 보내지 않습니다. 되돌릴 수 없습니다."
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Nothing left to download"
-msgstr ""
+msgstr "받을 항목이 남아 있지 않음"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -12363,8 +12655,9 @@ msgid "Nothing needs review."
 msgstr "검토할 항목이 없습니다."
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "nothing new"
-msgstr ""
+msgstr "새 항목 없음"
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -12377,8 +12670,9 @@ msgid "Nothing queued: {displayName} doesn't list those chapters."
 msgstr "대기열에 추가된 항목 없음: {displayName}에 해당 챕터가 나열되지 않습니다."
 
 #: src/pages/stats/sections/TasteSection.tsx
+#, fuzzy
 msgid "Nothing read in this window. Pick a wider range to see your taste."
-msgstr ""
+msgstr "이 기간에는 읽은 작품이 없습니다. 취향을 보려면 더 넓은 기간을 고르세요."
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -12417,8 +12711,9 @@ msgid "Nothing to pick up yet"
 msgstr "아직 가져올 항목이 없습니다"
 
 #: src/components/releases/UpcomingView.tsx
+#, fuzzy
 msgid "Nothing to place yet"
-msgstr ""
+msgstr "아직 배치할 항목이 없음"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -12513,8 +12808,9 @@ msgid "Notifications"
 msgstr "알림"
 
 #: src/components/settings/PushNotificationsSection.tsx
+#, fuzzy
 msgid "Notifications are blocked for this site. Change the permission in your browser's site settings to turn them on."
-msgstr ""
+msgstr "이 사이트의 알림이 차단되어 있습니다. 켜려면 브라우저의 사이트 설정에서 권한을 바꾸세요."
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -12523,8 +12819,9 @@ msgid "Notifications muted"
 msgstr "알림 음소거됨"
 
 #: src/components/settings/PushNotificationsSection.tsx
+#, fuzzy
 msgid "Notifications on this device, even when Maki is closed. Which events push is picked in the Notifications table above, and only events that also land in the bell can push."
-msgstr ""
+msgstr "Maki가 닫혀 있어도 이 기기에 알림을 보냅니다. 어떤 이벤트를 푸시할지는 위의 알림 표에서 고르며, 벨에도 표시되는 이벤트만 푸시할 수 있습니다."
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -12537,8 +12834,9 @@ msgid "Notify"
 msgstr "알림"
 
 #: src/components/settings/PushNotificationsSection.tsx
+#, fuzzy
 msgid "Notify this device"
-msgstr ""
+msgstr "이 기기에 알림"
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -12556,8 +12854,9 @@ msgid "obscure"
 msgstr "잘 알려지지 않음"
 
 #: src/components/discover/RecommenderDials.tsx
+#, fuzzy
 msgid "Obscurity"
-msgstr ""
+msgstr "비주류"
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -12599,8 +12898,9 @@ msgid "Off by default: with it on, anyone your provider will authenticate gets a
 msgstr "기본값은 꺼짐입니다. 켜면 제공자가 인증하는 사람은 누구나 Maki 계정을 얻습니다. 새 계정은 루트 폴더 접근 권한을 줄 때까지 라이브러리에 접근할 수 없습니다. 꺼 두면, 인증된 이메일이 같은 기존 계정에 처음 로그인이 연결됩니다."
 
 #: src/components/settings/PushNotificationsSection.tsx
+#, fuzzy
 msgid "Off for this device. Turning it on asks your browser for permission."
-msgstr ""
+msgstr "이 기기에서는 꺼져 있습니다. 켜면 브라우저에 권한을 요청합니다."
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -12608,8 +12908,9 @@ msgid "Off for this series"
 msgstr "이 시리즈에서는 끔"
 
 #: src/components/settings/ProgressSection.tsx
+#, fuzzy
 msgid "Off hides the Home section, the all-time tab on Stats and unlock notifications."
-msgstr ""
+msgstr "끄면 홈 섹션, 통계의 전체 기간 탭, 잠금 해제 알림이 숨겨집니다."
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -12641,17 +12942,20 @@ msgstr "공식"
 #: src/components/OfflineBanner.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "Offline reading"
-msgstr ""
+msgstr "오프라인 읽기"
 
 #: src/components/settings/SecureContextNote.tsx
+#, fuzzy
 msgid "Offline reading and push notifications need Maki to be opened over HTTPS. Browsers switch them off on plain HTTP addresses other than localhost. Put Maki behind a reverse proxy with a certificate to use them."
-msgstr ""
+msgstr "오프라인 읽기와 푸시 알림은 Maki를 HTTPS로 열어야 합니다. 브라우저는 localhost가 아닌 일반 HTTP 주소에서 이 기능을 끕니다. 사용하려면 인증서가 있는 리버스 프록시 뒤에 Maki를 두세요."
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "offline, save for offline, download to device, read offline, storage, install app, home screen, pwa"
-msgstr ""
+msgstr "오프라인, offline, 기기에 다운로드, 오프라인 읽기, 저장 공간, 앱 설치, 홈 화면, pwa, save for offline"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -12710,8 +13014,9 @@ msgid "On every device. Discover needs the local MangaBaka database, which an ad
 msgstr "모든 기기에 적용됩니다. 탐색에는 로컬 MangaBaka 데이터베이스가 필요하며, 관리자가 라이브러리에서 켭니다."
 
 #: src/components/settings/PushNotificationsSection.tsx
+#, fuzzy
 msgid "On for this device."
-msgstr ""
+msgstr "이 기기에서는 켜져 있습니다."
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -12729,8 +13034,9 @@ msgid "On shelf"
 msgstr "라이브러리에 있음"
 
 #: src/components/series/ChapterTableRows.tsx
+#, fuzzy
 msgid "On this device"
-msgstr ""
+msgstr "이 기기에 있음"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -12788,8 +13094,9 @@ msgid "Only {scanRootPath}, the root chosen on the Files tab"
 msgstr "{scanRootPath}만, 파일 탭에서 고른 루트"
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "Only add what is missing"
-msgstr ""
+msgstr "없는 항목만 추가"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -12817,8 +13124,9 @@ msgid "Only notify services with this tag."
 msgstr "이 태그가 있는 서비스에만 알립니다."
 
 #: src/components/settings/IndexerForm.tsx
+#, fuzzy
 msgid "Only one indexer is used at a time. Switching makes release suggestions you dismissed earlier stop matching, because Prowlarr and Jackett number releases differently."
-msgstr ""
+msgstr "한 번에 하나의 인덱서만 사용합니다. Prowlarr와 Jackett은 릴리스 번호를 다르게 매기기 때문에 인덱서를 바꾸면 이전에 숨긴 릴리스 제안이 더 이상 일치하지 않게 됩니다."
 
 #: src/components/ContentRatingCards.tsx
 #, fuzzy
@@ -12897,8 +13205,9 @@ msgid "Open any chapter in the built-in reader, or connect Kavita, and Maki star
 msgstr "내장 리더에서 아무 챕터나 열거나 Kavita를 연결하면 Maki가 현재 위치 추적을 시작합니다."
 
 #: src/components/home/HomeZones.tsx
+#, fuzzy
 msgid "Open Discover"
-msgstr ""
+msgstr "탐색 열기"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -12911,12 +13220,14 @@ msgid "Open file findings"
 msgstr "파일 발견 항목 열기"
 
 #: src/pages/MetadataGatePage.tsx
+#, fuzzy
 msgid "Open health"
-msgstr ""
+msgstr "상태 열기"
 
 #: src/components/import/MihonSummary.tsx
+#, fuzzy
 msgid "Open library"
-msgstr ""
+msgstr "라이브러리 열기"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -12965,12 +13276,14 @@ msgid "Open the search with these filters from now on"
 msgstr "이제부터 이 필터로 검색 열기"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#, fuzzy
 msgid "Open webtoon chapters in Continuous layout"
-msgstr ""
+msgstr "웹툰 챕터는 연속 레이아웃으로 열기"
 
 #: src/pages/settings/PreferenceCards.tsx
+#, fuzzy
 msgid "Opening a series grows its cover into the series page, and going back shrinks it into place. Needs page transitions."
-msgstr ""
+msgstr "시리즈를 열면 표지가 시리즈 페이지로 커지고, 뒤로 가면 제자리로 줄어듭니다. 페이지 전환 효과가 필요합니다."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12983,8 +13296,9 @@ msgid "Opens a GitHub issue with the template."
 msgstr "템플릿이 포함된 GitHub 이슈를 엽니다."
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "Operation"
-msgstr ""
+msgstr "작업"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -13094,13 +13408,15 @@ msgstr "{pageCount}개 중 {pageNumber}페이지"
 
 #: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "Page conversion"
-msgstr ""
+msgstr "페이지 변환"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format"
-msgstr ""
+msgstr "페이지 변환, page conversion, webp, avif, 압축, 디스크 공간, 파일 크기, 재인코딩, 이미지 형식"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -13129,12 +13445,14 @@ msgid "Page tolerance %"
 msgstr "페이지 허용 오차 %"
 
 #: src/pages/settings/PreferenceCards.tsx
+#, fuzzy
 msgid "Page transitions"
-msgstr ""
+msgstr "페이지 전환"
 
 #: src/pages/settings/PreferenceCards.tsx
+#, fuzzy
 msgid "Page transitions and moving covers take about half as long."
-msgstr ""
+msgstr "페이지 전환과 표지 이동 효과가 약 절반의 시간으로 줄어듭니다."
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy
@@ -13158,12 +13476,14 @@ msgid "Pages a streaming app fetches count as read, so OPDS reading reaches your
 msgstr "스트리밍 앱이 가져온 페이지를 읽은 것으로 처리하므로 OPDS 읽기 기록이 라이브러리, Rewind, 트래커에 반영됩니다. 일부 앱은 페이지를 미리 가져오므로 실제로 읽지 않은 진행 상황이 표시되면 끄세요."
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "Pages are kept exactly as the source served them."
-msgstr ""
+msgstr "페이지는 소스가 제공한 그대로 유지됩니다."
 
 #: src/pages/settings/SystemCards.tsx
+#, fuzzy
 msgid "Pages decoded at once"
-msgstr ""
+msgstr "한 번에 디코딩하는 페이지 수"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -13181,8 +13501,9 @@ msgid "Panels"
 msgstr "패널"
 
 #: src/theme-context.tsx
+#, fuzzy
 msgid "Paper"
-msgstr ""
+msgstr "페이퍼"
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -13237,8 +13558,9 @@ msgid "Paste id or URL"
 msgstr "ID 또는 URL 붙여넣기"
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Paste series URL or id…"
-msgstr ""
+msgstr "시리즈 URL 또는 ID를 붙여넣으세요…"
 
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/LibraryCards.tsx
@@ -13258,8 +13580,9 @@ msgid "Path as Maki sees it"
 msgstr "Maki가 보는 경로"
 
 #: src/components/settings/downloadClientFields.ts
+#, fuzzy
 msgid "Path as the download client reports it"
-msgstr ""
+msgstr "다운로드 클라이언트가 보고하는 경로"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -13283,8 +13606,9 @@ msgid "Pause downloads"
 msgstr "다운로드 일시 정지"
 
 #: src/pages/rewind/RewindIntro.tsx
+#, fuzzy
 msgid "Pause Rewind"
-msgstr ""
+msgstr "Rewind 일시 정지"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -13293,16 +13617,19 @@ msgid "Paused"
 msgstr "일시 중지됨"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "Paused because page conversion was switched off."
-msgstr ""
+msgstr "페이지 변환이 꺼져 있어 일시 정지되었습니다."
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Paused or dropped"
-msgstr ""
+msgstr "일시 정지 또는 중단"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "Paused: converting the next file would leave less than 1 GB free on the library drive."
-msgstr ""
+msgstr "일시 정지됨: 다음 파일을 변환하면 라이브러리 드라이브의 여유 공간이 1GB 미만이 됩니다."
 
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -13377,8 +13704,9 @@ msgid "Pick a root folder"
 msgstr "루트 폴더 선택"
 
 #: src/pages/ImportPage.tsx
+#, fuzzy
 msgid "Pick a root folder and scan it"
-msgstr ""
+msgstr "루트 폴더를 고르고 스캔하세요"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -13421,8 +13749,9 @@ msgid "Picks for you, ranked the same way as the Recommended tab with these sett
 msgstr "이 설정을 기준으로 추천 탭과 같은 방식으로 순위를 매긴 추천 작품입니다."
 
 #: src/components/home/HomeZones.tsx
+#, fuzzy
 msgid "Picks from the catalogue. Open one to read more about it or add it."
-msgstr ""
+msgstr "카탈로그에서 골랐습니다. 열어서 자세히 보거나 추가하세요."
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
@@ -13456,8 +13785,9 @@ msgid "Play the {rewindYear} retrospective"
 msgstr "{rewindYear} 회고 재생"
 
 #: src/theme-context.tsx
+#, fuzzy
 msgid "Plum"
-msgstr ""
+msgstr "플럼"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -13558,8 +13888,9 @@ msgid "Preparing model…"
 msgstr "모델 준비 중…"
 
 #: src/components/ui/DiscoverRail.tsx
+#, fuzzy
 msgid "Prequel to"
-msgstr ""
+msgstr "전편"
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -13743,8 +14074,9 @@ msgid "pull the new image and recreate the container"
 msgstr "새 이미지를 가져와 컨테이너를 다시 생성"
 
 #: src/pages/reader/ContinuousView.tsx
+#, fuzzy
 msgid "Pull up for next chapter"
-msgstr ""
+msgstr "당겨서 다음 챕터"
 
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
@@ -13752,22 +14084,26 @@ msgid "Pulls your tracker lists on a schedule and adds matching series to the li
 msgstr "트래커 목록을 예약에 따라 가져와 맞는 시리즈를 라이브러리에 추가합니다. 직접 시리즈를 추가할 수 없는 경우에는 요청으로 등록합니다. 먼저 Scrobble 페이지에서 트래커를 연결하세요. 로컬 MangaBaka 데이터베이스가 필요합니다."
 
 #: src/components/settings/NotificationPrefsSection.tsx
+#, fuzzy
 msgid "Push"
-msgstr ""
+msgstr "푸시"
 
 #: src/components/settings/NotificationPrefsSection.tsx
+#, fuzzy
 msgid "Push applies to every device signed in as you, once it is turned on in Push notifications below. Only events that also land in the bell can push, so Push is unavailable while Bell is off."
-msgstr ""
+msgstr "아래 푸시 알림에서 켜면 나로 로그인한 모든 기기에 푸시가 적용됩니다. 벨에도 표시되는 이벤트만 푸시할 수 있으므로, 벨이 꺼져 있으면 푸시도 사용할 수 없습니다."
 
 #: src/components/settings/PushNotificationsSection.tsx
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "Push notifications"
-msgstr ""
+msgstr "푸시 알림"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "push, push notifications, phone notifications, desktop notifications, new chapters, notify this device"
-msgstr ""
+msgstr "push, 푸시 알림, 휴대폰 알림, 데스크톱 알림, 새 챕터, 이 기기에 알림"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -13780,8 +14116,9 @@ msgid "Pushes down titles close to this one"
 msgstr "가까운 작품들의 순위를 낮춤"
 
 #: src/pages/settings/IntegrationCards.tsx
+#, fuzzy
 msgid "Pushes reading progress and ratings to AniList, MyAnimeList, MangaBaka, Kitsu and MangaUpdates. Connect and disconnect accounts, and review matches, on the Scrobble page."
-msgstr ""
+msgstr "읽기 진행 상황과 평점을 AniList, MyAnimeList, MangaBaka, Kitsu, MangaUpdates로 보냅니다. 계정 연결과 해제, 일치 항목 검토는 Scrobble 페이지에서 합니다."
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -13882,12 +14219,14 @@ msgid "Queued upgrade from {winnerSource}"
 msgstr "{winnerSource}에서 업그레이드를 대기열에 추가함"
 
 #: src/App.tsx
+#, fuzzy
 msgid "Quick links"
-msgstr ""
+msgstr "빠른 링크"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
+#, fuzzy
 msgid "Quiet for longer than its usual rhythm, so there is no estimate."
-msgstr ""
+msgstr "평소 간격보다 오래 조용해서 예측하지 않습니다."
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -13948,12 +14287,14 @@ msgid "Rate limited by {source}, waiting before the next try"
 msgstr "{source}의 속도 제한으로 다음 시도 전 대기 중"
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Rate limited. Retrying {time}."
-msgstr ""
+msgstr "요청 제한에 걸렸습니다. {time}에 다시 시도합니다."
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Rate limited. Retrying soon."
-msgstr ""
+msgstr "요청 제한에 걸렸습니다. 곧 다시 시도합니다."
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -13962,8 +14303,9 @@ msgid "Rated"
 msgstr "평가함"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Rated {rated}"
-msgstr ""
+msgstr "평가: {rated}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13971,8 +14313,9 @@ msgid "Rated {rating}/10"
 msgstr "{rating}/10점"
 
 #: src/components/CatalogueFilters.tsx
+#, fuzzy
 msgid "Rated {ratingLabel} or more"
-msgstr ""
+msgstr "{ratingLabel} 이상 평가"
 
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -14003,8 +14346,9 @@ msgid "Rating to"
 msgstr "평점 최대"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Ratings and reading"
-msgstr ""
+msgstr "평점과 읽기"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -14059,8 +14403,9 @@ msgid "Read a chapter in Maki's reader and it starts tracking. An admin can also
 msgstr "Maki 리더에서 챕터를 읽으면 추적을 시작합니다. 관리자는 설정에서 Kavita도 연결할 수 있습니다. 다운로드와 라이브러리 변경은 어느 쪽이든 추적합니다."
 
 #: src/components/home/ReadingWeeks.tsx
+#, fuzzy
 msgid "Read a chapter to start a streak"
-msgstr ""
+msgstr "챕터를 하나 읽으면 연속 기록이 시작됩니다"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -14068,8 +14413,9 @@ msgid "Read a few chapters and this fills in."
 msgstr "몇 챕터를 읽으면 여기에 내용이 채워집니다."
 
 #: src/components/import/MihonImport.tsx
+#, fuzzy
 msgid "Read backup"
-msgstr ""
+msgstr "백업 읽기"
 
 #: src/components/series/AnimeResumeCallout.tsx
 #, fuzzy
@@ -14132,12 +14478,14 @@ msgid "Read now"
 msgstr "지금 읽기"
 
 #: src/components/home/ReadingWeeks.tsx
+#, fuzzy
 msgid "Read on {daysRead} of the last {daysSoFar} days"
-msgstr ""
+msgstr "최근 {daysSoFar}일 중 {daysRead}일 읽음"
 
 #: src/pages/stats/ReadingHeatmap.tsx
+#, fuzzy
 msgid "Read on {daysRead} of the last {daysSoFar} days."
-msgstr ""
+msgstr "최근 {daysSoFar}일 중 {daysRead}일 읽었습니다."
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -14145,8 +14493,9 @@ msgid "Read slowly over a long span"
 msgstr "오랜 기간 천천히 읽음"
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "Read ticks show in the chapter list. Series read counts only include downloaded chapters."
-msgstr ""
+msgstr "읽음 표시는 챕터 목록에 나타납니다. 시리즈의 읽음 수에는 다운로드된 챕터만 포함됩니다."
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -14154,8 +14503,9 @@ msgid "Read to"
 msgstr "읽기 끝"
 
 #: src/components/home/ReadingWeeks.tsx
+#, fuzzy
 msgid "Read today to keep it going"
-msgstr ""
+msgstr "오늘 읽어서 기록을 이어 가세요"
 
 #: src/lib/documentTitle.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
@@ -14198,8 +14548,9 @@ msgid "Readers like you also recommended this"
 msgstr "나와 비슷한 독자도 이 항목을 추천함"
 
 #: src/components/ui/DiscoverRail.tsx
+#, fuzzy
 msgid "Readers who finished {finished} also finished this"
-msgstr ""
+msgstr "{finished}을(를) 완독한 독자들이 이 작품도 완독했습니다."
 
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
@@ -14213,8 +14564,9 @@ msgid "Reading"
 msgstr "읽는 중"
 
 #: src/pages/MetadataGatePage.tsx
+#, fuzzy
 msgid "Reading apps connected over OPDS, Komga or KOReader keep working in the meantime."
-msgstr ""
+msgstr "OPDS, Komga 또는 KOReader로 연결된 읽기 앱은 그동안에도 계속 작동합니다."
 
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
@@ -14556,12 +14908,14 @@ msgid "related series, more like this, similar, recommendations, rails, sequels,
 msgstr "관련 시리즈, 이와 비슷한 항목, 유사, 추천, 레일, 속편, 스핀오프"
 
 #: src/components/ReleaseSearchModal.tsx
+#, fuzzy
 msgid "Related series: {relatedTitle}"
-msgstr ""
+msgstr "관련 시리즈: {relatedTitle}"
 
 #: src/components/ui/DiscoverRail.tsx
+#, fuzzy
 msgid "Related to"
-msgstr ""
+msgstr "관련 작품"
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -14584,8 +14938,9 @@ msgid "Release checks per scan"
 msgstr "스캔당 릴리스 확인 수"
 
 #: src/pages/reader/ContinuousView.tsx
+#, fuzzy
 msgid "Release for next chapter"
-msgstr ""
+msgstr "다음 챕터 놓기"
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -14610,8 +14965,9 @@ msgid "Released"
 msgstr "출시됨"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
+#, fuzzy
 msgid "Releases too irregularly to estimate."
-msgstr ""
+msgstr "릴리스 간격이 너무 불규칙해서 예측할 수 없습니다."
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -14652,8 +15008,9 @@ msgid "Remove {label}"
 msgstr "{label} 삭제"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Remove {label} from this device"
-msgstr ""
+msgstr "이 기기에서 {label} 제거"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -14661,8 +15018,9 @@ msgid "Remove {removingSourceName}?"
 msgstr "{removingSourceName}을(를) 제거할까요?"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Remove {seriesTitle} from this device"
-msgstr ""
+msgstr "이 기기에서 {seriesTitle} 제거"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -14695,16 +15053,19 @@ msgid "Remove condition"
 msgstr "조건 제거"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Remove everything"
-msgstr ""
+msgstr "모두 제거"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Remove everything from this device"
-msgstr ""
+msgstr "이 기기에서 모두 제거"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Remove everything from this device?"
-msgstr ""
+msgstr "이 기기에서 모두 제거할까요?"
 
 #: src/components/QueueActions.tsx
 #, fuzzy
@@ -14743,8 +15104,9 @@ msgid "Remove from queue"
 msgstr "대기열에서 제거"
 
 #: src/components/series/ChapterTableRows.tsx
+#, fuzzy
 msgid "Remove from this device"
-msgstr ""
+msgstr "이 기기에서 제거"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -14757,8 +15119,9 @@ msgid "Remove mapping"
 msgstr "매핑 제거"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#, fuzzy
 msgid "Remove offline copies"
-msgstr ""
+msgstr "오프라인 사본 제거"
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -14797,8 +15160,9 @@ msgid "Remove single sign-on for {editName}?"
 msgstr "{editName}의 싱글 사인온을 제거할까요?"
 
 #: src/pwa/offlineChapters.ts
+#, fuzzy
 msgid "Remove some saved chapters and try again."
-msgstr ""
+msgstr "저장된 챕터 일부를 지우고 다시 시도하세요."
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -14832,8 +15196,9 @@ msgid "Remove this root folder?"
 msgstr "이 루트 폴더를 제거할까요?"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Remove this series from the device"
-msgstr ""
+msgstr "이 기기에서 이 시리즈 제거"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14957,8 +15322,9 @@ msgid "Reopen"
 msgstr "다시 열기"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "Reopen all"
-msgstr ""
+msgstr "모두 다시 열기"
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -14981,12 +15347,14 @@ msgid "Replace"
 msgstr "교체"
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "Replace what it covers"
-msgstr ""
+msgstr "포함된 범위 교체"
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "replaced"
-msgstr ""
+msgstr "교체됨"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -14994,8 +15362,9 @@ msgid "Replaced files are kept this long before being purged. 0 purges on the ne
 msgstr "교체된 파일은 삭제되기 전까지 이 기간 동안 보관됩니다. 0이면 다음 정리 작업 때 삭제합니다."
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "Replacement"
-msgstr ""
+msgstr "교체"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -15077,8 +15446,9 @@ msgstr "요청 시리즈 페이지와 시리즈 페이지에서 제출한 요청
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "requests, request, single user, multi user, multi-user, household, family, sharing, leaderboard, reader picker"
-msgstr ""
+msgstr "요청, requests, request, 단일 사용자, single user, 다중 사용자, multi user, multi-user, 가족, household, family, 공유, sharing, 리더보드, leaderboard, 리더 선택기, reader picker"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -15091,8 +15461,9 @@ msgid "Require HTTPS from a plain HTTP address?"
 msgstr "일반 HTTP 주소에서도 HTTPS를 요구할까요?"
 
 #: src/components/CatalogueFilters.tsx
+#, fuzzy
 msgid "Require or exclude genres and tags"
-msgstr ""
+msgstr "장르와 태그를 포함하거나 제외"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -15276,8 +15647,9 @@ msgid "Restrict release searches to specific indexers and categories. With nothi
 msgstr "릴리스 검색을 특정 인덱서와 카테고리로 제한합니다. 아무것도 선택하지 않으면 모든 인덱서와 카테고리를 검색합니다."
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Result"
-msgstr ""
+msgstr "결과"
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
@@ -15300,8 +15672,9 @@ msgid "Resume at"
 msgstr "재개 시각"
 
 #: src/pages/rewind/RewindIntro.tsx
+#, fuzzy
 msgid "Resume Rewind"
-msgstr ""
+msgstr "Rewind 재개"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -15376,8 +15749,9 @@ msgid "Reusing the name of the active preset overwrites it."
 msgstr "활성 프리셋의 이름을 재사용하면 기존 프리셋을 덮어씁니다."
 
 #: src/components/settings/SecureContextNote.tsx
+#, fuzzy
 msgid "Reverse proxy setup"
-msgstr ""
+msgstr "리버스 프록시 설정"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -15412,8 +15786,9 @@ msgid "Review archive"
 msgstr "보관 파일 검토"
 
 #: src/components/discover/DiscoverReviews.tsx
+#, fuzzy
 msgid "Review by {author}"
-msgstr ""
+msgstr "{author}의 리뷰"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -15431,8 +15806,9 @@ msgid "Review linked file"
 msgstr "연결된 파일 검토"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "Review operation"
-msgstr ""
+msgstr "작업 검토"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -15528,12 +15904,14 @@ msgid "Rose"
 msgstr "장미"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#, fuzzy
 msgid "Rotate"
-msgstr ""
+msgstr "회전"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#, fuzzy
 msgid "Rotate to fit"
-msgstr ""
+msgstr "맞게 회전"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -15576,13 +15954,15 @@ msgid "Running"
 msgstr "실행 중"
 
 #: src/components/releases/UpcomingView.tsx
+#, fuzzy
 msgid "Running late"
-msgstr ""
+msgstr "지연 중"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
+#, fuzzy
 msgid "Running late. It was likely {range}."
-msgstr ""
+msgstr "지연 중입니다. 원래 예상 기간은 {range}였습니다."
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -15591,8 +15971,9 @@ msgid "Russian"
 msgstr "러시아어"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Safari clears what a website saved after seven days without a visit. Add Maki to your home screen and save chapters from there to keep them."
-msgstr ""
+msgstr "Safari는 웹사이트가 저장한 데이터를 7일 동안 방문하지 않으면 지웁니다. Maki를 홈 화면에 추가하고 거기서 챕터를 저장하면 유지됩니다."
 
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
@@ -15642,8 +16023,9 @@ msgid "Save"
 msgstr "저장"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Save {label} again"
-msgstr ""
+msgstr "{label} 다시 저장"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -15692,8 +16074,9 @@ msgid "Save filters"
 msgstr "필터 저장"
 
 #: src/components/series/ChapterTableRows.tsx
+#, fuzzy
 msgid "Save for offline"
-msgstr ""
+msgstr "오프라인용 저장"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -15716,8 +16099,9 @@ msgid "Save this filter"
 msgstr "이 필터 저장"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#, fuzzy
 msgid "Save unread chapters for offline"
-msgstr ""
+msgstr "읽지 않은 챕터 오프라인용 저장"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -15750,16 +16134,19 @@ msgid "Saved as your default"
 msgstr "기본값으로 저장됨"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Saved by Keep upcoming chapters, removed once read"
-msgstr ""
+msgstr "다음 챕터 유지로 저장됨, 읽으면 제거"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Saved chapters"
-msgstr ""
+msgstr "저장된 챕터"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Saved chapters, the copies of pages kept for browsing offline and this device's settings for offline reading all go. Nothing changes on the server."
-msgstr ""
+msgstr "저장된 챕터, 오프라인 탐색용으로 보관된 페이지 사본, 이 기기의 오프라인 읽기 설정이 모두 삭제됩니다. 서버에는 아무 변화도 없습니다."
 
 #: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
@@ -15771,12 +16158,14 @@ msgstr "저장된 필터"
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Saved on this device"
-msgstr ""
+msgstr "이 기기에 저장됨"
 
 #: src/components/series/ChapterTableRows.tsx
+#, fuzzy
 msgid "Saved on this device for offline reading"
-msgstr ""
+msgstr "오프라인 읽기용으로 이 기기에 저장됨"
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
@@ -15789,25 +16178,30 @@ msgid "Saves the current search, sort and every filter in the panel as a named p
 msgstr "패널의 현재 검색, 정렬 및 모든 필터를 이름이 지정된 프리셋으로 저장합니다."
 
 #: src/components/series/ChapterTableRows.tsx
+#, fuzzy
 msgid "Saving"
-msgstr ""
+msgstr "저장 중"
 
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Saving {done}/{total}"
-msgstr ""
+msgstr "저장 중 {done}/{total}"
 
 #: src/components/series/ChapterTableRows.tsx
+#, fuzzy
 msgid "Saving for offline failed. Try again from the chapter's menu."
-msgstr ""
+msgstr "오프라인용 저장에 실패했습니다. 챕터 메뉴에서 다시 시도하세요."
 
 #: src/components/series/ChapterTableRows.tsx
+#, fuzzy
 msgid "Saving on this device for offline reading"
-msgstr ""
+msgstr "오프라인 읽기를 위해 이 기기에 저장 중"
 
 #: src/pages/settings/DownloadCards.tsx
+#, fuzzy
 msgid "Saving switches the indexer to {selectedName}. Its indexer and category lists load after that."
-msgstr ""
+msgstr "저장하면 인덱서가 {selectedName}(으)로 바뀝니다. 그 뒤에 인덱서와 카테고리 목록을 불러옵니다."
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -15892,8 +16286,9 @@ msgid "Scanlator"
 msgstr "스캔레이션 그룹"
 
 #: src/pages/ImportPage.tsx
+#, fuzzy
 msgid "Scanning finds the series folders in it that Maki doesn't know yet and matches each to metadata. On import every folder is renamed to the English title and its comic files are linked to chapters. Files keep their own names, and a PDF is kept as it is."
-msgstr ""
+msgstr "스캔은 Maki가 아직 모르는 시리즈 폴더를 찾아 각각 메타데이터와 일치시킵니다. 가져올 때 모든 폴더는 영어 제목으로 이름이 바뀌고, 그 안의 만화 파일은 챕터와 연결됩니다. 파일 이름은 그대로 유지되며, PDF는 그대로 둡니다."
 
 #: src/components/LinkChaptersModal.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -15922,8 +16317,9 @@ msgid "Scheduled"
 msgstr "예약됨"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "Scheduled jobs"
-msgstr ""
+msgstr "예약된 작업"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -16055,8 +16451,9 @@ msgid "Scroll to finish the preview"
 msgstr "미리보기를 끝내려면 스크롤하세요"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#, fuzzy
 msgid "Scroll webtoon chapters"
-msgstr ""
+msgstr "웹툰 챕터 스크롤"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16076,12 +16473,14 @@ msgid "Search by chapter number or title"
 msgstr "챕터 번호 또는 제목으로 검색"
 
 #: src/components/CatalogueBrowser.tsx
+#, fuzzy
 msgid "search by meaning is being set up, title matches for now"
-msgstr ""
+msgstr "의미 검색을 설정하는 중입니다. 지금은 제목 일치만 사용합니다."
 
 #: src/components/CatalogueBrowser.tsx
+#, fuzzy
 msgid "Search by meaning is ready"
-msgstr ""
+msgstr "의미 검색 준비됨"
 
 #: src/components/CreditPicker.tsx
 #, fuzzy
@@ -16230,8 +16629,9 @@ msgid "Search volumes now"
 msgstr "지금 권 검색"
 
 #: src/components/SetupWizard.tsx
+#, fuzzy
 msgid "Search, adding series, imports and Discover all read from it. About a 350 MB download and 3.5 GB on disk, refreshed nightly. Setup finishes once it is in."
-msgstr ""
+msgstr "검색, 시리즈 추가, 가져오기, 탐색이 모두 이 데이터를 사용합니다. 다운로드는 약 350MB이고 디스크에서는 3.5GB를 차지하며 매일 밤 새로 고칩니다. 데이터가 들어오면 설정이 끝납니다."
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -16239,12 +16639,14 @@ msgid "searched as “{cleanedTitle}”"
 msgstr "“{cleanedTitle}”(으)로 검색함"
 
 #: src/components/SetupWizard.tsx
+#, fuzzy
 msgid "Searches your indexers for manga releases to download as torrents. Works through Prowlarr or Jackett."
-msgstr ""
+msgstr "인덱서에서 만화 릴리스를 검색해 토렌트로 다운로드합니다. Prowlarr 또는 Jackett을 통해 동작합니다."
 
 #: src/pages/settings/DownloadCards.tsx
+#, fuzzy
 msgid "Searches your torrent indexers for manga releases, used for volume upgrades and for grabbing releases by hand. Works through Prowlarr or Jackett, no app sync needed."
-msgstr ""
+msgstr "토렌트 인덱서에서 만화 릴리스를 검색합니다. 권 업그레이드와 수동으로 릴리스를 가져올 때 사용합니다. Prowlarr 또는 Jackett을 통해 동작하며, 앱 동기화는 필요하지 않습니다."
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -16283,8 +16685,9 @@ msgstr "모든 알림 보기"
 
 #: src/components/CatalogueBrowser.tsx
 #: src/components/SetupWizard.tsx
+#, fuzzy
 msgid "See progress"
-msgstr ""
+msgstr "진행 상황 보기"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -16418,8 +16821,9 @@ msgid "Send events to chat apps, push services or a webhook. Each connection pic
 msgstr "채팅 앱, 푸시 서비스 또는 웹훅으로 이벤트를 보냅니다. 각 연결에서 이벤트를 선택합니다."
 
 #: src/components/SetupWizard.tsx
+#, fuzzy
 msgid "Send reading progress to AniList, MyAnimeList, Kitsu, MangaBaka or MangaUpdates."
-msgstr ""
+msgstr "읽기 진행 상황을 AniList, MyAnimeList, Kitsu, MangaBaka 또는 MangaUpdates로 보냅니다."
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16432,21 +16836,25 @@ msgid "Send silently"
 msgstr "소리 없이 보내기"
 
 #: src/components/settings/PushNotificationsSection.tsx
+#, fuzzy
 msgid "Send test"
-msgstr ""
+msgstr "테스트 보내기"
 
 #: src/pages/settings/DownloadCards.tsx
+#, fuzzy
 msgid "Sends grabbed releases to your torrent client. Finished torrents import into the library automatically. Fill the path mapping only if the client reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
-msgstr ""
+msgstr "가져온 릴리스를 토렌트 클라이언트로 보냅니다. 완료된 토렌트는 자동으로 라이브러리에 가져옵니다. 클라이언트가 보고하는 경로에 Maki가 접근할 수 없을 때만 경로 매핑을 입력하세요. 예를 들어 Docker에서 Maki는 Z:\\downloads로 보고 클라이언트는 /downloads로 보는 경우입니다."
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Sends what you read to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Progress on a tracker is never lowered."
-msgstr ""
+msgstr "읽은 내용을 {intervalMinutes, plural, other {#분}}마다 트래커에 보냅니다. 트래커의 진행 상황은 절대 낮아지지 않습니다."
 
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
+#, fuzzy
 msgid "Sent to the download client: {title}"
-msgstr ""
+msgstr "다운로드 클라이언트로 보냄: {title}"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -16455,8 +16863,9 @@ msgid "Sepia"
 msgstr "세피아"
 
 #: src/components/ui/DiscoverRail.tsx
+#, fuzzy
 msgid "Sequel to"
-msgstr ""
+msgstr "후편"
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -16480,8 +16889,9 @@ msgid "Series"
 msgstr "시리즈"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Series {seriesId}"
-msgstr ""
+msgstr "시리즈 {seriesId}"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -16494,8 +16904,9 @@ msgid "Series already in the destination root folder are skipped."
 msgstr "대상 루트 폴더에 이미 있는 시리즈는 건너뜁니다."
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "Series already in your library are not added again. Importing them only applies tags and read state."
-msgstr ""
+msgstr "라이브러리에 이미 있는 시리즈는 다시 추가하지 않습니다. 가져오면 태그와 읽음 상태만 적용합니다."
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -16508,12 +16919,14 @@ msgid "Series checked per daily run. Each series is searched at most once a week
 msgstr "일일 실행마다 확인하는 시리즈 수입니다. 각 시리즈는 일주일에 최대 한 번 검색합니다."
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#, fuzzy
 msgid "Series details"
-msgstr ""
+msgstr "시리즈 상세 정보"
 
 #: src/components/SetupWizard.tsx
+#, fuzzy
 msgid "Series details come from a local copy of the MangaBaka database. Choose what Discover may show you."
-msgstr ""
+msgstr "시리즈 상세 정보는 MangaBaka 데이터베이스의 로컬 사본에서 가져옵니다. 탐색에 무엇을 보여 줄지 고르세요."
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -16536,8 +16949,9 @@ msgid "Series in your library you haven't started are added to your lists as pla
 msgstr "아직 시작하지 않은 라이브러리의 시리즈는 읽을 예정으로 목록에 추가합니다. 목록에 이미 있는 항목은 바꾸지 않습니다."
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "Series metadata comes from a local copy of the MangaBaka database, about 3.5 GB and refreshed from the nightly dump. Search, adding series, imports and Discover all read from it."
-msgstr ""
+msgstr "시리즈 메타데이터는 MangaBaka 데이터베이스의 로컬 사본에서 가져옵니다. 약 3.5GB이며 매일 밤 덤프로 새로 고칩니다. 검색, 시리즈 추가, 가져오기, 탐색이 모두 여기서 읽습니다."
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16604,12 +17018,14 @@ msgid "Series you finished a chapter of that still have more to read."
 msgstr "챕터를 읽었고 다음 챕터가 남아 있는 시리즈입니다."
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "Server address"
-msgstr ""
+msgstr "서버 주소"
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "Server address copied"
-msgstr ""
+msgstr "서버 주소를 복사했습니다"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -16652,8 +17068,9 @@ msgid "Set by hand. Metadata refreshes leave it alone."
 msgstr "직접 설정함. 메타데이터 새로 고침이 건드리지 않습니다."
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "Set Document matching method to Binary."
-msgstr ""
+msgstr "문서 일치 방식을 Binary로 설정하세요."
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -16677,12 +17094,14 @@ msgid "Set up"
 msgstr "설정"
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Set up in Settings"
-msgstr ""
+msgstr "설정에서 구성"
 
 #: src/pages/ActivityPage.tsx
+#, fuzzy
 msgid "Set up quality profiles"
-msgstr ""
+msgstr "품질 프로필 설정"
 
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
@@ -16690,8 +17109,9 @@ msgid "Set up the Kavita connection above to pick libraries."
 msgstr "라이브러리를 선택하려면 위에서 Kavita 연결을 설정하세요."
 
 #: src/pages/ScrobblePage.tsx
+#, fuzzy
 msgid "Set up trackers"
-msgstr ""
+msgstr "트래커 설정"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -16785,8 +17205,9 @@ msgid "Show all"
 msgstr "전체 보기"
 
 #: src/components/settings/SecuritySection.tsx
+#, fuzzy
 msgid "Show covers from the library"
-msgstr ""
+msgstr "라이브러리의 표지 보기"
 
 #: src/components/TagBuckets.tsx
 #: src/pages/HealthPage.tsx
@@ -16813,8 +17234,9 @@ msgid "Show more"
 msgstr "더 보기"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "Show newest {max} of {count}"
-msgstr ""
+msgstr "{count}개 중 최신 {max}개 보기"
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -16858,8 +17280,9 @@ msgid "Show the Home page"
 msgstr "홈 페이지 보이기"
 
 #: src/components/layout/SectionProperties.tsx
+#, fuzzy
 msgid "Show the most recent series as a large card, with the rest in a tray of posters under it, instead of a plain row."
-msgstr ""
+msgstr "최근 시리즈를 한 줄 대신 큰 카드로 보여 주고, 나머지는 그 아래 포스터 트레이에 보여 줍니다."
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -16872,8 +17295,9 @@ msgid "Show this section"
 msgstr "이 섹션 표시"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#, fuzzy
 msgid "Show whole"
-msgstr ""
+msgstr "전체 보기"
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -16911,8 +17335,9 @@ msgid "Side interests"
 msgstr "세부 관심사"
 
 #: src/components/ui/DiscoverRail.tsx
+#, fuzzy
 msgid "Side story of"
-msgstr ""
+msgstr "외전"
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -16959,8 +17384,9 @@ msgstr "로그인 실패"
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "Sign-in page"
-msgstr ""
+msgstr "로그인 페이지"
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
@@ -16984,8 +17410,9 @@ msgid "Signed in as <0>{oidcUserName}</0> on {displayName}."
 msgstr "<0>{oidcUserName}</0>(으)로 {displayName}에 로그인함."
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Signing out keeps saved chapters on this device. They come back when you sign in again."
-msgstr ""
+msgstr "로그아웃해도 이 기기의 저장된 챕터는 유지됩니다. 다시 로그인하면 다시 나타납니다."
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -17019,8 +17446,9 @@ msgid "Single page"
 msgstr "단일 페이지"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#, fuzzy
 msgid "Single page layout only."
-msgstr ""
+msgstr "단일 페이지 레이아웃만 가능합니다."
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -17057,8 +17485,9 @@ msgstr "싱글 사인온이 저장되었습니다. 적용하려면 Maki를 다�
 
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "Single-user mode"
-msgstr ""
+msgstr "단일 사용자 모드"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -17121,12 +17550,14 @@ msgid "Skip specials on new series"
 msgstr "새 시리즈의 특별편 건너뛰기"
 
 #: src/App.tsx
+#, fuzzy
 msgid "Skip to content"
-msgstr ""
+msgstr "본문으로 건너뛰기"
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "skipped"
-msgstr ""
+msgstr "건너뜀"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -17144,8 +17575,9 @@ msgid "Sliding: activity extends it."
 msgstr "슬라이딩: 활동이 타이머를 연장합니다."
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "Smaller than WebP, and slower to convert. KOReader cannot open AVIF pages, and neither can iPhones and iPads older than iOS 16."
-msgstr ""
+msgstr "WebP보다 작지만 변환이 느립니다. KOReader는 AVIF 페이지를 열 수 없고, iOS 16 이전의 iPhone과 iPad도 열 수 없습니다."
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -17362,8 +17794,9 @@ msgid "specials, omake, decimal chapters, monitor new items, monitoring, incogni
 msgstr "특별편, 오마케, 소수점 챕터, 새 항목 모니터링, 모니터링, 시크릿 모드, 읽기 기록 동기화 안 함, 콘텐츠 등급, 시리즈 추가"
 
 #: src/components/ui/DiscoverRail.tsx
+#, fuzzy
 msgid "Spin-off of"
-msgstr ""
+msgstr "스핀오프"
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -17371,8 +17804,9 @@ msgid "Spin-off of {relatedTo}"
 msgstr "{relatedTo}의 스핀오프"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#, fuzzy
 msgid "Split"
-msgstr ""
+msgstr "분할"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -17380,8 +17814,9 @@ msgid "Split from the tier above"
 msgstr "위 티어에서 분리"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#, fuzzy
 msgid "Split into two pages"
-msgstr ""
+msgstr "두 페이지로 분할"
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -17455,8 +17890,9 @@ msgid "Start chapter"
 msgstr "챕터 시작"
 
 #: src/components/MetadataDumpProgress.tsx
+#, fuzzy
 msgid "Start now"
-msgstr ""
+msgstr "지금 시작"
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -17519,8 +17955,9 @@ msgid "Status change"
 msgstr "상태 변경"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Status, type, content rating, chapters"
-msgstr ""
+msgstr "연재 상태, 유형, 콘텐츠 등급, 챕터"
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #: src/pages/reader/ChapterEnd.tsx
@@ -17605,20 +18042,24 @@ msgid "Stopping"
 msgstr "중지 중"
 
 #: src/pages/HealthPage.tsx
+#, fuzzy
 msgid "Storage"
-msgstr ""
+msgstr "저장 공간"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Storage on this device"
-msgstr ""
+msgstr "이 기기의 저장 공간"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "Storage used"
-msgstr ""
+msgstr "사용 중인 저장 공간"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "Stores chapter pages in a smaller image format. New downloads are converted as they arrive, and the library pass below converts what is already on disk."
-msgstr ""
+msgstr "챕터 페이지를 더 작은 이미지 형식으로 저장합니다. 새 다운로드는 도착하는 대로 변환하고, 아래의 라이브러리 작업은 디스크에 이미 있는 파일을 변환합니다."
 
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -17653,8 +18094,9 @@ msgid "Success and wait cover the last 30 days."
 msgstr "성공과 대기 시간은 지난 30일을 기준으로 합니다."
 
 #: src/pages/stats/SourceReliability.tsx
+#, fuzzy
 msgid "Success rate"
-msgstr ""
+msgstr "성공률"
 
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
@@ -17731,12 +18173,14 @@ msgid "sync running… · last {lastSync} · next {nextSync}"
 msgstr "동기화 실행 중… · 마지막 {lastSync} · 다음 {nextSync}"
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "Sync server"
-msgstr ""
+msgstr "동기화 서버"
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "Sync server address copied"
-msgstr ""
+msgstr "동기화 서버 주소를 복사했습니다"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -17744,8 +18188,9 @@ msgid "Sync started, you will get a notification when it finishes"
 msgstr "동기화를 시작했습니다. 완료되면 알림을 받습니다"
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "Sync works for chapters downloaded through the OPDS catalogue and for files copied straight from your library folders. Regenerating the OPDS token signs KOReader out too."
-msgstr ""
+msgstr "OPDS 카탈로그로 다운로드한 챕터와 라이브러리 폴더에서 직접 복사한 파일에 대해 동기화가 작동합니다. OPDS 토큰을 다시 만들면 KOReader도 로그아웃됩니다."
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -17804,8 +18249,9 @@ msgid "Tags"
 msgstr "태그"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Tags and genres"
-msgstr ""
+msgstr "태그와 장르"
 
 #: src/components/CatalogueRules.tsx
 #: src/components/TagBrowserModal.tsx
@@ -17844,8 +18290,9 @@ msgid "Taste"
 msgstr "취향"
 
 #: src/theme-context.tsx
+#, fuzzy
 msgid "Teal"
-msgstr ""
+msgstr "틸"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -17881,8 +18328,9 @@ msgid "Test notification sent"
 msgstr "테스트 알림 전송됨"
 
 #: src/components/settings/PushNotificationsSection.tsx
+#, fuzzy
 msgid "Test notification sent."
-msgstr ""
+msgstr "테스트 알림을 보냈습니다."
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -17900,8 +18348,9 @@ msgid "That account is disabled"
 msgstr "그 계정은 비활성화되어 있습니다"
 
 #: src/components/import/MihonImport.tsx
+#, fuzzy
 msgid "That backup is larger than the {MAX_BACKUP_MB} MB limit, so it can't be imported."
-msgstr ""
+msgstr "이 백업은 {MAX_BACKUP_MB}MB 제한을 넘어 가져올 수 없습니다."
 
 #: src/api/queue.ts
 #, fuzzy
@@ -17944,8 +18393,9 @@ msgid "The anime covers through ch. {covered}."
 msgstr "애니메이션은 챕터 {covered}까지 다룹니다."
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "The API key is the last part of your feed URL, after /opds/. Enter it in the app, or use any username with the API key as the password."
-msgstr ""
+msgstr "API 키는 피드 URL에서 /opds/ 뒤에 오는 마지막 부분입니다. 앱에 입력하거나, 아무 사용자 이름이나 쓰고 비밀번호에 API 키를 입력하세요."
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -17963,12 +18413,14 @@ msgid "The approved source no longer has these pages"
 msgstr "승인된 소스에 더 이상 페이지가 없습니다"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "The browser keeps saved chapters even when space runs low."
-msgstr ""
+msgstr "공간이 부족해도 브라우저가 저장된 챕터를 유지합니다."
 
 #: src/components/settings/OfflineReadingSection.tsx
+#, fuzzy
 msgid "The browser may clear saved chapters when the device runs low on space."
-msgstr ""
+msgstr "기기의 공간이 부족하면 브라우저가 저장된 챕터를 지울 수 있습니다."
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -18016,8 +18468,9 @@ msgid "The current file moves to trash rather than being deleted outright, so th
 msgstr "현재 파일은 바로 삭제되지 않고 휴지통으로 이동하므로, 새 사본이 더 나쁘면 활동에서 되돌릴 수 있습니다."
 
 #: src/components/home/homeSectionDefs.ts
+#, fuzzy
 msgid "The days you read, your streak, chapters and time read, as a card in the hero."
-msgstr ""
+msgstr "히어로 영역의 카드에 읽은 날짜, 연속 기록, 챕터 수, 읽은 시간을 보여 줍니다."
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
@@ -18025,25 +18478,30 @@ msgid "The default for every series event: new chapters, downloads, upgrades. An
 msgstr "모든 시리즈 이벤트의 기본값입니다: 새 챕터, 다운로드, 업그레이드. 시리즈마다 자체 페이지에서 다르게 설정하거나, 라이브러리의 선택 모드에서 여러 개를 한꺼번에 설정할 수 있습니다."
 
 #: src/api/queue.ts
+#, fuzzy
 msgid "The download client reports an error on this torrent"
-msgstr ""
+msgstr "다운로드 클라이언트가 이 토렌트에 오류를 보고했습니다"
 
 #. placeholder {0}: progress.lastError
 #: src/components/MetadataDumpProgress.tsx
+#, fuzzy
 msgid "The download failed: {0}"
-msgstr ""
+msgstr "다운로드에 실패했습니다: {0}"
 
 #: src/pages/MetadataGatePage.tsx
+#, fuzzy
 msgid "The download failed. Maki tries again by itself, and an admin can check what went wrong. This page opens Maki by itself when it is done."
-msgstr ""
+msgstr "다운로드에 실패했습니다. Maki가 스스로 다시 시도하며, 관리자는 무엇이 잘못되었는지 확인할 수 있습니다. 완료되면 이 페이지가 Maki를 자동으로 엽니다."
 
 #: src/components/MetadataDumpProgress.tsx
+#, fuzzy
 msgid "The download has not started yet."
-msgstr ""
+msgstr "다운로드가 아직 시작되지 않았습니다."
 
 #: src/api/queue.ts
+#, fuzzy
 msgid "The download is no longer in the download client"
-msgstr ""
+msgstr "다운로드가 더 이상 다운로드 클라이언트에 없습니다"
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -18151,8 +18609,9 @@ msgid "The linked file has not been inventoried yet, so its pages cannot be show
 msgstr "연결된 파일의 목록이 아직 작성되지 않아 페이지를 표시할 수 없습니다. 파일 스캔을 실행한 다음 돌아와 비교하세요."
 
 #: src/components/SetupWizard.tsx
+#, fuzzy
 msgid "The local MangaBaka database is still downloading. Setup finishes once it is in."
-msgstr ""
+msgstr "로컬 MangaBaka 데이터베이스를 아직 다운로드하는 중입니다. 데이터가 들어오면 설정이 끝납니다."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -18176,8 +18635,9 @@ msgid "The newest titles from the creators and studios you follow. Empty until y
 msgstr "팔로우 중인 창작자와 스튜디오의 최신 작품입니다. 누군가를 팔로우하기 전에는 비어 있습니다."
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
+#, fuzzy
 msgid "The next check is due."
-msgstr ""
+msgstr "다음 확인 시점이 되었습니다."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -18215,8 +18675,9 @@ msgid "The provider's issuer, without /.well-known/openid-configuration. Maki ap
 msgstr "/.well-known/openid-configuration 없이 제공자의 issuer를 지정합니다. Maki가 직접 추가합니다."
 
 #: src/components/settings/PushNotificationsSection.tsx
+#, fuzzy
 msgid "The push service did not accept the test notification."
-msgstr ""
+msgstr "푸시 서비스가 테스트 알림을 받아들이지 않았습니다."
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -18234,8 +18695,9 @@ msgid "The request for {removingTitle} is removed. This can't be undone."
 msgstr "{removingTitle} 요청이 삭제됩니다. 되돌릴 수 없습니다."
 
 #: src/components/home/homeSectionDefs.ts
+#, fuzzy
 msgid "The rest of the section as a list beside the hero, instead of a tray of posters under it."
-msgstr ""
+msgstr "히어로 옆에 목록으로, 그 아래 포스터 트레이 대신 나머지 섹션을 보여 줍니다."
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -18253,8 +18715,9 @@ msgid "The sample download failed"
 msgstr "샘플 다운로드에 실패했습니다"
 
 #: src/components/home/OfflineHome.tsx
+#, fuzzy
 msgid "The saved chapters wouldn't open"
-msgstr ""
+msgstr "저장된 챕터를 열 수 없습니다"
 
 #: src/components/import/IgnoredFoldersModal.tsx
 #, fuzzy
@@ -18287,8 +18750,9 @@ msgid "the series' sources"
 msgstr "시리즈의 소스"
 
 #: src/pages/MetadataGatePage.tsx
+#, fuzzy
 msgid "The server is downloading it now. This page opens Maki by itself when it is done."
-msgstr ""
+msgstr "서버가 지금 다운로드하고 있습니다. 완료되면 이 페이지가 Maki를 자동으로 엽니다."
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -18367,8 +18831,9 @@ msgid "The title might be a different series"
 msgstr "제목이 다른 시리즈일 수 있습니다"
 
 #: src/api/upgrades.ts
+#, fuzzy
 msgid "The title names a related series, not this one"
-msgstr ""
+msgstr "제목이 이 시리즈가 아니라 관련 시리즈를 가리킵니다"
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
@@ -18382,16 +18847,19 @@ msgstr "@BotFather가 제공한 토큰입니다."
 
 #. {series} is a series title and is never translated. It may be this row's own series, when an older download of it holds the torrent.
 #: src/api/queue.ts
+#, fuzzy
 msgid "The torrent is in the download client, but another download for {series} owns it"
-msgstr ""
+msgstr "토렌트는 다운로드 클라이언트에 있지만, {series}의 다른 다운로드가 이를 소유하고 있습니다"
 
 #: src/api/queue.ts
+#, fuzzy
 msgid "The torrent is no longer in the download client"
-msgstr ""
+msgstr "토렌트가 더 이상 다운로드 클라이언트에 없습니다"
 
 #: src/api/queue.ts
+#, fuzzy
 msgid "The torrent never appeared in the download client"
-msgstr ""
+msgstr "토렌트가 다운로드 클라이언트에 나타나지 않았습니다"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -18420,8 +18888,9 @@ msgstr "2단계 인증이 꺼지고 인증 앱이 초기화되어, 다시 설정
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, faster animations, speed, reduce motion"
-msgstr ""
+msgstr "테마, 다크 모드, 라이트 모드, 강조 색상, accent colour, accent color, 색상, colour, 시스템 설정 따르기, match system, follow system, 자동, auto, 모션, motion, 애니메이션, animation, 전환 효과, transitions, 페이지 전환, page transitions, 표지 이동, moving covers, 빠른 애니메이션, faster animations, 속도, speed, 모션 줄이기, reduce motion"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -18459,8 +18928,9 @@ msgid "These rules need the rules view. Remove some to switch back."
 msgstr "이 규칙은 규칙 보기에서만 사용할 수 있습니다. 이전 보기로 돌아가려면 일부 규칙을 삭제하세요."
 
 #: src/components/home/OfflineHome.tsx
+#, fuzzy
 msgid "They are still on this device. Reload the page, or remove and save them again once you're back online."
-msgstr ""
+msgstr "아직 이 기기에 있습니다. 페이지를 새로 고치거나, 온라인으로 돌아온 뒤 제거하고 다시 저장하세요."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -18514,12 +18984,14 @@ msgid "This archive is not inside any series folder in its root, so there is no 
 msgstr "이 보관 파일은 루트의 어떤 시리즈 폴더에도 없으므로 가져올 시리즈가 없습니다. 올바른 폴더로 이동한 후 다시 스캔하거나 가져오기 페이지에서 해당 폴더를 가져오세요."
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "This backup has no categories."
-msgstr ""
+msgstr "이 백업에는 카테고리가 없습니다."
 
 #: src/components/settings/PushNotificationsSection.tsx
+#, fuzzy
 msgid "This browser does not support push notifications."
-msgstr ""
+msgstr "이 브라우저는 푸시 알림을 지원하지 않습니다."
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -18532,8 +19004,9 @@ msgid "This chapter has no readable file."
 msgstr "이 챕터에는 읽을 수 있는 파일이 없습니다."
 
 #: src/pages/reader/ReaderPage.tsx
+#, fuzzy
 msgid "This chapter isn't saved on this device."
-msgstr ""
+msgstr "이 챕터는 이 기기에 저장되어 있지 않습니다."
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -18541,12 +19014,14 @@ msgid "This chapter was added or upgraded too recently"
 msgstr "이 챕터는 추가되었거나 업그레이드된 지 얼마 되지 않았습니다"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#, fuzzy
 msgid "This device"
-msgstr ""
+msgstr "이 기기"
 
 #: src/components/settings/PushNotificationsSection.tsx
+#, fuzzy
 msgid "This device could not subscribe to push notifications."
-msgstr ""
+msgstr "이 기기는 푸시 알림을 구독할 수 없었습니다."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -18591,8 +19066,9 @@ msgid "This page hit an error"
 msgstr "이 페이지에서 오류가 발생했습니다"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "This pass:"
-msgstr ""
+msgstr "이번 작업:"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -18650,8 +19126,9 @@ msgid "This series has no quality profile"
 msgstr "이 시리즈에는 품질 프로필이 없습니다"
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "This series is already in the library, but you can't see it, so it can't be changed here."
-msgstr ""
+msgstr "이 시리즈는 이미 라이브러리에 있지만 볼 수 없어서 여기서 바꿀 수 없습니다."
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -18659,8 +19136,9 @@ msgid "This series isn't eligible for a volume search"
 msgstr "이 시리즈는 권 검색 대상이 아닙니다"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "This series isn't saved on this device. It opens again as soon as Maki can reach the server."
-msgstr ""
+msgstr "이 시리즈는 이 기기에 저장되어 있지 않습니다. Maki가 서버에 연결되면 바로 다시 열립니다."
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -18735,8 +19213,9 @@ msgid "Those series are already being matched."
 msgstr "해당 시리즈는 이미 일치 작업 중입니다."
 
 #: src/pages/settings/SystemCards.tsx
+#, fuzzy
 msgid "Thresholds"
-msgstr ""
+msgstr "임계값"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -18830,8 +19309,9 @@ msgid "Time zone"
 msgstr "시간대"
 
 #: src/pages/settings/SystemCards.tsx
+#, fuzzy
 msgid "Timezone"
-msgstr ""
+msgstr "시간대"
 
 #: src/theme-context.tsx
 #, fuzzy
@@ -18858,16 +19338,19 @@ msgid "Title language"
 msgstr "제목 언어"
 
 #: src/components/CatalogueBrowser.tsx
+#, fuzzy
 msgid "title match only, an admin can set up search by meaning"
-msgstr ""
+msgstr "제목 일치만 사용, 관리자가 의미 검색을 설정할 수 있습니다"
 
 #: src/components/CatalogueBrowser.tsx
+#, fuzzy
 msgid "title match only, search by meaning is off"
-msgstr ""
+msgstr "제목 일치만 사용, 의미 검색이 꺼져 있습니다"
 
 #: src/components/CatalogueBrowser.tsx
+#, fuzzy
 msgid "title match only, search by meaning needs its index"
-msgstr ""
+msgstr "제목 일치만 사용, 의미 검색에 인덱스가 필요합니다"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -19075,8 +19558,9 @@ msgid "Tries {sourceNames} in priority order and takes the first that has the ch
 msgstr "{sourceNames}을 우선순위 순으로 시도하여 챕터가 있는 첫 번째 소스를 사용합니다. 소스 이름을 지정하면 해당 소스에 고정되므로 대체 소스를 사용하지 않고 선택한 곳에서만 후보를 가져옵니다."
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#, fuzzy
 msgid "Trims white or black margins. Not applied in the Continuous layout."
-msgstr ""
+msgstr "흰색 또는 검은색 여백을 잘라냅니다. 연속 레이아웃에는 적용되지 않습니다."
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -19132,8 +19616,9 @@ msgid "Turn it off if you don't read in Maki: the tab disappears and Library bec
 msgstr "Maki에서 읽지 않는다면 끄세요. 탭이 사라지고 라이브러리가 시작 페이지가 됩니다."
 
 #: src/components/CatalogueBrowser.tsx
+#, fuzzy
 msgid "Turn on"
-msgstr ""
+msgstr "켜기"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -19141,8 +19626,9 @@ msgid "Turn on anime signals on the Taste tab to use this."
 msgstr "사용하려면 취향 탭에서 애니메이션 신호를 켜세요."
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "Turn on the OPDS catalogue first. KOReader signs in with its token."
-msgstr ""
+msgstr "먼저 OPDS 카탈로그를 켜세요. KOReader는 토큰으로 로그인합니다."
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -19522,8 +20008,9 @@ msgid "Up to {max}"
 msgstr "최대 {max}개"
 
 #: src/components/settings/SecuritySection.tsx
+#, fuzzy
 msgid "Up to 24 covers rated Safe from folders every account can see, blurred into one image, shown to anyone who can open the sign-in page. Off: Maki's own art, and nothing from the library."
-msgstr ""
+msgstr "모든 계정이 볼 수 있는 폴더에서 Safe 등급 표지를 최대 24개 골라 흐리게 합친 한 장의 이미지를, 로그인 페이지를 열 수 있는 모든 사람에게 보여 줍니다. 끄면 Maki 자체 아트를 보여 주며, 라이브러리의 어떤 것도 사용하지 않습니다."
 
 #: src/api/requests.ts
 #, fuzzy
@@ -19541,8 +20028,9 @@ msgid "Up to date, last checked {checkedAtLabel}"
 msgstr "최신 상태, 마지막 확인: {checkedAtLabel}"
 
 #: src/pages/ActivityPage.tsx
+#, fuzzy
 msgid "Upcoming"
-msgstr ""
+msgstr "예정"
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -19632,8 +20120,9 @@ msgid "Upgrades"
 msgstr "업그레이드"
 
 #: src/pages/ActivityPage.tsx
+#, fuzzy
 msgid "Upgrades are not set up yet"
-msgstr ""
+msgstr "업그레이드가 아직 설정되지 않았습니다"
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -19880,8 +20369,9 @@ msgid "varied ({diversityChip})"
 msgstr "다양함 ({diversityChip})"
 
 #: src/components/discover/RecommenderDials.tsx
+#, fuzzy
 msgid "Variety"
-msgstr ""
+msgstr "다양성"
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -19915,8 +20405,9 @@ msgid "Verify this file"
 msgstr "이 파일 확인"
 
 #: src/theme-context.tsx
+#, fuzzy
 msgid "Vermilion"
-msgstr ""
+msgstr "버밀리언"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -19965,8 +20456,9 @@ msgid "View in library"
 msgstr "라이브러리에서 보기"
 
 #: src/components/discover/DiscoverHero.tsx
+#, fuzzy
 msgid "View in library: {title}"
-msgstr ""
+msgstr "라이브러리에서 보기: {title}"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -20118,8 +20610,9 @@ msgid "Waiting for the MangaBaka snapshot to download first."
 msgstr "먼저 MangaBaka 스냅샷이 다운로드되기를 기다리는 중입니다."
 
 #: src/components/SetupWizard.tsx
+#, fuzzy
 msgid "Waiting for the metadata database."
-msgstr ""
+msgstr "메타데이터 데이터베이스를 기다리는 중입니다."
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20177,12 +20670,14 @@ msgid "Webhook URL"
 msgstr "웹훅 URL"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "WebP"
-msgstr ""
+msgstr "WebP"
 
 #: src/pages/settings/PageConversionSection.tsx
+#, fuzzy
 msgid "WebP quality"
-msgstr ""
+msgstr "WebP 품질"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -20190,8 +20685,9 @@ msgid "Webtoon"
 msgstr "웹툰"
 
 #: src/components/releases/UpcomingView.tsx
+#, fuzzy
 msgid "Week of {start}"
-msgstr ""
+msgstr "{start} 주"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -20244,8 +20740,9 @@ msgid "What lands in your bell. Only affects you. Alerts to Discord and other ap
 msgstr "알림 벨에 들어오는 항목입니다. 나에게만 적용됩니다. Discord 등 다른 앱으로의 알림은 관리자가 통합에서 설정합니다."
 
 #: src/components/settings/SecuritySection.tsx
+#, fuzzy
 msgid "What people see behind the sign-in form before they have signed in."
-msgstr ""
+msgstr "로그인하기 전에 로그인 폼 뒤에 보이는 화면입니다."
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -20303,8 +20800,9 @@ msgid "What's new in v{version}"
 msgstr "v{version}의 새로운 기능"
 
 #: src/components/home/OfflineHome.tsx
+#, fuzzy
 msgid "What's new on the server can wait. These chapters are saved on this device and ready to read."
-msgstr ""
+msgstr "서버의 새 항목은 기다릴 수 있습니다. 이 챕터들은 이 기기에 저장되어 있어 바로 읽을 수 있습니다."
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/ScrobblePage.tsx
@@ -20323,12 +20821,14 @@ msgid "When importing an existing series from disk: rename its folder to the ser
 msgstr "디스크에 있는 기존 시리즈를 가져올 때: 폴더를 시리즈 폴더 형식으로 이름 바꾸거나, 찾은 그대로 둡니다."
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#, fuzzy
 msgid "When most pages are very tall. A layout picked in the reader still wins."
-msgstr ""
+msgstr "대부분의 페이지가 매우 길 때 적용됩니다. 리더에서 직접 고른 레이아웃이 여전히 우선합니다."
 
 #: src/pages/settings/SystemCards.tsx
+#, fuzzy
 msgid "When the health scans run and where the disk and backup checks start warning. The checks and file findings are on the Health page."
-msgstr ""
+msgstr "상태 스캔을 언제 실행할지, 디스크와 백업 점검이 언제부터 경고할지 정합니다. 점검 결과와 파일 발견 항목은 상태 페이지에 있습니다."
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -20436,8 +20936,9 @@ msgid "While reading only tells you about new chapters while you are partway thr
 msgstr "읽는 중은 시리즈를 읽는 동안 새 챕터에 관한 내용만 알려줍니다."
 
 #: src/pages/reader/ReaderToolbar.tsx
+#, fuzzy
 msgid "Whole"
-msgstr ""
+msgstr "전체"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -20467,8 +20968,9 @@ msgstr "시리즈 전체 묶음, 직접 결정해야 합니다"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#, fuzzy
 msgid "Wide pages"
-msgstr ""
+msgstr "넓은 페이지"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -20476,8 +20978,9 @@ msgid "Width"
 msgstr "너비"
 
 #: src/pages/settings/ReadingCards.tsx
+#, fuzzy
 msgid "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."
-msgstr ""
+msgstr "KOReader에서 책을 연 상태로 도구 > 진행 상황 동기화 > 사용자 지정 동기화 서버로 가서 위 주소를 입력하세요."
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -20589,16 +21092,19 @@ msgid "You can keep browsing while it looks."
 msgstr "찾는 동안 계속 둘러볼 수 있습니다."
 
 #: src/components/ImportReviewModal.tsx
+#, fuzzy
 msgid "You can undo this from Activity."
-msgstr ""
+msgstr "활동 페이지에서 이 작업을 되돌릴 수 있습니다."
 
 #: src/components/import/MihonSummary.tsx
+#, fuzzy
 msgid "You can't add series directly, so these were sent to an admin as requests. Tags and read marks are not applied to them."
-msgstr ""
+msgstr "시리즈를 직접 추가할 수 없어서 이 항목들은 요청으로 관리자에게 보냈습니다. 이 항목에는 태그와 읽음 표시가 적용되지 않습니다."
 
 #: src/components/import/MihonReview.tsx
+#, fuzzy
 msgid "You can't add series directly. New ones are sent to an admin as requests, and tags and read marks are only applied to series already in the library."
-msgstr ""
+msgstr "시리즈를 직접 추가할 수 없습니다. 새 시리즈는 요청으로 관리자에게 보내며, 태그와 읽음 표시는 이미 라이브러리에 있는 시리즈에만 적용됩니다."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -20718,12 +21224,14 @@ msgstr "읽을 항목이 없습니다"
 
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
+#, fuzzy
 msgid "You're offline"
-msgstr ""
+msgstr "오프라인 상태입니다"
 
 #: src/components/OfflineBanner.tsx
+#, fuzzy
 msgid "You're offline. Showing what's saved on this device."
-msgstr ""
+msgstr "오프라인 상태입니다. 이 기기에 저장된 항목을 보여 줍니다."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -20741,8 +21249,9 @@ msgid "Your busiest month"
 msgstr "가장 바쁜 달"
 
 #: src/pages/settings/PreferenceCards.tsx
+#, fuzzy
 msgid "Your device asks for reduced motion, so these stay off."
-msgstr ""
+msgstr "기기가 모션 줄이기를 요청하므로 이 기능은 꺼진 상태로 둡니다."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -20750,8 +21259,9 @@ msgid "Your folder is left alone. New chapters go into a folder Maki names."
 msgstr "기존 폴더는 그대로 둡니다. 새 챕터는 Maki가 이름을 지정한 폴더에 저장됩니다."
 
 #: src/components/home/homeSectionDefs.ts
+#, fuzzy
 msgid "Your last five weeks"
-msgstr ""
+msgstr "최근 5주"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -20815,8 +21325,9 @@ msgid "Your priority order"
 msgstr "내 우선순위 순서"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Your rating, score, how much you've read"
-msgstr ""
+msgstr "내 평점, 점수, 읽은 양"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -20870,8 +21381,9 @@ msgid "Your tags"
 msgstr "내 태그"
 
 #: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Your tags, genres, provider tags"
-msgstr ""
+msgstr "내 태그, 장르, 제공자 태그"
 
 #: src/api/hooks.ts
 #: src/components/discover/DiscoverTasteStrip.tsx
@@ -20895,8 +21407,9 @@ msgid "Yours alone - this changes what lands in your bell, not anybody else's."
 msgstr "나만 볼 수 있음 - 내 알림 벨에 표시되는 내용만 변경하고 다른 사람의 알림에는 영향을 주지 않습니다."
 
 #: src/components/settings/downloadClientFields.ts
+#, fuzzy
 msgid "Z:\\downloads (optional)"
-msgstr ""
+msgstr "Z:\\downloads (선택 사항)"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
