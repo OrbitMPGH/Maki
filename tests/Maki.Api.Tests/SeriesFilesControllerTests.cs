@@ -133,14 +133,9 @@ public sealed class SeriesFilesControllerTests : IDisposable
     /// The second folder's file cannot land (its destination path is past the OS limit), so the
     /// series folder that already moved goes back and the series stays on its old root.
     /// </summary>
-    [Fact]
+    [NotWindowsFact]
     public async Task A_failed_second_folder_puts_the_first_back()
     {
-        if (OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
         var deep = Path.Combine(_temp, Path.Combine(Enumerable.Range(0, 20).Select(i => new string((char)('a' + i), 200)).ToArray()));
         var (seriesId, fromId, toId, from, to) = SeedTwoFolderSeries(deep);
         Directory.CreateDirectory(to);
@@ -196,10 +191,7 @@ public sealed class SeriesFilesControllerTests : IDisposable
         Write(Path.Combine(outside, "Berserk Ch.3.cbz"));
         var link = Path.Combine(from, "Berserk", "Extras", "linked");
         Directory.CreateDirectory(Path.GetDirectoryName(link)!);
-        if (!TestLinks.TryLinkDirectory(link, outside))
-        {
-            return;
-        }
+        Assert.True(TestLinks.TryLinkDirectory(link, outside));
 
         try
         {
@@ -227,10 +219,7 @@ public sealed class SeriesFilesControllerTests : IDisposable
         var outside = Path.Combine(_temp, "outside");
         var seriesFolder = Path.Combine(from, "Berserk");
         Directory.Move(seriesFolder, outside);
-        if (!TestLinks.TryLinkDirectory(seriesFolder, outside))
-        {
-            return;
-        }
+        Assert.True(TestLinks.TryLinkDirectory(seriesFolder, outside));
 
         try
         {

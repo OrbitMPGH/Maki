@@ -449,17 +449,14 @@ public class RecycleBinTests : IDisposable
         Assert.Equal(s.RelativePath, Assert.Single(check.ChapterFiles).RelativePath);
     }
 
-    [Fact]
+    [Maki.Core.Tests.FileSymlinkFact]
     public async Task A_binned_link_whose_target_is_gone_can_still_be_restored()
     {
         var s = Seed();
         var target = Path.Combine(_configDir, "elsewhere.cbz");
         File.WriteAllText(target, "elsewhere");
         File.Delete(s.Absolute);
-        if (!Maki.Core.Tests.TestLinks.TryLinkFile(s.Absolute, target))
-        {
-            return;
-        }
+        Assert.True(Maki.Core.Tests.TestLinks.TryLinkFile(s.Absolute, target));
 
         using (var db = _db.NewContext())
         {

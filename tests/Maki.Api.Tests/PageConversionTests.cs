@@ -9,6 +9,7 @@ using Maki.Core.Kavita;
 using Maki.Core.Quality;
 using Maki.Core.Sources;
 using Maki.Core.Storage;
+using Maki.Core.Tests;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -560,14 +561,9 @@ public sealed class PageConversionTests : IDisposable
         Assert.Single(verdicts);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task The_windows_source_copy_is_stamped_fresh_so_the_tmp_sweep_leaves_it()
     {
-        if (!OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
         var (_, fileId, path) = JpegChapter(1);
         File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddDays(-30));
         DateTime? copyWritten = null;

@@ -1,5 +1,6 @@
 using Maki.Api.Configuration;
 using Maki.Api.Services;
+using Maki.Core.Tests;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -46,14 +47,9 @@ public class CoverServiceDeleteTests : IDisposable
         Assert.False(Directory.Exists(Path.GetDirectoryName(path)));
     }
 
-    [Fact]
+    [WindowsFact]
     public void DeleteCover_swallows_a_folder_that_cannot_be_removed()
     {
-        if (!OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
         var covers = Covers();
         var path = covers.CoverPathFor(8);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);

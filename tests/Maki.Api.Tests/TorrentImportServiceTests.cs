@@ -9,6 +9,7 @@ using Maki.Core.Quality;
 using Maki.Core.Storage;
 using Maki.Core.Reading;
 using Maki.Core.Sources;
+using Maki.Core.Tests;
 using SharpCompress.Common;
 using SharpCompress.Writers;
 using Microsoft.EntityFrameworkCore;
@@ -1086,14 +1087,9 @@ public class TorrentImportServiceTests : IDisposable
         Assert.Equal(UpgradeRevertError.None, error);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task A_superseded_file_that_cannot_move_keeps_its_row_and_gets_no_history()
     {
-        if (!OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
         var (series, item) = SeedLibrary();
         SeedVolumeDownload(1, 2, 3, 4, 5, 6);
         var locked = Path.Combine(_root, "Berserk", "Berserk Vol.1 Ch.3.cbz");
@@ -1191,10 +1187,7 @@ public class TorrentImportServiceTests : IDisposable
         var library = Path.Combine(_root, "Berserk", "Berserk Vol.1 Ch.1.cbz");
         var seeding = Path.Combine(_root, "seeding", "ch1.cbz");
         Directory.CreateDirectory(Path.GetDirectoryName(seeding)!);
-        if (!FileLinker.TryHardlink(library, seeding))
-        {
-            return;
-        }
+        Assert.True(FileLinker.TryHardlink(library, seeding), "this filesystem cannot hardlink");
 
         var bytes = File.ReadAllBytes(seeding);
 

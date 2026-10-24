@@ -11,6 +11,7 @@ using Maki.Core.Metadata;
 using Maki.Core.Naming;
 using Maki.Core.Security;
 using Maki.Core.Sources;
+using Maki.Core.Tests;
 using Maki.Data;
 using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -758,14 +759,9 @@ public class LibraryImportUndoTests : IDisposable
         Assert.False(ImportOperations.Parse((await check.ImportBatchFolders.SingleAsync()).OperationsJson).DiskPending);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task A_built_CBZ_that_could_not_be_removed_keeps_the_folder_in_place_for_the_retry()
     {
-        if (!OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
         var rootId = SeedRoot();
         WriteFixture("chainsaw raws");
         var originals = Fingerprint(At("chainsaw raws"));

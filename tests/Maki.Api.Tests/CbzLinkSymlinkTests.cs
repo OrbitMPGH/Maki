@@ -85,10 +85,7 @@ public class CbzLinkSymlinkTests : IDisposable
         WriteComic(external);
         var before = SHA256.HashData(await File.ReadAllBytesAsync(external));
         var writtenBefore = File.GetLastWriteTimeUtc(external);
-        if (!TestLinks.TryLinkDirectory(Path.Combine(_root, "Berserk", "linked"), _outside))
-        {
-            return;
-        }
+        Assert.True(TestLinks.TryLinkDirectory(Path.Combine(_root, "Berserk", "linked"), _outside));
 
         using (var db = _db.NewContext())
         {
@@ -142,16 +139,13 @@ public class CbzLinkSymlinkTests : IDisposable
         Assert.NotNull((await check.Chapters.SingleAsync(c => c.SeriesId == seriesId)).ChapterFileId);
     }
 
-    [Fact]
+    [FileSymlinkFact]
     public async Task Rescan_keeps_a_root_level_row_whose_file_is_a_symlink()
     {
         var external = Path.Combine(_outside, "Berserk c001.cbz");
         WriteComic(external);
         Directory.CreateDirectory(_root);
-        if (!TestLinks.TryLinkFile(Path.Combine(_root, "Berserk c001.cbz"), external))
-        {
-            return;
-        }
+        Assert.True(TestLinks.TryLinkFile(Path.Combine(_root, "Berserk c001.cbz"), external));
 
         var seriesId = SeedRootLevelRow("Berserk c001.cbz");
 
