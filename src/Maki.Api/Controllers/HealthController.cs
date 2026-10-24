@@ -1,4 +1,5 @@
 using Maki.Api.Localization;
+using System.Text;
 using System.Text.Json;
 using System.Security.Cryptography;
 using Maki.Api.Auth;
@@ -507,7 +508,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         foreach (var g in groups)
         {
             var key = OperationGroupKey.From(g.Kind, g.Status, g.ErrorKey, g.ErrorParamsJson, g.Error);
-            previews.Add(await key.Apply(db.HealthOperations.AsNoTracking()).OrderByDescending(o => o.Id).Take(OperationGroupPreview).ToListAsync(ct));
+            previews.Add(await (await key.ApplyAsync(db.HealthOperations.AsNoTracking(), ct)).OrderByDescending(o => o.Id).Take(OperationGroupPreview).ToListAsync(ct));
         }
 
         var rendered = await RenderedOperationsAsync(previews.SelectMany(p => p).ToList(), userSettings, ct);
@@ -537,7 +538,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     {
         var group = OperationGroupKey.Decode(key);
         if (group is null) return BadRequest();
-        var query = group.Apply(db.HealthOperations.AsNoTracking());
+        var query = await group.ApplyAsync(db.HealthOperations.AsNoTracking(), ct);
         var rows = await query.OrderByDescending(o => o.Id).Take(Math.Clamp(take, 1, OperationGroupRowsMax)).ToListAsync(ct);
         return Ok(new { total = await query.CountAsync(ct), items = await RenderedOperationsAsync(rows, userSettings, ct) });
     }
@@ -561,29 +562,40 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     /// <summary>
     /// What makes two operations the same problem. The key the client holds is these five fields,
     /// base64url encoded, so it stays the same while operations join or leave the group. A legacy
-    /// <c>Error</c> longer than <see cref="ErrorPrefixMax"/> travels as its prefix and its length so
-    /// the URL stays short.
+    /// <c>Error</c> longer than <see cref="ErrorInlineMax"/> travels as a short prefix plus its
+    /// SHA-256: the prefix narrows the query and the hash picks the exact group, so the URL stays
+    /// short and two long errors that open the same way never merge.
     /// </summary>
-    private sealed record OperationGroupKey(string Kind, string Status, string? ErrorKey, string? ErrorParamsJson, string? Error, int? ErrorLength = null)
+    private sealed record OperationGroupKey(string Kind, string Status, string? ErrorKey, string? ErrorParamsJson, string? Error, string? ErrorHash = null)
     {
-        private const int ErrorPrefixMax = 1500;
+        private const int ErrorInlineMax = 200;
 
-        private sealed record Wire(string K, string S, string? Ek, string? Ep, string? E, int? L);
+        private static readonly JsonSerializerOptions WireOptions = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
-        public static OperationGroupKey From(string kind, string status, string? errorKey, string? errorParamsJson, string? error) =>
-            error is { Length: > ErrorPrefixMax }
-                ? new(kind, status, errorKey, errorParamsJson, error[..ErrorPrefixMax], error.Length)
-                : new(kind, status, errorKey, errorParamsJson, error);
+        private sealed record Wire(string K, string S, string? Ek, string? Ep, string? E, string? H);
+
+        public static OperationGroupKey From(string kind, string status, string? errorKey, string? errorParamsJson, string? error)
+        {
+            if (error is not { Length: > ErrorInlineMax }) return new(kind, status, errorKey, errorParamsJson, error);
+            var cut = char.IsHighSurrogate(error[ErrorInlineMax - 1]) ? ErrorInlineMax - 1 : ErrorInlineMax;
+            return new(kind, status, errorKey, errorParamsJson, error[..cut], HashOf(error));
+        }
+
+        private static string HashOf(string error) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(error)));
 
         public string Encode() =>
-            WebEncoders.Base64UrlEncode(JsonSerializer.SerializeToUtf8Bytes(new Wire(Kind, Status, ErrorKey, ErrorParamsJson, Error, ErrorLength)));
+            WebEncoders.Base64UrlEncode(JsonSerializer.SerializeToUtf8Bytes(new Wire(Kind, Status, ErrorKey, ErrorParamsJson, Error, ErrorHash), WireOptions));
 
-        public IQueryable<HealthOperation> Apply(IQueryable<HealthOperation> source)
+        /// <summary>The group's operations. A long error is matched by prefix in SQL and then by hash in memory.</summary>
+        public async Task<IQueryable<HealthOperation>> ApplyAsync(IQueryable<HealthOperation> source, CancellationToken ct)
         {
             source = source.Where(o => o.Kind == Kind && o.Status == Status && o.ErrorKey == ErrorKey && o.ErrorParamsJson == ErrorParamsJson);
-            if (ErrorLength is not { } length) return source.Where(o => o.Error == Error);
+            if (ErrorHash is null) return source.Where(o => o.Error == Error);
             var prefix = Error!;
-            return source.Where(o => o.Error != null && o.Error.Length == length && o.Error.StartsWith(prefix));
+            var candidates = await source.Where(o => o.Error != null && o.Error.StartsWith(prefix))
+                .Select(o => new { o.Id, o.Error }).ToListAsync(ct);
+            var ids = candidates.Where(c => HashOf(c.Error!) == ErrorHash).Select(c => c.Id).ToList();
+            return source.Where(o => ids.Contains(o.Id));
         }
 
         public static OperationGroupKey? Decode(string? key)
@@ -591,10 +603,10 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             if (string.IsNullOrEmpty(key)) return null;
             try
             {
-                var wire = JsonSerializer.Deserialize<Wire>(WebEncoders.Base64UrlDecode(key));
+                var wire = JsonSerializer.Deserialize<Wire>(WebEncoders.Base64UrlDecode(key), WireOptions);
                 if (wire is null || string.IsNullOrEmpty(wire.K) || string.IsNullOrEmpty(wire.S)) return null;
-                if (wire.L is not null && (wire.E is null || wire.L <= wire.E.Length)) return null;
-                return new(wire.K, wire.S, wire.Ek, wire.Ep, wire.E, wire.L);
+                if (wire.H is not null && string.IsNullOrEmpty(wire.E)) return null;
+                return new(wire.K, wire.S, wire.Ek, wire.Ep, wire.E, wire.H);
             }
             catch (Exception ex) when (ex is FormatException or JsonException)
             {

@@ -133,7 +133,7 @@ public sealed class HealthOperationGroupTests : IDisposable
         var key = group.GetProperty("key").GetString()!;
         var all = Body(await controller.OperationGroup(new NoUserSettings(), key, 100, default));
 
-        Assert.True(key.Length < 4_000);
+        Assert.True(key.Length < 1_000);
         Assert.Equal(4, all.GetProperty("total").GetInt32());
         Assert.All(all.GetProperty("items").EnumerateArray(), r => Assert.Equal(error, r.GetProperty("error").GetString()));
     }
@@ -176,5 +176,44 @@ public sealed class HealthOperationGroupTests : IDisposable
 
         var all = Body(await controller.OperationGroup(new NoUserSettings(), key, 100, default));
         Assert.Equal(1, all.GetProperty("total").GetInt32());
+    }
+
+    [Fact]
+    public async Task Long_errors_with_the_same_opening_and_length_stay_separate_groups()
+    {
+        using var db = fixture.NewContext();
+        var shared = new string('x', 3_000);
+        var first = shared + "A";
+        var second = shared + "B";
+        await Seed(db, 3, "repair", "failed", null, first);
+        await Seed(db, 2, "repair", "failed", null, second);
+        var controller = Controller(db);
+
+        var groups = Body(await controller.Operations(new NoUserSettings(), 1, default)).GetProperty("items").EnumerateArray().ToList();
+        Assert.Equal(2, groups.Count);
+        foreach (var (error, count) in new[] { (first, 3), (second, 2) })
+        {
+            var group = groups.Single(g => g.GetProperty("error").GetString() == error);
+            var all = Body(await controller.OperationGroup(new NoUserSettings(), group.GetProperty("key").GetString()!, 100, default));
+            Assert.Equal(count, all.GetProperty("total").GetInt32());
+            Assert.All(all.GetProperty("items").EnumerateArray(), r => Assert.Equal(error, r.GetProperty("error").GetString()));
+        }
+    }
+
+    [Fact]
+    public async Task A_long_error_with_characters_outside_the_bmp_resolves_even_when_the_prefix_cuts_a_pair()
+    {
+        using var db = fixture.NewContext();
+        var error = new string('x', 199) + "😀" + new string('漢', 2_000);
+        await Seed(db, 2, "repair", "failed", null, error);
+        var controller = Controller(db);
+
+        var group = Body(await controller.Operations(new NoUserSettings(), 1, default)).GetProperty("items").EnumerateArray().Single();
+        var key = group.GetProperty("key").GetString()!;
+        var all = Body(await controller.OperationGroup(new NoUserSettings(), key, 100, default));
+
+        Assert.True(key.Length < 1_500);
+        Assert.Equal(2, all.GetProperty("total").GetInt32());
+        Assert.Equal(error, all.GetProperty("items")[0].GetProperty("error").GetString());
     }
 }
