@@ -1709,7 +1709,10 @@ export function useDeleteSeries() {
   return useMutation({
     mutationFn: ({ id, deleteFiles, permanent = false }: { id: number; deleteFiles: boolean; permanent?: boolean }) =>
       api<void>(`/series/${id}?deleteFiles=${deleteFiles}&permanent=${permanent}`, { method: 'DELETE' }),
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
+      // The series page navigates to the Library right after this, before the refetch lands. A stale
+      // card there would still be on screen and the poster would fly back into it.
+      queryClient.setQueryData<SeriesDto[]>(['series'], (list) => list?.filter((s) => s.id !== id))
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['recycle-bin'] })
       for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
