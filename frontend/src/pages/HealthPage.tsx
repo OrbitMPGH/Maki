@@ -1790,7 +1790,7 @@ function OperationGroup({ group, onReview }: { group: OperationGroupData; onRevi
                 coverUrl={op.coverUrl ?? null}
                 detail={
                   op.seriesTitle && fileName && op.relativePath ? (
-                    <MonoValue value={fileName} full={op.relativePath} fz="var(--type-meta)" c="var(--ink-3)" />
+                    <MonoValue value={fileName} full={op.relativePath} focusable={false} fz="var(--type-meta)" c="var(--ink-3)" />
                   ) : undefined
                 }
                 small

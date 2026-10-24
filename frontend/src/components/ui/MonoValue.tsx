@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { IconCheck, IconCopy } from '@tabler/icons-react'
 import { useLingui } from '@lingui/react/macro'
@@ -55,6 +55,7 @@ export function MonoValue({
   full,
   href,
   copy,
+  focusable = true,
   minWidth,
   fz,
   c,
@@ -63,6 +64,8 @@ export function MonoValue({
   full?: string
   href?: string
   copy?: boolean
+  /** False when the row already has a control to tab to and hover, the title and the DOM text are enough. */
+  focusable?: boolean
   minWidth?: CSSProperties['minWidth']
   fz?: CSSProperties['fontSize']
   c?: CSSProperties['color']
@@ -88,6 +91,11 @@ export function MonoValue({
   }, [value])
 
   const show = () => setOpened(hidesSome)
+  // A click focuses the copy button too, and the pointer is not on the text to take the tooltip
+  // back down, so only keyboard focus opens it.
+  const showOnKeyboardFocus = (e: FocusEvent<HTMLElement>) => {
+    if (e.currentTarget.matches(':focus-visible')) show()
+  }
   const hide = () => setOpened(false)
 
   const text = (
@@ -110,7 +118,7 @@ export function MonoValue({
             className="mono-value-text"
             onMouseEnter={show}
             onMouseLeave={hide}
-            onFocus={show}
+            onFocus={showOnKeyboardFocus}
             onBlur={hide}
           >
             {text}
@@ -118,11 +126,11 @@ export function MonoValue({
         ) : (
           <span
             className="mono-value-text"
-            tabIndex={hidesSome && !copy ? 0 : undefined}
+            tabIndex={hidesSome && !copy && focusable ? 0 : undefined}
             title={hidesSome && !opened ? whole : undefined}
             onMouseEnter={show}
             onMouseLeave={hide}
-            onFocus={show}
+            onFocus={showOnKeyboardFocus}
             onBlur={hide}
           >
             {text}
@@ -137,7 +145,7 @@ export function MonoValue({
           color={copied ? 'var(--ok)' : 'var(--neutral)'}
           aria-label={copied ? t`Copied` : t`Copy ${whole}`}
           onClick={() => void copyValue(whole)}
-          onFocus={show}
+          onFocus={showOnKeyboardFocus}
           onBlur={hide}
         >
           {copied ? <IconCheck size={13} /> : <IconCopy size={13} />}
