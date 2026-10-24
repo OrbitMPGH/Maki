@@ -250,8 +250,9 @@ appHistory.listen = (listener) =>
     // skip can land before the callback has built the flight, which would then never start or clear.
     let skipped = false
 
+    let releaseTint = () => {}
     const transition = document.startViewTransition(() => {
-      holdTint(true)
+      releaseTint = holdTint()
       listener(update)
       settle?.()
       const deadline = performance.now() + COMMIT_TIMEOUT_MS
@@ -282,23 +283,27 @@ appHistory.listen = (listener) =>
         else if (outgoing && leaving) incoming = linkedCover(leaving)
         if (fromRect && incoming && !skipped) flight = flyCover(fromRect, incoming)
         if (!flight) rise(false)
-        // The flight's image and the new page's cover tint, which the cross-fade then carries from
-        // the old ground to the new instead of an ease restyling the page every frame.
+        // The flight's image, and the new cover's tint so it can ease in with the cross-fade.
         await Promise.race([
           Promise.all([flight?.decoded, tintSettled()]),
           tick(Math.max(0, deadline - performance.now())),
         ])
         if (skipped) flight?.cancel()
-      }).finally(() => holdTint(false))
+      })
     })
     transition.ready.then(
-      () => flight?.start(),
+      () => {
+        flight?.start()
+        releaseTint()
+      },
       () => {
         skipped = true
         flight?.cancel()
+        releaseTint()
       },
     )
     transition.finished.finally(() => {
+      releaseTint()
       // A couple of frames past the capture, so every rail has been laid out once and remembers it.
       requestAnimationFrame(() => requestAnimationFrame(() => unsettleLayout(settled)))
     })

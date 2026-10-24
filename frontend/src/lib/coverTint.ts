@@ -1,5 +1,6 @@
 import { useLayoutEffect } from 'react'
 import { useThemeChoice } from '../theme-context'
+import { motionPace, prefersReducedMotion } from './motionPrefs'
 
 /**
  * The Cover tint background mixes the ground toward the cover on screen instead of the accent.
@@ -69,10 +70,8 @@ function sampleTint(img: HTMLImageElement): string | null {
   return toHex(hue, Math.min(0.75, Math.max(0.45, sat)), 0.55)
 }
 
-const EASE_MS = 800
-// theme.css's --ease, kept here rather than read back, since any read of the root's style while it is
-// changing restyles the whole page on the spot.
-const EASING = 'cubic-bezier(0.16, 1, 0.3, 1)'
+const EASE_MS = 250
+const EASING = 'cubic-bezier(0.65, 0, 0.35, 1)'
 const ACCENT = 'var(--brand)'
 /** What the property holds now: the last value written, or the accent when it is unset. */
 let current = ACCENT
@@ -80,18 +79,28 @@ let clock: Animation | null = null
 let frame = 0
 
 /**
- * Set by lib/pageTransition.ts while a page transition prepares the new page. A tint change then is
- * written at once: the transition's cross-fade blends the old page's ground into the new one on the
- * GPU, where easing it here would restyle the whole page on every frame (about 33ms a frame on
- * Discover, which read as a stutter).
+ * Held by lib/pageTransition.ts while a page transition prepares the new page, which is captured on
+ * the old ground. The tint then eases in alongside the cross-fade. Writing it before the capture left
+ * the cross-fade's 0.2s, front-loaded curve as the only blend, which read as a snap.
  */
-let held = false
-export function holdTint(on: boolean) {
-  held = on
+let holds = 0
+/** Where the ground goes once the last hold is released; undefined when nothing asked to move. */
+let pending: string | null | undefined
+export function holdTint(): () => void {
+  holds++
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    if (--holds > 0 || pending === undefined) return
+    const tint = pending
+    pending = undefined
+    easeTint(tint)
+  }
 }
 
 let settling: Promise<void> = Promise.resolve()
-/** Resolves once the cover the current page asked for has been sampled and its tint written. */
+/** Resolves once the cover the current page asked for has been sampled. */
 export const tintSettled = () => settling
 
 /**
@@ -106,6 +115,10 @@ export const tintSettled = () => settling
  * timeline. Nothing is read back from the page, so each frame costs one restyle and no more.
  */
 function easeTint(tint: string | null) {
+  if (holds > 0) {
+    pending = tint
+    return
+  }
   const root = document.documentElement
   clock?.cancel()
   cancelAnimationFrame(frame)
@@ -116,9 +129,9 @@ function easeTint(tint: string | null) {
     if (value === ACCENT) root.style.removeProperty(PROPERTY)
     else root.style.setProperty(PROPERTY, value)
   }
-  if (held || from === to || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return write(to)
+  if (from === to || prefersReducedMotion()) return write(to)
 
-  const timer = new Animation(new KeyframeEffect(null, null, { duration: EASE_MS, easing: EASING }))
+  const timer = new Animation(new KeyframeEffect(null, null, { duration: EASE_MS * motionPace(), easing: EASING }))
   clock = timer
   timer.finished.then(
     () => {
@@ -169,10 +182,10 @@ export function useCoverTint(coverUrl: string | null | undefined) {
       img.onload = null
       img.onerror = null
       done()
-      // Inside a page transition only the captured result shows, so the accent can go in now and the
-      // next cover over it. Otherwise deferred, so moving from one series to the next goes straight
-      // from cover to cover instead of dipping back to the accent in between.
-      if (held) {
+      // Inside a page transition the accent only becomes pending, and the next cover replaces it.
+      // Otherwise deferred, so moving from one series to the next goes straight from cover to cover
+      // instead of dipping back to the accent in between.
+      if (holds > 0) {
         if (id === owner) easeTint(null)
         return
       }
