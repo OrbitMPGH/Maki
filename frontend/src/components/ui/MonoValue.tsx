@@ -45,7 +45,8 @@ function watchSize(el: Element, onResize: () => void) {
 /**
  * A machine string (file name, path, source id) on one line. When its column is too narrow it loses
  * its middle, so the start and the extension stay readable; the full value is in a tooltip and,
- * with `copy`, one click away. It never wraps, so a table holding one needs a min width and scrolls
+ * with `copy`, one click away. With `copy` the button is the single tab stop and shows the tooltip
+ * on focus; without it the clipped value itself is focusable. It never wraps, so a table holding one needs a min width and scrolls
  * as a whole. `full` is what the tooltip shows and the button copies when the label is shorter, a
  * file name standing for its path. `minWidth` stops a table column collapsing to the tail.
  */
@@ -73,8 +74,9 @@ export function MonoValue({
   const [clipped, setClipped] = useState(false)
   const whole = full ?? value
   const [head, tail] = splitForTruncation(value)
-  // Clipped, or standing for something longer: only then is there anything to reveal, and only then
-  // does the value take focus, so keyboard and touch users can get at it too.
+  // Clipped, or standing for something longer: only then is there anything to reveal. The value
+  // takes focus for that only when it has no copy button, which reveals the same tooltip on focus,
+  // so a table of values has one tab stop per row. The full text is in the DOM either way.
   const hidesSome = whole !== value || clipped
 
   useLayoutEffect(() => {
@@ -116,7 +118,7 @@ export function MonoValue({
         ) : (
           <span
             className="mono-value-text"
-            tabIndex={hidesSome ? 0 : undefined}
+            tabIndex={hidesSome && !copy ? 0 : undefined}
             title={hidesSome && !opened ? whole : undefined}
             onMouseEnter={show}
             onMouseLeave={hide}
@@ -135,6 +137,8 @@ export function MonoValue({
           color={copied ? 'var(--ok)' : 'var(--neutral)'}
           aria-label={copied ? t`Copied` : t`Copy ${whole}`}
           onClick={() => void copyValue(whole)}
+          onFocus={show}
+          onBlur={hide}
         >
           {copied ? <IconCheck size={13} /> : <IconCopy size={13} />}
         </ActionIcon>
