@@ -6,9 +6,11 @@ namespace Maki.Api.Jobs;
 /// Retries a failed MangaBaka dump download sooner than the six-hour schedule while no usable dump
 /// is installed (none at all, which gates most of the web app, or one that failed its integrity
 /// check, which breaks every metadata lookup): 15 minutes, then 30, 60 and so on, until the
-/// schedule's own next run comes first. A failed refresh of a sound dump keeps the schedule. A singleton, so the count of failures in a row survives between job instances.
+/// schedule's own next run comes first. A failed refresh of a sound dump keeps the schedule. A
+/// singleton, so the count of failures in a row survives between job instances.
 /// </summary>
-public sealed class MangaBakaDumpRetry
+/// <param name="firstDelay">Overrides <see cref="FirstDelay"/>; tests shorten it to drive real runs.</param>
+public sealed class MangaBakaDumpRetry(TimeSpan? firstDelay = null)
 {
     public static readonly TriggerKey RetryTriggerKey = new("mangabaka-dump-retry");
     public static readonly TriggerKey ScheduleTriggerKey = new("mangabaka-dump-trigger");
@@ -16,12 +18,13 @@ public sealed class MangaBakaDumpRetry
     public static readonly TimeSpan FirstDelay = TimeSpan.FromMinutes(15);
     public static readonly TimeSpan MaxDelay = TimeSpan.FromHours(6);
 
+    private readonly TimeSpan _firstDelay = firstDelay ?? FirstDelay;
     private int _failures;
 
     /// <summary>The wait after the <paramref name="failures"/>th failure in a row (1-based).</summary>
-    public static TimeSpan DelayAfter(int failures)
+    public static TimeSpan DelayAfter(int failures, TimeSpan? firstDelay = null)
     {
-        var delay = FirstDelay;
+        var delay = firstDelay ?? FirstDelay;
         for (var i = 1; i < failures && delay < MaxDelay; i++)
         {
             delay *= 2;
@@ -43,7 +46,7 @@ public sealed class MangaBakaDumpRetry
             return null;
         }
 
-        var at = now + DelayAfter(Interlocked.Increment(ref _failures));
+        var at = now + DelayAfter(Interlocked.Increment(ref _failures), _firstDelay);
         if ((await scheduler.GetTrigger(ScheduleTriggerKey, ct))?.GetNextFireTimeUtc() is { } next && next <= at)
         {
             return null;

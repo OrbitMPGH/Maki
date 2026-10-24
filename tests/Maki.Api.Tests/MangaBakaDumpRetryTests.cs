@@ -1,7 +1,12 @@
 using System.Collections.Specialized;
+using System.Net;
+using Maki.Api.Hubs;
 using Maki.Api.Jobs;
+using Maki.Metadata.MangaBaka;
+using Microsoft.Extensions.Logging.Abstractions;
 using Quartz;
 using Quartz.Impl;
+using Quartz.Spi;
 
 namespace Maki.Api.Tests;
 
@@ -77,6 +82,45 @@ public class MangaBakaDumpRetryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_failed_run_schedules_a_retry_that_reschedules_itself_when_it_fails_too()
+    {
+        var dir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "maki-dump-retry-" + Guid.NewGuid().ToString("N")));
+        try
+        {
+            var http = new FailingDumpHttp();
+            var status = new MangaBakaDumpStatus();
+            var dumpService = new MangaBakaDumpService(
+                http, new MangaBakaDumpOptions(Path.Combine(dir.FullName, "mangabaka.db"), dir.FullName),
+                new FakeAppSettings(), status, NullLogger<MangaBakaDumpService>.Instance);
+            var job = new MangaBakaDumpRefreshJob(
+                dumpService, status, new EventBroadcaster(null!, null!), schedulerFactory: null!,
+                new ArtifactBuildGate(NullLogger<ArtifactBuildGate>.Instance),
+                new MangaBakaDumpRetry(TimeSpan.FromMilliseconds(200)),
+                NullLogger<MangaBakaDumpRefreshJob>.Instance);
+            _scheduler.JobFactory = new OneJob(job);
+            await _scheduler.Start();
+
+            await _scheduler.TriggerJob(MangaBakaDumpRefreshJob.Key);
+
+            // The manual run fails, its retry (+200 ms) fails, and that one schedules the next
+            // (+400 ms), which is the third request.
+            var deadline = DateTime.UtcNow.AddSeconds(15);
+            while (http.Calls < 3 && DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(50);
+            }
+
+            Assert.True(http.Calls >= 3, $"only {http.Calls} attempts");
+            Assert.NotNull(status.Snapshot().LastError);
+        }
+        finally
+        {
+            await _scheduler.Shutdown(waitForJobsToComplete: true);
+            try { dir.Delete(recursive: true); } catch (IOException) { }
+        }
+    }
+
+    [Fact]
     public async Task Success_resets_the_backoff_and_drops_the_pending_retry()
     {
         await ScheduleRegularAt(Now.AddHours(6));
@@ -88,5 +132,34 @@ public class MangaBakaDumpRetryTests : IAsyncLifetime
 
         Assert.Null(await RetryAt());
         Assert.Equal(Now.AddMinutes(15), await retry.OnFailureAsync(_scheduler, dumpUnusable: true, Now, default));
+    }
+
+    private sealed class OneJob(IJob job) : IJobFactory
+    {
+        public IJob NewJob(TriggerFiredBundle bundle, IScheduler scheduler) => job;
+
+        public void ReturnJob(IJob job)
+        {
+        }
+    }
+
+    /// <summary>Every request fails, so every refresh does; counts the requests.</summary>
+    private sealed class FailingDumpHttp : IHttpClientFactory
+    {
+        private int _calls;
+
+        public int Calls => Volatile.Read(ref _calls);
+
+        public HttpClient CreateClient(string name) =>
+            new(new Handler(this)) { BaseAddress = new Uri("https://fixture.test/") };
+
+        private sealed class Handler(FailingDumpHttp owner) : HttpMessageHandler
+        {
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+            {
+                Interlocked.Increment(ref owner._calls);
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
+            }
+        }
     }
 }
