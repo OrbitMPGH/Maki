@@ -5110,7 +5110,7 @@ msgid "health.issue.noSourceMappings"
 msgstr "{series} é monitorada, mas não tem fontes ativadas"
 
 #: src/Maki.Api/Services/HealthCheckService.cs
-#. English: The local MangaBaka database has not been downloaded, so Maki stays closed to everyone until it is. Check the download in Settings → Library → Metadata database.
+#. English: The local MangaBaka database has not been downloaded yet. Until it is, only the reader and, for admins, Settings and Health are open. Maki retries the download by itself; check it in Settings → Library → Metadata database.
 #, fuzzy
 msgid "health.issue.dumpMissing"
 msgstr ""

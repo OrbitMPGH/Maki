@@ -3645,7 +3645,7 @@ msgstr "{series} is monitored but has no enabled sources"
 
 #: src/Maki.Api/Services/HealthCheckService.cs
 msgid "health.issue.dumpMissing"
-msgstr "The local MangaBaka database has not been downloaded, so Maki stays closed to everyone until it is. Check the download in Settings → Library → Metadata database."
+msgstr "The local MangaBaka database has not been downloaded yet. Until it is, only the reader and, for admins, Settings and Health are open. Maki retries the download by itself; check it in Settings → Library → Metadata database."
 
 #: src/Maki.Api/Services/HealthCheckService.cs
 msgid "health.issue.dumpStale"
