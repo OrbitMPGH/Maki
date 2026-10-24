@@ -425,7 +425,7 @@ function AppShellRoutes() {
 
   // Focus moves in only for a drawer someone asked for; a peek under a passing mouse must not take it.
   useEffect(() => {
-    if (pinned) navbarRef.current?.querySelector<HTMLElement>('a[href], button:not([disabled])')?.focus()
+    if (pinned) navbarRef.current?.querySelector<HTMLElement>('a.nav-link[href]')?.focus()
   }, [pinned])
 
   useEffect(() => {
@@ -433,6 +433,10 @@ function AppShellRoutes() {
     const navbar = navbarRef.current
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return
+      // Focus elsewhere (a popover, a modal, a field in the page) means Escape is meant for that.
+      const active = document.activeElement
+      const inDrawer = !!active && (navbar?.contains(active) || burgerRef.current?.contains(active))
+      if (!inDrawer && active && active !== document.body) return
       window.clearTimeout(peekTimer.current)
       setPeeking(false)
       closePinned()
