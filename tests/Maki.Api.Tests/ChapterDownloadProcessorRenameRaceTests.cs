@@ -1,6 +1,5 @@
 using Maki.Api.Services;
 using Maki.Core.Entities;
-using Microsoft.Data.Sqlite;
 
 namespace Maki.Api.Tests;
 
@@ -37,37 +36,14 @@ public class ChapterDownloadProcessorRenameRaceTests : IDisposable
         using (await SeriesLocks.SeriesAsync(_world.SeriesId, CancellationToken.None))
         {
             run = _world.ProcessAsync(itemId);
-            for (var i = 0; i < 400; i++)
-            {
-                try
-                {
-                    using var db = _world.Db.NewContext();
-                    if (db.DownloadQueue.Single(q => q.Id == itemId).Status == QueueStatus.Importing)
-                    {
-                        break;
-                    }
-                }
-                catch (SqliteException)
-                {
-                }
+            // Downloaded and waiting to import: the folder it would have written to is about to change.
+            await Wait.UntilAsync(() => run.IsCompleted || SeriesLocks.SeriesUsers(_world.SeriesId) == 2,
+                "the download never asked for the series lock to import");
+            Assert.False(run.IsCompleted);
 
-                await Task.Delay(25);
-            }
-
-            for (var i = 0; ; i++)
-            {
-                try
-                {
-                    using var db = _world.Db.NewContext();
-                    db.Series.Single(s => s.Id == _world.SeriesId).FolderName = "Renamed";
-                    db.SaveChanges();
-                    break;
-                }
-                catch (Exception ex) when (i < 50 && (ex is SqliteException || ex.InnerException is SqliteException))
-                {
-                    await Task.Delay(50);
-                }
-            }
+            using var db = _world.Db.NewContext();
+            db.Series.Single(s => s.Id == _world.SeriesId).FolderName = "Renamed";
+            db.SaveChanges();
         }
 
         Assert.Equal(DownloadOutcome.Settled, await run);

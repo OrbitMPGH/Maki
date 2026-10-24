@@ -72,7 +72,8 @@ public class SourceMappingRemovalServiceTests : IDisposable
         using (await SeriesLocks.SeriesAsync(seriesId, CancellationToken.None))
         {
             removal = BuildService().RemoveAsync(wrongId, deleteFiles: false);
-            await Task.Delay(200);
+            await Wait.UntilAsync(() => removal.IsCompleted || SeriesLocks.SeriesUsers(seriesId) == 2,
+                "the removal never asked for the series lock");
             Assert.False(removal.IsCompleted);
             using var check = _db.NewContext();
             Assert.Single(check.SourceMappings.Where(m => m.Id == wrongId));

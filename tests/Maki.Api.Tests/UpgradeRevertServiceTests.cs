@@ -222,7 +222,9 @@ public class UpgradeRevertServiceTests : IDisposable
         try
         {
             revert = RevertAsync();
-            await Task.Delay(200);
+            var waiting = revert;
+            await Wait.UntilAsync(() => waiting.IsCompleted || SeriesLocks.SeriesUsers(_world.SeriesId) == 2,
+                "the revert never asked for the series lock");
             Assert.False(revert.IsCompleted);
             Assert.Equal(_upgraded, File.ReadAllBytes(_path));
         }

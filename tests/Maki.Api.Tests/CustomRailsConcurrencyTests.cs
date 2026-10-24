@@ -106,14 +106,17 @@ public sealed class CustomRailsConcurrencyTests : IDisposable
 
     /// <summary>
     /// Pauses right after the very first <c>COUNT</c> this connection runs (<c>Create</c>'s cap
-    /// check) comes back, but before the awaiting C# code acts on it. Whatever the count check sees
-    /// (stale or not) is already decided by the time this fires; the pause is purely about giving the
-    /// other racer's connection a window to run while this one holds whatever lock (if any) its own
-    /// count query left it holding.
+    /// check) comes back, but before the awaiting C# code acts on it, until <see cref="Release"/>.
+    /// Whatever the count check sees (stale or not) is already decided by the time this fires; the
+    /// pause is purely about giving the other racer's connection a window to run while this one holds
+    /// whatever lock (if any) its own count query left it holding.
     /// </summary>
-    private sealed class PauseAfterFirstCount(TimeSpan delay) : DbCommandInterceptor
+    private sealed class PauseAfterFirstCount : DbCommandInterceptor
     {
         private bool _fired;
+
+        public TaskCompletionSource Paused { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public override async ValueTask<DbDataReader> ReaderExecutedAsync(
             DbCommand command, CommandExecutedEventData eventData, DbDataReader result,
@@ -122,7 +125,8 @@ public sealed class CustomRailsConcurrencyTests : IDisposable
             if (!_fired && command.CommandText.Contains("COUNT"))
             {
                 _fired = true;
-                await Task.Delay(delay, cancellationToken);
+                Paused.SetResult();
+                await Release.Task.WaitAsync(cancellationToken);
             }
 
             return result;
@@ -142,16 +146,19 @@ public sealed class CustomRailsConcurrencyTests : IDisposable
                 await Controller(alice, seedDb).Create(Request($"Rail {i}"), CancellationToken.None));
         }
 
-        // One slot left (29 of 30). The first racer's cap-check count is deliberately delayed after
-        // it has already read the value, giving the second racer's own, fully independent connection
-        // a real window to run a whole Create to completion before the first acts on what it read.
-        var pause = new PauseAfterFirstCount(TimeSpan.FromMilliseconds(500));
+        // One slot left (29 of 30). The first racer is held right after its cap-check count has read
+        // the value, giving the second racer's own, fully independent connection a real window to run
+        // a whole Create to completion before the first acts on what it read. If A's count left a lock
+        // that B queues on, B cannot finish while A is held, so A is let go after a bounded wait.
+        var pause = new PauseAfterFirstCount();
         using var dbA = NewContext(alice, pause);
         using var dbB = NewContext(alice);
 
         var racerA = Task.Run(() => Controller(alice, dbA).Create(Request("Racer A"), CancellationToken.None));
-        await Task.Delay(TimeSpan.FromMilliseconds(100)); // let A's count fire and start its pause first
+        await pause.Paused.Task.WaitAsync(TimeSpan.FromSeconds(10));
         var racerB = Task.Run(() => Controller(alice, dbB).Create(Request("Racer B"), CancellationToken.None));
+        await Task.WhenAny(racerB, Task.Delay(TimeSpan.FromMilliseconds(500)));
+        pause.Release.SetResult();
 
         var results = await Task.WhenAll(racerA, racerB);
 

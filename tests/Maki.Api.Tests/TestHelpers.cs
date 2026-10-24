@@ -14,6 +14,34 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
+internal static class Wait
+{
+    /// <summary>
+    /// Polls until <paramref name="condition"/> holds, for state a background task reaches with no
+    /// task to await. Fails after <paramref name="timeout"/>, ten seconds unless given.
+    /// </summary>
+    public static async Task UntilAsync(Func<bool> condition, string because, TimeSpan? timeout = null)
+    {
+        var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(10));
+        while (!condition())
+        {
+            Assert.True(DateTime.UtcNow < deadline, because);
+            await Task.Delay(5);
+        }
+    }
+
+    /// <inheritdoc cref="UntilAsync(Func{bool}, string, TimeSpan?)"/>
+    public static async Task UntilAsync(Func<Task<bool>> condition, string because, TimeSpan? timeout = null)
+    {
+        var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(10));
+        while (!await condition())
+        {
+            Assert.True(DateTime.UtcNow < deadline, because);
+            await Task.Delay(5);
+        }
+    }
+}
+
 /// <summary>
 /// A <see cref="NotificationService"/> that records dispatches instead of sending them — the real
 /// <c>Dispatch</c> is fire-and-forget, which a test can't await.
@@ -46,11 +74,22 @@ internal sealed class RecordingInbox() : InboxService(
     /// <summary>Series raises land here with the audience unresolved — the resolution is a DB concern.</summary>
     public List<(InboxEventType Type, InboxMessage Message, int SeriesId)> RaisedForSeries { get; } = [];
 
-    public override void Raise(InboxEventType type, InboxMessage message, InboxAudience audience) =>
-        Raised.Add((type, message, audience));
+    // Background work raises from its own thread, so the lists are locked on themselves.
+    public override void Raise(InboxEventType type, InboxMessage message, InboxAudience audience)
+    {
+        lock (Raised)
+        {
+            Raised.Add((type, message, audience));
+        }
+    }
 
-    public override void RaiseForSeries(InboxEventType type, InboxMessage message, int seriesId) =>
-        RaisedForSeries.Add((type, message, seriesId));
+    public override void RaiseForSeries(InboxEventType type, InboxMessage message, int seriesId)
+    {
+        lock (RaisedForSeries)
+        {
+            RaisedForSeries.Add((type, message, seriesId));
+        }
+    }
 
     /// <summary>How many <see cref="RaiseOrThrowAsync"/> calls fail before they succeed, as a database write that errors would.</summary>
     public int DurableRaiseFailures { get; set; }

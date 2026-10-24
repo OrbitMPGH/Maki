@@ -509,6 +509,15 @@ public class ImportListServiceTests : IDisposable
         Assert.Equal(25, prefs.MaxPerRun);
     }
 
+    /// <summary>The detached run's last act is the inbox row, which it raises from its own thread.</summary>
+    private Task RunFinished() => Wait.UntilAsync(() =>
+    {
+        lock (_inbox.Raised)
+        {
+            return _inbox.Raised.Any(r => r.Type == Maki.Core.Inbox.InboxEventType.ImportListFinished);
+        }
+    }, "the background run never finished");
+
     [Fact]
     public async Task A_full_run_starts_in_the_background_and_holds_the_lock()
     {
@@ -526,12 +535,7 @@ public class ImportListServiceTests : IDisposable
         Assert.Equal(409, ((ObjectResult)partial).StatusCode);
 
         _tracker.Hold.SetResult();
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (!_inbox.Raised.Any(r => r.Type == Maki.Core.Inbox.InboxEventType.ImportListFinished))
-        {
-            Assert.True(DateTime.UtcNow < deadline, "the background run never finished");
-            await Task.Delay(20);
-        }
+        await RunFinished();
 
         Assert.Equal(new int?[] { 101 }, LibraryIds());
         var after = await Controller(user).Run(new ImportListsController.RunRequest(null), default);
@@ -554,12 +558,7 @@ public class ImportListServiceTests : IDisposable
 
         cts.Cancel();
         _tracker.Hold.SetResult();
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (!_inbox.Raised.Any(r => r.Type == Maki.Core.Inbox.InboxEventType.ImportListFinished))
-        {
-            Assert.True(DateTime.UtcNow < deadline, "the background run never finished");
-            await Task.Delay(20);
-        }
+        await RunFinished();
 
         Assert.Equal(new int?[] { 101 }, LibraryIds());
     }
@@ -571,12 +570,7 @@ public class ImportListServiceTests : IDisposable
         _tracker.Entries = [];
 
         Assert.IsType<AcceptedResult>(await Controller(user).Run(new ImportListsController.RunRequest(null), default));
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (!_inbox.Raised.Any(r => r.Type == Maki.Core.Inbox.InboxEventType.ImportListFinished))
-        {
-            Assert.True(DateTime.UtcNow < deadline, "the background run never finished");
-            await Task.Delay(20);
-        }
+        await RunFinished();
     }
 
     [Fact]

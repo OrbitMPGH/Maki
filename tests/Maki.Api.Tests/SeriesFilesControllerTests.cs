@@ -367,7 +367,8 @@ public sealed class SeriesFilesControllerTests : IDisposable
         {
             relink = Controller(db).Relink(
                 seriesId, new SeriesController.RelinkRequest(null, null, DeleteSuperseded: false), CancellationToken.None);
-            await Task.Delay(200);
+            await Wait.UntilAsync(() => relink.IsCompleted || SeriesLocks.SeriesUsers(seriesId) == 2,
+                "the relink never asked for the series lock");
             Assert.False(relink.IsCompleted);
         }
 
@@ -521,12 +522,7 @@ public sealed class SeriesFilesControllerTests : IDisposable
 
             // The folder moves before the move asks for the lock to save, so the up-front check has passed.
             var moved = Path.Combine(to, "Berserk");
-            for (var i = 0; i < 200 && !Directory.Exists(moved); i++)
-            {
-                await Task.Delay(25);
-            }
-
-            Assert.True(Directory.Exists(moved));
+            await Wait.UntilAsync(() => Directory.Exists(moved), "the move never moved the folder");
             using var seed = _db.NewContext();
             seed.Series.Add(new Series
             {

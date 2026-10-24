@@ -158,8 +158,8 @@ public class SimilarSeriesServiceTests
         var service = Service(recommender);
 
         var visits = Enumerable.Range(1, 4).Select(id => service.GetAsync(id, ["safe"])).ToList();
-        await Task.Delay(200);
-        Assert.Equal(2, recommender.Calls);
+        await Wait.UntilAsync(() => Volatile.Read(ref recommender.Calls) >= 2, "two visits never started scanning");
+        Assert.Equal(2, Volatile.Read(ref recommender.Calls));
 
         recommender.Gate.SetResult();
         await Task.WhenAll(visits);
