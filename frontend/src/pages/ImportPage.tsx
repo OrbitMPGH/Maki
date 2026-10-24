@@ -139,7 +139,7 @@ export default function ImportPage() {
         title={t`Import`}
         description={
           mihonMode
-            ? t`Adds the manga in your Mihon library to Maki. Each one is matched to MangaBaka, its categories can become tags, and chapters you have read can be marked as read.`
+            ? t`Adds the manga in your Mihon library to Maki.`
             : t`Brings series folders Maki doesn't know yet into the library.`
         }
       />
@@ -483,10 +483,7 @@ function FolderImport() {
         size="lg"
       >
         <Text size="sm" mb="xs">
-          <Trans>
-            Folders are renamed to the English title. Sources are then found in the background, and
-            each series' comic files are linked to chapters as soon as its sources are in.
-          </Trans>
+          <Trans>Folders are renamed to the English title.</Trans>
         </Text>
         <Checkbox
           label={t`Standardize ComicInfo.xml inside the imported files (recommended)`}
@@ -495,14 +492,7 @@ function FolderImport() {
           mb="xs"
         />
         <Text size="xs" c="var(--ink-3)" mb="lg">
-          <Trans>
-            Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter
-            numbers) to Maki's standard so Kavita groups these files with future downloads and
-            imports; PDFs are skipped, since there is nowhere in a PDF to put it. If Kavita
-            already indexed this library, its existing entries may reshuffle; skipping keeps the
-            files byte-for-byte untouched, but they may not group consistently with chapters Maki
-            adds later.
-          </Trans>
+          <Trans>Helps Kavita group these files with later downloads.</Trans>
         </Text>
         <Group justify="flex-end">
           <Button variant="default" onClick={() => setConfirmOpen(false)}>
@@ -644,7 +634,7 @@ function FolderImport() {
             compact
             mood="asking"
             title={t`Choose a root folder`}
-            description={t`Scanning finds the series folders in it that Maki doesn't know yet and matches each to metadata. On import every folder is renamed to the English title and its comic files are linked to chapters. Files keep their own names, and a PDF is kept as it is.`}
+            description={t`Scanning finds the series folders Maki doesn't know yet.`}
           />
         )
       )}

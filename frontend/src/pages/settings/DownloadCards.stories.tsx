@@ -359,6 +359,6 @@ export const IndexerSwitchBackend: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByLabelText('Indexer', { selector: 'input' }))
     await userEvent.click(await within(document.body).findByRole('option', { name: 'Jackett' }))
-    await expect(await canvas.findByText(/Saving switches the indexer to Jackett/)).toBeVisible()
+    await expect(await canvas.findByText(/Save to switch to Jackett/)).toBeVisible()
   },
 }

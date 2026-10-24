@@ -178,14 +178,8 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
  * module loaded. Only event types that need more than their label carry an entry.
  */
 export const INBOX_TYPE_DESCRIPTIONS: Partial<Record<InboxEventType, MessageDescriptor>> = {
-  sourceMatchFinished: msg`A newly added series was linked to its download sources.`,
-  importListFinished: msg`A tracker list sync added or requested series.`,
-  followedCreatorRelease: msg`Checked after each nightly catalogue update. Follow someone from their creator page.`,
-  chapterUpgraded: msg`A better release replaced a downloaded chapter's file.`,
-  upgradeRestoreFailed: msg`A file could not be put back after a failed upgrade and is waiting in the trash folder.`,
-  torrentProposalPending: msg`A torrent volume release could replace files in a series and is waiting for your decision.`,
-  volumeUpgraded: msg`A volume release replaced several chapter files in a series.`,
-  seriesStatusChanged: msg`A series you read was completed, cancelled, put on hiatus or resumed.`,
+  followedCreatorRelease: msg`Follow someone from their creator page.`,
+  upgradeRestoreFailed: msg`The file is waiting in the trash folder.`,
 }
 
 /** Only ever admin-visible, so the settings card hides these for everyone else. */

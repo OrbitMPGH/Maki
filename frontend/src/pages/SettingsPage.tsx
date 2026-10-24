@@ -287,9 +287,6 @@ export default function SettingsPage() {
               <div className="settings-layout">
                 <SettingsJump entries={tabEntries} />
                 <Stack className="settings-content" gap="xl">
-                  <Text size="sm" c="var(--ink-3)">
-                    {renderLabel(tab.description)}
-                  </Text>
                   {tabEntries.map((entry) => (
                     <div key={entry.id} id={`setting-${entry.id}`} className="settings-entry">
                       {sectionNodes[entry.id]}

@@ -183,7 +183,7 @@ export default function RequestsPage() {
         title={t`Requests`}
         description={
           isAdmin
-            ? t`What readers without add or download permissions have asked for. Approving adds the series and queues the chapters.`
+            ? t`Approving adds the series and queues the chapters.`
             : t`Series and chapters you have asked an admin for.`
         }
       />
@@ -247,7 +247,7 @@ export default function RequestsPage() {
             return (
               <Panel key={r.id} p="sm">
                 <div className="requests-row">
-                  <div className="requests-row-cover">
+                  <div className="requests-row-cover" data-series-cover={r.seriesId ?? undefined}>
                     {r.coverUrl && <Image src={r.coverUrl} w={48} h={72} fit="cover" alt="" />}
                   </div>
 

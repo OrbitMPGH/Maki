@@ -428,16 +428,9 @@ export function SourceCompareModal({
         <Stack gap="md" style={{ flex: 1, minHeight: 0 }}>
           <Text size="sm" c="var(--ink-3)">
             {pick ? (
-              <Trans>
-                This chapter as each source scans it, heaviest first. Pick the one that looks best
-                and Maki downloads it again from there, replacing the file you have.
-              </Trans>
+              <Trans>Pick the one that looks best and Maki downloads it again from there.</Trans>
             ) : (
-              <Trans>
-                The same chapter as each source scans it, heaviest first. Drag the columns so your
-                favourite is first, then save: that becomes the order chapters download in for this
-                series.
-              </Trans>
+              <Trans>Drag your favourite first and save to set this series' download order.</Trans>
             )}
           </Text>
 
@@ -481,7 +474,7 @@ export function SourceCompareModal({
             <Group gap="md">
               {snapshot?.pagesAligned && (
                 <Tooltip
-                  label={t`Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page.`}
+                  label={t`Pages are matched by image content, so each row is the same drawing in every column.`}
                   withArrow
                   multiline
                   w={300}
@@ -633,7 +626,7 @@ export function SourceCompareModal({
 
                       {panel.status === 'ready' && panel.pages.some((x) => x !== null) && (
                         <Tooltip
-                          label={t`Total bytes across the pages shown. Over the same pages it tracks how hard the source compressed them, which is why the columns start in this order, but a source that upscales its scans is bigger without being better.`}
+                          label={t`Total bytes across the pages shown. Bigger is not always better.`}
                           withArrow
                           multiline
                           w={280}

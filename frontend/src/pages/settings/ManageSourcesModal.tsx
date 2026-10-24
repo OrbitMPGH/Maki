@@ -337,10 +337,7 @@ function SuwayomiLanguageSetup({ source, options, opened, onToggle, onSaved }: {
         <Stack gap="xs">
           <Text size="sm" fw={600} c="var(--ink-hi)"><Trans>Chapter language</Trans></Text>
           <Text size="xs" c="var(--ink-3)">
-            <Trans>
-              {label} mixes languages, and Suwayomi does not say which one a chapter is in. Every
-              chapter from it is filed under the language you pick here.
-            </Trans>
+            <Trans>{label} mixes languages. Every chapter from it is filed under the one you pick.</Trans>
           </Text>
           <Select
             data={options}
@@ -423,11 +420,7 @@ function SuwayomiLanguagePicker({ siteName, members, selected, onChange, opened,
         <Stack gap="xs">
           <Text size="sm" fw={600} c="var(--ink-hi)"><Trans>{siteName} languages</Trans></Text>
           <Text size="xs" c="var(--ink-3)">
-            <Trans>
-              Suwayomi has a separate source for each language of this site, with its own chapters.
-              Every language you pick is searched for each series you add and gets its own place in
-              the priority list.
-            </Trans>
+            <Trans>Each language you pick is searched separately.</Trans>
           </Text>
           <MultiSelect
             data={options}
@@ -994,14 +987,7 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
         content: narrow ? undefined : { height: 'min(860px, 92dvh)' },
         body: { padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
       }}
-      title={
-        <div>
-          <Text fw={600}><Trans>Manage sources</Trans></Text>
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Turn sources on or off on the left. Drag the rail on the right to set which one Maki tries first.</Trans>
-          </Text>
-        </div>
-      }
+      title={<Text fw={600}><Trans>Manage sources</Trans></Text>}
     >
       <div className="source-manager" data-narrow={narrow || undefined}>
         {narrow && (

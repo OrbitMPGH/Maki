@@ -223,10 +223,7 @@ export function ImportPlanModal({
         </Text>
         {deferred && (
           <Alert color="var(--info)" icon={<IconInfoCircle size={16} />}>
-            <Trans>
-              Final linking happens after sources are found. Until then the chapters below are read
-              off the file names, and a file whose chapter the sources do not list stays unlinked.
-            </Trans>
+            <Trans>Chapters below are read off the file names until sources are found.</Trans>
           </Alert>
         )}
         {plan.isPending && (

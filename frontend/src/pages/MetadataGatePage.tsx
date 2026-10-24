@@ -30,10 +30,7 @@ export default function MetadataGatePage() {
     <AuthFrame
       title={t`Getting the metadata database ready`}
       subtitle={
-        <Trans>
-          Maki keeps a local copy of the MangaBaka database for search, adding series and Discover.
-          It is about a 350 MB download and 3.5 GB on disk, and Maki opens as soon as it is installed.
-        </Trans>
+        <Trans>About a 350 MB download. Maki opens as soon as it is installed.</Trans>
       }
       footer={
         <Group justify="center">

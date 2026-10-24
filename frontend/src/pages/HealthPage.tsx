@@ -319,11 +319,7 @@ export default function HealthPage() {
                     <Trans>Index</Trans>
                   </Text>
                   <Text size="xs" c="var(--ink-4)">
-                    <Trans>
-                      Reads each archive's table of contents, not its contents. Seconds for a whole library.
-                      Finds files that went missing, arrived on their own, changed size, or stopped being a
-                      readable archive.
-                    </Trans>
+                    <Trans>Finds missing, new or broken files. Takes seconds.</Trans>
                   </Text>
                 </Menu.Item>
                 <Menu.Item onClick={() => run('/scans', { rootFolderId: scanRoot, verify: true })}>
@@ -331,12 +327,7 @@ export default function HealthPage() {
                     <Trans>Verify</Trans>
                   </Text>
                   <Text size="xs" c="var(--ink-4)">
-                    <Trans>
-                      Reads every byte and checks it against the archive's own checksums, which is what catches
-                      a file that has rotted on disk. A full read of the library: around half an hour per 100 GB
-                      on a hard disk. Files are verified as they arrive, so this is for re-checking what is
-                      already there.
-                    </Trans>
+                    <Trans>Reads every byte to catch rotted files. About half an hour per 100 GB.</Trans>
                   </Text>
                 </Menu.Item>
               </Menu.Dropdown>
@@ -1303,12 +1294,7 @@ function FileReview({
 
               {!data.analysis.verified && (
                 <Alert color="var(--neutral)">
-                  <Trans>
-                    This archive has only been indexed: what it says it holds is known, whether it still holds
-                    it is not. Verifying reads every byte and checks it against the archive's own checksums. It
-                    is also what produces the content hash that replacing or deleting this file checks against,
-                    so those need it first.
-                  </Trans>
+                  <Trans>Not verified yet. Replacing or deleting this file needs a verify first.</Trans>
                 </Alert>
               )}
             </div>

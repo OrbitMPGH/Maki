@@ -29,7 +29,6 @@ export const HOME_LAYOUT_CONFIG: LayoutConfig = {
 const nextUpBeside: SectionOptionDef = {
   key: 'nextUpBeside',
   label: msg`Next up beside the hero`,
-  description: msg`The rest of the section as a list beside the hero, instead of a tray of posters under it.`,
   hero: true,
 }
 

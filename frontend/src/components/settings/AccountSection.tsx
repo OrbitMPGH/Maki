@@ -59,10 +59,7 @@ export function SignInSection() {
       id="sign-in"
       title={<Trans>Sign-in</Trans>}
       description={
-        <Trans>
-          Your password, two-factor code and single sign-on link. Changing your password signs out
-          your other devices.
-        </Trans>
+        <Trans>Changing your password signs out your other devices.</Trans>
       }
     >
       <Group gap="xs" mb="md">
@@ -97,8 +94,7 @@ export function ApiKeysSection() {
       title={<Trans>API keys</Trans>}
       description={
         <Trans>
-          Keys for scripts and third-party apps. A key acts as you, sent in the{' '}
-          <Code>X-Api-Key</Code> header. Your OPDS feed has its own URL under Reading.
+          Sent in the <Code>X-Api-Key</Code> header. A key acts as you.
         </Trans>
       }
     >

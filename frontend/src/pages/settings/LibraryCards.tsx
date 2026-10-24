@@ -87,12 +87,6 @@ export function RootFoldersSection() {
     <SettingsSection
       id="root-folders"
       title={<Trans>Root folders</Trans>}
-      description={
-        <Trans>
-          Folders where series are stored. Point Kavita at the same folders. Which users can see
-          each folder is set per user under Users &amp; security.
-        </Trans>
-      }
     >
       <Stack>
         {rootFolders && rootFolders.length > 0 && (
@@ -196,13 +190,6 @@ export function MetadataSection() {
     <SettingsSection
       id="metadata"
       title={<Trans>Metadata database</Trans>}
-      description={
-        <Trans>
-          Series metadata comes from a local copy of the MangaBaka database, about 3.5 GB and
-          refreshed from the nightly dump. Search, adding series, imports and Discover all read
-          from it.
-        </Trans>
-      }
     >
       <Stack gap="sm">
         {downloading && progress && <DumpProgressBar progress={progress} />}
@@ -276,13 +263,6 @@ export function RecommendationIndexSection() {
     <SettingsSection
       id="recommendations"
       title={<Trans>Semantic search &amp; recommendations</Trans>}
-      description={
-        <Trans>
-          A local embedding model lets Discover recommend by feel and search by description. The
-          vectors download prebuilt, so this normally needs no attention. While it's off or still
-          downloading, search falls back to titles and recommendations to genres.
-        </Trans>
-      }
     >
       <RecommendationModelSwitch
         status={status}
@@ -332,18 +312,11 @@ export function NewSeriesDefaultsSection() {
     <SettingsSection
       id="monitoring"
       title={<Trans>New series defaults</Trans>}
-      description={
-        <Trans>
-          What a series starts with when it is added or imported. Series already in the library
-          keep their own settings.
-        </Trans>
-      }
     >
       <Select
         mb="md"
         styles={{ wrapper: { maxWidth: 320 } }}
         label={t`Monitoring`}
-        description={t`What a series added with monitoring on, or imported from disk, starts with. Smart downloads the next few chapters ahead of your reading.`}
         data={MONITOR_OPTIONS.filter((o) => o.value !== 'None').map((o) => ({
           value: o.value,
           label: renderLabel(o.label),
@@ -356,7 +329,7 @@ export function NewSeriesDefaultsSection() {
       <Switch
         mb="lg"
         label={t`Skip specials`}
-        description={t`New series start without decimal chapters (10.5, x.1): they stay listed but are never downloaded or counted. Also applies to Smart-monitored series when a special appears later.`}
+        description={t`Decimal chapters like 10.5 stay listed but are never downloaded.`}
         checked={monitoring?.unmonitorSpecials ?? false}
         onChange={(e) => saveMonitoring.mutate({ unmonitorSpecials: e.currentTarget.checked })}
       />
@@ -365,11 +338,7 @@ export function NewSeriesDefaultsSection() {
         <Trans>Incognito by content rating</Trans>
       </Text>
       <SettingsHelp mb="sm">
-        <Trans>
-          Pre-filled on the add form, where any single add can change it. "No scrobble" keeps a
-          series off your trackers; "Full" also keeps it out of stats and history. Series imported
-          from disk start with incognito off.
-        </Trans>
+        <Trans>"No scrobble" keeps a series off your trackers. "Full" also keeps it out of stats and history.</Trans>
       </SettingsHelp>
       <Stack gap="xs">
         {CONTENT_RATINGS.map((rating) => {
@@ -412,23 +381,15 @@ export function LibraryFilesSection() {
     <SettingsSection
       id="library-files"
       title={<Trans>ComicInfo &amp; covers</Trans>}
-      description={
-        <Trans>
-          Extra files Maki writes next to the chapters so Kavita and Komga name and group them the
-          way Maki does.
-        </Trans>
-      }
     >
       <Switch
         mb="lg"
         label={t`Write ComicInfo.xml into imported files`}
-        description={t`Standardises the ComicInfo.xml in CBZ files that arrive by torrent or import. Maki's own downloads always get one, hardlinked torrents are left as released, and PDFs never get one. A series page's "Update ComicInfo" action does one series later.`}
         checked={settings?.writeComicInfo ?? true}
         onChange={(e) => patch({ writeComicInfo: e.currentTarget.checked })}
       />
       <Switch
         label={t`Save a cover.jpg into each series' library folder`}
-        description={t`For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on.`}
         checked={settings?.writeCoverToFolder ?? false}
         onChange={(e) => patch({ writeCoverToFolder: e.currentTarget.checked })}
       />
@@ -480,18 +441,11 @@ export function NamingSection() {
     <SettingsSection
       id="naming"
       title={<Trans>Folder &amp; file naming</Trans>}
-      description={
-        <Trans>
-          How Maki names series folders and the chapter files it downloads. The "?" button lists
-          every token. Changes apply to new series and downloads; files already on disk stay put
-          until you rename them from a series' page or with the button below.
-        </Trans>
-      }
+      description={<Trans>Files already on disk keep their names until you rename them.</Trans>}
     >
       <Stack gap="md" mb="md">
         <NamingFormatInput
           label={t`Series folder format`}
-          description={t`Used when adding a series, importing one, or renaming its folder`}
           value={folderFormat}
           example={preview.data?.seriesFolder}
           error={folderError}
@@ -500,7 +454,6 @@ export function NamingSection() {
         />
         <NamingFormatInput
           label={t`Chapter file format`}
-          description={t`Used for chapters Maki downloads, and for torrent imports unless you keep their file names below.`}
           value={chapterFormat}
           example={preview.data?.chapterFile}
           error={chapterError}
@@ -526,10 +479,9 @@ export function NamingSection() {
       >
         <Text size="sm" mb="md">
           <Trans>
-            Applies the series folder format and chapter file format above to all{' '}
-            <Plural value={seriesCount} one="# series" other="# series" /> in the library, renaming
-            folders and files on disk to match. Series already matching the format are left alone.
-            This can take a while for a large library.
+            Renames the folders and files of all{' '}
+            <Plural value={seriesCount} one="# series" other="# series" /> on disk to match the formats
+            above. This can take a while.
           </Trans>
         </Text>
         <Group justify="flex-end">
@@ -571,12 +523,6 @@ export function NamingSection() {
       <Text fw={500} size="sm" mb={4}>
         <Trans>Folder naming on import</Trans>
       </Text>
-      <SettingsHelp mb="sm">
-        <Trans>
-          When importing an existing series from disk: rename its folder to the series folder
-          format, or keep it as found.
-        </Trans>
-      </SettingsHelp>
       <Radio.Group
         aria-label={t`Folder naming on import`}
         value={settings?.folderNamingMode ?? 'rename'}
@@ -595,13 +541,6 @@ export function NamingSection() {
       <Text fw={500} size="sm" mt="lg" mb={4}>
         <Trans>File naming on import</Trans>
       </Text>
-      <SettingsHelp mb="sm">
-        <Trans>
-          Applies to torrent grabs and reviewed imports. Off keeps the release's own file name,
-          which often says more than the format can. Series imported from disk keep their file
-          names either way.
-        </Trans>
-      </SettingsHelp>
       <Switch
         label={t`Rename imported files to the chapter file format`}
         checked={settings?.renameImportedFiles ?? true}
@@ -626,15 +565,7 @@ export function NameParsingSection() {
     <SettingsSection
       id="name-parsing"
       title={<Trans>File name parsing</Trans>}
-      description={
-        <Trans>
-          Maki always reads English markers like v01, Vol. 3 and Ch. 12 in release and file names.
-          Turn a language on to read its markers as well, so a release named Tome 3 or 第3巻 is
-          recognized as a volume. Changes apply to the next search, import or rescan; files that are
-          already linked stay where they are. A title that ends in one of these words and a number,
-          like Brass Band 2, reads as a volume once that language is on.
-        </Trans>
-      }
+      description={<Trans>English markers like v01 and Ch. 12 are always read. Turn on a language to read its markers too.</Trans>}
     >
       <Checkbox.Group
         aria-label={t`Languages to read markers in`}
@@ -735,13 +666,6 @@ export function RecycleBinSection() {
     <SettingsSection
       id="recycle-bin"
       title={<Trans>Recycle bin</Trans>}
-      description={
-        <Plural
-          value={days}
-          one="Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was."
-          other="Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was."
-        />
-      }
       actions={
         <Button
           variant="default"

@@ -66,13 +66,7 @@ export function SourceLanguageSection() {
     <SettingsSection
       id="languages"
       title={<Trans>Languages</Trans>}
-      description={
-        <Trans>
-          Languages to download, most preferred first. Auto-match tries sources that publish your
-          top language first and skips sources that publish none of these. New auto-matched
-          sources get these languages; existing mappings are never changed. Drag to reorder.
-        </Trans>
-      }
+      description={<Trans>Most preferred first.</Trans>}
       dirty={dirty}
       saving={save.isPending}
       saveDisabled={noneEnabled}
@@ -157,14 +151,6 @@ export function SourcePrioritySection() {
     <SettingsSection
       id="sources"
       title={<Trans>Sources</Trans>}
-      description={
-        <Trans>
-          Which sites Maki downloads from, and which it tries first. Language ranking above comes
-          first. Applies to new auto-matches and manual Auto-match runs; other series keep their
-          order. Switching a source off pauses it for every series without touching their own
-          toggles.
-        </Trans>
-      }
       actions={
         <Button size="xs" leftSection={<IconAdjustments size={14} />} onClick={() => setManaging(true)}>
           <Trans>Manage sources</Trans>
@@ -177,7 +163,6 @@ export function SourcePrioritySection() {
     >
       <Select
         label={t`Pick a source by`}
-        description={t`Which source a chapter is downloaded from first when several have it. Best quality ranks sources by the series' quality profile and what their recent chapters measured, and uses the priority you set to break ties. A series can override this on its Sources tab.`}
         data={[
           { value: 'manual', label: t`Your priority order` },
           { value: 'quality', label: t`Best measured quality` },
@@ -189,7 +174,7 @@ export function SourcePrioritySection() {
       />
       <Switch
         label={t`Measure sources when a series is added`}
-        description={t`Once a new series is matched, sample a few pages from three chapters on each linked source, so its first downloads already come from the best one. Downloads a little from every source for every series you add.`}
+        description={t`Samples a few pages from every linked source.`}
         checked={scoutOnMatch}
         onChange={(e) => setScoutOnMatch(e.currentTarget.checked)}
         mb="lg"
@@ -263,12 +248,6 @@ export function DownloadQueueSection() {
     <SettingsSection
       id="downloads"
       title={<Trans>Download queue</Trans>}
-      description={
-        <Trans>
-          How chapters from scraper sources move through the queue. Torrents are handled by
-          the download client below.
-        </Trans>
-      }
       dirty={dirty}
       saving={save.isPending}
       onDiscard={discard}
@@ -290,7 +269,6 @@ export function DownloadQueueSection() {
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" verticalSpacing="lg" mb="lg">
         <SettingsNumberInput
           label={t`Concurrent chapter downloads`}
-          description={t`More isn't always faster: tripping a site's rate limit pauses that source for a while.`}
           min={1}
           max={8}
           value={concurrentChapters}
@@ -298,12 +276,7 @@ export function DownloadQueueSection() {
         />
         <SettingsNumberInput
           label={t`Retry a failed download up to (attempts)`}
-          description={
-            <Trans>
-              Failed downloads retry on a growing backoff (5m, 10m, 20m, ...). 0 turns automatic retry
-              off. Manual retries from Activity don't count.
-            </Trans>
-          }
+          description={t`0 turns retry off.`}
           min={0}
           max={20}
           value={retryAttempts}
@@ -311,12 +284,7 @@ export function DownloadQueueSection() {
         />
         <SettingsNumberInput
           label={t`Give up on a chapter after (minutes)`}
-          description={
-            <Trans>
-              A chapter that never finishes holds a worker and can stall the whole queue. Past this
-              many minutes it is marked failed and retried like any other failure. 0 means no limit.
-            </Trans>
-          }
+          description={t`0 means no limit.`}
           min={0}
           max={1440}
           value={itemTimeoutMinutes}
@@ -325,13 +293,7 @@ export function DownloadQueueSection() {
         />
         <SettingsNumberInput
           label={t`Don't auto-queue more than (chapters)`}
-          description={
-            <Trans>
-              When a refresh finds more new chapters for a series than this, none of them are queued.
-              That usually means a source renumbered or backfilled its list, not a real release. They
-              stay wanted, so you can download them from the series page. 0 means always queue.
-            </Trans>
-          }
+          description={t`Bigger batches stay wanted for you to download by hand. 0 means always queue.`}
           min={0}
           max={1000}
           value={bulkHoldThreshold}
@@ -340,7 +302,6 @@ export function DownloadQueueSection() {
       </SimpleGrid>
       <Switch
         label={t`Check quiet series less often`}
-        description={t`A series is checked every 30 minutes for a few hours after a new chapter, every 2 hours while chapters keep coming, every 6 hours after two quiet weeks and once a day after two quiet months. A new chapter puts it straight back on the fast checks. Off checks every series every 30 minutes.`}
         checked={adaptiveRefresh}
         onChange={(e) => setAdaptiveRefresh(e.currentTarget.checked)}
       />
@@ -377,13 +338,7 @@ export function SmartDownloadSection() {
     <SettingsSection
       id="smart-download"
       title={<Trans>Smart Download</Trans>}
-      description={
-        <Trans>
-          Downloads the next chapters of a series when you're down to a few unread. Checks every
-          five minutes against progress from Kavita or the built-in reader. Turn it on per series
-          in its monitoring options.
-        </Trans>
-      }
+      description={<Trans>Turned on per series in its monitoring options.</Trans>}
       dirty={dirty}
       saving={save.isPending}
       onDiscard={discard}
@@ -400,7 +355,6 @@ export function SmartDownloadSection() {
       <Group align="flex-end" className="settings-field-row">
         <SettingsNumberInput
           label={t`Fetch more when unread chapters drop to`}
-          description={t`At this many or fewer downloaded chapters ahead of where you are, Maki fetches more.`}
           min={1}
           max={10}
           value={smartDownloadChaptersLeft}
@@ -445,13 +399,7 @@ export function ReadFileCleanupSection() {
     <SettingsSection
       id="read-cleanup"
       title={<Trans>Clean up read chapters</Trans>}
-      description={
-        <Trans>
-          Deletes a chapter's file once everyone reading the series has finished it and the days below
-          have passed. The chapter stays in the list with its read history, and Maki won't download
-          it again unless you ask. A series can turn this on or off for itself from its menu.
-        </Trans>
-      }
+      description={<Trans>Deletes a chapter's file once everyone has read it. The chapter and its history stay.</Trans>}
       dirty={dirty}
       saving={save.isPending}
       onDiscard={discard}
@@ -462,7 +410,6 @@ export function ReadFileCleanupSection() {
       <Stack gap="md">
         <Switch
           label={t`Delete read chapters for every series`}
-          description={t`Off: only series switched on from their own menu are cleaned up.`}
           checked={enabled}
           onChange={(e) => setEnabled(e.currentTarget.checked)}
         />
@@ -475,7 +422,6 @@ export function ReadFileCleanupSection() {
         />
         <Switch
           label={t`Keep each reader's last read chapter`}
-          description={t`So there is always something to look back at where you stopped.`}
           checked={keepLast}
           onChange={(e) => setKeepLast(e.currentTarget.checked)}
         />
@@ -497,12 +443,7 @@ function HardlinkField() {
         <Trans>Finished torrents</Trans>
       </Text>
       <SettingsHelp mb="xs">
-        <Trans>
-          Seeding torrents stay in the download folder, so imports are linked or copied, never
-          moved. A hardlink stores the files once but needs the download folder and library on the
-          same filesystem; otherwise Maki copies. Hardlinked files are left as released, without
-          Maki's ComicInfo.xml, so Kavita may group them apart from Maki's own downloads.
-        </Trans>
+        <Trans>Needs the download folder and library on one filesystem, otherwise Maki copies.</Trans>
       </SettingsHelp>
       <Switch
         label={t`Hardlink imported torrents when possible`}
@@ -522,7 +463,7 @@ export function FlareSolverrCard() {
     <ConnectionSettingsCard
       name="flaresolverr"
       title="FlareSolverr"
-      description={t`A helper that gets past Cloudflare for sources like MangaFire. Point this at a running FlareSolverr instance. Sources that need it are tagged in Manage sources.`}
+      description={t`Gets past Cloudflare for the sources that need it.`}
       fields={[{ key: 'url', label: t`URL`, placeholder: 'http://localhost:8191' }]}
     />
   )
@@ -535,7 +476,6 @@ export function DownloadClientCard() {
     <ConnectionSettingsCard
       name="downloadclient"
       title={t`Download client`}
-      description={t`Sends grabbed releases to your torrent client. Finished torrents import into the library automatically. Fill the path mapping only if the client reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads.`}
       fields={fields}
     >
       <HardlinkField />
@@ -600,13 +540,7 @@ export function UpgradeScanSection() {
     <SettingsSection
       id="upgrades"
       title={<Trans>Upgrade scan</Trans>}
-      description={
-        <Trans>
-          Replaces downloaded files with better releases, judged against each series' quality
-          profile. The daily scan runs after the chosen hour. Scan now and scans started from a
-          series page run regardless of the switch.
-        </Trans>
-      }
+      description={<Trans>Replaces downloaded files with better releases for each series' quality profile.</Trans>}
       dirty={dirty}
       saving={save.isPending}
       onDiscard={discard}
@@ -628,14 +562,12 @@ export function UpgradeScanSection() {
     >
       <Switch
         label={t`Run the daily scan`}
-        description={t`Off stops the daily scan and the daily volume search. Scan now and per-series scans still work.`}
         checked={enabled}
         onChange={(e) => setEnabled(e.currentTarget.checked)}
         mb="md"
       />
       <Select
         label={t`Default profile`}
-        description={t`Used by any series that hasn't been pinned to a profile of its own.`}
         value={defaultProfileId == null ? '' : String(defaultProfileId)}
         onChange={(value) => setDefaultProfileId(value ? Number(value) : null)}
         data={[
@@ -656,7 +588,7 @@ export function UpgradeScanSection() {
         />
         <SettingsNumberInput
           label={t`Max upgrades per day`}
-          description={t`Counted per UTC day. 0 means no cap.`}
+          description={t`0 means no cap.`}
           min={0}
           max={1000}
           value={maxPerDay}
@@ -666,7 +598,6 @@ export function UpgradeScanSection() {
       <Group grow mb="md">
         <SettingsNumberInput
           label={t`Release checks per scan`}
-          description={t`How many candidate releases one scan may inspect before it stops.`}
           min={1}
           max={500}
           value={maxProbesPerRun}
@@ -683,7 +614,6 @@ export function UpgradeScanSection() {
       </Group>
       <SettingsNumberInput
         label={t`Trash retention (days)`}
-        description={t`Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass.`}
         min={0}
         max={365}
         value={trashRetentionDays}
@@ -771,13 +701,7 @@ export function VolumeReleasesSection() {
     <SettingsSection
       id="volume-releases"
       title={<Trans>Volume releases</Trans>}
-      description={
-        <Trans>
-          Looks for torrent volume packs that could replace single-chapter files, for series whose
-          profile aims for volumes. Needs an indexer and a download client, and runs an hour after the
-          daily scan.
-        </Trans>
-      }
+      description={<Trans>Needs an indexer and a download client.</Trans>}
       dirty={dirty}
       saving={save.isPending}
       onDiscard={discard}
@@ -814,7 +738,6 @@ export function VolumeReleasesSection() {
         />
         <SettingsNumberInput
           label={t`Missing chapters allowed per volume`}
-          description={t`Auto-grab only when a volume adds this many chapters or fewer that you don't have.`}
           min={0}
           max={50}
           value={volumeMissingTolerance}
@@ -825,7 +748,6 @@ export function VolumeReleasesSection() {
       <Group grow align="flex-start">
         <SettingsNumberInput
           label={t`Volume searches per run`}
-          description={t`Series checked per daily run. Each series is searched at most once a week.`}
           min={1}
           max={200}
           value={volumeSearchesPerRun}
@@ -834,7 +756,6 @@ export function VolumeReleasesSection() {
         />
         <SettingsNumberInput
           label={t`Proposal expiry (days)`}
-          description={t`A proposal nobody answers is dropped after this long.`}
           min={1}
           max={365}
           value={proposalExpiryDays}
@@ -899,7 +820,6 @@ export function IndexerSection() {
     <SettingsSection
       id="indexer"
       title={t`Indexer`}
-      description={t`Searches your torrent indexers for manga releases, used for volume upgrades and for grabbing releases by hand. Works through Prowlarr or Jackett, no app sync needed.`}
       dirty={form.dirty || optionsDirty}
       saving={form.saving || options.saving}
       onSave={() => {
@@ -916,10 +836,7 @@ export function IndexerSection() {
       <IndexerFieldRow form={form} />
       {form.switching ? (
         <Text size="sm" c="var(--ink-3)" mt="md">
-          <Trans>
-            Saving switches the indexer to {selectedName}. Its indexer and
-            category lists load after that.
-          </Trans>
+          <Trans>Save to switch to {selectedName}.</Trans>
         </Text>
       ) : (
         <IndexerOptionsSection form={options} />
@@ -953,10 +870,7 @@ function IndexerOptionsSection({ form }: { form: ReturnType<typeof useIndexerOpt
     <Stack gap="sm" mt="md">
       {configured && (
         <Text size="sm" c="var(--ink-3)">
-          <Trans>
-            Restrict release searches to specific indexers and categories. With nothing
-            selected, every indexer and category is searched.
-          </Trans>
+          <Trans>Nothing selected searches them all.</Trans>
         </Text>
       )}
       {configured && indexersErrorMessage != null && (

@@ -41,8 +41,6 @@ export type SettingsTabKey =
 export interface SettingsTab {
   key: SettingsTabKey
   label: MessageDescriptor
-  /** Shown under the tab strip, so a tab explains itself before any card is read. */
-  description: MessageDescriptor
 }
 
 export interface SettingsEntry {
@@ -66,42 +64,34 @@ export const SETTINGS_TABS: SettingsTab[] = [
   {
     key: 'account',
     label: msg`Account`,
-    description: msg`Your password, two-factor code, single sign-on link and API keys.`,
   },
   {
     key: 'preferences',
     label: msg`Preferences`,
-    description: msg`How Maki looks and behaves for you: colours, language, start page, content rating and what reaches your bell.`,
   },
   {
     key: 'reading',
     label: msg`Reading`,
-    description: msg`The built-in reader, progress and achievements, the OPDS catalogue and read sync with Kavita.`,
   },
   {
     key: 'library',
     label: msg`Library`,
-    description: msg`Where files live, how they are named, what new series start with, and where metadata comes from.`,
   },
   {
     key: 'downloads',
     label: msg`Downloads`,
-    description: msg`The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced.`,
   },
   {
     key: 'integrations',
     label: msg`Integrations`,
-    description: msg`Kavita, tracker accounts and import lists, and alerts to chat and push apps.`,
   },
   {
     key: 'users',
     label: msg`Users & security`,
-    description: msg`Accounts, permissions, lockout and session rules, and single sign-on.`,
   },
   {
     key: 'system',
     label: msg`System`,
-    description: msg`HTTPS and proxies, backups, the image cache and updates.`,
   },
 ]
 

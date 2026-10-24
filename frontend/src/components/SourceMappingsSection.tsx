@@ -255,7 +255,7 @@ export function SourceMappingsSection({
         <Group gap="xs">
           {sourceOrder && (
             <Tooltip
-              label={t`Which source a chapter downloads from first. Best quality ranks sources by this series' quality profile and what their recent chapters measured, with priority breaking ties.`}
+              label={t`Which source a chapter downloads from first.`}
               withArrow
               multiline
               w={280}

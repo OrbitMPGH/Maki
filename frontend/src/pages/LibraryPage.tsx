@@ -1998,17 +1998,9 @@ export default function LibraryPage() {
         title={plural(selectedCount, { one: 'Auto-match sources for # series', other: 'Auto-match sources for # series' })}
       >
         <Text size="sm" mb="md">
-          <Trans>
-            Every source that isn't linked yet is searched again for each series, which is worth doing
-            when a source has picked a title up since you added it.
-          </Trans>{' '}
-          <Trans>Sources already linked are left exactly as they are, so this only ever adds.</Trans>
+          <Trans>Searches every source that isn't linked yet. Linked sources stay as they are.</Trans>
         </Text>
         <Text size="sm" c="var(--ink-3)" mb="lg">
-          <Trans>
-            Matching runs in the background, one series at a time, to keep the request rate at the
-            sites sane.
-          </Trans>{' '}
           <Trans>A large selection can take a while.</Trans>
         </Text>
         <Group justify="flex-end">
@@ -2110,10 +2102,7 @@ export default function LibraryPage() {
         title={plural(selectedCount, { one: 'Set quality profile for # series', other: 'Set quality profile for # series' })}
       >
         <Text size="sm" mb="md">
-          <Trans>
-            Decides which copies of these series get upgraded and, in best-quality source order, which
-            source their downloads try first. Instance default clears each series' own choice.
-          </Trans>
+          <Trans>Instance default clears each series' own choice.</Trans>
         </Text>
         <Select
           aria-label={t`Quality profile`}

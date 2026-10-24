@@ -27,7 +27,7 @@ export const MixedPlan: Story = {
     const dialog = await body.findByRole('dialog', { name: 'Import preview' })
     await waitFor(async () => expect(await within(dialog).findByText('Registers 5 files, 3 of them CBZs Maki builds')).toBeVisible())
     await waitFor(() => expect(within(dialog).getByText('The folder holds no readable comic files.')).toBeVisible())
-    await waitFor(() => expect(within(dialog).getByText(/Final linking happens after sources are found/)).toBeVisible())
+    await waitFor(() => expect(within(dialog).getByText(/read off the file names until sources are found/)).toBeVisible())
     await waitFor(() => expect(within(dialog).getByText('2 files are left out')).toBeVisible())
   },
 }

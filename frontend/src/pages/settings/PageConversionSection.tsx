@@ -5,7 +5,6 @@ import { notifications } from '@mantine/notifications'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { SettingsSection } from './SettingsSection'
-import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { formatBytes, formatDateTime } from '../../format'
 import {
@@ -43,10 +42,7 @@ export function PageConversionSection() {
       id="page-conversion"
       title={<Trans>Page conversion</Trans>}
       description={
-        <Trans>
-          Stores chapter pages in a smaller image format. New downloads are converted as they arrive, and the library
-          pass below converts what is already on disk.
-        </Trans>
+        <Trans>Stores chapter pages in a smaller image format.</Trans>
       }
       dirty={dirty}
       saving={save.isPending}
@@ -69,31 +65,21 @@ export function PageConversionSection() {
             onChange={(format) => update({ format: format as PageConversionSettings['format'] })}
           >
             <Stack gap="sm" mt="xs">
-              <Radio value="off" label={t`Off`} description={t`Pages are kept exactly as the source served them.`} />
+              <Radio value="off" label={t`Off`} />
               <Radio
                 value="webp"
                 label={t`WebP`}
-                description={t`Every reader Maki works with opens it: browsers, Kavita, Komga, KOReader, Mihon and Panels. Saves most on PNG pages and on JPEG pages a source saved at high quality.`}
+                description={t`Opens in every reader Maki works with.`}
               />
               <Radio
                 value="avif"
                 label={t`AVIF`}
-                description={t`Smaller than WebP, and slower to convert. KOReader cannot open AVIF pages, and neither can iPhones and iPads older than iOS 16.`}
+                description={t`Smaller than WebP. KOReader and iOS before 16 can't open it.`}
               />
             </Stack>
           </Radio.Group>
 
           {current.format !== 'off' && <QualityInput settings={current} onChange={update} />}
-
-          <SettingsHelp>
-            <Trans>
-              JPEG pages become the chosen format and PNG pages become lossless WebP, so line art keeps every pixel.
-              WebP and AVIF pages, animations, pages under 16 KB and pages over 16,383 pixels on a side stay as they
-              are, and so does any page or file that would not come out at least 5% smaller. Files hardlinked to a
-              torrent client's copy are skipped, since converting them would use more disk, not less. Upgrades and
-              quality scores still see the size and format each chapter was downloaded in.
-            </Trans>
-          </SettingsHelp>
 
           <Divider />
           <LibraryPass status={status} />

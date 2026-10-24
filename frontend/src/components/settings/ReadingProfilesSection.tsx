@@ -79,11 +79,7 @@ export function ReadingProfilesSection() {
       id="reader"
       title={<Trans>Reader profiles</Trans>}
       description={
-        <Trans>
-          How the built-in reader opens a series. A profile applies automatically to the series
-          types it covers; everything else uses Default. You can also pin a profile to a series, or
-          change settings from inside the reader.
-        </Trans>
+        <Trans>Series types no profile covers use Default.</Trans>
       }
       actions={
         <Button
@@ -395,7 +391,6 @@ function ProfileEditor({
         />
         <SettingsNumberInput
           label={t`Dim`}
-          description={t`Darkens the pages, in percent.`}
           suffix="%"
           min={0}
           max={80}
@@ -417,7 +412,7 @@ function ProfileEditor({
         />
         <SettingsNumberInput
           label={t`Page gap`}
-          description={t`Continuous layout only, in pixels.`}
+          description={t`Continuous layout only.`}
           min={0}
           max={64}
           value={prefs.pageGap}
@@ -425,7 +420,7 @@ function ProfileEditor({
         />
         <SettingsNumberInput
           label={t`Preload`}
-          description={t`Pages fetched ahead. Not used in Continuous layout.`}
+          description={t`Pages fetched ahead.`}
           min={0}
           max={10}
           value={prefs.preload}
@@ -451,14 +446,14 @@ function ProfileEditor({
       <Switch
         size="sm"
         label={t`Crop borders`}
-        description={t`Trims white or black margins. Not applied in the Continuous layout.`}
+        description={t`Not in Continuous layout.`}
         checked={prefs.cropBorders}
         onChange={(e) => set({ cropBorders: e.currentTarget.checked })}
       />
       <Switch
         size="sm"
         label={t`Open webtoon chapters in Continuous layout`}
-        description={t`When most pages are very tall. A layout picked in the reader still wins.`}
+        description={t`When most pages are very tall.`}
         checked={prefs.autoWebtoon}
         onChange={(e) => set({ autoWebtoon: e.currentTarget.checked })}
       />
@@ -483,14 +478,13 @@ function ProfileEditor({
       <Switch
         size="sm"
         label={t`Keep the screen awake while reading`}
-        description={t`Only where the browser allows it, which needs HTTPS or localhost.`}
+        description={t`Needs HTTPS or localhost.`}
         checked={prefs.keepAwake}
         onChange={(e) => set({ keepAwake: e.currentTarget.checked })}
       />
       <Switch
         size="sm"
         label={t`Flash the chapter name on chapter change`}
-        description={t`Credit pages and the next chapter's first pages often look alike, so this marks the turn.`}
         checked={prefs.chapterBanner}
         onChange={(e) => set({ chapterBanner: e.currentTarget.checked })}
       />
