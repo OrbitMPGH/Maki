@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, waitFor, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api, failWith } from '../../../.storybook/mocks/api'
@@ -172,13 +172,26 @@ export const SingleSignOnIssuerChangeAsksFirst: Story = {
   },
 }
 
+const onOidcSave = fn()
+
 export const SingleSignOnSaveWithoutIssuerChange: Story = {
   render: () => <OidcSection />,
+  parameters: {
+    msw: settingsMsw(
+      http.put(api('/settings/oidc'), async ({ request }) => {
+        const body = await request.json()
+        onOidcSave(body)
+        return HttpResponse.json(body)
+      }),
+    ),
+  },
+  beforeEach: () => onOidcSave.mockClear(),
   play: async ({ canvas, userEvent }) => {
     const name = await canvas.findByRole('textbox', { name: 'Button label' })
     await waitFor(() => expect(name).toHaveValue('Authentik'))
     await userEvent.type(name, ' SSO')
     await userEvent.click(await canvas.findByRole('button', { name: 'Save' }))
     await expect(await within(document.body).findByText('Single sign-on saved. Restart Maki to apply it.')).toBeVisible()
+    await waitFor(() => expect(onOidcSave).toHaveBeenCalledWith({ ...oidcSettings, displayName: 'Authentik SSO' }))
   },
 }

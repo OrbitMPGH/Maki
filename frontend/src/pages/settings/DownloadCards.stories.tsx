@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, waitFor, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api, failWith } from '../../../.storybook/mocks/api'
@@ -61,7 +61,19 @@ export const DownloadQueueEditShowsSave: Story = {
   },
 }
 
+const onDownloadSave = fn()
+
 export const DownloadQueueSave: Story = {
+  parameters: {
+    msw: settingsMsw(
+      http.put(api('/settings/download'), async ({ request }) => {
+        const body = await request.json()
+        onDownloadSave(body)
+        return HttpResponse.json(body)
+      }),
+    ),
+  },
+  beforeEach: () => onDownloadSave.mockClear(),
   play: async ({ canvas, userEvent }) => {
     const field = await canvas.findByRole('textbox', { name: 'Concurrent chapter downloads' })
     await waitFor(() => expect(field).toHaveValue('2'))
@@ -69,6 +81,8 @@ export const DownloadQueueSave: Story = {
     await userEvent.type(field, '3')
     await userEvent.click(await canvas.findByRole('button', { name: 'Save' }))
     await expect(await within(document.body).findByText('Saved')).toBeVisible()
+    // The edited field goes out and every other setting rides along unchanged.
+    await waitFor(() => expect(onDownloadSave).toHaveBeenCalledWith({ ...downloadSettings, concurrentChapters: 3 }))
   },
 }
 

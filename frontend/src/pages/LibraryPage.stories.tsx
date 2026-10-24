@@ -79,20 +79,17 @@ export const ListView: Story = {
   },
 }
 
-export const CompactGrid: Story = {
-  beforeEach: () => seedLibraryPrefs({ density: 'compact' }),
-}
+export const DensityChoiceIsKept: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })
+    await userEvent.click(await canvas.findByRole('button', { name: 'More options' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Compact' }))
+    await waitFor(() => expect(localStorage.getItem('library-density')).toBe('compact'))
 
-export const ComfortableGrid: Story = {
-  beforeEach: () => seedLibraryPrefs({ density: 'comfortable' }),
-}
-
-export const CompactList: Story = {
-  beforeEach: () => seedLibraryPrefs({ view: 'list', density: 'compact' }),
-}
-
-export const ComfortableList: Story = {
-  beforeEach: () => seedLibraryPrefs({ view: 'list', density: 'comfortable' }),
+    await userEvent.click(await canvas.findByRole('button', { name: 'More options' }))
+    const compact = await body(canvasElement).findByRole('menuitem', { name: 'Compact' })
+    await waitFor(() => expect(compact).toHaveAttribute('aria-current', 'true'))
+  },
 }
 
 export const Loading: Story = {
