@@ -46,6 +46,12 @@ public class PageConversionService(
 
     internal Func<string, long?> FreeSpace { get; init; } = DiskSpace.AvailableFor;
 
+    /// <summary>
+    /// Windows refuses to rename an open file or move the folder it is in, and a conversion can take
+    /// minutes, so there it reads a copy rather than holding the library file.
+    /// </summary>
+    internal bool CopiesSource { get; init; } = OperatingSystem.IsWindows();
+
     internal Func<string, string, PageConversionSettings, CancellationToken, Task<ArchiveConversionResult>> Converter { get; init; } =
         ArchivePageConverter.ConvertAsync;
 
@@ -96,9 +102,7 @@ public class PageConversionService(
             return new FileConversion(FileConversionStatus.Failed);
         }
 
-        // Windows refuses to rename an open file or move the folder it is in, and a conversion can take
-        // minutes, so there it reads a copy rather than holding the library file.
-        var source = OperatingSystem.IsWindows() ? Path.ChangeExtension(tmp, ".source.cbz") : path;
+        var source = CopiesSource ? Path.ChangeExtension(tmp, ".source.cbz") : path;
         ArchiveConversionResult result;
         try
         {
@@ -216,9 +220,11 @@ public class PageConversionService(
     }
 
     /// <summary>
-    /// Without hardlinks the swap copies the original into the trash after the encode, so the volume
-    /// needs room for that copy beside the converted one. Checked before the encode, so a full share
-    /// skips the file instead of encoding it on every pass only to fail at the copy.
+    /// Without hardlinks the swap copies the original into the trash after the encode, and where the
+    /// converter reads a copy of the source that copy sits beside the converted one during the encode.
+    /// Either way the volume needs room for a second whole copy next to the converted one. Checked
+    /// before anything is copied or encoded, so a full volume skips the file instead of filling up and
+    /// failing on every pass.
     /// </summary>
     private bool HasRoomToSwap(string root, string relativePath, string path, string tmp, long length)
     {
@@ -230,7 +236,13 @@ public class PageConversionService(
             if (Hardlink(path, probe))
             {
                 TryDelete(probe);
-                return true;
+                if (!CopiesSource)
+                {
+                    return true;
+                }
+
+                return HasRoomFor(root, relativePath, length,
+                    "the source is copied into .maki/tmp to be read");
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -239,15 +251,20 @@ public class PageConversionService(
             return true;
         }
 
+        return HasRoomFor(root, relativePath, length,
+            "this volume has no hardlinks, so the original is copied into the trash");
+    }
+
+    private bool HasRoomFor(string root, string relativePath, long length, string why)
+    {
         var needed = 2 * length + PageConversionWorker.DiskReserveBytes;
         if (FreeSpace(root) is not { } free || free >= needed)
         {
             return true;
         }
 
-        logger.LogWarning(
-            "Skipped converting {Path}: this volume has no hardlinks, so the original is copied into the trash, which needs {Needed} bytes free and {Free} are",
-            relativePath, needed, free);
+        logger.LogWarning("Skipped converting {Path}: {Why}, which needs {Needed} bytes free and {Free} are",
+            relativePath, why, needed, free);
         return false;
     }
 

@@ -76,7 +76,7 @@ public sealed class PageConversionTests : IDisposable
     private PageConversionService Service(MakiDbContext db, Func<string, string, bool>? hardlink = null,
         Action<string, string>? moveOver = null,
         Func<string, string, PageConversionSettings, CancellationToken, Task<ArchiveConversionResult>>? converter = null,
-        Func<string, long?>? freeSpace = null) =>
+        Func<string, long?>? freeSpace = null, bool? copiesSource = null) =>
         new(db, _world.Archives,
             new KavitaScanService(new KavitaClient(new StubHttpClientFactory("{}")), _world.Settings, _world.Db.ScopeFactory(),
                 NullLogger<KavitaScanService>.Instance),
@@ -85,7 +85,8 @@ public sealed class PageConversionTests : IDisposable
             Hardlink = hardlink ?? FileLinker.TryHardlink,
             MoveOver = moveOver ?? ((from, to) => File.Move(from, to, overwrite: true)),
             Converter = converter ?? ArchivePageConverter.ConvertAsync,
-            FreeSpace = freeSpace ?? DiskSpace.AvailableFor
+            FreeSpace = freeSpace ?? DiskSpace.AvailableFor,
+            CopiesSource = copiesSource ?? OperatingSystem.IsWindows()
         };
 
     private string[] TmpFiles() =>
@@ -476,30 +477,35 @@ public sealed class PageConversionTests : IDisposable
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task Without_room_for_the_trash_copy_the_file_is_skipped_before_it_is_encoded(bool hardlinks)
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    public async Task Without_room_for_a_second_copy_the_file_is_skipped_before_it_is_copied_or_encoded(bool hardlinks,
+        bool copiesSource)
     {
         var (_, fileId, path) = JpegChapter(1);
         var originalHash = Hash(path);
         var encoded = false;
+        var converts = hardlinks && !copiesSource;
 
         using (var db = _world.Db.NewContext())
         {
             var service = Service(db, hardlink: hardlinks ? null : (_, _) => false, freeSpace: _ => 1024,
+                copiesSource: copiesSource,
                 converter: (source, target, settings, ct) =>
                 {
                     encoded = true;
                     return ArchivePageConverter.ConvertAsync(source, target, settings, ct);
                 });
             var result = await service.ConvertAsync(fileId, Webp, CancellationToken.None);
-            Assert.Equal(hardlinks ? FileConversionStatus.Converted : FileConversionStatus.Failed, result.Status);
+            Assert.Equal(converts ? FileConversionStatus.Converted : FileConversionStatus.Failed, result.Status);
         }
 
-        Assert.Equal(hardlinks, encoded);
-        Assert.Equal(hardlinks, originalHash != Hash(path));
-        Assert.Equal(hardlinks, TrashedOriginals().Length == 1);
-        Assert.Equal(hardlinks, Row(fileId).ConversionCheckedAtUtc is not null);
+        Assert.Equal(converts, encoded);
+        Assert.Equal(converts, originalHash != Hash(path));
+        Assert.Equal(converts, TrashedOriginals().Length == 1);
+        Assert.Equal(converts, Row(fileId).ConversionCheckedAtUtc is not null);
         Assert.Empty(TmpFiles());
     }
 
