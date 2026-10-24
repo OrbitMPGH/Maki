@@ -431,11 +431,15 @@ msgstr "{acknowledged, plural, one {# acknowledged} other {# acknowledged}}"
 msgid "{actionError} Refresh the page and try again."
 msgstr "{actionError} Refresh the page and try again."
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 msgid "{active, plural, one {# download in progress} other {# downloads in progress}}"
 msgstr "{active, plural, one {# download in progress} other {# downloads in progress}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
+msgid "{active, plural, one {# in progress} other {# in progress}}"
+msgstr "{active, plural, one {# in progress} other {# in progress}}"
+
+#: src/components/ActivityButton.tsx
 msgid "{active, plural, one {Activity, # download in progress} other {Activity, # downloads in progress}}"
 msgstr "{active, plural, one {Activity, # download in progress} other {Activity, # downloads in progress}}"
 
@@ -1392,15 +1396,19 @@ msgstr "{resolved, plural, one {# resolved} other {# resolved}}"
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, one {# min} other {# min}}"
 
+#: src/components/ActivityButton.tsx
+msgid "{rest, plural, one {and # more} other {and # more}}"
+msgstr "{rest, plural, one {and # more} other {and # more}}"
+
 #: src/pages/ActivityPage.tsx
 msgid "{retentionDays, plural, one {kept # day} other {kept # days}}"
 msgstr "{retentionDays, plural, one {kept # day} other {kept # days}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
 msgstr "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 msgid "{review, plural, one {Activity, # download waiting for an import decision} other {Activity, # downloads waiting for an import decision}}"
 msgstr "{review, plural, one {Activity, # download waiting for an import decision} other {Activity, # downloads waiting for an import decision}}"
 
@@ -2407,7 +2415,7 @@ msgstr "Actions"
 msgid "Actions for {spanLabel}"
 msgstr "Actions for {spanLabel}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 msgid "Activity"
@@ -5549,6 +5557,7 @@ msgstr "Download path not accessible from Maki"
 msgid "Download path not accessible from Maki: {path}"
 msgstr "Download path not accessible from Maki: {path}"
 
+#: src/components/ActivityButton.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -8331,6 +8340,7 @@ msgstr "Loading chapters…"
 msgid "loading search by meaning, title matches for now"
 msgstr "loading search by meaning, title matches for now"
 
+#: src/components/ActivityButton.tsx
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 msgid "Loading…"
@@ -10147,6 +10157,10 @@ msgstr "Nothing downloaded or sampled from this source yet."
 msgid "Nothing downloaded yet."
 msgstr "Nothing downloaded yet."
 
+#: src/components/ActivityButton.tsx
+msgid "Nothing downloading right now"
+msgstr "Nothing downloading right now"
+
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Nothing dropped. Keep it that way."
 msgstr "Nothing dropped. Keep it that way."
@@ -10702,6 +10716,10 @@ msgstr "Open {title} in Discover"
 msgid "Open a chapter and it will show up here, ready to resume."
 msgstr "Open a chapter and it will show up here, ready to resume."
 
+#: src/components/ActivityButton.tsx
+msgid "Open Activity"
+msgstr "Open Activity"
+
 #: src/pages/HomePage.tsx
 msgid "Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are."
 msgstr "Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are."
@@ -11036,6 +11054,7 @@ msgstr "Pause downloads"
 msgid "Pause Rewind"
 msgstr "Pause Rewind"
 
+#: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Paused"

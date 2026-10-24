@@ -514,12 +514,16 @@ msgstr "{acknowledged, plural, one {Potwierdzone: #} few {Potwierdzone: #} many 
 msgid "{actionError} Refresh the page and try again."
 msgstr "{actionError} Odśwież stronę i spróbuj ponownie."
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{active, plural, one {# download in progress} other {# downloads in progress}}"
 msgstr "{active, plural, one {# pobieranie w toku} few {# pobierania w toku} many {# pobierań w toku} other {# pobierania w toku}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
+msgid "{active, plural, one {# in progress} other {# in progress}}"
+msgstr ""
+
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{active, plural, one {Activity, # download in progress} other {Activity, # downloads in progress}}"
 msgstr "{active, plural, one {Aktywność, # pobieranie w toku} few {Aktywność, # pobierania w toku} many {Aktywność, # pobierań w toku} other {Aktywność, # pobierania w toku}}"
@@ -1712,17 +1716,21 @@ msgstr "{resolved, plural, one {# rozpatrzona} few {# rozpatrzone} many {# rozpa
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, one {# min} few {# min} many {# min} other {# min}}"
 
+#: src/components/ActivityButton.tsx
+msgid "{rest, plural, one {and # more} other {and # more}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{retentionDays, plural, one {kept # day} other {kept # days}}"
 msgstr "{retentionDays, plural, one {przechowywane # dzień} few {przechowywane # dni} many {przechowywane # dni} other {przechowywane # dnia}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
 msgstr "{review, plural, one {# pobieranie oczekujące na decyzję o imporcie} few {# pobierania oczekujące na decyzję o imporcie} many {# pobierań oczekujących na decyzję o imporcie} other {# pobierania oczekujące na decyzję o imporcie}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{review, plural, one {Activity, # download waiting for an import decision} other {Activity, # downloads waiting for an import decision}}"
 msgstr "{review, plural, one {Aktywność, # pobranie oczekujące na decyzję o imporcie} few {Aktywność, # pobrania oczekujące na decyzję o imporcie} many {Aktywność, # pobrań oczekujących na decyzję o imporcie} other {Aktywność, # pobrania oczekujące na decyzję o imporcie}}"
@@ -2975,7 +2983,7 @@ msgstr "Akcje"
 msgid "Actions for {spanLabel}"
 msgstr "Działania dla {spanLabel}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -6837,6 +6845,7 @@ msgstr "Ścieżka pobierania jest niedostępna dla Maki"
 msgid "Download path not accessible from Maki: {path}"
 msgstr "Ścieżka pobierania jest niedostępna dla Maki: {path}"
 
+#: src/components/ActivityButton.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -10271,6 +10280,7 @@ msgstr "Wczytywanie rozdziałów…"
 msgid "loading search by meaning, title matches for now"
 msgstr "wczytywanie wyszukiwania po znaczeniu, na razie dopasowania tytułów"
 
+#: src/components/ActivityButton.tsx
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -12513,6 +12523,10 @@ msgstr "Z tego źródła nic jeszcze nie pobrano ani nie próbkowano."
 msgid "Nothing downloaded yet."
 msgstr "Jeszcze nic nie pobrano."
 
+#: src/components/ActivityButton.tsx
+msgid "Nothing downloading right now"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Nothing dropped. Keep it that way."
@@ -13199,6 +13213,10 @@ msgstr "Otwórz {title} w Odkrywaniu"
 msgid "Open a chapter and it will show up here, ready to resume."
 msgstr "Otwórz rozdział, a pojawi się tutaj, gotowy do wznowienia."
 
+#: src/components/ActivityButton.tsx
+msgid "Open Activity"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are."
@@ -13610,6 +13628,7 @@ msgstr "Wstrzymaj pobieranie"
 msgid "Pause Rewind"
 msgstr "Wstrzymaj Rewind"
 
+#: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy

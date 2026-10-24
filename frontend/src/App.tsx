@@ -14,7 +14,6 @@ import {
 import { useDisclosure, useMediaQuery } from '@mantine/hooks'
 import {
   IconArrowLeft,
-  IconDownload,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
 } from '@tabler/icons-react'
@@ -24,7 +23,6 @@ import {
   useHealth,
   useMetadataSettings,
   usePrefetchSeriesOnHover,
-  useQueueSummary,
   useSetupStatus,
   useUiSettings,
 } from './api/hooks'
@@ -40,7 +38,7 @@ import MetadataGatePage from './pages/MetadataGatePage'
 import { CommandPaletteModal, CommandPaletteTrigger } from './components/CommandPalette'
 import { IconBrandMark } from './components/IconBrandMark'
 import { NotificationBell } from './components/NotificationBell'
-import { CountIndicator } from './components/ui/CountIndicator'
+import { ActivityButton } from './components/ActivityButton'
 import MetadataDumpProgress from './components/MetadataDumpProgress'
 import SetupWizard from './components/SetupWizard'
 import SidebarFooter from './components/layout/SidebarFooter'
@@ -51,8 +49,7 @@ import { TipLayer } from './components/ui/TipLayer'
 import { EmptyState } from './components/ui/EmptyState'
 import { RouteErrorBoundary } from './components/RouteErrorBoundary'
 import { useLanguageSync } from './i18n-context'
-import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import { plural } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, type NavItem } from './nav'
 import { DocumentTitle, DocumentTitleProvider } from './lib/documentTitle'
@@ -156,55 +153,6 @@ function NavLinks({
         </Stack>
       ))}
     </Stack>
-  )
-}
-
-function ActivityButton() {
-  const { t } = useLingui()
-  const { data: summary } = useQueueSummary()
-  const active = summary?.active ?? 0
-  // A download waiting on an import decision outranks work in progress: progress finishes on its
-  // own, this does not, and the count is the only thing telling anyone it is there.
-  const review = summary?.awaitingImport ?? 0
-  const count = review > 0 ? review : active
-  const accessibleName =
-    review > 0
-      ? plural(review, {
-          one: 'Activity, # download waiting for an import decision',
-          other: 'Activity, # downloads waiting for an import decision',
-        })
-      : active > 0
-        ? plural(active, {
-            one: 'Activity, # download in progress',
-            other: 'Activity, # downloads in progress',
-          })
-        : t`Activity`
-  return (
-    <Tooltip
-      label={
-        review > 0 ? (
-          <Plural value={review} one="# download waiting for an import decision"
-            other="# downloads waiting for an import decision" />
-        ) : active > 0 ? (
-          <Plural value={active} one="# download in progress" other="# downloads in progress" />
-        ) : (
-          <Trans>Activity</Trans>
-        )
-      }
-      withArrow
-    >
-      <CountIndicator count={count} tone={review > 0 ? 'warn' : 'brand'}>
-        <ActionIcon
-          component={Link}
-          to="/activity"
-          variant="subtle"
-          color="var(--neutral)"
-          aria-label={accessibleName}
-        >
-          <IconDownload size={19} />
-        </ActionIcon>
-      </CountIndicator>
-    </Tooltip>
   )
 }
 
@@ -587,7 +535,7 @@ function AppShellRoutes() {
             actions={
               navCollapsed ? undefined : (
                 <Group gap={2} wrap="nowrap" visibleFrom="sm">
-                  <ActivityButton />
+                  <ActivityButton position="top-start" />
                   <NotificationBell position="top-start" />
                 </Group>
               )

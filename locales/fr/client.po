@@ -514,12 +514,16 @@ msgstr "{acknowledged, plural, one {# pris en compte} many {# pris en compte} ot
 msgid "{actionError} Refresh the page and try again."
 msgstr "{actionError} Actualisez la page et réessayez."
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{active, plural, one {# download in progress} other {# downloads in progress}}"
 msgstr "{active, plural, one {# téléchargement en cours} many {# téléchargements en cours} other {# téléchargements en cours}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
+msgid "{active, plural, one {# in progress} other {# in progress}}"
+msgstr ""
+
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{active, plural, one {Activity, # download in progress} other {Activity, # downloads in progress}}"
 msgstr "{active, plural, one {Activité, # téléchargement en cours} many {Activité, # téléchargements en cours} other {Activité, # téléchargements en cours}}"
@@ -1712,17 +1716,21 @@ msgstr "{resolved, plural, one {# traitée} many {# traitées} other {# traitée
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, one {# min} many {# min} other {# min}}"
 
+#: src/components/ActivityButton.tsx
+msgid "{rest, plural, one {and # more} other {and # more}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{retentionDays, plural, one {kept # day} other {kept # days}}"
 msgstr "{retentionDays, plural, one {conservé # jour} many {conservé # jours} other {conservé # jours}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
 msgstr "{review, plural, one {# téléchargement en attente d'une décision d'importation} many {# téléchargements en attente d'une décision d'importation} other {# téléchargements en attente d'une décision d'importation}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{review, plural, one {Activity, # download waiting for an import decision} other {Activity, # downloads waiting for an import decision}}"
 msgstr "{review, plural, one {Activité, # téléchargement en attente d'une décision d'import} many {Activité, # téléchargements en attente d'une décision d'import} other {Activité, # téléchargements en attente d'une décision d'import}}"
@@ -2975,7 +2983,7 @@ msgstr "Actions"
 msgid "Actions for {spanLabel}"
 msgstr "Actions pour {spanLabel}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -6837,6 +6845,7 @@ msgstr "Dossier de téléchargement inaccessible depuis Maki"
 msgid "Download path not accessible from Maki: {path}"
 msgstr "Dossier de téléchargement inaccessible depuis Maki : {path}"
 
+#: src/components/ActivityButton.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -10271,6 +10280,7 @@ msgstr "Chargement des chapitres…"
 msgid "loading search by meaning, title matches for now"
 msgstr "chargement de la recherche par sens, correspondances par titre pour l'instant"
 
+#: src/components/ActivityButton.tsx
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -12513,6 +12523,10 @@ msgstr "Rien n'a encore été téléchargé ni échantillonné depuis cette sour
 msgid "Nothing downloaded yet."
 msgstr "Rien téléchargé pour le moment."
 
+#: src/components/ActivityButton.tsx
+msgid "Nothing downloading right now"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Nothing dropped. Keep it that way."
@@ -13199,6 +13213,10 @@ msgstr "Ouvrir {title} dans Découvrir"
 msgid "Open a chapter and it will show up here, ready to resume."
 msgstr "Ouvrez un chapitre et il apparaîtra ici, prêt à reprendre."
 
+#: src/components/ActivityButton.tsx
+msgid "Open Activity"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are."
@@ -13610,6 +13628,7 @@ msgstr "Mettre les téléchargements en pause"
 msgid "Pause Rewind"
 msgstr "Mettre Rewind en pause"
 
+#: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy

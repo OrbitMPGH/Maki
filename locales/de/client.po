@@ -514,12 +514,16 @@ msgstr "{acknowledged, plural, one {# bestätigt} other {# bestätigt}}"
 msgid "{actionError} Refresh the page and try again."
 msgstr "{actionError} Lade die Seite neu und versuche es erneut."
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{active, plural, one {# download in progress} other {# downloads in progress}}"
 msgstr "{active, plural, one {# Download läuft} other {# Downloads laufen}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
+msgid "{active, plural, one {# in progress} other {# in progress}}"
+msgstr ""
+
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{active, plural, one {Activity, # download in progress} other {Activity, # downloads in progress}}"
 msgstr "{active, plural, one {Aktivität, # Download läuft} other {Aktivität, # Downloads laufen}}"
@@ -1712,17 +1716,21 @@ msgstr "{resolved, plural, one {# erledigt} other {# erledigt}}"
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, one {# Min.} other {# Min.}}"
 
+#: src/components/ActivityButton.tsx
+msgid "{rest, plural, one {and # more} other {and # more}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{retentionDays, plural, one {kept # day} other {kept # days}}"
 msgstr "{retentionDays, plural, one {# Tag aufbewahrt} other {# Tage aufbewahrt}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
 msgstr "{review, plural, one {# Download wartet auf eine Import-Entscheidung} other {# Downloads warten auf eine Import-Entscheidung}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{review, plural, one {Activity, # download waiting for an import decision} other {Activity, # downloads waiting for an import decision}}"
 msgstr "{review, plural, one {Aktivität, # Download wartet auf eine Importentscheidung} other {Aktivität, # Downloads warten auf eine Importentscheidung}}"
@@ -2975,7 +2983,7 @@ msgstr "Aktionen"
 msgid "Actions for {spanLabel}"
 msgstr "Aktionen für {spanLabel}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -6837,6 +6845,7 @@ msgstr "Download-Pfad ist für Maki nicht erreichbar"
 msgid "Download path not accessible from Maki: {path}"
 msgstr "Download-Pfad ist für Maki nicht erreichbar: {path}"
 
+#: src/components/ActivityButton.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -10271,6 +10280,7 @@ msgstr "Kapitel werden geladen…"
 msgid "loading search by meaning, title matches for now"
 msgstr "Suche nach Bedeutung wird geladen, vorerst nur Titeltreffer"
 
+#: src/components/ActivityButton.tsx
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -12513,6 +12523,10 @@ msgstr "Von dieser Quelle wurde noch nichts heruntergeladen oder als Stichprobe 
 msgid "Nothing downloaded yet."
 msgstr "Noch nichts heruntergeladen."
 
+#: src/components/ActivityButton.tsx
+msgid "Nothing downloading right now"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Nothing dropped. Keep it that way."
@@ -13199,6 +13213,10 @@ msgstr "{title} in Entdecken öffnen"
 msgid "Open a chapter and it will show up here, ready to resume."
 msgstr "Öffne ein Kapitel, dann erscheint es hier und kann fortgesetzt werden."
 
+#: src/components/ActivityButton.tsx
+msgid "Open Activity"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are."
@@ -13610,6 +13628,7 @@ msgstr "Downloads pausieren"
 msgid "Pause Rewind"
 msgstr "Rewind pausieren"
 
+#: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy

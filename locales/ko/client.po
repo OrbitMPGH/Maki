@@ -514,12 +514,16 @@ msgstr "{acknowledged, plural, other {#개 확인됨}}"
 msgid "{actionError} Refresh the page and try again."
 msgstr "{actionError} 페이지를 새로고침한 후 다시 시도하세요."
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{active, plural, one {# download in progress} other {# downloads in progress}}"
 msgstr "{active, plural, other {다운로드 #개 진행 중}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
+msgid "{active, plural, one {# in progress} other {# in progress}}"
+msgstr ""
+
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{active, plural, one {Activity, # download in progress} other {Activity, # downloads in progress}}"
 msgstr "{active, plural, other {활동, 다운로드 #개 진행 중}}"
@@ -1712,17 +1716,21 @@ msgstr "{resolved, plural, other {#개 해결}}"
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, other {#분}}"
 
+#: src/components/ActivityButton.tsx
+msgid "{rest, plural, one {and # more} other {and # more}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{retentionDays, plural, one {kept # day} other {kept # days}}"
 msgstr "{retentionDays, plural, other {#일 보관}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
 msgstr "{review, plural, other {가져오기 결정 대기 중인 다운로드 #개}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{review, plural, one {Activity, # download waiting for an import decision} other {Activity, # downloads waiting for an import decision}}"
 msgstr "{review, plural, other {활동, 가져오기 결정을 기다리는 다운로드 #개}}"
@@ -2975,7 +2983,7 @@ msgstr "작업"
 msgid "Actions for {spanLabel}"
 msgstr "{spanLabel} 작업"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -6837,6 +6845,7 @@ msgstr "Maki에서 다운로드 경로에 접근할 수 없습니다"
 msgid "Download path not accessible from Maki: {path}"
 msgstr "Maki에서 다운로드 경로에 접근할 수 없습니다: {path}"
 
+#: src/components/ActivityButton.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -10271,6 +10280,7 @@ msgstr "챕터 불러오는 중…"
 msgid "loading search by meaning, title matches for now"
 msgstr "의미 검색을 불러오는 중, 지금은 제목 일치만 사용"
 
+#: src/components/ActivityButton.tsx
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -12513,6 +12523,10 @@ msgstr "이 소스에서 다운로드하거나 샘플링한 것이 아직 없습
 msgid "Nothing downloaded yet."
 msgstr "아직 다운로드한 항목이 없습니다."
 
+#: src/components/ActivityButton.tsx
+msgid "Nothing downloading right now"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Nothing dropped. Keep it that way."
@@ -13199,6 +13213,10 @@ msgstr "탐색에서 {title} 열기"
 msgid "Open a chapter and it will show up here, ready to resume."
 msgstr "챕터를 열면 여기 표시되어 이어서 읽을 수 있습니다."
 
+#: src/components/ActivityButton.tsx
+msgid "Open Activity"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are."
@@ -13610,6 +13628,7 @@ msgstr "다운로드 일시 정지"
 msgid "Pause Rewind"
 msgstr "Rewind 일시 정지"
 
+#: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy

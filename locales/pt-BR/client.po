@@ -514,12 +514,16 @@ msgstr "{acknowledged, plural, one {# confirmado} many {# confirmados} other {# 
 msgid "{actionError} Refresh the page and try again."
 msgstr "{actionError} Atualize a página e tente novamente."
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{active, plural, one {# download in progress} other {# downloads in progress}}"
 msgstr "{active, plural, one {# download em andamento} many {# downloads em andamento} other {# downloads em andamento}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
+msgid "{active, plural, one {# in progress} other {# in progress}}"
+msgstr ""
+
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{active, plural, one {Activity, # download in progress} other {Activity, # downloads in progress}}"
 msgstr "{active, plural, one {Atividade, # download em andamento} many {Atividade, # downloads em andamento} other {Atividade, # downloads em andamento}}"
@@ -1712,17 +1716,21 @@ msgstr "{resolved, plural, one {# resolvida} many {# resolvidas} other {# resolv
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, one {# min} many {# min}other {# min}}"
 
+#: src/components/ActivityButton.tsx
+msgid "{rest, plural, one {and # more} other {and # more}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{retentionDays, plural, one {kept # day} other {kept # days}}"
 msgstr "{retentionDays, plural, one {mantido por # dia} many {mantido por # dias} other {mantido por # dias}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
 msgstr "{review, plural, one {# download aguardando uma decisão de importação} many {# downloads aguardando uma decisão de importação} other {# downloads aguardando uma decisão de importação}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{review, plural, one {Activity, # download waiting for an import decision} other {Activity, # downloads waiting for an import decision}}"
 msgstr "{review, plural, one {Atividade, # download aguardando uma decisão de importação} many {Atividade, # downloads aguardando uma decisão de importação} other {Atividade, # downloads aguardando uma decisão de importação}}"
@@ -2975,7 +2983,7 @@ msgstr "Ações"
 msgid "Actions for {spanLabel}"
 msgstr "Ações para {spanLabel}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -6837,6 +6845,7 @@ msgstr "O caminho de download não está acessível para o Maki"
 msgid "Download path not accessible from Maki: {path}"
 msgstr "O caminho de download não está acessível para o Maki: {path}"
 
+#: src/components/ActivityButton.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -10271,6 +10280,7 @@ msgstr "Carregando capítulos…"
 msgid "loading search by meaning, title matches for now"
 msgstr "carregando busca por significado, por enquanto só correspondências de título"
 
+#: src/components/ActivityButton.tsx
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -12513,6 +12523,10 @@ msgstr "Nada foi baixado nem amostrado desta fonte ainda."
 msgid "Nothing downloaded yet."
 msgstr "Nada baixado ainda."
 
+#: src/components/ActivityButton.tsx
+msgid "Nothing downloading right now"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Nothing dropped. Keep it that way."
@@ -13199,6 +13213,10 @@ msgstr "Abrir {title} em Descobrir"
 msgid "Open a chapter and it will show up here, ready to resume."
 msgstr "Abra um capítulo e ele aparecerá aqui, pronto para retomar."
 
+#: src/components/ActivityButton.tsx
+msgid "Open Activity"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are."
@@ -13610,6 +13628,7 @@ msgstr "Pausar downloads"
 msgid "Pause Rewind"
 msgstr "Pausar Rewind"
 
+#: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy

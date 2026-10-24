@@ -514,12 +514,16 @@ msgstr "{acknowledged, plural, one {Подтверждено: #} few {Подтв
 msgid "{actionError} Refresh the page and try again."
 msgstr "{actionError} Обновите страницу и попробуйте снова."
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{active, plural, one {# download in progress} other {# downloads in progress}}"
 msgstr "{active, plural, one {# загрузка выполняется} few {# загрузки выполняются} many {# загрузок выполняется} other {# загрузки выполняется}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
+msgid "{active, plural, one {# in progress} other {# in progress}}"
+msgstr ""
+
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{active, plural, one {Activity, # download in progress} other {Activity, # downloads in progress}}"
 msgstr "{active, plural, one {Активность: # загрузка выполняется} few {Активность: # загрузки выполняются} many {Активность: # загрузок выполняются} other {Активность: # загрузки выполняются}}"
@@ -1712,17 +1716,21 @@ msgstr "{resolved, plural, one {Решён # запрос} few {Решены # �
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, one {# мин} few {# мин} many {# мин} other {# мин}}"
 
+#: src/components/ActivityButton.tsx
+msgid "{rest, plural, one {and # more} other {and # more}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{retentionDays, plural, one {kept # day} other {kept # days}}"
 msgstr "{retentionDays, plural, one {хранится # день} few {хранится # дня} many {хранится # дней} other {хранится # дня}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
 msgstr "{review, plural, one {# загрузка, ожидающая решения по импорту} few {# загрузки, ожидающие решения по импорту} many {# загрузок, ожидающих решения по импорту} other {# загрузки, ожидающие решения по импорту}}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #, fuzzy
 msgid "{review, plural, one {Activity, # download waiting for an import decision} other {Activity, # downloads waiting for an import decision}}"
 msgstr "{review, plural, one {Активность: # загрузка ждёт решения по импорту} few {Активность: # загрузки ждут решения по импорту} many {Активность: # загрузок ждут решения по импорту} other {Активность: # загрузки ждут решения по импорту}}"
@@ -2975,7 +2983,7 @@ msgstr "Действия"
 msgid "Actions for {spanLabel}"
 msgstr "Действия для {spanLabel}"
 
-#: src/App.tsx
+#: src/components/ActivityButton.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -6837,6 +6845,7 @@ msgstr "Путь загрузки недоступен для Maki"
 msgid "Download path not accessible from Maki: {path}"
 msgstr "Путь загрузки недоступен для Maki: {path}"
 
+#: src/components/ActivityButton.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -10271,6 +10280,7 @@ msgstr "Загрузка глав…"
 msgid "loading search by meaning, title matches for now"
 msgstr "загружается поиск по смыслу, пока только совпадения по названию"
 
+#: src/components/ActivityButton.tsx
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -12513,6 +12523,10 @@ msgstr "Из этого источника пока ничего не загру
 msgid "Nothing downloaded yet."
 msgstr "Пока ничего не загружено."
 
+#: src/components/ActivityButton.tsx
+msgid "Nothing downloading right now"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Nothing dropped. Keep it that way."
@@ -13199,6 +13213,10 @@ msgstr "Открыть {title} в Обзоре"
 msgid "Open a chapter and it will show up here, ready to resume."
 msgstr "Откройте главу, и она появится здесь, готовая к продолжению чтения."
 
+#: src/components/ActivityButton.tsx
+msgid "Open Activity"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are."
@@ -13610,6 +13628,7 @@ msgstr "Приостановить загрузки"
 msgid "Pause Rewind"
 msgstr "Приостановить Rewind"
 
+#: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
