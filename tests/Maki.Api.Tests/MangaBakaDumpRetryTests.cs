@@ -51,10 +51,10 @@ public class MangaBakaDumpRetryTests : IAsyncLifetime
         await ScheduleRegularAt(Now.AddHours(6));
         var retry = new MangaBakaDumpRetry();
 
-        Assert.Equal(Now.AddMinutes(15), await retry.OnFailureAsync(_scheduler, dumpMissing: true, Now, default));
+        Assert.Equal(Now.AddMinutes(15), await retry.OnFailureAsync(_scheduler, dumpUnusable: true, Now, default));
         Assert.Equal(Now.AddMinutes(15), await RetryAt());
 
-        Assert.Equal(Now.AddMinutes(30), await retry.OnFailureAsync(_scheduler, dumpMissing: true, Now, default));
+        Assert.Equal(Now.AddMinutes(30), await retry.OnFailureAsync(_scheduler, dumpUnusable: true, Now, default));
         Assert.Equal(Now.AddMinutes(30), await RetryAt());
     }
 
@@ -63,7 +63,7 @@ public class MangaBakaDumpRetryTests : IAsyncLifetime
     {
         await ScheduleRegularAt(Now.AddMinutes(10));
 
-        Assert.Null(await new MangaBakaDumpRetry().OnFailureAsync(_scheduler, dumpMissing: true, Now, default));
+        Assert.Null(await new MangaBakaDumpRetry().OnFailureAsync(_scheduler, dumpUnusable: true, Now, default));
         Assert.Null(await RetryAt());
     }
 
@@ -72,7 +72,7 @@ public class MangaBakaDumpRetryTests : IAsyncLifetime
     {
         await ScheduleRegularAt(Now.AddHours(6));
 
-        Assert.Null(await new MangaBakaDumpRetry().OnFailureAsync(_scheduler, dumpMissing: false, Now, default));
+        Assert.Null(await new MangaBakaDumpRetry().OnFailureAsync(_scheduler, dumpUnusable: false, Now, default));
         Assert.Null(await RetryAt());
     }
 
@@ -81,12 +81,12 @@ public class MangaBakaDumpRetryTests : IAsyncLifetime
     {
         await ScheduleRegularAt(Now.AddHours(6));
         var retry = new MangaBakaDumpRetry();
-        await retry.OnFailureAsync(_scheduler, dumpMissing: true, Now, default);
-        await retry.OnFailureAsync(_scheduler, dumpMissing: true, Now, default);
+        await retry.OnFailureAsync(_scheduler, dumpUnusable: true, Now, default);
+        await retry.OnFailureAsync(_scheduler, dumpUnusable: true, Now, default);
 
         await retry.OnSuccessAsync(_scheduler, default);
 
         Assert.Null(await RetryAt());
-        Assert.Equal(Now.AddMinutes(15), await retry.OnFailureAsync(_scheduler, dumpMissing: true, Now, default));
+        Assert.Equal(Now.AddMinutes(15), await retry.OnFailureAsync(_scheduler, dumpUnusable: true, Now, default));
     }
 }

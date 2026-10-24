@@ -10,8 +10,8 @@ namespace Maki.Api.Jobs;
 /// 00:00 UTC; runs every 6 hours but short-circuits on the published SHA1, so repeat
 /// runs cost one tiny checksum request. Also triggerable on demand from settings, and
 /// triggered once the setup wizard finishes so a fresh install starts the download then
-/// rather than waiting out the schedule. While no dump is installed, a failure retries sooner
-/// (<see cref="MangaBakaDumpRetry"/>).
+/// rather than waiting out the schedule. While no usable dump is installed, a failure retries
+/// sooner (<see cref="MangaBakaDumpRetry"/>).
 /// </summary>
 [DisallowConcurrentExecution]
 public class MangaBakaDumpRefreshJob(
@@ -63,8 +63,8 @@ public class MangaBakaDumpRefreshJob(
         }
         catch (Exception ex)
         {
-            // Health check surfaces prolonged staleness; the next run retries, sooner while no dump
-            // is installed at all.
+            // Health check surfaces prolonged staleness; the next run retries, sooner while no usable
+            // dump is installed.
             logger.LogWarning(ex, "MangaBaka dump refresh failed");
             context.ReportFailure(ex);
             await ScheduleRetryAsync(context);
@@ -75,11 +75,11 @@ public class MangaBakaDumpRefreshJob(
     {
         try
         {
-            var missing = !(await dumpService.GetStatusAsync(context.CancellationToken)).Present;
-            if (await retry.OnFailureAsync(context.Scheduler, missing, DateTimeOffset.UtcNow, context.CancellationToken)
+            var unusable = dumpService.Damaged || !(await dumpService.GetStatusAsync(context.CancellationToken)).Present;
+            if (await retry.OnFailureAsync(context.Scheduler, unusable, DateTimeOffset.UtcNow, context.CancellationToken)
                 is { } at)
             {
-                logger.LogInformation("No MangaBaka dump is installed yet; trying again at {At:u}", at);
+                logger.LogInformation("No usable MangaBaka dump is installed; trying again at {At:u}", at);
             }
         }
         catch (Exception ex) when (!context.CancellationToken.IsCancellationRequested)

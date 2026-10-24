@@ -3648,6 +3648,10 @@ msgid "health.issue.dumpMissing"
 msgstr "The local MangaBaka database has not been downloaded yet. Until it is, only the reader and, for admins, Settings and Health are open. Maki retries the download by itself; check it in Settings → Library → Metadata database."
 
 #: src/Maki.Api/Services/HealthCheckService.cs
+msgid "health.issue.dumpDamaged"
+msgstr "The local MangaBaka database failed its integrity check, so metadata search and adding series can fail. Maki downloads it again by itself; check it in Settings → Library → Metadata database."
+
+#: src/Maki.Api/Services/HealthCheckService.cs
 msgid "health.issue.dumpStale"
 msgstr "The MangaBaka local database is out of date, last refreshed {at}. The refresh may be failing."
 

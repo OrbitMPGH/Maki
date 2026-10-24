@@ -54,6 +54,12 @@ public class MangaBakaDumpService(
     /// <summary>Live progress of the refresh in flight, for the settings UI and the progress toast.</summary>
     public MangaBakaDumpProgress Progress() => status.Snapshot();
 
+    /// <summary>
+    /// True when the installed dump failed its integrity check and has not been replaced yet. Read
+    /// from the last refresh, never checked here, so it costs nothing to ask.
+    /// </summary>
+    public bool Damaged => status.Damage is not null;
+
     /// <summary>Downloads and installs the dump if its checksum changed; returns true when a new dump was installed.</summary>
     public async Task<bool> RefreshAsync(CancellationToken ct = default)
     {
@@ -102,7 +108,9 @@ public class MangaBakaDumpService(
         if (string.Equals(expectedSha1, installedSha1, StringComparison.OrdinalIgnoreCase) &&
             File.Exists(options.DatabasePath))
         {
-            if (IntegrityProblem(options.DatabasePath) is not { } problem)
+            var problem = IntegrityProblem(options.DatabasePath);
+            status.Damage = problem;
+            if (problem is null)
             {
                 logger.LogDebug("MangaBaka dump unchanged ({Sha1}); skipping download", expectedSha1);
                 return false;
@@ -134,6 +142,7 @@ public class MangaBakaDumpService(
             throw;
         }
 
+        status.Damage = null;
         await settings.SetAsync(SettingKeys.MangaBakaDumpSha1, expectedSha1, ct);
         await settings.SetAsync(SettingKeys.MangaBakaDumpRefreshedAt, DateTime.UtcNow.ToString("O"), ct);
         logger.LogInformation("MangaBaka local database installed at {Path} ({Sha1})", options.DatabasePath, expectedSha1);

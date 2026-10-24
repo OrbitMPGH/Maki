@@ -116,6 +116,26 @@ public class MangaBakaDumpServiceTests : IDisposable
 
         Assert.True(await service.RefreshAsync());
         Assert.Null(MangaBakaDumpService.IntegrityProblem(dbPath));
+        Assert.False(service.Damaged);
+    }
+
+    [Fact]
+    public async Task A_damaged_dump_whose_download_fails_stays_flagged()
+    {
+        var dbPath = Path.Combine(_workDir, "mangabaka.db");
+        await File.WriteAllTextAsync(dbPath, "placeholder");
+        _settings.Values[SettingKeys.MangaBakaDumpSha1] = "abc123";
+
+        // The dump itself is not stubbed, so the re-download 404s.
+        var service = CreateService(new Dictionary<string, byte[]>
+        {
+            ["series.sqlite.zst.sha1"] = "abc123  series.sqlite.zst"u8.ToArray()
+        });
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => service.RefreshAsync());
+
+        Assert.True(service.Damaged);
+        Assert.True(File.Exists(dbPath));
     }
 
     [Fact]

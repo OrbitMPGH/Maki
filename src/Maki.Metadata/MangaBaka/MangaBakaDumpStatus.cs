@@ -46,6 +46,7 @@ public class MangaBakaDumpStatus(Func<DateTime>? clock = null)
     private DateTime? _finishedAt;
     private bool _lastInstalled;
     private string? _lastError;
+    private string? _damage;
 
     public bool Running
     {
@@ -139,6 +140,29 @@ public class MangaBakaDumpStatus(Func<DateTime>? clock = null)
             _finishedAt = _clock();
             _lastInstalled = installed;
             _lastError = error;
+        }
+    }
+
+    /// <summary>
+    /// Why the installed dump failed its integrity check on the last refresh that ran it; null when
+    /// it passed or a new dump has replaced it. In memory only: the first refresh after a restart
+    /// finds it again.
+    /// </summary>
+    public string? Damage
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _damage;
+            }
+        }
+        set
+        {
+            lock (_gate)
+            {
+                _damage = value;
+            }
         }
     }
 

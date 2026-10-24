@@ -5116,6 +5116,11 @@ msgid "health.issue.dumpMissing"
 msgstr ""
 
 #: src/Maki.Api/Services/HealthCheckService.cs
+#. English: The local MangaBaka database failed its integrity check, so metadata search and adding series can fail. Maki downloads it again by itself; check it in Settings → Library → Metadata database.
+msgid "health.issue.dumpDamaged"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthCheckService.cs
 #. English: The MangaBaka local database is out of date, last refreshed {at}. The refresh may be failing.
 #, fuzzy
 msgid "health.issue.dumpStale"

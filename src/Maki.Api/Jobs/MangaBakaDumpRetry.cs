@@ -3,10 +3,10 @@ using Quartz;
 namespace Maki.Api.Jobs;
 
 /// <summary>
-/// Retries a failed MangaBaka dump download sooner than the six-hour schedule while no dump is
-/// installed, since most of the web app waits on it: 15 minutes, then 30, 60 and so on, until the
-/// schedule's own next run comes first. A failed refresh of a dump already on disk keeps the
-/// schedule. A singleton, so the count of failures in a row survives between job instances.
+/// Retries a failed MangaBaka dump download sooner than the six-hour schedule while no usable dump
+/// is installed (none at all, which gates most of the web app, or one that failed its integrity
+/// check, which breaks every metadata lookup): 15 minutes, then 30, 60 and so on, until the
+/// schedule's own next run comes first. A failed refresh of a sound dump keeps the schedule. A singleton, so the count of failures in a row survives between job instances.
 /// </summary>
 public sealed class MangaBakaDumpRetry
 {
@@ -31,13 +31,13 @@ public sealed class MangaBakaDumpRetry
     }
 
     /// <summary>
-    /// Schedules the next try when the dump is still missing, unless the regular trigger fires first.
+    /// Schedules the next try when there is still no usable dump, unless the regular trigger fires first.
     /// Returns when the retry will run, or null when none was scheduled.
     /// </summary>
     public async Task<DateTimeOffset?> OnFailureAsync(
-        IScheduler scheduler, bool dumpMissing, DateTimeOffset now, CancellationToken ct)
+        IScheduler scheduler, bool dumpUnusable, DateTimeOffset now, CancellationToken ct)
     {
-        if (!dumpMissing)
+        if (!dumpUnusable)
         {
             Interlocked.Exchange(ref _failures, 0);
             return null;

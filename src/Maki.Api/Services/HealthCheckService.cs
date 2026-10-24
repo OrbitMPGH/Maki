@@ -104,6 +104,10 @@ public class HealthCheckService(
         {
             issues.Add(new HealthIssue("mangaBakaDump", "warning", "health.issue.dumpMissing"));
         }
+        else if (dump.Present && mangaBakaDump.Damaged)
+        {
+            issues.Add(new HealthIssue("mangaBakaDump", "error", "health.issue.dumpDamaged"));
+        }
         else if (dump.Present && dump.RefreshedAt < DateTime.UtcNow.AddHours(-72))
         {
             issues.Add(new HealthIssue("mangaBakaDump", "warning", "health.issue.dumpStale",
