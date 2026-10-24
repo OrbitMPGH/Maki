@@ -63,20 +63,24 @@ OPDS in Panels, Chunky, KOReader and Mihon, or in apps that speak Komga's API.
   [MangaBaka](https://mangabaka.org) catalog suggest what to read next, with rails for blind
   spots, Readers like you and Your Taste. It all runs on your server.
 - **Automatic monitoring.** Maki checks your sources on a schedule, picks the best one for each
-  series and queues new chapters as they appear. More than 30 sources are built in, in over a
-  dozen languages, and optional Suwayomi support adds its extensions on top. Torrents through
-  Prowlarr or Jackett work the same way.
+  series and queues new chapters as they appear. Series that release often are checked every
+  30 minutes, and an Upcoming view shows when the next chapter is likely. More than 30 sources
+  are built in, in over a dozen languages, and optional Suwayomi support adds its extensions on
+  top. Torrents through Prowlarr or Jackett, sent to qBittorrent, Transmission or Deluge, work the
+  same way.
 - **Scrobbling.** Reading progress goes to AniList, MyAnimeList, Kitsu, MangaBaka and
   MangaUpdates, whether you read in Maki, over OPDS or in Kavita.
 - **Plain files, any reader.** Everything is saved as CBZ with ComicInfo.xml. Kavita, KOReader,
   Panels, Chunky, Mihon or any other comic reader can use the same folder, and nothing is locked
   inside Maki's database.
 - **A reader when you want one.** Paged, double-page or continuous scroll, with progress merged
-  across every app you read in.
+  across every app you read in. Install Maki to your phone's home screen and save chapters to
+  read offline.
 
 Also included: multiple users with per-folder access, two-factor and OpenID Connect, notifications
-to Discord, Telegram, ntfy and more, stats and Rewind, eleven languages, a REST API and one-click
-backups. The full list is in [docs/features.md](docs/features.md).
+to Discord, Telegram, ntfy and more plus push to your devices, Mihon backup import, optional
+WebP/AVIF page conversion, stats and Rewind, eleven languages, a REST API and one-click backups.
+The full list is in [docs/features.md](docs/features.md).
 
 ## Quick start
 
@@ -97,7 +101,9 @@ services:
 ```
 
 1. Open `http://localhost:8990` and create the administrator account.
-2. Under **Settings**, add `/library` as a root folder.
+2. The setup guide opens next. Add `/library` as a library folder there. Maki downloads the
+   local [MangaBaka](https://mangabaka.org) database in the background (about 350 MB, 3.5 GB on
+   disk) and finishes opening once it is installed.
 3. Click **Add series**, search for a title and pick it. Maki links sources and syncs chapters in
    the background.
 4. Download a chapter or click **Search all missing**, then follow progress under **Activity**.
@@ -107,6 +113,9 @@ Kavita, FlareSolverr and Suwayomi are optional. A compose file with all of them 
 URL under **Settings → Downloads → FlareSolverr** to `http://flaresolverr:8191` and hit **Test**. For
 Suwayomi, set `http://suwayomi:4567` under **Settings → Integrations → Suwayomi**, hit **Test**,
 then **Manage sources** to turn on the ones you want.
+
+Offline reading and push notifications need HTTPS. See
+[Exposing Maki to the internet](docs/exposing-to-the-internet.md) for a reverse proxy setup.
 
 Upgrading from a single-user Maki? The first page asks you to set a username and password. Your
 library, history and tracker connections are already attached to that account.

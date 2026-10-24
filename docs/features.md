@@ -17,8 +17,11 @@
   MangaUpdates, and Kitsu IDs. It is required: Maki downloads it on first start and opens once
   it is installed. Until then the reader still opens chapters already on disk, and admins can
   reach Settings and Health.
-- **Torrents alongside scrapers.** Search releases through Prowlarr or Jackett and send them to qBittorrent, Transmission and Deluge.
-  Maki imports each one when it finishes, repacking anything that is not already CBZ.
+- **Torrents alongside scrapers.** Search releases through Prowlarr or Jackett and send them to
+  qBittorrent, Transmission or Deluge. Maki imports each one when it finishes, repacking anything
+  that is not already CBZ.
+- **Install it, read offline.** Maki installs to a phone or desktop home screen, keeps saved
+  chapters on the device and sends push notifications for new chapters.
 - **Built for a household.** Per-user history, preferences, tracker accounts, and library access
   over one shared set of files. It also supports two-factor authentication, API keys, and OpenID
   Connect single sign-on.
@@ -30,15 +33,22 @@
 - **Built-in reader.** Paged, double-page, 1:1 (original size), and continuous-scroll modes.
   Progress is tracked and merged with Kavita so nothing double-counts. A read meter shows how far
   through the series you are, and time-remaining estimates are based on comparable chapters.
+  Wide pages in single-page mode can be shown whole, split into two halves in reading order, or
+  rotated. **Crop borders** (shortcut C) trims plain white or black margins. Chapters with very
+  tall pages open in continuous mode on their own, and on touch you pull past the end of a
+  chapter to open the next one.
 - **Reading profiles.** Per-user defaults for page fit, direction, and mode by series type, with
   per-series overrides on top.
-- **Home.** **Continue reading**, **Jump back in**, **Recently added**, **You might like**, and other
-  rails, drag-reorderable and switchable per user.
+- **Home.** Opens on one large card for the series you're reading, with the rest of **Continue
+  reading** in a **Next up** tray under it, and a **Your last five weeks** card with reading days,
+  streak and goal progress. **Jump back in**, **Recently added**, **You might like** and the other
+  rails follow. Every part can be reordered or switched off per user in the layout editor.
 - **Scrobbling.** Sends read progress to AniList, MyAnimeList, Kitsu, MangaBaka, and
   MangaUpdates, whether the reading happened in Maki, over OPDS, in KOReader, or in Kavita. Your lists on those trackers can also be
   imported into the library from Settings.
-- **Mihon backup import.** Upload a Mihon backup on the Import page to add its library, with
-  categories as tags and read chapters marked read. Needs the local MangaBaka database.
+- **Mihon backup import.** Upload a Mihon backup (`.tachibk` or `.proto.gz`) on the Import page
+  to add its library. Entries are matched by tracker ids, then by title, with a review table for
+  fixes. Categories become tags and read chapters are marked read.
 - **Anime tie-in.** For a series with an anime adaptation, Maki can start you at the chapter where
   the anime ended.
 - **OPDS server.** OPDS 1.2 with page streaming (OPDS-PSE), so Panels, Chunky, KOReader, and
@@ -87,12 +97,21 @@
 - **Monitoring.** Chapter lists refresh on a schedule and new chapters are queued automatically.
   Whole-series monitor modes decide what gets queued, and a per-chapter **Wanted** toggle keeps
   individual chapters or specials out.
+- **Release-aware refresh.** Series that released recently are checked every 30 minutes, quieter
+  ones every 2 hours, 6 hours or once a day, and a new chapter puts a series back on the fast
+  schedule. Turn off **Check quiet series less often** in Settings, Downloads to check everything
+  every 30 minutes.
+- **Upcoming.** The Upcoming tab in Activity shows each series' likely next chapter on a
+  five-week grid, as a span with a confidence rather than a date. Release times a source
+  announces (MANGA Plus) are shown on the day, and Maki checks again just after them. The series
+  page shows the same estimate and when the next check is due.
 - **Automatic source matching.** Adding a series returns instantly; matching runs in the background
   and can be re-run or fixed by hand. Sources are drag-ordered by preference and can be disabled
   globally, and the series page can compare linked sources side by side on sampled page quality.
   A single chapter can also be re-fetched from whichever linked source has the better copy.
-- **Torrents.** Search releases through Prowlarr or Jackett, grab them with qBittorrent, Transmission and Deluge, and auto-import on
-  completion. Files are hardlinked into the library where possible, and torrents share the queue
+- **Torrents.** Search releases through Prowlarr or Jackett, grab them with qBittorrent,
+  Transmission or Deluge, and auto-import on completion. A release whose title names a related
+  work (a spin-off or sequel) better than the series itself is rejected. Files are hardlinked into the library where possible, and torrents share the queue
   with scraper downloads. Anything that is not already CBZ is converted on the way in: `.zip` is
   placed unchanged (a CBZ is a zip), `.cbr`/`.rar`/`.7z`/`.tar` are repacked, and a folder of
   loose images becomes one CBZ per folder. A PDF is the one exception: it is kept as it is and
@@ -126,13 +145,15 @@
   items and review downloads that need a decision, for example an import that would replace
   existing chapter files.
 - **Library health.** Admins can index and verify archives, and find missing, unreadable,
-  duplicate, or suspicious files. Replacement and deletion operations are reviewed before they
-  run, and unlinked CBZs can be imported.
+  duplicate, or suspicious files. Repeated findings of one kind fold into one row with
+  **Acknowledge all**. Replacement and deletion operations are reviewed before they run, and
+  unlinked CBZs can be imported.
 
 ## Administration
 
 - **Multi-user.** Per-user history, preferences, and tracker accounts over one shared library,
-  with per-root-folder access grants. See [Multiple readers](multiple-readers.md).
+  with per-root-folder access grants. While only one account is enabled, single-user mode hides
+  requests, leaderboards and the other multi-user parts. See [Multiple readers](multiple-readers.md).
 - **Security.** Two-factor authentication, per-user API keys, HTTPS enforcement, trusted proxies,
   lockout, and OpenID Connect single sign-on. See
   [Exposing Maki to the internet](exposing-to-the-internet.md).
@@ -140,8 +161,12 @@
   before every schema migration. See [Backup & restore](backup-restore.md).
 - **Notifications.** Outbound events (new chapters, download results, health warnings, and more)
   go to Discord, Telegram, Slack, Notifiarr, ntfy, Gotify, Pushover, Apprise, or a plain webhook.
-  Connections can be scoped to user tags so each person only hears about their own series.
-- **Interface.** Eleven UI languages, five accent colors and several dark and light
-  backgrounds.
+  Connections can be scoped to user tags so each person only hears about their own series. Each
+  user picks which events show in the bell and which push to their devices.
+- **Interface.** Eleven UI languages. Eight accent colours (Blush by default) and nine
+  backgrounds, among them Cover tint, which takes the colour of the cover on screen, OLED black
+  and the light Paper. The sidebar can collapse into a slim header, and page transitions can be
+  turned off or sped up under Settings, Appearance, Motion. The sign-in page can show a blurred
+  mosaic of Safe-rated covers.
 - **REST API.** Available at `/api/v1` with `X-Api-Key` auth. Swagger is served at `/swagger`
   when running in the Development environment.
