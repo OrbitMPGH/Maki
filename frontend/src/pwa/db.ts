@@ -148,6 +148,7 @@ export async function mergeProgress(write: ProgressWrite): Promise<void> {
       seriesId: write.seriesId || open.seriesId,
       pageIndex: write.pageIndex,
       completed: open.completed || write.completed,
+      held: write.held,
       seconds: open.seconds + seconds,
       clientTime: write.clientTime,
       opId: randomUUID(),

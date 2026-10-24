@@ -72,7 +72,7 @@ export async function queueOfflineWrite(
   chapterId: number,
   seriesId: number,
   pageIndex: number,
-  completed: boolean,
+  completed: boolean | undefined,
   seconds: number,
   pageCount: number,
 ): Promise<boolean> {
@@ -83,8 +83,10 @@ export async function queueOfflineWrite(
     chapterId,
     seriesId,
     pageIndex,
-    // A later merge moves the position, so the completion the server would derive from it is kept here.
-    completed: completed || (pageCount > 0 && pageIndex >= pageCount - 1),
+    // A later merge moves the position, so the completion the server would derive from it is kept
+    // here, unless the write said false outright (a held-back last half).
+    completed: completed === true || (completed === undefined && pageCount > 0 && pageIndex >= pageCount - 1),
+    held: completed === false,
     seconds,
     clientTime: new Date().toISOString(),
   })
@@ -106,8 +108,8 @@ async function sendRow(row: QueuedProgress): Promise<Outcome> {
   if (!current) return 'dropped'
   const body = {
     pageIndex: current.pageIndex,
-    // Never false: the server only derives completion from the position when the field is absent.
-    completed: current.completed || undefined,
+    // Absent lets the server derive completion from the position; an explicit false holds it back.
+    completed: current.completed ? true : current.held ? false : undefined,
     seconds: current.seconds,
     final: true,
     clientTime: current.clientTime,

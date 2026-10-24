@@ -75,6 +75,7 @@ export async function captureProgress(event: FetchEvent, url: URL, chapterId: nu
       seriesId,
       pageIndex: body.pageIndex,
       completed: body.completed === true,
+      held: body.completed === false,
       seconds: typeof body.seconds === 'number' && body.seconds > 0 ? body.seconds : 0,
       clientTime: typeof body.clientTime === 'string' && body.clientTime ? body.clientTime : new Date().toISOString(),
       opId: typeof body.opId === 'string' && body.opId ? body.opId : randomUUID(),

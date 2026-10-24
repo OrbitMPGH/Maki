@@ -60,6 +60,8 @@ export interface ProgressRow {
   seriesId: number
   pageIndex: number
   completed: boolean
+  /** The write said `completed: false` outright, so the server must not derive completion from the position. */
+  held?: boolean
   seconds: number
   /** ISO timestamp of the latest write folded into this row. */
   clientTime: string
@@ -81,6 +83,7 @@ export interface ProgressWrite {
   seriesId: number
   pageIndex: number
   completed: boolean
+  held?: boolean
   seconds: number
   clientTime: string
 }

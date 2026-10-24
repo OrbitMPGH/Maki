@@ -169,7 +169,8 @@ export function useContinueReading(seriesId: number, enabled = true) {
  * Every write carries an `opId`, so a copy the service worker queued after the connection dropped
  * mid-send is recognised as a repeat, and `seriesId`, which the worker files a queued copy under.
  * While offline the write goes straight to this device's queue, which needs `pageCount` to keep a
- * completion the server would have derived from the position.
+ * completion the server would have derived from the position. An explicit `completed: false` is kept
+ * as such, so a held-back last half is not completed on replay.
  */
 export async function saveProgress(
   chapterId: number,
@@ -227,7 +228,7 @@ function queuedOffline(
   pageCount: number,
 ): Promise<boolean> {
   if (getConnectivity() !== 'offline') return Promise.resolve(false)
-  return queueOfflineWrite(chapterId, seriesId, pageIndex, completed === true, seconds ?? 0, pageCount).catch(
+  return queueOfflineWrite(chapterId, seriesId, pageIndex, completed, seconds ?? 0, pageCount).catch(
     () => false,
   )
 }
