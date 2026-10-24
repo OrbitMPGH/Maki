@@ -196,7 +196,12 @@ export function usePrefetchSeriesOnHover() {
       return link && id ? { link, id: Number(id) } : null
     }
     const prefetch = (id: number) =>
-      void queryClient.prefetchQuery({ ...seriesDetailQuery(id), staleTime: 30_000 })
+      void queryClient.prefetchQuery({
+        ...seriesDetailQuery(id),
+        staleTime: 30_000,
+        // A series only hovered must not toast; the page raises its own error if it is opened.
+        meta: { inlineNotFound: true, silent: true },
+      })
     const onOver = (e: PointerEvent) => {
       const hit = idOf(e.target)
       if (!hit || (e.relatedTarget instanceof Node && hit.link.contains(e.relatedTarget))) return
