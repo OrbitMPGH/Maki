@@ -1,11 +1,14 @@
 using System.Net;
 using System.Threading.RateLimiting;
 using Maki.Core.Http;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Maki.Core.Tests;
 
 public class RequestTimeoutHandlerTests
 {
+    private readonly FakeTimeProvider _time = new();
+
     private sealed class Ok : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) =>
@@ -14,8 +17,13 @@ public class RequestTimeoutHandlerTests
 
     private sealed class Hangs : HttpMessageHandler
     {
+        private readonly TaskCompletionSource _entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task Entered => _entered.Task;
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
+            _entered.TrySetResult();
             await Task.Delay(Timeout.Infinite, ct);
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
@@ -24,22 +32,32 @@ public class RequestTimeoutHandlerTests
     [Fact]
     public async Task A_request_that_hangs_times_out_like_the_client_would()
     {
-        using var client = new HttpClient(new RequestTimeoutHandler(TimeSpan.FromMilliseconds(100)) { InnerHandler = new Hangs() })
+        var hangs = new Hangs();
+        using var client = new HttpClient(new RequestTimeoutHandler(TimeSpan.FromSeconds(30), _time) { InnerHandler = hangs })
         {
             Timeout = Timeout.InfiniteTimeSpan,
         };
 
-        var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => client.GetAsync("http://lan.test/a"));
+        var request = client.GetAsync("http://lan.test/a");
+        await hangs.Entered;
+        _time.Advance(TimeSpan.FromSeconds(30));
+
+        var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => request);
         Assert.IsType<TimeoutException>(ex.InnerException);
     }
 
     [Fact]
     public async Task The_caller_cancelling_stays_a_plain_cancellation()
     {
-        using var client = new HttpClient(new RequestTimeoutHandler(TimeSpan.FromMinutes(1)) { InnerHandler = new Hangs() });
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+        var hangs = new Hangs();
+        using var client = new HttpClient(new RequestTimeoutHandler(TimeSpan.FromMinutes(1), _time) { InnerHandler = hangs });
+        using var cts = new CancellationTokenSource();
 
-        var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.GetAsync("http://lan.test/a", cts.Token));
+        var request = client.GetAsync("http://lan.test/a", cts.Token);
+        await hangs.Entered;
+        await cts.CancelAsync();
+
+        var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => request);
         Assert.Null(ex.InnerException as TimeoutException);
     }
 
@@ -50,12 +68,12 @@ public class RequestTimeoutHandlerTests
         using var held = await limiter.AcquireAsync(1);
         var chain = new RateLimitingHandler(limiter)
         {
-            InnerHandler = new RequestTimeoutHandler(TimeSpan.FromMilliseconds(200)) { InnerHandler = new Ok() },
+            InnerHandler = new RequestTimeoutHandler(TimeSpan.FromSeconds(30), _time) { InnerHandler = new Ok() },
         };
         using var client = new HttpClient(chain) { Timeout = Timeout.InfiniteTimeSpan };
 
         var queued = client.GetAsync("http://lan.test/a");
-        await Task.Delay(500);
+        _time.Advance(TimeSpan.FromMinutes(5));
         held.Dispose();
 
         using var answered = await queued.WaitAsync(TimeSpan.FromSeconds(5));
@@ -65,13 +83,18 @@ public class RequestTimeoutHandlerTests
     [Fact]
     public async Task An_inner_timeout_passes_through_an_outer_one_untouched()
     {
-        var inner = new RequestTimeoutHandler(TimeSpan.FromMilliseconds(100)) { InnerHandler = new Hangs() };
-        using var client = new HttpClient(new RequestTimeoutHandler(TimeSpan.FromMinutes(10)) { InnerHandler = inner })
+        var hangs = new Hangs();
+        var inner = new RequestTimeoutHandler(TimeSpan.FromSeconds(30), _time) { InnerHandler = hangs };
+        using var client = new HttpClient(new RequestTimeoutHandler(TimeSpan.FromMinutes(10), _time) { InnerHandler = inner })
         {
             Timeout = Timeout.InfiniteTimeSpan,
         };
 
-        var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => client.GetAsync("http://lan.test/a"));
+        var request = client.GetAsync("http://lan.test/a");
+        await hangs.Entered;
+        _time.Advance(TimeSpan.FromSeconds(30));
+
+        var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => request);
 
         Assert.DoesNotContain("600", ex.Message);
     }
