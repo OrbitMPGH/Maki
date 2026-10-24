@@ -39,65 +39,74 @@ function writeArt(mode: 'shapes' | 'covers') {
  * Which art the band shows. Starts from the last answer so a returning visitor paints the right
  * mode at once; a first visit holds at "pending" (neither art, no identity block) until the
  * bootstrap and, when covers are on, the mosaic have answered, so the layout never jumps from one
- * mode to the other. Waiting is bounded: past the timeouts the page's own art shows. Once shapes
- * have been painted in this visit the mosaic is remembered for the next one but never swapped in,
- * and a failed mosaic load falls back to shapes without being remembered.
+ * mode to the other. Waiting is bounded in every case: past the timeouts the page's own art shows,
+ * including for a returning visitor whose remembered mosaic never arrives. Once shapes have been
+ * painted in this visit the mosaic is remembered for the next one but never swapped in. A mosaic
+ * the server refuses (a 4xx) is remembered as shapes; a network error or timeout is not.
  */
 function useAuthArt() {
   const [mode, setMode] = useState<ArtMode>(readArt)
   const [mosaicUrl, setMosaicUrl] = useState<string | null>(null)
-  const shapesShown = useRef(mode === 'shapes')
+  const modeRef = useRef(mode)
+  const coversLoaded = useRef(false)
 
-  const showShapes = useCallback(() => {
-    setMode((m) => {
-      if (m === 'pending') shapesShown.current = true
-      return m === 'pending' ? 'shapes' : m
-    })
+  const commit = useCallback((next: ArtMode) => {
+    modeRef.current = next
+    setMode(next)
   }, [])
 
   useEffect(() => {
     let live = true
     let coversExpected = false
     const timers: number[] = []
+    const fallBack = () => {
+      if (modeRef.current !== 'shapes') commit('shapes')
+    }
     getInitialize()
       .then((init) => {
         if (!live) return
         if (init.signInCovers) {
           coversExpected = true
           setMosaicUrl(`${init.apiRoot}/signin/mosaic.webp`)
-          timers.push(window.setTimeout(showShapes, ART_COVERS_MS))
         } else {
-          shapesShown.current = true
-          setMode('shapes')
+          commit('shapes')
           writeArt('shapes')
         }
       })
       .catch(() => {
-        if (!live) return
-        shapesShown.current = true
-        setMode('shapes')
+        if (live) commit('shapes')
       })
     timers.push(
       window.setTimeout(() => {
-        if (!coversExpected) showShapes()
+        if (!coversExpected && modeRef.current === 'pending') fallBack()
       }, ART_PENDING_MS),
+      window.setTimeout(() => {
+        if (!coversLoaded.current) fallBack()
+      }, ART_COVERS_MS),
     )
     return () => {
       live = false
       timers.forEach((id) => window.clearTimeout(id))
     }
-  }, [showShapes])
+  }, [commit])
 
   return {
     mode,
     mosaicUrl,
     onCoversLoad: () => {
+      coversLoaded.current = true
       writeArt('covers')
-      if (!shapesShown.current) setMode('covers')
+      if (modeRef.current !== 'shapes') commit('covers')
     },
     onCoversError: () => {
-      shapesShown.current = true
-      setMode('shapes')
+      commit('shapes')
+      if (!mosaicUrl) return
+      fetch(mosaicUrl)
+        .then((res) => {
+          void res.body?.cancel()
+          if (res.status >= 400 && res.status < 500) writeArt('shapes')
+        })
+        .catch(() => {})
     },
   }
 }
