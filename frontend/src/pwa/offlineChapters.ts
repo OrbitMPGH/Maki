@@ -107,7 +107,7 @@ export function useOfflineSeriesIds(): ReadonlySet<number> {
   const { records } = useOfflineChapters()
   return useMemo(() => {
     const ids = new Set<number>()
-    for (const record of records.values()) if (record.state !== 'error') ids.add(record.seriesId)
+    for (const record of records.values()) if (record.state === 'saved' || record.state === 'stale') ids.add(record.seriesId)
     return ids
   }, [records])
 }
