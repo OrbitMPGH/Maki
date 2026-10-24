@@ -47,7 +47,8 @@ public class AuthController(
     TimeProvider clock,
     ILogger<AuthController> logger,
     InboxService inbox,
-    IHubContext<EventsHub>? hub = null) : ControllerBase
+    IHubContext<EventsHub>? hub = null,
+    IAppSettings? settings = null) : ControllerBase
 {
     /// <summary>
     /// A real password hash to verify against when the username does not exist, so a miss costs the
@@ -366,6 +367,15 @@ public class AuthController(
         if (!updated.Succeeded)
         {
             return BadRequest(new { error = Describe(updated) });
+        }
+
+        // An unset flag reads as "done" once a root folder exists, which the guide's own library step
+        // creates, so a fresh install pins the guide open until the admin finishes or skips it. An
+        // install upgrading into accounts already has a library and is left alone.
+        if (settings is not null && await settings.GetAsync(SettingKeys.SetupCompleted, ct) is null &&
+            !await db.RootFolders.AnyAsync(ct))
+        {
+            await settings.SetAsync(SettingKeys.SetupCompleted, "false", ct);
         }
 
         await signInManager.SignInAsync(user, isPersistent: true);

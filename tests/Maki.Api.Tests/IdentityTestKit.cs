@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -86,6 +87,10 @@ internal class TestSignInManager(UserManager<MakiUser> users, MakiUser? twoFacto
     public override Task<bool> IsTwoFactorClientRememberedAsync(MakiUser user) => Task.FromResult(false);
 
     public override Task SignInWithClaimsAsync(MakiUser user, bool isPersistent, IEnumerable<Claim> additionalClaims) =>
+        Task.CompletedTask;
+
+    public override Task SignInWithClaimsAsync(
+        MakiUser user, AuthenticationProperties? authenticationProperties, IEnumerable<Claim> additionalClaims) =>
         Task.CompletedTask;
 
     public override async Task<SignInResult> TwoFactorAuthenticatorSignInAsync(
