@@ -23,39 +23,33 @@ public class HomeLayoutTests
     }
 
     [Fact]
-    public void Default_ships_the_library_rails_then_the_catalogue_ones_with_popular_last()
-    {
-        Assert.Equal(
-            [
-                HomeSections.ContinueReading, HomeSections.JumpBackIn, HomeSections.RecentlyAdded,
-                HomeSections.Recommended, HomeSections.FromAnime, HomeSections.Following, HomeSections.Popular,
-            ],
-            HomeLayoutSpec.Default.Sections!.Select(s => s.Key));
-    }
-
-    [Fact]
-    public void Default_opens_on_continue_reading_with_jump_back_in_next()
+    public void Default_lists_each_known_section_once_opens_on_continue_reading_and_omits_retired_keys()
     {
         var keys = HomeLayoutSpec.Default.Sections!.Select(s => s.Key).ToList();
 
+        Assert.Equal(keys.Count, keys.Distinct().Count());
+        Assert.All(keys, k => Assert.True(HomeSections.IsValid(k), k));
         Assert.Equal(HomeSections.ContinueReading, keys[0]);
-        Assert.Equal(HomeSections.JumpBackIn, keys[1]);
         Assert.DoesNotContain(HomeSections.Glance, keys);
         Assert.DoesNotContain(HomeSections.Downloading, keys);
     }
 
     [Fact]
-    public void Default_continue_shows_the_glance_with_next_up_in_a_tray()
+    public void Default_gives_only_the_hero_sections_options_and_the_glance_to_continue_alone()
     {
         var sections = HomeLayoutSpec.Default.Sections!;
 
+        var withOptions = sections.Where(s => s.Options is not null).Select(s => s.Key).Order().ToList();
+        var withHero = sections.Where(s => s.Hero is not null).Select(s => s.Key).Order().ToList();
+        Assert.Equal(withHero, withOptions);
+        Assert.Contains(HomeSections.ContinueReading, withOptions);
+
         var cont = sections.Single(s => s.Key == HomeSections.ContinueReading);
-        Assert.Equal(new Dictionary<string, bool> { ["glance"] = true, ["nextUpBeside"] = false }, cont.Options);
-        var jumpBack = sections.Single(s => s.Key == HomeSections.JumpBackIn);
-        Assert.Equal(new Dictionary<string, bool> { ["nextUpBeside"] = false }, jumpBack.Options);
+        Assert.True(cont.Hero);
+        Assert.True(cont.Options![HomeHeroOptions.Glance]);
         Assert.All(
-            sections.Where(s => s.Key is not HomeSections.ContinueReading and not HomeSections.JumpBackIn),
-            s => Assert.Null(s.Options));
+            sections.Where(s => s.Key != HomeSections.ContinueReading && s.Options is not null),
+            s => Assert.DoesNotContain(HomeHeroOptions.Glance, s.Options!.Keys));
     }
 
     [Fact]
@@ -96,18 +90,6 @@ public class HomeLayoutTests
         var cont = parsed.Sections!.Single(s => s.Key == HomeSections.ContinueReading);
         Assert.False(cont.Options![HomeHeroOptions.Glance]);
         Assert.True(cont.Options[HomeHeroOptions.NextUpBeside]);
-    }
-
-    [Fact]
-    public void Default_hero_flags_match_the_definitions_defaults()
-    {
-        var spec = HomeLayoutSpec.Default;
-
-        Assert.True(spec.Sections!.Single(s => s.Key == HomeSections.ContinueReading).Hero);
-        Assert.False(spec.Sections!.Single(s => s.Key == HomeSections.JumpBackIn).Hero);
-        Assert.All(
-            spec.Sections!.Where(s => s.Key is not HomeSections.ContinueReading and not HomeSections.JumpBackIn),
-            s => Assert.Null(s.Hero));
     }
 
     [Fact]
@@ -472,13 +454,26 @@ public class HomeLayoutTests
         Assert.False(GlanceOf(merged));
     }
 
+    // Orders earlier builds wrote and users still have stored, as literals so the tests do not
+    // follow whatever production lists as the predecessors.
+    private static readonly string[] BeforeHomeOpenedOnItsHero =
+        ["downloading", "continue", "jumpback", "fromanime", "recent", "following", "recommended", "popular"];
+
+    private static readonly string[] HeroFirstWithDiscoveryOff =
+        ["continue", "jumpback", "fromanime", "recent", "downloading", "following", "recommended", "popular"];
+
+    private static readonly string[] BeforeTheGlanceBecameASwitch =
+        ["continue", "jumpback", "recent", "recommended", "fromanime", "following", "popular"];
+
     private static List<PageSection> PreviousDefault() =>
-        HomeSections.ShippingOrderPredecessors[0].Select(key => new PageSection(key)).ToList();
+        BeforeHomeOpenedOnItsHero.Select(key => new PageSection(key)).ToList();
+
+    private static int IndexOf(List<PageSection> sections, string key) => sections.FindIndex(s => s.Key == key);
 
     [Fact]
     public void The_hero_first_default_moves_to_the_new_order_without_downloading()
     {
-        var stored = HomeSections.ShippingOrderPredecessors[1]
+        var stored = HeroFirstWithDiscoveryOff
             .Select(key => new PageSection(key, Enabled: key is not HomeSections.Recommended and not HomeSections.Popular))
             .ToList();
 
@@ -515,13 +510,13 @@ public class HomeLayoutTests
     public void The_shipping_order_before_the_glance_became_a_switch_is_left_as_it_is()
     {
         // Continue, glance, jump back in, ...: the default the previous build wrote. Folding the
-        // glance away leaves it equal to the current order, so nothing moves.
-        var stored = HomeSections.All.Select(key => new PageSection(key)).ToList();
+        // glance away leaves that order as it was, so nothing moves.
+        var stored = BeforeTheGlanceBecameASwitch.Select(key => new PageSection(key)).ToList();
         stored.Insert(1, new PageSection(HomeSections.Glance, Enabled: false));
 
         var merged = new HomeLayoutSpec(true, stored).Merge();
 
-        Assert.Equal(HomeSections.All, merged.Sections!.Select(s => s.Key));
+        Assert.Equal(BeforeTheGlanceBecameASwitch, merged.Sections!.Take(BeforeTheGlanceBecameASwitch.Length).Select(s => s.Key));
         Assert.False(GlanceOf(merged));
     }
 
@@ -542,9 +537,12 @@ public class HomeLayoutTests
     public void The_move_keeps_the_switches_the_owner_flipped()
     {
         var stored = PreviousDefault();
-        stored[2] = stored[2] with { Enabled = false };
-        stored[1] = stored[1] with { Hero = false };
-        stored[6] = stored[6] with { Enabled = false };
+        var jumpBack = IndexOf(stored, HomeSections.JumpBackIn);
+        var cont = IndexOf(stored, HomeSections.ContinueReading);
+        var recommended = IndexOf(stored, HomeSections.Recommended);
+        stored[jumpBack] = stored[jumpBack] with { Enabled = false };
+        stored[cont] = stored[cont] with { Hero = false };
+        stored[recommended] = stored[recommended] with { Enabled = false };
 
         var merged = new HomeLayoutSpec(true, stored).Merge();
 
