@@ -16,26 +16,16 @@ namespace Maki.Api.Tests;
 /// <see cref="HousekeepingJob"/> applies two rules and needs both: an age rule alone never touches
 /// somebody who has not opened the bell, and a cap alone keeps a year of acknowledged noise.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public class InboxRetentionTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly string _configDir = Directory.CreateTempSubdirectory("maki-inbox-retention").FullName;
-    private readonly string? _priorEnv;
     private readonly AppPaths _paths;
 
-    public InboxRetentionTests()
-    {
-        // AppPaths reads MAKI_CONFIG_DIR at construction, so point it somewhere disposable before
-        // building one — same dance BackupServiceTests does.
-        _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
-        _paths = new AppPaths();
-    }
+    public InboxRetentionTests() => _paths = new AppPaths(_configDir);
 
     public void Dispose()
     {
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
         _db.Dispose();
         try
         {

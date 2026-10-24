@@ -22,7 +22,6 @@ namespace Maki.Api.Tests;
 /// The Komga-compatible API: which credentials open it, that it serves only what the token's owner
 /// can see, and that progress from a Komga client lands in Maki's own progress rows.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public sealed class KomgaControllerTests : IDisposable
 {
     private const int Pages = 4;
@@ -31,22 +30,18 @@ public sealed class KomgaControllerTests : IDisposable
     private readonly IDataProtectionProvider _protection = new EphemeralDataProtectionProvider();
     private readonly string _root = Path.Combine(Path.GetTempPath(), "maki-komga-tests", Guid.NewGuid().ToString("N"));
     private readonly string _configDir;
-    private readonly string? _priorEnv;
     private readonly AppPaths _paths;
 
     public KomgaControllerTests()
     {
         Directory.CreateDirectory(_root);
         _configDir = Path.Combine(_root, "config");
-        _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
-        _paths = new AppPaths();
+        _paths = new AppPaths(_configDir);
     }
 
     public void Dispose()
     {
         _db.Dispose();
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
         try
         {
             Directory.Delete(_root, recursive: true);

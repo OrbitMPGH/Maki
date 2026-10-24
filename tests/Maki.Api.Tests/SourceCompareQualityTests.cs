@@ -8,7 +8,6 @@ namespace Maki.Api.Tests;
 /// panel of a snapshot. The file on disk is "agg" at 800px over 20 pages; the profile's width format
 /// (worth 10) starts at 1400px.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public class SourceCompareQualityTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();

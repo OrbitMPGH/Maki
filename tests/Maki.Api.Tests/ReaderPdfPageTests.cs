@@ -13,12 +13,10 @@ namespace Maki.Api.Tests;
 /// synthetic <c>NNNN.jpg</c> names <see cref="PdfReader.PageName"/> produces rather than a zip
 /// entry, and 404 past the page count exactly like a CBZ would past its own entry list.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public sealed class ReaderPdfPageTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly string _configDir;
-    private readonly string? _priorEnv;
     private readonly AppPaths _paths;
     private readonly string _root =
         Path.Combine(Path.GetTempPath(), "maki-reader-pdf-" + Guid.NewGuid().ToString("N")[..8]);
@@ -27,15 +25,12 @@ public sealed class ReaderPdfPageTests : IDisposable
     {
         Directory.CreateDirectory(_root);
         _configDir = Path.Combine(Path.GetTempPath(), "maki-reader-pdf-config", Guid.NewGuid().ToString("N"));
-        _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
-        _paths = new AppPaths();
+        _paths = new AppPaths(_configDir);
     }
 
     public void Dispose()
     {
         _db.Dispose();
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
         if (Directory.Exists(_root)) Directory.Delete(_root, recursive: true);
         if (Directory.Exists(_configDir)) Directory.Delete(_configDir, recursive: true);
     }

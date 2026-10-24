@@ -28,7 +28,6 @@ namespace Maki.Api.Tests;
 /// back, and every file the user had before the import is left exactly as it was. Refused, and
 /// changing nothing, when the series has been downloaded into or read since.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public class LibraryImportUndoTests : IDisposable
 {
     private readonly TestDb _db = new();
@@ -38,18 +37,15 @@ public class LibraryImportUndoTests : IDisposable
         Path.Combine(Path.GetTempPath(), "maki-import-undo-" + Guid.NewGuid().ToString("N")[..8]);
     private readonly string _configDir =
         Path.Combine(Path.GetTempPath(), "maki-import-undo-config-" + Guid.NewGuid().ToString("N")[..8]);
-    private readonly string? _priorConfigDir = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
 
     public LibraryImportUndoTests()
     {
         // CoverService.DeleteCover resolves under the config dir; never let it reach a real one.
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
         Directory.CreateDirectory(_root);
     }
 
     public void Dispose()
     {
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorConfigDir);
         _db.Dispose();
         foreach (var dir in new[] { _root, _configDir })
         {
@@ -122,7 +118,7 @@ public class LibraryImportUndoTests : IDisposable
         new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
 
     private LibraryImportUndoService UndoService(MakiDbContext db, ICurrentUser? user = null) => new(
-        db, _queue, new CoverService(null!, new AppPaths(), _settings, NullLogger<CoverService>.Instance),
+        db, _queue, new CoverService(null!, new AppPaths(_configDir), _settings, NullLogger<CoverService>.Instance),
         new StatsEventService(db), new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
         new MangaBakaLocalStore(
             new MangaBakaDumpOptions("", _configDir), NullLogger<MangaBakaLocalStore>.Instance),

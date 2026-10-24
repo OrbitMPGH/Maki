@@ -12,20 +12,16 @@ namespace Maki.Api.Tests;
 /// (otherwise "rebuild missing" quietly costs a download per series), and it has to recognise a
 /// truncated poster as broken, which <c>File.Exists</c> alone cannot.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public class ImageCacheRebuildTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly string _configDir;
-    private readonly string? _priorEnv;
     private readonly AppPaths _paths;
 
     public ImageCacheRebuildTests()
     {
         _configDir = Path.Combine(Path.GetTempPath(), "maki-imagecache-tests", Guid.NewGuid().ToString("N"));
-        _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
-        _paths = new AppPaths();
+        _paths = new AppPaths(_configDir);
     }
 
     [Fact]
@@ -183,7 +179,6 @@ public class ImageCacheRebuildTests : IDisposable
     public void Dispose()
     {
         _db.Dispose();
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
         try { Directory.Delete(_configDir, recursive: true); } catch (IOException) { }
     }
 }

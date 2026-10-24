@@ -5,7 +5,6 @@ using Maki.Core.Sources;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
 public class SourceProbeServiceTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();
@@ -93,9 +92,9 @@ public class SourceProbeServiceTests : IDisposable
         AssertNoScratchLeft();
     }
 
-    private static void AssertNoScratchLeft()
+    private void AssertNoScratchLeft()
     {
-        var probeRoot = Path.Combine(new AppPaths().DownloadCacheDir, "probe");
+        var probeRoot = Path.Combine(_world.Paths.DownloadCacheDir, "probe");
         Assert.True(!Directory.Exists(probeRoot) || !Directory.EnumerateFileSystemEntries(probeRoot).Any());
     }
 }

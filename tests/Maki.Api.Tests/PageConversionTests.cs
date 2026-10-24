@@ -19,7 +19,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
 public sealed class PageConversionTests : IDisposable
 {
     private readonly UpgradeWorld _world = new UpgradeWorld().Seed();

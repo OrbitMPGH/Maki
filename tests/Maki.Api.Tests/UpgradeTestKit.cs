@@ -67,20 +67,18 @@ internal sealed class PngHttpFactory : IHttpClientFactory
 
 /// <summary>
 /// A library with one series, two source mappings ("agg", an aggregator the files came from, and
-/// "official") and an upgrade profile, on a temp root folder, with the config dir pointed inside it.
+/// "official") and an upgrade profile, on a temp root folder, with its own config dir inside it.
 /// </summary>
 internal sealed class UpgradeWorld : IDisposable
 {
     public const string Agg = "agg";
     public const string Official = "official";
 
-    private readonly string? _priorEnv;
 
     public UpgradeWorld()
     {
         Root = Path.Combine(Path.GetTempPath(), "maki-upgrade-" + Guid.NewGuid().ToString("N")[..8]);
-        _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", Path.Combine(Root, "config"));
+        Paths = new AppPaths(Path.Combine(Root, "config"));
         Registry = new SourceRegistry([
             new FakeSource { Name = Agg, Kind = SourceKind.Aggregator, OnGetPages = c => AggPages(c) },
             new FakeSource
@@ -94,6 +92,7 @@ internal sealed class UpgradeWorld : IDisposable
     }
 
     public TestDb Db { get; } = new();
+    public AppPaths Paths { get; }
     public FakeAppSettings Settings { get; } = new();
     public string Root { get; }
     public string Library => Path.Combine(Root, "library");
@@ -215,7 +214,7 @@ internal sealed class UpgradeWorld : IDisposable
     }
 
     public SourceProbeService Probes() => new(
-        new PageDownloader(Http, Queue, TimeProvider.System, NullLogger<PageDownloader>.Instance), Queue, new AppPaths(),
+        new PageDownloader(Http, Queue, TimeProvider.System, NullLogger<PageDownloader>.Instance), Queue, Paths,
         NullLogger<SourceProbeService>.Instance);
 
     public DownloadBatchNotifier Batches() => new(
@@ -230,7 +229,7 @@ internal sealed class UpgradeWorld : IDisposable
         db, Registry, Sources.Resolver(Registry, Availability),
         new PageDownloader(new StubHttpClientFactory(""), Queue, TimeProvider.System, NullLogger<PageDownloader>.Instance),
         new EventBroadcaster(new NoopHubContext(), Db.ScopeFactory()),
-        new AppPaths(),
+        Paths,
         new KavitaScanService(new KavitaClient(new StubHttpClientFactory("{}")), Settings,
             Db.ScopeFactory(), NullLogger<KavitaScanService>.Instance),
         Queue, Inbox, stats ?? new StatsEventService(db), Notifications, batches,
@@ -290,7 +289,6 @@ internal sealed class UpgradeWorld : IDisposable
 
     public void Dispose()
     {
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
         Db.Dispose();
         try
         {

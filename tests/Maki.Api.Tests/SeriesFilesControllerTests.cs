@@ -15,7 +15,7 @@ namespace Maki.Api.Tests;
 /// <summary>Moving a series between root folders, and the gates in front of a relink.</summary>
 public sealed class SeriesFilesControllerTests : IDisposable
 {
-    private readonly TestDb _db = new();
+    private readonly TestDb _db = new TestDb().WithDistinctSeriesIds();
     private readonly string _temp = Path.Combine(Path.GetTempPath(), "maki-move-" + Guid.NewGuid().ToString("N")[..8]);
 
     public void Dispose()
@@ -356,7 +356,7 @@ public sealed class SeriesFilesControllerTests : IDisposable
         {
             relink = Controller(db).Relink(
                 seriesId, new SeriesController.RelinkRequest(null, null, DeleteSuperseded: false), CancellationToken.None);
-            await Wait.UntilAsync(() => relink.IsCompleted || SeriesLocks.SeriesUsers(seriesId) == 2,
+            await Wait.UntilAsync(() => relink.IsCompleted || SeriesLocks.SeriesUsers(seriesId) >= 2,
                 "the relink never asked for the series lock");
             Assert.False(relink.IsCompleted);
         }

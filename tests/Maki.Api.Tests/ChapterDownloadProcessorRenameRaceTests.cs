@@ -3,7 +3,6 @@ using Maki.Core.Entities;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
 public class ChapterDownloadProcessorRenameRaceTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();
@@ -37,7 +36,7 @@ public class ChapterDownloadProcessorRenameRaceTests : IDisposable
         {
             run = _world.ProcessAsync(itemId);
             // Downloaded and waiting to import: the folder it would have written to is about to change.
-            await Wait.UntilAsync(() => run.IsCompleted || SeriesLocks.SeriesUsers(_world.SeriesId) == 2,
+            await Wait.UntilAsync(() => run.IsCompleted || SeriesLocks.SeriesUsers(_world.SeriesId) >= 2,
                 "the download never asked for the series lock to import");
             Assert.False(run.IsCompleted);
 
