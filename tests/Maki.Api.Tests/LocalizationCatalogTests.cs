@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using Maki.Api.Localization;
 using Maki.Core.Configuration;
 using Maki.Core.Localization;
 using Maki.Core.Naming;
@@ -332,15 +333,20 @@ public class LocalizationCatalogTests
             all.Add(key);
         }
 
+        // Through AchievementText itself (TestLocalizer hands back the key), so a change to the key
+        // format there is checked against the catalogue too.
+        var localizer = new TestLocalizer();
         foreach (var definition in AchievementCatalog.All)
         {
-            all.Add($"achievement.{definition.Key}.name");
-            all.Add($"achievement.{definition.Key}.description");
-        }
-
-        for (var tier = 1; tier <= AchievementCatalog.TierNames.Length; tier++)
-        {
-            all.Add($"achievement.tier.{tier}");
+            all.Add(localizer.AchievementName(definition.Key));
+            all.Add(localizer.AchievementDescription(definition.Key));
+            for (var tier = 1; tier <= AchievementCatalog.TierNames.Length; tier++)
+            {
+                if (localizer.AchievementTier(definition, tier) is { } tierKey)
+                {
+                    all.Add(tierKey);
+                }
+            }
         }
 
         foreach (var token in NamingTokens.All)

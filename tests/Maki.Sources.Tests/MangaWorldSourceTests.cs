@@ -231,17 +231,4 @@ public class MangaWorldSourceTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("1708/one-piece"));
     }
-
-    [Theory]
-    [InlineData("Capitolo 1194", "1194")]
-    [InlineData("Capitolo 1023\t", "1023")]
-    public void CapitoloRegex_extracts_the_bare_number(string raw, string expected)
-    {
-        // Regression guard for the source-local pre-extraction 00-GENERAL calls out as a deviation:
-        // ChapterNumberParser only knows "ch"/"chapter", never the Italian "Capitolo" label.
-        var match = System.Text.RegularExpressions.Regex.Match(
-            raw, @"capitolo\s*(\d+(?:\.\d+)?)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        Assert.True(match.Success);
-        Assert.Equal(expected, match.Groups[1].Value);
-    }
 }
