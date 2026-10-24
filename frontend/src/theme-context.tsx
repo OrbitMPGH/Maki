@@ -44,9 +44,6 @@ const tintedSwatch = (accentHex: string) => `color-mix(in srgb, #1b1b1b 96%, ${a
 
 export const BACKGROUNDS: BackgroundOption[] = [
   { id: 'tinted', label: msg`Tinted black`, scheme: 'dark', ground: 'tinted', swatch: tintedSwatch },
-  { id: 'night', label: msg`Night`, scheme: 'dark', ground: 'night', swatch: () => '#161922' },
-  { id: 'charcoal', label: msg`Charcoal`, scheme: 'dark', ground: 'charcoal', swatch: () => '#181818' },
-  { id: 'moss', label: msg`Moss`, scheme: 'dark', ground: 'moss', swatch: () => '#1b1e1b' },
   {
     id: 'cover',
     label: msg`Cover tint`,
@@ -54,6 +51,9 @@ export const BACKGROUNDS: BackgroundOption[] = [
     ground: 'cover',
     swatch: () => 'linear-gradient(135deg, #3a2420 0 33%, #1f2a3a 33% 66%, #23331f 66%)',
   },
+  { id: 'night', label: msg`Night`, scheme: 'dark', ground: 'night', swatch: () => '#161922' },
+  { id: 'charcoal', label: msg`Charcoal`, scheme: 'dark', ground: 'charcoal', swatch: () => '#181818' },
+  { id: 'moss', label: msg`Moss`, scheme: 'dark', ground: 'moss', swatch: () => '#1b1e1b' },
   { id: 'oled', label: msg`OLED black`, scheme: 'dark', ground: 'ink', swatch: () => '#000000' },
   { id: 'light', label: msg`Light`, scheme: 'light', ground: 'tinted', swatch: () => '#f4f5fa' },
   {
@@ -73,9 +73,9 @@ export const BACKGROUNDS: BackgroundOption[] = [
 ]
 
 export const ACCENTS: AccentOption[] = [
+  { id: 'blush', label: msg`Blush`, swatch: accentSwatch('blush') },
   { id: 'indigo', label: msg`Indigo`, swatch: accentSwatch('indigo') },
   { id: 'rose', label: msg`Rose`, swatch: accentSwatch('rose') },
-  { id: 'blush', label: msg`Blush`, swatch: accentSwatch('blush') },
   { id: 'emerald', label: msg`Emerald`, swatch: accentSwatch('emerald') },
   { id: 'amber', label: msg`Amber`, swatch: accentSwatch('amber') },
   { id: 'vermilion', label: msg`Vermilion`, swatch: accentSwatch('vermilion') },
