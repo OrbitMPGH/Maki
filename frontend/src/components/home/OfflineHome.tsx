@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@mantine/core'
-import { useQueries } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { plural } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { IconCloudDownload, IconSettings } from '@tabler/icons-react'
@@ -9,6 +9,7 @@ import { api } from '../../api/client'
 import type { HomeReadingItem } from '../../api/hooks'
 import type { ReaderManifest } from '../../api/reader'
 import type { OfflineChapter } from '../../pwa/contract'
+import { queuedPositions } from '../../pwa/progressQueue'
 import { EmptyState } from '../ui/EmptyState'
 import { Rail } from '../ui/Rail'
 import { RailSkeleton } from '../ui/RailSkeleton'
@@ -63,7 +64,22 @@ export function OfflineHome({
     }),
   })
 
-  const series = useMemo(() => bySeries(saved, manifests.data), [saved, manifests.data])
+  // Progress made offline sits in the queue, newer than the manifest stored at save time.
+  const userId = saved[0]?.userId ?? null
+  const queued = useQuery({
+    queryKey: ['offline-home', 'queued', userId],
+    queryFn: () => queuedPositions(userId as number),
+    enabled: userId !== null && controlled,
+    gcTime: 0,
+    retry: false,
+    meta: { silent: true },
+  })
+
+  const series = useMemo(
+    () => (queued.data || userId === null ? bySeries(saved, manifests.data, queued.data) : []),
+    [saved, manifests.data, queued.data, userId],
+  )
+  const loading = manifests.pending || queued.isPending
 
   if (!supported || saved.length === 0) {
     return (
@@ -130,7 +146,7 @@ export function OfflineHome({
         }
         chevron
       />
-      {series.length === 0 && manifests.pending ? (
+      {series.length === 0 && loading ? (
         <RailSkeleton />
       ) : series.length === 0 ? (
         <EmptyState
@@ -153,7 +169,17 @@ export function OfflineHome({
 }
 
 /** One card per series: the first saved chapter not finished, else the first saved. In progress first, then newest saves. */
-function bySeries(records: OfflineChapter[], manifests: ReaderManifest[]): SavedSeries[] {
+function bySeries(
+  records: OfflineChapter[],
+  stored: ReaderManifest[],
+  queued: ReadonlyMap<number, { pageIndex: number; completed: boolean }> = new Map(),
+): SavedSeries[] {
+  const manifests = stored.map((m) => {
+    const waiting = queued.get(m.chapterId)
+    return waiting
+      ? { ...m, completed: m.completed || waiting.completed, resumePage: Math.max(m.resumePage, waiting.pageIndex) }
+      : m
+  })
   const savedAt = new Map(records.map((r) => [r.chapterId, r.savedAt]))
   const groups = new Map<number, ReaderManifest[]>()
   for (const m of manifests) {

@@ -245,6 +245,23 @@ export async function settleQueuedProgress(chapterId: number): Promise<{ rows: Q
   }
 }
 
+/** Where this device's unsent rows leave each chapter: the furthest page and whether any completed it. */
+export async function queuedPositions(user: number): Promise<Map<number, { pageIndex: number; completed: boolean }>> {
+  const out = new Map<number, { pageIndex: number; completed: boolean }>()
+  try {
+    for (const row of await listProgress(user)) {
+      const seen = out.get(row.chapterId)
+      out.set(row.chapterId, {
+        pageIndex: Math.max(seen?.pageIndex ?? 0, row.pageIndex),
+        completed: (seen?.completed ?? false) || row.completed,
+      })
+    }
+  } catch {
+    out.clear()
+  }
+  return out
+}
+
 /** Rows still waiting to reach the server, for the warning before everything is removed. */
 export async function queuedProgressCount(user: number): Promise<number> {
   try {
