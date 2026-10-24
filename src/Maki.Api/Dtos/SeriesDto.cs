@@ -258,7 +258,7 @@ public record SeriesDto(
     /// </param>
     public static string? CoverUrlFor(int seriesId, string? coverPath, DateTime? version = null) =>
         coverPath != null
-            ? $"/api/v1/mediacover/{seriesId}/cover.jpg?v={CoverVersionCache.Get(seriesId, coverPath) ?? (version ?? DateTime.UtcNow).Ticks}"
+            ? $"/api/v1/mediacover/{seriesId}/cover.jpg?v={CoverVersionCache.Get(coverPath) ?? (version ?? DateTime.UtcNow).Ticks}"
             : null;
 
     /// <param name="rating">

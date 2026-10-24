@@ -26,7 +26,7 @@ public class CoverService(
     public void DeleteCover(int seriesId)
     {
         var dir = Path.GetDirectoryName(CoverPathFor(seriesId))!;
-        CoverVersionCache.Remove(seriesId);
+        CoverVersionCache.Remove(CoverPathFor(seriesId));
         try
         {
             if (Directory.Exists(dir))
@@ -108,7 +108,7 @@ public class CoverService(
             else
             {
                 File.Move(temp, target, overwrite: true);
-                CoverVersionCache.Set(seriesId, File.GetLastWriteTimeUtc(target).Ticks);
+                CoverVersionCache.Set(target, File.GetLastWriteTimeUtc(target).Ticks);
             }
         }
         catch
