@@ -8,7 +8,7 @@
     "build": "node capture.mjs && node compose.mjs"
   },
   "dependencies": {
-    "puppeteer-core": "24.9.0",
-    "sharp": "0.34.3"
+    "puppeteer-core": "25.16.0",
+    "sharp": "0.35.5"
   }
 }
