@@ -9,10 +9,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Controllers;
 
-/// <summary>One poster on the Home dashboard's "Continue reading" or "Jump back in" rail.</summary>
+/// <summary>One poster on the Home dashboard's Continue reading list.</summary>
 /// <param name="ChapterLabel">Rendered server-side so the client never has to hold a series' whole
 /// chapter list just to turn a chapter id into "Vol.3 Ch.12".</param>
 /// <param name="Page">Resume position inside the chapter's slice; 0 means start from the beginning.</param>
+/// <param name="LastReadAt">When anything in the series was last read, which is what orders the list.</param>
 /// <param name="PageCount">Slice length snapshotted on the progress row. 0 on Kavita-imported rows,
 /// which is what the UI keys off to hide the resume bar.</param>
 /// <param name="UnreadChapters">Downloaded chapters in this series still unread.</param>
@@ -30,9 +31,7 @@ public record HomeReadingItem(
     int UnreadChapters,
     string? CoverAccent);
 
-public record HomeReadingResponse(
-    IReadOnlyList<HomeReadingItem> ContinueReading,
-    IReadOnlyList<HomeReadingItem> JumpBackIn);
+public record HomeReadingResponse(IReadOnlyList<HomeReadingItem> ContinueReading);
 
 /// <summary>A series that recently gained chapter files.</summary>
 /// <param name="AddedAt">Newest <c>ChapterFile.DateAdded</c> for this series.</param>
@@ -90,30 +89,31 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     public const int MaxRailItems = 100;
 
     /// <summary>
-    /// The two reading rails. "Continue reading" is series with a chapter part-way through;
-    /// "Jump back in" is series last touched by a <em>finished</em> chapter that still have
-    /// something left to read, minus anything already in the first rail.
+    /// The reading list: every series with something left to read, most recently read first,
+    /// whether the reader stopped part-way through a chapter or between two. A series resumes its
+    /// part-read chapter when that is the last thing read in it. Otherwise it offers the next
+    /// unread chapter, at the page reached if that chapter was started earlier, so an older
+    /// part-read chapter the reader has since read past counts as abandoned.
     /// </summary>
     [HttpGet("reading")]
     public async Task<IActionResult> Reading([FromQuery] int limit = MaxRailItems, CancellationToken ct = default)
     {
         limit = Math.Clamp(limit, 1, MaxRailItems);
 
-        // One bounded, index-ordered pass over the newest progress rows, grouped in memory. Both
-        // rails are "most recently touched first", so the newest RecentProgressScan rows contain
-        // every series either of them could show — see the constant for why this is not a GROUP BY.
-        // Watched ticks are not reading, so they neither put a series on a rail nor bring back a
-        // hidden one.
+        // One bounded, index-ordered pass over the newest progress rows, grouped in memory. The list
+        // is "most recently read first", so the newest RecentProgressScan rows contain every series
+        // it could show; see the constant for why this is not a GROUP BY. Watched ticks are not
+        // reading, so they neither put a series on the list nor bring back a hidden one.
         var recent = await db.ChapterProgress
             .AsNoTracking()
             .OwnedByScopeUser(db)
             .Where(p => !p.Watched)
             .OrderByDescending(p => p.UpdatedAt)
             .Take(RecentProgressScan)
-            .Select(p => new { p.SeriesId, p.ChapterId, p.Completed, p.UnreadAt, p.PageIndex, p.UpdatedAt })
+            .Select(p => new { p.SeriesId, p.ChapterId, p.Completed, p.UnreadAt, p.PageIndex, p.PageCount, p.UpdatedAt })
             .ToListAsync(ct);
 
-        // A removed series stays off both rails until any of its progress rows moves past the
+        // A removed series stays off the list until any of its progress rows moves past the
         // removal. The scan is newest-first, so its first row per series is that series' latest.
         var hiddenAt = await db.UserSeriesStates
             .AsNoTracking()
@@ -130,12 +130,11 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         }
 
         // Tombstones excluded: a chapter the user just marked unread is the most recently touched
-        // incomplete row, and resuming into it would hijack "Continue reading". It is still unread,
-        // so the Jump-back-in resolver below offers it in its proper place.
+        // incomplete row, and resuming into it would hijack the list. It is still unread, so the
+        // next-chapter resolver below offers it in its proper place.
         //
         // A part-read chapter whose file is gone (deleted or removed on purpose) has nothing to
-        // resume into. Its series counts as finished instead, so Jump back in offers the next
-        // chapter that is actually there.
+        // resume into, so its series moves on to the next chapter that is actually there.
         var partReadIds = recent
             .Where(p => !p.Completed && p.UnreadAt == null && p.PageIndex > 0)
             .Select(p => p.ChapterId)
@@ -150,119 +149,95 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
                 .ToListAsync(ct))
             .ToHashSet();
 
-        var inProgressSeries = recent
+        var resumable = recent
             .Where(p => !p.Completed && p.UnreadAt == null && p.PageIndex > 0 && onDisk.Contains(p.ChapterId))
-            .GroupBy(p => p.SeriesId)
-            .Select(g => new { SeriesId = g.Key, Last = g.Max(p => p.UpdatedAt) })
-            .OrderByDescending(x => x.Last)
-            .Take(limit)
-            .ToList();
+            .GroupBy(p => p.ChapterId)
+            .ToDictionary(g => g.Key, g => g.First());
 
-        var continuedIds = inProgressSeries.Select(x => x.SeriesId).ToList();
-        var continuedSet = continuedIds.ToHashSet();
-
-        // Over-fetch: a candidate is dropped below if every downloaded chapter in it is already
-        // read. The old multiplier of 2 was too tight — a user who finishes series outright got a
-        // short or empty rail, because the handful of candidates fetched were exactly the ones
-        // with nothing left. Bounded all the same, since each survivor costs a chapter lookup in
-        // NextForAsync below.
-        var finishedSeries = recent
-            .Where(p => (p.Completed || (p.UnreadAt == null && p.PageIndex > 0 && !onDisk.Contains(p.ChapterId)))
-                && !continuedSet.Contains(p.SeriesId))
+        // Each series' newest reading row. Over-fetched: a candidate is dropped below when every
+        // downloaded chapter in it is already read, and a user who finishes series outright would
+        // otherwise get a short list. Bounded all the same, since each survivor costs a chapter
+        // lookup in NextForAsync below.
+        var candidates = recent
+            .Where(p => p.Completed || (p.UnreadAt == null && p.PageIndex > 0))
             .GroupBy(p => p.SeriesId)
-            .Select(g => new { SeriesId = g.Key, Last = g.Max(p => p.UpdatedAt) })
-            .OrderByDescending(x => x.Last)
+            .Select(g => g.First())
+            .OrderByDescending(p => p.UpdatedAt)
             .Take(limit * 8)
             .ToList();
 
-        var allIds = continuedIds.Concat(finishedSeries.Select(x => x.SeriesId)).ToList();
-        if (allIds.Count == 0)
+        if (candidates.Count == 0)
         {
-            return Ok(new HomeReadingResponse([], []));
+            return Ok(new HomeReadingResponse([]));
         }
 
+        var seriesIds = candidates.Select(c => c.SeriesId).ToList();
         var titles = await db.Series
             .AsNoTracking()
-            .Where(s => allIds.Contains(s.Id))
+            .Where(s => seriesIds.Contains(s.Id))
             .Select(s => new { s.Id, s.Title, s.CoverPath, s.LastMetadataRefresh })
             .ToDictionaryAsync(s => s.Id, ct);
 
-        var next = await continueReading.NextForAsync(continuedIds, ct);
-
-        // The actual in-progress rows for just the series above, newest per series.
-        var resumeRows = (await db.ChapterProgress
-                .Where(p => continuedIds.Contains(p.SeriesId)
-                    && !p.Completed && p.UnreadAt == null && p.PageIndex > 0
-                    && db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null))
-                .Select(p => new { p.SeriesId, p.ChapterId, p.PageIndex, p.PageCount, p.UpdatedAt })
-                .ToListAsync(ct))
-            .GroupBy(p => p.SeriesId)
-            .ToDictionary(g => g.Key, g => g.OrderByDescending(p => p.UpdatedAt).First());
-
         var resumeLabels = await ChapterLabelsAsync(
-            resumeRows.Values.Select(r => r.ChapterId).ToList(), ct);
-
-        var continueRail = new List<HomeReadingItem>();
-        foreach (var entry in inProgressSeries)
-        {
-            if (!titles.TryGetValue(entry.SeriesId, out var series) ||
-                !resumeRows.TryGetValue(entry.SeriesId, out var row))
-            {
-                continue;
-            }
-
-            continueRail.Add(new HomeReadingItem(
-                series.Id,
-                series.Title,
-                SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.LastMetadataRefresh),
-                row.ChapterId,
-                resumeLabels.GetValueOrDefault(row.ChapterId, "Ch.?"),
-                row.PageIndex,
-                row.PageCount,
-                row.UpdatedAt,
-                next.GetValueOrDefault(entry.SeriesId)?.UnreadChapters ?? 0,
-                accents.AccentFor(series.Id)));
-        }
+            candidates.Where(c => !c.Completed && resumable.ContainsKey(c.ChapterId)).Select(c => c.ChapterId).ToList(), ct);
 
         // Resolved a chunk at a time, in the same newest-first order, so the chapter lists of the
-        // later candidates are only read when the rail is still short of `limit`.
-        var jumpRail = new List<HomeReadingItem>();
-        foreach (var chunk in finishedSeries.Chunk(limit * 2))
+        // later candidates are only read when the list is still short of `limit`.
+        var items = new List<HomeReadingItem>();
+        foreach (var chunk in candidates.Chunk(limit * 2))
         {
-            var upNextBySeries = await continueReading.NextForAsync(chunk.Select(x => x.SeriesId).ToList(), ct);
-            foreach (var entry in chunk)
+            var next = await continueReading.NextForAsync(chunk.Select(c => c.SeriesId).ToList(), ct);
+            foreach (var latest in chunk)
             {
-                if (!titles.TryGetValue(entry.SeriesId, out var series) ||
-                    !upNextBySeries.TryGetValue(entry.SeriesId, out var upNext))
+                if (!titles.TryGetValue(latest.SeriesId, out var series))
+                {
+                    continue;
+                }
+
+                var upNext = next.GetValueOrDefault(latest.SeriesId);
+                int chapterId;
+                string label;
+                if (!latest.Completed && resumable.ContainsKey(latest.ChapterId))
+                {
+                    chapterId = latest.ChapterId;
+                    label = resumeLabels.GetValueOrDefault(chapterId, "Ch.?");
+                }
+                else if (upNext is not null)
+                {
+                    chapterId = upNext.ChapterId;
+                    label = upNext.Label;
+                }
+                else
                 {
                     continue; // nothing left to read in this series
                 }
 
-                jumpRail.Add(new HomeReadingItem(
+                var started = resumable.GetValueOrDefault(chapterId);
+                items.Add(new HomeReadingItem(
                     series.Id,
                     series.Title,
                     SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.LastMetadataRefresh),
-                    upNext.ChapterId,
-                    upNext.Label,
-                    0,
-                    0,
-                    entry.Last,
-                    upNext.UnreadChapters,
+                    chapterId,
+                    label,
+                    started?.PageIndex ?? 0,
+                    started?.PageCount ?? 0,
+                    latest.UpdatedAt,
+                    upNext?.UnreadChapters ?? 0,
                     accents.AccentFor(series.Id)));
 
-                if (jumpRail.Count == limit)
+                if (items.Count == limit)
                 {
                     break;
                 }
             }
 
-            if (jumpRail.Count == limit)
+            if (items.Count == limit)
             {
                 break;
             }
         }
 
-        return Ok(new HomeReadingResponse(continueRail, jumpRail));
+        return Ok(new HomeReadingResponse(items));
     }
 
     /// <summary>Takes a series off this user's reading rails until they next read it.</summary>

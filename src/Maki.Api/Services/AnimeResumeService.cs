@@ -150,7 +150,7 @@ public class AnimeResumeService(
     /// <summary>
     /// Series whose anime the reader finished and whose reading has not caught up with it: library
     /// series first, then manga nobody has added yet. Once they have read or watched past the
-    /// frontier, Jump back in covers the series instead. The page is capped at
+    /// frontier, Continue reading covers the series instead. The page is capped at
     /// <paramref name="limit"/>; <see cref="RailPage.Total"/> is every match, so a count can stay honest.
     /// </summary>
     public async Task<RailPage> RailAsync(CancellationToken ct, int limit = RailLimit)

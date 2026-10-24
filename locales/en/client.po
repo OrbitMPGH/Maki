@@ -7484,8 +7484,8 @@ msgstr "Judge the scans, not the site"
 #: src/api/hooks.ts
 #: src/components/home/ContinueHero.tsx
 #: src/pages/HomePage.tsx
-msgid "Jump back in"
-msgstr "Jump back in"
+#~ msgid "Jump back in"
+#~ msgstr "Jump back in"
 
 #: src/components/settings/SettingsIndex.tsx
 msgid "Jump to a section"
@@ -9223,8 +9223,8 @@ msgstr "Next tier at {nextValue}"
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
-msgid "Next to jump back in"
-msgstr "Next to jump back in"
+#~ msgid "Next to jump back in"
+#~ msgstr "Next to jump back in"
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
@@ -11965,8 +11965,8 @@ msgid "Remove from Continue reading"
 msgstr "Remove from Continue reading"
 
 #: src/components/home/ReadingCardMenu.tsx
-msgid "Remove from Jump back in"
-msgstr "Remove from Jump back in"
+#~ msgid "Remove from Jump back in"
+#~ msgstr "Remove from Jump back in"
 
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Remove from library"
@@ -13466,8 +13466,8 @@ msgid "Series whose anime you finished, starting after the last adapted chapter.
 msgstr "Series whose anime you finished, starting after the last adapted chapter."
 
 #: src/components/home/homeSectionDefs.ts
-msgid "Series with a chapter part-way through."
-msgstr "Series with a chapter part-way through."
+#~ msgid "Series with a chapter part-way through."
+#~ msgstr "Series with a chapter part-way through."
 
 #: src/components/DiscoverPresets.tsx
 msgid "Series with any of these never show up on Discover: not in rails, search, recommendations, or creator pages. Only you see this list."
@@ -13486,8 +13486,8 @@ msgid "Series you already have that match these filters."
 msgstr "Series you already have that match these filters."
 
 #: src/components/home/homeSectionDefs.ts
-msgid "Series you finished a chapter of that still have more to read."
-msgstr "Series you finished a chapter of that still have more to read."
+#~ msgid "Series you finished a chapter of that still have more to read."
+#~ msgstr "Series you finished a chapter of that still have more to read."
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Server address"
@@ -14820,6 +14820,10 @@ msgstr "The series was deleted or moved while this download was being imported, 
 #: src/components/import/RecentImports.tsx
 msgid "The series was removed since, nothing to undo."
 msgstr "The series was removed since, nothing to undo."
+
+#: src/components/home/homeSectionDefs.ts
+msgid "The series you read most recently, part-way through a chapter or ready for the next one."
+msgstr "The series you read most recently, part-way through a chapter or ready for the next one."
 
 #: src/pages/HealthPage.tsx
 msgid "the series' sources"

@@ -9169,8 +9169,8 @@ msgstr "Oceniaj skany, a nie źródło"
 #: src/components/home/ContinueHero.tsx
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Jump back in"
-msgstr "Wróć do czytania"
+#~ msgid "Jump back in"
+#~ msgstr "Wróć do czytania"
 
 #: src/components/settings/SettingsIndex.tsx
 #, fuzzy
@@ -11301,8 +11301,8 @@ msgstr "Następny poziom przy {nextValue}"
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
 #, fuzzy
-msgid "Next to jump back in"
-msgstr "Następne, do czego wrócić"
+#~ msgid "Next to jump back in"
+#~ msgstr "Następne, do czego wrócić"
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
@@ -14665,8 +14665,8 @@ msgstr "Usuń z sekcji Kontynuuj czytanie"
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
-msgid "Remove from Jump back in"
-msgstr "Usuń z sekcji Wróć do czytania"
+#~ msgid "Remove from Jump back in"
+#~ msgstr "Usuń z sekcji Wróć do czytania"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -16498,8 +16498,8 @@ msgstr "Serie, których anime zostało obejrzane do końca, zaczynając od rozdz
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Series with a chapter part-way through."
-msgstr "Serie z rozpoczętym rozdziałem."
+#~ msgid "Series with a chapter part-way through."
+#~ msgstr "Serie z rozpoczętym rozdziałem."
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -16523,8 +16523,8 @@ msgstr "Serie z Twojej biblioteki, które pasują do tych filtrów."
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Series you finished a chapter of that still have more to read."
-msgstr "Serie, w których przeczytano rozdział, ale zostało jeszcze coś do czytania."
+#~ msgid "Series you finished a chapter of that still have more to read."
+#~ msgstr "Serie, w których przeczytano rozdział, ale zostało jeszcze coś do czytania."
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -18161,6 +18161,10 @@ msgstr "Seria została usunięta lub przeniesiona, gdy importowano to pobranie, 
 #, fuzzy
 msgid "The series was removed since, nothing to undo."
 msgstr "Seria została od tego czasu usunięta, nie ma nic do cofnięcia."
+
+#: src/components/home/homeSectionDefs.ts
+msgid "The series you read most recently, part-way through a chapter or ready for the next one."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

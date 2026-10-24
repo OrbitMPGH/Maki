@@ -9169,8 +9169,8 @@ msgstr "サイトではなくスキャンを評価"
 #: src/components/home/ContinueHero.tsx
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Jump back in"
-msgstr "続きを始める"
+#~ msgid "Jump back in"
+#~ msgstr "続きを始める"
 
 #: src/components/settings/SettingsIndex.tsx
 #, fuzzy
@@ -11301,8 +11301,8 @@ msgstr "{nextValue}で次の段階"
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
 #, fuzzy
-msgid "Next to jump back in"
-msgstr "続きから読む"
+#~ msgid "Next to jump back in"
+#~ msgstr "続きから読む"
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
@@ -14665,8 +14665,8 @@ msgstr "「続きを読む」から削除"
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
-msgid "Remove from Jump back in"
-msgstr "「続きを読む」から削除"
+#~ msgid "Remove from Jump back in"
+#~ msgstr "「続きを読む」から削除"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -16498,8 +16498,8 @@ msgstr "アニメを最後まで視聴したシリーズ。最終アニメ化章
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Series with a chapter part-way through."
-msgstr "途中まで読んだ章があるシリーズです。"
+#~ msgid "Series with a chapter part-way through."
+#~ msgstr "途中まで読んだ章があるシリーズです。"
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -16523,8 +16523,8 @@ msgstr "フィルターに一致するライブラリ内のシリーズです。
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Series you finished a chapter of that still have more to read."
-msgstr "章を読み終えた後も、まだ読む章が残っているシリーズです。"
+#~ msgid "Series you finished a chapter of that still have more to read."
+#~ msgstr "章を読み終えた後も、まだ読む章が残っているシリーズです。"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -18161,6 +18161,10 @@ msgstr "このダウンロードのインポート中にシリーズが削除ま
 #, fuzzy
 msgid "The series was removed since, nothing to undo."
 msgstr "その後シリーズが削除されたため、取り消す内容はありません。"
+
+#: src/components/home/homeSectionDefs.ts
+msgid "The series you read most recently, part-way through a chapter or ready for the next one."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

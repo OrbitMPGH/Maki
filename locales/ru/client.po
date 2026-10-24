@@ -9169,8 +9169,8 @@ msgstr "Оценивайте сканы, а не сайт"
 #: src/components/home/ContinueHero.tsx
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Jump back in"
-msgstr "Вернуться к чтению"
+#~ msgid "Jump back in"
+#~ msgstr "Вернуться к чтению"
 
 #: src/components/settings/SettingsIndex.tsx
 #, fuzzy
@@ -11301,8 +11301,8 @@ msgstr "Следующий уровень на {nextValue}"
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
 #, fuzzy
-msgid "Next to jump back in"
-msgstr "Что читать дальше"
+#~ msgid "Next to jump back in"
+#~ msgstr "Что читать дальше"
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
@@ -14665,8 +14665,8 @@ msgstr "Убрать из «Продолжить чтение»"
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
-msgid "Remove from Jump back in"
-msgstr "Убрать из «Вернуться к чтению»"
+#~ msgid "Remove from Jump back in"
+#~ msgstr "Убрать из «Вернуться к чтению»"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -16498,8 +16498,8 @@ msgstr "Серии, аниме которых ты досмотрел. Начи�
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Series with a chapter part-way through."
-msgstr "Серии, главу которых вы читаете."
+#~ msgid "Series with a chapter part-way through."
+#~ msgstr "Серии, главу которых вы читаете."
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -16523,8 +16523,8 @@ msgstr "Серии, которые уже есть у вас и соответс
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Series you finished a chapter of that still have more to read."
-msgstr "Серии, в которых вы прочитали главу, но есть ещё что читать."
+#~ msgid "Series you finished a chapter of that still have more to read."
+#~ msgstr "Серии, в которых вы прочитали главу, но есть ещё что читать."
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -18161,6 +18161,10 @@ msgstr "Серия была удалена или перемещена во вр
 #, fuzzy
 msgid "The series was removed since, nothing to undo."
 msgstr "Серия с тех пор удалена, отменять нечего."
+
+#: src/components/home/homeSectionDefs.ts
+msgid "The series you read most recently, part-way through a chapter or ready for the next one."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

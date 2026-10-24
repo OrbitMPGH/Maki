@@ -10,14 +10,14 @@ import { HeroBackdrop } from '../series/HeroBackdrop'
 import { SectionHeader } from '../ui/SectionHeader'
 import { relativeTime } from '../ui/time'
 import { NextUpList } from './NextUpList'
-import { ReadingCardMenu, type ReadingRailKind } from './ReadingCardMenu'
+import { ReadingCardMenu } from './ReadingCardMenu'
 import { ReadingRail } from './ReadingRail'
 
 /** Where the rest of the section goes: a tray of posters under the hero, or a list in a card beside it. */
 export type HeroQueue = 'tray' | 'beside'
 
 /**
- * The lead for a Home reading section: one hero card for the series in focus, and a Next up strip
+ * The lead for Home's Continue reading: one hero card for the series in focus, and a Next up strip
  * of posters for the rest of the section in a tray joined to the card's foot, so the two read as
  * one object rather than a hero and one more rail. Each poster opens its chapter in the reader,
  * like every other reading card.
@@ -30,12 +30,10 @@ function accentStyle(item: HomeReadingItem): CSSProperties | undefined {
 
 export function ContinueHero({
   items,
-  rail,
   glance,
   queue = 'tray',
 }: {
   items: HomeReadingItem[]
-  rail: ReadingRailKind
   /**
    * Home's glance (`ReadingWeeks`). Rendered twice and placed by width (see `.continue-glance-below`
    * in theme.css): inside the hero as a column on its right when wide or a row under the actions on a
@@ -52,20 +50,16 @@ export function ContinueHero({
   const lane =
     queue === 'beside' ? (
       <div className="continue-lead" data-queue="beside" data-solo={rest.length === 0 || undefined}>
-        <ContinueHeroCard key={lead.chapterId} item={lead} rail={rail} glance={glance} />
-        {rest.length > 0 && <NextUpList items={rest} rail={rail} />}
+        <ContinueHeroCard key={lead.chapterId} item={lead} glance={glance} />
+        {rest.length > 0 && <NextUpList items={rest} />}
       </div>
     ) : (
       <div className="continue-lead">
-        <ContinueHeroCard key={lead.chapterId} item={lead} rail={rail} glance={glance} />
+        <ContinueHeroCard key={lead.chapterId} item={lead} glance={glance} />
         {rest.length > 0 && (
           <div className="continue-tray">
-            <SectionHeader
-              icon={IconPlayerTrackNext}
-              title={rail === 'jumpback' ? t`Next to jump back in` : t`Next up`}
-              count={rest.length}
-            />
-            <ReadingRail items={rest} rail={rail} />
+            <SectionHeader icon={IconPlayerTrackNext} title={t`Next up`} count={rest.length} />
+            <ReadingRail items={rest} />
           </div>
         )}
       </div>
@@ -81,11 +75,9 @@ export function ContinueHero({
 
 const ContinueHeroCard = memo(function ContinueHeroCard({
   item,
-  rail,
   glance,
 }: {
   item: HomeReadingItem
-  rail: ReadingRailKind
   glance?: ReactNode
 }) {
   const { t } = useLingui()
@@ -122,7 +114,9 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
 
         <div className="continue-hero-copy">
           <div className="continue-hero-eyebrow">
-            <span>{rail === 'jumpback' ? <Trans>Jump back in</Trans> : <Trans>Continue reading</Trans>}</span>
+            <span>
+              <Trans>Continue reading</Trans>
+            </span>
             {lastRead && (
               <span className="continue-hero-eyebrow-when">
                 <Trans>Last read {lastRead}</Trans>
@@ -171,7 +165,7 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
             <Button component={Link} to={`/series/${item.seriesId}`} variant="default">
               <Trans>Open series</Trans>
             </Button>
-            <ReadingCardMenu item={item} rail={rail} className="continue-hero-menu" variant="default" size={36} />
+            <ReadingCardMenu item={item} className="continue-hero-menu" variant="default" size={36} />
           </div>
         </div>
         {/* Last in the DOM so Resume stays the first tab stop; the grid places it. */}

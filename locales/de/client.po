@@ -9169,8 +9169,8 @@ msgstr "Bewerte die Scans, nicht die Website"
 #: src/components/home/ContinueHero.tsx
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Jump back in"
-msgstr "Wieder einsteigen"
+#~ msgid "Jump back in"
+#~ msgstr "Wieder einsteigen"
 
 #: src/components/settings/SettingsIndex.tsx
 #, fuzzy
@@ -11301,8 +11301,8 @@ msgstr "Nächste Stufe bei {nextValue}"
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
 #, fuzzy
-msgid "Next to jump back in"
-msgstr "Nächste zum Wiedereinsteigen"
+#~ msgid "Next to jump back in"
+#~ msgstr "Nächste zum Wiedereinsteigen"
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
@@ -14665,8 +14665,8 @@ msgstr "Aus „Weiterlesen“ entfernen"
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
-msgid "Remove from Jump back in"
-msgstr "Aus „Wieder einsteigen“ entfernen"
+#~ msgid "Remove from Jump back in"
+#~ msgstr "Aus „Wieder einsteigen“ entfernen"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -16498,8 +16498,8 @@ msgstr "Serien, deren Anime du zu Ende geschaut hast, ab dem letzten adaptierten
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Series with a chapter part-way through."
-msgstr "Serien mit einem teilweise gelesenen Kapitel."
+#~ msgid "Series with a chapter part-way through."
+#~ msgstr "Serien mit einem teilweise gelesenen Kapitel."
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -16523,8 +16523,8 @@ msgstr "Serien, die du bereits hast und die diesen Filtern entsprechen."
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Series you finished a chapter of that still have more to read."
-msgstr "Serien, bei denen du ein Kapitel abgeschlossen hast und noch mehr lesen kannst."
+#~ msgid "Series you finished a chapter of that still have more to read."
+#~ msgstr "Serien, bei denen du ein Kapitel abgeschlossen hast und noch mehr lesen kannst."
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -18161,6 +18161,10 @@ msgstr "Die Serie wurde während des Imports dieses Downloads gelöscht oder ver
 #, fuzzy
 msgid "The series was removed since, nothing to undo."
 msgstr "Die Serie wurde seitdem entfernt, daher gibt es nichts rückgängig zu machen."
+
+#: src/components/home/homeSectionDefs.ts
+msgid "The series you read most recently, part-way through a chapter or ready for the next one."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

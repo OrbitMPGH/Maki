@@ -5,16 +5,16 @@ import type { HomeReadingItem } from '../../api/hooks'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { Rail } from '../ui/Rail'
-import { ReadingCardMenu, type ReadingRailKind } from './ReadingCardMenu'
+import { ReadingCardMenu } from './ReadingCardMenu'
 
 /**
- * Horizontal rail of "open this chapter" posters, for Home's Continue reading and Jump back in.
+ * Horizontal rail of "open this chapter" posters, for Home's Continue reading.
  *
  * Deliberately not `components/ui/CoverCard`: that takes a whole `SeriesDto` and links to the
  * series page, whereas these link straight into the reader and carry a chapter label rather than
  * download counts. It reuses that card's CSS classes, so the two match without new layout rules.
  */
-export function ReadingRail({ items, rail }: { items: HomeReadingItem[]; rail: ReadingRailKind }) {
+export function ReadingRail({ items }: { items: HomeReadingItem[] }) {
   return (
     <Rail>
       {items.map((item) => (
@@ -24,7 +24,7 @@ export function ReadingRail({ items, rail }: { items: HomeReadingItem[]; rail: R
           style={item.coverAccent ? ({ '--series-accent': item.coverAccent } as CSSProperties) : undefined}
         >
           <ReadingCard item={item} />
-          <ReadingCardMenu item={item} rail={rail} className="reading-card-menu" />
+          <ReadingCardMenu item={item} className="reading-card-menu" />
         </div>
       ))}
     </Rail>

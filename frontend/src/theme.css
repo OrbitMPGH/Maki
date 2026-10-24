@@ -2737,7 +2737,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   transition: opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
-/* The chapter pill is the card's mark; the button waits for hover, like the Jump back in menu. */
+/* The chapter pill is the card's mark; the button waits for hover, like the reading card menu. */
 @media (hover: hover) and (pointer: fine) {
   .home-read-button {
     opacity: 0;

@@ -10,7 +10,6 @@ import {
   continueReading,
   customRails,
   homeUi,
-  jumpBackIn,
   librarySeries,
   popularPicks,
   progressSummary,
@@ -29,7 +28,7 @@ const noContent = () => new HttpResponse(null, { status: 204 })
  */
 export const homeHandlers: HttpHandler[] = [
   http.get(api('/home/reading'), () =>
-    HttpResponse.json({ continueReading, jumpBackIn } satisfies HomeReadingResponse),
+    HttpResponse.json({ continueReading } satisfies HomeReadingResponse),
   ),
   http.post(api('/home/reading/:seriesId/hide'), noContent),
   http.delete(api('/home/reading/:seriesId/hide'), noContent),

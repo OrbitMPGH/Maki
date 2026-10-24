@@ -9169,8 +9169,8 @@ msgstr "사이트가 아니라 스캔을 평가하세요"
 #: src/components/home/ContinueHero.tsx
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Jump back in"
-msgstr "다시 읽기 시작"
+#~ msgid "Jump back in"
+#~ msgstr "다시 읽기 시작"
 
 #: src/components/settings/SettingsIndex.tsx
 #, fuzzy
@@ -11301,8 +11301,8 @@ msgstr "{nextValue}에서 다음 등급"
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
 #, fuzzy
-msgid "Next to jump back in"
-msgstr "다시 이어 읽을 다음 항목"
+#~ msgid "Next to jump back in"
+#~ msgstr "다시 이어 읽을 다음 항목"
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
@@ -14665,8 +14665,8 @@ msgstr "계속 읽기에서 제거"
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
-msgid "Remove from Jump back in"
-msgstr "다시 이어 읽기에서 제거"
+#~ msgid "Remove from Jump back in"
+#~ msgstr "다시 이어 읽기에서 제거"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -16498,8 +16498,8 @@ msgstr "애니메이션을 완결한 시리즈이며 각색된 마지막 챕터 
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Series with a chapter part-way through."
-msgstr "읽다 만 챕터가 있는 시리즈입니다."
+#~ msgid "Series with a chapter part-way through."
+#~ msgstr "읽다 만 챕터가 있는 시리즈입니다."
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -16523,8 +16523,8 @@ msgstr "이미 라이브러리에 있으며 이 필터와 일치하는 시리즈
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Series you finished a chapter of that still have more to read."
-msgstr "챕터를 읽었고 다음 챕터가 남아 있는 시리즈입니다."
+#~ msgid "Series you finished a chapter of that still have more to read."
+#~ msgstr "챕터를 읽었고 다음 챕터가 남아 있는 시리즈입니다."
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -18161,6 +18161,10 @@ msgstr "이 다운로드를 가져오는 동안 시리즈가 삭제되었거나 
 #, fuzzy
 msgid "The series was removed since, nothing to undo."
 msgstr "그 뒤 시리즈가 제거되어 되돌릴 것이 없습니다."
+
+#: src/components/home/homeSectionDefs.ts
+msgid "The series you read most recently, part-way through a chapter or ready for the next one."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

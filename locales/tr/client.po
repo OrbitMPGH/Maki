@@ -9169,8 +9169,8 @@ msgstr "Siteyi değil, taramaları değerlendirin"
 #: src/components/home/ContinueHero.tsx
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Jump back in"
-msgstr "Kaldığınız yerden devam edin"
+#~ msgid "Jump back in"
+#~ msgstr "Kaldığınız yerden devam edin"
 
 #: src/components/settings/SettingsIndex.tsx
 #, fuzzy
@@ -11301,8 +11301,8 @@ msgstr "Sonraki kademe: {nextValue}"
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
 #, fuzzy
-msgid "Next to jump back in"
-msgstr "Devam etmek için sıradakiler"
+#~ msgid "Next to jump back in"
+#~ msgstr "Devam etmek için sıradakiler"
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
@@ -14665,8 +14665,8 @@ msgstr "Okumaya Devam Et bölümünden kaldır"
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
-msgid "Remove from Jump back in"
-msgstr "Kaldığınız Yerden Devam Edin bölümünden kaldır"
+#~ msgid "Remove from Jump back in"
+#~ msgstr "Kaldığınız Yerden Devam Edin bölümünden kaldır"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -16498,8 +16498,8 @@ msgstr "Animesini bitirdiğin seriler. Okumaya uyarlanan son bölümden sonrası
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Series with a chapter part-way through."
-msgstr "Bir bölümünü okumaya başladığınız seriler."
+#~ msgid "Series with a chapter part-way through."
+#~ msgstr "Bir bölümünü okumaya başladığınız seriler."
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -16523,8 +16523,8 @@ msgstr "Bu filtrelerle eşleşen ve zaten kitaplığınızda bulunan seriler."
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Series you finished a chapter of that still have more to read."
-msgstr "Bir bölümünü bitirdiğiniz ve okumaya devam edebileceğiniz seriler."
+#~ msgid "Series you finished a chapter of that still have more to read."
+#~ msgstr "Bir bölümünü bitirdiğiniz ve okumaya devam edebileceğiniz seriler."
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -18161,6 +18161,10 @@ msgstr "Bu indirme içe aktarılırken seri silindi veya taşındı, bu yüzden 
 #, fuzzy
 msgid "The series was removed since, nothing to undo."
 msgstr "Seri o zamandan beri kaldırıldı, geri alınacak bir şey yok."
+
+#: src/components/home/homeSectionDefs.ts
+msgid "The series you read most recently, part-way through a chapter or ready for the next one."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

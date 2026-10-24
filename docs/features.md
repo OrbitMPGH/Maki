@@ -39,10 +39,11 @@
   chapter to open the next one.
 - **Reading profiles.** Per-user defaults for page fit, direction, and mode by series type, with
   per-series overrides on top.
-- **Home.** Opens on one large card for the series you're reading, with the rest of **Continue
+- **Home.** Opens on one large card for the series you read last, with the rest of **Continue
   reading** in a **Next up** tray under it, and a **Your last five weeks** card with reading days,
-  streak and goal progress. **Jump back in**, **Recently added**, **You might like** and the other
-  rails follow. Every part can be reordered or switched off per user in the layout editor.
+  streak and goal progress. Continue reading lists every series with something left to read, most
+  recently read first, whether you stopped part-way through a chapter or between two.
+  **Recently added**, **You might like** and the other rails follow. Every part can be reordered or switched off per user in the layout editor.
 - **Scrobbling.** Sends read progress to AniList, MyAnimeList, Kitsu, MangaBaka, and
   MangaUpdates, whether the reading happened in Maki, over OPDS, in KOReader, or in Kavita. Your lists on those trackers can also be
   imported into the library from Settings.

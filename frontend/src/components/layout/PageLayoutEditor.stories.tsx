@@ -6,7 +6,7 @@ import { customRails, homePage, homeUi } from '../../../.storybook/mocks/home'
 import { HOME_LAYOUT_CONFIG, HOME_SECTION_DEFS } from '../home/homeSectionDefs'
 import { PageLayoutEditor, PageLayoutEditorLoading } from './PageLayoutEditor'
 
-const layout = homeUi({ rails: [1, 2, 3], off: ['following'], hero: { jumpback: true } }).homeLayout.sections
+const layout = homeUi({ rails: [1, 2, 3], off: ['following'] }).homeLayout.sections
 
 const meta = {
   component: PageLayoutEditor,
@@ -35,7 +35,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Editing layout')).toBeVisible()
-    await expect(await canvas.findByRole('button', { name: /Move Jump back in/ })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /Move Recently added/ })).toBeVisible()
     await expect(await canvas.findByText('Unread favourites')).toBeVisible()
     await expect(await canvas.findByText('Hidden')).toBeVisible()
   },
@@ -52,10 +52,10 @@ export const OpenSectionProperties: Story = {
 
 export const KeyboardReorder: Story = {
   play: async ({ canvas, userEvent }) => {
-    const grip = await canvas.findByRole('button', { name: 'Move Jump back in' })
+    const grip = await canvas.findByRole('button', { name: 'Move Recently added' })
     grip.focus()
     await userEvent.keyboard('{ArrowDown}')
-    await waitFor(() => expect(canvas.getByText('Jump back in moved to position 3 of 10')).toBeInTheDocument())
+    await waitFor(() => expect(canvas.getByText('Recently added moved to position 3 of 9')).toBeInTheDocument())
   },
 }
 

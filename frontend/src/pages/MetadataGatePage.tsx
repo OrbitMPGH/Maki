@@ -91,13 +91,13 @@ const GATE_READING_LIMIT = 6
 
 /**
  * Chapters to pick up while the database downloads, since the reader is the one page everyone can
- * still open and nothing else leads to it. Home's reading rails need no metadata, only progress
+ * still open and nothing else leads to it. Home's reading list needs no metadata, only progress
  * rows and files on disk. Renders nothing when there is nothing to resume.
  */
 function GateReadingList() {
   const { t } = useLingui()
   const { data } = useHomeReading(GATE_READING_LIMIT)
-  const items = data ? [...data.continueReading, ...data.jumpBackIn].slice(0, GATE_READING_LIMIT) : []
+  const items = data?.continueReading.slice(0, GATE_READING_LIMIT) ?? []
   if (items.length === 0) return null
 
   return (

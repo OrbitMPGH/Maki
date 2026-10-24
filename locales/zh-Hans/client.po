@@ -9169,8 +9169,8 @@ msgstr "评价扫描质量，不要评价网站"
 #: src/components/home/ContinueHero.tsx
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Jump back in"
-msgstr "继续回来阅读"
+#~ msgid "Jump back in"
+#~ msgstr "继续回来阅读"
 
 #: src/components/settings/SettingsIndex.tsx
 #, fuzzy
@@ -11301,8 +11301,8 @@ msgstr "下一层级：{nextValue}"
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
 #, fuzzy
-msgid "Next to jump back in"
-msgstr "接着读下一部"
+#~ msgid "Next to jump back in"
+#~ msgstr "接着读下一部"
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
@@ -14665,8 +14665,8 @@ msgstr "从“继续阅读”中移除"
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
-msgid "Remove from Jump back in"
-msgstr "从“继续回来阅读”中移除"
+#~ msgid "Remove from Jump back in"
+#~ msgstr "从“继续回来阅读”中移除"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -16498,8 +16498,8 @@ msgstr "动画已看完的系列，从最后改编的章节之后开始。"
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Series with a chapter part-way through."
-msgstr "包含未读完章节的作品。"
+#~ msgid "Series with a chapter part-way through."
+#~ msgstr "包含未读完章节的作品。"
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -16523,8 +16523,8 @@ msgstr "资料库中符合这些筛选条件的作品。"
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
-msgid "Series you finished a chapter of that still have more to read."
-msgstr "已读完一个章节但还有内容待读的作品。"
+#~ msgid "Series you finished a chapter of that still have more to read."
+#~ msgstr "已读完一个章节但还有内容待读的作品。"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -18161,6 +18161,10 @@ msgstr "系列在此下载导入期间被删除或移动，因此未导入任何
 #, fuzzy
 msgid "The series was removed since, nothing to undo."
 msgstr "系列之后已被移除，没有可撤销的内容。"
+
+#: src/components/home/homeSectionDefs.ts
+msgid "The series you read most recently, part-way through a chapter or ready for the next one."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

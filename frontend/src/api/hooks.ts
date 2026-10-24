@@ -948,7 +948,7 @@ export function useCreditSuggestions(query: string, role?: string | null) {
   })
 }
 
-/** One poster on Home's "Continue reading" or "Jump back in" rail. */
+/** One poster on Home's Continue reading list. */
 export interface HomeReadingItem {
   seriesId: number
   seriesTitle: string
@@ -960,6 +960,7 @@ export interface HomeReadingItem {
   page: number
   /** Slice length. 0 on Kavita-imported rows, which is how the resume bar knows to hide. */
   pageCount: number
+  /** When anything in the series was last read, which is what orders the list. */
   lastReadAt: string
   unreadChapters: number
   /** The colour the cover lends to the card's bar and button, `#rrggbb`; null keeps the theme accent. */
@@ -967,8 +968,8 @@ export interface HomeReadingItem {
 }
 
 export interface HomeReadingResponse {
+  /** Most recently read first, whether part-way through a chapter (`page` > 0) or between two. */
   continueReading: HomeReadingItem[]
-  jumpBackIn: HomeReadingItem[]
 }
 
 /** A series that recently gained chapter files. */
@@ -987,10 +988,10 @@ export interface HomeRecentSeriesItem {
 export const HOME_RAIL_LIMIT = 100
 
 /**
- * Home's two reading rails.
+ * Home's reading list.
  *
  * `refetchOnMount: 'always'` because reader position writes are fire-and-forget and invalidate
- * nothing; without it, coming back from `/read/:id` shows the resume page the rail was built with
+ * nothing; without it, coming back from `/read/:id` shows the resume page the list was built with
  * rather than where you actually stopped.
  */
 export function useHomeReading(limit = HOME_RAIL_LIMIT, enabled = true) {
@@ -1004,8 +1005,8 @@ export function useHomeReading(limit = HOME_RAIL_LIMIT, enabled = true) {
 }
 
 /**
- * Takes a series off both reading rails (or puts it back, for Undo). The server keeps it off until
- * the series is next read. Removal is applied to the cached rails straight away so the card leaves
+ * Takes a series off the reading list (or puts it back, for Undo). The server keeps it off until
+ * the series is next read. Removal is applied to the cached list straight away so the card leaves
  * on click rather than after a round trip.
  */
 export function useHideHomeReading() {
@@ -1017,10 +1018,7 @@ export function useHideHomeReading() {
       if (!hidden) return
       await queryClient.cancelQueries({ queryKey: ['home', 'reading'] })
       queryClient.setQueriesData<HomeReadingResponse>({ queryKey: ['home', 'reading'] }, (data) =>
-        data && {
-          continueReading: data.continueReading.filter((i) => i.seriesId !== seriesId),
-          jumpBackIn: data.jumpBackIn.filter((i) => i.seriesId !== seriesId),
-        },
+        data && { continueReading: data.continueReading.filter((i) => i.seriesId !== seriesId) },
       )
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['home', 'reading'] }),
@@ -1041,7 +1039,6 @@ export function useHomeRecentlyAdded(limit = HOME_RAIL_LIMIT, enabled = true) {
 /** Home section keys, in the order they ship. Mirrors `HomeSections.All` on the server exactly. */
 export const HOME_SECTIONS = [
   'continue',
-  'jumpback',
   'recent',
   'recommended',
   'fromanime',
@@ -1060,7 +1057,6 @@ export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
 export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
   continue: msg`Continue reading`,
   recent: msg`Recently added`,
-  jumpback: msg`Jump back in`,
   fromanime: msg`Continue from the anime`,
   following: msg`New from creators you follow`,
   recommended: msg`You might like`,
@@ -1068,16 +1064,15 @@ export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
 }
 
 /** Sections that can lead with a hero, and whether they do by default. Mirrors the server. */
-export const HOME_HERO_DEFAULTS: Record<string, boolean> = { continue: true, jumpback: false }
+export const HOME_HERO_DEFAULTS: Record<string, boolean> = { continue: true }
 
 /**
  * The reading sections' own switches and their defaults. Mirrors `HomeHeroOptions` on the server.
- * `glance` is the last five weeks as a card in the Continue hero; `nextUpBeside` puts the rest of a
- * hero section in a list beside the hero instead of a tray of posters under it.
+ * `glance` is the last five weeks as a card in the Continue hero; `nextUpBeside` puts the rest of
+ * the section in a list beside the hero instead of a tray of posters under it.
  */
 export const HOME_SECTION_OPTIONS: Record<string, Record<string, boolean>> = {
   continue: { glance: true, nextUpBeside: false },
-  jumpback: { nextUpBeside: false },
 }
 
 /** Discover Browse tab section keys, in the order they ship. Mirrors `DiscoverSections.All`. */
