@@ -916,8 +916,12 @@ msgstr "{days, plural, other {通常は#日ごとです。}}"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
-msgstr "{daysLeft, plural, other {#日後にファイルを削除}}"
+#~ msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
+#~ msgstr "{daysLeft, plural, other {#日後にファイルを削除}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{daysLeft, plural, one {Removed in # day} other {Removed in # days}}"
+msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -3733,6 +3737,10 @@ msgstr "自動照合はすでに実行中です。"
 #, fuzzy
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "自動照合はまだ実行中です。すぐに空きます。"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Auto-removed"
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -7200,6 +7208,10 @@ msgstr "毎年"
 msgid "everyone"
 msgstr "全員"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Everyone has read this chapter, so read file cleanup deletes the file around {dueOn}. It gets no upgrades until then."
+msgstr ""
+
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "Everything"
@@ -7544,8 +7556,8 @@ msgstr "ファイルを削除しました"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "File removed soon"
-msgstr "まもなくファイルを削除"
+#~ msgid "File removed soon"
+#~ msgstr "まもなくファイルを削除"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -14011,9 +14023,17 @@ msgid "Read ch. {resumeAt}"
 msgstr "第{resumeAt}章を読む"
 
 #: src/components/series/ChapterTableRows.tsx
+msgid "Read file cleanup deleted the file on {removedOn} after everyone read it. Turn Wanted back on to download it again."
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Read file cleanup is going to delete this file"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "Read file cleanup is on for this series"
-msgstr "このシリーズでは既読ファイルの整理がオンです"
+#~ msgid "Read file cleanup is on for this series"
+#~ msgstr "このシリーズでは既読ファイルの整理がオンです"
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -14566,6 +14586,10 @@ msgstr "ファイルの再リンクでは、巻ファイルを1つずつ読み�
 #, fuzzy
 msgid "Reload"
 msgstr "再読み込み"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Removal pending"
+msgstr ""
 
 #: src/components/QueueActions.tsx
 #: src/components/series/RemoveSeriesDialog.tsx

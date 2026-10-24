@@ -303,6 +303,8 @@ export interface ChapterDto {
   hasFile: boolean
   /** When Maki deleted this chapter's file on purpose; null while it has a file. Not missing, never re-queued on its own. */
   fileRemovedAt: string | null
+  /** The removal was read file cleanup's, which also turned Wanted off. False while the chapter has a file. */
+  fileAutoRemoved: boolean
   /** When read file cleanup will delete this chapter's file, or null when it isn't scheduled. */
   fileDeleteDueAt: string | null
   filePath: string | null

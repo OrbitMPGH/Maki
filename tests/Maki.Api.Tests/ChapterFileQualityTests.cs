@@ -499,7 +499,7 @@ public class ChapterDownloadQualityTests : IDisposable
                 queue, new RecordingInbox(), new StatsEventService(db), new RecordingNotifications(), batches,
                 availability, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
                 new NamingService(_settings), TestQuality.Create(registry), new TestLocalizer(),
-                new TestUserLocaleResolver(), NullLogger<ChapterDownloadProcessor>.Instance);
+                new TestUserLocaleResolver(), _settings, NullLogger<ChapterDownloadProcessor>.Instance);
 
             Assert.Equal(DownloadOutcome.Settled, await processor.ProcessAsync(itemId, CancellationToken.None));
         }

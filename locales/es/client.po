@@ -916,8 +916,12 @@ msgstr "{days, plural, one {Suele salir cada día.} many {Suele salir cada # dí
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
-msgstr "{daysLeft, plural, one {Archivo eliminado en # día} many {Archivo eliminado en # días} other {Archivo eliminado en # días}}"
+#~ msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
+#~ msgstr "{daysLeft, plural, one {Archivo eliminado en # día} many {Archivo eliminado en # días} other {Archivo eliminado en # días}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{daysLeft, plural, one {Removed in # day} other {Removed in # days}}"
+msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -3733,6 +3737,10 @@ msgstr "La búsqueda automática de coincidencias ya está en curso."
 #, fuzzy
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "La búsqueda automática de coincidencias sigue en curso. Se liberará en un momento."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Auto-removed"
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -7200,6 +7208,10 @@ msgstr "Cada año"
 msgid "everyone"
 msgstr "todos"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Everyone has read this chapter, so read file cleanup deletes the file around {dueOn}. It gets no upgrades until then."
+msgstr ""
+
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "Everything"
@@ -7544,8 +7556,8 @@ msgstr "Archivo eliminado"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "File removed soon"
-msgstr "Archivo eliminado pronto"
+#~ msgid "File removed soon"
+#~ msgstr "Archivo eliminado pronto"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -14011,9 +14023,17 @@ msgid "Read ch. {resumeAt}"
 msgstr "Leer cap. {resumeAt}"
 
 #: src/components/series/ChapterTableRows.tsx
+msgid "Read file cleanup deleted the file on {removedOn} after everyone read it. Turn Wanted back on to download it again."
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Read file cleanup is going to delete this file"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "Read file cleanup is on for this series"
-msgstr "La limpieza de archivos leídos está activada para esta serie"
+#~ msgid "Read file cleanup is on for this series"
+#~ msgstr "La limpieza de archivos leídos está activada para esta serie"
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -14566,6 +14586,10 @@ msgstr "Al volver a vincular, se lee cada archivo de tomo para encontrar los cap
 #, fuzzy
 msgid "Reload"
 msgstr "Recargar"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Removal pending"
+msgstr ""
 
 #: src/components/QueueActions.tsx
 #: src/components/series/RemoveSeriesDialog.tsx

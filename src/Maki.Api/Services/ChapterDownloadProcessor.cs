@@ -5,6 +5,7 @@ using Maki.Api.Dtos;
 using Maki.Api.Hubs;
 using Maki.Api.Localization;
 using Maki.Core.ComicInfo;
+using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Http;
@@ -53,6 +54,7 @@ public class ChapterDownloadProcessor(
     ChapterFileQualityService quality,
     ILocalizer localizer,
     IUserLocaleResolver locales,
+    IAppSettings settings,
     ILogger<ChapterDownloadProcessor> logger)
 {
     /// <summary>A RateLimited row parked for a missing root folder, which no source's cooldown is about.</summary>
@@ -686,6 +688,15 @@ public class ChapterDownloadProcessor(
                 UpgradeReasons.UnsupportedFile, after: null, info.ProfileId, info.ProfileVersion, null, null, null, ct);
         }
 
+        // The scan leaves these alone; this catches one queued before the chapter was read. Not
+        // remembered, so the copy is a candidate again if the chapter stops being due.
+        if ((await ReadFileCleanupService.PendingAsync(db, settings, series.Id, ct)).ContainsKey(chapter.Id))
+        {
+            return await RejectUpgradeAsync(item, chapter, series, mapping, sourceChapterId, tmpCbz, workingDir, info,
+                UpgradeReasons.RemovalScheduled, after: null, info.ProfileId, info.ProfileVersion, null, null, null, ct,
+                remember: false);
+        }
+
         await SourceQualitySamples.RecordAsync(db, mapping, chapter.Id, SourceQualityOrigin.Download,
             measurement.PageCount, measurement.MedianWidth, measurement.MedianHeight, size, measurement.ImageFormat,
             DateTime.UtcNow, ct);
@@ -908,10 +919,10 @@ public class ChapterDownloadProcessor(
     private async Task<DownloadOutcome> RejectUpgradeAsync(
         DownloadQueueItem item, Chapter chapter, Series series, SourceMapping mapping, string sourceChapterId,
         string tmpCbz, string workingDir, UpgradeInfo info, string? reason, QualitySnapshot? after, int profileId,
-        int profileVersion, int? pageCount, int? width, int? score, CancellationToken ct)
+        int profileVersion, int? pageCount, int? width, int? score, CancellationToken ct, bool remember = true)
     {
         TryDeleteFile(tmpCbz);
-        if (!info.Force)
+        if (!info.Force && remember)
         {
             await UpgradeAttempts.UpsertAsync(db, chapter.Id, series.Id, mapping.Id, sourceChapterId, profileId,
                 profileVersion, reason ?? UpgradeReasons.UpgradeRejected, probed: true, pageCount, width, score, ct);

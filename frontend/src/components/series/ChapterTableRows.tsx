@@ -27,6 +27,7 @@ import {
   IconPhotoSearch,
   IconSparkles,
   IconTrash,
+  IconTrashX,
 } from '@tabler/icons-react'
 import { queueErrorMessage } from '../../api/queue'
 import type { ChapterProgressDto, ChapterReadState } from '../../api/reader'
@@ -130,9 +131,10 @@ export const ChapterRow = memo(function ChapterRow({
   const { read, inProgress, external, watched } = readStateOf(rowProgress)
   const pageIndex = rowProgress ? rowProgress.pageIndex + 1 : null
   const pageCount = rowProgress ? rowProgress.pageCount : null
+  const removing = c.hasFile && c.fileDeleteDueAt !== null
   return (
       <Table.Tr
-          opacity={c.wanted || c.hasFile ? 1 : 0.55}
+          opacity={c.wanted || c.hasFile || c.fileAutoRemoved ? 1 : 0.55}
           className={[
             watched
                 ? 'chapter-row-watched'
@@ -141,6 +143,7 @@ export const ChapterRow = memo(function ChapterRow({
                     : inProgress
                         ? 'chapter-row-reading'
                         : '',
+            removing ? 'chapter-row-removing' : '',
             selectMode ? 'chapter-row-selectable' : '',
             isSelected ? 'chapter-row-selected' : '',
           ]
@@ -318,20 +321,42 @@ export const ChapterRow = memo(function ChapterRow({
                         0,
                         Math.ceil((Date.parse(c.fileDeleteDueAt) - Date.now()) / 86_400_000),
                     )
+                    const dueOn = formatCalendarDate(c.fileDeleteDueAt)
                     return (
-                        <HoverTooltip label={t`Read file cleanup is on for this series`} withArrow>
-                          <LightBadge color="var(--neutral)" leftSection={<IconClock size={12} />}>
+                        <HoverTooltip
+                            label={t`Everyone has read this chapter, so read file cleanup deletes the file around ${dueOn}. It gets no upgrades until then.`}
+                            withArrow
+                            multiline
+                            w={280}
+                        >
+                          <LightBadge color="var(--warn)" leftSection={<IconClock size={12} />}>
                             {daysLeft === 0
-                                ? t`File removed soon`
+                                ? t`Removal pending`
                                 : plural(daysLeft, {
-                                  one: 'File removed in # day',
-                                  other: 'File removed in # days',
+                                  one: 'Removed in # day',
+                                  other: 'Removed in # days',
                                 })}
                           </LightBadge>
                         </HoverTooltip>
                     )
                   })()}
                 </>
+            ) : c.fileRemovedAt && c.fileAutoRemoved ? (
+                (() => {
+                  const removedOn = formatCalendarDate(c.fileRemovedAt)
+                  return (
+                      <HoverTooltip
+                          label={t`Read file cleanup deleted the file on ${removedOn} after everyone read it. Turn Wanted back on to download it again.`}
+                          withArrow
+                          multiline
+                          w={280}
+                      >
+                        <LightBadge color="var(--neutral)" leftSection={<IconTrashX size={12} />}>
+                          <Trans>Auto-removed</Trans>
+                        </LightBadge>
+                      </HoverTooltip>
+                  )
+                })()
             ) : c.fileRemovedAt ? (
                 <HoverTooltip label={t`The file was deleted on purpose. Maki won't download it again unless you ask.`} withArrow>
                   <LightBadge color="var(--neutral)" leftSection={<IconTrash size={12} />}>
@@ -462,7 +487,7 @@ export const ChapterRow = memo(function ChapterRow({
                         </Menu.Item>
                     )}
                     {canSaveOffline && (canDownload || canDelete) && <Menu.Divider />}
-                    {canDownload && c.number !== null && canFindBetterCopy && (
+                    {canDownload && c.number !== null && canFindBetterCopy && !removing && (
                         <Menu.Item
                             leftSection={<IconPhotoSearch size={14} />}
                             onClick={() =>
@@ -477,7 +502,7 @@ export const ChapterRow = memo(function ChapterRow({
                           <Trans>Find better copy</Trans>
                         </Menu.Item>
                     )}
-                    {canDownload && (
+                    {canDownload && !removing && (
                     <Menu.Item
                         leftSection={upgradingThis ? <Loader size={14} /> : <IconSparkles size={14} />}
                         disabled={upgradePending}

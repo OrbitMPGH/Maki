@@ -916,8 +916,12 @@ msgstr "{days, plural, one {Sort en général chaque jour.} many {Sort en géné
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
-msgstr "{daysLeft, plural, one {Fichier retiré dans # jour} many {Fichier retiré dans # jours} other {Fichier retiré dans # jours}}"
+#~ msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
+#~ msgstr "{daysLeft, plural, one {Fichier retiré dans # jour} many {Fichier retiré dans # jours} other {Fichier retiré dans # jours}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{daysLeft, plural, one {Removed in # day} other {Removed in # days}}"
+msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -3733,6 +3737,10 @@ msgstr "La mise en correspondance automatique est déjà en cours."
 #, fuzzy
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "La mise en correspondance automatique est toujours en cours. Elle sera disponible dans un instant."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Auto-removed"
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -7200,6 +7208,10 @@ msgstr "Chaque année"
 msgid "everyone"
 msgstr "tout le monde"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Everyone has read this chapter, so read file cleanup deletes the file around {dueOn}. It gets no upgrades until then."
+msgstr ""
+
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "Everything"
@@ -7544,8 +7556,8 @@ msgstr "Fichier retiré"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "File removed soon"
-msgstr "Fichier bientôt retiré"
+#~ msgid "File removed soon"
+#~ msgstr "Fichier bientôt retiré"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -14011,9 +14023,17 @@ msgid "Read ch. {resumeAt}"
 msgstr "Lire le chap. {resumeAt}"
 
 #: src/components/series/ChapterTableRows.tsx
+msgid "Read file cleanup deleted the file on {removedOn} after everyone read it. Turn Wanted back on to download it again."
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Read file cleanup is going to delete this file"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "Read file cleanup is on for this series"
-msgstr "Le nettoyage des fichiers lus est activé pour cette série"
+#~ msgid "Read file cleanup is on for this series"
+#~ msgstr "Le nettoyage des fichiers lus est activé pour cette série"
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -14566,6 +14586,10 @@ msgstr "La réassociation lit chaque fichier de volume pour trouver les chapitre
 #, fuzzy
 msgid "Reload"
 msgstr "Recharger"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Removal pending"
+msgstr ""
 
 #: src/components/QueueActions.tsx
 #: src/components/series/RemoveSeriesDialog.tsx

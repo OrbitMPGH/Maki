@@ -5698,6 +5698,12 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   background: color-mix(in srgb, var(--chapter-accent) 4%, transparent);
 }
 
+/* Read by everyone and on course for read file cleanup: same stripe and tint as a read row, in the
+   warning colour, so the files about to go stand out from the ones that stay. */
+.chapter-row-read.chapter-row-removing {
+  --chapter-accent: var(--warn);
+}
+
 /* A watched chapter is read for every count the UI shows, but it was ticked off
    rather than opened, so it gets its own desaturated accent: a run of watched
    rows has to be distinguishable at a glance from a run actually read. */

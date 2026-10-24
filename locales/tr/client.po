@@ -916,8 +916,12 @@ msgstr "{days, plural, one {Genellikle her gün.} other {Genellikle # günde bir
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
-msgstr "{daysLeft, plural, one {Dosya # gün içinde kaldırılacak} other {Dosya # gün içinde kaldırılacak}}"
+#~ msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
+#~ msgstr "{daysLeft, plural, one {Dosya # gün içinde kaldırılacak} other {Dosya # gün içinde kaldırılacak}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{daysLeft, plural, one {Removed in # day} other {Removed in # days}}"
+msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -3733,6 +3737,10 @@ msgstr "Otomatik eşleştirme zaten çalışıyor."
 #, fuzzy
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "Otomatik eşleştirme hâlâ çalışıyor. Birazdan boşa çıkacak."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Auto-removed"
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -7200,6 +7208,10 @@ msgstr "Her yıl"
 msgid "everyone"
 msgstr "herkes"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Everyone has read this chapter, so read file cleanup deletes the file around {dueOn}. It gets no upgrades until then."
+msgstr ""
+
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "Everything"
@@ -7544,8 +7556,8 @@ msgstr "Dosya kaldırıldı"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "File removed soon"
-msgstr "Dosya yakında kaldırılacak"
+#~ msgid "File removed soon"
+#~ msgstr "Dosya yakında kaldırılacak"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -14011,9 +14023,17 @@ msgid "Read ch. {resumeAt}"
 msgstr "{resumeAt}. bölümü oku"
 
 #: src/components/series/ChapterTableRows.tsx
+msgid "Read file cleanup deleted the file on {removedOn} after everyone read it. Turn Wanted back on to download it again."
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Read file cleanup is going to delete this file"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "Read file cleanup is on for this series"
-msgstr "Bu seri için okunmuş dosya temizliği açık"
+#~ msgid "Read file cleanup is on for this series"
+#~ msgstr "Bu seri için okunmuş dosya temizliği açık"
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -14566,6 +14586,10 @@ msgstr "Dosyaları yeniden bağla, içindeki bölümleri bulmak için her cilt d
 #, fuzzy
 msgid "Reload"
 msgstr "Yeniden yükle"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Removal pending"
+msgstr ""
 
 #: src/components/QueueActions.tsx
 #: src/components/series/RemoveSeriesDialog.tsx

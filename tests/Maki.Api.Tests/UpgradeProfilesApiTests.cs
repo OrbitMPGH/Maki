@@ -26,11 +26,7 @@ public sealed class UpgradeProfilesApiTests : IDisposable
 
     private static UpgradeEvaluationService Evaluation(MakiDbContext db) => new(db, TestQuality.Create());
 
-    private ReadFileCleanupService Cleanup(MakiDbContext db) => new(
-        db, new SettingsService(_db.ScopeFactory()),
-        new ChapterFileDeletion(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), TimeProvider.System,
-            TestRecycleBin.For(db), NullLogger<ChapterFileDeletion>.Instance),
-        TimeProvider.System, NullLogger<ReadFileCleanupService>.Instance);
+    private SettingsService Settings() => new(_db.ScopeFactory());
 
     [Fact]
     public void A_candidate_is_never_scored_on_the_current_files_name()
@@ -520,8 +516,8 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         using var db = _db.NewContext();
         var controller = ChapterController(db);
 
-        var pinnedRows = Qualities(await controller.List(pinned, Evaluation(db), Cleanup(db), default));
-        var plainRows = Qualities(await controller.List(plain, Evaluation(db), Cleanup(db), default));
+        var pinnedRows = Qualities(await controller.List(pinned, Evaluation(db), Settings(), default));
+        var plainRows = Qualities(await controller.List(plain, Evaluation(db), Settings(), default));
 
         Assert.Equal([(0, false), (null, null)], pinnedRows.Select(q => (q.Score, q.CutoffMet)));
         Assert.Equal([(null, null)], plainRows.Select(q => (q.Score, q.CutoffMet)));
@@ -539,7 +535,7 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         SeedFile(seriesId, 2, QualityTier.Aggregator, width: 800);
         using var db = _db.NewContext();
 
-        var rows = Qualities(await ChapterController(db).List(seriesId, Evaluation(db), Cleanup(db), default));
+        var rows = Qualities(await ChapterController(db).List(seriesId, Evaluation(db), Settings(), default));
 
         Assert.Equal([(7, true), (0, false)], rows.Select(q => (q.Score, q.CutoffMet)));
     }

@@ -29,8 +29,9 @@ public class Chapter
     /// Whether the user wants this chapter at all. Purely their intent: it decides what counts
     /// toward a series' chapter total and what is eligible to download, and nothing else.
     /// <para>
-    /// Only three things write it — <c>ChapterSyncService</c> stamps it once when a chapter is first
-    /// discovered (see <see cref="WantedUnder"/>), the user flips it, and the duplicate merge ORs it.
+    /// Only four things write it: <c>ChapterSyncService</c> stamps it once when a chapter is first
+    /// discovered (see <see cref="WantedUnder"/>), the user flips it, the duplicate merge ORs it, and
+    /// read file cleanup clears it on the chapters whose file it deleted (<see cref="FileAutoRemoved"/>).
     /// The download pipeline must never write it: <c>SmartDownloadJob</c> used to rewrite every flag
     /// on each top-up so only its current window stayed set, which silently undid the user's own
     /// choices and made a held-back series read "10 / 10" instead of "10 / 207".
@@ -49,6 +50,13 @@ public class Chapter
     /// so a later unlink of that new file reads as missing again rather than as removed.
     /// </summary>
     public DateTime? FileRemovedAt { get; set; }
+
+    /// <summary>
+    /// The removal at <see cref="FileRemovedAt"/> was read file cleanup's, not a user's, so the chapter
+    /// list can say so. Only meaningful while <see cref="FileRemovedAt"/> is set; every writer of that
+    /// stamp writes this too.
+    /// </summary>
+    public bool FileAutoRemoved { get; set; }
 
     /// <summary>The per-source listings that currently support this chapter.</summary>
     [JsonIgnore]

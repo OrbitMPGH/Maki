@@ -108,6 +108,9 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("ChapterFileId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("FileAutoRemoved")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("FileRemovedAt")
                         .HasColumnType("TEXT");
 

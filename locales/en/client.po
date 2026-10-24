@@ -754,8 +754,12 @@ msgid "{days, plural, one {Usually every day.} other {Usually every # days.}}"
 msgstr "{days, plural, one {Usually every day.} other {Usually every # days.}}"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
-msgstr "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
+#~ msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
+#~ msgstr "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{daysLeft, plural, one {Removed in # day} other {Removed in # days}}"
+msgstr "{daysLeft, plural, one {Removed in # day} other {Removed in # days}}"
 
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "{decade}s"
@@ -3041,6 +3045,10 @@ msgstr "Auto-matching is already running."
 #: src/components/SourceMappingsSection.tsx
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "Auto-matching is still running. It'll be free in a moment."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Auto-removed"
+msgstr "Auto-removed"
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -5876,6 +5884,10 @@ msgstr "Every year"
 msgid "everyone"
 msgstr "everyone"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Everyone has read this chapter, so read file cleanup deletes the file around {dueOn}. It gets no upgrades until then."
+msgstr "Everyone has read this chapter, so read file cleanup deletes the file around {dueOn}. It gets no upgrades until then."
+
 #: src/components/TagBrowserModal.tsx
 msgid "Everything"
 msgstr "Everything"
@@ -6153,8 +6165,8 @@ msgid "File removed"
 msgstr "File removed"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "File removed soon"
-msgstr "File removed soon"
+#~ msgid "File removed soon"
+#~ msgstr "File removed soon"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -11433,8 +11445,16 @@ msgid "Read ch. {resumeAt}"
 msgstr "Read ch. {resumeAt}"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "Read file cleanup is on for this series"
-msgstr "Read file cleanup is on for this series"
+msgid "Read file cleanup deleted the file on {removedOn} after everyone read it. Turn Wanted back on to download it again."
+msgstr "Read file cleanup deleted the file on {removedOn} after everyone read it. Turn Wanted back on to download it again."
+
+#: src/api/upgrades.ts
+msgid "Read file cleanup is going to delete this file"
+msgstr "Read file cleanup is going to delete this file"
+
+#: src/components/series/ChapterTableRows.tsx
+#~ msgid "Read file cleanup is on for this series"
+#~ msgstr "Read file cleanup is on for this series"
 
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "Read first chapter"
@@ -11885,6 +11905,10 @@ msgstr "Relink reads each volume file to find the chapters inside it. Anything i
 #: src/components/RouteErrorBoundary.tsx
 msgid "Reload"
 msgstr "Reload"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Removal pending"
+msgstr "Removal pending"
 
 #: src/components/QueueActions.tsx
 #: src/components/series/RemoveSeriesDialog.tsx

@@ -330,12 +330,19 @@ public class UpgradeScanService(
             .GroupBy(q => (q.ChapterId, q.MappingId, SourceChapterId: q.SourceChapterId!))
             .ToDictionary(g => g.Key, g => g.Count());
         var estimates = await SourceQualitySamples.EstimatesAsync(db, seriesId, ct);
+        var removing = chapters.Count == 0 ? [] : await ReadFileCleanupService.PendingAsync(db, settings, seriesId, ct);
 
         var survivors = new List<Survivor>();
         foreach (var chapter in chapters)
         {
             run.ChaptersChecked++;
             var file = chapter.ChapterFile!;
+            if (removing.ContainsKey(chapter.Id))
+            {
+                run.Skip(UpgradeReasons.RemovalScheduled);
+                continue;
+            }
+
             if (file.MeasuredAtUtc is null)
             {
                 run.Skip("unmeasured");

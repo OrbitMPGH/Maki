@@ -234,7 +234,7 @@ internal sealed class UpgradeWorld : IDisposable
             Db.ScopeFactory(), NullLogger<KavitaScanService>.Instance),
         Queue, Inbox, stats ?? new StatsEventService(db), Notifications, batches,
         Availability, Archives, new NamingService(Settings), TestQuality.Create(Registry), new TestLocalizer(),
-        new TestUserLocaleResolver(), NullLogger<ChapterDownloadProcessor>.Instance);
+        new TestUserLocaleResolver(), Settings, NullLogger<ChapterDownloadProcessor>.Instance);
 
     /// <summary>An upgrade row for the chapter's file from "official", as the scan would queue it.</summary>
     public int QueueUpgrade(int chapterId, int fileId, string sourceChapterId = "o1")

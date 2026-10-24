@@ -241,6 +241,7 @@ export function chaptersFor(id: number, shape: ChapterShape = {}): ChapterDto[] 
       wanted: !unwanted.has(n),
       hasFile,
       fileRemovedAt: null,
+      fileAutoRemoved: false,
       fileDeleteDueAt: null,
       filePath: hasFile ? `/library/manga/${entry.title}/${entry.title} - Ch.${n}.cbz` : null,
       fileSourceName: hasFile ? sourceKey(entry) : null,
