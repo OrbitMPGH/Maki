@@ -1,5 +1,12 @@
 import { memo } from 'react'
-import { IconBellOff, IconCircleCheckFilled, IconDeviceMobileCheck, IconEye, IconEyeOff } from '@tabler/icons-react'
+import {
+  IconBellOff,
+  IconCircleCheckFilled,
+  IconCloudOff,
+  IconDeviceMobileCheck,
+  IconEye,
+  IconEyeOff,
+} from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import type { OfflineAvailability } from './CoverCard'
@@ -88,14 +95,25 @@ export const SeriesRow = memo(function SeriesRow({
           </span>
           {series.year && <span className="row-year">{series.year}</span>}
           {offline === 'saved' && (
-            <span className="cover-badge" data-offline-badge="saved" style={{ flexShrink: 0 }}>
+            <span
+              className="cover-badge"
+              data-offline-badge="saved"
+              data-tip={t`Saved on this device`}
+              style={{ flexShrink: 0 }}
+            >
               <IconDeviceMobileCheck size={11} />
-              {t`Saved on this device`}
+              <span className="offline-badge-label">{t`Saved on this device`}</span>
             </span>
           )}
           {offline === 'unavailable' && (
-            <span className="cover-badge" data-offline-badge="unavailable" style={{ flexShrink: 0 }}>
-              {t`Not available offline`}
+            <span
+              className="cover-badge"
+              data-offline-badge="unavailable"
+              data-tip={t`Not available offline`}
+              style={{ flexShrink: 0 }}
+            >
+              <IconCloudOff size={11} />
+              <span className="offline-badge-label">{t`Not available offline`}</span>
             </span>
           )}
           <span

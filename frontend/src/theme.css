@@ -1735,6 +1735,22 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: color-mix(in srgb, var(--brand) 16%, transparent);
   color: var(--brand-fg);
 }
+/* The row header never wraps, so on a phone the offline badge shrinks to its icon (the tooltip
+   keeps the words) rather than crush the title beside the status badge and the eye. */
+@media (max-width: 36em) {
+  .series-row [data-offline-badge] {
+    width: 20px;
+    padding: 0;
+    justify-content: center;
+  }
+  .series-row .offline-badge-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
 /* Publication status, top-right: a disc filled in the status colour (CoverCard sets --tone). Not
    monitored hollows it to a ring instead of adding a second mark; the eye-off still shows on hover. */
 .cover-state[data-tone='status'] {
