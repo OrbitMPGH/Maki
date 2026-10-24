@@ -1752,6 +1752,7 @@ function OperationGroup({ group, onReview }: { group: OperationGroupData; onRevi
     expanded,
   )
   const count = group.count
+  const max = GROUP_ROWS_MAX
   const shown = expanded && all.data ? all.data.items : group.rows
   return (
     <Panel p={0} className="health-op-group">
@@ -1809,10 +1810,20 @@ function OperationGroup({ group, onReview }: { group: OperationGroupData; onRevi
           <Button size="compact-sm" variant="subtle" color="var(--neutral)" onClick={() => setExpanded((e) => !e)}>
             {expanded ? (
               <Trans>Show fewer</Trans>
+            ) : count > GROUP_ROWS_MAX ? (
+              <Trans>
+                Show newest {max} of {count}
+              </Trans>
             ) : (
               <Plural value={count} one="Show all # operation" other="Show all # operations" />
             )}
           </Button>
+          {expanded && all.isFetching && !all.data && <Loader size="xs" ml="sm" />}
+          {expanded && all.error && (
+            <Text size="sm" c="var(--danger)" mt="xs">
+              {all.error.message}
+            </Text>
+          )}
         </div>
       )}
     </Panel>
