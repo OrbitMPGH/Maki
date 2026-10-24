@@ -4,11 +4,7 @@ using Maki.Core.Metadata;
 
 namespace Maki.Api.Tests;
 
-/// <summary>
-/// A refresh answered by MangaBaka's API fallback has no alt titles, anime data or spoiler flags.
-/// It must not blank out what an earlier dump-backed refresh filled in.
-/// </summary>
-public class SeriesMetadataRefreshPartialTests
+public class SeriesMetadataRefreshServiceTests
 {
     private sealed class Provider(SeriesMetadata metadata) : IMetadataProvider
     {
@@ -35,22 +31,7 @@ public class SeriesMetadataRefreshPartialTests
         new SeriesMetadataRefreshService([new Provider(metadata)], null!).RefreshAsync(series, includeCover: false);
 
     [Fact]
-    public async Task A_partial_result_keeps_alt_titles_anime_and_tags()
-    {
-        var series = Existing();
-
-        await Refresh(series, new SeriesMetadata
-        {
-            ProviderId = "42", Title = "Frieren", Tags = ["Elf", "Spoiler"], Partial = true
-        });
-
-        Assert.True(series.HasAnime);
-        Assert.Single(series.AltTitles);
-        Assert.Equal(["Elf", "Journey"], series.Tags);
-    }
-
-    [Fact]
-    public async Task A_full_result_still_clears_them()
+    public async Task A_refresh_replaces_alt_titles_anime_and_tags()
     {
         var series = Existing();
 

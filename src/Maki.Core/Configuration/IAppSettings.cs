@@ -19,7 +19,6 @@ public static class SettingKeys
     /// DNS itself (some dev machines); unset in normal deployments, which resolve normally.
     /// </summary>
     public const string MangaFireBrowserHostResolverRules = "mangafire.browserhostresolverrules";
-    public const string MangaBakaUseLocalDb = "mangabaka.uselocaldb";
     public const string MangaBakaDumpSha1 = "mangabaka.dumpsha1";
     public const string MangaBakaDumpRefreshedAt = "mangabaka.dumprefreshedat";
 

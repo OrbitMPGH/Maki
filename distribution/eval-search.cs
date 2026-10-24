@@ -674,7 +674,6 @@ file static class Settings
     }
 }
 
-/// <summary>MangaBakaLocalStore only reads a setting to answer "is the local DB on"; here it is.</summary>
 file sealed class Factory : IHttpClientFactory
 {
     public HttpClient CreateClient(string name) => new() { Timeout = TimeSpan.FromMinutes(60) };

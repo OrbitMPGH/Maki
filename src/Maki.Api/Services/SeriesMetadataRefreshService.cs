@@ -141,17 +141,9 @@ public class SeriesMetadataRefreshService(
             series.Genres = [.. metadata.Genres];
         }
 
-        // A partial result's tags are unfiltered for spoilers, so they only fill an empty list.
-        if (!metadata.Partial || series.Tags.Count == 0)
-        {
-            series.Tags = [.. metadata.Tags];
-        }
-
+        series.Tags = [.. metadata.Tags];
         series.ContentRating = metadata.ContentRating ?? series.ContentRating;
-        if (!metadata.Partial || metadata.AltTitles.Count > 0)
-        {
-            series.AltTitles = [.. metadata.AltTitles];
-        }
+        series.AltTitles = [.. metadata.AltTitles];
 
         series.Year = metadata.Year ?? series.Year;
         if (Open(SeriesMetadataField.TotalChapters))
@@ -171,10 +163,7 @@ public class SeriesMetadataRefreshService(
         series.AuthorStory = metadata.AuthorStory ?? series.AuthorStory;
         series.AuthorArt = metadata.AuthorArt ?? series.AuthorArt;
         series.Publisher = metadata.Publisher ?? series.Publisher;
-        if (!metadata.Partial)
-        {
-            series.HasAnime = metadata.HasAnime;
-        }
+        series.HasAnime = metadata.HasAnime;
 
         series.AnimeName = metadata.AnimeName ?? series.AnimeName;
         series.AnimeStart = metadata.AnimeStart ?? series.AnimeStart;
