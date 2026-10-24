@@ -9971,6 +9971,10 @@ msgstr "Not connected yet."
 msgid "Not connected."
 msgstr "Not connected."
 
+#: src/components/SetupWizard.tsx
+msgid "Not downloaded yet"
+msgstr "Not downloaded yet"
+
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Not enough genre data yet"
 msgstr "Not enough genre data yet"
@@ -13478,8 +13482,8 @@ msgid "Search volumes now"
 msgstr "Search volumes now"
 
 #: src/components/SetupWizard.tsx
-msgid "Search, adding series, imports and Discover all read from it. About a 350 MB download and 3.5 GB on disk, refreshed nightly. It is already downloading, and setup finishes once it is in."
-msgstr "Search, adding series, imports and Discover all read from it. About a 350 MB download and 3.5 GB on disk, refreshed nightly. It is already downloading, and setup finishes once it is in."
+msgid "Search, adding series, imports and Discover all read from it. About a 350 MB download and 3.5 GB on disk, refreshed nightly. Setup finishes once it is in."
+msgstr "Search, adding series, imports and Discover all read from it. About a 350 MB download and 3.5 GB on disk, refreshed nightly. Setup finishes once it is in."
 
 #: src/pages/ImportPage.tsx
 msgid "searched as “{cleanedTitle}”"
@@ -13717,8 +13721,8 @@ msgid "Series details"
 msgstr "Series details"
 
 #: src/components/SetupWizard.tsx
-msgid "Series details come from MangaBaka. Choose how much of it Maki keeps at hand, and what it may show you."
-msgstr "Series details come from MangaBaka. Choose how much of it Maki keeps at hand, and what it may show you."
+msgid "Series details come from a local copy of the MangaBaka database. Choose what Discover may show you."
+msgstr "Series details come from a local copy of the MangaBaka database. Choose what Discover may show you."
 
 #: src/components/settings/ProgressSection.tsx
 msgid "series finished"
@@ -14981,6 +14985,10 @@ msgstr "The download client reports an error on this torrent"
 msgid "The download failed: {0}"
 msgstr "The download failed: {0}"
 
+#: src/components/MetadataDumpProgress.tsx
+msgid "The download has not started yet."
+msgstr "The download has not started yet."
+
 #: src/api/queue.ts
 msgid "The download is no longer in the download client"
 msgstr "The download is no longer in the download client"
@@ -14988,10 +14996,6 @@ msgstr "The download is no longer in the download client"
 #: src/pages/settings/registry.ts
 msgid "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
 msgstr "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
-
-#: src/components/MetadataDumpProgress.tsx
-msgid "The download starts on its own a few seconds after Maki starts."
-msgstr "The download starts on its own a few seconds after Maki starts."
 
 #: src/pages/HealthPage.tsx
 msgid "The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page."

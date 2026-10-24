@@ -12020,6 +12020,10 @@ msgstr ""
 msgid "Not connected."
 msgstr "연결되지 않았습니다."
 
+#: src/components/SetupWizard.tsx
+msgid "Not downloaded yet"
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "Not enough genre data yet"
@@ -16220,7 +16224,7 @@ msgid "Search volumes now"
 msgstr "지금 권 검색"
 
 #: src/components/SetupWizard.tsx
-msgid "Search, adding series, imports and Discover all read from it. About a 350 MB download and 3.5 GB on disk, refreshed nightly. It is already downloading, and setup finishes once it is in."
+msgid "Search, adding series, imports and Discover all read from it. About a 350 MB download and 3.5 GB on disk, refreshed nightly. Setup finishes once it is in."
 msgstr ""
 
 #: src/pages/ImportPage.tsx
@@ -16502,9 +16506,8 @@ msgid "Series details"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Series details come from MangaBaka. Choose how much of it Maki keeps at hand, and what it may show you."
-msgstr "시리즈 정보는 MangaBaka에서 가져옵니다. Maki가 보관할 정보와 표시할 정보를 선택하세요."
+msgid "Series details come from a local copy of the MangaBaka database. Choose what Discover may show you."
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -18020,6 +18023,10 @@ msgstr ""
 msgid "The download failed: {0}"
 msgstr ""
 
+#: src/components/MetadataDumpProgress.tsx
+msgid "The download has not started yet."
+msgstr ""
+
 #: src/api/queue.ts
 msgid "The download is no longer in the download client"
 msgstr ""
@@ -18028,10 +18035,6 @@ msgstr ""
 #, fuzzy
 msgid "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
 msgstr "다운로드 대기열, Smart Download, 소스와 언어, 토렌트 클라이언트, 파일을 교체할 시점을 정하는 품질 규칙."
-
-#: src/components/MetadataDumpProgress.tsx
-msgid "The download starts on its own a few seconds after Maki starts."
-msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
