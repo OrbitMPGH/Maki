@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Core.Configuration;
+using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -565,6 +566,46 @@ public class OidcTests
         using (var db = fixture.NewContext())
         {
             Assert.NotEqual(stampBefore, db.Users.Single(u => u.Id == first.User.Id).SecurityStamp);
+        }
+    }
+
+    [Theory]
+    [InlineData("DownloadChapters", true)]
+    [InlineData("DownloadChapters,UseOpds,AddSeries", false)]
+    public async Task ClaimsThatRemoveAPermissionEndOtherSessionsAndDropPushSubscriptions(string later, bool removes)
+    {
+        using var fixture = new TestDb();
+        fixture.SeedUser("keeper", MakiPermission.Admin);
+        (string, string)[] settings =
+        [
+            (SettingKeys.AuthOidcAutoProvision, "true"),
+            (SettingKeys.AuthOidcPermissionClaim, "groups"),
+        ];
+        var first = await (await ServiceAsync(fixture, settings)).SignInAsync("oidc", "sub-1",
+            Claims(("preferred_username", "ada"), ("groups", "DownloadChapters"), ("groups", "UseOpds")), default);
+        Assert.NotNull(first.User);
+        string? stampBefore;
+        using (var db = fixture.NewContext())
+        {
+            db.PushSubscriptions.Add(new PushSubscription
+            {
+                UserId = first.User.Id, Endpoint = "https://push.example.com/phone", P256dh = "key", Auth = "secret",
+                CreatedAt = DateTime.UtcNow,
+            });
+            db.SaveChanges();
+            stampBefore = db.Users.Single(u => u.Id == first.User.Id).SecurityStamp;
+        }
+
+        var claims = later.Split(',').Select(g => ("groups", g)).Prepend(("preferred_username", "ada")).ToArray();
+        var again = await (await ServiceAsync(fixture, settings)).SignInAsync("oidc", "sub-1", Claims(claims), default);
+
+        // Same as the Users page: a lost phone must not keep a session or pushes once access is taken
+        // away, while widening access signs nobody out.
+        Assert.NotNull(again.User);
+        using (var db = fixture.NewContext())
+        {
+            Assert.Equal(removes, stampBefore != db.Users.Single(u => u.Id == first.User.Id).SecurityStamp);
+            Assert.Equal(removes ? 0 : 1, db.PushSubscriptions.Count(p => p.UserId == first.User.Id));
         }
     }
 
