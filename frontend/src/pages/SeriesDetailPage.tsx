@@ -237,15 +237,23 @@ type ChapterLayout = 'full' | 'compact' | 'list'
 const CHAPTER_SHED_COLUMN: ChapterColumn = 'released'
 const shownChapterColumns = (layout: ChapterLayout) =>
   layout === 'compact' ? CHAPTER_COLUMN_KEYS.filter((key) => key !== CHAPTER_SHED_COLUMN) : CHAPTER_COLUMN_KEYS
-const chapterTableMinWidthFor = (widths: Record<ChapterColumn, number>, layout: ChapterLayout) =>
+const chapterColumnsWidthFor = (widths: Record<ChapterColumn, number>, layout: ChapterLayout) =>
   CHAPTER_FIXED_COLUMNS_WIDTH + CHAPTER_TITLE_MIN_WIDTH + shownChapterColumns(layout).reduce((sum, key) => sum + widths[key], 0)
 // Off the default widths, never the dragged ones: a column dragged wide used to tip the table into
 // list rows, which have no header to drag it back from.
 const CHAPTER_DEFAULT_WIDTHS = Object.fromEntries(
     CHAPTER_COLUMN_KEYS.map((key) => [key, CHAPTER_COLUMNS[key].width]),
 ) as Record<ChapterColumn, number>
-const CHAPTER_FULL_MIN_WIDTH = chapterTableMinWidthFor(CHAPTER_DEFAULT_WIDTHS, 'full')
-const CHAPTER_COMPACT_MIN_WIDTH = chapterTableMinWidthFor(CHAPTER_DEFAULT_WIDTHS, 'compact')
+const CHAPTER_FULL_MIN_WIDTH = chapterColumnsWidthFor(CHAPTER_DEFAULT_WIDTHS, 'full')
+const CHAPTER_COMPACT_MIN_WIDTH = chapterColumnsWidthFor(CHAPTER_DEFAULT_WIDTHS, 'compact')
+// The layout was picked because the panel holds at least this much, so a table never needs to
+// scroll sideways in it. Widths stored from a wider window stay as preferences the browser can
+// squeeze rather than a floor that pushes the table past the panel.
+const chapterTableMinWidthFor = (widths: Record<ChapterColumn, number>, layout: ChapterLayout) =>
+  Math.min(
+      chapterColumnsWidthFor(widths, layout),
+      layout === 'full' ? CHAPTER_FULL_MIN_WIDTH : CHAPTER_COMPACT_MIN_WIDTH,
+  )
 const chapterLayoutFor = (panelWidth: number): ChapterLayout =>
   panelWidth === 0 || panelWidth >= CHAPTER_FULL_MIN_WIDTH ? 'full' : panelWidth >= CHAPTER_COMPACT_MIN_WIDTH ? 'compact' : 'list'
 
