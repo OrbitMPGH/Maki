@@ -12909,6 +12909,10 @@ msgstr "항목 열기"
 msgid "Open file findings"
 msgstr "파일 발견 항목 열기"
 
+#: src/pages/MetadataGatePage.tsx
+msgid "Open health"
+msgstr ""
+
 #: src/components/import/MihonSummary.tsx
 msgid "Open library"
 msgstr ""
@@ -12939,6 +12943,7 @@ msgstr "시리즈 열기"
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/ImportPage.tsx
+#: src/pages/MetadataGatePage.tsx
 #, fuzzy
 msgid "Open settings"
 msgstr "설정 열기"
@@ -18025,6 +18030,10 @@ msgstr ""
 #. placeholder {0}: progress.lastError
 #: src/components/MetadataDumpProgress.tsx
 msgid "The download failed: {0}"
+msgstr ""
+
+#: src/pages/MetadataGatePage.tsx
+msgid "The download failed. Maki tries again by itself, and an admin can check what went wrong. This page opens Maki by itself when it is done."
 msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx

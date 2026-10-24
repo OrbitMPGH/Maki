@@ -6,7 +6,7 @@ import { api } from '../../.storybook/mocks/api'
 import { downloadingDump, idleDump } from '../../.storybook/mocks/shell/wizard'
 import MetadataGatePage from './MetadataGatePage'
 
-const missing: MetadataSettings = { dumpPresent: false, dumpSizeBytes: null, dumpRefreshedAt: null }
+const missing: MetadataSettings = { dumpPresent: false, dumpSizeBytes: null, dumpRefreshedAt: null, dumpDownloadFailed: false }
 
 const failedDump: DumpProgress = {
   ...idleDump,
@@ -45,6 +45,8 @@ export const AdminDownloading: Story = {
     await expect(await canvas.findByText('Downloading metadata database')).toBeVisible()
     await expect(await canvas.findByText(/207 MB of 333 MB/)).toBeVisible()
     await expect(canvas.queryByRole('button', { name: 'Try again' })).toBeNull()
+    await expect(await canvas.findByRole('link', { name: 'Open settings' })).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: 'Open health' })).toBeVisible()
   },
 }
 
@@ -75,6 +77,22 @@ export const ReaderWaiting: Story = {
     ).toBeVisible()
     await expect(canvas.queryByRole('button', { name: 'Try again' })).toBeNull()
     await expect(canvas.queryByText('Downloading metadata database')).toBeNull()
+    await expect(canvas.queryByRole('link', { name: 'Open settings' })).toBeNull()
     await expect(await canvas.findByRole('button', { name: 'Sign out' })).toBeVisible()
+  },
+}
+
+/** After a failed download a reader is told so, not that it is downloading, and never sees the error text. */
+export const ReaderDownloadFailed: Story = {
+  parameters: {
+    auth: 'reader',
+    msw: [
+      http.get(api('/settings/metadata'), () => HttpResponse.json({ ...missing, dumpDownloadFailed: true })),
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/The download failed\. Maki tries again by itself/)).toBeVisible()
+    await expect(canvas.queryByText(/The server is downloading it now/)).toBeNull()
+    await expect(canvas.queryByRole('button', { name: 'Try again' })).toBeNull()
   },
 }

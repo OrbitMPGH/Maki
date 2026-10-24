@@ -272,21 +272,31 @@ function AuthGate() {
   )
 }
 
+/** What an admin can still open while the dump is missing: enough to find out why and fix it. */
+function openToAdminsWithoutDump(pathname: string) {
+  return ['/settings', '/health'].some((p) => pathname === p || pathname.startsWith(`${p}/`))
+}
+
 /**
  * Holds the app back until the local MangaBaka database is installed, since nothing falls back to
- * the API any more. An admin still in the setup guide is let through: the guide owns the screen,
- * shows the download, and its Finish waits for it. A failed or loading query lets the app through
- * like the other shell flags do, so an offline start still reaches saved chapters.
+ * the API any more. The reader stays open to everyone, since chapters on disk need no metadata, and
+ * Settings and Health stay open to admins. Everything else, "/" included, lands on the gate page
+ * rather than redirecting, so StartPageRedirect cannot loop. An admin still in the setup guide is
+ * let through: the guide owns the screen, shows the download, and its Finish waits for it. A failed
+ * or loading query lets the app through like the other shell flags do, so an offline start still
+ * reaches saved chapters.
  */
 function MetadataGate({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation()
   const { can } = useAuth()
   const isAdmin = can('Admin')
   const { data: metadata } = useMetadataSettings()
   const { data: setup } = useSetupStatus()
 
   if (metadata?.dumpPresent !== false) return children
+  if (pathname.startsWith('/read/')) return children
   if (isAdmin && setup === undefined) return <RouteFallback />
-  if (isAdmin && !setup?.completed) return children
+  if (isAdmin && (!setup?.completed || openToAdminsWithoutDump(pathname))) return children
   return <MetadataGatePage />
 }
 

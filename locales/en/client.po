@@ -10717,6 +10717,10 @@ msgstr "Open entry"
 msgid "Open file findings"
 msgstr "Open file findings"
 
+#: src/pages/MetadataGatePage.tsx
+msgid "Open health"
+msgstr "Open health"
+
 #: src/components/import/MihonSummary.tsx
 msgid "Open library"
 msgstr "Open library"
@@ -10743,6 +10747,7 @@ msgstr "Open series"
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/ImportPage.tsx
+#: src/pages/MetadataGatePage.tsx
 msgid "Open settings"
 msgstr "Open settings"
 
@@ -14988,6 +14993,10 @@ msgstr "The download client reports an error on this torrent"
 #: src/components/MetadataDumpProgress.tsx
 msgid "The download failed: {0}"
 msgstr "The download failed: {0}"
+
+#: src/pages/MetadataGatePage.tsx
+msgid "The download failed. Maki tries again by itself, and an admin can check what went wrong. This page opens Maki by itself when it is done."
+msgstr "The download failed. Maki tries again by itself, and an admin can check what went wrong. This page opens Maki by itself when it is done."
 
 #: src/components/MetadataDumpProgress.tsx
 msgid "The download has not started yet."

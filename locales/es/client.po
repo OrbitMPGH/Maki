@@ -12910,6 +12910,10 @@ msgstr "Abrir entrada"
 msgid "Open file findings"
 msgstr "Abrir hallazgos de archivos"
 
+#: src/pages/MetadataGatePage.tsx
+msgid "Open health"
+msgstr ""
+
 #: src/components/import/MihonSummary.tsx
 msgid "Open library"
 msgstr ""
@@ -12940,6 +12944,7 @@ msgstr "Abrir serie"
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/ImportPage.tsx
+#: src/pages/MetadataGatePage.tsx
 #, fuzzy
 msgid "Open settings"
 msgstr "Abrir ajustes"
@@ -18026,6 +18031,10 @@ msgstr ""
 #. placeholder {0}: progress.lastError
 #: src/components/MetadataDumpProgress.tsx
 msgid "The download failed: {0}"
+msgstr ""
+
+#: src/pages/MetadataGatePage.tsx
+msgid "The download failed. Maki tries again by itself, and an admin can check what went wrong. This page opens Maki by itself when it is done."
 msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx

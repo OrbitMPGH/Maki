@@ -15,7 +15,8 @@
 - **Local metadata.** A local copy of the [MangaBaka](https://mangabaka.org) database gives
   instant search with no API rate limits, and links each series to its MyAnimeList, AniList,
   MangaUpdates, and Kitsu IDs. It is required: Maki downloads it on first start and opens once
-  it is installed.
+  it is installed. Until then the reader still opens chapters already on disk, and admins can
+  reach Settings and Health.
 - **Torrents alongside scrapers.** Search releases through Prowlarr or Jackett and send them to qBittorrent, Transmission and Deluge.
   Maki imports each one when it finishes, repacking anything that is not already CBZ.
 - **Built for a household.** Per-user history, preferences, tracker accounts, and library access

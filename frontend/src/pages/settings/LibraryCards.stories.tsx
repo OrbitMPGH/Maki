@@ -113,7 +113,7 @@ export const MetadataNoSnapshotYet: Story = {
   parameters: {
     msw: settingsMsw(
       http.get(api('/settings/metadata'), () =>
-        HttpResponse.json({ dumpPresent: false, dumpSizeBytes: null, dumpRefreshedAt: null }),
+        HttpResponse.json({ dumpPresent: false, dumpSizeBytes: null, dumpRefreshedAt: null, dumpDownloadFailed: false }),
       ),
     ),
   },

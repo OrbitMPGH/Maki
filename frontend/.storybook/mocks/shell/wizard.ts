@@ -119,6 +119,7 @@ export function wizardHandlers(options: WizardOptions = {}): HttpHandler[] {
     dumpPresent: false,
     dumpSizeBytes: null,
     dumpRefreshedAt: null,
+    dumpDownloadFailed: false,
     ...options.metadata,
   }
   let recommendations: RecommendationIndexStatus = { ...readyIndex, ...options.recommendations }

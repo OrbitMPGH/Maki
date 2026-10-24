@@ -167,6 +167,7 @@ try
     builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
     builder.Services.AddSingleton<MangaBakaDumpStatus>();
     builder.Services.AddSingleton<MangaBakaDumpService>();
+    builder.Services.AddSingleton<Maki.Api.Jobs.MangaBakaDumpRetry>();
     builder.Services.AddSingleton<MangaBakaLocalStore>();
     // Credits and the title-index term dictionary, both RAM-resident and both built lazily from the
     // dump. They are what answer "junji ito" and what let a misspelled title still find its series;
@@ -1159,14 +1160,15 @@ try
         // Stable job key so the settings endpoint can trigger a refresh on demand. Without a dump
         // the SPA is gated, so a missing one starts downloading right away instead of at +2 minutes.
         // MAKI_DUMP_BOOT_DOWNLOAD=0 keeps the +2 minutes, so test hosts on an empty config dir
-        // never start a 350 MB transfer.
+        // never start a 350 MB transfer. A failure while no dump is installed retries sooner than
+        // the 6 h interval through MangaBakaDumpRetry.
         var downloadAtBoot = !File.Exists(paths.MangaBakaDbPath) &&
                              Environment.GetEnvironmentVariable("MAKI_DUMP_BOOT_DOWNLOAD") != "0";
         q.AddJob<Maki.Api.Jobs.MangaBakaDumpRefreshJob>(j => j
             .WithIdentity(Maki.Api.Jobs.MangaBakaDumpRefreshJob.Key));
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.MangaBakaDumpRefreshJob.Key)
-            .WithIdentity("mangabaka-dump-trigger")
+            .WithIdentity(Maki.Api.Jobs.MangaBakaDumpRetry.ScheduleTriggerKey)
             .StartAt(downloadAtBoot ? DateTimeOffset.UtcNow.AddSeconds(5) : DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 

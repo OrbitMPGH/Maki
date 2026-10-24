@@ -281,6 +281,7 @@ export const metadataSettings: MetadataSettings = {
   dumpPresent: true,
   dumpSizeBytes: 1_842_000_000,
   dumpRefreshedAt: '2026-10-12T03:00:00Z',
+  dumpDownloadFailed: false,
 }
 
 export const healthIssues: HealthIssue[] = []

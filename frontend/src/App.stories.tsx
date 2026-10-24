@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api } from '../.storybook/mocks/api'
-import { setupStatus, uiSettings } from '../.storybook/mocks/shared'
+import { metadataSettings, setupStatus, uiSettings } from '../.storybook/mocks/shared'
 import App from './App'
 import * as ActivityStories from './pages/ActivityPage.stories'
 import * as AddSeriesStories from './pages/AddSeriesPage.stories'
@@ -13,6 +13,7 @@ import * as HomeStories from './pages/HomePage.stories'
 import * as ImportStories from './pages/ImportPage.stories'
 import * as LibraryStories from './pages/LibraryPage.stories'
 import * as NotificationsStories from './pages/NotificationsPage.stories'
+import * as ReaderStories from './pages/reader/ReaderPage.stories'
 import * as RequestsStories from './pages/RequestsPage.stories'
 import * as ScrobbleStories from './pages/ScrobblePage.stories'
 import * as SeriesStories from './pages/SeriesDetailPage.stories'
@@ -116,6 +117,61 @@ export const SignedOut: Story = {
   parameters: { router: { initialEntries: ['/library'] }, auth: 'signedOut' },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: /sign in/i })).toBeVisible()
+  },
+}
+
+// Without the MangaBaka database everyone can still read, admins can still open Settings and Health,
+// and every other route, "/" included, shows the gate instead.
+const dumpMissing: Handlers[] = [
+  http.get(api('/settings/metadata'), () =>
+    HttpResponse.json({ ...metadataSettings, dumpPresent: false, dumpSizeBytes: null, dumpRefreshedAt: null }),
+  ),
+]
+const gateHeading = 'Getting the metadata database ready'
+
+export const GateKeepsHomeClosed: Story = {
+  ...home(dumpMissing),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('heading', { name: gateHeading })).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: 'Open settings' })).toHaveAttribute(
+      'href',
+      '/settings?tab=library&s=metadata',
+    )
+    await expect(await canvas.findByRole('link', { name: 'Open health' })).toHaveAttribute('href', '/health')
+  },
+}
+
+export const GateLetsAdminsIntoSettings: Story = {
+  ...mirror('/settings', SettingsStories, SettingsStories.AdminAllTabs, dumpMissing),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('tab', { name: 'Library' })).toBeVisible()
+    await expect(canvas.queryByRole('heading', { name: gateHeading })).toBeNull()
+  },
+}
+
+export const GateLetsAdminsIntoHealth: Story = {
+  ...mirror('/health', HealthStories, HealthStories.Healthy, dumpMissing),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('System checks')).toBeVisible()
+    await expect(canvas.queryByRole('heading', { name: gateHeading })).toBeNull()
+  },
+}
+
+export const GateKeepsSettingsClosedToReaders: Story = {
+  ...mirror('/settings', SettingsStories, SettingsStories.AdminAllTabs, dumpMissing),
+  parameters: { ...mirror('/settings', SettingsStories, SettingsStories.AdminAllTabs, dumpMissing).parameters, auth: 'reader' },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('heading', { name: gateHeading })).toBeVisible()
+    await expect(canvas.queryByRole('link', { name: 'Open settings' })).toBeNull()
+  },
+}
+
+export const GateLetsReadersRead: Story = {
+  ...mirror('/read/1132', ReaderStories, ReaderStories.PagedManga, dumpMissing),
+  parameters: { ...mirror('/read/1132', ReaderStories, ReaderStories.PagedManga, dumpMissing).parameters, auth: 'reader' },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible()
+    await expect(canvas.queryByRole('heading', { name: gateHeading })).toBeNull()
   },
 }
 

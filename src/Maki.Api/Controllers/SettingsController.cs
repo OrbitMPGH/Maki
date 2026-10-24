@@ -88,7 +88,12 @@ public class SettingsController(
     public record IndexerConnection(string? Backend, string? Url, string? ApiKey);
     public record DownloadClientSettings(
         string? Kind, string? Url, string? Username, string? Password, string? Label, string? PathMapFrom, string? PathMapTo);
-    public record MetadataSettingsResponse(bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
+    /// <param name="DumpDownloadFailed">
+    /// No dump is installed and the last download failed, for the gate's waiting screen. Only a bit:
+    /// the error text stays on the admin-only progress endpoint.
+    /// </param>
+    public record MetadataSettingsResponse(
+        bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt, bool DumpDownloadFailed);
     /// <summary>Both fields optional on PUT: a null leaves that setting as it is.</summary>
     public record MonitoringSettings(bool? UnmonitorSpecials, string? DefaultMode = null);
     /// <param name="IncognitoByRating">
@@ -1847,7 +1852,9 @@ public class SettingsController(
     public async Task<IActionResult> GetMetadata(CancellationToken ct)
     {
         var status = await mangaBakaDump.GetStatusAsync(ct);
-        return Ok(new MetadataSettingsResponse(status.Present, status.SizeBytes, status.RefreshedAt));
+        var progress = mangaBakaDump.Progress();
+        return Ok(new MetadataSettingsResponse(status.Present, status.SizeBytes, status.RefreshedAt,
+            !status.Present && !progress.Running && progress.LastError is not null));
     }
 
     [Authorize(Policy = Policies.Admin)]

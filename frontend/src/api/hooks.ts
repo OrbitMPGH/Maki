@@ -3334,6 +3334,8 @@ export interface MetadataSettings {
   dumpPresent: boolean
   dumpSizeBytes: number | null
   dumpRefreshedAt: string | null
+  /** No dump installed and the last download failed. The error text is admin-only (dump-progress). */
+  dumpDownloadFailed: boolean
 }
 
 export function useMetadataSettings() {
