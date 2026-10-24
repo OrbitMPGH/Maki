@@ -309,11 +309,13 @@ public sealed class LibraryCompositionTests : IDisposable
             mappingId = db.SourceMappings.Single().Id;
         }
 
+        // The service windows against DateTime.UtcNow, so seed relative to "now".
         // Completed after 10, 20, 30 minutes -> median 20 minutes = 1200s.
-        SeedQueueItem(series, QueueStatus.Completed, T0, T0.AddMinutes(10), mappingId);
-        SeedQueueItem(series, QueueStatus.Completed, T0, T0.AddMinutes(20), mappingId);
-        SeedQueueItem(series, QueueStatus.Completed, T0, T0.AddMinutes(30), mappingId);
-        SeedQueueItem(series, QueueStatus.Failed, T0, sourceMappingId: mappingId);
+        var start = DateTime.UtcNow.AddDays(-1);
+        SeedQueueItem(series, QueueStatus.Completed, start, start.AddMinutes(10), mappingId);
+        SeedQueueItem(series, QueueStatus.Completed, start, start.AddMinutes(20), mappingId);
+        SeedQueueItem(series, QueueStatus.Completed, start, start.AddMinutes(30), mappingId);
+        SeedQueueItem(series, QueueStatus.Failed, start, sourceMappingId: mappingId);
 
         using var check = _db.NewContext(Owner);
         var stats = await Service(check).GetAsync(CancellationToken.None);
