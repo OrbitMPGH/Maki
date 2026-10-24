@@ -64,11 +64,19 @@ public class MangaBakaDumpService(
             status.End(installed, null);
             return installed;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             // Shutdown, not a failure: the job treats it as one and so should the UI.
             status.End(false, null);
             throw;
+        }
+        catch (OperationCanceledException ex)
+        {
+            // HttpClient.Timeout surfaces as a cancellation nobody asked for. Left as one, the UI
+            // would show no error and the gate would keep saying the download is running.
+            var timeout = new TimeoutException("The MangaBaka dump download timed out", ex);
+            status.End(false, timeout.Message);
+            throw timeout;
         }
         catch (Exception ex)
         {

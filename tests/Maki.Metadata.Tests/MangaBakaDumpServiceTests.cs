@@ -195,6 +195,39 @@ public class MangaBakaDumpServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Refresh_reports_an_HttpClient_timeout_as_a_failure_not_a_shutdown()
+    {
+        var service = new MangaBakaDumpService(
+            new HangingDumpHttpClientFactory("abc123  series.sqlite.zst"),
+            new MangaBakaDumpOptions(Path.Combine(_workDir, "mangabaka.db"), _workDir),
+            _settings,
+            _status,
+            NullLogger<MangaBakaDumpService>.Instance);
+
+        await Assert.ThrowsAsync<TimeoutException>(() => service.RefreshAsync());
+
+        var progress = _status.Snapshot();
+        Assert.False(progress.Running);
+        Assert.Contains("timed out", progress.LastError);
+    }
+
+    [Fact]
+    public async Task Refresh_cancelled_by_its_caller_is_not_a_failure()
+    {
+        using var cts = new CancellationTokenSource();
+        var service = new MangaBakaDumpService(
+            new HangingDumpHttpClientFactory("abc123  series.sqlite.zst", TimeSpan.FromMinutes(5), cts.Cancel),
+            new MangaBakaDumpOptions(Path.Combine(_workDir, "mangabaka.db"), _workDir),
+            _settings,
+            _status,
+            NullLogger<MangaBakaDumpService>.Instance);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.RefreshAsync(cts.Token));
+
+        Assert.Null(_status.Snapshot().LastError);
+    }
+
+    [Fact]
     public async Task Refresh_rejects_checksum_mismatch_and_cleans_up()
     {
         using var source = new DumpDbBuilder();
@@ -253,6 +286,35 @@ public class FakeDumpHttpClientFactory(Dictionary<string, byte[]> responsesByUrl
             {
                 Content = new StringContent($"No fixture for {url}")
             });
+        }
+    }
+}
+
+/// <summary>
+/// Answers the checksum, then never answers the dump request, so the client's own
+/// <see cref="HttpClient.Timeout"/> fires, or <paramref name="onHang"/> cancels from outside.
+/// </summary>
+public class HangingDumpHttpClientFactory(string sha1Line, TimeSpan? timeout = null, Action? onHang = null)
+    : IHttpClientFactory
+{
+    public HttpClient CreateClient(string name) => new(new Handler(sha1Line, onHang))
+    {
+        BaseAddress = new Uri("https://fixture.test/"),
+        Timeout = timeout ?? TimeSpan.FromMilliseconds(200),
+    };
+
+    private class Handler(string sha1Line, Action? onHang) : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            if (request.RequestUri!.ToString().EndsWith(".sha1", StringComparison.OrdinalIgnoreCase))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(sha1Line) };
+            }
+
+            onHang?.Invoke();
+            await Task.Delay(Timeout.Infinite, ct);
+            throw new InvalidOperationException("unreachable");
         }
     }
 }
