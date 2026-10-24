@@ -53,17 +53,69 @@ public class MangaBakaDumpServiceTests : IDisposable
     public async Task Refresh_skips_download_when_checksum_unchanged()
     {
         var dbPath = Path.Combine(_workDir, "mangabaka.db");
-        await File.WriteAllTextAsync(dbPath, "placeholder");
+        using (var installed = new DumpDbBuilder())
+        {
+            installed.AddSeries(377, "ONE PIECE").BuildSearchIndex();
+            SqliteConnection.ClearAllPools();
+            File.Copy(installed.Path, dbPath);
+        }
+
+        var before = await File.ReadAllBytesAsync(dbPath);
         _settings.Values[SettingKeys.MangaBakaDumpSha1] = "abc123";
 
-        // Only the checksum endpoint is stubbed â€” requesting the dump itself would 404 and throw.
+        // Only the checksum endpoint is stubbed: requesting the dump itself would 404 and throw.
         var service = CreateService(new Dictionary<string, byte[]>
         {
             ["series.sqlite.zst.sha1"] = "abc123  series.sqlite.zst"u8.ToArray()
         });
 
         Assert.False(await service.RefreshAsync());
-        Assert.Equal("placeholder", await File.ReadAllTextAsync(dbPath));
+        Assert.Equal(before, await File.ReadAllBytesAsync(dbPath));
+    }
+
+    [Theory]
+    [InlineData("garbage")]
+    [InlineData("truncated")]
+    [InlineData("no-search-table")]
+    public async Task Refresh_replaces_a_damaged_dump_even_when_the_checksum_is_unchanged(string damage)
+    {
+        var dbPath = Path.Combine(_workDir, "mangabaka.db");
+        using (var installed = new DumpDbBuilder())
+        {
+            installed.AddSeries(1, "Old").AddFillerSeries(2000);
+            if (damage != "no-search-table")
+            {
+                installed.BuildSearchIndex();
+            }
+
+            SqliteConnection.ClearAllPools();
+            File.Copy(installed.Path, dbPath);
+        }
+
+        if (damage == "garbage")
+        {
+            await File.WriteAllTextAsync(dbPath, "placeholder");
+        }
+        else if (damage == "truncated")
+        {
+            await using var file = new FileStream(dbPath, FileMode.Open);
+            file.SetLength(file.Length / 2);
+        }
+
+        Assert.NotNull(MangaBakaDumpService.IntegrityProblem(dbPath));
+
+        using var source = new DumpDbBuilder();
+        source.AddSeries(377, "ONE PIECE").AddFillerSeries(1000);
+        var (compressed, sha1) = CompressDb(source.Path);
+        _settings.Values[SettingKeys.MangaBakaDumpSha1] = sha1;
+        var service = CreateService(new Dictionary<string, byte[]>
+        {
+            ["series.sqlite.zst.sha1"] = System.Text.Encoding.UTF8.GetBytes($"{sha1}  series.sqlite.zst"),
+            ["series.sqlite.zst"] = compressed
+        });
+
+        Assert.True(await service.RefreshAsync());
+        Assert.Null(MangaBakaDumpService.IntegrityProblem(dbPath));
     }
 
     [Fact]

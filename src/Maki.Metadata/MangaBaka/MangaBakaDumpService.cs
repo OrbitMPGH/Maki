@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Globalization;
 using System.Security.Cryptography;
 using Maki.Core.Configuration;
@@ -93,8 +94,13 @@ public class MangaBakaDumpService(
         if (string.Equals(expectedSha1, installedSha1, StringComparison.OrdinalIgnoreCase) &&
             File.Exists(options.DatabasePath))
         {
-            logger.LogDebug("MangaBaka dump unchanged ({Sha1}); skipping download", expectedSha1);
-            return false;
+            if (IntegrityProblem(options.DatabasePath) is not { } problem)
+            {
+                logger.LogDebug("MangaBaka dump unchanged ({Sha1}); skipping download", expectedSha1);
+                return false;
+            }
+
+            logger.LogWarning("The installed MangaBaka dump looks damaged ({Problem}); downloading it again", problem);
         }
 
         Directory.CreateDirectory(options.StagingDirectory);
@@ -124,6 +130,70 @@ public class MangaBakaDumpService(
         await settings.SetAsync(SettingKeys.MangaBakaDumpRefreshedAt, DateTime.UtcNow.ToString("O"), ct);
         logger.LogInformation("MangaBaka local database installed at {Path} ({Sha1})", options.DatabasePath, expectedSha1);
         return true;
+    }
+
+    /// <summary>
+    /// Why the installed dump cannot be used, or null when it looks whole. Compares the header's own
+    /// page count with the file length (a truncated copy), then opens it and reads the first and last
+    /// series rows and checks the search table is there. That costs milliseconds on the 3.5 GB file,
+    /// where <c>PRAGMA quick_check</c> would read all of it, so it only runs when the refresh is about
+    /// to skip the download, never on a metadata lookup.
+    /// </summary>
+    internal static string? IntegrityProblem(string path)
+    {
+        try
+        {
+            var length = new FileInfo(path).Length;
+            var header = new byte[100];
+            using (var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+            {
+                if (file.ReadAtLeast(header, header.Length, throwOnEndOfStream: false) < header.Length)
+                {
+                    return "shorter than a SQLite header";
+                }
+            }
+
+            if (!header.AsSpan(0, 16).SequenceEqual("SQLite format 3\0"u8))
+            {
+                return "not a SQLite database";
+            }
+
+            // The in-header page count is only trustworthy while the version-valid-for number
+            // matches the change counter; SQLite itself falls back to the file size otherwise.
+            long pageSize = BinaryPrimitives.ReadUInt16BigEndian(header.AsSpan(16));
+            if (pageSize == 1)
+            {
+                pageSize = 65536;
+            }
+
+            var changeCounter = BinaryPrimitives.ReadUInt32BigEndian(header.AsSpan(24));
+            var pages = BinaryPrimitives.ReadUInt32BigEndian(header.AsSpan(28));
+            var validFor = BinaryPrimitives.ReadUInt32BigEndian(header.AsSpan(92));
+            if (pages > 0 && validFor == changeCounter && length < pages * pageSize)
+            {
+                return $"truncated: {length} bytes of {pages * pageSize}";
+            }
+
+            using var conn = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
+            conn.Open();
+            var tables = (long)Scalar(conn,
+                $"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('series', '{SearchTableName}')")!;
+            if (tables < 2)
+            {
+                return "the series or search table is missing";
+            }
+
+            if (Scalar(conn, "SELECT (SELECT id FROM series LIMIT 1) + (SELECT MAX(rowid) FROM series)") is null or DBNull)
+            {
+                return "the series table is empty";
+            }
+
+            return null;
+        }
+        catch (Exception ex) when (ex is SqliteException or IOException or UnauthorizedAccessException)
+        {
+            return ex.Message;
+        }
     }
 
     /// <summary>Streams the zst dump to disk, decompressing on the fly while hashing the compressed bytes.</summary>
