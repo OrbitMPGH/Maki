@@ -252,13 +252,14 @@ public class PageConversionService(
     /// <summary>
     /// Hardlinks a scratch file in <c>.maki/tmp</c>, deletes the link and reads the scratch file back.
     /// On a Docker Desktop for Windows bind mount the link and the delete both succeed and then the
-    /// first name can no longer be read, so a link that was made proves nothing. A library file is
-    /// never used for this: the probe itself can break it.
+    /// first name is gone for the running container, though still on disk, so a link that was made
+    /// proves nothing. A library file is never used for this: the probe itself can break it. The
+    /// name is fixed because on that mount the scratch file outlives its delete.
     /// </summary>
     internal bool HardlinksHoldUp(string root)
     {
         var tmp = Path.Combine(root, ".maki", "tmp");
-        var scratch = Path.Combine(tmp, $"{TrashPrefix}hardlink-{Guid.NewGuid():N}.probe");
+        var scratch = Path.Combine(tmp, $"{TrashPrefix}hardlink.probe");
         var link = scratch + ".link";
         var bytes = "maki hardlink probe"u8.ToArray();
         try
