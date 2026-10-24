@@ -34,6 +34,9 @@ if (typeof credentials.apiKey !== 'string') {
   console.log('Minted an API key.')
 }
 
+// A fresh install opens the setup guide over every page until it is finished or skipped.
+await client.put('/settings/setup', { completed: true })
+
 const libraryPath = join(configDir, 'library')
 let folders = await client.get('/rootfolder')
 let folder = folders.find((f) => f.path === libraryPath)

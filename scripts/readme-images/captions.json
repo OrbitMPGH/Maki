@@ -9,7 +9,8 @@
       "Scrobbling",
       "35 sources",
       "Plain CBZ",
-      "Built-in reader"
+      "Built-in reader",
+      "Offline reading"
     ],
     "desktop": {
       "shot": "desktop-library",
@@ -23,7 +24,7 @@
       "y": 12,
       "w": 16
     },
-    "accent": "rose"
+    "accent": "blush"
   },
   "tiles": [
     {
@@ -34,7 +35,7 @@
       "x": 0,
       "y": 0,
       "w": 100,
-      "accent": "rose"
+      "accent": "blush"
     },
     {
       "id": "scrobbling",
@@ -80,7 +81,7 @@
         "Chunky",
         "Mihon"
       ],
-      "accent": "rose"
+      "accent": "blush"
     }
   ],
   "phones": [
@@ -89,21 +90,21 @@
       "kicker": "Home",
       "headline": "Pick up where you left off",
       "shot": "phone-home",
-      "accent": "rose"
+      "accent": "blush"
     },
     {
       "id": "phone-reader",
       "kicker": "Reader",
       "headline": "A reader built in",
       "shot": "phone-reader",
-      "accent": "rose"
+      "accent": "blush"
     },
     {
       "id": "phone-discover",
       "kicker": "Discover",
       "headline": "What to read next",
       "shot": "phone-discover",
-      "accent": "rose"
+      "accent": "blush"
     },
     {
       "id": "phone-stats",

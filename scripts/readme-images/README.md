@@ -32,6 +32,7 @@ Both steps take image names to redo only some: `npm run capture -- phone-home` a
 | `MAKI_SERIES` | `Dandadan` | Title text of the series used for the series page |
 | `MAKI_READER_CHAPTER` | none | Id of a chapter that really has a file. Without it the reader shot is skipped |
 | `MAKI_BACKGROUND` | `tinted` | Background stored in the browser before the page loads |
+| `MAKI_VERSION` | none | Version the sidebar shows, for example `v0.34.0`. A local build reports `v0.0.0-dev` |
 | `CHROME_PATH` | found automatically | Chrome, Edge or Chromium executable |
 
 Each shot sets its own accent in `capture.mjs`, and `captions.json` carries the matching accent
@@ -44,12 +45,17 @@ screenshot inside the frame in units of the frame's width: `w` is how large it i
 slide it. Raise `w` to zoom in, make `x` negative to hide the sidebar. The Files tile is drawn from
 the values in its entry, not captured. Layout and styling live in `compose.html`.
 
-In `capture.mjs`, a shot can set `viewport`, `scrollY` and `click` (the text of a tab to open
-first), which decide what is on screen when it is taken.
+In `capture.mjs`, a shot can set `viewport`, `scrollY`, `click` (the text of a tab or segment to
+open first), `wheelScreens` (how far to scroll the reader), `session` (page state such as the
+Library sort) and `trackersConnected` (shows every tracker as connected, since the showcase has no
+real tracker accounts).
 
 ## Notes
 
-- Capture blocks every write request to `/api/`, so opening the reader does not record progress or XP.
+- Capture blocks every write request to `/api/`, so opening the reader does not record progress or
+  XP. Writes get an empty 204 rather than an abort, which the PWA build would read as offline, and
+  are also stubbed inside the page's `fetch`, because the reader's keepalive flush on close
+  outlives request interception. The service worker is bypassed for the same reason.
 - Raw captures go to `raw/` and are not committed. Only `docs/readme/*.png` is.
 - Fonts load from Google Fonts, so compose needs a network connection.
 - Commit new images once per release. Every version of a PNG stays in the repository history.
