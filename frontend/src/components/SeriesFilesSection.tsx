@@ -24,6 +24,8 @@ import { plural, t as now } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
 import { fileStatusVisual, statusToken } from './ui/status'
+import { StatusDot } from './ui/StatusDot'
+import { MonoValue } from './ui/MonoValue'
 import { Panel } from './ui/Panel'
 import { useAuth } from '../auth/AuthProvider'
 import { LinkFileToChaptersModal } from './LinkFileToChaptersModal'
@@ -38,6 +40,10 @@ function mappedLabel(file: SeriesFileDto): string {
 }
 
 const hasLinks = (file: SeriesFileDto) => file.mappedChapters.length > 0 || file.status === 'linked'
+const MAPPED_TOOLTIP_EVENTS = { hover: true, focus: true, touch: true }
+// The fixed columns take 742px; this leaves the file name about 140px, so a phone sees it and the
+// parsed label before the table scrolls.
+const FILE_TABLE_MIN_WIDTH = 880
 
 export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const { t } = useLingui()
@@ -106,14 +112,14 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const tableHead = (
     <Table.Thead>
       <Table.Tr>
-        {selectMode && <Table.Th w={40} />}
+        {selectMode && <Table.Th w={40}><VisuallyHidden><Trans>Select</Trans></VisuallyHidden></Table.Th>}
         <Table.Th><Trans>File</Trans></Table.Th>
         <Table.Th w={90}><Trans>Parsed</Trans></Table.Th>
-        <Table.Th w={160}><Trans>Status</Trans></Table.Th>
-        <Table.Th><Trans>Mapped to</Trans></Table.Th>
-        <Table.Th w={90}><Trans>Size</Trans></Table.Th>
-        <Table.Th w={180}><Trans>Quality</Trans></Table.Th>
-        {!selectMode && <Table.Th w={40 + (canLink ? 36 : 0) + (canDownload ? 36 : 0)} />}
+        <Table.Th w={130}><Trans>Status</Trans></Table.Th>
+        <Table.Th w={150}><Trans>Mapped to</Trans></Table.Th>
+        <Table.Th w={100}><Trans>Size</Trans></Table.Th>
+        <Table.Th w={160}><Trans>Quality</Trans></Table.Th>
+        {!selectMode && <Table.Th w={40 + (canLink ? 36 : 0) + (canDownload ? 36 : 0)}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>}
       </Table.Tr>
     </Table.Thead>
   )
@@ -177,8 +183,8 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             <VisuallyHidden role="status">
               <Trans>Scanning folder…</Trans>
             </VisuallyHidden>
-            <Table.ScrollContainer minWidth={640}>
-              <Table className="panel-table ops-table" aria-busy>
+            <Table.ScrollContainer minWidth={FILE_TABLE_MIN_WIDTH}>
+              <Table className="panel-table ops-table" layout="fixed" aria-busy>
                 {tableHead}
                 <Table.Tbody>
                   <FileRowSkeletons />
@@ -253,8 +259,10 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
           )}
 
           <Panel p={0} className="table-panel" mt="sm">
-            <Table.ScrollContainer minWidth={640}>
-              <Table className="panel-table ops-table" highlightOnHover>
+            <Table.ScrollContainer minWidth={FILE_TABLE_MIN_WIDTH}>
+              {/* Fixed, so the file name takes what the other columns leave and loses its middle
+                  rather than pushing them into wrapping. */}
+              <Table className="panel-table ops-table" layout="fixed" highlightOnHover>
                 {tableHead}
                 <Table.Tbody>
                   {files.map((f) => {
@@ -279,9 +287,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             ) : (
                               <IconFileZip size={15} style={{ flexShrink: 0 }} />
                             )}
-                            <Text size="sm" style={{ wordBreak: 'break-all' }}>
-                              {f.fileName}
-                            </Text>
+                            <MonoValue value={f.fileName} full={f.relativePath} copy />
                           </Group>
                         </Table.Td>
                         <Table.Td>
@@ -301,25 +307,27 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           )}
                         </Table.Td>
                         <Table.Td>
-                          <Badge
-                            size="sm"
-                            color={`var(--${statusToken(v.color)})`}
-                            variant="light"
-                            leftSection={<v.Icon size={12} />}
-                          >
-                            {renderLabel(v.label)}
-                          </Badge>
+                          <StatusDot tone={statusToken(v.color)}>{renderLabel(v.label)}</StatusDot>
                         </Table.Td>
                         <Table.Td>
                           {f.isVolume && f.mappedChapters.length > 0 ? (
                             <Tooltip
-                              label={plural(f.mappedChapters.length, {
-                                one: 'Volume file backing # chapter',
-                                other: 'Volume file backing # chapters',
-                              })}
+                              label={
+                                <>
+                                  {plural(f.mappedChapters.length, {
+                                    one: 'Volume file backing # chapter',
+                                    other: 'Volume file backing # chapters',
+                                  })}
+                                  <br />
+                                  {mappedLabel(f)}
+                                </>
+                              }
                               withArrow
+                              multiline
+                              maw={360}
+                              events={MAPPED_TOOLTIP_EVENTS}
                             >
-                              <Text size="sm" className="tnum">
+                              <Text size="sm" className="tnum mapped-to-label" truncate="end" tabIndex={0}>
                                 {mappedLabel(f)}
                               </Text>
                             </Tooltip>
@@ -332,14 +340,20 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             >
                               <Trans>Link chapters</Trans>
                             </Button>
+                          ) : hasLinks(f) ? (
+                            <Tooltip label={mappedLabel(f)} withArrow multiline maw={360} events={MAPPED_TOOLTIP_EVENTS}>
+                              <Text size="sm" className="tnum mapped-to-label" truncate="end" tabIndex={0}>
+                                {mappedLabel(f)}
+                              </Text>
+                            </Tooltip>
                           ) : (
-                            <Text size="sm" c={hasLinks(f) ? undefined : 'var(--ink-3)'} className="tnum">
+                            <Text size="sm" c="var(--ink-3)" className="tnum" truncate="end">
                               {mappedLabel(f)}
                             </Text>
                           )}
                         </Table.Td>
                         <Table.Td>
-                          <Text size="sm" c="var(--ink-3)" className="tnum">
+                          <Text size="sm" c="var(--ink-3)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
                             {formatBytes(f.size)}
                           </Text>
                         </Table.Td>

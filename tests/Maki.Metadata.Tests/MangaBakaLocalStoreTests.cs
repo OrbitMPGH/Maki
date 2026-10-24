@@ -9,11 +9,9 @@ namespace Maki.Metadata.Tests;
 public class MangaBakaLocalStoreTests : IDisposable
 {
     private readonly DumpDbBuilder _db = new();
-    private readonly FakeAppSettings _settings = new();
 
     private MangaBakaLocalStore Store => new(
         new MangaBakaDumpOptions(_db.Path, Path.GetTempPath()),
-        _settings,
         NullLogger<MangaBakaLocalStore>.Instance);
 
     /// <summary>
@@ -28,7 +26,6 @@ public class MangaBakaLocalStoreTests : IDisposable
 
         return new MangaBakaLocalStore(
             dumpOptions,
-            _settings,
             NullLogger<MangaBakaLocalStore>.Instance,
             cache,
             options ?? CatalogueOptions.Default);
@@ -590,19 +587,73 @@ public class MangaBakaLocalStoreTests : IDisposable
     }
 
     [Fact]
-    public async Task IsAvailable_depends_on_file_and_setting()
+    public async Task IsAvailable_depends_on_the_file()
     {
         Assert.True(await Store.IsAvailableAsync());
 
-        _settings.Values[SettingKeys.MangaBakaUseLocalDb] = "false";
-        Assert.False(await Store.IsAvailableAsync());
-
-        _settings.Values[SettingKeys.MangaBakaUseLocalDb] = "true";
         var missingFile = new MangaBakaLocalStore(
             new MangaBakaDumpOptions(Path.Combine(Path.GetTempPath(), "does-not-exist.db"), Path.GetTempPath()),
-            _settings,
             NullLogger<MangaBakaLocalStore>.Instance);
         Assert.False(await missingFile.IsAvailableAsync());
+    }
+
+    // --- related titles --------------------------------------------------------------------
+
+    private void SeedDressUpDarling()
+    {
+        _db.AddSeries(4323, "My Dress-Up Darling", romanizedTitle: "Sono Bisque Doll wa Koi o Suru",
+            relationshipsV2: """
+                [{"to_series_id": 572901, "relation_type": "spin_off"},
+                 {"to_series_id": 9001, "relation_type": "parody"},
+                 {"to_series_id": 372561, "relation_type": "alternative"}]
+                """,
+            sequels: "[9002]");
+        _db.AddSeries(372561, "My Dress-Up Darling", state: "merged", mergedWith: "4323");
+        _db.AddSeries(572901, "My Dress-Up Darling XOXO!", state: "merged", mergedWith: "2428");
+        _db.AddSeries(2428, "My Dress-Up Darling XOXO!", nativeTitle: "ビスク・ドールでチュ♡",
+            romanizedTitle: "Bisque Doll de Chu",
+            titlesJson: """[{"title": "Smooch with a Bisque Doll", "language": "en", "is_primary": false}]""",
+            relationshipsV2: """[{"to_series_id": 4323, "relation_type": "parent"}]""");
+        _db.AddSeries(9001, "Sono Bisque Doll wa Koi o Suru dj - Love", type: "doujinshi", contentRating: "pornographic");
+        _db.AddSeries(9002, "My Dress-Up Darling 2");
+    }
+
+    [Fact]
+    public async Task RelatedTitles_follow_every_relation_type_and_merged_rows()
+    {
+        SeedDressUpDarling();
+
+        var titles = await Store.GetRelatedTitlesAsync(4323);
+
+        string[] expected =
+        [
+            "My Dress-Up Darling XOXO!", "ビスク・ドールでチュ♡", "Bisque Doll de Chu", "Smooch with a Bisque Doll",
+            "Sono Bisque Doll wa Koi o Suru dj - Love", "My Dress-Up Darling 2"
+        ];
+        Assert.Equal(expected.Order(StringComparer.Ordinal), titles.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task RelatedTitles_resolve_a_merged_seed_and_never_return_it()
+    {
+        SeedDressUpDarling();
+
+        var fromAlias = await Store.GetRelatedTitlesAsync(372561);
+
+        Assert.Equal(
+            (await Store.GetRelatedTitlesAsync(4323)).Order(StringComparer.Ordinal),
+            fromAlias.Order(StringComparer.Ordinal));
+        Assert.DoesNotContain("My Dress-Up Darling", fromAlias);
+    }
+
+    [Fact]
+    public async Task RelatedTitles_is_empty_without_the_dump()
+    {
+        var missingFile = new MangaBakaLocalStore(
+            new MangaBakaDumpOptions(Path.Combine(Path.GetTempPath(), "does-not-exist.db"), Path.GetTempPath()),
+            NullLogger<MangaBakaLocalStore>.Instance);
+
+        Assert.Empty(await missingFile.GetRelatedTitlesAsync(4323));
     }
 
     // --- typo tolerance ---------------------------------------------------------------------
@@ -629,7 +680,7 @@ public class MangaBakaLocalStoreTests : IDisposable
         var dumpOptions = new MangaBakaDumpOptions(_db.Path, Path.GetTempPath());
         var cache = new CatalogueIndexCache(dumpOptions, NullLogger<CatalogueIndexCache>.Instance);
         var store = new MangaBakaLocalStore(
-            dumpOptions, _settings, NullLogger<MangaBakaLocalStore>.Instance, cache, CatalogueOptions.Default);
+            dumpOptions, NullLogger<MangaBakaLocalStore>.Instance, cache, CatalogueOptions.Default);
 
         var cold = await store.SearchWithCorrectionAsync("berserck", ContentRating.Pornographic);
 
@@ -1099,7 +1150,6 @@ public class MangaBakaLocalStoreTests : IDisposable
         // A store pointed at nothing: the short-circuit is what keeps an empty library from throwing.
         var missingFile = new MangaBakaLocalStore(
             new MangaBakaDumpOptions(Path.Combine(Path.GetTempPath(), "nope.db"), Path.GetTempPath()),
-            _settings,
             NullLogger<MangaBakaLocalStore>.Instance);
 
         Assert.Empty(await missingFile.GetProfileRowsAsync([]));
@@ -1116,5 +1166,37 @@ public class MangaBakaLocalStoreTests : IDisposable
             MangaBakaLocalStore.ExternalSource.Kitsu, [8L, 9L, 10L, 2L, 404L]);
 
         Assert.Equal([(8L, 1L), (9L, 2L)], ids.Select(kv => (kv.Key, kv.Value)).Order());
+    }
+
+    [Fact]
+    public async Task MangaUpdates_slugs_resolve_whatever_their_casing()
+    {
+        _db.AddSeries(1, "One Piece", mangaUpdatesId: "pb8uwds")
+            .AddSeries(2, "Stray caps", mangaUpdatesId: "Ij97889")
+            .AddSeries(3, "A novel", mangaUpdatesId: "novel01", type: "novel")
+            .AddSeries(4, "Unrelated", mangaUpdatesId: "zzzzzzz");
+
+        var ids = await Store.GetIdsByMangaUpdatesIdsAsync(["PB8UWDS", "ij97889", "novel01", "missing"]);
+
+        Assert.Equal([("ij97889", 2L), ("pb8uwds", 1L)], ids.Select(kv => (kv.Key, kv.Value)).Order());
+    }
+
+    [Fact]
+    public async Task MangaUpdates_lookup_treats_a_quote_as_data_and_follows_merges()
+    {
+        _db.AddSeries(1, "Canonical")
+            .AddSeries(2, "Merged away", state: "merged", mergedWith: "1", mangaUpdatesId: "abc123")
+            .AddSeries(3, "Quoted", mangaUpdatesId: "o'brien");
+
+        var ids = await Store.GetIdsByMangaUpdatesIdsAsync(["abc123", "x' OR '1'='1", "o'brien"]);
+
+        Assert.Equal([("abc123", 1L), ("o'brien", 3L)], ids.Select(kv => (kv.Key, kv.Value)).Order());
+    }
+
+    [Fact]
+    public async Task MangaUpdates_lookup_with_no_slugs_returns_nothing()
+    {
+        Assert.Empty(await Store.GetIdsByMangaUpdatesIdsAsync([]));
+        Assert.Empty(await Store.GetIdsByMangaUpdatesIdsAsync(["", "  "]));
     }
 }

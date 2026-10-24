@@ -22,7 +22,7 @@ public sealed class SourceOrderTests : IDisposable
 
     /// <summary>
     /// Three aggregator sources, priority poor, good, fresh. "poor" measures well under the reference
-    /// quality, "good" well over it, "fresh" has never been measured.
+    /// quality, "good" well over it, "fresh" has never been measured on this series.
     /// </summary>
     private (int SeriesId, int Poor, int Good, int Fresh) Seed(SourceOrderMode? seriesMode, string? instanceDefault)
     {
@@ -81,13 +81,43 @@ public sealed class SourceOrderTests : IDisposable
     [Theory]
     [InlineData(SourceOrderMode.Quality, null)]
     [InlineData(null, "quality")]
-    public async Task Quality_order_puts_the_better_measured_source_first_and_an_unmeasured_one_in_between(
+    public async Task Quality_order_puts_the_better_measured_source_first_and_an_unmeasured_one_last(
         SourceOrderMode? seriesMode, string? instanceDefault)
     {
         var (seriesId, poor, good, fresh) = Seed(seriesMode, instanceDefault);
         using var db = _db.NewContext();
 
-        Assert.Equal([good, fresh, poor], await OrderAsync(db, seriesId));
+        Assert.Equal([good, poor, fresh], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task A_source_unmeasured_here_is_judged_by_its_record_on_other_series()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        using (var seed = _db.NewContext())
+        {
+            var root = seed.RootFolders.First();
+            var other = new Series { Title = "O", SortTitle = "o", FolderName = "O", RootFolderId = root.Id };
+            var mapping = new SourceMapping { SourceName = "fresh", SourceSeriesId = "o", Priority = 1 };
+            other.SourceMappings.Add(mapping);
+            seed.Series.Add(other);
+            seed.SaveChanges();
+            for (var chapter = 1; chapter <= 2; chapter++)
+            {
+                seed.SourceQualitySamples.Add(new SourceQualitySample
+                {
+                    SourceMappingId = mapping.Id, SeriesId = other.Id, ChapterId = 100 + chapter, PageCount = 20,
+                    MedianWidth = 1500, MedianHeight = 2250, SizeBytes = (long)(3.0 * 1500 * 2250 / 8) * 20,
+                    ImageFormat = "jpg", MeasuredAtUtc = DateTime.UtcNow
+                });
+            }
+
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext();
+
+        Assert.Equal([fresh, good, poor], await OrderAsync(db, seriesId));
     }
 
     [Fact]

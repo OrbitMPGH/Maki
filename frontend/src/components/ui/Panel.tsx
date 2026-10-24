@@ -3,25 +3,13 @@ import type { ComponentPropsWithoutRef } from 'react'
 import { Paper } from '@mantine/core'
 import type { PaperProps } from '@mantine/core'
 
-export type PanelEdge = 'brand' | 'info' | 'ok' | 'warn' | 'danger' | 'strong'
-
-export interface PanelProps
-  extends PaperProps,
-    Omit<ComponentPropsWithoutRef<'div'>, keyof PaperProps | 'color'> {
-  /** Draws the 2px accent rule. `strong` is the neutral `--border-strong` variant. */
-  edge?: PanelEdge
-  /** Which side the accent rule sits on. Left drops the right border, top keeps all four. */
-  edgeSide?: 'top' | 'left'
-}
+export type PanelProps = PaperProps & Omit<ComponentPropsWithoutRef<'div'>, keyof PaperProps | 'color'>
 
 /**
- * The house panel: bordered, `radius="lg"`, `p="lg"`, the 1px card shadow, and the optional
- * accent edge for emphasis. Everything else passes through to Mantine `Paper`.
+ * The house panel: bordered, `radius="lg"`, `p="lg"` and the 1px card shadow. Everything else
+ * passes through to Mantine `Paper`.
  */
-export const Panel = forwardRef<HTMLDivElement, PanelProps>(function Panel(
-  { edge, edgeSide = 'top', className, p = 'lg', ...rest },
-  ref,
-) {
+export const Panel = forwardRef<HTMLDivElement, PanelProps>(function Panel({ className, p = 'lg', ...rest }, ref) {
   return (
     <Paper
       ref={ref}
@@ -29,8 +17,6 @@ export const Panel = forwardRef<HTMLDivElement, PanelProps>(function Panel(
       radius="lg"
       p={p}
       className={className ? `panel ${className}` : 'panel'}
-      data-edge={edge}
-      data-edge-side={edge ? edgeSide : undefined}
       {...rest}
     />
   )

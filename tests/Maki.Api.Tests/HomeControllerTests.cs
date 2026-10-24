@@ -1,3 +1,4 @@
+using Maki.Api.Configuration;
 using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Entities;
@@ -5,6 +6,7 @@ using Maki.Core.Recommendations;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
@@ -13,6 +15,7 @@ namespace Maki.Api.Tests;
 /// into a bug: tombstones must not hijack Continue reading, a series with nothing left to read
 /// must drop out of Jump back in, and neither rail may consult <see cref="ReadingState"/>.
 /// </summary>
+[Collection(ConfigDirCollection.Name)]
 public class HomeControllerTests : IDisposable
 {
     private static readonly DateTime Base = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -21,10 +24,30 @@ public class HomeControllerTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
+    /// <summary>
+    /// A cover store pointed at an empty folder: these rails are about chapters, not art, so every
+    /// series resolves to "no cover, no colour" without reading a real config directory.
+    /// </summary>
+    private static CoverAccentCache Accents()
+    {
+        var previous = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
+        Environment.SetEnvironmentVariable(
+            "MAKI_CONFIG_DIR", Path.Combine(Path.GetTempPath(), "maki-tests", "home-controller-accents"));
+        try
+        {
+            var covers = new CoverService(null!, new AppPaths(), new FakeAppSettings(), NullLogger<CoverService>.Instance);
+            return new CoverAccentCache(covers, NullLogger<CoverAccentCache>.Instance);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", previous);
+        }
+    }
+
     private HomeController Controller()
     {
         var context = _db.NewContext();
-        return new HomeController(context, new ContinueReadingService(context));
+        return new HomeController(context, new ContinueReadingService(context), Accents());
     }
 
     /// <summary>Seeds a downloaded chapter (chapter + backing file) and returns its chapter id.</summary>
@@ -106,6 +129,49 @@ public class HomeControllerTests : IDisposable
         Assert.Equal(20, item.PageCount);
         Assert.Equal("Ch.1", item.ChapterLabel);
         Assert.Equal(2, item.UnreadChapters);
+        Assert.Empty(response.JumpBackIn);
+    }
+
+    private void RemoveFile(int chapterId)
+    {
+        using var db = _db.NewContext();
+        var chapter = db.Chapters.Single(c => c.Id == chapterId);
+        chapter.ChapterFileId = null;
+        chapter.FileRemovedAt = Base;
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task Continue_drops_a_part_read_chapter_whose_file_was_removed()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        var removed = SeedChapter(seriesId, 1);
+        var next = SeedChapter(seriesId, 2);
+        SeedProgress(seriesId, removed, pageIndex: 5, completed: false, updatedAt: Base);
+        RemoveFile(removed);
+
+        var response = Reading(await Controller().Reading(ct: CancellationToken.None));
+
+        Assert.Empty(response.ContinueReading);
+        var item = Assert.Single(response.JumpBackIn);
+        Assert.Equal(next, item.ChapterId);
+    }
+
+    [Fact]
+    public async Task Continue_resumes_the_part_read_chapter_that_still_has_a_file()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        var removed = SeedChapter(seriesId, 1);
+        var kept = SeedChapter(seriesId, 2);
+        SeedProgress(seriesId, kept, pageIndex: 3, completed: false, updatedAt: Base);
+        SeedProgress(seriesId, removed, pageIndex: 5, completed: false, updatedAt: Base.AddHours(1));
+        RemoveFile(removed);
+
+        var response = Reading(await Controller().Reading(ct: CancellationToken.None));
+
+        var item = Assert.Single(response.ContinueReading);
+        Assert.Equal(kept, item.ChapterId);
+        Assert.Equal(3, item.Page);
         Assert.Empty(response.JumpBackIn);
     }
 
@@ -308,6 +374,42 @@ public class HomeControllerTests : IDisposable
         Assert.NotNull(item.ReadChapterId);
     }
 
+    private void EditFile(int chapterId, Action<ChapterFile> edit)
+    {
+        using var db = _db.NewContext();
+        var fileId = db.Chapters.Single(c => c.Id == chapterId).ChapterFileId;
+        edit(db.ChapterFiles.Single(f => f.Id == fileId));
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task RecentlyAdded_leaves_out_relinked_and_redownloaded_files()
+    {
+        var relinked = _db.SeedSeries("Relinked");
+        var redownloaded = _db.SeedSeries("Redownloaded");
+        var fresh = _db.SeedSeries("Fresh");
+        EditFile(SeedChapter(relinked, 1, addedAt: Base.AddDays(2)),
+            f => f.SourceName = ChapterFile.RelinkSourceName);
+        EditFile(SeedChapter(redownloaded, 1, addedAt: Base.AddDays(2)),
+            f => f.ReplacedAtUtc = f.DateAdded);
+        SeedChapter(fresh, 1, addedAt: Base);
+
+        var items = Recent(await Controller().RecentlyAdded(ct: CancellationToken.None));
+
+        Assert.Equal(["Fresh"], items.Select(i => i.SeriesTitle));
+    }
+
+    [Fact]
+    public async Task RecentlyAdded_keeps_a_file_upgraded_since_it_was_added()
+    {
+        var seriesId = _db.SeedSeries("Upgraded");
+        EditFile(SeedChapter(seriesId, 1, addedAt: Base), f => f.ReplacedAtUtc = Base.AddDays(3));
+
+        var item = Assert.Single(Recent(await Controller().RecentlyAdded(ct: CancellationToken.None)));
+
+        Assert.Equal(Base, item.AddedAt);
+    }
+
     [Fact]
     public async Task RecentlyAdded_read_chapter_is_null_once_everything_is_read()
     {
@@ -377,7 +479,7 @@ public class HomeControllerTests : IDisposable
     private HomeController UserController()
     {
         var context = _db.NewContext(userId: 1);
-        return new HomeController(context, new ContinueReadingService(context));
+        return new HomeController(context, new ContinueReadingService(context), Accents());
     }
 
     [Fact]
@@ -446,7 +548,7 @@ public class HomeControllerTests : IDisposable
         int userId = 1, bool allRootFolders = true, int limit = AnimeResumeService.RailLimit)
     {
         var context = _db.NewContext(userId, allRootFolders);
-        var controller = new HomeController(context, new ContinueReadingService(context))
+        var controller = new HomeController(context, new ContinueReadingService(context), Accents())
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
         };

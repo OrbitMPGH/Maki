@@ -318,7 +318,6 @@ async Task Explain(Variant variant, string query)
 // its options from the constructor, so a shared store would silently ignore every fuzzy.* sweep.
 MangaBakaLocalStore BuildStore(Variant variant) => new(
     dumpOptions,
-    new NoSettings(),
     new ConsoleLogger<MangaBakaLocalStore>(),
     catalogueCache,
     variant.Tuning.Catalogue);
@@ -673,14 +672,6 @@ file static class Settings
             return null;
         }
     }
-}
-
-/// <summary>MangaBakaLocalStore only reads a setting to answer "is the local DB on"; here it is.</summary>
-file sealed class NoSettings : IAppSettings
-{
-    public Task<string?> GetAsync(string key, CancellationToken ct = default) => Task.FromResult<string?>(null);
-
-    public Task SetAsync(string key, string? value, CancellationToken ct = default) => Task.CompletedTask;
 }
 
 file sealed class Factory : IHttpClientFactory

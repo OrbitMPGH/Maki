@@ -20,14 +20,14 @@ Maki is a manga collection manager in the Sonarr/Radarr mold: add a series once,
 
 ## Positioning
 
-Kavita-first but not Kavita-only: Maki owns acquisition (built-in multi-language source monitoring, optional Suwayomi extension bridge, torrent fallback via Prowlarr/qBittorrent) and metadata (local MangaBaka mirror, no rate limits), and writes plain well-tagged CBZs any reader can consume, with no proprietary lock-in. Sources are built in, so there are no extensions to install. A neighboring "just a reader" app can't truthfully claim the automated, multi-source acquisition pipeline or the free, rate-limit-free local metadata mirror.
+Kavita-first but not Kavita-only: Maki owns acquisition (built-in multi-language source monitoring, optional Suwayomi extension bridge, torrent fallback that searches Prowlarr or Jackett and downloads with qBittorrent, Transmission or Deluge) and metadata (local MangaBaka mirror, no rate limits), and writes plain well-tagged CBZs any reader can consume, with no proprietary lock-in. Sources are built in, so there are no extensions to install. A neighboring "just a reader" app can't truthfully claim the automated, multi-source acquisition pipeline or the free, rate-limit-free local metadata mirror.
 
 ## Operating Context
 
 - Deployed via Docker alongside Kavita, sharing a library volume; also runs bare via `dotnet run` or the Windows executable. FlareSolverr and Suwayomi are optional sidecars.
 - Usually reached over plain HTTP on the LAN, which is not a secure context; exposing it to the internet behind a TLS reverse proxy is supported and documented.
 - Backend ASP.NET Core host (`:8990`) + Vite/React/Mantine SPA (`:5173` in dev, proxied).
-- Core workflows: Add Series (search MangaBaka, sources match in the background) → Monitoring (scheduled chapter-list refresh, monitor modes, per-chapter Wanted) → Download (scraper queue or torrent via Prowlarr/qBittorrent) → Library (grid/list, per-series state, saved filters, health checks, manual import) → Reader (built-in CBZ reader, reading profiles) → Home (per-user rails) → Discover (embedding-based recommendations, Browse, Your Taste) → Stats (reading/download history, achievements and levels; "Rewind" is its year playback) → Scrobble (AniList/MyAnimeList/Kitsu/MangaBaka progress push, tracker list import) → Settings (root folders, users, sources, metadata, notifications, security, backup/restore, appearance).
+- Core workflows: Add Series (search MangaBaka, sources match in the background) → Monitoring (scheduled chapter-list refresh, monitor modes, per-chapter Wanted) → Download (scraper queue or torrent search through Prowlarr or Jackett, downloaded with qBittorrent, Transmission or Deluge) → Library (grid/list, per-series state, saved filters, health checks, manual import) → Reader (built-in CBZ reader, reading profiles) → Home (per-user rails) → Discover (embedding-based recommendations, Browse, Your Taste) → Stats (reading/download history, achievements and levels; "Rewind" is its year playback) → Scrobble (AniList/MyAnimeList/Kitsu/MangaBaka progress push, tracker list import) → Settings (root folders, users, sources, metadata, notifications, security, backup/restore, appearance).
 - `/` redirects to the user's chosen start page rather than being a page itself.
 - Reading also happens outside the SPA: in Kavita, and over OPDS in Panels, Chunky, KOReader, or Mihon, with progress counted back into Maki.
 - Real-time activity queue over SignalR (download progress, retry/remove, downloads that need a decision).
@@ -40,7 +40,7 @@ Kavita-first but not Kavita-only: Maki owns acquisition (built-in multi-language
 - Multilingual libraries: a series' source link can hold several languages, each with its own chapters and files; per-user title-language preference picks the display title.
 - Local MangaBaka metadata mirror (~3 GB nightly snapshot) for instant, rate-limit-free search and cross-IDs (MAL/AniList/MangaUpdates/Kitsu).
 - Torrent acquisition alongside direct scraping, same download queue; non-CBZ downloads and imports are converted on the way in (PDF is kept and read in place).
-- Scrobbling to AniList, MyAnimeList, Kitsu, MangaBaka, whether reading happened in Maki, Kavita, or over OPDS.
+- Scrobbling to AniList, MyAnimeList, Kitsu, MangaBaka, MangaUpdates, whether reading happened in Maki, Kavita, or over OPDS.
 - OPDS 1.2 server with page streaming, off by default, per-user rotatable feed token.
 - Discover: local ONNX embeddings over the MangaBaka dump for feel-based recommendations, filterable by year/rating/type/status/genre/chapter count/content rating/popularity; Browse rails and a Your Taste view.
 - Stats: append-only reading/download history, plus a per-user progression layer (level, achievements, streaks, self-set goals) derived from the same log and hideable with one switch. Rewind is the animated year recap it launches. Per-series incognito keeps a title out of stats.

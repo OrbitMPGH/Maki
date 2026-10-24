@@ -11,16 +11,11 @@ export declare function PageHeader(props: {
   actions?: ReactNode
   /** Smaller title for operational pages. */
   compact?: boolean
+  className?: string
 }): JSX.Element
-
-export type PanelEdge = 'brand' | 'info' | 'ok' | 'warn' | 'danger' | 'strong'
 
 /** The house panel: bordered Paper, radius lg, padding lg, 1px card shadow. */
 export interface PanelProps extends PaperProps {
-  /** Draws the 2px accent rule. `strong` is the neutral border-strong variant. */
-  edge?: PanelEdge
-  /** Left drops the right border, top keeps all four. Default 'top'. */
-  edgeSide?: 'top' | 'left'
   children?: ReactNode
 }
 export declare const Panel: (props: PanelProps) => JSX.Element
@@ -67,6 +62,27 @@ export declare function FigureStrip(props: {
   middle?: ReactNode
   /** How many figures come before `middle`. Default: centred. */
   middleAfter?: number
+}): JSX.Element
+
+export interface DisclosureProps {
+  title: ReactNode
+  /** Badges how many things inside are set. Hidden at 0. */
+  count?: number
+  /** What a screen reader hears for `count`, translated. */
+  countLabel?: string
+  /** Up to two lines under the title, shown only while closed. */
+  summary?: ReactNode
+  opened: boolean
+  onToggle: () => void
+  children: ReactNode
+}
+export declare function Disclosure(props: DisclosureProps): JSX.Element
+
+/** The count on an icon button. Hidden at zero, `99+` past 99; the child is the ActionIcon. */
+export declare function CountIndicator(props: {
+  count: number
+  tone?: 'brand' | 'warn' | 'danger'
+  children: ReactNode
 }): JSX.Element
 
 /** A status as a coloured dot and a word. `tone` is a token stem. */
@@ -163,6 +179,8 @@ export declare const EngineCard: (props: {
   item: RecommendationItem
   inLibrarySeriesId: number | null
   onOpen: (item: RecommendationItem) => void
+  /** Cover of the library series this pick was seeded from. */
+  seedCoverUrl?: string | null
 }) => JSX.Element
 
 /** List-view card for an owned series. */
@@ -204,3 +222,19 @@ export declare function SurfaceFrame(props: ComponentPropsWithRef<'div'> & {
 
 /** A panel-table outline while rows load. */
 export declare function TableSkeleton(props: { columns: number; rows?: number }): JSX.Element
+
+/**
+ * A file name, path or id on one line. Too long for its column, it loses its middle, keeping the
+ * start and the extension; the full value is in a tooltip and, with `copy`, behind a copy button.
+ */
+export declare function MonoValue(props: {
+  value: string
+  /** Tooltip and copy value when the label is shorter, e.g. a file name standing for its path. */
+  full?: string
+  href?: string
+  copy?: boolean
+  /** Stops a table column collapsing to the tail. */
+  minWidth?: CSSProperties['minWidth']
+  fz?: CSSProperties['fontSize']
+  c?: CSSProperties['color']
+}): JSX.Element

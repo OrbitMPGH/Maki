@@ -50,10 +50,6 @@ export default function LanguageAnnouncementModal() {
       title={t`Maki speaks your language`}
       centered
       size="md"
-      // Mantine zeroes the body's top padding whenever the modal has a header, which leaves the
-      // first paragraph reading as part of the title. Put it back. The dialog is one short
-      // message; it can afford the room.
-      styles={{ body: { paddingTop: 'var(--mantine-spacing-lg)' } }}
     >
       <Stack gap="lg">
         <Group gap="sm" wrap="nowrap" align="flex-start">

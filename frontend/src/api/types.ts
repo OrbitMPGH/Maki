@@ -416,6 +416,7 @@ export interface QueueItemDto {
   origin: QueueOrigin
   /** Set only when `origin` is 'upgrade'. */
   upgrade: UpgradeQueueInfoDto | null
+  seriesCoverUrl: string | null
 }
 
 export interface QueueHistoryDto {
@@ -444,7 +445,7 @@ export interface QueuePauseEntry {
   until: string | null
 }
 
-/** What is paused on scraper downloads. Torrents already handed to qBittorrent are never part of it. */
+/** What is paused on scraper downloads. Torrents already handed to the download client are never part of it. */
 export interface QueuePauseDto {
   all: QueuePauseEntry | null
   sources: { sourceName: string; until: string | null }[]
@@ -500,6 +501,15 @@ export interface TorrentImportPlanDto {
   isUpgrade: boolean
   /** File names whose chapters are all at cutoff already; pre-ticked as Skip when `isUpgrade`. */
   suggestedSkips: string[]
+  /** Every chapter of the series in reading order, one per label, for the review's chapter map. */
+  chapters: ImportPlanChapterDto[]
+}
+
+export interface ImportPlanChapterDto {
+  label: string
+  number: number | null
+  /** Every row with this label is backed by a file today. */
+  hasFile: boolean
 }
 
 /** Matches the server's `ImportDecision`; sent verbatim. */

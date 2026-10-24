@@ -55,6 +55,11 @@ export interface SettingsEntry {
   /** Instance configuration: the server rejects these for a non-admin, so they are not rendered. */
   admin?: boolean
   permission?: Permission
+  /**
+   * Search only: a control inside another entry's card, which the palette lists by its own name.
+   * The page and the jump list skip it; the control carries the `setting-{id}` anchor itself.
+   */
+  within?: string
 }
 
 export const SETTINGS_TABS: SettingsTab[] = [
@@ -125,7 +130,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     tab: 'preferences',
     title: msg`Appearance`,
     keywords: msg({
-      message: `theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system`,
+      message: `theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, faster animations, speed, reduce motion`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -186,6 +191,15 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
+  {
+    id: 'push-notifications',
+    tab: 'preferences',
+    title: msg`Push notifications`,
+    keywords: msg({
+      message: `push, push notifications, phone notifications, desktop notifications, new chapters, notify this device`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
 
   {
     id: 'reader',
@@ -211,7 +225,26 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`OPDS catalogue`,
     permission: 'UseOpds',
     keywords: msg({
-      message: `feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress`,
+      message: `feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress, komga, tachimanga, api key`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'koreader-sync',
+    tab: 'reading',
+    title: msg`KOReader progress sync`,
+    permission: 'UseOpds',
+    keywords: msg({
+      message: `koreader, kosync, progress sync, sync server, offline, ereader, kobo, kindle, read progress`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'offline-reading',
+    tab: 'reading',
+    title: msg`Offline reading`,
+    keywords: msg({
+      message: `offline, save for offline, download to device, read offline, storage, install app, home screen, pwa`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -262,6 +295,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     admin: true,
     keywords: msg({
       message: `comicinfo, comicinfo.xml, cover.jpg, folder poster, library files, komga`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'page-conversion',
+    tab: 'library',
+    title: msg`Page conversion`,
+    admin: true,
+    keywords: msg({
+      message: `page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -367,22 +410,22 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
-    id: 'prowlarr',
+    id: 'indexer',
     tab: 'downloads',
-    title: msg`Prowlarr`,
+    title: msg`Indexer`,
     admin: true,
     keywords: msg({
-      message: `indexer, torrent search, api key, releases, indexers, torznab, categories`,
+      message: `indexer, prowlarr, jackett, torrent search, api key, releases, indexers, torznab, categories`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
   {
-    id: 'qbittorrent',
+    id: 'downloadclient',
     tab: 'downloads',
-    title: msg`qBittorrent`,
+    title: msg`Download client`,
     admin: true,
     keywords: msg({
-      message: `torrent client, category, path mapping, download client`,
+      message: `download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -453,7 +496,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Trackers`,
     permission: 'UseTrackers',
     keywords: msg({
-      message: `anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read`,
+      message: `anilist, myanimelist, mal, mangabaka, kitsu, mangaupdates, mu, trackers, oauth, client id, client secret, sync interval, plan to read`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -463,7 +506,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Import lists`,
     permission: 'UseTrackers',
     keywords: msg({
-      message: `import list, anilist, mal, kitsu, tracker, auto add`,
+      message: `import list, anilist, mal, kitsu, mangaupdates, mu, tracker, auto add`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -489,12 +532,33 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'user-mode',
+    tab: 'users',
+    title: msg`Single-user mode`,
+    admin: true,
+    within: 'users',
+    keywords: msg({
+      message: `requests, request, single user, multi user, multi-user, household, family, sharing, leaderboard, reader picker`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'security',
     tab: 'users',
     title: msg`Sign-in policy`,
     admin: true,
     keywords: msg({
       message: `lockout, failed attempts, session lifetime`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'signin-page',
+    tab: 'users',
+    title: msg`Sign-in page`,
+    admin: true,
+    keywords: msg({
+      message: `login page, background, covers, mosaic, wallpaper`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -540,6 +604,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'health',
+    tab: 'system',
+    title: msg`Library health`,
+    admin: true,
+    keywords: msg({
+      message: `health, scan, verify, reconciliation, scan hour, timezone, low disk, disk space, threshold, stale backup`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'updates',
     tab: 'system',
     title: msg`Updates`,
@@ -556,6 +630,8 @@ export const SETTINGS_ENTRY_ALIASES: Record<string, string> = {
   account: 'sign-in',
   'source-languages': 'languages',
   backups: 'backup',
+  prowlarr: 'indexer',
+  qbittorrent: 'downloadclient',
 }
 
 /** Old `tab` values. `connections` is still emitted by stored health notifications. */

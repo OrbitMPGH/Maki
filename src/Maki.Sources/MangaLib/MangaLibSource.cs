@@ -14,7 +14,7 @@ namespace Maki.Sources.MangaLib;
 /// translation branch as "{volume}|{number}|{branchId}" so <see cref="GetPagesAsync"/> can rebuild
 /// the per-chapter endpoint without a second series lookup. Image URLs come from the "download"
 /// image server (<c>/api/constants</c>), never "main": that one serves AVIF bytes under a
-/// <c>.jpg</c> name, which ImageSharp cannot decode.
+/// <c>.jpg</c> name, which would sit in the archive under a name that lies about its bytes.
 /// </summary>
 public partial class MangaLibSource(IHttpClientFactory httpClientFactory) : ISource
 {

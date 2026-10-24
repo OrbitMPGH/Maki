@@ -52,6 +52,12 @@ public class ImportListService(
     /// <summary>An Unmatched row older than this is dropped and its entry resolved again.</summary>
     public static readonly TimeSpan UnmatchedRetryAfter = TimeSpan.FromDays(7);
 
+    /// <summary>
+    /// The same for an entry whose MangaBaka id the local dump does not have yet: the series is
+    /// newer than the snapshot, and the next nightly snapshot will likely carry it.
+    /// </summary>
+    public static readonly TimeSpan NotInDumpRetryAfter = TimeSpan.FromDays(1);
+
     private readonly IScrobbleTracker[] _trackers = [.. trackers];
     private readonly ConcurrentDictionary<int, SemaphoreSlim> _userLocks = new();
     private readonly SemaphoreSlim _tickLock = new(1, 1);
@@ -304,9 +310,11 @@ public class ImportListService(
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
         var retryBefore = DateTime.UtcNow - UnmatchedRetryAfter;
+        var notInDumpRetryBefore = DateTime.UtcNow - NotInDumpRetryAfter;
         await db.ImportListSkips.IgnoreQueryFilters()
             .Where(x => x.UserId == user.Id && x.Service == tracker.Name &&
-                        x.Reason == ImportListSkipReason.Unmatched && x.CreatedAt < retryBefore)
+                        x.Reason == ImportListSkipReason.Unmatched &&
+                        (x.CreatedAt < retryBefore || (x.MangaBakaId != null && x.CreatedAt < notInDumpRetryBefore)))
             .ExecuteDeleteAsync(ct);
 
         var handled = await db.ImportListSkips.IgnoreQueryFilters().AsNoTracking()
@@ -326,6 +334,22 @@ public class ImportListService(
             fresh.Add(entry);
         }
 
+        // Every entry needs the dump, even one that already carries a MangaBaka id: adding or
+        // requesting the series reads its metadata from it. Not an error and not recorded as
+        // unmatched: nothing is wrong with the list, and the entries may well match once the local
+        // database is downloaded.
+        if (fresh.Count > 0 && !await store.IsAvailableAsync(ct))
+        {
+            if (!state.DumpNoticeLogged)
+            {
+                state.DumpNoticeLogged = true;
+                logger.LogInformation(
+                    "Import lists skipped: the local MangaBaka database is not downloaded yet");
+            }
+
+            return ImportListRunResult.Empty with { DumpUnavailable = true };
+        }
+
         var resolved = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var entry in fresh)
         {
@@ -336,38 +360,16 @@ public class ImportListService(
         }
 
         var unresolved = fresh.Where(e => !resolved.ContainsKey(e.RemoteId)).ToList();
-        var dumpMissing = false;
         if (unresolved.Count > 0)
         {
-            if (!await store.IsAvailableAsync(ct))
-            {
-                // Not an error and not recorded as unmatched: nothing is wrong with the list, and the
-                // entries may well match once the local database is downloaded.
-                if (!state.DumpNoticeLogged)
-                {
-                    state.DumpNoticeLogged = true;
-                    logger.LogInformation(
-                        "Import lists skipped: the local MangaBaka database is not downloaded yet, so tracker ids cannot be resolved");
-                }
+            await ResolveAsync(MangaBakaLocalStore.ExternalSource.AniList, e => e.AniListId);
+            await ResolveAsync(MangaBakaLocalStore.ExternalSource.MyAnimeList, e => e.MalId);
+            await ResolveAsync(MangaBakaLocalStore.ExternalSource.Kitsu, e => e.KitsuId);
+            await ResolveMangaUpdatesAsync();
 
-                // Entries that already carry a MangaBaka id need no dump, so they carry on.
-                if (resolved.Count == 0)
-                {
-                    return ImportListRunResult.Empty with { DumpUnavailable = true };
-                }
-
-                dumpMissing = true;
-            }
-            else
-            {
-                await ResolveAsync(MangaBakaLocalStore.ExternalSource.AniList, e => e.AniListId);
-                await ResolveAsync(MangaBakaLocalStore.ExternalSource.MyAnimeList, e => e.MalId);
-                await ResolveAsync(MangaBakaLocalStore.ExternalSource.Kitsu, e => e.KitsuId);
-
-                var unmatched = unresolved.Where(e => !resolved.ContainsKey(e.RemoteId)).ToList();
-                await RecordAsync(user.Id, tracker.Name, unmatched, ImportListSkipReason.Unmatched, null, ct);
-                skipped += unmatched.Count;
-            }
+            var unmatched = unresolved.Where(e => !resolved.ContainsKey(e.RemoteId)).ToList();
+            await RecordAsync(user.Id, tracker.Name, unmatched, ImportListSkipReason.Unmatched, null, ct);
+            skipped += unmatched.Count;
         }
 
         var candidates = new List<Candidate>();
@@ -420,7 +422,7 @@ public class ImportListService(
         var batch = full && canAdd ? candidates : candidates.Take(prefs.MaxPerRun).ToList();
         if (batch.Count == 0)
         {
-            return new(added, requested, skipped, present, errors, dumpMissing);
+            return new(added, requested, skipped, present, errors);
         }
 
         var rootFolderId = canAdd ? await RootFolderForAsync(db, user, prefs.RootFolderId, ct) : null;
@@ -429,7 +431,7 @@ public class ImportListService(
             logger.LogWarning(
                 "Import list {Service} for user {UserId}: no root folder available, nothing added",
                 tracker.Name, user.Id);
-            return new(added, requested, skipped, present, errors + 1, dumpMissing);
+            return new(added, requested, skipped, present, errors + 1);
         }
 
         var note = canAdd
@@ -456,8 +458,12 @@ public class ImportListService(
                         present += recorded - 1;
                         break;
                     case Outcome.Unmatched:
+                        // An id the dump has no row for keeps it on the row, which retries after
+                        // NotInDumpRetryAfter rather than a week. A row it has but declines (a novel)
+                        // will not change with the next snapshot.
+                        var notInDump = !await store.HasSeriesAsync(candidate.MangaBakaId, ct);
                         skipped += await RecordAsync(user.Id, tracker.Name, candidate.All,
-                            ImportListSkipReason.Unmatched, null, ct);
+                            ImportListSkipReason.Unmatched, notInDump ? candidate.MangaBakaId : null, ct);
                         break;
                     case Outcome.Removed:
                         skipped += await RecordAsync(user.Id, tracker.Name, candidate.All,
@@ -476,7 +482,7 @@ public class ImportListService(
             }
         }
 
-        return new(added, requested, skipped, present, errors, dumpMissing);
+        return new(added, requested, skipped, present, errors);
 
         async Task ResolveAsync(MangaBakaLocalStore.ExternalSource source, Func<RemoteListEntry, long?> key)
         {
@@ -488,6 +494,24 @@ public class ImportListService(
             foreach (var entry in pendingEntries)
             {
                 if (map.TryGetValue(key(entry)!.Value, out var mangaBakaId) && mangaBakaId is > 0 and <= int.MaxValue)
+                {
+                    resolved[entry.RemoteId] = (int)mangaBakaId;
+                }
+            }
+        }
+
+        async Task ResolveMangaUpdatesAsync()
+        {
+            var pendingEntries = unresolved
+                .Where(e => !resolved.ContainsKey(e.RemoteId) && !string.IsNullOrEmpty(e.MangaUpdatesId))
+                .ToList();
+            if (pendingEntries.Count == 0) return;
+
+            var map = await store.GetIdsByMangaUpdatesIdsAsync(pendingEntries.Select(e => e.MangaUpdatesId!).ToList(), ct);
+            foreach (var entry in pendingEntries)
+            {
+                if (map.TryGetValue(entry.MangaUpdatesId!.ToLowerInvariant(), out var mangaBakaId) &&
+                    mangaBakaId is > 0 and <= int.MaxValue)
                 {
                     resolved[entry.RemoteId] = (int)mangaBakaId;
                 }

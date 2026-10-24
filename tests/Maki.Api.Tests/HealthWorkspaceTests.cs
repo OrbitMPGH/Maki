@@ -5,6 +5,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Reflection;
@@ -13,8 +14,7 @@ using Maki.Api.Hubs;
 using Maki.Core.Reading;
 using Maki.Core.Tests;
 using Microsoft.Extensions.DependencyInjection;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using Maki.Core.Images;
 namespace Maki.Api.Tests;
 public class HealthWorkspaceTests : IDisposable
 {
@@ -101,13 +101,13 @@ public class HealthWorkspaceTests : IDisposable
             for (var i = 0; i < pages; i++)
             {
                 using var stream = zip.CreateEntry($"{i:000}.png").Open();
-                using var image = new Image<Rgba32>(16, 16);
+                var image = new Raster(16, 16);
                 // Distinct pages get their own gradient; the copies share one. 99 is outside the
                 // range the distinct pages use.
                 var seed = i >= pages - copies ? 99 : i + 1;
                 for (var y = 0; y < 16; y++)
-                for (var x = 0; x < 16; x++) image[x,y] = new Rgba32((byte)(x*seed), (byte)(y*seed), (byte)(seed*9));
-                image.SaveAsPng(stream);
+                for (var x = 0; x < 16; x++) image[x,y] = new Rgba((byte)(x*seed), (byte)(y*seed), (byte)(seed*9));
+                stream.Write(image.EncodePng());
             }
         }
         var file = new HealthFile { RootFolderId=folder.Id, RelativePath=name };
@@ -234,6 +234,21 @@ public class HealthWorkspaceTests : IDisposable
         Assert.Equal(Policies.Admin,typeof(HealthController).GetCustomAttribute<AuthorizeAttribute>()?.Policy);
         Assert.DoesNotContain(typeof(HealthController).GetMethods(),m=>m.GetCustomAttribute<AllowAnonymousAttribute>()!=null);
         Assert.Equal(Policies.Admin,typeof(SystemController).GetMethod("Health")!.GetCustomAttribute<AuthorizeAttribute>()?.Policy);
+    }
+    [Fact] public async Task Bulk_acknowledge_touches_only_the_named_checks_and_can_reopen_them()
+    {
+        using var db=fixture.NewContext();
+        db.HealthChecks.AddRange(
+            new HealthCheckRecord{Id="legacy:series:1",Category="library",Status="warning"},
+            new HealthCheckRecord{Id="legacy:series:2",Category="library",Status="warning"},
+            new HealthCheckRecord{Id="legacy:series:3",Category="library",Status="warning"});
+        await db.SaveChangesAsync();
+        var controller=new HealthController(db,null!,null!,null!,null!,null!,null!,null!,null!,null!);
+        var done=Assert.IsType<OkObjectResult>(await controller.AcknowledgeMany(new HealthController.CheckReviewMany(["legacy:series:1","legacy:series:2","missing"],true),default));
+        Assert.Equal(2,done.Value!.GetType().GetProperty("updated")!.GetValue(done.Value));
+        Assert.Equal(["legacy:series:1","legacy:series:2"],db.HealthChecks.Where(c=>c.Acknowledged).OrderBy(c=>c.Id).Select(c=>c.Id).ToList());
+        await controller.AcknowledgeMany(new HealthController.CheckReviewMany(["legacy:series:1","legacy:series:2"],false),default);
+        Assert.DoesNotContain(db.HealthChecks,c=>c.Acknowledged);
     }
     [Fact] public async Task Ignores_survive_rescan_but_new_content_reopens()
     {
@@ -377,7 +392,7 @@ public class HealthWorkspaceTests : IDisposable
             var relative=$".maki/health/{op.Id}/chapter-{chapter.Id}.cbz";
             var path=Path.Combine(root,relative);Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             using(var zip=ZipFile.Open(path,ZipArchiveMode.Create))
-            { using var stream=zip.CreateEntry("001.png").Open(); using var image=new Image<Rgba32>(8,8); image.SaveAsPng(stream); }
+            { using var stream=zip.CreateEntry("001.png").Open(); stream.Write(new Raster(8,8).EncodePng()); }
             var analysis=await ArchiveHealthAnalyzer.AnalyzeAsync(path,default,null,null,verify:true);
             candidates.Add(new(chapter.Id,relative,analysis.Hash!,analysis));
         }
@@ -392,13 +407,46 @@ public class HealthWorkspaceTests : IDisposable
             db.ReaderBookmarks.Add(new(){UserId=userId,SeriesId=chapters[0].SeriesId,ChapterId=chapters[0].Id,PageIndex=4});
             db.ChapterProgress.Add(new(){UserId=userId,SeriesId=chapters[0].SeriesId,ChapterId=chapters[0].Id,PageIndex=4,PageCount=5,Completed=true,ReadSeconds=120});
         }
-        await db.SaveChangesAsync();var op=await Stage(db,file);var service=Operations(db);
+        await db.SaveChangesAsync();SeedKoreaderId(chapters[0].ChapterFileId!.Value);var op=await Stage(db,file);var service=Operations(db);
         await Assert.ThrowsAnyAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,true,false,default));
         Assert.True(File.Exists(Path.Combine(root,"one.cbz")));
         await service.ApplyAsync(op.Id,file.Version,true,true,default);
         Assert.Equal("completed",op.Status);Assert.Equal(2,await db.ChapterFiles.CountAsync());Assert.Empty(db.ReaderBookmarks);
         Assert.All(db.ChapterProgress,p=>{Assert.Equal(0,p.PageIndex);Assert.True(p.Completed);Assert.Equal(120,p.ReadSeconds);});
         Assert.True(chapters[0].Wanted);Assert.False(chapters[1].Wanted);Assert.Empty(db.StatsEvents);
+        // The pages moved, so a copy of the old archive on a device no longer reads true.
+        Assert.Empty(db.KoreaderDocuments.AsNoTracking());
+    }
+    // Through a context of its own: one the service tracks would be cascaded by EF rather than by the database.
+    private void SeedKoreaderId(int chapterFileId)
+    {
+        using var db=fixture.NewContext();
+        db.KoreaderDocuments.Add(new(){ChapterFileId=chapterFileId,Kind=KoreaderDigestKind.Binary,Digest=new string('d',32),CreatedAt=DateTime.UtcNow});
+        db.SaveChanges();
+    }
+    [Fact] public async Task A_repair_that_keeps_every_page_in_place_moves_the_koreader_ids_to_the_replacement()
+    {
+        using var db=fixture.NewContext();
+        var folder=new RootFolder{Path=root};db.RootFolders.Add(folder);await db.SaveChangesAsync();
+        var path=Path.Combine(root,"one.cbz");
+        using(var zip=ZipFile.Open(path,ZipArchiveMode.Create))
+        {
+            using(var info=zip.CreateEntry("ComicInfo.xml").Open()) info.Write("<ComicInfo/>"u8);
+            using var page=zip.CreateEntry("001.png").Open(); page.Write(new Raster(8,8).EncodePng());
+        }
+        var series=new Series{Title="Kept pages",SortTitle="kept pages",RootFolderId=folder.Id,FolderName="Test"};db.Series.Add(series);await db.SaveChangesAsync();
+        var cf=new ChapterFile{SeriesId=series.Id,RelativePath="one.cbz",Size=new FileInfo(path).Length};db.ChapterFiles.Add(cf);await db.SaveChangesAsync();
+        db.Chapters.Add(new Chapter{SeriesId=series.Id,ChapterFileId=cf.Id,Number=1});
+        var file=new HealthFile{RootFolderId=folder.Id,RelativePath="one.cbz",ChapterFileId=cf.Id,SeriesId=series.Id};db.HealthFiles.Add(file);
+        await db.SaveChangesAsync();await new HealthScanService(db).AnalyzeAsync(file,root,true,default,0,true);
+        SeedKoreaderId(cf.Id);var op=await Stage(db,file);
+
+        await Operations(db).ApplyAsync(op.Id,file.Version,true,false,default);
+
+        Assert.Equal("completed",op.Status);
+        var replacement=await db.ChapterFiles.SingleAsync();
+        Assert.NotEqual(cf.Id,replacement.Id);
+        Assert.Equal(replacement.Id,(await db.KoreaderDocuments.AsNoTracking().SingleAsync()).ChapterFileId);
     }
     [Fact] public async Task Changed_candidate_is_rejected_before_original_is_moved()
     {

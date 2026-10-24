@@ -1,5 +1,7 @@
 using Maki.Api.Controllers;
 using Maki.Api.Dtos;
+using Maki.Api.Services;
+using Maki.Data;
 using Maki.Core.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +19,9 @@ public class TagsControllerTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private TagsController Controller() => new(new TestLocalizer(), _db.NewContext());
+    private TagsController Controller() => NewController(_db.NewContext());
+
+    private static TagsController NewController(MakiDbContext db) => new(new TestLocalizer(), db, new TagService(db));
 
     private static T Body<T>(IActionResult result) => (T)((OkObjectResult)result).Value!;
 
@@ -73,7 +77,7 @@ public class TagsControllerTests : IDisposable
             await db.SaveChangesAsync();
         }
 
-        var controller = new TagsController(new TestLocalizer(), _db.NewContext(restricted, allRootFolders: false));
+        var controller = NewController(_db.NewContext(restricted, allRootFolders: false));
         var tags = Body<IEnumerable<TagDto>>(await controller.List(CancellationToken.None)).ToList();
 
         Assert.Equal(0, tags.Single(t => t.Id == tag.Id).SeriesCount);

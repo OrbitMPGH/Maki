@@ -590,6 +590,41 @@ public sealed class VectorIndex(
     }
 
     /// <summary>
+    /// Whether a series this index does not hold carries a never-show term, judged on its own genres
+    /// and tags from the dump. Terms resolve through this index's vocabularies, so a subtag or
+    /// central-only term means what it means on a row; a tag name the index does not know still
+    /// hides by name.
+    /// </summary>
+    public bool IsHidden(
+        IReadOnlyList<CatalogueTerm> hidden, IReadOnlyCollection<string> genres,
+        IReadOnlyList<(int Id, string Name, byte Class)> tags)
+    {
+        foreach (var term in hidden)
+        {
+            if (term.Kind == CatalogueRules.Genre)
+            {
+                if (genres.Contains(term.Name, StringComparer.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                continue;
+            }
+
+            var ids = ResolveTerm(term)?.TagIds;
+            var minClass = term.Central ? TagMath.Defining : TagMath.Unweighted;
+            if (tags.Any(t => t.Class >= minClass &&
+                    ((ids is not null && Array.BinarySearch(ids, t.Id) >= 0) ||
+                     string.Equals(t.Name, term.Name, StringComparison.OrdinalIgnoreCase))))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Builds a per-row allow mask from a set of MangaBaka ids, for
     /// <see cref="FilterPlan.CreditMask"/>. Ids this index does not carry are simply absent from
     /// the mask, which is the right answer: an unrated or novel series is not searchable here

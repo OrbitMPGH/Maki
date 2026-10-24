@@ -2,15 +2,26 @@ import type { MessageDescriptor } from '@lingui/core'
 import type { Icon } from '@tabler/icons-react'
 import { isRailKey, railIdOf, type PageSection, type RailKey } from '../../api/hooks'
 
+/** One of a section's own switches, as the layout editor draws it. */
+export interface SectionOptionDef {
+  key: string
+  label: MessageDescriptor
+  description?: MessageDescriptor
+  /** Only does anything while the section leads with a hero, so the switch waits for that one. */
+  hero?: boolean
+}
+
 /** What the layout editor knows about one built-in section. */
 export interface SectionDef {
   icon: Icon
   label: MessageDescriptor
   description?: MessageDescriptor
-  /** Offers the "large tiles" switch. */
+  /** Offers the hero switch. */
   hero?: boolean
   /** The section's panels, each with its own switch. */
   panels?: readonly { key: string; label: MessageDescriptor }[]
+  /** The section's own switches, in the order they are shown. */
+  options?: readonly SectionOptionDef[]
 }
 
 export type SectionRegistry = Record<string, SectionDef>
@@ -20,6 +31,8 @@ export interface LayoutConfig {
   canonical: readonly string[]
   heroDefaults: Record<string, boolean>
   panels: Record<string, readonly string[]>
+  /** Sections with switches of their own, and each switch's default. */
+  options: Record<string, Record<string, boolean>>
   /** Where a rail the layout has not seen goes: after the last rail, or before this key. Null = at the end. */
   railAnchor: string | null
 }
@@ -49,9 +62,13 @@ export function reconcileLayout(
   const out: PageSection[] = []
   const normalize = (s: PageSection): PageSection => {
     const panels = config.panels[s.key]
+    const options = config.options[s.key]
     return {
       ...s,
       hero: s.key in config.heroDefaults ? (s.hero ?? config.heroDefaults[s.key]) : null,
+      options: options
+        ? Object.fromEntries(Object.entries(options).map(([key, fallback]) => [key, s.options?.[key] ?? fallback]))
+        : null,
       panels: panels
         ? [
             ...(s.panels ?? []).filter((p) => panels.includes(p.key)),
@@ -81,7 +98,7 @@ export function reconcileLayout(
     const key: RailKey = `rail:${id}`
     if (seen.has(key)) continue
     seen.add(key)
-    out.splice(railInsertAt(out, config.railAnchor), 0, { key, enabled: true, hero: null, panels: null })
+    out.splice(railInsertAt(out, config.railAnchor), 0, { key, enabled: true, hero: null, panels: null, options: null })
   }
   return out
 }

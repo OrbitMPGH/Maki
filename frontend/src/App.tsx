@@ -1,31 +1,29 @@
 import {
   ActionIcon,
   AppShell,
-  Badge,
   Box,
   Burger,
   Center,
   Group,
-  Indicator,
   Loader,
-  Popover,
   ScrollArea,
   Stack,
   Text,
   Tooltip,
 } from '@mantine/core'
-import { useDisclosure } from '@mantine/hooks'
+import { useDisclosure, useMediaQuery } from '@mantine/hooks'
 import {
-  IconAlertTriangle,
   IconArrowLeft,
   IconDownload,
-  IconHeartbeat,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
 } from '@tabler/icons-react'
-import { lazy, Suspense, useEffect } from 'react'
+import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
   useHealth,
   useMetadataSettings,
+  usePrefetchSeriesOnHover,
   useQueueSummary,
   useSetupStatus,
   useUiSettings,
@@ -34,10 +32,15 @@ import { usePendingRequestCount } from './api/requests'
 import { useLiveEvents } from './api/signalr'
 import { AuthProvider, useAuth } from './auth/AuthProvider'
 import { LoginPage } from './pages/LoginPage'
+import { OfflineStartPage } from './auth/OfflineStartPage'
+import { OfflineBanner } from './components/OfflineBanner'
+import { OfflineSync } from './pwa/OfflineSync'
 import { SetupAccountPage } from './pages/SetupAccountPage'
-import CommandPalette from './components/CommandPalette'
+import MetadataGatePage from './pages/MetadataGatePage'
+import { CommandPaletteModal, CommandPaletteTrigger } from './components/CommandPalette'
 import { IconBrandMark } from './components/IconBrandMark'
 import { NotificationBell } from './components/NotificationBell'
+import { CountIndicator } from './components/ui/CountIndicator'
 import MetadataDumpProgress from './components/MetadataDumpProgress'
 import SetupWizard from './components/SetupWizard'
 import SidebarFooter from './components/layout/SidebarFooter'
@@ -49,10 +52,11 @@ import { EmptyState } from './components/ui/EmptyState'
 import { RouteErrorBoundary } from './components/RouteErrorBoundary'
 import { useLanguageSync } from './i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, type NavItem } from './nav'
-import { ShellTitleProvider, useShellTitleValue } from './lib/shellTitle'
 import { DocumentTitle, DocumentTitleProvider } from './lib/documentTitle'
+import { lazyRoute, preloadRoutes } from './lib/routePreload'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
 // (StartPageRedirect), so splitting them would only add a round trip to the first paint.
 import HomePage from './pages/HomePage'
@@ -61,28 +65,28 @@ import LibraryPage from './pages/LibraryPage'
 // Everything else is reached by a navigation, so it can arrive as its own chunk instead of riding
 // in the initial bundle. Stats in particular pulls @mantine/charts and recharts, and Settings and
 // Discover are the two largest pages in the app, and none of which someone landing on Home needs.
-const SeriesDetailPage = lazy(() => import('./pages/SeriesDetailPage'))
-const AddSeriesPage = lazy(() => import('./pages/AddSeriesPage'))
-const CreatorPage = lazy(() => import('./pages/CreatorPage'))
-const ActivityPage = lazy(() => import('./pages/ActivityPage'))
-const RequestsPage = lazy(() => import('./pages/RequestsPage'))
-const DiscoverPage = lazy(() => import('./pages/DiscoverPage'))
-const ImportPage = lazy(() => import('./pages/ImportPage'))
-const ScrobblePage = lazy(() => import('./pages/ScrobblePage'))
-const StatsPage = lazy(() => import('./pages/StatsPage'))
-const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
-const SettingsPage = lazy(() => import('./pages/SettingsPage'))
-const HealthPage = lazy(() => import('./pages/HealthPage'))
-const ReaderPage = lazy(() => import('./pages/reader/ReaderPage'))
+const SeriesDetailPage = lazyRoute(() => import('./pages/SeriesDetailPage'))
+const AddSeriesPage = lazyRoute(() => import('./pages/AddSeriesPage'))
+const CreatorPage = lazyRoute(() => import('./pages/CreatorPage'))
+const ActivityPage = lazyRoute(() => import('./pages/ActivityPage'))
+const RequestsPage = lazyRoute(() => import('./pages/RequestsPage'))
+const DiscoverPage = lazyRoute(() => import('./pages/DiscoverPage'))
+const ImportPage = lazyRoute(() => import('./pages/ImportPage'))
+const ScrobblePage = lazyRoute(() => import('./pages/ScrobblePage'))
+const StatsPage = lazyRoute(() => import('./pages/StatsPage'))
+const NotificationsPage = lazyRoute(() => import('./pages/NotificationsPage'))
+const SettingsPage = lazyRoute(() => import('./pages/SettingsPage'))
+const HealthPage = lazyRoute(() => import('./pages/HealthPage'))
+const ReaderPage = lazyRoute(() => import('./pages/reader/ReaderPage'))
 
-function ShellTitle() {
-  const title = useShellTitleValue()
-  if (!title) return null
-  return (
-    <Text fw={650} fz="md" visibleFrom="sm" truncate className="app-header-title">
-      {title}
-    </Text>
-  )
+const NAV_COLLAPSED_KEY = 'sidebar-collapsed'
+
+function readNavCollapsed(): boolean {
+  try {
+    return localStorage.getItem(NAV_COLLAPSED_KEY) === '1'
+  } catch {
+    return false
+  }
 }
 
 function NotFoundPage() {
@@ -117,7 +121,7 @@ function NavLinks({
   sections: ReturnType<typeof navSections>
   onNavigate?: () => void
   /** Path → count. A zero or missing entry draws no badge. */
-  badges?: Record<string, number>
+  badges?: Record<string, { count: number; tone?: 'warn' | 'danger' }>
 }) {
   const { pathname } = useLocation()
   const { _ } = useLinguiReact()
@@ -129,7 +133,8 @@ function NavLinks({
             {_(section.label)}
           </Text>
           {section.items.map((item) => {
-            const count = badges?.[item.path] ?? 0
+            const count = badges?.[item.path]?.count ?? 0
+            const tone = badges?.[item.path]?.tone
             return (
               <Link
                 key={item.path}
@@ -141,7 +146,9 @@ function NavLinks({
                 <item.icon size={18} stroke={1.7} className="nav-icon" />
                 {_(item.label)}
                 {count > 0 && (
-                  <span className="nav-count tnum">{count > 99 ? '99+' : count}</span>
+                  <span className="nav-count tnum" data-tone={tone}>
+                    {count > 99 ? '99+' : count}
+                  </span>
                 )}
               </Link>
             )
@@ -149,62 +156,6 @@ function NavLinks({
         </Stack>
       ))}
     </Stack>
-  )
-}
-
-function HealthButton() {
-  const { t } = useLingui()
-  const { data: health } = useHealth()
-  if (!health || health.length === 0) return null
-  const hasError = health.some((h) => h.severity === 'error')
-  return (
-    <Popover width={340} position="bottom-end" withArrow shadow="md">
-      <Popover.Target>
-        <Indicator
-          size={16}
-          color={hasError ? 'var(--danger)' : 'var(--warn)'}
-          label={health.length}
-          withBorder
-          className="count-indicator"
-        >
-          <ActionIcon
-            variant="subtle"
-            color={hasError ? 'var(--danger)' : 'var(--warn)'}
-            aria-label={t`Health issues`}
-          >
-            <IconAlertTriangle size={19} />
-          </ActionIcon>
-        </Indicator>
-      </Popover.Target>
-      <Popover.Dropdown>
-        <Group gap={6} mb="xs">
-          <IconHeartbeat size={16} />
-          <Text fw={650} size="sm">
-            <Trans>Health</Trans>
-          </Text>
-          <Text component={Link} to="/health" size="sm">
-            <Trans>Open Health</Trans>
-          </Text>
-        </Group>
-        <Stack gap="xs">
-          {health.map((issue, i) => (
-            <Group key={`${issue.type}-${i}`} gap="xs" wrap="nowrap" align="flex-start">
-              <Badge
-                size="xs"
-                color={issue.severity === 'error' ? 'var(--danger)' : 'var(--warn)'}
-                variant="light"
-                mt={2}
-              >
-                {issue.severity === 'error' ? <Trans>Error</Trans> : <Trans>Warning</Trans>}
-              </Badge>
-              <Text size="xs" c="var(--ink-3)">
-                {issue.message}
-              </Text>
-            </Group>
-          ))}
-        </Stack>
-      </Popover.Dropdown>
-    </Popover>
   )
 }
 
@@ -216,6 +167,18 @@ function ActivityButton() {
   // own, this does not, and the count is the only thing telling anyone it is there.
   const review = summary?.awaitingImport ?? 0
   const count = review > 0 ? review : active
+  const accessibleName =
+    review > 0
+      ? plural(review, {
+          one: 'Activity, # download waiting for an import decision',
+          other: 'Activity, # downloads waiting for an import decision',
+        })
+      : active > 0
+        ? plural(active, {
+            one: 'Activity, # download in progress',
+            other: 'Activity, # downloads in progress',
+          })
+        : t`Activity`
   return (
     <Tooltip
       label={
@@ -230,38 +193,17 @@ function ActivityButton() {
       }
       withArrow
     >
-      <ActionIcon
-        component={Link}
-        to="/activity"
-        variant="subtle"
-        color="var(--neutral)"
-        aria-label={t`Activity`}
-        pos="relative"
-        style={{ overflow: 'visible' }}
-      >
-        <IconDownload size={19} />
-        {count > 0 && (
-          <Badge
-            size="xs"
-            variant="filled"
-            color={review > 0 ? 'var(--warn)' : 'brand'}
-            c={review > 0 ? 'var(--warn-on)' : undefined}
-            // A `circle` badge clips 2+ digit counts against its radius; a pill that grows
-            // horizontally (with a floor width so single digits still read as a dot) doesn't.
-            style={{
-              position: 'absolute',
-              top: -6,
-              right: -6,
-              minWidth: 16,
-              padding: '0 4px',
-              pointerEvents: 'none',
-            }}
-            className="tnum"
-          >
-            {count > 99 ? '99+' : count}
-          </Badge>
-        )}
-      </ActionIcon>
+      <CountIndicator count={count} tone={review > 0 ? 'warn' : 'brand'}>
+        <ActionIcon
+          component={Link}
+          to="/activity"
+          variant="subtle"
+          color="var(--neutral)"
+          aria-label={accessibleName}
+        >
+          <IconDownload size={19} />
+        </ActionIcon>
+      </CountIndicator>
     </Tooltip>
   )
 }
@@ -288,7 +230,7 @@ function App() {
  */
 function AuthGate() {
   const location = useLocation()
-  const { me, loading, setupNeeded } = useAuth()
+  const { me, loading, setupNeeded, offline } = useAuth()
 
   if (loading) {
     return <RouteFallback />
@@ -299,7 +241,7 @@ function AuthGate() {
   }
 
   if (!me) {
-    return <LoginPage />
+    return offline ? <OfflineStartPage /> : <LoginPage />
   }
 
   // The reader owns the whole viewport, so it renders outside the AppShell rather than inside
@@ -311,20 +253,51 @@ function AuthGate() {
   return (
     <DocumentTitleProvider>
       <LiveEvents />
+      <OfflineSync />
       <DocumentTitle />
-      {inReader ? (
-        <RouteErrorBoundary>
-          <Suspense fallback={<RouteFallback />}>
-            <Routes>
-              <Route path="/read/:chapterId" element={<ReaderPage />} />
-            </Routes>
-          </Suspense>
-        </RouteErrorBoundary>
-      ) : (
-        <AppShellRoutes />
-      )}
+      <MetadataGate>
+        {inReader ? (
+          <RouteErrorBoundary>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route path="/read/:chapterId" element={<ReaderPage />} />
+              </Routes>
+            </Suspense>
+          </RouteErrorBoundary>
+        ) : (
+          <AppShellRoutes />
+        )}
+      </MetadataGate>
     </DocumentTitleProvider>
   )
+}
+
+/** What an admin can still open while the dump is missing: enough to find out why and fix it. */
+function openToAdminsWithoutDump(pathname: string) {
+  return ['/settings', '/health'].some((p) => pathname === p || pathname.startsWith(`${p}/`))
+}
+
+/**
+ * Holds the app back until the local MangaBaka database is installed, since nothing falls back to
+ * the API any more. The reader stays open to everyone, since chapters on disk need no metadata, and
+ * Settings and Health stay open to admins. Everything else, "/" included, lands on the gate page
+ * rather than redirecting, so StartPageRedirect cannot loop. An admin still in the setup guide is
+ * let through: the guide owns the screen, shows the download, and its Finish waits for it. A failed
+ * or loading query lets the app through like the other shell flags do, so an offline start still
+ * reaches saved chapters.
+ */
+function MetadataGate({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation()
+  const { can } = useAuth()
+  const isAdmin = can('Admin')
+  const { data: metadata } = useMetadataSettings()
+  const { data: setup } = useSetupStatus()
+
+  if (metadata?.dumpPresent !== false) return children
+  if (pathname.startsWith('/read/')) return children
+  if (isAdmin && setup === undefined) return <RouteFallback />
+  if (isAdmin && (!setup?.completed || openToAdminsWithoutDump(pathname))) return children
+  return <MetadataGatePage />
 }
 
 function LiveEvents() {
@@ -335,11 +308,85 @@ function LiveEvents() {
 function AppShellRoutes() {
   const location = useLocation()
   const navigate = useNavigate()
-  const [opened, { toggle, close }] = useDisclosure()
+  usePrefetchSeriesOnHover()
+  useEffect(() => preloadRoutes(), [])
+  const [pinned, { open: openPinned, close: closePinned }] = useDisclosure()
+  // A mouse resting on the burger opens the drawer without pinning it, and leaving the burger and
+  // the drawer closes it again. Touch and keyboard never peek: a tap fires pointerenter too, and
+  // would open the drawer only for the click that follows to close it.
+  const [peeking, setPeeking] = useState(false)
+  const peekTimer = useRef(0)
+  // How the drawer last opened, which picks its transition: a peek fades in where it stands, a
+  // press slides the whole drawer in.
+  const [reveal, setReveal] = useState<'hover' | 'press'>('press')
+  const opened = pinned || peeking
+  const close = () => {
+    window.clearTimeout(peekTimer.current)
+    setPeeking(false)
+    closePinned()
+  }
+  // A mouse always enters the burger before it clicks it, so the click lands on a drawer the hover
+  // already opened. Closing it then would flash the drawer open and shut; the click pins it instead,
+  // and a second click closes it.
+  const toggle = () => {
+    if (pinned) close()
+    else {
+      if (!peeking) setReveal('press')
+      close()
+      openPinned()
+    }
+  }
+  const peekEnter = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse') return
+    window.clearTimeout(peekTimer.current)
+    if (!opened) setReveal('hover')
+    setPeeking(true)
+  }
+  // The delay carries the pointer across the gap between the burger and the drawer below it. The
+  // drawer's user and help menus open in portals outside it, so the peek holds while one is open.
+  const endPeek = () => {
+    if (navbarRef.current?.querySelector('[aria-expanded="true"]')) {
+      peekTimer.current = window.setTimeout(endPeek, 250)
+    } else setPeeking(false)
+  }
+  const peekLeave = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse') return
+    window.clearTimeout(peekTimer.current)
+    peekTimer.current = window.setTimeout(endPeek, 250)
+  }
+  useEffect(() => () => window.clearTimeout(peekTimer.current), [])
+  // Per device rather than per account: the same person wants the column on a desktop monitor and
+  // the room on a tablet.
+  const [navCollapsed, setNavCollapsed] = useState(readNavCollapsed)
+  // The page's padding animates only while the sidebar folds or unfolds; see `[data-nav-moving]`.
+  const [navMoving, setNavMoving] = useState(false)
+  const navMovingTimer = useRef(0)
+  useEffect(() => () => window.clearTimeout(navMovingTimer.current), [])
+  const toggleNavCollapsed = () => {
+    const next = !navCollapsed
+    setNavCollapsed(next)
+    setNavMoving(true)
+    window.clearTimeout(navMovingTimer.current)
+    navMovingTimer.current = window.setTimeout(() => setNavMoving(false), 400)
+    close()
+    try {
+      if (next) localStorage.setItem(NAV_COLLAPSED_KEY, '1')
+      else localStorage.removeItem(NAV_COLLAPSED_KEY)
+    } catch {
+      /* private mode: collapsed for this visit only */
+    }
+  }
+  const phone = useMediaQuery('(max-width: 47.9375em)', false, { getInitialValueInEffect: false })
+  // The navbar is a column on desktop and a drawer on phones and when collapsed; only the drawer
+  // can be closed, and a closed one is only translated off-screen, so it has to be taken out of
+  // the tab order explicitly.
+  const drawerClosed = (navCollapsed || phone) && !opened
+  const navbarRef = useRef<HTMLDivElement>(null)
+  const burgerRef = useRef<HTMLButtonElement>(null)
   const { data: setup } = useSetupStatus()
   const { data: metadata, isError: metadataFailed } = useMetadataSettings()
   const { data: ui } = useUiSettings()
-  const { can } = useAuth()
+  const { can, singleUser } = useAuth()
   const { t } = useLingui()
   // localStorage decided the first paint; the stored preference is what follows the user here.
   useLanguageSync(ui?.language)
@@ -348,7 +395,7 @@ function AppShellRoutes() {
   // on every visit. HomePage takes the opposite default for its own data, see the note there.
   // A failed settings request counts as unavailable, so the start page falls through to Home or the
   // library instead of waiting on an answer that is not coming.
-  const discoverAvailable = metadata ? metadata.useLocalDb && metadata.dumpPresent : !metadataFailed
+  const discoverAvailable = metadata ? metadata.dumpPresent : !metadataFailed
   const homeEnabled = ui ? ui.homeLayout.enabled : true
   const isAdmin = can('Admin')
   const canAdd = can('AddSeries')
@@ -363,10 +410,17 @@ function AppShellRoutes() {
     canTrack,
     // An admin works the queue; anyone who has to ask for a series or a download wants to see what
     // happened to what they asked for. Someone holding both permissions never files one.
-    requestsVisible: isAdmin || !canAdd || !can('DownloadChapters'),
+    requestsVisible: !singleUser && (isAdmin || !canAdd || !can('DownloadChapters')),
   })
   const allItems: NavItem[] = sections.flatMap((s) => s.items)
-  const { data: pendingRequests } = usePendingRequestCount(isAdmin)
+  // The places someone reads from, in the collapsed header, so the drawer is only for the rest.
+  const quickItems = allItems.filter((i) => ['/home', '/library', '/discover'].includes(i.path))
+  const { _ } = useLinguiReact()
+  const { data: pendingRequests } = usePendingRequestCount(isAdmin && !singleUser)
+  const { data: health } = useHealth(isAdmin)
+  const healthIssues = health?.length ?? 0
+  const healthTone = health?.some((h) => h.severity === 'error') ? 'danger' : 'warn'
+  const [paletteOpened, { open: openPalette, close: closePalette }] = useDisclosure(false)
 
   useEffect(() => {
     // Send anyone sitting on a page that has just become unavailable back through "/", which
@@ -379,36 +433,97 @@ function AppShellRoutes() {
     }
   }, [discoverAvailable, homeEnabled, location.pathname, navigate])
 
+  // Focus moves in only for a drawer someone asked for; a peek under a passing mouse must not take it.
+  useEffect(() => {
+    if (pinned) navbarRef.current?.querySelector<HTMLElement>('a.nav-link[href]')?.focus()
+  }, [pinned])
+
+  useEffect(() => {
+    if (!opened) return
+    const navbar = navbarRef.current
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      // Focus elsewhere (a popover, a modal, a field in the page) means Escape is meant for that.
+      const active = document.activeElement
+      const inDrawer = !!active && (navbar?.contains(active) || burgerRef.current?.contains(active))
+      if (!inDrawer && active && active !== document.body) return
+      window.clearTimeout(peekTimer.current)
+      setPeeking(false)
+      closePinned()
+      if (navbar?.contains(document.activeElement)) burgerRef.current?.focus()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [opened, closePinned])
+
   return (
-    <ShellTitleProvider>
     <AppShell
-      header={{ height: 58 }}
-      navbar={{ width: 232, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      header={{ height: navCollapsed ? 58 : { base: 58, sm: 0 } }}
+      // Collapsed means the phone layout at every width: a breakpoint no screen reaches keeps
+      // Mantine in its mobile mode, where the navbar is an overlay and the page keeps its width.
+      navbar={{ width: 232, breakpoint: navCollapsed ? 100000 : 'sm', collapsed: { mobile: !opened } }}
       padding="lg"
+      className={navCollapsed ? 'nav-collapsed' : undefined}
+      data-nav-moving={navMoving || undefined}
     >
-      <AppShell.Header className="app-header">
-        <Group h="100%" px="md" justify="space-between" wrap="nowrap">
+      {/* Focuses rather than following the hash, which the router would keep in the URL. */}
+      <a
+        href="#main"
+        className="skip-link"
+        onClick={(e) => {
+          e.preventDefault()
+          document.getElementById('main')?.focus()
+        }}
+      >
+        <Trans>Skip to content</Trans>
+      </a>
+      {/* Phone, or a collapsed sidebar. Otherwise the sidebar carries search, downloads and the
+          bell, so the page starts at the top edge of the window. */}
+      <AppShell.Header className="app-header" hiddenFrom={navCollapsed ? undefined : 'sm'}>
+        <Group h="100%" className="app-header-row" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
             <Burger
+              ref={burgerRef}
               opened={opened}
               onClick={toggle}
-              hiddenFrom="sm"
+              onPointerEnter={peekEnter}
+              onPointerLeave={peekLeave}
               size="sm"
               aria-label={t`Menu`}
               aria-expanded={opened}
+              aria-controls="app-navbar"
             />
-            <Group gap="sm" wrap="nowrap" hiddenFrom="sm">
-              <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
-                <IconBrandMark />
-              </span>
-            </Group>
-            <ShellTitle />
+            <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
+              <IconBrandMark />
+            </span>
+            {navCollapsed && (
+              <Group component="nav" gap={4} wrap="nowrap" visibleFrom="sm" aria-label={t`Quick links`}>
+                {quickItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className="app-header-link"
+                    data-active={isActive(item, location.pathname)}
+                  >
+                    <item.icon size={18} stroke={1.7} />
+                    {_(item.label)}
+                  </Link>
+                ))}
+              </Group>
+            )}
           </Group>
-          <Group gap={4} wrap="nowrap">
-            <CommandPalette navItems={allItems} />
+          <Group gap={4} wrap="nowrap" className="app-header-actions">
+            {/* A tablet has the room for the full field; a phone keeps the icon. */}
+            {navCollapsed && (
+              <Box visibleFrom="sm" className="app-header-search">
+                <CommandPaletteTrigger onOpen={openPalette} />
+              </Box>
+            )}
+            <Box hiddenFrom={navCollapsed ? 'sm' : undefined}>
+              <CommandPaletteTrigger onOpen={openPalette} variant="icon" />
+            </Box>
             <ActivityButton />
             <NotificationBell />
-            {isAdmin && <HealthButton />}
           </Group>
         </Group>
       </AppShell.Header>
@@ -417,42 +532,77 @@ function AppShellRoutes() {
           one there is nowhere to tap to dismiss it except the burger. `hiddenFrom` rather than a
           media query so it can never appear over the desktop layout, where the navbar is a
           column and nothing is covered. */}
-      {opened && <Box className="nav-scrim" hiddenFrom="sm" onClick={close} />}
+      {pinned && (
+        <Box className="nav-scrim" hiddenFrom={navCollapsed ? undefined : 'sm'} onClick={close} />
+      )}
 
-      <AppShell.Navbar className="app-navbar" px={12} pt={16} pb={12}>
-        <Group gap={10} mb={18} px={4} wrap="nowrap">
+      <AppShell.Navbar
+        ref={navbarRef}
+        id="app-navbar"
+        className="app-navbar"
+        inert={drawerClosed}
+        data-reveal={navCollapsed || phone ? reveal : undefined}
+        data-open={opened || undefined}
+        onPointerEnter={peeking ? peekEnter : undefined}
+        onPointerLeave={peeking ? peekLeave : undefined}
+      >
+        <Group gap={10} mb={14} px={4} wrap="nowrap">
           <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
             <IconBrandMark />
           </span>
           <Text fz="var(--type-section)" lh={1} c="var(--ink-hi)" className="brand-wordmark">
             Maki
           </Text>
+          <Tooltip label={navCollapsed ? t`Keep sidebar open` : t`Collapse sidebar`} withArrow>
+            <ActionIcon
+              visibleFrom="sm"
+              variant="subtle"
+              color="var(--neutral)"
+              className="nav-collapse-toggle"
+              onClick={toggleNavCollapsed}
+              aria-label={navCollapsed ? t`Keep sidebar open` : t`Collapse sidebar`}
+            >
+              {navCollapsed ? <IconLayoutSidebarLeftExpand size={19} /> : <IconLayoutSidebarLeftCollapse size={19} />}
+            </ActionIcon>
+          </Tooltip>
         </Group>
-        <AppShell.Section grow component={ScrollArea} type="never">
+        {!navCollapsed && (
+          <Box visibleFrom="sm">
+            <CommandPaletteTrigger onOpen={openPalette} />
+          </Box>
+        )}
+        <AppShell.Section grow component={ScrollArea} type="never" mt={14}>
           <NavLinks
             sections={sections}
             onNavigate={close}
-            badges={{ '/requests': pendingRequests?.count ?? 0 }}
+            badges={{
+              '/requests': { count: pendingRequests?.count ?? 0 },
+              '/health': { count: healthIssues, tone: healthTone },
+            }}
           />
         </AppShell.Section>
         <AppShell.Section>
-          <SidebarFooter onNavigate={close} />
+          <SidebarFooter
+            onNavigate={close}
+            actions={
+              navCollapsed ? undefined : (
+                <Group gap={2} wrap="nowrap" visibleFrom="sm">
+                  <ActivityButton />
+                  <NotificationBell position="top-start" />
+                </Group>
+              )
+            }
+          />
         </AppShell.Section>
       </AppShell.Navbar>
 
-      {/* Zeroes the shell padding for the pages whose hero band bleeds to the window edges: the
-          series page and Discover's browse tab. Written as "Discover, but not its other two tabs"
-          rather than "/discover exactly", because DiscoverPage falls back to the browse tab for any
-          unrecognised :tab: a stale /discover/genres link lands on the band and has to bleed like
-          the canonical URL does. Recommended and Your Taste have no band and keep their padding. */}
+      {/* Zeroes the shell padding on the series page, whose hero band bleeds to the window edges. */}
       <AppShell.Main
-        className={
-          /^\/series\/\d+(?:\/|$)/.test(location.pathname) ||
-          /^\/discover(?!\/(?:recommended|taste)(?:\/|$))/.test(location.pathname)
-            ? 'app-main-hero'
-            : undefined
-        }
+        className={/^\/series\/\d+(?:\/|$)/.test(location.pathname) ? 'app-main-hero' : undefined}
+        id="main"
+        tabIndex={-1}
       >
+        <OfflineBanner />
         {/* One boundary around the whole switch rather than one per lazy route: only a single
             route is ever resolving, and a shared fallback keeps the loader identical everywhere.
             The error boundary sits inside the shell on purpose, so a page that throws leaves the
@@ -503,6 +653,13 @@ function AppShellRoutes() {
         </RouteErrorBoundary>
       </AppShell.Main>
 
+      <CommandPaletteModal
+        navItems={allItems}
+        opened={paletteOpened}
+        onOpen={openPalette}
+        onClose={closePalette}
+      />
+
       {/* Opens itself off the setup flag, latched so a language pick's cache clear can't close it. */}
       {isAdmin && <SetupWizard />}
       {/* Only once the instance is past first-run: the wizard owns the screen while it is up, and
@@ -510,10 +667,9 @@ function AppShellRoutes() {
       {setup?.completed && <LanguageAnnouncementModal />}
       {setup?.completed && <AppearanceAnnouncementModal />}
       {/* Owns a toast, not a piece of the page, so it sits outside Main and renders nothing. */}
-      {isAdmin && <MetadataDumpProgress />}
+      {isAdmin && <MetadataDumpProgress quiet={!setup?.completed} />}
       <TipLayer />
     </AppShell>
-    </ShellTitleProvider>
   )
 }
 

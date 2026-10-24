@@ -10,7 +10,9 @@ import { SETTINGS_ENTRY_ALIASES, SETTINGS_TAB_ALIASES, SETTINGS_TABS } from './s
 import { useVisibleSettingsEntries } from './settings/useVisibleSettingsEntries'
 import { ApiKeysSection, SignInSection } from '../components/settings/AccountSection'
 import { NotificationPrefsSection } from '../components/settings/NotificationPrefsSection'
-import { NetworkSection, OidcSection, SecuritySection } from '../components/settings/SecuritySection'
+import { PushNotificationsSection } from '../components/settings/PushNotificationsSection'
+import { OfflineReadingSection } from '../components/settings/OfflineReadingSection'
+import { NetworkSection, OidcSection, SecuritySection, SignInPageSection } from '../components/settings/SecuritySection'
 import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
 import { ProgressSection } from '../components/settings/ProgressSection'
@@ -19,7 +21,7 @@ import { useCompleteSetup } from '../api/hooks'
 import { useReaderUsed } from '../api/reader'
 import { UnsavedSettingsContext } from '../components/settings/SaveButton'
 import { useLeaveGuard, type LeaveTarget } from '../lib/useLeaveGuard'
-import { SettingsIndex } from '../components/settings/SettingsIndex'
+import { SettingsIndex, SettingsJump } from '../components/settings/SettingsIndex'
 import { NotificationsSection } from '../components/NotificationsSection'
 import {
   AppearanceSection,
@@ -29,7 +31,7 @@ import {
   SeriesPageSection,
   TitleLanguageSection,
 } from './settings/PreferenceCards'
-import { KavitaSyncSection, OpdsSection } from './settings/ReadingCards'
+import { KavitaSyncSection, KoreaderSyncSection, OpdsSection } from './settings/ReadingCards'
 import {
   LibraryFilesSection,
   MetadataSection,
@@ -40,11 +42,12 @@ import {
   RecycleBinSection,
   RootFoldersSection,
 } from './settings/LibraryCards'
+import { PageConversionSection } from './settings/PageConversionSection'
 import {
   DownloadQueueSection,
   FlareSolverrCard,
-  ProwlarrSection,
-  QbittorrentCard,
+  IndexerSection,
+  DownloadClientCard,
   SmartDownloadSection,
   ReadFileCleanupSection,
   SourceLanguageSection,
@@ -54,7 +57,7 @@ import {
 } from './settings/DownloadCards'
 import { ImportListSettingsSection, KavitaCard, ScrobbleSection } from './settings/IntegrationCards'
 import { SuwayomiCard } from './settings/SuwayomiCards'
-import { BackupSection, ImageCacheSection, UpdatesSection } from './settings/SystemCards'
+import { BackupSection, HealthSettingsSection, ImageCacheSection, UpdatesSection } from './settings/SystemCards'
 import { scrollBehavior } from '../lib/scrollBehavior'
 
 /**
@@ -79,16 +82,20 @@ function useSectionNodes(): Record<string, ReactNode> {
       'home-screen': <HomeSectionsSection />,
       'series-page': <SeriesPageSection />,
       'notification-prefs': <NotificationPrefsSection />,
+      'push-notifications': <PushNotificationsSection />,
 
       reader: <ReadingProfilesSection />,
       progress: <ProgressSection />,
       opds: <OpdsSection />,
+      'koreader-sync': <KoreaderSyncSection />,
+      'offline-reading': <OfflineReadingSection />,
       'kavita-sync': <KavitaSyncSection />,
 
       'root-folders': <RootFoldersSection />,
       naming: <NamingSection />,
       'name-parsing': <NameParsingSection />,
       'library-files': <LibraryFilesSection />,
+      'page-conversion': <PageConversionSection />,
       'recycle-bin': <RecycleBinSection />,
       monitoring: <NewSeriesDefaultsSection />,
       metadata: <MetadataSection />,
@@ -100,8 +107,8 @@ function useSectionNodes(): Record<string, ReactNode> {
       languages: <SourceLanguageSection />,
       sources: <SourcePrioritySection />,
       flaresolverr: <FlareSolverrCard />,
-      prowlarr: <ProwlarrSection />,
-      qbittorrent: <QbittorrentCard />,
+      indexer: <IndexerSection />,
+      downloadclient: <DownloadClientCard />,
       profiles: <UpgradeProfilesSection />,
       formats: <QualityFormatsSection />,
       upgrades: <UpgradeScanSection />,
@@ -115,11 +122,13 @@ function useSectionNodes(): Record<string, ReactNode> {
 
       users: <UsersSection />,
       security: <SecuritySection />,
+      'signin-page': <SignInPageSection />,
       oidc: <OidcSection />,
 
       network: <NetworkSection />,
       backup: <BackupSection />,
       'image-cache': <ImageCacheSection />,
+      health: <HealthSettingsSection />,
       updates: <UpdatesSection />,
     }),
     [i18n.locale],
@@ -160,7 +169,19 @@ export default function SettingsPage() {
     const want = fromTarget ?? (tabParam ? (SETTINGS_TAB_ALIASES[tabParam] ?? tabParam) : null)
     return tabs.some((x) => x.key === want) ? want! : (tabs[0]?.key ?? 'account')
   }
-  const tabEntries = useMemo(() => visible.filter((e) => e.tab === activeTab), [visible, activeTab])
+  const tabEntries = useMemo(
+    () => visible.filter((e) => e.tab === activeTab && !e.within),
+    [visible, activeTab],
+  )
+  // The tab rail scrolls sideways on a phone; the open tab is brought into view, not left off the edge.
+  const tabListRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const list = tabListRef.current
+    const tab = list?.querySelector<HTMLElement>('[data-active]')
+    if (!list || !tab || list.scrollWidth <= list.clientWidth) return
+    const offset = tab.getBoundingClientRect().left - list.getBoundingClientRect().left
+    list.scrollTo({ left: list.scrollLeft + offset - (list.clientWidth - tab.offsetWidth) / 2, behavior: scrollBehavior() })
+  }, [activeTab])
 
   // Panels unmount on a tab change (`keepMounted={false}`), which used to drop half-typed edits
   // without a word. Cards report through SettingsSection; a switch away from unsaved edits asks first.
@@ -230,11 +251,6 @@ export default function SettingsPage() {
       <PageHeader
         compact
         title={t`Settings`}
-        description={
-          isAdmin
-            ? t`Your account and preferences, then everything about this Maki instance.`
-            : t`Your account and how Maki looks.`
-        }
         actions={
           isAdmin && (
             <Button
@@ -257,7 +273,7 @@ export default function SettingsPage() {
         }}
         keepMounted={false}
       >
-        <Tabs.List>
+        <Tabs.List ref={tabListRef}>
           {tabs.map((tab) => (
             <Tabs.Tab key={tab.key} value={tab.key}>
               {renderLabel(tab.label)}
@@ -269,12 +285,13 @@ export default function SettingsPage() {
           {tabs.map((tab) => (
             <Tabs.Panel key={tab.key} value={tab.key}>
               <div className="settings-layout">
+                <SettingsJump entries={tabEntries} />
                 <Stack className="settings-content" gap="xl">
                   <Text size="sm" c="var(--ink-3)">
                     {renderLabel(tab.description)}
                   </Text>
                   {tabEntries.map((entry) => (
-                    <div key={entry.id} id={`setting-${entry.id}`} style={{ scrollMarginTop: 80 }}>
+                    <div key={entry.id} id={`setting-${entry.id}`} className="settings-entry">
                       {sectionNodes[entry.id]}
                     </div>
                   ))}

@@ -3,9 +3,7 @@ using Maki.Core.Http;
 using Maki.Core.Sources;
 using Maki.Sources.Common;
 using Maki.Sources.MangaDenizi;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using Maki.Core.Images;
 
 namespace Maki.Sources.Tests;
 
@@ -110,7 +108,7 @@ public class MangaDeniziSourceTests
             // and never the raw scrambled bytes.
             Assert.Equal("RIFF", System.Text.Encoding.ASCII.GetString(p.Data!, 0, 4));
             Assert.Equal("WEBP", System.Text.Encoding.ASCII.GetString(p.Data!, 8, 4));
-            using var decoded = Image.Load(p.Data!);
+            var decoded = ImageCodec.Identify(p.Data!);
             Assert.True(decoded.Width > 0 && decoded.Height > 0);
         });
     }
@@ -263,14 +261,14 @@ public class MangaDeniziDescramblerTests
     private const uint Bo = 2246822507;
 
     /// <summary>Every pixel encodes its own coordinates, so any misplaced tile is detected.</summary>
-    private static Image<Rgb24> CoordinateImage(int width, int height)
+    private static Raster CoordinateImage(int width, int height)
     {
-        var image = new Image<Rgb24>(width, height);
+        var image = new Raster(width, height, bands: 3);
         for (var y = 0; y < height; y++)
         {
             for (var x = 0; x < width; x++)
             {
-                image[x, y] = new Rgb24((byte)(x % 256), (byte)(y % 256), (byte)((x / 256 * 16) + (y / 256)));
+                image[x, y] = new Rgba((byte)(x % 256), (byte)(y % 256), (byte)((x / 256 * 16) + (y / 256)));
             }
         }
 
@@ -337,7 +335,7 @@ public class MangaDeniziDescramblerTests
     /// built straight from the plan's pseudocode rather than by calling into production code, so a
     /// bug shared between the two would not pass unnoticed.
     /// </summary>
-    private static Image<Rgb24> Scramble(Image<Rgb24> original, int grid, uint seed)
+    private static Raster Scramble(Raster original, int grid, uint seed)
     {
         var width = original.Width;
         var height = original.Height;
@@ -350,26 +348,27 @@ public class MangaDeniziDescramblerTests
         var p = MapSlices(u, m);
         var g = MapSlices(c, f);
 
-        var scrambled = new Image<Rgb24>(width, height);
-        scrambled.Mutate(ctx =>
+        var scrambled = new Raster(width, height, bands: 3);
+        for (var row = 0; row < l; row++)
         {
-            for (var row = 0; row < l; row++)
+            for (var col = 0; col < l; col++)
             {
-                for (var col = 0; col < l; col++)
+                // The descrambler copies scrambled(p,g) -> original(u[m],c[f]); the scrambler
+                // is exactly that copy run backwards.
+                for (var y = 0; y < g[row].Length; y++)
                 {
-                    // The descrambler copies scrambled(p,g) -> original(u[m],c[f]); the scrambler
-                    // is exactly that copy run backwards.
-                    var sourceRect = new Rectangle(u[m[col]].Offset, c[f[row]].Offset, p[col].Length, g[row].Length);
-                    var destination = new Point(p[col].Offset, g[row].Offset);
-                    ctx.DrawImage(original, destination, sourceRect, 1f);
+                    for (var x = 0; x < p[col].Length; x++)
+                    {
+                        scrambled[p[col].Offset + x, g[row].Offset + y] = original[u[m[col]].Offset + x, c[f[row]].Offset + y];
+                    }
                 }
             }
-        });
+        }
 
         return scrambled;
     }
 
-    private static void AssertPixelsEqual(Image<Rgb24> expected, Image<Rgb24> actual)
+    private static void AssertPixelsEqual(Raster expected, Raster actual)
     {
         Assert.Equal(expected.Width, actual.Width);
         Assert.Equal(expected.Height, actual.Height);
@@ -390,10 +389,10 @@ public class MangaDeniziDescramblerTests
     [InlineData(50, 50, 1, 0u)]               // seed 0 forces the TA fallback constant
     public void Descramble_reverses_the_synthetic_scramble(int width, int height, int grid, uint seed)
     {
-        using var original = CoordinateImage(width, height);
-        using var scrambled = Scramble(original, grid, seed);
+        var original = CoordinateImage(width, height);
+        var scrambled = Scramble(original, grid, seed);
 
-        using var descrambled = MangaDeniziDescrambler.Descramble(scrambled, grid, seed);
+        var descrambled = MangaDeniziDescrambler.Descramble(scrambled, grid, seed);
 
         AssertPixelsEqual(original, descrambled);
     }
@@ -403,7 +402,7 @@ public class MangaDeniziDescramblerTests
     [InlineData(-1)]
     public void Descramble_throws_for_a_non_positive_grid(int grid)
     {
-        using var image = CoordinateImage(10, 10);
+        var image = CoordinateImage(10, 10);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => MangaDeniziDescrambler.Descramble(image, grid, 1u));
     }
@@ -414,11 +413,11 @@ public class MangaDeniziDescramblerTests
         // solo-leveling/000 page 1, grid 10, seed 316064641 - verified once by eye against the
         // real site (a Python port produced the clean credits page; see PR description).
         var raw = FakeHttpClientFactory.BinaryFixture("mangadenizi-page1.bin");
-        using var scrambled = Image.Load<Rgb24>(raw);
-        using var expected = Image.Load<Rgb24>(
-            File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "mangadenizi-page1-expected.jpg")));
+        var scrambled = Raster.Decode(raw, bands: 3);
+        var expected = Raster.Decode(
+            File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "mangadenizi-page1-expected.jpg")), bands: 3);
 
-        using var descrambled = MangaDeniziDescrambler.Descramble(scrambled, 10, 316064641u);
+        var descrambled = MangaDeniziDescrambler.Descramble(scrambled, 10, 316064641u);
 
         // The expected fixture was captured once through a lossy JPEG encode (the Python port
         // used to verify the algorithm by eye), so pixels differ by a few units even for an
@@ -435,12 +434,12 @@ public class MangaDeniziDescramblerTests
         Assert.True(scrambledDiff > 30.0, $"Scrambled input unexpectedly close to the expected output ({scrambledDiff})");
 
         // Negative control 2: an off-by-one seed must not produce the same layout.
-        using var wrongSeed = MangaDeniziDescrambler.Descramble(scrambled, 10, 316064642u);
+        var wrongSeed = MangaDeniziDescrambler.Descramble(scrambled, 10, 316064642u);
         var wrongSeedDiff = MeanAbsoluteDifference(expected, wrongSeed);
         Assert.True(wrongSeedDiff > 30.0, $"Wrong seed unexpectedly close to the expected output ({wrongSeedDiff})");
     }
 
-    private static double MeanAbsoluteDifference(Image<Rgb24> a, Image<Rgb24> b)
+    private static double MeanAbsoluteDifference(Raster a, Raster b)
     {
         Assert.Equal(a.Width, b.Width);
         Assert.Equal(a.Height, b.Height);

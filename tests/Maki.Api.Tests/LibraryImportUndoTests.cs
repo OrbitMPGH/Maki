@@ -124,7 +124,7 @@ public class LibraryImportUndoTests : IDisposable
         db, _queue, new CoverService(null!, new AppPaths(), _settings, NullLogger<CoverService>.Instance),
         new StatsEventService(db), new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
         new MangaBakaLocalStore(
-            new MangaBakaDumpOptions("", _configDir), _settings, NullLogger<MangaBakaLocalStore>.Instance),
+            new MangaBakaDumpOptions("", _configDir), NullLogger<MangaBakaLocalStore>.Instance),
         new TestLocalizer(), user ?? new TestCurrentUser(1), NullLogger<LibraryImportUndoService>.Instance);
 
     private SourceMatchWorkerHostedService Worker()

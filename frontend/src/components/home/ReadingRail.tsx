@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { IconPlayerPlayFilled } from '@tabler/icons-react'
 import type { HomeReadingItem } from '../../api/hooks'
@@ -18,7 +18,11 @@ export function ReadingRail({ items, rail }: { items: HomeReadingItem[]; rail: R
   return (
     <Rail>
       {items.map((item) => (
-        <div key={item.chapterId} className="discover-rail-item reading-card">
+        <div
+          key={item.chapterId}
+          className={item.coverAccent ? 'discover-rail-item reading-card has-accent' : 'discover-rail-item reading-card'}
+          style={item.coverAccent ? ({ '--series-accent': item.coverAccent } as CSSProperties) : undefined}
+        >
           <ReadingCard item={item} />
           <ReadingCardMenu item={item} rail={rail} className="reading-card-menu" />
         </div>
@@ -27,8 +31,11 @@ export function ReadingRail({ items, rail }: { items: HomeReadingItem[]; rail: R
   )
 }
 
-// Memoized: `item` keeps its reference across renders, so unrelated Home state does not re-render the cards.
-const ReadingCard = memo(function ReadingCard({ item }: { item: HomeReadingItem }) {
+/**
+ * One poster that opens the reader. `note` replaces the "# new" count in the corner of the meta row.
+ * Memoized: `item` keeps its reference across renders, so unrelated Home state does not re-render the cards.
+ */
+export const ReadingCard = memo(function ReadingCard({ item, note }: { item: HomeReadingItem; note?: string }) {
   const { t } = useLingui()
   // Kavita-imported rows carry no slice length, so there is no honest fraction to draw.
   const resumePct =
@@ -66,10 +73,14 @@ const ReadingCard = memo(function ReadingCard({ item }: { item: HomeReadingItem 
           )}
           <div className="cover-row">
             <span>{item.page > 0 ? t`Resume` : t`Start`}</span>
-            {unreadChapters > 0 && (
-              <span className="cover-new cover-new-quiet">
-                {plural(unreadChapters, { one: '# new', other: '# new' })}
-              </span>
+            {note ? (
+              <span className="cover-new cover-new-quiet">{note}</span>
+            ) : (
+              unreadChapters > 0 && (
+                <span className="cover-new cover-new-quiet">
+                  {plural(unreadChapters, { one: '# new', other: '# new' })}
+                </span>
+              )
             )}
           </div>
         </div>

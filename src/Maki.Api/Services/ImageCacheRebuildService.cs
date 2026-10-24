@@ -1,9 +1,8 @@
 using Maki.Api.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Images;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
 
 namespace Maki.Api.Services;
 
@@ -75,9 +74,6 @@ public class ImageCacheRebuildService(
         {
             status.End(error);
             status.InvalidateUsage();
-            // Every poster in the library was identified or decoded, so the pool is as full as it
-            // gets, and nothing else needs it until the next decode. Same reason as HealthScanService.
-            SixLabors.ImageSharp.Configuration.Default.MemoryAllocator.ReleaseRetainedResources();
         }
 
         return true;
@@ -312,8 +308,8 @@ public class ImageCacheRebuildService(
 
             // Maki writes every poster as a JPEG itself. A cut-off one still has a readable header,
             // so the end marker is what tells it apart.
-            var identified = Image.Identify(path);
-            return identified.Metadata.DecodedImageFormat is not JpegFormat || EndsWithJpegMarker(path);
+            var identified = ImageCodec.IdentifyFile(path);
+            return identified.Format is not ImageFormat.Jpeg || EndsWithJpegMarker(path);
         }
         catch
         {

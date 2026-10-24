@@ -28,6 +28,7 @@ import {
   CatalogueFilters,
   useBrowseSortOptions,
   useCatalogueFilters,
+  useLiveApply,
 } from '../components/CatalogueFilters'
 import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
 import { CREDIT_ROLE_LABELS } from '../components/CreditPicker'
@@ -86,6 +87,15 @@ export default function CreatorPage() {
   const [applied, setApplied] = usePageState<RecommendationFilters>(`${scope}:applied`, {})
   const [sort, setSort] = usePageState<BrowseSort>(`${scope}:sort`, 'popular')
   const [pages, setPages] = usePageState(`${scope}:pages`, 1)
+  useLiveApply(catalogue.build, setApplied)
+
+  // New filters start the list over, but not on mount: restored filters arrive looking like a
+  // change, and resetting there would drop pages loaded before opening one of the results.
+  const filtersAsMounted = useUnchangedSinceMount([applied])
+  useEffect(() => {
+    if (filtersAsMounted) return
+    setPages(1)
+  }, [filtersAsMounted, applied, setPages])
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
 
   // Clicking a credit on this page navigates to the same route with a different name, so React
@@ -243,7 +253,7 @@ export default function CreatorPage() {
       </Group>
 
       <Collapse expanded={filtersOpen}>
-        <Panel edge="strong" p="md" mb="md">
+        <Panel p="md" mb="md">
           <Stack gap="md">
             <CatalogueFilters controls={catalogue.controls} />
             <CatalogueFilterActions
@@ -251,10 +261,6 @@ export default function CreatorPage() {
               onReset={() => {
                 catalogue.reset()
                 setApplied({})
-              }}
-              onApply={() => {
-                setApplied(catalogue.build())
-                setPages(1)
               }}
               extra={
                 <>

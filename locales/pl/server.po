@@ -556,6 +556,20 @@ msgstr "Import listy jest już uruchomiony"
 msgid "error.inbox.unknownSeriesDefault"
 msgstr "Właściwość seriesDefault musi mieć jedną z tych wartości: {allowed}"
 
+#. Shown by KOReader under "Progress sync" when it logs in with something that is not a usable OPDS token.
+#: src/Maki.Api/Controllers/KoreaderSyncController.cs
+#. English: Maki did not accept this username. Enter your OPDS token, and check that the OPDS catalogue is on.
+#, fuzzy
+msgid "error.koreaderSync.unauthorized"
+msgstr "Nie przyjęto tej nazwy użytkownika. Wpisz swój token OPDS i sprawdź, czy katalog OPDS jest włączony."
+
+#. Shown by KOReader when someone taps Register. Maki has no separate KOReader accounts.
+#: src/Maki.Api/Controllers/KoreaderSyncController.cs
+#. English: There is nothing to register. Enter your OPDS token as the username and tap Login.
+#, fuzzy
+msgid "error.koreaderSync.registerWithToken"
+msgstr "Nie ma czego rejestrować. Wpisz swój token OPDS jako nazwę użytkownika i kliknij Login."
+
 #: src/Maki.Api/Controllers/LibraryFiltersController.cs
 #. English: Name is required
 #, fuzzy
@@ -622,10 +636,11 @@ msgid "error.libraryImport.folderOwnedByOtherSeries"
 msgstr "Ten folder należy już do innej serii w bibliotece"
 
 #: src/Maki.Api/Services/LibraryImportResolver.cs
-#. English: AniList and MyAnimeList ids are looked up in the local MangaBaka database, which is not downloaded yet. Paste a MangaBaka id or link instead.
+#. English: Ids are looked up in the local MangaBaka database, which is not downloaded yet. Try again once it is installed.
+#, fuzzy
 #, fuzzy
 msgid "error.libraryImport.idNeedsDump"
-msgstr "Identyfikatory AniList i MyAnimeList są wyszukiwane w lokalnej bazie MangaBaka, która jeszcze nie jest pobrana. Wklej zamiast tego identyfikator lub link MangaBaka."
+msgstr "Identyfikatory są sprawdzane w lokalnej bazie MangaBaka, której jeszcze nie pobrano. Spróbuj ponownie, gdy się pobierze."
 
 #: src/Maki.Api/Services/LibraryImportResolver.cs
 #. English: No MangaBaka series has that id
@@ -861,6 +876,77 @@ msgstr "Ta wartość jest za długa."
 msgid "error.metadata.unknownField"
 msgstr "Nieznane pole metadanych."
 
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: The backup file is damaged and could not be read.
+#, fuzzy
+msgid "error.mihon.corrupt"
+msgstr "Plik kopii jest uszkodzony i nie dało się go odczytać."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: Importing a Mihon backup needs the local MangaBaka database, which is not downloaded yet.
+#, fuzzy
+msgid "error.mihon.dumpUnavailable"
+msgstr "Import kopii Mihon wymaga lokalnej bazy MangaBaka, której jeszcze nie pobrano."
+
+#. The series was added (or was already there), but its Mihon categories or read chapters could not be applied.
+#: src/Maki.Api/Services/MihonImportService.cs
+#. English: Added, but its tags or read chapters could not be applied.
+#, fuzzy
+msgid "error.mihon.extrasFailed"
+msgstr "Dodano, ale nie udało się zastosować jej tagów ani przeczytanych rozdziałów."
+
+#: src/Maki.Api/Services/MihonImportService.cs
+#. English: Could not add this series.
+#, fuzzy
+msgid "error.mihon.importFailed"
+msgstr "Nie udało się dodać tej serii."
+
+#. The series exists in a root folder this user cannot see, so it was left alone.
+#: src/Maki.Api/Services/MihonImportService.cs
+#. English: Already in the library, in a folder you do not have access to.
+#, fuzzy
+msgid "error.mihon.inLibraryElsewhere"
+msgstr "Seria jest już w bibliotece, w folderze, do którego nie masz dostępu."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: This is an old JSON backup. Create a new backup in Mihon (Settings, Data and storage) and upload that.
+#, fuzzy
+msgid "error.mihon.jsonBackup"
+msgstr "To stara kopia w formacie JSON. Utwórz nową kopię w Mihon (Settings, Data and storage) i wyślij ją."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: This file is not a Mihon backup. Upload a .tachibk or .proto.gz file.
+#, fuzzy
+msgid "error.mihon.notABackup"
+msgstr "Ten plik nie jest kopią Mihon. Wyślij plik .tachibk lub .proto.gz."
+
+#. A user who cannot add series directly gets requests for admin approval instead, and one
+#. import files at most {max} of them (currently 10). This series was left out.
+#: src/Maki.Api/Services/MihonImportService.cs
+#. English: Not requested: one import sends at most {max} series for approval. Import again later to request the rest.
+#, fuzzy
+msgid "error.mihon.requestLimitReached"
+msgstr "Nie zgłoszono: jeden import wysyła najwyżej {max} serii do zatwierdzenia. Zaimportuj ponownie później, aby zgłosić resztę."
+
+#. The client generates the run id; only a broken or outdated client sends none.
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: The import request is missing its run id.
+#, fuzzy
+msgid "error.mihon.runIdRequired"
+msgstr "Żądanie importu nie ma identyfikatora przebiegu."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: The backup is too large to import.
+#, fuzzy
+msgid "error.mihon.tooLarge"
+msgstr "Kopia jest za duża, by ją zaimportować."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: Too many items in one request ({count}); send batches of {max} or fewer
+#, fuzzy
+msgid "error.mihon.tooManyItems"
+msgstr "Zbyt wiele elementów w jednym żądaniu ({count}); wysyłaj partie po {max} lub mniej"
+
 #: src/Maki.Core/Notifications/AppriseNotificationProvider.cs
 #. English: Set a config key or at least one notification URL.
 #, fuzzy
@@ -951,6 +1037,25 @@ msgstr "URL musi być pełnym adresem http:// lub https://"
 msgid "error.notifications.webhookUrlRequired"
 msgstr "Wymagany jest URL webhooka"
 
+#: src/Maki.Api/Controllers/PageConversionController.cs
+#. English: Choose WebP, AVIF or off
+#, fuzzy
+msgid "error.pageConversion.formatInvalid"
+msgstr "Wybierz WebP, AVIF lub wyłączone"
+
+#. Starting the library pass while page conversion is switched off.
+#: src/Maki.Api/Controllers/PageConversionController.cs
+#. English: Choose a format for page conversion first
+#, fuzzy
+msgid "error.pageConversion.off"
+msgstr "Najpierw wybierz format konwersji stron"
+
+#: src/Maki.Api/Controllers/PageConversionController.cs
+#. English: Quality must be between {min} and {max}
+#, fuzzy
+msgid "error.pageConversion.qualityRange"
+msgstr "Jakość musi mieścić się między {min} a {max}"
+
 #: src/Maki.Api/Controllers/PreviewController.cs
 #. English: Other previews are loading right now. Try again in a moment.
 #, fuzzy
@@ -1005,6 +1110,19 @@ msgstr "Nieznany okres lub metryka"
 msgid "error.progress.unknownTimeZone"
 msgstr "Nieznana strefa czasowa"
 
+#. The browser sent a push subscription without an https endpoint on a public address or without valid keys.
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: This browser's push subscription is not valid
+#, fuzzy
+msgid "error.push.invalidSubscription"
+msgstr "Subskrypcja push tej przeglądarki jest nieprawidłowa"
+
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: No device has push notifications turned on for this account
+#, fuzzy
+msgid "error.push.noSubscription"
+msgstr "Żadne urządzenie nie ma włączonych powiadomień push dla tego konta"
+
 #: src/Maki.Api/Controllers/QueueController.cs
 #. English: Item has no chapter to resolve
 #, fuzzy
@@ -1058,6 +1176,13 @@ msgstr "Rozdział nie ma czytelnego pliku"
 #, fuzzy
 msgid "error.reader.importAlreadyRunning"
 msgstr "Import jest już w trakcie"
+
+#. A reading-progress write carried an operation id that is empty, longer than 64 characters or contains spaces.
+#: src/Maki.Api/Controllers/ReaderController.cs
+#. English: The operation id must be 1 to 64 characters with no spaces
+#, fuzzy
+msgid "error.reader.invalidOpId"
+msgstr "Identyfikator operacji musi mieć od 1 do 64 znaków, bez spacji"
 
 #: src/Maki.Api/Controllers/ReaderController.cs
 #. English: State must be one of read, watched, unread
@@ -1268,9 +1393,9 @@ msgstr "Ten plik jest wciąż przenoszony do kosza. Spróbuj ponownie za chwilę
 msgid "error.recycleBin.targetInvalid"
 msgstr "Pierwotne miejsce jest poza folderem głównym albo za linkiem, więc plik nie może tam wrócić."
 
-#. The Prowlarr or qBittorrent call failed; the cause is in the server log.
+#. The indexer or download client call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-#. English: Could not send the release to qBittorrent. Details are in the server log.
+#. English: Could not send the release to the download client. Details are in the server log.
 #, fuzzy
 msgid "error.release.grabFailed"
 msgstr "Nie udało się wysłać wydania do qBittorrent. Szczegóły są w dzienniku serwera."
@@ -1282,32 +1407,46 @@ msgid "error.release.noDownloadLink"
 msgstr "To wydanie nie ma linku do pobrania"
 
 #: src/Maki.Api/Services/ReleaseService.cs
-#. English: Prowlarr is not configured (Settings → Downloads → Prowlarr)
+#. English: No indexer is configured (Settings → Downloads → Indexer)
 #, fuzzy
-msgid "error.release.prowlarrNotConfigured"
-msgstr "Prowlarr nie jest skonfigurowany (Ustawienia → Pobrania → Prowlarr)"
+msgid "error.release.indexerNotConfigured"
+msgstr "Nie skonfigurowano indeksera (Ustawienia → Pobrania → Indekser)"
 
-#. qBittorrent rejected the username or password Maki has stored for it.
+#. The download client rejected the username or password Maki has stored for it.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-#. English: qBittorrent rejected the login. Check the username and password in Settings → Downloads.
+#. English: The download client rejected the login. Check the username and password in Settings → Downloads.
 #, fuzzy
-msgid "error.release.qbittorrentLoginFailed"
-msgstr "qBittorrent odrzucił logowanie. Sprawdź nazwę użytkownika i hasło w Ustawieniach → Pobrania."
+msgid "error.release.downloadClientLoginFailed"
+msgstr "Klient pobierania odrzucił logowanie. Sprawdź nazwę użytkownika i hasło w Ustawieniach → Pobrania."
 
 #: src/Maki.Api/Services/ReleaseService.cs
-#. English: qBittorrent is not configured (Settings → Downloads → qBittorrent)
+#. English: No download client is configured (Settings → Downloads → Download client)
 #, fuzzy
-msgid "error.release.qbittorrentNotConfigured"
-msgstr "qBittorrent nie jest skonfigurowany (Ustawienia → Pobrania → qBittorrent)"
+msgid "error.release.downloadClientNotConfigured"
+msgstr "Nie skonfigurowano klienta pobierania (Ustawienia → Pobrania → Klient pobierania)"
 
-#. qBittorrent answered but refused to add the torrent.
+#. The download client answered but refused to add the torrent.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-#. English: qBittorrent refused to add the torrent.
+#. English: The download client refused to add the torrent.
 #, fuzzy
-msgid "error.release.qbittorrentRejected"
-msgstr "qBittorrent nie chce dodać tego torrenta."
+msgid "error.release.downloadClientRejected"
+msgstr "Klient pobierania odmówił dodania torrenta."
 
-#. The Prowlarr call failed; the cause is in the server log.
+#. A qBittorrent duplicate upload of a torrent the user keeps in another category.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+#. English: The download client already has this torrent in another category or label. Move it to Maki's, or remove it, and grab again.
+#, fuzzy
+msgid "error.release.downloadClientHeldOutsideLabel"
+msgstr "Klient pobierania ma już ten torrent w innej kategorii lub etykiecie. Przenieś go do kategorii Maki albo go usuń i pobierz ponownie."
+
+#. The download client did not answer, or answered with something that was not its API.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+#. English: The download client did not respond. Check its URL in Settings → Downloads.
+#, fuzzy
+msgid "error.release.downloadClientUnreachable"
+msgstr "Klient pobierania nie odpowiedział. Sprawdź jego adres URL w Ustawieniach → Pobrania."
+
+#. The indexer call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 #. English: The release search failed. Details are in the server log.
 #, fuzzy
@@ -1337,6 +1476,7 @@ msgid "error.requests.alreadyInLibrary"
 msgstr "Jest już w bibliotece."
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#: src/Maki.Api/Services/MihonImportService.cs
 #. English: You already have that request pending
 #, fuzzy
 msgid "error.requests.alreadyPending"
@@ -1468,6 +1608,12 @@ msgstr "Ścieżka jest wymagana"
 #, fuzzy
 msgid "error.scrobble.aniListNotConfigured"
 msgstr "Najpierw ustaw identyfikator/sekret klienta AniList w Ustawieniach"
+
+#: src/Maki.Api/Controllers/ScrobbleController.cs
+#. English: paste the mangaupdates.com/series link, or the id from the end of it
+#, fuzzy
+msgid "error.scrobble.invalidMangaUpdatesId"
+msgstr "wklej link mangaupdates.com/series albo identyfikator z jego końca"
 
 #: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: expected a numeric id or a series URL for that service
@@ -1851,6 +1997,13 @@ msgstr "Coś poszło nie tak po stronie serwera. Szczegóły są w dzienniku ser
 msgid "error.settings.unknownStartPage"
 msgstr "Nieznana strona startowa: {page}"
 
+#. Shown when an admin turns single-user mode on while a second account is still enabled.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Single-user mode needs exactly one enabled account. Disable or delete the others first.
+#, fuzzy
+msgid "error.settings.singleUserNeedsOneAccount"
+msgstr "Tryb jednego użytkownika wymaga dokładnie jednego włączonego konta. Najpierw wyłącz lub usuń pozostałe."
+
 #. English: Unknown folder naming mode: {mode}
 #, fuzzy
 msgid "error.settings.unknownFolderNamingMode"
@@ -2140,10 +2293,10 @@ msgid "error.torrentImport.noRootFolder"
 msgstr "Seria nie ma przypisanego folderu głównego."
 
 #: src/Maki.Api/Services/TorrentImportService.cs
-#. English: The download is no longer in qBittorrent
+#. English: The download is no longer in the download client
 #, fuzzy
-msgid "error.torrentImport.notInQbittorrent"
-msgstr "Tego pobrania nie ma już w qBittorrent."
+msgid "error.torrentImport.notInClient"
+msgstr "Pobranie nie znajduje się już w kliencie pobierania"
 
 #. {path} is a filesystem path and is never translated.
 #: src/Maki.Api/Services/TorrentImportService.cs
@@ -2357,7 +2510,7 @@ msgstr "Ten rozdział nie ma pliku do ulepszenia"
 msgid "error.upgrades.proposalNotFound"
 msgstr "Taka propozycja wydania tomu nie istnieje"
 
-#. {detail} is the torrent client's or Prowlarr's own error text, shown as it is.
+#. {detail} is the torrent client's or the indexer's own error text, shown as it is.
 #: src/Maki.Api/Controllers/UpgradesController.cs
 #. English: Could not grab the release: {detail}
 #, fuzzy
@@ -2582,13 +2735,20 @@ msgstr "Nieznane kody języków: {codes}"
 msgid "error.settings.noSourceLanguageEnabled"
 msgstr "Co najmniej jeden język musi pozostać włączony"
 
+#. {service} is the indexer backend's product name (Prowlarr, Jackett), never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
-#. English: Prowlarr is not configured
+#. English: {service} is not configured
 #, fuzzy
-msgid "error.settings.prowlarrNotConfigured"
-msgstr "Prowlarr nie jest skonfigurowany"
+msgid "error.settings.indexerNotConfigured"
+msgstr "{service} nie jest skonfigurowany"
 
-#. Shared by the Prowlarr and Kavita connection tests, both of which need the pair.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unknown indexer
+#, fuzzy
+msgid "error.settings.indexerBackendInvalid"
+msgstr "Nieznany indekser"
+
+#. Shared by the indexer and Kavita connection tests, both of which need the pair.
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: URL and API key are required
 #, fuzzy
@@ -2609,17 +2769,51 @@ msgstr "URL jest wymagany"
 msgid "error.settings.userCannotSignIn"
 msgstr "Ten użytkownik nie istnieje albo nie może się zalogować"
 
+#. {service} is the indexer backend's product name (Prowlarr, Jackett), never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
-#. English: Prowlarr did not respond (check URL/API key)
+#. English: {service} did not respond (check the URL and API key)
 #, fuzzy
-msgid "error.settings.prowlarrNoResponse"
-msgstr "Prowlarr nie odpowiedział (sprawdź URL/klucz API)"
+msgid "error.settings.indexerNoResponse"
+msgstr "{service} nie odpowiedział (sprawdź adres URL i klucz API)"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
-#. English: qBittorrent login failed
+#. English: The download client rejected the login (check username/password)
 #, fuzzy
-msgid "error.settings.qbittorrentLoginFailed"
-msgstr "Logowanie do qBittorrent nie powiodło się"
+msgid "error.settings.downloadClientLoginFailed"
+msgstr "Klient pobierania odrzucił logowanie (sprawdź nazwę użytkownika i hasło)"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: The download client did not respond (check the URL)
+#, fuzzy
+msgid "error.settings.downloadClientNoResponse"
+msgstr "Klient pobierania nie odpowiedział (sprawdź adres URL)"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unknown download client
+#, fuzzy
+msgid "error.settings.downloadClientKindInvalid"
+msgstr "Nieznany klient pobierania"
+
+#. The label, category or tag Maki puts on its torrents.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: The label cannot start or end with a space, contain control characters, or be longer than 64 characters
+#, fuzzy
+msgid "error.settings.labelInvalid"
+msgstr "Etykieta nie może zaczynać się ani kończyć spacją, zawierać znaków sterujących ani mieć więcej niż 64 znaki"
+
+#. Deluge's Label plugin rejects anything else, so Maki checks before saving.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Deluge labels can only use letters, digits, dot, dash and underscore
+#, fuzzy
+msgid "error.settings.labelInvalidDeluge"
+msgstr "Etykiety Deluge mogą zawierać tylko litery, cyfry, kropkę, myślnik i podkreślenie"
+
+#. Saving a different download client or label while torrents are still downloading or waiting to import through the current one.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: {count, plural, one {# torrent is} other {# torrents are}} still downloading or waiting to import through the current client and label. Let them finish or remove them before changing either.
+#, fuzzy
+msgid "error.settings.downloadClientTorrentsInFlight"
+msgstr "{count, plural, one {# torrent nadal się pobiera albo czeka na import przez obecnego klienta i etykietę. Poczekaj, aż się zakończy, albo go usuń, zanim zmienisz klienta albo etykietę.} few {# torrenty nadal się pobierają albo czekają na import przez obecnego klienta i etykietę. Poczekaj, aż się zakończą, albo je usuń, zanim zmienisz klienta albo etykietę.} many {# torrentów nadal się pobiera albo czeka na import przez obecnego klienta i etykietę. Poczekaj, aż się zakończą, albo je usuń, zanim zmienisz klienta albo etykietę.} other {# torrentów nadal się pobiera albo czeka na import przez obecnego klienta i etykietę. Poczekaj, aż się zakończą, albo je usuń, zanim zmienisz klienta albo etykietę.}}"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Kavita did not respond (check URL/API key)
@@ -2972,6 +3166,19 @@ msgstr "Nie udało się utworzyć kopii zapasowej. Sprawdź szczegóły w logach
 #, fuzzy
 msgid "inbox.unknownSeries"
 msgstr "Nieznana seria"
+
+#. Sent by the "Send a test" button in the push notification settings.
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: Push notifications work
+#, fuzzy
+msgid "inbox.pushTest.title"
+msgstr "Powiadomienia push działają"
+
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: This device will get Maki notifications.
+#, fuzzy
+msgid "inbox.pushTest.body"
+msgstr "To urządzenie będzie otrzymywać powiadomienia Maki."
 
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: Library import finished
@@ -4008,18 +4215,34 @@ msgid "error.download.importRejected"
 msgstr "Import odrzucony, biblioteka pozostała bez zmian"
 
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
-#. English: The torrent never appeared in qBittorrent
+#. English: The torrent never appeared in the download client
 #, fuzzy
 msgid "error.download.torrentMissing"
 msgstr "Torrent nigdy nie pojawił się w qBittorrent"
 
-#. The torrent had been seen in qBittorrent before and has been gone for hours: deleted there, moved to
-#. another category, or dropped.
+#. A torrent named like this release is in the download client, but another Maki download (for the
+#. named series, possibly this one) already recorded it as its own. {series} is a series title and
+#. is never translated.
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
-#. English: The torrent is no longer in qBittorrent
+#. English: The torrent is in the download client, but another download for {series} owns it
+#, fuzzy
+msgid "error.download.torrentHeldElsewhere"
+msgstr "Torrent jest w kliencie pobierania, ale należy do innego pobrania dla {series}"
+
+#. The torrent had been seen in the download client before and has been gone for hours: deleted there,
+#. moved to another category or label, or dropped.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: The torrent is no longer in the download client
 #, fuzzy
 msgid "error.download.torrentRemoved"
 msgstr "Torrenta nie ma już w qBittorrent"
+
+#. The download client has held this torrent in an error state for half an hour. The client's own message follows.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: The download client reports an error on this torrent
+#, fuzzy
+msgid "error.download.torrentClientError"
+msgstr "Klient pobierania zgłasza błąd tego torrenta"
 
 #. A download held its worker for the whole per-item time limit (Settings, Downloads) and was stopped.
 #: src/Maki.Api/Services/DownloadWorkerHostedService.cs
@@ -4419,6 +4642,13 @@ msgstr "Nie udało się odczytać postępu: {detail}"
 #, fuzzy
 msgid "scrobble.log.matchingFailed"
 msgstr "Nie udało się dopasować tej serii: {detail}"
+
+#. {service} is the tracker's name. Stored as a key, so the sentence has no duration; the page adds the live countdown.
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: {service} is rate limiting or blocking requests, so syncing to it is paused.
+#, fuzzy
+msgid "scrobble.error.backedOff"
+msgstr "{service} ogranicza liczbę zapytań albo je blokuje, więc synchronizacja z nim jest wstrzymana."
 
 #. {remote} is the tracker's own id for the entry, which has since been deleted or merged there.
 #: src/Maki.Api/Services/ScrobbleService.cs
@@ -4842,7 +5072,7 @@ msgstr "Poprzednia migracja przy starcie nie powiodła się ({error}). Sprawdź 
 msgid "health.check.diagnosticsUnavailable"
 msgstr "Diagnostyka bazy danych lub harmonogramu nie mogła zostać ukończona"
 
-#. {service} is a product name (Prowlarr, Kavita, qBittorrent, FlareSolverr), never translated.
+#. {service} is a product name (Prowlarr, Jackett, Kavita, qBittorrent, FlareSolverr), never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: {service}: not configured
 #, fuzzy
@@ -4923,10 +5153,17 @@ msgid "health.issue.noSourceMappings"
 msgstr "{series} jest monitorowana, ale nie ma włączonych źródeł"
 
 #: src/Maki.Api/Services/HealthCheckService.cs
-#. English: The MangaBaka local database has not been downloaded, so metadata comes from the rate-limited API
+#. English: The local MangaBaka database has not been downloaded yet. Until it is, only the reader and, for admins, Settings and Health are open. Maki retries the download by itself; check it in Settings → Library → Metadata database.
+#, fuzzy
 #, fuzzy
 msgid "health.issue.dumpMissing"
-msgstr "Lokalna baza danych MangaBaka nie została pobrana, więc metadane pochodzą z ograniczonego limitami API"
+msgstr "Lokalna baza MangaBaka nie została jeszcze pobrana. Do tego czasu otwarte są tylko czytnik oraz, dla administratorów, Ustawienia i Kondycja. Maki sam ponawia pobieranie; sprawdź je w Ustawieniach → Biblioteka → Baza metadanych."
+
+#: src/Maki.Api/Services/HealthCheckService.cs
+#. English: The local MangaBaka database failed its integrity check, so metadata search and adding series can fail. Maki downloads it again by itself; check it in Settings → Library → Metadata database.
+#, fuzzy
+msgid "health.issue.dumpDamaged"
+msgstr "Lokalna baza MangaBaka nie przeszła kontroli integralności, więc wyszukiwanie metadanych i dodawanie serii mogą się nie udać. Maki pobiera ją ponownie sam; sprawdź to w Ustawieniach → Biblioteka → Baza metadanych."
 
 #: src/Maki.Api/Services/HealthCheckService.cs
 #. English: The MangaBaka local database is out of date, last refreshed {at}. The refresh may be failing.

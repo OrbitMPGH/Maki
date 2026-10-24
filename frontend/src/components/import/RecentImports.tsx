@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Badge, Button, Card, Group, Modal, Stack, Text, Title } from '@mantine/core'
-import { IconArrowBackUp, IconArrowRight } from '@tabler/icons-react'
+import { Badge, Button, Card, Group, Modal, Stack, Text } from '@mantine/core'
+import { IconArrowBackUp, IconArrowRight, IconHistory } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { formatDateTime } from '../../format'
+import { SectionHeader } from '../ui/SectionHeader'
 import {
   useImportBatches,
   useUndoImport,
@@ -87,7 +88,7 @@ function UndoConfirm({
           <Button variant="default" onClick={onClose}>
             <Trans>Cancel</Trans>
           </Button>
-          <Button color="var(--danger)" loading={undo.isPending} onClick={run}>
+          <Button color="var(--danger-fill)" loading={undo.isPending} onClick={run}>
             <Trans>Undo import</Trans>
           </Button>
         </Group>
@@ -135,7 +136,7 @@ function FolderRow({
   const undoneOn = folder.undoneAt ? formatDateTime(folder.undoneAt) : null
   return (
     <Group justify="space-between" wrap="nowrap" align="flex-start">
-      <div style={{ minWidth: 0 }}>
+      <div style={{ minWidth: 0, flex: 1 }}>
         <Group gap={6} wrap="wrap">
           <Text size="sm" fw={600} style={{ overflowWrap: 'anywhere' }}>
             {originalFolderName}
@@ -182,13 +183,27 @@ function FolderRow({
         ) : null}
       </div>
       {folder.diskPending ? (
-        <Button size="xs" variant="default" leftSection={<IconArrowBackUp size={14} />} onClick={onUndo} disabled={busy}>
+        <Button
+          size="xs"
+          variant="default"
+          leftSection={<IconArrowBackUp size={14} />}
+          onClick={onUndo}
+          disabled={busy}
+          style={{ flexShrink: 0 }}
+        >
           <Trans>Retry</Trans>
         </Button>
       ) : (
         !folder.undoneAt &&
         !folder.seriesGone && (
-          <Button size="xs" variant="default" leftSection={<IconArrowBackUp size={14} />} onClick={onUndo} disabled={busy}>
+          <Button
+            size="xs"
+            variant="default"
+            leftSection={<IconArrowBackUp size={14} />}
+            onClick={onUndo}
+            disabled={busy}
+            style={{ flexShrink: 0 }}
+          >
             <Trans>Undo</Trans>
           </Button>
         )
@@ -240,19 +255,24 @@ function BatchCard({ batch, onUndo, busy }: { batch: ImportBatch; onUndo: (t: Un
  * import made and moves the folder back; the user's own files stay.
  */
 export function RecentImports({ rootFolderId, onUndone }: { rootFolderId: number | null; onUndone?: () => void }) {
+  const { t } = useLingui()
   const { data: batches } = useImportBatches(rootFolderId)
   const [confirm, setConfirm] = useState<UndoTarget | null>(null)
 
   if (!batches || batches.length === 0) return null
 
   return (
-    <Stack gap="sm" mt="xl">
-      <Title order={4}>
-        <Trans>Recent imports</Trans>
-      </Title>
-      <Text size="xs" c="var(--ink-3)">
-        <Trans>Imports can be undone for 30 days.</Trans>
-      </Text>
+    <Stack gap="sm">
+      <SectionHeader
+        icon={IconHistory}
+        title={t`Recent imports`}
+        count={batches.length}
+        action={
+          <Text size="xs" c="var(--ink-3)">
+            <Trans>Imports can be undone for 30 days.</Trans>
+          </Text>
+        }
+      />
       {batches.map((b) => (
         <BatchCard key={b.batchId} batch={b} onUndo={setConfirm} busy={confirm !== null} />
       ))}

@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../../lib/updateSkip'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -15,10 +16,13 @@ import {
   Progress,
   ScrollArea,
   Stack,
+  SimpleGrid,
   Switch,
   Table,
   Text,
+  TextInput,
   UnstyledButton,
+  VisuallyHidden,
 } from '@mantine/core'
 import {
   IconAlertTriangle,
@@ -49,6 +53,7 @@ import {
 } from '../../api/hooks'
 import { formatBytes, formatDateTime, formatNumber } from '../../format'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
+import { useHealthAction, useHealthData, type HealthOptions } from '../../api/health'
 
 type RestoreTarget = { kind: 'existing'; name: string } | { kind: 'upload'; file: File }
 
@@ -148,7 +153,7 @@ export function BackupSection() {
                   <Table.Th><Trans>Kind</Trans></Table.Th>
                   <Table.Th><Trans>Version</Trans></Table.Th>
                   <Table.Th><Trans>Size</Trans></Table.Th>
-                  <Table.Th />
+                  <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -233,7 +238,6 @@ export function BackupSection() {
           max={50}
           value={retention}
           onChange={setRetention}
-          w={220}
         />
       </Stack>
 
@@ -539,6 +543,7 @@ export function ImageCacheSection() {
           animated={running}
           striped={running}
           color={status?.lastError ? 'var(--danger)' : 'brand'}
+          aria-label={t`Cache progress`}
         />
       )}
 
@@ -616,3 +621,108 @@ export function ImageCacheSection() {
   )
 }
 
+/**
+ * When the health scans run and where the disk and backup checks draw their lines. The checks and
+ * findings themselves live on the Health page; this is only how they are scheduled and judged.
+ */
+export function HealthSettingsSection() {
+  const { t } = useLingui()
+  const qc = useQueryClient()
+  const { data } = useHealthData<HealthOptions>('/options')
+  const save = useHealthAction()
+  const [draft, setDraft] = useState<HealthOptions | null>(null)
+  const value = draft ?? data
+  const update = (patch: Partial<HealthOptions>) => value && setDraft({ ...value, ...patch })
+
+  return (
+    <SettingsSection
+      id="health"
+      title={<Trans>Library health</Trans>}
+      description={
+        <Trans>
+          When the health scans run and where the disk and backup checks start warning. The checks and
+          file findings are on the Health page.
+        </Trans>
+      }
+      dirty={draft !== null}
+      saving={save.isPending}
+      onDiscard={() => setDraft(null)}
+      onSave={() =>
+        value &&
+        save.mutate(
+          { path: '/options', method: 'PUT', body: value },
+          {
+            onSuccess: () => {
+              qc.setQueryData(['health-workspace', '/options'], value)
+              setDraft(null)
+              notifications.show({ message: now`Saved`, color: 'var(--ok)' })
+            },
+          },
+        )
+      }
+    >
+      {save.error && (
+        <Alert color="var(--danger)" mb="md">
+          {save.error.message}
+        </Alert>
+      )}
+      {value && (
+        <Stack gap="lg">
+          <Switch
+            label={t`Analyze new files and run daily reconciliation`}
+            checked={value.automaticScanning}
+            onChange={(e) => update({ automaticScanning: e.currentTarget.checked })}
+          />
+          <SimpleGrid cols={{ base: 1, sm: 3 }}>
+            <SettingsNumberInput
+              label={t`Daily scan hour`}
+              description={t`0 to 23.`}
+              min={0}
+              max={23}
+              value={value.scanHour}
+              onChange={(v) => update({ scanHour: v })}
+            />
+            <TextInput
+              label={t`Timezone`}
+              description={t`Empty uses the server's timezone.`}
+              value={value.timeZone ?? ''}
+              onChange={(e) => update({ timeZone: e.currentTarget.value || null })}
+            />
+            <SettingsNumberInput
+              label={t`Pages decoded at once`}
+              description={t`0 picks a number for this machine. Raise it to scan faster, lower it to leave the CPU alone.`}
+              min={0}
+              max={32}
+              value={value.scanWorkers}
+              onChange={(v) => update({ scanWorkers: v })}
+            />
+          </SimpleGrid>
+          <Stack gap="xs">
+            <Text size="sm" fw={600}>
+              <Trans>Thresholds</Trans>
+            </Text>
+            <SimpleGrid cols={{ base: 1, sm: 3 }}>
+              {(['warningPercent', 'errorPercent', 'backupDays', 'warningGiB', 'errorGiB'] as const).map((key) => (
+                <SettingsNumberInput
+                  key={key}
+                  label={
+                    {
+                      warningPercent: t`Low disk warning (%)`,
+                      errorPercent: t`Low disk error (%)`,
+                      warningGiB: t`Low disk warning (GiB)`,
+                      errorGiB: t`Low disk error (GiB)`,
+                      backupDays: t`Backup freshness (days)`,
+                    }[key]
+                  }
+                  min={0}
+                  value={value[key]}
+                  onChange={(v) => update({ [key]: v })}
+                />
+              ))}
+            </SimpleGrid>
+          </Stack>
+        </Stack>
+      )}
+    </SettingsSection>
+  )
+}

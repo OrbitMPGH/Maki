@@ -394,6 +394,16 @@ msgstr "An import list run is already in progress"
 msgid "error.inbox.unknownSeriesDefault"
 msgstr "seriesDefault must be one of: {allowed}"
 
+#. Shown by KOReader under "Progress sync" when it logs in with something that is not a usable OPDS token.
+#: src/Maki.Api/Controllers/KoreaderSyncController.cs
+msgid "error.koreaderSync.unauthorized"
+msgstr "Maki did not accept this username. Enter your OPDS token, and check that the OPDS catalogue is on."
+
+#. Shown by KOReader when someone taps Register. Maki has no separate KOReader accounts.
+#: src/Maki.Api/Controllers/KoreaderSyncController.cs
+msgid "error.koreaderSync.registerWithToken"
+msgstr "There is nothing to register. Enter your OPDS token as the username and tap Login."
+
 #: src/Maki.Api/Controllers/LibraryFiltersController.cs
 msgid "error.libraryFilters.nameRequired"
 msgstr "Name is required"
@@ -441,7 +451,7 @@ msgstr "This folder already belongs to another series in the library"
 
 #: src/Maki.Api/Services/LibraryImportResolver.cs
 msgid "error.libraryImport.idNeedsDump"
-msgstr "AniList and MyAnimeList ids are looked up in the local MangaBaka database, which is not downloaded yet. Paste a MangaBaka id or link instead."
+msgstr "Ids are looked up in the local MangaBaka database, which is not downloaded yet. Try again once it is installed."
 
 #: src/Maki.Api/Services/LibraryImportResolver.cs
 msgid "error.libraryImport.idNotFound"
@@ -603,6 +613,55 @@ msgstr "That value is too long."
 msgid "error.metadata.unknownField"
 msgstr "Unknown metadata field."
 
+#: src/Maki.Api/Controllers/MihonImportController.cs
+msgid "error.mihon.corrupt"
+msgstr "The backup file is damaged and could not be read."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+msgid "error.mihon.dumpUnavailable"
+msgstr "Importing a Mihon backup needs the local MangaBaka database, which is not downloaded yet."
+
+#. The series was added (or was already there), but its Mihon categories or read chapters could not be applied.
+#: src/Maki.Api/Services/MihonImportService.cs
+msgid "error.mihon.extrasFailed"
+msgstr "Added, but its tags or read chapters could not be applied."
+
+#: src/Maki.Api/Services/MihonImportService.cs
+msgid "error.mihon.importFailed"
+msgstr "Could not add this series."
+
+#. The series exists in a root folder this user cannot see, so it was left alone.
+#: src/Maki.Api/Services/MihonImportService.cs
+msgid "error.mihon.inLibraryElsewhere"
+msgstr "Already in the library, in a folder you do not have access to."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+msgid "error.mihon.jsonBackup"
+msgstr "This is an old JSON backup. Create a new backup in Mihon (Settings, Data and storage) and upload that."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+msgid "error.mihon.notABackup"
+msgstr "This file is not a Mihon backup. Upload a .tachibk or .proto.gz file."
+
+#. A user who cannot add series directly gets requests for admin approval instead, and one
+#. import files at most {max} of them (currently 10). This series was left out.
+#: src/Maki.Api/Services/MihonImportService.cs
+msgid "error.mihon.requestLimitReached"
+msgstr "Not requested: one import sends at most {max} series for approval. Import again later to request the rest."
+
+#. The client generates the run id; only a broken or outdated client sends none.
+#: src/Maki.Api/Controllers/MihonImportController.cs
+msgid "error.mihon.runIdRequired"
+msgstr "The import request is missing its run id."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+msgid "error.mihon.tooLarge"
+msgstr "The backup is too large to import."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+msgid "error.mihon.tooManyItems"
+msgstr "Too many items in one request ({count}); send batches of {max} or fewer"
+
 #: src/Maki.Core/Notifications/AppriseNotificationProvider.cs
 msgid "error.notifications.appriseTarget"
 msgstr "Set a config key or at least one notification URL."
@@ -665,6 +724,19 @@ msgstr "URL must be a full http:// or https:// address"
 msgid "error.notifications.webhookUrlRequired"
 msgstr "Webhook URL is required"
 
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.formatInvalid"
+msgstr "Choose WebP, AVIF or off"
+
+#. Starting the library pass while page conversion is switched off.
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.off"
+msgstr "Choose a format for page conversion first"
+
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.qualityRange"
+msgstr "Quality must be between {min} and {max}"
+
 #: src/Maki.Api/Controllers/PreviewController.cs
 msgid "error.preview.busy"
 msgstr "Other previews are loading right now. Try again in a moment."
@@ -701,6 +773,15 @@ msgstr "Unknown period or metric"
 msgid "error.progress.unknownTimeZone"
 msgstr "Unknown time zone"
 
+#. The browser sent a push subscription without an https endpoint on a public address or without valid keys.
+#: src/Maki.Api/Controllers/PushController.cs
+msgid "error.push.invalidSubscription"
+msgstr "This browser's push subscription is not valid"
+
+#: src/Maki.Api/Controllers/PushController.cs
+msgid "error.push.noSubscription"
+msgstr "No device has push notifications turned on for this account"
+
 #: src/Maki.Api/Controllers/QueueController.cs
 msgid "error.queue.noChapterToResolve"
 msgstr "Item has no chapter to resolve"
@@ -736,6 +817,11 @@ msgstr "Chapter has no readable file"
 #: src/Maki.Api/Controllers/ReaderController.cs
 msgid "error.reader.importAlreadyRunning"
 msgstr "An import is already running"
+
+#. A reading-progress write carried an operation id that is empty, longer than 64 characters or contains spaces.
+#: src/Maki.Api/Controllers/ReaderController.cs
+msgid "error.reader.invalidOpId"
+msgstr "The operation id must be 1 to 64 characters with no spaces"
 
 #: src/Maki.Api/Controllers/ReaderController.cs
 msgid "error.reader.invalidState"
@@ -882,34 +968,44 @@ msgstr "This file is still being moved into the recycle bin. Try again in a mome
 msgid "error.recycleBin.targetInvalid"
 msgstr "The original location is outside the root folder or behind a link, so the file cannot go back there."
 
-#. The Prowlarr or qBittorrent call failed; the cause is in the server log.
+#. The indexer or download client call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 msgid "error.release.grabFailed"
-msgstr "Could not send the release to qBittorrent. Details are in the server log."
+msgstr "Could not send the release to the download client. Details are in the server log."
 
 #: src/Maki.Api/Services/ReleaseService.cs
 msgid "error.release.noDownloadLink"
 msgstr "This release has no download link"
 
 #: src/Maki.Api/Services/ReleaseService.cs
-msgid "error.release.prowlarrNotConfigured"
-msgstr "Prowlarr is not configured (Settings → Downloads → Prowlarr)"
+msgid "error.release.indexerNotConfigured"
+msgstr "No indexer is configured (Settings → Downloads → Indexer)"
 
-#. qBittorrent rejected the username or password Maki has stored for it.
+#. The download client rejected the username or password Maki has stored for it.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-msgid "error.release.qbittorrentLoginFailed"
-msgstr "qBittorrent rejected the login. Check the username and password in Settings → Downloads."
+msgid "error.release.downloadClientLoginFailed"
+msgstr "The download client rejected the login. Check the username and password in Settings → Downloads."
 
 #: src/Maki.Api/Services/ReleaseService.cs
-msgid "error.release.qbittorrentNotConfigured"
-msgstr "qBittorrent is not configured (Settings → Downloads → qBittorrent)"
+msgid "error.release.downloadClientNotConfigured"
+msgstr "No download client is configured (Settings → Downloads → Download client)"
 
-#. qBittorrent answered but refused to add the torrent.
+#. The download client answered but refused to add the torrent.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-msgid "error.release.qbittorrentRejected"
-msgstr "qBittorrent refused to add the torrent."
+msgid "error.release.downloadClientRejected"
+msgstr "The download client refused to add the torrent."
 
-#. The Prowlarr call failed; the cause is in the server log.
+#. A qBittorrent duplicate upload of a torrent the user keeps in another category.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+msgid "error.release.downloadClientHeldOutsideLabel"
+msgstr "The download client already has this torrent in another category or label. Move it to Maki's, or remove it, and grab again."
+
+#. The download client did not answer, or answered with something that was not its API.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+msgid "error.release.downloadClientUnreachable"
+msgstr "The download client did not respond. Check its URL in Settings → Downloads."
+
+#. The indexer call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 msgid "error.release.searchFailed"
 msgstr "The release search failed. Details are in the server log."
@@ -931,6 +1027,7 @@ msgid "error.requests.alreadyInLibrary"
 msgstr "Already in the library."
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#: src/Maki.Api/Services/MihonImportService.cs
 msgid "error.requests.alreadyPending"
 msgstr "You already have that request pending"
 
@@ -1020,6 +1117,10 @@ msgstr "Path is required"
 #: src/Maki.Api/Controllers/ScrobbleController.cs
 msgid "error.scrobble.aniListNotConfigured"
 msgstr "Set the AniList client id/secret in Settings first"
+
+#: src/Maki.Api/Controllers/ScrobbleController.cs
+msgid "error.scrobble.invalidMangaUpdatesId"
+msgstr "paste the mangaupdates.com/series link, or the id from the end of it"
 
 #: src/Maki.Api/Controllers/ScrobbleController.cs
 msgid "error.scrobble.invalidRemoteId"
@@ -1287,6 +1388,11 @@ msgstr "Something went wrong on the server. Details are in the server log."
 msgid "error.settings.unknownStartPage"
 msgstr "Unknown start page: {page}"
 
+#. Shown when an admin turns single-user mode on while a second account is still enabled.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.singleUserNeedsOneAccount"
+msgstr "Single-user mode needs exactly one enabled account. Disable or delete the others first."
+
 msgid "error.settings.unknownFolderNamingMode"
 msgstr "Unknown folder naming mode: {mode}"
 
@@ -1484,8 +1590,8 @@ msgid "error.torrentImport.noRootFolder"
 msgstr "Series has no root folder"
 
 #: src/Maki.Api/Services/TorrentImportService.cs
-msgid "error.torrentImport.notInQbittorrent"
-msgstr "The download is no longer in qBittorrent"
+msgid "error.torrentImport.notInClient"
+msgstr "The download is no longer in the download client"
 
 #. {path} is a filesystem path and is never translated.
 #: src/Maki.Api/Services/TorrentImportService.cs
@@ -1633,7 +1739,7 @@ msgstr "That chapter has no file to upgrade"
 msgid "error.upgrades.proposalNotFound"
 msgstr "That volume release proposal does not exist"
 
-#. {detail} is the torrent client's or Prowlarr's own error text, shown as it is.
+#. {detail} is the torrent client's or the indexer's own error text, shown as it is.
 #: src/Maki.Api/Controllers/UpgradesController.cs
 msgid "error.upgrades.grabFailed"
 msgstr "Could not grab the release: {detail}"
@@ -1792,11 +1898,16 @@ msgstr "Unknown language code(s): {codes}"
 msgid "error.settings.noSourceLanguageEnabled"
 msgstr "At least one language must stay enabled"
 
+#. {service} is the indexer backend's product name (Prowlarr, Jackett), never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
-msgid "error.settings.prowlarrNotConfigured"
-msgstr "Prowlarr is not configured"
+msgid "error.settings.indexerNotConfigured"
+msgstr "{service} is not configured"
 
-#. Shared by the Prowlarr and Kavita connection tests, both of which need the pair.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.indexerBackendInvalid"
+msgstr "Unknown indexer"
+
+#. Shared by the indexer and Kavita connection tests, both of which need the pair.
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.urlAndApiKeyRequired"
 msgstr "URL and API key are required"
@@ -1811,13 +1922,37 @@ msgstr "URL is required"
 msgid "error.settings.userCannotSignIn"
 msgstr "That user does not exist, or cannot sign in"
 
+#. {service} is the indexer backend's product name (Prowlarr, Jackett), never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
-msgid "error.settings.prowlarrNoResponse"
-msgstr "Prowlarr did not respond (check URL/API key)"
+msgid "error.settings.indexerNoResponse"
+msgstr "{service} did not respond (check the URL and API key)"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
-msgid "error.settings.qbittorrentLoginFailed"
-msgstr "qBittorrent login failed"
+msgid "error.settings.downloadClientLoginFailed"
+msgstr "The download client rejected the login (check username/password)"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.downloadClientNoResponse"
+msgstr "The download client did not respond (check the URL)"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.downloadClientKindInvalid"
+msgstr "Unknown download client"
+
+#. The label, category or tag Maki puts on its torrents.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.labelInvalid"
+msgstr "The label cannot start or end with a space, contain control characters, or be longer than 64 characters"
+
+#. Deluge's Label plugin rejects anything else, so Maki checks before saving.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.labelInvalidDeluge"
+msgstr "Deluge labels can only use letters, digits, dot, dash and underscore"
+
+#. Saving a different download client or label while torrents are still downloading or waiting to import through the current one.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.downloadClientTorrentsInFlight"
+msgstr "{count, plural, one {# torrent is} other {# torrents are}} still downloading or waiting to import through the current client and label. Let them finish or remove them before changing either."
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.kavitaNoResponse"
@@ -2060,6 +2195,15 @@ msgstr "Could not create the backup. Check the server logs for details."
 #: src/Maki.Api/Localization/InboxRenderer.cs
 msgid "inbox.unknownSeries"
 msgstr "Unknown series"
+
+#. Sent by the "Send a test" button in the push notification settings.
+#: src/Maki.Api/Controllers/PushController.cs
+msgid "inbox.pushTest.title"
+msgstr "Push notifications work"
+
+#: src/Maki.Api/Controllers/PushController.cs
+msgid "inbox.pushTest.body"
+msgstr "This device will get Maki notifications."
 
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 msgid "inbox.libraryImport.finished.title"
@@ -2826,13 +2970,25 @@ msgstr "Import rejected, the library was left as it was"
 
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentMissing"
-msgstr "The torrent never appeared in qBittorrent"
+msgstr "The torrent never appeared in the download client"
 
-#. The torrent had been seen in qBittorrent before and has been gone for hours: deleted there, moved to
-#. another category, or dropped.
+#. A torrent named like this release is in the download client, but another Maki download (for the
+#. named series, possibly this one) already recorded it as its own. {series} is a series title and
+#. is never translated.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentHeldElsewhere"
+msgstr "The torrent is in the download client, but another download for {series} owns it"
+
+#. The torrent had been seen in the download client before and has been gone for hours: deleted there,
+#. moved to another category or label, or dropped.
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentRemoved"
-msgstr "The torrent is no longer in qBittorrent"
+msgstr "The torrent is no longer in the download client"
+
+#. The download client has held this torrent in an error state for half an hour. The client's own message follows.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentClientError"
+msgstr "The download client reports an error on this torrent"
 
 #. A download held its worker for the whole per-item time limit (Settings, Downloads) and was stopped.
 #: src/Maki.Api/Services/DownloadWorkerHostedService.cs
@@ -3133,6 +3289,11 @@ msgstr "Could not read progress: {detail}"
 msgid "scrobble.log.matchingFailed"
 msgstr "Could not match this series: {detail}"
 
+#. {service} is the tracker's name. Stored as a key, so the sentence has no duration; the page adds the live countdown.
+#: src/Maki.Api/Services/ScrobbleService.cs
+msgid "scrobble.error.backedOff"
+msgstr "{service} is rate limiting or blocking requests, so syncing to it is paused."
+
 #. {remote} is the tracker's own id for the entry, which has since been deleted or merged there.
 #: src/Maki.Api/Services/ScrobbleService.cs
 msgid "scrobble.log.remoteEntryGone"
@@ -3426,7 +3587,7 @@ msgstr "A previous startup migration failed ({error}). Check the startup logs."
 msgid "health.check.diagnosticsUnavailable"
 msgstr "Database or scheduler diagnostics could not complete"
 
-#. {service} is a product name (Prowlarr, Kavita, qBittorrent, FlareSolverr), never translated.
+#. {service} is a product name (Prowlarr, Jackett, Kavita, qBittorrent, FlareSolverr), never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.notConfigured"
 msgstr "{service}: not configured"
@@ -3484,7 +3645,11 @@ msgstr "{series} is monitored but has no enabled sources"
 
 #: src/Maki.Api/Services/HealthCheckService.cs
 msgid "health.issue.dumpMissing"
-msgstr "The MangaBaka local database has not been downloaded, so metadata comes from the rate-limited API"
+msgstr "The local MangaBaka database has not been downloaded yet. Until it is, only the reader and, for admins, Settings and Health are open. Maki retries the download by itself; check it in Settings → Library → Metadata database."
+
+#: src/Maki.Api/Services/HealthCheckService.cs
+msgid "health.issue.dumpDamaged"
+msgstr "The local MangaBaka database failed its integrity check, so metadata search and adding series can fail. Maki downloads it again by itself; check it in Settings → Library → Metadata database."
 
 #: src/Maki.Api/Services/HealthCheckService.cs
 msgid "health.issue.dumpStale"

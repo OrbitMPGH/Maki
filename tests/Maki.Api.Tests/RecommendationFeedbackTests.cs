@@ -26,8 +26,7 @@ public class RecommendationFeedbackTests : IDisposable
 
     /// <summary>A store over the fake dump once <see cref="Catalogued"/> has built one.</summary>
     private MangaBakaLocalStore Store(string path) => new(
-        new MangaBakaDumpOptions(path, Path.GetTempPath()), new FakeAppSettings(),
-        NullLogger<MangaBakaLocalStore>.Instance);
+        new MangaBakaDumpOptions(path, Path.GetTempPath()), NullLogger<MangaBakaLocalStore>.Instance);
 
     private RecommendationFeedbackService Catalogued(Maki.Data.MakiDbContext db, int userId,
         Action<DumpDbBuilder> seed)
@@ -638,7 +637,7 @@ public class RecommendationFeedbackTests : IDisposable
         var options = new EmbeddingOptions("", "", "", EmbeddingModelProfile.Base);
         var dump = new MangaBakaDumpOptions("", Path.GetTempPath());
         return new TasteAvoidanceService(
-            new MangaBakaLocalStore(dump, new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance),
+            new MangaBakaLocalStore(dump, NullLogger<MangaBakaLocalStore>.Instance),
             new VectorIndexCache(options, dump, NullLogger<VectorIndexCache>.Instance),
             new EmbeddingStore(options),
             null!,

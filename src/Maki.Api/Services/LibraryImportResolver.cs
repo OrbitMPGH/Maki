@@ -74,14 +74,14 @@ public partial class LibraryImportResolver(
             return new(null, "error.libraryImport.idUnrecognized");
         }
 
+        if (!await store.IsAvailableAsync(ct))
+        {
+            return new(null, "error.libraryImport.idNeedsDump");
+        }
+
         var mangaBakaId = id;
         if (service != ImportIdService.MangaBaka)
         {
-            if (!await store.IsAvailableAsync(ct))
-            {
-                return new(null, "error.libraryImport.idNeedsDump");
-            }
-
             var source = service == ImportIdService.AniList
                 ? MangaBakaLocalStore.ExternalSource.AniList
                 : MangaBakaLocalStore.ExternalSource.MyAnimeList;

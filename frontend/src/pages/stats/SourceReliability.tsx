@@ -117,6 +117,7 @@ export function SourceReliability({
                         radius="xl"
                         color={low ? 'var(--warn)' : 'var(--brand)'}
                         mt={4}
+                        aria-label={t`Success rate`}
                       />
                     </div>
                   )}

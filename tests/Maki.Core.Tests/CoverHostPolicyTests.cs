@@ -85,7 +85,7 @@ public class CoverHostPolicyTests
 
     [Theory]
     [InlineData("http://169.254.169.254/latest/meta-data/")]
-    [InlineData("http://127.0.0.1:8990/api/v1/settings/prowlarr")]
+    [InlineData("http://127.0.0.1:8990/api/v1/settings/indexer")]
     [InlineData("http://localhost/")]
     [InlineData("http://192.168.1.1/")]
     [InlineData("http://[::1]/")]

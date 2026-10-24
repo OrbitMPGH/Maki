@@ -12,13 +12,18 @@ const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
 // Rebuilt when the interface language changes. Passing `undefined` would take the browser's locale,
 // which is not the one the user picked: a Swedish interface would otherwise say "2 hours ago".
 let formatFor: string | null = null
-let format: Intl.RelativeTimeFormat
+const formats = new Map<Intl.RelativeTimeFormatStyle, Intl.RelativeTimeFormat>()
 
-function formatter(): Intl.RelativeTimeFormat {
+function formatter(style: Intl.RelativeTimeFormatStyle): Intl.RelativeTimeFormat {
   const locale = i18n.locale || 'en'
   if (formatFor !== locale) {
-    format = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
+    formats.clear()
     formatFor = locale
+  }
+  let format = formats.get(style)
+  if (!format) {
+    format = new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style })
+    formats.set(style, format)
   }
   return format
 }
@@ -29,8 +34,10 @@ function formatter(): Intl.RelativeTimeFormat {
  * Anything under a minute reads as "just now" rather than "in 0 seconds": clock skew between the
  * server that stamped the row and the browser rendering it routinely puts a fresh row a second or
  * two into the future, and "in 2 seconds" is a worse lie than "just now".
+ *
+ * `narrow` ("6h ago") is for tight spots like cover cards.
  */
-export function relativeTime(iso: string): string {
+export function relativeTime(iso: string, style: Intl.RelativeTimeFormatStyle = 'long'): string {
   const then = new Date(iso).getTime()
   if (Number.isNaN(then)) return ''
 
@@ -40,7 +47,7 @@ export function relativeTime(iso: string): string {
 
   for (const [unit, size] of UNITS) {
     if (magnitude >= size) {
-      return formatter().format(Math.round(seconds / size), unit)
+      return formatter(style).format(Math.round(seconds / size), unit)
     }
   }
 

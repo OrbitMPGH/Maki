@@ -900,7 +900,7 @@ public class SeriesController(
                 state?.Volume ?? 0,
                 state?.Status,
                 state?.SyncedAt,
-                state?.Error,
+                ScrobbleService.RenderError(state?.Error, tracker.Label, localizer),
                 review?.Reason,
                 candidates));
         }

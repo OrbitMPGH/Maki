@@ -1,6 +1,5 @@
 import {
   Anchor,
-  Badge,
   Button,
   Group,
   Stack,
@@ -60,20 +59,23 @@ function ReviewControls({
       { onSuccess: (r) => notify.ok(r.message) },
     )
 
+  // Shrinkable and capped, so on a phone a long candidate title truncates instead of pushing the
+  // buttons and the paste field past the edge of the table.
   return (
-    <Stack gap={6}>
+    <Stack gap={6} style={{ flex: '1 1 14rem', minWidth: 0 }}>
       {service.reviewCandidates.slice(0, 3).map((c) => (
-        <Group key={c.id} gap={6} wrap="nowrap">
+        <Group key={c.id} gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
           <Button
             size="compact-xs"
             variant="light"
+            style={{ flexShrink: 0 }}
             disabled={match.isPending}
             loading={match.isPending && match.variables?.remoteId === c.id}
             onClick={() => doMatch(c.id)}
           >
             <Trans>Use</Trans>
           </Button>
-          <Anchor href={c.url} target="_blank" rel="noopener noreferrer" size="xs" lineClamp={1}>
+          <Anchor href={c.url} target="_blank" rel="noopener noreferrer" size="xs" lineClamp={1} style={{ minWidth: 0 }}>
             {c.title}
           </Anchor>
         </Group>
@@ -134,10 +136,10 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
   }
 
   return (
-    <div>
+    <div className="series-machine">
       <Group justify="space-between" wrap="wrap" gap="sm" mb="sm">
         <Group gap="xs" align="baseline">
-          <Title order={3}><Trans>Scrobbling</Trans></Title>
+          <Title order={3} fz="var(--type-subhead)"><Trans>Scrobbling</Trans></Title>
           {!data.matched && (
             <Text size="sm" c="var(--ink-3)">
               <Trans>not yet synced</Trans>
@@ -204,10 +206,10 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
 
                     {s.reviewReason ? (
                       <Table.Td colSpan={3}>
-                        <Group gap={8} align="flex-start" wrap="nowrap">
-                          <Badge size="sm" color="var(--warn)" variant="light">
+                        <Group gap={8} align="flex-start" wrap="wrap">
+                          <StatusDot tone="warn">
                             <Trans>Needs review</Trans>
-                          </Badge>
+                          </StatusDot>
                           {data.kavitaSeriesId != null && (
                             <ReviewControls kavitaSeriesId={data.kavitaSeriesId} service={s} />
                           )}
@@ -215,9 +217,9 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                       </Table.Td>
                     ) : s.method === 'ignored' ? (
                       <Table.Td colSpan={3}>
-                        <Badge size="sm" color="var(--neutral)" variant="light">
+                        <StatusDot tone="neutral">
                           <Trans>Ignored</Trans>
-                        </Badge>
+                        </StatusDot>
                       </Table.Td>
                     ) : (
                       <>

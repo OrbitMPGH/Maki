@@ -51,7 +51,7 @@ export function TorrentProposalCard({
   const onGrab = () =>
     grab.mutate(
       { id, seriesId },
-      { onSuccess: () => notifications.show({ message: t`Sent to qBittorrent: ${title}`, color: 'var(--ok)' }) },
+      { onSuccess: () => notifications.show({ message: t`Sent to the download client: ${title}`, color: 'var(--ok)' }) },
     )
   const onDismiss = () =>
     dismiss.mutate(
@@ -63,7 +63,7 @@ export function TorrentProposalCard({
     <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
       <Stack gap={6} style={{ flex: 1, minWidth: 240 }}>
         {!banner && (
-          <Text component={Link} to={`/series/${seriesId}?tab=chapters`} size="sm" fw={600} c="brand.4" lineClamp={1}>
+          <Text component={Link} to={`/series/${seriesId}?tab=chapters`} className="series-cell-title" lineClamp={1}>
             {seriesTitle}
           </Text>
         )}
@@ -139,8 +139,13 @@ export function TorrentProposalCard({
     )
   }
   return (
-    <Panel p="md" edge="warn" edgeSide="left">
-      {body}
+    <Panel p="md">
+      <div className="cover-panel">
+        <Link to={`/series/${seriesId}?tab=chapters`} className="cover-panel-cover" tabIndex={-1} aria-hidden>
+          {proposal.seriesCoverUrl && <img src={proposal.seriesCoverUrl} alt="" loading="lazy" decoding="async" />}
+        </Link>
+        <div className="cover-panel-body">{body}</div>
+      </div>
     </Panel>
   )
 }

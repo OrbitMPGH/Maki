@@ -2,9 +2,8 @@ import { memo } from 'react'
 import {
   IconBellOff,
   IconCheck,
-  IconClock,
+  IconDeviceMobileCheck,
   IconDownload,
-  IconEye,
   IconEyeOff,
   IconPlayerPause,
   IconPlayerPlay,
@@ -17,6 +16,9 @@ import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusVisual, st
 import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
+
+/** What a library entry offers while the server is out of reach. */
+export type OfflineAvailability = 'saved' | 'unavailable'
 
 /** Glyphs for the status chip; anything else falls back to the icon `seriesStatusVisual` picks. */
 const STATUS_GLYPH: Record<string, Icon> = {
@@ -46,10 +48,16 @@ export const CoverCard = memo(function CoverCard({
   selected,
   readTracking,
   onToggle,
+  offline,
 }: {
   series: SeriesDto
   selectMode: boolean
   selected: boolean
+  /**
+   * Only while offline: `saved` marks a series with chapters on this device, `unavailable` one whose
+   * page this device holds no copy of, which is dimmed and says so in place of its chapter count.
+   */
+  offline?: OfflineAvailability
   /**
    * Whether read progress is meaningful: Kavita is connected, or the built-in reader has been
    * used. Hides the read ring otherwise, so a stale ReadingState row from a Kavita connection
@@ -71,19 +79,47 @@ export const CoverCard = memo(function CoverCard({
     readTracking,
   )
   const { readChapterCount } = series
-  const totalLabel = total || '?'
-  const downloadTip = download ? renderLabel(download.label) : null
+  // No total at all means no source has listed a chapter yet; "0 of ?" left that to be guessed.
+  const countLabel =
+    total > 0
+      ? t`${have} of ${total}`
+      : have > 0
+        ? plural(have, { one: '# chapter', other: '# chapters' })
+        : t`No chapters listed`
+  const savedTip = t`Saved on this device`
+  const countTip = nothingWanted
+    ? plural(total, {
+        one: '# chapter listed, none wanted, nothing will download',
+        other: '# chapters listed, none wanted, nothing will download',
+      })
+    : total === 0
+      ? t`No source has listed this series' chapters yet, so there is no total to count against.`
+      : undefined
+  // Only a download in progress earns the corner, and it stands in for the read ring until it ends.
+  // Queued is a list-view and series-page fact.
+  const downloading = series.downloadingCount > 0
+  const downloadTip = downloading && download ? renderLabel(download.label) : null
   const readTip = unread === 0 ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
-  const monitoredTip = series.monitored ? t`Monitored` : t`Not monitored`
+  const notMonitoredTip = t`Not monitored`
   const mutedTip = t`Notifications muted`
+  const statusTip = series.monitored ? statusLabel : t`${statusLabel}, not monitored`
 
   return (
     <Link
       to={`/series/${series.id}`}
       className="cover-card"
       data-selected={selected || undefined}
+      data-offline={offline}
+      role={selectMode ? 'checkbox' : undefined}
+      aria-checked={selectMode ? selected : undefined}
       onClick={(e) => {
         if (selectMode) {
+          e.preventDefault()
+          onToggle(series.id)
+        }
+      }}
+      onKeyDown={(e) => {
+        if (selectMode && e.key === ' ') {
           e.preventDefault()
           onToggle(series.id)
         }
@@ -97,11 +133,44 @@ export const CoverCard = memo(function CoverCard({
         )}
         <div className="cover-scrim" />
 
-        {selectMode && <span className="cover-check" data-checked={selected || undefined} />}
+        {selectMode && <span className="cover-check" data-checked={selected || undefined} aria-hidden />}
+
+        {/* Ahead of the corner marks in the DOM so the link's accessible name starts with the title. */}
+        <div className="cover-meta">
+          {/* The tooltip stays the canonical title, so the name the folder on disk and search
+              use is still reachable when a language preference has moved the label off it. */}
+          <span className="cover-title" title={series.title}>
+            {series.displayTitle}
+          </span>
+          <div className="cover-bar">
+            <div
+              className="cover-bar-fill"
+              data-complete={complete || undefined}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <div className="cover-row">
+            {offline === 'unavailable' ? (
+              <span>{t`Not available offline`}</span>
+            ) : (
+              <span data-nothing-wanted={nothingWanted || undefined} data-tip={countTip}>
+                {countLabel}
+              </span>
+            )}
+            {offline !== 'unavailable' && unread !== null && unread > 0 && (
+              <span className="cover-new">{plural(unread, { one: '# new', other: '# new' })}</span>
+            )}
+          </div>
+        </div>
 
         <div className="cover-corners">
           <div className="cover-corner cover-corner-left">
-            {readPct !== null && readPct > 0 && (
+            {offline === 'saved' && (
+              <span className="cover-state" data-tone="saved" data-tip={savedTip} role="img" aria-label={savedTip}>
+                <IconDeviceMobileCheck size={13} stroke={2} />
+              </span>
+            )}
+            {!downloading && readPct !== null && readPct > 0 && (
               <span
                 className="cover-ring"
                 data-complete={unread === 0 || undefined}
@@ -114,33 +183,24 @@ export const CoverCard = memo(function CoverCard({
               </span>
             )}
             {downloadTip && (
-              <span
-                className="cover-state"
-                data-tone={series.downloadingCount > 0 ? 'info' : undefined}
-                data-tip={downloadTip}
-                role="img"
-                aria-label={downloadTip}
-              >
-                {series.downloadingCount > 0 ? (
-                  <IconDownload size={13} stroke={2} />
-                ) : (
-                  <IconClock size={13} stroke={2} />
-                )}
+              <span className="cover-state" data-tone="info" data-tip={downloadTip} role="img" aria-label={downloadTip}>
+                <IconDownload size={13} stroke={2} />
               </span>
             )}
           </div>
 
           <div className="cover-corner cover-corner-right">
-            {/* Monitor state on every card: a subtle eye when watched, a clear eye-off when not. */}
-            <span
-              className="cover-badge cover-badge-circle"
-              data-dim={series.monitored || undefined}
-              data-tip={monitoredTip}
-              role="img"
-              aria-label={monitoredTip}
-            >
-              {series.monitored ? <IconEye size={15} /> : <IconEyeOff size={15} />}
-            </span>
+            {/* Only the exception: monitored is the normal case, and a mark for it is noise. */}
+            {!series.monitored && (
+              <span
+                className="cover-badge cover-badge-circle"
+                data-tip={notMonitoredTip}
+                role="img"
+                aria-label={notMonitoredTip}
+              >
+                <IconEyeOff size={15} />
+              </span>
+            )}
             {/* Only when muted: the other three modes are the normal case and would be noise. */}
             {series.notificationMode === 'Muted' && (
               <span
@@ -157,46 +217,14 @@ export const CoverCard = memo(function CoverCard({
             <span
               className="cover-state"
               data-tone="status"
-              data-tip={statusLabel}
+              data-unmonitored={!series.monitored || undefined}
+              data-tip={statusTip}
               role="img"
-              aria-label={statusLabel}
+              aria-label={statusTip}
               style={{ '--tone': statusColor(status.color), '--tone-on': statusOnColor(status.color) } as React.CSSProperties}
             >
               <StatusGlyph size={13} stroke={2} />
             </span>
-          </div>
-        </div>
-
-        <div className="cover-meta">
-          {/* The tooltip stays the canonical title, so the name the folder on disk and search
-              use is still reachable when a language preference has moved the label off it. */}
-          <span className="cover-title" title={series.title}>
-            {series.displayTitle}
-          </span>
-          <div className="cover-bar">
-            <div
-              className="cover-bar-fill"
-              data-complete={complete || undefined}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <div className="cover-row">
-            <span
-              data-nothing-wanted={nothingWanted || undefined}
-              data-tip={
-                nothingWanted
-                  ? plural(total, {
-                      one: '# chapter listed, none wanted, nothing will download',
-                      other: '# chapters listed, none wanted, nothing will download',
-                    })
-                  : undefined
-              }
-            >
-              {t`${have} of ${totalLabel}`}
-            </span>
-            {unread !== null && unread > 0 && (
-              <span className="cover-new">{plural(unread, { one: '# new', other: '# new' })}</span>
-            )}
           </div>
         </div>
       </div>

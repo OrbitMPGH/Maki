@@ -50,13 +50,16 @@ public static class SeriesDefaults
 public record InboxPrefsSpec(
     IReadOnlyDictionary<string, bool>? Types = null,
     bool Toasts = true,
-    string SeriesDefault = SeriesDefaults.All)
+    string SeriesDefault = SeriesDefaults.All,
+    int Version = 0)
 {
     public static readonly JsonSerializerOptions Json = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
     };
+
+    public const int CurrentVersion = 1;
 
     public static InboxPrefsSpec Default => new InboxPrefsSpec().Merge();
 
@@ -94,7 +97,7 @@ public record InboxPrefsSpec(
                     : !InboxEventTypes.DefaultsOff(type));
         }
 
-        return this with { Types = merged, SeriesDefault = ResolvedSeriesDefault.ToString() };
+        return this with { Types = merged, SeriesDefault = ResolvedSeriesDefault.ToString(), Version = CurrentVersion };
     }
 
     /// <summary>
@@ -117,12 +120,34 @@ public record InboxPrefsSpec(
 
         try
         {
-            return (JsonSerializer.Deserialize<InboxPrefsSpec>(json, Json) ?? new InboxPrefsSpec()).Merge();
+            return Upgrade(JsonSerializer.Deserialize<InboxPrefsSpec>(json, Json) ?? new InboxPrefsSpec()).Merge();
         }
         catch (JsonException)
         {
             return Default;
         }
+    }
+
+    /// <summary>
+    /// Version 1: <c>backupFinished</c> became off by default, but every saved spec already stores
+    /// <c>true</c> from when it was on, a value nobody chose. Flipped once, here; <see cref="Merge"/>
+    /// stamps the version so a later explicit opt-in survives.
+    /// </summary>
+    private static InboxPrefsSpec Upgrade(InboxPrefsSpec spec)
+    {
+        if (spec.Version >= 1 || spec.Types is null)
+        {
+            return spec;
+        }
+
+        var backup = InboxEventTypes.Key(InboxEventType.BackupFinished);
+        var types = new Dictionary<string, bool>(spec.Types, StringComparer.OrdinalIgnoreCase);
+        if (types.ContainsKey(backup))
+        {
+            types[backup] = false;
+        }
+
+        return spec with { Types = types };
     }
 
     public static string Serialize(InboxPrefsSpec spec) => JsonSerializer.Serialize(spec.Merge(), Json);

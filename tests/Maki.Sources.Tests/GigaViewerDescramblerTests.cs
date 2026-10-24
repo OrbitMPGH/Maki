@@ -1,6 +1,5 @@
 using Maki.Sources.GigaViewer;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using Maki.Core.Images;
 
 namespace Maki.Sources.Tests;
 
@@ -22,10 +21,10 @@ public class GigaViewerDescramblerTests
     public void Descramble_MapsTheScrambledGridBackToTheOriginalLayout()
     {
         var colors = BuildDistinctColors();
-        using var original = BuildGrid(colors, blockAt: i => (i % 4, i / 4));
-        using var scrambled = BuildGrid(colors, blockAt: i => (i / 4, i % 4));
+        var original = BuildGrid(colors, blockAt: i => (i % 4, i / 4));
+        var scrambled = BuildGrid(colors, blockAt: i => (i / 4, i % 4));
 
-        using var result = GigaViewerDescrambler.Descramble(scrambled);
+        var result = GigaViewerDescrambler.Descramble(scrambled);
 
         AssertPixelsEqual(original, result);
 
@@ -44,16 +43,14 @@ public class GigaViewerDescramblerTests
     public void Descramble_ProducesDecodableJpegBytes()
     {
         var colors = BuildDistinctColors();
-        using var scrambled = BuildGrid(colors, blockAt: i => (i / 4, i % 4));
-        using var stream = new MemoryStream();
-        scrambled.SaveAsPng(stream);
+        var scrambled = BuildGrid(colors, blockAt: i => (i / 4, i % 4));
 
-        var result = GigaViewerDescrambler.Descramble(stream.ToArray());
+        var result = GigaViewerDescrambler.Descramble(scrambled.EncodePng());
 
-        using var decoded = Image.Load(result);
+        var decoded = ImageCodec.Identify(result);
         Assert.Equal(Width, decoded.Width);
         Assert.Equal(Height, decoded.Height);
-        Assert.Equal("JPEG", decoded.Metadata.DecodedImageFormat?.Name);
+        Assert.Equal(ImageFormat.Jpeg, decoded.Format);
     }
 
     /// <summary>
@@ -63,9 +60,9 @@ public class GigaViewerDescramblerTests
     [Fact]
     public void Descramble_LeavesTheMarginOutsideTheBlockGridUntouched()
     {
-        using var source = new Image<Rgba32>(100, 64);
-        var blue = new Rgba32(100, 149, 237, 255);
-        var crimson = new Rgba32(220, 20, 60, 255);
+        var source = new Raster(100, 64);
+        var blue = new Rgba(100, 149, 237);
+        var crimson = new Rgba(220, 20, 60);
         for (var y = 0; y < 64; y++)
         {
             for (var x = 0; x < 100; x++)
@@ -74,7 +71,7 @@ public class GigaViewerDescramblerTests
             }
         }
 
-        using var result = GigaViewerDescrambler.Descramble(source);
+        var result = GigaViewerDescrambler.Descramble(source);
 
         for (var y = 0; y < 64; y++)
         {
@@ -88,8 +85,8 @@ public class GigaViewerDescramblerTests
     [Fact]
     public void Descramble_ReturnsBytesUntouchedWhenTooSmallForAGrid()
     {
-        using var tiny = new Image<Rgba32>(16, 16);
-        var yellow = new Rgba32(255, 255, 0, 255);
+        var tiny = new Raster(16, 16);
+        var yellow = new Rgba(255, 255, 0);
         for (var y = 0; y < 16; y++)
         {
             for (var x = 0; x < 16; x++)
@@ -98,23 +95,21 @@ public class GigaViewerDescramblerTests
             }
         }
 
-        using var stream = new MemoryStream();
-        tiny.SaveAsPng(stream);
-        var bytes = stream.ToArray();
+        var bytes = tiny.EncodePng();
 
         var result = GigaViewerDescrambler.Descramble(bytes);
 
         Assert.Equal(bytes, result);
     }
 
-    private static Rgba32[] BuildDistinctColors() =>
+    private static Rgba[] BuildDistinctColors() =>
         Enumerable.Range(0, 16)
-            .Select(i => new Rgba32((byte)(i * 16), (byte)(255 - i * 16), (byte)(i * 8 + 4), 255))
+            .Select(i => new Rgba((byte)(i * 16), (byte)(255 - i * 16), (byte)(i * 8 + 4), 255))
             .ToArray();
 
-    private static Image<Rgba32> BuildGrid(Rgba32[] colors, Func<int, (int Col, int Row)> blockAt)
+    private static Raster BuildGrid(Rgba[] colors, Func<int, (int Col, int Row)> blockAt)
     {
-        var image = new Image<Rgba32>(Width, Height);
+        var image = new Raster(Width, Height);
         for (var i = 0; i < 16; i++)
         {
             var (col, row) = blockAt(i);
@@ -132,7 +127,7 @@ public class GigaViewerDescramblerTests
         return image;
     }
 
-    private static void AssertBlockColor(Image<Rgba32> image, Rgba32 expected, int col, int row)
+    private static void AssertBlockColor(Raster image, Rgba expected, int col, int row)
     {
         // Sample the block's centre, not its corner, so an off-by-one in the block math
         // still fails the assertion instead of accidentally landing on the right pixel.
@@ -141,7 +136,7 @@ public class GigaViewerDescramblerTests
         Assert.Equal(expected, image[x, y]);
     }
 
-    private static void AssertPixelsEqual(Image<Rgba32> a, Image<Rgba32> b)
+    private static void AssertPixelsEqual(Raster a, Raster b)
     {
         Assert.Equal(a.Width, b.Width);
         Assert.Equal(a.Height, b.Height);
@@ -154,7 +149,7 @@ public class GigaViewerDescramblerTests
         }
     }
 
-    private static bool PixelsEqual(Image<Rgba32> a, Image<Rgba32> b)
+    private static bool PixelsEqual(Raster a, Raster b)
     {
         for (var y = 0; y < a.Height; y++)
         {

@@ -1,7 +1,15 @@
 import { memo } from 'react'
-import { IconBellOff, IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
+import {
+  IconBellOff,
+  IconCircleCheckFilled,
+  IconCloudOff,
+  IconDeviceMobileCheck,
+  IconEye,
+  IconEyeOff,
+} from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
+import type { OfflineAvailability } from './CoverCard'
 import {
   badgeFill,
   seriesDownloadStateVisual,
@@ -24,6 +32,7 @@ export const SeriesRow = memo(function SeriesRow({
   readTracking,
   density,
   onToggle,
+  offline,
 }: {
   series: SeriesDto
   selectMode: boolean
@@ -32,6 +41,8 @@ export const SeriesRow = memo(function SeriesRow({
   readTracking: boolean
   density: 'compact' | 'default' | 'comfortable'
   onToggle: (id: number) => void
+  /** Same meaning as on `CoverCard`. */
+  offline?: OfflineAvailability
 }) {
   const renderLabel = useLabel()
   const { t } = useLingui()
@@ -55,6 +66,7 @@ export const SeriesRow = memo(function SeriesRow({
       to={`/series/${series.id}`}
       className={`series-row ${density}`}
       data-selected={selected || undefined}
+      data-offline={offline}
       onClick={(e) => {
         if (selectMode) {
           e.preventDefault()
@@ -82,6 +94,28 @@ export const SeriesRow = memo(function SeriesRow({
             {series.displayTitle}
           </span>
           {series.year && <span className="row-year">{series.year}</span>}
+          {offline === 'saved' && (
+            <span
+              className="cover-badge"
+              data-offline-badge="saved"
+              data-tip={t`Saved on this device`}
+              style={{ flexShrink: 0 }}
+            >
+              <IconDeviceMobileCheck size={11} />
+              <span className="offline-badge-label">{t`Saved on this device`}</span>
+            </span>
+          )}
+          {offline === 'unavailable' && (
+            <span
+              className="cover-badge"
+              data-offline-badge="unavailable"
+              data-tip={t`Not available offline`}
+              style={{ flexShrink: 0 }}
+            >
+              <IconCloudOff size={11} />
+              <span className="offline-badge-label">{t`Not available offline`}</span>
+            </span>
+          )}
           <span
             className="cover-badge"
             style={{ ...badgeFill(status.color), flexShrink: 0 }}
@@ -176,10 +210,12 @@ export const SeriesRow = memo(function SeriesRow({
                     one: '# chapter listed, none wanted, nothing will download',
                     other: '# chapters listed, none wanted, nothing will download',
                   })
-                : undefined
+                : total === 0
+                  ? t`No source has listed this series' chapters yet, so there is no total to count against.`
+                  : undefined
             }
           >
-            {have}/{total || '?'}
+            {total > 0 ? `${have}/${total}` : have > 0 ? have : t`None listed`}
           </span>
         </div>
       </div>

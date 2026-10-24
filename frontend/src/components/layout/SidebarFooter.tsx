@@ -28,7 +28,14 @@ function readStarDismissed(): boolean {
   }
 }
 
-export default function SidebarFooter({ onNavigate }: { onNavigate?: () => void }) {
+export default function SidebarFooter({
+  onNavigate,
+  actions,
+}: {
+  onNavigate?: () => void
+  /** Icon buttons drawn beside the account row. */
+  actions?: ReactNode
+}) {
   const { t } = useLingui()
   const { data: version } = useAppVersion()
   // Only an admin can act on an update, so only an admin is told about one.
@@ -57,7 +64,10 @@ export default function SidebarFooter({ onNavigate }: { onNavigate?: () => void 
 
   return (
     <div className="nav-footer">
-      <UserMenu onNavigate={onNavigate} />
+      <div className="nav-footer-account">
+        <UserMenu onNavigate={onNavigate} />
+        {actions}
+      </div>
 
       {showUpdate && latestVersion ? (
         <div className="nav-footer-notice">
@@ -197,8 +207,10 @@ function VersionLabel({
   isSkipped: boolean
 }) {
   const { t } = useLingui()
+  // A nightly's build stamp ("-nightly.202610210024-") is too long for the sidebar; the tooltip keeps it.
+  const shown = version.replace(/-nightly\.\d+-/, '-nightly ')
   const tooltip = unofficial
-    ? t`Unofficial build (not a tagged release)`
+    ? `${t`Unofficial build (not a tagged release)`}: v${version}`
     : latestVersion && isSkipped
       ? t`${latestVersion} available, skipped`
       : latestVersion
@@ -213,10 +225,13 @@ function VersionLabel({
           className="nav-footer-version nav-footer-version-button"
           onClick={() => setSkippedVersion(null)}
         >
-          <span className="nav-footer-dot" />v{version}
+          <span className="nav-footer-dot" />
+          <span className="nav-footer-version-text">v{shown}</span>
         </button>
       ) : (
-        <span className="nav-footer-version">v{version}</span>
+        <span className="nav-footer-version">
+          <span className="nav-footer-version-text">v{shown}</span>
+        </span>
       )}
     </Tooltip>
   )

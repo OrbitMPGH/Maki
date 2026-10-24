@@ -453,6 +453,26 @@ public sealed class OpdsCatalogTests : IDisposable
         Assert.Equal(["New - Ch.1", "Old - Ch.1"], feed.Entries.Select(e => e.Title));
     }
 
+    [Fact]
+    public async Task RecentlyAddedLeavesOutRelinkedAndRedownloadedFiles()
+    {
+        var at = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);
+        var (relinked, _) = SeedSeriesWithChapters("Relinked", "r.cbz", ["001.jpg"], [1m], addedAt: at);
+        var (redownloaded, _) = SeedSeriesWithChapters("Redownloaded", "d.cbz", ["001.jpg"], [1m], addedAt: at);
+        SeedSeriesWithChapters("Fresh", "f.cbz", ["001.jpg"], [1m], addedAt: at.AddDays(-30));
+        using (var db = _db.NewContext())
+        {
+            db.ChapterFiles.Single(f => f.SeriesId == relinked).SourceName = ChapterFile.RelinkSourceName;
+            var file = db.ChapterFiles.Single(f => f.SeriesId == redownloaded);
+            file.ReplacedAtUtc = file.DateAdded;
+            db.SaveChanges();
+        }
+
+        var feed = await Catalog().RecentFeedAsync(Ctx, CancellationToken.None);
+
+        Assert.Equal(["Fresh - Ch.1"], feed.Entries.Select(e => e.Title));
+    }
+
     // ---- seeding ----
 
     private int SeedMultiLanguage(

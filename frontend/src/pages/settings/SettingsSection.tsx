@@ -1,9 +1,19 @@
 import { useContext, useEffect, useId, type ReactNode } from 'react'
-import { Button, Group } from '@mantine/core'
+import { Button, Group, MantineThemeProvider, type MantineThemeOverride } from '@mantine/core'
 import { Trans } from '@lingui/react/macro'
 import { Panel, type PanelProps } from '../../components/ui/Panel'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { UnsavedSettingsContext } from '../../components/settings/SaveButton'
+
+/**
+ * Inside a card every field reads label, input, hint. With the hint above the input, fields side by
+ * side put their inputs at different heights whenever one hint runs longer than its neighbour's.
+ */
+const SETTINGS_FIELDS: MantineThemeOverride = {
+  components: {
+    InputWrapper: { defaultProps: { inputWrapperOrder: ['label', 'input', 'description', 'error'] } },
+  },
+}
 
 export interface SettingsSectionProps {
   /** Registry id (or a sub-id for a card that shares one entry); the heading is `setting-{id}-title`. */
@@ -82,8 +92,8 @@ export function SettingsSection({
           <SettingsHelp>{description}</SettingsHelp>
         </div>
       )}
-      <Panel edge={unsaved ? 'brand' : undefined} {...panelProps}>
-        {children}
+      <Panel {...panelProps}>
+        <MantineThemeProvider theme={SETTINGS_FIELDS}>{children}</MantineThemeProvider>
       </Panel>
     </section>
   )

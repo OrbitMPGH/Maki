@@ -12,8 +12,7 @@ using Maki.Core.Sources;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using Maki.Core.Images;
 
 namespace Maki.Api.Tests;
 
@@ -24,10 +23,7 @@ internal static class TestQuality
 
     public static byte[] Png(int width, int height)
     {
-        using var image = new Image<Rgba32>(width, height);
-        using var stream = new MemoryStream();
-        image.SaveAsPng(stream);
-        return stream.ToArray();
+        return new Raster(width, height).EncodePng();
     }
 
     public static void WriteCbz(string path, int pages, int width, int height)

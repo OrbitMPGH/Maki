@@ -43,7 +43,6 @@ export default function AppearanceAnnouncementModal() {
       title={t`More ways to make Maki yours`}
       centered
       size="lg"
-      styles={{ body: { paddingTop: 'var(--mantine-spacing-lg)' } }}
     >
       <Stack gap="lg">
         <Group gap="sm" wrap="nowrap" align="flex-start">

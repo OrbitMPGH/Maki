@@ -30,7 +30,7 @@ public sealed class ContentCeilingTests : IDisposable
         var options = new MangaBakaDumpOptions(_dump.Path, Path.GetTempPath());
         var embedding = new EmbeddingOptions("", "", "", EmbeddingModelProfile.Base);
         return new DiscoverService(
-            new MangaBakaLocalStore(options, new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance),
+            new MangaBakaLocalStore(options, NullLogger<MangaBakaLocalStore>.Instance),
             null!,
             new VectorIndexCache(embedding, options, NullLogger<VectorIndexCache>.Instance),
             new CatalogueIndexCache(options, NullLogger<CatalogueIndexCache>.Instance),

@@ -19,7 +19,6 @@ public static class SettingKeys
     /// DNS itself (some dev machines); unset in normal deployments, which resolve normally.
     /// </summary>
     public const string MangaFireBrowserHostResolverRules = "mangafire.browserhostresolverrules";
-    public const string MangaBakaUseLocalDb = "mangabaka.uselocaldb";
     public const string MangaBakaDumpSha1 = "mangabaka.dumpsha1";
     public const string MangaBakaDumpRefreshedAt = "mangabaka.dumprefreshedat";
 
@@ -30,20 +29,31 @@ public static class SettingKeys
     /// download the prebuilt index never need it.
     /// </summary>
     public const string MangaBakaUseFullDump = "mangabaka.usefulldump";
+    /// <summary>Which indexer backend searches: an <c>IndexerBackends.Key</c>; unset reads as Prowlarr.</summary>
+    public const string IndexerBackend = "indexer.backend";
     public const string ProwlarrUrl = "prowlarr.url";
     public const string ProwlarrApiKey = "prowlarr.apikey";
     /// <summary>CSV of Prowlarr indexer ids to search; empty/unset = all indexers.</summary>
     public const string ProwlarrIndexerIds = "prowlarr.indexerids";
     /// <summary>CSV of Torznab category ids to search; empty/unset = all categories.</summary>
     public const string ProwlarrCategories = "prowlarr.categories";
-    public const string QBittorrentUrl = "qbittorrent.url";
-    public const string QBittorrentUsername = "qbittorrent.username";
-    public const string QBittorrentPassword = "qbittorrent.password";
-    public const string QBittorrentCategory = "qbittorrent.category";
-    /// <summary>qBittorrent-side download path prefix (e.g. "/downloads" in Docker) rewritten to...</summary>
-    public const string QBittorrentPathMapFrom = "qbittorrent.pathmapfrom";
+    public const string JackettUrl = "jackett.url";
+    public const string JackettApiKey = "jackett.apikey";
+    /// <summary>CSV of Jackett indexer ids (<c>nyaasi</c>); empty/unset = all configured indexers.</summary>
+    public const string JackettIndexerIds = "jackett.indexerids";
+    /// <summary>CSV of Torznab category ids to search; empty/unset = all categories.</summary>
+    public const string JackettCategories = "jackett.categories";
+    /// <summary>Which driver talks to the download client: a <c>TorrentClientKinds.Key</c>; unset reads as qBittorrent.</summary>
+    public const string DownloadClientKind = "downloadclient.kind";
+    public const string DownloadClientUrl = "downloadclient.url";
+    public const string DownloadClientUsername = "downloadclient.username";
+    public const string DownloadClientPassword = "downloadclient.password";
+    /// <summary>The category, label or tag that marks a torrent as Maki's.</summary>
+    public const string DownloadClientLabel = "downloadclient.label";
+    /// <summary>Client-side download path prefix (e.g. "/downloads" in Docker) rewritten to...</summary>
+    public const string DownloadClientPathMapFrom = "downloadclient.pathmapfrom";
     /// <summary>...the path Maki can actually read (e.g. @"Z:\downloads"). Empty = no rewrite.</summary>
-    public const string QBittorrentPathMapTo = "qbittorrent.pathmapto";
+    public const string DownloadClientPathMapTo = "downloadclient.pathmapto";
     public const string KavitaUrl = "kavita.url";
     public const string KavitaApiKey = "kavita.apikey";
     public const string KavitaPathMapFrom = "kavita.pathmapfrom";
@@ -84,6 +94,18 @@ public static class SettingKeys
     /// </summary>
     public const string MonitoringDefaultMode = "monitoring.defaultmode";
 
+    /// <summary>
+    /// "true" shows a blurred mosaic of Safe-rated covers behind the sign-in card, to anyone who can
+    /// reach the page. Off unless set. Not under <c>auth.*</c>: it is read per request, no restart.
+    /// </summary>
+    public const string SignInCoverMosaic = "signin.covermosaic";
+
+    /// <summary>
+    /// "false" keeps the multi-user surfaces (Requests, reader pickers, leaderboard) on an instance
+    /// with one account. On unless set. Ignored while more than one account is enabled.
+    /// </summary>
+    public const string SingleUserMode = "instance.singleusermode";
+
     /// <summary>"true" deletes read chapter files for every series left on Default. Off unless set.</summary>
     public const string ReadFileCleanupEnabled = "cleanup.readfiles.enabled";
 
@@ -100,6 +122,12 @@ public static class SettingKeys
     /// otherwise download the whole series. Held chapters stay wanted, so "Search missing" gets them.
     /// </summary>
     public const string MonitoringBulkHoldThreshold = "monitoring.bulkholdthreshold";
+
+    /// <summary>
+    /// "false" → refresh every series every 30 minutes, as before. On unless set: each series is
+    /// checked on a tier picked from how recently it last had a new chapter (<c>RefreshSchedule</c>).
+    /// </summary>
+    public const string MonitoringAdaptiveRefresh = "monitoring.adaptiverefresh";
 
     /// <summary>
     /// "false" → don't rewrite ComicInfo.xml inside files Maki adopts from disk (torrent grabs,
@@ -335,6 +363,23 @@ public static class SettingKeys
     public const string NotificationsInbox = "notifications.inbox";
 
     /// <summary>
+    /// Per user: which inbox event types also go out as Web Push, a JSON array of event type keys
+    /// (see <see cref="Inbox.PushPrefs"/>). Unset = new chapters available and chapters downloaded.
+    /// Only rows the inbox prefs already let through are pushed.
+    /// </summary>
+    public const string NotificationsPush = "notifications.push";
+
+    /// <summary>
+    /// The instance's VAPID key pair for Web Push, base64url, generated on first use. Instance-wide and
+    /// in backups, so a restore keeps every browser's subscription working. The private key is
+    /// credential material like the other plaintext secrets here.
+    /// </summary>
+    public const string PushVapidPublicKey = "push.vapid.publickey";
+
+    /// <inheritdoc cref="PushVapidPublicKey"/>
+    public const string PushVapidPrivateKey = "push.vapid.privatekey";
+
+    /// <summary>
     /// Per user: the level they were last told they reached. Levels are derived arithmetic and are
     /// never stored (see <c>LevelMath</c>), so without somewhere to remember the last announcement
     /// there is nothing to diff a level-up against.
@@ -419,6 +464,21 @@ public static class SettingKeys
 
     /// <summary>Days a file the user deleted stays in the recycle bin (<c>.maki-trash/bin</c>). Default 14; 0 purges on the next housekeeping run.</summary>
     public const string RecycleBinRetentionDays = "library.recyclebindays";
+
+    /// <summary>"webp" or "avif" converts the pages of new downloads and lets the library pass run. Unset is off.</summary>
+    public const string PageConversionFormat = "library.pageconversion.format";
+
+    /// <summary>1 to 100. Unset is <c>PageConversionSettings.DefaultWebpQuality</c>.</summary>
+    public const string PageConversionWebpQuality = "library.pageconversion.webpquality";
+
+    /// <summary>1 to 100. Unset is <c>PageConversionSettings.DefaultAvifQuality</c>.</summary>
+    public const string PageConversionAvifQuality = "library.pageconversion.avifquality";
+
+    /// <summary>"running" or "paused" while the library pass has work left; unset when idle.</summary>
+    public const string PageConversionPass = "library.pageconversion.pass";
+
+    /// <summary>JSON totals of the last library pass, for the settings card.</summary>
+    public const string PageConversionLastPass = "library.pageconversion.lastpass";
 
     /// <summary>"false" leaves incognito series out of the upgrade scan. Default on.</summary>
     public const string UpgradesScanIncognito = "upgrades.scanIncognito";
@@ -685,6 +745,9 @@ public static class SettingKeys
     /// <summary>Kitsu account email/password — exchanged for a token via the password grant (no redirect flow).</summary>
     public const string ScrobbleKitsuEmail = "scrobble.kitsuemail";
     public const string ScrobbleKitsuPassword = "scrobble.kitsupassword";
+    /// <summary>MangaUpdates account username/password, exchanged lazily for a session token.</summary>
+    public const string ScrobbleMangaUpdatesUsername = "scrobble.mangaupdates.username";
+    public const string ScrobbleMangaUpdatesPassword = "scrobble.mangaupdates.password";
     public const string ScrobbleIntervalMinutes = "scrobble.intervalminutes";
     /// <summary>"true" → unread Kavita series are added to the sites as plan-to-read.</summary>
     public const string ScrobblePlanToRead = "scrobble.plantoread";
@@ -788,6 +851,13 @@ public static class SettingKeys
     /// front to size the view), which would otherwise report progress the user never made.
     /// </summary>
     public const string OpdsTrackProgress = "opds.trackprogress";
+
+    /// <summary>
+    /// "true" → serve the Komga-compatible API under <c>/komga</c> for this user's OPDS token. Default
+    /// off, and only answers while <see cref="OpdsEnabled"/> is on too: it is a second protocol over
+    /// the same credential, not a separate one.
+    /// </summary>
+    public const string KomgaEnabled = "komga.enabled";
 
     /// <summary>
     /// "true" → redirect HTTP to HTTPS, send HSTS, and mark the session cookie <c>Secure</c>

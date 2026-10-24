@@ -50,6 +50,20 @@ namespace Maki.Metadata.MangaBaka;
 /// for it is a materially different explanation.
 /// </para>
 /// </param>
+/// <param name="CoReadWithTitle">
+/// The reader's own title that did the most to earn <see cref="CoRead"/>, so the card can say
+/// "Readers who finished X also finished this" instead of an anonymous crowd. Null whenever
+/// <see cref="CoRead"/> is false, and when the seed has no row in the dump.
+/// </param>
+/// <param name="RelatedToId">
+/// MangaBaka ids of the seeds <see cref="RelatedToTitle"/>, <see cref="BecauseOfTitle"/> and
+/// <see cref="CoReadWithTitle"/> name, set exactly when the title is, so a card can show the seed's
+/// own cover from the library next to a title too long to fit.
+/// </param>
+/// <param name="RelatedToThumbUrl">
+/// The dump's x250 cover of the same seeds, for a seed the reader picked from the catalogue rather
+/// than owns, which has no library cover to show.
+/// </param>
 /// <param name="FranchiseId">
 /// Which same-work component this pick belongs to (<see cref="FranchiseGraph"/>), or null when it
 /// is in no franchise, which is most of the catalogue. Never treat a null as a component: two picks
@@ -81,7 +95,14 @@ public record MangaBakaRecommendation(
     bool CoRecommended = false,
     bool CoRead = false,
     bool TasteMatch = false,
-    int? FranchiseId = null);
+    int? FranchiseId = null,
+    string? CoReadWithTitle = null,
+    string? RelatedToId = null,
+    string? BecauseOfId = null,
+    string? CoReadWithId = null,
+    string? RelatedToThumbUrl = null,
+    string? BecauseOfThumbUrl = null,
+    string? CoReadWithThumbUrl = null);
 
 /// <summary>A dump row's anime range, as <c>AnimeCoverage.Parse</c> reads it, plus its chapter count.</summary>
 public record MangaBakaAnimeCoverage(string? AnimeStart, string? AnimeEnd, int? TotalChapters);

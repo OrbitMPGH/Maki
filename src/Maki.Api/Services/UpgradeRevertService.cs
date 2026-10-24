@@ -153,7 +153,7 @@ public class UpgradeRevertService(MakiDbContext db, ReaderArchiveCache archives,
         file.PageCount = before.PageCount;
         file.MedianWidth = before.MedianWidth;
         file.MedianHeight = before.MedianHeight;
-        file.ImageFormat = before.ImageFormat;
+        before.RestoreFormatOnto(file, now);
         file.Size = new FileInfo(currentPath).Length;
         file.SourceName = before.SourceName ?? file.SourceName;
         file.SourceChapterId = before.SourceChapterId;
@@ -325,10 +325,10 @@ public class UpgradeRevertService(MakiDbContext db, ReaderArchiveCache archives,
                 PageCount = before.PageCount,
                 MedianWidth = before.MedianWidth,
                 MedianHeight = before.MedianHeight,
-                ImageFormat = before.ImageFormat,
                 MeasuredAtUtc = before.PageCount is null && before.MedianWidth is null ? null : now,
                 Trusted = plan.Detail.Trusted
             };
+            before.RestoreFormatOnto(file, now);
             db.ChapterFiles.Add(file);
             created.Add((plan.Detail, file));
         }
@@ -403,6 +403,11 @@ public class UpgradeRevertService(MakiDbContext db, ReaderArchiveCache archives,
         }
 
         await db.SaveChangesAsync(CancellationToken.None);
+        foreach (var (detail, file) in created)
+        {
+            await KoreaderDocumentIndexer.RestoreAsync(db, file.Id, detail.KoreaderDocuments, logger, CancellationToken.None);
+        }
+
         logger.LogInformation("Reverted torrent replacement {Group}: {Files} file(s) restored (user {User})",
             groupId, plans.Count, userId);
         return (rows, UpgradeRevertError.None);

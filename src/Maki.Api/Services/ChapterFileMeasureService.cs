@@ -102,7 +102,7 @@ public class ChapterFileMeasureService(
                             string.Equals(m?.SourceName, file.SourceName, StringComparison.OrdinalIgnoreCase)) is { } mapping)
                     {
                         await SourceQualitySamples.RecordAsync(db, mapping, chapter.Id, SourceQualityOrigin.Library,
-                            file.PageCount, file.MedianWidth, file.MedianHeight, file.Size, file.ImageFormat, file.DateAdded,
+                            file.PageCount, file.MedianWidth, file.MedianHeight, file.QualitySize, file.QualityImageFormat, file.DateAdded,
                             CancellationToken.None);
                         await db.SaveChangesAsync(CancellationToken.None);
                     }

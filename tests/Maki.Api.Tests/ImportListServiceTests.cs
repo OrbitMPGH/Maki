@@ -22,7 +22,7 @@ public class ImportListServiceTests : IDisposable
     private readonly string _rootPath = Path.Combine(Path.GetTempPath(), "maki-importlist-" + Guid.NewGuid().ToString("N"));
     private readonly FakeTracker _tracker = new();
     private readonly FakeStore _store = new();
-    private readonly FakeMetadataProvider _metadata = new();
+    private readonly FakeMetadataProvider _metadata;
     private readonly RecordingInbox _inbox = new();
     private readonly RecordingNotifications _notifications = new();
     private readonly IServiceScopeFactory _scopes;
@@ -30,6 +30,7 @@ public class ImportListServiceTests : IDisposable
 
     public ImportListServiceTests()
     {
+        _metadata = new FakeMetadataProvider(_store);
         Directory.CreateDirectory(_rootPath);
         using (var db = _db.NewContext())
         {
@@ -82,8 +83,10 @@ public class ImportListServiceTests : IDisposable
     private int Adder(int maxPerRun = 10) =>
         SeedUser("adder", MakiPermission.AddSeries | MakiPermission.UseTrackers, maxPerRun);
 
-    private static RemoteListEntry Entry(string remoteId, long? mangaBaka = null, long? aniList = null) =>
-        new(remoteId, ScrobbleStatus.Reading, $"Title {remoteId}", AniListId: aniList, MangaBakaId: mangaBaka);
+    private static RemoteListEntry Entry(
+        string remoteId, long? mangaBaka = null, long? aniList = null, string? mangaUpdates = null) =>
+        new(remoteId, ScrobbleStatus.Reading, $"Title {remoteId}", AniListId: aniList, MangaBakaId: mangaBaka,
+            MangaUpdatesId: mangaUpdates);
 
     private List<int?> LibraryIds()
     {
@@ -106,6 +109,38 @@ public class ImportListServiceTests : IDisposable
         Assert.All(db.ImportListSkips.ToList(), x => Assert.Equal(ImportListSkipReason.Added, x.Reason));
         Assert.All(db.UserSeriesStates.ToList(), x => Assert.Equal(ImportListService.AddedFrom, x.AddedFrom));
         Assert.Single(_inbox.Raised, r => r.Type == Maki.Core.Inbox.InboxEventType.ImportListFinished);
+    }
+
+    [Fact]
+    public async Task Resolves_a_MangaUpdates_slug_to_a_MangaBaka_id()
+    {
+        var user = Adder();
+        _tracker.Entries = [Entry("pb8uwds", mangaUpdates: "pb8uwds"), Entry("zzzzzzz", mangaUpdates: "zzzzzzz")];
+        _store.MangaUpdates["pb8uwds"] = 103;
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(1, result!.Added);
+        Assert.Equal(new int?[] { 103 }, LibraryIds());
+        using var db = _db.NewContext();
+        Assert.Contains(db.ImportListSkips.ToList(),
+            x => x.RemoteId == "zzzzzzz" && x.Reason == ImportListSkipReason.Unmatched);
+    }
+
+    [Fact]
+    public async Task A_missing_dump_leaves_MangaUpdates_entries_for_a_later_tick()
+    {
+        var user = Adder();
+        _store.Available = false;
+        _tracker.Entries = [Entry("pb8uwds", mangaUpdates: "pb8uwds")];
+        _store.MangaUpdates["pb8uwds"] = 103;
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.True(result!.DumpUnavailable);
+        Assert.Empty(LibraryIds());
+        using var db = _db.NewContext();
+        Assert.Empty(db.ImportListSkips);
     }
 
     [Fact]
@@ -205,7 +240,7 @@ public class ImportListServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task A_missing_dump_still_adds_entries_that_already_carry_a_MangaBaka_id()
+    public async Task A_missing_dump_also_waits_on_entries_that_already_carry_a_MangaBaka_id()
     {
         var user = Adder();
         _store.Available = false;
@@ -213,12 +248,79 @@ public class ImportListServiceTests : IDisposable
 
         var result = await Service().RunUserAsync(user, null, full: false, default);
 
-        Assert.Equal(1, result!.Added);
+        Assert.Equal(0, result!.Added);
+        Assert.Equal(0, result.Skipped);
         Assert.Equal(0, result.Errors);
         Assert.True(result.DumpUnavailable);
-        Assert.Equal(new int?[] { 101 }, LibraryIds());
+        Assert.Empty(LibraryIds());
         using var db = _db.NewContext();
-        Assert.DoesNotContain(db.ImportListSkips, x => x.RemoteId == "r2");
+        Assert.Empty(db.ImportListSkips);
+    }
+
+    [Fact]
+    public async Task A_MangaBaka_id_the_dump_does_not_have_yet_is_retried_after_a_day()
+    {
+        var user = Adder();
+        _store.NotInDump.Add(101);
+        _tracker.Entries = [Entry("r1", mangaBaka: 101)];
+
+        var first = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(1, first!.Skipped);
+        Assert.Empty(LibraryIds());
+        using (var db = _db.NewContext())
+        {
+            var row = Assert.Single(db.ImportListSkips);
+            Assert.Equal(ImportListSkipReason.Unmatched, row.Reason);
+            Assert.Equal(101, row.MangaBakaId);
+            row.CreatedAt = DateTime.UtcNow - ImportListService.NotInDumpRetryAfter - TimeSpan.FromMinutes(1);
+            await db.SaveChangesAsync();
+        }
+
+        _store.NotInDump.Clear();
+        var second = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(1, second!.Added);
+        Assert.Equal(new int?[] { 101 }, LibraryIds());
+    }
+
+    [Fact]
+    public async Task A_novel_on_a_MangaBaka_list_is_not_retried_daily()
+    {
+        var user = Adder();
+        _metadata.Novels.Add(101);
+        _tracker.Entries = [Entry("r1", mangaBaka: 101)];
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(1, result!.Skipped);
+        using var db = _db.NewContext();
+        var row = Assert.Single(db.ImportListSkips);
+        Assert.Equal(ImportListSkipReason.Unmatched, row.Reason);
+        Assert.Null(row.MangaBakaId);
+    }
+
+    [Fact]
+    public async Task A_tracker_id_the_dump_cannot_resolve_still_waits_a_week()
+    {
+        var user = Adder();
+        using (var db = _db.NewContext())
+        {
+            db.ImportListSkips.Add(new ImportListSkip
+            {
+                UserId = user, Service = FakeTracker.ServiceName, RemoteId = "r1", Title = "Title r1",
+                Reason = ImportListSkipReason.Unmatched, CreatedAt = DateTime.UtcNow.AddDays(-2),
+            });
+            await db.SaveChangesAsync();
+        }
+
+        _tracker.Entries = [Entry("r1", aniList: 5001)];
+        _store.AniList[5001] = 102;
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(1, result!.Skipped);
+        Assert.Empty(LibraryIds());
     }
 
     [Fact]
@@ -594,12 +696,25 @@ public class ImportListServiceTests : IDisposable
     }
 
     private sealed class FakeStore() : MangaBakaLocalStore(
-        new MangaBakaDumpOptions("", Path.GetTempPath()), new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance)
+        new MangaBakaDumpOptions("", Path.GetTempPath()), NullLogger<MangaBakaLocalStore>.Instance)
     {
         public Dictionary<long, long> AniList { get; } = [];
+        public Dictionary<string, long> MangaUpdates { get; } = [];
         public bool Available { get; set; } = true;
 
+        /// <summary>Ids the dump has no row for: series newer than the snapshot.</summary>
+        public HashSet<long> NotInDump { get; } = [];
+
         public override Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(Available);
+
+        public override Task<bool> HasSeriesAsync(long id, CancellationToken ct = default) =>
+            Task.FromResult(Available && !NotInDump.Contains(id));
+
+        public override Task<IReadOnlyDictionary<string, long>> GetIdsByMangaUpdatesIdsAsync(
+            IReadOnlyCollection<string> slugs, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyDictionary<string, long>>(
+                slugs.Select(s => s.ToLowerInvariant()).Where(MangaUpdates.ContainsKey)
+                    .Distinct().ToDictionary(s => s, s => MangaUpdates[s]));
 
         public override Task<IReadOnlyDictionary<long, long>> GetIdsByExternalIdsAsync(
             ExternalSource source, IReadOnlyCollection<long> externalIds, CancellationToken ct = default) =>
@@ -608,9 +723,15 @@ public class ImportListServiceTests : IDisposable
                 : new Dictionary<long, long>());
     }
 
-    private sealed class FakeMetadataProvider : IMetadataProvider
+    /// <summary>
+    /// Answers like MangaBakaProvider: nothing without the dump, nothing for an id it lacks, and
+    /// nothing for a novel, which the dump does have.
+    /// </summary>
+    private sealed class FakeMetadataProvider(FakeStore store) : IMetadataProvider
     {
         public const long Throws = 666;
+
+        public HashSet<long> Novels { get; } = [];
 
         public string Name => "fake";
 
@@ -621,6 +742,9 @@ public class ImportListServiceTests : IDisposable
         public Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default) =>
             providerId == Throws.ToString()
                 ? throw new HttpRequestException("provider down")
+                : !store.Available || store.NotInDump.Contains(long.Parse(providerId)) ||
+                  Novels.Contains(long.Parse(providerId))
+                ? Task.FromResult<SeriesMetadata?>(null)
                 : Task.FromResult<SeriesMetadata?>(new SeriesMetadata
                 {
                     ProviderId = providerId,

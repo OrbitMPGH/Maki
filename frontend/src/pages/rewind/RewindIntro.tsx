@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ActionIcon } from '@mantine/core'
-import { IconX } from '@tabler/icons-react'
+import { IconPlayerPauseFilled, IconPlayerPlayFilled, IconX } from '@tabler/icons-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useLingui } from '@lingui/react/macro'
 import type { ActivityStats } from '../../api/hooks'
@@ -29,7 +29,11 @@ export function RewindIntro({
   // language switch would otherwise leave the deck frozen in whatever language built it.
   const slides = useMemo(() => buildSlides(stats, label), [stats, label, i18n.locale])
   const [index, setIndex] = useState(0)
+  const [paused, setPaused] = useState(false)
+  // Time already spent on the current slide, so a resume finishes the slide instead of restarting it.
+  const elapsed = useRef(0)
   const overlayRef = useRef<HTMLDivElement>(null)
+  const pauseRef = useRef<HTMLButtonElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const isLast = index === slides.length - 1
 
@@ -38,12 +42,20 @@ export function RewindIntro({
   }, [slides.length])
   const prev = useCallback(() => setIndex((i) => Math.max(i - 1, 0)), [])
 
-  // Auto-advance; the last slide stays until dismissed.
+  // Auto-advance; the last slide stays until dismissed. Declared before the timer so a new slide
+  // starts from zero after the old slide's cleanup has added its time.
   useEffect(() => {
-    if (isLast) return
-    const timer = setTimeout(next, SLIDE_MS)
-    return () => clearTimeout(timer)
-  }, [index, isLast, next])
+    elapsed.current = 0
+  }, [index])
+  useEffect(() => {
+    if (isLast || paused) return
+    const started = performance.now()
+    const timer = setTimeout(next, Math.max(0, SLIDE_MS - elapsed.current))
+    return () => {
+      clearTimeout(timer)
+      elapsed.current += performance.now() - started
+    }
+  }, [index, isLast, next, paused])
 
   // Focus moves into the overlay while it is open and goes back to the Play button afterwards.
   useEffect(() => {
@@ -57,10 +69,11 @@ export function RewindIntro({
       if (e.key === 'Escape') {
         onClose()
       } else if (e.key === 'Tab') {
-        // Nothing behind the overlay is reachable: Tab only hops between the overlay and its close button.
+        // Nothing behind the overlay is reachable: Tab cycles the overlay and its two buttons.
         e.preventDefault()
-        if (document.activeElement === closeRef.current) overlayRef.current?.focus()
-        else closeRef.current?.focus()
+        const stops = [overlayRef.current, pauseRef.current, closeRef.current].filter((s) => s !== null)
+        const at = stops.indexOf(document.activeElement as HTMLDivElement | HTMLButtonElement)
+        stops[(at + (e.shiftKey ? stops.length - 1 : 1)) % stops.length]?.focus()
       } else if (e.key === ' ' && e.target instanceof HTMLButtonElement) {
         // Space on the focused close button closes; it should not also advance the slide.
       } else if (e.key === 'ArrowRight' || e.key === ' ') {
@@ -75,12 +88,18 @@ export function RewindIntro({
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose, next, prev])
 
-  // Lock page scroll while the overlay is up.
+  // Lock page scroll while the overlay is up. In the installed iOS app the shell's <main> is the
+  // scroller (lib/pageScroll.ts), so it is locked too.
   useEffect(() => {
     const previous = document.body.style.overflow
     document.body.style.overflow = 'hidden'
+    const inner =
+      document.documentElement.dataset.scroll === 'inner' ? document.getElementById('main') : null
+    const previousInner = inner?.style.overflow ?? ''
+    if (inner) inner.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = previous
+      if (inner) inner.style.overflow = previousInner
     }
   }, [])
 
@@ -152,32 +171,47 @@ export function RewindIntro({
               (reduced || isLast ? (
                 <div className="rewind-progress-fill" style={{ width: '100%' }} />
               ) : (
-                <motion.div
+                <div
                   key={index}
-                  className="rewind-progress-fill"
-                  initial={{ width: '0%' }}
-                  animate={{ width: '100%' }}
-                  transition={{ duration: SLIDE_MS / 1000, ease: 'linear' }}
+                  className="rewind-progress-fill rewind-progress-timed"
+                  style={{ animationDuration: `${SLIDE_MS}ms`, animationPlayState: paused ? 'paused' : 'running' }}
                 />
               ))}
           </div>
         ))}
       </div>
 
-      <ActionIcon
-        ref={closeRef}
-        className="rewind-close"
-        variant="subtle"
-        color="gray.0"
-        size="lg"
-        aria-label={t`Close Rewind`}
-        onClick={(e) => {
-          e.stopPropagation()
-          onClose()
-        }}
-      >
-        <IconX size={22} />
-      </ActionIcon>
+      <div className="rewind-controls">
+        {!isLast && (
+          <ActionIcon
+            ref={pauseRef}
+            variant="subtle"
+            color="gray.0"
+            size="lg"
+            aria-label={paused ? t`Resume Rewind` : t`Pause Rewind`}
+            aria-pressed={paused}
+            onClick={(e) => {
+              e.stopPropagation()
+              setPaused((p) => !p)
+            }}
+          >
+            {paused ? <IconPlayerPlayFilled size={18} /> : <IconPlayerPauseFilled size={18} />}
+          </ActionIcon>
+        )}
+        <ActionIcon
+          ref={closeRef}
+          variant="subtle"
+          color="gray.0"
+          size="lg"
+          aria-label={t`Close Rewind`}
+          onClick={(e) => {
+            e.stopPropagation()
+            onClose()
+          }}
+        >
+          <IconX size={22} />
+        </ActionIcon>
+      </div>
 
       <AnimatePresence mode="wait">
         <motion.div

@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
-using SixLabors.ImageSharp;
+using Maki.Core.Images;
 
 namespace Maki.Core.Reading;
 
@@ -58,7 +58,7 @@ public static class ArchiveHealthAnalyzer
     /// because re-verifying a library means reading all of it again, and a change to what the
     /// directory tells us has no business forcing that.
     /// </summary>
-    public const int VerifyVersion = 1;
+    public const int VerifyVersion = 2;
 
     public const int MaxPages = 5000;
     public const long MaxEntryBytes = 128L * 1024 * 1024;
@@ -202,10 +202,10 @@ public static class ArchiveHealthAnalyzer
                 {
                     var (name, bytes) = entry;
                     var rawHash = Convert.ToHexString(SHA256.HashData(bytes));
-                    using var stream = new MemoryStream(bytes);
                     try
                     {
-                        var info = await Image.IdentifyAsync(stream, cancel);
+                        cancel.ThrowIfCancellationRequested();
+                        var info = ImageCodec.Identify(bytes);
                         if ((long)info.Width * info.Height > MaxPixels)
                             incomplete.Add("health.finding.pixelLimit");
                         fingerprints.Add(new(name, rawHash, info.Width, info.Height));
@@ -215,8 +215,9 @@ public static class ArchiveHealthAnalyzer
                     // and none of them should abort the whole archive's analysis.
                     catch (Exception ex) when (ex is not (OperationCanceledException or OutOfMemoryException))
                     {
-                        if (ex is UnknownImageFormatException &&
-                            Path.GetExtension(name).Equals(".avif", StringComparison.OrdinalIgnoreCase))
+                        // libheif does not cover every AVIF a browser shows, so an unreadable one
+                        // says more about the decoder than about the file.
+                        if (Path.GetExtension(name).Equals(".avif", StringComparison.OrdinalIgnoreCase))
                             incomplete.Add("health.finding.unsupportedDecoder");
                         else problems.Add(new("damagedImage", "error", "health.finding.cannotRead", Params(new { name })));
                         fingerprints.Add(new(name, rawHash, 0, 0));
@@ -294,7 +295,7 @@ public static class ArchiveHealthAnalyzer
                 using var rendered = await PdfReader.RenderPageAsync(path, i, PdfReader.FingerprintEdge, token);
                 var bytes = rendered.GetBuffer().AsSpan(0, (int)rendered.Length);
                 var rawHash = Convert.ToHexString(SHA256.HashData(bytes));
-                var info = Image.Identify(rendered);
+                var info = ImageCodec.Identify(bytes);
                 result.Pages.Add(new(name, rawHash, info.Width, info.Height));
             }
             catch (OperationCanceledException) { throw; }

@@ -65,21 +65,22 @@ public class LibraryImportResolverTests
     }
 
     [Fact]
-    public async Task An_external_id_without_the_dump_says_so()
+    public async Task Any_id_without_the_dump_says_so()
     {
         var store = new FakeStore { Available = false };
         store.AniList[30013] = 501;
         var resolver = new LibraryImportResolver([new FakeProvider()], store);
 
-        var result = await resolver.ResolveAsync("al:30013", CancellationToken.None);
-
-        Assert.Equal("error.libraryImport.idNeedsDump", result.ErrorKey);
+        Assert.Equal("error.libraryImport.idNeedsDump",
+            (await resolver.ResolveAsync("al:30013", CancellationToken.None)).ErrorKey);
+        Assert.Equal("error.libraryImport.idNeedsDump",
+            (await resolver.ResolveAsync("77", CancellationToken.None)).ErrorKey);
     }
 
     [Fact]
-    public async Task A_MangaBaka_id_skips_the_dump_and_asks_the_provider()
+    public async Task A_MangaBaka_id_asks_the_provider_directly()
     {
-        var store = new FakeStore { Available = false };
+        var store = new FakeStore();
         var resolver = new LibraryImportResolver([new FakeProvider()], store);
 
         Assert.Equal("77", (await resolver.ResolveAsync("77", CancellationToken.None)).Match!.ProviderId);
@@ -90,7 +91,7 @@ public class LibraryImportResolverTests
     }
 
     private sealed class FakeStore() : MangaBakaLocalStore(
-        new MangaBakaDumpOptions("", Path.GetTempPath()), new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance)
+        new MangaBakaDumpOptions("", Path.GetTempPath()), NullLogger<MangaBakaLocalStore>.Instance)
     {
         public Dictionary<long, long> AniList { get; } = [];
         public bool Available { get; set; } = true;

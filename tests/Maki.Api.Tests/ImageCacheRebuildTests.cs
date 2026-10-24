@@ -2,8 +2,7 @@ using Maki.Api.Configuration;
 using Maki.Api.Services;
 using Maki.Core.Metadata;
 using Microsoft.Extensions.Logging.Abstractions;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using Maki.Core.Images;
 
 namespace Maki.Api.Tests;
 
@@ -46,9 +45,9 @@ public class ImageCacheRebuildTests : IDisposable
         Assert.Equal(2, snapshot.Downloaded);
         Assert.Equal(0, snapshot.Failed);
         // The downloaded poster is 4px wide, so a re-download of the good one would be visible here.
-        Assert.Equal(8, Image.Identify(CoverPath(good)).Width);
-        Assert.Equal(4, Image.Identify(CoverPath(missing)).Width);
-        Assert.Equal(4, Image.Identify(CoverPath(truncated)).Width);
+        Assert.Equal(8, ImageCodec.IdentifyFile(CoverPath(good)).Width);
+        Assert.Equal(4, ImageCodec.IdentifyFile(CoverPath(missing)).Width);
+        Assert.Equal(4, ImageCodec.IdentifyFile(CoverPath(truncated)).Width);
     }
 
     [Fact]
@@ -63,7 +62,7 @@ public class ImageCacheRebuildTests : IDisposable
 
         Assert.Equal(2, status.Snapshot().Total);
         Assert.Equal(2, status.Snapshot().Downloaded);
-        Assert.Equal(4, Image.Identify(CoverPath(good)).Width);
+        Assert.Equal(4, ImageCodec.IdentifyFile(CoverPath(good)).Width);
     }
 
     [Fact]
@@ -149,13 +148,7 @@ public class ImageCacheRebuildTests : IDisposable
             NullLogger<ImageCacheRebuildService>.Instance);
     }
 
-    private static byte[] Jpeg(int size)
-    {
-        using var image = new Image<Rgba32>(size, size);
-        using var buffer = new MemoryStream();
-        image.SaveAsJpeg(buffer);
-        return buffer.ToArray();
-    }
+    private static byte[] Jpeg(int size) => new Raster(size, size).EncodeJpeg(75);
 
     /// <summary>Answers every cover download with the same image, so a re-download is detectable.</summary>
     private sealed class JpegClientFactory(byte[] bytes) : IHttpClientFactory

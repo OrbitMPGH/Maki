@@ -3,7 +3,7 @@ import { useEffect, useReducer, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
-import { Button, Checkbox, Group, MultiSelect, Select, Stack, Switch, Text } from '@mantine/core'
+import { Button, Checkbox, Group, MultiSelect, Select, SimpleGrid, Stack, Switch, Text } from '@mantine/core'
 import { IconAdjustments } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { SettingsSection } from './SettingsSection'
@@ -18,13 +18,13 @@ import {
 } from '../../api/upgrades'
 import { savedToast, useSliceSync } from './sharedRecord'
 import {
-  useConnectionSettings,
   useDownloadSettings,
-  useProwlarrIndexers,
-  useProwlarrOptions,
+  useIndexerList,
+  useIndexerOptions,
+  useIndexerSettings,
   useReadFileCleanupSettings,
   useSaveDownloadSettings,
-  useSaveProwlarrOptions,
+  useSaveIndexerOptions,
   useSaveReadFileCleanupSettings,
   useSaveSourceLanguages,
   type SourceOrderMode,
@@ -33,6 +33,9 @@ import {
   useSources,
 } from '../../api/hooks'
 import { ConnectionSettingsCard } from '../../components/ConnectionSettingsCard'
+import { IndexerFieldRow } from '../../components/settings/IndexerForm'
+import { indexerBackendName, useIndexerForm } from '../../components/settings/useIndexerForm'
+import { useDownloadClientFields } from '../../components/settings/downloadClientFields'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { languageName } from '../../api/titles'
@@ -227,6 +230,7 @@ export function DownloadQueueSection() {
   const [retryAttempts, setRetryAttempts] = useState<number>(5)
   const [itemTimeoutMinutes, setItemTimeoutMinutes] = useState<number>(120)
   const [bulkHoldThreshold, setBulkHoldThreshold] = useState<number>(5)
+  const [adaptiveRefresh, setAdaptiveRefresh] = useState(true)
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useSliceSync(
@@ -235,12 +239,14 @@ export function DownloadQueueSection() {
       retryAttempts: settings.retryEnabled ? settings.retryMaxAttempts : 0,
       itemTimeoutMinutes: settings.itemTimeoutMinutes,
       bulkHoldThreshold: settings.bulkHoldThreshold,
+      adaptiveRefresh: settings.adaptiveRefresh,
     },
     (slice) => {
       setConcurrentChapters(slice.concurrentChapters)
       setRetryAttempts(slice.retryAttempts)
       setItemTimeoutMinutes(slice.itemTimeoutMinutes)
       setBulkHoldThreshold(slice.bulkHoldThreshold)
+      setAdaptiveRefresh(slice.adaptiveRefresh)
     },
     discarded,
   )
@@ -250,7 +256,8 @@ export function DownloadQueueSection() {
     (Number(concurrentChapters) !== settings.concurrentChapters ||
       Number(retryAttempts) !== (settings.retryEnabled ? settings.retryMaxAttempts : 0) ||
       Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes ||
-      Number(bulkHoldThreshold) !== settings.bulkHoldThreshold)
+      Number(bulkHoldThreshold) !== settings.bulkHoldThreshold ||
+      adaptiveRefresh !== settings.adaptiveRefresh)
 
   return (
     <SettingsSection
@@ -259,7 +266,7 @@ export function DownloadQueueSection() {
       description={
         <Trans>
           How chapters from scraper sources move through the queue. Torrents are handled by
-          qBittorrent below.
+          the download client below.
         </Trans>
       }
       dirty={dirty}
@@ -274,75 +281,68 @@ export function DownloadQueueSection() {
             ...(retries > 0 && { retryMaxAttempts: retries }),
             itemTimeoutMinutes: clampItemTimeout(Number(itemTimeoutMinutes)),
             bulkHoldThreshold: Number(bulkHoldThreshold),
+            adaptiveRefresh,
           },
           { onSuccess: savedToast },
         )
       }}
     >
-      <SettingsNumberInput
-        label={t`Concurrent chapter downloads`}
-        description={t`More isn't always faster: tripping a site's rate limit pauses that source for a while.`}
-        min={1}
-        max={8}
-        value={concurrentChapters}
-        onChange={setConcurrentChapters}
-        w={220}
-        mb="md"
-      />
-      <Text fw={500} size="sm" mb={4}>
-        <Trans>Retries</Trans>
-      </Text>
-      <SettingsHelp mb="xs">
-        <Trans>
-          Failed downloads retry on a growing backoff (5m, 10m, 20m, ...). 0 turns automatic retry
-          off. Manual retries from Activity don't count.
-        </Trans>
-      </SettingsHelp>
-      <SettingsNumberInput
-        label={t`Retry a failed download up to (attempts)`}
-        min={0}
-        max={20}
-        value={retryAttempts}
-        onChange={setRetryAttempts}
-        w={220}
-        mb="md"
-      />
-      <Text fw={500} size="sm" mb={4}>
-        <Trans>Stuck downloads</Trans>
-      </Text>
-      <SettingsHelp mb="xs">
-        <Trans>
-          A chapter that never finishes holds a worker and can stall the whole queue. Past this
-          many minutes it is marked failed and retried like any other failure. 0 means no limit.
-        </Trans>
-      </SettingsHelp>
-      <SettingsNumberInput
-        label={t`Give up on a chapter after (minutes)`}
-        min={0}
-        max={1440}
-        value={itemTimeoutMinutes}
-        onChange={setItemTimeoutMinutes}
-        settle={clampItemTimeout}
-        w={220}
-        mb="md"
-      />
-      <Text fw={500} size="sm" mb={4}>
-        <Trans>Bulk new chapters</Trans>
-      </Text>
-      <SettingsHelp mb="xs">
-        <Trans>
-          When a refresh finds more new chapters for a series than this, none of them are queued.
-          That usually means a source renumbered or backfilled its list, not a real release. They
-          stay wanted, so you can download them from the series page. 0 means always queue.
-        </Trans>
-      </SettingsHelp>
-      <SettingsNumberInput
-        label={t`Don't auto-queue more than (chapters)`}
-        min={0}
-        max={1000}
-        value={bulkHoldThreshold}
-        onChange={setBulkHoldThreshold}
-        w={220}
+      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" verticalSpacing="lg" mb="lg">
+        <SettingsNumberInput
+          label={t`Concurrent chapter downloads`}
+          description={t`More isn't always faster: tripping a site's rate limit pauses that source for a while.`}
+          min={1}
+          max={8}
+          value={concurrentChapters}
+          onChange={setConcurrentChapters}
+        />
+        <SettingsNumberInput
+          label={t`Retry a failed download up to (attempts)`}
+          description={
+            <Trans>
+              Failed downloads retry on a growing backoff (5m, 10m, 20m, ...). 0 turns automatic retry
+              off. Manual retries from Activity don't count.
+            </Trans>
+          }
+          min={0}
+          max={20}
+          value={retryAttempts}
+          onChange={setRetryAttempts}
+        />
+        <SettingsNumberInput
+          label={t`Give up on a chapter after (minutes)`}
+          description={
+            <Trans>
+              A chapter that never finishes holds a worker and can stall the whole queue. Past this
+              many minutes it is marked failed and retried like any other failure. 0 means no limit.
+            </Trans>
+          }
+          min={0}
+          max={1440}
+          value={itemTimeoutMinutes}
+          onChange={setItemTimeoutMinutes}
+          settle={clampItemTimeout}
+        />
+        <SettingsNumberInput
+          label={t`Don't auto-queue more than (chapters)`}
+          description={
+            <Trans>
+              When a refresh finds more new chapters for a series than this, none of them are queued.
+              That usually means a source renumbered or backfilled its list, not a real release. They
+              stay wanted, so you can download them from the series page. 0 means always queue.
+            </Trans>
+          }
+          min={0}
+          max={1000}
+          value={bulkHoldThreshold}
+          onChange={setBulkHoldThreshold}
+        />
+      </SimpleGrid>
+      <Switch
+        label={t`Check quiet series less often`}
+        description={t`A series is checked every 30 minutes for a few hours after a new chapter, every 2 hours while chapters keep coming, every 6 hours after two quiet weeks and once a day after two quiet months. A new chapter puts it straight back on the fast checks. Off checks every series every 30 minutes.`}
+        checked={adaptiveRefresh}
+        onChange={(e) => setAdaptiveRefresh(e.currentTarget.checked)}
       />
     </SettingsSection>
   )
@@ -397,7 +397,7 @@ export function SmartDownloadSection() {
         )
       }
     >
-      <Group align="flex-end">
+      <Group align="flex-end" className="settings-field-row">
         <SettingsNumberInput
           label={t`Fetch more when unread chapters drop to`}
           description={t`At this many or fewer downloaded chapters ahead of where you are, Maki fetches more.`}
@@ -405,7 +405,6 @@ export function SmartDownloadSection() {
           max={10}
           value={smartDownloadChaptersLeft}
           onChange={setSmartDownloadChaptersLeft}
-          w={220}
         />
         <SettingsNumberInput
           label={t`Chapters to fetch each time`}
@@ -413,7 +412,6 @@ export function SmartDownloadSection() {
           max={20}
           value={smartDownloadChapters}
           onChange={setSmartDownloadChapters}
-          w={220}
         />
       </Group>
     </SettingsSection>
@@ -474,7 +472,6 @@ export function ReadFileCleanupSection() {
           max={365}
           value={days}
           onChange={setDays}
-          w={220}
         />
         <Switch
           label={t`Keep each reader's last read chapter`}
@@ -487,7 +484,7 @@ export function ReadFileCleanupSection() {
   )
 }
 
-/** The hardlink switch inside the qBittorrent card. Part of the download settings record, saved on change. */
+/** The hardlink switch inside the download client card. Part of the download settings record, saved on change. */
 function HardlinkField() {
   const { t } = useLingui()
   const { data: settings } = useDownloadSettings()
@@ -531,26 +528,15 @@ export function FlareSolverrCard() {
   )
 }
 
-export function QbittorrentCard() {
+export function DownloadClientCard() {
   const { t } = useLingui()
+  const fields = useDownloadClientFields()
   return (
     <ConnectionSettingsCard
-      name="qbittorrent"
-      title="qBittorrent"
-      description={t`Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads.`}
-      fields={[
-        { key: 'url', label: t`URL`, placeholder: 'http://localhost:8080' },
-        { key: 'username', label: t`Username` },
-        { key: 'password', label: t`Password`, secret: true },
-        {
-          key: 'category',
-          label: t`Category`,
-          placeholder: 'maki',
-          description: t`Tag given to torrents Maki adds. Defaults to maki.`,
-        },
-        { key: 'pathMapFrom', label: t`Path as qBittorrent reports it`, placeholder: t`/downloads (optional)` },
-        { key: 'pathMapTo', label: t`Path as Maki sees it`, placeholder: t`Z:\\downloads (optional)` },
-      ]}
+      name="downloadclient"
+      title={t`Download client`}
+      description={t`Sends grabbed releases to your torrent client. Finished torrents import into the library automatically. Fill the path mapping only if the client reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads.`}
+      fields={fields}
     >
       <HardlinkField />
     </ConnectionSettingsCard>
@@ -702,7 +688,6 @@ export function UpgradeScanSection() {
         max={365}
         value={trashRetentionDays}
         onChange={setTrashRetentionDays}
-        w={260}
         mb="md"
       />
       <Switch
@@ -789,7 +774,7 @@ export function VolumeReleasesSection() {
       description={
         <Trans>
           Looks for torrent volume packs that could replace single-chapter files, for series whose
-          profile aims for volumes. Needs Prowlarr and qBittorrent, and runs an hour after the
+          profile aims for volumes. Needs an indexer and a download client, and runs an hour after the
           daily scan.
         </Trans>
       }
@@ -861,28 +846,27 @@ export function VolumeReleasesSection() {
   )
 }
 
-/** The indexer and category filter, which saves through its own endpoint beside the connection. */
-function useProwlarrOptionsForm() {
-  const { data: options } = useProwlarrOptions()
-  const save = useSaveProwlarrOptions()
-  const [selectedIndexers, setSelectedIndexers] = useState<Set<number>>(new Set())
+/** The indexer and category filter of the active backend, which saves through its own endpoint beside the connection. */
+function useIndexerOptionsForm() {
+  const { data: connection } = useIndexerSettings()
+  const backend = connection?.backend
+  const { data: options } = useIndexerOptions(backend)
+  const save = useSaveIndexerOptions()
+  const [selectedIndexers, setSelectedIndexers] = useState<Set<string>>(new Set())
   const [categories, setCategories] = useState<string[]>([])
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useEffect(() => {
     if (options) {
-      setSelectedIndexers(
-        new Set((options.indexerIds ?? '').split(',').filter(Boolean).map(Number)),
-      )
+      setSelectedIndexers(new Set((options.indexerIds ?? '').split(',').filter(Boolean)))
       setCategories((options.categories ?? '').split(',').filter(Boolean))
     }
   }, [options, discarded])
 
-  const sortedIds = (ids: Iterable<number>) => [...ids].sort((a, b) => a - b).join(',')
+  const sortedIds = (ids: Iterable<string>) => [...ids].sort().join(',')
   const dirty =
     options !== undefined &&
-    (sortedIds(selectedIndexers) !==
-      sortedIds((options.indexerIds ?? '').split(',').filter(Boolean).map(Number)) ||
+    (sortedIds(selectedIndexers) !== sortedIds((options.indexerIds ?? '').split(',').filter(Boolean)) ||
       categories.join(',') !== (options.categories ?? ''))
 
   return {
@@ -894,37 +878,62 @@ function useProwlarrOptionsForm() {
     saving: save.isPending,
     reset: discard,
     commit: () =>
-      save.mutateAsync({
-        indexerIds: [...selectedIndexers].sort((a, b) => a - b).join(',') || null,
-        categories: categories.join(',') || null,
-      }),
+      backend === undefined
+        ? Promise.resolve()
+        : save.mutateAsync({
+            backend,
+            indexerIds: sortedIds(selectedIndexers) || null,
+            categories: categories.join(',') || null,
+          }),
   }
 }
 
-export function ProwlarrSection() {
+export function IndexerSection() {
   const { t } = useLingui()
-  const options = useProwlarrOptionsForm()
+  const form = useIndexerForm()
+  const options = useIndexerOptionsForm()
+  const optionsDirty = options.dirty && !form.switching
+  const selectedName = indexerBackendName(form.selected)
+
   return (
-    <ConnectionSettingsCard
-      name="prowlarr"
-      title="Prowlarr"
-      description={t`Searches your torrent indexers for manga releases, used for volume upgrades and for grabbing releases by hand. No app sync needed.`}
-      fields={[
-        { key: 'url', label: t`URL`, placeholder: 'http://localhost:9696' },
-        { key: 'apiKey', label: t`API key`, secret: true },
-      ]}
-      extra={options}
+    <SettingsSection
+      id="indexer"
+      title={t`Indexer`}
+      description={t`Searches your torrent indexers for manga releases, used for volume upgrades and for grabbing releases by hand. Works through Prowlarr or Jackett, no app sync needed.`}
+      dirty={form.dirty || optionsDirty}
+      saving={form.saving || options.saving}
+      onSave={() => {
+        const jobs = [form.dirty && form.commit(), optionsDirty && options.commit()].filter(
+          (j) => j instanceof Promise,
+        )
+        Promise.all(jobs).then(savedToast, () => {})
+      }}
+      onDiscard={() => {
+        form.reset()
+        options.reset()
+      }}
     >
-      <ProwlarrOptionsSection form={options} />
-    </ConnectionSettingsCard>
+      <IndexerFieldRow form={form} />
+      {form.switching ? (
+        <Text size="sm" c="var(--ink-3)" mt="md">
+          <Trans>
+            Saving switches the indexer to {selectedName}. Its indexer and
+            category lists load after that.
+          </Trans>
+        </Text>
+      ) : (
+        <IndexerOptionsSection form={options} />
+      )}
+    </SettingsSection>
   )
 }
 
-function ProwlarrOptionsSection({ form }: { form: ReturnType<typeof useProwlarrOptionsForm> }) {
+function IndexerOptionsSection({ form }: { form: ReturnType<typeof useIndexerOptionsForm> }) {
   const { t } = useLingui()
-  const { data: connection } = useConnectionSettings<Record<string, string | null>>('prowlarr')
+  const { data: connection } = useIndexerSettings()
   const configured = Boolean(connection?.url && connection?.apiKey)
-  const { data: indexers, error: indexersError } = useProwlarrIndexers(configured)
+  const backendName = indexerBackendName(connection?.backend)
+  const { data: indexers, error: indexersError } = useIndexerList(connection?.backend, configured)
   const indexersErrorMessage = indexersError != null ? errorText(indexersError) : null
   const { selectedIndexers, setSelectedIndexers, categories, setCategories } = form
 
@@ -952,34 +961,34 @@ function ProwlarrOptionsSection({ form }: { form: ReturnType<typeof useProwlarrO
       )}
       {configured && indexersErrorMessage != null && (
         <Text size="sm" c="var(--danger)">
-          <Trans>Could not load indexers from Prowlarr: {indexersErrorMessage}</Trans>
+          <Trans>Could not load indexers from {backendName}: {indexersErrorMessage}</Trans>
         </Text>
       )}
       {configured && indexers && (
         <Stack gap="sm">
           <Stack gap={6}>
             {indexers.map((indexer) => {
-              const { name, enable } = indexer
+              const { id, name, enabled } = indexer
               return (
-              <Checkbox
-                key={indexer.id}
-                label={enable ? name : t`${name} (disabled in Prowlarr)`}
-                checked={selectedIndexers.has(indexer.id)}
-                onChange={(e) => {
-                  const checked = e.currentTarget.checked
-                  setSelectedIndexers((prev) => {
-                    const next = new Set(prev)
-                    if (checked) next.add(indexer.id)
-                    else next.delete(indexer.id)
-                    return next
-                  })
-                }}
-              />
+                <Checkbox
+                  key={id}
+                  label={enabled ? name : t`${name} (disabled in ${backendName})`}
+                  checked={selectedIndexers.has(id)}
+                  onChange={(e) => {
+                    const checked = e.currentTarget.checked
+                    setSelectedIndexers((prev) => {
+                      const next = new Set(prev)
+                      if (checked) next.add(id)
+                      else next.delete(id)
+                      return next
+                    })
+                  }}
+                />
               )
             })}
             {indexers.length === 0 && (
               <Text size="sm" c="var(--ink-3)">
-                <Trans>No indexers configured in Prowlarr.</Trans>
+                <Trans>No indexers configured in {backendName}.</Trans>
               </Text>
             )}
           </Stack>
@@ -997,4 +1006,3 @@ function ProwlarrOptionsSection({ form }: { form: ReturnType<typeof useProwlarrO
     </Stack>
   )
 }
-

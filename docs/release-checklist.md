@@ -147,6 +147,20 @@ grows with the page number, so wrong page order is obvious in the reader.
 - [ ] **4.4** Force a failure (download a chapter, then block the source or pull the network).
       The item shows as failed with a readable reason and **Retry** works once the network is back.
 - [ ] **4.5** The chapter list's **Wanted** toggle and the series monitor mode stick after a reload.
+- [ ] **4.6** Grab a release with each torrent client kind the release touches (qBittorrent,
+      Transmission, Deluge) against a live instance: the row shows progress, the import runs on
+      completion, and Settings > Download client > Test reports a bad password as a login failure.
+      Recorded-handler tests cannot catch a wrong RPC field name.
+- [ ] **4.7** Point Settings > Indexer at a live Jackett (`linuxserver/jackett`) when the release
+      touches indexers: Test passes, the indexer checklist lists the configured trackers, a release
+      search returns results with seeders and leechers that match Jackett's own UI, and a grab of
+      a magnet-only result reaches the client. Then switch back to Prowlarr and check its indexer
+      selection is still there.
+- [ ] **4.8** Page conversion, when the release touches images or the converter: under
+      **Settings → Library → Page conversion** pick WebP, download a chapter, and open the CBZ. JPEG
+      pages are WebP and PNG pages are lossless WebP. Repeat with AVIF. Run the library pass on a
+      small series: it shows what it saved, pausing and resuming works, and the originals are in
+      `.maki-trash/<series id>/conv-*`. The chapter still opens in the reader.
 
 ## 5. Reader [both]
 
@@ -180,6 +194,10 @@ Use a scratch series here: reaching a chapter's last page marks it read and adds
 - [ ] **7.3** Notifications: add a webhook connection (any request bin) and **Test** delivers.
 - [ ] **7.4** OPDS: enable it, **Copy** the feed URL, and fetch the URL with `curl`. The feed lists
       the library. The OPDS token is refused on `/api/v1`.
+- [ ] **7.4a** Komga API: switch it on in the OPDS card and run
+      `curl -H "X-API-Key: <token>" http://<host>/komga/api/v1/series`. It lists the library; without
+      the header it answers 401. In Mihon, add the Komga extension with that address and key, read a
+      chapter with the Komga tracker on, and the chapter shows as read in Maki.
 - [ ] **7.5** Backup: create one and download it. The zip has `maki.db`, `config.json` and
       `manifest.json`, and no `dataprotection-keys`.
 - [ ] **7.6** Health page: run a scan. It completes and lists the library files.
@@ -194,6 +212,21 @@ Use a scratch series here: reaching a chapter's last page marks it read and adds
       from it, and its search results show covers. Stop the container: the Health page shows
       Suwayomi failing on its next refresh while the series' other sources keep syncing. Start it,
       uninstall the extension: Health names the source as no longer installed.
+- [ ] **7.9** PWA and offline, on the secure origin only (over the LAN IP the offline and push
+      parts must be hidden, not broken). The app is installable, and the service worker is
+      registered with the current precache after an upgrade. **Save for offline** on a chapter,
+      then switch the browser to offline: the chapter opens and pages turn. Read a few pages
+      offline, go back online, and the progress shows in Maki and on the right day in Stats.
+      **[manual]** Install it on a phone, and turn on **Settings → Preferences → Push
+      notifications**: the test push arrives.
+- [ ] **7.10** KOReader sync, when the release touches kosync or OPDS: with a device or the
+      KOReader emulator, point **Progress sync → Custom sync server** at
+      `/api/v1/kosync`, register with the OPDS token as the username, push progress from a
+      downloaded chapter and confirm it shows as read in Maki. Then move the position in Maki's
+      reader and **Pull progress** returns it. A wrong token is refused.
+- [ ] **7.11** Image formats, when the release touches NetVips or the image libraries: a chapter
+      containing JPEG, PNG, WebP, AVIF and GIF pages opens in the reader and in the Health page
+      preview, covers render for each, and none of them logs a loader error.
 
 ## 8. Upgrade from the previous release
 

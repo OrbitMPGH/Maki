@@ -2,7 +2,7 @@
 
 The interface ships in English, German, French, Spanish, Brazilian Portuguese, Polish, Russian,
 Turkish, Japanese, Simplified Chinese, and Korean. Set yours under
-**Settings → My account → Language**, or leave it on Automatic to follow the browser. The choice
+**Settings → Preferences → Language**, or leave it on Automatic to follow the browser. The choice
 is stored per account and follows you across devices. It is separate from **Title language**,
 which controls how series titles are displayed.
 

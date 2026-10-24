@@ -14,6 +14,7 @@ import {
   Table,
   Text,
   TextInput,
+  VisuallyHidden,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconPlus } from '@tabler/icons-react'
@@ -21,8 +22,10 @@ import {
   useCreateUser,
   useDeleteUser,
   useResetUserTwoFactor,
+  useSetUserMode,
   useUnlinkUserOidc,
   useUpdateUser,
+  useUserMode,
   useUsers,
   type Permission,
   type SaveUserBody,
@@ -57,7 +60,7 @@ const GRANTABLE_DEFS: { value: Exclude<Permission, 'Admin'>; label: MessageDescr
   { value: 'EditMetadata', label: msg`Edit metadata`, hint: msg`Refresh metadata, rewrite ComicInfo, change monitoring` },
   { value: 'ManageTags', label: msg`Manage tags`, hint: msg`Create, rename and assign library tags` },
   { value: 'ChangeContentRating', label: msg`Change own content rating`, hint: msg`Raise or lower their own maximum rating` },
-  { value: 'UseTrackers', label: msg`Use trackers`, hint: msg`Connect their own AniList, MAL or Kitsu account` },
+  { value: 'UseTrackers', label: msg`Use trackers`, hint: msg`Connect their own AniList, MAL, Kitsu or MangaUpdates account` },
   { value: 'UseOpds', label: msg`Use OPDS`, hint: msg`Hold a feed token and read through an OPDS app` },
   { value: 'ImportLibrary', label: msg`Import library`, hint: msg`Scan root folders and adopt existing series` },
 ]
@@ -86,6 +89,39 @@ const BIT: Record<Permission, number> = {
   ImportLibrary: 1 << 11,
 }
 
+/**
+ * Single-user mode hides Requests, the Stats reader picker and the leaderboard. Kept beside the user
+ * list so whoever is about to add a second account sees that those exist, and that adding one turns
+ * them back on.
+ */
+function UserModeSwitch() {
+  const { t } = useLinguiMacro()
+  const { data: mode } = useUserMode()
+  const save = useSetUserMode()
+
+  const checked = save.isPending && save.variables !== undefined ? save.variables : mode?.singleUser
+
+  // The wrapper is there before the mode loads and stays the same element after, so a palette deep
+  // link finds it on arrival and its flash class is not wiped when the switch fills in.
+  return (
+    <div id="setting-user-mode" className="settings-inline-target">
+      {mode && (
+        <Switch
+          checked={checked}
+          disabled={!mode.available || save.isPending}
+          onChange={(e) => save.mutate(e.currentTarget.checked)}
+          label={t`Single-user mode`}
+          description={
+            mode.available
+              ? t`Hides Requests, the reader picker and leaderboard on Stats, and other controls for sharing the instance. Adding a second user switches to multi-user mode.`
+              : t`Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back.`
+          }
+        />
+      )}
+    </div>
+  )
+}
+
 export function UsersSection() {
   const renderLabel = useLabel()
   const { data: users } = useUsers()
@@ -111,6 +147,7 @@ export function UsersSection() {
       }
       panelProps={{ p: 'md' }}
     >
+      <UserModeSwitch />
 
       <Table.ScrollContainer minWidth={576}>
         <Table className="panel-table ops-table">
@@ -120,7 +157,7 @@ export function UsersSection() {
               <Table.Th><Trans>Permissions</Trans></Table.Th>
               <Table.Th><Trans>Rating</Trans></Table.Th>
               <Table.Th><Trans>Last sign-in</Trans></Table.Th>
-              <Table.Th />
+              <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>

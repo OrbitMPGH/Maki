@@ -134,7 +134,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
                 roundCaps
                 sections={[{ value: (finishRate ?? 0) * 100, color: 'var(--brand)' }]}
                 label={
-                  <Text ta="center" fw={700} className="tnum">
+                  <Text ta="center" fw={700} className="figure">
                     {finishRate !== null ? formatPercent(finishRate, 0) : '-'}
                   </Text>
                 }
@@ -255,7 +255,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
                       format={(i) => (
                         <span
                           className="stats-row-value"
-                          style={{ color: 'var(--brand)', cursor: 'pointer' }}
+                          style={{ color: 'var(--brand-fg)', cursor: 'pointer' }}
                         >
                           <SeriesLink id={i.seriesId} title={t`Resume`} />
                         </span>

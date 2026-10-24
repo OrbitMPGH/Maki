@@ -37,7 +37,6 @@ public sealed record TitleSearchOutcome(
 /// </param>
 public class MangaBakaLocalStore(
     MangaBakaDumpOptions options,
-    IAppSettings settings,
     ILogger<MangaBakaLocalStore> logger,
     CatalogueIndexCache? catalogue = null,
     CatalogueOptions? catalogueOptions = null)
@@ -59,16 +58,9 @@ public class MangaBakaLocalStore(
     /// </summary>
     private const int MaxInlineIds = 10_000;
 
-    public virtual async Task<bool> IsAvailableAsync(CancellationToken ct = default)
-    {
-        if (!File.Exists(options.DatabasePath))
-        {
-            return false;
-        }
-
-        var enabled = await settings.GetAsync(SettingKeys.MangaBakaUseLocalDb, ct);
-        return !string.Equals(enabled, "false", StringComparison.OrdinalIgnoreCase);
-    }
+    /// <summary>False only until the first download installs the dump; the SPA stays gated until then.</summary>
+    public virtual Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
+        Task.FromResult(File.Exists(options.DatabasePath));
 
     /// <summary>
     /// Title search, reporting the spelling it fell back on when the query as typed found next to
@@ -513,7 +505,25 @@ public class MangaBakaLocalStore(
         return matches;
     }
 
-    public async Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default)
+    /// <summary>
+    /// Whether the dump has any row for <paramref name="id"/>, whatever its state or type. Tells a
+    /// series newer than the snapshot apart from one <see cref="GetAsync"/> declines (a novel).
+    /// </summary>
+    public virtual async Task<bool> HasSeriesAsync(long id, CancellationToken ct = default)
+    {
+        if (!await IsAvailableAsync(ct))
+        {
+            return false;
+        }
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT 1 FROM series WHERE id = $id";
+        cmd.Parameters.AddWithValue("$id", id);
+        return await cmd.ExecuteScalarAsync(ct) is not null;
+    }
+
+    public virtual async Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default)
     {
         if (!long.TryParse(providerId, out var id))
         {
@@ -694,24 +704,26 @@ public class MangaBakaLocalStore(
         using var conn = Open();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = $"""
-            SELECT {DisplayTitleSql("series")}, {string.Join(", ", kinds.Select(k => k.Column))}
+            SELECT id, {DisplayTitleSql("series")}, cover_x250_x1, {string.Join(", ", kinds.Select(k => k.Column))}
             FROM series WHERE id IN ({string.Join(",", seedIds)})
             """;
 
         // relation id → (kind, which library series it relates to); first mention wins
-        var wanted = new Dictionary<long, (string Kind, string RelatedTo)>();
+        var wanted = new Dictionary<long, (string Kind, string RelatedTo, long RelatedToId, string? RelatedToThumb)>();
         using (var reader = await cmd.ExecuteReaderAsync(ct))
         {
             while (await reader.ReadAsync(ct))
             {
-                var sourceTitle = GetString(reader, 0) ?? string.Empty;
+                var sourceId = reader.GetInt64(0);
+                var sourceTitle = GetString(reader, 1) ?? string.Empty;
+                var sourceThumb = GetString(reader, 2);
                 for (var i = 0; i < kinds.Length; i++)
                 {
-                    foreach (var id in ParseIdArray(GetString(reader, i + 1)))
+                    foreach (var id in ParseIdArray(GetString(reader, i + 3)))
                     {
                         if (!excludeIds.Contains(id))
                         {
-                            wanted.TryAdd(id, (kinds[i].Kind, sourceTitle));
+                            wanted.TryAdd(id, (kinds[i].Kind, sourceTitle, sourceId, sourceThumb));
                         }
                     }
                 }
@@ -768,11 +780,97 @@ public class MangaBakaLocalStore(
                     [], [], false,
                     relation.Kind, relation.RelatedTo,
                     ThumbUrl: GetString(reader, 12),
-                    ThumbUrlHiDpi: GetString(reader, 13)));
+                    ThumbUrlHiDpi: GetString(reader, 13),
+                    RelatedToId: relation.RelatedToId.ToString(CultureInfo.InvariantCulture),
+                    RelatedToThumbUrl: relation.RelatedToThumb));
             }
         }
 
         return results.OrderByDescending(r => r.Rating ?? 0).ToList();
+    }
+
+    /// <summary>
+    /// Every title of the works one relation away from <paramref name="id"/>, of any relation type
+    /// (<see cref="FranchiseGraph.RelatedTargets"/>), in every language the dump has. Merged rows are
+    /// followed on both ends, and anything resolving back to the seed's merge chain is the seed itself
+    /// and left out. Novels and adult entries stay in: this is about what a release title may name.
+    /// </summary>
+    public virtual async Task<IReadOnlyList<string>> GetRelatedTitlesAsync(long id, CancellationToken ct = default)
+    {
+        if (!await IsAvailableAsync(ct))
+        {
+            return [];
+        }
+
+        using var conn = Open();
+        var columns = FranchiseGraph.SameWorkColumns;
+        var self = new HashSet<long>();
+        List<long>? targets = null;
+        for (var hop = 0; hop < 5 && targets is null && self.Add(id); hop++)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                $"SELECT state, merged_with, relationships_v2, {string.Join(", ", columns)} FROM series WHERE id = $id";
+            cmd.Parameters.AddWithValue("$id", id);
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            if (!await reader.ReadAsync(ct))
+            {
+                return [];
+            }
+
+            if (GetString(reader, 0) == "merged" && long.TryParse(GetString(reader, 1), out var canonical))
+            {
+                id = canonical;
+                continue;
+            }
+
+            var flat = Enumerable.Range(3, columns.Count).Select(i => GetString(reader, i)).ToList();
+            targets = FranchiseGraph.RelatedTargets(GetString(reader, 2), flat).ToList();
+        }
+
+        if (targets is null)
+        {
+            return [];
+        }
+
+        var visited = new HashSet<long>(self);
+        var pending = targets.Where(visited.Add).ToList();
+        var titles = new List<string>();
+        for (var hop = 0; hop < 3 && pending.Count > 0; hop++)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"""
+                SELECT state, merged_with, title, native_title, romanized_title, titles
+                FROM series WHERE id IN ({string.Join(",", pending)})
+                """;
+            pending = [];
+
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                if (GetString(reader, 0) == "merged")
+                {
+                    if (long.TryParse(GetString(reader, 1), out var canonical) && visited.Add(canonical))
+                    {
+                        pending.Add(canonical);
+                    }
+
+                    continue;
+                }
+
+                if (GetString(reader, 0) != "active")
+                {
+                    continue;
+                }
+
+                titles.AddRange(new[] { GetString(reader, 2), GetString(reader, 3), GetString(reader, 4) }
+                    .OfType<string>()
+                    .Where(t => !string.IsNullOrWhiteSpace(t)));
+                titles.AddRange(ParseAllTitles(GetString(reader, 5)));
+            }
+        }
+
+        return titles.Distinct(StringComparer.Ordinal).ToList();
     }
 
     /// <summary>
@@ -1736,9 +1834,89 @@ public class MangaBakaLocalStore(
             }
         }
 
+        await FollowMergedAsync(conn, pending, result, chunkSize, ct);
+        return result;
+    }
+
+    /// <summary>
+    /// MangaUpdates slug -> canonical MangaBaka id. <c>source_manga_updates_id</c> is text, so this is a
+    /// separate parameterized lookup rather than another column in the numeric one. Slugs are lowercase
+    /// base36 and the dump is lowercase apart from a couple of stray rows, so both sides are compared
+    /// lowercased, through the expression index <c>ix_ext_mangaupdates</c>. The <c>IS NOT NULL</c> term
+    /// is what lets SQLite prove the partial index applies. Keys of the result are lowercase.
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<string, long>> GetIdsByMangaUpdatesIdsAsync(
+        IReadOnlyCollection<string> slugs, CancellationToken ct = default)
+    {
+        var wanted = slugs
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s.Trim().ToLowerInvariant())
+            .Distinct()
+            .ToList();
+        if (wanted.Count == 0 || !await IsAvailableAsync(ct))
+        {
+            return new Dictionary<string, long>();
+        }
+
+        var result = new Dictionary<string, long>(wanted.Count);
+        var pending = new List<(string External, long SeriesId)>();
+
+        using var conn = Open();
+        const int chunkSize = 500;
+        for (var offset = 0; offset < wanted.Count; offset += chunkSize)
+        {
+            var chunk = wanted.Skip(offset).Take(chunkSize).ToList();
+            using var cmd = conn.CreateCommand();
+            var names = new List<string>(chunk.Count);
+            for (var i = 0; i < chunk.Count; i++)
+            {
+                names.Add($"$p{i}");
+                cmd.Parameters.AddWithValue($"$p{i}", chunk[i]);
+            }
+
+            cmd.CommandText = $"""
+                SELECT lower(source_manga_updates_id), id, state, merged_with, type
+                FROM series
+                WHERE source_manga_updates_id IS NOT NULL
+                  AND lower(source_manga_updates_id) IN ({string.Join(",", names)})
+                """;
+            cmd.CommandTimeout = 600;
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                var external = GetString(reader, 0);
+                if (string.IsNullOrEmpty(external))
+                {
+                    continue;
+                }
+
+                var seriesId = reader.GetInt64(1);
+                if (GetString(reader, 2) == "merged" && long.TryParse(GetString(reader, 3), out var canonical))
+                {
+                    pending.Add((external, canonical));
+                    continue;
+                }
+
+                if (GetString(reader, 4) == "novel")
+                {
+                    continue;
+                }
+
+                result.TryAdd(external, seriesId);
+            }
+        }
+
+        await FollowMergedAsync(conn, pending, result, chunkSize, ct);
+        return result;
+    }
+
+    private static async Task FollowMergedAsync<TKey>(
+        SqliteConnection conn, List<(TKey External, long SeriesId)> pending, Dictionary<TKey, long> result,
+        int chunkSize, CancellationToken ct) where TKey : notnull
+    {
         for (var hop = 0; hop < 5 && pending.Count > 0; hop++)
         {
-            var next = new List<(long External, long SeriesId)>();
+            var next = new List<(TKey External, long SeriesId)>();
             var ids = pending.Select(x => x.SeriesId).Distinct().ToList();
             var states = new Dictionary<long, (string? State, string? MergedWith, string? Type)>(ids.Count);
             for (var offset = 0; offset < ids.Count; offset += chunkSize)
@@ -1775,8 +1953,6 @@ public class MangaBakaLocalStore(
 
             pending = next;
         }
-
-        return result;
     }
 
     private SqliteConnection Open()
@@ -2016,6 +2192,35 @@ public class MangaBakaLocalStore(
         catch (JsonException)
         {
             return (null, null, []);
+        }
+    }
+
+    /// <summary>Every title in a <c>titles</c> JSON array, primary or not, in any language.</summary>
+    private static IEnumerable<string> ParseAllTitles(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            return doc.RootElement.EnumerateArray()
+                .Select(e => e.ValueKind == JsonValueKind.Object && e.TryGetProperty("title", out var t) &&
+                             t.ValueKind == JsonValueKind.String ? t.GetString() : null)
+                .OfType<string>()
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .ToList();
+        }
+        catch (JsonException)
+        {
+            return [];
         }
     }
 

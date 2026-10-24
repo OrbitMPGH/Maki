@@ -42,7 +42,6 @@ import {
   useRootFolders,
   useSaveDiscoverSettings,
   useSaveLibrarySettings,
-  useSaveMetadataSettings,
   useSaveMonitoringSettings,
   useSaveSourceLanguages,
   useSetEmbeddingModel,
@@ -57,10 +56,12 @@ import { languageName } from '../api/titles'
 import { formatBytes } from '../format'
 import { useLanguageChoice } from '../i18n-context'
 import { AppearancePicker } from './AppearancePicker'
-import { ConnectionForm, type ConnectionField } from './ConnectionSettingsCard'
+import { ConnectionForm, type ConnectionFields } from './ConnectionSettingsCard'
+import { useDownloadClientFields } from './settings/downloadClientFields'
+import { IndexerForm } from './settings/IndexerForm'
 import { ContentRatingCards } from './ContentRatingCards'
 import { IconBrandMark } from './IconBrandMark'
-import { DumpProgressBar } from './MetadataDumpProgress'
+import { MetadataDumpStatus } from './MetadataDumpProgress'
 import { PriorityList } from './PriorityList'
 import { RecommendationModelSwitch } from './RecommendationModelSwitch'
 import { UnsavedSettingsContext } from './settings/SaveButton'
@@ -336,35 +337,25 @@ function LibraryStep() {
 }
 
 function DiscoveryStep() {
-  const { t } = useLingui()
   const { data: metadata } = useMetadataSettings()
-  const saveMetadata = useSaveMetadataSettings()
   const { data: progress } = useDumpProgress()
   const { data: recIndex } = useRecommendationIndex()
   const setModel = useSetEmbeddingModel()
   const { data: discover } = useDiscoverSettings()
   const saveDiscover = useSaveDiscoverSettings()
-  const downloading = Boolean(progress?.running && progress.phase !== 'checking')
 
   return (
     <>
       <SettingRow
-        label={<Trans>Keep a local copy of MangaBaka</Trans>}
+        label={<Trans>Local MangaBaka database</Trans>}
         description={
           <Trans>
-            About 3 GB on disk, refreshed nightly. Search and imports become instant instead of
-            rate-limited, and Discover needs it. Downloads in the background once setup is done.
+            Search, adding series, imports and Discover all read from it. About a 350 MB download and
+            3.5 GB on disk, refreshed nightly. Setup finishes once it is in.
           </Trans>
         }
-        control={
-          <Switch
-            aria-label={t`Keep a local copy of MangaBaka`}
-            checked={metadata?.useLocalDb ?? true}
-            onChange={(e) => saveMetadata.mutate(e.currentTarget.checked)}
-          />
-        }
       >
-        {downloading && progress && <DumpProgressBar progress={progress} />}
+        <MetadataDumpStatus metadata={metadata} progress={progress} />
       </SettingRow>
 
       <SettingRow
@@ -478,11 +469,13 @@ interface ServiceSpec {
   name: ConnectionName
   title: string
   description: string
-  fields: ConnectionField[]
+  /** Left out for the indexer, which has its own form. */
+  fields?: ConnectionFields
 }
 
 function useServices(): ServiceSpec[] {
   const { t } = useLingui()
+  const downloadClientFields = useDownloadClientFields()
   return [
     {
       name: 'flaresolverr',
@@ -491,25 +484,15 @@ function useServices(): ServiceSpec[] {
       fields: [{ key: 'url', label: t`URL`, placeholder: 'http://localhost:8191' }],
     },
     {
-      name: 'prowlarr',
-      title: 'Prowlarr',
-      description: t`Searches your indexers for manga releases to download as torrents.`,
-      fields: [
-        { key: 'url', label: t`URL`, placeholder: 'http://localhost:9696' },
-        { key: 'apiKey', label: t`API key`, secret: true },
-      ],
+      name: 'indexer',
+      title: t`Indexer`,
+      description: t`Searches your indexers for manga releases to download as torrents. Works through Prowlarr or Jackett.`,
     },
     {
-      name: 'qbittorrent',
-      title: 'qBittorrent',
-      description: t`Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if qBittorrent sees paths Maki can't, as in Docker.`,
-      fields: [
-        { key: 'url', label: t`URL`, placeholder: 'http://localhost:8080' },
-        { key: 'username', label: t`Username` },
-        { key: 'password', label: t`Password`, secret: true },
-        { key: 'pathMapFrom', label: t`Path mapping - qBittorrent side`, placeholder: t`/downloads (optional)` },
-        { key: 'pathMapTo', label: t`Path mapping - Maki side`, placeholder: t`Z:\\downloads (optional)` },
-      ],
+      name: 'downloadclient',
+      title: t`Download client`,
+      description: t`Downloads what the indexer finds. Finished torrents import into the library on their own. Fill the path mapping only if the client sees paths Maki can't, as in Docker.`,
+      fields: downloadClientFields,
     },
     {
       name: 'kavita',
@@ -536,8 +519,8 @@ function useConnectedTitles(): string[] {
   const services = useServices()
   const connected: Record<ConnectionName, boolean> = {
     flaresolverr: useConnected('flaresolverr'),
-    prowlarr: useConnected('prowlarr'),
-    qbittorrent: useConnected('qbittorrent'),
+    indexer: useConnected('indexer'),
+    downloadclient: useConnected('downloadclient'),
     kavita: useConnected('kavita'),
   }
   return services.filter((s) => connected[s.name]).map((s) => s.title)
@@ -567,7 +550,11 @@ function ServiceRow({ service }: { service: ServiceSpec }) {
       </UnstyledButton>
       <Collapse expanded={open} id={bodyId}>
         <div className="setup-service-body">
-          <ConnectionForm name={service.name} title={service.title} fields={service.fields} />
+          {service.fields ? (
+            <ConnectionForm name={service.name} title={service.title} fields={service.fields} />
+          ) : (
+            <IndexerForm />
+          )}
         </div>
       </Collapse>
     </div>
@@ -597,7 +584,15 @@ function SummaryLine({ tone, children, action }: { tone: Tone; children: ReactNo
   )
 }
 
-function FinishStep({ goTo, finishTo }: { goTo: (step: StepId) => void; finishTo: (path: string) => void }) {
+function FinishStep({
+  goTo,
+  finishTo,
+  ready,
+}: {
+  goTo: (step: StepId) => void
+  finishTo: (path: string) => void
+  ready: boolean
+}) {
   const { data: rootFolders } = useRootFolders()
   const { data: metadata } = useMetadataSettings()
   const { data: recIndex } = useRecommendationIndex()
@@ -616,7 +611,7 @@ function FinishStep({ goTo, finishTo }: { goTo: (step: StepId) => void; finishTo
           <SummaryLine
             tone="warn"
             action={
-              <Anchor component="button" size="sm" onClick={() => goTo('library')}>
+              <Anchor component="button" type="button" size="sm" onClick={() => goTo('library')}>
                 <Trans>Add one</Trans>
               </Anchor>
             }
@@ -624,15 +619,22 @@ function FinishStep({ goTo, finishTo }: { goTo: (step: StepId) => void; finishTo
             <Trans>No library folder yet. Series need one to download into.</Trans>
           </SummaryLine>
         )}
-        <SummaryLine tone="ok">
-          {metadata?.useLocalDb === false ? (
-            <Trans>Metadata straight from the MangaBaka API</Trans>
-          ) : metadata?.dumpPresent ? (
+        {metadata?.dumpPresent ? (
+          <SummaryLine tone="ok">
             <Trans>Local MangaBaka database ready</Trans>
-          ) : (
-            <Trans>Local MangaBaka database downloads once you finish</Trans>
-          )}
-        </SummaryLine>
+          </SummaryLine>
+        ) : (
+          <SummaryLine
+            tone="warn"
+            action={
+              <Anchor component="button" type="button" size="sm" onClick={() => goTo('discovery')}>
+                <Trans>See progress</Trans>
+              </Anchor>
+            }
+          >
+            <Trans>The local MangaBaka database is still downloading. Setup finishes once it is in.</Trans>
+          </SummaryLine>
+        )}
         <SummaryLine tone="ok">
           {recIndex?.embeddingModel === 'off' ? (
             <Trans>Recommendations off</Trans>
@@ -653,7 +655,7 @@ function FinishStep({ goTo, finishTo }: { goTo: (step: StepId) => void; finishTo
         <Trans>Where to go next</Trans>
       </Text>
       <div className="setup-next">
-        <UnstyledButton className="setup-next-card" onClick={() => finishTo('/add')}>
+        <UnstyledButton className="setup-next-card" disabled={!ready} onClick={() => finishTo('/add')}>
           <Text className="setup-row-label">
             <Trans>Add a series</Trans>
           </Text>
@@ -661,7 +663,7 @@ function FinishStep({ goTo, finishTo }: { goTo: (step: StepId) => void; finishTo
             <Trans>Search MangaBaka and start downloading.</Trans>
           </Text>
         </UnstyledButton>
-        <UnstyledButton className="setup-next-card" onClick={() => finishTo('/import')}>
+        <UnstyledButton className="setup-next-card" disabled={!ready} onClick={() => finishTo('/import')}>
           <Text className="setup-row-label">
             <Trans>Import what you have</Trans>
           </Text>
@@ -671,16 +673,17 @@ function FinishStep({ goTo, finishTo }: { goTo: (step: StepId) => void; finishTo
         </UnstyledButton>
         <UnstyledButton
           className="setup-next-card"
+          disabled={!ready}
           onClick={() => finishTo('/settings?tab=integrations&s=scrobbling')}
         >
           <Text className="setup-row-label">
             <Trans>Connect your trackers</Trans>
           </Text>
           <Text className="setup-row-description">
-            <Trans>Send reading progress to AniList, MyAnimeList, Kitsu or MangaBaka.</Trans>
+            <Trans>Send reading progress to AniList, MyAnimeList, Kitsu, MangaBaka or MangaUpdates.</Trans>
           </Text>
         </UnstyledButton>
-        <UnstyledButton className="setup-next-card" onClick={() => finishTo('/settings?tab=users&s=users')}>
+        <UnstyledButton className="setup-next-card" disabled={!ready} onClick={() => finishTo('/settings?tab=users&s=users')}>
           <Text className="setup-row-label">
             <Trans>Invite people</Trans>
           </Text>
@@ -707,6 +710,7 @@ function useSteps(): StepMeta[] {
   const { locale, locales } = useLanguageChoice()
   const { data: rootFolders } = useRootFolders()
   const { data: metadata } = useMetadataSettings()
+  const { data: dump } = useDumpProgress()
   const { data: languages } = useSourceLanguages()
   const connectedCount = useConnectedTitles().length
   const folderCount = rootFolders?.length ?? 0
@@ -740,8 +744,15 @@ function useSteps(): StepMeta[] {
       id: 'discovery',
       label: t`Discover`,
       title: t`Metadata and Discover`,
-      lead: t`Series details come from MangaBaka. Choose how much of it Maki keeps at hand, and what it may show you.`,
-      hint: metadata ? (metadata.useLocalDb ? t`Local database` : t`API only`) : undefined,
+      lead: t`Series details come from a local copy of the MangaBaka database. Choose what Discover may show you.`,
+      hint: metadata
+        ? metadata.dumpPresent
+          ? t`Database ready`
+          : dump?.running
+            ? t`Downloading`
+            : t`Not downloaded yet`
+        : undefined,
+      tone: metadata && !metadata.dumpPresent ? 'warn' : undefined,
     },
     {
       id: 'downloads',
@@ -854,7 +865,10 @@ export default function SetupWizard() {
   const navigate = useNavigate()
   const { data: setup } = useSetupStatus()
   const complete = useCompleteSetup()
+  const { data: metadata } = useMetadataSettings()
   const steps = useSteps()
+  // Skip still leaves early: the gate in front of the app then waits for the database instead.
+  const ready = Boolean(metadata?.dumpPresent)
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const [visited, setVisited] = useState<Set<number>>(() => new Set([0]))
@@ -942,11 +956,10 @@ export default function SetupWizard() {
       padding={0}
       transitionProps={{ duration: 0 }}
       classNames={{ content: 'setup-modal', body: 'setup-modal-body' }}
-      aria-label={t`Setup guide`}
+      attributes={{ content: { 'aria-label': t`Setup guide` } }}
     >
       <UnsavedSettingsContext value={reportUnsaved}>
         <div className="setup-frame">
-          <div className="setup-art" aria-hidden />
           <GuideRail
             steps={steps}
             active={active}
@@ -992,7 +1005,11 @@ export default function SetupWizard() {
                   {step.id === 'downloads' && <DownloadsStep />}
                   {step.id === 'connections' && <ConnectionsStep />}
                   {step.id === 'finish' && (
-                    <FinishStep goTo={(id) => confirmedGo(STEP_IDS.indexOf(id))} finishTo={confirmedFinish} />
+                    <FinishStep
+                      goTo={(id) => confirmedGo(STEP_IDS.indexOf(id))}
+                      finishTo={confirmedFinish}
+                      ready={ready}
+                    />
                   )}
                 </div>
               </div>
@@ -1008,13 +1025,20 @@ export default function SetupWizard() {
                 >
                   <Trans>Back</Trans>
                 </Button>
-                {confirmLeave && (
+                {confirmLeave ? (
                   <Text className="setup-footer-warning" role="status">
                     <Trans>A connection has unsaved changes.</Trans>
                   </Text>
+                ) : (
+                  active === last &&
+                  !ready && (
+                    <Text className="setup-footer-warning" role="status">
+                      <Trans>Waiting for the metadata database.</Trans>
+                    </Text>
+                  )
                 )}
                 {active === last ? (
-                  <Button onClick={() => confirmedFinish()} loading={complete.isPending}>
+                  <Button onClick={() => confirmedFinish()} loading={complete.isPending} disabled={!ready}>
                     <Trans>Finish setup</Trans>
                   </Button>
                 ) : (

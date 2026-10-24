@@ -20,6 +20,13 @@ public interface ISource
     /// <summary>Who runs this source: the rightsholder, a scanlation group, or an aggregator.</summary>
     SourceKind Kind => SourceKind.Aggregator;
 
+    /// <summary>
+    /// False when <see cref="SourceChapter.ReleaseDate"/> is not when the chapter came out: a mirror
+    /// that re-stamps re-uploads (MangaFire), an "updated at" field, or a relative "2 days ago".
+    /// Release cadence and the upcoming estimate skip such dates; the chapter table still shows them.
+    /// </summary>
+    bool ReleaseDatesAreReliable => true;
+
     /// <summary>Formats this source publishes.</summary>
     SourceContent Content => SourceContent.Manga;
 

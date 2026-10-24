@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Alert,
   Anchor,
   Badge,
@@ -10,7 +11,6 @@ import {
   Loader,
   Menu,
   Modal,
-  NumberInput,
   Pagination,
   Select,
   SimpleGrid,
@@ -22,6 +22,8 @@ import {
   Text,
   TextInput,
   Title,
+  Tooltip,
+  VisuallyHidden,
 } from '@mantine/core'
 import {
   IconBooks,
@@ -35,6 +37,8 @@ import {
   IconRefresh,
   IconScan,
   IconServer,
+  IconSettings,
+  IconStethoscope,
   IconTrash,
   type Icon,
 } from '@tabler/icons-react'
@@ -50,18 +54,22 @@ import {
   type HealthCheck,
   type HealthFile,
   type HealthOperation,
-  type HealthOptions,
   type HealthOverview,
   type MatchCounterpart,
   type OperationDetail,
+  type OperationGroup as OperationGroupData,
   type SourceFailures,
   type UnlinkedMatch,
 } from '../api/health'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SectionHeader } from '../components/ui/SectionHeader'
+import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
+import { MonoValue } from '../components/ui/MonoValue'
+import { SeriesCell } from '../components/SeriesCell'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
 import { useLabel } from '../i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -80,6 +88,15 @@ const weight = (check: HealthCheck) =>
   !ISSUE.includes(check.status) ? 2 : check.acknowledged ? 1 : 0
 
 /** HealthMonitor's category strings. Anything unknown falls back to the generic system icon. */
+const CATEGORY_LABEL: Record<string, MessageDescriptor> = {
+  library: msg`Library`,
+  storage: msg`Storage`,
+  connections: msg`Connections`,
+  system: msg`System`,
+  downloads: msg`Downloads`,
+  job: msg`Scheduled jobs`,
+}
+
 const CATEGORY_ICON: Record<string, Icon> = {
   library: IconBooks,
   storage: IconDatabase,
@@ -124,6 +141,7 @@ const STATUS_LABEL: Record<string, MessageDescriptor> = {
   complete: msg`Complete`,
   completed: msg`Completed`,
   cancelled: msg`Cancelled`,
+  unavailable: msg`Unavailable`,
 }
 
 const bytes = (size: number, missing: string) => (size < 0 ? missing : formatBytes(size))
@@ -204,10 +222,10 @@ export default function HealthPage() {
     tab === 'files',
     scanning ? 5000 : false,
   )
-  const operations = useHealthData<{ items: HealthOperation[]; total: number }>(
+  const operations = useHealthData<{ items: OperationGroupData[]; total: number }>(
     `/operations?page=${repairPage}`,
     tab === 'repairs',
-    (data) => (data?.items.some((o) => RUNNING_STATES.includes(o.status)) ? 5000 : false),
+    (data) => (data?.items.some((g) => RUNNING_STATES.includes(g.status)) ? 5000 : false),
   )
   const history = useHealthData<{
     items: { id: number; createdAt: string; kind: string; message: string }[]
@@ -248,7 +266,10 @@ export default function HealthPage() {
   const error = queryError ?? action.error ?? quick.error ?? refresh.error
   // Acknowledged checks are still issues, but they are issues someone has already decided about,
   // so they do not belong in a number whose job is to say "something needs you".
-  const issues = overview.data?.checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged).length ?? 0
+  const openChecks = overview.data?.checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged) ?? []
+  const issues = openChecks.length
+  // Red is kept for something broken; a page of warnings reads as a page of failures otherwise.
+  const issuesTone = openChecks.some((c) => c.status !== 'warning') ? 'danger' : issues > 0 ? 'warn' : undefined
   const partialScanError = overview.data?.scans.find((s) => s.error)?.error
   const selectedCount = selected.size
   const deletedCount = deleteReport?.deleted ?? 0
@@ -270,6 +291,17 @@ export default function HealthPage() {
             >
               <Trans>Check now</Trans>
             </Button>
+            <Tooltip label={t`Health settings`} withArrow>
+              <ActionIcon
+                component={Link}
+                to="/settings?tab=system&s=health"
+                variant="default"
+                size="lg"
+                aria-label={t`Health settings`}
+              >
+                <IconSettings size={18} />
+              </ActionIcon>
+            </Tooltip>
             <Menu position="bottom-end" withinPortal width={320}>
               <Menu.Target>
                 <Button leftSection={<IconScan size={16} />} rightSection={<IconChevronDown size={14} />}>
@@ -318,6 +350,7 @@ export default function HealthPage() {
           color="var(--danger)"
           mb="lg"
           withCloseButton={!queryError}
+          closeButtonLabel={t`Dismiss`}
           onClose={() => {
             action.reset()
             quick.reset()
@@ -330,7 +363,7 @@ export default function HealthPage() {
       <FigureStrip
         loading={overview.isPending}
         figures={[
-          { label: t`System issues`, value: issues, tone: 'danger' },
+          { label: t`System issues`, value: issues, tone: issuesTone },
           { label: t`Open file findings`, value: overview.data?.openFindings ?? 0, tone: 'warn' },
           { label: t`Archives inventoried`, value: overview.data?.files ?? 0 },
         ]}
@@ -387,11 +420,10 @@ export default function HealthPage() {
         </Tabs.List>
 
         <Tabs.Panel value="overview">
-          <div className="health-overview">
+          <Stack gap="xl">
             <ChecksPanel checks={overview.data?.checks ?? []} loading={overview.isPending} run={run} />
             <CachePanel />
-            <OptionsPanel />
-          </div>
+          </Stack>
         </Tabs.Panel>
 
         <Tabs.Panel value="files">
@@ -495,7 +527,12 @@ export default function HealthPage() {
             )}
 
             {deleteReport && failedCount > 0 && (
-              <Alert color="var(--danger)" withCloseButton onClose={() => setDeleteReport(null)}>
+              <Alert
+                color="var(--danger)"
+                withCloseButton
+                closeButtonLabel={t`Dismiss`}
+                onClose={() => setDeleteReport(null)}
+              >
                 <Text size="sm" mb="xs">
                   <Trans>
                     {deletedCount} deleted, {failedCount} refused:
@@ -514,8 +551,9 @@ export default function HealthPage() {
             ) : (
               <>
                 <Panel p={0} className="table-panel">
-                  <Table.ScrollContainer minWidth={720}>
-                    <Table highlightOnHover className="panel-table">
+                  <Table.ScrollContainer minWidth={880}>
+                    {/* Fixed, so the archive path takes what the other columns leave and loses its middle. */}
+                    <Table highlightOnHover className="panel-table" layout="fixed">
                       <Table.Thead>
                         <Table.Tr>
                           <Table.Th w={40}>
@@ -539,16 +577,16 @@ export default function HealthPage() {
                           <Table.Th>
                             <Trans>Archive</Trans>
                           </Table.Th>
-                          <Table.Th>
+                          <Table.Th w={90}>
                             <Trans>Size</Trans>
                           </Table.Th>
-                          <Table.Th>
+                          <Table.Th w={120}>
                             <Trans>Analysis</Trans>
                           </Table.Th>
-                          <Table.Th>
+                          <Table.Th w={200}>
                             <Trans>Findings</Trans>
                           </Table.Th>
-                          <Table.Th />
+                          <Table.Th w={100}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                         </Table.Tr>
                       </Table.Thead>
                       <Table.Tbody>
@@ -570,9 +608,7 @@ export default function HealthPage() {
                               />
                             </Table.Td>
                             <Table.Td>
-                              <Text fz="var(--type-meta)" ff="monospace" style={{ overflowWrap: 'anywhere' }}>
-                                {file.relativePath}
-                              </Text>
+                              <MonoValue value={file.relativePath} copy fz="var(--type-meta)" />
                               <Text size="xs" c="var(--ink-3)">
                                 {file.analyzedAt ? formatDateTime(file.analyzedAt) : <Trans>Not analyzed</Trans>}
                               </Text>
@@ -582,11 +618,11 @@ export default function HealthPage() {
                               <Status value={file.status} hint={file.status === 'partial'} />
                             </Table.Td>
                             <Table.Td>
-                              <Group gap={4}>
+                              <Group gap="xs">
                                 {file.findings.map((f) => (
-                                  <Badge key={f.id} color={color(f.severity)} variant="light">
+                                  <StatusDot key={f.id} tone={tone(f.severity)}>
                                     {renderLabel(FINDING_LABEL[f.kind] ?? f.kind)}
-                                  </Badge>
+                                  </StatusDot>
                                 ))}
                               </Group>
                             </Table.Td>
@@ -619,33 +655,9 @@ export default function HealthPage() {
 
         <Tabs.Panel value="repairs">
           <Stack>
-            {operations.data?.items.map((op) => {
-              const { id: opId, kind: opKind } = op
-              return (
-                <Panel p="md" key={op.id}>
-                  <Group justify="space-between">
-                    <div>
-                      <Group>
-                        <Text fw={600}>
-                          {opKind === 'delete' ? (
-                            <Trans>Deletion review #{opId}</Trans>
-                          ) : (
-                            <Trans>Replacement #{opId}</Trans>
-                          )}
-                        </Text>
-                        <Status value={op.status} />
-                      </Group>
-                      <Text size="sm" c="var(--ink-3)">
-                        {op.error ?? formatDateTime(op.createdAt)}
-                      </Text>
-                    </div>
-                    <Button variant="default" onClick={() => setOperationId(op.id)}>
-                      <Trans>Review</Trans>
-                    </Button>
-                  </Group>
-                </Panel>
-              )
-            })}
+            {operations.data?.items.map((group) => (
+              <OperationGroup key={group.key} group={group} onReview={setOperationId} />
+            ))}
             {operations.data?.items.length === 0 && (
               <Text c="var(--ink-3)">
                 <Trans>No repairs or deletions requested.</Trans>
@@ -849,27 +861,34 @@ function ChecksPanel({
   const visible = showPassing ? checks : checks.filter((c) => ISSUE.includes(c.status))
   const categories = Array.from(new Set(visible.map((c) => c.category)))
   const totalChecks = checks.length
-  // Coloured only while something needs attention; a healthy system is the plain panel.
+  // Shown only while something needs attention; a healthy system is the plain panel.
+  const renderLabel = useLabel()
   const unresolved = checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged)
-  const edge = unresolved.some((c) => tone(c.status) === 'danger')
-    ? 'danger'
-    : unresolved.length > 0
-      ? 'warn'
-      : undefined
+  const severity = unresolved.some((c) => tone(c.status) === 'danger') ? 'danger' : 'warn'
 
   return (
-    <Panel edge={edge} className="health-area-checks" p="lg">
-      <Group justify="space-between" align="center" wrap="nowrap" mb="md">
-        <Title order={3} fz="var(--type-section)">
-          <Trans>System checks</Trans>
-        </Title>
-        <Switch
-          size="xs"
-          label={t`Show passing`}
-          checked={showPassing}
-          onChange={(e) => setShowPassing(e.currentTarget.checked)}
-        />
-      </Group>
+    <Stack gap="sm">
+      <SectionHeader
+        icon={IconStethoscope}
+        title={t`System checks`}
+        count={totalChecks > 0 ? totalChecks : undefined}
+        action={
+          <Group gap="md" wrap="nowrap">
+            {unresolved.length > 0 && (
+              <StatusDot tone={severity}>
+                <Plural value={unresolved.length} one="# needs attention" other="# need attention" />
+              </StatusDot>
+            )}
+            <Switch
+              size="xs"
+              label={t`Show passing`}
+              checked={showPassing}
+              onChange={(e) => setShowPassing(e.currentTarget.checked)}
+            />
+          </Group>
+        }
+      />
+    <Panel p="lg">
 
       {loading && (
         <Stack gap="md" aria-hidden>
@@ -891,12 +910,15 @@ function ChecksPanel({
         </Alert>
       )}
       {checks.length > 0 && visible.length === 0 && (
-        <Text size="sm" c="var(--ink-3)">
-          <Trans>
-            Everything is passing. Turn on Show passing to see all{' '}
-            <Plural value={totalChecks} one="# check" other="# checks" />.
-          </Trans>
-        </Text>
+        <EmptyState
+          compact
+          mood="pleased"
+          title={t`Everything is passing`}
+          description={plural(totalChecks, {
+            one: 'Turn on Show passing to see the # check.',
+            other: 'Turn on Show passing to see all # checks.',
+          })}
+        />
       )}
 
       {categories.map((category) => {
@@ -910,18 +932,135 @@ function ChecksPanel({
           <div className="health-group" key={category}>
             <Group gap={7} className="health-group-label" wrap="nowrap">
               <CategoryIcon size={14} stroke={1.8} />
-              <span>{category}</span>
+              <span>{CATEGORY_LABEL[category] ? renderLabel(CATEGORY_LABEL[category]) : category}</span>
               <Text span size="xs" c="var(--ink-4)" fw={500} className="tnum">
                 {rows.length}
               </Text>
             </Group>
-            {rows.map((check) => (
-              <CheckRow key={check.id} check={check} run={run} />
-            ))}
+            {collapseByType(rows).map((item) =>
+              Array.isArray(item) ? (
+                <CheckGroup key={checkType(item[0].id)} checks={item} run={run} />
+              ) : (
+                <CheckRow key={item.id} check={item} run={run} />
+              ),
+            )}
           </div>
         )
       })}
     </Panel>
+    </Stack>
+  )
+}
+
+/**
+ * Checks that repeat once per series or per source. Past `COLLAPSE_AT` live issues of one type they
+ * fold into a single row: eleven "monitored but has no enabled sources" rows read as eleven
+ * problems and took eleven clicks to acknowledge. The prefix is the check type; the rest of the id
+ * is the series, mapping or source it is about.
+ */
+const COLLAPSIBLE = ['legacy:series:', 'legacy:mapping:', 'legacy:source:', 'suwayomi:missing:'] as const
+const COLLAPSE_AT = 3
+
+function checkType(id: string): string | null {
+  return COLLAPSIBLE.find((prefix) => id.startsWith(prefix)) ?? null
+}
+
+/** The rows in order, with each collapsible type's live issues gathered where its first one stood. */
+function collapseByType(rows: HealthCheck[]): (HealthCheck | HealthCheck[])[] {
+  const issues = new Map<string, HealthCheck[]>()
+  for (const row of rows) {
+    const type = checkType(row.id)
+    if (type && ISSUE.includes(row.status)) issues.set(type, [...(issues.get(type) ?? []), row])
+  }
+  const out: (HealthCheck | HealthCheck[])[] = []
+  for (const row of rows) {
+    const type = checkType(row.id)
+    const group = type && ISSUE.includes(row.status) ? issues.get(type) : undefined
+    if (!group || group.length < COLLAPSE_AT) out.push(row)
+    else if (group[0] === row) out.push(group)
+  }
+  return out
+}
+
+function CheckGroup({ checks, run }: { checks: HealthCheck[]; run: (path: string, body?: object) => void }) {
+  const [open, setOpen] = useState(false)
+  const count = checks.length
+  const type = checkType(checks[0].id)
+  const unsettled = checks.filter((c) => !c.acknowledged)
+  const acknowledged = count - unsettled.length
+  const worst = checks.find((c) => tone(c.status) === 'danger') ?? checks[0]
+  const latest = checks.reduce((a, b) => (a.checkedAt > b.checkedAt ? a : b)).checkedAt
+  const headline =
+    type === 'legacy:series:' ? (
+      <Plural
+        value={count}
+        one="# monitored series has no enabled sources"
+        other="# monitored series have no enabled sources"
+      />
+    ) : type === 'legacy:mapping:' ? (
+      <Plural
+        value={count}
+        one="# series is failing to refresh from its source"
+        other="# series are failing to refresh from their sources"
+      />
+    ) : type === 'legacy:source:' ? (
+      <Plural value={count} one="# source looks unstable" other="# sources look unstable" />
+    ) : (
+      <Plural value={count} one="# source is no longer installed in Suwayomi" other="# sources are no longer installed in Suwayomi" />
+    )
+
+  return (
+    <div className="health-check-group">
+      <div className="health-check" data-acknowledged={unsettled.length === 0 || undefined}>
+        <Status value={worst.status} />
+        <div style={{ minWidth: 0 }}>
+          <Text size="sm" c={unsettled.length === 0 ? 'var(--ink-3)' : 'var(--ink-2)'}>
+            {headline}
+          </Text>
+          <Text size="xs" c="var(--ink-4)" mt={2}>
+            {formatDateTime(latest)}
+            {acknowledged > 0 && (
+              <>
+                {' · '}
+                <Plural value={acknowledged} one="# acknowledged" other="# acknowledged" />
+              </>
+            )}
+          </Text>
+          <Button
+            size="compact-xs"
+            variant="subtle"
+            mt={4}
+            px={0}
+            aria-expanded={open}
+            rightSection={<IconChevronDown size={12} style={{ transform: open ? 'rotate(180deg)' : undefined }} />}
+            onClick={() => setOpen((o) => !o)}
+          >
+            {open ? <Trans>Hide the list</Trans> : <Plural value={count} one="Show # check" other="Show all # checks" />}
+          </Button>
+        </div>
+        <div className="health-check-actions">
+          <Button
+            size="xs"
+            variant="subtle"
+            onClick={() =>
+              run('/checks/acknowledge/bulk', {
+                ids: (unsettled.length > 0 ? unsettled : checks).map((c) => c.id),
+                acknowledged: unsettled.length > 0,
+              })
+            }
+          >
+            {unsettled.length > 0 ? <Trans>Acknowledge all</Trans> : <Trans>Reopen all</Trans>}
+          </Button>
+        </div>
+      </div>
+      {open && (
+        <div className="health-check-group-body">
+          {checks.map((check) => (
+            <CheckRow key={check.id} check={check} run={run} />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -944,7 +1083,7 @@ function CheckRow({ check, run }: { check: HealthCheck; run: (path: string, body
     <div className="health-check" data-acknowledged={check.acknowledged || undefined}>
       <Status value={check.status} />
       <div style={{ minWidth: 0 }}>
-        <Text size="sm" c="var(--ink-2)">
+        <Text size="sm" c={check.acknowledged ? 'var(--ink-3)' : 'var(--ink-2)'}>
           {check.message}
         </Text>
         <Text size="xs" c="var(--ink-4)" mt={2}>
@@ -1072,8 +1211,8 @@ function FileReview({
           <div className="health-review">
             <div className="health-review-column">
               <Panel p="md">
-                <Text fw={600} ff="monospace" style={{ overflowWrap: 'anywhere' }}>
-                  {data.file.relativePath}
+                <Text fw={600} component="div">
+                  <MonoValue value={data.file.relativePath} copy />
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt={4}>
                   {bytes(data.file.size, t`Missing`)} · <Plural value={pageCount} one="# page" other="# pages" /> ·{' '}
@@ -1176,7 +1315,7 @@ function FileReview({
 
             <div className="health-review-column">
               <Panel p="md">
-                <Title order={4} fz="var(--type-subhead)" mb="sm">
+                <Title order={3} size="h4" fz="var(--type-subhead)" mb="sm">
                   <Trans>Request replacement</Trans>
                 </Title>
                 <Select
@@ -1236,7 +1375,7 @@ function FileReview({
               </Panel>
 
               <Panel p="md">
-                <Title order={4} fz="var(--type-subhead)" mb="sm">
+                <Title order={3} size="h4" fz="var(--type-subhead)" mb="sm">
                   {gone ? <Trans>Clear the record</Trans> : <Trans>Remove archive</Trans>}
                 </Title>
                 <Text size="xs" c="var(--ink-4)" mb="sm">
@@ -1321,7 +1460,7 @@ function UnlinkedPanel({
   return (
     <Panel p="md">
       <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
-        <Title order={4} fz="var(--type-subhead)">
+        <Title order={3} size="h4" fz="var(--type-subhead)">
           <Trans>Not linked to any chapter</Trans>
         </Title>
         <Badge variant="light" color="var(--neutral)">
@@ -1494,10 +1633,10 @@ function CompareArchives({
     <Panel p="md">
       <div className="health-compare">
         <div />
-        <Text size="xs" fw={700} tt="uppercase" c="var(--ink-4)" style={{ letterSpacing: '0.05em' }}>
+        <Text size="xs" fw={600} c="var(--ink-4)">
           <Trans>This archive</Trans>
         </Text>
-        <Text size="xs" fw={700} tt="uppercase" c="var(--ink-4)" style={{ letterSpacing: '0.05em' }}>
+        <Text size="xs" fw={600} c="var(--ink-4)">
           <Trans>Linked file</Trans>
         </Text>
         {rows.map(({ id, label, mine, theirs }) => (
@@ -1598,6 +1737,99 @@ function CompareArchives({
   )
 }
 
+/** The most rows HealthController serves for one group. */
+const GROUP_ROWS_MAX = 500
+
+/**
+ * Operations of one kind that ended the same way, grouped by the server so the count is the whole
+ * group, not what fits on a page. A bulk delete the filesystem refused reads as the single
+ * problem it is. The newest rows come with the group; Show all loads the rest.
+ */
+function OperationGroup({ group, onReview }: { group: OperationGroupData; onReview: (id: number) => void }) {
+  const [expanded, setExpanded] = useState(false)
+  const all = useHealthData<{ items: HealthOperation[]; total: number }>(
+    `/operations/group?key=${encodeURIComponent(group.key)}&take=${Math.min(group.count, GROUP_ROWS_MAX)}`,
+    expanded,
+  )
+  const count = group.count
+  const max = GROUP_ROWS_MAX
+  const shown = expanded && all.data ? all.data.items : group.rows
+  return (
+    <Panel p={0} className="health-op-group">
+      <div className="health-op-head">
+        <Group gap="sm">
+          <Text fw={650}>
+            {group.kind === 'delete' ? (
+              count === 1 ? (
+                <Trans>Deletion</Trans>
+              ) : (
+                <Plural value={count} one="# deletion" other="# deletions" />
+              )
+            ) : count === 1 ? (
+              <Trans>Replacement</Trans>
+            ) : (
+              <Plural value={count} one="# replacement" other="# replacements" />
+            )}
+          </Text>
+          <Status value={group.status} />
+        </Group>
+        {group.error && (
+          <Text size="sm" c="var(--ink-3)">
+            {group.error}
+          </Text>
+        )}
+      </div>
+      <ul className="health-op-rows">
+        {shown.map((op) => {
+          const fileName = op.relativePath?.split('/').pop() ?? null
+          return (
+            <li key={op.id} className="health-op-row">
+              <SeriesCell
+                seriesId={op.seriesId ?? null}
+                title={op.seriesTitle ?? fileName ?? `#${op.fileId}`}
+                coverUrl={op.coverUrl ?? null}
+                detail={
+                  op.seriesTitle && fileName && op.relativePath ? (
+                    <MonoValue value={fileName} full={op.relativePath} focusable={false} fz="var(--type-meta)" c="var(--ink-3)" />
+                  ) : undefined
+                }
+                small
+              />
+              <Text size="xs" c="var(--ink-3)" className="health-op-when">
+                {formatDateTime(op.createdAt)}
+              </Text>
+              <Button size="compact-sm" variant="default" onClick={() => onReview(op.id)}>
+                <Trans>Review</Trans>
+              </Button>
+            </li>
+          )
+        })}
+      </ul>
+      {count > group.rows.length && (
+        <div className="health-op-more">
+          <Button size="compact-sm" variant="subtle" color="var(--neutral)" onClick={() => setExpanded((e) => !e)}>
+            {expanded ? (
+              <Trans>Show fewer</Trans>
+            ) : count > GROUP_ROWS_MAX ? (
+              <Trans>
+                Show newest {max} of {count}
+              </Trans>
+            ) : (
+              <Plural value={count} one="Show all # operation" other="Show all # operations" />
+            )}
+          </Button>
+          {expanded && all.isFetching && !all.data && <Loader size="xs" ml="sm" />}
+          {expanded && all.error && (
+            <Text size="sm" c="var(--danger)" mt="xs">
+              {all.error.message}
+            </Text>
+          )}
+        </div>
+      )}
+    </Panel>
+  )
+}
+
 function OperationReview({ id, close }: { id: number; close: () => void }) {
   const { t } = useLingui()
   const { data, error } = useHealthData<OperationDetail>(`/operations/${id}`, true, (detail) =>
@@ -1613,7 +1845,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
     <Modal
       opened
       onClose={close}
-      title={t`Operation #${id}`}
+      title={t`Review operation`}
       size="min(1060px, 94vw)"
       centered
     >
@@ -1686,8 +1918,11 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
             <div className="health-review-column">
               <Panel p="md">
                 <Status value={data.operation.status} />
-                <Text fw={600} mt="sm" ff="monospace" style={{ overflowWrap: 'anywhere' }}>
-                  {data.file.relativePath}
+                <Text size="xs" c="var(--ink-3)" mt="xs" component="div">
+                  <Trans>Operation</Trans> <MonoValue value={String(id)} copy />
+                </Text>
+                <Text fw={600} mt="sm" component="div">
+                  <MonoValue value={data.file.relativePath} copy />
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt={4}>
                   {bytes(data.file.size, t`Missing`)} ·{' '}
@@ -1765,91 +2000,16 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
   )
 }
 
-function OptionsPanel() {
-  const { t } = useLingui()
-  const { data } = useHealthData<HealthOptions>('/options')
-  const [draft, setDraft] = useState<HealthOptions | null>(null)
-  const action = useHealthAction()
-  const value = draft ?? data
-  if (!value) return null
-  const update = (patch: Partial<HealthOptions>) => setDraft({ ...value, ...patch })
-
-  return (
-    <Panel edge="strong" className="health-area-options" p="lg">
-      <Stack>
-        <Title order={3} fz="var(--type-section)">
-          <Trans>Health settings</Trans>
-        </Title>
-        {action.error && <Alert color="var(--danger)">{action.error.message}</Alert>}
-        <Switch
-          label={t`Analyze new files and run daily reconciliation`}
-          checked={value.automaticScanning}
-          onChange={(e) => update({ automaticScanning: e.currentTarget.checked })}
-        />
-        <SimpleGrid cols={{ base: 1, sm: 2 }}>
-          <NumberInput
-            label={t`Daily scan hour (0-23)`}
-            min={0}
-            max={23}
-            value={value.scanHour}
-            onChange={(v) => update({ scanHour: Number(v) })}
-          />
-          <TextInput
-            label={t`Timezone (empty uses server timezone)`}
-            value={value.timeZone ?? ''}
-            onChange={(e) => update({ timeZone: e.currentTarget.value || null })}
-          />
-          <NumberInput
-            label={t`Pages decoded at once (0 = automatic)`}
-            description={t`Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone.`}
-            min={0}
-            max={32}
-            value={value.scanWorkers}
-            onChange={(v) => update({ scanWorkers: Number(v) })}
-          />
-          {(['warningPercent', 'errorPercent', 'warningGiB', 'errorGiB', 'backupDays'] as const).map((key) => (
-            <NumberInput
-              key={key}
-              label={
-                {
-                  warningPercent: t`Low disk warning (%)`,
-                  errorPercent: t`Low disk error (%)`,
-                  warningGiB: t`Low disk warning (GiB)`,
-                  errorGiB: t`Low disk error (GiB)`,
-                  backupDays: t`Backup freshness (days)`,
-                }[key]
-              }
-              min={0}
-              value={value[key]}
-              onChange={(v) => update({ [key]: Number(v) })}
-            />
-          ))}
-        </SimpleGrid>
-        <Button
-          disabled={!draft}
-          loading={action.isPending}
-          onClick={() =>
-            action.mutate({ path: '/options', method: 'PUT', body: value }, { onSuccess: () => setDraft(null) })
-          }
-        >
-          <Trans>Save health settings</Trans>
-        </Button>
-      </Stack>
-    </Panel>
-  )
-}
-
 function CachePanel() {
   const { t } = useLingui()
   const cache = useImageCache()
   const rebuild = useRebuildImageCache()
 
   return (
-    <Panel className="health-area-cache" p="lg">
-      <Stack>
-        <Title order={3} fz="var(--type-section)">
-          <Trans>Image cache and backups</Trans>
-        </Title>
+    <Stack gap="sm">
+      <SectionHeader icon={IconPhotoScan} title={t`Image cache and backups`} />
+      <Panel p="lg">
+      <Group justify="space-between" align="center" gap="lg">
         {cache.data && (
           <div className="health-facts">
             {(
@@ -1870,7 +2030,6 @@ function CachePanel() {
             ))}
           </div>
         )}
-        {(cache.error ?? rebuild.error) && <Alert color="var(--danger)">{(cache.error ?? rebuild.error)?.message}</Alert>}
         <Group gap="xs">
           <Button
             variant="default"
@@ -1883,7 +2042,13 @@ function CachePanel() {
             <Trans>Backup and cache tools</Trans>
           </Button>
         </Group>
-      </Stack>
-    </Panel>
+      </Group>
+      {(cache.error ?? rebuild.error) && (
+        <Alert color="var(--danger)" mt="md">
+          {(cache.error ?? rebuild.error)?.message}
+        </Alert>
+      )}
+      </Panel>
+    </Stack>
   )
 }

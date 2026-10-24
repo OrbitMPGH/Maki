@@ -266,16 +266,21 @@ public class OidcSignInService(
             OpdsAccessService.EvictUser(user.Id);
         }
 
-        // Same as an edit on the Users page: other sessions carry the old permissions until the stamp
-        // moves, and hub connections keep the groups they joined with. The sign-in this is part of
-        // issues its cookie afterwards, so it picks up the new stamp.
-        if (user.Permissions != before)
+        // Same as an edit on the Users page: taking access away ends other sessions and push
+        // subscriptions, and hub connections keep the groups they joined with. The sign-in this is part
+        // of issues its cookie afterwards, so it picks up the new stamp, and its page load re-posts
+        // this device's subscription.
+        var isAdmin = user.Permissions.Grants(MakiPermission.Admin);
+        var revokeSessions = !isAdmin && (before & ~user.Permissions) != 0;
+        if (revokeSessions)
         {
             await userManager.UpdateSecurityStampAsync(user);
-            if (before.Grants(MakiPermission.Admin) && !user.Permissions.Grants(MakiPermission.Admin))
-            {
-                await EventsHub.DisconnectUserAsync(hub, user.Id);
-            }
+            await WebPushSender.DropSubscriptionsAsync(db, user.Id, ct);
+        }
+
+        if (before.Grants(MakiPermission.Admin) != isAdmin || revokeSessions)
+        {
+            await EventsHub.DisconnectUserAsync(hub, user.Id);
         }
 
         await RefreshLoginDisplayNameAsync(user, provider, providerKey, subject, claims, ct);

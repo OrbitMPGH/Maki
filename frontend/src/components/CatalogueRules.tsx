@@ -122,7 +122,7 @@ function fromFilters(f: RecommendationFilters | undefined | null): TermFilterSta
   return simple ? { ...EMPTY, ...simple, view: 'simple' } : { ...EMPTY, view: 'rules', rules }
 }
 
-function liveRules(s: TermFilterState): CatalogueRule[] {
+export function liveRules(s: TermFilterState): CatalogueRule[] {
   const rules = s.view === 'simple' ? compileSimple(s) : s.rules
   return rules.filter((rule) => rule.terms.length > 0)
 }
@@ -155,8 +155,11 @@ function useModeLabels(): Record<RuleMode, string> {
   return { all: t`Has all of`, any: t`Has any of`, none: t`Has none of` }
 }
 
-/** The genre and tag editor: tri-state chips and two tag pickers, or the rule builder. */
-export function TermFilters({ controls }: { controls: TermFilterControls }) {
+/**
+ * The genre and tag editor: tri-state chips and two tag pickers, or the rule builder. `heading`
+ * off drops the "Genres and tags" label for a host that already titles the section.
+ */
+export function TermFilters({ controls, heading = true }: { controls: TermFilterControls; heading?: boolean }) {
   const { t } = useLingui()
   const { state, setState } = controls
   const simpleShape = state.view === 'rules' ? toSimple(state.rules) : null
@@ -173,10 +176,12 @@ export function TermFilters({ controls }: { controls: TermFilterControls }) {
 
   return (
     <Stack gap="sm">
-      <Group justify="space-between" wrap="nowrap">
-        <Text size="sm" fw={500}>
-          <Trans>Genres and tags</Trans>
-        </Text>
+      <Group justify={heading ? 'space-between' : 'flex-end'} wrap="nowrap">
+        {heading && (
+          <Text size="sm" fw={500}>
+            <Trans>Genres and tags</Trans>
+          </Text>
+        )}
         <Tooltip
           label={t`These rules need the rules view. Remove some to switch back.`}
           disabled={canSimplify}
@@ -393,6 +398,7 @@ export function TermPicker({
 }) {
   const { t } = useLingui()
   const combobox = useCombobox({ onDropdownClose: () => combobox.resetSelectedOption() })
+  const fieldName = typeof label === 'string' ? label : kinds.includes('genre') ? t`Search genres and tags` : t`Search tags`
   const [search, setSearch] = useState('')
   const { data: tagOptions, isLoading } = useRecommendationTags()
   const genreOptions = useGenreOptions()
@@ -492,6 +498,7 @@ export function TermPicker({
               ))}
               <Combobox.EventsTarget>
                 <PillsInput.Field
+                  aria-label={fieldName}
                   value={search}
                   placeholder={value.length ? undefined : (placeholder ?? (kinds.includes('genre') ? t`Search genres and tags` : t`Search tags`))}
                   onFocus={() => combobox.openDropdown()}
@@ -514,7 +521,7 @@ export function TermPicker({
         </Combobox.DropdownTarget>
 
         <Combobox.Dropdown>
-          <Combobox.Options mah={300} style={{ overflowY: 'auto' }}>
+          <Combobox.Options mah={300} style={{ overflowY: 'auto' }} aria-label={fieldName}>
             {genres.length > 0 && (
               <Combobox.Group label={t`Genres`}>
                 {genres.map((g) => (
@@ -642,7 +649,15 @@ function TermPill({
   if (term.kind === 'genre') return pill
 
   return (
-    <Popover opened={opened} onChange={setOpened} position="bottom-start" withArrow shadow="md" width={260}>
+    <Popover
+      opened={opened}
+      onChange={setOpened}
+      position="bottom-start"
+      withArrow
+      shadow="md"
+      width={260}
+      withRoles={false}
+    >
       <Popover.Target>{pill}</Popover.Target>
       <Popover.Dropdown>
         <Stack gap="xs">

@@ -181,6 +181,25 @@ public class TorrentImportServiceTests : IDisposable
         Assert.Contains(file.Replaces, r => r.RelativePath.EndsWith("Berserk Vol.1 Ch.1.cbz"));
     }
 
+    [Fact]
+    public async Task Plan_lists_every_series_chapter_in_reading_order_for_the_map()
+    {
+        var (series, item) = SeedLibrary();
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.Add(new Chapter { SeriesId = series.Id, Number = 8, Language = "en" });
+            db.Chapters.Add(new Chapter { SeriesId = series.Id, Number = 7, Language = "en" });
+            db.SaveChanges();
+        }
+        SeedVolumeDownload(1, 2, 3, 4, 5, 6);
+
+        var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        Assert.Equal(["1", "2", "3", "4", "5", "6", "7", "8"], plan.Chapters.Select(c => c.Label));
+        Assert.All(plan.Chapters.Take(6), c => Assert.True(c.HasFile));
+        Assert.All(plan.Chapters.Skip(6), c => Assert.False(c.HasFile));
+    }
+
     /// <summary>
     /// The link step can run twice for one placed file: the poll that imported it was cut off before
     /// the queue row was saved, or a parked item is settled after the job already placed the files.
@@ -1012,6 +1031,40 @@ public class TorrentImportServiceTests : IDisposable
         Assert.Equal(sharedId, after.Single(c => c.Number == 6).ChapterFileId);
         Assert.All(after.Where(c => c.Number <= 4), c => Assert.NotNull(c.ChapterFileId));
         Assert.True(File.Exists(Path.Combine(_root, "Berserk", "Berserk Vol.1 Ch.1.cbz")));
+    }
+
+    [Fact]
+    public async Task A_reverted_volume_gives_the_restored_files_their_koreader_ids_back()
+    {
+        var (series, item) = SeedLibrary();
+        var digest = new string('c', 32);
+        using (var db = _db.NewContext())
+        {
+            var fileId = db.ChapterFiles.Single(f => f.RelativePath.EndsWith("Ch.1.cbz")).Id;
+            db.KoreaderDocuments.Add(new KoreaderDocument
+            {
+                ChapterFileId = fileId, Kind = KoreaderDigestKind.Binary, Digest = digest, FileVersion = "1-1",
+                CreatedAt = DateTime.UtcNow
+            });
+            db.SaveChanges();
+        }
+
+        SeedVolumeDownload(1, 2, 3, 4, 5, 6);
+        var outcome = await Service().ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+
+        using (var db = _db.NewContext())
+        {
+            Assert.Empty(db.KoreaderDocuments.Where(d => d.Digest == digest));
+            var (_, error) = await new UpgradeRevertService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
+                NullLogger<UpgradeRevertService>.Instance).RevertGroupAsync(outcome.HistoryGroupId!.Value, null, CancellationToken.None);
+            Assert.Equal(UpgradeRevertError.None, error);
+        }
+
+        using var check = _db.NewContext();
+        var restored = check.ChapterFiles.Single(f => f.RelativePath.EndsWith("Ch.1.cbz"));
+        var document = Assert.Single(check.KoreaderDocuments.Where(d => d.Digest == digest).ToList());
+        Assert.Equal((restored.Id, "1-1"), (document.ChapterFileId, document.FileVersion));
     }
 
     [Fact]

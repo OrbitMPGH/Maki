@@ -98,7 +98,7 @@ export function CustomRailForm({
   const { t } = useLingui()
   const renderLabel = useLabel()
   const { data: metadata } = useMetadataSettings()
-  const discoverAvailable = Boolean(metadata?.useLocalDb && metadata?.dumpPresent)
+  const discoverAvailable = Boolean(metadata?.dumpPresent)
   const create = useCreateCustomRail()
   const update = useUpdateCustomRail()
 

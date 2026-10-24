@@ -4,10 +4,6 @@ using Maki.Core.Entities;
 using Maki.Core.Images;
 using Maki.Core.Notifications;
 using System.Security.Cryptography;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Processing;
 
 namespace Maki.Api.Services;
 
@@ -17,8 +13,6 @@ public class CoverService(
     : INotificationCoverStore
 {
     private const int PosterWidth = 400;
-
-    private static readonly DecoderOptions FirstFrameOnly = new() { MaxFrames = 1 };
 
     public string CoverPathFor(int seriesId) => Path.Combine(paths.MediaCoverDir, seriesId.ToString(), "cover.jpg");
 
@@ -71,12 +65,8 @@ public class CoverService(
             await using var stream = await client.GetStreamAsync(coverUrl, ct);
             using var buffer = new MemoryStream();
             await stream.CopyToAsync(buffer, ct);
-            buffer.Position = 0;
-            return await ImageWorkGate.RunAsync(async () =>
-            {
-                using var image = await Image.LoadAsync(FirstFrameOnly, buffer, ct);
-                return await SavePosterAsync(seriesId, image);
-            }, ct);
+            var bytes = buffer.ToArray();
+            return await ImageWorkGate.RunAsync(() => Task.FromResult(SavePoster(seriesId, bytes)), ct);
         }
         catch (Exception ex)
         {
@@ -88,34 +78,28 @@ public class CoverService(
     /// <summary>
     /// Stores an image a user uploaded as the series' poster, through the same resize and encode as a
     /// downloaded one. The caller has already checked the bytes are a raster image of sane size.
-    /// Orientation is applied and every metadata profile dropped, so a phone photo's EXIF location
-    /// never reaches the poster other users can fetch.
+    /// Orientation is applied and every metadata block dropped (<see cref="ImageCodec.JpegThumbnail"/>
+    /// does both for every poster), so a phone photo's EXIF location never reaches the poster other
+    /// users can fetch.
     /// </summary>
     public Task<string> StoreUploadedCoverAsync(int seriesId, Stream content, CancellationToken ct = default) =>
         ImageWorkGate.RunAsync(async () =>
         {
-            using var image = await Image.LoadAsync(FirstFrameOnly, content, ct);
-            image.Mutate(x => x.AutoOrient());
-            image.Metadata.ExifProfile = null;
-            image.Metadata.IptcProfile = null;
-            image.Metadata.XmpProfile = null;
-            image.Metadata.IccProfile = null;
-            return await SavePosterAsync(seriesId, image);
+            using var buffer = new MemoryStream();
+            await content.CopyToAsync(buffer, ct);
+            return SavePoster(seriesId, buffer.ToArray());
         }, ct);
 
-    private async Task<string> SavePosterAsync(int seriesId, Image image)
+    /// <summary>The first frame of an animation, shrunk to <see cref="PosterWidth"/> when wider and never enlarged.</summary>
+    private string SavePoster(int seriesId, byte[] source)
     {
-        if (image.Width > PosterWidth)
-        {
-            image.Mutate(x => x.Resize(PosterWidth, 0));
-        }
-
+        var poster = ImageCodec.JpegThumbnail(source, PosterWidth, 90, enlarge: false);
         var target = CoverPathFor(seriesId);
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
         var temp = $"{target}.{Guid.NewGuid():N}.tmp";
         try
         {
-            await image.SaveAsync(temp, new JpegEncoder { Quality = 90 }, CancellationToken.None);
+            File.WriteAllBytes(temp, poster);
             if (SameBytes(temp, target))
             {
                 // Keeps the write time, which is what the cover URL's cache-buster follows.

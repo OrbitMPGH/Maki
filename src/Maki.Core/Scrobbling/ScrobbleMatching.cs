@@ -22,11 +22,16 @@ public static partial class ScrobbleMatching
     [GeneratedRegex(@"^/(?:series/)?(\d+)", RegexOptions.IgnoreCase)]
     private static partial Regex MangaBakaPath();
 
+    // The base36 slug form, which may be all digits. Legacy "/series.html?id=" links never match.
+    [GeneratedRegex(@"^/series/([0-9a-z]+)(?:/|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex MangaUpdatesPath();
+
     private static readonly (string Service, string[] Hosts, Regex PathPattern)[] LinkPatterns =
     [
         ("anilist", ["anilist.co", "www.anilist.co"], AniListPath()),
         ("mal", ["myanimelist.net", "www.myanimelist.net"], MalPath()),
         ("mangabaka", ["mangabaka.org", "www.mangabaka.org", "mangabaka.dev", "www.mangabaka.dev"], MangaBakaPath()),
+        ("mangaupdates", ["mangaupdates.com", "www.mangaupdates.com"], MangaUpdatesPath()),
     ];
 
     /// <summary>
@@ -53,7 +58,7 @@ public static partial class ScrobbleMatching
                     hosts.Contains(uri.Host, StringComparer.OrdinalIgnoreCase) &&
                     pathPattern.Match(uri.AbsolutePath) is { Success: true } m)
                 {
-                    found[service] = m.Groups[1].Value;
+                    found[service] = m.Groups[1].Value.ToLowerInvariant();
                 }
             }
         }
@@ -185,10 +190,12 @@ public static partial class ScrobbleMatching
     /// "Blue Lock" would extend to "Blue Locker".
     /// </para>
     /// </summary>
-    private static bool ExtendsOrIsExtendedBy(string a, string b)
+    private static bool ExtendsOrIsExtendedBy(string a, string b) =>
+        NormalizedExtendsOrIsExtendedBy(NormalizeTitle(a), NormalizeTitle(b));
+
+    /// <summary><see cref="ExtendsOrIsExtendedBy"/> over titles already through <see cref="NormalizeTitle"/>.</summary>
+    internal static bool NormalizedExtendsOrIsExtendedBy(string na, string nb)
     {
-        var na = NormalizeTitle(a);
-        var nb = NormalizeTitle(b);
         if (na.Length == 0 || nb.Length == 0)
         {
             return false;
@@ -241,13 +248,8 @@ public static partial class ScrobbleMatching
         var bestScore = 0.0;
         foreach (var candidate in candidates)
         {
-            var names = new[] { candidate.Title }.Concat(candidate.AltTitles);
-            var score = queries
-                .SelectMany(q => names.Select(n => (Score: TitleSimilarity(q, n), Q: q, N: n)))
-                .Where(pair => pair.Score >= threshold && WordCoverage(pair.Q, pair.N) >= WordCoverageThreshold)
-                .Where(pair => pair.Score >= standalone || ExtendsOrIsExtendedBy(pair.Q, pair.N))
-                .Select(pair => pair.Score)
-                .DefaultIfEmpty(0)
+            var score = new[] { candidate.Title }.Concat(candidate.AltTitles)
+                .Select(n => MatchScore(queries, n, threshold))
                 .Max();
             if (score > bestScore)
             {
@@ -256,6 +258,23 @@ public static partial class ScrobbleMatching
         }
 
         return bestScore >= threshold ? best : null;
+    }
+
+    /// <summary>
+    /// The best similarity of <paramref name="name"/> to any of the queries that passes the threshold,
+    /// word-coverage and shape checks, or 0 when none does. <see cref="BestCandidate(IReadOnlyList{string}, IReadOnlyList{ScrobbleCandidate}, double)"/>
+    /// is the maximum of this over a candidate's names.
+    /// </summary>
+    public static double MatchScore(IReadOnlyList<string> queries, string name, double threshold = MatchThreshold)
+    {
+        var standalone = Math.Max(threshold, StandaloneThreshold);
+        return queries
+            .Select(q => (Score: TitleSimilarity(q, name), Q: q))
+            .Where(pair => pair.Score >= threshold && WordCoverage(pair.Q, name) >= WordCoverageThreshold)
+            .Where(pair => pair.Score >= standalone || ExtendsOrIsExtendedBy(pair.Q, name))
+            .Select(pair => pair.Score)
+            .DefaultIfEmpty(0)
+            .Max();
     }
 
     /// <summary>Ratcliff/Obershelp: longest common substring, then recurse on both flanks.</summary>

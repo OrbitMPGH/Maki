@@ -68,7 +68,7 @@ public class RecommendationServiceTasteTests : IDisposable
 
     /// <summary>A store that reports the dump present and contributes no relations of its own.</summary>
     private sealed class EmptyStore() : MangaBakaLocalStore(
-        new MangaBakaDumpOptions("", ""), new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance)
+        new MangaBakaDumpOptions("", ""), NullLogger<MangaBakaLocalStore>.Instance)
     {
         public override Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(true);
 

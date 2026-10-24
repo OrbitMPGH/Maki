@@ -53,17 +53,89 @@ public class MangaBakaDumpServiceTests : IDisposable
     public async Task Refresh_skips_download_when_checksum_unchanged()
     {
         var dbPath = Path.Combine(_workDir, "mangabaka.db");
-        await File.WriteAllTextAsync(dbPath, "placeholder");
+        using (var installed = new DumpDbBuilder())
+        {
+            installed.AddSeries(377, "ONE PIECE").BuildSearchIndex();
+            SqliteConnection.ClearAllPools();
+            File.Copy(installed.Path, dbPath);
+        }
+
+        var before = await File.ReadAllBytesAsync(dbPath);
         _settings.Values[SettingKeys.MangaBakaDumpSha1] = "abc123";
 
-        // Only the checksum endpoint is stubbed â€” requesting the dump itself would 404 and throw.
+        // Only the checksum endpoint is stubbed: requesting the dump itself would 404 and throw.
         var service = CreateService(new Dictionary<string, byte[]>
         {
             ["series.sqlite.zst.sha1"] = "abc123  series.sqlite.zst"u8.ToArray()
         });
 
         Assert.False(await service.RefreshAsync());
-        Assert.Equal("placeholder", await File.ReadAllTextAsync(dbPath));
+        Assert.Equal(before, await File.ReadAllBytesAsync(dbPath));
+    }
+
+    [Theory]
+    [InlineData("garbage")]
+    [InlineData("truncated")]
+    [InlineData("no-search-table")]
+    public async Task Refresh_replaces_a_damaged_dump_even_when_the_checksum_is_unchanged(string damage)
+    {
+        var dbPath = Path.Combine(_workDir, "mangabaka.db");
+        using (var installed = new DumpDbBuilder())
+        {
+            installed.AddSeries(1, "Old").AddFillerSeries(2000);
+            if (damage != "no-search-table")
+            {
+                installed.BuildSearchIndex();
+            }
+
+            SqliteConnection.ClearAllPools();
+            File.Copy(installed.Path, dbPath);
+        }
+
+        if (damage == "garbage")
+        {
+            await File.WriteAllTextAsync(dbPath, "placeholder");
+        }
+        else if (damage == "truncated")
+        {
+            await using var file = new FileStream(dbPath, FileMode.Open);
+            file.SetLength(file.Length / 2);
+        }
+
+        Assert.NotNull(MangaBakaDumpService.IntegrityProblem(dbPath));
+
+        using var source = new DumpDbBuilder();
+        source.AddSeries(377, "ONE PIECE").AddFillerSeries(1000);
+        var (compressed, sha1) = CompressDb(source.Path);
+        _settings.Values[SettingKeys.MangaBakaDumpSha1] = sha1;
+        var service = CreateService(new Dictionary<string, byte[]>
+        {
+            ["series.sqlite.zst.sha1"] = System.Text.Encoding.UTF8.GetBytes($"{sha1}  series.sqlite.zst"),
+            ["series.sqlite.zst"] = compressed
+        });
+
+        Assert.True(await service.RefreshAsync());
+        Assert.Null(MangaBakaDumpService.IntegrityProblem(dbPath));
+        Assert.False(service.Damaged);
+    }
+
+    [Fact]
+    public async Task A_damaged_dump_whose_download_fails_stays_flagged()
+    {
+        var dbPath = Path.Combine(_workDir, "mangabaka.db");
+        await File.WriteAllTextAsync(dbPath, "placeholder");
+        _settings.Values[SettingKeys.MangaBakaDumpSha1] = "abc123";
+
+        // The dump itself is not stubbed, so the re-download 404s.
+        var service = CreateService(new Dictionary<string, byte[]>
+        {
+            ["series.sqlite.zst.sha1"] = "abc123  series.sqlite.zst"u8.ToArray()
+        });
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => service.RefreshAsync());
+
+        Assert.True(service.Damaged);
+        Assert.True(File.Exists(dbPath));
     }
 
     [Fact]
@@ -90,7 +162,6 @@ public class MangaBakaDumpServiceTests : IDisposable
         // The installed copy is queryable through the FTS index the service built.
         var store = new MangaBakaLocalStore(
             new MangaBakaDumpOptions(installedPath, _workDir),
-            _settings,
             NullLogger<MangaBakaLocalStore>.Instance);
         var results = await store.SearchAsync("one piece", ContentRating.Pornographic);
         Assert.Equal("377", Assert.Single(results).ProviderId);
@@ -141,6 +212,39 @@ public class MangaBakaDumpServiceTests : IDisposable
         {
             Assert.False(File.Exists(installedPath + suffix), suffix);
         }
+    }
+
+    [Fact]
+    public async Task Refresh_reports_an_HttpClient_timeout_as_a_failure_not_a_shutdown()
+    {
+        var service = new MangaBakaDumpService(
+            new HangingDumpHttpClientFactory("abc123  series.sqlite.zst"),
+            new MangaBakaDumpOptions(Path.Combine(_workDir, "mangabaka.db"), _workDir),
+            _settings,
+            _status,
+            NullLogger<MangaBakaDumpService>.Instance);
+
+        await Assert.ThrowsAsync<TimeoutException>(() => service.RefreshAsync());
+
+        var progress = _status.Snapshot();
+        Assert.False(progress.Running);
+        Assert.Contains("timed out", progress.LastError);
+    }
+
+    [Fact]
+    public async Task Refresh_cancelled_by_its_caller_is_not_a_failure()
+    {
+        using var cts = new CancellationTokenSource();
+        var service = new MangaBakaDumpService(
+            new HangingDumpHttpClientFactory("abc123  series.sqlite.zst", TimeSpan.FromMinutes(5), cts.Cancel),
+            new MangaBakaDumpOptions(Path.Combine(_workDir, "mangabaka.db"), _workDir),
+            _settings,
+            _status,
+            NullLogger<MangaBakaDumpService>.Instance);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.RefreshAsync(cts.Token));
+
+        Assert.Null(_status.Snapshot().LastError);
     }
 
     [Fact]
@@ -202,6 +306,35 @@ public class FakeDumpHttpClientFactory(Dictionary<string, byte[]> responsesByUrl
             {
                 Content = new StringContent($"No fixture for {url}")
             });
+        }
+    }
+}
+
+/// <summary>
+/// Answers the checksum, then never answers the dump request, so the client's own
+/// <see cref="HttpClient.Timeout"/> fires, or <paramref name="onHang"/> cancels from outside.
+/// </summary>
+public class HangingDumpHttpClientFactory(string sha1Line, TimeSpan? timeout = null, Action? onHang = null)
+    : IHttpClientFactory
+{
+    public HttpClient CreateClient(string name) => new(new Handler(sha1Line, onHang))
+    {
+        BaseAddress = new Uri("https://fixture.test/"),
+        Timeout = timeout ?? TimeSpan.FromMilliseconds(200),
+    };
+
+    private class Handler(string sha1Line, Action? onHang) : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            if (request.RequestUri!.ToString().EndsWith(".sha1", StringComparison.OrdinalIgnoreCase))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(sha1Line) };
+            }
+
+            onHang?.Invoke();
+            await Task.Delay(Timeout.Infinite, ct);
+            throw new InvalidOperationException("unreachable");
         }
     }
 }

@@ -25,6 +25,9 @@ public sealed record SourceOrderResult(
 /// under the series' upgrade profile, scoring each source on its recent measurements
 /// (<see cref="SourceQualitySamples"/>); a series with no profile is ranked under the default tier
 /// order at the starter weights, so the mode still means something before any profile is picked.
+/// A source this series has not measured is judged by its record across the library, and one never
+/// measured anywhere gets the lowest measured points there are: below the reference is the norm, so
+/// scoring it as average would put it ahead of nearly every source that has been measured.
 /// </summary>
 public class SourceOrderService(SourceRegistry registry, ChapterFileQualityService quality)
 {
@@ -54,17 +57,31 @@ public class SourceOrderService(SourceRegistry registry, ChapterFileQualityServi
         var evaluator = await new UpgradeEvaluationService(db, quality).ForSeriesAsync(seriesId, ct)
                         ?? new UpgradeEvaluator(DefaultProfile(), [], quality);
         var estimates = await SourceQualitySamples.EstimatesAsync(db, seriesId, ct);
+        var unmeasured = mappings.Where(m => !estimates.ContainsKey(m.Id)).Select(m => m.SourceName).Distinct().ToList();
+        var library = unmeasured.Count == 0
+            ? []
+            : await SourceQualitySamples.LibraryEstimatesAsync(db, ct, SourceQualitySamples.Keep * 5, unmeasured);
         var scores = new Dictionary<int, QualityScore>();
         foreach (var mapping in mappings)
         {
             var group = ChapterFileQualityService.SiteGroup(registry.Find(mapping.SourceName));
             var candidate = evaluator.CandidateFor(mapping.SourceName, group, string.Empty, null, null, null, null, null);
-            if (estimates.GetValueOrDefault(mapping.Id) is { } estimate)
+            var estimate = estimates.GetValueOrDefault(mapping.Id)
+                           ?? (library.TryGetValue(mapping.SourceName, out var known) ? known.Estimate : null);
+            if (estimate is not null)
             {
-                candidate = estimate.Apply(candidate);
+                scores[mapping.Id] = evaluator.Score(estimate.Apply(candidate));
+                continue;
             }
 
-            scores[mapping.Id] = evaluator.Score(candidate);
+            var score = evaluator.Score(candidate);
+            var (resolution, compression) = MeasuredQuality.PessimisticPoints(evaluator.Profile);
+            scores[mapping.Id] = score with
+            {
+                Score = score.Score + resolution + compression,
+                ResolutionPoints = resolution,
+                CompressionPoints = compression
+            };
         }
 
         var byId = mappings.ToDictionary(m => m.Id);

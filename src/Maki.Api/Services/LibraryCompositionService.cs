@@ -1,5 +1,6 @@
 using System.Globalization;
 using Maki.Api.Dtos;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Data;
@@ -16,7 +17,8 @@ namespace Maki.Api.Services;
 /// different root folders must not share an entry.
 /// </para>
 /// </summary>
-public class LibraryCompositionService(MakiDbContext db, ICurrentUser currentUser, IMemoryCache cache)
+public class LibraryCompositionService(
+    MakiDbContext db, ICurrentUser currentUser, IMemoryCache cache, IUserSettingsStore userSettings)
 {
     /// <summary>
     /// Short, like <see cref="UserMetricsService"/>'s. Heavier than Rewind and re-requested on every
@@ -106,11 +108,11 @@ public class LibraryCompositionService(MakiDbContext db, ICurrentUser currentUse
             .ToList();
 
         // Genres is a JSON list column, so the counting has to happen in memory — same constraint
-        // RewindService works under. Added rides along rather than paying for a second scan.
-        var shape = await series.Select(s => new { s.Added, s.Genres }).ToListAsync(ct);
+        // RewindService works under.
+        var genreLists = await series.Select(s => s.Genres).ToListAsync(ct);
 
         var genreCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        foreach (var g in shape.SelectMany(s => s.Genres))
+        foreach (var g in genreLists.SelectMany(g => g))
         {
             genreCounts[g] = genreCounts.GetValueOrDefault(g) + 1;
         }
@@ -120,18 +122,6 @@ public class LibraryCompositionService(MakiDbContext db, ICurrentUser currentUse
             .Take(TopGenreCount)
             .Select(kv => new NamedCountDto(kv.Key, kv.Value))
             .ToList();
-
-        // UTC months, not the caller's calendar: this is a property of the library rather than of
-        // anyone's reading day, and a shared number that shifted per viewer would be worse.
-        var growth = new List<LibraryGrowthDto>();
-        var running = 0;
-        foreach (var month in shape
-                     .GroupBy(s => s.Added.ToString("yyyy-MM", CultureInfo.InvariantCulture))
-                     .OrderBy(g => g.Key))
-        {
-            running += month.Count();
-            growth.Add(new LibraryGrowthDto(month.Key, month.Count(), running));
-        }
 
         var largestRaw = await files
             .GroupBy(f => f.SeriesId)
@@ -174,8 +164,97 @@ public class LibraryCompositionService(MakiDbContext db, ICurrentUser currentUse
         var monitorCatches = await GetMonitorCatchesAsync(ct);
 
         return new LibraryCompositionDto(
-            totals, byType, byStatus, bySource, topGenres, growth, largest,
+            totals, byType, byStatus, bySource, topGenres, largest,
             byContentRating, sourceReliability, requests, monitorCatches);
+    }
+
+    /// <summary>
+    /// Series count and disk use through an inclusive local-date window, a point per day for short
+    /// windows and per month otherwise (the same cut-over as the activity timeline). Unlike the
+    /// composition it follows the reader's calendar, since the window it answers is theirs.
+    /// </summary>
+    public async Task<IReadOnlyList<LibraryGrowthDto>> GetGrowthAsync(
+        DateOnly from, DateOnly to, int utcOffsetMinutes, CancellationToken ct)
+    {
+        var key = $"librarygrowth:{currentUser.UserId}:{from:O}:{to:O}:{utcOffsetMinutes}";
+        if (cache.TryGetValue(key, out IReadOnlyList<LibraryGrowthDto>? cached) && cached is not null)
+        {
+            return cached;
+        }
+
+        var growth = await ComputeGrowthAsync(from, to, utcOffsetMinutes, ct);
+        cache.Set(key, growth, CacheFor);
+        return growth;
+    }
+
+    private async Task<IReadOnlyList<LibraryGrowthDto>> ComputeGrowthAsync(
+        DateOnly from, DateOnly to, int utcOffsetMinutes, CancellationToken ct)
+    {
+        var zone = await UserTimeZone.TryResolveAsync(userSettings, currentUser.UserId, ct)
+                   ?? StatsInsightsService.FixedOffset(utcOffsetMinutes);
+        DateTime Local(DateTime utc) =>
+            TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), zone);
+
+        // The rest of a calendar year that has not happened yet would only repeat today's totals.
+        var today = DateOnly.FromDateTime(Local(DateTime.UtcNow));
+        if (to > today)
+        {
+            to = today;
+        }
+
+        if (to < from)
+        {
+            return [];
+        }
+
+        var fromUtc = StatsInsightsService.ToUtc(from.ToDateTime(TimeOnly.MinValue), zone);
+        var toUtc = StatsInsightsService.ToUtc(to.AddDays(1).ToDateTime(TimeOnly.MinValue), zone);
+
+        var series = db.Series.AsNoTracking();
+        var files = db.ChapterFiles.AsNoTracking();
+
+        var running = await series.CountAsync(s => s.Added < fromUtc, ct);
+        var runningBytes = await files.Where(f => f.DateAdded < fromUtc).SumAsync(f => f.Size, ct);
+
+        var useDays = to.DayNumber - from.DayNumber + 1 <= ActivityStatsService.TimelineDayBucketMaxDays;
+        var format = useDays ? "yyyy-MM-dd" : "yyyy-MM";
+        string Bucket(DateTime utc) => Local(utc).ToString(format, CultureInfo.InvariantCulture);
+
+        var seriesByBucket = (await series
+                .Where(s => s.Added >= fromUtc && s.Added < toUtc)
+                .Select(s => s.Added)
+                .ToListAsync(ct))
+            .GroupBy(Bucket)
+            .ToDictionary(g => g.Key, g => g.Count());
+        var bytesByBucket = (await files
+                .Where(f => f.DateAdded >= fromUtc && f.DateAdded < toUtc)
+                .Select(f => new { f.DateAdded, f.Size })
+                .ToListAsync(ct))
+            .GroupBy(f => Bucket(f.DateAdded))
+            .ToDictionary(g => g.Key, g => g.Sum(f => f.Size));
+
+        // Every bucket in the window, empty ones included, so the x axis is evenly spaced time.
+        var growth = new List<LibraryGrowthDto>();
+        var cursor = useDays ? from : new DateOnly(from.Year, from.Month, 1);
+        while (cursor <= to)
+        {
+            var bucket = cursor.ToString(format, CultureInfo.InvariantCulture);
+            var added = seriesByBucket.GetValueOrDefault(bucket);
+            var bytes = bytesByBucket.GetValueOrDefault(bucket);
+            running += added;
+            runningBytes += bytes;
+
+            // All time starts at the first year with any reading, which can sit well before the
+            // first series. A flat zero run there is just empty space.
+            if (growth.Count > 0 || running > 0 || runningBytes > 0)
+            {
+                growth.Add(new LibraryGrowthDto(bucket, added, running, bytes, runningBytes));
+            }
+
+            cursor = useDays ? cursor.AddDays(1) : cursor.AddMonths(1);
+        }
+
+        return growth;
     }
 
     // HousekeepingJob deletes Completed/Cancelled DownloadQueue rows after 30 days and keeps Failed,

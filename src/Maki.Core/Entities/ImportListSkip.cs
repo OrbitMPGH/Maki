@@ -46,7 +46,10 @@ public class ImportListSkip : IUserOwned
     public string Title { get; set; } = string.Empty;
     public ImportListSkipReason Reason { get; set; }
 
-    /// <summary>The resolved MangaBaka id. Null for <see cref="ImportListSkipReason.Unmatched"/>.</summary>
+    /// <summary>
+    /// The resolved MangaBaka id. On an <see cref="ImportListSkipReason.Unmatched"/> row it is set
+    /// only when the entry carried an id the local dump does not have yet, which retries sooner.
+    /// </summary>
     public int? MangaBakaId { get; set; }
 
     public DateTime CreatedAt { get; set; }

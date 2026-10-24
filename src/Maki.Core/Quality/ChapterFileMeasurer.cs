@@ -2,15 +2,14 @@ using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Text;
 using Maki.Core.Reading;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
+using Maki.Core.Images;
 
 namespace Maki.Core.Quality;
 
 /// <summary>
 /// Measures page count, typical dimensions and image format for a chapter file, used to compare
 /// two candidate copies of the same chapter. Never throws on a corrupt page or archive: a page
-/// ImageSharp cannot decode is skipped and the rest of the chapter is still measured. An
+/// that cannot be decoded is skipped and the rest of the chapter is still measured. An
 /// <see cref="IOException"/> or <see cref="UnauthorizedAccessException"/> opening or reading the
 /// file does propagate, since a locked file or an unreachable share says nothing about the bytes.
 /// Every stream and archive handle is closed before returning, since a handle left open on
@@ -52,16 +51,16 @@ public static class ChapterFileMeasurer
             var bytes = buffer.AsSpan(0, length);
             if (IsAvif(bytes))
             {
-                // ImageSharp has no AVIF decoder registered, so Identify would just throw on one.
-                // The signature alone still says what format the page is in.
+                // The signature alone says what format the page is in, and a header cut short at
+                // HeaderBytes would not get through the HEIF loader anyway.
                 _formats.Add("avif");
                 return;
             }
 
-            IImageFormat? format = null;
+            ImageFormat? format = null;
             try
             {
-                format = Image.DetectFormat(bytes);
+                format = ImageCodec.DetectFormat(bytes);
             }
             catch
             {
@@ -70,19 +69,26 @@ public static class ChapterFileMeasurer
 
             try
             {
-                using var stream = new MemoryStream(buffer, 0, length, writable: false);
-                var info = Image.Identify(stream);
+                var info = ImageCodec.Identify(bytes);
                 _widths.Add(info.Width);
                 _heights.Add(info.Height);
                 _formats.Add(FormatName(format) ?? FormatFromExtension(name));
             }
             catch when (TryPngSize(bytes, out var width, out var height))
             {
-                // ImageSharp refuses a PNG whose chunks run past the end of the buffer, which is
-                // every PNG larger than HeaderBytes. IHDR is always first, so read it directly.
+                // A PNG whose chunks run past the end of the buffer, which is every PNG larger than
+                // HeaderBytes, may be refused. IHDR is always first, so read it directly.
                 _widths.Add(width);
                 _heights.Add(height);
                 _formats.Add("png");
+            }
+            catch when (TryWebpSize(bytes, out var width, out var height))
+            {
+                // Same for a WebP cut short at HeaderBytes: libvips wants the whole file before it
+                // reports a size, and the frame header that holds it is near the start.
+                _widths.Add(width);
+                _heights.Add(height);
+                _formats.Add("webp");
             }
             catch
             {
@@ -209,18 +215,47 @@ public static class ChapterFileMeasurer
         return width > 0 && height > 0;
     }
 
-    public static string? FormatName(IImageFormat? format)
+    /// <summary>
+    /// The canvas size from VP8X, or the frame size from a lone VP8 (lossy) or VP8L (lossless)
+    /// chunk, whichever comes first after the RIFF header.
+    /// </summary>
+    private static bool TryWebpSize(ReadOnlySpan<byte> bytes, out int width, out int height)
     {
-        if (format is null) return null;
-        return format.Name.ToUpperInvariant() switch
+        width = height = 0;
+        if (bytes.Length < 30 || !bytes.StartsWith("RIFF"u8) || !bytes.Slice(8, 4).SequenceEqual("WEBP"u8))
+            return false;
+        var chunk = bytes.Slice(12, 4);
+        var data = bytes[20..];
+        if (chunk.SequenceEqual("VP8X"u8))
         {
-            "JPEG" => "jpg",
-            "PNG" => "png",
-            "WEBP" => "webp",
-            "GIF" => "gif",
-            _ => format.Name.ToLowerInvariant()
-        };
+            width = 1 + (data[4] | data[5] << 8 | data[6] << 16);
+            height = 1 + (data[7] | data[8] << 8 | data[9] << 16);
+        }
+        else if (chunk.SequenceEqual("VP8L"u8) && data[0] == 0x2F)
+        {
+            var bits = BinaryPrimitives.ReadUInt32LittleEndian(data[1..]);
+            width = 1 + (int)(bits & 0x3FFF);
+            height = 1 + (int)((bits >> 14) & 0x3FFF);
+        }
+        else if (chunk.SequenceEqual("VP8 "u8) && data[3] == 0x9D && data[4] == 0x01 && data[5] == 0x2A)
+        {
+            width = BinaryPrimitives.ReadUInt16LittleEndian(data[6..]) & 0x3FFF;
+            height = BinaryPrimitives.ReadUInt16LittleEndian(data[8..]) & 0x3FFF;
+        }
+
+        return width > 0 && height > 0;
     }
+
+    public static string? FormatName(ImageFormat? format) => format switch
+    {
+        ImageFormat.Jpeg => "jpg",
+        ImageFormat.Png => "png",
+        ImageFormat.Webp => "webp",
+        ImageFormat.Gif => "gif",
+        ImageFormat.Avif => "avif",
+        ImageFormat.Bmp => "bmp",
+        _ => null
+    };
 
     private static string FormatFromExtension(string name) => Path.GetExtension(name).ToLowerInvariant() switch
     {

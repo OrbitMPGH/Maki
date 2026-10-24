@@ -1,6 +1,6 @@
 # StatTile
 
-A compact metric tile: uppercase label, a big tabular number in the display face, and an optional delta. No icon and no coloured rule.
+A compact metric tile: sentence-case label, a big tabular number in the display face, and an optional delta. No icon and no coloured rule.
 
 The value uses the `figure` face (26px) with tabular figures so a row of tiles lines up.
 

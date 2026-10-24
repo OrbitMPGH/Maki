@@ -15,6 +15,7 @@ import {
   Text,
   TextInput,
   Tooltip,
+  VisuallyHidden,
 } from '@mantine/core'
 import {
   IconBell,
@@ -55,6 +56,7 @@ import { SettingsSection } from '../pages/settings/SettingsSection'
 import { EmptyState } from './ui/EmptyState'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { useLabel } from '../i18n-context'
+import { useAuth } from '../auth/AuthProvider'
 import { formatDateTime } from '../format'
 
 interface EventField {
@@ -63,7 +65,7 @@ interface EventField {
   description: MessageDescriptor
 }
 
-const EVENT_GROUPS: { title: MessageDescriptor; fields: EventField[] }[] = [
+const EVENT_GROUPS: { title: MessageDescriptor; fields: EventField[]; multiUserOnly?: boolean }[] = [
   {
     title: msg`Downloads`,
     fields: [
@@ -88,6 +90,7 @@ const EVENT_GROUPS: { title: MessageDescriptor; fields: EventField[] }[] = [
       { key: 'requestSubmitted', label: msg`Request submitted`, description: msg`Someone asked for a series.` },
       { key: 'requestResolved', label: msg`Request resolved`, description: msg`A request was approved or rejected.` },
     ],
+    multiUserOnly: true,
   },
   {
     title: msg`System`,
@@ -392,6 +395,7 @@ function TypeBadge({ type }: { type: NotificationType }) {
 export function NotificationsSection() {
   const { t } = useLingui()
   const renderLabel = useLabel()
+  const { singleUser } = useAuth()
   const { data: providers } = useNotificationProviders()
   const { data: connections, isError: connectionsError, refetch: refetchConnections } = useNotifications()
   const { data: tags } = useTags()
@@ -490,7 +494,7 @@ export function NotificationsSection() {
               <Table.Th><Trans>Type</Trans></Table.Th>
               <Table.Th><Trans>Scope</Trans></Table.Th>
               <Table.Th><Trans>Status</Trans></Table.Th>
-              <Table.Th />
+              <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -610,9 +614,9 @@ export function NotificationsSection() {
             <Text size="sm" fw={600} mt="xs">
               <Trans>Events</Trans>
             </Text>
-            {EVENT_GROUPS.map((group) => (
+            {EVENT_GROUPS.filter((g) => !g.multiUserOnly || !singleUser).map((group) => (
               <Stack key={group.title.id} gap="xs">
-                <Text size="xs" fw={600} c="var(--ink-3)" tt="uppercase">
+                <Text size="xs" fw={600} c="var(--ink-3)">
                   {renderLabel(group.title)}
                 </Text>
                 {group.fields.map((f) => (

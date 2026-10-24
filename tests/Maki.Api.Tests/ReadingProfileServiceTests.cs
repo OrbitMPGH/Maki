@@ -119,6 +119,51 @@ public class ReadingProfileServiceTests : IDisposable
     }
 
     /// <summary>
+    /// Webtoon detection may override only a layout nobody chose: the global defaults switch it on
+    /// when unset, a profile or override that never mentions it keeps its own layout.
+    /// </summary>
+    [Fact]
+    public async Task AutoWebtoonDefaultsOnForGlobalAndOffForProfilesAndOverrides()
+    {
+        var untyped = _db.SeedSeries("Untyped");
+        var manga = _db.SeedSeries("Typed", configure: s => s.Type = SeriesTypes.Manga);
+        var overridden = _db.SeedSeries("Overridden");
+        await SeedDefaultProfilesAsync();
+        await using (var db = _db.NewContext(UserId))
+        {
+            db.UserSeriesStates.Add(new UserSeriesState
+            {
+                UserId = UserId,
+                SeriesId = overridden,
+                ReaderPrefsJson = """{"mode":"paged"}""",
+            });
+            await db.SaveChangesAsync();
+        }
+
+        Assert.True((await Service().ResolveAsync(untyped, default)).Prefs.AutoWebtoon);
+        Assert.False((await Service().ResolveAsync(manga, default)).Prefs.AutoWebtoon);
+        Assert.False((await Service().ResolveAsync(overridden, default)).Prefs.AutoWebtoon);
+    }
+
+    [Fact]
+    public async Task AProfileCanOptIntoAutoWebtoon()
+    {
+        var seriesId = _db.SeedSeries("Typed", configure: s => s.Type = SeriesTypes.Manga);
+        await SeedDefaultProfilesAsync();
+        await using (var db = _db.NewContext(UserId))
+        {
+            var manga = db.ReadingProfiles.Single(p => p.Name == "Manga");
+            manga.PrefsJson = ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(AutoWebtoon: true, SplitWide: "split"));
+            await db.SaveChangesAsync();
+        }
+
+        var resolved = await Service().ResolveAsync(seriesId, default);
+
+        Assert.True(resolved.Prefs.AutoWebtoon);
+        Assert.Equal("split", resolved.Prefs.SplitWide);
+    }
+
+    /// <summary>
     /// Profiles are per user, and so is the type claim. One person retuning their Webtoon profile
     /// must not reach anybody else's reader.
     /// </summary>

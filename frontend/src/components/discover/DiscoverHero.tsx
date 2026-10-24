@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { Badge, Box, Button, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconArrowRight, IconPlus, IconStar } from '@tabler/icons-react'
@@ -20,7 +20,7 @@ import { useLabel } from '../../i18n-context'
 import { formatFixedDecimal } from '../../format'
 
 /** How long one pick holds the band before the next takes it. */
-const ROTATE_MS = 7000
+const ROTATE_MS = 5000
 
 /**
  * How many picks the list carries. The list is the tallest thing in the band, so this number is
@@ -31,6 +31,61 @@ const PICKS = 5
 const PICKS_SHORT = 4
 /** Under 820px the list stops sitting beside the feature and stacks under it, so it costs double. */
 const PICKS_NARROW = 3
+
+/**
+ * The title sits in a box two display lines tall, so the band is the same height for every pick and
+ * a rotation never moves the page under someone scrolled past it. A title that does not fit is set
+ * smaller, three lines in the same box (`data-fit`), and clamped past that. Measured rather than
+ * guessed from its length, because how much fits depends on the column and the font.
+ */
+function useTitleFit(title: string | undefined) {
+  const ref = useRef<HTMLHeadingElement>(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    // The button's own height, not the heading's scrollHeight: at a 0.94 line height the glyphs
+    // overhang their lines, so a title that fits still reports overflow.
+    const fit = () => {
+      el.dataset.fit = 'full'
+      const lines = el.firstElementChild?.getBoundingClientRect().height ?? 0
+      el.dataset.fit = lines > el.clientHeight + 1 ? 'small' : 'full'
+    }
+    fit()
+    let live = true
+    void document.fonts?.ready.then(() => live && fit())
+    const observer = new ResizeObserver(fit)
+    observer.observe(el)
+    return () => {
+      live = false
+      observer.disconnect()
+    }
+  }, [title])
+  return ref
+}
+
+/**
+ * Whether the band is on screen in a visible tab. The rotation holds otherwise, so someone who
+ * scrolls back up or returns to the tab finds the pick they left.
+ */
+function useWatched(el: HTMLElement | null) {
+  const [inView, setInView] = useState(true)
+  const [tabVisible, setTabVisible] = useState(() => document.visibilityState === 'visible')
+  useEffect(() => {
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setInView(entry.intersectionRatio >= 0.3),
+      { threshold: 0.3 },
+    )
+    observer.observe(el)
+    const onVisibility = () => setTabVisible(document.visibilityState === 'visible')
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      observer.disconnect()
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [el])
+  return inView && tabVisible
+}
 
 /**
  * The Discover page's opening band: one pick at full size, the rest in a vertical list beside it.
@@ -70,6 +125,9 @@ export function DiscoverHero({
   const [activeIndex, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
   const [autoRotate, setAutoRotate] = useState(true)
+  const [heroEl, setHeroEl] = useState<HTMLDivElement | null>(null)
+  const watched = useWatched(heroEl)
+  const halted = paused || !watched
   const reducedMotion = useReducedMotion()
   // Called up here, unconditionally, rather than after the `if (!item) return null` below: both are
   // hooks, and the rule holds even though `item` is never actually undefined once Discover is the
@@ -83,6 +141,7 @@ export function DiscoverHero({
   const active = Math.min(activeIndex, picks.length - 1)
   const item = picks[active] as RecommendationItem | undefined
   const { data: detail } = useRecommendationDetail(item?.providerId ?? null)
+  const titleRef = useTitleFit(item?.title)
 
   const choose = useCallback((n: number) => {
     setAutoRotate(false)
@@ -90,11 +149,11 @@ export function DiscoverHero({
   }, [])
 
   useEffect(() => {
-    if (!canAutoRotate || paused) return
+    if (!canAutoRotate || halted) return
 
     const id = window.setTimeout(() => setActive((n) => (n + 1) % picks.length), ROTATE_MS)
     return () => window.clearTimeout(id)
-  }, [active, canAutoRotate, paused, picks.length])
+  }, [active, canAutoRotate, halted, picks.length])
 
   if (!item) return null
 
@@ -133,6 +192,7 @@ export function DiscoverHero({
 
   return (
     <Box
+      ref={setHeroEl}
       className="series-hero discover-hero"
       data-compact
       data-auto-rotating={canAutoRotate ? 'true' : undefined}
@@ -181,8 +241,8 @@ export function DiscoverHero({
                 <Trans>Your next read</Trans>
               </Text>
 
-              <Title order={1} className="series-hero-title">
-                <button type="button" className="discover-hero-title" onClick={() => onOpen(item)}>
+              <Title order={1} className="series-hero-title" ref={titleRef}>
+                <button type="button" className="discover-hero-title" title={title} onClick={() => onOpen(item)}>
                   {title}
                 </button>
               </Title>
@@ -267,15 +327,14 @@ export function DiscoverHero({
                 ))}
               </Group>
 
-              {reasons.length > 0 && (
-                <Group gap={7} wrap="wrap" className="discover-hero-reasons">
-                  {reasons.slice(0, 3).map((r) => (
-                    <span key={r.id} className="discover-hero-reason">
-                      {r.text}
-                    </span>
-                  ))}
-                </Group>
-              )}
+              {/* Always rendered: an empty row still holds its height. */}
+              <Group gap={7} wrap="wrap" className="discover-hero-reasons">
+                {reasons.slice(0, 3).map((r) => (
+                  <span key={r.id} className="discover-hero-reason" title={r.text}>
+                    {r.text}
+                  </span>
+                ))}
+              </Group>
 
               <Group gap="xs" className="discover-hero-actions">
                 {/* Adding needs a root folder, the caller's permissions and the request path for
@@ -286,7 +345,7 @@ export function DiscoverHero({
                     variant="light"
                     rightSection={<IconArrowRight size={16} />}
                     onClick={() => navigate(`/series/${ownedSeriesId}`)}
-                    aria-label={t`View ${title} in library`}
+                    aria-label={t`View in library: ${title}`}
                   >
                     <Trans>View in library</Trans>
                   </Button>
@@ -294,7 +353,7 @@ export function DiscoverHero({
                   <Button
                     leftSection={<IconPlus size={16} />}
                     onClick={() => onOpen(item)}
-                    aria-label={t`Add ${title} to library`}
+                    aria-label={t`Add to library: ${title}`}
                   >
                     <Trans>Add to library</Trans>
                   </Button>
@@ -334,7 +393,6 @@ export function DiscoverHero({
                     type="button"
                     role="tab"
                     aria-selected={n === active}
-                    aria-label={p.title}
                     className="discover-hero-strip-item"
                     onClick={() => choose(n)}
                   >
@@ -365,7 +423,7 @@ export function DiscoverHero({
                         <span className="discover-hero-strip-match">{matches.join(' · ')}</span>
                       )}
                     </span>
-                    {n === active && canAutoRotate && !paused && (
+                    {n === active && canAutoRotate && !halted && (
                       <span className="discover-hero-strip-progress" aria-hidden>
                         <span key={item.providerId} />
                       </span>

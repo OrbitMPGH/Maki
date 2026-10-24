@@ -30,8 +30,8 @@ public class SettingsServiceTests : IDisposable
     [Fact]
     public async Task Set_then_get_round_trips()
     {
-        await _settings.SetAsync("qbittorrent.password", "hunter2");
-        Assert.Equal("hunter2", await _settings.GetAsync("qbittorrent.password"));
+        await _settings.SetAsync("downloadclient.password", "hunter2");
+        Assert.Equal("hunter2", await _settings.GetAsync("downloadclient.password"));
     }
 
     [Fact]

@@ -556,6 +556,20 @@ msgstr "Bir içe aktarma listesi işlemi zaten sürüyor"
 msgid "error.inbox.unknownSeriesDefault"
 msgstr "seriesDefault şu değerlerden biri olmalı: {allowed}"
 
+#. Shown by KOReader under "Progress sync" when it logs in with something that is not a usable OPDS token.
+#: src/Maki.Api/Controllers/KoreaderSyncController.cs
+#. English: Maki did not accept this username. Enter your OPDS token, and check that the OPDS catalogue is on.
+#, fuzzy
+msgid "error.koreaderSync.unauthorized"
+msgstr "Maki bu kullanıcı adını kabul etmedi. OPDS jetonunuzu girin ve OPDS kataloğunun açık olduğunu kontrol edin."
+
+#. Shown by KOReader when someone taps Register. Maki has no separate KOReader accounts.
+#: src/Maki.Api/Controllers/KoreaderSyncController.cs
+#. English: There is nothing to register. Enter your OPDS token as the username and tap Login.
+#, fuzzy
+msgid "error.koreaderSync.registerWithToken"
+msgstr "Kaydedilecek bir şey yok. OPDS jetonunuzu kullanıcı adı olarak girin ve Giriş'e dokunun."
+
 #: src/Maki.Api/Controllers/LibraryFiltersController.cs
 #. English: Name is required
 #, fuzzy
@@ -622,10 +636,10 @@ msgid "error.libraryImport.folderOwnedByOtherSeries"
 msgstr "Bu klasör zaten kitaplıktaki başka bir seriye ait"
 
 #: src/Maki.Api/Services/LibraryImportResolver.cs
-#. English: AniList and MyAnimeList ids are looked up in the local MangaBaka database, which is not downloaded yet. Paste a MangaBaka id or link instead.
+#. English: Ids are looked up in the local MangaBaka database, which is not downloaded yet. Try again once it is installed.
 #, fuzzy
 msgid "error.libraryImport.idNeedsDump"
-msgstr "AniList ve MyAnimeList kimlikleri, henüz indirilmemiş olan yerel MangaBaka veritabanında aranır. Bunun yerine bir MangaBaka kimliği veya bağlantısı yapıştırın."
+msgstr "Kimlikler, henüz indirilmemiş olan yerel MangaBaka veritabanında aranır. Kurulduktan sonra yeniden deneyin."
 
 #: src/Maki.Api/Services/LibraryImportResolver.cs
 #. English: No MangaBaka series has that id
@@ -861,6 +875,77 @@ msgstr "Bu değer çok uzun."
 msgid "error.metadata.unknownField"
 msgstr "Bilinmeyen meta veri alanı."
 
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: The backup file is damaged and could not be read.
+#, fuzzy
+msgid "error.mihon.corrupt"
+msgstr "Yedek dosyası bozuk ve okunamadı."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: Importing a Mihon backup needs the local MangaBaka database, which is not downloaded yet.
+#, fuzzy
+msgid "error.mihon.dumpUnavailable"
+msgstr "Mihon yedeğini içe aktarmak, henüz indirilmemiş olan yerel MangaBaka veritabanını gerektirir."
+
+#. The series was added (or was already there), but its Mihon categories or read chapters could not be applied.
+#: src/Maki.Api/Services/MihonImportService.cs
+#. English: Added, but its tags or read chapters could not be applied.
+#, fuzzy
+msgid "error.mihon.extrasFailed"
+msgstr "Eklendi, ama etiketleri veya okunmuş bölümleri uygulanamadı."
+
+#: src/Maki.Api/Services/MihonImportService.cs
+#. English: Could not add this series.
+#, fuzzy
+msgid "error.mihon.importFailed"
+msgstr "Bu seri eklenemedi."
+
+#. The series exists in a root folder this user cannot see, so it was left alone.
+#: src/Maki.Api/Services/MihonImportService.cs
+#. English: Already in the library, in a folder you do not have access to.
+#, fuzzy
+msgid "error.mihon.inLibraryElsewhere"
+msgstr "Zaten kitaplıkta, erişiminiz olmayan bir klasörde."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: This is an old JSON backup. Create a new backup in Mihon (Settings, Data and storage) and upload that.
+#, fuzzy
+msgid "error.mihon.jsonBackup"
+msgstr "Bu eski bir JSON yedeği. Mihon'da yeni bir yedek oluşturun (Ayarlar, Veri ve depolama) ve onu yükleyin."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: This file is not a Mihon backup. Upload a .tachibk or .proto.gz file.
+#, fuzzy
+msgid "error.mihon.notABackup"
+msgstr "Bu dosya bir Mihon yedeği değil. Bir .tachibk veya .proto.gz dosyası yükleyin."
+
+#. A user who cannot add series directly gets requests for admin approval instead, and one
+#. import files at most {max} of them (currently 10). This series was left out.
+#: src/Maki.Api/Services/MihonImportService.cs
+#. English: Not requested: one import sends at most {max} series for approval. Import again later to request the rest.
+#, fuzzy
+msgid "error.mihon.requestLimitReached"
+msgstr "İstenmedi: tek bir içe aktarma en fazla {max} seriyi onaya gönderir. Kalanları istemek için daha sonra yeniden içe aktarın."
+
+#. The client generates the run id; only a broken or outdated client sends none.
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: The import request is missing its run id.
+#, fuzzy
+msgid "error.mihon.runIdRequired"
+msgstr "İçe aktarma isteğinde çalıştırma kimliği eksik."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: The backup is too large to import.
+#, fuzzy
+msgid "error.mihon.tooLarge"
+msgstr "Yedek içe aktarmak için çok büyük."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: Too many items in one request ({count}); send batches of {max} or fewer
+#, fuzzy
+msgid "error.mihon.tooManyItems"
+msgstr "Tek istekte çok fazla öğe ({count}); en fazla {max} öğelik gruplar halinde gönderin"
+
 #: src/Maki.Core/Notifications/AppriseNotificationProvider.cs
 #. English: Set a config key or at least one notification URL.
 #, fuzzy
@@ -951,6 +1036,25 @@ msgstr "URL, tam bir http:// veya https:// adresi olmalı"
 msgid "error.notifications.webhookUrlRequired"
 msgstr "Webhook URL'si gerekli"
 
+#: src/Maki.Api/Controllers/PageConversionController.cs
+#. English: Choose WebP, AVIF or off
+#, fuzzy
+msgid "error.pageConversion.formatInvalid"
+msgstr "WebP, AVIF veya kapalı seçin"
+
+#. Starting the library pass while page conversion is switched off.
+#: src/Maki.Api/Controllers/PageConversionController.cs
+#. English: Choose a format for page conversion first
+#, fuzzy
+msgid "error.pageConversion.off"
+msgstr "Önce sayfa dönüştürme için bir biçim seçin"
+
+#: src/Maki.Api/Controllers/PageConversionController.cs
+#. English: Quality must be between {min} and {max}
+#, fuzzy
+msgid "error.pageConversion.qualityRange"
+msgstr "Kalite {min} ile {max} arasında olmalıdır"
+
 #: src/Maki.Api/Controllers/PreviewController.cs
 #. English: Other previews are loading right now. Try again in a moment.
 #, fuzzy
@@ -1005,6 +1109,19 @@ msgstr "Bilinmeyen dönem veya metrik"
 msgid "error.progress.unknownTimeZone"
 msgstr "Bilinmeyen saat dilimi"
 
+#. The browser sent a push subscription without an https endpoint on a public address or without valid keys.
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: This browser's push subscription is not valid
+#, fuzzy
+msgid "error.push.invalidSubscription"
+msgstr "Bu tarayıcının push aboneliği geçerli değil"
+
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: No device has push notifications turned on for this account
+#, fuzzy
+msgid "error.push.noSubscription"
+msgstr "Bu hesap için push bildirimleri açık olan hiçbir cihaz yok"
+
 #: src/Maki.Api/Controllers/QueueController.cs
 #. English: Item has no chapter to resolve
 #, fuzzy
@@ -1058,6 +1175,13 @@ msgstr "Bölümün okunabilir bir dosyası yok"
 #, fuzzy
 msgid "error.reader.importAlreadyRunning"
 msgstr "Zaten devam eden bir içe aktarma var"
+
+#. A reading-progress write carried an operation id that is empty, longer than 64 characters or contains spaces.
+#: src/Maki.Api/Controllers/ReaderController.cs
+#. English: The operation id must be 1 to 64 characters with no spaces
+#, fuzzy
+msgid "error.reader.invalidOpId"
+msgstr "İşlem kimliği boşluk içermeden 1 ile 64 karakter arasında olmalıdır"
 
 #: src/Maki.Api/Controllers/ReaderController.cs
 #. English: State must be one of read, watched, unread
@@ -1268,9 +1392,9 @@ msgstr "Bu dosya hâlâ geri dönüşüm kutusuna taşınıyor. Birazdan yeniden
 msgid "error.recycleBin.targetInvalid"
 msgstr "Özgün konum kök klasörün dışında veya bir bağlantının arkasında, bu yüzden dosya oraya geri konulamaz."
 
-#. The Prowlarr or qBittorrent call failed; the cause is in the server log.
+#. The indexer or download client call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-#. English: Could not send the release to qBittorrent. Details are in the server log.
+#. English: Could not send the release to the download client. Details are in the server log.
 #, fuzzy
 msgid "error.release.grabFailed"
 msgstr "Sürüm qBittorrent'e gönderilemedi. Ayrıntılar sunucu günlüğünde."
@@ -1282,32 +1406,46 @@ msgid "error.release.noDownloadLink"
 msgstr "Bu sürümün indirme bağlantısı yok"
 
 #: src/Maki.Api/Services/ReleaseService.cs
-#. English: Prowlarr is not configured (Settings → Downloads → Prowlarr)
+#. English: No indexer is configured (Settings → Downloads → Indexer)
 #, fuzzy
-msgid "error.release.prowlarrNotConfigured"
-msgstr "Prowlarr yapılandırılmamış (Ayarlar → İndirmeler → Prowlarr)"
+msgid "error.release.indexerNotConfigured"
+msgstr "Hiçbir dizinleyici yapılandırılmadı (Ayarlar → İndirmeler → Dizinleyici)"
 
-#. qBittorrent rejected the username or password Maki has stored for it.
+#. The download client rejected the username or password Maki has stored for it.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-#. English: qBittorrent rejected the login. Check the username and password in Settings → Downloads.
+#. English: The download client rejected the login. Check the username and password in Settings → Downloads.
 #, fuzzy
-msgid "error.release.qbittorrentLoginFailed"
-msgstr "qBittorrent oturum açmayı reddetti. Ayarlar → İndirmeler bölümündeki kullanıcı adını ve parolayı kontrol edin."
+msgid "error.release.downloadClientLoginFailed"
+msgstr "İndirme istemcisi girişi reddetti. Ayarlar → İndirmeler bölümündeki kullanıcı adını ve parolayı kontrol edin."
 
 #: src/Maki.Api/Services/ReleaseService.cs
-#. English: qBittorrent is not configured (Settings → Downloads → qBittorrent)
+#. English: No download client is configured (Settings → Downloads → Download client)
 #, fuzzy
-msgid "error.release.qbittorrentNotConfigured"
-msgstr "qBittorrent yapılandırılmamış (Ayarlar → İndirmeler → qBittorrent)"
+msgid "error.release.downloadClientNotConfigured"
+msgstr "Hiçbir indirme istemcisi yapılandırılmadı (Ayarlar → İndirmeler → İndirme istemcisi)"
 
-#. qBittorrent answered but refused to add the torrent.
+#. The download client answered but refused to add the torrent.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-#. English: qBittorrent refused to add the torrent.
+#. English: The download client refused to add the torrent.
 #, fuzzy
-msgid "error.release.qbittorrentRejected"
-msgstr "qBittorrent torrenti eklemeyi reddetti."
+msgid "error.release.downloadClientRejected"
+msgstr "İndirme istemcisi torrenti eklemeyi reddetti."
 
-#. The Prowlarr call failed; the cause is in the server log.
+#. A qBittorrent duplicate upload of a torrent the user keeps in another category.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+#. English: The download client already has this torrent in another category or label. Move it to Maki's, or remove it, and grab again.
+#, fuzzy
+msgid "error.release.downloadClientHeldOutsideLabel"
+msgstr "İndirme istemcisinde bu torrent zaten başka bir kategoride veya etikette. Onu Maki'nin kategorisine taşıyın ya da kaldırın ve yeniden alın."
+
+#. The download client did not answer, or answered with something that was not its API.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+#. English: The download client did not respond. Check its URL in Settings → Downloads.
+#, fuzzy
+msgid "error.release.downloadClientUnreachable"
+msgstr "İndirme istemcisi yanıt vermedi. Ayarlar → İndirmeler bölümündeki adresini kontrol edin."
+
+#. The indexer call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 #. English: The release search failed. Details are in the server log.
 #, fuzzy
@@ -1337,6 +1475,7 @@ msgid "error.requests.alreadyInLibrary"
 msgstr "Zaten kitaplıkta."
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#: src/Maki.Api/Services/MihonImportService.cs
 #. English: You already have that request pending
 #, fuzzy
 msgid "error.requests.alreadyPending"
@@ -1468,6 +1607,12 @@ msgstr "Yol gerekli"
 #, fuzzy
 msgid "error.scrobble.aniListNotConfigured"
 msgstr "Önce Ayarlar'dan AniList istemci kimliğini/gizli anahtarını girin"
+
+#: src/Maki.Api/Controllers/ScrobbleController.cs
+#. English: paste the mangaupdates.com/series link, or the id from the end of it
+#, fuzzy
+msgid "error.scrobble.invalidMangaUpdatesId"
+msgstr "mangaupdates.com/series bağlantısını veya bağlantının sonundaki kimliği yapıştırın"
 
 #: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: expected a numeric id or a series URL for that service
@@ -1851,6 +1996,13 @@ msgstr "Sunucuda bir sorun oluştu. Ayrıntılar sunucu günlüğünde."
 msgid "error.settings.unknownStartPage"
 msgstr "Bilinmeyen başlangıç sayfası: {page}"
 
+#. Shown when an admin turns single-user mode on while a second account is still enabled.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Single-user mode needs exactly one enabled account. Disable or delete the others first.
+#, fuzzy
+msgid "error.settings.singleUserNeedsOneAccount"
+msgstr "Tek kullanıcı modu tam olarak bir etkin hesap gerektirir. Önce diğerlerini devre dışı bırakın veya silin."
+
 #. English: Unknown folder naming mode: {mode}
 #, fuzzy
 msgid "error.settings.unknownFolderNamingMode"
@@ -2140,10 +2292,10 @@ msgid "error.torrentImport.noRootFolder"
 msgstr "Serinin kök klasörü yok"
 
 #: src/Maki.Api/Services/TorrentImportService.cs
-#. English: The download is no longer in qBittorrent
+#. English: The download is no longer in the download client
 #, fuzzy
-msgid "error.torrentImport.notInQbittorrent"
-msgstr "İndirme artık qBittorrent'te yok"
+msgid "error.torrentImport.notInClient"
+msgstr "İndirme artık indirme istemcisinde değil"
 
 #. {path} is a filesystem path and is never translated.
 #: src/Maki.Api/Services/TorrentImportService.cs
@@ -2357,7 +2509,7 @@ msgstr "Bu bölümün yükseltilecek bir dosyası yok"
 msgid "error.upgrades.proposalNotFound"
 msgstr "Bu cilt sürümü teklifi yok"
 
-#. {detail} is the torrent client's or Prowlarr's own error text, shown as it is.
+#. {detail} is the torrent client's or the indexer's own error text, shown as it is.
 #: src/Maki.Api/Controllers/UpgradesController.cs
 #. English: Could not grab the release: {detail}
 #, fuzzy
@@ -2582,13 +2734,20 @@ msgstr "Bilinmeyen dil kodu/kodları: {codes}"
 msgid "error.settings.noSourceLanguageEnabled"
 msgstr "En az bir dil etkin kalmalı"
 
+#. {service} is the indexer backend's product name (Prowlarr, Jackett), never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
-#. English: Prowlarr is not configured
+#. English: {service} is not configured
 #, fuzzy
-msgid "error.settings.prowlarrNotConfigured"
-msgstr "Prowlarr yapılandırılmamış"
+msgid "error.settings.indexerNotConfigured"
+msgstr "{service} yapılandırılmadı"
 
-#. Shared by the Prowlarr and Kavita connection tests, both of which need the pair.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unknown indexer
+#, fuzzy
+msgid "error.settings.indexerBackendInvalid"
+msgstr "Bilinmeyen dizinleyici"
+
+#. Shared by the indexer and Kavita connection tests, both of which need the pair.
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: URL and API key are required
 #, fuzzy
@@ -2609,17 +2768,51 @@ msgstr "URL gerekli"
 msgid "error.settings.userCannotSignIn"
 msgstr "Bu kullanıcı mevcut değil veya oturum açamıyor"
 
+#. {service} is the indexer backend's product name (Prowlarr, Jackett), never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
-#. English: Prowlarr did not respond (check URL/API key)
+#. English: {service} did not respond (check the URL and API key)
 #, fuzzy
-msgid "error.settings.prowlarrNoResponse"
-msgstr "Prowlarr yanıt vermedi (URL/API anahtarını kontrol edin)"
+msgid "error.settings.indexerNoResponse"
+msgstr "{service} yanıt vermedi (adresi ve API anahtarını kontrol edin)"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
-#. English: qBittorrent login failed
+#. English: The download client rejected the login (check username/password)
 #, fuzzy
-msgid "error.settings.qbittorrentLoginFailed"
-msgstr "qBittorrent oturum açma başarısız oldu"
+msgid "error.settings.downloadClientLoginFailed"
+msgstr "İndirme istemcisi girişi reddetti (kullanıcı adını ve parolayı kontrol edin)"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: The download client did not respond (check the URL)
+#, fuzzy
+msgid "error.settings.downloadClientNoResponse"
+msgstr "İndirme istemcisi yanıt vermedi (adresi kontrol edin)"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unknown download client
+#, fuzzy
+msgid "error.settings.downloadClientKindInvalid"
+msgstr "Bilinmeyen indirme istemcisi"
+
+#. The label, category or tag Maki puts on its torrents.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: The label cannot start or end with a space, contain control characters, or be longer than 64 characters
+#, fuzzy
+msgid "error.settings.labelInvalid"
+msgstr "Etiket boşlukla başlayamaz veya bitemez, denetim karakteri içeremez ve 64 karakterden uzun olamaz"
+
+#. Deluge's Label plugin rejects anything else, so Maki checks before saving.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Deluge labels can only use letters, digits, dot, dash and underscore
+#, fuzzy
+msgid "error.settings.labelInvalidDeluge"
+msgstr "Deluge etiketleri yalnızca harf, rakam, nokta, tire ve alt çizgi kullanabilir"
+
+#. Saving a different download client or label while torrents are still downloading or waiting to import through the current one.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: {count, plural, one {# torrent is} other {# torrents are}} still downloading or waiting to import through the current client and label. Let them finish or remove them before changing either.
+#, fuzzy
+msgid "error.settings.downloadClientTorrentsInFlight"
+msgstr "{count, plural, one {Mevcut istemci ve etiket üzerinden hâlâ # torrent indiriliyor veya içe aktarılmayı bekliyor.} other {Mevcut istemci ve etiket üzerinden hâlâ # torrent indiriliyor veya içe aktarılmayı bekliyor.}} Değiştirmeden önce bitmelerini bekleyin ya da kaldırın."
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Kavita did not respond (check URL/API key)
@@ -2972,6 +3165,19 @@ msgstr "Yedek oluşturulamadı. Ayrıntılar için sunucu günlüklerini kontrol
 #, fuzzy
 msgid "inbox.unknownSeries"
 msgstr "Bilinmeyen seri"
+
+#. Sent by the "Send a test" button in the push notification settings.
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: Push notifications work
+#, fuzzy
+msgid "inbox.pushTest.title"
+msgstr "Push bildirimleri çalışıyor"
+
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: This device will get Maki notifications.
+#, fuzzy
+msgid "inbox.pushTest.body"
+msgstr "Bu cihaz Maki bildirimlerini alacak."
 
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: Library import finished
@@ -4008,18 +4214,34 @@ msgid "error.download.importRejected"
 msgstr "İçe aktarma reddedildi, kitaplık olduğu gibi bırakıldı"
 
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
-#. English: The torrent never appeared in qBittorrent
+#. English: The torrent never appeared in the download client
 #, fuzzy
 msgid "error.download.torrentMissing"
 msgstr "Torrent hiçbir zaman qBittorrent'te görünmedi"
 
-#. The torrent had been seen in qBittorrent before and has been gone for hours: deleted there, moved to
-#. another category, or dropped.
+#. A torrent named like this release is in the download client, but another Maki download (for the
+#. named series, possibly this one) already recorded it as its own. {series} is a series title and
+#. is never translated.
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
-#. English: The torrent is no longer in qBittorrent
+#. English: The torrent is in the download client, but another download for {series} owns it
+#, fuzzy
+msgid "error.download.torrentHeldElsewhere"
+msgstr "Torrent indirme istemcisinde, ama {series} için başka bir indirme ona sahip"
+
+#. The torrent had been seen in the download client before and has been gone for hours: deleted there,
+#. moved to another category or label, or dropped.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: The torrent is no longer in the download client
 #, fuzzy
 msgid "error.download.torrentRemoved"
 msgstr "Torrent artık qBittorrent'te değil"
+
+#. The download client has held this torrent in an error state for half an hour. The client's own message follows.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: The download client reports an error on this torrent
+#, fuzzy
+msgid "error.download.torrentClientError"
+msgstr "İndirme istemcisi bu torrent için bir hata bildiriyor"
 
 #. A download held its worker for the whole per-item time limit (Settings, Downloads) and was stopped.
 #: src/Maki.Api/Services/DownloadWorkerHostedService.cs
@@ -4419,6 +4641,13 @@ msgstr "İlerleme okunamadı: {detail}"
 #, fuzzy
 msgid "scrobble.log.matchingFailed"
 msgstr "Bu seri eşleştirilemedi: {detail}"
+
+#. {service} is the tracker's name. Stored as a key, so the sentence has no duration; the page adds the live countdown.
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: {service} is rate limiting or blocking requests, so syncing to it is paused.
+#, fuzzy
+msgid "scrobble.error.backedOff"
+msgstr "{service} istekleri sınırlıyor veya engelliyor, bu yüzden ona eşitleme duraklatıldı."
 
 #. {remote} is the tracker's own id for the entry, which has since been deleted or merged there.
 #: src/Maki.Api/Services/ScrobbleService.cs
@@ -4842,7 +5071,7 @@ msgstr "Önceki başlangıç geçişi başarısız oldu ({error}). Başlangıç 
 msgid "health.check.diagnosticsUnavailable"
 msgstr "Veritabanı veya zamanlayıcı tanılaması tamamlanamadı"
 
-#. {service} is a product name (Prowlarr, Kavita, qBittorrent, FlareSolverr), never translated.
+#. {service} is a product name (Prowlarr, Jackett, Kavita, qBittorrent, FlareSolverr), never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: {service}: not configured
 #, fuzzy
@@ -4923,10 +5152,16 @@ msgid "health.issue.noSourceMappings"
 msgstr "{series} izleniyor ancak etkin bir kaynağı yok"
 
 #: src/Maki.Api/Services/HealthCheckService.cs
-#. English: The MangaBaka local database has not been downloaded, so metadata comes from the rate-limited API
+#. English: The local MangaBaka database has not been downloaded yet. Until it is, only the reader and, for admins, Settings and Health are open. Maki retries the download by itself; check it in Settings → Library → Metadata database.
 #, fuzzy
 msgid "health.issue.dumpMissing"
-msgstr "Yerel MangaBaka veritabanı henüz indirilmedi, bu yüzden meta veriler hız sınırlı API'den geliyor"
+msgstr "Yerel MangaBaka veritabanı henüz indirilmedi. İndirilene kadar yalnızca okuyucu açıktır; yöneticiler için Ayarlar ve Sağlık da açıktır. Maki indirmeyi kendiliğinden yeniden dener; Ayarlar → Kitaplık → Meta veri veritabanı bölümünden kontrol edin."
+
+#: src/Maki.Api/Services/HealthCheckService.cs
+#. English: The local MangaBaka database failed its integrity check, so metadata search and adding series can fail. Maki downloads it again by itself; check it in Settings → Library → Metadata database.
+#, fuzzy
+msgid "health.issue.dumpDamaged"
+msgstr "Yerel MangaBaka veritabanı bütünlük denetimini geçemedi, bu yüzden meta veri araması ve seri ekleme başarısız olabilir. Maki onu kendiliğinden yeniden indirir; Ayarlar → Kitaplık → Meta veri veritabanı bölümünden kontrol edin."
 
 #: src/Maki.Api/Services/HealthCheckService.cs
 #. English: The MangaBaka local database is out of date, last refreshed {at}. The refresh may be failing.

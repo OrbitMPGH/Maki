@@ -37,6 +37,13 @@ public class ApiKeyAuthenticationHandler(
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        // Komga clients send their OPDS token in this same header; KomgaAuthenticator resolves it.
+        // Failing it here would log one line and run one lookup per page fetched.
+        if (Request.Path.StartsWithSegments("/komga"))
+        {
+            return AuthenticateResult.NoResult();
+        }
+
         var presented = Request.Headers[HeaderName].FirstOrDefault();
         if (string.IsNullOrEmpty(presented))
         {

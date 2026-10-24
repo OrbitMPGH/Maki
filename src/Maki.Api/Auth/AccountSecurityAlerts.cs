@@ -23,7 +23,13 @@ public class AccountSecurityAlerts(InboxService inbox, TimeProvider clock)
     public const string PermissionsChanged = "inbox.account.permissionsChanged";
     public const string FolderAccessChanged = "inbox.account.folderAccessChanged";
 
-    public Task RaiseAsync(int userId, string key, string? name = null, CancellationToken ct = default)
+    /// <param name="devices">
+    /// The devices a revocation in the same request just forgot. The alert is pushed to them, since
+    /// the user's subscriptions are gone by the time the queued push goes out.
+    /// </param>
+    public Task RaiseAsync(
+        int userId, string key, string? name = null, CancellationToken ct = default,
+        IReadOnlyList<PushDevice>? devices = null)
     {
         var when = clock.GetUtcNow().UtcDateTime.ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture);
         var args = name is null
@@ -33,6 +39,7 @@ public class AccountSecurityAlerts(InboxService inbox, TimeProvider clock)
             InboxEventType.AccountSecurity,
             new InboxMessage(key, args, NotificationLevel.Warning, Url: "/settings"),
             InboxAudience.User(userId),
-            ct);
+            ct,
+            devices);
     }
 }

@@ -13,6 +13,8 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
     private static readonly HtmlParser Parser = new();
     public string Name => "topmanhua";
     public string DisplayName => "TopManhua";
+    /// <summary>Day-only dates that move when the site re-uploads, measured weeks behind other sources.</summary>
+    public bool ReleaseDatesAreReliable => false;
     public string BaseUrl => "https://www.topmanhua.fan";
     // Page images (not search/chapter-list HTML) are fetched through TopManhuaImageBrowser, which
     // needs FlareSolverr to seed a real browser session against the Cloudflare-fronted image CDN.

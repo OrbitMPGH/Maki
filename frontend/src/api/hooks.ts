@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -127,6 +127,20 @@ export function useSeriesIdLookup() {
     seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
 }
 
+/** Maps a MangaBaka id to the poster of the library series that owns it, or null. */
+export function useLibraryCoverLookup() {
+  const { data: library } = useSeries()
+  const coverByMangaBaka = useMemo(() => {
+    const map = new Map<number, string>()
+    for (const s of library ?? []) {
+      if (s.mangaBakaId != null && s.coverUrl) map.set(s.mangaBakaId, s.coverUrl)
+    }
+    return map
+  }, [library])
+  return (mangaBakaId: string | null | undefined) =>
+    mangaBakaId ? coverByMangaBaka.get(Number(mangaBakaId)) ?? null : null
+}
+
 // When each series was first seen waiting on its match or link, for the polling backoff below.
 const pendingSince = new Map<number, number>()
 
@@ -147,11 +161,15 @@ function pendingPollInterval(id: number, pending: boolean): number | false {
   return waited < 60_000 ? 3000 : waited < 5 * 60_000 ? 15_000 : 60_000
 }
 
+const seriesDetailQuery = (id: number) => ({
+  queryKey: ['series', id],
+  queryFn: () => api<SeriesDto>(`/series/${id}`),
+  meta: { inlineNotFound: true },
+})
+
 export function useSeriesDetail(id: number) {
   return useQuery({
-    queryKey: ['series', id],
-    queryFn: () => api<SeriesDto>(`/series/${id}`),
-    meta: { inlineNotFound: true },
+    ...seriesDetailQuery(id),
     // Background source matching ends with a `sourceMatchFinished` push. A dropped hub connection
     // would otherwise leave the Sources card spinning with nothing to end it, so poll while, and
     // only while, there is something to wait for.
@@ -161,6 +179,53 @@ export function useSeriesDetail(id: number) {
         Boolean(query.state.data?.sourceMatchPending || query.state.data?.importLinkPending),
       ),
   })
+}
+
+/**
+ * Fetches a series when the pointer settles on a link to it, or presses one, so its page opens with
+ * the data already there and the cover morph into its poster isn't held back waiting on it. The
+ * short delay keeps a mouse sweeping across the library grid from requesting every cover it passes.
+ */
+export function usePrefetchSeriesOnHover() {
+  const queryClient = useQueryClient()
+  useEffect(() => {
+    let timer = 0
+    const idOf = (target: EventTarget | null) => {
+      const link = target instanceof Element ? target.closest('a[href^="/series/"]') : null
+      const id = link && /^\/series\/(\d+)$/.exec(link.getAttribute('href') ?? '')?.[1]
+      return link && id ? { link, id: Number(id) } : null
+    }
+    const prefetch = (id: number) =>
+      void queryClient.prefetchQuery({
+        ...seriesDetailQuery(id),
+        staleTime: 30_000,
+        // A series only hovered must not toast; the page raises its own error if it is opened.
+        meta: { inlineNotFound: true, silent: true },
+      })
+    const onOver = (e: PointerEvent) => {
+      const hit = idOf(e.target)
+      if (!hit || (e.relatedTarget instanceof Node && hit.link.contains(e.relatedTarget))) return
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => prefetch(hit.id), 80)
+    }
+    const onOut = (e: PointerEvent) => {
+      const hit = idOf(e.target)
+      if (hit && !(e.relatedTarget instanceof Node && hit.link.contains(e.relatedTarget))) window.clearTimeout(timer)
+    }
+    const onDown = (e: PointerEvent) => {
+      const hit = idOf(e.target)
+      if (hit) prefetch(hit.id)
+    }
+    document.addEventListener('pointerover', onOver, { passive: true })
+    document.addEventListener('pointerout', onOut, { passive: true })
+    document.addEventListener('pointerdown', onDown, { passive: true })
+    return () => {
+      window.clearTimeout(timer)
+      document.removeEventListener('pointerover', onOver)
+      document.removeEventListener('pointerout', onOut)
+      document.removeEventListener('pointerdown', onDown)
+    }
+  }, [queryClient])
 }
 
 export function useMetadataSearch(query: string) {
@@ -204,6 +269,16 @@ export interface RecommendationItem {
   coRecommended?: boolean
   coRead?: boolean
   tasteMatch?: boolean
+  /** The reader's own title the co-read crowd paired this with. Only set alongside `coRead`. */
+  coReadWithTitle?: string | null
+  /** MangaBaka ids of the seeds `relatedToTitle`, `becauseOfTitle` and `coReadWithTitle` name. */
+  relatedToId?: string | null
+  becauseOfId?: string | null
+  coReadWithId?: string | null
+  /** The catalogue's covers for those seeds, for one the reader picked rather than owns. */
+  relatedToThumbUrl?: string | null
+  becauseOfThumbUrl?: string | null
+  coReadWithThumbUrl?: string | null
   /**
    * The same-work component this pick belongs to, or null when it is in no franchise, which is
    * most of the catalogue. Two nulls are unrelated, not siblings. The server already spaces a
@@ -748,6 +823,13 @@ export interface DiscoverSearchRequest {
   engine?: SearchEngine
 }
 
+/**
+ * Why a meaning search was answered by titles: `warming` is a built index loading back in after an
+ * idle unload, `preparing` one being built or downloaded, `off` switched off by an admin, and
+ * `unavailable` no index and nothing producing one.
+ */
+export type SearchFallback = 'warming' | 'preparing' | 'off' | 'unavailable'
+
 export interface DiscoverSearchResponse {
   /** `semantic` = matched on meaning; `title` = answered by the title index. */
   mode: 'semantic' | 'title'
@@ -755,6 +837,26 @@ export interface DiscoverSearchResponse {
   /** The spelling that actually found something, when what was typed found next to nothing. */
   correctedQuery?: string | null
   credits?: ResolvedCredit[] | null
+  fallback?: SearchFallback | null
+}
+
+/**
+ * How often to ask again while titles stand in for a meaning search, and for how long. A cold index
+ * loads in seconds; a download or a build takes minutes, so that one is only checked now and then.
+ */
+function fallbackPoll(fallback: SearchFallback | null | undefined, polls: number): number | false {
+  if (fallback === 'warming') return polls < 15 ? 2000 : false
+  if (fallback === 'preparing') return polls < 40 ? 15000 : false
+  return false
+}
+
+/**
+ * True while a cold index is still being waited on for this request, which is when an empty title
+ * answer means "not yet" rather than "nothing". Turns false once the polling gives up.
+ */
+export function useSearchStillWarming(request: DiscoverSearchRequest | null) {
+  const state = useQueryClient().getQueryState<DiscoverSearchResponse>(['discover-search', request])
+  return state?.data?.fallback === 'warming' && fallbackPoll('warming', state.dataUpdateCount) !== false
 }
 
 /**
@@ -780,7 +882,9 @@ export function useDiscoverSearch(
         signal,
       }),
     enabled,
-    staleTime: 5 * 60 * 1000,
+    // A title answer standing in for a meaning search is provisional, so it is never served from cache.
+    staleTime: (q) => (q.state.data?.fallback ? 0 : 5 * 60 * 1000),
+    refetchInterval: (q) => fallbackPoll(q.state.data?.fallback, q.state.dataUpdateCount),
     retry: false,
     meta: { silent: true },
   })
@@ -858,6 +962,8 @@ export interface HomeReadingItem {
   pageCount: number
   lastReadAt: string
   unreadChapters: number
+  /** The colour the cover lends to the card's bar and button, `#rrggbb`; null keeps the theme accent. */
+  coverAccent: string | null
 }
 
 export interface HomeReadingResponse {
@@ -877,6 +983,9 @@ export interface HomeRecentSeriesItem {
   readChapterId: number | null
 }
 
+/** Most cards a Home rail asks for: the server's `HomeController.MaxRailItems`. The rails scroll. */
+export const HOME_RAIL_LIMIT = 100
+
 /**
  * Home's two reading rails.
  *
@@ -884,7 +993,7 @@ export interface HomeRecentSeriesItem {
  * nothing; without it, coming back from `/read/:id` shows the resume page the rail was built with
  * rather than where you actually stopped.
  */
-export function useHomeReading(limit = 12, enabled = true) {
+export function useHomeReading(limit = HOME_RAIL_LIMIT, enabled = true) {
   return useQuery({
     queryKey: ['home', 'reading', limit],
     queryFn: () => api<HomeReadingResponse>(`/home/reading?limit=${limit}`),
@@ -920,7 +1029,7 @@ export function useHideHomeReading() {
 }
 
 /** Series that recently gained chapter files. Invalidated live by the `chapterImported` event. */
-export function useHomeRecentlyAdded(limit = 12, enabled = true) {
+export function useHomeRecentlyAdded(limit = HOME_RAIL_LIMIT, enabled = true) {
   return useQuery({
     queryKey: ['home', 'recently-added', limit],
     queryFn: () => api<HomeRecentSeriesItem[]>(`/home/recently-added?limit=${limit}`),
@@ -931,14 +1040,12 @@ export function useHomeRecentlyAdded(limit = 12, enabled = true) {
 
 /** Home section keys, in the order they ship. Mirrors `HomeSections.All` on the server exactly. */
 export const HOME_SECTIONS = [
-  'glance',
-  'downloading',
   'continue',
   'jumpback',
-  'fromanime',
   'recent',
-  'following',
   'recommended',
+  'fromanime',
+  'following',
   'popular',
 ] as const
 
@@ -951,9 +1058,7 @@ export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
  * here would be stuck in whichever language was active at that moment. Render with `useLabel()`.
  */
 export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
-  glance: msg`At a glance`,
   continue: msg`Continue reading`,
-  downloading: msg`Downloading now`,
   recent: msg`Recently added`,
   jumpback: msg`Jump back in`,
   fromanime: msg`Continue from the anime`,
@@ -962,19 +1067,18 @@ export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
   popular: msg`Currently popular`,
 }
 
-/** The panels of the glance section, in the order they ship. Mirrors `HomeGlancePanels.All`. */
-export const HOME_GLANCE_PANELS = ['stats', 'progress', 'toread'] as const
-
-export type HomeGlancePanel = (typeof HOME_GLANCE_PANELS)[number]
-
-export const HOME_GLANCE_PANEL_LABELS: Record<HomeGlancePanel, MessageDescriptor> = {
-  stats: msg`Library counts`,
-  progress: msg`Your progress`,
-  toread: msg`Waiting to read`,
-}
-
-/** Sections that can lead with large tiles, and whether they do by default. Mirrors the server. */
+/** Sections that can lead with a hero, and whether they do by default. Mirrors the server. */
 export const HOME_HERO_DEFAULTS: Record<string, boolean> = { continue: true, jumpback: false }
+
+/**
+ * The reading sections' own switches and their defaults. Mirrors `HomeHeroOptions` on the server.
+ * `glance` is the last five weeks as a card in the Continue hero; `nextUpBeside` puts the rest of a
+ * hero section in a list beside the hero instead of a tray of posters under it.
+ */
+export const HOME_SECTION_OPTIONS: Record<string, Record<string, boolean>> = {
+  continue: { glance: true, nextUpBeside: false },
+  jumpback: { nextUpBeside: false },
+}
 
 /** Discover Browse tab section keys, in the order they ship. Mirrors `DiscoverSections.All`. */
 export const DISCOVER_SECTIONS = [
@@ -1026,10 +1130,12 @@ export interface LayoutPanel {
 export interface PageSection<K extends string = string> {
   key: K | RailKey
   enabled: boolean
-  /** Leads with large tiles. Set on sections that support it, null elsewhere. */
+  /** Leads with a hero. Set on sections that support it, null elsewhere. */
   hero?: boolean | null
   /** The parts of a multi-panel section, in order. Null elsewhere. */
   panels?: LayoutPanel[] | null
+  /** The section's own switches, keyed by option name. Set on sections that have any, null elsewhere. */
+  options?: Record<string, boolean> | null
 }
 
 export type HomeSection = PageSection<HomeSectionKey>
@@ -1511,10 +1617,11 @@ export interface PrebuiltIndexResult {
   rowCount: number | null
 }
 
-export function useRecommendationIndex() {
+export function useRecommendationIndex(enabled = true) {
   return useQuery({
     queryKey: ['recommendation-index'],
     queryFn: () => api<RecommendationIndexStatus>('/settings/recommendations'),
+    enabled,
     // Poll quickly while an index pass or a live model switch is running, or while the server is
     // still counting the catalogue in the background; back off when idle.
     refetchInterval: (query) => {
@@ -2590,11 +2697,12 @@ export interface HealthIssue {
   message: string
 }
 
-export function useHealth() {
+export function useHealth(enabled = true) {
   return useQuery({
     queryKey: ['health'],
     queryFn: () => api<HealthIssue[]>('/system/health'),
     refetchInterval: 60_000,
+    enabled,
   })
 }
 
@@ -2623,6 +2731,8 @@ export interface OpdsSettings {
    * so a plain GET always returns null here and the URL cannot be shown a second time.
    */
   feedUrl: string | null
+  /** The Komga-compatible API under `/komga`, opened by the same token. Only answers while `enabled` is on too. */
+  komga: boolean
 }
 
 export function useOpdsSettings() {
@@ -2636,7 +2746,7 @@ export function useSaveOpdsSettings() {
   const queryClient = useQueryClient()
   return useMutation({
     // `password` is only needed when the save mints the token (first enable); the server decides.
-    mutationFn: (settings: { enabled: boolean; trackProgress: boolean; password?: string }) =>
+    mutationFn: (settings: { enabled: boolean; trackProgress: boolean; komga?: boolean; password?: string }) =>
       api<OpdsSettings>('/settings/opds', { method: 'PUT', body: JSON.stringify(settings) }),
     onSuccess: (data) => {
       // The PUT mints the token on first enable, so seed the cache from the response rather
@@ -3006,19 +3116,42 @@ export function useRemoveMapping() {
   })
 }
 
-export interface ProwlarrSettings {
+export type IndexerBackend = 'prowlarr' | 'jackett'
+
+export interface IndexerSettings {
+  backend: IndexerBackend
   url: string | null
   apiKey: string | null
 }
 
-export interface QBittorrentSettings {
+export type DownloadClientKind = 'qbittorrent' | 'transmission' | 'deluge'
+
+export interface DownloadClientSettings {
+  kind: string | null
   url: string | null
   username: string | null
   password: string | null
-  category: string | null
+  label: string | null
+  pathMapFrom: string | null
+  pathMapTo: string | null
 }
 
-export type ConnectionName = 'prowlarr' | 'qbittorrent' | 'kavita' | 'flaresolverr'
+export interface DownloadClientKindInfo {
+  kind: DownloadClientKind
+  name: string
+  usesUsername: boolean
+  defaultUrl: string
+}
+
+export function useDownloadClientKinds() {
+  return useQuery({
+    queryKey: ['downloadclient-kinds'],
+    queryFn: () => api<DownloadClientKindInfo[]>('/settings/downloadclient/kinds'),
+    staleTime: Infinity,
+  })
+}
+
+export type ConnectionName = 'indexer' | 'downloadclient' | 'kavita' | 'flaresolverr'
 
 export function useConnectionSettings<T>(name: ConnectionName) {
   return useQuery({
@@ -3053,33 +3186,64 @@ export function useTestConnectionSettings<T>(name: ConnectionName) {
   })
 }
 
-export interface ProwlarrOptions {
+export interface IndexerOptions {
   indexerIds: string | null
   categories: string | null
 }
 
-export interface ProwlarrIndexer {
-  id: number
+export interface IndexerEntry {
+  id: string
   name: string
-  enable: boolean
+  enabled: boolean
   protocol: string | null
   categories: { id: number; name: string }[]
 }
 
-export function useProwlarrOptions() {
+/** The saved connection for one backend, or for the active backend when none is named. */
+export function useIndexerSettings(backend?: IndexerBackend) {
   return useQuery({
-    queryKey: ['settings', 'prowlarr-options'],
-    queryFn: () => api<ProwlarrOptions>('/settings/prowlarr/options'),
+    queryKey: backend ? ['settings', 'indexer', backend] : ['settings', 'indexer'],
+    queryFn: () => api<IndexerSettings>(backend ? `/settings/indexer?backend=${backend}` : '/settings/indexer'),
   })
 }
 
-export function useSaveProwlarrOptions() {
+/** Saving makes `backend` the active one, so every list keyed on the active backend reloads. */
+export function useSaveIndexerSettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (value: ProwlarrOptions) =>
-      api<ProwlarrOptions>('/settings/prowlarr/options', { method: 'PUT', body: JSON.stringify(value) }),
+    mutationFn: (value: IndexerSettings) =>
+      api<IndexerSettings>('/settings/indexer', { method: 'PUT', body: JSON.stringify(value) }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'prowlarr-options'] })
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'indexer'] })
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'indexer-options'] })
+      void queryClient.invalidateQueries({ queryKey: ['indexer-indexers'] })
+    },
+  })
+}
+
+export function useTestIndexerSettings() {
+  return useMutation({
+    mutationFn: (value: Partial<IndexerSettings>) =>
+      api<{ success: boolean }>('/settings/indexer/test', { method: 'POST', body: JSON.stringify(value) }),
+  })
+}
+
+/** The indexer and category filter of one backend; the query key and the request name the same backend. */
+export function useIndexerOptions(backend: IndexerBackend | undefined) {
+  return useQuery({
+    queryKey: ['settings', 'indexer-options', backend],
+    queryFn: () => api<IndexerOptions>(`/settings/indexer/options?backend=${backend}`),
+    enabled: backend !== undefined,
+  })
+}
+
+export function useSaveIndexerOptions() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: IndexerOptions & { backend: IndexerBackend }) =>
+      api<IndexerOptions>('/settings/indexer/options', { method: 'PUT', body: JSON.stringify(value) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'indexer-options'] })
     },
   })
 }
@@ -3100,11 +3264,11 @@ export function useKavitaLibraries(enabled: boolean) {
   })
 }
 
-export function useProwlarrIndexers(enabled: boolean) {
+export function useIndexerList(backend: IndexerBackend | undefined, enabled: boolean) {
   return useQuery({
-    queryKey: ['prowlarr-indexers'],
-    queryFn: () => api<ProwlarrIndexer[]>('/settings/prowlarr/indexers'),
-    enabled,
+    queryKey: ['indexer-indexers', backend],
+    queryFn: () => api<IndexerEntry[]>(`/settings/indexer/indexers?backend=${backend}`),
+    enabled: enabled && backend !== undefined,
     retry: false,
     staleTime: 5 * 60 * 1000,
   })
@@ -3118,8 +3282,6 @@ export interface ReleaseDto {
   seeders: number | null
   leechers: number | null
   protocol: string
-  downloadUrl: string | null
-  magnetUrl: string | null
   infoUrl: string | null
 }
 
@@ -3150,10 +3312,10 @@ export function useReleaseSearch(seriesId: number, enabled: boolean, query?: str
 export function useGrabRelease() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: { seriesId: number; release: ReleaseDto }) =>
+    mutationFn: (payload: { seriesId: number; release: Pick<ReleaseDto, 'guid'> }) =>
       api<{ queueItemId: number }>('/release/grab', {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ seriesId: payload.seriesId, release: { guid: payload.release.guid } }),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
@@ -3169,10 +3331,11 @@ export function useGrabRelease() {
 }
 
 export interface MetadataSettings {
-  useLocalDb: boolean
   dumpPresent: boolean
   dumpSizeBytes: number | null
   dumpRefreshedAt: string | null
+  /** No dump installed and the last download failed. The error text is admin-only (dump-progress). */
+  dumpDownloadFailed: boolean
 }
 
 export function useMetadataSettings() {
@@ -3182,6 +3345,9 @@ export function useMetadataSettings() {
     // The shell reads a failure here as "Discover is unavailable", so a failed load heals when the
     // user comes back to the tab (and when the live connection returns) instead of sticking.
     refetchOnWindowFocus: (query) => query.state.status === 'error',
+    // The SPA is gated until the dump is installed, and only admins get the hub's install push, so
+    // everyone else polls their way through the gate.
+    refetchInterval: (query) => (query.state.data?.dumpPresent === false ? 5000 : false),
   })
 }
 
@@ -3215,20 +3381,6 @@ export function useDumpProgress(enabled = true) {
     queryFn: () => api<DumpProgress>('/settings/metadata/dump-progress'),
     enabled,
     refetchInterval: (query) => (query.state.data?.running ? 5000 : false),
-  })
-}
-
-export function useSaveMetadataSettings() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (useLocalDb: boolean) =>
-      api<MetadataSettings>('/settings/metadata', {
-        method: 'PUT',
-        body: JSON.stringify({ useLocalDb }),
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'metadata'] })
-    },
   })
 }
 
@@ -3553,6 +3705,8 @@ export interface DownloadSettings {
   sourceOrder: SourceOrderMode
   /** Measure every linked source of a newly matched series before anything downloads. */
   scoutOnMatch: boolean
+  /** Check each series on a tier picked from how recently it had a new chapter, instead of every 30 minutes. */
+  adaptiveRefresh: boolean
 }
 
 /** `manual` follows each mapping's priority; `quality` ranks sources by the series' upgrade profile. */
@@ -3706,6 +3860,10 @@ export interface ScrobbleConnection {
   animeList: boolean
   /** Per-tracker: let this service's watched anime steer recommendations. */
   animeSignals: boolean
+  /** Whether this reader has saved sign-in details, for trackers each reader signs in to themselves; null for the rest. */
+  savedDetails?: boolean | null
+  /** When a tracker that is refusing calls will be tried again; null or past when it is not backing off. */
+  backOffUntil?: string | null
 }
 
 export interface ScrobbleCandidate {
@@ -3720,6 +3878,9 @@ export interface ScrobbleUnmatchedItem {
   title: string
   reason: string
   candidates: ScrobbleCandidate[]
+  /** The library series this title matched, by normalized title or folder name; null when none did. */
+  seriesId: number | null
+  coverUrl: string | null
 }
 
 export interface ScrobbleSyncRow {
@@ -3730,6 +3891,9 @@ export interface ScrobbleSyncRow {
   status: string | null
   at: string
   error: string | null
+  /** The library series this row is about; null for a Kavita title no library series matched. */
+  seriesId: number | null
+  coverUrl: string | null
 }
 
 export interface ScrobbleLogRow {
@@ -3917,8 +4081,11 @@ export interface ScrobbleSettings {
   kitsuClientSecret: string | null
   kitsuEmail: string | null
   kitsuPassword: string | null
+  mangaUpdatesUsername: string | null
+  mangaUpdatesPassword: string | null
   /** The server never echoes the secrets back; these say whether one is stored. */
   kitsuPasswordSet: boolean
+  mangaUpdatesPasswordSet: boolean
   mangaBakaTokenSet: boolean
   intervalMinutes: number
   planToRead: boolean
@@ -4368,11 +4535,13 @@ export interface SourceUsage {
   bytes: number
 }
 
-/** bucket is "yyyy-MM" (UTC); cumulative is the library size at the end of that month. */
+/** bucket is a local "yyyy-MM-dd" or "yyyy-MM"; the cumulative fields are the library at the end of it. */
 export interface LibraryGrowth {
   bucket: string
   seriesAdded: number
   cumulative: number
+  bytesAdded: number
+  cumulativeBytes: number
 }
 
 export interface SeriesSize {
@@ -4389,7 +4558,6 @@ export interface LibraryComposition {
   byStatus: NamedCount[]
   bySource: SourceUsage[]
   topGenres: NamedCount[]
-  growth: LibraryGrowth[]
   largest: SeriesSize[]
   /** "unknown" for series with no rating. */
   byContentRating: NamedCount[]
@@ -4406,6 +4574,20 @@ export function useLibraryComposition(enabled = true) {
     queryFn: () => api<LibraryComposition>('/stats/library'),
     enabled,
     staleTime: 60_000,
+  })
+}
+
+/** Series count and disk use over an inclusive local-date window, by day or month like the activity timeline. */
+export function useLibraryGrowth(from: string, to: string, enabled = true) {
+  return useQuery({
+    queryKey: ['stats', 'library', 'growth', from, to],
+    queryFn: () =>
+      api<LibraryGrowth[]>(
+        `/stats/library/growth?from=${from}&to=${to}&utcOffsetMinutes=${new Date().getTimezoneOffset()}`,
+      ),
+    enabled,
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
   })
 }
 

@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Routing;
@@ -50,6 +51,39 @@ public class HostStartupTests : IDisposable
             Assert.Equal(System.Net.HttpStatusCode.Forbidden, (await client.GetAsync(path)).StatusCode);
         Assert.Equal(System.Net.HttpStatusCode.Forbidden, (await client.PostAsync("/api/v1/health/refresh", null)).StatusCode);
     }
+    [Fact]
+    public async Task Metadata_settings_tell_anyone_signed_in_that_the_first_download_failed()
+    {
+        using var factory = new WebApplicationFactory<Program>();
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<Maki.Data.MakiDbContext>();
+            var user = new Maki.Data.Identity.MakiUser { UserName = "gate-reader", NormalizedUserName = "GATE-READER", Permissions = Maki.Core.Security.MakiPermission.None };
+            db.Users.Add(user);
+            await db.SaveChangesAsync();
+            db.UserApiKeys.Add(new Maki.Data.Identity.UserApiKey { UserId = user.Id, Name = "gate test", KeyHash = Maki.Api.Auth.ApiKeyCrypto.Hash("gate-reader-key"), Prefix = "gate", Scope = Maki.Data.Identity.UserApiKeyScope.Full, CreatedAt = DateTime.UtcNow });
+            await db.SaveChangesAsync();
+        }
+
+        client.DefaultRequestHeaders.Add("X-Api-Key", "gate-reader-key");
+        var status = factory.Services.GetRequiredService<Maki.Metadata.MangaBaka.MangaBakaDumpStatus>();
+
+        async Task<bool> Failed()
+        {
+            var body = await client.GetFromJsonAsync<System.Text.Json.JsonElement>("/api/v1/settings/metadata");
+            Assert.False(body.GetProperty("dumpPresent").GetBoolean());
+            return body.GetProperty("dumpDownloadFailed").GetBoolean();
+        }
+
+        Assert.False(await Failed());
+        status.Begin();
+        status.End(false, "No space left on device");
+        Assert.True(await Failed());
+        status.Begin();
+        Assert.False(await Failed());
+    }
+
     private readonly string _configDir;
     private readonly string? _previousConfigDir;
 

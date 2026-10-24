@@ -13,10 +13,6 @@ using Maki.Data.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Processing;
 
 namespace Maki.Api.Controllers;
 
@@ -26,8 +22,14 @@ namespace Maki.Api.Controllers;
 /// does not. Absent or zero simply records no time. <paramref name="Final"/> marks the write that
 /// ends a sitting (tab hidden, reader closed, chapter changed), which flushes the chapter's banked
 /// time instead of waiting for a report that is not coming.
+/// <para>
+/// <paramref name="ClientTime"/> (UTC) is when the write was made, sent by a write replayed from the
+/// offline queue. <paramref name="OpId"/> identifies the write so a replay of one that already landed
+/// changes nothing. Both are optional; see <see cref="ReaderService.SaveProgressAsync"/>.
+/// </para>
 /// </summary>
-public record SaveProgressRequest(int PageIndex, bool? Completed, int? Seconds, bool? Final);
+public record SaveProgressRequest(
+    int PageIndex, bool? Completed, int? Seconds, bool? Final, DateTime? ClientTime = null, string? OpId = null);
 
 /// <summary>A null spec clears the series override, falling back to whatever the series resolves to.</summary>
 public record SeriesReaderPrefsRequest(ReaderPrefsSpec? Prefs);
@@ -44,6 +46,9 @@ public record SeriesReadingProfileRequest(int? ProfileId);
 /// </para>
 /// </summary>
 public record SetChaptersStateRequest(int[] ChapterIds, string State);
+
+/// <summary>Chapters a device holds offline copies of. See <see cref="ReaderController.ChapterVersions"/>.</summary>
+public record ChapterVersionsRequest(int[]? Ids);
 
 /// <summary>
 /// Serves pages out of the library's CBZ files and records what has been read.
@@ -74,29 +79,10 @@ public class ReaderController(
     private const int ThumbnailWidth = 200;
 
     /// <summary>
-    /// Asks the decoder for the thumbnail's own size, which a JPEG honours by scaling in the DCT: a
-    /// 2000x3000 scan then decodes into ~1 MB of pixels instead of ~24 MB, up to four at a time
-    /// under the gate. The exact height comes from the header so the shape matches a full decode
-    /// and resize. A stream that cannot rewind, or a page already narrower, decodes as before.
+    /// A strip thumbnail at quality 80. A narrower page is scaled up so the strip stays even, and a
+    /// JPEG shrinks while it decodes, so a 2000x3000 scan never exists as full-size pixels.
     /// </summary>
-    internal static async Task<DecoderOptions> ThumbnailDecoderAsync(Stream source, CancellationToken ct)
-    {
-        if (!source.CanSeek)
-        {
-            return new DecoderOptions();
-        }
-
-        var start = source.Position;
-        var info = await Image.IdentifyAsync(source, ct);
-        source.Position = start;
-        if (info.Width <= ThumbnailWidth)
-        {
-            return new DecoderOptions();
-        }
-
-        var height = Math.Max(1, (int)Math.Round((double)info.Height * ThumbnailWidth / info.Width));
-        return new DecoderOptions { TargetSize = new Size(ThumbnailWidth, height) };
-    }
+    internal static byte[] ReaderThumbnail(byte[] page) => ImageCodec.JpegThumbnail(page, ThumbnailWidth, 80, enlarge: true);
 
     /// <summary>
     /// Loads (creating on demand) this user's state row for a series, or null when the series is not
@@ -357,14 +343,15 @@ public class ReaderController(
                         return;
                     }
 
-                    await using var _ = source;
-
-                    using var image = await Image.LoadAsync(await ThumbnailDecoderAsync(source, ct), source, ct);
-                    image.Mutate(x => x.Resize(new ResizeOptions
+                    byte[] bytes;
+                    await using (source)
                     {
-                        Size = new Size(ThumbnailWidth, 0),
-                        Mode = ResizeMode.Max
-                    }));
+                        using var copy = new MemoryStream();
+                        await source.CopyToAsync(copy, ct);
+                        bytes = copy.ToArray();
+                    }
+
+                    var thumbnail = ReaderThumbnail(bytes);
 
                     // Written aside and moved into place: an aborted request would otherwise leave a
                     // truncated JPEG at the final path, served as immutable for a year.
@@ -372,7 +359,7 @@ public class ReaderController(
                     var tmp = Path.Combine(dir, $"{Guid.NewGuid():N}.tmp");
                     try
                     {
-                        await image.SaveAsJpegAsync(tmp, new JpegEncoder { Quality = 80 }, ct);
+                        await System.IO.File.WriteAllBytesAsync(tmp, thumbnail, ct);
                         try
                         {
                             System.IO.File.Move(tmp, cached, overwrite: true);
@@ -399,7 +386,7 @@ public class ReaderController(
             }
             catch (Exception e)
             {
-                // AVIF in particular cannot be decoded by the pinned ImageSharp build.
+                // A page format libvips is not allowed to open (BMP among them) has no thumbnail.
                 logger.LogDebug(e, "Thumbnail failed for chapter {ChapterId} page {Page}", id, page);
                 return NotFound();
             }
@@ -426,9 +413,15 @@ public class ReaderController(
             return this.Fail(localizer, "error.reader.pageOutOfRange");
         }
 
+        if (!ReaderService.IsValidOpId(request.OpId))
+        {
+            return this.Fail(localizer, "error.reader.invalidOpId");
+        }
+
         var finished = await reader.SaveProgressAsync(
             slice, request.PageIndex, request.Completed,
-            new ReaderService.TimeReport(request.Seconds ?? 0, request.Final ?? false), ct);
+            new ReaderService.TimeReport(request.Seconds ?? 0, request.Final ?? false), ct,
+            request.ClientTime, request.OpId);
 
         // After the save, so the evaluation sees the finished chapter. Whatever it unlocks reaches
         // the reader through the inbox push rather than this response.
@@ -513,6 +506,29 @@ public class ReaderController(
         }
 
         return Ok(new { updated = await reader.MarkReadAsync(visible, ct) });
+    }
+
+    /// <summary>Largest set one <see cref="ChapterVersions"/> call answers.</summary>
+    internal const int MaxVersionChapters = 500;
+
+    /// <summary>
+    /// The manifest's <c>pageVersion</c> for each requested chapter the caller can still read, so a
+    /// device can check the chapters it saved offline in one call. A chapter that does not exist,
+    /// has no file record, or is outside the caller's root folders is left out, and the device
+    /// drops it. A chapter whose file cannot be read right now (an unmounted root) comes back with
+    /// a null <c>pageVersion</c>, so a storage outage never wipes the device's copies.
+    /// </summary>
+    [HttpPost("chapters/versions")]
+    public async Task<IActionResult> ChapterVersions(ChapterVersionsRequest req, CancellationToken ct)
+    {
+        var ids = (req.Ids ?? []).Distinct().ToArray();
+        if (ids.Length > MaxVersionChapters)
+        {
+            return this.Fail(localizer, "error.reader.tooManyChapters", new { max = MaxVersionChapters });
+        }
+
+        var versions = await reader.ArchiveVersionsAsync(ids, ct);
+        return Ok(versions.Select(v => new { id = v.ChapterId, pageVersion = v.ArchiveVersion is null ? null : PageVersion(v.ChapterFileId, v.ArchiveVersion) }));
     }
 
     /// <summary>

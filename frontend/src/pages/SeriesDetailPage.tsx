@@ -1,6 +1,6 @@
 import { errorText } from '../api/errorText'
 import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, FormEvent, ReactNode } from 'react'
+import type { CSSProperties, FormEvent, ReactNode, RefObject } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { msg, plural, t as staticT } from '@lingui/core/macro'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
@@ -31,12 +31,14 @@ import {
   TextInput,
   Title,
   Tooltip,
+  VisuallyHidden,
 } from '@mantine/core'
 import {
   IconAlertTriangle,
   IconArrowLeft,
   IconBook,
   IconChevronDown,
+  IconCircleCheck,
   IconDownload,
   IconEye,
   IconEyeCheck,
@@ -112,7 +114,7 @@ import {
   useVolumeSearch,
 } from '../api/upgrades'
 import type { UpgradeScanResultDto } from '../api/upgrades'
-import { ApiError } from '../api/client'
+import { ApiError, isOfflineUnavailable } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
 import { useDocumentTitle } from '../lib/documentTitle'
@@ -149,6 +151,7 @@ import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
+import { ReleaseOutlookSummary } from '../components/releases/ReleaseOutlookSummary'
 import { SourceCompareModal } from '../components/SourceCompareModal'
 import type { PickChapter } from '../components/SourceCompareModal'
 import { formatDate, formatReadingTime } from '../format'
@@ -158,14 +161,14 @@ import {
   seriesStatusVisual,
 } from '../components/ui/status'
 import { readStored, writeStored } from '../components/ui/viewPrefs'
-import { useColumnWidths } from '../lib/useColumnWidths'
+import { MonoValue } from '../components/ui/MonoValue'
+import { useColumnWidths, type ColumnSpec } from '../lib/useColumnWidths'
 import { useStableActions } from '../lib/useStableActions'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
 import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
-import { useShellTitle } from '../lib/shellTitle'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 import { cleanSynopsis } from '../lib/synopsis'
 import { useIncognitoOptions } from '../components/ui/incognito'
@@ -173,6 +176,14 @@ import { useSeriesNotificationOptions } from '../components/ui/seriesNotificatio
 import { scrollBehavior } from '../lib/scrollBehavior'
 import { offersPermanentDelete, useRecycleBinDays } from '../api/recycleBin'
 import { PermanentDeleteFallback } from '../components/PermanentDeleteFallback'
+import { pwaSupported } from '../lib/pwa/serviceWorker'
+import {
+  removeChaptersOffline,
+  removeSeriesOffline,
+  saveChaptersOffline,
+  saveUnreadOffline,
+  useOfflineChapters,
+} from '../pwa/offlineChapters'
 
 /** A special is a decimal-numbered chapter (10.5 omake etc.). */
 const isSpecial = (c: ChapterDto) => c.number !== null && c.number % 1 !== 0
@@ -209,13 +220,62 @@ const CHAPTER_COLUMNS = {
   status: { width: 240, min: 140 },
 }
 // The Wanted and actions columns hold fixed-size controls, and Title takes whatever is left, down
-// to this much before the table scrolls sideways instead.
+// to this much before the rows turn into two-line list rows instead.
 const CHAPTER_WANTED_COLUMN_WIDTH = 80
 const CHAPTER_ACTIONS_COLUMN_WIDTH = 124
 const CHAPTER_FIXED_COLUMNS_WIDTH = CHAPTER_WANTED_COLUMN_WIDTH + CHAPTER_ACTIONS_COLUMN_WIDTH
-const CHAPTER_TITLE_MIN_WIDTH = 110
-const chapterTableMinWidthFor = (widths: Record<keyof typeof CHAPTER_COLUMNS, number>) =>
-  CHAPTER_FIXED_COLUMNS_WIDTH + CHAPTER_TITLE_MIN_WIDTH + Object.values(widths).reduce((sum, w) => sum + w, 0)
+const CHAPTER_TITLE_MIN_WIDTH = 220
+type ChapterColumn = keyof typeof CHAPTER_COLUMNS
+const CHAPTER_COLUMN_KEYS = Object.keys(CHAPTER_COLUMNS) as ChapterColumn[]
+const CHAPTER_COLUMN_MAX = 640
+/**
+ * Full shows every column, compact sheds Released, list turns rows into two-line list rows. Released
+ * goes first because it is the one column nothing on the page acts on: Source and Status are what
+ * downloads and upgrades are decided from, and the actions need the room.
+ */
+type ChapterLayout = 'full' | 'compact' | 'list'
+const CHAPTER_SHED_COLUMN: ChapterColumn = 'released'
+const shownChapterColumns = (layout: ChapterLayout) =>
+  layout === 'compact' ? CHAPTER_COLUMN_KEYS.filter((key) => key !== CHAPTER_SHED_COLUMN) : CHAPTER_COLUMN_KEYS
+const chapterColumnsWidthFor = (widths: Record<ChapterColumn, number>, layout: ChapterLayout) =>
+  CHAPTER_FIXED_COLUMNS_WIDTH + CHAPTER_TITLE_MIN_WIDTH + shownChapterColumns(layout).reduce((sum, key) => sum + widths[key], 0)
+// Off the default widths, never the dragged ones: a column dragged wide used to tip the table into
+// list rows, which have no header to drag it back from.
+const CHAPTER_DEFAULT_WIDTHS = Object.fromEntries(
+    CHAPTER_COLUMN_KEYS.map((key) => [key, CHAPTER_COLUMNS[key].width]),
+) as Record<ChapterColumn, number>
+const CHAPTER_FULL_MIN_WIDTH = chapterColumnsWidthFor(CHAPTER_DEFAULT_WIDTHS, 'full')
+const CHAPTER_COMPACT_MIN_WIDTH = chapterColumnsWidthFor(CHAPTER_DEFAULT_WIDTHS, 'compact')
+// The layout was picked because the panel holds at least this much, so a table never needs to
+// scroll sideways in it. Widths stored from a wider window stay as preferences the browser can
+// squeeze rather than a floor that pushes the table past the panel.
+const chapterTableMinWidthFor = (widths: Record<ChapterColumn, number>, layout: ChapterLayout) =>
+  Math.min(
+      chapterColumnsWidthFor(widths, layout),
+      layout === 'full' ? CHAPTER_FULL_MIN_WIDTH : CHAPTER_COMPACT_MIN_WIDTH,
+  )
+const chapterLayoutFor = (panelWidth: number): ChapterLayout =>
+  panelWidth === 0 || panelWidth >= CHAPTER_FULL_MIN_WIDTH ? 'full' : panelWidth >= CHAPTER_COMPACT_MIN_WIDTH ? 'compact' : 'list'
+
+type ChapterColumnRoom = { panel: number; layout: ChapterLayout; widths: Record<ChapterColumn, number> | null }
+/**
+ * Column specs whose max is whatever the panel has left once every other shown column has its
+ * width, so a drag can't push the table wider than the panel. Read at drag time from `room`, which
+ * the page keeps current without re-rendering on every pixel of a window resize.
+ */
+const chapterColumnSpecsWithin = (room: RefObject<ChapterColumnRoom>) =>
+  Object.fromEntries(
+      CHAPTER_COLUMN_KEYS.map((key): [ChapterColumn, ColumnSpec] => [key, {
+        ...CHAPTER_COLUMNS[key],
+        get max() {
+          const { panel, layout, widths } = room.current
+          if (panel === 0 || layout === 'list' || !widths) return CHAPTER_COLUMN_MAX
+          const others = shownChapterColumns(layout).reduce((sum, k) => (k === key ? sum : sum + widths[k]), 0)
+          const left = Math.floor(panel - CHAPTER_FIXED_COLUMNS_WIDTH - CHAPTER_TITLE_MIN_WIDTH - others)
+          return Math.min(CHAPTER_COLUMN_MAX, Math.max(CHAPTER_COLUMNS[key].min, left))
+        },
+      }]),
+  ) as Record<ChapterColumn, ColumnSpec>
 
 /**
  * Descriptors, not strings: this table is built once when the module loads, so a rendered string
@@ -334,7 +394,7 @@ function SeriesDetailBody() {
     setSearchParams(next, { replace: true })
   }
   const isMobile = useMediaQuery('(max-width: 47.99em)')
-  const { data: series, isLoading } = useSeriesDetail(seriesId)
+  const { data: series, isLoading, error: seriesError } = useSeriesDetail(seriesId)
   // So that a series reached from another one (Similar, Related) offers a back link that names it
   // rather than the generic "Series".
   usePageLabel(series?.title)
@@ -420,6 +480,12 @@ function SeriesDetailBody() {
   const readStateFor = useCallback(
       (c: ChapterDto) => readStateOf(readProgress.get(c.id)),
       [readProgress],
+  )
+  const canSaveOffline = pwaSupported()
+  const { records: offlineRecords, progress: offlineProgress } = useOfflineChapters()
+  const offlineSaved = useMemo(
+      () => [...offlineRecords.values()].filter((r) => r.seriesId === seriesId).length,
+      [offlineRecords, seriesId],
   )
   const { data: queue } = useSeriesQueue(seriesId)
   const queueByChapterId = useMemo(
@@ -556,20 +622,21 @@ function SeriesDetailBody() {
     setChapterSortState(next)
     writeStored(CHAPTER_SORT_STORAGE_KEY, next)
   }
+  const chapterColumnRoom = useRef<ChapterColumnRoom>({ panel: 0, layout: 'full', widths: null })
+  const [chapterColumnSpecs] = useState(() => chapterColumnSpecsWithin(chapterColumnRoom))
   const { widths: chapterColumnWidths, handleProps: chapterColumnHandle } = useColumnWidths(
       CHAPTER_COLUMNS_STORAGE_KEY,
-      CHAPTER_COLUMNS,
+      chapterColumnSpecs,
       (widths, key, shift) => {
         // Mid-drag nothing renders, so the table's min-width and the season lines are moved by
         // hand. The lines sit at the Chapter cell's end, so they shift by exactly what it grew.
         chapterTable
             ?.querySelector<HTMLElement>('.mantine-TableScrollContainer-scrollContainer')
-            ?.style.setProperty('--table-min-width', `${chapterTableMinWidthFor(widths)}px`)
+            ?.style.setProperty('--table-min-width', `${chapterTableMinWidthFor(widths, chapterColumnRoom.current.layout)}px`)
         const overlay = chapterTable?.querySelector<HTMLElement>('.chapter-span-overlay')
         if (overlay) overlay.style.transform = key === 'chapter' && shift ? `translateX(${shift}px)` : ''
       },
   )
-  const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths)
   const [chapterSearch, setChapterSearch] = useState('')
   const [chapterPageSizePreference, setChapterPageSizePreference] = useState<ChapterPageSize>(() =>
       readStored(CHAPTER_PAGE_SIZE_STORAGE_KEY, CHAPTER_PAGE_SIZES, '50'),
@@ -745,6 +812,7 @@ function SeriesDetailBody() {
       () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile && !c.fileRemovedAt && !queueByChapterId.has(c.id)).length,
       [chapters, queueByChapterId],
   )
+  const allWantedOnDisk = chapters !== undefined && missingWanted === 0
 
   // What "Delete files" will actually touch: a volume file backs several chapters, and the server
   // removes it from all of them, so the dialog has to say so before anyone confirms.
@@ -861,6 +929,28 @@ function SeriesDetailBody() {
    * lines only appeared if the page was loaded straight into Chapters.
    */
   const [chapterTable, setChapterTable] = useState<HTMLDivElement | null>(null)
+  // Only the layout is state, so a window resize re-renders the page when it crosses a threshold
+  // rather than on every pixel. The width itself goes to the column specs' drag limits.
+  const [chapterLayoutByWidth, setChapterLayoutByWidth] = useState<ChapterLayout>('full')
+  useEffect(() => {
+    if (!chapterTable) return
+    const observer = new ResizeObserver(([entry]) => {
+      chapterColumnRoom.current.panel = entry.contentRect.width
+      setChapterLayoutByWidth(chapterLayoutFor(entry.contentRect.width))
+    })
+    observer.observe(chapterTable)
+    return () => observer.disconnect()
+  }, [chapterTable])
+  // A panel that can't hold the default columns first drops Released, then turns rows into two-line
+  // list rows. A scrolling table squeezed Title to a few characters and pushed the switch and
+  // actions out of view.
+  const chapterLayout: ChapterLayout = isMobile ? 'list' : chapterLayoutByWidth
+  const chapterRowsAsList = chapterLayout === 'list'
+  const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths, chapterLayout)
+  useLayoutEffect(() => {
+    chapterColumnRoom.current.layout = chapterLayout
+    chapterColumnRoom.current.widths = chapterColumnWidths
+  }, [chapterLayout, chapterColumnWidths])
   const [spanLines, setSpanLines] = useState<
       { key: string; label: string; top: number; height: number; left: number; openStart: boolean; openEnded: boolean }[]
   >([])
@@ -1114,7 +1204,34 @@ function SeriesDetailBody() {
       observer.disconnect()
       viewport?.removeEventListener('scroll', measure)
     }
-  }, [chapterTable, animeSpans, foldedSpans, shownRows, markerSlot, chapterSort, chapterColumnWidths])
+  }, [chapterTable, animeSpans, foldedSpans, shownRows, markerSlot, chapterSort, chapterColumnWidths, chapterLayout])
+
+  // On a phone only the toolbar stays pinned; the search scrolls away with the page, or the two
+  // together cover a third of the screen.
+  const chapterSearchInput = chapters && chapters.length > 0 && (
+      <TextInput
+          size="sm"
+          mt={isMobile ? -8 : undefined}
+          value={chapterSearch}
+          onChange={(event) => setChapterSearch(event.currentTarget.value)}
+          leftSection={<IconSearch size={16} />}
+          rightSection={
+            chapterSearch ? (
+                <ActionIcon
+                    size="sm"
+                    variant="subtle"
+                    color="var(--neutral)"
+                    aria-label={t`Clear chapter search`}
+                    onClick={() => setChapterSearch('')}
+                >
+                  <IconX size={14} />
+                </ActionIcon>
+            ) : null
+          }
+          placeholder={t`Search by chapter number or title`}
+          aria-label={t`Search chapters`}
+      />
+  )
 
   const setChaptersState = useSetChaptersState(seriesId)
 
@@ -1188,6 +1305,8 @@ function SeriesDetailBody() {
       }),
     setTrusted: (fileId, trusted) => setFileTrusted.mutate({ fileId, trusted }),
     deleteFile: (chapterId) => setDeleteFileIds([chapterId]),
+    saveOffline: (chapterId) => void saveChaptersOffline([{ chapterId, seriesId }]),
+    removeOffline: (chapterId) => void removeChaptersOffline([chapterId]),
     toggleSpanFold,
     setMarkerRef,
   })
@@ -1215,20 +1334,6 @@ function SeriesDetailBody() {
       // renders without its chapter number until something else changes the chapter list's identity.
       [chapters, continueAt?.chapterId, i18n.locale]
   )
-
-  // The top bar takes the series name once the hero heading has scrolled out of view.
-  const [heroTitleHidden, setHeroTitleHidden] = useState(false)
-  const heroTitleShown = series !== undefined
-  useEffect(() => {
-    const el = document.querySelector('.series-hero-title')
-    if (!el) return
-    const observer = new IntersectionObserver(([entry]) => setHeroTitleHidden(!entry.isIntersecting), {
-      rootMargin: '-58px 0px 0px 0px',
-    })
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [heroTitleShown])
-  useShellTitle(heroTitleHidden && series ? series.displayTitle : null)
 
   // Arrived by a dice roll: offer another. Local state so a tab switch, which drops router state,
   // does not take the pill with it.
@@ -1262,6 +1367,23 @@ function SeriesDetailBody() {
         <SurfaceFrame width="full" pageStyle="editorial">
           <SeriesHeroSkeleton />
           {luckyPill}
+        </SurfaceFrame>
+    )
+  }
+
+  // Offline the series is not gone, this device just holds no copy of its page.
+  if (!series && isOfflineUnavailable(seriesError)) {
+    return (
+        <SurfaceFrame width="full" pageStyle="editorial">
+          <EmptyState
+              art="offline"
+              headingOrder={1}
+              title={t`Not available offline`}
+              description={t`This series isn't saved on this device. It opens again as soon as Maki can reach the server.`}
+              actionLabel={t`Back to library`}
+              actionTo="/library"
+              actionIcon={<IconArrowLeft size={16} />}
+          />
         </SurfaceFrame>
     )
   }
@@ -1582,13 +1704,7 @@ function SeriesDetailBody() {
                     which is what made the wanted switch double as a deferral tool and wrecked every
                     chapter count. This is the replacement: "all wanted" is the old Search missing,
                     "next N" queues in chapter-number order using the same selector Smart top-ups use. */}
-                      <Tooltip
-                          label={t`Every wanted chapter is already on disk`}
-                          withArrow
-                          disabled={!(chapters !== undefined && missingWanted === 0)}
-                      >
-                        {/* A disabled button fires no pointer events, so the tooltip hangs off a wrapper instead. */}
-                        <Box component="span" display="inline-flex">
+                      {!allWantedOnDisk && (
                         <Button.Group>
                         <Button
                             variant="default"
@@ -1596,7 +1712,6 @@ function SeriesDetailBody() {
                             radius="md"
                             leftSection={<IconDownload size={17} />}
                             loading={searchMissing.isPending || downloadNext.isPending}
-                            disabled={chapters !== undefined && missingWanted === 0}
                             onClick={requestQueueAllWanted}
                         >
                           {/* The count is the point of the label: it says what the click will actually
@@ -1615,7 +1730,7 @@ function SeriesDetailBody() {
                                 radius="md"
                                 px={10}
                                 aria-label={t`More download options`}
-                                disabled={(chapters !== undefined && missingWanted === 0) || searchMissing.isPending || downloadNext.isPending}
+                                disabled={searchMissing.isPending || downloadNext.isPending}
                             >
                               <IconChevronDown size={16} />
                             </Button>
@@ -1631,8 +1746,7 @@ function SeriesDetailBody() {
                           </Menu.Dropdown>
                         </Menu>
                         </Button.Group>
-                        </Box>
-                      </Tooltip>
+                      )}
                       <Button
                           variant="default"
                           size="md"
@@ -1763,7 +1877,32 @@ function SeriesDetailBody() {
                       setDeleteSeriesFiles(false)
                       setDeleteSeriesModalOpen(true)
                     }}
+                    offlineSaved={canSaveOffline ? offlineSaved : undefined}
+                    onSaveUnreadOffline={() =>
+                        void saveUnreadOffline(seriesId).then(
+                            (count) =>
+                                count > 0
+                                    ? notify.ok(
+                                        plural(count, {
+                                          one: 'Saving # chapter for offline',
+                                          other: 'Saving # chapters for offline',
+                                        }),
+                                    )
+                                    : notify.info(staticT`Every unread chapter is already on this device`),
+                            (error: unknown) => notify.err(error instanceof Error ? error.message : String(error)),
+                        )
+                    }
+                    onRemoveOffline={() => void removeSeriesOffline(seriesId)}
                 />
+                {/* A state, not a control: nothing here could enable a download button, so it stops posing as one. */}
+                {canDownload && allWantedOnDisk && chapters.length > 0 && (
+                    <Tooltip label={t`Every wanted chapter is already on disk`} withArrow>
+                      <Text component="span" size="sm" c="var(--ink-3)" className="series-actions-done">
+                        <IconCircleCheck size={16} />
+                        <Trans>Nothing left to download</Trans>
+                      </Text>
+                    </Tooltip>
+                )}
               </>
             }
             tabs={
@@ -1802,7 +1941,7 @@ function SeriesDetailBody() {
                 />
             )}
             <div className="series-split">
-              <Panel className="series-detail-synopsis" edge="brand">
+              <Panel className="series-detail-synopsis">
                 <Title order={2} size="h3" fz="var(--type-section)">
                   <Trans>Synopsis</Trans>
                   {series.lockedFields.includes('overview') && <>{' '}<MetadataLock /></>}
@@ -1896,7 +2035,7 @@ function SeriesDetailBody() {
               </Panel>
 
               <div className="series-split-row">
-                <Panel className="series-detail-source-panel" edge="info" edgeSide="left">
+                <Panel className="series-detail-source-panel series-machine">
                   {series.numberingClash && (
                       <Alert
                           mb="md"
@@ -1926,13 +2065,16 @@ function SeriesDetailBody() {
                       </Alert>
                   )}
                   {canManageSources && (
-                    <SourceMappingsSection
-                        seriesId={seriesId}
-                        seriesTitle={series.title}
-                        matching={series.sourceMatchPending}
-                    />
+                    <>
+                      <SourceMappingsSection
+                          seriesId={seriesId}
+                          seriesTitle={series.title}
+                          matching={series.sourceMatchPending}
+                      />
+                      <Divider my="md" color="var(--hairline)" />
+                    </>
                   )}
-                  <Divider my="md" color="var(--hairline)" />
+                  <ReleaseOutlookSummary seriesId={seriesId} divided />
                   <Text size="xs" c="var(--ink-3)">
                     {scanning ? (
                         <Group gap={6} component="span" wrap="nowrap">
@@ -1967,9 +2109,9 @@ function SeriesDetailBody() {
                     )}
                   </Text>
                 </Panel>
-                <Panel className="series-detail-metadata-panel" edge="strong" edgeSide="left">
+                <Panel className="series-detail-metadata-panel series-machine">
                   <Group justify="space-between" align="baseline" mb="sm" wrap="nowrap">
-                    <Title order={2} size="h3" fz="var(--type-section)">
+                    <Title order={2} size="h3" fz="var(--type-subhead)">
                       <Trans>Metadata</Trans>
                     </Title>
                     <Anchor component="button" type="button" size="xs" c="var(--ink-3)" onClick={() => setMetadataHistoryOpen(true)}>
@@ -2026,9 +2168,7 @@ function SeriesDetailBody() {
                     )}
                     {series.rootFolderPath && (
                         <RecordRow label={t`Folder`}>
-                          <Text size="sm" c="var(--ink-3)" ff="monospace" style={{ wordBreak: 'break-all' }}>
-                            {series.rootFolderPath}
-                          </Text>
+                          <MonoValue value={series.rootFolderPath} copy c="var(--ink-3)" />
                         </RecordRow>
                     )}
                   </div>
@@ -2195,106 +2335,85 @@ function SeriesDetailBody() {
 
         <Tabs.Panel value="chapters">
           <Stack className="series-detail-chapters" gap="lg">
-            {/* Chapters */}
-            <Group
-                className="series-detail-chapter-toolbar"
-                data-sticky={selectMode ? undefined : true}
-                justify="space-between"
-                wrap="wrap"
-                gap="sm"
-            >
-              <Group gap="xs" align="baseline">
-                <Title order={2} size="h3"><Trans>Chapters</Trans></Title>
-                {chapters && (
-                    <Text size="sm" c="var(--ink-3)" className="tnum">
-                      {progress.have}/{progress.total}
-                    </Text>
-                )}
-                {chapters && readTracking && progress.have > 0 && (
-                    <Badge size="sm" variant="light" color="var(--ok)" className="tnum">
-                      <Trans>{readFilterCount} read</Trans>
-                    </Badge>
+            <div className="series-detail-chapter-head" data-sticky={selectMode ? undefined : true}>
+              <Group
+                  className="series-detail-chapter-toolbar"
+                  justify="space-between"
+                  wrap="wrap"
+                  gap="sm"
+              >
+                <Group gap="xs" align="baseline">
+                  <Title order={2} size="h3"><Trans>Chapters</Trans></Title>
+                  {chapters && (
+                      <Text size="sm" c="var(--ink-3)" className="tnum">
+                        {progress.have}/{progress.total}
+                      </Text>
+                  )}
+                  {chapters && readTracking && progress.have > 0 && (
+                      <Badge size="sm" variant="light" color="var(--ok)" className="tnum">
+                        <Trans>{readFilterCount} read</Trans>
+                      </Badge>
+                  )}
+                </Group>
+                {chapters && chapters.length > 0 && (
+                    <Group gap="xs" wrap="wrap">
+                      {isMobile ? (
+                          <Select
+                              size="xs"
+                              aria-label={t`Filter chapters`}
+                              data={chapterFilterData}
+                              value={chapterFilter}
+                              onChange={(value) => value && setChapterFilter(value)}
+                              allowDeselect={false}
+                              w={150}
+                          />
+                      ) : (
+                          <SegmentedControl
+                              aria-label={t`Filter chapters`}
+                              size="xs"
+                              value={chapterFilter}
+                              onChange={setChapterFilter}
+                              data={chapterFilterData}
+                          />
+                      )}
+                      <Tooltip label={chapterSort === 'asc' ? t`Oldest first` : t`Newest first`} withArrow>
+                        <ActionIcon
+                            size="input-xs"
+                            variant="default"
+                            aria-label={chapterSort === 'asc' ? t`Sort newest first` : t`Sort oldest first`}
+                            onClick={toggleChapterSort}
+                        >
+                          {chapterSort === 'asc'
+                              ? <IconSortAscendingNumbers size={16} />
+                              : <IconSortDescendingNumbers size={16} />}
+                        </ActionIcon>
+                      </Tooltip>
+                      <Select
+                          size="xs"
+                          aria-label={t`Chapters per page`}
+                          data={chapterPageSizeOptions}
+                          value={chapterPageSizePreference}
+                          onChange={setChapterPageSize}
+                          allowDeselect={false}
+                          w={isMobile ? 100 : 108}
+                      />
+                      {!selectMode && (
+                          <Button
+                              size="xs"
+                              variant="default"
+                              leftSection={<IconListCheck size={14} />}
+                              onClick={() => setSelectMode(true)}
+                          >
+                            <Trans>Select</Trans>
+                          </Button>
+                      )}
+                    </Group>
                 )}
               </Group>
-              {chapters && chapters.length > 0 && (
-                  <Group gap="xs" wrap="wrap">
-                    {isMobile ? (
-                        <Select
-                            size="xs"
-                            aria-label={t`Filter chapters`}
-                            data={chapterFilterData}
-                            value={chapterFilter}
-                            onChange={(value) => value && setChapterFilter(value)}
-                            allowDeselect={false}
-                            w={150}
-                        />
-                    ) : (
-                        <SegmentedControl
-                            aria-label={t`Filter chapters`}
-                            size="xs"
-                            value={chapterFilter}
-                            onChange={setChapterFilter}
-                            data={chapterFilterData}
-                        />
-                    )}
-                    <Tooltip label={chapterSort === 'asc' ? t`Oldest first` : t`Newest first`} withArrow>
-                      <ActionIcon
-                          size="input-xs"
-                          variant="default"
-                          aria-label={chapterSort === 'asc' ? t`Sort newest first` : t`Sort oldest first`}
-                          onClick={toggleChapterSort}
-                      >
-                        {chapterSort === 'asc'
-                            ? <IconSortAscendingNumbers size={16} />
-                            : <IconSortDescendingNumbers size={16} />}
-                      </ActionIcon>
-                    </Tooltip>
-                    <Select
-                        size="xs"
-                        aria-label={t`Chapters per page`}
-                        data={chapterPageSizeOptions}
-                        value={chapterPageSizePreference}
-                        onChange={setChapterPageSize}
-                        allowDeselect={false}
-                        w={isMobile ? 100 : 108}
-                    />
-                    {!selectMode && (
-                        <Button
-                            size="xs"
-                            variant="default"
-                            leftSection={<IconListCheck size={14} />}
-                            onClick={() => setSelectMode(true)}
-                        >
-                          <Trans>Select</Trans>
-                        </Button>
-                    )}
-                  </Group>
-              )}
-            </Group>
 
-            {chapters && chapters.length > 0 && (
-                <TextInput
-                    size="sm"
-                    value={chapterSearch}
-                    onChange={(event) => setChapterSearch(event.currentTarget.value)}
-                    leftSection={<IconSearch size={16} />}
-                    rightSection={
-                      chapterSearch ? (
-                          <ActionIcon
-                              size="sm"
-                              variant="subtle"
-                              color="var(--neutral)"
-                              aria-label={t`Clear chapter search`}
-                              onClick={() => setChapterSearch('')}
-                          >
-                            <IconX size={14} />
-                          </ActionIcon>
-                      ) : null
-                    }
-                    placeholder={t`Search by chapter number or title`}
-                    aria-label={t`Search chapters`}
-                />
-            )}
+              {!isMobile && chapterSearchInput}
+            </div>
+            {isMobile && chapterSearchInput}
 
             {/* Two closed issues came from people who had a file on disk and could not find how to
                 tell Maki which chapters it holds. Point at it from the tab they were looking at. */}
@@ -2658,13 +2777,18 @@ function SeriesDetailBody() {
                 </Text>
             ) : (
                 <Stack gap="sm">
-                  <Paper className="series-detail-chapter-table" withBorder radius="lg" style={{ overflow: 'hidden' }}>
+                  <Paper
+                      className={`series-detail-chapter-table chapter-rows-${chapterLayout}`}
+                      withBorder
+                      radius="lg"
+                      style={{ overflow: 'hidden' }}
+                  >
                     <Box
                         pos="relative"
                         ref={setChapterTable}
                         style={{ '--chapter-marker-slot': `${markerSlot}px` } as React.CSSProperties}
                     >
-                      <Table.ScrollContainer minWidth={isMobile ? 0 : chapterTableMinWidth}>
+                      <Table.ScrollContainer minWidth={chapterRowsAsList ? 0 : chapterTableMinWidth}>
                         <Table
                             className="chapter-table"
                             highlightOnHover
@@ -2676,26 +2800,34 @@ function SeriesDetailBody() {
                               <Table.Th w={CHAPTER_WANTED_COLUMN_WIDTH}><Trans>Wanted</Trans></Table.Th>
                               <Table.Th w={chapterColumnWidths.chapter}>
                                 <Trans>Chapter</Trans>
-                                <div {...chapterColumnHandle('chapter')} aria-label={t`Resize Chapter column`} />
+                                {!chapterRowsAsList && (
+                                    <div {...chapterColumnHandle('chapter')} aria-label={t`Resize Chapter column`} />
+                                )}
                               </Table.Th>
                               <Table.Th>
                                 {/* Less the cell's padding. The table's min-width alone doesn't stop the
                                     browser squeezing Title when the other columns grow. */}
                                 <Box miw={CHAPTER_TITLE_MIN_WIDTH - 32}><Trans>Title</Trans></Box>
                               </Table.Th>
-                              <Table.Th w={chapterColumnWidths.released}>
+                              <Table.Th w={chapterColumnWidths.released} className="chapter-released">
                                 <Trans>Released</Trans>
-                                <div {...chapterColumnHandle('released', 'start')} aria-label={t`Resize Released column`} />
+                                {!chapterRowsAsList && (
+                                    <div {...chapterColumnHandle('released', 'start')} aria-label={t`Resize Released column`} />
+                                )}
                               </Table.Th>
                               <Table.Th w={chapterColumnWidths.source}>
                                 <Trans>Source</Trans>
-                                <div {...chapterColumnHandle('source', 'start')} aria-label={t`Resize Source column`} />
+                                {!chapterRowsAsList && (
+                                    <div {...chapterColumnHandle('source', 'start')} aria-label={t`Resize Source column`} />
+                                )}
                               </Table.Th>
                               <Table.Th w={chapterColumnWidths.status}>
                                 <Trans>Status</Trans>
-                                <div {...chapterColumnHandle('status', 'start')} aria-label={t`Resize Status column`} />
+                                {!chapterRowsAsList && (
+                                    <div {...chapterColumnHandle('status', 'start')} aria-label={t`Resize Status column`} />
+                                )}
                               </Table.Th>
-                              <Table.Th w={CHAPTER_ACTIONS_COLUMN_WIDTH} />
+                              <Table.Th w={CHAPTER_ACTIONS_COLUMN_WIDTH}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                             </Table.Tr>
                           </Table.Thead>
                           <Table.Tbody>
@@ -2737,6 +2869,9 @@ function SeriesDetailBody() {
                                           canDownload={canDownload}
                                           canDelete={canDelete}
                                           canFindBetterCopy={enabledMappings > 1}
+                                          canSaveOffline={canSaveOffline}
+                                          offline={offlineRecords.get(c.id)}
+                                          offlineSaving={offlineProgress.get(c.id)}
                                           wantedPending={toggleWanted.isPending && toggleWanted.variables?.chapterId === c.id}
                                           readPending={setRead.isPending && setRead.variables?.chapterId === c.id}
                                           upgradePending={upgradeChapterNow.isPending}

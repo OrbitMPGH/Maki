@@ -24,6 +24,7 @@ import {
 } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { Achievement } from '../../api/hooks'
+import { useAuth } from '../../auth/AuthProvider'
 import { formatNumber, formatReadingTime } from '../../format'
 
 /** Server icon keys (`AchievementCatalog.cs`) mapped to the closest Tabler glyph. No literal owl icon
@@ -78,6 +79,11 @@ const TIER_SOFT_COLORS = [
 
 function tierColor(tier: number): string {
   return TIER_COLORS[Math.min(Math.max(tier, 1), TIER_COLORS.length) - 1]
+}
+
+/** Several tier hues miss 4.5:1 as small text; pulling them toward the ink keeps the hue and passes. */
+function tierTextColor(tier: number): string {
+  return `color-mix(in srgb, ${tierColor(tier)} 65%, var(--ink-hi))`
 }
 
 function tierSoftColor(tier: number): string {
@@ -155,7 +161,7 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
       padding="md"
       style={{
         borderColor: earned ? tierColor(achievement.tier) : undefined,
-        opacity: earned ? 1 : 0.72,
+        opacity: earned ? 1 : 0.85,
       }}
     >
       <Stack gap={6}>
@@ -181,7 +187,7 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
               <Badge
                 size="sm"
                 variant="light"
-                style={{ backgroundColor: tierSoftColor(achievement.tier), color: tierColor(achievement.tier) }}
+                style={{ backgroundColor: tierSoftColor(achievement.tier), color: tierTextColor(achievement.tier) }}
               >
                 {achievement.tierName}
               </Badge>
@@ -206,6 +212,7 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
               size="sm"
               radius="xl"
               color={earned ? tierColor(achievement.tier) : 'var(--neutral)'}
+              aria-label={achievement.name}
             />
             <Group justify="space-between" gap="xs">
               <Text size="xs" c="var(--ink-3)" className="tnum">
@@ -229,11 +236,12 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
 export function AchievementGrid({ achievements }: { achievements: Achievement[] }) {
   const reader = sortAchievements(achievements.filter((a) => a.track === 'Reader'))
   const library = sortAchievements(achievements.filter((a) => a.track === 'Library'))
+  const { singleUser } = useAuth()
 
   return (
     <Stack gap="lg">
       <Stack gap="xs">
-        <Title order={4}>
+        <Title order={3} size="h4">
           <Trans>Reading</Trans>
         </Title>
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">
@@ -245,14 +253,18 @@ export function AchievementGrid({ achievements }: { achievements: Achievement[] 
 
       {library.length > 0 && (
         <Stack gap="xs">
-          <Title order={4}>
+          <Title order={3} size="h4">
             <Trans>The library</Trans>
           </Title>
           {/* Said plainly, because these count what is on disk and the library is shared: on a
               multi-user instance everybody sees the same numbers here, and presenting them beside
               the reading badges without saying so would read as a claim about the viewer. */}
           <Text size="sm" c="var(--ink-3)">
-            <Trans>Earned by the library itself, so everyone on this instance shares them.</Trans>
+            {singleUser ? (
+              <Trans>Earned by the library itself, not by your reading.</Trans>
+            ) : (
+              <Trans>Earned by the library itself, so everyone on this instance shares them.</Trans>
+            )}
           </Text>
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">
             {library.map((a) => (

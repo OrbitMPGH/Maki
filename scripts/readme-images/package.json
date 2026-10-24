@@ -1,0 +1,14 @@
+{
+  "name": "maki-readme-images",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "capture": "node capture.mjs",
+    "compose": "node compose.mjs",
+    "build": "node capture.mjs && node compose.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "24.9.0",
+    "sharp": "0.34.3"
+  }
+}

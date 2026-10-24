@@ -134,7 +134,7 @@ public sealed class SeriesListSortDatesTests : IDisposable
     }
 
     private sealed class RatedStore(Dictionary<long, double> ratings) : MangaBakaLocalStore(
-        new MangaBakaDumpOptions("", ""), new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance)
+        new MangaBakaDumpOptions("", ""), NullLogger<MangaBakaLocalStore>.Instance)
     {
         public override Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(true);
 

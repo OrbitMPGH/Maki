@@ -22,19 +22,22 @@ const HEARTBEAT_MS = 60_000
  * double-counts it. Failures stay silent: losing a position must never interrupt reading.
  *
  * `complete` rides along on every write once set, so a completion never depends on the server
- * deriving it from the page index. The returned `settle` hands off to a caller about to write
+ * deriving it from the page index. `false` is sent too, to stop the server deriving one; leave it
+ * undefined to let it. The returned `settle` hands off to a caller about to write
  * the same chapter itself: it drops the pending write and waits out the one in flight, so two
  * completing writes never race each other into a double completion.
  */
 export function useReaderProgress(
   chapterId: number | undefined,
+  seriesId: number | undefined,
   page: number,
-  complete: boolean,
+  pageCount: number,
+  complete: boolean | undefined,
   enabled: boolean,
   clock: ReadingClock,
   onFlushed?: () => void,
 ) {
-  const latest = useRef({ chapterId, page, complete })
+  const latest = useRef({ chapterId, seriesId, page, pageCount, complete })
   const pending = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const inflight = useRef<Promise<void>>(Promise.resolve())
@@ -47,7 +50,7 @@ export function useReaderProgress(
   const flushedHandler = useRef(onFlushed)
   flushedHandler.current = onFlushed
 
-  latest.current = { chapterId, page, complete }
+  latest.current = { chapterId, seriesId, page, pageCount, complete }
 
   if (!enabled || !chapterId) {
     opened.current = undefined
@@ -60,21 +63,22 @@ export function useReaderProgress(
   // or after the final flush and regress the persisted position. Chaining serializes them, so
   // `settle()` draining `inflight.current` waits for every send still queued, in order.
   const send = useCallback(
-    (id: number, at: number, done: boolean) => {
+    (id: number, series: number, at: number, done: boolean | undefined) => {
       // Seconds are pulled from the clock now, at the moment this send is decided, not once its
       // turn in the chain comes up: waiting would let time banked while queued behind an earlier
       // request bleed into this send instead of a later one.
       const seconds = clock.take()
+      const count = latest.current.pageCount
       if (opened.current?.chapterId === id) opened.current.written = true
       inflight.current = inflight.current
-        .then(() => saveProgress(id, at, done || undefined, seconds))
+        .then(() => saveProgress(id, series, at, done, seconds, count))
         .catch(() => {})
     },
     [clock],
   )
 
   useEffect(() => {
-    if (!enabled || !chapterId) return
+    if (!enabled || !chapterId || seriesId === undefined) return
 
     const start = opened.current
     if (start && !start.written && start.page === page && !complete) {
@@ -86,19 +90,19 @@ export function useReaderProgress(
     timer.current = setTimeout(() => {
       if (!pending.current) return
       pending.current = false
-      send(chapterId, page, complete)
+      send(chapterId, seriesId, page, complete)
     }, DEBOUNCE_MS)
 
     return () => clearTimeout(timer.current)
-  }, [chapterId, page, complete, enabled, send])
+  }, [chapterId, seriesId, page, complete, enabled, send])
 
   useEffect(() => {
     if (!enabled) return
 
     const timer = setInterval(() => {
-      const { chapterId: id, page: at, complete: done } = latest.current
-      if (!id || clock.pending() === 0) return
-      send(id, at, done)
+      const { chapterId: id, seriesId: series, page: at, complete: done } = latest.current
+      if (!id || series === undefined || clock.pending() === 0) return
+      send(id, series, at, done)
     }, HEARTBEAT_MS)
 
     return () => clearInterval(timer)
@@ -108,17 +112,17 @@ export function useReaderProgress(
     if (!enabled) return
 
     const flush = (direct: boolean) => {
-      const { chapterId: id, page: at, complete: done } = latest.current
+      const { chapterId: id, seriesId: series, page: at, pageCount: count, complete: done } = latest.current
       // Banked seconds are worth a write on their own: this is the last chance to report the
       // stretch since the previous one, and a hidden tab may never come back.
-      if (!id || (!pending.current && clock.pending() === 0)) return
+      if (!id || series === undefined || (!pending.current && clock.pending() === 0)) return
       // The flush carries the latest position, so a debounce still armed would only repeat it.
       clearTimeout(timer.current)
       pending.current = false
       const seconds = clock.take()
       if (opened.current?.chapterId === id) opened.current.written = true
       const run = () =>
-        flushProgress(id, at, done || undefined, seconds)
+        flushProgress(id, series, at, done, seconds, count)
           .then(() => {
             // Only now has the write committed, so a refetch started any earlier could read the old state.
             flushedHandler.current?.()

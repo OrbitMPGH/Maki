@@ -90,7 +90,7 @@ function ratio(value: number): string {
 function TasteSkeleton() {
   const { t } = useLingui()
   return (
-    <Stack gap="md" aria-hidden>
+    <Stack gap="md" aria-hidden inert>
       <SignalsCard />
       <SectionHeader icon={IconClock} title={t`How you read`} />
       <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md">
@@ -496,7 +496,7 @@ function TagsCard({
   onExplore: (tag: string) => void
 }) {
   return (
-    <Panel edge="strong" p="md">
+    <Panel p="md">
       <Group gap={8} mb="xs" wrap="nowrap">
         <IconTags size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
         <Text fw={650}>
@@ -581,7 +581,7 @@ export function TasteTab() {
 
   if (nothingAtAll) {
     return (
-      <Stack gap="md">
+      <Stack gap="md" className="discover-tab-body">
       <Alert color="var(--neutral)" icon={<IconAlertCircle size={16} />} title={t`Nothing to profile yet`}>
         <Trans>Read a few chapters and this fills in.</Trans>
       </Alert>
@@ -605,7 +605,7 @@ export function TasteTab() {
     : ''
 
   return (
-    <Stack gap="md">
+    <Stack gap="md" className="discover-tab-body">
       <SignalsCard />
 
       {behaviour && behaviour.chaptersRead > 0 && (

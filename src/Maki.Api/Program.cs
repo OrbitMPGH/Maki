@@ -101,16 +101,6 @@ catch (Exception ex) when (ex is not HostAbortedException)
     return;
 }
 
-// ImageSharp's default allocator pools every buffer it hands out and never gives one back to the
-// OS, so RSS ratcheted to the high-water mark of whatever burst of concurrent decodes happened
-// last - a download night or a health scan - and stayed there for the life of the process. Capping
-// the pool means anything above it is an ordinary managed allocation the GC can reclaim. This is a
-// retention limit, not an allocation limit: a page larger than the pool still decodes, it just is
-// not kept afterwards.
-SixLabors.ImageSharp.Configuration.Default.MemoryAllocator =
-    SixLabors.ImageSharp.Memory.MemoryAllocator.Create(
-        new SixLabors.ImageSharp.Memory.MemoryAllocatorOptions { MaximumPoolSizeMegabytes = 48 });
-
 try
 {
     var builder = WebApplication.CreateBuilder(args);
@@ -129,21 +119,6 @@ try
         options.UseSqlite($"Data Source={paths.DatabasePath}"));
 
     builder.Services.AddScoped<BackupService>();
-
-    // MangaBaka: uncached requests are limited to 30/min (search) and 120/min (lookup).
-    // Replenish smoothly (1 token / 2 s = 30/min) instead of in per-minute chunks, and
-    // keep the client timeout well above the worst queue wait — library scans fire one
-    // search per folder and the queue delay counts toward the HttpClient timeout.
-    var mangaBakaLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(2), burst: 10);
-    builder.Services.AddHttpClient(MangaBakaProvider.HttpClientName, client =>
-        {
-            client.BaseAddress = new Uri("https://api.mangabaka.org/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
-            client.Timeout = TimeSpan.FromMinutes(3);
-        })
-        // Retry outside the limiter, so every attempt takes its own token.
-        .AddHttpMessageHandler(() => new TransientRetryHandler())
-        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaBakaLimiter));
 
     builder.Services.AddHttpClient("covers", client =>
         {
@@ -192,6 +167,7 @@ try
     builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
     builder.Services.AddSingleton<MangaBakaDumpStatus>();
     builder.Services.AddSingleton<MangaBakaDumpService>();
+    builder.Services.AddSingleton<Maki.Api.Jobs.MangaBakaDumpRetry>();
     builder.Services.AddSingleton<MangaBakaLocalStore>();
     // Credits and the title-index term dictionary, both RAM-resident and both built lazily from the
     // dump. They are what answer "junji ito" and what let a misspelled title still find its series;
@@ -200,6 +176,8 @@ try
     builder.Services.AddSingleton(SearchTuning.Default.Catalogue);
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
     builder.Services.AddSingleton<CoverService>();
+    builder.Services.AddSingleton<SignInMosaicService>();
+    builder.Services.AddSingleton<CoverAccentCache>();
     // Seed weights derived from reading behaviour, for the seeds a user never rated. Same shape as
     // SearchTuning below: the constants live in one record so distribution/eval-reco.cs can sweep
     // them, and nothing changes them at runtime.
@@ -285,6 +263,7 @@ try
     builder.Services.AddSingleton<ReadingBehaviourService>();
     builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();
+    builder.Services.AddSingleton<SemanticSearchState>();
     builder.Services.AddScoped<HiddenContentService>();
     builder.Services.AddScoped<CustomRailService>();
 
@@ -359,7 +338,7 @@ try
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     // Page and image clients fetch URLs the scraped site chose, so they may only reach public
-    // addresses (SSRF). Never give this handler to FlareSolverr, Kavita, qBittorrent or Prowlarr.
+    // addresses (SSRF). Never give this handler to FlareSolverr, Kavita, the download client or the indexer.
     builder.Services.AddHttpClient(PageDownloader.HttpClientName, client =>
         {
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
@@ -848,6 +827,14 @@ try
     // NotificationService is one — the raise sites are jobs, hosted services and other singletons.
     builder.Services.AddSingleton<InboxAudienceResolver>();
     builder.Services.AddSingleton<InboxService>();
+
+    // Web Push rides the inbox: one bounded queue and one consumer, so a raise never waits on a push
+    // service. The endpoint is a URL a browser supplied, so connections are held to public addresses.
+    builder.Services.AddSingleton<WebPushKeys>();
+    builder.Services.AddSingleton<WebPushSender>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<WebPushSender>());
+    builder.Services.AddHttpClient(WebPushSender.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(30))
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler);
     builder.Services.AddSingleton<AccountSecurityAlerts>();
     builder.Services.AddSingleton<FollowedCreatorReleaseService>();
 
@@ -889,6 +876,7 @@ try
     builder.Services.AddSingleton<DownloadBatchNotifier>();
     builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());
     builder.Services.AddScoped<ChapterSyncService>();
+    builder.Services.AddScoped<ReleaseOutlookService>();
     builder.Services.AddScoped<SourceMappingRemovalService>();
     builder.Services.AddScoped<SourceMatchService>();
     builder.Services.AddSingleton<SourceMatchQueue>();
@@ -904,6 +892,9 @@ try
     builder.Services.AddScoped<FileRelinkPlanner>();
     builder.Services.AddSingleton<ChapterFileQualityService>();
     builder.Services.AddScoped<ChapterFileMeasureService>();
+    builder.Services.AddScoped<PageConversionService>();
+    builder.Services.AddSingleton<PageConversionWorker>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<PageConversionWorker>());
     builder.Services.AddScoped<UpgradeEvaluationService>();
     builder.Services.AddScoped<UpgradeProfileSeeder>();
     builder.Services.AddScoped<SourceQualitySeeder>();
@@ -913,6 +904,7 @@ try
     builder.Services.AddScoped<UpgradeTrashService>();
     builder.Services.AddScoped<TorrentUpgradeService>();
     builder.Services.AddScoped<SeriesCreationService>();
+    builder.Services.AddScoped<TagService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
     builder.Services.AddScoped<TorrentImportService>();
@@ -964,13 +956,29 @@ try
     builder.Services.AddScoped<ReadingTimeEstimateService>();
     builder.Services.AddScoped<OpdsCatalogService>();
     builder.Services.AddScoped<OpdsAccessService>();
+    builder.Services.AddScoped<Maki.Api.Komga.KomgaAuthenticator>();
+    builder.Services.AddScoped<Maki.Api.Komga.KomgaAuthFilter>();
+    builder.Services.AddScoped<Maki.Api.Komga.KomgaCatalogService>();
     builder.Services.AddSingleton<OpdsProgressWriter>().AddHostedService(sp => sp.GetRequiredService<OpdsProgressWriter>());
+    builder.Services.AddScoped<KoreaderDocumentIndexer>();
+    builder.Services.AddScoped<KoreaderSyncService>();
+    builder.Services.AddSingleton<KoreaderPushWriter>().AddHostedService(sp => sp.GetRequiredService<KoreaderPushWriter>());
 
-    builder.Services.AddHttpClient(Maki.Core.Indexers.ProwlarrClient.HttpClientName,
-            client => client.Timeout = TimeSpan.FromSeconds(100)) // aggregated searches fan out to indexers
-        .AddHttpMessageHandler(() => new TransientRetryHandler());
-    builder.Services.AddSingleton<Maki.Core.Indexers.ProwlarrClient>();
-    builder.Services.AddSingleton<Maki.Core.Download.QBittorrentClient>();
+    // Aggregated searches fan out to every indexer, hence the long timeout. Both are LAN services, so
+    // neither gets PublicAddressGuard.
+    foreach (var indexerClient in new[] { Maki.Core.Indexers.ProwlarrClient.HttpClientName, Maki.Core.Indexers.JackettClient.HttpClientName })
+    {
+        builder.Services.AddHttpClient(indexerClient, client => client.Timeout = TimeSpan.FromSeconds(100))
+            .AddHttpMessageHandler(() => new TransientRetryHandler());
+    }
+
+    builder.Services.AddSingleton<Maki.Core.Indexers.IReleaseIndexer, Maki.Core.Indexers.ProwlarrClient>();
+    builder.Services.AddSingleton<Maki.Core.Indexers.IReleaseIndexer, Maki.Core.Indexers.JackettClient>();
+    builder.Services.AddSingleton<Maki.Core.Indexers.IndexerRegistry>();
+    builder.Services.AddSingleton<Maki.Core.Download.ITorrentClient, Maki.Core.Download.QBittorrentClient>();
+    builder.Services.AddSingleton<Maki.Core.Download.ITorrentClient, Maki.Core.Download.TransmissionClient>();
+    builder.Services.AddSingleton<Maki.Core.Download.ITorrentClient, Maki.Core.Download.DelugeClient>();
+    builder.Services.AddSingleton<Maki.Core.Download.TorrentClientRegistry>();
     builder.Services.AddHostedService<DownloadWorkerHostedService>();
 
     builder.Services.AddHttpClient(Maki.Core.Kavita.KavitaClient.HttpClientName,
@@ -995,24 +1003,29 @@ try
         MalOAuthUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_MAL_OAUTH") ?? "https://myanimelist.net/v1/oauth2",
         MangaBakaApiUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_MANGABAKA_API") ?? "https://api.mangabaka.org",
         KitsuApiUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_KITSU_API") ?? "https://kitsu.app/api/edge",
-        KitsuOAuthUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_KITSU_OAUTH") ?? "https://kitsu.app/api/oauth"));
+        KitsuOAuthUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_KITSU_OAUTH") ?? "https://kitsu.app/api/oauth",
+        MangaUpdatesApiUrl: Environment.GetEnvironmentVariable("MAKI_SCROBBLE_MANGAUPDATES_API") ?? "https://api.mangaupdates.com/v1"));
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTokenStore, ScrobbleTokenStore>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.AniListTracker>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.MalTracker>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.MangaBakaTracker>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.KitsuTracker>();
+    builder.Services.AddSingleton<Maki.Core.Scrobbling.MangaUpdatesTracker>();
     builder.Services.AddSingleton<ScrobbleService>();
-    // The same four instances, in ScrobbleService's order, for consumers that only need the interface.
+    // The same five instances, in ScrobbleService's order, for consumers that only need the interface.
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.AniListTracker>());
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.MalTracker>());
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.MangaBakaTracker>());
     builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.KitsuTracker>());
+    builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.MangaUpdatesTracker>());
     builder.Services.AddSingleton<ImportListService>();
     builder.Services.AddScoped<SeriesRequestSubmitter>();
     builder.Services.AddSingleton<AnimeSignalSources>();
     builder.Services.AddSingleton<AnimeSignalSyncService>();
     builder.Services.AddScoped<AnimeResumeService>();
     builder.Services.AddSingleton<AnimeResumePendingService>();
+    builder.Services.AddSingleton<PendingReadImportService>();
+    builder.Services.AddScoped<MihonImportService>();
 
     // Read before the host is built, unlike the rest of auth.*, because whether the OpenID Connect
     // scheme is registered at all is decided here. See OidcRuntimeOptions.Load.
@@ -1058,11 +1071,12 @@ try
         // Twenty minutes rather than five, to keep the first source sync out of the window where
         // every index is being built. It is the one startup job that launches a headless browser
         // (MangaFire), so it used to add ~120 MB of native memory at exactly the minute the builds
-        // were at their peak. Nothing needs it sooner: it repeats every half hour regardless.
+        // were at their peak. Nothing needs it sooner: it repeats every quarter hour regardless, and
+        // each tick syncs only the series whose NextCheckAt has come.
         q.ScheduleJob<Maki.Api.Jobs.RefreshMonitoredSeriesJob>(t => t
             .WithIdentity("refresh-monitored")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
-            .WithSimpleSchedule(s => s.WithIntervalInMinutes(30).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithInterval(Maki.Api.Jobs.RefreshMonitoredSeriesJob.Tick).RepeatForever()));
 
         q.ScheduleJob<Maki.Api.Jobs.MetadataRefreshJob>(t => t
             .WithIdentity("metadata-refresh")
@@ -1143,13 +1157,19 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
             .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
-        // Stable job key so the settings endpoint can trigger a refresh on demand.
+        // Stable job key so the settings endpoint can trigger a refresh on demand. Without a dump
+        // the SPA is gated, so a missing one starts downloading right away instead of at +2 minutes.
+        // MAKI_DUMP_BOOT_DOWNLOAD=0 keeps the +2 minutes, so test hosts on an empty config dir
+        // never start a 350 MB transfer. A failure while no dump is installed retries sooner than
+        // the 6 h interval through MangaBakaDumpRetry.
+        var downloadAtBoot = !File.Exists(paths.MangaBakaDbPath) &&
+                             Environment.GetEnvironmentVariable("MAKI_DUMP_BOOT_DOWNLOAD") != "0";
         q.AddJob<Maki.Api.Jobs.MangaBakaDumpRefreshJob>(j => j
             .WithIdentity(Maki.Api.Jobs.MangaBakaDumpRefreshJob.Key));
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.MangaBakaDumpRefreshJob.Key)
-            .WithIdentity("mangabaka-dump-trigger")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
+            .WithIdentity(Maki.Api.Jobs.MangaBakaDumpRetry.ScheduleTriggerKey)
+            .StartAt(downloadAtBoot ? DateTimeOffset.UtcNow.AddSeconds(5) : DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Prebuilt embedding index. Runs before the local indexer's trigger so a fresh install
@@ -1295,6 +1315,17 @@ try
             .ForJob(Maki.Api.Jobs.ChapterFileMeasureJob.Key)
             .WithIdentity("chapter-file-measure-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(15))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
+        // Digests chapter files so KOReader's progress sync can name them. Does nothing while no user
+        // has the OPDS catalogue on; a sync for an unknown document also fires it.
+        q.AddJob<Maki.Api.Jobs.KoreaderDocumentIndexJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.KoreaderDocumentIndexJob.Key)
+            .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.KoreaderDocumentIndexJob.Key)
+            .WithIdentity("koreader-document-index-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(18))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Daily upgrade scan. Polls every 15 minutes and runs once per local day after the configured
@@ -1668,9 +1699,12 @@ try
     // Pre-authentication bootstrap for the SPA. Carries no secret: it used to hand the instance API
     // key to any anonymous caller, which made the key check decorative — anyone who could reach the
     // page could read the credential that guarded it.
-    app.MapGet("/initialize.json", async (MakiDbContext db, CancellationToken ct) => Results.Json(new
+    app.MapGet("/initialize.json", async (MakiDbContext db, IAppSettings settings, CancellationToken ct) => Results.Json(new
     {
         apiRoot = "/api/v1",
+        // Whether to ask for the blurred cover mosaic behind the sign-in card. The image itself
+        // decides the rest: it 404s when too few Safe-rated covers exist.
+        signInCovers = await settings.GetAsync(SettingKeys.SignInCoverMosaic, ct) == "true",
         // True while the placeholder account the migration created is unclaimed, which is what sends
         // both a fresh install and an upgraded single-user one through first-run setup.
         setupNeeded = await db.Users.AnyAsync(u => u.PendingSetup, ct),

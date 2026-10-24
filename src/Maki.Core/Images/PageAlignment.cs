@@ -53,7 +53,7 @@ public static class PageAlignment
 
     /// <summary>
     /// Works out the grid. <paramref name="panels"/> holds each panel's page hashes in served order;
-    /// a null hash is a page that could not be decoded (AVIF, which ImageSharp cannot read) and so
+    /// a null hash is a page that could not be decoded (a BMP, which libvips is not allowed to read) and so
     /// takes no part in matching, though it still occupies its index and is still displayable.
     /// </summary>
     /// <param name="want">Rows to return at most.</param>

@@ -1,7 +1,5 @@
 using Maki.Api.Services;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Formats.Jpeg;
+using Maki.Core.Images;
 
 namespace Maki.Api.Tests;
 
@@ -18,16 +16,16 @@ public class ImageCacheRebuildUsableCoverTests : IDisposable
     {
         var path = Path.Combine(_dir, "cover.jpg");
         var rng = new Random(1);
-        using var image = new Image<Rgb24>(200, 300);
+        var image = new Raster(200, 300, bands: 3);
         for (var y = 0; y < image.Height; y++)
         {
             for (var x = 0; x < image.Width; x++)
             {
-                image[x, y] = new Rgb24((byte)rng.Next(256), (byte)rng.Next(256), (byte)rng.Next(256));
+                image[x, y] = new Rgba((byte)rng.Next(256), (byte)rng.Next(256), (byte)rng.Next(256));
             }
         }
 
-        image.SaveAsJpeg(path, new JpegEncoder { Quality = 90 });
+        File.WriteAllBytes(path, image.EncodeJpeg(90));
         return path;
     }
 

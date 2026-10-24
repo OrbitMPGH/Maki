@@ -14,7 +14,7 @@
   --ink-hi: #f1f3f5;
   --ink: #dee2e6;
   --ink-2: #c7cad4;
-  --ink-3: #a6adbb;
+  --ink-3: #b1b7c3;
   --ink-4: #9098a8;
   --hairline: var(--border);
   --mantine-color-dimmed: var(--ink-3);
@@ -48,6 +48,7 @@
   --info-on: #06142b;
   --danger: #f2554c;
   --danger-on: #2a0a08;
+  --danger-fg: #ff8b84;
   /* Filled danger buttons carry white text, which --danger is too light for in the dark themes. */
   --danger-fill: #c0322b;
   --watched: #b197fc;
@@ -76,6 +77,7 @@
   --radius-chip: 7px;
   --radius-thumb: 8px;
   --radius-card: 10px;
+  --radius-cover: 7px;
   --radius-hero: 12px;
   /* Bars, badges and anything whose ends should be fully round, whatever its height. */
   --radius-pill: 999px;
@@ -86,15 +88,20 @@
      off-scale value. */
   --type-display: clamp(2rem, 5vw, 4rem);
   --type-route: clamp(2rem, 3vw, 2.8rem);
+  /* A page title is a label for where you are, so it stays one clear step over the section titles
+     under it and no more; the hero title is the subject. */
+  --type-page-title: 1.7rem;
   --type-feature: clamp(1.25rem, 1.8vw, 1.625rem);
+  --type-section-title: 1.375rem;
   --type-figure: 1.3125rem;
   --type-section: 1.125rem;
   --type-subhead: 1rem;
-  --type-body: 0.875rem;
+  --type-body: 0.9375rem;
   --type-meta: 0.8125rem;
+  /* The floor for anything read. Only badges go under it. */
   --type-micro: 0.75rem;
-  --type-label: 0.6875rem;
-  --type-badge: 0.625rem;
+  --type-label: 0.8125rem;
+  --type-badge: 0.6875rem;
 
   /* Weight scale. Same rule as the type scale: a weight between two steps belongs on one of them. */
   --fw-regular: 400;
@@ -112,20 +119,31 @@
   --surface-sunken: var(--app-bg);
   --border-raised: var(--border);
   --shadow-raised: none;
+  /* Depth model: an object (hero, Next up, Progress, modals) is raised with this and no border;
+     everything else sits on the ground and is divided by hairlines, never boxed. */
+  --shadow-object:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    0 22px 48px -20px rgba(0, 0, 0, 0.9);
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-cover: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 22px -12px rgba(0, 0, 0, 0.85);
+  --shadow-cover-hover: 0 2px 4px rgba(0, 0, 0, 0.4), 0 20px 34px -14px rgba(0, 0, 0, 0.9);
+  --cover-rim: rgba(255, 255, 255, 0.09);
+  --cover-rim-hover: rgba(255, 255, 255, 0.18);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-fast: 0.12s;
   --dur-base: 0.15s;
   --dur-medium: 0.18s;
   --dur-slow: 0.35s;
 
-  --font-display: 'Bricolage Grotesque Variable', 'Inter Variable', ui-sans-serif, -apple-system,
+  --font-display: 'Bricolage Grotesque Variable', 'Onest Variable', ui-sans-serif, -apple-system,
     'Segoe UI', Roboto, sans-serif;
 }
 
-/* Titles only: a series, a page or the product names itself in the display face. Everything read
-   or operated stays in Inter. No Cyrillic or CJK in Bricolage, so those titles fall through to Inter. */
+/* The display face carries names and headline numbers: page, section, modal and series titles, card
+   and row titles, and figures (.figure below). Body copy, tables, inputs and buttons stay in Onest.
+   No Cyrillic or CJK in Bricolage, so those titles fall through to Onest. */
 .series-hero-title,
 .page-header .mantine-Title-root,
 .auth-panel-title,
@@ -134,6 +152,17 @@
   font-family: var(--font-display);
   font-weight: var(--fw-bold);
   letter-spacing: -0.025em;
+}
+
+.page-header .mantine-Title-root {
+  font-size: var(--type-page-title);
+  line-height: 1.15;
+}
+
+.cover-title,
+.row-title,
+.utility-modal-title {
+  font-family: var(--font-display);
 }
 
 /* Mantine centres each slider mark label on its mark, so the end labels hang past the track and
@@ -154,7 +183,7 @@
 /* --- Selectable accents -------------------------------------------------- */
 /* The Mantine `brand` colour is swapped in JS (theme-context); these keep the custom
    CSS tokens (glows, nav rail, brand mark) in sync so accent changes are visible app-wide.
-   Indigo is the default and lives in :root. */
+   Indigo lives in :root as the reference values; the default accent is set in theme-context. */
 :root[data-accent='blush'] {
   --brand: #ee7fa4;
   --brand-hover: #e86d96;
@@ -166,7 +195,7 @@
   --brand: #c4476e;
   --brand-hover: #b8436a;
   --brand-on: #ffffff;
-  --brand-fg: #b8496b;
+  --brand-fg: #ad4064;
   --brand-fg-on-art: #f5b6c8;
 }
 :root[data-theme='light'][data-accent='rose'] {
@@ -202,6 +231,42 @@
   --brand-glow: rgba(240, 173, 20, 0.3);
   --brand-fg: #ffdf85;
 }
+:root[data-accent='vermilion'] {
+  --brand: #ef5634;
+  --brand-hover: #d43d1f;
+  --brand-on: #ffffff;
+  --brand-glow: rgba(239, 86, 52, 0.3);
+  --brand-fg: #ffb8a5;
+}
+:root[data-theme='light'][data-accent='vermilion'] {
+  --brand-fg: #b03018;
+  --brand-fg-on-art: #ffb8a5;
+}
+:root[data-accent='teal'] {
+  --brand: #17ab9d;
+  --brand-hover: #0e8f84;
+  --brand-on: #04201d;
+  --brand-glow: rgba(23, 171, 157, 0.3);
+  --brand-fg: #8fe5da;
+}
+:root[data-theme='light'][data-accent='teal'] {
+  --brand: #0b766d;
+  --brand-hover: #0a5e58;
+  --brand-on: #ffffff;
+  --brand-fg: #0a5e58;
+  --brand-fg-on-art: #8fe5da;
+}
+:root[data-accent='plum'] {
+  --brand: #b84cbc;
+  --brand-hover: #9e3aa3;
+  --brand-on: #ffffff;
+  --brand-glow: rgba(184, 76, 188, 0.32);
+  --brand-fg: #e6b0e6;
+}
+:root[data-theme='light'][data-accent='plum'] {
+  --brand-fg: #832e88;
+  --brand-fg-on-art: #e6b0e6;
+}
 
 /* --- Selectable backgrounds ---------------------------------------------- */
 /* The surface ramp under everything, chosen separately from the accent. Night (blue-black) lives in
@@ -217,12 +282,9 @@
   --ink-hi: #f4f2ee;
   --ink: #e3e1dc;
   --ink-2: #c6c4bf;
-  --ink-3: #a3a19c;
-  --ink-4: #888681;
+  --ink-3: #b0aea9;
+  --ink-4: #8d8b86;
   --neutral: #a3a19c;
-}
-[data-ground='charcoal'] .app-header {
-  background: rgba(15, 15, 15, 0.72);
 }
 :root[data-ground='moss'] {
   --app-bg: #0e100e;
@@ -232,13 +294,10 @@
   --border: #2e332e;
   --border-strong: #3e453e;
 }
-[data-ground='moss'] .app-header {
-  background: rgba(14, 16, 14, 0.72);
-}
 /* Every surface is charcoal mixed 4% toward the accent, so the black belongs to whichever accent
    is active. The neutral ramp under the mix is wider than charcoal's (16 units from body to card
    against 9): the mix lifts the body more than the cards in relative terms, so an equal ramp reads
-   flat. The wash is a touch under the default strength for the same reason. */
+   flat. */
 :root[data-ground='tinted'] {
   --app-bg: color-mix(in srgb, #0b0b0b 96%, var(--brand));
   --surface: color-mix(in srgb, #1b1b1b 96%, var(--brand));
@@ -247,13 +306,50 @@
   --border: color-mix(in srgb, #303030 96%, var(--brand));
   --border-strong: color-mix(in srgb, #3e3e3e 96%, var(--brand));
 }
-[data-ground='tinted'] body {
-  background-image:
-    radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 6%, transparent), transparent 55%);
+/* Tinted black, but toward the cover on screen: the series page and Home's hero set --ground-tint
+   from their cover (lib/coverTint.ts), and every other page falls back to the accent. Registered
+   so it computes to a plain colour the script can ease from one cover to the next; it is not a CSS
+   transition, which Chrome painted wrongly (see easeTint). The mix is stronger than tinted's
+   because a cover's colour is pinned to a mid lightness, below most accents. */
+@property --ground-tint {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #000000;
 }
-[data-ground='tinted'] .app-header {
-  background: color-mix(in srgb, rgba(11, 11, 11, 0.72) 96%, var(--brand));
+:root[data-ground='cover'] {
+  --ground-tint: var(--brand);
+  --app-bg: color-mix(in srgb, #0b0b0b 93%, var(--ground-tint));
+  --surface: color-mix(in srgb, #1b1b1b 94%, var(--ground-tint));
+  --surface-2: color-mix(in srgb, #222222 94%, var(--ground-tint));
+  --surface-hover: color-mix(in srgb, #282828 94%, var(--ground-tint));
+  --border: color-mix(in srgb, #303030 93%, var(--ground-tint));
+  --border-strong: color-mix(in srgb, #3e3e3e 93%, var(--ground-tint));
+}
+/* Mantine's own surfaces (inputs, menus) read its dark scale, which JS can only mix toward the
+   accent. Pointing the scale at the tokens keeps them on the cover's ground. */
+:root[data-ground='cover'][data-mantine-color-scheme='dark'] {
+  --mantine-color-dark-4: var(--border);
+  --mantine-color-dark-5: var(--surface-2);
+  --mantine-color-dark-6: var(--surface);
+  --mantine-color-dark-7: var(--app-bg);
+}
+/* True black for OLED screens. Nothing lifts off black, so depth is drawn with lines: cards sit on
+   the same black as the body, raised objects trade their shadow for an outline, the borders carry
+   a trace of the accent, and covers get a brighter rim. */
+:root[data-ground='ink'] {
+  --app-bg: #000000;
+  --surface: #000000;
+  --surface-2: #0b0b0b;
+  --surface-hover: #141414;
+  --border: color-mix(in srgb, #2a2a2a 88%, var(--brand));
+  --border-strong: color-mix(in srgb, #3c3c3c 85%, var(--brand));
+  --surface-raised: #000000;
+  --shadow-card: none;
+  --shadow-object: 0 0 0 1px var(--border-strong);
+  --shadow-cover: none;
+  --shadow-cover-hover: none;
+  --cover-rim: rgba(255, 255, 255, 0.16);
+  --cover-rim-hover: rgba(255, 255, 255, 0.3);
 }
 
 /* --- Light theme --------------------------------------------------------- */
@@ -267,7 +363,7 @@
   --ink-hi: #111420;
   --ink: #252a38;
   --ink-2: #3d4454;
-  --ink-3: #4a5162;
+  --ink-3: #454c5d;
   --ink-4: #606879;
   --brand-fg: #4553e6;
   --brand-fg-on-art: #b8c1ff;
@@ -279,6 +375,7 @@
   --info-on: #ffffff;
   --danger: #c0322b;
   --danger-on: #ffffff;
+  --danger-fg: var(--danger);
   --watched: #7040bd;
   --watched-on: #ffffff;
   --suggestive: #657018;
@@ -293,24 +390,72 @@
   --tier-5: #5b4bab;
   --tier-6: #a83660;
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
+  --shadow-cover: 0 1px 2px rgba(20, 24, 40, 0.14), 0 10px 22px -12px rgba(20, 24, 40, 0.4);
+  --shadow-cover-hover: 0 2px 4px rgba(20, 24, 40, 0.12), 0 20px 34px -14px rgba(20, 24, 40, 0.45);
+  --cover-rim: rgba(20, 24, 40, 0.1);
+  --cover-rim-hover: rgba(20, 24, 40, 0.18);
   --surface-raised: #ffffff;
   --surface-sunken: #eceef6;
   --border-raised: var(--border);
   --shadow-raised:
     0 6px 20px -8px rgba(20, 24, 40, 0.18),
     0 2px 5px -2px rgba(20, 24, 40, 0.1);
+  --shadow-object:
+    0 0 0 1px rgba(20, 24, 40, 0.04),
+    0 2px 6px -2px rgba(20, 24, 40, 0.12),
+    0 18px 40px -16px rgba(20, 24, 40, 0.24);
 }
-[data-theme='light'] body {
-  background-image:
-    radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 6%, transparent), transparent 55%);
+/* Paper: the light theme printed rather than lit. Warm stock instead of blue-white, ink with a brown
+   cast, a faint grain on the page, and depth from a pressed edge instead of a cast shadow. The stock
+   takes 4% of the accent the way Tinted black does. */
+:root[data-theme='light'][data-ground='paper'] {
+  --app-bg: color-mix(in srgb, #efe9dd 96%, var(--brand));
+  --surface: #fbf8f1;
+  --surface-2: #f6f1e7;
+  --surface-hover: #ebe4d6;
+  --border: #e0d8c8;
+  --border-strong: #c9bfac;
+  --ink-hi: #1d1812;
+  --ink: #2c261f;
+  --ink-2: #453d33;
+  --ink-3: #4e463b;
+  --ink-4: #675e52;
+  --neutral: #675e52;
+  --surface-raised: #fbf8f1;
+  --surface-sunken: #e9e2d4;
+  --shadow-card: 0 1px 0 rgba(70, 52, 30, 0.08);
+  --shadow-raised: 0 0 0 1px rgba(70, 52, 30, 0.06), 0 1px 0 rgba(70, 52, 30, 0.1);
+  --shadow-object: 0 0 0 1px rgba(70, 52, 30, 0.1), 0 2px 0 rgba(70, 52, 30, 0.07);
+  --shadow-cover: 0 1px 0 rgba(70, 52, 30, 0.18), 0 8px 16px -12px rgba(70, 52, 30, 0.45);
+  --shadow-cover-hover: 0 2px 0 rgba(70, 52, 30, 0.16), 0 14px 24px -14px rgba(70, 52, 30, 0.5);
+  --cover-rim: rgba(70, 52, 30, 0.16);
+  --cover-rim-hover: rgba(70, 52, 30, 0.26);
+  /* The stock is darker than Light's ground, which pulls these just under 4.5:1. */
+  --ok: #207132;
+  --warn: #825c00;
+  --danger: #b83029;
+  --suggestive: #5d6716;
 }
-[data-theme='light'] body::before {
-  opacity: 0.03;
+:root[data-theme='light'][data-ground='paper'][data-accent='blush'] {
+  --brand-fg: #a63d60;
 }
-[data-theme='light'] .app-header {
-  background: rgba(255, 255, 255, 0.78);
-  border-bottom: 1px solid var(--border);
+:root[data-theme='light'][data-ground='paper'][data-accent='emerald'] {
+  --brand-fg: #117549;
+}
+:root[data-ground='paper'][data-mantine-color-scheme='light'] {
+  --mantine-color-body: var(--surface);
+  --mantine-color-default: var(--surface);
+  --mantine-color-default-hover: var(--surface-hover);
+  --mantine-color-default-border: var(--border);
+}
+:root[data-theme='light'][data-ground='paper'] {
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .27 0 0 0 0 .2 0 0 0 0 .12 0 0 0 .14 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* The hero band's scrims end on a flat --app-bg, so without its own grain the band stops on a
+   visible seam where it meets the page. Its canvas layer sits over the art and scrims. */
+:root[data-theme='light'][data-ground='paper'] body,
+:root[data-theme='light'][data-ground='paper'] .series-hero::after {
+  background-image: var(--paper-grain);
 }
 /* The resting colour is a dark-theme grey; left alone on white it lands around 2.5:1. */
 [data-theme='light'] .nav-link {
@@ -331,46 +476,39 @@
   background-color: var(--surface);
 }
 
-/* Deep, subtly-lit app background sitting behind the Mantine shell. */
 html,
 body,
 #root {
   height: 100%;
 }
 
-/* The ambient wash follows the accent on every background, so the page keeps a temperature
-   whatever ground sits under it. */
 body {
-  isolation: isolate;
   background-color: var(--app-bg);
-  background-image:
-    radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 12%, transparent), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 8%, transparent), transparent 55%);
-  background-attachment: fixed;
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* index.html asks for viewport-fit=cover, so the page runs edge to edge and pads itself with the
+     safe-area insets wherever a device reports them. */
+  --safe-top: env(safe-area-inset-top, 0px);
 }
-/* Paper grain: fixed and under the app (body is isolated), never on a scrolling element. No blend
-   mode, which would push the whole page into an offscreen blend group for no visible change. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.045;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-@media (prefers-reduced-transparency: reduce) {
-  body::before {
-    display: none;
-  }
+.mantine-Modal-content[data-full-screen],
+.mantine-Drawer-content {
+  border-top: var(--safe-top) solid transparent;
 }
 
 :root[data-mantine-color-scheme='dark'],
 :root[data-mantine-color-scheme='light'] {
   --mantine-color-dimmed: var(--ink-3);
+  --mantine-color-placeholder: var(--ink-3);
+}
+.mantine-Slider-markLabel,
+.mantine-RangeSlider-markLabel {
+  color: var(--ink-3);
+}
+/* For fields whose empty state is a real answer ("Any", "Min"): the word is the value, so it reads
+   at value strength rather than as a hint. A disabled field keeps the quieter placeholder. */
+.field-default-value input:not(:disabled)::placeholder {
+  color: var(--mantine-color-text);
+  opacity: 1;
 }
 
 /* Elevate surfaces above the app body so cards/modals read as layers. */
@@ -385,7 +523,7 @@ body::before {
       .mantine-Popover-dropdown,
       .mantine-Modal-content,
       .mantine-Drawer-content,
-      .series-hero-glass-panel
+      .series-hero-panel
     )
   ) {
   background-color: var(--surface);
@@ -398,13 +536,19 @@ body::before {
 /* Overlays sit on the raised layer in both themes. Previously these were dark-only,
    so light overlays fell through to the blanket rule and rendered at the same
    colour as the cards behind them. */
-[data-mantine-color-scheme] .mantine-Modal-content,
-[data-mantine-color-scheme] .mantine-Drawer-content,
 [data-mantine-color-scheme] .mantine-Menu-dropdown,
 [data-mantine-color-scheme] .mantine-Popover-dropdown {
   background-color: var(--surface-raised);
   border: 1px solid var(--border-raised);
   box-shadow: var(--shadow-raised);
+}
+/* Modals and drawers sit over a dimmed page, so they are objects: no border. Menus keep theirs,
+   since they open over covers of any colour. */
+[data-mantine-color-scheme] .mantine-Modal-content,
+[data-mantine-color-scheme] .mantine-Drawer-content {
+  background-color: var(--surface-raised);
+  border: 0;
+  box-shadow: var(--shadow-object);
 }
 [data-mantine-color-scheme] .mantine-Modal-header {
   background-color: var(--surface-raised);
@@ -442,7 +586,11 @@ body::before {
   font-feature-settings: 'tnum';
 }
 /* Headline numbers: figure strips, stat tiles, the hero figures, the level. Sizes stay per call site. */
-.figure {
+.figure,
+.figure-strip-n,
+.hero-stat-n,
+.stats-figure-n,
+.stats-fact-value {
   font-family: var(--font-display);
   font-weight: var(--fw-bold);
   letter-spacing: -0.02em;
@@ -554,33 +702,108 @@ body::before {
 }
 
 /* --- App shell ----------------------------------------------------------- */
-/* The sidebar has no ground of its own on desktop: the body (ground, wash and grain) shows through,
-   and only the hairline separates it from the page. No backdrop-filter: nothing scrolls under it. */
+/* The sidebar has no ground of its own on desktop: the body shows through and only the hairline
+   separates it from the page. */
+/* Everything Mantine positions off the header offset (navbar, main, hero bands) and every sticky
+   bar below drops by the status bar this way. The header itself is never collapsed, so its height
+   is the offset Mantine would have used. */
+.mantine-AppShell-root {
+  --app-shell-header-offset: calc(var(--app-shell-header-height, 0rem) + var(--safe-top));
+}
+/* Wide windows leave a widening margin on the right so the last column isn't jammed against the
+   scrollbar. It ramps from the plain page padding around 1330px up to 10rem. Bleeding bands give
+   back --page-gutter-start/-end rather than the shell padding. */
+.mantine-AppShell-main {
+  --page-gutter-start: var(--app-shell-padding);
+  --page-gutter-end: max(var(--app-shell-padding), min((100vw - 75rem) * 0.15, 10rem));
+  padding-inline-start: max(
+    calc(var(--app-shell-navbar-offset, 0rem) + var(--page-gutter-start)),
+    calc(env(safe-area-inset-left, 0px) + var(--page-gutter-start))
+  );
+  padding-inline-end: calc(var(--page-gutter-end) + env(safe-area-inset-right, 0px));
+  padding-bottom: calc(var(--app-shell-padding) + env(safe-area-inset-bottom, 0px));
+}
+/* With the sidebar folded into the top bar nothing sits on the left, so the gutter goes both sides. */
+.nav-collapsed .mantine-AppShell-main {
+  --page-gutter-start: var(--page-gutter-end);
+}
+/* Capped pages centre their column, and the uneven gutter would push it off centre. */
+.mantine-AppShell-main:has(.surface-frame--wide) {
+  --page-gutter-end: var(--app-shell-padding);
+}
+/* Page changes cross-fade (lib/pageTransition.ts). Old and new share one timing, which keeps the
+   sidebar and header, identical on both sides, perfectly still while the content swaps. */
+::view-transition-group(root) {
+  animation-duration: 0.2s;
+  animation-timing-function: var(--ease);
+}
+/* "Faster animations" under Settings > Appearance; the script scales the rise and the cover to match. */
+:root[data-motion='fast']::view-transition-group(root) {
+  animation-duration: 0.11s;
+}
+/* Laid out for real while a page transition captures the new page (settleLayout in
+   lib/pageTransition.ts); their guessed heights otherwise shift everything below them afterwards. */
+html[data-page-settling] :is(.discover-rail, .series-row) {
+  content-visibility: visible;
+}
+/* The copy of a cover flying into the series poster or back into its card (lib/pageTransition.ts).
+   z-index 1 keeps it over the page's content and under the top bar and sticky toolbars. */
+.cover-ghost {
+  position: absolute;
+  z-index: 1;
+  object-fit: cover;
+  transform-origin: 0 0;
+  box-shadow: var(--shadow-cover);
+  pointer-events: none;
+  will-change: transform;
+}
+/* The padding changes with the page (the rule above, the series hero's top), and Mantine animates
+   it, so leaving Settings drew the next page wide and then squeezed it into its gutters. Only
+   folding or unfolding the sidebar animates it now. */
+.mantine-AppShell-root .mantine-AppShell-main {
+  transition-property: none;
+}
+.mantine-AppShell-root[data-nav-moving] .mantine-AppShell-main {
+  transition-property: padding;
+}
+/* The installed iOS app scrolls <main> rather than the document (lib/pageScroll.ts), so nothing
+   ever scrolls up behind the status bar. Sticky bars inside stick to <main>'s top edge, which is
+   the window's. Only while the shell is up: the sign-in and setup pages scroll as usual. */
+html[data-scroll='inner']:has(.mantine-AppShell-root),
+html[data-scroll='inner']:has(.mantine-AppShell-root) body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+/* A scroller's top padding would also push every sticky bar down by that much, so the page's top
+   padding becomes a spacer instead. */
+html[data-scroll='inner'] .mantine-AppShell-main {
+  height: 100dvh;
+  padding-top: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+html[data-scroll='inner'] .mantine-AppShell-main::before {
+  content: '';
+  display: block;
+  height: calc(var(--app-shell-header-offset, 0rem) + var(--app-shell-padding));
+}
+html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
+  height: var(--app-shell-header-offset, 0rem);
+}
 .app-navbar {
+  padding: 16px 12px max(12px, env(safe-area-inset-bottom, 0px));
+  padding-inline-start: max(12px, env(safe-area-inset-left, 0px));
   background: transparent;
   border-right: 1px solid var(--border);
 }
 .app-header {
-  background: rgba(11, 13, 19, 0.72);
-  backdrop-filter: blur(12px);
+  top: var(--safe-top);
+  background: var(--app-bg);
   border-bottom: 1px solid var(--border);
 }
-.app-header-title {
-  max-width: 40vw;
-  color: var(--ink-hi);
-  letter-spacing: -0.01em;
-  animation: app-header-title-in 0.2s var(--ease);
-}
-@keyframes app-header-title-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .app-header-title {
-    animation: none;
-  }
+.app-header-row {
+  padding-inline: max(var(--mantine-spacing-md), env(safe-area-inset-left, 0px))
+    max(var(--mantine-spacing-md), env(safe-area-inset-right, 0px));
 }
 
 /* Below Mantine's `sm` breakpoint the navbar stops being a column and becomes an overlay drawer,
@@ -601,6 +824,108 @@ body::before {
   [data-theme='light'] .app-navbar {
     background: var(--surface);
   }
+  /* Thumb-sized targets: the desktop sizes are mouse sizes. */
+  .app-header .mantine-Burger-root {
+    width: 44px;
+    height: 44px;
+    padding: 13px;
+  }
+  .app-header-actions .mantine-ActionIcon-root {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .app-header-actions .command-palette-trigger {
+    width: 40px;
+    height: 40px;
+    margin-inline: 2px;
+  }
+}
+/* A collapsed sidebar on a wider screen (App.tsx) is the phone layout at any width: the same
+   header, the same drawer. Tablets are touch screens too, so the targets stay thumb-sized. */
+.mantine-AppShell-root.nav-collapsed {
+  --app-shell-navbar-width: min(272px, 82vw);
+}
+.nav-collapsed .app-navbar {
+  background: var(--surface-2);
+  box-shadow: 12px 0 32px -16px rgba(0, 0, 0, 0.8);
+}
+[data-theme='light'] .nav-collapsed .app-navbar {
+  background: var(--surface);
+}
+.nav-collapsed .app-header .mantine-Burger-root {
+  width: 44px;
+  height: 44px;
+  padding: 13px;
+}
+.nav-collapsed .app-header-actions .mantine-ActionIcon-root {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+.nav-collapsed .app-header-actions .command-palette-trigger-icon {
+  width: 40px;
+  height: 40px;
+  margin-inline: 2px;
+}
+.nav-collapsed .app-header-actions .mantine-ActionIcon-root svg {
+  width: 23px;
+  height: 23px;
+}
+.nav-collapse-toggle {
+  margin-inline-start: auto;
+}
+/* A drawer a mouse peeked open fades in where it stands with a short nudge, instead of Mantine's
+   slide across its whole width, which reads as a lot of motion for a hover. A tap or a press keeps
+   the slide. `visibility` waits for the fade out so the closed drawer stops catching the pointer. */
+.app-navbar[data-reveal='hover'] {
+  transform: none;
+  transition:
+    opacity var(--dur-base) var(--ease),
+    translate var(--dur-medium) var(--ease),
+    visibility 0s;
+}
+.app-navbar[data-reveal='hover']:not([data-open]) {
+  opacity: 0;
+  translate: -8px 0;
+  visibility: hidden;
+  transition:
+    opacity var(--dur-fast) ease-in,
+    translate var(--dur-fast) ease-in,
+    visibility 0s var(--dur-fast);
+}
+.app-header-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-base) var(--ease),
+    color var(--dur-base) var(--ease);
+}
+.app-header-link:hover {
+  background: var(--surface-hover);
+  color: var(--ink-hi);
+}
+.app-header-link[data-active='true'] {
+  background: color-mix(in srgb, var(--brand) 13%, transparent);
+  color: var(--ink-hi);
+}
+.app-header-link[data-active='true'] svg {
+  color: var(--brand-fg);
+}
+.app-header-search .command-palette-trigger {
+  width: clamp(180px, 22vw, 260px);
+  height: 40px;
 }
 
 /* Popovers carry a fixed pixel width (the inbox bell is 380, health is 340), which Mantine writes
@@ -614,14 +939,35 @@ body::before {
   }
 }
 
+/* First tab stop on every page, out of sight until it has focus. */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 300;
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  transform: translateY(calc(-100% - 16px));
+}
+.skip-link:focus-visible {
+  transform: none;
+}
+#main:focus {
+  outline: none;
+}
+
 /* Sits under the drawer and over the page; tapping it closes the drawer. Below the header (100)
    as well as the navbar (101), so the burger that opened the drawer still closes it. */
 .nav-scrim {
   position: fixed;
   inset: 0;
   z-index: 99;
-  background: rgba(6, 7, 11, 0.55);
-  backdrop-filter: blur(2px);
+  background: rgba(6, 7, 11, 0.6);
 }
 
 .brand-mark {
@@ -702,6 +1048,19 @@ body::before {
   padding-top: 10px;
   margin-top: 8px;
 }
+.nav-footer-account {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.nav-footer-account .nav-user {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+.nav-footer-account .nav-user-chevron {
+  display: none;
+}
 .nav-footer .nav-footer-help {
   width: 100%;
   padding: 0 10px;
@@ -729,8 +1088,8 @@ body::before {
   flex-shrink: 0;
 }
 .nav-user-avatar .mantine-Avatar-placeholder {
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
 }
@@ -754,7 +1113,7 @@ body::before {
   align-items: center;
   gap: 8px;
   color: var(--ink-4);
-  font-size: 0.75rem;
+  font-size: var(--type-micro);
   line-height: 1.3;
   white-space: nowrap;
 }
@@ -818,6 +1177,22 @@ body::before {
   color: var(--ink-hi);
   background: var(--surface-hover);
 }
+/* The phone drawer is tapped, not clicked. */
+@media (max-width: 47.9375em) {
+  .nav-link,
+  .nav-footer-link {
+    height: 44px;
+  }
+  .nav-footer-link {
+    padding-right: 44px;
+  }
+  .nav-footer .nav-footer-dismiss {
+    right: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-control);
+  }
+}
 .nav-footer-row {
   display: flex;
   align-items: center;
@@ -829,18 +1204,22 @@ body::before {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  min-width: 0;
+  font-size: var(--type-meta);
   font-weight: 600;
-  color: var(--ink-4);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--ink-3);
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
+}
+.nav-footer-version-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .nav-footer .nav-footer-version-button {
   margin-left: -4px;
   padding: 2px 4px;
-  font-size: 10px;
+  font-size: var(--type-micro);
   font-weight: 600;
   border-radius: 4px;
   transition:
@@ -863,12 +1242,11 @@ body::before {
 .command-palette-trigger {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
   flex-shrink: 0;
-  width: 34px;
+  width: 100%;
   height: 34px;
-  padding: 0;
+  padding: 0 6px 0 12px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   background: var(--surface-2);
@@ -883,10 +1261,14 @@ body::before {
   border-color: var(--border-strong);
 }
 .command-palette-trigger-label {
-  display: none;
+  flex: 1;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .command-palette-trigger-kbd {
-  display: none;
+  display: inline-flex;
   align-items: center;
   height: 22px;
   padding: 0 8px;
@@ -897,24 +1279,23 @@ body::before {
   font-size: var(--type-label);
   font-weight: var(--fw-semibold);
 }
-@media (min-width: 48em) {
-  .command-palette-trigger {
-    justify-content: flex-start;
-    width: min(320px, 36vw);
-    margin-right: 8px;
-    padding: 0 6px 0 12px;
-  }
-  .command-palette-trigger-label {
-    display: inline;
-    flex: 1;
-    overflow: hidden;
-    text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .command-palette-trigger-kbd {
-    display: inline-flex;
-  }
+/* The phone's top bar has room for the glass only. */
+.command-palette-trigger-icon {
+  justify-content: center;
+  width: 34px;
+  padding: 0;
+}
+.command-palette-trigger-icon .command-palette-trigger-label,
+.command-palette-trigger-icon .command-palette-trigger-kbd {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 .command-palette-item[data-active='true'] {
   background: var(--surface-hover);
@@ -962,6 +1343,12 @@ body::before {
 /* Arriving from the command palette: the tab switches and the page scrolls, so without a marker
    there is nothing to say which of a dozen cards was the one asked for. Outline rather than a
    background change, so it reads over any card's own surface. */
+/* A menu capped at the screen by the size middleware scrolls inside rather than off the edge. */
+.menu-dropdown-scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .settings-flash {
   border-radius: var(--mantine-radius-md);
   animation: settings-flash 1.8s var(--ease);
@@ -981,8 +1368,14 @@ body::before {
     box-shadow: 0 0 0 2px var(--brand);
   }
 }
+/* A single control the palette can land on inside a card: room around it so the flash outline
+   does not sit on the switch's own edge. */
+.settings-inline-target {
+  margin: -6px -8px var(--mantine-spacing-md);
+  padding: 6px 8px;
+}
 .nav-section-label {
-  font-size: 10.5px;
+  font-size: var(--type-micro);
   font-weight: var(--fw-bold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -996,31 +1389,88 @@ body::before {
   margin-left: auto;
   padding: 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);
   line-height: 18px;
   text-align: center;
 }
+.nav-count[data-tone='warn'] {
+  background: var(--warn);
+  color: var(--warn-on);
+}
+.nav-count[data-tone='danger'] {
+  background: var(--danger);
+  color: var(--danger-on);
+}
+/* Mantine sets the label in 13px body type on a 20px line inside a 16px pill, so one digit sat low in
+   a wide lozenge. Badge type on a line of 1 makes a single digit a circle and centres it. */
 .count-indicator > .mantine-Indicator-indicator {
+  box-sizing: border-box;
+  min-width: 16px;
+  padding-inline: 2px;
+  /* The ring cuts the count off the glyph; Mantine draws it in the body colour, white in light. */
+  border-color: var(--app-bg);
   background-image: none;
   box-shadow: none;
+  font-size: var(--type-badge);
+  font-weight: var(--fw-bold);
+  line-height: 1;
   font-variant-numeric: tabular-nums;
+  /* Mantine draws the count as the button's sibling, so without this a press on it hits nothing. */
+  pointer-events: none;
+}
+/* The header's buttons grow to 44px on phones and with the sidebar collapsed, which carried a
+   corner-anchored badge 8px off the glyph. Anchored to the middle instead, it stays on the 19px
+   glyph's corner at any button size. */
+.app-header-actions .count-indicator > .mantine-Indicator-indicator {
+  top: calc(50% - 9px);
+  right: calc(50% - 9px);
+}
+.nav-collapsed .app-header-actions .count-indicator > .mantine-Indicator-indicator {
+  --indicator-size: 20px;
+  min-width: 20px;
+  padding-inline: 4px;
+  font-size: var(--type-micro);
+  top: calc(50% - 11px);
+  right: calc(50% - 11px);
 }
 .count-indicator[data-tone='brand'] > .mantine-Indicator-indicator {
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+}
+/* Mantine's xs and sm badges and its xs pills set 9 and 10px type, under the floor every other label keeps. */
+.mantine-Badge-root {
+  --badge-fz-xs: var(--type-badge);
+  --badge-fz-sm: var(--type-badge);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.mantine-Pill-root {
+  --pill-fz-xs: var(--type-badge);
+}
+/* Mantine puts white on any colour it was handed as a CSS variable; on warn that is 2.3:1. */
+.count-indicator[data-tone='warn'] > .mantine-Indicator-indicator {
+  background: var(--warn);
+  color: var(--warn-on);
+}
+.count-indicator[data-tone='danger'] > .mantine-Indicator-indicator {
+  background: var(--danger);
+  color: var(--danger-on);
 }
 
 /* --- Cover / poster cards ------------------------------------------------ */
+/* A book, not a tile: a translucent rim instead of an opaque border, so it vanishes over bright art
+   and only shows where the scrimmed foot meets an equally dark page, plus a shadow underneath. */
 .cover-card {
   position: relative;
   display: block;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-cover);
   overflow: hidden;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--cover-rim);
+  box-shadow: var(--shadow-cover);
   text-decoration: none;
   color: inherit;
   /* A library of a few hundred posters is the heaviest thing the app paints. This lets the
@@ -1040,8 +1490,8 @@ body::before {
 }
 .cover-card:hover {
   transform: translateY(-4px);
-  border-color: var(--border-strong);
-  box-shadow: var(--mantine-shadow-lg);
+  border-color: var(--cover-rim-hover);
+  box-shadow: var(--shadow-cover-hover);
 }
 .cover-card[data-selected='true'] {
   border-color: var(--brand);
@@ -1110,7 +1560,7 @@ body::before {
 }
 
 /* Overlay furniture. All plain elements: see the note in CoverCard.tsx for why this isn't
-   Mantine Badge/Tooltip/RingProgress, and why the chips skip backdrop-filter.
+   Mantine Badge/Tooltip/RingProgress.
    The two corners share one flex row so they can never overlap on a narrow card. */
 .cover-corners {
   position: absolute;
@@ -1133,6 +1583,11 @@ body::before {
 .cover-corner-right {
   margin-left: auto;
 }
+/* Select mode puts its checkbox in the top-left corner; the ring and download state move over
+   beside it rather than sit underneath. */
+.cover-check ~ .cover-corners .cover-corner-left {
+  margin-left: 26px;
+}
 .cover-badge {
   display: inline-flex;
   align-items: center;
@@ -1143,8 +1598,6 @@ body::before {
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
   line-height: 1;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
   white-space: nowrap;
   color: #fff;
   background: color-mix(in srgb, black 55%, transparent);
@@ -1217,23 +1670,17 @@ body::before {
     flex-shrink: 0;
   }
 }
-/* Read progress: a conic-gradient ring, so it costs one element instead of an SVG per card.
-   The blur lives on the disc and the ring is masked onto a pseudo-element above it: masking the
-   two together would cut the hole out of the blur as well, and it's the blurred cover art showing
-   through the hollow centre and the translucent track that makes the ring read as glass.
-   This is the only backdrop-filter left on a card, and it's affordable where the badges weren't:
-   it appears only when Kavita has reported progress, so it's a few layers per screen rather than
-   three on every poster. */
+/* Read progress: a conic-gradient ring masked onto a pseudo-element over a dark disc, so it costs
+   one element instead of an SVG per card. */
 .cover-ring {
   position: relative;
   flex: none;
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  /* A dark disc under the blur, so the ring reads the same over a pale cover as a dark one. */
-  background: rgba(6, 7, 11, 0.62);
+  /* Dark enough that the ring reads the same over a pale cover as a dark one. */
+  background: rgba(6, 7, 11, 0.78);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(4px);
 }
 .cover-ring::before {
   content: '';
@@ -1270,7 +1717,42 @@ body::before {
 .cover-state[data-tone='info'] {
   --tone: var(--info);
 }
-/* Publication status, top-right: a disc filled in the status colour (CoverCard sets --tone). */
+.cover-state[data-tone='saved'] {
+  --tone: var(--brand-fg);
+}
+/* Offline, a series this device cannot open: the art greys and fades, the text keeps its contrast
+   (it is still a link) and the count row or badge says why. */
+.cover-card[data-offline='unavailable'] .cover-poster img,
+.cover-card[data-offline='unavailable'] .cover-placeholder,
+.series-row[data-offline='unavailable'] .row-cover {
+  filter: grayscale(1);
+  opacity: 0.35;
+}
+.cover-card[data-offline='unavailable'] .cover-corners {
+  filter: grayscale(1);
+}
+.series-row [data-offline-badge='saved'] {
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand-fg);
+}
+/* The row header never wraps, so on a phone the offline badge shrinks to its icon (the tooltip
+   keeps the words) rather than crush the title beside the status badge and the eye. */
+@media (max-width: 36em) {
+  .series-row [data-offline-badge] {
+    width: 20px;
+    padding: 0;
+    justify-content: center;
+  }
+  .series-row .offline-badge-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+/* Publication status, top-right: a disc filled in the status colour (CoverCard sets --tone). Not
+   monitored hollows it to a ring instead of adding a second mark; the eye-off still shows on hover. */
 .cover-state[data-tone='status'] {
   width: 24px;
   height: 24px;
@@ -1280,7 +1762,25 @@ body::before {
     0 2px 6px rgba(0, 0, 0, 0.35);
   color: var(--tone-on, #fff);
 }
-/* The light theme's status colours are tuned for a pale ground; these sit on a dark disc. */
+.cover-state[data-tone='status'][data-unmonitored] {
+  background: rgba(6, 7, 11, 0.62);
+  box-shadow:
+    inset 0 0 0 1.5px var(--tone),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+  color: var(--tone);
+}
+/* The light theme's status colours are tuned for a pale ground; these sit on a dark disc. The
+   unmonitored ring and glyph lift further than the others and sit on a denser disc, because the disc
+   is all that separates them from the art. Composited over a white cover the disc is about
+   rgb(56, 56, 60), and the lifted tones measure 6.5:1 or better against it (9.3:1 over mid grey). */
+[data-theme='light'] .cover-state[data-tone='status'][data-unmonitored] {
+  --lift: color-mix(in srgb, var(--tone) 35%, white);
+  background: rgba(6, 7, 11, 0.8);
+  box-shadow:
+    inset 0 0 0 1.5px var(--lift),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+  color: var(--lift);
+}
 [data-theme='light'] .cover-state:not([data-tone='status']),
 [data-theme='light'] .cover-ring-check {
   color: color-mix(in srgb, var(--tone) 55%, white);
@@ -1350,6 +1850,18 @@ body::before {
   white-space: nowrap;
   color: rgba(255, 255, 255, 0.7);
 }
+/* The count pill keeps its width; the text beside it gives way first. */
+.cover-row > :first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* A lone line ("Anime ends at ch. 120") has no pill to make room for, so it wraps instead of clipping. */
+.cover-row > :only-child {
+  overflow: visible;
+  white-space: normal;
+  line-height: 1.25;
+}
 .cover-title + .cover-row {
   margin-top: 5px;
 }
@@ -1362,12 +1874,11 @@ body::before {
   height: 16px;
   padding: 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
-  font-size: var(--type-badge);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+  flex-shrink: 0;
+  font-size: var(--type-micro);
   font-weight: var(--fw-bold);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 /* Home rails already carry a brand chapter pill, so the count stays neutral to keep one accent per card. */
 .cover-new-quiet {
@@ -1385,12 +1896,10 @@ body::before {
   margin-bottom: 7px;
   padding: 0 8px 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 .cover-corner-left > .cover-chapter {
@@ -1494,7 +2003,10 @@ body::before {
    containment on the cards it was switched off (the old rule here) and every one of the ~240
    posters stayed laid out, painted and image-decoded for as long as the tab was open.
    No scroll-snap: WebKit re-snaps after layout, and a contained rail coming on screen (or posters
-   replacing skeletons) left iOS Safari's rails parked mid-row on first load. */
+   replacing skeletons) left iOS Safari's rails parked mid-row on first load.
+   The 6px gutter, cancelled by the negative margin, keeps the cards where they were but gives the
+   focus ring and Trending's rank badge room inside the scroller, which clips both. Scroll padding
+   lands a focused card clear of the edge fade. */
 .discover-rail {
   --rail-fade-start: 0px;
   --rail-fade-end: 0px;
@@ -1502,14 +2014,16 @@ body::before {
   gap: 14px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 8px;
+  margin: -6px -6px -12px;
+  padding: 6px 6px 20px;
+  scroll-padding-inline: 30px;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   content-visibility: auto;
-  /* Poster height at the 150px item every surface but Discover uses (2/3 ratio) plus the scrollbar
-     gutter. `auto` keeps the real measurement once a rail has been on screen; this is only the
-     first guess, so Discover's wider steps cost nothing more than a slightly stale one. */
-  contain-intrinsic-size: auto 233px;
+  /* Poster height at the 150px item every surface but Discover uses (2/3 ratio) plus the gutters.
+     `auto` keeps the real measurement once a rail has been on screen; this is only the first
+     guess, so Discover's wider steps cost nothing more than a slightly stale one. */
+  contain-intrinsic-size: auto 251px;
 }
 .discover-rail-item {
   flex: 0 0 auto;
@@ -1562,150 +2076,624 @@ body::before {
   background: transparent;
 }
 
-.home-glance {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mantine-spacing-md);
-}
-.home-glance > * {
-  flex: 1 1 250px;
+/* Home's glance: the last five weeks as a day grid, the streak and the window's totals, in one raised
+   card. Its own width picks the inner layout, so the hero only decides where it goes (see
+   `.continue-hero-body > .home-glance`): stacked on a phone, the grid beside stacked figures in the
+   hero's right column, and the grid beside everything else when it has a whole row. */
+.reading-weeks {
+  container: reading-weeks / inline-size;
   min-width: 0;
 }
-/* Progression carries a ring and five figures where the others carry three, so it asks for more of
-   the row before anything wraps. */
-.home-glance > .home-glance-wide {
-  flex: 1.7 1 430px;
+.reading-weeks:not([data-hosted]) {
+  max-width: 48rem;
+  margin-top: var(--mantine-spacing-xl);
 }
-/* The progression half links to Stats as one target, the way its card used to. */
-.home-glance-progress {
+.reading-weeks-card {
+  display: grid;
+  grid-template-areas: 'head' 'grid' 'figs' 'goal';
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: var(--radius-hero);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-card), 0 18px 40px -18px rgba(0, 0, 0, 0.8);
+}
+.reading-weeks[data-loading] :is(.reading-weeks-head, .reading-weeks-weekday, .reading-weeks-figures, .reading-weeks-week) {
+  visibility: hidden;
+}
+.reading-weeks-head {
+  grid-area: head;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--mantine-spacing-md);
-  color: inherit;
+  gap: 12px;
+}
+.reading-weeks-heading {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.reading-weeks-title {
+  margin: 0;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+}
+.reading-weeks-title a {
+  color: var(--ink-hi);
   text-decoration: none;
 }
-.home-glance-xp {
-  height: 4px;
-  margin-top: 4px;
-  overflow: hidden;
-  border-radius: 2px;
-  background: var(--border-strong);
+.reading-weeks-title a:hover {
+  text-decoration: underline;
 }
-.home-glance-xp > div {
+.reading-weeks-sub,
+.reading-weeks-l {
+  color: var(--ink-4);
+  font-size: var(--type-micro);
+  line-height: 1.3;
+}
+.reading-weeks-streak {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--ink-hi);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-bold);
+}
+.reading-weeks-streak svg {
+  color: var(--ink-4);
+}
+.reading-weeks-streak[data-lit] svg {
+  color: var(--warn);
+}
+.reading-weeks-grid {
+  grid-area: grid;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  align-content: start;
+}
+.reading-weeks-weekday {
+  padding-bottom: 2px;
+  color: var(--ink-4);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-semibold);
+  text-align: center;
+}
+.reading-weeks-day {
+  display: grid;
+  height: 20px;
+  place-items: center;
+  border-radius: 5px;
+  background: var(--surface-hover);
+  color: var(--ink-hi);
+  font-size: 9px;
+  font-weight: var(--fw-bold);
+  line-height: 1;
+}
+.reading-weeks-day[data-future] {
+  background: color-mix(in srgb, var(--surface-hover) 45%, transparent);
+}
+.reading-weeks-day[data-empty] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink-3) 45%, transparent);
+}
+.reading-weeks-day[data-today] {
+  box-shadow: inset 0 0 0 1.5px var(--brand-fg);
+  font-size: var(--type-badge);
+}
+.reading-weeks-figures {
+  grid-area: figs;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.reading-weeks-fig {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-width: 0;
+  padding: 0 12px;
+  border-left: 1px solid var(--border-strong);
+}
+.reading-weeks-fig:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.reading-weeks-n {
+  color: var(--ink-hi);
+  font-size: var(--type-subhead);
+  font-weight: var(--fw-bold);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.reading-weeks-n small {
+  color: var(--ink-4);
+  font-size: var(--type-meta);
+}
+.reading-weeks-goal {
+  grid-area: goal;
+  display: grid;
+  gap: 6px;
+}
+.reading-weeks-goal-t {
+  color: var(--ink-4);
+  font-size: var(--type-micro);
+}
+.reading-weeks-goal-t b {
+  color: var(--ink-hi);
+  font-size: var(--type-meta);
+}
+.reading-weeks-bar {
+  height: 5px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-hover);
+}
+.reading-weeks-bar > span {
+  display: block;
   height: 100%;
   border-radius: inherit;
   background: var(--brand);
 }
-/* Tighter than the series band's, where the same figures have a whole band to spread across. */
-.home-glance .hero-stats {
-  --hero-stat-pad: 14px;
+.reading-weeks-bar > span[data-done] {
+  background: var(--ok);
+}
+/* The hero's right column: square days at a fixed size, the figures stacked beside them. */
+@container reading-weeks (min-width: 22rem) {
+  .reading-weeks-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'head head' 'grid figs' 'goal goal';
+    column-gap: 20px;
+  }
+  .reading-weeks-grid {
+    grid-template-columns: repeat(7, 26px);
+    gap: 3px;
+  }
+  .reading-weeks-day {
+    height: 26px;
+  }
+  .reading-weeks-n {
+    font-size: var(--type-figure);
+  }
+  .reading-weeks-figures {
+    grid-template-columns: none;
+    align-content: space-between;
+    padding-top: 18px;
+  }
+  .reading-weeks-fig {
+    padding: 0;
+    border-left: 0;
+  }
+}
+/* A whole row: the grid on the left, everything else beside it. */
+@container reading-weeks (min-width: 34rem) {
+  .reading-weeks-card {
+    grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+    grid-template-areas: 'grid head' 'grid figs' 'grid goal';
+    align-items: start;
+    column-gap: 28px;
+  }
+  .reading-weeks-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+  .reading-weeks-day {
+    height: auto;
+    aspect-ratio: 1;
+  }
+  .reading-weeks-figures {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding-top: 0;
+  }
+  .reading-weeks-fig {
+    padding: 0 12px;
+    border-left: 1px solid var(--border-strong);
+  }
+  .reading-weeks-fig:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
 }
 
-/* A panel's figures. One row that never wraps, so the hairline between two numbers can never end
-   up hanging at the start of a wrapped line; a panel narrower than its figures shrinks the columns
-   instead, which the short uppercase labels take without complaint. */
-.home-figures {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
+/* The phone form's parts, hidden until a phone asks for them. */
+.reading-weeks-title-week,
+.reading-weeks-streak-l,
+.reading-weeks-week {
+  display: none;
 }
-.home-figure {
+/* Phone: no card, one line at the foot of the hero under a hairline. The streak pill, this week as
+   seven dots (the grid keeps its last row: after the 7 weekday letters come 35 days, and days 1 to
+   28 go) and this week's goal or count on the right. The five-week grid cost a screen of scrolling
+   before Next up. The heading stays for screen readers only. */
+@media (max-width: 36em) {
+  .reading-weeks-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    padding: 16px 0 0;
+    border-top: 1px solid color-mix(in srgb, var(--ink-4) 22%, transparent);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .reading-weeks-head {
+    display: contents;
+  }
+  .reading-weeks-title-weeks {
+    display: none;
+  }
+  .reading-weeks-title-week {
+    display: inline;
+  }
+  .reading-weeks-heading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  /* The heading holds the link to Stats, so keyboard focus must not land on a control nobody can see. */
+  .reading-weeks-heading:focus-within {
+    position: static;
+    order: 0;
+    flex: 1 1 100%;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+  .reading-weeks-streak {
+    order: 1;
+    gap: 6px;
+    padding: 5px 11px 5px 9px;
+    background: color-mix(in srgb, var(--surface-2) 80%, transparent);
+    font-size: var(--type-meta);
+  }
+  .reading-weeks-streak-l {
+    display: inline;
+    color: var(--ink-3);
+    font-weight: var(--fw-medium);
+  }
+  .reading-weeks-grid {
+    order: 2;
+    display: flex;
+    gap: 5px;
+    margin-left: auto;
+  }
+  .reading-weeks-weekday,
+  .reading-weeks-figures,
+  .reading-weeks-grid > .reading-weeks-day:nth-child(-n + 35) {
+    display: none;
+  }
+  .reading-weeks-grid > .reading-weeks-day {
+    width: 9px;
+    height: 9px;
+    aspect-ratio: auto;
+    border-radius: var(--radius-pill);
+    font-size: 0;
+  }
+  .reading-weeks-day[data-today] {
+    box-shadow: inset 0 0 0 1.5px var(--brand-fg);
+  }
+  .reading-weeks-day[data-today]:not([style]) {
+    background: transparent;
+  }
+  /* Its own line: the pill and the dots fill a phone's first one. */
+  .reading-weeks-week,
+  .reading-weeks-goal {
+    order: 3;
+    flex: 1 1 100%;
+  }
+  .reading-weeks-week {
+    display: block;
+    color: var(--ink-3);
+    font-size: var(--type-meta);
+  }
+  .reading-weeks-goal {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .reading-weeks-goal-t {
+    color: var(--ink-3);
+    font-size: var(--type-meta);
+  }
+  .reading-weeks-bar {
+    flex: 1;
+  }
+}
+
+/* The glance rides inside the Continue hero card, a grid item of `.continue-hero-body`, so the hero
+   grows with it and it can never sit on the poster. `.continue-lead` is the container its placement
+   is keyed to: a column on the hero's right when wide, a row under the actions otherwise. */
+.continue-section {
+  container: continue-lead / inline-size;
+}
+.continue-lead {
+  /* Hero and tray are one object: one faint ring and one shadow around both, no border on either.
+     The ring gives the edge, since the hero's ground is the page's and a shadow barely shows on it. */
+  border-radius: var(--radius-overlay);
+  box-shadow:
+    0 0 0 1px var(--line-soft),
+    var(--shadow-object);
+  /* The right column's width. Fixed, because `.reading-weeks` sizes its layout from it. */
+  --glance-w: 22.5rem;
+}
+
+/* Next up, joined to the foot of the hero card: the card gives up its bottom corners and the tray
+   carries them, a step darker than the card so it reads as the card's lower deck, split from it by
+   a hairline. It keeps a real SectionHeader for the heading and the rail's arrows, set smaller here. */
+.continue-lead:has(> .continue-tray) > .continue-hero {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.continue-tray {
+  /* Smaller than the page's rails: the queue, not the shelf. Any narrower and a "Vol.6 Ch.43" pill
+     clips against the menu button's corner. */
+  --rail-item-w: 132px;
+  padding: 10px clamp(20px, 2.6vw, 36px) 8px;
+  border-top: 1px solid var(--line-soft);
+  border-radius: 0 0 var(--radius-overlay) var(--radius-overlay);
+  background: color-mix(in srgb, var(--surface) 70%, var(--app-bg));
+}
+.continue-tray .section-header {
+  min-height: 22px;
+  margin: 0 0 8px;
+}
+.continue-tray .section-header-title {
+  font-family: inherit;
+  font-size: var(--type-meta);
+  letter-spacing: 0;
+}
+.continue-tray .section-header-count {
+  margin-left: -2px;
+  color: var(--ink-4);
+  font-family: inherit;
+  font-size: var(--type-meta);
+  font-weight: inherit;
+  letter-spacing: 0;
+}
+.continue-tray .section-header-icon svg {
+  width: 14px;
+  height: 14px;
+}
+.continue-tray .section-header-rule {
+  background: transparent;
+}
+
+/* Next up as a card beside the hero instead of a tray under it, at the hero's height and no more
+   (`contain: size`), so the list scrolls inside it and the block stays as short as the hero alone.
+   The ring and shadow move from the pair to the hero; the list is a raised card like the glance. */
+.continue-lead[data-queue='beside'] {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(290px, 24%, 340px);
+  gap: var(--mantine-spacing-md);
+  border-radius: 0;
+  box-shadow: none;
+}
+.continue-lead[data-queue='beside'][data-solo] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.continue-lead[data-queue='beside'] > .continue-hero {
+  box-shadow:
+    0 0 0 1px var(--line-soft),
+    var(--shadow-object);
+}
+.continue-lead[data-queue='beside'] > .next-up {
+  align-self: stretch;
+  contain: size;
+}
+/* Stacked: the list goes under the hero at full width and shows every row. A media query, since
+   `.continue-lead` is the container and cannot query itself. */
+@media (max-width: 56.25em) {
+  .continue-lead[data-queue='beside'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .continue-lead[data-queue='beside'] > .next-up {
+    contain: none;
+  }
+  .continue-lead[data-queue='beside'] .next-up-list {
+    overflow: visible;
+  }
+}
+
+.next-up {
+  --queue-fade-start: 0px;
+  --queue-fade-end: 0px;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  padding: 10px 6px 4px 12px;
+  border-radius: var(--radius-hero);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-card), 0 18px 40px -18px rgba(0, 0, 0, 0.8);
+}
+.next-up-head {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 6px 8px 2px;
+}
+.next-up-title {
+  margin: 0;
+  color: var(--ink-hi);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+}
+.next-up-count {
+  color: var(--ink-4);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+}
+.next-up-list {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
   gap: 2px;
+  padding: 0 6px 6px 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.next-up-list[data-fade-start] {
+  --queue-fade-start: 24px;
+}
+.next-up-list[data-fade-end] {
+  --queue-fade-end: 40px;
+}
+.next-up-list[data-fade-start],
+.next-up-list[data-fade-end] {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 var(--queue-fade-start),
+    #000 calc(100% - var(--queue-fade-end)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 var(--queue-fade-start),
+    #000 calc(100% - var(--queue-fade-end)),
+    transparent
+  );
+}
+.next-up-row {
+  --tile-accent: var(--brand);
+  --tile-accent-fg: var(--brand-fg);
+  display: grid;
+  flex: none;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px 4px 4px;
+  border-radius: var(--radius-thumb);
+  color: inherit;
+  text-decoration: none;
+  transition: background var(--dur-base) var(--ease);
+}
+.next-up-row.has-accent {
+  --tile-accent: var(--series-accent);
+  --tile-accent-fg: color-mix(in oklab, var(--series-accent) 68%, white);
+}
+:root[data-theme='light'] .next-up-row.has-accent {
+  --tile-accent-fg: color-mix(in oklab, var(--series-accent) 82%, black);
+}
+.next-up-row:hover {
+  background: var(--surface-hover);
+}
+.next-up-row:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+.next-up-thumb {
+  display: block;
+  overflow: hidden;
+  width: 30px;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--mantine-radius-xs);
+  background: var(--surface-hover);
+}
+.next-up-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.next-up-copy {
+  display: flex;
   min-width: 0;
-  padding-right: 14px;
+  flex-direction: column;
+  gap: 2px;
 }
-.home-figure:last-child {
-  padding-right: 0;
+.next-up-name {
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-strong);
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.home-figure + .home-figure {
-  padding-left: 14px;
-  border-left: 1px solid var(--border-strong);
+.next-up-meta {
+  display: flex;
+  gap: 6px;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: var(--type-badge);
+  line-height: 1.3;
+  white-space: nowrap;
 }
-/* Too narrow for one row, the shrinking columns ran the uppercase labels into each other. Two
-   columns instead, with the hairline only between the pair on each line. Four figures need more
-   room than three, hence the two thresholds. */
-.home-glance > :not(.home-glance-wide) {
-  container-type: inline-size;
+.next-up-meta > * + *::before {
+  content: '·';
+  margin-right: 6px;
 }
-@container (max-width: 23rem) {
-  .home-figures:has(> :nth-child(4)) {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    row-gap: var(--mantine-spacing-sm);
-  }
-  .home-figures:has(> :nth-child(4)) > .home-figure:nth-child(odd) {
-    padding-left: 0;
-    border-left: 0;
-  }
-  .home-figures:has(> :nth-child(4)) > .home-figure:nth-child(even) {
-    padding-right: 0;
-  }
+.next-up-progress {
+  display: flex;
+  min-height: 8px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
 }
-@container (max-width: 14rem) {
-  .home-figures {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    row-gap: var(--mantine-spacing-sm);
-  }
-  .home-figures > .home-figure:nth-child(odd) {
-    padding-left: 0;
-    border-left: 0;
-  }
-  .home-figures > .home-figure:nth-child(even) {
-    padding-right: 0;
+.next-up-bar {
+  overflow: hidden;
+  flex: 1 1 auto;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ink-3) 24%, transparent);
+}
+.next-up-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tile-accent);
+}
+.next-up-unread {
+  margin-left: auto;
+  color: var(--tile-accent-fg);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+/* The play mark says the row opens the reader, as the pill's glyph does on a card. Shown on hover
+   and focus; always on touch. */
+.next-up-play {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--brand-on);
+  background: var(--brand);
+  opacity: 0;
+  transform: scale(0.9);
+  transition:
+    opacity var(--dur-base) var(--ease),
+    transform var(--dur-base) var(--ease);
+}
+.next-up-row:hover .next-up-play,
+.next-up-row:focus-visible .next-up-play {
+  opacity: 1;
+  transform: none;
+}
+@media (hover: none) {
+  .next-up-play {
+    opacity: 1;
+    transform: none;
   }
 }
 
 /* --- Import review ------------------------------------------------------- */
 /* The choices are full sentences with a count in them, so on a phone they wrap rather than
    losing their ending to Mantine's single-line label. */
-.import-review-actions .mantine-Button-root {
-  height: auto;
-  min-height: var(--button-height);
-  padding-block: 6px;
-}
-.import-review-actions .mantine-Button-inner,
-.import-review-actions .mantine-Button-label {
-  height: auto;
-  white-space: normal;
-  line-height: 1.3;
-  text-align: center;
-}
-
-/* --- Home downloading strip --------------------------------------------- */
-/* Title and release label share a line on wider screens, the label capped at half of it. On a
-   phone the badge leaves too little room for both, so the label drops under the title. */
-.downloading-strip-name {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  align-items: baseline;
-  gap: var(--mantine-spacing-sm);
-}
-.downloading-strip-title {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.downloading-strip-label {
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 50%;
-}
-@media (max-width: 47.99em) {
-  .downloading-strip-name {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-  }
-  .downloading-strip-label {
-    max-width: none;
-    font-size: var(--mantine-font-size-xs);
-  }
-}
-
 /* --- Home dashboard rails ------------------------------------------------ */
 /* How far into the current chapter you are. Same geometry as .cover-bar so a Continue-reading
    card and a library card line up, but its own class: this measures pages within one chapter,
@@ -1721,6 +2709,12 @@ body::before {
   height: 100%;
   border-radius: var(--radius-pill);
   background: var(--brand);
+}
+/* A rail card whose cover lends a colour (`--series-accent`, set inline by ReadingRail) fills its
+   bar with it, matching the lead tiles above. The chapter chip stays on the theme accent: a row of
+   nine differently coloured chips would read as nine states. */
+.reading-card.has-accent .home-resume-fill {
+  background: var(--series-accent);
 }
 /* Recently added's jump-to-reader button, top-right. A sibling of the card link inside a
    .reading-card wrapper, which owns the hover lift. */
@@ -1741,7 +2735,17 @@ body::before {
   color: #fff;
   background: rgba(6, 7, 11, 0.62);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-  transition: transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
+  transition: opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
+}
+/* The chapter pill is the card's mark; the button waits for hover, like the Jump back in menu. */
+@media (hover: hover) and (pointer: fine) {
+  .home-read-button {
+    opacity: 0;
+  }
+  .reading-card:hover > .home-read-button,
+  .home-read-button:focus-visible {
+    opacity: 1;
+  }
 }
 .home-read-button::before {
   content: '';
@@ -1794,11 +2798,10 @@ body::before {
 }
 .reading-card:hover > .cover-card {
   transform: translateY(-4px);
-  border-color: var(--border-strong);
-  box-shadow: var(--mantine-shadow-lg);
+  border-color: var(--cover-rim-hover);
+  box-shadow: var(--shadow-cover-hover);
 }
-.reading-card-menu,
-.continue-tile-menu {
+.reading-card-menu {
   position: absolute;
   z-index: 3;
   color: #fff;
@@ -1806,8 +2809,7 @@ body::before {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   transition: opacity var(--dur-base) var(--ease), transform var(--dur-medium) var(--ease), background var(--dur-base) var(--ease);
 }
-.reading-card-menu:hover,
-.continue-tile-menu:hover {
+.reading-card-menu:hover {
   background: rgba(6, 7, 11, 0.85);
 }
 .reading-card-menu {
@@ -1817,21 +2819,13 @@ body::before {
 .reading-card:hover > .reading-card-menu {
   transform: translateY(-4px);
 }
-.continue-tile-menu {
-  top: 10px;
-  right: 10px;
-}
 @media (hover: hover) and (pointer: fine) {
-  .reading-card-menu,
-  .continue-tile-menu {
+  .reading-card-menu {
     opacity: 0;
   }
   .reading-card:hover > .reading-card-menu,
   .reading-card-menu:focus-visible,
-  .reading-card-menu[data-expanded],
-  .continue-tile:hover > .continue-tile-menu,
-  .continue-tile-menu:focus-visible,
-  .continue-tile-menu[data-expanded] {
+  .reading-card-menu[data-expanded] {
     opacity: 1;
   }
 }
@@ -1894,20 +2888,28 @@ body::before {
    clipped line: these rows are claims about the reader, so the grounds have to be readable. */
 .discover-rail[data-engine] {
   /* Poster at the wider item (2/3) plus the footer and the scrollbar gutter. */
-  contain-intrinsic-size: auto 330px;
+  contain-intrinsic-size: auto 336px;
 }
+/* The footer's content differs per reason (a seed card has no chips), so the item stretches to the
+   row and the footer takes up the difference: every card in a row ends at the same line. */
 .discover-rail[data-engine] .discover-rail-item {
+  display: flex;
   width: var(--rail-item-engine-w, 180px);
 }
 /* The poster keeps the 2/3 ratio; the card is poster + footer, so it cannot also be 2/3. */
 .engine-card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   aspect-ratio: auto;
 }
 .engine-card .cover-poster {
   height: auto;
 }
 .engine-why {
+  container-type: inline-size;
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 5px;
   padding: 8px 10px 9px;
@@ -1928,15 +2930,67 @@ body::before {
   flex: none;
   margin-top: 1px;
 }
-/* Two lines, and always two lines' worth of room: "Feels like <a long title>" does not fit on one
-   at this width, and a footer that grows with the sentence gives every card in the row a different
-   height. */
+/* Two shapes of about the same height. A sentence reason (author, taste, the anonymous crowd) takes
+   two lines over the matched-tag chips. A reason naming one of the reader's series puts the kind on
+   its own line, so an ellipsis never eats it, and gives the series up to three lines beside its
+   cover; the chips go, since the seed already says why the pick is here. */
 .engine-why-text {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  min-height: calc(2 * 1.25em);
   overflow: hidden;
+}
+.engine-why-seed-row {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  font-size: var(--type-micro);
+  line-height: 1.25;
+}
+.engine-why-seed {
+  flex: none;
+  width: calc(3 * 1.25em * 2 / 3);
+  height: calc(3 * 1.25em);
+  border-radius: 3px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+.engine-why-seed-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.engine-why-kind {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-weight: var(--fw-semibold);
+  color: var(--brand-fg, #b8c1ff);
+}
+.engine-why-kind svg {
+  flex: none;
+}
+.engine-why-kind span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* In a five-column grid the cover leaves too little room for "Side story of", so the icon goes:
+   the label is what must never be cut, and the cover already sets the line apart. */
+@container (max-width: 170px) {
+  .engine-why-seed + .engine-why-seed-body .engine-why-kind svg {
+    display: none;
+  }
+}
+/* Quieter than the poster's own title, which is the pick; this is only the reason for it. */
+.engine-why-seed-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-weight: var(--fw-medium);
+  color: var(--ink-2);
 }
 .engine-why-chips {
   display: flex;
@@ -1948,7 +3002,7 @@ body::before {
   border-radius: var(--radius-control);
   background: var(--surface-2);
   color: var(--ink-3);
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   font-weight: var(--fw-medium);
   white-space: nowrap;
   overflow: hidden;
@@ -1972,11 +3026,26 @@ body::before {
    (.discover-rail, .discover-rail-item) are shared with Home, the series page's related rows and
    two more surfaces, so nothing here touches them. */
 
+/* The header's buttons (44px) show on Discover and Recommended only. Without them the row shrank to
+   the title's height and the tabs and everything under them jumped 13px up on Your Taste, so the
+   row keeps their height on every tab. */
+.discover-page-header {
+  min-height: 44px;
+}
 /* The full-bleed hero reaches into the tab row's bottom margin. Keep the controls above that
    overlap so their whole visible area remains clickable. */
 .discover-page-tabs {
   position: relative;
   z-index: 1;
+}
+/* The slot a tab portals its toolbar into; its buttons sit in the header's row as siblings. */
+.discover-tab-tools {
+  display: contents;
+}
+/* The tab row already spaces the page from what follows, so the rail-scale margin above a first
+   section header would double it. */
+.discover-tab-body > .section-header:not(.section-header ~ .section-header) {
+  margin-top: 0;
 }
 
 /* Initial Discover paint follows the current feature band instead of dropping straight into a
@@ -1987,9 +3056,10 @@ body::before {
   align-items: center;
   gap: clamp(28px, 4vw, 64px);
   min-height: 360px;
-  padding: clamp(28px, 4vw, 54px);
-  margin: calc(var(--app-shell-padding, 1rem) * -1);
-  margin-bottom: var(--mantine-spacing-xl);
+  padding: 28px clamp(20px, 2.6vw, 36px) 26px;
+  margin: 0 0 var(--mantine-spacing-xl);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-hero);
   background: var(--surface);
 }
 .discover-loading-feature {
@@ -2014,13 +3084,12 @@ body::before {
   background: var(--surface-2);
 }
 
-/* Compact metrics, but the full band's bleed. [data-compact] zeroes the negative margin because
-   the modal's band sits inside a card with its own edges; on a page the band has to give the shell
-   padding back on three sides or it reads as a card with art in it. */
+/* Held inside the page gutters with its own outline, like the taste strip under it. Only the series
+   page's band bleeds to the window edges. */
 .discover-hero.series-hero[data-compact] {
-  margin: calc(var(--app-shell-padding, 1rem) * -1);
-  margin-bottom: var(--mantine-spacing-xl);
-  border-radius: 0;
+  margin: 0 0 var(--mantine-spacing-xl);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-hero);
 }
 /* The modal's band reserves 46px above the content for its floating close button. The page's band
    has no such button, and that clearance reads as a gap between the tabs and the pick. */
@@ -2053,11 +3122,9 @@ body::before {
   }
 }
 .discover-hero-eyebrow {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
   margin-bottom: 8px;
 }
 /* Poster and title are the click target, so they are buttons, but they must not look like one. */
@@ -2085,6 +3152,21 @@ body::before {
 .discover-hero-title:hover {
   color: var(--brand-fg, var(--brand));
 }
+/* A fixed box, two display lines at whatever size the band sets, so the band's height does not
+   follow the title. `useTitleFit` sets `data-fit="small"` on a title that needs more: three lines
+   at 0.58 x 1.07 fill the same 1.88em, and anything longer still is clamped. */
+.discover-hero.series-hero[data-compact] .series-hero-title {
+  height: calc(2 * 0.94em);
+  overflow: hidden;
+}
+.discover-hero .series-hero-title[data-fit='small'] .discover-hero-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.58em;
+  line-height: 1.07;
+}
 /* The feature's rows. Spacing lives here rather than on the elements so the short-viewport block
    at the bottom can tune the whole stack in one place. */
 .discover-hero-pills {
@@ -2096,13 +3178,22 @@ body::before {
   min-height: 22px;
   margin-top: 14px;
 }
+/* One row, held even when empty. Pills that wrap land on a second row the box cuts off whole, so
+   the band shows as many reasons as fit rather than growing to show all three. */
 .discover-hero-reasons {
+  height: 28px;
   margin-top: 12px;
+  overflow: hidden;
 }
 .discover-hero-actions {
   margin-top: 20px;
 }
 .discover-hero-reason {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 18px;
   padding: 4px 9px;
   border-radius: var(--radius-control);
   font-size: var(--type-micro);
@@ -2121,18 +3212,28 @@ body::before {
   padding: 13px;
 }
 .discover-hero-strip,
-.series-hero-glass-panel {
-  border: 1px solid color-mix(in srgb, var(--border-strong) 86%, transparent);
+.series-hero-panel {
   border-radius: var(--radius-hero);
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
-  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(18px) saturate(0.85);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-object);
+}
+/* The quiet stand-in for the download button once every wanted chapter is on disk. Button height,
+   so the action row keeps its line. */
+.series-actions-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding-inline: 4px;
+  color: var(--ink-3);
+}
+.series-actions-done svg {
+  flex-shrink: 0;
+  color: var(--ok);
 }
 .discover-hero-strip-label {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: var(--ink-3);
 }
 .discover-hero-strip-heading {
@@ -2142,10 +3243,8 @@ body::before {
   gap: 12px;
 }
 .discover-hero-strip-mode {
-  font-size: var(--type-badge);
-  font-weight: var(--fw-strong);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-medium);
   color: var(--brand-fg, var(--brand));
 }
 .discover-hero-strip-row {
@@ -2234,7 +3333,7 @@ body::before {
 .discover-hero-strip-match {
   overflow: hidden;
   color: var(--brand-fg, var(--brand));
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
   line-height: 1;
   text-overflow: ellipsis;
@@ -2276,11 +3375,9 @@ body::before {
 }
 .discover-seeds-label {
   flex: none;
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
 }
 .discover-seeds-row {
   display: flex;
@@ -2335,7 +3432,7 @@ body::before {
   white-space: nowrap;
 }
 .discover-seed-meta {
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   line-height: 1.1;
   color: var(--ink-4);
   font-variant-numeric: tabular-nums;
@@ -2493,11 +3590,9 @@ body::before {
   background: var(--surface);
 }
 .discover-taste-lead {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
 }
 .discover-taste-chip {
   display: inline-flex;
@@ -2609,55 +3704,73 @@ body::before {
   user-select: auto;
 }
 
-/* --- Auth band (sign-in, first-run setup) --------------------------------- */
-/* A painted glow instead of a poster. These screens live outside the AppShell, so the band is the
-   whole viewport rather than a full-bleed strip. */
+/* --- Auth frame (sign-in, first-run setup) ----------------------------- */
 .auth-frame {
   position: relative;
   overflow: hidden;
-  isolation: isolate;
   min-height: 100dvh;
   display: flex;
   align-items: flex-end;
   background: var(--app-bg);
 }
-/* Off-centre on purpose, so it reads as light falling across the band rather than as a centred
-   gradient wash. One layer: stacking translucent scrims over it quantises at every step. */
-.auth-backdrop-art {
+/* The page's one cinematic band (see AuthFrame): tilted cover shapes in the accent colour, or the
+   admin's opt-in mosaic of Safe-rated covers, already blurred by the server. It fills the top of
+   the window and is gone before it reaches the wordmark and the card. */
+.auth-band {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 38%, transparent 82%);
+  mask-image: linear-gradient(to bottom, black 0%, black 38%, transparent 82%);
+}
+/* Rewind's intro vocabulary: a grid of covers turned a few degrees. */
+.auth-band-shapes,
+.auth-band-covers {
+  position: absolute;
+  top: -22%;
+  left: -12%;
+  width: 124%;
+  transform: rotate(-9deg);
+  transition: opacity var(--dur-slow) var(--ease);
+}
+.auth-band-shapes {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 16px;
+  filter: blur(11px) saturate(1.2);
+  opacity: 0.85;
+}
+.auth-band-shapes > span {
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius-cover);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--brand) var(--shade), var(--app-bg)),
+    color-mix(in srgb, var(--brand) calc(var(--shade) / 3), var(--app-bg))
+  );
+}
+/* The mosaic is only three rows deep, so its own bottom edge fades out too, or a narrow window shows
+   it as a hard diagonal above the wordmark. */
+.auth-band-covers {
+  opacity: 0;
+  -webkit-mask-image: linear-gradient(to bottom, black 45%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 45%, transparent 100%);
+}
+.auth-frame[data-art='covers'] .auth-band-covers {
+  opacity: 0.6;
+}
+.auth-frame[data-art='covers'] .auth-band-shapes,
+.auth-frame[data-art='pending'] .auth-band-shapes {
+  opacity: 0;
+}
+/* Light falls from the top right, away from the card, so the form never sits on bright art. */
+.auth-band-scrim {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(
-      95% 85% at 86% 4%,
-      color-mix(in srgb, var(--brand-glow) 55%, transparent) 0%,
-      color-mix(in srgb, var(--brand-glow) 49.7%, transparent) 15%,
-      color-mix(in srgb, var(--brand-glow) 36.5%, transparent) 30%,
-      color-mix(in srgb, var(--brand-glow) 21.7%, transparent) 45%,
-      color-mix(in srgb, var(--brand-glow) 10.4%, transparent) 60%,
-      color-mix(in srgb, var(--brand-glow) 3.8%, transparent) 75%,
-      transparent 100%
-    ),
-    radial-gradient(
-      50% 45% at 66% 80%,
-      color-mix(in srgb, var(--brand) 6%, transparent) 0%,
-      color-mix(in srgb, var(--brand) 5.4%, transparent) 15%,
-      color-mix(in srgb, var(--brand) 4%, transparent) 30%,
-      color-mix(in srgb, var(--brand) 2.4%, transparent) 45%,
-      color-mix(in srgb, var(--brand) 1.1%, transparent) 60%,
-      color-mix(in srgb, var(--brand) 0.4%, transparent) 75%,
-      transparent 100%
-    );
-}
-/* Dither. A faint glow stretched over the whole viewport on near-black only has a handful of
-   8-bit steps to work with, so without grain it bands into visible blocks. */
-.auth-frame::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.045;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1 0 0 0 0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='4' intercept='-1.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    radial-gradient(120% 90% at 85% 0%, transparent 0%, color-mix(in srgb, var(--app-bg) 45%, transparent) 70%),
+    linear-gradient(to bottom, color-mix(in srgb, var(--app-bg) 15%, transparent), color-mix(in srgb, var(--app-bg) 60%, transparent));
 }
 .auth-content {
   position: relative;
@@ -2672,6 +3785,12 @@ body::before {
 .auth-identity {
   min-width: 0;
   padding-bottom: 6px;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+/* Until the art is known the mascot and tagline are not drawn: the two modes size them
+   differently, and the card sits at the bottom, so it does not move when they appear. */
+.auth-frame[data-art='pending'] .auth-identity {
+  opacity: 0;
 }
 .auth-brand-mark {
   width: 56px;
@@ -2695,6 +3814,20 @@ body::before {
   color: var(--ink-3);
   font-size: var(--type-subhead);
 }
+/* The covers say what Maki is. Without them, the mascot says it at size. */
+.auth-frame[data-art='covers'] .auth-tagline {
+  display: none;
+}
+.auth-frame[data-art='shapes'] .auth-brand-mark {
+  width: 132px;
+  height: 132px;
+  margin-bottom: 28px;
+  border-radius: 34px;
+}
+.auth-frame[data-art='shapes'] .auth-brand-mark svg {
+  width: 104px;
+  height: 104px;
+}
 .auth-column {
   display: grid;
   gap: var(--mantine-spacing-md);
@@ -2702,6 +3835,10 @@ body::before {
 }
 .auth-panel {
   animation: auth-panel-in 0.3s var(--ease) both;
+}
+/* Opaque, so the form reads the same over any art. */
+[data-mantine-color-scheme] .auth-panel {
+  background: var(--surface-2);
 }
 .auth-panel-title {
   font-size: var(--type-feature);
@@ -2716,8 +3853,7 @@ body::before {
   padding: 14px 16px;
   border: 1px solid var(--hairline);
   border-radius: var(--radius-surface);
-  background: color-mix(in srgb, var(--surface) 62%, transparent);
-  backdrop-filter: blur(12px);
+  background: var(--surface-2);
   color: var(--ink-2);
 }
 .auth-error {
@@ -2749,6 +3885,17 @@ body::before {
     padding-bottom: 0;
   }
 }
+/* Phones: fewer, larger covers, so the band still reads as books rather than a texture. */
+@media (max-width: 47.99em) {
+  .auth-band-shapes {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+  .auth-band-covers {
+    left: -70%;
+    width: 250%;
+  }
+}
 
 /* --- Setup guide ----------------------------------------------------------- */
 /* Full screen over the app: a step rail on the left, one step at a time on the right. The art is
@@ -2762,20 +3909,10 @@ body::before {
 }
 .setup-frame {
   position: relative;
-  isolation: isolate;
   display: grid;
   grid-template-columns: 17.5rem minmax(0, 1fr);
   height: 100dvh;
   overflow: hidden;
-}
-.setup-art {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(56% 48% at 94% 0%, color-mix(in srgb, var(--brand) 16%, transparent) 0%, transparent 70%),
-    radial-gradient(40% 44% at 22% 104%, color-mix(in srgb, var(--brand) 8%, transparent) 0%, transparent 70%);
 }
 
 .setup-rail {
@@ -2785,9 +3922,8 @@ body::before {
   min-height: 0;
   overflow-y: auto;
   padding: 28px 18px 20px;
-  border-right: 1px solid var(--hairline);
-  background: color-mix(in srgb, var(--surface) 55%, transparent);
-  backdrop-filter: blur(14px);
+  border-right: 1px solid var(--border);
+  background: var(--surface-2);
 }
 .setup-rail-brand {
   display: flex;
@@ -2813,11 +3949,9 @@ body::before {
 }
 .setup-rail-caption {
   margin-top: 4px;
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
 }
 .setup-steps {
   display: grid;
@@ -2936,10 +4070,8 @@ body::before {
   animation: setup-stage-in 0.32s var(--ease) both;
 }
 .setup-eyebrow {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: var(--brand-fg, var(--brand));
 }
 .setup-title {
@@ -3028,7 +4160,7 @@ body::before {
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--brand) 16%, transparent);
   color: var(--brand-fg);
-  font-size: 11px;
+  font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
   white-space: nowrap;
 }
@@ -3136,10 +4268,8 @@ body::before {
   padding: 3px 9px;
   border-radius: var(--radius-pill);
   background: var(--neutral-soft);
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   font-weight: var(--fw-bold);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--ink-3);
   white-space: nowrap;
 }
@@ -3195,10 +4325,8 @@ body::before {
 }
 .setup-next-heading {
   margin: 36px 0 12px;
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: var(--ink-3);
 }
 .setup-next {
@@ -3213,16 +4341,19 @@ body::before {
   background: color-mix(in srgb, var(--surface) 50%, transparent);
   transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
 }
-.setup-next-card:hover {
+.setup-next-card:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--brand) 55%, var(--border));
   background: color-mix(in srgb, var(--brand) 6%, transparent);
+}
+.setup-next-card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .setup-footer {
   padding: 14px clamp(24px, 5vw, 72px);
-  border-top: 1px solid var(--hairline);
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
-  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
 }
 .setup-footer-inner {
   display: flex;
@@ -3267,10 +4398,8 @@ body::before {
     background: color-mix(in srgb, var(--surface) 70%, transparent);
   }
   .setup-mobile-step {
-    font-size: var(--type-label);
-    font-weight: var(--fw-bold);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-size: var(--type-meta);
+    font-weight: var(--fw-semibold);
     color: var(--ink-3);
   }
   .setup-mobile-progress {
@@ -3303,15 +4432,10 @@ body::before {
   }
 }
 
-/* Same padding transition as the redesign: the hero moves up by the shell's page
-   padding, and returning to the library restores it. Mantine animates padding on
-   AppShell.Main. Keep the header offset because dev has a fixed desktop header. */
+/* The hero moves up by the shell's page padding. Keep the header offset because dev has a fixed
+   desktop header. */
 .app-main-hero {
   padding-top: var(--app-shell-header-offset, 0rem);
-}
-/* Discover's browse tab puts an ordinary `PageHeader` here instead of a hero band, so it needs its page padding back. */
-.app-main-hero .page-header {
-  margin-top: var(--mantine-spacing-lg);
 }
 
 /* --- Series hero ---------------------------------------------------------- */
@@ -3325,6 +4449,8 @@ body::before {
   overflow: clip;
   isolation: isolate;
   margin: calc(var(--app-shell-padding, 1rem) * -1);
+  margin-inline: calc(var(--page-gutter-start, var(--app-shell-padding, 1rem)) * -1)
+    calc(var(--page-gutter-end, var(--app-shell-padding, 1rem)) * -1);
   margin-bottom: 0;
   min-height: 452px;
   display: flex;
@@ -3397,9 +4523,11 @@ body::before {
   position: relative;
   width: 100%;
   /* Clears whatever header there is (none on desktop, the burger bar on mobile), plus real air.
-     The inline padding is deliberately generous: the poster hard against the rail was the single
-     thing that most made this band read as unfinished. */
-  padding: var(--app-shell-header-offset, 0px) clamp(24px, 3.6vw, 64px) 0;
+     The inline padding is the gutter the band bled past, so the poster and the Progress panel line
+     up with the panels under the band. */
+  padding: max(var(--app-shell-header-offset, 0px), 28px)
+    var(--page-gutter-end, var(--app-shell-padding, 1rem)) 0
+    var(--page-gutter-start, var(--app-shell-padding, 1rem));
 }
 /* Inline-flex and `fit-content` so the target is the arrow and the word, not the full width of
    the hero: a link as wide as the band sends a stray click halfway across the page back to it. */
@@ -3421,6 +4549,36 @@ body::before {
   display: grid;
   grid-template-columns: minmax(70%, 2fr) 0.6fr
 }
+/* The tabs follow the Progress panel in the markup so a stacked band reads title, progress, tabs.
+   Side by side, the panel spans both rows and the tabs line up under the title, past the poster. */
+.series-hero-tabs {
+  min-width: 0;
+  margin-top: var(--mantine-spacing-md);
+}
+@media (min-width: 68.8125em) {
+  /* The empty first and last rows take whatever the panel is taller by, so the title and tabs stay
+     one block centred against it rather than splitting around the extra height. */
+  .series-hero:not([data-compact]) .series-hero-content {
+    grid-template-rows: 1fr auto auto 1fr;
+    row-gap: 0;
+  }
+  .series-hero:not([data-compact]) .series-hero-row {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .series-hero:not([data-compact]) .series-hero-panel {
+    grid-column: 2;
+    grid-row: 1 / -1;
+  }
+  .series-hero:not([data-compact]) .series-hero-tabs {
+    grid-column: 1;
+    grid-row: 3;
+    margin-top: var(--mantine-spacing-xl);
+  }
+  .series-hero:not([data-compact]) .series-hero-content:has(.series-hero-poster) .series-hero-tabs {
+    padding-left: calc(224px + 32px);
+  }
+}
 
 .series-hero-poster {
   display: block;
@@ -3433,7 +4591,7 @@ body::before {
   flex-shrink: 0;
 }
 /* Anton is the only face that takes the distress. It is a poster face carrying the identity of the
-   thing on screen, and a poster is printed; Inter has to stay legible at 12.5px and gets none of it.
+   thing on screen, and a poster is printed; the text face has to stay legible at 12.5px and gets none of it.
 
    A mask rather than `background-clip: text`: it erodes the edge and speckles the fill in one pass,
    it leaves `color` on the token where the theme can still reach it, and it fails safe. A browser
@@ -3447,7 +4605,7 @@ body::before {
   color: var(--ink-hi);
   font-size: var(--type-display);
   line-height: 0.9;
-
+  hyphens: auto;
   overflow-wrap: anywhere;
 }
 .series-hero-status {
@@ -3575,11 +4733,9 @@ body::before {
   line-height: 1.05;
 }
 .hero-stat-l {
-  color: var(--ink-4);
-  font-size: var(--type-micro);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 /* Mantine's modal content is not a positioned element, so the floating close button needs one:
@@ -3722,8 +4878,6 @@ body::before {
   color: var(--bucket);
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
 }
 .tag-bucket-rule {
   flex: 1;
@@ -3806,6 +4960,15 @@ body::before {
   background: var(--danger-soft);
   color: var(--ink-hi);
 }
+/* Hover deepens the tone instead of falling back to the plain chip hover, which outranks the rules above. */
+.term-chip[data-state='include']:hover {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 22%, var(--ok-soft));
+}
+.term-chip[data-state='exclude']:hover {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 22%, var(--danger-soft));
+}
 .term-chip[data-state='exclude'] .tag-chip-body,
 .term-pill[data-state='exclude'] .mantine-Pill-label {
   text-decoration: line-through;
@@ -3875,12 +5038,20 @@ body::before {
 }
 
 /* --- Series tabs ---------------------------------------------------------- */
+/* One row that scrolls sideways. Mantine's list wraps by default, which on a phone stacked
+   Settings' eight tabs into three rows. */
 .series-tabs {
   display: flex;
+  flex-wrap: nowrap;
   gap: 32px;
   border-bottom: none;
   overflow-x: auto;
   scrollbar-width: none;
+}
+@media (max-width: 47.9375em) {
+  .series-tabs {
+    gap: 24px;
+  }
 }
 .series-tabs::-webkit-scrollbar {
   display: none;
@@ -3960,14 +5131,26 @@ body::before {
   margin-bottom: 14px;
   min-width: 0;
 }
+/* Icon, title and count wrap as one unit, so a narrow row never strands the count on a line of its own. */
+.section-header-lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.section-header-end {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+}
+.section-header-end:not(:has(> .section-header-action)):has(> .section-header-arrows:empty) {
+  display: none;
+}
 .section-header-icon {
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--brand) 12%, transparent);
   color: var(--brand-fg);
 }
 .section-header-title {
@@ -3976,18 +5159,21 @@ body::before {
   overflow: hidden;
   color: var(--ink-hi);
   font-family: var(--font-display);
-  font-size: 1.3rem;
+  font-size: var(--type-section-title);
   font-weight: var(--fw-bold);
-  line-height: 1.25;
+  line-height: 1.2;
   letter-spacing: -0.02em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* A figure, not a caption: the count is what tells a section title from the page title above it. */
 .section-header-count {
   flex-shrink: 0;
-  margin-left: -2px;
-  color: var(--ink-4);
-  font-size: var(--type-meta);
+  color: var(--ink-3);
+  font-family: var(--font-display);
+  font-size: var(--type-subhead);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 .section-header-rule {
@@ -4070,18 +5256,113 @@ body::before {
   cursor: default;
 }
 
-/* Below `xs` the title loses the shrinking contest to the rule and gets squeezed to nothing, so the rule drops out and the row wraps naturally. */
+/* Below `xs` the title loses the shrinking contest to the rule and gets squeezed to nothing, so the
+   rule drops out and the action moves under the title, right-aligned, only when both cannot share a
+   line. A phone swipes rails, so it skips the arrows and keeps the header to one row. */
 @media (max-width: 36em) {
   .section-header {
     flex-wrap: wrap;
     row-gap: 6px;
   }
+  .section-header-lead {
+    max-width: 100%;
+  }
   .section-header-rule {
     display: none;
   }
-  .section-header-action,
-  .section-header-rule + .section-header-arrows {
+  .section-header-end {
+    max-width: 100%;
     margin-left: auto;
+  }
+}
+@media (max-width: 36em) and (hover: none) {
+  .section-header-arrows,
+  .section-header-end:not(:has(> .section-header-action)) {
+    display: none;
+  }
+}
+
+/* A label after the title, set by `SectionTagContext` (Home's catalogue rails in the tagged draft). */
+.section-header-tag {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand-fg);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-semibold);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+/* --- Home zones (draft) ----------------------------------------------------
+   Gathers Home's catalogue sections under one heading, after the library ones. `break` is a
+   heading on a full-width rule; `well` puts the whole zone in an outlined, faintly tinted well. */
+.home-zone-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.home-zone-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand-fg);
+}
+.home-zone-text {
+  flex: 1;
+  min-width: 0;
+}
+.home-zone-title {
+  margin: 0;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-page-title);
+  font-weight: var(--fw-bold);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+.home-zone-sub {
+  margin: 4px 0 0;
+  color: var(--ink-3);
+  font-size: var(--type-body);
+}
+.home-zone-action {
+  flex-shrink: 0;
+}
+.home-zone-head + .section-header,
+.home-zone-head + * > .section-header:first-child {
+  margin-top: 30px;
+}
+.home-zone[data-variant='break'] {
+  margin-top: 76px;
+  padding-top: 30px;
+  border-top: 1px solid var(--border-strong);
+}
+.home-zone[data-variant='well'] {
+  margin-top: 56px;
+  padding: 24px 24px 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-hero);
+  background: color-mix(in srgb, var(--brand) 4%, var(--surface-sunken));
+}
+@media (max-width: 36em) {
+  .home-zone-head {
+    flex-wrap: wrap;
+  }
+  .home-zone-icon {
+    display: none;
+  }
+  .home-zone-action {
+    margin-left: auto;
+  }
+  .home-zone[data-variant='well'] {
+    padding: 18px 14px 20px;
   }
 }
 
@@ -4276,9 +5557,11 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   gap: var(--mantine-spacing-lg);
   align-items: start;
 }
+/* Two columns only when each can hold the 132px label and a name beside it. A fixed pair inside
+   the narrower Metadata panel left a creator link 16px and pushed the page sideways. */
 .series-records {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
   gap: 0 var(--mantine-spacing-xl);
 }
 .series-record {
@@ -4298,18 +5581,35 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 }
 
 @media (max-width: 61.9375em) {
-  .series-split,
-  .series-records {
+  .series-split {
     grid-template-columns: minmax(0, 1fr);
   }
-  /* The Progress panel gets its own line before it starts squeezing the title and actions.
-     `:not([data-compact])` keeps this off the modal band, which has its own narrower collapse
-     breakpoint below. */
+}
+/* The Progress panel gets its own line before it starts squeezing the title and actions: beside
+   them under ~1100px it was a 150px column, and the title broke inside its words. Stacked, the two
+   meters sit side by side so the panel stays one short band rather than a tall card.
+   `:not([data-compact])` keeps this off the modal band, which has its own narrower collapse
+   breakpoint below. */
+@media (max-width: 68.75em) {
   .series-hero:not([data-compact]) .series-hero-content {
     grid-template-columns: minmax(0, 1fr);
   }
-  .series-hero:not([data-compact]) .series-hero-glass-panel {
+  .series-hero:not([data-compact]) .series-hero-panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    column-gap: var(--mantine-spacing-xl);
     margin-top: var(--mantine-spacing-lg);
+  }
+  .series-hero:not([data-compact]) .series-hero-panel > :not(.series-progress-meter),
+  .series-hero-panel:not(:has(.series-progress-meter + .series-progress-meter)) > .series-progress-meter {
+    grid-column: 1 / -1;
+  }
+  .series-hero:not([data-compact]) .series-progress-meter .mantine-Divider-root {
+    display: none;
+  }
+  .series-hero:not([data-compact]) .series-hero-poster {
+    width: 176px;
+    height: 264px;
   }
 }
 
@@ -4494,6 +5794,15 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   flex-shrink: 0;
   white-space: nowrap;
 }
+/* The list reads as a table of contents: the number in the display face, the date set flush
+   against the end of the title column. */
+.chapter-table .chapter-number {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+.chapter-table .chapter-released {
+  text-align: end;
+}
 .chapter-table thead th {
   position: relative;
 }
@@ -4605,108 +5914,122 @@ body.column-resizing * {
   box-shadow: inset 3px 0 0 var(--brand);
 }
 
-/* On narrow screens each chapter is a two-line list row inside the panel: switch, number, title
-   and actions on top, then date, source and status wrapping underneath. The cells stay the same so
-   every action survives; `order` plus a full-width ::before is what forces the line break. */
-@media (max-width: 47.99em) {
-  .chapter-table,
-  .chapter-table tbody {
-    display: block;
-    width: 100%;
-  }
-  .chapter-table thead {
-    display: none;
-  }
-  .chapter-table tbody tr {
-    --chapter-lead: 34px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 8px;
-    /* The switch hangs out into this padding, so every wrapped line lines up under the number. */
-    padding: 8px 6px 8px calc(10px + var(--chapter-lead) + 8px);
-    border-bottom: 1px solid var(--hairline);
-    box-shadow: inset 3px 0 0 var(--chapter-accent, transparent);
-  }
-  [data-mantine-color-scheme='dark'] .chapter-table tbody tr:hover {
-    background-image: linear-gradient(color-mix(in srgb, white 2%, transparent), color-mix(in srgb, white 2%, transparent));
-  }
-  [data-mantine-color-scheme='dark'] .chapter-table tbody tr:hover > td {
-    background-color: transparent;
-  }
-  .chapter-table tbody tr:last-child {
-    border-bottom: 0;
-  }
-  .chapter-table tbody tr::before {
-    content: '';
-    order: 2;
-    flex-basis: 100%;
-    height: 0;
-  }
-  .chapter-table tbody tr.chapter-row-selected {
-    --chapter-accent: var(--brand);
-  }
-  .chapter-table tbody td {
-    display: block;
-    width: auto !important;
-    height: auto;
-    min-width: 0;
-    padding: 0 !important;
-    border: 0 !important;
-    box-shadow: none !important;
-  }
-  .chapter-table tbody td:nth-child(1) {
-    order: 1;
-    flex: 0 0 var(--chapter-lead);
-    margin-inline-start: calc(-1 * (var(--chapter-lead) + 8px));
-  }
-  .chapter-table tbody td:nth-child(2) {
-    order: 1;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .chapter-table tbody td:nth-child(3) {
-    order: 1;
-    flex: 1 1 0;
-  }
-  .chapter-table tbody td:nth-child(7) {
-    order: 1;
-    margin-inline-start: auto;
-  }
-  .chapter-table tbody td:nth-child(4),
-  .chapter-table tbody td:nth-child(5),
-  .chapter-table tbody td:nth-child(6) {
-    order: 3;
-  }
-  .chapter-table .chapter-source-empty {
-    display: none;
-  }
-  .chapter-table tbody td:nth-child(5) > div {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  /* A folded span's summary and progress bar need the full second line, and its two empty
-     cells would otherwise add gaps to it. */
-  .chapter-table tbody tr.chapter-span-row td:empty {
-    display: none;
-  }
-  .chapter-table tbody tr.chapter-span-row td:nth-child(3),
-  .chapter-table tbody tr.chapter-span-row td:nth-child(6) {
-    order: 3;
-    flex: 1 1 100%;
-  }
-  .chapter-table .chapter-cell {
-    padding-inline-end: 0 !important;
-  }
-  .chapter-table .chapter-span-markers {
-    position: static;
-    min-width: 0;
-  }
-  .chapter-span-overlay {
-    display: none;
-  }
+/* A panel a little narrower than the default columns (a laptop with the sidebar open) drops the
+   Released column before it falls back to list rows. By position, so folded span rows lose their
+   matching empty cell. */
+.chapter-rows-compact .chapter-table :is(th, td):nth-child(4) {
+  display: none;
+}
+
+/* When the panel is narrower than the columns need even without Released (a phone, the 800px
+   pane, a small laptop with the sidebar open), each chapter becomes a two-line list row instead of a table that scrolls the title
+   down to a few characters: switch, number, title and actions on top, then date, source and status
+   wrapping underneath. SeriesDetailPage measures the panel and sets the class. The cells stay the
+   same so every action survives; `order` plus a full-width ::before is what forces the line break. */
+.chapter-rows-list .chapter-table,
+.chapter-rows-list .chapter-table tbody {
+  display: block;
+  width: 100%;
+}
+/* Visually hidden rather than display:none, so the column names stay with the table for screen
+   readers. The page drops the resize handles in this mode, so nothing in it takes focus. */
+.chapter-rows-list .chapter-table thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.chapter-rows-list .chapter-table tbody tr {
+  --chapter-lead: 34px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  /* The switch hangs out into this padding, so every wrapped line lines up under the number. */
+  padding: 8px 6px 8px calc(10px + var(--chapter-lead) + 8px);
+  border-bottom: 1px solid var(--hairline);
+  box-shadow: inset 3px 0 0 var(--chapter-accent, transparent);
+}
+[data-mantine-color-scheme='dark'] .chapter-rows-list .chapter-table tbody tr:hover {
+  background-image: linear-gradient(color-mix(in srgb, white 2%, transparent), color-mix(in srgb, white 2%, transparent));
+}
+[data-mantine-color-scheme='dark'] .chapter-rows-list .chapter-table tbody tr:hover > td {
+  background-color: transparent;
+}
+.chapter-rows-list .chapter-table tbody tr:last-child {
+  border-bottom: 0;
+}
+.chapter-rows-list .chapter-table tbody tr::before {
+  content: '';
+  order: 2;
+  flex-basis: 100%;
+  height: 0;
+}
+.chapter-rows-list .chapter-table tbody tr.chapter-row-selected {
+  --chapter-accent: var(--brand);
+}
+.chapter-rows-list .chapter-table tbody td {
+  display: block;
+  width: auto !important;
+  height: auto;
+  min-width: 0;
+  padding: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.chapter-rows-list .chapter-table tbody td:nth-child(1) {
+  order: 1;
+  flex: 0 0 var(--chapter-lead);
+  margin-inline-start: calc(-1 * (var(--chapter-lead) + 8px));
+}
+.chapter-rows-list .chapter-table tbody td:nth-child(2) {
+  order: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chapter-rows-list .chapter-table tbody td:nth-child(3) {
+  order: 1;
+  flex: 1 1 0;
+}
+.chapter-rows-list .chapter-table tbody td:nth-child(7) {
+  order: 1;
+  margin-inline-start: auto;
+}
+.chapter-rows-list .chapter-table tbody td:nth-child(4),
+.chapter-rows-list .chapter-table tbody td:nth-child(5),
+.chapter-rows-list .chapter-table tbody td:nth-child(6) {
+  order: 3;
+}
+.chapter-rows-list .chapter-table .chapter-source-empty {
+  display: none;
+}
+.chapter-rows-list .chapter-table tbody td:nth-child(5) > div {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+/* A folded span's summary and progress bar need the full second line, and its two empty
+   cells would otherwise add gaps to it. */
+.chapter-rows-list .chapter-table tbody tr.chapter-span-row td:empty {
+  display: none;
+}
+.chapter-rows-list .chapter-table tbody tr.chapter-span-row td:nth-child(3),
+.chapter-rows-list .chapter-table tbody tr.chapter-span-row td:nth-child(6) {
+  order: 3;
+  flex: 1 1 100%;
+}
+.chapter-rows-list .chapter-table .chapter-cell {
+  padding-inline-end: 0 !important;
+}
+.chapter-rows-list .chapter-table .chapter-span-markers {
+  position: static;
+  min-width: 0;
+}
+.chapter-rows-list .chapter-span-overlay {
+  display: none;
 }
 
 /* --- Stat tiles ---------------------------------------------------------- */
@@ -4854,11 +6177,9 @@ body.column-resizing * {
 }
 /* No rule for `down`: a quieter month is not a failure, and red here read like a broken download. */
 .stats-figure-l {
-  color: var(--ink-4);
-  font-size: var(--type-micro);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 @media (max-width: 61.9375em) {
@@ -4911,7 +6232,7 @@ body.column-resizing * {
 }
 .stats-section {
   min-width: 0;
-  scroll-margin-top: calc(var(--app-shell-header-height, 58px) + 3.5rem);
+  scroll-margin-top: calc(var(--app-shell-header-offset, 58px) + 3.5rem);
 }
 .stats-section > .section-header {
   margin-top: 0;
@@ -4939,7 +6260,7 @@ body.column-resizing * {
    background rather than a blur: content scrolls under it on every frame. */
 .stats-rail {
   position: sticky;
-  top: var(--app-shell-header-height, 58px);
+  top: var(--app-shell-header-offset, 58px);
   z-index: 20;
   display: flex;
   flex-wrap: wrap;
@@ -4985,7 +6306,7 @@ body.column-resizing * {
     padding-block: 4px 8px;
   }
   .stats-section {
-    scroll-margin-top: calc(var(--app-shell-header-height, 58px) + 6.5rem);
+    scroll-margin-top: calc(var(--app-shell-header-offset, 58px) + 6.5rem);
   }
 }
 .stats-rail-link {
@@ -5111,10 +6432,8 @@ body.column-resizing * {
 }
 .stats-fact-label {
   color: var(--ink-3);
-  font-size: var(--type-micro);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
 }
 .stats-fact-value {
   color: var(--ink-hi);
@@ -5297,6 +6616,16 @@ body.column-resizing * {
   font-weight: var(--fw-bold);
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+.stats-hist-note {
+  display: flex;
+  justify-content: center;
+  min-height: calc(var(--type-micro) * 1.4);
+  color: var(--warn);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+  white-space: nowrap;
 }
 .stats-hist-label {
   padding-top: 4px;
@@ -5501,9 +6830,9 @@ body.column-resizing * {
 
 .rewind-progress {
   position: absolute;
-  top: 16px;
+  top: calc(16px + var(--safe-top));
   left: 16px;
-  right: 64px;
+  right: 104px;
   display: flex;
   gap: 6px;
 }
@@ -5519,11 +6848,25 @@ body.column-resizing * {
   border-radius: var(--radius-pill);
   background: #fff;
 }
+/* A CSS animation rather than a motion one so pausing Rewind can freeze it where it is. */
+.rewind-progress-timed {
+  width: 0;
+  animation-name: rewind-progress-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes rewind-progress-fill {
+  to {
+    width: 100%;
+  }
+}
 
-.rewind-close {
+.rewind-controls {
   position: absolute;
-  top: 10px;
+  top: calc(10px + var(--safe-top));
   right: 12px;
+  display: flex;
+  gap: 4px;
 }
 
 .rewind-slide {
@@ -5532,9 +6875,8 @@ body.column-resizing * {
 }
 
 .rewind-eyebrow {
-  font-size: 0.8rem;
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.18em;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   opacity: 0.75;
 }
 .rewind-title {
@@ -5578,10 +6920,8 @@ body.column-resizing * {
   line-height: 1.1;
 }
 .rewind-summary-label {
-  font-size: 0.8rem;
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   opacity: 0.7;
 }
 
@@ -5629,7 +6969,7 @@ body.column-resizing * {
 }
 .rewind-slide,
 .rewind-progress,
-.rewind-close {
+.rewind-controls {
   z-index: 1;
 }
 .rewind-slide {
@@ -5709,7 +7049,7 @@ body.reader-open {
 }
 .reader-preview-body {
   position: absolute;
-  inset: 56px 0 0;
+  inset: calc(56px + var(--safe-top)) 0 0;
   overflow: auto;
 }
 /* A page's outline while the chapter loads. Its own colours: the reader is always dark, and the
@@ -5795,6 +7135,20 @@ body.reader-open {
 .reader-continuous .reader-page:not([data-loaded]) {
   min-height: 60dvh;
 }
+/* Once a page has loaded, the rest borrow its shape (ContinuousView sets --page-aspect and
+   --page-width from the pages so far), so the strip is close to its real length before they load
+   and the scrollbar stays put. Fit-height pages are a viewport tall whatever their shape. */
+.reader-continuous[data-shaped] .reader-page:not([data-loaded]) {
+  min-height: 0;
+  aspect-ratio: 1 / var(--page-aspect);
+}
+.reader-continuous[data-shaped] .reader-fit-original:not([data-loaded]) {
+  width: min(var(--page-width), 100%);
+}
+.reader-continuous[data-shaped] .reader-fit-height:not([data-loaded]) {
+  height: 100dvh;
+  aspect-ratio: auto;
+}
 
 .reader-page {
   display: block;
@@ -5823,10 +7177,37 @@ body.reader-open {
   max-width: none;
 }
 
+/* A trimmed, split or turned page (PagedView's RegionPage). The canvas inside takes the fit
+   classes and gives the box its size; `clip` rather than `hidden` keeps this from becoming a scroll
+   container, whose flex min-width of 0 would let a 1:1 page shrink and cut its own edge off. */
+.reader-region {
+  position: relative;
+  overflow: clip;
+}
+.reader-region[data-fit='width'] {
+  width: 100%;
+}
+.reader-paged[data-double='true'] .reader-region {
+  max-width: 50%;
+}
+.reader-paged[data-double='true'] .reader-region .reader-page {
+  max-width: 100%;
+}
+.reader-region-frame {
+  position: absolute;
+  overflow: clip;
+}
+.reader-region-image {
+  position: absolute;
+  max-width: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
 .reader-next-chapter-hint {
   position: fixed;
   left: 50%;
-  bottom: 32px;
+  bottom: calc(32px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   z-index: var(--reader-overlay-z-index);
   display: flex;
@@ -5835,8 +7216,8 @@ body.reader-open {
   gap: 8px;
   padding: 10px 18px;
   border-radius: var(--radius-pill);
-  background: rgba(10, 10, 11, 0.86);
-  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0a0a0b;
   color: #fff;
   font-size: var(--type-meta);
   pointer-events: none;
@@ -5870,20 +7251,27 @@ body.reader-open {
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-base) var(--ease);
-  background: rgba(10, 10, 11, 0.86);
-  backdrop-filter: blur(8px);
+  background: #0a0a0b;
   color: #fff;
 }
 .reader-bar[data-visible='true'] {
   opacity: 1;
   pointer-events: auto;
 }
+/* The bars grow into the status bar and home indicator areas rather than sitting under them. */
+.reader-bar {
+  padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+}
 .reader-bar-top {
   top: 0;
+  height: calc(56px + var(--safe-top));
+  padding-top: var(--safe-top);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .reader-bar-bottom {
   bottom: 0;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 .reader-bar .mantine-Text-root {
@@ -5895,7 +7283,7 @@ body.reader-open {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 56px;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   z-index: 2;
   opacity: 0;
   pointer-events: none;
@@ -5949,7 +7337,7 @@ body.reader-open {
   bottom: 2px;
   padding: 0 4px;
   border-radius: var(--mantine-radius-xs);
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.85);
   background: rgba(0, 0, 0, 0.65);
@@ -5970,16 +7358,13 @@ body.reader-open {
   padding: 10px 20px;
   border-radius: var(--radius-hero);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(10, 10, 11, 0.86);
-  backdrop-filter: blur(8px);
+  background: #0a0a0b;
   text-align: center;
   pointer-events: none;
   animation: reader-chapter-banner 2400ms var(--ease) both;
 }
 .reader-chapter-banner-series {
-  font-size: var(--type-micro);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
   color: rgba(255, 255, 255, 0.6);
 }
 .reader-chapter-banner-label {
@@ -6041,10 +7426,8 @@ body.reader-open {
   flex: 1;
 }
 .reader-end-eyebrow {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: rgba(255, 255, 255, 0.5);
 }
 .reader-end-title {
@@ -6153,8 +7536,7 @@ body.reader-open {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.62);
-  backdrop-filter: blur(3px);
+  background: rgba(0, 0, 0, 0.7);
 }
 .reader-shortcuts-panel {
   width: min(800px, 100%);
@@ -6188,10 +7570,8 @@ body.reader-open {
 }
 .reader-shortcuts-groups h3 {
   margin: 0 0 8px;
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: rgba(255, 255, 255, 0.5);
 }
 .reader-shortcuts-groups dl {
@@ -6342,7 +7722,7 @@ body.reader-open {
   height: 100%;
   display: grid;
   place-items: center;
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   /* Scheme-aware, unlike the grid card's placeholder: that one sits on cover art behind a dark
      scrim and can hard-code a light grey, while this one sits on `--surface-2`, which is #f7f8fc
      in the light theme. */
@@ -6431,12 +7811,10 @@ body.reader-open {
   color: var(--mantine-color-dimmed);
   opacity: 0.7;
 }
-/* And the ring's blur is pure compositor cost here: it exists to let cover art show through the
-   glass, and there is no art under a row. */
+/* No art under a row, so the disc takes the row's surface. */
 .series-row .cover-ring {
   width: 26px;
   height: 26px;
-  backdrop-filter: none;
   background: var(--surface-2);
   box-shadow: none;
 }
@@ -6445,32 +7823,7 @@ body.reader-open {
 }
 
 /* --- Health workspace ------------------------------------------------------ */
-/* Same idea as `.series-split`: one wide reading column beside a narrower column of tools, rather
-   than a single stack that leaves half the viewport empty on a desktop. The checks panel spans
-   both rows because it is the only one whose height grows with the library; the two panels beside
-   it are fixed-size and stack against its top. */
-.health-overview {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
-  grid-template-rows: max-content max-content;
-  grid-template-areas:
-    'checks cache'
-    'checks options';
-  gap: var(--mantine-spacing-lg);
-  align-items: start;
-}
-.health-area-checks {
-  grid-area: checks;
-}
-.health-area-cache {
-  grid-area: cache;
-}
-.health-area-options {
-  grid-area: options;
-}
-
-/* Three short facts side by side rather than a label column: in the narrow aside a 132px label
-   leaves nothing for the value. */
+/* Three short facts side by side rather than a label column. */
 .health-facts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -6493,6 +7846,19 @@ body.reader-open {
   gap: 4px;
   align-self: center;
 }
+/* A collapsed type's own rows, opened under its summary: indented to the message column so they
+   read as the group's members, each keeping its Open and Acknowledge. */
+.health-check-group-body {
+  margin-left: calc(104px + 14px);
+  border-left: 1px solid var(--hairline);
+  padding-left: 14px;
+}
+.health-check-group-body .health-check {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+.health-check-group-body .health-check > .status-dot {
+  display: none;
+}
 /* Sixty series behind one outage must not push the rest of the checks off the page. */
 .health-source-series {
   grid-column: 2 / -1;
@@ -6507,20 +7873,22 @@ body.reader-open {
   border-radius: var(--mantine-radius-sm);
 }
 /* An acknowledged check is kept, not hidden: the decision was "stop telling me", not "this is
-   fine", and the row has to stay findable for whoever reverses it. */
-.health-check[data-acknowledged] {
-  opacity: 0.55;
+   fine", and the row has to stay findable for whoever reverses it. The dot and the quieter
+   message carry the state; dimming the whole row took its text and buttons under 4.5:1. */
+.health-check[data-acknowledged] .status-dot {
+  color: var(--ink-3);
+}
+.health-check[data-acknowledged] .status-dot::before {
+  opacity: 0.45;
 }
 
 /* The category heading is a label, not a title: it separates groups inside one panel and must not
    compete with the panel's own heading. */
 .health-group-label {
   margin-top: var(--mantine-spacing-md);
-  color: var(--ink-4);
-  font-size: var(--type-micro);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 .health-group:first-of-type .health-group-label {
   margin-top: 0;
@@ -6576,13 +7944,6 @@ body.reader-open {
 }
 
 @media (max-width: 61.9375em) {
-  .health-overview {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      'checks'
-      'cache'
-      'options';
-  }
   .health-review {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -6595,6 +7956,9 @@ body.reader-open {
   .health-check-actions,
   .health-source-series {
     grid-column: 1 / -1;
+  }
+  .health-check-group-body {
+    margin-left: 0;
   }
 }
 
@@ -6809,6 +8173,12 @@ body.reader-open {
 .page-header[data-compact] .mantine-Text-root {
   font-size: var(--type-meta);
 }
+/* Sections here sit in Stacks that already space them, so the rail-scale margin above a header
+   would double the gap. */
+.surface-frame--operational .section-header {
+  margin-top: 0;
+  margin-bottom: 2px;
+}
 /* Panels take `p="lg"` as a spacing variable, so rescoping the variable tightens every panel on
    these pages, and the gaps inside them, without touching each call site. */
 .surface-frame--operational .panel {
@@ -6826,15 +8196,93 @@ body.reader-open {
   color: var(--ink-3);
 }
 
-/* A source's own series id: a slug, a number or a UUID. Kept to one line; the full id is in the
-   title and behind the link. */
-.mono-id {
-  display: inline-block;
-  max-width: 18ch;
+/* The machine half of the series page (Sources, Metadata, Scrobbling) sits one type step under the
+   reading half, so its tables stop outweighing the synopsis. Portalled menus and tooltips are
+   outside the scope and keep their size. */
+.series-machine {
+  --mantine-font-size-sm: var(--type-meta);
+  --mantine-font-size-xs: var(--type-micro);
+}
+
+/* MonoValue: a file name, path or id on one line that gives up its middle, never its end. */
+.mono-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  vertical-align: bottom;
+}
+.mono-value-text {
+  display: inline-flex;
+  min-width: 0;
+  font-family: var(--mantine-font-family-monospace);
+  white-space: pre;
+  color: inherit;
+}
+a.mono-value-text {
+  color: var(--brand);
+  text-decoration: none;
+}
+a.mono-value-text:hover {
+  text-decoration: underline;
+}
+span.mono-value-text:focus-visible,
+.mapped-to-label:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 1px;
+  border-radius: var(--radius-2xs);
+}
+/* The head gives way first. It keeps six characters while a tail sits beside it, so a name never
+   collapses to its tags. The tail never shrinks (a shared shrink hands it a fraction of a pixel,
+   which is enough to ellipsize it); it is capped at what the head leaves instead. */
+.mono-value-head {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.mono-value-head[data-split] {
+  min-width: 6ch;
+}
+.mono-value-tail {
+  flex-shrink: 0;
+  max-width: calc(100% - 6ch);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mono-value-tip {
+  font-family: var(--mantine-font-family-monospace);
+  overflow-wrap: anywhere;
+}
+/* The copy button shows on the row or value it belongs to, so a table of paths is not a column of
+   identical icons. Touch screens have no hover, so it stays. */
+.mono-value-copy {
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+.mono-value:hover .mono-value-copy,
+.mono-value:focus-within .mono-value-copy,
+tr:hover .mono-value-copy {
+  opacity: 1;
+}
+@media (hover: none) {
+  .mono-value-copy {
+    opacity: 1;
+  }
+}
+
+.sources-table th,
+.sources-table td {
+  padding-inline: 8px;
+}
+/* The panel-table header size, so translated labels fit the fixed columns. */
+.sources-table thead th {
+  overflow: hidden;
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+  text-overflow: ellipsis;
   white-space: nowrap;
-  vertical-align: bottom;
 }
 
 .figure-strip {
@@ -6872,11 +8320,9 @@ body.reader-open {
   color: var(--ink-4);
 }
 .figure-strip-l {
-  color: var(--ink-4);
-  font-size: var(--type-label);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .status-dot {
@@ -6914,73 +8360,93 @@ body.reader-open {
 }
 
 /* --- Import page --- */
-.import-workspace {
+/* The import's three steps across the top of its toolbar, drawn like the setup wizard's rail: a
+   numbered circle that becomes a check, the current step tinted, a thread joining them. */
+.import-steps {
   display: grid;
-  grid-template-columns: minmax(12rem, 0.34fr) minmax(0, 1fr);
-  gap: clamp(1rem, 2.5vw, 2rem);
-  margin-bottom: var(--mantine-spacing-lg);
-}
-.import-step-rail {
-  display: grid;
-  align-content: start;
-  gap: 0;
-  margin: 0;
-  padding: 0;
-  border-block: 1px solid var(--border);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 var(--mantine-spacing-sm);
+  padding: 0 0 var(--mantine-spacing-sm);
+  border-bottom: 1px solid var(--hairline);
   list-style: none;
 }
-.import-step-rail li {
-  display: grid;
-  grid-template-columns: 0.7rem minmax(0, 1fr);
-  gap: 0.7rem;
-  align-items: start;
-  padding: 0.85rem 0.15rem;
-  border-bottom: 1px solid var(--line-soft);
+.import-step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-surface);
   color: var(--ink-3);
 }
-.import-step-rail li:last-child {
-  border-bottom: 0;
+.import-step-thread {
+  flex: 1 1 auto;
+  min-width: 12px;
+  height: 1px;
+  margin-top: 13px;
+  background: var(--border);
 }
-.import-step-rail li[data-active='true'] {
+.import-step[data-state='done'] .import-step-thread {
+  background: color-mix(in srgb, var(--brand) 45%, var(--border));
+}
+.import-step[data-state='current'] {
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
   color: var(--ink-hi);
 }
-.import-step-dot {
-  width: 0.6rem;
-  height: 0.6rem;
-  margin-top: 0.25rem;
-  border: 1px solid currentColor;
-  border-radius: 50%;
+.import-step[data-state='done'] {
+  color: var(--ink-2);
 }
-.import-step-rail li[data-active='true'] .import-step-dot {
-  border-color: var(--brand);
-  background: var(--brand);
-  box-shadow: 0 0 0 3px var(--brand-glow);
-}
-.import-step-copy {
+.import-step-index {
   display: grid;
-  gap: 0.2rem;
-  min-width: 0;
-  font-weight: var(--fw-bold);
-}
-.import-step-copy small {
-  color: var(--ink-3);
+  place-items: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
   font-size: var(--type-micro);
-  font-weight: var(--fw-regular);
-  line-height: 1.35;
+  font-weight: var(--fw-strong);
+  font-variant-numeric: tabular-nums;
 }
-.import-control-row {
+.import-step[data-state='done'] .import-step-index {
+  border-color: color-mix(in srgb, var(--brand) 60%, transparent);
+  background: color-mix(in srgb, var(--brand) 14%, var(--surface));
+  color: var(--brand-fg, var(--brand));
+}
+.import-step[data-state='current'] .import-step-index {
+  border-color: var(--brand);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 22%, transparent);
+}
+.import-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
-  align-self: start;
-  border-block: 1px solid var(--border);
-  padding-block: 1rem;
+  padding-top: 3px;
+}
+.import-step-label {
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+}
+.import-step-hint {
+  overflow: hidden;
+  font-size: var(--type-micro);
+  color: var(--ink-4);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.import-step[data-state='current'] .import-step-hint {
+  color: var(--ink-3);
 }
 .import-root-select {
   flex: 1 1 20rem;
   min-width: min(100%, 20rem);
-}
-.import-results {
-  border-block: 1px solid var(--border);
-  padding-block: 0.7rem;
+  max-width: 34rem;
 }
 .import-results > .mantine-Text-root {
   overflow-wrap: anywhere;
@@ -7002,31 +8468,39 @@ body.reader-open {
 }
 
 @media (max-width: 47.9375em) {
-  .import-workspace {
-    grid-template-columns: minmax(0, 1fr);
+  .import-step {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 4px;
+    text-align: center;
   }
-  .import-step-rail {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .import-step-rail li {
-    grid-template-columns: 1fr;
-    gap: 0.35rem;
-    padding-inline: 0.35rem;
-  }
-  .import-step-dot {
-    margin-top: 0;
-  }
-  .import-step-copy small {
+  .import-step-thread {
     display: none;
   }
-  .import-control-row {
-    align-items: stretch;
+  .import-step-text {
+    align-items: center;
+    padding-top: 0;
+  }
+  .import-step-hint {
+    display: none;
   }
   .import-root-select {
     min-width: 100%;
   }
-  .import-control-row .mantine-Button-root {
+  .import-toolbar .mantine-Button-root {
     flex: 1 1 auto;
+  }
+  .import-toolbar-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+  .import-toolbar-actions .mantine-Button-root {
+    flex: 1 1 100%;
+  }
+  /* The in-library switch and the ignored-folders link don't fit one phone row beside each other. */
+  .import-surface .section-header-action .mantine-Switch-root {
+    flex-basis: 100%;
   }
 }
 
@@ -7061,7 +8535,7 @@ body.reader-open {
 }
 .settings-section[data-dirty] .settings-section-head {
   position: sticky;
-  top: var(--app-shell-header-height, 58px);
+  top: var(--app-shell-header-offset, 58px);
   z-index: 3;
   background: var(--app-bg);
 }
@@ -7096,7 +8570,7 @@ body.reader-open {
 }
 .settings-index {
   position: sticky;
-  top: calc(var(--app-shell-header-height, 0px) + var(--mantine-spacing-md));
+  top: calc(var(--app-shell-header-offset, 0px) + var(--mantine-spacing-md));
   display: grid;
   border-left: 1px solid var(--border);
 }
@@ -7117,13 +8591,153 @@ body.reader-open {
   color: var(--ink-hi);
   font-weight: var(--fw-semibold);
 }
+/* Below the width the index fits beside the cards, the same list is a bar pinned under the header
+   that names the card being read. The dirty-card header that also sticks moves down to sit under it. */
+.settings-jump {
+  display: none;
+}
+.settings-entry {
+  scroll-margin-top: 80px;
+}
 @media (max-width: 74.9375em) {
   .settings-layout {
     grid-template-columns: minmax(0, 1fr);
+    gap: var(--mantine-spacing-md);
   }
   .settings-index {
     display: none;
   }
+  .settings-layout:has(> .settings-jump) {
+    --settings-jump-h: 52px;
+  }
+  .settings-jump {
+    position: sticky;
+    top: var(--app-shell-header-offset, 0px);
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    height: var(--settings-jump-h);
+    background: var(--app-bg);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .settings-layout:has(> .settings-jump) .settings-section[data-dirty] .settings-section-head {
+    top: calc(var(--app-shell-header-offset, 0px) + var(--settings-jump-h));
+  }
+  .settings-layout:has(> .settings-jump) .settings-entry {
+    scroll-margin-top: calc(var(--app-shell-header-offset, 0px) + var(--settings-jump-h) + 16px);
+  }
+}
+.settings-jump-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 4px;
+  border-radius: var(--radius-control);
+  color: var(--ink-hi);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+}
+.settings-jump-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.settings-jump-icon {
+  flex-shrink: 0;
+  color: var(--brand-fg);
+}
+.settings-jump-current {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-jump-current[data-none] {
+  color: var(--ink-3);
+  font-weight: var(--fw-medium);
+}
+.settings-jump-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ink-3);
+}
+
+/* --- Disclosure --------------------------------------------------------------
+   A heading row that opens the controls below it. Rows in a run share one hairline between them,
+   so four filter groups read as one list rather than four boxes. */
+.disclosure + .disclosure {
+  border-top: 1px solid var(--border);
+}
+.disclosure-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 2px;
+  border-radius: var(--radius-control);
+  color: var(--ink-hi);
+}
+.disclosure-head:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.disclosure-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.disclosure-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.disclosure-title {
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+}
+.disclosure-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  color: var(--mantine-primary-color-contrast);
+  background: var(--mantine-primary-color-filled);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-bold);
+}
+.disclosure-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.disclosure-summary-active {
+  color: var(--ink-2);
+}
+.disclosure-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ink-3);
+  transition: transform var(--dur-medium) var(--ease), color var(--dur-base) var(--ease);
+}
+.disclosure-head:hover .disclosure-chevron {
+  color: var(--ink-hi);
+}
+.disclosure[data-open] .disclosure-chevron {
+  transform: rotate(180deg);
+}
+.disclosure-body {
+  display: grid;
+  gap: var(--mantine-spacing-sm);
+  padding: 4px 2px 18px;
 }
 
 .save-control {
@@ -7170,7 +8784,7 @@ body.reader-open {
   /* Pins under the app header while the grid scrolls. The strip slides away under the header so only
      the toolbar stays; its height is measured into --library-strip-h. */
   position: sticky;
-  top: calc(var(--app-shell-header-height, 58px) - var(--library-strip-h, 0px));
+  top: calc(var(--app-shell-header-offset, 58px) - var(--library-strip-h, 0px));
   z-index: 20;
 }
 .figure-strip.library-index-metrics {
@@ -7185,10 +8799,24 @@ body.reader-open {
 }
 .library-toolbar-row .library-search {
   flex: 1 1 15rem;
-  min-width: min(18rem, 100%);
+  min-width: min(14rem, 100%);
 }
-.library-toolbar-row .library-sort {
-  flex: 0 0 10.625rem;
+/* Sort field and direction as one joined control. */
+.library-sort-control {
+  display: flex;
+  flex: none;
+}
+.library-sort-control .library-sort {
+  width: 10.625rem;
+}
+.library-sort-control .library-sort .mantine-Input-input {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+.library-sort-control > .mantine-ActionIcon-root {
+  margin-inline-start: -1px;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
 }
 .library-toolbar-row > .tnum {
   flex: none;
@@ -7199,41 +8827,37 @@ body.reader-open {
 }
 .library-view-controls {
   flex: none;
+  margin-inline-start: auto;
 }
-.library-view-toggle {
+/* Grid / list, shared by every poster grid. */
+.view-mode-toggle {
   flex: none;
   padding: 2px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-control);
   background: transparent;
 }
-.library-view-toggle .mantine-SegmentedControl-indicator {
+.view-mode-toggle .mantine-SegmentedControl-indicator {
   border-radius: 4px;
   background: color-mix(in srgb, var(--brand) 18%, transparent);
   box-shadow: none;
 }
-.library-view-toggle .mantine-SegmentedControl-label {
+.view-mode-toggle .mantine-SegmentedControl-label {
   padding: 0;
   color: var(--ink-3);
 }
-.library-view-toggle .mantine-SegmentedControl-label:hover {
+.view-mode-toggle .mantine-SegmentedControl-label:hover {
   color: var(--ink-hi);
 }
-.library-view-toggle .mantine-SegmentedControl-label[data-active] {
+.view-mode-toggle .mantine-SegmentedControl-label[data-active] {
   color: var(--brand-fg);
 }
-.library-view-option {
+.view-mode-option {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 30px;
   height: 26px;
-}
-.library-density-button {
-  flex: none;
-  border-color: var(--border-strong);
-  background: transparent;
-  color: var(--ink-2);
 }
 .library-saved-filters {
   min-height: 1.75rem;
@@ -7244,11 +8868,55 @@ body.reader-open {
   align-items: center;
   gap: 0.375rem;
   margin-right: 0.125rem;
-  font-size: 0.75rem;
+  font-size: var(--type-micro);
   color: var(--ink-4);
 }
 .library-selection-bar {
   padding: 0.875rem 1.125rem;
+}
+/* Remove is the one action that cannot be taken back, so a rule keeps it out of the run of the rest. */
+.library-bulk-divider {
+  align-self: stretch;
+  margin-inline: 4px;
+}
+@media (min-width: 48em) {
+  .library-bulk-more-phone {
+    display: none;
+  }
+}
+/* On a phone the drawer covers the grid it filters, so the count and the way back to the grid sit
+   in a footer that stays on screen however far the groups run. */
+.library-filter-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: auto calc(var(--mantine-spacing-md) * -1) 0;
+  padding: 12px var(--mantine-spacing-md) max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+.library-filter-show {
+  flex: 1;
+}
+@media (max-width: 47.9375em) {
+  .library-filter-drawer {
+    display: flex;
+    flex-direction: column;
+  }
+  .library-filter-drawer > .mantine-Drawer-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding-bottom: 0;
+  }
+  .library-filter-drawer-body {
+    flex: 1;
+  }
+}
+@media (min-width: 48em) {
+  .library-filter-drawer-body {
+    padding-bottom: var(--mantine-spacing-xl);
+  }
 }
 @media (max-width: 47.9375em) {
   /* Home carries the same four numbers. On a phone the 2x2 tiles pushed the first cover below the
@@ -7261,16 +8929,12 @@ body.reader-open {
      toolbar rather than a card floating over the covers. */
   .mantine-Paper-root.library-index {
     position: sticky;
-    top: var(--app-shell-header-height, 58px);
+    top: var(--app-shell-header-offset, 58px);
     z-index: 20;
     margin-inline: calc(-1 * var(--mantine-spacing-lg));
     border-width: 0 0 1px;
     border-radius: 0;
     box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
-  }
-  /* A brand rule along the top of a sticky bar reads as a progress bar. */
-  .mantine-Paper-root.library-index.panel[data-edge] {
-    border-top-width: 0;
   }
   .library-toolbar,
   .library-selection-bar {
@@ -7279,6 +8943,21 @@ body.reader-open {
   .library-toolbar {
     gap: 0.5rem;
   }
+  /* The title shares its row with Select and Add series, so the first covers start higher on a phone. */
+  .library-page-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+  /* Select keeps only its icon here, or the title runs under it at 375px. */
+  .library-select-button .mantine-Button-label {
+    display: none;
+  }
+  .library-select-button .mantine-Button-section {
+    margin-inline-end: 0;
+  }
+  /* One row: search, the filter button, the dice and the menu. Sort, view and density live in the
+     menu here, so the first cover starts right under the bar. */
   .library-toolbar-row {
     flex-wrap: nowrap;
     gap: 0.5rem;
@@ -7287,8 +8966,9 @@ body.reader-open {
     flex: 1 1 0;
     min-width: 0;
   }
-  .library-toolbar-row .library-sort {
-    flex: 0 0 9.75rem;
+  .library-sort-control,
+  .library-toolbar-row > .tnum {
+    display: none;
   }
   /* One line that scrolls sideways, and gone entirely when it would hold only the tag gear: the
      Filters drawer carries "Manage tags" too. */
@@ -7300,13 +8980,14 @@ body.reader-open {
   .library-saved-filters > * {
     flex-shrink: 0;
   }
-  .library-selection-bar > .mantine-Group-root:last-child {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
+}
+/* Below 360px the add button goes the same way, or the title runs under both. */
+@media (max-width: 22.5em) {
+  .library-add-button .mantine-Button-label {
+    display: none;
   }
-  .library-selection-bar > .mantine-Group-root:last-child > * {
-    flex-shrink: 0;
+  .library-add-button .mantine-Button-section {
+    margin-inline-end: 0;
   }
 }
 
@@ -7319,64 +9000,42 @@ body.reader-open {
   border-radius: var(--radius-surface);
   box-shadow: none;
 }
-/* --- Panel: shared accent-edge panel grammar (components/ui/Panel.tsx) --- */
+/* --- Panel (components/ui/Panel.tsx) --- */
 
 .panel {
   box-shadow: var(--shadow-card);
 }
-.panel[data-edge] {
-  --panel-edge: var(--border-strong);
-}
-.panel[data-edge='brand'] {
-  --panel-edge: var(--brand);
-}
-.panel[data-edge='info'] {
-  --panel-edge: var(--info);
-}
-.panel[data-edge='ok'] {
-  --panel-edge: var(--ok);
-}
-.panel[data-edge='warn'] {
-  --panel-edge: var(--warn);
-}
-.panel[data-edge='danger'] {
-  --panel-edge: var(--danger);
-}
-.panel[data-edge][data-edge-side='top'] {
-  border-top: 2px solid var(--panel-edge);
-}
-.panel[data-edge][data-edge-side='left'] {
-  border-left: 2px solid var(--panel-edge);
-  border-right: 0;
-}
 
 /* Scheme prefix out-specifies the blanket Paper surface rule, like the layer-* classes. */
 [data-mantine-color-scheme] .discover-recommended-customize {
-  border-top-color: var(--border-strong);
-  border-bottom-color: var(--border-strong);
-  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
-  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  background: var(--surface-2);
 }
 
+.series-detail-chapter-head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 .series-detail-chapter-toolbar {
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
 }
-/* Long chapter lists: Select (and then the selection actions) stay pinned under the header so
-   picking rows far down never means scrolling back up. Only one of the two is sticky at a time. */
-.series-detail-chapter-toolbar[data-sticky] {
+/* Long chapter lists: the toolbar and search (and then the selection actions) stay pinned to the
+   top so picking rows far down never means scrolling back up. Only one of the two is sticky at a
+   time. The app header is only there on phones; everywhere else the variable is 0. */
+.series-detail-chapter-head[data-sticky] {
   position: sticky;
-  top: var(--app-shell-header-height, 58px);
+  top: var(--app-shell-header-offset, 0px);
   z-index: 20;
-  padding-top: 12px;
-  margin-top: -12px;
+  padding-block: 12px;
+  margin-block: -12px;
   background: var(--app-bg);
 }
 /* Scheme prefix so the tint outranks the blanket Paper surface rule. The tint is layered over the
    page ground so rows don't show through while it is pinned. */
 [data-mantine-color-scheme] .series-detail-chapter-selection {
   position: sticky;
-  top: var(--app-shell-header-height, 58px);
+  top: var(--app-shell-header-offset, 0px);
   z-index: 20;
   border-left: 2px solid var(--brand);
   border-right: 0;
@@ -7450,7 +9109,7 @@ body.reader-open {
   border-radius: 3px;
   border: 1px solid var(--border);
   background: var(--surface-2);
-  font-size: 9px;
+  font-size: var(--type-badge);
   font-weight: 600;
   color: var(--ink-4);
   display: grid;
@@ -7460,9 +9119,9 @@ body.reader-open {
   transition: background-color 0.25s, border-color 0.25s, color 0.25s;
 }
 .relink-cell.is-move {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  border-color: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
 }
 .relink-cell.is-fill {
   background: var(--ok);
@@ -7525,6 +9184,71 @@ body.reader-open {
   border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
   background: color-mix(in srgb, var(--surface-2) 72%, transparent);
 }
+.relink-cell.is-held {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.relink-swatch.is-held {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--brand);
+}
+.relink-cell.is-lit {
+  box-shadow: 0 0 0 1px var(--surface), 0 0 0 2px var(--ink);
+}
+
+/* --- import review dialog: the same chapter map, rows with a size column --- */
+.relink-row.import-review-row {
+  grid-template-columns: 24px minmax(0, 0.8fr) minmax(0, 1fr) 112px 64px;
+  grid-template-areas: 'tick name range effect size';
+  transition: opacity 0.2s, background-color 0.2s;
+}
+.import-review-row.is-lit {
+  background: color-mix(in srgb, var(--brand) 7%, transparent);
+}
+.import-review-tick {
+  grid-area: tick;
+}
+.import-review-name {
+  grid-area: name;
+}
+.import-review-range {
+  grid-area: range;
+}
+.import-review-effect {
+  grid-area: effect;
+  display: flex;
+  justify-content: flex-end;
+}
+.import-review-size {
+  grid-area: size;
+  text-align: right;
+}
+@media (max-width: 36em) {
+  .relink-row.import-review-row {
+    grid-template-columns: 24px minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'tick name effect size'
+      '. range range range';
+    row-gap: 2px;
+  }
+  .import-review-map .relink-map {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+  }
+}
+.import-review-mode .mantine-SegmentedControl-label {
+  white-space: normal;
+  line-height: 1.25;
+}
+.import-review-map {
+  padding: 10px 10px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: color-mix(in srgb, var(--surface-2) 46%, transparent);
+}
+
 .series-detail-chapter-table thead th {
   background: color-mix(in srgb, var(--surface-2) 46%, transparent);
 }
@@ -7563,11 +9287,9 @@ body.reader-open {
   margin: 0;
   padding: 0.8rem 1rem 0.45rem;
   color: var(--ink-3);
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.08em;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   line-height: 1.25;
-  text-transform: uppercase;
 }
 .inbox-record {
   border-bottom: 1px solid var(--line-soft);
@@ -7575,11 +9297,9 @@ body.reader-open {
 .inbox-record:last-child {
   border-bottom: 0;
 }
-.inbox-record[data-read='false'] {
-  background: color-mix(in srgb, var(--brand-glow) 24%, transparent);
-}
-/* The bell's row has no record around it, so it carries the edge itself. The dropdown skips the
-   unread wash: on a short list, colour on most rows reads as an error state. */
+/* Unread is the accent edge and a bold title, nothing else: a tinted row read as an error state
+   under a red-leaning accent, and severity already has its icon. The bell's row has no record
+   around it, so it carries the edge itself. */
 .inbox-record,
 .inbox-row[data-read] {
   border-left: 2px solid transparent;
@@ -7610,217 +9330,276 @@ body.reader-open {
 
 /* --- home page (ported from redesignv2) --- */
 
-/* ── Home: Continue reading lead ─────────────────────────────────────────────
-   Ported from redesignv2. The mount reveal is CSS-only: no JS motion wrapper, so
-   `prefers-reduced-motion` is honoured without a guard in the component. */
+/* ── Home: Continue reading hero ──────────────────────────────────────────────
+   One contained hero card for the series in focus, with a Next up strip of posters under it. The card's
+   backdrop is the series-hero recipe (`HeroBackdrop`), inside a rounded card rather than bleeding
+   to the page edges: Home's hero leads a section, not the page. */
 
-@keyframes continue-tile-reveal {
+.continue-hero {
+  position: relative;
+  overflow: clip;
+  /* The backdrop's layers are absolutely positioned; without a stacking context of its own the
+     art escapes the card's rounded corners. */
+  isolation: isolate;
+  display: flex;
+  /* The poster and the glance column both end just under this; the rest was dead art. */
+  min-height: 380px;
+  align-items: flex-end;
+  border-radius: var(--radius-overlay);
+  /* The vertical scrim ends on --app-bg, so the card's ground has to match or the fade lands on
+     a visible step. */
+  background: var(--app-bg);
+}
+.continue-hero-body {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  width: 100%;
+  align-items: end;
+  column-gap: clamp(18px, 2.4vw, 30px);
+  padding: clamp(20px, 2.6vw, 36px);
+  animation: continue-hero-in 0.4s var(--ease) both;
+}
+/* The glance has two homes (`ContinueHero` renders it in both and one is always `display: none`):
+   in the hero as a column on its right when wide, or as a row under the actions on a phone, and
+   otherwise as its own raised card under the whole lead (`.continue-glance-below`). */
+.continue-hero-body > .home-glance {
+  display: none;
+  grid-column: 1 / -1;
+  margin-top: 22px;
+}
+.continue-glance-below {
+  margin-top: var(--mantine-spacing-md);
+}
+@keyframes continue-hero-in {
   from {
     opacity: 0;
-    transform: scale(0.92);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: none;
   }
 }
-
-.continue-lead-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--lead-cols, 3), minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 0.875rem;
-}
-.continue-lead-grid[data-count='1'] {
-  --lead-cols: 1;
-}
-.continue-lead-grid[data-count='2'] {
-  --lead-cols: 2;
-}
-@media (max-width: 1200px) {
-  .continue-lead-grid {
-    --lead-cols: 2;
-  }
-  .continue-lead-grid[data-count='1'] {
-    --lead-cols: 1;
-  }
-}
-@media (max-width: 760px) {
-  .continue-lead-grid,
-  .continue-lead-grid[data-count='2'] {
-    --lead-cols: 1;
-  }
-}
-
-.continue-tile {
-  position: relative;
-  overflow: hidden;
-  /* The backdrop's layers are absolutely positioned; without a stacking context of its own the
-     art escapes the tile's rounded corners. */
-  isolation: isolate;
-  display: flex;
-  min-height: 188px;
-  align-items: stretch;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-overlay);
-  background: var(--surface-raised);
-}
-.continue-tile .series-hero-art {
-  background-position: 82% 22%;
-  background-size: 118%;
-}
-.continue-tile-content {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  min-width: 0;
-  flex: 1 1 auto;
-  align-items: center;
-  gap: clamp(0.75rem, 1.2vw, 1.125rem);
-  padding: clamp(0.75rem, 1vw, 1rem);
-}
-.continue-tile-motion {
-  position: relative;
-  flex: 0 0 auto;
-}
-.continue-tile-motion img {
-  transform-origin: center;
-  animation: continue-tile-reveal 0.6s cubic-bezier(0.215, 0.61, 0.355, 1) both;
-}
-.continue-lead-grid > :nth-child(2) .continue-tile-motion img {
-  animation-delay: 70ms;
-}
-.continue-lead-grid > :nth-child(3) .continue-tile-motion img {
-  animation-delay: 140ms;
-}
-.continue-tile-poster {
+.continue-hero-poster {
   position: relative;
   display: block;
+  flex: none;
   overflow: hidden;
-  width: clamp(72px, 6vw, 96px);
+  width: clamp(132px, 14vw, 204px);
   aspect-ratio: 2 / 3;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-control);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-hero);
   background: var(--surface-sunken);
-  box-shadow: 0 18px 38px -14px rgba(0, 0, 0, 0.85);
-  transition:
-    border-color var(--dur-medium) var(--ease),
-    box-shadow var(--dur-medium) var(--ease);
+  box-shadow: 0 26px 58px -16px rgba(0, 0, 0, 0.9);
+  transition: transform var(--dur-medium) var(--ease);
 }
-.continue-tile-poster img {
+.continue-hero-poster:hover {
+  transform: translateY(-2px);
+}
+.continue-hero-poster img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform var(--dur-slow) var(--ease);
 }
-.continue-tile-poster:hover {
-  border-color: var(--brand);
-  box-shadow: 0 18px 38px -14px rgba(0, 0, 0, 0.85);
-}
-.continue-tile-poster:hover img {
-  transform: scale(1.04);
-}
-.continue-tile-placeholder {
-  position: absolute;
-  inset: 0;
+.continue-hero-placeholder {
   display: grid;
+  height: 100%;
   place-items: center;
-  padding: 0.4rem;
+  padding: 0.5rem;
   color: var(--ink-3);
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   text-align: center;
 }
-.continue-tile-body {
+.continue-hero-copy {
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.3rem;
 }
-.continue-tile-meta {
+/* A cover that lends a colour (`--series-accent`, set inline by ContinueHero) tints the bar and
+   the unread count; Resume stays on the brand so the primary action reads the same everywhere. */
+.continue-hero {
+  --tile-accent: var(--brand);
+  --tile-accent-fg: var(--brand-fg);
+}
+.continue-hero.has-accent {
+  --tile-accent: var(--series-accent);
+  --tile-accent-fg: color-mix(in oklab, var(--series-accent) 68%, white);
+}
+:root[data-theme='light'] .continue-hero.has-accent {
+  --tile-accent-fg: color-mix(in oklab, var(--series-accent) 82%, black);
+}
+.continue-hero-eyebrow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: var(--ink-3);
-  font-size: var(--type-badge);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.075em;
-  text-transform: uppercase;
-  font-variant-numeric: tabular-nums;
-}
-.continue-tile-unread {
+  gap: 9px;
+  margin-bottom: 10px;
   color: var(--brand-fg);
-}
-.continue-tile-title {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  color: var(--ink-hi);
-  font-family: var(--font-display);
-  font-size: var(--type-section);
-  font-weight: var(--fw-strong);
-  letter-spacing: -0.015em;
-  line-height: 1.18;
-  text-decoration: none;
-}
-.continue-tile-title:hover {
-  color: var(--brand-fg);
-}
-.continue-lead-grid[data-count='1'] .continue-tile {
-  min-height: 212px;
-}
-.continue-lead-grid[data-count='1'] .continue-tile-title {
-  font-size: var(--type-feature);
-}
-.continue-lead-grid[data-count='1'] .continue-tile-poster {
-  width: clamp(96px, 8vw, 128px);
-}
-.continue-tile-chapter {
-  color: var(--ink-2);
   font-size: var(--type-meta);
-  font-variant-numeric: tabular-nums;
+  font-weight: var(--fw-semibold);
 }
-.continue-tile-progress {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 0.5rem;
-}
-.continue-tile-bar {
-  overflow: hidden;
-  flex: 1 1 auto;
-  height: 4px;
-  border-radius: var(--radius-pill);
-  /* The tile's own ground shows through here, not poster art, so this track is themed rather
-     than the fixed light-on-dark that .home-resume-bar uses over a scrim. */
-  background: color-mix(in srgb, var(--ink-3) 30%, transparent);
-}
-.continue-tile-fill {
-  height: 100%;
+.continue-hero-eyebrow::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
   background: var(--brand);
 }
-.continue-tile-pages {
+.continue-hero-eyebrow-when {
   color: var(--ink-3);
-  font-size: var(--type-badge);
-  white-space: nowrap;
+  font-weight: var(--fw-medium);
 }
-.continue-tile-action {
-  margin-top: 0.35rem;
+.continue-hero-eyebrow-when::before {
+  content: '·';
+  margin-right: 9px;
+  color: var(--ink-4);
+}
+.continue-hero-title {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.6vw, 3.5rem);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.025em;
+  line-height: 0.96;
+  overflow-wrap: anywhere;
+}
+.continue-hero-title a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--dur-base) var(--ease);
+}
+.continue-hero-title a:hover {
+  color: var(--brand-fg);
+}
+.continue-hero-chapter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin-top: 14px;
+  color: var(--ink-hi);
+  font-size: var(--type-subhead);
+  font-weight: var(--fw-strong);
+}
+.continue-hero-pages {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-medium);
+}
+.continue-hero-bar {
+  overflow: hidden;
+  width: min(440px, 100%);
+  height: 4px;
+  margin-top: 10px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ink-3) 30%, transparent);
+}
+.continue-hero-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tile-accent);
+}
+.continue-hero-unread {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  margin-top: 14px;
+  padding: 0 10px;
+  border-radius: var(--radius-control);
+  color: var(--tile-accent-fg);
+  background: color-mix(in srgb, var(--tile-accent) 15%, transparent);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.continue-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-xs);
+  margin-top: 20px;
 }
 
-/* The global reduced-motion rule already collapses every transition-duration, so only the hover
-   transform and the stagger need cancelling here: an animation reduced to 0.001ms still waits
-   out its delay before appearing. */
-@media (prefers-reduced-motion: reduce) {
-  .continue-tile-poster:hover img {
-    transform: none;
+/* Wide: the glance is a card in a column of its own on the right. With Next up beside it the hero
+   is narrower than its container, so the glance stays under the lead until the wider query below. */
+@container continue-lead (min-width: 62rem) {
+  .continue-lead:not([data-queue='beside']) .continue-hero-body {
+    grid-template-columns: auto minmax(0, 1fr) var(--glance-w);
   }
-  .continue-lead-grid > :nth-child(2) .continue-tile-motion img,
-  .continue-lead-grid > :nth-child(3) .continue-tile-motion img {
-    animation-delay: 0ms;
+  .continue-lead:not([data-queue='beside']) .continue-hero-body > .home-glance {
+    display: block;
+    grid-column: 3;
+    grid-row: 1;
+    margin-top: 0;
+  }
+  .continue-section:not([data-queue='beside']) > .continue-glance-below {
+    display: none;
+  }
+}
+@container continue-lead (min-width: 84rem) {
+  .continue-section[data-queue='beside'] > .continue-glance-below {
+    display: none;
+  }
+  .continue-lead[data-queue='beside'] .continue-hero-body > .home-glance {
+    display: block;
+  }
+  .continue-lead[data-queue='beside'] .continue-hero-body {
+    grid-template-columns: auto minmax(0, 1fr) var(--glance-w);
+  }
+  .continue-lead[data-queue='beside'] .continue-hero-body > .home-glance {
+    grid-column: 3;
+    grid-row: 1;
+    margin-top: 0;
+  }
+}
+/* Phone: the poster beside the title and the action row under both. The copy's children join the
+   body's grid, with the buttons spanning it. Stacking the poster above cost a screen of phone. */
+@container continue-lead (max-width: 35.99rem) {
+  .continue-hero {
+    min-height: 0;
+  }
+  .continue-hero-body {
+    grid-template-columns: 112px minmax(0, 1fr);
+    column-gap: 14px;
+  }
+  .continue-hero-body > .home-glance {
+    display: block;
+  }
+  .continue-glance-below {
+    display: none;
+  }
+  .continue-hero-poster {
+    width: 112px;
+    grid-row: 1 / span 6;
+    align-self: start;
+  }
+  .continue-hero-eyebrow-when {
+    display: none;
+  }
+  .continue-hero-copy {
+    display: contents;
+  }
+  .continue-hero-title {
+    font-size: 1.75rem;
+  }
+  .continue-hero-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .continue-hero-body {
+    animation: none;
+  }
+  .continue-hero-poster:hover {
+    transform: none;
   }
 }
 
@@ -7841,6 +9620,11 @@ body.reader-open {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+}
+/* Mantine zeroes the body's top padding under a header, which assumes the two run together. Ours
+   is ruled off by a hairline, so the body needs its own top padding back. */
+.utility-modal-header + .utility-modal-body {
+  padding-top: var(--mb-padding, var(--mantine-spacing-md));
 }
 [data-mantine-color-scheme] .utility-modal-content[data-full-screen] {
   border: 0;
@@ -7864,8 +9648,7 @@ body.reader-open {
   background-color: var(--surface-hover);
 }
 
-/* Same accent-edge grammar the Panel uses, so a destructive confirm reads the same way a
-   destructive panel does. */
+/* A destructive confirm carries a rule along its top in the state colour. */
 .utility-modal-content[data-edge] {
   --panel-edge: var(--border-strong);
   border-top: 2px solid var(--panel-edge);
@@ -7908,14 +9691,10 @@ body.reader-open {
     left: 16px;
     right: 16px;
   }
-  .rewind-close {
+  .rewind-controls {
     top: auto;
     bottom: 34px;
     right: 8px;
-  }
-  .rewind-eyebrow {
-    font-size: 0.72rem;
-    letter-spacing: 0.13em;
   }
   /* The desktop clamps floor at 2rem / 3.5rem, which is wider than 360px once a
      four-digit count is drawn. */
@@ -7956,8 +9735,283 @@ body.reader-open {
 .scrobble-review-input {
   width: 160px;
 }
-.scrobble-error-text {
-  max-width: 320px;
+/* Recent syncs: one row per series. The result most trackers share is one line with a row of
+   tracker icons; trackers that differ or failed sit indented under it, so a second line always
+   means a different outcome, never a wrap. A failure keeps the tracker's own reason in full. */
+.scrobble-recent-table thead th:nth-child(1) {
+  width: 24%;
+}
+.scrobble-recent-table thead th:nth-child(3) {
+  width: 150px;
+}
+.scrobble-recent-table td {
+  vertical-align: top;
+}
+.scrobble-result-cell {
+  container-type: inline-size;
+}
+.scrobble-result {
+  display: grid;
+  grid-template-columns: 13.5rem minmax(0, 1fr);
+  gap: 6px 16px;
+}
+/* Stacks on the cell's own width rather than the viewport's, since the sidebar and the series
+   column decide how much the result gets. */
+@container (max-width: 30rem) {
+  .scrobble-result {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 2px;
+  }
+  .scrobble-exceptions {
+    row-gap: 6px;
+    margin-top: 4px;
+  }
+  /* One column: the rule moves to the whole exception, which now stacks what over who. */
+  .scrobble-result-line[data-exception] {
+    padding-left: 10px;
+    border-left: 2px solid var(--border-strong);
+  }
+  .scrobble-result-line[data-exception] .scrobble-result-what {
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+/* Subgrid lines, so every line's columns line up with the main line's. */
+.scrobble-result-line,
+.scrobble-exceptions {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+.scrobble-exceptions {
+  row-gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.scrobble-result-what,
+.scrobble-result-who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  min-width: 0;
+  min-height: 24px;
+}
+.scrobble-result-line[data-exception] .scrobble-result-what {
+  padding-left: 10px;
+  border-left: 2px solid var(--border-strong);
+}
+.scrobble-exceptions[data-flat] .scrobble-result-what {
+  padding-left: 0;
+  border-left: 0;
+}
+.scrobble-marks {
+  display: inline-flex;
+  flex: none;
+  gap: 3px;
+}
+.scrobble-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface-2);
+}
+.scrobble-result-detail {
+  grid-column: 1 / -1;
+  margin: 2px 0 4px;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--type-micro);
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
+}
+.scrobble-tracker-icon {
+  display: inline-flex;
+  flex: none;
+}
+
+/* A text-only button under a card's text, pulled left by its own padding so the word lines up. */
+.scrobble-disconnect {
+  margin-inline-start: calc(var(--button-padding-x, 10px) * -1);
+}
+
+/* Activity log: one line per event, time then tracker then what happened. A warning or error is
+   marked by a rule down the left edge rather than colouring the text. */
+/* Settings > Notifications: one row per event, a column each for the bell and push. */
+.notify-matrix {
+  width: 100%;
+  border-collapse: collapse;
+}
+.notify-matrix thead th {
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
+  text-align: left;
+  padding: 0 0 6px;
+}
+.notify-matrix th[scope='row'] {
+  font-weight: normal;
+  text-align: left;
+  padding: 7px 12px 7px 0;
+}
+.notify-matrix tbody tr + tr > * {
+  border-top: 1px solid var(--border);
+}
+.notify-matrix-category th {
+  padding: 16px 0 4px;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
+  text-align: left;
+}
+.notify-matrix .notify-matrix-check {
+  width: 4.5rem;
+  text-align: center;
+  vertical-align: middle;
+}
+.notify-matrix-check .mantine-Checkbox-root {
+  display: inline-flex;
+}
+.notify-matrix-hit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.notify-matrix-hit[data-disabled] {
+  cursor: not-allowed;
+}
+.notify-matrix-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+/* A row of fields with a button at its end. Outside a settings card hints sit above the inputs and
+   the row aligns bottoms; inside one they sit below, so the row aligns tops and the button's own
+   invisible label (see FieldAction) puts it level with the inputs. */
+.settings-field-action {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-md);
+}
+.settings-section .settings-field-row {
+  align-items: flex-start;
+}
+.panel-table .sticky-end-cell {
+  position: sticky;
+  right: 0;
+  background: var(--surface);
+}
+/* One width for every settings number field; the label and hint keep the full column. */
+.settings-number-field {
+  max-width: 12rem;
+}
+.health-op-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-md) var(--mantine-spacing-xs);
+}
+.health-op-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.health-op-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--mantine-spacing-md);
+  padding: 8px var(--mantine-spacing-md);
+  border-top: 1px solid var(--border);
+}
+.health-op-more {
+  padding: 6px var(--mantine-spacing-md) 10px;
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 600px) {
+  .health-op-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .health-op-when {
+    display: none;
+  }
+}
+.scrobble-connections {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--mantine-spacing-xs);
+}
+.scrobble-connection {
+  gap: 6px;
+}
+.scrobble-connection-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+.scrobble-connection-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-3);
+}
+@media (pointer: coarse) {
+  .scrobble-connection {
+    min-height: 44px;
+  }
+}
+.scrobble-connections-setup {
+  margin-left: 4px;
+}
+.scrobble-log {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+.scrobble-log-line {
+  display: grid;
+  grid-template-columns: 10.5rem 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 2px 12px;
+  padding: 5px var(--mantine-spacing-md);
+  font-size: var(--type-meta);
+  box-shadow: inset 2px 0 transparent;
+}
+.scrobble-log-line + .scrobble-log-line {
+  border-top: 1px solid var(--hairline);
+}
+.scrobble-log-line[data-level='warning'] {
+  box-shadow: inset 2px 0 var(--warn);
+}
+.scrobble-log-line[data-level='error'] {
+  box-shadow: inset 2px 0 var(--danger);
+}
+.scrobble-log-time {
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.scrobble-log-service {
+  display: inline-flex;
+}
+.scrobble-log-text {
+  min-width: 0;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.scrobble-log-title {
+  margin-right: 6px;
+  font-weight: var(--fw-semibold);
+  color: var(--ink-hi);
 }
 
 @media (max-width: 47.9375em) {
@@ -7973,37 +10027,332 @@ body.reader-open {
   .scrobble-review-input {
     width: 100%;
   }
-  .scrobble-error-text {
-    max-width: none;
+  .scrobble-recent-table thead th:nth-child(1) {
+    width: 36%;
   }
   /* Service and timestamp are recoverable from the row itself; series, progress
      and status are what the table is read for. */
   .scrobble-recent-table [data-priority='low'] {
     display: none;
   }
+  /* The candidates and the input need the width more than the card needs its cover. */
+  .scrobble-review .cover-panel-cover {
+    display: none;
+  }
+  .scrobble-log-line {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+  .scrobble-log-time {
+    grid-column: 1 / -1;
+    font-size: var(--type-micro);
+  }
 }
 
 /* Activity. Same idea: column widths in CSS so the queue can collapse to the
-   three columns that matter. */
-.activity-queue-table thead th:nth-child(4) {
+   three columns that matter. The series column takes what is left. */
+.activity-queue-table thead th:nth-child(2) {
   width: 240px;
 }
-.activity-queue-table thead th:nth-child(5) {
-  width: 150px;
+.activity-queue-table thead th:nth-child(3) {
+  width: 200px;
 }
-.activity-queue-table thead th:nth-child(6) {
-  width: 190px;
+.activity-queue-table thead th:nth-child(4) {
+  width: 270px;
+}
+.activity-queue-table thead th:nth-child(5) {
+  width: 140px;
+}
+.activity-history-table thead th:nth-child(3) {
+  width: 160px;
 }
 .activity-history-table thead th:nth-child(4) {
-  width: 150px;
+  width: 190px;
 }
-.activity-history-table thead th:nth-child(5) {
-  width: 160px;
+
+/* An upgrade's rejection reason is a sentence. On one line it widened the status column until the
+   series column was left a few words wide. */
+.activity-queue-table .status-dot {
+  white-space: normal;
+  align-items: flex-start;
+}
+.activity-queue-table .status-dot::before {
+  margin-top: 0.45em;
+}
+
+/* A table row's series (Activity, Scrobble): the cover beside the title, the chapter, release or
+   file under it. */
+.series-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+}
+.series-cell-cover {
+  width: 32px;
+  height: 48px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--surface-2);
+}
+.series-cell[data-small] .series-cell-cover {
+  width: 24px;
+  height: 36px;
+  border-radius: 4px;
+}
+.series-cell-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* A panel led by its series' cover: a volume release on Activity > Upgrades, a Scrobble review. */
+.cover-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-md);
+}
+.cover-panel-cover {
+  width: 48px;
+  height: 72px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: var(--radius-thumb);
+  background: var(--surface-2);
+}
+.cover-panel-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.cover-panel-body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* A replaced file under its volume row, lined up with the row's text rather than its cover. */
+.panel-table td.series-cell-indent {
+  padding-inline-start: calc(var(--table-horizontal-spacing, var(--mantine-spacing-xs)) + 44px);
+}
+.series-cell-text {
+  min-width: 0;
+}
+.series-cell-title {
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-hi);
+  text-decoration: none;
+}
+.series-cell-title:hover {
+  color: var(--brand-fg);
+}
+
+/* Activity > Upcoming. A day grid, one row per series; the bar is a likely span, never a date.
+   Opacity carries the confidence so a guess never looks as solid as an announcement. */
+.upcoming-panel {
+  overflow-x: auto;
+}
+.upcoming-timeline {
+  --upcoming-name: minmax(180px, 240px);
+  min-width: 760px;
+}
+.upcoming-head,
+.upcoming-row {
+  display: grid;
+  grid-template-columns: var(--upcoming-name) 1fr;
+  align-items: center;
+}
+.upcoming-head {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  z-index: 1;
+}
+.upcoming-row + .upcoming-row {
+  border-top: 1px solid var(--line-soft);
+}
+.upcoming-days,
+.upcoming-track {
+  display: grid;
+  grid-template-columns: repeat(var(--upcoming-days), minmax(0, 1fr));
+}
+.upcoming-week {
+  grid-row: 1;
+  padding: 8px 6px 2px;
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
+  border-left: 1px solid var(--line-soft);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.upcoming-day {
+  grid-row: 2;
+  padding: 2px 0 8px;
+  text-align: center;
+  font-size: var(--type-micro);
+  color: var(--ink-3);
+}
+.upcoming-day[data-weekend] {
+  color: var(--ink-4);
+}
+.upcoming-day[data-today] {
+  color: var(--brand-fg);
+  font-weight: var(--fw-bold);
+}
+.upcoming-track {
+  position: relative;
+  height: 100%;
+  min-height: 52px;
+  align-items: center;
+  /* Today's column, so a bar that is already open reads as open. */
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--brand) 10%, transparent) 0,
+    color-mix(in srgb, var(--brand) 10%, transparent) calc(100% / var(--upcoming-days)),
+    transparent calc(100% / var(--upcoming-days))
+  );
+}
+.upcoming-bar {
+  grid-row: 1;
+  height: 14px;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  min-width: 10px;
+}
+.upcoming-bar[data-level='medium'] {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 70%, transparent);
+}
+.upcoming-bar[data-open-start] {
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+.upcoming-bar[data-open-end] {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+.upcoming-announced {
+  grid-row: 1;
+  justify-self: center;
+  width: 14px;
+  height: 14px;
+  transform: rotate(45deg);
+  border-radius: 3px;
+  background: var(--info);
+  box-shadow: 0 0 0 2px var(--surface);
+  z-index: 1;
+}
+.upcoming-bar:focus-visible,
+.upcoming-announced:focus-visible {
+  outline: 2px solid var(--brand-fg);
+  outline-offset: 2px;
+}
+.upcoming-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 12px;
+  color: inherit;
+  text-decoration: none;
+}
+.upcoming-name:hover .upcoming-title {
+  color: var(--brand-fg);
+}
+.upcoming-cover {
+  flex: none;
+  width: 24px;
+  height: 36px;
+  border-radius: var(--radius-2xs);
+  object-fit: cover;
+  background: var(--surface-sunken);
+}
+.upcoming-title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.upcoming-confidence {
+  flex: none;
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+  color: var(--brand-fg);
+}
+.upcoming-confidence[data-level='medium'] {
+  color: var(--ink-3);
+}
+.upcoming-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+.upcoming-line .upcoming-name {
+  flex: 0 0 240px;
+}
+.upcoming-line-text {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 8px 8px 0;
+}
+.upcoming-legend {
+  font-size: var(--type-micro);
+  color: var(--ink-3);
+}
+.upcoming-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.upcoming-legend-item .upcoming-bar {
+  display: inline-block;
+  width: 28px;
+  height: 10px;
+}
+.upcoming-legend-item .upcoming-announced {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+}
+@media (max-width: 47.9375em) {
+  .upcoming-line {
+    flex-direction: column;
+  }
+  .upcoming-line .upcoming-name {
+    flex: none;
+    width: 100%;
+  }
+  .upcoming-line-text {
+    padding: 0 12px 10px;
+  }
+}
+
+/* Series page: the confidence badge under "Next chapter" follows the timeline's two levels. */
+.release-confidence[data-level='high'] {
+  --badge-bg: color-mix(in srgb, var(--brand) 18%, transparent);
+  --badge-color: var(--brand-fg);
+}
+.release-confidence[data-level='medium'] {
+  --badge-bg: var(--neutral-soft);
+  --badge-color: var(--ink-2);
+}
+.release-announced {
+  color: var(--info);
 }
 
 @media (max-width: 47.9375em) {
-  .activity-queue-table thead th,
-  .activity-history-table thead th {
+  .activity-queue-table thead th:nth-child(n),
+  .activity-history-table thead th:nth-child(n) {
     width: auto;
   }
   .mantine-TableScrollContainer-scrollContainerInner:has(> .activity-queue-table),
@@ -8017,6 +10366,15 @@ body.reader-open {
   .activity-queue-table tbody td,
   .activity-history-table tbody td {
     padding-inline: 0.4rem;
+  }
+  .series-cell {
+    min-width: 0;
+    gap: 8px;
+  }
+  .series-cell .series-cell-cover {
+    width: 24px;
+    height: 36px;
+    border-radius: 4px;
   }
 }
 
@@ -8139,7 +10497,7 @@ body.reader-open {
 /* Page layout editor (Home, Discover): compact section cards dragged by a grip. */
 .layout-edit-bar {
   position: sticky;
-  top: calc(var(--app-shell-header-height, 0px) + var(--mantine-spacing-sm));
+  top: calc(var(--app-shell-header-offset, 0px) + var(--mantine-spacing-sm));
   z-index: 5;
   display: flex;
   align-items: center;
@@ -8211,7 +10569,7 @@ body.reader-open {
   color: var(--brand-fg);
 }
 .layout-edit-badge {
-  font-size: 11px;
+  font-size: var(--type-badge);
   line-height: 1;
   padding: 3px 6px;
   border-radius: var(--radius-pill);
@@ -8303,7 +10661,14 @@ body.reader-open {
 .lucky-pill {
   position: fixed;
   z-index: 100;
-  left: calc(50% + var(--app-shell-navbar-offset, 0px) / 2);
+  left: calc(
+    50% +
+      (
+        var(--app-shell-navbar-offset, 0px) + var(--page-gutter-start, 0px) -
+          var(--page-gutter-end, 0px)
+      ) /
+      2
+  );
   bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px));
   transform: translateX(-50%);
   display: flex;
@@ -8464,11 +10829,9 @@ body.reader-open {
   display: flex;
   justify-content: space-between;
   padding: 10px 10px 6px;
-  font-size: var(--type-label);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  color: var(--ink-3);
 }
 .source-manager-empty {
   padding: 24px 10px;
@@ -8622,8 +10985,6 @@ body.reader-open {
 .source-tag[data-tone='language'] {
   font-family: var(--mantine-font-family-monospace);
   font-size: var(--type-badge);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 
 .source-filter-count {
@@ -8633,8 +10994,8 @@ body.reader-open {
   height: 18px;
   padding: 0 5px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-label);
   font-weight: var(--fw-semibold);
 }
@@ -8645,11 +11006,9 @@ body.reader-open {
 }
 .source-filter-label {
   margin-bottom: 6px;
-  font-size: var(--type-label);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  color: var(--ink-3);
 }
 .source-filter-n {
   margin-left: 4px;

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
-import type { ReaderDirection, ReaderFit } from './prefs'
+import { cropRegion, isFull, partOf, type PagePart, type Region } from './pageShape'
+import type { ReaderDirection, ReaderFit, ReaderSplitWide } from './prefs'
 import type { Spread } from './useSpreads'
 
 const FIT_CLASS: Record<ReaderFit, string> = {
@@ -12,6 +13,85 @@ const FIT_CLASS: Record<ReaderFit, string> = {
 }
 
 type PageState = 'loading' | 'ready' | 'failed'
+
+/** How a page is shown beyond its fit: trimmed, one half of a spread, or turned a quarter. */
+export interface PageShaping {
+  crop: boolean
+  part: PagePart
+  rotate: 0 | 90 | -90
+}
+
+const PLAIN: PageShaping = { crop: false, part: 'whole', rotate: 0 }
+
+/**
+ * A region of a page drawn at the size the fit would give that region alone. The blank canvas
+ * carries the region's pixel size and takes the fit classes, so it sizes exactly like an `<img>`
+ * of the cropped page would (1:1 included); the real image sits inside, scaled and offset so only
+ * the region shows. A canvas rather than a sized image: it has its size the moment it mounts, so a
+ * page turn never flashes an empty box, and with no context drawn it holds no pixel buffer.
+ */
+function RegionPage({
+  src,
+  alt,
+  className,
+  style,
+  tone,
+  fit,
+  natural,
+  region,
+  rotate,
+}: {
+  src: string
+  alt: string
+  className: string
+  style: React.CSSProperties | undefined
+  tone: string | undefined
+  fit: ReaderFit
+  natural: { width: number; height: number }
+  region: Region
+  rotate: 0 | 90 | -90
+}) {
+  const width = Math.max(1, Math.round(natural.width * region.w))
+  const height = Math.max(1, Math.round(natural.height * region.h))
+  const turned = rotate !== 0
+  const frame: React.CSSProperties = turned
+    ? {
+        left: '50%',
+        top: '50%',
+        width: `${(100 * width) / height}%`,
+        height: `${(100 * height) / width}%`,
+        transform: `translate(-50%, -50%) rotate(${rotate}deg)`,
+      }
+    : { inset: 0 }
+  return (
+    <div className="reader-region" data-fit={fit}>
+      <canvas
+        className={className}
+        width={turned ? height : width}
+        height={turned ? width : height}
+        style={style}
+        aria-hidden
+      />
+      <div className="reader-region-frame" style={frame}>
+        <img
+          src={src}
+          alt={alt}
+          className="reader-region-image"
+          data-no-cover-fallback
+          style={{
+            left: `${(-region.x / region.w) * 100}%`,
+            top: `${(-region.y / region.h) * 100}%`,
+            width: `${100 / region.w}%`,
+            height: `${100 / region.h}%`,
+            filter: tone,
+          }}
+          decoding="sync"
+          draggable={false}
+        />
+      </div>
+    </div>
+  )
+}
 
 /**
  * One page with its own loading and failure state: the page's outline while it loads, and a retry
@@ -24,6 +104,8 @@ function PagedPage({
   className,
   style,
   tone,
+  fit,
+  shaping,
   onLoaded,
 }: {
   src: string
@@ -31,25 +113,37 @@ function PagedPage({
   className: string
   style: React.CSSProperties | undefined
   tone: string | undefined
+  fit: ReaderFit
+  shaping: PageShaping
   onLoaded: (image: HTMLImageElement) => void
 }) {
   const [state, setState] = useState<PageState>('loading')
   const [attempt, setAttempt] = useState(0)
+  const [image, setImage] = useState<HTMLImageElement | null>(null)
   const url = attempt === 0 ? src : `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`
 
   const loaded = useRef(onLoaded)
   loaded.current = onLoaded
-  const markReady = useCallback((image: HTMLImageElement) => {
+  const markReady = useCallback((element: HTMLImageElement) => {
     setState('ready')
-    loaded.current(image)
+    setImage(element)
+    loaded.current(element)
   }, [])
   // A page already in the browser cache is complete before React attaches its load listener.
   const setRef = useCallback(
-    (image: HTMLImageElement | null) => {
-      if (image?.complete && image.naturalWidth > 0) markReady(image)
+    (element: HTMLImageElement | null) => {
+      if (element?.complete && element.naturalWidth > 0) markReady(element)
     },
     [markReady],
   )
+
+  const ready = state === 'ready' && image !== null
+  const natural = ready ? { width: image.naturalWidth, height: image.naturalHeight } : null
+  const wide = natural !== null && natural.width > natural.height
+  const crop = useMemo(() => (ready && shaping.crop ? cropRegion(image) : null), [ready, image, shaping.crop])
+  const region = partOf(crop, wide ? shaping.part : 'whole')
+  const rotate = wide ? shaping.rotate : 0
+  const shaped = natural !== null && (rotate !== 0 || !isFull(region))
 
   return (
     <>
@@ -64,6 +158,7 @@ function PagedPage({
             size="xs"
             onClick={() => {
               setState('loading')
+              setImage(null)
               setAttempt((n) => n + 1)
             }}
           >
@@ -74,14 +169,28 @@ function PagedPage({
       <img
         ref={setRef}
         src={url}
+        data-no-cover-fallback
         alt={alt}
         className={className}
-        style={{ ...style, filter: tone, ...(state === 'ready' ? undefined : { display: 'none' }) }}
+        style={{ ...style, filter: tone, ...(state === 'ready' && !shaped ? undefined : { display: 'none' }) }}
         decoding="async"
         draggable={false}
         onLoad={(event) => markReady(event.currentTarget)}
         onError={() => setState('failed')}
       />
+      {shaped && (
+        <RegionPage
+          src={url}
+          alt={alt}
+          className={className}
+          style={style}
+          tone={tone}
+          fit={fit}
+          natural={natural}
+          region={region}
+          rotate={rotate}
+        />
+      )}
     </>
   )
 }
@@ -100,6 +209,9 @@ export default function PagedView({
   tone,
   label,
   onMeasure,
+  cropBorders = false,
+  splitWide = 'off',
+  half = 0,
 }: {
   urls: string[]
   spread: Spread
@@ -112,6 +224,11 @@ export default function PagedView({
   tone?: string
   label: string
   onMeasure: (index: number, image: HTMLImageElement) => void
+  cropBorders?: boolean
+  /** What a wide page does when it is shown alone; the parent passes 'off' outside single-page mode. */
+  splitWide?: ReaderSplitWide
+  /** Which half of a split wide page is up, in reading order. */
+  half?: 0 | 1
 }) {
   const { t } = useLingui()
   // In right-to-left reading the lower page number belongs on the right.
@@ -123,6 +240,17 @@ export default function PagedView({
   // begins from: the right in right-to-left. Its width is not known until the image has loaded, so
   // the right edge is held until the reader touches the scroller or the zoom changes.
   const rtl = direction === 'rtl'
+  // The half read first is the right one in right-to-left. A quarter turn puts it at the top:
+  // anticlockwise lifts the right edge, clockwise the left.
+  const single = spread.length === 1
+  const shaping: PageShaping =
+    !cropBorders && (!single || splitWide === 'off')
+      ? PLAIN
+      : {
+          crop: cropBorders,
+          part: single && splitWide === 'split' ? ((half === 0) === rtl ? 'right' : 'left') : 'whole',
+          rotate: single && splitWide === 'rotate' ? (rtl ? -90 : 90) : 0,
+        }
   const rtlRef = useRef(rtl)
   rtlRef.current = rtl
   const pinRight = useRef(false)
@@ -136,7 +264,7 @@ export default function PagedView({
     if (scroller) scroller.scrollTop = 0
     pinRight.current = rtlRef.current
     toStart()
-  }, [leadSrc, toStart])
+  }, [leadSrc, half, toStart])
 
   useEffect(() => {
     const scroller = root.current?.parentElement
@@ -189,6 +317,8 @@ export default function PagedView({
             className={`reader-page ${FIT_CLASS[fit]}`}
             style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
             tone={tone}
+            fit={fit}
+            shaping={shaping}
             onLoaded={(image) => onMeasure(page, image)}
           />
         )

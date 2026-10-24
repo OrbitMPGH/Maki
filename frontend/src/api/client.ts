@@ -1,10 +1,18 @@
 import { i18n } from '@lingui/core'
 import { t } from '@lingui/core/macro'
+import { OFFLINE_CODE, OFFLINE_HEADER, QUEUED_HEADER } from '../pwa/contract'
+import { isUnreachable } from '../sw/net'
+import { getConnectivity, onConnectivityChange, setConnectivity } from '../lib/connectivity'
 
 interface InitializeInfo {
   apiRoot: string
   /** True while the account the multi-user migration created has never been claimed. */
   setupNeeded: boolean
+  /**
+   * An admin chose to show a blurred mosaic of Safe-rated covers behind the sign-in card. The image
+   * can still 404 (too few covers), and the page then keeps its own art.
+   */
+  signInCovers: boolean
   /**
    * Enough to draw the login page and no more. The issuer, client id and secret stay behind the
    * admin settings endpoint; this one is anonymous.
@@ -141,16 +149,81 @@ export function xsrfHeader(): Record<string, string> {
 }
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+  return (await apiWithOrigin<T>(path, options)).data
+}
+
+/**
+ * `api`, plus whether the answer came from this device's offline copy rather than the server. For
+ * a caller that must not mistake a cached manifest for a live one (saving a chapter for offline).
+ */
+export async function apiWithOrigin<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<{ data: T; servedOffline: boolean }> {
   const generation = sessionGeneration
   const init = await getInitialize()
-  const res = await fetch(`${init.apiRoot}${path}`, {
+  const res = await trackedFetch(`${init.apiRoot}${path}`, {
     ...options,
     // Explicit rather than relying on the default: the session cookie is the only credential now,
     // so a request that silently omitted it would fail in a way that looks like a server bug.
     credentials: 'same-origin',
     headers: authHeaders(options.headers),
   })
-  return readResponse<T>(res, generation)
+  return { data: await readResponse<T>(res, generation), servedOffline: servedOffline(res) }
+}
+
+/** True when the service worker answered from the device (or queued a write) instead of the server. */
+export function servedOffline(res: Response): boolean {
+  return res.headers.has(OFFLINE_HEADER) || res.headers.has(QUEUED_HEADER)
+}
+
+/** `fetch` that keeps the connectivity store in step with what it sees. */
+export async function trackedFetch(input: string, init: RequestInit): Promise<Response> {
+  let res: Response
+  try {
+    res = await fetch(input, init)
+  } catch (err) {
+    // A cancelled query aborts its fetch, which says nothing about the server.
+    const aborted = init.signal?.aborted || (err instanceof Error && err.name === 'AbortError')
+    if (!aborted) setConnectivity('offline')
+    throw err
+  }
+  setConnectivity(servedOffline(res) || isUnreachable(res) ? 'offline' : 'online')
+  return res
+}
+
+const PROBE_MS = 15_000
+let probeTimer: ReturnType<typeof setInterval> | undefined
+
+/** While offline, asks the server whether it is back: a quiet page may send nothing that would tell. */
+function probeServer(): void {
+  if (getConnectivity() !== 'offline') return
+  void getInitialize()
+    .then((init) => trackedFetch(`${init.apiRoot}/auth/me`, { credentials: 'same-origin', headers: authHeaders() }))
+    .then((res) => res.body?.cancel())
+    .catch(() => {})
+}
+
+function watchConnectivity(): void {
+  if (getConnectivity() === 'offline') {
+    probeTimer ??= setInterval(probeServer, PROBE_MS)
+  } else {
+    clearInterval(probeTimer)
+    probeTimer = undefined
+  }
+}
+
+if (typeof window !== 'undefined') {
+  onConnectivityChange(watchConnectivity)
+  watchConnectivity()
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') probeServer()
+  })
+}
+
+/** The service worker had no offline copy of what was asked for. */
+export function isOfflineUnavailable(error: unknown): boolean {
+  return error instanceof ApiError && error.code === OFFLINE_CODE
 }
 
 /**
@@ -160,7 +233,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
   const generation = sessionGeneration
   const init = await getInitialize()
-  const res = await fetch(`${init.apiRoot}${path}`, {
+  const res = await trackedFetch(`${init.apiRoot}${path}`, {
     method: 'POST',
     credentials: 'same-origin',
     headers: { ...languageHeader(), ...xsrfHeader() },
@@ -186,10 +259,12 @@ async function readResponse<T>(res: Response, generation: number): Promise<T> {
     // The status stays on ApiError.status. A body that is not the server's own JSON (a reverse
     // proxy's HTML error page, say) is never shown.
     const status = res.status
+    const code = errorCode(body)
+    if (code === OFFLINE_CODE) throw new ApiError(status, t`Not available offline`, code)
     throw new ApiError(
       status,
       errorMessage(body) ?? t`The server returned an error (${status}).`,
-      errorCode(body),
+      code,
       offersPermanentDelete(body),
     )
   }

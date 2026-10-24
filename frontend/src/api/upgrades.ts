@@ -147,6 +147,7 @@ export interface CutoffUnmetRowDto {
   profileId: number
   profileName: string
   cutoff: QualityTierName
+  seriesCoverUrl: string | null
 }
 
 export interface CutoffUnmetPageDto {
@@ -257,6 +258,7 @@ export interface UpgradeHistoryRowDto {
   groupId: string | null
   /** Rows in the whole group, which can exceed the rows on this page. */
   groupSize: number
+  seriesCoverUrl: string | null
 }
 
 export interface UpgradeHistoryPageDto {
@@ -414,6 +416,7 @@ export interface TorrentProposalDto {
   createdAtUtc: string
   resolvedAtUtc: string | null
   queueItemId: number | null
+  seriesCoverUrl: string | null
 }
 
 export type SpanVerdictName = 'ignore' | 'proposal' | 'autoGrab'
@@ -429,6 +432,8 @@ export interface ReleaseParsedDto {
   alreadyMetCount: number
   missingCount: number
   titleMatched: boolean
+  /** The related work the title names instead of this series, when that is why it did not match. */
+  rivalTitle: string | null
 }
 
 export interface SeriesVolumeSearchResultDto {
@@ -447,6 +452,7 @@ export const PROPOSAL_REASON_LABELS: Record<string, MessageDescriptor> = {
   volume_span_unknown: msg`Its volumes aren't mapped to your chapters yet`,
   unknown_chapters: msg`Covers chapters Maki doesn't know about`,
   title_uncertain: msg`The title might be a different series`,
+  title_related_series: msg`The title names a related series, not this one`,
   nothing_to_upgrade: msg`Nothing in it beats what you have`,
   no_span: msg`No volume or chapter range in the title`,
   no_profile: msg`No quality profile`,
@@ -530,7 +536,8 @@ const NOT_ELIGIBLE_LABELS: Record<string, MessageDescriptor> = {
   not_eligible_nothing_below_cutoff: msg`Every file already meets the cutoff`,
   not_eligible_pending_proposal: msg`A proposal is already waiting for this series`,
   not_eligible_incognito: msg`Incognito series are excluded`,
-  not_eligible_no_prowlarr: msg`Prowlarr isn't configured`,
+  not_eligible_no_indexer: msg`No indexer is configured`,
+  not_eligible_no_prowlarr: msg`No indexer is configured`,
   not_eligible_not_found: msg`Series not found`,
   not_eligible_recent: msg`This series was searched in the last week`,
   not_eligible_profile_disabled: msg`Upgrades are turned off in this series' profile`,
@@ -543,7 +550,7 @@ export function volumeSearchResultText(
 ): string {
   if (result.grabbed != null) return now`Queued a volume release`
   if (result.proposalId != null) return now`Proposal created`
-  if (result.reason === 'search_failed') return now`Prowlarr search failed`
+  if (result.reason === 'search_failed') return now`Indexer search failed`
   if (result.reason === 'grab_failed') return now`Could not queue the release`
   if (!result.searched) {
     const label = result.reason ? NOT_ELIGIBLE_LABELS[result.reason] : undefined

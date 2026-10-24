@@ -132,7 +132,7 @@ public class CatalogueRuleTests
             .ToList();
     }
 
-    private static VectorIndex BuildIndex()
+    internal static VectorIndex BuildIndex()
     {
         var count = Rows.Length;
         var ids = Enumerable.Range(0, count).Select(i => 100L + i).ToArray();

@@ -1,7 +1,8 @@
-import { useSearchParams } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLingui } from '@lingui/react/macro'
 import { useAuth } from '../auth/AuthProvider'
-import { CatalogueBrowser } from '../components/CatalogueBrowser'
+import { CatalogueBrowser, type CatalogueSeed } from '../components/CatalogueBrowser'
 import { PageHeader } from '../components/ui/PageHeader'
 
 export default function AddSeriesPage() {
@@ -9,6 +10,15 @@ export default function AddSeriesPage() {
   // The command palette sends the text you typed there here as ?q= when the library holds no match.
   const [searchParams] = useSearchParams()
   const { can } = useAuth()
+
+  // Discover's catalogue feeds hand over their Show more as router state. Dropped once used, or a
+  // reload or a back/forward would put the feed back over whatever was browsed since.
+  const location = useLocation()
+  const navigate = useNavigate()
+  const seed = (location.state as { catalogueSeed?: CatalogueSeed } | null)?.catalogueSeed ?? null
+  useEffect(() => {
+    if (seed) navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+  }, [seed, navigate, location.pathname, location.search])
 
   // Same catalogue, same results, same detail modal: only the verb changes. Someone without
   // AddSeries files a request an admin actions instead of adding the series themselves.
@@ -19,9 +29,7 @@ export default function AddSeriesPage() {
       <PageHeader
         title={canAdd ? t`Add series` : t`Request series`}
         description={
-          canAdd
-            ? t`Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest.`
-            : t`Browse or search MangaBaka and ask an admin for a title. You can ask for a chapter range too.`
+          canAdd ? undefined : t`Browse or search MangaBaka and ask an admin for a title. You can ask for a chapter range too.`
         }
       />
 
@@ -32,6 +40,7 @@ export default function AddSeriesPage() {
       <CatalogueBrowser
         scope="discover"
         seededQuery={searchParams.get('q')}
+        seededBrowse={seed}
         placeholder={t`Search by title, description, or by feel`}
       />
     </>

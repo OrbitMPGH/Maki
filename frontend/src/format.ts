@@ -43,7 +43,12 @@ const dateAndTime = cached((l) => new Intl.DateTimeFormat(l, { dateStyle: 'mediu
 const timeOnly = cached((l) => new Intl.DateTimeFormat(l, { timeStyle: 'short' }))
 const shortWeekday = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'short' }))
 const longWeekday = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'long' }))
+const narrowWeekday = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'narrow' }))
 const hourOnly = cached((l) => new Intl.DateTimeFormat(l, { hour: 'numeric', minute: '2-digit' }))
+const weekdayDate = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'short', day: 'numeric', month: 'short' }))
+const weekdayDateTime = cached(
+  (l) => new Intl.DateTimeFormat(l, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }),
+)
 const percents = cached(() => new Map<number, Intl.NumberFormat>())
 const signedDecimals = cached(() => new Map<number, Intl.NumberFormat>())
 const signedPercent = cached((l) => new Intl.NumberFormat(l, { style: 'percent', signDisplay: 'exceptZero' }))
@@ -87,6 +92,13 @@ export function formatDate(value: string | number | Date): string {
   return Number.isNaN(date.getTime()) ? '' : dateOnly().format(date)
 }
 
+/** "15 Sep" within the current year, "15 Sep 2025" before it. For dates that are nearly always recent. */
+export function formatRecentDate(value: string | number | Date): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.getFullYear() === new Date().getFullYear() ? dayAndMonth().format(date) : dateOnly().format(date)
+}
+
 /**
  * "15 Sep 2026" for a day with no time of day, such as a chapter's release date. The server stamps
  * those as midnight UTC, so the viewer's zone would show the previous day anywhere west of Greenwich.
@@ -95,6 +107,26 @@ export function formatDate(value: string | number | Date): string {
 export function formatCalendarDate(value: string | number | Date): string {
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? '' : calendarDate().format(date)
+}
+
+/** "Fri 24 Oct", in the viewer's zone. */
+export function formatWeekdayDate(value: string | number | Date): string {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '' : weekdayDate().format(date)
+}
+
+/** "Fri 24 Oct, 16:00", in the viewer's zone. */
+export function formatWeekdayDateTime(value: string | number | Date): string {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '' : weekdayDateTime().format(date)
+}
+
+/** "Fri 24 Oct to Sun 26 Oct" as the language writes a range, collapsing to one day when both fall on it. */
+export function formatDayRange(start: string | number | Date, end: string | number | Date): string {
+  const from = new Date(start)
+  const to = new Date(end)
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return ''
+  return from.toDateString() === to.toDateString() ? weekdayDate().format(from) : weekdayDate().formatRange(from, to)
 }
 
 /** "15 Sep 2026, 16:45". */
@@ -124,11 +156,11 @@ export function monthName(month: number, style: 'short' | 'long' = 'long'): stri
 }
 
 /** Weekday name with Monday as 0, the order the stats endpoints send weekdays in. */
-export function weekdayName(index: number, style: 'short' | 'long' = 'long'): string {
+export function weekdayName(index: number, style: 'narrow' | 'short' | 'long' = 'long'): string {
   if (!Number.isInteger(index) || index < 0 || index > 6) return ''
   // 1 January 2001 was a Monday.
   const date = new Date(2001, 0, 1 + index)
-  return (style === 'short' ? shortWeekday() : longWeekday()).format(date)
+  return (style === 'narrow' ? narrowWeekday() : style === 'short' ? shortWeekday() : longWeekday()).format(date)
 }
 
 /** An hour of the day, 0-23, as a clock time: "22:00", or "10:00 PM" where that is the convention. */
@@ -196,6 +228,11 @@ export function formatDayBucket(bucket: string): string {
   const [year, month, day] = bucket.split('-').map(Number)
   if (!year || !month || !day) return bucket
   return dayAndMonth().format(new Date(year, month - 1, day))
+}
+
+/** Either stats bucket shape: "2026-03" as a month, "2026-03-14" as a day. */
+export function formatStatsBucket(bucket: string): string {
+  return bucket.split('-').length === 2 ? formatMonthBucket(bucket) : formatDayBucket(bucket)
 }
 
 /**

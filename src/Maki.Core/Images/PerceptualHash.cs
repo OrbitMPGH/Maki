@@ -1,6 +1,4 @@
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using NetVips;
 
 namespace Maki.Core.Images;
 
@@ -12,36 +10,54 @@ namespace Maki.Core.Images;
 /// </summary>
 public static class PerceptualHash
 {
-    public static async Task<ulong> OfFileAsync(string path, CancellationToken ct = default)
+    private const int Cell = 16;
+
+    public static ulong OfFile(string path)
     {
-        using var image = await Image.LoadAsync<L8>(path, ct);
-        return Of(image);
+        // A 144x128 thumbnail first, so a JPEG shrinks while decoding instead of the whole page
+        // existing as pixels; the aspect ratio does not matter, the hash squashes it anyway.
+        using var thumb = ImageCodec.ThumbnailFile(path, 9 * Cell, 8 * Cell);
+        // Through 8-bit sRGB first: straight to greyscale, a 16-bit PNG would stay 16-bit.
+        using var srgb = thumb.Colourspace(Enums.Interpretation.Srgb);
+        using var grey = srgb.Colourspace(Enums.Interpretation.Bw);
+        using var flat = grey.HasAlpha() ? grey.Flatten(background: [255]) : grey.Copy();
+        return Of(flat.WriteToMemory<byte>(), flat.Width, flat.Height);
     }
 
-    public static ulong Of(Image<L8> image)
+    /// <summary>Hash of one-byte-per-pixel greyscale, averaged into a 9x8 grid of boxes.</summary>
+    public static ulong Of(byte[] grey, int width, int height)
     {
-        // Box resampling, not the default bicubic: no ringing or sharpening, so two copies of the
+        // Box averaging, not a smoothing filter: no ringing or sharpening, so two copies of the
         // same page at different resolutions land on the same gradients.
-        image.Mutate(x => x.Resize(9, 8, KnownResamplers.Box));
+        var cells = new long[9 * 8];
+        var counts = new long[9 * 8];
+        for (var y = 0; y < height; y++)
+        {
+            var cy = y * 8 / height;
+            for (var x = 0; x < width; x++)
+            {
+                var cell = cy * 9 + x * 9 / width;
+                cells[cell] += grey[y * width + x];
+                counts[cell]++;
+            }
+        }
 
         ulong hash = 0;
         var bit = 0;
-        image.ProcessPixelRows(rows =>
+        for (var y = 0; y < 8; y++)
         {
-            for (var y = 0; y < 8; y++)
+            for (var x = 0; x < 8; x++)
             {
-                var row = rows.GetRowSpan(y);
-                for (var x = 0; x < 8; x++)
+                var left = cells[y * 9 + x] * counts[y * 9 + x + 1];
+                var right = cells[y * 9 + x + 1] * counts[y * 9 + x];
+                if (left > right)
                 {
-                    if (row[x].PackedValue > row[x + 1].PackedValue)
-                    {
-                        hash |= 1UL << bit;
-                    }
-
-                    bit++;
+                    hash |= 1UL << bit;
                 }
+
+                bit++;
             }
-        });
+        }
 
         return hash;
     }

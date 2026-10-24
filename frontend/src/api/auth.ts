@@ -3,6 +3,8 @@ import { stopConnection } from './signalr'
 import { api, beginSession, invalidateInitialize } from './client'
 import { noteSignedInUser, noteSignedOut } from '../lib/pageState'
 import { useSaveSettingsRecord } from './settingsRecord'
+import { postToWorker } from '../lib/pwa/serviceWorker'
+import { dropPushSubscription, repostPushSubscription } from './push'
 
 type SetupDoneHandler = () => void
 let onSetupDone: SetupDoneHandler | null = null
@@ -52,9 +54,11 @@ export interface Me {
   twoFactorEnabled: boolean
   oidcLinked: boolean
   oidcUserName: string | null
+  /** Effective single-user mode: the setting is on and only one account is enabled. */
+  singleUser: boolean
 }
 
-export interface UserSummary extends Omit<Me, 'oidcUserName'> {
+export interface UserSummary extends Omit<Me, 'oidcUserName' | 'singleUser'> {
   disabled: boolean
   pendingSetup: boolean
   createdAt: string
@@ -201,8 +205,15 @@ export function useSetup() {
 export function useLogout() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: () => api<void>('/auth/logout', { method: 'POST' }),
+    mutationFn: async () => {
+      await dropPushSubscription()
+      return api<void>('/auth/logout', { method: 'POST' })
+    },
     onSuccess: () => {
+      // Browsing caches go with an explicit sign-out; saved chapters and queued progress stay,
+      // keyed by user, for when the same person signs back in.
+      const userId = qc.getQueryData<Me | null>(ME_QUERY_KEY)?.id
+      if (userId !== undefined) void postToWorker({ type: 'purge-browse', userId })
       noteSignedOut()
       dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, null)
@@ -214,6 +225,7 @@ export function useChangePassword() {
   return useMutation({
     mutationFn: (body: { currentPassword: string; newPassword: string }) =>
       api<void>('/account/password', { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: () => void repostPushSubscription(),
   })
 }
 
@@ -272,6 +284,7 @@ export function useDisableTwoFactor() {
     mutationFn: (password: string) =>
       api<void>('/account/2fa/disable', { method: 'POST', body: JSON.stringify({ password }) }),
     onSuccess: () => {
+      void repostPushSubscription()
       void qc.invalidateQueries({ queryKey: ['account', '2fa'] })
       void qc.invalidateQueries({ queryKey: ME_QUERY_KEY })
     },
@@ -328,6 +341,7 @@ export function useUnlinkOidc() {
 export function useRevokeSessions() {
   return useMutation({
     mutationFn: () => api<void>('/account/sessions/revoke-all', { method: 'POST' }),
+    onSuccess: () => void repostPushSubscription(),
   })
 }
 
@@ -382,12 +396,46 @@ export interface SaveUserBody {
   disabled?: boolean
 }
 
+export interface UserMode {
+  singleUser: boolean
+  /** False while more than one account is enabled, when the mode cannot be switched on. */
+  available: boolean
+}
+
+const USER_MODE_KEY = ['settings', 'usermode'] as const
+
+export function useUserMode() {
+  return useQuery({
+    queryKey: USER_MODE_KEY,
+    queryFn: () => api<UserMode>('/settings/usermode'),
+  })
+}
+
+export function useSetUserMode() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (singleUser: boolean) =>
+      api<UserMode>('/settings/usermode', { method: 'PUT', body: JSON.stringify({ singleUser }) }),
+    onSuccess: (mode) => {
+      qc.setQueryData(USER_MODE_KEY, mode)
+      void qc.invalidateQueries({ queryKey: ME_QUERY_KEY })
+    },
+  })
+}
+
+/** Adding, disabling or removing an account can end or start single-user mode. */
+function invalidateAccountCount(qc: QueryClient) {
+  void qc.invalidateQueries({ queryKey: ['users'] })
+  void qc.invalidateQueries({ queryKey: USER_MODE_KEY })
+  void qc.invalidateQueries({ queryKey: ME_QUERY_KEY })
+}
+
 export function useCreateUser() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: SaveUserBody) =>
       api<UserSummary>('/users', { method: 'POST', body: JSON.stringify(body) }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => invalidateAccountCount(qc),
   })
 }
 
@@ -396,10 +444,10 @@ export function useUpdateUser() {
   return useMutation({
     mutationFn: ({ id, ...body }: SaveUserBody & { id: number }) =>
       api<UserSummary>(`/users/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['users'] })
-      // The edited account may be the caller's own, and its permissions drive the whole nav.
-      void qc.invalidateQueries({ queryKey: ME_QUERY_KEY })
+    onSuccess: (_, { id }) => {
+      // Also covers the edited account being the caller's own, whose permissions drive the whole nav.
+      invalidateAccountCount(qc)
+      if (qc.getQueryData<Me | null>(ME_QUERY_KEY)?.id === id) void repostPushSubscription()
     },
   })
 }
@@ -408,7 +456,7 @@ export function useDeleteUser() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => api<void>(`/users/${id}`, { method: 'DELETE' }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => invalidateAccountCount(qc),
   })
 }
 
@@ -452,6 +500,22 @@ export function useSecuritySettings() {
 
 export function useSaveSecuritySettings() {
   return useSaveSettingsRecord<SecuritySettings>(['settings', 'security'], '/settings/security')
+}
+
+export interface SignInPageSettings {
+  /** A blurred mosaic of Safe-rated covers behind the sign-in card, seen by anyone who can reach it. */
+  coverMosaic: boolean
+}
+
+export function useSignInPageSettings() {
+  return useQuery({
+    queryKey: ['settings', 'signin'],
+    queryFn: () => api<SignInPageSettings>('/settings/signin'),
+  })
+}
+
+export function useSaveSignInPageSettings() {
+  return useSaveSettingsRecord<SignInPageSettings>(['settings', 'signin'], '/settings/signin')
 }
 
 export interface OidcSettings {

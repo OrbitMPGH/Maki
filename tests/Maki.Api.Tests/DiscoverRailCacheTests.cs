@@ -14,7 +14,7 @@ public class DiscoverRailCacheTests
 
     /// <summary>Answers every browse query with as many picks as asked for, and counts them.</summary>
     private sealed class CountingStore() : MangaBakaLocalStore(
-        new MangaBakaDumpOptions("", ""), new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance)
+        new MangaBakaDumpOptions("", ""), NullLogger<MangaBakaLocalStore>.Instance)
     {
         private int _queries;
         public int Queries => _queries;

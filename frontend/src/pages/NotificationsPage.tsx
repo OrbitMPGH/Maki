@@ -18,7 +18,7 @@ import type { I18n } from '@lingui/core'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  INBOX_CATEGORIES,
+  visibleInboxCategories,
   useClearInbox,
   useDismissInbox,
   useInbox,
@@ -100,7 +100,7 @@ function groupNotifications(items: InboxItem[], i18n: I18n): NotificationDateGro
 export default function NotificationsPage() {
   const { t, i18n } = useLingui()
   const navigate = useNavigate()
-  const { can } = useAuth()
+  const { can, singleUser } = useAuth()
   const renderLabel = useLabel()
   const isAdmin = can('Admin')
 
@@ -115,7 +115,7 @@ export default function NotificationsPage() {
   const dismiss = useDismissInbox()
   const clear = useClearInbox()
 
-  const categories = INBOX_CATEGORIES.filter((c) => !c.adminOnly || isAdmin)
+  const categories = visibleInboxCategories(isAdmin, singleUser)
 
   // Filtered client-side rather than through the endpoint's `type` parameter: a category is several
   // types, and the endpoint takes one. Paging still comes from the server, so this narrows the page
@@ -142,7 +142,6 @@ export default function NotificationsPage() {
       <PageHeader
         compact
         title={t`Notifications`}
-        description={t`What happened in your library while you were away.`}
         actions={
           <>
             <Tooltip label={t`Notification settings`} withArrow>
@@ -329,7 +328,7 @@ function Row({
             <Text size="xs" c="var(--ink-3)">
               {item.body}
             </Text>
-            <Text fz="var(--type-badge)" lh={1.5} c="var(--ink-3)">
+            <Text fz="var(--type-micro)" lh={1.5} c="var(--ink-4)">
               {/* Under an older day's heading the day is already said, and a relative time can
                   disagree with it ("yesterday" under Monday, 34 hours on), so those rows give the
                   clock time instead. */}

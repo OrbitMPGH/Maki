@@ -262,10 +262,6 @@ public class HealthScanService(MakiDbContext db)
         scan.Completed = current.Completed;
         scan.Error = current.Error;
         scan.FinishedAt = current.FinishedAt;
-        // ImageSharp pools what it allocates and holds it for the life of the process. Header
-        // parsing needs far less than decoding did, but a scan is still the largest thing that
-        // touches it and the next one is not until files arrive.
-        SixLabors.ImageSharp.Configuration.Default.MemoryAllocator.ReleaseRetainedResources();
     }
 
     /// <param name="verify">Read the archive's contents. Indexing is the default because it reads

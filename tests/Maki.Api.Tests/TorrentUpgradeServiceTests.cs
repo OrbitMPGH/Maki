@@ -6,18 +6,20 @@ using Maki.Core.Inbox;
 using Maki.Core.Parsing;
 using Maki.Core.Quality;
 using Maki.Data;
+using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-/// <summary>A Prowlarr and qBittorrent stand-in: search answers from a list, a grab is recorded.</summary>
+/// <summary>An indexer and download client stand-in: search answers from a list, a grab is recorded.</summary>
 internal sealed class FakeReleases() : ReleaseService(null!, null!, null!, null!, NullLogger<ReleaseService>.Instance)
 {
     public List<ReleaseDto> Results { get; } = [];
     public List<(int SeriesId, string Query)> Queries { get; } = [];
     public List<(int SeriesId, ReleaseDto Release, DownloadOrigin Origin, int? UserId, string? Info)> Grabs { get; } = [];
     public Exception? SearchError { get; set; }
+    public Exception? GrabError { get; set; }
     public Action? OnSearch { get; set; }
 
     public override Task<ReleaseSearchResult> SearchAsync(int seriesId, string? query = null, CancellationToken ct = default)
@@ -36,11 +38,26 @@ internal sealed class FakeReleases() : ReleaseService(null!, null!, null!, null!
         int? queuedByUserId, string? upgradeInfoJson, CancellationToken ct = default)
     {
         Grabs.Add((seriesId, release, origin, queuedByUserId, upgradeInfoJson));
+        if (GrabError is not null)
+        {
+            throw GrabError;
+        }
+
         return Task.FromResult(new DownloadQueueItem { Id = 1000 + Grabs.Count, SeriesId = seriesId, Origin = origin });
     }
 
     public static ReleaseDto Release(string title, long size = 100L * 1024 * 1024, int seeders = 5, string? guid = null) =>
         new(guid ?? title, title, size, "Nyaa", seeders, 0, "torrent", null, "magnet:?xt=urn:btih:abc", null);
+}
+
+/// <summary>A dump that is not installed, except for the related titles a test hands it.</summary>
+internal sealed class FakeRelatedTitles() : MangaBakaLocalStore(new MangaBakaDumpOptions("", Path.GetTempPath()),
+    NullLogger<MangaBakaLocalStore>.Instance)
+{
+    public Dictionary<long, IReadOnlyList<string>> Related { get; } = [];
+
+    public override Task<IReadOnlyList<string>> GetRelatedTitlesAsync(long id, CancellationToken ct = default) =>
+        Task.FromResult(Related.GetValueOrDefault(id) ?? []);
 }
 
 internal sealed class SettableClock(DateTimeOffset now) : TimeProvider
@@ -59,6 +76,7 @@ public class TorrentUpgradeServiceTests : IDisposable
     private readonly UpgradeWorld _world = new();
     private readonly FakeReleases _releases = new();
     private readonly SettableClock _clock = SettableClock.LocalNoon();
+    private readonly FakeRelatedTitles _store = new();
 
     public TorrentUpgradeServiceTests()
     {
@@ -72,7 +90,7 @@ public class TorrentUpgradeServiceTests : IDisposable
 
     private TorrentUpgradeService Service(MakiDbContext db) => new(db,
         new UpgradeEvaluationService(db, TestQuality.Create(_world.Registry)), _releases, _world.Inbox, _world.Settings,
-        _clock, NullLogger<TorrentUpgradeService>.Instance);
+        _clock, _store, NullLogger<TorrentUpgradeService>.Instance);
 
     private int Chapter(decimal number, int? volume, bool withFile = true, bool wanted = true, Action<ChapterFile>? file = null,
         string language = "en")
@@ -278,6 +296,71 @@ public class TorrentUpgradeServiceTests : IDisposable
         Assert.Equal(wanted, WantedFlags());
     }
 
+    private void AddLibrarySeries(string title)
+    {
+        using var db = _world.Db.NewContext();
+        var rootFolderId = db.Series.Single(s => s.Id == _world.SeriesId).RootFolderId;
+        db.Series.Add(new Series
+        {
+            Title = title, SortTitle = title.ToLowerInvariant(), FolderName = title, RootFolderId = rootFolderId,
+            Added = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task A_release_naming_a_related_series_is_ignored_with_its_own_reason()
+    {
+        Chapter(1, 1);
+        Chapter(2, 1);
+        using (var db = _world.Db.NewContext())
+        {
+            db.Series.Single(s => s.Id == _world.SeriesId).MangaBakaId = 4323;
+            db.SaveChanges();
+        }
+
+        _store.Related[4323] = ["Kaguya Gaiden", "Unrelated Title"];
+
+        var spinOff = await EvaluateAsync("Kaguya Gaiden v01 (Digital) (1r0n)");
+        var own = await EvaluateAsync("Kaguya v01 (Digital) (1r0n)");
+
+        Assert.False(spinOff.TitleMatched);
+        Assert.Equal(SpanOutcome.Ignore, spinOff.Verdict.Outcome);
+        Assert.Equal([SpanVerdictReasons.TitleRelatedSeries], spinOff.Verdict.Reasons);
+        Assert.Equal("Kaguya Gaiden", spinOff.RivalTitle);
+        Assert.True(own.TitleMatched);
+        Assert.Null(own.RivalTitle);
+
+        _releases.Results.Add(FakeReleases.Release("Kaguya Gaiden v01 (Digital) (1r0n)"));
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)"));
+        await SearchAsync();
+
+        Assert.Equal("Kaguya v01 (Digital) (1r0n)", Assert.Single(_releases.Grabs).Release.Title);
+    }
+
+    [Fact]
+    public async Task Another_library_series_is_a_rival_when_there_is_no_dump()
+    {
+        Chapter(1, 1);
+        AddLibrarySeries("Kaguya Gaiden");
+
+        var spinOff = await EvaluateAsync("Kaguya Gaiden v01 (Digital) (1r0n)");
+        var own = await EvaluateAsync("Kaguya v01 (Digital) (1r0n)");
+
+        Assert.False(spinOff.TitleMatched);
+        Assert.Equal("Kaguya Gaiden", spinOff.RivalTitle);
+        Assert.True(own.TitleMatched);
+    }
+
+    [Fact]
+    public async Task A_duplicate_library_entry_is_not_a_rival()
+    {
+        Chapter(1, 1);
+        AddLibrarySeries("Kaguya");
+
+        Assert.True((await EvaluateAsync("Kaguya v01 (Digital) (1r0n)")).TitleMatched);
+    }
+
     [Fact]
     public async Task A_proposal_is_written_and_announced()
     {
@@ -367,8 +450,11 @@ public class TorrentUpgradeServiceTests : IDisposable
         }
 
         _world.Settings.Set(SettingKeys.ProwlarrApiKey, "");
-        Assert.Equal(VolumeSearchReasons.NoProwlarr, (await SearchAsync()).Reason);
+        Assert.Equal(VolumeSearchReasons.NoIndexer, (await SearchAsync()).Reason);
         _world.Settings.Set(SettingKeys.ProwlarrApiKey, "key");
+        _world.Settings.Set(SettingKeys.IndexerBackend, "jackett");
+        Assert.Equal(VolumeSearchReasons.NoIndexer, (await SearchAsync()).Reason);
+        _world.Settings.Set(SettingKeys.IndexerBackend, "prowlarr");
 
         using (var db = _world.Db.NewContext())
         {
@@ -429,7 +515,7 @@ public class TorrentUpgradeServiceTests : IDisposable
         }
 
         _world.Settings.Set(SettingKeys.ProwlarrUrl, "");
-        Assert.Equal(VolumeSearchReasons.NoProwlarr, (await SearchAsync(ignoreGlobalSwitch: true)).Reason);
+        Assert.Equal(VolumeSearchReasons.NoIndexer, (await SearchAsync(ignoreGlobalSwitch: true)).Reason);
         _world.Settings.Set(SettingKeys.ProwlarrUrl, "http://prowlarr.test");
         using (var db = _world.Db.NewContext())
         {
@@ -487,6 +573,29 @@ public class TorrentUpgradeServiceTests : IDisposable
         _clock.Now = _clock.Now.AddHours(2);
         using var later = _world.Db.NewContext();
         Assert.Equal([_world.SeriesId], await Service(later).CandidateSeriesAsync(CancellationToken.None));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_grab_the_client_holds_in_another_category_waits_the_full_interval(bool heldOutsideLabel)
+    {
+        Chapter(1, 1);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)"));
+        _releases.GrabError = heldOutsideLabel
+            ? new Maki.Core.Download.TorrentClientException(Maki.Core.Download.TorrentClientFailure.HeldOutsideLabel, "held")
+            : new HttpRequestException("qbittorrent down");
+
+        var result = await SearchAsync();
+
+        Assert.Equal(VolumeSearchReasons.GrabFailed, result.Reason);
+        Assert.Single(_releases.Grabs);
+        using var db = _world.Db.NewContext();
+        var expected = heldOutsideLabel
+            ? _clock.Now.UtcDateTime
+            : _clock.Now.UtcDateTime - (TorrentUpgradeService.SearchInterval - TorrentUpgradeService.RetryAfterFailure);
+        Assert.Equal(expected, db.Series.Single().LastVolumeSearchUtc);
+        Assert.DoesNotContain(db.TorrentProposals, p => p.Status == TorrentProposalStatus.Dismissed);
     }
 
     private void RenameSeries(string title)

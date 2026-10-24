@@ -1,15 +1,124 @@
-import type { ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Paper, Text, Title } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
+import { getInitialize } from '../../api/client'
 import { IconBrandMark } from '../IconBrandMark'
 
+/** Accent strength of each shape in the band: fixed, so the art is the same on every visit. */
+const SHAPES = Array.from({ length: 50 }, (_, i) => 10 + ((i * 37) % 62))
+
+type ArtMode = 'pending' | 'shapes' | 'covers'
+
+const ART_KEY = 'auth-art'
+
+/** How long the frame waits for the bootstrap to answer before it paints its own art. */
+const ART_PENDING_MS = 1500
+
+/** How long it then waits for the mosaic image once the bootstrap has said covers are on. */
+const ART_COVERS_MS = 5000
+
+function readArt(): ArtMode {
+  try {
+    const stored = localStorage.getItem(ART_KEY)
+    if (stored === 'shapes' || stored === 'covers') return stored
+  } catch {
+    /* private mode: the first paint waits for the server */
+  }
+  return 'pending'
+}
+
+function writeArt(mode: 'shapes' | 'covers') {
+  try {
+    localStorage.setItem(ART_KEY, mode)
+  } catch {
+    /* private mode: remembered for this visit only */
+  }
+}
+
 /**
- * The band behind sign-in and first-run setup, so the first screen anyone sees belongs to the same
- * product as the series page.
- *
- * The art is CSS rather than a cover: nobody is signed in yet, and fetching library art anonymously
- * would leak what the instance holds to anyone who can reach the login form. No hero scrims either:
- * with no image to protect they only stack more 8-bit layers, and the steps show as blocks.
+ * Which art the band shows. Starts from the last answer so a returning visitor paints the right
+ * mode at once; a first visit holds at "pending" (neither art, no identity block) until the
+ * bootstrap and, when covers are on, the mosaic have answered, so the layout never jumps from one
+ * mode to the other. Waiting is bounded in every case: past the timeouts the page's own art shows,
+ * including for a returning visitor whose remembered mosaic never arrives. Once shapes have been
+ * painted in this visit the mosaic is remembered for the next one but never swapped in. A mosaic
+ * the server refuses (a 4xx) is remembered as shapes; a network error or timeout is not.
+ */
+function useAuthArt() {
+  const [mode, setMode] = useState<ArtMode>(readArt)
+  const [mosaicUrl, setMosaicUrl] = useState<string | null>(null)
+  const modeRef = useRef(mode)
+  const coversLoaded = useRef(false)
+
+  const commit = useCallback((next: ArtMode) => {
+    modeRef.current = next
+    setMode(next)
+  }, [])
+
+  useEffect(() => {
+    let live = true
+    let coversExpected = false
+    const timers: number[] = []
+    const fallBack = () => {
+      if (modeRef.current !== 'shapes') commit('shapes')
+    }
+    getInitialize()
+      .then((init) => {
+        if (!live) return
+        if (init.signInCovers) {
+          coversExpected = true
+          setMosaicUrl(`${init.apiRoot}/signin/mosaic.webp`)
+        } else {
+          commit('shapes')
+          writeArt('shapes')
+        }
+      })
+      .catch(() => {
+        if (live) commit('shapes')
+      })
+    timers.push(
+      window.setTimeout(() => {
+        if (!coversExpected && modeRef.current === 'pending') fallBack()
+      }, ART_PENDING_MS),
+      window.setTimeout(() => {
+        if (!coversLoaded.current) fallBack()
+      }, ART_COVERS_MS),
+    )
+    return () => {
+      live = false
+      timers.forEach((id) => window.clearTimeout(id))
+    }
+  }, [commit])
+
+  return {
+    mode,
+    mosaicUrl,
+    onCoversLoad: () => {
+      coversLoaded.current = true
+      writeArt('covers')
+      if (modeRef.current !== 'shapes') commit('covers')
+    },
+    onCoversError: () => {
+      commit('shapes')
+      if (!mosaicUrl) return
+      fetch(mosaicUrl)
+        .then((res) => {
+          void res.body?.cancel()
+          if (res.status >= 400 && res.status < 500) writeArt('shapes')
+        })
+        .catch(() => {})
+    },
+  }
+}
+
+/**
+ * The frame behind sign-in and first-run setup, with the page's one cinematic band.
+ * <p>
+ * By default the band is Maki's own art (cover shapes in the accent colour) and the mascot is drawn
+ * at size: nobody is signed in, and fetching covers anonymously would show what the instance holds
+ * to anyone who can reach the form. An admin can opt in to a mosaic of Safe-rated covers, which the
+ * server blurs into one image; it replaces the shapes once it has loaded, and the tagline goes,
+ * since the covers say it. Until the mode is known (see {@link useAuthArt}) neither is painted.
  */
 export function AuthFrame({
   title,
@@ -23,10 +132,29 @@ export function AuthFrame({
   footer?: ReactNode
 }) {
   const { t } = useLingui()
+  const { mode, mosaicUrl, onCoversLoad, onCoversError } = useAuthArt()
 
   return (
-    <div className="auth-frame">
-      <div className="auth-backdrop-art" aria-hidden />
+    <div className="auth-frame" data-art={mode}>
+      <div className="auth-band" aria-hidden>
+        <div className="auth-band-shapes">
+          {SHAPES.map((shade, i) => (
+            <span key={i} style={{ '--shade': `${shade}%` } as CSSProperties} />
+          ))}
+        </div>
+        {mosaicUrl && (
+          <img
+            className="auth-band-covers"
+            data-no-cover-fallback
+            src={mosaicUrl}
+            alt=""
+            decoding="async"
+            onLoad={onCoversLoad}
+            onError={onCoversError}
+          />
+        )}
+        <div className="auth-band-scrim" />
+      </div>
 
       <div className="auth-content">
         <div className="auth-identity">
@@ -38,7 +166,7 @@ export function AuthFrame({
         </div>
 
         <div className="auth-column">
-          <Paper withBorder radius="lg" p="lg" className="series-hero-glass-panel auth-panel">
+          <Paper withBorder radius="lg" p="lg" className="series-hero-panel auth-panel">
             <Title order={2} className="auth-panel-title">
               {title}
             </Title>

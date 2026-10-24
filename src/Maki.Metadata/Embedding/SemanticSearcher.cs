@@ -212,6 +212,7 @@ public class SemanticSearcher(
             }
 
             var works = RankByPopularity(index, plan, limit);
+            works = await WithUnindexedWorksAsync(index, works, credits.SeriesIds, filters, limit, ct);
             return new SemanticSearchOutcome(await HydrateAsync(works, ct), null, credits.Credits);
         }
 
@@ -261,6 +262,7 @@ public class SemanticSearcher(
         // Fourth channel: the query may simply be somebody's name. Only when no explicit credit
         // term was given, since one of those has already narrowed everything above.
         var chips = credits.Credits;
+        var unindexedCreditWorks = new List<long>();
         if (!parsed.HasCredits && catalogue is not null)
         {
             var named = CreditChannel.Select(
@@ -275,7 +277,13 @@ public class SemanticSearcher(
                 var rank = 0;
                 foreach (var id in catalogue.Credits.WorksOf(creator.NameId, CreditRole.Creator))
                 {
-                    if (!index.TryGetRow(id, out var row) || !index.Matches(row, plan))
+                    if (!index.TryGetRow(id, out var row))
+                    {
+                        unindexedCreditWorks.Add(id);
+                        continue;
+                    }
+
+                    if (!index.Matches(row, plan))
                     {
                         continue;
                     }
@@ -307,11 +315,184 @@ public class SemanticSearcher(
         }
 
         var winners = RankCandidates(index, plan, fused, exactTitles, limit, nearTitles);
+        var unindexed = await UnindexedCandidatesAsync(
+            index, filters, credits.SeriesIds, exactTitles, nearTitles, lexical, unindexedCreditWorks, ct);
+        if (unindexed.Count > 0)
+        {
+            winners = MergeUnindexed(index, winners, fused, exactTitles, nearTitles, unindexed, limit);
+        }
+
         var results = await HydrateAsync(winners, ct);
         logger.LogDebug(
             "Semantic search for {Length}-char query returned {Count} of {Pool} candidates in {Elapsed:F0}ms",
             text.Length, results.Count, fused.Count, (DateTime.UtcNow - started).TotalMilliseconds);
         return new SemanticSearchOutcome(results, corrected, chips);
+    }
+
+    /// <summary>How many series the index does not hold may join one answer.</summary>
+    private const int MaxUnindexed = 10;
+
+    /// <summary>A search hit scored for <see cref="MergeUnindexed"/>.</summary>
+    /// <param name="TitleDistance">0 for an exact title, the edit distance of a near one, else null.</param>
+    internal sealed record UnindexedCandidate(long Id, int? TitleDistance, double Score);
+
+    /// <summary>
+    /// Series the query names that the index does not hold (see <see cref="UnindexedHits"/>): an
+    /// exact or near title, a title the lexical channel found, or a work of the creator the query
+    /// names. Exact titles are offered whatever the preference filters say, as for indexed series;
+    /// the rest only when none is set. Each is scored on the lexical and credit channels plus the
+    /// popularity prior, the same terms an indexed row gets from those channels.
+    /// </summary>
+    private async Task<IReadOnlyList<UnindexedCandidate>> UnindexedCandidatesAsync(
+        VectorIndex index, RecommendationFilters? filters, IReadOnlyCollection<long>? creditScope,
+        IReadOnlySet<long> exactTitles, IReadOnlyDictionary<long, int> nearTitles,
+        IReadOnlyList<(long Id, int Rank)> lexical, IReadOnlyList<long> creditWorks, CancellationToken ct)
+    {
+        bool Unindexed(long id) => !index.TryGetRow(id, out _);
+
+        var distances = new Dictionary<long, int>();
+        var scores = new Dictionary<long, double>();
+        var order = new List<long>();
+        void Offer(long id)
+        {
+            if (scores.TryAdd(id, 0))
+            {
+                order.Add(id);
+            }
+        }
+
+        foreach (var id in exactTitles.Where(Unindexed))
+        {
+            distances[id] = 0;
+            Offer(id);
+        }
+
+        if (!UnindexedHits.NarrowsByPreference(filters))
+        {
+            foreach (var (id, distance) in nearTitles.Where(kv => Unindexed(kv.Key)).OrderBy(kv => kv.Value))
+            {
+                distances.TryAdd(id, distance);
+                Offer(id);
+            }
+
+            foreach (var (id, rank) in lexical.Where(hit => Unindexed(hit.Id)))
+            {
+                Offer(id);
+                scores[id] += 1.0 / (tuning.RrfK + rank + 1);
+            }
+
+            for (var rank = 0; rank < creditWorks.Count; rank++)
+            {
+                Offer(creditWorks[rank]);
+                scores[creditWorks[rank]] += tuning.CreditChannelWeight / (tuning.CreditChannelRrfK + rank + 1);
+            }
+        }
+
+        if (creditScope is not null)
+        {
+            var scope = creditScope.ToHashSet();
+            order.RemoveAll(id => !scope.Contains(id));
+        }
+
+        if (order.Count == 0)
+        {
+            return [];
+        }
+
+        IReadOnlyList<UnindexedHits.Hit> visible;
+        try
+        {
+            visible = await UnindexedHits.VisibleAsync(dumpOptions.DatabasePath, index, order, filters, ct);
+        }
+        catch (SqliteException ex)
+        {
+            logger.LogDebug(ex, "Could not look up search hits the vector index does not hold");
+            return [];
+        }
+
+        return visible
+            .Take(MaxUnindexed)
+            .Select(hit => new UnindexedCandidate(
+                hit.Id,
+                distances.TryGetValue(hit.Id, out var distance) ? distance : null,
+                scores[hit.Id] + (tuning.PopularityWeight * PopularityPrior(hit.Popularity))))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Folds series the index does not hold into the ranked winners: by title distance first, as
+    /// <see cref="RankCandidates"/> orders, then by score. An indexed series stays ahead of an
+    /// unindexed one it ties with.
+    /// </summary>
+    internal static IReadOnlyList<long> MergeUnindexed(
+        VectorIndex index, IReadOnlyList<long> winners, IReadOnlyDictionary<int, double> fused,
+        IReadOnlySet<long> exactTitles, IReadOnlyDictionary<long, int> nearTitles,
+        IReadOnlyList<UnindexedCandidate> unindexed, int limit)
+    {
+        var indexed = winners.Select(id => new UnindexedCandidate(
+            id,
+            exactTitles.Contains(id) ? 0 : nearTitles.TryGetValue(id, out var distance) ? distance : null,
+            index.TryGetRow(id, out var row) ? fused.GetValueOrDefault(row) : 0));
+
+        var seen = winners.ToHashSet();
+        return indexed
+            .Concat(unindexed.Where(u => seen.Add(u.Id)))
+            .OrderBy(c => c.TitleDistance ?? int.MaxValue)
+            .ThenByDescending(c => c.Score)
+            .Take(limit)
+            .Select(c => c.Id)
+            .ToList();
+    }
+
+    /// <summary>
+    /// A creator-only query ranks the indexed works by popularity; the creator's works the index
+    /// does not hold join them in the same order, unless a preference filter is set.
+    /// </summary>
+    private async Task<IReadOnlyList<long>> WithUnindexedWorksAsync(
+        VectorIndex index, IReadOnlyList<long> indexedWorks, IReadOnlyCollection<long>? creatorWorks,
+        RecommendationFilters? filters, int limit, CancellationToken ct)
+    {
+        if (creatorWorks is not { Count: > 0 } || UnindexedHits.NarrowsByPreference(filters))
+        {
+            return indexedWorks;
+        }
+
+        var unindexed = creatorWorks.Where(id => !index.TryGetRow(id, out _)).ToList();
+        if (unindexed.Count == 0)
+        {
+            return indexedWorks;
+        }
+
+        IReadOnlyList<UnindexedHits.Hit> visible;
+        try
+        {
+            visible = await UnindexedHits.VisibleAsync(dumpOptions.DatabasePath, index, unindexed, filters, ct);
+        }
+        catch (SqliteException ex)
+        {
+            logger.LogDebug(ex, "Could not look up a creator's works the vector index does not hold");
+            return indexedWorks;
+        }
+
+        return MergeByPopularity(index, indexedWorks, visible, limit);
+    }
+
+    /// <summary>
+    /// Indexed works (already in popularity order) and unindexed ones in one popularity order,
+    /// unknown ranks last. An indexed work stays ahead of an unindexed one it ties with.
+    /// </summary>
+    internal static IReadOnlyList<long> MergeByPopularity(
+        VectorIndex index, IReadOnlyList<long> indexedWorks, IReadOnlyList<UnindexedHits.Hit> unindexed, int limit)
+    {
+        static int RankOf(int popularity) => popularity == VectorIndex.Unknown ? int.MaxValue : popularity;
+
+        return indexedWorks
+            .Select(id => (Id: id, Rank: RankOf(index.TryGetRow(id, out var row) ? index.PopularityAt(row) : VectorIndex.Unknown)))
+            .Concat(unindexed.Select(hit => (hit.Id, Rank: RankOf(hit.Popularity))))
+            .OrderBy(x => x.Rank)
+            .Take(limit)
+            .Select(x => x.Id)
+            .ToList();
     }
 
     /// <summary>

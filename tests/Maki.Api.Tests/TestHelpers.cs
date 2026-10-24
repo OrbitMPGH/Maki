@@ -2,7 +2,9 @@ using System.Net;
 using Maki.Api.Hubs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Download;
 using Maki.Core.Inbox;
+using Maki.Core.Indexers;
 using Maki.Core.Notifications;
 using Maki.Core.Security;
 using Maki.Core.Sources;
@@ -35,6 +37,7 @@ internal sealed class RecordingInbox() : InboxService(
     new ServiceCollection().BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(),
     null!,
     null!,
+    null!,
     TimeProvider.System,
     NullLogger<InboxService>.Instance)
 {
@@ -53,7 +56,8 @@ internal sealed class RecordingInbox() : InboxService(
     public int DurableRaiseFailures { get; set; }
 
     public override Task RaiseOrThrowAsync(
-        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default)
+        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default,
+        IReadOnlyList<PushDevice>? pushDevices = null)
     {
         if (DurableRaiseFailures-- > 0) throw new InvalidOperationException("inbox write failed");
         Raised.Add((type, message, audience));
@@ -61,7 +65,8 @@ internal sealed class RecordingInbox() : InboxService(
     }
 
     public override Task RaiseAsync(
-        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default)
+        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default,
+        IReadOnlyList<PushDevice>? pushDevices = null)
     {
         Raised.Add((type, message, audience));
         return Task.CompletedTask;
@@ -213,6 +218,51 @@ internal sealed class StubHttpClientFactory(string body, HttpStatusCode status =
             return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body) });
         }
     }
+}
+
+/// <summary>Both real indexer clients over one stubbed HTTP factory.</summary>
+internal static class TestIndexers
+{
+    public static IndexerRegistry Registry(IHttpClientFactory http) =>
+        new([new ProwlarrClient(http), new JackettClient(http, NullLogger<JackettClient>.Instance)]);
+}
+
+/// <summary>An <see cref="ITorrentClient"/> that records adds and lists <see cref="Torrents"/>.</summary>
+internal sealed class FakeTorrentClient : ITorrentClient
+{
+    public List<ClientTorrent> Torrents { get; } = [];
+
+    public List<string> AddedLinks { get; } = [];
+
+    public List<(byte[] File, string Hash)> AddedFiles { get; } = [];
+
+    /// <summary>What <see cref="AddAsync"/> answers, as a client that reports the hash would.</summary>
+    public string? HashToReturn { get; set; }
+
+    public TorrentClientKind Kind => TorrentClientKind.QBittorrent;
+
+    public bool UsesUsername => true;
+
+    public string DefaultUrl => "http://localhost:8080";
+
+    public Task PingAsync(TorrentClientSettings settings, CancellationToken ct = default) => Task.CompletedTask;
+
+    public Task<string?> AddAsync(TorrentClientSettings settings, string magnetOrUrl, CancellationToken ct = default)
+    {
+        AddedLinks.Add(magnetOrUrl);
+        return Task.FromResult(HashToReturn);
+    }
+
+    public Task AddFileAsync(TorrentClientSettings settings, byte[] torrent, string infoHash, CancellationToken ct = default)
+    {
+        AddedFiles.Add((torrent, infoHash));
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<ClientTorrent>> ListAsync(TorrentClientSettings settings, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<ClientTorrent>>(Torrents.ToList());
+
+    public TorrentClientRegistry Registry() => new([this]);
 }
 
 /// <summary>A <see cref="RecycleBinService"/> over <paramref name="db"/> for services under test that bin files.</summary>

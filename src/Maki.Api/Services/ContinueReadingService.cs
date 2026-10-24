@@ -80,10 +80,60 @@ public class ContinueReadingService(MakiDbContext db)
                 continue;
             }
 
-            // The earliest unread chapter after the furthest one read, else the earliest unread
-            // (everything past the furthest read is done, so offer what was skipped). Another
-            // language's copy of the furthest chapter is not "next".
-            var furthestRead = ordered.FindLastIndex(c => c.Number is not null && IsRead(c.Id, c.Number, c.Volume));
+            // The earliest unread chapter after the reader's place, else the earliest unread
+            // (everything past the place is done, so offer what was skipped). Another language's
+            // copy of the chapter at the place is not "next".
+            //
+            // The place is the furthest read whole-numbered chapter whose previous whole-numbered
+            // chapter is read too (or that has none). A bonus read out of curiosity (37.5) never
+            // moves it, and neither does a lone read far ahead (a misclick, a Kavita mark): with
+            // 1-10 read and 50 marked, Read offers 11, not 51. A real jump ahead takes over once
+            // the chapter after it is read. With no such chapter, the furthest read whole-numbered
+            // chapter is the place, so someone who started at 100 is offered 101. A volume-only
+            // entry (number 0) is placed by estimate and is never the place.
+            static bool Whole(decimal? number) => number is { } n && n >= 0 && n % 1 == 0;
+            bool FollowsARead(int index)
+            {
+                var number = ordered[index].Number;
+                for (var i = index - 1; i >= 0; i--)
+                {
+                    var p = ordered[i];
+                    if (Whole(p.Number) && p.Number > 0 && p.Number != number)
+                    {
+                        return IsRead(p.Id, p.Number, p.Volume);
+                    }
+                }
+
+                return true;
+            }
+
+            var furthestRead = -1;
+            var furthestAny = -1;
+            for (var i = ordered.Count - 1; i >= 0; i--)
+            {
+                var c = ordered[i];
+                if (!Whole(c.Number) || c.Number == 0 || !IsRead(c.Id, c.Number, c.Volume))
+                {
+                    continue;
+                }
+
+                if (furthestAny < 0)
+                {
+                    furthestAny = i;
+                }
+
+                if (FollowsARead(i))
+                {
+                    furthestRead = i;
+                    break;
+                }
+            }
+
+            if (furthestRead < 0)
+            {
+                furthestRead = furthestAny;
+            }
+
             var furthestNumber = furthestRead < 0 ? null : ordered[furthestRead].Number;
             var next = ordered.Skip(furthestRead + 1)
                            .FirstOrDefault(c => c.HasFile && !IsRead(c.Id, c.Number, c.Volume) && (furthestRead < 0 || c.Number != furthestNumber))

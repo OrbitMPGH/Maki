@@ -130,7 +130,7 @@ public class QueueController(
             Failed: counts.GetValueOrDefault(QueueStatus.Failed)));
     }
 
-    /// <summary>What is paused right now. Torrents already handed to qBittorrent are not part of it.</summary>
+    /// <summary>What is paused right now. Torrents already handed to the download client are not part of it.</summary>
     [HttpGet("pause")]
     public async Task<IActionResult> GetPause(CancellationToken ct) =>
         Ok(QueuePauseDto.From(await pauses.ActiveAsync(ct)));
@@ -211,7 +211,15 @@ public class QueueController(
                     Title = q.Chapter.Title,
                     IsOneShot = q.Chapter.IsOneShot,
                 },
-            q.Series == null ? null : new Series { Id = q.Series.Id, Title = q.Series.Title },
+            q.Series == null
+                ? null
+                : new Series
+                {
+                    Id = q.Series.Id,
+                    Title = q.Series.Title,
+                    CoverPath = q.Series.CoverPath,
+                    LastMetadataRefresh = q.Series.LastMetadataRefresh,
+                },
             q.SourceMapping != null
                 ? q.SourceMapping.SourceName
                 : q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?"));
@@ -331,7 +339,8 @@ public class QueueController(
             plan.NewChapterCount,
             plan.ReplacedFileCount,
             plan.IsUpgrade,
-            plan.SuggestedSkips
+            plan.SuggestedSkips,
+            plan.Chapters
         });
     }
 

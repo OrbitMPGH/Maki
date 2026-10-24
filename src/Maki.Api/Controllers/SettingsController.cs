@@ -8,7 +8,10 @@ using Maki.Api.Configuration;
 using Maki.Api.Jobs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Download;
+using Maki.Core.Indexers;
 using Maki.Core.Parsing;
+using Maki.Core.Scrobbling;
 using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Api.Localization;
@@ -34,13 +37,13 @@ namespace Maki.Api.Controllers;
 // database, the reader's display defaults. Those are listed explicitly below and require only a
 // signed-in user; every other endpoint — and every write without exception — is admin-only.
 //
-// Reads matter as much as writes on the rest: these endpoints return the Prowlarr and Kavita API keys,
-// the qBittorrent password and the tracker client secrets, all stored in plaintext by design.
+// Reads matter as much as writes on the rest: these endpoints return the indexer and Kavita API keys,
+// the download client password and the tracker client secrets, all stored in plaintext by design.
 //
 // "reader", "ui", "discover", "opds" and the per-tracker halves of "scrobble" are per-user, stored in
 // UserSettings and read through the scoped IUserSettings — so their writes need no admin policy: a
 // caller can only ever change their own. Everything else here describes the deployment (paths,
-// Prowlarr/qBittorrent/Kavita connections, source priority, updates) or an app registration shared by
+// indexer/download client/Kavita connections, source priority, updates) or an app registration shared by
 // everyone (a tracker's client id and secret), and stays admin-only.
 public class SettingsController(
     ILocalizer localizer,
@@ -48,8 +51,8 @@ public class SettingsController(
     SettingsService settings,
     NamingService naming,
     FlareSolverrClient flareSolverr,
-    Maki.Core.Indexers.ProwlarrClient prowlarr,
-    Maki.Core.Download.QBittorrentClient qbittorrent,
+    Maki.Core.Indexers.IndexerRegistry indexers,
+    Maki.Core.Download.TorrentClientRegistry torrentClients,
     Maki.Core.Kavita.KavitaClient kavita,
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,
@@ -77,14 +80,20 @@ public class SettingsController(
     ISchedulerFactory schedulerFactory,
     IServiceScopeFactory scopeFactory,
     ILogger<SettingsController> logger,
-    AccountSecurityAlerts? alerts = null) : ControllerBase
+    AccountSecurityAlerts? alerts = null,
+    IScrobbleTokenStore? scrobbleTokens = null,
+    MangaUpdatesTracker? mangaUpdates = null) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
-    public record ProwlarrSettings(string? Url, string? ApiKey);
-    public record QBittorrentSettings(
-        string? Url, string? Username, string? Password, string? Category, string? PathMapFrom, string? PathMapTo);
-    public record MetadataSettings(bool UseLocalDb);
-    public record MetadataSettingsResponse(bool UseLocalDb, bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
+    public record IndexerConnection(string? Backend, string? Url, string? ApiKey);
+    public record DownloadClientSettings(
+        string? Kind, string? Url, string? Username, string? Password, string? Label, string? PathMapFrom, string? PathMapTo);
+    /// <param name="DumpDownloadFailed">
+    /// No dump is installed and the last download failed, for the gate's waiting screen. Only a bit:
+    /// the error text stays on the admin-only progress endpoint.
+    /// </param>
+    public record MetadataSettingsResponse(
+        bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt, bool DumpDownloadFailed);
     /// <summary>Both fields optional on PUT: a null leaves that setting as it is.</summary>
     public record MonitoringSettings(bool? UnmonitorSpecials, string? DefaultMode = null);
     /// <param name="IncognitoByRating">
@@ -151,10 +160,12 @@ public class SettingsController(
     /// "manual" or "quality"; see <see cref="SettingKeys.DownloadSourceOrder"/>. Null on a write leaves it alone.
     /// </param>
     /// <param name="ScoutOnMatch">See <see cref="SettingKeys.SourcesScoutOnMatch"/>. Null on a write leaves it alone.</param>
+    /// <param name="AdaptiveRefresh">See <see cref="SettingKeys.MonitoringAdaptiveRefresh"/>. Null on a write leaves it alone.</param>
     public record DownloadSettings(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
-        bool UseHardlinks = true, int? BulkHoldThreshold = null, string? SourceOrder = null, bool? ScoutOnMatch = null);
+        bool UseHardlinks = true, int? BulkHoldThreshold = null, string? SourceOrder = null, bool? ScoutOnMatch = null,
+        bool? AdaptiveRefresh = null);
     /// <param name="Enabled">Turns the daily upgrade scan on.</param>
     /// <param name="DefaultProfileId">The upgrade profile a series without its own pin uses, or null for none.</param>
     /// <param name="MaxPerDay">0 means no cap.</param>
@@ -174,6 +185,12 @@ public class SettingsController(
         int VolumeSearchesPerRun = 10,
         int ProposalExpiryDays = 30);
     public record ReadFileCleanupSettings(bool Enabled, int Days, bool KeepLast);
+    public record SignInPageSettings(bool CoverMosaic);
+
+    /// <summary><c>SingleUser</c> is the effective mode, <c>Available</c> whether it can be on right now.</summary>
+    public record UserModeSettings(bool SingleUser, bool Available);
+
+    public record SetUserModeRequest(bool SingleUser);
     public record BackupSettings(int Retention, bool? Scheduled = null);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -235,7 +252,8 @@ public class SettingsController(
     /// The account password, required only when this request mints the first token (enabling with
     /// none yet), the same as minting an API key.
     /// </param>
-    public record OpdsSettings(bool Enabled, bool TrackProgress, string? Password = null);
+    /// <summary><c>Komga</c> null leaves the Komga API switch as it is.</summary>
+    public record OpdsSettings(bool Enabled, bool TrackProgress, string? Password = null, bool? Komga = null);
 
     public record SecuritySettings(
         bool RequireHttps,
@@ -277,7 +295,7 @@ public class SettingsController(
     /// or reverse proxy the instance is reached through. Non-null <b>only</b> on the response that
     /// generated the token — nothing stores the token itself, so it cannot be shown again.</param>
     public record OpdsSettingsResponse(
-        bool Enabled, bool TrackProgress, bool HasToken, string? TokenPrefix, string? FeedUrl);
+        bool Enabled, bool TrackProgress, bool HasToken, string? TokenPrefix, string? FeedUrl, bool Komga = false);
 
     /// <summary>
     /// Blank clears the setting; anything else must be an absolute http(s) URL. Rejecting garbage
@@ -336,7 +354,7 @@ public class SettingsController(
         var stored = await userSettings.GetManyAsync(
             [SettingKeys.ReaderPrefs, SettingKeys.ReaderPushToKavita, SettingKeys.ReaderPullFromKavita], ct);
         return Ok(new ReaderSettings(
-            Maki.Core.Reading.ReaderPrefsSpec.Parse(stored.GetValueOrDefault(SettingKeys.ReaderPrefs)),
+            Maki.Core.Reading.ReaderPrefsSpec.Parse(stored.GetValueOrDefault(SettingKeys.ReaderPrefs)).WithAutoWebtoon(true),
             stored.GetValueOrDefault(SettingKeys.ReaderPushToKavita) == "true",
             KavitaUserId: await kavitaUser.ResolveAsync(ct),
             PullFromKavita: stored.GetValueOrDefault(SettingKeys.ReaderPullFromKavita) == "true",
@@ -386,13 +404,14 @@ public class SettingsController(
     {
         var existing = await CurrentOpdsKeyAsync(ct);
         var stored = await userSettings.GetManyAsync(
-            [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress], ct);
+            [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress, SettingKeys.KomgaEnabled], ct);
         return Ok(new OpdsSettingsResponse(
             stored.GetValueOrDefault(SettingKeys.OpdsEnabled) == "true",
             stored.GetValueOrDefault(SettingKeys.OpdsTrackProgress) != "false",
             existing is not null,
             existing?.Prefix,
-            FeedUrl: null));
+            FeedUrl: null,
+            stored.GetValueOrDefault(SettingKeys.KomgaEnabled) == "true"));
     }
 
     /// <summary>
@@ -423,16 +442,23 @@ public class SettingsController(
         await userSettings.SetAsync(SettingKeys.OpdsEnabled, request.Enabled ? "true" : "false", ct);
         await userSettings.SetAsync(
             SettingKeys.OpdsTrackProgress, request.TrackProgress ? "true" : "false", ct);
+        if (request.Komga is { } komga)
+        {
+            await userSettings.SetAsync(SettingKeys.KomgaEnabled, komga ? "true" : "false", ct);
+        }
+
         OpdsAccessService.EvictUser(currentUser.UserId);
+        var komgaEnabled = request.Komga ?? await userSettings.GetAsync(SettingKeys.KomgaEnabled, ct) == "true";
 
         if (mints)
         {
             var (prefix, feedUrl) = await MintOpdsKeyAsync(ct);
-            return Ok(new OpdsSettingsResponse(true, request.TrackProgress, true, prefix, feedUrl));
+            return Ok(new OpdsSettingsResponse(true, request.TrackProgress, true, prefix, feedUrl, komgaEnabled));
         }
 
         return Ok(new OpdsSettingsResponse(
-            request.Enabled, request.TrackProgress, existing is not null, existing?.Prefix, FeedUrl: null));
+            request.Enabled, request.TrackProgress, existing is not null, existing?.Prefix, FeedUrl: null,
+            komgaEnabled));
     }
 
     /// <summary>
@@ -457,13 +483,14 @@ public class SettingsController(
         var (prefix, feedUrl) = await MintOpdsKeyAsync(ct);
         OpdsAccessService.EvictUser(currentUser.UserId);
         var stored = await userSettings.GetManyAsync(
-            [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress], ct);
+            [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress, SettingKeys.KomgaEnabled], ct);
         return Ok(new OpdsSettingsResponse(
             stored.GetValueOrDefault(SettingKeys.OpdsEnabled) == "true",
             stored.GetValueOrDefault(SettingKeys.OpdsTrackProgress) != "false",
             true,
             prefix,
-            feedUrl));
+            feedUrl,
+            stored.GetValueOrDefault(SettingKeys.KomgaEnabled) == "true"));
     }
 
     private async Task<IActionResult?> ConfirmOpdsPasswordAsync(
@@ -901,13 +928,10 @@ public class SettingsController(
     }
 
     /// <summary>
-    /// Marks the guide finished (or re-opens it). Finishing it also kicks the MangaBaka dump
-    /// download when there is nothing on disk yet: Discover, search and library imports are all
-    /// waiting on that ~350 MB transfer, and the scheduled trigger fires two minutes after startup
-    /// and then only every six hours — so an instance whose first minutes went on creating the
-    /// admin account and picking a root folder would otherwise sit idle with no metadata. The job
-    /// disallows concurrent execution, but a trigger while one is already running still queues a
-    /// second pass, hence the guard rather than an unconditional trigger.
+    /// Marks the guide finished (or re-opens it). A missing dump already starts downloading at boot;
+    /// finishing kicks it again in case that run failed, since the SPA stays gated without it and
+    /// the schedule only retries every six hours. The job disallows concurrent execution, but a
+    /// trigger while one is already running still queues a second pass, hence the guard.
     /// </summary>
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("setup")]
@@ -978,7 +1002,11 @@ public class SettingsController(
         await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false",
         await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
         await SourceOrderNameAsync(ct),
-        await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true"));
+        await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true",
+        await AdaptiveRefreshAsync(ct)));
+
+    private async Task<bool> AdaptiveRefreshAsync(CancellationToken ct) =>
+        await settings.GetAsync(SettingKeys.MonitoringAdaptiveRefresh, ct) != "false";
 
     private async Task<string> SourceOrderNameAsync(CancellationToken ct) => SourceOrderService.Name(
         SourceOrderService.Parse(await settings.GetAsync(SettingKeys.DownloadSourceOrder, ct)) ?? SourceOrderMode.Manual);
@@ -1058,12 +1086,52 @@ public class SettingsController(
             await settings.SetAsync(SettingKeys.SourcesScoutOnMatch, scoutOnMatch ? "true" : "false", ct);
         }
 
+        if (request.AdaptiveRefresh is { } adaptive && adaptive != await AdaptiveRefreshAsync(ct))
+        {
+            await settings.SetAsync(SettingKeys.MonitoringAdaptiveRefresh, adaptive ? "true" : "false", ct);
+            // Plans made under the old mode could be a day out; the next tick replans every series.
+            await db.Series.Where(s => s.NextCheckAt != null)
+                .ExecuteUpdateAsync(u => u.SetProperty(s => s.NextCheckAt, (DateTime?)null), ct);
+        }
+
         return Ok(request with
         {
             BulkHoldThreshold = await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
             SourceOrder = await SourceOrderNameAsync(ct),
-            ScoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true"
+            ScoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true",
+            AdaptiveRefresh = await AdaptiveRefreshAsync(ct)
         });
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("signin")]
+    public async Task<IActionResult> GetSignInPage(CancellationToken ct) =>
+        Ok(new SignInPageSettings(await settings.GetAsync(SettingKeys.SignInCoverMosaic, ct) == "true"));
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("signin")]
+    public async Task<IActionResult> SetSignInPage([FromBody] SignInPageSettings request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.SignInCoverMosaic, request.CoverMosaic ? "true" : "false", ct);
+        return await GetSignInPage(ct);
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("usermode")]
+    public async Task<IActionResult> GetUserMode(CancellationToken ct) => Ok(new UserModeSettings(
+        await SingleUserMode.IsOnAsync(db, settings, ct),
+        await SingleUserMode.EnabledAccountsAsync(db, ct) <= 1));
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("usermode")]
+    public async Task<IActionResult> SetUserMode([FromBody] SetUserModeRequest request, CancellationToken ct)
+    {
+        if (request.SingleUser && await SingleUserMode.EnabledAccountsAsync(db, ct) > 1)
+        {
+            return this.Fail(localizer, "error.settings.singleUserNeedsOneAccount");
+        }
+        await settings.SetAsync(SettingKeys.SingleUserMode, request.SingleUser ? "true" : "false", ct);
+        return await GetUserMode(ct);
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -1358,137 +1426,286 @@ public class SettingsController(
         return await GetSourceLanguages(ct);
     }
 
+    /// <summary>
+    /// A backend's connection. Without <paramref name="backend"/> it is the active one; naming another
+    /// reads that backend's stored values without switching, so the card can fill its fields.
+    /// </summary>
     [Authorize(Policy = Policies.Admin)]
-    [HttpGet("prowlarr")]
-    public async Task<IActionResult> GetProwlarr(CancellationToken ct) => Ok(new ProwlarrSettings(
-        await settings.GetAsync(SettingKeys.ProwlarrUrl, ct),
-        await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct)));
-
-    [Authorize(Policy = Policies.Admin)]
-    [HttpPut("prowlarr")]
-    public async Task<IActionResult> SetProwlarr([FromBody] ProwlarrSettings request, CancellationToken ct)
+    [HttpGet("indexer")]
+    public async Task<IActionResult> GetIndexer([FromQuery] string? backend, CancellationToken ct)
     {
+        if (!TryChooseBackend(backend, out var chosen))
+        {
+            return this.Fail(localizer, "error.settings.indexerBackendInvalid");
+        }
+
+        var stored = await IndexerSettingsStore.LoadAsync(settings, ct, chosen);
+        var keys = IndexerSettingsStore.KeysFor(stored.Backend);
+        return Ok(new IndexerConnection(
+            stored.Backend.Key(), await settings.GetAsync(keys.Url, ct), await settings.GetAsync(keys.ApiKey, ct)));
+    }
+
+    /// <summary>Makes <c>backend</c> the active one and stores its connection; the other backend's values stay.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("indexer")]
+    public async Task<IActionResult> SetIndexer([FromBody] IndexerConnection request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.Backend) || IndexerBackends.Parse(request.Backend) is not { } backend)
+        {
+            return this.Fail(localizer, "error.settings.indexerBackendInvalid");
+        }
+
         if (!IsValidServiceUrl(request.Url))
         {
-            return UrlError("Prowlarr");
+            return UrlError(backend.DisplayName());
         }
 
-        await settings.SetAsync(SettingKeys.ProwlarrUrl, request.Url, ct);
-        await settings.SetAsync(SettingKeys.ProwlarrApiKey, request.ApiKey, ct);
+        var keys = IndexerSettingsStore.KeysFor(backend);
+        await settings.SetAsync(SettingKeys.IndexerBackend, backend.Key(), ct);
+        await settings.SetAsync(keys.Url, request.Url, ct);
+        await settings.SetAsync(keys.ApiKey, request.ApiKey, ct);
+        return Ok(request with { Backend = backend.Key() });
+    }
+
+    /// <param name="Backend">The backend the options belong to; null is the active one.</param>
+    public record IndexerOptions(string? IndexerIds, string? Categories, string? Backend = null);
+
+    /// <summary>An empty name is no choice (the active backend); a name that is not a backend fails.</summary>
+    private static bool TryChooseBackend(string? backend, out IndexerBackend? chosen)
+    {
+        chosen = null;
+        if (string.IsNullOrWhiteSpace(backend))
+        {
+            return true;
+        }
+
+        if (IndexerBackends.Parse(backend) is not { } parsed)
+        {
+            return false;
+        }
+
+        chosen = parsed;
+        return true;
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("indexer/options")]
+    public async Task<IActionResult> GetIndexerOptions([FromQuery] string? backend, CancellationToken ct)
+    {
+        if (!TryChooseBackend(backend, out var chosen))
+        {
+            return this.Fail(localizer, "error.settings.indexerBackendInvalid");
+        }
+
+        var keys = IndexerSettingsStore.KeysFor(chosen ?? await IndexerSettingsStore.ActiveBackendAsync(settings, ct));
+        return Ok(new IndexerOptions(
+            await settings.GetAsync(keys.IndexerIds, ct),
+            await settings.GetAsync(keys.Categories, ct)));
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("indexer/options")]
+    public async Task<IActionResult> SetIndexerOptions([FromBody] IndexerOptions request, CancellationToken ct)
+    {
+        if (!TryChooseBackend(request.Backend, out var chosen))
+        {
+            return this.Fail(localizer, "error.settings.indexerBackendInvalid");
+        }
+
+        var keys = IndexerSettingsStore.KeysFor(chosen ?? await IndexerSettingsStore.ActiveBackendAsync(settings, ct));
+        await settings.SetAsync(keys.IndexerIds, request.IndexerIds, ct);
+        await settings.SetAsync(keys.Categories, request.Categories, ct);
         return Ok(request);
     }
 
-    public record ProwlarrOptions(string? IndexerIds, string? Categories);
-
+    /// <summary>
+    /// A backend's indexer list, with each one's categories, for the settings UI. Without
+    /// <paramref name="backend"/> it is the active one.
+    /// </summary>
     [Authorize(Policy = Policies.Admin)]
-    [HttpGet("prowlarr/options")]
-    public async Task<IActionResult> GetProwlarrOptions(CancellationToken ct) => Ok(new ProwlarrOptions(
-        await settings.GetAsync(SettingKeys.ProwlarrIndexerIds, ct),
-        await settings.GetAsync(SettingKeys.ProwlarrCategories, ct)));
-
-    [Authorize(Policy = Policies.Admin)]
-    [HttpPut("prowlarr/options")]
-    public async Task<IActionResult> SetProwlarrOptions([FromBody] ProwlarrOptions request, CancellationToken ct)
+    [HttpGet("indexer/indexers")]
+    public async Task<IActionResult> GetIndexerList([FromQuery] string? backend, CancellationToken ct)
     {
-        await settings.SetAsync(SettingKeys.ProwlarrIndexerIds, request.IndexerIds, ct);
-        await settings.SetAsync(SettingKeys.ProwlarrCategories, request.Categories, ct);
-        return Ok(request);
-    }
-
-    /// <summary>Proxies Prowlarr's indexer list (with category capabilities) for the settings UI.</summary>
-    [Authorize(Policy = Policies.Admin)]
-    [HttpGet("prowlarr/indexers")]
-    public async Task<IActionResult> GetProwlarrIndexers(CancellationToken ct)
-    {
-        var url = await settings.GetAsync(SettingKeys.ProwlarrUrl, ct);
-        var apiKey = await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct);
-        if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
+        if (!TryChooseBackend(backend, out var chosen))
         {
-            return this.Fail(localizer, "error.settings.prowlarrNotConfigured");
+            return this.Fail(localizer, "error.settings.indexerBackendInvalid");
         }
 
-        var indexers = await prowlarr.GetIndexersAsync(url, apiKey, ct);
-        return Ok(indexers.Select(i => new
+        var stored = await IndexerSettingsStore.LoadAsync(settings, ct, chosen);
+        var service = stored.Backend.DisplayName();
+        if (!stored.IsConfigured)
         {
-            i.Id,
-            i.Name,
-            i.Enable,
-            i.Protocol,
-            Categories = Flatten(i.Capabilities?.Categories)
-                .Where(c => c.Name is not null)
-                .Select(c => new { c.Id, c.Name })
-                .DistinctBy(c => c.Id)
-                .OrderBy(c => c.Id)
-        }));
+            return this.Fail(localizer, "error.settings.indexerNotConfigured", new { service });
+        }
 
-        static IEnumerable<Maki.Core.Indexers.ProwlarrClient.ProwlarrCategory> Flatten(
-            IEnumerable<Maki.Core.Indexers.ProwlarrClient.ProwlarrCategory>? categories) =>
-            categories?.SelectMany(c => new[] { c }.Concat(Flatten(c.SubCategories))) ?? [];
+        try
+        {
+            return Ok(await indexers.For(stored.Backend).GetIndexersAsync(stored, ct));
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or System.Text.Json.JsonException
+                                       or System.Xml.XmlException ||
+                                   (ex is TaskCanceledException && !ct.IsCancellationRequested))
+        {
+            logger.LogInformation("Listing {Service} indexers failed: {Error}", service, ex.Message);
+            return this.BadGateway(localizer, "error.settings.indexerNoResponse", new { service });
+        }
     }
 
     [Authorize(Policy = Policies.Admin)]
-    [HttpPost("prowlarr/test")]
-    public async Task<IActionResult> TestProwlarr([FromBody] ProwlarrSettings request, CancellationToken ct)
+    [HttpPost("indexer/test")]
+    public async Task<IActionResult> TestIndexer([FromBody] IndexerConnection request, CancellationToken ct)
     {
-        var url = request.Url ?? await settings.GetAsync(SettingKeys.ProwlarrUrl, ct);
-        var apiKey = request.ApiKey ?? await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct);
-        if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
+        if (!TryChooseBackend(request.Backend, out var chosen))
+        {
+            return this.Fail(localizer, "error.settings.indexerBackendInvalid");
+        }
+
+        var stored = await IndexerSettingsStore.LoadAsync(settings, ct, chosen);
+        var candidate = stored with
+        {
+            Url = request.Url ?? stored.Url,
+            ApiKey = request.ApiKey ?? stored.ApiKey,
+        };
+        if (!candidate.IsConfigured)
         {
             return this.Fail(localizer, "error.settings.urlAndApiKeyRequired");
         }
 
-        return await prowlarr.PingAsync(url, apiKey, ct)
-            ? Ok(new { success = true })
-            : StatusCode(StatusCodes.Status502BadGateway,
-                new { success = false, code = "error.settings.prowlarrNoResponse", error = localizer.Get("error.settings.prowlarrNoResponse") });
-    }
-
-    [Authorize(Policy = Policies.Admin)]
-    [HttpGet("qbittorrent")]
-    public async Task<IActionResult> GetQBittorrent(CancellationToken ct) => Ok(new QBittorrentSettings(
-        await settings.GetAsync(SettingKeys.QBittorrentUrl, ct),
-        await settings.GetAsync(SettingKeys.QBittorrentUsername, ct),
-        await settings.GetAsync(SettingKeys.QBittorrentPassword, ct),
-        await settings.GetAsync(SettingKeys.QBittorrentCategory, ct) ?? "maki",
-        await settings.GetAsync(SettingKeys.QBittorrentPathMapFrom, ct),
-        await settings.GetAsync(SettingKeys.QBittorrentPathMapTo, ct)));
-
-    [Authorize(Policy = Policies.Admin)]
-    [HttpPut("qbittorrent")]
-    public async Task<IActionResult> SetQBittorrent([FromBody] QBittorrentSettings request, CancellationToken ct)
-    {
-        if (!IsValidServiceUrl(request.Url))
+        if (await indexers.For(candidate.Backend).PingAsync(candidate, ct))
         {
-            return UrlError("qBittorrent");
+            return Ok(new { success = true });
         }
 
-        await settings.SetAsync(SettingKeys.QBittorrentUrl, request.Url, ct);
-        await settings.SetAsync(SettingKeys.QBittorrentUsername, request.Username, ct);
-        await settings.SetAsync(SettingKeys.QBittorrentPassword, request.Password, ct);
-        await settings.SetAsync(SettingKeys.QBittorrentCategory, request.Category, ct);
-        await settings.SetAsync(SettingKeys.QBittorrentPathMapFrom, request.PathMapFrom, ct);
-        await settings.SetAsync(SettingKeys.QBittorrentPathMapTo, request.PathMapTo, ct);
-        return Ok(request);
+        const string code = "error.settings.indexerNoResponse";
+        return StatusCode(StatusCodes.Status502BadGateway,
+            new { success = false, code, error = localizer.Get(code, new { service = candidate.Backend.DisplayName() }) });
     }
 
     [Authorize(Policy = Policies.Admin)]
-    [HttpPost("qbittorrent/test")]
-    public async Task<IActionResult> TestQBittorrent([FromBody] QBittorrentSettings request, CancellationToken ct)
+    [HttpGet("downloadclient")]
+    public async Task<IActionResult> GetDownloadClient(CancellationToken ct)
     {
-        var url = request.Url ?? await settings.GetAsync(SettingKeys.QBittorrentUrl, ct);
+        var stored = await DownloadClientSettingsStore.LoadAsync(settings, ct);
+        return Ok(new DownloadClientSettings(
+            stored.Kind.Key(),
+            await settings.GetAsync(SettingKeys.DownloadClientUrl, ct),
+            await settings.GetAsync(SettingKeys.DownloadClientUsername, ct),
+            await settings.GetAsync(SettingKeys.DownloadClientPassword, ct),
+            stored.Label,
+            await settings.GetAsync(SettingKeys.DownloadClientPathMapFrom, ct),
+            await settings.GetAsync(SettingKeys.DownloadClientPathMapTo, ct)));
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("downloadclient")]
+    public async Task<IActionResult> SetDownloadClient([FromBody] DownloadClientSettings request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.Kind) || TorrentClientKinds.Parse(request.Kind) is not { } kind)
+        {
+            return this.Fail(localizer, "error.settings.downloadClientKindInvalid");
+        }
+
+        if (!IsValidServiceUrl(request.Url))
+        {
+            return UrlError(kind.DisplayName());
+        }
+
+        if (request.Label is { Length: > 0 } label &&
+            (label.Length > 64 || label != label.Trim() || label.Any(char.IsControl)))
+        {
+            return this.Fail(localizer, "error.settings.labelInvalid");
+        }
+
+        // Deluge would refuse it, and the driver would then label nothing and list every torrent.
+        if (kind == TorrentClientKind.Deluge && !DelugeClient.IsValidLabel(DownloadClientSettingsStore.LabelOrDefault(request.Label)))
+        {
+            return this.Fail(localizer, "error.settings.labelInvalidDeluge");
+        }
+
+        // The next poll would list through the new driver or label, miss these torrents and fail their
+        // rows. Every row the poll still covers counts, a parked AwaitingImport one included.
+        var current = await DownloadClientSettingsStore.LoadAsync(settings, ct);
+        if (current.Kind != kind || current.Label != DownloadClientSettingsStore.LabelOrDefault(request.Label))
+        {
+            var inFlight = await db.DownloadQueue.CountAsync(
+                q => q.Protocol == AcquisitionProtocol.Torrent &&
+                     q.Status != QueueStatus.Completed &&
+                     q.Status != QueueStatus.Failed &&
+                     q.Status != QueueStatus.Cancelled, ct);
+            if (inFlight > 0)
+            {
+                return this.Conflict(localizer, "error.settings.downloadClientTorrentsInFlight", new { count = inFlight });
+            }
+        }
+
+        await settings.SetAsync(SettingKeys.DownloadClientKind, kind.Key(), ct);
+        await settings.SetAsync(SettingKeys.DownloadClientUrl, request.Url, ct);
+        await settings.SetAsync(SettingKeys.DownloadClientUsername, request.Username, ct);
+        await settings.SetAsync(SettingKeys.DownloadClientPassword, request.Password, ct);
+        await settings.SetAsync(SettingKeys.DownloadClientLabel, request.Label, ct);
+        await settings.SetAsync(SettingKeys.DownloadClientPathMapFrom, request.PathMapFrom, ct);
+        await settings.SetAsync(SettingKeys.DownloadClientPathMapTo, request.PathMapTo, ct);
+        return Ok(request with { Kind = kind.Key() });
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("downloadclient/test")]
+    public async Task<IActionResult> TestDownloadClient([FromBody] DownloadClientSettings request, CancellationToken ct)
+    {
+        var stored = await DownloadClientSettingsStore.LoadAsync(settings, ct);
+        TorrentClientKind kind;
+        if (request.Kind is null)
+        {
+            kind = stored.Kind;
+        }
+        else if (TorrentClientKinds.Parse(request.Kind) is { } chosen)
+        {
+            kind = chosen;
+        }
+        else
+        {
+            return this.Fail(localizer, "error.settings.downloadClientKindInvalid");
+        }
+
+        var url = request.Url ?? stored.Url;
         if (string.IsNullOrWhiteSpace(url))
         {
             return this.Fail(localizer, "error.settings.urlRequired");
         }
 
-        var username = request.Username ?? await settings.GetAsync(SettingKeys.QBittorrentUsername, ct) ?? string.Empty;
-        var password = request.Password ?? await settings.GetAsync(SettingKeys.QBittorrentPassword, ct) ?? string.Empty;
+        if (!IsValidServiceUrl(url))
+        {
+            return UrlError(kind.DisplayName());
+        }
 
-        return await qbittorrent.PingAsync(url, username, password, ct)
-            ? Ok(new { success = true })
-            : StatusCode(StatusCodes.Status502BadGateway,
-                new { success = false, code = "error.settings.qbittorrentLoginFailed", error = localizer.Get("error.settings.qbittorrentLoginFailed") });
+        var client = new TorrentClientSettings(
+            kind,
+            url,
+            request.Username ?? stored.Username,
+            request.Password ?? stored.Password,
+            request.Label is null ? stored.Label : DownloadClientSettingsStore.LabelOrDefault(request.Label));
+
+        try
+        {
+            await torrentClients.For(kind).PingAsync(client, ct);
+            return Ok(new { success = true });
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            logger.LogInformation("Download client test against {Client} at {Url} failed: {Error}", kind.DisplayName(), url, ex.Message);
+            var code = ex is TorrentClientException { Failure: TorrentClientFailure.LoginFailed }
+                ? "error.settings.downloadClientLoginFailed"
+                : "error.settings.downloadClientNoResponse";
+            return StatusCode(StatusCodes.Status502BadGateway, new { success = false, code, error = localizer.Get(code) });
+        }
     }
+
+    /// <summary>The drivers this build has, for the kind select: what each is called and whether it takes a username.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("downloadclient/kinds")]
+    public IActionResult GetDownloadClientKinds() => Ok(torrentClients.All
+        .OrderBy(c => c.Kind)
+        .Select(c => new { kind = c.Kind.Key(), name = c.Kind.DisplayName(), usesUsername = c.UsesUsername, defaultUrl = c.DefaultUrl }));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("kavita")]
@@ -1634,17 +1851,10 @@ public class SettingsController(
     [HttpGet("metadata")]
     public async Task<IActionResult> GetMetadata(CancellationToken ct)
     {
-        var useLocalDb = await settings.GetAsync(SettingKeys.MangaBakaUseLocalDb, ct) != "false";
         var status = await mangaBakaDump.GetStatusAsync(ct);
-        return Ok(new MetadataSettingsResponse(useLocalDb, status.Present, status.SizeBytes, status.RefreshedAt));
-    }
-
-    [Authorize(Policy = Policies.Admin)]
-    [HttpPut("metadata")]
-    public async Task<IActionResult> SetMetadata([FromBody] MetadataSettings request, CancellationToken ct)
-    {
-        await settings.SetAsync(SettingKeys.MangaBakaUseLocalDb, request.UseLocalDb ? "true" : "false", ct);
-        return await GetMetadata(ct);
+        var progress = mangaBakaDump.Progress();
+        return Ok(new MetadataSettingsResponse(status.Present, status.SizeBytes, status.RefreshedAt,
+            !status.Present && !progress.Running && progress.LastError is not null));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -2121,7 +2331,11 @@ public class SettingsController(
         /// </summary>
         bool KitsuPasswordSet = false,
         /// <summary>Stands in for <c>MangaBakaToken</c>, which is never sent back, for the same reason.</summary>
-        bool MangaBakaTokenSet = false);
+        bool MangaBakaTokenSet = false,
+        string? MangaUpdatesUsername = null,
+        /// <summary>Never sent back, like <c>KitsuPassword</c>; <c>MangaUpdatesPasswordSet</c> stands in for it.</summary>
+        string? MangaUpdatesPassword = null,
+        bool MangaUpdatesPasswordSet = false);
 
     /// <summary>
     /// Both halves of the scrobble configuration in one response, because one card in the UI shows
@@ -2144,6 +2358,8 @@ public class SettingsController(
                 SettingKeys.ScrobbleMangaBakaToken,
                 SettingKeys.ScrobbleKitsuEmail,
                 SettingKeys.ScrobbleKitsuPassword,
+                SettingKeys.ScrobbleMangaUpdatesUsername,
+                SettingKeys.ScrobbleMangaUpdatesPassword,
                 SettingKeys.ScrobblePlanToRead,
             ],
             ct);
@@ -2166,7 +2382,10 @@ public class SettingsController(
             admin ? await settings.GetAsync(SettingKeys.ScrobbleLibraryIds, ct) : null,
             IsAdmin: admin,
             KitsuPasswordSet: !string.IsNullOrEmpty(mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuPassword)),
-            MangaBakaTokenSet: !string.IsNullOrEmpty(mine.GetValueOrDefault(SettingKeys.ScrobbleMangaBakaToken))));
+            MangaBakaTokenSet: !string.IsNullOrEmpty(mine.GetValueOrDefault(SettingKeys.ScrobbleMangaBakaToken)),
+            MangaUpdatesUsername: mine.GetValueOrDefault(SettingKeys.ScrobbleMangaUpdatesUsername),
+            MangaUpdatesPasswordSet:
+                !string.IsNullOrEmpty(mine.GetValueOrDefault(SettingKeys.ScrobbleMangaUpdatesPassword))));
     }
 
     [Authorize(Policy = Policies.UseTrackers)]
@@ -2186,6 +2405,8 @@ public class SettingsController(
         {
             await userSettings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
         }
+
+        await SaveMangaUpdatesCredentialsAsync(request, ct);
 
         await userSettings.SetAsync(
             SettingKeys.ScrobblePlanToRead, request.PlanToRead ? "true" : "false", ct);
@@ -2210,6 +2431,47 @@ public class SettingsController(
 
         await settings.SetAsync(SettingKeys.ScrobbleLibraryIds, request.LibraryIds, ct);
         return await GetScrobble(ct);
+    }
+
+    /// <summary>
+    /// Null leaves the username or password as it is, an empty string clears it. A real change also
+    /// drops the stored session token and the tracker's in-memory state for this user, since both
+    /// belong to the old account.
+    /// </summary>
+    private async Task SaveMangaUpdatesCredentialsAsync(ScrobbleSettings request, CancellationToken ct)
+    {
+        if (request.MangaUpdatesUsername is null && request.MangaUpdatesPassword is null)
+        {
+            return;
+        }
+
+        var stored = await userSettings.GetManyAsync(
+            [SettingKeys.ScrobbleMangaUpdatesUsername, SettingKeys.ScrobbleMangaUpdatesPassword], ct);
+        var changed = false;
+
+        if (request.MangaUpdatesUsername is not null)
+        {
+            changed |= request.MangaUpdatesUsername !=
+                stored.GetValueOrDefault(SettingKeys.ScrobbleMangaUpdatesUsername, "");
+            await userSettings.SetAsync(SettingKeys.ScrobbleMangaUpdatesUsername, request.MangaUpdatesUsername, ct);
+        }
+
+        if (request.MangaUpdatesPassword is not null)
+        {
+            changed |= request.MangaUpdatesPassword !=
+                stored.GetValueOrDefault(SettingKeys.ScrobbleMangaUpdatesPassword, "");
+            await userSettings.SetAsync(SettingKeys.ScrobbleMangaUpdatesPassword, request.MangaUpdatesPassword, ct);
+        }
+
+        if (changed)
+        {
+            if (scrobbleTokens is not null)
+            {
+                await scrobbleTokens.DeleteAsync(currentUser.UserId, "mangaupdates", ct);
+            }
+
+            mangaUpdates?.Forget(currentUser.UserId);
+        }
     }
 
     public record ImportListSettings(bool Enabled, int IntervalMinutes);

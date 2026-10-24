@@ -14,8 +14,8 @@ import {
   Table,
   Tabs,
   Text,
-  Title,
   Tooltip,
+  VisuallyHidden,
 } from '@mantine/core'
 import {
   IconArrowBackUp,
@@ -25,9 +25,11 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconHistory,
+  IconPackage,
   IconRefresh,
   IconSearch,
-  IconTrash,
+  IconSparkles,
+  IconTarget,
   IconX,
 } from '@tabler/icons-react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -64,14 +66,17 @@ import type {
   UpgradeHistoryRowDto,
   UpgradeQueueInfoDto,
 } from '../api/upgrades'
+import type { QueueItemDto } from '../api/types'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
-import { FailedQueueActions } from '../components/FailedQueueActions'
+import { QueueActions } from '../components/QueueActions'
 import { ImportReviewModal } from '../components/ImportReviewModal'
 import { QueuePauseBanner, QueuePauseButton } from '../components/QueuePause'
 import { FileQualityBadge } from '../components/series/FileQualityBadge'
 import { TorrentProposalCard } from '../components/upgrades/TorrentProposalCard'
 import { EmptyState } from '../components/ui/EmptyState'
+import { SectionHeader } from '../components/ui/SectionHeader'
+import { SeriesCell } from '../components/SeriesCell'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
@@ -83,6 +88,7 @@ import { useLabel } from '../i18n-context'
 import { useSourceLabel } from '../sourceLabels'
 import { formatBytes, formatCalendarDate, formatDateTime, formatTime } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { UpcomingView } from '../components/releases/UpcomingView'
 
 const HISTORY_PAGE_SIZE = 25
 const UPGRADES_PAGE_SIZE = 25
@@ -180,9 +186,21 @@ function upgradeRejectionText(
   return reason ? now`Not an upgrade: ${reason}` : null
 }
 
-type ActivityTab = 'queue' | 'upgrades'
+type ActivityTab = 'queue' | 'upgrades' | 'upcoming'
 
 /** What a section shows in place of its skeleton once its first fetch has failed. */
+function QueueSeriesCell({ item, small }: { item: QueueItemDto; small?: boolean }) {
+  return (
+    <SeriesCell
+      seriesId={item.seriesId}
+      title={item.seriesTitle}
+      coverUrl={item.seriesCoverUrl}
+      detail={queueItemLabel(item)}
+      small={small}
+    />
+  )
+}
+
 function LoadFailed({ query }: { query: { error: unknown; isRefetching: boolean; refetch: () => unknown } }) {
   const { t } = useLingui()
   return (
@@ -220,7 +238,7 @@ export default function ActivityPage() {
   // straight at Upgrades and a refresh doesn't bounce back to Queue.
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedTab = searchParams.get('tab')
-  const tab: ActivityTab = requestedTab === 'upgrades' ? 'upgrades' : 'queue'
+  const tab: ActivityTab = requestedTab === 'upgrades' || requestedTab === 'upcoming' ? requestedTab : 'queue'
   const changeTab = (value: string | null) => {
     if (!value) return
     const next = new URLSearchParams(searchParams)
@@ -269,6 +287,15 @@ export default function ActivityPage() {
   // The proposals list is small, unlike the cutoff evaluation behind the summary, so the tab badge
   // can be live while Queue is showing.
   const { data: proposals } = useTorrentProposals(undefined, canDownload)
+  // One fact gets one state: with nothing upgraded and nothing waiting, the two empty sections
+  // collapse into the line that says why.
+  const nothingUpgraded = upgradeHistory?.total === 0 && (proposals?.length ?? 0) === 0
+  const upgradesUnset =
+    nothingUpgraded &&
+    upgradesSummary?.profilesConfigured === false &&
+    !upgradesSummary.lastScanDate &&
+    upgradesSummary.trashFiles === 0
+  const upgradesQuiet = nothingUpgraded && upgradesSummary?.profilesConfigured === true && cutoffUnmet?.total === 0
   const pendingProposals = proposals?.length ?? 0
 
   const runUpgradeScan = () =>
@@ -384,19 +411,11 @@ export default function ActivityPage() {
       <PageHeader
         compact
         title={t`Activity`}
-        description={t`Live download queue: pages are fetched, validated and packaged into CBZ files two at a time.`}
         actions={
           canManageQueue ? (
             <Group gap="xs">
               <QueuePauseButton />
-              {queue && queue.total > 0 && (
-                <>
-                  <FailedQueueActions />
-                  <Button color="var(--danger)" variant="light" leftSection={<IconTrash size={16} />} onClick={() => setClearConfirmOpen(true)}>
-                    <Trans>Clear queue</Trans>
-                  </Button>
-                </>
-              )}
+              <QueueActions onClearQueue={queue && queue.total > 0 ? () => setClearConfirmOpen(true) : undefined} />
             </Group>
           ) : undefined
         }
@@ -415,7 +434,12 @@ export default function ActivityPage() {
             <Trans>Upgrades</Trans>
             {pendingProposals > 0 && <span className="series-tab-count tnum">{pendingProposals}</span>}
           </Tabs.Tab>
+          <Tabs.Tab value="upcoming"><Trans>Upcoming</Trans></Tabs.Tab>
         </Tabs.List>
+
+        <Tabs.Panel value="upcoming">
+          <UpcomingView />
+        </Tabs.Panel>
 
         <Tabs.Panel value="queue">
       <QueuePauseBanner canManage={canManageQueue} />
@@ -451,9 +475,6 @@ export default function ActivityPage() {
                   <Table.Th>
                     <Trans>Series</Trans>
                   </Table.Th>
-                  <Table.Th>
-                    <Trans>Chapter</Trans>
-                  </Table.Th>
                   <Table.Th data-priority="low">
                     <Trans>Source</Trans>
                   </Table.Th>
@@ -463,7 +484,7 @@ export default function ActivityPage() {
                   <Table.Th>
                     <Trans>Status</Trans>
                   </Table.Th>
-                  <Table.Th />
+                  <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -488,21 +509,7 @@ export default function ActivityPage() {
                   return (
                     <Table.Tr key={q.id}>
                       <Table.Td>
-                        <Text
-                          component={Link}
-                          to={`/series/${q.seriesId}`}
-                          size="sm"
-                          fw={600}
-                          c="brand.4"
-                          lineClamp={1}
-                        >
-                          {q.seriesTitle}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm" className="tnum">
-                          {queueItemLabel(q)}
-                        </Text>
+                        <QueueSeriesCell item={q} />
                       </Table.Td>
                       <Table.Td data-priority="low">
                         {q.status === 'Resolving' ? (
@@ -519,7 +526,7 @@ export default function ActivityPage() {
                                 {sourceLabel(q.sourceName)}
                               </Text>
                               {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
-                                <Badge size="xs" variant="light" color="var(--brand)">
+                                <Badge size="xs" variant="light" color="var(--brand-fg)">
                                   {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
                                 </Badge>
                               )}
@@ -541,6 +548,7 @@ export default function ActivityPage() {
                               radius="xl"
                               animated={q.status === 'Downloading'}
                               color={q.status === 'Failed' ? 'var(--danger)' : 'brand'}
+                              aria-label={t`Download progress`}
                             />
                             <Text size="xs" c="var(--ink-3)" w={52} className="tnum" ta="right">
                               {q.pagesDone}/{q.pagesTotal}
@@ -726,12 +734,7 @@ export default function ActivityPage() {
       </Modal>
 
       <Stack gap="sm" mt="xl">
-        <Group gap="xs">
-          <IconHistory size={18} />
-          <Title order={2} size="h4">
-            <Trans>History</Trans>
-          </Title>
-        </Group>
+        <SectionHeader icon={IconHistory} title={t`History`} count={history?.total} />
 
         {!history ? (
           historyQuery.isError ? (
@@ -755,9 +758,6 @@ export default function ActivityPage() {
                       <Table.Th>
                         <Trans>Series</Trans>
                       </Table.Th>
-                      <Table.Th>
-                        <Trans>Chapter</Trans>
-                      </Table.Th>
                       <Table.Th data-priority="low">
                         <Trans>Source</Trans>
                       </Table.Th>
@@ -767,7 +767,7 @@ export default function ActivityPage() {
                       <Table.Th data-priority="low">
                         <Trans>Completed</Trans>
                       </Table.Th>
-                      <Table.Th />
+                      <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
@@ -782,21 +782,7 @@ export default function ActivityPage() {
                       return (
                         <Table.Tr key={q.id}>
                           <Table.Td>
-                            <Text
-                              component={Link}
-                              to={`/series/${q.seriesId}`}
-                              size="sm"
-                              fw={600}
-                              c="brand.4"
-                              lineClamp={1}
-                            >
-                              {q.seriesTitle}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Text size="sm" className="tnum">
-                              {queueItemLabel(q)}
-                            </Text>
+                            <QueueSeriesCell item={q} small />
                           </Table.Td>
                           <Table.Td data-priority="low">
                             <Stack gap={2}>
@@ -805,7 +791,7 @@ export default function ActivityPage() {
                                   {sourceLabel(q.sourceName)}
                                 </Text>
                                 {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
-                                  <Badge size="xs" variant="light" color="var(--brand)">
+                                  <Badge size="xs" variant="light" color="var(--brand-fg)">
                                     {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
                                   </Badge>
                                 )}
@@ -890,6 +876,17 @@ export default function ActivityPage() {
             ) : (
               <TableSkeleton columns={6} rows={4} />
             )
+          ) : upgradeHistoryQuery.isPending ? (
+            <TableSkeleton columns={6} rows={4} />
+          ) : upgradesUnset ? (
+            <EmptyState
+              compact
+              mood="asking"
+              title={t`Upgrades are not set up yet`}
+              description={t`Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here.`}
+              actionLabel={isAdmin ? t`Set up quality profiles` : undefined}
+              actionTo={isAdmin ? '/settings?tab=downloads&s=profiles' : undefined}
+            />
           ) : (
             <Stack gap="xl">
               <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
@@ -951,19 +948,25 @@ export default function ActivityPage() {
 
               {proposals && proposals.length > 0 && (
                 <Stack gap="sm">
-                  <Title order={2} size="h4">
-                    <Trans>Volume releases waiting for you</Trans>
-                  </Title>
+                  <SectionHeader icon={IconPackage} title={t`Volume releases waiting for you`} count={proposals.length} />
                   {proposals.map((proposal) => (
                     <TorrentProposalCard key={proposal.id} proposal={proposal} />
                   ))}
                 </Stack>
               )}
 
+              {upgradesQuiet && (
+                <EmptyState
+                  compact
+                  mood="pleased"
+                  title={t`Every file meets its cutoff`}
+                  description={t`Nothing has needed an upgrade yet. Files the upgrader replaces show up here.`}
+                />
+              )}
+
+              {!upgradesQuiet && (
               <Stack gap="sm">
-                <Title order={2} size="h4">
-                  <Trans>Recent upgrades</Trans>
-                </Title>
+                <SectionHeader icon={IconSparkles} title={t`Recent upgrades`} count={upgradeHistory?.total} />
                 {!upgradeHistory ? (
                   upgradeHistoryQuery.isError ? (
                     <LoadFailed query={upgradeHistoryQuery} />
@@ -984,10 +987,9 @@ export default function ActivityPage() {
                           <Table.Thead>
                             <Table.Tr>
                               <Table.Th><Trans>Series</Trans></Table.Th>
-                              <Table.Th><Trans>Chapter</Trans></Table.Th>
                               <Table.Th><Trans>Change</Trans></Table.Th>
                               <Table.Th data-priority="low"><Trans>When</Trans></Table.Th>
-                              <Table.Th />
+                              <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                             </Table.Tr>
                           </Table.Thead>
                           <Table.Tbody>
@@ -998,21 +1000,12 @@ export default function ActivityPage() {
                                 return (
                                   <Table.Tr key={entry.key}>
                                     <Table.Td>
-                                      <Text
-                                        component={Link}
-                                        to={`/series/${first.seriesId}`}
-                                        size="sm"
-                                        fw={600}
-                                        c="brand.4"
-                                        lineClamp={1}
-                                      >
-                                        {first.seriesTitle}
-                                      </Text>
-                                    </Table.Td>
-                                    <Table.Td>
-                                      <Text size="sm" className="tnum">
-                                        {chapterRowLabel(first)}
-                                      </Text>
+                                      <SeriesCell
+                                        seriesId={first.seriesId}
+                                        title={first.seriesTitle}
+                                        coverUrl={first.seriesCoverUrl}
+                                        detail={chapterRowLabel(first)}
+                                      />
                                     </Table.Td>
                                     <Table.Td>
                                       <Text size="sm" c="var(--ink-3)">
@@ -1060,19 +1053,17 @@ export default function ActivityPage() {
                                 <Fragment key={entry.key}>
                                   <Table.Tr>
                                     <Table.Td>
-                                      <Text
-                                        component={Link}
-                                        to={`/series/${first.seriesId}`}
-                                        size="sm"
-                                        fw={600}
-                                        c="brand.4"
-                                        lineClamp={1}
-                                      >
-                                        {first.seriesTitle}
-                                      </Text>
-                                    </Table.Td>
-                                    <Table.Td>
-                                      <Group gap={4} wrap="nowrap">
+                                      <Group gap={6} wrap="nowrap" justify="space-between">
+                                        <SeriesCell
+                                          seriesId={first.seriesId}
+                                          title={first.seriesTitle}
+                                          coverUrl={first.seriesCoverUrl}
+                                          detail={
+                                            <span style={{ overflowWrap: 'anywhere' }}>
+                                              <Trans>{fileName} replaced {filesText}</Trans>
+                                            </span>
+                                          }
+                                        />
                                         <ActionIcon
                                           variant="subtle"
                                           color="var(--neutral)"
@@ -1083,9 +1074,6 @@ export default function ActivityPage() {
                                         >
                                           {expanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
                                         </ActionIcon>
-                                        <Text size="sm" style={{ wordBreak: 'break-all' }}>
-                                          <Trans>{fileName} replaced {filesText}</Trans>
-                                        </Text>
                                       </Group>
                                     </Table.Td>
                                     <Table.Td>
@@ -1125,8 +1113,7 @@ export default function ActivityPage() {
                                   {expanded &&
                                     entry.rows.map((row) => (
                                       <Table.Tr key={row.id}>
-                                        <Table.Td />
-                                        <Table.Td colSpan={2}>
+                                        <Table.Td colSpan={2} className="series-cell-indent">
                                           <Text size="xs" c="var(--ink-3)" className="tnum">
                                             {chapterRowLabel(row)}
                                             {' · '}
@@ -1157,11 +1144,15 @@ export default function ActivityPage() {
                   </>
                 )}
               </Stack>
+              )}
 
+              {!upgradesQuiet && (
               <Stack gap="sm">
-                <Title order={2} size="h4">
-                  <Trans>Cutoff unmet</Trans>
-                </Title>
+                <SectionHeader
+                  icon={IconTarget}
+                  title={t`Cutoff unmet`}
+                  count={upgradesSummary.profilesConfigured ? cutoffUnmet?.total : undefined}
+                />
                 {!cutoffUnmet ? (
                   cutoffUnmetQuery.isError ? (
                     <LoadFailed query={cutoffUnmetQuery} />
@@ -1197,7 +1188,6 @@ export default function ActivityPage() {
                           <Table.Thead>
                             <Table.Tr>
                               <Table.Th><Trans>Series</Trans></Table.Th>
-                              <Table.Th><Trans>Chapter</Trans></Table.Th>
                               <Table.Th><Trans>Current file</Trans></Table.Th>
                               <Table.Th data-priority="low"><Trans>Score</Trans></Table.Th>
                               <Table.Th data-priority="low"><Trans>Profile</Trans></Table.Th>
@@ -1210,21 +1200,13 @@ export default function ActivityPage() {
                               return (
                               <Table.Tr key={row.fileId}>
                                 <Table.Td>
-                                  <Text
-                                    component={Link}
-                                    to={`/series/${row.seriesId}`}
-                                    size="sm"
-                                    fw={600}
-                                    c="brand.4"
-                                    lineClamp={1}
-                                  >
-                                    {row.seriesTitle}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text size="sm" className="tnum">
-                                    {chapterRowLabel(row)}
-                                  </Text>
+                                  <SeriesCell
+                                    seriesId={row.seriesId}
+                                    title={row.seriesTitle}
+                                    coverUrl={row.seriesCoverUrl}
+                                    detail={chapterRowLabel(row)}
+                                    small
+                                  />
                                 </Table.Td>
                                 <Table.Td>
                                   <FileQualityBadge quality={row.quality} />
@@ -1262,6 +1244,7 @@ export default function ActivityPage() {
                   </>
                 )}
               </Stack>
+              )}
             </Stack>
           )}
         </Tabs.Panel>

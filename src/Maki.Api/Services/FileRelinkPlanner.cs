@@ -144,7 +144,7 @@ public class FileRelinkPlanner(
                 SeriesId = series.Id,
                 RelativePath = candidate.RelativePath,
                 Size = candidate.Size,
-                SourceName = "relink",
+                SourceName = ChapterFile.RelinkSourceName,
                 DateAdded = DateTime.UtcNow,
             };
             ChapterFileQualityService.StampTierOnly(candidate.Record, null, null);

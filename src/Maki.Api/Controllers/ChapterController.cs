@@ -82,6 +82,8 @@ public class ChapterController(
                     MedianWidth = c.ChapterFile.MedianWidth,
                     MedianHeight = c.ChapterFile.MedianHeight,
                     ImageFormat = c.ChapterFile.ImageFormat,
+                    OriginalImageFormat = c.ChapterFile.OriginalImageFormat,
+                    ConversionSavedBytes = c.ChapterFile.ConversionSavedBytes,
                     MeasuredAtUtc = c.ChapterFile.MeasuredAtUtc,
                     Trusted = c.ChapterFile.Trusted
                 }

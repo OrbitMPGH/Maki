@@ -31,8 +31,8 @@ public class SourceQualitySeeder(MakiDbContext db, ILogger<SourceQualitySeeder> 
                 c.ChapterFile.PageCount,
                 c.ChapterFile.MedianWidth,
                 c.ChapterFile.MedianHeight,
-                c.ChapterFile.Size,
-                c.ChapterFile.ImageFormat,
+                Size = c.ChapterFile.Size + c.ChapterFile.ConversionSavedBytes,
+                ImageFormat = c.ChapterFile.OriginalImageFormat ?? c.ChapterFile.ImageFormat,
                 c.ChapterFile.DateAdded
             })
             .ToListAsync(ct);

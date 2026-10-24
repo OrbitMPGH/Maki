@@ -51,6 +51,9 @@ public record ImportPlanFile(
     int UpgradeCount = 0,
     int AlreadyMetCount = 0);
 
+/// <param name="HasFile">Every row with this label is backed by a file today.</param>
+public record ImportPlanChapter(string Label, decimal? Number, bool HasFile);
+
 /// <param name="Reason"><c>unmeasurable</c> or <c>fewer_pages</c>.</param>
 public record VolumeGuardFailure(string File, string Reason);
 
@@ -85,6 +88,9 @@ public sealed class VolumeReplacementDetail
     public int ReplacementFor(int index) =>
         index < ReplacementFileIds.Count && ReplacementFileIds[index] != 0 ? ReplacementFileIds[index] : ReplacementFileId;
     public bool Trusted { get; set; }
+
+    /// <summary>The file's KOReader document ids, which go with its row, for the row a revert gives it back.</summary>
+    public List<KoreaderDocumentIndexer.Carried> KoreaderDocuments { get; set; } = [];
 
     public string Serialize() => JsonSerializer.Serialize(this, Maki.Core.Quality.QualitySnapshot.Json);
 
@@ -130,6 +136,9 @@ public record TorrentImportPlan(
     /// <summary>For an upgrade, the files whose chapters are all already at cutoff or protected.</summary>
     public IReadOnlyList<string> SuggestedSkips { get; init; } = [];
 
+    /// <summary>Every chapter of the series in reading order, for the review's chapter map.</summary>
+    public IReadOnlyList<ImportPlanChapter> Chapters { get; init; } = [];
+
     /// <summary>
     /// The scan <see cref="Files"/> was built from, kept so the guard and the import reuse it rather
     /// than opening every archive in the download again. Empty for a plan that could not be built.
@@ -165,7 +174,7 @@ public record TorrentImportOutcome(
 public class TorrentImportService(
     MakiDbContext db,
     ReleaseService releaseService,
-    QBittorrentClient qbittorrent,
+    TorrentClientRegistry torrentClients,
     CbzLinkService cbzLinkService,
     SeriesRenameService seriesRenameService,
     ReaderArchiveCache archives,
@@ -200,8 +209,8 @@ public class TorrentImportService(
     public const string SeriesChangedKey = "error.torrentImport.seriesChanged";
 
     /// <summary>
-    /// Where qBittorrent put this item's data, as Maki sees it. Null when the torrent is gone, or
-    /// its path isn't reachable from here (qBittorrent in a container with a different mount).
+    /// Where the download client put this item's data, as Maki sees it. Null when the torrent is gone,
+    /// or its path isn't reachable from here (the client in a container with a different mount).
     /// </summary>
     public async Task<string?> ResolveContentPathAsync(DownloadQueueItem item, CancellationToken ct)
     {
@@ -211,24 +220,24 @@ public class TorrentImportService(
             return null;
         }
 
-        (string Url, string Username, string Password, string Category) qbt;
+        TorrentClientSettings client;
         try
         {
-            qbt = await releaseService.GetQbtConfigAsync(ct);
+            client = await releaseService.GetClientSettingsAsync(ct);
         }
         catch (InvalidOperationException)
         {
             return null;
         }
 
-        var torrents = await qbittorrent.ListAsync(qbt.Url, qbt.Username, qbt.Password, qbt.Category, ct);
+        var torrents = await torrentClients.For(client.Kind).ListAsync(client, ct);
         var torrent = torrents.FirstOrDefault(t => t.Hash.Equals(hash, StringComparison.OrdinalIgnoreCase));
         if (torrent is null)
         {
             return null;
         }
 
-        var pathMap = await releaseService.GetQbtPathMapAsync(ct);
+        var pathMap = await releaseService.GetClientPathMapAsync(ct);
         return PathRemapper.Map(torrent.ContentPath, pathMap.From, pathMap.To);
     }
 
@@ -242,7 +251,7 @@ public class TorrentImportService(
         var releaseName = ReleaseInfoOf(item)?.Title ?? item.Title ?? "Release";
         if (contentPath is null)
         {
-            return Empty("error.torrentImport.notInQbittorrent");
+            return Empty("error.torrentImport.notInClient");
         }
 
         if (!Directory.Exists(contentPath) && !File.Exists(contentPath))
@@ -341,6 +350,11 @@ public class TorrentImportService(
         {
             IsUpgrade = isUpgrade,
             SuggestedSkips = suggestedSkips,
+            Chapters = chapters
+                .GroupBy(Label)
+                .Select(g => new ImportPlanChapter(g.Key, g.First().Number, g.All(c => c.ChapterFileId != null)))
+                .OrderBy(c => c.Number ?? decimal.MaxValue)
+                .ToList(),
             Sources = sources
         };
 
@@ -404,7 +418,7 @@ public class TorrentImportService(
             .Select(s => s!)
             .ToList();
 
-        // Never a move — qBittorrent keeps seeding from where it downloaded. A hardlink gives the
+        // Never a move: the client keeps seeding from where it downloaded. A hardlink gives the
         // library its own name for the same bytes; the copy is the fallback when the two folders
         // can't share an inode (different volumes, a share, a filesystem without hardlinks).
         var seriesDir = Path.Combine(rootFolder.Path, series.FolderName);
@@ -695,6 +709,7 @@ public class TorrentImportService(
                 row.Id.ToString(CultureInfo.InvariantCulture), Path.GetFileName(row.RelativePath));
             var trashPath = LibraryPaths.Resolve(rootPath, trashRelative)!;
 
+            var carried = await KoreaderDocumentIndexer.CarryAsync(db, row.Id, CancellationToken.None);
             var beforeScore = evaluator?.Evaluate(row, backed[0].Language) is { } current ? current.Score.Score : 0;
             if (!afterByFile.TryGetValue(replacementId, out var after))
             {
@@ -726,7 +741,8 @@ public class TorrentImportService(
                     ReplacementFileIds = replacements,
                     DateAdded = row.DateAdded,
                     Trusted = row.Trusted,
-                    TakenChapters = taken
+                    TakenChapters = taken,
+                    KoreaderDocuments = carried
                 }.Serialize()
             };
             db.UpgradeHistory.Add(history);
@@ -739,6 +755,7 @@ public class TorrentImportService(
                 db.UpgradeHistory.Remove(history);
                 db.ChapterFiles.Add(row);
                 await db.SaveChangesAsync(CancellationToken.None);
+                await KoreaderDocumentIndexer.RestoreAsync(db, row.Id, carried, logger, CancellationToken.None);
                 continue;
             }
 

@@ -75,7 +75,8 @@ public sealed class AuthHardeningTests : IDisposable
 
     private AuthController Auth(
         MakiDbContext db, UserManager<MakiUser> users, SignInManager<MakiUser> signIn, OidcRuntimeOptions oidc,
-        int userId, IAuthenticationService? authentication = null, IPasswordHasher<MakiUser>? hasher = null)
+        int userId, IAuthenticationService? authentication = null, IPasswordHasher<MakiUser>? hasher = null,
+        IAppSettings? settings = null)
     {
         var services = new ServiceCollection();
         services.AddDataProtection();
@@ -87,7 +88,7 @@ public sealed class AuthHardeningTests : IDisposable
         return new AuthController(
             new TestLocalizer(), db, users, signIn, hasher ?? new PasswordHasher<MakiUser>(), new NoopAntiforgery(),
             new TestCurrentUser(userId), new AuthEventLogger(db, _clock), oidc, null!, _clock,
-            NullLogger<AuthController>.Instance, Inbox())
+            NullLogger<AuthController>.Instance, Inbox(), settings: settings)
         {
             ControllerContext = new ControllerContext
             {
@@ -104,7 +105,7 @@ public sealed class AuthHardeningTests : IDisposable
     {
         var scopes = _db.ScopeFactory();
         return new Maki.Api.Services.InboxService(scopes, new Maki.Api.Services.InboxAudienceResolver(scopes),
-            new Maki.Api.Hubs.EventBroadcaster(new NoopHubContext(), scopes), _clock,
+            new Maki.Api.Hubs.EventBroadcaster(new NoopHubContext(), scopes), new RecordingPushSender(scopes), _clock,
             NullLogger<Maki.Api.Services.InboxService>.Instance);
     }
 
@@ -174,6 +175,31 @@ public sealed class AuthHardeningTests : IDisposable
             Verifies++;
             return _inner.VerifyHashedPassword(user, hashedPassword, providedPassword);
         }
+    }
+
+    [Theory]
+    [InlineData(false, "false")]
+    [InlineData(true, null)]
+    public async Task First_run_setup_keeps_the_guide_open_only_on_a_fresh_install(bool hasLibrary, string? expected)
+    {
+        if (hasLibrary)
+        {
+            _db.SeedSeries("Existing");
+        }
+
+        var userId = _db.SeedUser("placeholder", MakiPermission.Admin, configure: u => u.PendingSetup = true);
+        using var db = _db.NewContext();
+        var users = IdentityTestKit.UserManager(db);
+        var settings = new FakeAppSettings();
+        var controller = Auth(db, users, new TestSignInManager(users), new OidcRuntimeOptions(), userId,
+            settings: settings);
+
+        var result = await controller.Setup(new SetupRequest("admin", "Long-enough-Passw0rd!", null),
+            new AuthRuntimeOptions(), default);
+
+        Assert.IsType<OkObjectResult>(result);
+        // The guide's library step adds a root folder, which an unset flag reads as finished.
+        Assert.Equal(expected, await settings.GetAsync(SettingKeys.SetupCompleted));
     }
 
     private async Task<(IActionResult Result, MakiDbContext Db, CountingHasher Hasher)> LoginAsync(

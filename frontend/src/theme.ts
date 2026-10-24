@@ -2,11 +2,14 @@ import {
   Badge,
   Button,
   Card,
+  type CSSVariablesResolver,
   Drawer,
   type MantineColorScheme,
   type MantineColorsTuple,
   type MantineThemeOverride,
   Modal,
+  Notification,
+  Pagination,
   Paper,
   Table,
   type VariantColorsResolver,
@@ -22,7 +25,7 @@ const ModalPassthrough = ({ children }: { children?: ReactNode }) => children
  *
  * Content-first, cinematic dark UI for a self-hosted collection manager. The
  * dark scale is overridden to a cohesive near-black elevation ramp so every
- * Mantine surface picks up the look for free; `brand` (indigo/periwinkle by default) is
+ * Mantine surface picks up the look for free; `brand` (blush by default) is
  * the single accent. Semantic status hues live in ./components/ui/status.tsx.
  */
 
@@ -91,8 +94,56 @@ const amber: MantineColorsTuple = [
   '#674709',
 ]
 
+const vermilion: MantineColorsTuple = [
+  '#fff0eb',
+  '#ffdcd2',
+  '#ffb8a5',
+  '#ff9174',
+  '#fb6e4c',
+  '#ef5634',
+  '#d43d1f',
+  '#b03018',
+  '#8c2714',
+  '#6e2011',
+]
+
+const teal: MantineColorsTuple = [
+  '#e3fbf8',
+  '#c3f2ec',
+  '#8fe5da',
+  '#57d4c6',
+  '#2dc2b3',
+  '#17ab9d',
+  '#0e8f84',
+  '#0b766d',
+  '#0a5e58',
+  '#094b47',
+]
+
+const plum: MantineColorsTuple = [
+  '#fbeefb',
+  '#f3d8f3',
+  '#e6b0e6',
+  '#d888d9',
+  '#c965cc',
+  '#b84cbc',
+  '#9e3aa3',
+  '#832e88',
+  '#69256e',
+  '#521d57',
+]
+
 /** Selectable accent palettes; the CSS-variable side lives in theme.css under [data-accent]. */
-export const accents: Record<string, MantineColorsTuple> = { indigo: brand, blush, rose, emerald, amber }
+export const accents: Record<string, MantineColorsTuple> = {
+  indigo: brand,
+  blush,
+  rose,
+  emerald,
+  amber,
+  vermilion,
+  teal,
+  plum,
+}
 
 // Near-black elevation ramp. 7 = app body, 6 = cards, 5 = elevated (modals),
 // 4 = borders, 2 = dimmed text, 0 = primary text. `night` is the base ramp (`tinted` is the
@@ -152,8 +203,29 @@ const tintedBase: MantineColorsTuple = [
   '#040404',
 ]
 
+// OLED black: the body and cards are both true black, so only the elevated step lifts at all.
+const ink: MantineColorsTuple = [
+  '#c7cad4',
+  '#a9adba',
+  '#8b90a0',
+  '#5d6373',
+  '#2a2a2a',
+  '#0b0b0b',
+  '#000000',
+  '#000000',
+  '#000000',
+  '#000000',
+]
+
 /** Selectable surface ramps; the CSS-variable side lives in theme.css under [data-ground]. */
-export const grounds: Record<string, MantineColorsTuple> = { night: dark, charcoal, moss, tinted: tintedBase }
+export const grounds: Record<string, MantineColorsTuple> = {
+  night: dark,
+  charcoal,
+  moss,
+  tinted: tintedBase,
+  cover: tintedBase,
+  ink,
+}
 
 function mixHex(a: string, b: string, t: number): string {
   const parse = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
@@ -175,16 +247,24 @@ export function accentSwatch(key: keyof typeof accents): string {
  */
 export function groundRamp(ground: keyof typeof grounds, accent: MantineColorsTuple): MantineColorsTuple {
   const base = grounds[ground] ?? dark
-  if (ground !== 'tinted') return base
   const hex = accent[Math.min(primaryShades.get(accent)?.dark ?? 5, 5)]
+  // OLED black's borders carry the accent, as theme.css does. Cover tint mixes toward the cover in
+  // CSS and remaps Mantine's scale onto those tokens there, so this is only its first paint.
+  if (ground === 'ink') return base.map((c, i) => (i === 4 ? mixHex(c, hex, 0.12) : c)) as unknown as MantineColorsTuple
+  if (ground !== 'tinted' && ground !== 'cover') return base
   return base.map((c, i) => (i >= 4 ? mixHex(c, hex, 0.04) : c)) as unknown as MantineColorsTuple
 }
 
 // Rose's shade 5 only reaches 4:1 under white text; one shade down clears 4.5:1.
 // Blush fills at shade 4 in dark with dark text; light takes shade 6 with white.
+// Vermilion and plum fill one shade down for white text; teal fills at 5 with dark text in dark and
+// needs shade 7 for white text in light.
 const primaryShades = new Map<MantineColorsTuple, { light: number; dark: number }>([
   [rose, { light: 6, dark: 6 }],
   [blush, { light: 6, dark: 4 }],
+  [vermilion, { light: 6, dark: 6 }],
+  [teal, { light: 7, dark: 5 }],
+  [plum, { light: 6, dark: 6 }],
 ])
 
 /**
@@ -196,8 +276,21 @@ const variantColorResolver: VariantColorsResolver = (input) => {
   const resolved = defaultVariantColorsResolver(input)
   const isBrand = !input.color || input.color === 'brand' || input.color === input.theme.primaryColor
   if (input.variant === 'filled' && isBrand) return { ...resolved, color: 'var(--brand-on)' }
+  // Danger text on its own 10% tint falls just under 4.5:1 in dark.
+  if (input.variant === 'light' && input.color === 'var(--danger)') return { ...resolved, color: 'var(--danger-fg)' }
   return resolved
 }
+
+/**
+ * Anchors take `--brand-fg`. Mantine colours them with the primary shade, a fill colour that
+ * emerald and amber cannot carry as text in Light. Set here because Mantine injects its own value
+ * after theme.css.
+ */
+export const cssVariablesResolver: CSSVariablesResolver = () => ({
+  variables: {},
+  light: { '--mantine-color-anchor': 'var(--brand-fg)', '--mantine-color-text': 'var(--ink)' },
+  dark: { '--mantine-color-anchor': 'var(--brand-fg)', '--mantine-color-text': 'var(--ink)' },
+})
 
 /**
  * Builds the Mantine theme for a given accent palette (defaults to indigo) and the active scheme.
@@ -209,12 +302,18 @@ export function createAppTheme(
   accent: MantineColorsTuple = brand,
   scheme: MantineColorScheme = 'dark',
   ground: MantineColorsTuple = dark,
-  /** Mantine's own close button is English-only, so the caller passes the translated label. */
-  closeLabel?: string,
+  /** Mantine's icon-only controls have no text of their own, so the caller passes translated labels. */
+  labels?: ThemeLabels,
 ) {
   const shades = primaryShades.get(accent) ?? (themeBase.primaryShade as { light: number; dark: number })
   const primaryShade = (scheme === 'light' ? shades.light : shades.dark) as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
-  const closeButtonProps = closeLabel ? { 'aria-label': closeLabel } : undefined
+  const closeButtonProps = labels ? { 'aria-label': labels.close } : undefined
+  const paginationLabels = labels && {
+    first: labels.firstPage,
+    previous: labels.previousPage,
+    next: labels.nextPage,
+    last: labels.lastPage,
+  }
   return createTheme({
     ...themeBase,
     primaryShade,
@@ -223,17 +322,35 @@ export function createAppTheme(
     components: {
       ...themeBase.components,
       Modal: Modal.extend({ defaultProps: { ...modalDefaults, closeButtonProps } }),
-      Drawer: Drawer.extend({ defaultProps: { closeButtonProps } }),
+      Drawer: Drawer.extend({ defaultProps: { closeButtonProps, attributes: dialogHeaderAttributes } }),
+      Notification: Notification.extend({ defaultProps: { closeButtonProps } }),
+      Pagination: Pagination.extend({
+        defaultProps: paginationLabels && {
+          getControlProps: (control) => ({ 'aria-label': paginationLabels[control] }),
+        },
+      }),
     },
   })
 }
 
+export interface ThemeLabels {
+  close: string
+  firstPage: string
+  previousPage: string
+  nextPage: string
+  lastPage: string
+}
+
+// Mantine renders dialog headers as <header>, a second banner landmark next to the app shell's.
+const dialogHeaderAttributes = { header: { role: 'presentation' } }
+
 const modalDefaults = {
+  attributes: dialogHeaderAttributes,
   radius: 'lg',
   padding: 'lg',
   centered: true,
   scrollAreaComponent: ModalPassthrough,
-  overlayProps: { blur: 3, backgroundOpacity: 0.55 },
+  overlayProps: { backgroundOpacity: 0.6 },
   classNames: {
     content: 'utility-modal-content',
     header: 'utility-modal-header',
@@ -251,10 +368,20 @@ const themeBase: MantineThemeOverride = {
   colors: { brand, dark },
   defaultRadius: 'md',
   fontFamily:
-    '"Inter Variable", InterVariable, Inter, ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    '"Onest Variable", Onest, ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   fontFamilyMonospace:
     'ui-monospace, "JetBrains Mono", "SFMono-Regular", "Cascadia Code", Menlo, monospace',
+  // One step per role: xs is meta, sm is body, matching --type-meta and --type-body in theme.css.
+  fontSizes: {
+    xs: '0.8125rem',
+    sm: '0.9375rem',
+    md: '1rem',
+    lg: '1.125rem',
+    xl: '1.25rem',
+  },
   headings: {
+    fontFamily:
+      '"Bricolage Grotesque Variable", "Onest Variable", ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif',
     fontWeight: '700',
     sizes: {
       h1: { fontSize: '1.9rem', lineHeight: '1.2', fontWeight: '800' },

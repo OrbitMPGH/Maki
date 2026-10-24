@@ -69,7 +69,7 @@ public sealed class ReaderCohortRailServiceTests : IDisposable
             new SeedWeightService(new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, settings),
             new FixedCandidates(11, 12, 13, 14),
             new VectorIndexCache(embedding, options, NullLogger<VectorIndexCache>.Instance),
-            new MangaBakaLocalStore(options, settings, NullLogger<MangaBakaLocalStore>.Instance),
+            new MangaBakaLocalStore(options, NullLogger<MangaBakaLocalStore>.Instance),
             NullLogger<ReaderCohortRailService>.Instance);
     }
 

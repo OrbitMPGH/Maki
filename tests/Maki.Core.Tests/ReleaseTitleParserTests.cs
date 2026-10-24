@@ -32,6 +32,20 @@ public class ReleaseTitleParserTests
         Assert.Equal(QualityTier.Volume, tier);
     }
 
+    /// <summary>
+    /// The unmarked chapter range before "as v01" stays in the title. The rival test in
+    /// ReleaseTitleMatcherTests is built on this candidate, noise and all.
+    /// </summary>
+    [Fact]
+    public void A_compilation_keeps_its_unmarked_chapter_range_in_the_title()
+    {
+        var parsed = ReleaseTitleParser.Parse(
+            "My Dress-Up Darling XOXO! 001-013 as v01 (Digital-Compilation) (Oak) [Completed]");
+
+        Assert.Equal(["My Dress-Up Darling XOXO! 001-013 as"], parsed.TitleCandidates);
+        Assert.Equal(new NumberRange(1, 1), parsed.Span.Volumes);
+    }
+
     [Fact]
     public void A_single_volume_has_no_chapter_segments()
     {

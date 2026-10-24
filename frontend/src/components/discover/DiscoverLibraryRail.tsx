@@ -196,11 +196,11 @@ export function DiscoverLibraryRail({
       withBorder
       radius="lg"
       p="md"
-      className="series-hero-glass-panel"
+      className="series-hero-panel"
     >
       {seriesId != null ? (
         <>
-          <Title order={3} fz="var(--type-subhead)">
+          <Title order={2} size="h3" fz="var(--type-subhead)">
             <Trans>In your library</Trans>
           </Title>
           <Button
@@ -219,7 +219,7 @@ export function DiscoverLibraryRail({
         // under Settings, Users. With no grant there is nothing to point the add at. Say so rather
         // than leaving a dead Select and a disabled button.
         <>
-          <Title order={3} fz="var(--type-subhead)">
+          <Title order={2} size="h3" fz="var(--type-subhead)">
             <Trans>Add to library</Trans>
           </Title>
           <Alert color="var(--warn)" variant="light" mt="md">
@@ -318,7 +318,7 @@ export function DiscoverLibraryRail({
         </Stack>
       ) : myRequest && (myRequest.status === 'Pending' || myRequest.status === 'Processing') ? (
         <>
-          <Title order={3} fz="var(--type-subhead)">
+          <Title order={2} size="h3" fz="var(--type-subhead)">
             <Trans>Requested</Trans>
           </Title>
           <Alert color="var(--ok)" variant="light" icon={<IconCheck size={16} />} mt="md">
@@ -327,7 +327,7 @@ export function DiscoverLibraryRail({
         </>
       ) : (
         <>
-          <Title order={3} fz="var(--type-subhead)">
+          <Title order={2} size="h3" fz="var(--type-subhead)">
             <Trans>Ask for this</Trans>
           </Title>
           <Text size="xs" c="var(--ink-4)" mt={6} style={{ lineHeight: 1.55 }}>

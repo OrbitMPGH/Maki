@@ -78,13 +78,19 @@ public static class SourceQualitySamples
     /// Each source's record across every series, newest <paramref name="perSource"/> samples, for the
     /// global source list. Keyed by source name, case-insensitive.
     /// </summary>
+    /// <param name="sources">Only these sources; null for every one.</param>
     public static async Task<Dictionary<string, (SourceQualityEstimate Estimate, int Series)>> LibraryEstimatesAsync(
-        MakiDbContext db, CancellationToken ct, int perSource = 200)
+        MakiDbContext db, CancellationToken ct, int perSource = 200, IReadOnlyCollection<string>? sources = null)
     {
-        var samples = await db.SourceQualitySamples.IgnoreQueryFilters().AsNoTracking()
+        var query = db.SourceQualitySamples.IgnoreQueryFilters().AsNoTracking()
             .Join(db.SourceMappings.IgnoreQueryFilters(), s => s.SourceMappingId, m => m.Id,
-                (s, m) => new { Sample = s, m.SourceName })
-            .ToListAsync(ct);
+                (s, m) => new { Sample = s, m.SourceName });
+        if (sources is not null)
+        {
+            query = query.Where(x => sources.Contains(x.SourceName));
+        }
+
+        var samples = await query.ToListAsync(ct);
         var result = new Dictionary<string, (SourceQualityEstimate, int)>(StringComparer.OrdinalIgnoreCase);
         foreach (var group in samples.GroupBy(x => x.SourceName, StringComparer.OrdinalIgnoreCase))
         {

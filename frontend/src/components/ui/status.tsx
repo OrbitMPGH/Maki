@@ -277,6 +277,9 @@ export function trackerStatusVisual(status: string): StatusVisual {
       return { color: 'brand', label: msg`Reading`, Icon: IconPlayerPlay }
     case 'plan_to_read':
       return { color: 'cyan', label: msg`Plan to read`, Icon: IconClock }
+    // A status the user set on the tracker that a sync never overrides.
+    case 'other':
+      return { color: 'gray', label: msg`Paused or dropped`, Icon: IconHourglass }
     default:
       return { color: 'gray', label: status || msg`Listed`, Icon: IconHourglass }
   }

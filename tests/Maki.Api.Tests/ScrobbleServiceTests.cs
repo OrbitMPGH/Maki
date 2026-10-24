@@ -33,6 +33,7 @@ public class ScrobbleServiceTests
             mal: null!,
             mangaBaka: null!,
             kitsu: null!,
+            mangaUpdates: null!,
             logger: NullLogger<ScrobbleService>.Instance);
 
     /// <summary>
@@ -62,6 +63,8 @@ public class ScrobbleServiceTests
             mangaBaka: mangaBaka,
             kitsu: new KitsuTracker(
                 noopHttp, appSettings, userSettings, tokens, options, NullLogger<KitsuTracker>.Instance),
+            mangaUpdates: new MangaUpdatesTracker(
+                noopHttp, userSettings, tokens, options, NullLogger<MangaUpdatesTracker>.Instance),
             logger: NullLogger<ScrobbleService>.Instance);
     }
 
@@ -107,6 +110,163 @@ public class ScrobbleServiceTests
 
         Assert.Contains(tracker.Pushes, p => p.RemoteId == "100" && p.Chapter == 5);
         Assert.DoesNotContain(tracker.Pushes, p => p.RemoteId == "200");
+    }
+
+    [Fact]
+    public async Task NativePassAsync_PushesToMangaUpdatesFromTheSeriesSlug()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var series = db.SeedSeries("Slugged", configure: s => s.MangaUpdatesId = "pb8uwds");
+        SeedReading(db, user, series, 12);
+
+        var tracker = new FakeScrobbleTracker { TrackerName = "mangaupdates" };
+
+        await BuildService(db, new FakeUserSettingsStore(db))
+            .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        Assert.Contains(tracker.Pushes, p => p.RemoteId == "pb8uwds" && p.Chapter == 12);
+    }
+
+    [Fact]
+    public async Task NativePassAsync_SendsABatchTrackersWritesTogetherAndRecordsEachOutcome()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var good = db.SeedSeries("Good", configure: s => s.MangaUpdatesId = "pb8uwds");
+        var bad = db.SeedSeries("Bad", configure: s => s.MangaUpdatesId = "pb8uwdt");
+        var third = db.SeedSeries("Third", configure: s => s.MangaUpdatesId = "pb8uwdu");
+        SeedReading(db, user, good, 4);
+        SeedReading(db, user, bad, 5);
+        SeedReading(db, user, third, 6);
+
+        var tracker = new FakeBatchTracker { FailFor = "pb8uwdt" };
+
+        var counts = await BuildService(db, new FakeUserSettingsStore(db))
+            .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        var batch = Assert.Single(tracker.Batches);
+        Assert.Equal(3, batch.Count);
+        Assert.Empty(tracker.Singles);
+        Assert.Equal(2, counts.Updated);
+        Assert.Equal(1, counts.Errors);
+
+        using var read = db.NewContext();
+        var states = read.SeriesScrobbleStates.AsNoTracking().Where(x => x.Service == "mangaupdates").ToList();
+        Assert.Equal(4, states.Single(x => x.SeriesId == good).Chapter);
+        Assert.True(string.IsNullOrEmpty(states.Single(x => x.SeriesId == good).Error));
+        Assert.False(string.IsNullOrEmpty(states.Single(x => x.SeriesId == bad).Error));
+        Assert.True(string.IsNullOrEmpty(states.Single(x => x.SeriesId == third).Error));
+    }
+
+    [Fact]
+    public async Task NativePassAsync_StoresABackOffAsAKey_NotAsAComputedDuration()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var bad = db.SeedSeries("Bad", configure: s => s.MangaUpdatesId = "pb8uwdt");
+        SeedReading(db, user, bad, 5);
+
+        var tracker = new FakeBatchTracker { FailFor = "pb8uwdt", BackOff = true };
+
+        await BuildService(db, new FakeUserSettingsStore(db))
+            .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        using var read = db.NewContext();
+        var error = read.SeriesScrobbleStates.AsNoTracking().Single(x => x.SeriesId == bad).Error;
+        Assert.Equal(ScrobbleService.BackedOffErrorKey, error);
+        Assert.Equal(
+            "scrobble.error.backedOff(service=MangaUpdates)",
+            ScrobbleService.RenderError(error, "MangaUpdates", new TestLocalizer()));
+        Assert.Equal("refused", ScrobbleService.RenderError("refused", "MangaUpdates", new TestLocalizer()));
+    }
+
+    [Fact]
+    public async Task NativePassAsync_FlushesABatchTrackerWhenItsBatchIsFull()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        foreach (var (title, slug, chapter) in new[] { ("A", "pb8uwds", 1), ("B", "pb8uwdt", 2), ("C", "pb8uwdu", 3) })
+        {
+            SeedReading(db, user, db.SeedSeries(title, configure: s => s.MangaUpdatesId = slug), chapter);
+        }
+
+        var tracker = new FakeBatchTracker { Limit = 2 };
+
+        await BuildService(db, new FakeUserSettingsStore(db))
+            .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        Assert.Equal([2, 1], tracker.Batches.Select(b => b.Count));
+    }
+
+    [Fact]
+    public async Task NativePassAsync_FlushesABatchTrackerWhoseOldestWriteHasWaitedTooLong()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        foreach (var (title, slug, chapter) in new[] { ("A", "pb8uwds", 1), ("B", "pb8uwdt", 2), ("C", "pb8uwdu", 3) })
+        {
+            SeedReading(db, user, db.SeedSeries(title, configure: s => s.MangaUpdatesId = slug), chapter);
+        }
+
+        var tracker = new FakeBatchTracker();
+        var service = BuildService(db, new FakeUserSettingsStore(db));
+        service.MaxBatchWait = TimeSpan.Zero;
+
+        await service.NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        Assert.Equal([1, 1, 1], tracker.Batches.Select(b => b.Count));
+    }
+
+    [Fact]
+    public async Task NativePassAsync_SkipsAMangaUpdatesTrackerForASeriesWithoutASlug()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var series = db.SeedSeries("No slug", configure: s => s.MangaBakaId = 100);
+        SeedReading(db, user, series, 3);
+
+        var tracker = new FakeScrobbleTracker { TrackerName = "mangaupdates" };
+
+        await BuildService(db, new FakeUserSettingsStore(db))
+            .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        Assert.Empty(tracker.Pushes);
+    }
+
+    [Theory]
+    [InlineData(IncognitoMode.ScrobbleOnly)]
+    [InlineData(IncognitoMode.Full)]
+    public async Task NativePassAsync_NeverPushesAnIncognitoSeriesToMangaUpdates(IncognitoMode mode)
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var series = db.SeedSeries("Private", configure: s =>
+        {
+            s.MangaUpdatesId = "pb8uwds";
+            s.Incognito = mode;
+        });
+        SeedReading(db, user, series, 9);
+
+        var userSettings = new FakeUserSettingsStore(db);
+        await userSettings.SetAsync(user, SettingKeys.ScrobblePlanToRead, "true");
+        var tracker = new FakeScrobbleTracker { TrackerName = "mangaupdates" };
+
+        await BuildService(db, userSettings)
+            .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        Assert.Empty(tracker.Pushes);
+    }
+
+    private static void SeedReading(TestDb db, int userId, int seriesId, double maxChapter)
+    {
+        using var seed = db.NewContext();
+        seed.ReadingStates.Add(new ReadingState
+        {
+            UserId = userId, SeriesId = seriesId, Title = "Seeded",
+            MaxChapter = maxChapter, LastProgressAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        seed.SaveChanges();
     }
 
     [Theory]
@@ -518,8 +678,9 @@ public class ScrobbleServiceTests
         public List<(string RemoteId, int Chapter, int Volume, ScrobbleStatus Status)> Pushes { get; } = [];
         public List<bool> KeptStatus { get; } = [];
         public RemoteEntry Entry { get; init; } = new();
+        public string TrackerName { get; init; } = "mangabaka";
 
-        public string Name => "mangabaka";
+        public string Name => TrackerName;
         public string Label => "MangaBaka";
         public bool UsesOAuth => false;
 
@@ -538,6 +699,53 @@ public class ScrobbleServiceTests
             Pushes.Add((remoteId, chapter, volume, status));
             KeptStatus.Add(keepStatus);
             return Task.CompletedTask;
+        }
+
+        public Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default) =>
+            Task.CompletedTask;
+
+        public Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(
+            int userId, string title, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<ScrobbleCandidate>>([]);
+
+        public string EntryUrl(string remoteId) => $"https://example.test/{remoteId}";
+    }
+
+    private sealed class FakeBatchTracker : IBatchScrobbleTracker
+    {
+        public List<List<ScrobbleWrite>> Batches { get; } = [];
+        public List<string> Singles { get; } = [];
+        public string? FailFor { get; init; }
+        public int Limit { get; init; } = 25;
+
+        public string Name => "mangaupdates";
+        public string Label => "MangaUpdates";
+        public bool UsesOAuth => false;
+        public int MaxBatch => Limit;
+        public bool BackOff { get; init; }
+
+        public Task<bool> ConfiguredAsync(CancellationToken ct = default) => Task.FromResult(true);
+        public Task<bool> AuthenticatedAsync(int userId, CancellationToken ct = default) => Task.FromResult(true);
+        public Task<string?> UsernameAsync(int userId, CancellationToken ct = default) =>
+            Task.FromResult<string?>("fake");
+
+        public Task<RemoteEntry> GetEntryAsync(int userId, string remoteId, CancellationToken ct = default) =>
+            Task.FromResult(new RemoteEntry());
+
+        public Task UpdateAsync(
+            int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
+            CancellationToken ct = default, bool keepStatus = false)
+        {
+            Singles.Add(remoteId);
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<Exception?>> UpdateManyAsync(
+            int userId, IReadOnlyList<ScrobbleWrite> writes, CancellationToken ct = default)
+        {
+            Batches.Add([.. writes]);
+            return Task.FromResult<IReadOnlyList<Exception?>>(
+                [.. writes.Select(w => w.RemoteId == FailFor ? (BackOff ? new TrackerBackOffException("backed off", DateTimeOffset.UtcNow.AddMinutes(30)) : new TrackerException("refused")) : (Exception?)null)]);
         }
 
         public Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default) =>

@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <PackageReference Include="Karambolo.PO" Version="1.13.0" />
+    <PackageReference Include="Lib.Net.Http.WebPush" Version="3.3.1" />
     <PackageReference Include="MessageFormat" Version="8.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.9" />
@@ -81,16 +82,13 @@
 
   <ItemGroup Condition="'$(BuildFrontendInDebug)' == 'true'">
     <Content Remove="wwwroot\**" />
-    <FrontendInput Include="$(FrontendDir)src\**;$(FrontendDir)public\**;$(LocalesDir)*\client.po" />
-    <FrontendInput Include="$(FrontendDir)index.html;$(FrontendDir)package-lock.json;$(FrontendDir)vite.config.ts;$(FrontendDir)lingui.config.js" />
+    <FrontendInput Include="$(FrontendDir)src\**;$(FrontendDir)public\**;$(FrontendDir)vite\**;$(LocalesDir)*\client.po" Exclude="$(FrontendDir)src\**\*.stories.tsx" />
+    <FrontendInput Include="$(FrontendDir)index.html;$(FrontendDir)package-lock.json;$(FrontendDir)vite.config.ts;$(FrontendDir)lingui.config.js;$(FrontendDir)tsconfig*.json" />
   </ItemGroup>
 
-  <Target Name="BuildFrontend" BeforeTargets="BeforeBuild" Condition="'$(BuildFrontendInDebug)' == 'true'"
-          Inputs="@(FrontendInput)" Outputs="$(SpaOutDir)index.html">
-    <Warning Condition="!Exists('$(FrontendDir)node_modules')"
-             Text="Skipping the SPA build: run `npm ci` in frontend/ first. wwwroot keeps its old contents." />
-    <Exec Condition="Exists('$(FrontendDir)node_modules')" WorkingDirectory="$(FrontendDir)"
-          Command="npx vite build --outDir &quot;$(SpaOutDir.TrimEnd('\/'))&quot; --emptyOutDir" />
+  <Target Name="BuildFrontend" BeforeTargets="BeforeBuild" Condition="'$(BuildFrontendInDebug)' == 'true'" Inputs="@(FrontendInput)" Outputs="$(SpaOutDir)index.html">
+    <Warning Condition="!Exists('$(FrontendDir)node_modules')" Text="Skipping the SPA build: run `npm ci` in frontend/ first. wwwroot keeps its old contents." />
+    <Exec Condition="Exists('$(FrontendDir)node_modules')" WorkingDirectory="$(FrontendDir)" Command="npx vite build --outDir &quot;$(SpaOutDir.TrimEnd('\/'))&quot; --emptyOutDir" />
   </Target>
 
 </Project>

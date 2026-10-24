@@ -96,6 +96,8 @@ export const INBOX_CATEGORIES: {
   label: MessageDescriptor
   types: InboxEventType[]
   adminOnly?: boolean
+  /** Hidden in single-user mode, where nobody else is there to file or answer one. */
+  multiUserOnly?: boolean
 }[] = [
   {
     id: 'library',
@@ -126,6 +128,7 @@ export const INBOX_CATEGORIES: {
     id: 'requests',
     label: msg`Requests`,
     types: ['requestSubmitted', 'requestApproved', 'requestRejected', 'requestEdited'],
+    multiUserOnly: true,
   },
   {
     id: 'system',
@@ -134,6 +137,10 @@ export const INBOX_CATEGORIES: {
     adminOnly: true,
   },
 ]
+
+export function visibleInboxCategories(isAdmin: boolean, singleUser: boolean) {
+  return INBOX_CATEGORIES.filter((c) => (!c.adminOnly || isAdmin) && (!c.multiUserOnly || !singleUser))
+}
 
 /**
  * Descriptors, not strings: this table is built once when the module loads, so a rendered string

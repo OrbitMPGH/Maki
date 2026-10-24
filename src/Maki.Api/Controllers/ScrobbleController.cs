@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
+using Maki.Api.Dtos;
 using System.Text.Json;
 using Maki.Api.Jobs;
 using Maki.Api.Localization;
@@ -10,6 +11,7 @@ using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Quartz;
 
 namespace Maki.Api.Controllers;
@@ -44,9 +46,19 @@ public class ScrobbleController(
     /// cannot, and a switch on those would be a control with nothing behind it.
     /// </param>
     /// <param name="AnimeSignals">The per-tracker anime-taste toggle. Meaningless when <paramref name="AnimeList"/> is false.</param>
+    /// <param name="BackOffUntil">
+    /// When a tracker that is refusing calls will be tried again, or null. The client renders the
+    /// remaining time itself, so the answer is right however long the page has been open.
+    /// </param>
+    /// <param name="SavedDetails">
+    /// For a tracker each reader signs in to with their own details (MangaBaka, MangaUpdates): whether
+    /// this reader has saved any. Null for the rest. Those trackers are always "configured", so without
+    /// it a reader who never entered anything is told their saved details are wrong.
+    /// </param>
     public record ConnectionDto(
         string Service, string Label, bool Configured, bool Connected, string? Username, bool OAuth,
-        bool SyncReading, bool SyncRatings, bool AnimeList, bool AnimeSignals);
+        bool SyncReading, bool SyncRatings, bool AnimeList, bool AnimeSignals, bool? SavedDetails = null,
+        DateTimeOffset? BackOffUntil = null);
 
     public record MatchRequest(int KavitaSeriesId, string Service, string RemoteId);
     public record IgnoreRequest(int KavitaSeriesId, string Service);
@@ -58,7 +70,7 @@ public class ScrobbleController(
     public record ApplyRatingImportRequest(int[] SeriesIds);
 
     [HttpGet("status")]
-    public async Task<IActionResult> Status(CancellationToken ct)
+    public async Task<IActionResult> Status([FromServices] IMemoryCache cache, CancellationToken ct)
     {
         var kavitaConfigured =
             !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.KavitaUrl, ct)) &&
@@ -82,37 +94,77 @@ public class ScrobbleController(
                 await scrobbler.SyncReadingEnabledAsync(UserId, tracker.Name, ct),
                 await scrobbler.SyncRatingsEnabledAsync(UserId, tracker.Name, ct),
                 AnimeList: tracker is IAnimeListSource,
-                AnimeSignals: await animeSources.EnabledForAsync(UserId, tracker.Name, ct)));
+                AnimeSignals: await animeSources.EnabledForAsync(UserId, tracker.Name, ct),
+                SavedDetails: await SavedDetailsAsync(tracker.Name, ct),
+                BackOffUntil: tracker.BackOffUntil));
         }
 
         var lastSync = await scrobbler.LastSyncAtAsync(ct);
         var interval = await scrobbler.IntervalMinutesAsync(ct);
 
-        var recent = await db.ScrobbleSyncStates.AsNoTracking()
+        var recentKavita = await db.ScrobbleSyncStates.AsNoTracking()
             .OrderByDescending(s => s.SyncedAt)
             .Take(40)
-            .Select(s => new { s.Title, s.Service, s.Chapter, s.Volume, s.Status, At = s.SyncedAt, s.Error })
+            .Select(s => new RecentRow(s.Title, s.Service, s.Chapter, s.Volume, s.Status, s.SyncedAt, s.Error, null))
             .ToListAsync(ct);
 
-        var unmatched = (await db.ScrobbleUnmatched.AsNoTracking()
-                .OrderBy(u => u.Title).ThenBy(u => u.Service)
-                .ToListAsync(ct))
-            .Select(u => new
+        var unmatchedRows = await db.ScrobbleUnmatched.AsNoTracking()
+            .OrderBy(u => u.Title).ThenBy(u => u.Service)
+            .ToListAsync(ct);
+
+        var recentNative = await db.SeriesScrobbleStates.AsNoTracking()
+            .OrderByDescending(s => s.SyncedAt)
+            .Take(40)
+            .Join(db.Series, s => s.SeriesId, sr => sr.Id,
+                (s, sr) => new RecentRow(sr.Title, s.Service, s.Chapter, s.Volume, s.Status, s.SyncedAt, s.Error, sr.Id))
+            .ToListAsync(ct);
+        var recentRows = recentKavita.Concat(recentNative).OrderByDescending(s => s.At).Take(40).ToList();
+
+        // Kavita rows name a Kavita series, not one of ours. They are tied to a library series the
+        // way the series page ties them (normalized title or folder name), only to show its cover.
+        var library = await LibrarySeriesByTitleAsync(
+            cache, recentRows.Where(r => r.SeriesId is null).Select(r => r.Title).Concat(unmatchedRows.Select(u => u.Title)),
+            ct);
+        var nativeIds = recentRows.Where(r => r.SeriesId is not null).Select(r => r.SeriesId!.Value).Distinct().ToList();
+        var covers = await db.Series.AsNoTracking()
+            .Where(s => nativeIds.Contains(s.Id))
+            .Select(s => new LibrarySeries(s.Id, s.CoverPath, s.LastMetadataRefresh))
+            .ToDictionaryAsync(s => s.Id, ct);
+        LibrarySeries? SeriesFor(int? id, string title) =>
+            id is { } known ? covers.GetValueOrDefault(known) : library.GetValueOrDefault(ScrobbleMatching.NormalizeTitle(title));
+
+        var recent = recentRows.Select(r =>
+        {
+            var series = SeriesFor(r.SeriesId, r.Title);
+            return new
+            {
+                r.Title,
+                r.Service,
+                r.Chapter,
+                r.Volume,
+                r.Status,
+                r.At,
+                Error = ScrobbleService.RenderError(
+                    r.Error, scrobbler.Trackers.FirstOrDefault(t => t.Name == r.Service)?.Label ?? r.Service, localizer),
+                SeriesId = series?.Id,
+                CoverUrl = series is null ? null : SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.Refreshed),
+            };
+        }).ToList();
+
+        var unmatched = unmatchedRows.Select(u =>
+        {
+            var series = SeriesFor(null, u.Title);
+            return new
             {
                 u.KavitaSeriesId,
                 u.Service,
                 u.Title,
                 u.Reason,
                 Candidates = JsonSerializer.Deserialize<List<ScrobbleService.CandidateDto>>(u.CandidatesJson) ?? [],
-            });
-
-        var recentNative = await db.SeriesScrobbleStates.AsNoTracking()
-            .OrderByDescending(s => s.SyncedAt)
-            .Take(40)
-            .Join(db.Series, s => s.SeriesId, sr => sr.Id,
-                (s, sr) => new { sr.Title, s.Service, s.Chapter, s.Volume, s.Status, At = s.SyncedAt, s.Error })
-            .ToListAsync(ct);
-        recent = recent.Concat(recentNative).OrderByDescending(s => s.At).Take(40).ToList();
+                SeriesId = series?.Id,
+                CoverUrl = series is null ? null : SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.Refreshed),
+            };
+        });
 
         // Rendered here rather than at the raise site: this log is one person's own, and they may
         // have changed language since the line was written. A row with no key is somebody else's
@@ -145,6 +197,74 @@ public class ScrobbleController(
             Unmatched = unmatched,
             Log = log,
         });
+    }
+
+    private async Task<bool?> SavedDetailsAsync(string service, CancellationToken ct)
+    {
+        switch (service)
+        {
+            case "mangabaka":
+                return !string.IsNullOrWhiteSpace(await userSettings.GetAsync(SettingKeys.ScrobbleMangaBakaToken, ct));
+            case "mangaupdates":
+                return !string.IsNullOrWhiteSpace(await userSettings.GetAsync(SettingKeys.ScrobbleMangaUpdatesUsername, ct)) &&
+                       !string.IsNullOrEmpty(await userSettings.GetAsync(SettingKeys.ScrobbleMangaUpdatesPassword, ct));
+            default:
+                return null;
+        }
+    }
+
+    private sealed record RecentRow(
+        string Title, string Service, int Chapter, int Volume, string? Status, DateTime At, string? Error, int? SeriesId);
+
+    private sealed record LibrarySeries(int Id, string? CoverPath, DateTime? Refreshed);
+
+    /// <summary>
+    /// Library series keyed by normalized title and folder name, for the titles asked about. Every
+    /// series is read because the key is computed in memory (id, names and cover columns only), so the
+    /// whole map is kept per user for a minute: the page polls this every few seconds.
+    /// </summary>
+    private async Task<Dictionary<string, LibrarySeries>> LibrarySeriesByTitleAsync(
+        IMemoryCache cache, IEnumerable<string> titles, CancellationToken ct)
+    {
+        var wanted = titles.Select(ScrobbleMatching.NormalizeTitle).Where(k => k.Length > 0).ToHashSet();
+        var found = new Dictionary<string, LibrarySeries>();
+        if (wanted.Count == 0)
+        {
+            return found;
+        }
+
+        var map = await cache.GetOrCreateAsync($"scrobble:library-titles:{UserId}", async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
+            var all = await db.Series.AsNoTracking()
+                .OrderBy(s => s.Id)
+                .Select(s => new { s.Id, s.Title, s.FolderName, s.CoverPath, s.LastMetadataRefresh })
+                .ToListAsync(ct);
+            var byKey = new Dictionary<string, LibrarySeries>();
+            foreach (var s in all)
+            {
+                foreach (var name in new[] { s.Title, s.FolderName })
+                {
+                    var key = ScrobbleMatching.NormalizeTitle(name ?? "");
+                    if (key.Length > 0)
+                    {
+                        byKey.TryAdd(key, new LibrarySeries(s.Id, s.CoverPath, s.LastMetadataRefresh));
+                    }
+                }
+            }
+
+            return byKey;
+        });
+
+        foreach (var key in wanted)
+        {
+            if (map!.TryGetValue(key, out var series))
+            {
+                found[key] = series;
+            }
+        }
+
+        return found;
     }
 
     /// <summary>
@@ -216,7 +336,14 @@ public class ScrobbleController(
         }
 
         var remoteId = request.RemoteId.Trim();
-        if (!remoteId.All(char.IsAsciiDigit) || remoteId.Length == 0)
+        if (request.Service == "mangaupdates")
+        {
+            if (!MangaUpdatesIds.TryParse(remoteId, out remoteId!))
+            {
+                return this.Fail(localizer, "error.scrobble.invalidMangaUpdatesId");
+            }
+        }
+        else if (!remoteId.All(char.IsAsciiDigit) || remoteId.Length == 0)
         {
             var ids = ScrobbleMatching.ParseWebLinks([remoteId]);
             if (!ids.TryGetValue(request.Service, out remoteId!))

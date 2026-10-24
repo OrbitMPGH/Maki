@@ -6,4 +6,4 @@ The title sets in the display face (`page-title`: Bricolage Grotesque 700, -0.02
 
 **The consumer provides:** `title`, optional `description` (one sentence on what the page is for), optional `actions` (at most one filled Button, the rest `default` or `light`), `compact`.
 
-**Don't:** hang a panel, hero band or stats beside the header. The cinematic band belongs to the series page, the Discover modal, sign-in and Rewind only.
+**Don't:** hang any other panel, hero band or stats beside the header. The cinematic band belongs to the series page, the Discover modal, sign-in and Rewind only.

@@ -116,6 +116,22 @@ export interface HealthOperation {
   version: string
   error?: string
   createdAt: string
+  /** What the operation acts on; the list endpoint fills these, the detail endpoint leaves them null. */
+  relativePath?: string | null
+  seriesId?: number | null
+  seriesTitle?: string | null
+  coverUrl?: string | null
+}
+
+/** One kind of operation that ended one way: the total, and the newest few rows. */
+export interface OperationGroup {
+  /** Opaque; pass to `/operations/group` to load the rest of the rows. */
+  key: string
+  kind: string
+  status: string
+  error?: string | null
+  count: number
+  rows: HealthOperation[]
 }
 
 export interface OperationDetail {

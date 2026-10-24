@@ -59,8 +59,8 @@ export function ScrobbleSection() {
       title={<Trans>Trackers</Trans>}
       description={
         <Trans>
-          Pushes reading progress and ratings to AniList, MyAnimeList, MangaBaka and Kitsu. Connect
-          and disconnect accounts, and review matches, on the Scrobble page.
+          Pushes reading progress and ratings to AniList, MyAnimeList, MangaBaka, Kitsu and
+          MangaUpdates. Connect and disconnect accounts, and review matches, on the Scrobble page.
         </Trans>
       }
       dirty={dirty}
@@ -175,10 +175,34 @@ export function ScrobbleSection() {
         </Group>
         <TrackerSyncControls service="kitsu" label="Kitsu" connection={conn('kitsu')} />
 
+        <Text size="sm" fw={600} mt="xs">
+          MangaUpdates
+        </Text>
+        <Group grow>
+          <TextInput
+            label={t`Username`}
+            autoComplete="off"
+            value={form?.mangaUpdatesUsername ?? ''}
+            onChange={(e) => set({ mangaUpdatesUsername: e.currentTarget.value })}
+          />
+          <TextInput
+            label={t`Password`}
+            type="password"
+            autoComplete="new-password"
+            placeholder={form?.mangaUpdatesPasswordSet ? t`Saved` : undefined}
+            value={form?.mangaUpdatesPassword ?? ''}
+            onChange={(e) => set({ mangaUpdatesPassword: e.currentTarget.value })}
+          />
+        </Group>
+        <TrackerSyncControls
+          service="mangaupdates"
+          label="MangaUpdates"
+          connection={conn('mangaupdates')}
+        />
+
         {isAdmin && (
           <SettingsNumberInput
             mt="xs"
-            w={220}
             label={t`Sync interval (minutes)`}
             description={t`How often progress and ratings are pushed, from both Kavita and the built-in reader.`}
             min={5}
@@ -387,9 +411,14 @@ function ImportListInstanceControls({ form: { data, form, set } }: { form: Retur
  */
 function KavitaOwnerField() {
   const { t } = useLingui()
+  const { me, singleUser } = useAuth()
   const { data: bound } = useKavitaUser()
   const { data: users } = useUsers()
   const save = useSetKavitaUser()
+
+  // With one account there is nobody else to attribute the reading to. Still shown when it points
+  // at some other, now disabled, account, since that is a setting worth being able to clear.
+  if (singleUser && (bound?.userId == null || bound.userId === me?.id)) return null
 
   const options = (users ?? [])
     .filter((u) => !u.disabled && !u.pendingSetup)

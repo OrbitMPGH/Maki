@@ -234,6 +234,26 @@ public class QueueBulkFailedTests : IDisposable
     }
 
     [Fact]
+    public async Task Queue_and_history_rows_carry_the_series_cover()
+    {
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == _seriesId).CoverPath = "cover.jpg";
+            db.SaveChanges();
+        }
+        SeedScraper("alpha", null, QueueStatus.Queued);
+        SeedScraper("alpha", null, QueueStatus.Completed);
+
+        var queue = Assert.IsType<QueueHistoryDto>(
+            Assert.IsType<OkObjectResult>(await Controller().List(ct: CancellationToken.None)).Value);
+        var history = Assert.IsType<QueueHistoryDto>(
+            Assert.IsType<OkObjectResult>(await Controller().History(1, 25, CancellationToken.None)).Value);
+
+        Assert.NotNull(Assert.Single(queue.Items).SeriesCoverUrl);
+        Assert.NotNull(Assert.Single(history.Items).SeriesCoverUrl);
+    }
+
+    [Fact]
     public async Task The_failed_summary_groups_by_reason_and_source()
     {
         SeedScraper("alpha", DownloadFailureReason.Network);

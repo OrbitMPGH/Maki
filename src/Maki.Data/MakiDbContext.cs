@@ -44,6 +44,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<Series> Series => Set<Series>();
     public DbSet<Chapter> Chapters => Set<Chapter>();
     public DbSet<ChapterFile> ChapterFiles => Set<ChapterFile>();
+    public DbSet<KoreaderDocument> KoreaderDocuments => Set<KoreaderDocument>();
     public DbSet<HealthCheckRecord> HealthChecks => Set<HealthCheckRecord>();
     public DbSet<HealthFile> HealthFiles => Set<HealthFile>();
     public DbSet<HealthFinding> HealthFindings => Set<HealthFinding>();
@@ -66,6 +67,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<StatsEvent> StatsEvents => Set<StatsEvent>();
     public DbSet<ReadingState> ReadingStates => Set<ReadingState>();
     public DbSet<ChapterProgress> ChapterProgress => Set<ChapterProgress>();
+    public DbSet<PendingReadImport> PendingReadImports => Set<PendingReadImport>();
     public DbSet<ReaderBookmark> ReaderBookmarks => Set<ReaderBookmark>();
     public DbSet<ReadingSession> ReadingSessions => Set<ReadingSession>();
     public DbSet<ReadingProfile> ReadingProfiles => Set<ReadingProfile>();
@@ -77,6 +79,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     /// which is the instance-wide list of outbound Discord/webhook connections.
     /// </summary>
     public DbSet<UserNotification> UserNotifications => Set<UserNotification>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<SeriesTag> SeriesTags => Set<SeriesTag>();
@@ -362,6 +365,14 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasQueryFilter(n => _scope.Unrestricted || n.UserId == _scope.UserId);
         });
 
+        modelBuilder.Entity<PushSubscription>(e =>
+        {
+            e.HasIndex(p => p.Endpoint).IsUnique();
+            e.HasIndex(p => p.UserId);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(p => _scope.Unrestricted || p.UserId == _scope.UserId);
+        });
+
         modelBuilder.Entity<ReadingGoal>(e =>
         {
             // At most one goal per period and metric. "5 chapters a day" and "10 chapters a day" are
@@ -383,6 +394,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         {
             e.HasIndex(s => s.SortTitle);
             e.HasIndex(s => s.MangaBakaId);
+            e.HasIndex(s => s.NextCheckAt);
             e.Property(s => s.Genres).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
             e.Property(s => s.Tags).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
             e.Property(s => s.AltTitles).HasConversion(LocalizedTitleListConverter.Instance, LocalizedTitleListComparer.Instance);
@@ -504,7 +516,20 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // through this index, so indexing the rest of the table would be pure overhead.
             e.HasIndex(f => f.MeasuredAtUtc).HasFilter("MeasuredAtUtc IS NULL");
 
+            // Same idea for page conversion's pass over the library.
+            e.HasIndex(f => f.ConversionCheckedAtUtc).HasFilter("ConversionCheckedAtUtc IS NULL");
+
             e.HasOne<Series>().WithMany().HasForeignKey(f => f.SeriesId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<KoreaderDocument>(e =>
+        {
+            e.HasQueryFilter(d => _scope.Unrestricted || ChapterFiles.Any(f => f.Id == d.ChapterFileId));
+            e.Property(d => d.Digest).HasMaxLength(32);
+            e.Property(d => d.FileVersion).HasMaxLength(64);
+            e.HasIndex(d => d.Digest);
+            e.HasIndex(d => new { d.ChapterFileId, d.Kind, d.Digest }).IsUnique();
+            e.HasOne<ChapterFile>().WithMany().HasForeignKey(d => d.ChapterFileId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<SourceMapping>(e =>
@@ -774,6 +799,14 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
 
             e.HasOne<Series>().WithMany().HasForeignKey(p => p.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<Chapter>().WithMany().HasForeignKey(p => p.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(p => _scope.Unrestricted || p.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<PendingReadImport>(e =>
+        {
+            e.HasIndex(p => new { p.SeriesId, p.UserId }).IsUnique();
+            e.HasOne<Series>().WithMany().HasForeignKey(p => p.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(p => _scope.Unrestricted || p.UserId == _scope.UserId);
         });

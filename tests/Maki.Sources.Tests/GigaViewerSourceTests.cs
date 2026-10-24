@@ -1,7 +1,6 @@
 using Maki.Core.Sources;
 using Maki.Sources.GigaViewer;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using Maki.Core.Images;
 
 namespace Maki.Sources.Tests;
 
@@ -186,8 +185,7 @@ public class GigaViewerSourceTests
             Assert.Equal(chapter.Url, p.Headers?["Referer"]);
         });
 
-        using var decoded = Image.Load(pages.Pages[0].Data!);
-        Assert.Equal("JPEG", decoded.Metadata.DecodedImageFormat?.Name);
+        Assert.Equal(ImageFormat.Jpeg, ImageCodec.Identify(pages.Pages[0].Data!).Format);
     }
 
     [Fact]
@@ -287,8 +285,8 @@ public class GigaViewerSourceTests
 
     private static byte[] BuildSyntheticPagePng()
     {
-        using var image = new Image<Rgba32>(64, 64);
-        var color = new Rgba32(200, 100, 50, 255);
+        var image = new Raster(64, 64);
+        var color = new Rgba(200, 100, 50);
         for (var y = 0; y < 64; y++)
         {
             for (var x = 0; x < 64; x++)
@@ -297,8 +295,6 @@ public class GigaViewerSourceTests
             }
         }
 
-        using var stream = new MemoryStream();
-        image.SaveAsPng(stream);
-        return stream.ToArray();
+        return image.EncodePng();
     }
 }

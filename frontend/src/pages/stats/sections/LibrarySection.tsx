@@ -1,15 +1,15 @@
-import { useMemo } from 'react'
-import { SimpleGrid, Skeleton, Stack, Text } from '@mantine/core'
-import { AreaChart } from '@mantine/charts'
+import { useMemo, useState } from 'react'
+import { Group, SegmentedControl, SimpleGrid, Skeleton, Stack, Text } from '@mantine/core'
+import { AreaChart, BarChart } from '@mantine/charts'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
-import { useLibraryComposition } from '../../../api/hooks'
+import { useLibraryComposition, useLibraryGrowth } from '../../../api/hooks'
 import type { LibraryCompositionTotals } from '../../../api/hooks'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { Panel } from '../../../components/ui/Panel'
 import { StatTile } from '../../../components/ui/StatTile'
 import { TagChip, TagChips } from '../../../components/ui/TagChip'
-import { formatBytes, formatMonthBucket, formatNumber, formatPercent } from '../../../format'
+import { formatBytes, formatNumber, formatPercent, formatStatsBucket } from '../../../format'
 import { ChartSkeleton } from '../ChartSkeleton'
 import { SplitBar } from '../charts/SplitBar'
 import type { SplitBarItem } from '../charts/SplitBar'
@@ -57,23 +57,26 @@ function TotalsTiles({ totals }: { totals?: LibraryCompositionTotals }) {
 
 /**
  * What the collection is made of, as opposed to what anyone read. Not per-user, so this section
- * ignores the reader picker — root-folder visibility is applied server-side.
+ * ignores the reader picker, since root-folder visibility is applied server-side. Only Growth follows
+ * the window; the rest describes the library as it is now.
  */
-export default function LibrarySection(_props: StatsSectionProps) {
+export default function LibrarySection({ range, windowLabel }: StatsSectionProps) {
   const { t, i18n } = useLingui()
   const nameLabel = useNameLabel()
   const { data: stats, isLoading, isError, refetch } = useLibraryComposition()
+  const { data: growth, isLoading: growthLoading } = useLibraryGrowth(range.from, range.to)
+  const [growthMetric, setGrowthMetric] = useState<'series' | 'size'>('series')
 
   const growthData = useMemo(
     () =>
-      (stats?.growth ?? []).map((g) => ({
-        bucket: formatMonthBucket(g.bucket),
-        Added: g.seriesAdded,
-        Total: g.cumulative,
+      (growth ?? []).map((g) => ({
+        bucket: formatStatsBucket(g.bucket),
+        Added: growthMetric === 'size' ? g.bytesAdded : g.seriesAdded,
+        Total: growthMetric === 'size' ? g.cumulativeBytes : g.cumulative,
       })),
-    // formatMonthBucket is locale-bound: without i18n.locale here, a language switch would leave
-    // the previous language's month names cached until stats changed too.
-    [stats, i18n.locale],
+    // The bucket labels are locale-bound: without i18n.locale here, a language switch would leave
+    // the previous language's month names cached until the data changed too.
+    [growth, growthMetric, i18n.locale],
   )
 
   const topSource = useMemo(() => {
@@ -152,6 +155,20 @@ export default function LibrarySection(_props: StatsSectionProps) {
     value: s.count,
   }))
 
+  if (seriesCount === 0) {
+    return (
+      <>
+        <StatsInsight>
+          <Trans>Nothing in the library yet.</Trans>{' '}
+          <span className="stats-insight-dim">
+            <Trans>Growth, composition and sources fill in once you add a series.</Trans>
+          </span>
+        </StatsInsight>
+        <TotalsTiles totals={stats.totals} />
+      </>
+    )
+  }
+
   return (
     <>
       <StatsInsight>
@@ -176,22 +193,54 @@ export default function LibrarySection(_props: StatsSectionProps) {
 
         <div className="stats-grid-main">
           <Panel p="md">
-            <p className="stats-panel-title">{t`Growth`}</p>
-            {growthData.length > 0 ? (
-              <AreaChart
-                h={240}
-                data={growthData}
-                dataKey="bucket"
-                curveType="monotone"
-                withGradient
-                withLegend
-                tickLine="none"
-                gridAxis="y"
-                series={[
-                  { name: 'Total', label: t`Total`, color: 'var(--brand)' },
-                  { name: 'Added', label: t`Added`, color: 'var(--ok)' },
+            <Group justify="space-between" align="flex-start" mb="xs">
+              <p className="stats-panel-title">{t`Growth`}</p>
+              <SegmentedControl
+                aria-label={t`Growth`}
+                size="xs"
+                value={growthMetric}
+                onChange={(v) => setGrowthMetric(v as 'series' | 'size')}
+                data={[
+                  { value: 'series', label: t`Series` },
+                  { value: 'size', label: t`Disk size` },
                 ]}
               />
+            </Group>
+            <p className="stats-panel-sub">{t`Follows ${windowLabel}. The rest of this tab covers the whole library.`}</p>
+            {growthLoading && !growth ? (
+              <ChartSkeleton h={240} />
+            ) : growthData.length > 0 ? (
+              <>
+                <Text size="xs" fw={600} c="var(--ink-3)" mb={4}>
+                  {t`Total`}
+                </Text>
+                <AreaChart
+                  h={170}
+                  data={growthData}
+                  dataKey="bucket"
+                  curveType="monotone"
+                  withGradient
+                  withXAxis={false}
+                  tickLine="none"
+                  gridAxis="y"
+                  yAxisProps={{ width: 64 }}
+                  valueFormatter={growthMetric === 'size' ? formatBytes : undefined}
+                  series={[{ name: 'Total', label: t`Total`, color: 'var(--brand)' }]}
+                />
+                <Text size="xs" fw={600} c="var(--ink-3)" mt="xs" mb={4}>
+                  {t`Added`}
+                </Text>
+                <BarChart
+                  h={110}
+                  data={growthData}
+                  dataKey="bucket"
+                  tickLine="none"
+                  gridAxis="y"
+                  yAxisProps={{ width: 64 }}
+                  valueFormatter={growthMetric === 'size' ? formatBytes : undefined}
+                  series={[{ name: 'Added', label: t`Added`, color: 'var(--ok)' }]}
+                />
+              </>
             ) : (
               <Text c="var(--ink-3)" size="sm">
                 {t`Nothing to show yet.`}
@@ -203,19 +252,19 @@ export default function LibrarySection(_props: StatsSectionProps) {
             <p className="stats-panel-title">{t`Composition`}</p>
             <Stack gap="md" mt="xs">
               <div>
-                <Text size="xs" fw={700} tt="uppercase" c="var(--ink-3)" mb={6} style={{ letterSpacing: '0.05em' }}>
+                <Text size="xs" fw={600} c="var(--ink-3)" mb={6}>
                   {t`By status`}
                 </Text>
                 <SplitBar items={statusItems} />
               </div>
               <div>
-                <Text size="xs" fw={700} tt="uppercase" c="var(--ink-3)" mb={6} style={{ letterSpacing: '0.05em' }}>
+                <Text size="xs" fw={600} c="var(--ink-3)" mb={6}>
                   {t`By type`}
                 </Text>
                 <SplitBar items={typeItems} />
               </div>
               <div>
-                <Text size="xs" fw={700} tt="uppercase" c="var(--ink-3)" mb={6} style={{ letterSpacing: '0.05em' }}>
+                <Text size="xs" fw={600} c="var(--ink-3)" mb={6}>
                   {t`Content rating`}
                 </Text>
                 <SplitBar items={ratingItems} />

@@ -114,4 +114,46 @@ public sealed class ReadingSessionServiceTests : IDisposable
         Assert.Equal(120, session.ActiveSeconds);
         Assert.Empty(Sessions(other));
     }
+    [Fact]
+    public async Task AReportOlderThanTheLatestSittingByMoreThanTheGapStartsItsOwn()
+    {
+        await Record(_user, 60, T0);
+        // Replayed from an offline queue: read in the morning, reported in the afternoon.
+        await Record(_user, 120, T0.AddHours(-3));
+
+        var sessions = Sessions(_user);
+        Assert.Equal(2, sessions.Count);
+        Assert.Equal((T0.AddHours(-3).AddSeconds(-120), T0.AddHours(-3), 120),
+            (sessions[0].StartedAt, sessions[0].EndedAt, sessions[0].ActiveSeconds));
+        Assert.Equal((T0.AddSeconds(-60), T0, 60),
+            (sessions[1].StartedAt, sessions[1].EndedAt, sessions[1].ActiveSeconds));
+    }
+
+    [Fact]
+    public async Task AnOlderReportWithinTheGapBeforeTheSittingJoinsIt()
+    {
+        await Record(_user, 60, T0);
+        await Record(_user, 60, T0.AddMinutes(-5));
+
+        var session = Assert.Single(Sessions(_user));
+        Assert.Equal(T0.AddMinutes(-6), session.StartedAt);
+        Assert.Equal(T0, session.EndedAt);
+        Assert.Equal(120, session.ActiveSeconds);
+    }
+
+    [Fact]
+    public async Task AnOlderReportJoinsTheEarlierSittingItNeighbours()
+    {
+        await Record(_user, 60, T0.AddHours(-3));
+        await Record(_user, 60, T0);
+
+        await Record(_user, 60, T0.AddHours(-3).AddMinutes(2));
+
+        var sessions = Sessions(_user);
+        Assert.Equal(2, sessions.Count);
+        Assert.Equal(120, sessions[0].ActiveSeconds);
+        Assert.Equal(T0.AddHours(-3).AddMinutes(2), sessions[0].EndedAt);
+        Assert.Equal(60, sessions[1].ActiveSeconds);
+    }
+
 }

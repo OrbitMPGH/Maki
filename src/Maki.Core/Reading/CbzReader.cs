@@ -79,7 +79,7 @@ public static class CbzReader
     /// Returns null when the entry is missing.
     /// <para>
     /// A PDF page is rendered rather than read out, and every way that can fail - a name outside
-    /// the document, an unreadable file, PDFium or ImageSharp giving up - is null here too, so the
+    /// the document, an unreadable file, PDFium or the JPEG encode giving up - is null here too, so the
     /// caller maps it to the same 404 as a missing zip entry.
     /// </para>
     /// </summary>

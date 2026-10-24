@@ -13,7 +13,16 @@ const banned = [
   { pattern: /\bnavigator\.clipboard\b/, use: "copyText() from 'lib/clipboard'", home: 'lib/clipboard.ts' },
   { pattern: /\bnavigator\.wakeLock\b/, use: "requestWakeLock() from 'lib/wakeLock'", home: 'lib/wakeLock.ts' },
   { pattern: /\bcrypto\.subtle\b/, use: 'a JS fallback, subtle is undefined outside secure contexts', home: null },
+  { pattern: /\bnavigator\.serviceWorker\b/, use: "the helpers in 'lib/pwa/serviceWorker'", home: 'lib/pwa/' },
+  { pattern: /\bcaches\./, use: "the helpers in 'lib/pwa/cache'", home: 'lib/pwa/' },
+  { pattern: /\b(?:PushManager|pushManager)\b/, use: "the helpers in 'lib/pwa/push'", home: 'lib/pwa/' },
+  { pattern: /\bnavigator\.storage\b/, use: "the helpers in 'lib/pwa/storage'", home: 'lib/pwa/' },
+  // The browser API's own members only: Mantine's <Notification> has `Notification.extend` too.
+  { pattern: /\bNotification\.(?:permission|requestPermission|maxActions)\b|\bnew Notification\(/, name: 'Notification', use: "the helpers in 'lib/pwa/push'", home: 'lib/pwa/' },
 ]
+
+// The service worker only ever runs in a secure context, so it uses these APIs directly.
+const exempt = ['sw/']
 
 const files = []
 const walk = (dir) => {
@@ -36,6 +45,7 @@ const importBlock = /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"](@mantine\/[\
 const failures = []
 for (const file of files) {
   const rel = relative(root, file).split(sep).join('/')
+  if (exempt.some((prefix) => rel.startsWith(prefix))) continue
   const source = readFileSync(file, 'utf8')
   for (const match of source.matchAll(importBlock)) {
     const names = match[1].split(',').map((n) => n.trim().split(/\s+as\s+/)[0].replace(/^type\s+/, ''))
@@ -49,9 +59,9 @@ for (const file of files) {
     .split('\n')
     .forEach((line, i) => {
       if (/^\s*(\/\/|\*|\/\*)/.test(line)) return
-      for (const { pattern, use, home } of banned) {
-        if (home === rel || !pattern.test(line)) continue
-        failures.push(`frontend/src/${rel}:${i + 1}: ${pattern.source.replace(/\b/g, '')} is undefined over plain HTTP. Use ${use}.`)
+      for (const { pattern, name, use, home } of banned) {
+        if ((home && rel.startsWith(home)) || !pattern.test(line)) continue
+        failures.push(`frontend/src/${rel}:${i + 1}: ${name ?? pattern.source.replace(/\b/g, '')} is undefined over plain HTTP. Use ${use}.`)
       }
     })
 }

@@ -10,7 +10,8 @@ namespace Maki.Api.Jobs;
 /// 00:00 UTC; runs every 6 hours but short-circuits on the published SHA1, so repeat
 /// runs cost one tiny checksum request. Also triggerable on demand from settings, and
 /// triggered once the setup wizard finishes so a fresh install starts the download then
-/// rather than waiting out the schedule.
+/// rather than waiting out the schedule. While no usable dump is installed, a failure retries
+/// sooner (<see cref="MangaBakaDumpRetry"/>).
 /// </summary>
 [DisallowConcurrentExecution]
 public class MangaBakaDumpRefreshJob(
@@ -19,6 +20,7 @@ public class MangaBakaDumpRefreshJob(
     EventBroadcaster events,
     ISchedulerFactory schedulerFactory,
     ArtifactBuildGate gate,
+    MangaBakaDumpRetry retry,
     ILogger<MangaBakaDumpRefreshJob> logger) : IJob
 {
     public static readonly JobKey Key = new("mangabaka-dump");
@@ -34,6 +36,7 @@ public class MangaBakaDumpRefreshJob(
             using var build = await gate.EnterAsync(nameof(MangaBakaDumpRefreshJob), context.CancellationToken);
 
             var installed = await RunWithProgressAsync(context.CancellationToken);
+            await retry.OnSuccessAsync(context.Scheduler, context.CancellationToken);
 
             // A fresh download already has them, built on the staged file. This covers the dump
             // that is already on disk: the browse indexes did not exist before this release, and
@@ -60,9 +63,28 @@ public class MangaBakaDumpRefreshJob(
         }
         catch (Exception ex)
         {
-            // Health check surfaces prolonged staleness; the next run retries.
+            // Health check surfaces prolonged staleness; the next run retries, sooner while no usable
+            // dump is installed.
             logger.LogWarning(ex, "MangaBaka dump refresh failed");
             context.ReportFailure(ex);
+            await ScheduleRetryAsync(context);
+        }
+    }
+
+    private async Task ScheduleRetryAsync(IJobExecutionContext context)
+    {
+        try
+        {
+            var unusable = dumpService.Damaged || !(await dumpService.GetStatusAsync(context.CancellationToken)).Present;
+            if (await retry.OnFailureAsync(context.Scheduler, unusable, DateTimeOffset.UtcNow, context.CancellationToken)
+                is { } at)
+            {
+                logger.LogInformation("No usable MangaBaka dump is installed; trying again at {At:u}", at);
+            }
+        }
+        catch (Exception ex) when (!context.CancellationToken.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Could not schedule a retry of the MangaBaka dump download");
         }
     }
 

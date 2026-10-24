@@ -2,6 +2,7 @@ using System.Globalization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
+using Maki.Core.Releases;
 using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -24,7 +25,8 @@ public class ChapterSyncService(
     SourceChapterListCache chapterLists,
     IAppSettings appSettings,
     ILogger<ChapterSyncService> logger,
-    AnimeResumePendingService? animeResumePending = null)
+    AnimeResumePendingService? animeResumePending = null,
+    PendingReadImportService? pendingReadImports = null)
 {
     /// <returns>Ids of newly discovered chapters.</returns>
     public Task<List<int>> SyncSeriesAsync(int seriesId, CancellationToken ct = default) =>
@@ -101,6 +103,16 @@ public class ChapterSyncService(
                         "The source listed no chapters, so the previous chapter list was kept");
                 }
 
+                if (source is INextReleaseSource announcing)
+                {
+                    mapping.AnnouncedNextReleaseAt = announcing.AnnouncedNextRelease(mapping.SourceSeriesId);
+                }
+
+                // Read before the snapshot changes: what the mapping listed until now decides which
+                // of its new links are releases and which are a catalogue arriving all at once.
+                var firstSnapshot = mapping.ChapterSnapshotAt is null && mapping.ChapterLinks.Count == 0;
+                var listedUpTo = mapping.ChapterLinks.Max(l => l.Chapter?.Number);
+
                 chapterLists.Store(source, mapping.SourceSeriesId, mapping.LanguageFilter, sourceChapters);
                 numbersBySource[mapping.SourceName] = sourceChapters.Select(sc => sc.Number).ToList();
                 var snapshotLinks = new Dictionary<Chapter, SourceChapter>();
@@ -165,7 +177,9 @@ public class ChapterSyncService(
                     snapshotLinks.TryAdd(match, sc);
                 }
 
-                var fileGroups = ReplaceSnapshot(mapping, snapshotLinks, ChapterFileQualityService.SiteGroup(source));
+                var fileGroups = ReplaceSnapshot(
+                    mapping, snapshotLinks, ChapterFileQualityService.SiteGroup(source),
+                    firstSnapshot ? null : listedUpTo ?? decimal.MinValue);
                 await BackfillFileGroupsAsync(mapping.SourceName, fileGroups, ct);
 
                 mapping.LastRefresh = DateTime.UtcNow;
@@ -224,20 +238,69 @@ public class ChapterSyncService(
         }
 
         await db.SaveChangesAsync(ct);
+
+        // Only a full sync reschedules. A partial one saw a few mappings, and the job would
+        // otherwise treat the whole series as checked.
+        if (mappingIds is null)
+        {
+            await ScheduleNextCheckAsync(series, liveMappings, ct);
+        }
+
         if (newChapters.Count > 0 && animeResumePending is not null)
         {
             await animeResumePending.ApplyAsync(seriesId, ct);
         }
 
+        if (newChapters.Count > 0 && pendingReadImports is not null)
+        {
+            await pendingReadImports.ApplyAsync(seriesId, ct);
+        }
+
         return newChapters.Select(c => c.Id).ToList();
     }
 
+    /// <summary>
+    /// Sets when <c>RefreshMonitoredSeriesJob</c> next picks this series up. Runs after every full
+    /// sync, failed mappings included: the plan comes from the newest chapter, so a source that
+    /// keeps failing does not pull the series back onto the fastest tier.
+    /// </summary>
+    private async Task ScheduleNextCheckAsync(Series series, List<SourceMapping> liveMappings, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var sightings = (await ReleaseSightings.ForSeriesAsync(db, sourceRegistry, [series.Id], ct))
+            .GetValueOrDefault(series.Id) ?? [];
+        var announced = liveMappings
+            .Select(m => m.AnnouncedNextReleaseAt)
+            .Where(at => at is { } a && a > now - RefreshSchedule.AnnouncedWatch)
+            .Min();
+        var adaptive = await appSettings.GetAsync(SettingKeys.MonitoringAdaptiveRefresh, ct) != "false";
+        var plan = RefreshSchedule.Plan(now, ReleaseHistory.LastNewChapter(sightings, now), series.Status, announced, adaptive);
+
+        series.LastCheckAt = now;
+        series.NextCheckAt = now + plan.Interval;
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// More arrivals than this in one listing is a source adding its back catalogue, not releasing,
+    /// so none of them is stamped.
+    /// </summary>
+    internal const int MaxArrivalsPerSync = 20;
+
+    /// <param name="arrivalsAbove">
+    /// Null on the mapping's first snapshot, when nothing it lists is an arrival. Otherwise a new
+    /// link is stamped <see cref="ChapterSourceLink.FirstSeenAt"/> when its chapter is new to the
+    /// series or numbered above everything the mapping listed before; an older chapter a source
+    /// adds later is not a release.
+    /// </param>
     /// <returns>The group each linked chapter's file should carry, by ChapterFile id.</returns>
     private Dictionary<int, string> ReplaceSnapshot(
         SourceMapping mapping,
         IReadOnlyDictionary<Chapter, SourceChapter> snapshot,
-        string? groupFallback)
+        string? groupFallback,
+        decimal? arrivalsAbove)
     {
+        var arrivals = new List<ChapterSourceLink>();
         var fileGroups = new Dictionary<int, string>();
         var current = mapping.ChapterLinks.ToDictionary(l => l.ChapterId);
         var retainedChapterIds = snapshot.Keys.Where(c => c.Id != 0).Select(c => c.Id).ToHashSet();
@@ -256,6 +319,10 @@ public class ChapterSyncService(
             {
                 link = new ChapterSourceLink { Chapter = chapter, SourceMapping = mapping };
                 db.ChapterSourceLinks.Add(link);
+                if (arrivalsAbove is { } above && (chapter.Id == 0 || chapter.Number > above))
+                {
+                    arrivals.Add(link);
+                }
             }
 
             link.SourceChapterId = sourceChapter.SourceChapterId;
@@ -267,6 +334,15 @@ public class ChapterSyncService(
             if (chapter.ChapterFileId is { } fileId && link.Group is { } group)
             {
                 fileGroups.TryAdd(fileId, group);
+            }
+        }
+
+        if (arrivals.Count <= MaxArrivalsPerSync)
+        {
+            var seenAt = DateTime.UtcNow;
+            foreach (var link in arrivals)
+            {
+                link.FirstSeenAt = seenAt;
             }
         }
 
@@ -397,7 +473,8 @@ public class ChapterSyncService(
                             Volume = link.Volume,
                             Title = link.Title,
                             ReleaseDate = link.ReleaseDate,
-                            Group = link.Group
+                            Group = link.Group,
+                            FirstSeenAt = link.FirstSeenAt
                         };
                         db.ChapterSourceLinks.Add(replacement);
                     }

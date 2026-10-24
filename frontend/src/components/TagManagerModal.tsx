@@ -98,7 +98,19 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                 <>
                   <Popover position="bottom-start" withArrow>
                     <Popover.Target>
-                      <Badge color={color} variant="light" style={{ cursor: 'pointer' }}>
+                      <Badge
+                        color={color}
+                        variant="light"
+                        style={{ cursor: 'pointer' }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            e.currentTarget.click()
+                          }
+                        }}
+                      >
                         {label}
                       </Badge>
                     </Popover.Target>
@@ -111,6 +123,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                             color={`var(--mantine-color-${c}-6)`}
                             size={20}
                             style={{ cursor: 'pointer' }}
+                            aria-label={t`Colour ${c}`}
                             onClick={() => updateTag.mutate({ id, color: c })}
                           />
                         ))}

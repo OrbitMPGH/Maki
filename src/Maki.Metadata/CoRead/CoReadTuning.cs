@@ -158,7 +158,7 @@ public sealed record CoReadTuning
     /// ordinary retrieval already found keeps its full bonus however thin the evidence.
     ///
     /// <para>
-    /// Higher than the vote graph's 0.60 because this graph is ten times denser (1.18M pairs against
+    /// Higher than the vote graph's gate because this graph is ten times denser (1.18M pairs against
     /// 116k) with up to 60 neighbours per series. Pool entry lets a candidate win on genre, tag,
     /// author and quality without ever having been near the cosine top-200 — the privilege that put
     /// an obscure one-shot at rank 1 of a real library before the vote graph got its floor — and a
@@ -166,11 +166,18 @@ public sealed record CoReadTuning
     /// </para>
     ///
     /// <para>
-    /// Swept: 0.30 admits enough to replace nearly half the pool (overlap 0.552 against the channel
+    /// First sweep, on the smaller artifact (the default has since moved to 0.60, see below): 0.30 admits enough to replace nearly half the pool (overlap 0.552 against the channel
     /// being off) and drags median popularity rank down with it; 0.80 and above is barely
     /// distinguishable from off. 0.70 keeps overlap at 0.890 at the shipping weight, which is the
     /// "refine rather than replace" line the vote graph's cap was chosen on.
     /// </para>
+    ///
+    /// <para>
+    /// Re-swept on the 1.99M-pair artifact (distribution/CLAUDE.md, "v5.3"): 0.60 measures +0.0017
+    /// at three seeds on MangaUpdates pairs and +0.0024 on vote pairs, with median pick popularity
+    /// within 4%; 0.80 loses on every grader. Together with the vote graph at 0.55 it adds Hell's
+    /// Paradise and Golden Kamuy to the dev library's page and nothing obscure.
+    /// </para>
     /// </summary>
-    public double MinInjectedScore { get; init; } = 0.70;
+    public double MinInjectedScore { get; init; } = 0.60;
 }

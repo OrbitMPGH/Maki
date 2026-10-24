@@ -1,5 +1,5 @@
 import { errorText } from '../api/errorText'
-import { Alert, Badge, Button, Center, Group, Loader, Modal, Stack, Table, Text, TextInput, Tooltip } from '@mantine/core'
+import { Alert, Badge, Button, Center, Group, Loader, Modal, Stack, Table, Text, TextInput, Tooltip, VisuallyHidden } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useEffect, useState } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -57,7 +57,7 @@ export function ReleaseSearchModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Search releases (Prowlarr)`} size="min(1180px, calc(100vw - 3rem))">
+    <Modal opened={opened} onClose={onClose} title={t`Search releases`} size="min(1180px, calc(100vw - 3rem))">
       <Group gap="xs" mb="md" wrap="nowrap">
         <TextInput
           style={{ flex: 1 }}
@@ -104,7 +104,7 @@ export function ReleaseSearchModal({
                 <Table.Th><Trans>Size</Trans></Table.Th>
                 <Table.Th><Trans>Seeds</Trans></Table.Th>
                 <Table.Th><Trans>Upgrade</Trans></Table.Th>
-                <Table.Th />
+                <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -113,6 +113,7 @@ export function ReleaseSearchModal({
                 const { title, indexer, infoUrl, size, seeders } = release
                 const spanText = parsed ? releaseSpanText(parsed.span) : null
                 const verdictKey = parsed ? spanVerdictKey(parsed) : null
+                const relatedTitle = parsed?.rivalTitle
                 return (
                   <Table.Tr key={r.guid}>
                     <Table.Td>
@@ -158,6 +159,11 @@ export function ReleaseSearchModal({
                                   {proposalReasonLabel(renderLabel, code)}
                                 </Text>
                               ))}
+                              {relatedTitle && (
+                                <Text size="xs" c="var(--ink-3)">
+                                  {t`Related series: ${relatedTitle}`}
+                                </Text>
+                              )}
                             </Stack>
                           }
                         >
@@ -184,7 +190,7 @@ export function ReleaseSearchModal({
                             {
                               onSuccess: () => {
                                 notifications.show({
-                                  message: now`Sent to qBittorrent: ${title}`,
+                                  message: now`Sent to the download client: ${title}`,
                                   color: 'var(--ok)',
                                 })
                                 onClose()

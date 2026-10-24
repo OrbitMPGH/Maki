@@ -10,9 +10,31 @@ const FIT_CLASS: Record<ReaderFit, string> = {
   original: 'reader-fit-original',
 }
 
-// Pixels of downward scroll (wheel delta / touch drag) needed at the bottom to trigger the next
-// chapter. Sized for a couple of scroll-wheel notches, not a long hold.
-const PAST_END_THRESHOLD = 1000
+// Pixels of wheel delta needed at the bottom to trigger the next chapter. Sized for a couple of
+// scroll-wheel notches, not a long hold.
+const PAST_END_WHEEL = 1000
+// A finger drag moves by real screen pixels and only counts once the strip is already at the
+// bottom, so a wheel-sized distance took two or three full swipes on a phone. One deliberate pull
+// of about a quarter of the screen does it instead, with a floor for short landscape screens.
+const PAST_END_TOUCH_SHARE = 0.25
+const PAST_END_TOUCH_MIN = 140
+// Wheel events this soon after a finger lifts belong to the same gesture, for a browser that
+// reports a touch scroll both ways.
+const WHEEL_AFTER_TOUCH_MS = 600
+/** A touch that has gone this long without an event is taken as lost, so the wheel works again. */
+const TOUCH_STALE_MS = 3000
+
+/** A loaded page's natural size, which unloaded pages borrow as their placeholder shape. */
+interface PageShape {
+  width: number
+  /** Height over width. */
+  aspect: number
+}
+
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b)
+  return sorted[Math.floor(sorted.length / 2)]
+}
 // How close to the true bottom counts as "at the bottom": scrollHeight/clientHeight are
 // fractional in some browsers, so an exact `=== ` check misses by sub-pixel amounts.
 const BOTTOM_EPSILON = 2
@@ -73,6 +95,7 @@ const StripPage = memo(function StripPage({
       <img
         ref={setRef}
         data-page={index}
+        data-no-cover-fallback
         src={url}
         alt={t`${label} - page ${pageNumber}`}
         className={`reader-page ${FIT_CLASS[fit]}`}
@@ -153,10 +176,12 @@ export default function ContinuousView({
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
   const sentinel = useRef<HTMLDivElement>(null)
-  // Mirrors `pastEndProgress` state without the render lag, so consecutive wheel/touch events in
-  // the same frame accumulate correctly instead of each reading a stale 0.
+  // Mirrors `pastEndProgress` state (0 to 1) without the render lag, so consecutive wheel/touch
+  // events in the same frame accumulate correctly instead of each reading a stale 0.
   const progress = useRef(0)
   const [pastEndProgress, setPastEndProgress] = useState(0)
+  // A finger is pulling the meter, which fills by distance and moves on only on release.
+  const [pulling, setPulling] = useState(false)
   // The last chapter's counterpart to `pastEndProgress`: shown under the same conditions, but it
   // only ever says the strip has run out, so nothing accumulates and nothing fires.
   const [atLibraryEnd, setAtLibraryEnd] = useState(false)
@@ -169,10 +194,19 @@ export default function ContinuousView({
   // Set by the sentinel effect below; image load handlers re-run it once a page settles.
   const reportEnd = useRef<() => void>(() => {})
 
+  // Unloaded pages take the median shape of the pages loaded so far, so the strip is close to its
+  // real length long before most pages arrive: the scrollbar says where you are and dragging it
+  // does not chase a strip that grows under it. Chapters nearly always use one page size, so after
+  // the first page the estimate is usually exact. Until then the CSS placeholder holds the room.
+  const samples = useRef<{ widths: number[]; aspects: number[] }>({ widths: [], aspects: [] })
+  const [shape, setShape] = useState<PageShape | null>(null)
+
   useEffect(() => {
     progress.current = 0
     setPastEndProgress(0)
     setAtLibraryEnd(false)
+    samples.current = { widths: [], aspects: [] }
+    setShape(null)
   }, [urls])
 
   // Pages before the seek target whose load can still shift the target's offset. Re-scroll keeps
@@ -202,6 +236,16 @@ export default function ContinuousView({
 
   const onPageSettled = useCallback((index: number, element: HTMLImageElement) => {
     element.dataset.loaded = 'true'
+    if (element.naturalWidth > 0 && element.naturalHeight > 0) {
+      const { widths, aspects } = samples.current
+      widths.push(element.naturalWidth)
+      aspects.push(element.naturalHeight / element.naturalWidth)
+      const next = { width: median(widths), aspect: median(aspects) }
+      // Only a real change re-renders: each load of a same-sized page leaves the medians alone.
+      setShape((prev) =>
+        prev && prev.width === next.width && Math.abs(prev.aspect - next.aspect) < 0.005 ? prev : next,
+      )
+    }
     reportEnd.current()
     if (!settling.current.delete(index)) return
     pages.current[seekTarget.current]?.scrollIntoView({ block: 'start' })
@@ -273,9 +317,9 @@ export default function ContinuousView({
   }, [urls, onPageChange])
 
   // The bottom-of-strip "scroll for next chapter" meter. `.reader-surface` clamps scrollTop at
-  // the true max (there's no native overscroll to detect), so instead this reads wheel/touch
-  // deltas directly and only counts them while already at the bottom, the same way Kavita's
-  // reader does it.
+  // the true max (there's no native overscroll to detect), so instead this reads wheel deltas and
+  // finger positions directly and only counts them while already at the bottom, the same way
+  // Kavita's reader does it.
   useEffect(() => {
     if (urls.length === 0) return
     const scroller = container.current?.parentElement
@@ -290,7 +334,8 @@ export default function ContinuousView({
       setPastEndProgress(0)
     }
 
-    const advance = (delta: number) => {
+    // `delta` is in pixels, `distance` how many of them this input needs for a full meter.
+    const advance = (delta: number, distance: number) => {
       clearTimeout(idle)
       if (delta <= 0 || !atBottom()) {
         setAtLibraryEnd(false)
@@ -306,9 +351,9 @@ export default function ContinuousView({
         setAtLibraryEnd(true)
         return
       }
-      progress.current = Math.min(PAST_END_THRESHOLD, progress.current + delta)
-      setPastEndProgress(progress.current / PAST_END_THRESHOLD)
-      if (progress.current >= PAST_END_THRESHOLD) {
+      progress.current = Math.min(1, progress.current + delta / distance)
+      setPastEndProgress(progress.current)
+      if (progress.current >= 1) {
         decay()
         onPastEnd()
         return
@@ -320,36 +365,104 @@ export default function ContinuousView({
     // not yank them back to where the resume landed.
     const abandonSeek = () => settling.current.clear()
 
+    // Touch is pull and release. Safari on iPad delivers a scrolling finger's moves late and in
+    // bursts, so a meter that summed them crawled, then filled on the burst at release and changed
+    // chapter unasked. Here the meter follows how far the finger is from where the strip hit the
+    // bottom, so a late event still shows the true pull, and only letting go with it full moves on.
+    let touching = false
+    let touchEndedAt = 0
+    let touchSeenAt = 0
+    // A second finger turns the gesture into a pinch, which must never fill the meter.
+    let multiTouch = false
+    let pullFrom: number | null = null
+    const touchDistance = () => Math.max(PAST_END_TOUCH_MIN, scroller.clientHeight * PAST_END_TOUCH_SHARE)
+
     const onWheel = (event: WheelEvent) => {
       abandonSeek()
-      advance(event.deltaY)
+      const now = performance.now()
+      if ((touching && now - touchSeenAt < TOUCH_STALE_MS) || now - touchEndedAt < WHEEL_AFTER_TOUCH_MS) return
+      advance(event.deltaY, PAST_END_WHEEL)
     }
 
-    let touchY: number | null = null
     const onTouchStart = (event: TouchEvent) => {
       abandonSeek()
-      touchY = event.touches[0]?.clientY ?? null
+      clearTimeout(idle)
+      touching = true
+      touchSeenAt = performance.now()
+      multiTouch = event.touches.length > 1
+      const y = event.touches[0]?.clientY
+      pullFrom = y != null && !multiTouch && atBottom() ? y : null
+      if (multiTouch && progress.current !== 0) decay()
+      setPulling(true)
     }
     const onTouchMove = (event: TouchEvent) => {
+      touchSeenAt = performance.now()
+      if (event.touches.length > 1) multiTouch = true
+      if (multiTouch) {
+        pullFrom = null
+        if (progress.current !== 0) decay()
+        return
+      }
       const y = event.touches[0]?.clientY
-      if (y == null || touchY == null) return
-      advance(touchY - y)
-      touchY = y
+      if (y == null) return
+      if (!atBottom()) {
+        pullFrom = null
+        setAtLibraryEnd(false)
+        if (progress.current !== 0) decay()
+        return
+      }
+      pullFrom ??= y
+      const pull = pullFrom - y
+      if (pull <= 0) {
+        if (progress.current !== 0) decay()
+        return
+      }
+      if (!hasNext) {
+        setAtLibraryEnd(true)
+        return
+      }
+      progress.current = Math.min(1, pull / touchDistance())
+      setPastEndProgress(progress.current)
     }
-    const onTouchEnd = () => {
-      touchY = null
+    const endTouch = (release: boolean) => {
+      const full = release && !multiTouch && hasNext && progress.current >= 1
+      touching = false
+      multiTouch = false
+      touchEndedAt = performance.now()
+      pullFrom = null
+      setPulling(false)
+      if (progress.current !== 0) decay()
+      if (full) onPastEnd()
+    }
+    // A finger lifted while another is still down is not the end of the gesture.
+    const onTouchEnd = (event: TouchEvent) => {
+      if (event.touches.length === 0) endTouch(true)
+    }
+    const onTouchCancel = () => endTouch(false)
+    // The end of a touch never arrives when the page loses focus mid-gesture.
+    const onLostFocus = () => {
+      if (touching) endTouch(false)
+    }
+    const onVisibility = () => {
+      if (document.hidden) onLostFocus()
     }
 
     scroller.addEventListener('wheel', onWheel, { passive: true })
     scroller.addEventListener('touchstart', onTouchStart, { passive: true })
     scroller.addEventListener('touchmove', onTouchMove, { passive: true })
     scroller.addEventListener('touchend', onTouchEnd, { passive: true })
+    scroller.addEventListener('touchcancel', onTouchCancel, { passive: true })
+    window.addEventListener('blur', onLostFocus)
+    document.addEventListener('visibilitychange', onVisibility)
     return () => {
       clearTimeout(idle)
       scroller.removeEventListener('wheel', onWheel)
       scroller.removeEventListener('touchstart', onTouchStart)
       scroller.removeEventListener('touchmove', onTouchMove)
       scroller.removeEventListener('touchend', onTouchEnd)
+      scroller.removeEventListener('touchcancel', onTouchCancel)
+      window.removeEventListener('blur', onLostFocus)
+      document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [urls, hasNext, onPastEnd])
 
@@ -361,7 +474,14 @@ export default function ContinuousView({
         // Only a deliberate zoom past 100% is allowed to make a page wider than the strip; see
         // the width clamp in theme.css.
         data-zoomed={fit === 'original' && scale > 100}
-        style={{ gap: `${gap}px` }}
+        data-shaped={shape ? true : undefined}
+        style={{
+          gap: `${gap}px`,
+          ...(shape && {
+            '--page-aspect': String(shape.aspect),
+            '--page-width': `${shape.width}px`,
+          }),
+        } as React.CSSProperties}
       >
         {urls.map((src, index) => (
           <StripPage
@@ -381,7 +501,20 @@ export default function ContinuousView({
       </div>
       {(pastEndProgress > 0 || atLibraryEnd) && (
         <div className={`reader-next-chapter-hint${atLibraryEnd ? ' is-end' : ''}`}>
-          <span>{atLibraryEnd ? <Trans>No more chapters</Trans> : (pastEndLabel ?? <Trans>Scroll for next chapter</Trans>)}</span>
+          <span>
+            {atLibraryEnd ? (
+              <Trans>No more chapters</Trans>
+            ) : (
+              pastEndLabel ??
+              (!pulling ? (
+                <Trans>Scroll for next chapter</Trans>
+              ) : pastEndProgress >= 1 ? (
+                <Trans>Release for next chapter</Trans>
+              ) : (
+                <Trans>Pull up for next chapter</Trans>
+              ))
+            )}
+          </span>
           <div className="reader-next-chapter-bar">
             {!atLibraryEnd && (
               <div

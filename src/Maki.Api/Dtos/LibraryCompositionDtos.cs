@@ -13,8 +13,12 @@ public record NamedCountDto(string Name, int Count);
 
 public record SourceUsageDto(string Name, int Files, long Bytes);
 
-/// <summary>Series added in one calendar month (UTC), with the library size at the end of it.</summary>
-public record LibraryGrowthDto(string Bucket, int SeriesAdded, int Cumulative);
+/// <summary>
+/// One local day ("yyyy-MM-dd") or month ("yyyy-MM"): series and bytes added, with the library's
+/// series count and disk use at the end of it. Bytes come from the files on disk now, by when each
+/// was added, so a deleted file drops out of every bucket rather than showing as a dip.
+/// </summary>
+public record LibraryGrowthDto(string Bucket, int SeriesAdded, int Cumulative, long BytesAdded, long CumulativeBytes);
 
 public record SeriesSizeDto(int SeriesId, string Title, string? CoverUrl, int Files, long Bytes);
 
@@ -35,7 +39,6 @@ public record LibraryCompositionDto(
     IReadOnlyList<NamedCountDto> ByStatus,
     IReadOnlyList<SourceUsageDto> BySource,
     IReadOnlyList<NamedCountDto> TopGenres,
-    IReadOnlyList<LibraryGrowthDto> Growth,
     IReadOnlyList<SeriesSizeDto> Largest,
     IReadOnlyList<NamedCountDto> ByContentRating,
     IReadOnlyList<SourceReliabilityDto> SourceReliability,
