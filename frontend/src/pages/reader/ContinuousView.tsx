@@ -389,7 +389,7 @@ export default function ContinuousView({
       clearTimeout(idle)
       touching = true
       touchSeenAt = performance.now()
-      if (event.touches.length > 1) multiTouch = true
+      multiTouch = event.touches.length > 1
       const y = event.touches[0]?.clientY
       pullFrom = y != null && !multiTouch && atBottom() ? y : null
       if (multiTouch && progress.current !== 0) decay()
