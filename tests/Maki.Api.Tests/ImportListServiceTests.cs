@@ -261,7 +261,7 @@ public class ImportListServiceTests : IDisposable
     public async Task A_MangaBaka_id_the_dump_does_not_have_yet_is_retried_after_a_day()
     {
         var user = Adder();
-        _metadata.NotInDump.Add(101);
+        _store.NotInDump.Add(101);
         _tracker.Entries = [Entry("r1", mangaBaka: 101)];
 
         var first = await Service().RunUserAsync(user, null, full: false, default);
@@ -277,11 +277,27 @@ public class ImportListServiceTests : IDisposable
             await db.SaveChangesAsync();
         }
 
-        _metadata.NotInDump.Clear();
+        _store.NotInDump.Clear();
         var second = await Service().RunUserAsync(user, null, full: false, default);
 
         Assert.Equal(1, second!.Added);
         Assert.Equal(new int?[] { 101 }, LibraryIds());
+    }
+
+    [Fact]
+    public async Task A_novel_on_a_MangaBaka_list_is_not_retried_daily()
+    {
+        var user = Adder();
+        _metadata.Novels.Add(101);
+        _tracker.Entries = [Entry("r1", mangaBaka: 101)];
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(1, result!.Skipped);
+        using var db = _db.NewContext();
+        var row = Assert.Single(db.ImportListSkips);
+        Assert.Equal(ImportListSkipReason.Unmatched, row.Reason);
+        Assert.Null(row.MangaBakaId);
     }
 
     [Fact]
@@ -686,7 +702,13 @@ public class ImportListServiceTests : IDisposable
         public Dictionary<string, long> MangaUpdates { get; } = [];
         public bool Available { get; set; } = true;
 
+        /// <summary>Ids the dump has no row for: series newer than the snapshot.</summary>
+        public HashSet<long> NotInDump { get; } = [];
+
         public override Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(Available);
+
+        public override Task<bool> HasSeriesAsync(long id, CancellationToken ct = default) =>
+            Task.FromResult(Available && !NotInDump.Contains(id));
 
         public override Task<IReadOnlyDictionary<string, long>> GetIdsByMangaUpdatesIdsAsync(
             IReadOnlyCollection<string> slugs, CancellationToken ct = default) =>
@@ -701,12 +723,15 @@ public class ImportListServiceTests : IDisposable
                 : new Dictionary<long, long>());
     }
 
-    /// <summary>Answers like MangaBakaProvider: nothing without the dump, nothing for an id it lacks.</summary>
+    /// <summary>
+    /// Answers like MangaBakaProvider: nothing without the dump, nothing for an id it lacks, and
+    /// nothing for a novel, which the dump does have.
+    /// </summary>
     private sealed class FakeMetadataProvider(FakeStore store) : IMetadataProvider
     {
         public const long Throws = 666;
 
-        public HashSet<int> NotInDump { get; } = [];
+        public HashSet<long> Novels { get; } = [];
 
         public string Name => "fake";
 
@@ -717,7 +742,8 @@ public class ImportListServiceTests : IDisposable
         public Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default) =>
             providerId == Throws.ToString()
                 ? throw new HttpRequestException("provider down")
-                : !store.Available || NotInDump.Contains(int.Parse(providerId))
+                : !store.Available || store.NotInDump.Contains(long.Parse(providerId)) ||
+                  Novels.Contains(long.Parse(providerId))
                 ? Task.FromResult<SeriesMetadata?>(null)
                 : Task.FromResult<SeriesMetadata?>(new SeriesMetadata
                 {

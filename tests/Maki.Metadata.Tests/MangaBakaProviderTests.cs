@@ -27,4 +27,17 @@ public class MangaBakaProviderTests
         Assert.Equal("377", Assert.Single(await provider.SearchAsync("one piece", ContentRating.Pornographic)).ProviderId);
         Assert.Equal("ONE PIECE", (await provider.GetAsync("377"))?.Title);
     }
+
+    [Fact]
+    public async Task HasSeries_counts_a_novel_GetAsync_declines_but_not_an_id_the_dump_lacks()
+    {
+        using var dump = new DumpDbBuilder();
+        dump.AddSeries(500, "A Light Novel", type: "novel");
+        var store = new MangaBakaLocalStore(
+            new MangaBakaDumpOptions(dump.Path, Path.GetTempPath()), NullLogger<MangaBakaLocalStore>.Instance);
+
+        Assert.Null(await store.GetAsync("500"));
+        Assert.True(await store.HasSeriesAsync(500));
+        Assert.False(await store.HasSeriesAsync(501));
+    }
 }

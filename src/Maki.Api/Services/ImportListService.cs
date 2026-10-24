@@ -458,9 +458,12 @@ public class ImportListService(
                         present += recorded - 1;
                         break;
                     case Outcome.Unmatched:
-                        // The id is kept so the row retries after NotInDumpRetryAfter, not a week.
+                        // An id the dump has no row for keeps it on the row, which retries after
+                        // NotInDumpRetryAfter rather than a week. A row it has but declines (a novel)
+                        // will not change with the next snapshot.
+                        var notInDump = !await store.HasSeriesAsync(candidate.MangaBakaId, ct);
                         skipped += await RecordAsync(user.Id, tracker.Name, candidate.All,
-                            ImportListSkipReason.Unmatched, candidate.MangaBakaId, ct);
+                            ImportListSkipReason.Unmatched, notInDump ? candidate.MangaBakaId : null, ct);
                         break;
                     case Outcome.Removed:
                         skipped += await RecordAsync(user.Id, tracker.Name, candidate.All,

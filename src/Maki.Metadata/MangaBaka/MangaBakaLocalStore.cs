@@ -505,6 +505,24 @@ public class MangaBakaLocalStore(
         return matches;
     }
 
+    /// <summary>
+    /// Whether the dump has any row for <paramref name="id"/>, whatever its state or type. Tells a
+    /// series newer than the snapshot apart from one <see cref="GetAsync"/> declines (a novel).
+    /// </summary>
+    public virtual async Task<bool> HasSeriesAsync(long id, CancellationToken ct = default)
+    {
+        if (!await IsAvailableAsync(ct))
+        {
+            return false;
+        }
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT 1 FROM series WHERE id = $id";
+        cmd.Parameters.AddWithValue("$id", id);
+        return await cmd.ExecuteScalarAsync(ct) is not null;
+    }
+
     public virtual async Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default)
     {
         if (!long.TryParse(providerId, out var id))
