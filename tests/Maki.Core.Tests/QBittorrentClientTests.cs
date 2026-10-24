@@ -93,12 +93,21 @@ public class QBittorrentClientTests
         Assert.Null(await new QBittorrentClient(new RecordingHandler()).AddAsync(Settings(), "http://indexer.test/1.torrent"));
     }
 
-    private sealed class DuplicateHandler(string existing) : HttpMessageHandler
+    /// <summary>Refuses every add, as qBittorrent does a torrent it already has: 409 on 5.x, "Fails." on 4.x.</summary>
+    private sealed class DuplicateHandler(string existing, bool legacy = false) : HttpMessageHandler
     {
+        public string? LookedUp { get; private set; }
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             var path = request.RequestUri!.AbsolutePath;
+            if (path.EndsWith("/torrents/info"))
+            {
+                LookedUp = request.RequestUri.Query;
+            }
+
             var response = path.EndsWith("/auth/login") ? new HttpResponseMessage(HttpStatusCode.NoContent)
+                : path.EndsWith("/torrents/add") && legacy ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Fails.") }
                 : path.EndsWith("/torrents/add") ? new HttpResponseMessage(HttpStatusCode.Conflict)
                 : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(existing) };
             return Task.FromResult(response);
@@ -130,6 +139,50 @@ public class QBittorrentClientTests
             new QBittorrentClient(new DuplicateHandler("[]")).AddFileAsync(Settings(), [1, 2, 3], "abc"));
 
         Assert.Equal(TorrentClientFailure.Rejected, ex.Failure);
+    }
+
+    private const string Base32Magnet = "magnet:?xt=urn:btih:AERUKZ4JVPG66AJDIVTYTK6N54ASGRLH&dn=x";
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_duplicate_magnet_in_makis_category_counts_as_added(bool legacy)
+    {
+        var handler = new DuplicateHandler(Existing("maki"), legacy);
+
+        Assert.Null(await new QBittorrentClient(handler).AddAsync(Settings(), Base32Magnet));
+        Assert.Equal("?hashes=0123456789abcdef0123456789abcdef01234567", handler.LookedUp);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_duplicate_magnet_in_another_category_fails_the_grab(bool legacy)
+    {
+        var ex = await Assert.ThrowsAsync<TorrentClientException>(() =>
+            new QBittorrentClient(new DuplicateHandler(Existing("manga"), legacy)).AddAsync(Settings(), Base32Magnet));
+
+        Assert.Equal(TorrentClientFailure.HeldOutsideLabel, ex.Failure);
+    }
+
+    [Fact]
+    public async Task A_refused_magnet_the_client_does_not_have_is_rejected()
+    {
+        var ex = await Assert.ThrowsAsync<TorrentClientException>(() =>
+            new QBittorrentClient(new DuplicateHandler("[]")).AddAsync(Settings(), Base32Magnet));
+
+        Assert.Equal(TorrentClientFailure.Rejected, ex.Failure);
+    }
+
+    [Fact]
+    public async Task A_refused_url_has_no_hash_to_look_up_and_is_rejected()
+    {
+        var handler = new DuplicateHandler(Existing("maki"), legacy: true);
+        var ex = await Assert.ThrowsAsync<TorrentClientException>(() =>
+            new QBittorrentClient(handler).AddAsync(Settings(), "http://indexer.test/1.torrent"));
+
+        Assert.Equal(TorrentClientFailure.Rejected, ex.Failure);
+        Assert.Null(handler.LookedUp);
     }
 
     [Fact]

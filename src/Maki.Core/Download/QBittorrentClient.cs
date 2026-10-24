@@ -55,7 +55,10 @@ public class QBittorrentClient : ITorrentClient
             return null;
         }, ct);
 
-    /// <summary>Always returns null: qBittorrent fetches a URL later and answers without the hash.</summary>
+    /// <summary>
+    /// Always returns null: qBittorrent fetches a URL later and answers without the hash. A magnet it
+    /// already has is refused like a duplicate upload, and handled the same way as in <see cref="AddFileAsync"/>.
+    /// </summary>
     public Task<string?> AddAsync(TorrentClientSettings settings, string magnetOrUrl, CancellationToken ct = default) =>
         GuardAsync<string?>(async () =>
         {
@@ -69,20 +72,23 @@ public class QBittorrentClient : ITorrentClient
 
             using var response = await SendAuthenticatedAsync(
                 settings, HttpMethod.Post, "torrents/add", () => new FormUrlEncodedContent(fields), ct);
-            response.EnsureSuccessStatusCode();
-            var body = await response.Content.ReadAsStringAsync(ct);
-            if (body.Contains("Fails", StringComparison.OrdinalIgnoreCase))
+            var body = response.IsSuccessStatusCode ? await response.Content.ReadAsStringAsync(ct) : string.Empty;
+            if (response.StatusCode == HttpStatusCode.Conflict || body.Contains("Fails", StringComparison.OrdinalIgnoreCase))
             {
-                throw new TorrentClientException(TorrentClientFailure.Rejected, "qBittorrent rejected the torrent");
+                var infoHash = magnetOrUrl.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase)
+                    ? TorrentInfoHash.FromMagnet(magnetOrUrl)
+                    : null;
+                await AcceptDuplicateAsync(settings, infoHash, ct);
+                return null;
             }
 
+            response.EnsureSuccessStatusCode();
             return null;
         }, ct);
 
     /// <summary>
     /// Uploads a .torrent file. Unlike a URL, which qBittorrent fetches later and so always accepts,
-    /// a file it already has is refused; that is not an error here when the torrent sits in Maki's category.
-    /// In another category the list would never show it, so the grab fails rather than move the user's torrent.
+    /// a file it already has is refused; see <see cref="AcceptDuplicateAsync"/>.
     /// </summary>
     public Task AddFileAsync(TorrentClientSettings settings, byte[] torrent, string infoHash, CancellationToken ct = default) =>
         GuardAsync<object?>(async () =>
@@ -102,24 +108,32 @@ public class QBittorrentClient : ITorrentClient
             var body = response.IsSuccessStatusCode ? await response.Content.ReadAsStringAsync(ct) : string.Empty;
             if (response.StatusCode == HttpStatusCode.Conflict || body.Contains("Fails", StringComparison.OrdinalIgnoreCase))
             {
-                var existing = await FindTorrentAsync(settings, infoHash, ct);
-                if (existing is null)
-                {
-                    throw new TorrentClientException(TorrentClientFailure.Rejected, "qBittorrent rejected the torrent");
-                }
-
-                if (!string.Equals(existing.Category ?? string.Empty, settings.Label, StringComparison.Ordinal))
-                {
-                    throw new TorrentClientException(TorrentClientFailure.HeldOutsideLabel,
-                        $"qBittorrent already has this torrent in category '{existing.Category}'");
-                }
-
+                await AcceptDuplicateAsync(settings, infoHash, ct);
                 return null;
             }
 
             response.EnsureSuccessStatusCode();
             return null;
         }, ct);
+
+    /// <summary>
+    /// A refused add is fine when qBittorrent already holds the torrent in Maki's category. In another
+    /// category the list would never show it, so the grab fails rather than move the user's torrent.
+    /// </summary>
+    private async Task AcceptDuplicateAsync(TorrentClientSettings settings, string? infoHash, CancellationToken ct)
+    {
+        var existing = infoHash is null ? null : await FindTorrentAsync(settings, infoHash, ct);
+        if (existing is null)
+        {
+            throw new TorrentClientException(TorrentClientFailure.Rejected, "qBittorrent rejected the torrent");
+        }
+
+        if (!string.Equals(existing.Category ?? string.Empty, settings.Label, StringComparison.Ordinal))
+        {
+            throw new TorrentClientException(TorrentClientFailure.HeldOutsideLabel,
+                $"qBittorrent already has this torrent in category '{existing.Category}'");
+        }
+    }
 
     private async Task<QbtTorrent?> FindTorrentAsync(TorrentClientSettings settings, string infoHash, CancellationToken ct)
     {
