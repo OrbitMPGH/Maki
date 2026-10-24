@@ -5438,6 +5438,7 @@ msgstr "Wznów po obejrzeniu anime"
 #: src/api/hooks.ts
 #: src/components/home/ContinueHero.tsx
 #: src/pages/HomePage.tsx
+#: src/pages/MetadataGatePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Continue reading"

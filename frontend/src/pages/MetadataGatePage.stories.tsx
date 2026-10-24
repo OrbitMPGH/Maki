@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, waitFor } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import type { DumpProgress, MetadataSettings } from '../api/hooks'
 import { api } from '../../.storybook/mocks/api'
+import { continueReading } from '../../.storybook/mocks/home'
 import { downloadingDump, idleDump } from '../../.storybook/mocks/shell/wizard'
 import MetadataGatePage from './MetadataGatePage'
 
@@ -94,5 +95,33 @@ export const ReaderDownloadFailed: Story = {
     await expect(await canvas.findByText(/The download failed\. Maki tries again by itself/)).toBeVisible()
     await expect(canvas.queryByText(/The server is downloading it now/)).toBeNull()
     await expect(canvas.queryByRole('button', { name: 'Try again' })).toBeNull()
+  },
+}
+
+/** The reader is the one page left open, so the gate lists what there is to pick up, six at most. */
+export const ReaderCanPickUpReading: Story = {
+  parameters: { auth: 'reader', msw: [http.get(api('/settings/metadata'), () => HttpResponse.json(missing))] },
+  play: async ({ canvas }) => {
+    const list = await canvas.findByRole('region', { name: 'Continue reading' })
+    const first = continueReading[0]
+    await expect(await within(list).findByRole('link', { name: new RegExp(first.seriesTitle) })).toHaveAttribute(
+      'href',
+      `/read/${first.chapterId}`,
+    )
+    await waitFor(() => expect(within(list).getAllByRole('link')).toHaveLength(6))
+  },
+}
+
+export const NothingToResume: Story = {
+  parameters: {
+    auth: 'reader',
+    msw: [
+      http.get(api('/settings/metadata'), () => HttpResponse.json(missing)),
+      http.get(api('/home/reading'), () => HttpResponse.json({ continueReading: [], jumpBackIn: [] })),
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/The server is downloading it now/)).toBeVisible()
+    await expect(canvas.queryByRole('region', { name: 'Continue reading' })).toBeNull()
   },
 }

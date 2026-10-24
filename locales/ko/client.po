@@ -5437,6 +5437,7 @@ msgstr "애니메이션 다음부터 읽기"
 #: src/api/hooks.ts
 #: src/components/home/ContinueHero.tsx
 #: src/pages/HomePage.tsx
+#: src/pages/MetadataGatePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Continue reading"

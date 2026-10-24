@@ -4,7 +4,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router-dom'
 import { useLogout } from '../api/auth'
 import { useAuth } from '../auth/AuthProvider'
-import { useDumpProgress, useMetadataSettings } from '../api/hooks'
+import { useDumpProgress, useHomeReading, useMetadataSettings } from '../api/hooks'
 import { AuthFrame } from '../components/auth/AuthFrame'
 import MetadataDumpProgress, { MetadataDumpStatus } from '../components/MetadataDumpProgress'
 
@@ -81,10 +81,44 @@ export default function MetadataGatePage() {
             </Text>
           </Group>
         )}
+        <GateReadingList />
         <Text size="xs" c="var(--ink-3)">
           <Trans>Reading apps connected over OPDS, Komga or KOReader keep working in the meantime.</Trans>
         </Text>
       </Stack>
     </AuthFrame>
+  )
+}
+
+const GATE_READING_LIMIT = 6
+
+/**
+ * Chapters to pick up while the database downloads, since the reader is the one page everyone can
+ * still open and nothing else leads to it. Home's reading rails need no metadata, only progress
+ * rows and files on disk. Renders nothing when there is nothing to resume.
+ */
+function GateReadingList() {
+  const { t } = useLingui()
+  const { data } = useHomeReading(GATE_READING_LIMIT)
+  const items = data ? [...data.continueReading, ...data.jumpBackIn].slice(0, GATE_READING_LIMIT) : []
+  if (items.length === 0) return null
+
+  return (
+    <Stack component="section" gap={2} aria-label={t`Continue reading`}>
+      <Text size="xs" c="var(--ink-3)" mb={2}>
+        <Trans>Continue reading</Trans>
+      </Text>
+      {items.map(({ chapterId, coverUrl, seriesTitle, chapterLabel }) => (
+        <Link key={chapterId} to={`/read/${chapterId}`} className="next-up-row">
+          <span className="next-up-thumb">
+            {coverUrl && <img src={coverUrl} alt="" loading="lazy" decoding="async" />}
+          </span>
+          <span className="next-up-copy">
+            <span className="next-up-name">{seriesTitle}</span>
+            <span className="next-up-meta tnum">{chapterLabel}</span>
+          </span>
+        </Link>
+      ))}
+    </Stack>
   )
 }
