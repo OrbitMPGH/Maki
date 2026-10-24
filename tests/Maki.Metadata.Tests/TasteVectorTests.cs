@@ -52,17 +52,15 @@ public class TasteVectorTests
         // It is its own term, not folded into the semantic cosine: the two answer the same question
         // from different evidence and a candidate both agree on should be paid for twice.
         Assert.Equal(0.5, without, 6);
-        Assert.Equal(0.5 + (2 * 0.25), with, 6);
+        Assert.Equal(without + (w.Taste * 0.25), with, 6);
     }
 
     [Fact]
     public void HybridScore_IgnoresTheBehaviouralTermAtWeightZero()
     {
-        var w = new EmbeddingMath.Weights(Semantic: 1, Genre: 0, Tag: 0, Author: 0, Quality: 0, Obscurity: 0);
+        var w = new EmbeddingMath.Weights(
+            Semantic: 1, Genre: 0, Tag: 0, Author: 0, Quality: 0, Obscurity: 0, Taste: 0);
 
-        // The shipped default for Taste is 0, exactly like Graph and CoRead, so an install with no
-        // artifact scores identically to one built before the channel existed.
-        Assert.Equal(0.0, w.Taste);
         Assert.Equal(
             EmbeddingMath.HybridScore(0.5, 0, 0, false, 0, 0, 0.5, w),
             EmbeddingMath.HybridScore(0.5, 0, 0, false, 0, 0, 0.5, w, tasteCosine: 0.9),

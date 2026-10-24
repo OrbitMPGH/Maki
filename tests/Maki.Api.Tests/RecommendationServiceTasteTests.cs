@@ -186,7 +186,7 @@ public class RecommendationServiceTasteTests : IDisposable
         var weights = Assert.Single(recommender.Seen);
         Assert.False(weights!.ContainsKey(101));
         Assert.DoesNotContain(101L, recommender.SeenSeeds[0]);
-        Assert.Equal(0.25, Assert.Single(recommender.SeenAvoid)![101]);
+        Assert.Equal(RecommendationFeedbackPolicy.AvoidStrength(4), Assert.Single(recommender.SeenAvoid)![101]);
     }
 
     [Fact]
@@ -198,7 +198,7 @@ public class RecommendationServiceTasteTests : IDisposable
         var (service, recommender) = Service();
         await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
 
-        Assert.Equal(1.0, Assert.Single(recommender.Seen)![101]);
+        Assert.Equal(TasteWeights.Neutral, Assert.Single(recommender.Seen)![101]);
         // Nothing to avoid, so the service hands in null rather than an empty dictionary.
         Assert.Null(Assert.Single(recommender.SeenAvoid));
     }

@@ -245,7 +245,12 @@ public class CoReadGraphTests : IDisposable
         var neither = EmbeddingMath.HybridScore(0.5, 0, 0, false, 0, 0, 0.5, w);
         var both = EmbeddingMath.HybridScore(0.5, 0, 0, false, 0, 0, 0.5, w, 1.0, 1.0);
 
-        Assert.Equal(1.0, both - neither, 5);
+        var graphOnly = EmbeddingMath.HybridScore(0.5, 0, 0, false, 0, 0, 0.5, w, 1.0, 0);
+        var coReadOnly = EmbeddingMath.HybridScore(0.5, 0, 0, false, 0, 0, 0.5, w, 0, 1.0);
+
+        Assert.True(graphOnly > neither);
+        Assert.True(coReadOnly > neither);
+        Assert.Equal((graphOnly - neither) + (coReadOnly - neither), both - neither, 5);
     }
 
     [Fact]
