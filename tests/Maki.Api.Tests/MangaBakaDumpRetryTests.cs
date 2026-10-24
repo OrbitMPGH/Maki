@@ -42,15 +42,24 @@ public class MangaBakaDumpRetryTests : IAsyncLifetime
     private async Task<DateTimeOffset?> RetryAt() =>
         (await _scheduler.GetTrigger(MangaBakaDumpRetry.RetryTriggerKey))?.GetNextFireTimeUtc();
 
-    [Theory]
-    [InlineData(1, 15)]
-    [InlineData(2, 30)]
-    [InlineData(3, 60)]
-    [InlineData(5, 240)]
-    [InlineData(6, 360)]
-    [InlineData(40, 360)]
-    public void The_delay_doubles_up_to_the_six_hour_schedule(int failures, int minutes) =>
-        Assert.Equal(TimeSpan.FromMinutes(minutes), MangaBakaDumpRetry.DelayAfter(failures));
+    [Fact]
+    public void The_delay_starts_at_the_first_delay_and_grows_until_it_reaches_the_schedule()
+    {
+        Assert.Equal(MangaBakaDumpRetry.FirstDelay, MangaBakaDumpRetry.DelayAfter(1));
+
+        var delays = Enumerable.Range(1, 40).Select(n => MangaBakaDumpRetry.DelayAfter(n)).ToList();
+        for (var i = 1; i < delays.Count; i++)
+        {
+            Assert.True(delays[i] >= delays[i - 1], $"delay {i + 1} shrank");
+            if (delays[i - 1] < MangaBakaDumpRetry.MaxDelay)
+            {
+                Assert.True(delays[i] > delays[i - 1], $"delay {i + 1} did not grow below the cap");
+            }
+        }
+
+        Assert.All(delays, d => Assert.True(d <= MangaBakaDumpRetry.MaxDelay));
+        Assert.Equal(MangaBakaDumpRetry.MaxDelay, delays[^1]);
+    }
 
     [Fact]
     public async Task A_failed_first_download_retries_sooner_each_time_backing_off()
@@ -58,11 +67,13 @@ public class MangaBakaDumpRetryTests : IAsyncLifetime
         await ScheduleRegularAt(Now.AddHours(6));
         var retry = new MangaBakaDumpRetry();
 
-        Assert.Equal(Now.AddMinutes(15), await retry.OnFailureAsync(_scheduler, dumpUnusable: true, Now, default));
-        Assert.Equal(Now.AddMinutes(15), await RetryAt());
+        var first = await retry.OnFailureAsync(_scheduler, dumpUnusable: true, Now, default);
+        Assert.Equal(Now + MangaBakaDumpRetry.FirstDelay, first);
+        Assert.Equal(first, await RetryAt());
 
-        Assert.Equal(Now.AddMinutes(30), await retry.OnFailureAsync(_scheduler, dumpUnusable: true, Now, default));
-        Assert.Equal(Now.AddMinutes(30), await RetryAt());
+        var second = await retry.OnFailureAsync(_scheduler, dumpUnusable: true, Now, default);
+        Assert.True(second > first);
+        Assert.Equal(second, await RetryAt());
     }
 
     [Fact]
@@ -133,7 +144,7 @@ public class MangaBakaDumpRetryTests : IAsyncLifetime
         await retry.OnSuccessAsync(_scheduler, default);
 
         Assert.Null(await RetryAt());
-        Assert.Equal(Now.AddMinutes(15), await retry.OnFailureAsync(_scheduler, dumpUnusable: true, Now, default));
+        Assert.Equal(Now + MangaBakaDumpRetry.FirstDelay, await retry.OnFailureAsync(_scheduler, dumpUnusable: true, Now, default));
     }
 
     private sealed class OneJob(IJob job) : IJobFactory

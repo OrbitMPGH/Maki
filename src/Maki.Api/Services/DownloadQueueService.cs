@@ -75,7 +75,7 @@ public class DownloadQueueService(
     // than made concurrent-safe per-entry, since rate limits are rare and this is never on a hot path.
     private readonly Lock _cooldownLock = new();
     private readonly Dictionary<string, TrackerCooldown> _cooldowns = new();
-    private static readonly TimeSpan MaxCooldown = TimeSpan.FromMinutes(15);
+    internal static readonly TimeSpan MaxCooldown = TimeSpan.FromMinutes(15);
 
     private class TrackerCooldown
     {
