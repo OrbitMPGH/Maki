@@ -55,7 +55,12 @@ public class PageConversionService(
     internal Func<string, string, PageConversionSettings, CancellationToken, Task<ArchiveConversionResult>> Converter { get; init; } =
         ArchivePageConverter.ConvertAsync;
 
-    public async Task<FileConversion> ConvertAsync(int fileId, PageConversionSettings settings, CancellationToken ct)
+    public Task<FileConversion> ConvertAsync(int fileId, PageConversionSettings settings, CancellationToken ct) =>
+        ConvertAsync(fileId, settings, new Dictionary<string, bool>(), ct);
+
+    /// <param name="hardlinkVerdicts">Whether hardlinks hold up in each root folder, shared across a pass so each root is probed once.</param>
+    public async Task<FileConversion> ConvertAsync(int fileId, PageConversionSettings settings,
+        IDictionary<string, bool> hardlinkVerdicts, CancellationToken ct)
     {
         var row = await db.ChapterFiles.IgnoreQueryFilters().AsNoTracking()
             .Where(f => f.Id == fileId)
@@ -97,7 +102,13 @@ public class PageConversionService(
         var before = new FileInfo(path);
         var (length, written) = (before.Length, before.LastWriteTimeUtc);
         var tmp = Path.Combine(row.Root, ".maki", "tmp", $"{TrashPrefix}{fileId.ToString(CultureInfo.InvariantCulture)}.cbz");
-        if (!HasRoomToSwap(row.Root, file.RelativePath, path, tmp, length))
+        if (!hardlinkVerdicts.TryGetValue(row.Root, out var hardlinks))
+        {
+            hardlinks = HardlinksHoldUp(row.Root);
+            hardlinkVerdicts[row.Root] = hardlinks;
+        }
+
+        if (!HasRoomToSwap(row.Root, file.RelativePath, length, hardlinks))
         {
             return new FileConversion(FileConversionStatus.Failed);
         }
@@ -147,7 +158,7 @@ public class PageConversionService(
                 return new FileConversion(FileConversionStatus.Busy);
             }
 
-            if (!Swap(row.Root, current, path, tmp))
+            if (!Swap(row.Root, current, path, tmp, hardlinks))
             {
                 return new FileConversion(FileConversionStatus.Failed);
             }
@@ -173,11 +184,11 @@ public class PageConversionService(
 
     /// <summary>
     /// Puts the original into the trash and the converted copy at its path: a hardlink (or, where the
-    /// filesystem has none, a copy) into the trash first, then a rename over the original, so the
+    /// probe found none that hold up, a copy) into the trash first, then a rename over the original, so the
     /// library path holds a whole archive at every step. Moving the original out instead would leave
     /// the path empty whenever moving a file back in failed too.
     /// </summary>
-    private bool Swap(string root, ChapterFile file, string path, string converted)
+    private bool Swap(string root, ChapterFile file, string path, string converted, bool hardlinks)
     {
         UpgradeTrash.EnsureFolder(root, file.SeriesId);
         var trashRelative = UpgradeTrash.NewRelativePath(root, file.SeriesId,
@@ -185,7 +196,7 @@ public class PageConversionService(
         var trash = LibraryPaths.Resolve(root, trashRelative)!;
         try
         {
-            if (!Hardlink(path, trash))
+            if (!hardlinks || !Hardlink(path, trash))
             {
                 File.Copy(path, trash);
             }
@@ -226,33 +237,52 @@ public class PageConversionService(
     /// before anything is copied or encoded, so a full volume skips the file instead of filling up and
     /// failing on every pass.
     /// </summary>
-    private bool HasRoomToSwap(string root, string relativePath, string path, string tmp, long length)
+    private bool HasRoomToSwap(string root, string relativePath, long length, bool hardlinks)
     {
-        var probe = Path.ChangeExtension(tmp, ".probe");
+        if (!hardlinks)
+        {
+            return HasRoomFor(root, relativePath, length,
+                "this volume has no working hardlinks, so the original is copied into the trash");
+        }
+
+        return !CopiesSource || HasRoomFor(root, relativePath, length,
+            "the source is copied into .maki/tmp to be read");
+    }
+
+    /// <summary>
+    /// Hardlinks a scratch file in <c>.maki/tmp</c>, deletes the link and reads the scratch file back.
+    /// On a Docker Desktop for Windows bind mount the link and the delete both succeed and then the
+    /// first name can no longer be read, so a link that was made proves nothing. A library file is
+    /// never used for this: the probe itself can break it.
+    /// </summary>
+    internal bool HardlinksHoldUp(string root)
+    {
+        var tmp = Path.Combine(root, ".maki", "tmp");
+        var scratch = Path.Combine(tmp, $"{TrashPrefix}hardlink-{Guid.NewGuid():N}.probe");
+        var link = scratch + ".link";
+        var bytes = "maki hardlink probe"u8.ToArray();
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(probe)!);
-            TryDelete(probe);
-            if (Hardlink(path, probe))
+            Directory.CreateDirectory(tmp);
+            File.WriteAllBytes(scratch, bytes);
+            if (!Hardlink(scratch, link))
             {
-                TryDelete(probe);
-                if (!CopiesSource)
-                {
-                    return true;
-                }
-
-                return HasRoomFor(root, relativePath, length,
-                    "the source is copied into .maki/tmp to be read");
+                return false;
             }
+
+            File.Delete(link);
+            return File.ReadAllBytes(scratch).AsSpan().SequenceEqual(bytes);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // The encode and the swap report their own failure.
-            return true;
+            logger.LogDebug(ex, "The hardlink probe in {Folder} failed, so originals are copied into the trash", tmp);
+            return false;
         }
-
-        return HasRoomFor(root, relativePath, length,
-            "this volume has no hardlinks, so the original is copied into the trash");
+        finally
+        {
+            TryDelete(link);
+            TryDelete(scratch);
+        }
     }
 
     private bool HasRoomFor(string root, string relativePath, long length, string why)

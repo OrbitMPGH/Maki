@@ -130,6 +130,7 @@ public class PageConversionWorker(
         }
 
         var lastId = 0;
+        var hardlinkVerdicts = new Dictionary<string, bool>(StringComparer.Ordinal);
         try
         {
             while (true)
@@ -184,7 +185,7 @@ public class PageConversionWorker(
                     {
                         using var fileScope = scopes.CreateScope();
                         result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
-                            .ConvertAsync(file.Id, options, ct);
+                            .ConvertAsync(file.Id, options, hardlinkVerdicts, ct);
                     }
                     // One file that throws every time must not restart the pass on it forever.
                     catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)

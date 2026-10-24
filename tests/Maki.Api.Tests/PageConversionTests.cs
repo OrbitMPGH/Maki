@@ -450,6 +450,116 @@ public sealed class PageConversionTests : IDisposable
         Assert.Empty(TmpFiles());
     }
 
+    private string TmpFolder => Path.Combine(_world.Library, ".maki", "tmp");
+
+    [Fact]
+    public async Task The_hardlink_probe_links_a_scratch_file_and_never_the_library_file()
+    {
+        var (_, fileId, path) = JpegChapter(1);
+        var links = new List<(string Source, string Target)>();
+
+        using (var db = _world.Db.NewContext())
+        {
+            var service = Service(db, hardlink: (source, target) =>
+            {
+                links.Add((source, target));
+                return FileLinker.TryHardlink(source, target);
+            });
+            Assert.Equal(FileConversionStatus.Converted, (await service.ConvertAsync(fileId, Webp, CancellationToken.None)).Status);
+        }
+
+        var probe = links[0];
+        Assert.StartsWith(TmpFolder, probe.Source);
+        Assert.NotEqual(path, probe.Source);
+        Assert.All(links.Where(l => l.Source == path),
+            l => Assert.StartsWith(UpgradeTrash.SeriesFolder(_world.Library, _world.SeriesId), l.Target));
+        Assert.Empty(TmpFiles());
+    }
+
+    /// <summary>
+    /// What a Docker Desktop for Windows bind mount does: the link is made, and deleting it takes the
+    /// first name with it.
+    /// </summary>
+    private static bool LinkThatTakesTheSourceWithIt(List<string> sources, string source, string target)
+    {
+        sources.Add(source);
+        File.Move(source, target);
+        return true;
+    }
+
+    [Fact]
+    public async Task Hardlinks_that_break_on_delete_send_the_original_to_the_trash_as_a_copy()
+    {
+        var (_, fileId, path) = JpegChapter(1);
+        var originalHash = Hash(path);
+        var sources = new List<string>();
+
+        using (var db = _world.Db.NewContext())
+        {
+            var service = Service(db, hardlink: (source, target) => LinkThatTakesTheSourceWithIt(sources, source, target));
+            Assert.Equal(FileConversionStatus.Converted, (await service.ConvertAsync(fileId, Webp, CancellationToken.None)).Status);
+        }
+
+        Assert.StartsWith(TmpFolder, Assert.Single(sources));
+        Assert.Equal(originalHash, Hash(Assert.Single(TrashedOriginals())));
+        Assert.Equal("webp", Row(fileId).ImageFormat);
+        Assert.Empty(TmpFiles());
+    }
+
+    [Fact]
+    public async Task Hardlinks_that_break_on_delete_still_need_room_for_the_trash_copy()
+    {
+        var (_, fileId, path) = JpegChapter(1);
+        var originalHash = Hash(path);
+        var sources = new List<string>();
+        var encoded = false;
+
+        using (var db = _world.Db.NewContext())
+        {
+            var service = Service(db, hardlink: (source, target) => LinkThatTakesTheSourceWithIt(sources, source, target),
+                freeSpace: _ => 1024, copiesSource: false,
+                converter: (source, target, settings, ct) =>
+                {
+                    encoded = true;
+                    return ArchivePageConverter.ConvertAsync(source, target, settings, ct);
+                });
+            Assert.Equal(FileConversionStatus.Failed, (await service.ConvertAsync(fileId, Webp, CancellationToken.None)).Status);
+        }
+
+        Assert.False(encoded);
+        Assert.DoesNotContain(path, sources);
+        Assert.Equal(originalHash, Hash(path));
+        Assert.Empty(TrashedOriginals());
+        Assert.Empty(TmpFiles());
+    }
+
+    [Fact]
+    public async Task A_pass_probes_each_root_folder_once()
+    {
+        var first = JpegChapter(1);
+        var second = JpegChapter(2);
+        var probes = 0;
+        var verdicts = new Dictionary<string, bool>();
+
+        foreach (var fileId in new[] { first.FileId, second.FileId })
+        {
+            using var db = _world.Db.NewContext();
+            var service = Service(db, hardlink: (source, target) =>
+            {
+                if (source.StartsWith(TmpFolder, StringComparison.Ordinal))
+                {
+                    probes++;
+                }
+
+                return FileLinker.TryHardlink(source, target);
+            });
+            Assert.Equal(FileConversionStatus.Converted, (await service.ConvertAsync(fileId, Webp, verdicts, CancellationToken.None)).Status);
+        }
+
+        Assert.Equal(1, probes);
+        Assert.Single(verdicts);
+    }
+
     [Fact]
     public async Task The_windows_source_copy_is_stamped_fresh_so_the_tmp_sweep_leaves_it()
     {
