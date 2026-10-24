@@ -643,6 +643,12 @@ msgstr "This is an old JSON backup. Create a new backup in Mihon (Settings, Data
 msgid "error.mihon.notABackup"
 msgstr "This file is not a Mihon backup. Upload a .tachibk or .proto.gz file."
 
+#. A user who cannot add series directly gets requests for admin approval instead, and one
+#. import files at most {max} of them (currently 10). This series was left out.
+#: src/Maki.Api/Services/MihonImportService.cs
+msgid "error.mihon.requestLimitReached"
+msgstr "Not requested: one import sends at most {max} series for approval. Import again later to request the rest."
+
 #. The client generates the run id; only a broken or outdated client sends none.
 #: src/Maki.Api/Controllers/MihonImportController.cs
 msgid "error.mihon.runIdRequired"
@@ -1021,6 +1027,7 @@ msgid "error.requests.alreadyInLibrary"
 msgstr "Already in the library."
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#: src/Maki.Api/Services/MihonImportService.cs
 msgid "error.requests.alreadyPending"
 msgstr "You already have that request pending"
 

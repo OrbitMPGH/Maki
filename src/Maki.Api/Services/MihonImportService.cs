@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Maki.Api.Localization;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Maki.Core.Mihon;
@@ -10,6 +11,7 @@ using Maki.Core.Security;
 using Maki.Data;
 using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Maki.Api.Services;
 
@@ -83,11 +85,25 @@ public class MihonImportService(
     PendingReadImportService pendingReads,
     ICurrentUser currentUser,
     ILocalizer localizer,
+    IMemoryCache cache,
     ILogger<MihonImportService> logger)
 {
     public const string AddedFrom = "mihon";
 
     public const int CandidateLimit = 5;
+
+    /// <summary>
+    /// Requests one run may file for a caller without AddSeries, as import lists cap theirs, so one
+    /// click cannot fill the admin queue. A run spans several batches, so the count is kept per run id.
+    /// </summary>
+    public const int MaxRequestsPerRun = ImportListTrackerPrefs.DefaultMaxPerRun;
+
+    private static readonly TimeSpan RunCountLifetime = TimeSpan.FromHours(1);
+
+    private sealed class RunCount
+    {
+        public int Filed;
+    }
 
     public static Guid MutationId(int userId, string runId, string providerId) =>
         new(SHA256.HashData(Encoding.UTF8.GetBytes($"mihon:{userId}:{runId}:{providerId}")).AsSpan(0, 16));
@@ -278,7 +294,7 @@ public class MihonImportService(
         string outcome;
         if (!currentUser.Has(MakiPermission.AddSeries))
         {
-            var (filed, existingId) = await RequestAsync(item.ProviderId, ct);
+            var (filed, existingId) = await RequestAsync(request.RunId, item.ProviderId, ct);
             if (filed is not null)
             {
                 return filed;
@@ -354,7 +370,8 @@ public class MihonImportService(
     }
 
     /// <summary>For a caller without AddSeries: files a request for admin approval, or names the series that already exists.</summary>
-    private async Task<(MihonImportResult? Result, int? ExistingId)> RequestAsync(string providerId, CancellationToken ct)
+    private async Task<(MihonImportResult? Result, int? ExistingId)> RequestAsync(
+        string runId, string providerId, CancellationToken ct)
     {
         var request = new SeriesRequest
         {
@@ -374,10 +391,29 @@ public class MihonImportService(
             };
         }
 
-        await requests.SubmitAsync(request, currentUser.UserName, ct);
+        var count = cache.GetOrCreate($"mihon-requests:{currentUser.UserId}:{runId}", entry =>
+        {
+            entry.SlidingExpiration = RunCountLifetime;
+            return new RunCount();
+        })!;
+        if (Interlocked.Increment(ref count.Filed) > MaxRequestsPerRun)
+        {
+            Interlocked.Decrement(ref count.Filed);
+            return (Skipped("error.mihon.requestLimitReached", new { max = MaxRequestsPerRun }), null);
+        }
+
+        var submitted = await requests.SubmitAsync(request, currentUser.UserName, ct);
+        if (submitted.Error == SeriesRequestSubmitError.AlreadyPending)
+        {
+            Interlocked.Decrement(ref count.Filed);
+            return (Skipped("error.requests.alreadyPending"), null);
+        }
+
         return (new MihonImportResult(providerId, "requested", null, null), null);
 
         MihonImportResult Failed(string key) => new(providerId, "failed", null, localizer.Get(key));
+
+        MihonImportResult Skipped(string key, object? args = null) => new(providerId, "skipped", null, localizer.Get(key, args));
     }
 
     /// <summary>Creation reports the first copy with filters off, which may be one this caller cannot see.</summary>

@@ -910,6 +910,13 @@ msgstr ""
 msgid "error.mihon.notABackup"
 msgstr ""
 
+#. A user who cannot add series directly gets requests for admin approval instead, and one
+#. import files at most {max} of them (currently 10). This series was left out.
+#: src/Maki.Api/Services/MihonImportService.cs
+#. English: Not requested: one import sends at most {max} series for approval. Import again later to request the rest.
+msgid "error.mihon.requestLimitReached"
+msgstr ""
+
 #. The client generates the run id; only a broken or outdated client sends none.
 #: src/Maki.Api/Controllers/MihonImportController.cs
 #. English: The import request is missing its run id.
@@ -1443,6 +1450,7 @@ msgid "error.requests.alreadyInLibrary"
 msgstr "すでにライブラリにあります。"
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#: src/Maki.Api/Services/MihonImportService.cs
 #. English: You already have that request pending
 #, fuzzy
 msgid "error.requests.alreadyPending"

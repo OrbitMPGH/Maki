@@ -12,6 +12,7 @@ using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -24,6 +25,7 @@ public sealed class MihonImportServiceTests : IDisposable
     private readonly FakeStore _store = new();
     private readonly FakeMetadataProvider _metadata = new();
     private readonly ReadingProgressGate _gate = new();
+    private readonly MemoryCache _cache = new(new MemoryCacheOptions());
     private readonly int _rootId;
     private readonly int _otherRootId;
 
@@ -42,6 +44,7 @@ public sealed class MihonImportServiceTests : IDisposable
     public void Dispose()
     {
         _db.Dispose();
+        _cache.Dispose();
         foreach (var path in new[] { _rootPath, _otherRootPath })
         {
             try { Directory.Delete(path, recursive: true); } catch (IOException) { }
@@ -84,7 +87,7 @@ public sealed class MihonImportServiceTests : IDisposable
             db, _store, [_metadata], creation, submitter, new TagService(db),
             new ReadingProgressService(db, _gate, NullLogger<ReadingProgressService>.Instance),
             new PendingReadImportService(_db.ScopeFactory(), NullLogger<PendingReadImportService>.Instance),
-            user, new TestLocalizer(), NullLogger<MihonImportService>.Instance);
+            user, new TestLocalizer(), _cache, NullLogger<MihonImportService>.Instance);
         return (service, db);
     }
 
@@ -274,8 +277,39 @@ public sealed class MihonImportServiceTests : IDisposable
         Assert.Equal(SeriesRequestStatus.Pending, request.Status);
 
         var (again, _) = Build(user, noAdd);
-        Assert.Equal("requested", Assert.Single(await again.ImportAsync(Request(Item("101")), default)).Outcome);
+        var repeat = Assert.Single(await again.ImportAsync(Request(Item("101")), default));
+        Assert.Equal("skipped", repeat.Outcome);
+        Assert.Equal("error.requests.alreadyPending", repeat.Reason);
         Assert.Single(db.SeriesRequests.IgnoreQueryFilters());
+    }
+
+    [Fact]
+    public async Task Import_without_AddSeries_files_at_most_the_per_run_cap_of_requests_across_batches()
+    {
+        const MakiPermission noAdd = MakiPermission.ImportLibrary | MakiPermission.ManageTags;
+        var user = SeedUser(noAdd);
+        var cap = MihonImportService.MaxRequestsPerRun;
+        var ids = Enumerable.Range(500, cap + 3).Select(i => i.ToString()).ToList();
+
+        // An already pending request uses no slot, and the run arrives in two batches like the client sends it.
+        var (first, _) = Build(user, noAdd);
+        await first.ImportAsync(Request(Item(ids[0])) with { RunId = "earlier" }, default);
+        var (service, _) = Build(user, noAdd);
+        var results = (await service.ImportAsync(Request([.. ids.Take(5).Select(id => Item(id))]), default))
+            .Concat(await service.ImportAsync(Request([.. ids.Skip(5).Select(id => Item(id))]), default))
+            .ToList();
+
+        Assert.Equal("error.requests.alreadyPending", results[0].Reason);
+        Assert.Equal(cap, results.Count(r => r.Outcome == "requested"));
+        var over = results.Where(r => r.Outcome == "skipped").Skip(1).ToList();
+        Assert.Equal(2, over.Count);
+        Assert.All(over, r => Assert.StartsWith("error.mihon.requestLimitReached", r.Reason));
+        using var db = _db.NewContext();
+        Assert.Equal(cap + 1, db.SeriesRequests.IgnoreQueryFilters().Count());
+
+        var (nextRun, _) = Build(user, noAdd);
+        var later = await nextRun.ImportAsync(Request([.. over.Select(r => Item(r.ProviderId))]) with { RunId = "run-2" }, default);
+        Assert.All(later, r => Assert.Equal("requested", r.Outcome));
     }
 
     [Fact]
