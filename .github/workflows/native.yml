@@ -14,6 +14,8 @@ on:
       - 'src/Maki.Desktop/**'
       - 'distribution/native/**'
       - '.github/workflows/native.yml'
+      # A dependency change can break the bundled web UI as easily as a packaging change.
+      - 'frontend/package-lock.json'
   # Rebuild an existing release, or try the pipeline without one (upload: false). GitHub only offers
   # this once the workflow is on the default branch, and the tag has to contain the packaging.
   workflow_dispatch:
