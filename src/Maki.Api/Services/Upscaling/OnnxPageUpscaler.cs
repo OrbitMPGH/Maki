@@ -72,7 +72,8 @@ public sealed class OnnxPageUpscaler(
 
         try
         {
-            var encoded = await ImageWorkGate.RunAsync(() => Task.FromResult(Encode(stitched, info)), ct);
+            var encoded = await ImageWorkGate.RunAsync(
+                () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Rgb, stitched.Width, stitched.Height)), ct);
             return UpscaleResult.Ready(encoded);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -161,7 +162,7 @@ public sealed class OnnxPageUpscaler(
         var tiles = UpscaleTiling.Plan(source.Width, source.Height,
             multiple: info.Adapter == UpscaleAdapter.Plain4xThenHalve ? 1 : 4,
             border: info.Adapter == UpscaleAdapter.Waifu2xSwin ? UpscaleTiling.Waifu2xBorder : 0);
-        var scale = info.ModelScale;
+        var scale = info.OutputScale;
         var width = source.Width * scale;
         var height = source.Height * scale;
         if ((long)width * height * 3 > Array.MaxLength)
@@ -189,7 +190,19 @@ public sealed class OnnxPageUpscaler(
 
             using (results)
             {
-                StitchTile(results[0], tile, scale, output, width);
+                var (rgb, tileWidth, tileHeight) = ReadTile(results[0], tile, info.ModelScale);
+                if (info.ModelScale != scale)
+                {
+                    (rgb, tileWidth, tileHeight) = ImageWorkGate.RunAsync(
+                        () => Task.FromResult(ImageCodec.ResizeRgb(rgb, tileWidth, tileHeight, (double)scale / info.ModelScale)),
+                        ct).GetAwaiter().GetResult();
+                    if ((tileWidth, tileHeight) != (tile.ContextWidth * scale, tile.ContextHeight * scale))
+                    {
+                        throw new InvalidDataException($"Resizing a tile gave {tileWidth}x{tileHeight}.");
+                    }
+                }
+
+                StitchTile(rgb, tileWidth, tile, scale, output, width);
             }
 
             TileCompleted?.Invoke(i);
@@ -240,7 +253,8 @@ public sealed class OnnxPageUpscaler(
         return OrtValue.CreateTensorValueFromMemory(halves, shape);
     }
 
-    private static void StitchTile(OrtValue result, UpscaleTile tile, int scale, byte[] output, int outputWidth)
+    /// <summary>The whole context tile the model returned, as interleaved 8-bit RGB.</summary>
+    private static (byte[] Rgb, int Width, int Height) ReadTile(OrtValue result, UpscaleTile tile, int scale)
     {
         var info = result.GetTensorTypeAndShape();
         var shape = info.Shape;
@@ -251,51 +265,48 @@ public sealed class OnnxPageUpscaler(
                 $"Expected [1,3,{tile.ContextHeight * scale},{tile.ContextWidth * scale}], got [{string.Join(',', shape)}].");
         }
 
-        var ow = (int)shape[3];
-        var plane = (int)shape[2] * ow;
-        var offset = tile.Pad * scale;
-        var rows = tile.Height * scale;
-        var columns = tile.Width * scale;
-        var half = info.ElementDataType == TensorElementType.Float16;
-        var halves = half ? MemoryMarshal.Cast<Float16, Half>(result.GetTensorDataAsSpan<Float16>()) : default;
-        var floats = half ? default : result.GetTensorDataAsSpan<float>();
-        for (var y = 0; y < rows; y++)
+        var width = (int)shape[3];
+        var height = (int)shape[2];
+        var plane = width * height;
+        var rgb = new byte[plane * 3];
+        if (info.ElementDataType == TensorElementType.Float16)
         {
-            var source = (offset + y) * ow + offset;
-            var target = ((tile.Y * scale + y) * outputWidth + tile.X * scale) * 3;
-            for (var x = 0; x < columns; x++, target += 3)
+            var halves = MemoryMarshal.Cast<Float16, Half>(result.GetTensorDataAsSpan<Float16>());
+            for (var s = 0; s < plane; s++)
             {
-                var s = source + x;
-                if (half)
-                {
-                    output[target] = ToByte((float)halves[s]);
-                    output[target + 1] = ToByte((float)halves[plane + s]);
-                    output[target + 2] = ToByte((float)halves[2 * plane + s]);
-                }
-                else
-                {
-                    output[target] = ToByte(floats[s]);
-                    output[target + 1] = ToByte(floats[plane + s]);
-                    output[target + 2] = ToByte(floats[2 * plane + s]);
-                }
+                rgb[s * 3] = ToByte((float)halves[s]);
+                rgb[s * 3 + 1] = ToByte((float)halves[plane + s]);
+                rgb[s * 3 + 2] = ToByte((float)halves[2 * plane + s]);
             }
+        }
+        else
+        {
+            var floats = result.GetTensorDataAsSpan<float>();
+            for (var s = 0; s < plane; s++)
+            {
+                rgb[s * 3] = ToByte(floats[s]);
+                rgb[s * 3 + 1] = ToByte(floats[plane + s]);
+                rgb[s * 3 + 2] = ToByte(floats[2 * plane + s]);
+            }
+        }
+
+        return (rgb, width, height);
+    }
+
+    /// <summary>Copies the tile's interior, past <c>Pad × scale</c> px of context, into the page.</summary>
+    private static void StitchTile(byte[] rgb, int rgbWidth, UpscaleTile tile, int scale, byte[] output, int outputWidth)
+    {
+        var offset = tile.Pad * scale;
+        var rowBytes = tile.Width * scale * 3;
+        for (var y = 0; y < tile.Height * scale; y++)
+        {
+            Buffer.BlockCopy(rgb, ((offset + y) * rgbWidth + offset) * 3,
+                output, ((tile.Y * scale + y) * outputWidth + tile.X * scale) * 3, rowBytes);
         }
     }
 
     private static byte ToByte(float value) =>
         value > 0f ? value < 1f ? (byte)(value * 255f + 0.5f) : (byte)255 : (byte)0;
-
-    private static UpscaledImage Encode(StitchedPage page, UpscaleModelInfo info)
-    {
-        if (info.ModelScale == info.OutputScale)
-        {
-            return ImageCodec.EncodeUpscaled(page.Rgb, page.Width, page.Height);
-        }
-
-        var (rgb, width, height) = ImageCodec.ResizeRgb(page.Rgb, page.Width, page.Height,
-            (double)info.OutputScale / info.ModelScale);
-        return ImageCodec.EncodeUpscaled(rgb, width, height);
-    }
 
     private LoadedModel Acquire(UpscaleModelInfo info, int threads)
     {

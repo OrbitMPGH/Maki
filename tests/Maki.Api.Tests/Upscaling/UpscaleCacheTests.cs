@@ -98,6 +98,32 @@ public sealed class UpscaleCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task Clearing_and_pruning_leave_a_page_still_being_written()
+    {
+        var cache = NewCache();
+        await cache.WriteAsync(Key(0, fileId: 1), [1], "webp", default);
+        await cache.WriteAsync(Key(0, fileId: 2), [1], "webp", default);
+        var writing = Path.Combine(cache.Root, "1", "fresh.tmp");
+        var orphanWriting = Path.Combine(cache.Root, "2", "fresh.tmp");
+        var abandoned = Path.Combine(cache.Root, "1", "old.tmp");
+        foreach (var tmp in (string[])[writing, orphanWriting, abandoned])
+        {
+            await File.WriteAllBytesAsync(tmp, [1]);
+        }
+
+        File.SetLastWriteTimeUtc(abandoned, DateTime.UtcNow.AddHours(-2));
+
+        await cache.ClearAsync(default);
+        Assert.True(File.Exists(writing));
+        Assert.False(File.Exists(abandoned));
+
+        await cache.PruneAsync(new Dictionary<int, long>(), default);
+        Assert.True(File.Exists(writing));
+        Assert.True(File.Exists(orphanWriting));
+        Assert.Equal((0L, 0), cache.Stats());
+    }
+
+    [Fact]
     public async Task Housekeeping_drops_stale_versions_and_orphan_folders_and_leaves_the_reader_cache_alone()
     {
         using var testDb = new TestDb();

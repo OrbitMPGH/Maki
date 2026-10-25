@@ -2,6 +2,8 @@
 Writes identity-2x.onnx: a nearest-neighbour 2x upsample that stands in for a real upscale model in
 tests. Input "input" float32 [1,3,H,W] with dynamic H and W, output "output" [1,3,2H,2W].
 
+Also writes identity-2x-fp16.onnx (float16 tensors) and identity-4x.onnx (nearest 4x).
+
 Needs the onnx package: python make-identity-2x.py
 """
 
@@ -56,3 +58,25 @@ model16 = helper.make_model(graph16, opset_imports=[helper.make_opsetid("", 13)]
 onnx.checker.check_model(model16)
 onnx.save(model16, str(here / "identity-2x-fp16.onnx"))
 print("wrote", here / "identity-2x-fp16.onnx")
+
+# A nearest-neighbour 4x, standing in for Real-ESRGAN's 4x-then-halve adapter.
+scales4 = numpy_helper.from_array(np.array([1, 1, 4, 4], dtype=np.float32), name="scales")
+resize4 = helper.make_node(
+    "Resize",
+    inputs=["input", "", "scales"],
+    outputs=["output"],
+    mode="nearest",
+    coordinate_transformation_mode="asymmetric",
+    nearest_mode="floor",
+)
+graph4 = helper.make_graph(
+    [resize4],
+    "identity_4x",
+    [helper.make_tensor_value_info("input", TensorProto.FLOAT, [1, 3, "height", "width"])],
+    [helper.make_tensor_value_info("output", TensorProto.FLOAT, [1, 3, "out_height", "out_width"])],
+    initializer=[scales4],
+)
+model4 = helper.make_model(graph4, opset_imports=[helper.make_opsetid("", 13)], ir_version=8)
+onnx.checker.check_model(model4)
+onnx.save(model4, str(here / "identity-4x.onnx"))
+print("wrote", here / "identity-4x.onnx")

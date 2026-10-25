@@ -138,7 +138,7 @@ public sealed class EnhanceEndpointTests : IDisposable
             posted.GetProperty("pages").GetRawText());
 
         using var upscaler = new OnnxPageUpscaler(_catalog, _store, _settings, NullLogger<OnnxPageUpscaler>.Instance);
-        var worker = new UpscaleWorker(_queue, _cache, upscaler, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
+        var worker = new UpscaleWorker(_queue, _cache, upscaler, _store, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
             _paths, _settings, _broadcaster, NullLogger<UpscaleWorker>.Instance);
         Assert.True(await worker.RunOnceAsync(default));
         Assert.Equal([(1, _chapterId, 1, "span-s", "ready")], _broadcaster.Sent);

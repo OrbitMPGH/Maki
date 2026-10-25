@@ -102,4 +102,31 @@ public class UpscaleQueueTests
         _queue.ForgetModel("span-s");
         Assert.Null(_queue.RecentOutcome(job.Key));
     }
+
+    [Fact]
+    public void Remembering_forgetting_and_remembering_again_keeps_the_memo_order_bounded()
+    {
+        var page = new UpscaleJob(Item(0).Key, Slice());
+        for (var i = 0; i < 5000; i++)
+        {
+            _queue.Complete(page, UpscaleOutcome.Failed, UpscaleReasons.InferenceFailed);
+            _queue.Complete(page, UpscaleOutcome.Ready, null);
+        }
+
+        Assert.True(_queue.MemoOrderCount <= 600, $"{_queue.MemoOrderCount} order entries");
+
+        _queue.Complete(page, UpscaleOutcome.Failed, UpscaleReasons.InferenceFailed);
+        for (var i = 1; i < 1024; i++)
+        {
+            _queue.Complete(new UpscaleJob(Item(i).Key, Slice()), UpscaleOutcome.Skipped, UpscaleReasons.TooLarge);
+            _queue.Complete(page, UpscaleOutcome.Failed, UpscaleReasons.InferenceFailed);
+        }
+
+        _queue.Complete(new UpscaleJob(Item(5000).Key, Slice()), UpscaleOutcome.Skipped, UpscaleReasons.TooLarge);
+
+        Assert.Equal(UpscaleOutcome.Failed, _queue.RecentOutcome(Item(0).Key));
+        Assert.Null(_queue.RecentOutcome(Item(1).Key));
+        Assert.Equal(UpscaleOutcome.Skipped, _queue.RecentOutcome(Item(2).Key));
+        Assert.True(_queue.MemoOrderCount <= 2 * 1024 + 1, $"{_queue.MemoOrderCount} order entries");
+    }
 }

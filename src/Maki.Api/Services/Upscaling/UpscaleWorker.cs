@@ -8,12 +8,13 @@ namespace Maki.Api.Services.Upscaling;
 /// <summary>
 /// The one consumer of <see cref="UpscaleQueue"/>. Idles while the server tier is off, and drops
 /// whatever was pending when it finds it off. A page that fails is reported as failed and the loop
-/// carries on.
+/// carries on. A page for a model the admin turned off or deleted fails without being cached.
 /// </summary>
 public sealed class UpscaleWorker(
     UpscaleQueue queue,
     UpscaleCache cache,
     IPageUpscaler upscaler,
+    UpscaleModelStore store,
     ReaderArchiveCache archives,
     AppPaths paths,
     IAppSettings settings,
@@ -57,7 +58,8 @@ public sealed class UpscaleWorker(
     /// <summary>Runs the next job. False when there was nothing to run.</summary>
     internal async Task<bool> RunOnceAsync(CancellationToken ct)
     {
-        if (!(await UpscaleOptions.LoadAsync(settings, ct)).Enabled)
+        var options = await UpscaleOptions.LoadAsync(settings, ct);
+        if (!options.Enabled)
         {
             queue.Clear();
             return false;
@@ -69,7 +71,9 @@ public sealed class UpscaleWorker(
             return false;
         }
 
-        var (outcome, reason) = await RunAsync(job, ct);
+        var (outcome, reason) = UpscaleModelId.TryParse(job.Key.Model, out var model) && options.Models.Contains(model)
+            ? await RunAsync(job, model, ct)
+            : (UpscaleOutcome.Failed, UpscaleReasons.ModelUnavailable);
         var state = outcome switch
         {
             UpscaleOutcome.Ready => "ready",
@@ -92,7 +96,7 @@ public sealed class UpscaleWorker(
         return true;
     }
 
-    private async Task<(UpscaleOutcome Outcome, string? Reason)> RunAsync(UpscaleJob job, CancellationToken ct)
+    private async Task<(UpscaleOutcome Outcome, string? Reason)> RunAsync(UpscaleJob job, UpscaleModelId model, CancellationToken ct)
     {
         try
         {
@@ -105,7 +109,22 @@ public sealed class UpscaleWorker(
             var result = await upscaler.UpscaleAsync(page, job.Key.Model, ct);
             if (result is { Outcome: UpscaleOutcome.Ready, Bytes: { } bytes, Extension: { } extension })
             {
-                await cache.WriteAsync(job.Key, bytes, extension, ct);
+                if (!store.IsReady(model))
+                {
+                    return (UpscaleOutcome.Failed, UpscaleReasons.ModelUnavailable);
+                }
+
+                try
+                {
+                    await cache.WriteAsync(job.Key, bytes, extension, ct);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    logger.LogInformation(ex, "Could not cache upscaled page {Page} of chapter file {FileId}",
+                        job.Key.AbsIndex, job.Key.ChapterFileId);
+                    return (UpscaleOutcome.Failed, UpscaleReasons.CacheWriteFailed);
+                }
+
                 return (UpscaleOutcome.Ready, null);
             }
 

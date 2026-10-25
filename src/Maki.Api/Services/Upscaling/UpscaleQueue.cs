@@ -47,8 +47,9 @@ public sealed class UpscaleQueue
     private readonly Dictionary<int, List<UpscaleWorkKey>> _lanes = [];
     private readonly Queue<int> _turns = new();
     private readonly HashSet<int> _inTurns = [];
-    private readonly Dictionary<UpscaleWorkKey, (UpscaleOutcome Outcome, DateTime At)> _memo = [];
-    private readonly Queue<UpscaleWorkKey> _memoOrder = new();
+    private readonly Dictionary<UpscaleWorkKey, (UpscaleOutcome Outcome, DateTime At, long Seq)> _memo = [];
+    private readonly Queue<(UpscaleWorkKey Key, long Seq)> _memoOrder = new();
+    private long _memoSeq;
     private readonly SemaphoreSlim _signal = new(0);
 
     /// <summary>
@@ -232,7 +233,8 @@ public sealed class UpscaleQueue
             }
 
             job.Working = false;
-            if (outcome == UpscaleOutcome.Ready || reason is UpscaleReasons.ModelUnavailable or UpscaleReasons.UnknownModel)
+            if (outcome == UpscaleOutcome.Ready
+                || reason is UpscaleReasons.ModelUnavailable or UpscaleReasons.UnknownModel or UpscaleReasons.CacheWriteFailed)
             {
                 _memo.Remove(job.Key);
             }
@@ -320,17 +322,46 @@ public sealed class UpscaleQueue
         }
     }
 
-    private void Remember(UpscaleWorkKey key, UpscaleOutcome outcome)
+    internal int MemoOrderCount
     {
-        if (!_memo.ContainsKey(key))
+        get
         {
-            _memoOrder.Enqueue(key);
-        }
-
-        _memo[key] = (outcome, DateTime.UtcNow);
-        while (_memo.Count > MemoCapacity && _memoOrder.TryDequeue(out var oldest))
-        {
-            _memo.Remove(oldest);
+            lock (_gate)
+            {
+                return _memoOrder.Count;
+            }
         }
     }
+
+    /// <summary>
+    /// The order queue keeps a sequence number per entry, so a key remembered again, or forgotten
+    /// elsewhere, leaves a stale entry that is skipped rather than evicting a fresh one. Stale entries
+    /// are compacted away once they outnumber the live ones.
+    /// </summary>
+    private void Remember(UpscaleWorkKey key, UpscaleOutcome outcome)
+    {
+        var seq = ++_memoSeq;
+        _memo[key] = (outcome, DateTime.UtcNow, seq);
+        _memoOrder.Enqueue((key, seq));
+        while (_memo.Count > MemoCapacity && _memoOrder.TryDequeue(out var oldest))
+        {
+            if (IsCurrent(oldest))
+            {
+                _memo.Remove(oldest.Key);
+            }
+        }
+
+        if (_memoOrder.Count > 2 * Math.Max(_memo.Count, MemoCapacity / 4))
+        {
+            var live = _memoOrder.Where(IsCurrent).ToList();
+            _memoOrder.Clear();
+            foreach (var entry in live)
+            {
+                _memoOrder.Enqueue(entry);
+            }
+        }
+    }
+
+    private bool IsCurrent((UpscaleWorkKey Key, long Seq) entry) =>
+        _memo.TryGetValue(entry.Key, out var memo) && memo.Seq == entry.Seq;
 }

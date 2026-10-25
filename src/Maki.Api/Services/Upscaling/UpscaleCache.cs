@@ -164,10 +164,17 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
                 {
                     foreach (var file in Directory.GetFiles(dir))
                     {
-                        DeleteAndForget(file);
+                        if (!IsFreshTmp(file))
+                        {
+                            DeleteAndForget(file);
+                        }
                     }
 
-                    Directory.Delete(dir, recursive: false);
+                    if (!Directory.EnumerateFileSystemEntries(dir).Any())
+                    {
+                        Directory.Delete(dir);
+                    }
+
                     continue;
                 }
 
@@ -190,7 +197,7 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
             var match = FileName().Match(Path.GetFileName(file));
             if (!match.Success)
             {
-                if (file.EndsWith(".tmp", StringComparison.Ordinal) && File.GetLastWriteTimeUtc(file) > DateTime.UtcNow - TmpGrace)
+                if (IsFreshTmp(file))
                 {
                     continue;
                 }
@@ -212,6 +219,10 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
             }
         }
     }
+
+    /// <summary>A page a worker may still be writing; it is moved into place or cleaned up by its writer.</summary>
+    private static bool IsFreshTmp(string file) =>
+        file.EndsWith(".tmp", StringComparison.Ordinal) && File.GetLastWriteTimeUtc(file) > DateTime.UtcNow - TmpGrace;
 
     private async Task TrimAsync(string? keep, CancellationToken ct)
     {
@@ -267,7 +278,7 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
             {
                 foreach (var file in Directory.GetFiles(dir))
                 {
-                    if (matches(Path.GetFileName(file)))
+                    if (!IsFreshTmp(file) && matches(Path.GetFileName(file)))
                     {
                         DeleteAndForget(file);
                     }

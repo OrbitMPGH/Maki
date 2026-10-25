@@ -18,12 +18,15 @@ public sealed class UpscaleWorkerTests : IDisposable
     private readonly UpscaleQueue _queue = new();
     private readonly RecordingBroadcaster _broadcaster = new();
     private readonly UpscaleCache _cache;
+    private readonly UpscaleModelCatalog _catalog = new();
+    private readonly UpscaleModelStore _store;
     private readonly string _cbz;
 
     public UpscaleWorkerTests()
     {
         _paths = new AppPaths(_configDir);
         _cache = new UpscaleCache(_paths, _settings, NullLogger<UpscaleCache>.Instance);
+        _store = UpscaleTestKit.StoreWithSpanS(_paths, _settings, _catalog);
         _cbz = Path.Combine(_configDir, "library", "c1.cbz");
         UpscaleTestKit.WriteCbz(_cbz, pages: 3);
     }
@@ -31,7 +34,7 @@ public sealed class UpscaleWorkerTests : IDisposable
     public void Dispose() => UpscaleTestKit.TryDelete(_configDir);
 
     private UpscaleWorker NewWorker(IPageUpscaler upscaler) => new(
-        _queue, _cache, upscaler, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), _paths, _settings,
+        _queue, _cache, upscaler, _store, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), _paths, _settings,
         _broadcaster, NullLogger<UpscaleWorker>.Instance);
 
     private ReaderService.PageSlice Slice() =>
@@ -43,9 +46,7 @@ public sealed class UpscaleWorkerTests : IDisposable
     [Fact]
     public async Task A_job_runs_the_model_writes_the_cache_and_tells_every_waiting_reader()
     {
-        var catalog = new UpscaleModelCatalog();
-        var store = UpscaleTestKit.StoreWithSpanS(_paths, _settings, catalog);
-        using var upscaler = new OnnxPageUpscaler(catalog, store, _settings, NullLogger<OnnxPageUpscaler>.Instance);
+        using var upscaler = new OnnxPageUpscaler(_catalog, _store, _settings, NullLogger<OnnxPageUpscaler>.Instance);
         _queue.Replace(1, 7, "span-s", [Item(1)]);
         _queue.Replace(2, 7, "span-s", [Item(1)]);
 
@@ -98,5 +99,54 @@ public sealed class UpscaleWorkerTests : IDisposable
 
         Assert.Equal(0, upscaler.Calls);
         Assert.Equal(0, _queue.Snapshot().Pending);
+    }
+
+    [Fact]
+    public async Task A_page_for_a_model_the_admin_unticked_fails_without_running()
+    {
+        _settings.Set(SettingKeys.UpscalingModels, "waifu2x-art");
+        var upscaler = new FakeUpscaler();
+        _queue.Replace(1, 7, "span-s", [Item(0)]);
+
+        Assert.True(await NewWorker(upscaler).RunOnceAsync(default));
+
+        Assert.Equal(0, upscaler.Calls);
+        Assert.Equal([(1, 7, 0, "span-s", "failed")], _broadcaster.Sent);
+        Assert.Null(_queue.RecentOutcome(Item(0).Key));
+    }
+
+    [Fact]
+    public async Task A_model_deleted_while_its_page_ran_leaves_nothing_in_the_cache()
+    {
+        var upscaler = new DeletingUpscaler(_store);
+        _queue.Replace(1, 7, "span-s", [Item(0)]);
+
+        Assert.True(await NewWorker(upscaler).RunOnceAsync(default));
+
+        Assert.Null(_cache.TryGet(Item(0).Key));
+        Assert.Equal([(1, 7, 0, "span-s", "failed")], _broadcaster.Sent);
+        Assert.Null(_queue.RecentOutcome(Item(0).Key));
+    }
+
+    [Fact]
+    public async Task A_page_that_could_not_be_cached_is_not_remembered_as_failed()
+    {
+        Directory.CreateDirectory(_cache.Root);
+        await File.WriteAllBytesAsync(Path.Combine(_cache.Root, "3"), [1]);
+        _queue.Replace(1, 7, "span-s", [Item(0)]);
+
+        Assert.True(await NewWorker(new FakeUpscaler()).RunOnceAsync(default));
+
+        Assert.Equal([(1, 7, 0, "span-s", "failed")], _broadcaster.Sent);
+        Assert.Null(_queue.RecentOutcome(Item(0).Key));
+    }
+
+    private sealed class DeletingUpscaler(UpscaleModelStore store) : IPageUpscaler
+    {
+        public async Task<UpscaleResult> UpscaleAsync(byte[] page, string modelId, CancellationToken ct)
+        {
+            await store.DeleteAsync(UpscaleModelId.SpanS);
+            return UpscaleResult.Ready(new UpscaledImage([1, 2, 3, 4], "webp", 2, 2, 1));
+        }
     }
 }

@@ -336,6 +336,7 @@ public sealed class UpscaleModelStore
     private static bool IsPlainFileName(string? name) =>
         !string.IsNullOrWhiteSpace(name)
         && name == Path.GetFileName(name)
+        && !name.StartsWith('.')
         && !name.Contains('/') && !name.Contains('\\') && !name.Contains(':');
 
     private void RemovePartials()

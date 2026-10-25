@@ -122,6 +122,9 @@ public class UpscaleModelStoreTests : IDisposable
     [InlineData("other-model", "span-s-2x.onnx", 1)]
     [InlineData("span-s", "..\\evil.onnx", 1)]
     [InlineData("span-s", "../evil.onnx", 1)]
+    [InlineData("span-s", "..", 1)]
+    [InlineData("span-s", ".", 1)]
+    [InlineData("span-s", ".span-s-2x.onnx", 1)]
     [InlineData("span-s", "span-s-2x.onnx", 2)]
     public async Task A_manifest_that_does_not_list_the_model_cleanly_fails_the_download(string id, string file, int version)
     {

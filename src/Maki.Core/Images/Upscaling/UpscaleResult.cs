@@ -17,6 +17,7 @@ public static class UpscaleReasons
     public const string ModelUnavailable = "modelUnavailable";
     public const string InferenceFailed = "inferenceFailed";
     public const string EncodeFailed = "encodeFailed";
+    public const string CacheWriteFailed = "cacheWriteFailed";
 }
 
 /// <param name="Extension">"webp" or "jpg", without the dot. Null unless Ready.</param>

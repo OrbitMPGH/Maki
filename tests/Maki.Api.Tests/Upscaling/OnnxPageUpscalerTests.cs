@@ -86,6 +86,47 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
+    public void A_4x_model_is_halved_per_tile_like_halving_the_whole_page()
+    {
+        using var upscaler = NewUpscaler("identity-4x.onnx", UpscaleModelId.RealEsrganAv3);
+        var source = Pattern(900, 1300);
+        var whole = new byte[source.Width * 4 * source.Height * 4 * 3];
+        for (var y = 0; y < source.Height * 4; y++)
+        for (var x = 0; x < source.Width * 4; x++)
+        {
+            var p = source[x / 4, y / 4];
+            var o = (y * source.Width * 4 + x) * 3;
+            (whole[o], whole[o + 1], whole[o + 2]) = (p.R, p.G, p.B);
+        }
+
+        var (expected, width, height) = ImageCodec.ResizeRgb(whole, source.Width * 4, source.Height * 4, 0.5);
+
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.RealEsrganAv3), threads: 2, CancellationToken.None);
+
+        Assert.Equal((width, height), (page.Width, page.Height));
+        var edge = 0;
+        for (var y = 0; y < height; y++)
+        for (var x = 0; x < width; x++)
+        for (var c = 0; c < 3; c++)
+        {
+            var o = (y * width + x) * 3 + c;
+            var diff = Math.Abs(page.Rgb[o] - expected[o]);
+            var nearBorder = x < 4 || y < 4 || x >= width - 4 || y >= height - 4;
+            if (nearBorder)
+            {
+                edge = Math.Max(edge, diff);
+            }
+            else if (diff != 0)
+            {
+                Assert.Fail($"Pixel ({x}, {y}) channel {c} is {page.Rgb[o]}, whole-page halving gives {expected[o]}.");
+            }
+        }
+
+        // A tile's context is reflected at the page edge where vips extends the edge pixel instead.
+        Assert.True(edge <= 16, $"Border pixels differ by up to {edge}.");
+    }
+
+    [Fact]
     public async Task A_colour_page_comes_back_as_a_three_band_webp_at_twice_the_size()
     {
         using var upscaler = NewUpscaler();

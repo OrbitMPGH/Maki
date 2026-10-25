@@ -97,12 +97,12 @@ public class UpscaleTilingTests
 
         Assert.True(UpscalePixels.IsGreyscale(grey));
 
-        // Off by one on one channel: a mean difference of 2/3, still grey.
-        for (var i = 0; i < 100; i++) grey[i * 3] += 1;
+        // JPEG-sized drift on one channel is still grey.
+        for (var i = 0; i < 100; i++) grey[i * 3] += 4;
         Assert.True(UpscalePixels.IsGreyscale(grey));
 
-        // Off by two: a mean of 4/3.
-        for (var i = 0; i < 100; i++) grey[i * 3] += 1;
+        // An even tint of 8 is not.
+        for (var i = 0; i < 100; i++) grey[i * 3] += 4;
         Assert.False(UpscalePixels.IsGreyscale(grey));
 
         Assert.Equal([1, 2], UpscalePixels.ToSingleBand([0, 1, 2, 2, 2, 3]));
