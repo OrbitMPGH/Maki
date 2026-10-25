@@ -18,6 +18,7 @@ import {
 import { relationPhrase } from '../ui/DiscoverRail'
 import { useLabel } from '../../i18n-context'
 import { formatFixedDecimal } from '../../format'
+import { onRovingKeyDown } from '../../lib/rovingFocus'
 
 /** How long one pick holds the band before the next takes it. */
 const ROTATE_MS = 5000
@@ -242,7 +243,8 @@ export function DiscoverHero({
                 <Trans>Your next read</Trans>
               </Text>
 
-              <Title order={1} className="series-hero-title" ref={titleRef}>
+              {/* The page's h1 is "Discover"; the featured pick is a section of it. */}
+              <Title order={2} className="series-hero-title" ref={titleRef}>
                 <button type="button" className="discover-hero-title" title={title} onClick={() => onOpen(item)}>
                   {title}
                 </button>
@@ -382,6 +384,7 @@ export function DiscoverHero({
               className="discover-hero-strip-row"
               role="tablist"
               aria-label={t`Other picks for you`}
+              onKeyDown={onRovingKeyDown}
             >
               {picks.map((p, n) => {
                 const pickStatus = seriesStatusVisual(p.status)
@@ -394,6 +397,7 @@ export function DiscoverHero({
                     type="button"
                     role="tab"
                     aria-selected={n === active}
+                    tabIndex={n === active ? 0 : -1}
                     className="discover-hero-strip-item"
                     onClick={() => choose(n)}
                   >

@@ -1947,7 +1947,7 @@ function SeriesDetailBody() {
                   {series.lockedFields.includes('overview') && <>{' '}<MetadataLock /></>}
                 </Title>
                 {series.overview ? (
-                    <Text size="sm" mt="sm" c="var(--ink-3)" style={{ lineHeight: 1.66, maxWidth: '100ch' }}>
+                    <Text size="sm" mt="sm" c="var(--ink-3)" style={{ lineHeight: 1.66, maxWidth: '75ch' }}>
                       {cleanSynopsis(series.overview)}
                     </Text>
                 ) : (

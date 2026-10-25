@@ -1,12 +1,13 @@
 import { memo, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Button } from '@mantine/core'
+import { Button, Skeleton } from '@mantine/core'
 import { IconPlayerPlay, IconPlayerTrackNext } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HomeReadingItem } from '../../api/hooks'
 import { useCoverTint } from '../../lib/coverTint'
 import { HeroBackdrop } from '../series/HeroBackdrop'
+import { RailSkeleton } from '../ui/RailSkeleton'
 import { SectionHeader } from '../ui/SectionHeader'
 import { relativeTime } from '../ui/time'
 import { NextUpList } from './NextUpList'
@@ -73,6 +74,29 @@ export function ContinueHero({
   )
 }
 
+/**
+ * Continue reading's shape while it loads, built from the same classes so the page holds still
+ * when the hero lands: two rail-sized skeletons in its place let everything under them jump by
+ * several hundred pixels.
+ */
+export function ContinueHeroSkeleton({ queue = 'tray' }: { queue?: HeroQueue }) {
+  return (
+    <div className="continue-section" data-queue={queue} aria-hidden>
+      <div className="continue-lead" data-queue={queue === 'beside' ? 'beside' : undefined} data-solo={queue === 'beside' || undefined}>
+        <div className="continue-hero">
+          <Skeleton pos="absolute" inset={0} radius={0} />
+        </div>
+        {queue === 'tray' && (
+          <div className="continue-tray">
+            <Skeleton h={18} w={110} mb="sm" />
+            <RailSkeleton flush />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 const ContinueHeroCard = memo(function ContinueHeroCard({
   item,
   glance,
@@ -106,7 +130,7 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
           }
         >
           {item.coverUrl ? (
-            <img src={item.coverUrl} alt="" decoding="async" />
+            <img src={item.coverUrl} alt="" decoding="async" fetchPriority="high" />
           ) : (
             <span className="continue-hero-placeholder">{seriesTitle}</span>
           )}

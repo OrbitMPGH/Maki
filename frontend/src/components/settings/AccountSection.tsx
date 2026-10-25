@@ -19,7 +19,6 @@ import {
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconCheck, IconCopy } from '@tabler/icons-react'
-import QRCode from 'qrcode'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
@@ -311,7 +310,9 @@ function TwoFactorCard() {
       return
     }
     let cancelled = false
-    QRCode.toDataURL(enrolling.authenticatorUri, { width: 200, margin: 1 })
+    // Only two-factor setup draws a code, so the encoder stays out of every other Settings visit.
+    import('qrcode')
+      .then(({ default: QRCode }) => QRCode.toDataURL(enrolling.authenticatorUri, { width: 200, margin: 1 }))
       .then((url) => {
         if (!cancelled) setQrDataUrl(url)
       })

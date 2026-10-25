@@ -46,7 +46,7 @@ import { HOME_LAYOUT_CONFIG, HOME_SECTION_DEFS } from '../components/home/homeSe
 import { useReadTracking } from '../api/reader'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { FollowingRail } from '../components/discover/FollowingRail'
-import { ContinueHero, type HeroQueue } from '../components/home/ContinueHero'
+import { ContinueHero, ContinueHeroSkeleton, type HeroQueue } from '../components/home/ContinueHero'
 import { ContinueRail } from '../components/home/ContinueRail'
 import { DiscoverZone, type HomeSeparation } from '../components/home/HomeZones'
 import { OfflineHome } from '../components/home/OfflineHome'
@@ -272,7 +272,8 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
         {homeTitle}
-        <RailSkeleton title />
+        {/* Home ships opening on the Continue reading hero, so that is the likeliest first shape. */}
+        <ContinueHeroSkeleton />
         <RailSkeleton title />
       </SurfaceFrame>
     )
@@ -296,7 +297,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   // yields null and takes up no space, exactly as when it is switched off.
   const sections: Record<HomeSectionKey, React.ReactNode> = {
     continue: readingLoading ? (
-      <RailSkeleton />
+      heroOn('continue') ? <ContinueHeroSkeleton queue={queueOf('continue')} /> : <RailSkeleton />
     ) : readingFailed ? (
       <ReadingErrorPrompt onRetry={() => void refetchReading()} />
     ) : continueReading.length > 0 ? (

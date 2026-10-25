@@ -132,12 +132,14 @@ function NavLinks({
           {section.items.map((item) => {
             const count = badges?.[item.path]?.count ?? 0
             const tone = badges?.[item.path]?.tone
+            const active = isActive(item, pathname)
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className="nav-link"
-                data-active={isActive(item, pathname)}
+                data-active={active}
+                aria-current={active ? 'page' : undefined}
                 onClick={onNavigate}
               >
                 <item.icon size={18} stroke={1.7} className="nav-icon" />
@@ -385,6 +387,19 @@ function AppShellRoutes() {
   useEffect(() => {
     if (pinned) navbarRef.current?.querySelector<HTMLElement>('a.nav-link[href]')?.focus()
   }, [pinned])
+
+  // A new page takes focus, so keyboard and screen reader users start at its content rather than on
+  // the sidebar link they left. A control inside the page that changes the path (Discover's tabs)
+  // still holds focus and keeps it; query-only changes such as Settings tabs never get here.
+  const focusedPath = useRef(location.pathname)
+  useEffect(() => {
+    if (focusedPath.current === location.pathname) return
+    focusedPath.current = location.pathname
+    const main = document.getElementById('main')
+    const active = document.activeElement
+    if (!main || (active && active !== document.body && main.contains(active))) return
+    main.focus({ preventScroll: true })
+  }, [location.pathname])
 
   useEffect(() => {
     if (!opened) return
