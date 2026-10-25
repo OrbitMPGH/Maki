@@ -20,7 +20,7 @@
   When a certificate exists, pass it through vpk pack's --signParams or --signTemplate below.
 
 .PARAMETER Version
-  X.Y.Z or X.Y.Z-prerelease, without the leading v. Defaults to 0.0.0-local for a test build.
+  X.Y.Z or X.Y.Z-prerelease, without the leading v. Defaults to 0.0.1-local for a test build.
 
 .PARAMETER FrontendDist
   An already built frontend/dist. Omit it to run npm ci and npm run build here.
@@ -40,7 +40,7 @@
 #>
 [CmdletBinding()]
 param(
-  [string]$Version = "0.0.0-local",
+  [string]$Version = "0.0.1-local",
   [string]$SourceCommit,
   [string]$FrontendDist,
   [string]$OutDir = "out/native/win-x64",

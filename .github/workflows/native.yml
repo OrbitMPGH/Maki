@@ -7,8 +7,9 @@ on:
   # GITHUB_TOKEN would not.
   release:
     types: [published]
-  # A change to the packaging itself is built and smoke-tested on push, under a CI version number,
-  # and never uploaded anywhere but the run's own artifacts.
+  # A change to the packaging itself is built and smoke-tested on push, under a CI version number
+  # (0.0.1-ci.N, since Velopack refuses anything below 0.0.1), and never uploaded anywhere but the
+  # run's own artifacts.
   push:
     paths:
       - 'src/Maki.Desktop/**'
@@ -59,7 +60,7 @@ jobs:
           set -euo pipefail
           if [ -z "$TAG" ]; then
             echo "ref=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-            echo "version=0.0.0-ci.$RUN" >> "$GITHUB_OUTPUT"
+            echo "version=0.0.1-ci.$RUN" >> "$GITHUB_OUTPUT"
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi

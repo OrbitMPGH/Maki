@@ -8,11 +8,11 @@
 # Building on Linux also keeps the executable bits that a tar made on Windows would lose.
 #
 # Usage: distribution/native/build-linux.sh [version] [frontend-dist]
-#   version        X.Y.Z without the v, default 0.0.0-local
+#   version        X.Y.Z without the v, default 0.0.1-local
 #   frontend-dist  an already built frontend/dist; omitted, the frontend is built here
 set -euo pipefail
 
-version="${1:-0.0.0-local}"
+version="${1:-0.0.1-local}"
 version="${version#v}"
 dist="${2:-}"
 repo="$(cd "$(dirname "$0")/../.." && pwd)"
