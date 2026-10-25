@@ -7,7 +7,15 @@ on:
   # GITHUB_TOKEN would not.
   release:
     types: [published]
-  # Rebuild an existing release, or try the pipeline without one (upload: false).
+  # A change to the packaging itself is built and smoke-tested on push, under a CI version number,
+  # and never uploaded anywhere but the run's own artifacts.
+  push:
+    paths:
+      - 'src/Maki.Desktop/**'
+      - 'distribution/native/**'
+      - '.github/workflows/native.yml'
+  # Rebuild an existing release, or try the pipeline without one (upload: false). GitHub only offers
+  # this once the workflow is on the default branch, and the tag has to contain the packaging.
   workflow_dispatch:
     inputs:
       tag:
@@ -21,7 +29,7 @@ on:
         default: false
 
 concurrency:
-  group: native-${{ inputs.tag || github.event.release.tag_name }}
+  group: native-${{ inputs.tag || github.event.release.tag_name || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -30,26 +38,35 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
+      ref: ${{ steps.release.outputs.ref }}
       tag: ${{ steps.release.outputs.tag }}
       version: ${{ steps.release.outputs.version }}
       prerelease: ${{ steps.release.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.tag || github.event.release.tag_name }}
+          ref: ${{ inputs.tag || github.event.release.tag_name || github.sha }}
 
       - name: Resolve version
         id: release
         env:
           TAG: ${{ inputs.tag || github.event.release.tag_name }}
+          RUN: ${{ github.run_number }}
         shell: bash
         run: |
           set -euo pipefail
+          if [ -z "$TAG" ]; then
+            echo "ref=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+            echo "version=0.0.0-ci.$RUN" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
             echo "::error::Tag must look like vX.Y.Z or vX.Y.Z-<prerelease>: $TAG"
             exit 1
           fi
           version="${TAG#v}"
+          echo "ref=$TAG" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           if printf '%s' "$version" | grep -q -- '-'; then
@@ -86,7 +103,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ needs.frontend.outputs.tag }}
+          ref: ${{ needs.frontend.outputs.ref }}
 
       - uses: actions/setup-dotnet@v5
         with:
@@ -100,16 +117,16 @@ jobs:
       - name: Install vpk
         run: dotnet tool install -g vpk --version 1.2.161
 
-      # The tray app follows stable releases only, so a release candidate is built and smoke-tested
-      # but never joins the update feed: packing it would hand every installed copy an -rc.
+      # Always packed, so a change that breaks vpk shows up before a release. A release candidate's
+      # feed files are harmless: the tray reads releases through GithubSource with prereleases off.
+      # Only a stable release fetches the previous one to build a delta from.
       - name: Build, self-test and pack
         shell: pwsh
         env:
-          PACK: ${{ needs.frontend.outputs.prerelease == 'false' }}
+          STABLE_RELEASE: ${{ github.event_name == 'release' && needs.frontend.outputs.prerelease == 'false' }}
         run: |
-          $pack = $env:PACK -eq 'true'
           ./distribution/native/build-windows.ps1 -Version '${{ needs.frontend.outputs.version }}' `
-            -FrontendDist frontend-dist -Pack:$pack -PreviousReleases:$pack
+            -FrontendDist frontend-dist -Pack -PreviousReleases:($env:STABLE_RELEASE -eq 'true')
 
       - name: Name the downloads
         shell: pwsh
@@ -162,7 +179,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ needs.frontend.outputs.tag }}
+          ref: ${{ needs.frontend.outputs.ref }}
 
       - uses: actions/setup-dotnet@v5
         with:
