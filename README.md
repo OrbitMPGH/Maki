@@ -126,6 +126,11 @@ library, history and tracker connections are already attached to that account.
 |---|---|---|
 | Docker (amd64, arm64) | Supported | `ghcr.io/orbitmpgh/maki:latest` |
 | Unraid | Supported | Search for Maki in the Apps tab on your Unraid server |
+| Windows 10 and 11 (x64), installer | Supported | `Maki-<version>-windows-x64-setup.exe` from [Releases](https://github.com/OrbitMPGH/Maki/releases), see [docs/windows.md](docs/windows.md) |
+| Windows 10 and 11 (x64), portable | Supported | `Maki-<version>-windows-x64-portable.zip` from [Releases](https://github.com/OrbitMPGH/Maki/releases) |
+| Linux x64 tarball | Community | `Maki-<version>-linux-x64.tar.gz` from [Releases](https://github.com/OrbitMPGH/Maki/releases), see [docs/linux.md](docs/linux.md) |
+| Linux arm64 tarball | Community, tested by CI only | `Maki-<version>-linux-arm64.tar.gz` from [Releases](https://github.com/OrbitMPGH/Maki/releases) |
+| macOS | Not available | Use Docker |
 | From source | Supported | .NET 10 and Node 24, see [docs/development.md](docs/development.md) |
 
 ## Sources

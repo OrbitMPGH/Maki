@@ -277,7 +277,7 @@ public class LocalizationCatalogTests
         // prefix there being `notifications.`, and neither does `feedback.`, whose settings live
         // under `recommendations.`, nor `install.` or `naming.`, which name no setting at all.
         var pattern = new Regex(
-            @"""((?:error|inbox|achievement|notify|opds|scrobble|health|feedback|discover|install|naming)\.[A-Za-z0-9_.]+)""",
+            @"""((?:error|inbox|achievement|notify|opds|scrobble|health|feedback|discover|install|naming|desktop)\.[A-Za-z0-9_.]+)""",
             RegexOptions.Compiled);
 
         var keys = new HashSet<string>(StringComparer.Ordinal);
