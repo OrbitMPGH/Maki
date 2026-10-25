@@ -8,7 +8,7 @@
   Layout of the package (what Velopack installs under %LOCALAPPDATA%\Maki.Desktop\current):
     Maki.exe            the tray app, Velopack's main executable
     server\Maki.Api.exe Maki itself, with wwwroot\ beside it
-    LICENSE
+    LICENSE, THIRD_PARTY_NOTICES.md
   The two are published into separate folders on purpose: both carry a self-contained runtime, and
   sharing one folder would let either project's copy of a shared assembly overwrite the other's.
 
@@ -86,7 +86,7 @@ Write-Host "== Publishing Maki.Desktop (win-x64, self-contained) ==" -Foreground
 dotnet publish src/Maki.Desktop/Maki.Desktop.csproj -c Release -r win-x64 --self-contained true `
   -o $app @versionArgs
 if ($LASTEXITCODE -ne 0) { throw "Publishing Maki.Desktop failed" }
-Copy-Item LICENSE $app
+Copy-Item LICENSE, THIRD_PARTY_NOTICES.md $app
 
 Write-Host "== Self-test ==" -ForegroundColor Cyan
 & (Join-Path $server "Maki.Api.exe") --selftest

@@ -40,7 +40,7 @@ echo "== Publishing Maki.Api ($rid, self-contained) =="
 dotnet publish src/Maki.Api/Maki.Api.csproj -c Release -r "$rid" --self-contained true \
   -p:SkipFrontendBuild=true -p:Version="$version" -p:InformationalVersion="$version+$commit" -o "$app"
 cp -r "$dist" "$app/wwwroot"
-cp LICENSE "$app/"
+cp LICENSE THIRD_PARTY_NOTICES.md "$app/"
 cp distribution/native/maki.service "$app/"
 cp distribution/native/README-linux.txt "$app/README.txt"
 chmod +x "$app/Maki.Api"
