@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { cropRegion, isFull, partOf, type PagePart, type Region } from './pageShape'
+import { cropRegion, FULL_REGION, isFull, partOf, type PagePart, type Region } from './pageShape'
+import EnhancedPage from './EnhancedPage'
+import { useCompareKey } from './compareHold'
+import {
+  EnhanceScope,
+  enhanceKey,
+  presetFor,
+  regionBitmap,
+  useEnhanceEngine,
+  type PageEnhance,
+} from './enhanceRuntime'
 import type { EnhanceServer } from '../../api/reader'
 import type {
   EnhanceMethod,
@@ -36,30 +46,37 @@ const PLAIN: PageShaping = { crop: false, part: 'whole', rotate: 0 }
  * of the cropped page would (1:1 included); the real image sits inside, scaled and offset so only
  * the region shows. A canvas rather than a sized image: it has its size the moment it mounts, so a
  * page turn never flashes an empty box, and with no context drawn it holds no pixel buffer.
+ * An enhanced page takes this path even when it is whole, and draws the engine's output over the frame.
  */
 function RegionPage({
   src,
+  url,
   alt,
   className,
   style,
   tone,
   fit,
-  natural,
+  image,
   region,
   rotate,
+  enhance,
 }: {
   src: string
+  url: string
   alt: string
   className: string
   style: React.CSSProperties | undefined
   tone: string | undefined
   fit: ReaderFit
-  natural: { width: number; height: number }
+  image: HTMLImageElement
   region: Region
   rotate: 0 | 90 | -90
+  enhance: PageEnhance | null
 }) {
-  const width = Math.max(1, Math.round(natural.width * region.w))
-  const height = Math.max(1, Math.round(natural.height * region.h))
+  const [box, setBox] = useState<HTMLDivElement | null>(null)
+  const [covered, setCovered] = useState(false)
+  const width = Math.max(1, Math.round(image.naturalWidth * region.w))
+  const height = Math.max(1, Math.round(image.naturalHeight * region.h))
   const turned = rotate !== 0
   const frame: React.CSSProperties = turned
     ? {
@@ -71,7 +88,7 @@ function RegionPage({
       }
     : { inset: 0 }
   return (
-    <div className="reader-region" data-fit={fit}>
+    <div ref={setBox} className="reader-region" data-fit={fit}>
       <canvas
         className={className}
         width={turned ? height : width}
@@ -81,7 +98,7 @@ function RegionPage({
       />
       <div className="reader-region-frame" style={frame}>
         <img
-          src={src}
+          src={url}
           alt={alt}
           className="reader-region-image"
           data-no-cover-fallback
@@ -91,10 +108,25 @@ function RegionPage({
             width: `${100 / region.w}%`,
             height: `${100 / region.h}%`,
             filter: tone,
+            visibility: enhance && covered ? 'hidden' : undefined,
           }}
           decoding="sync"
           draggable={false}
         />
+        {enhance && (
+          <EnhancedPage
+            image={image}
+            src={src}
+            region={region}
+            rotate={rotate}
+            alt={alt}
+            tone={tone}
+            enhance={enhance}
+            priority={0}
+            box={box}
+            onShowing={setCovered}
+          />
+        )}
       </div>
     </div>
   )
@@ -113,6 +145,7 @@ function PagedPage({
   tone,
   fit,
   shaping,
+  enhance,
   onLoaded,
 }: {
   src: string
@@ -122,6 +155,7 @@ function PagedPage({
   tone: string | undefined
   fit: ReaderFit
   shaping: PageShaping
+  enhance: PageEnhance | null
   onLoaded: (image: HTMLImageElement) => void
 }) {
   const [state, setState] = useState<PageState>('loading')
@@ -150,7 +184,7 @@ function PagedPage({
   const crop = useMemo(() => (ready && shaping.crop ? cropRegion(image) : null), [ready, image, shaping.crop])
   const region = partOf(crop, wide ? shaping.part : 'whole')
   const rotate = wide ? shaping.rotate : 0
-  const shaped = natural !== null && (rotate !== 0 || !isFull(region))
+  const shaped = natural !== null && (enhance !== null || rotate !== 0 || !isFull(region))
 
   return (
     <>
@@ -185,17 +219,19 @@ function PagedPage({
         onLoad={(event) => markReady(event.currentTarget)}
         onError={() => setState('failed')}
       />
-      {shaped && (
+      {shaped && image && (
         <RegionPage
-          src={url}
+          src={src}
+          url={url}
           alt={alt}
           className={className}
           style={style}
           tone={tone}
           fit={fit}
-          natural={natural}
+          image={image}
           region={region}
           rotate={rotate}
+          enhance={enhance}
         />
       )}
     </>
@@ -219,6 +255,9 @@ export default function PagedView({
   cropBorders = false,
   splitWide = 'off',
   half = 0,
+  enhance = 'off',
+  enhanceMethod = 'a4k-m',
+  preload,
 }: {
   urls: string[]
   spread: Spread
@@ -236,10 +275,12 @@ export default function PagedView({
   splitWide?: ReaderSplitWide
   /** Which half of a split wide page is up, in reading order. */
   half?: 0 | 1
-  /** Page enhancement, not drawn yet: the views accept these so the reader can already pass them. */
   enhance?: ReaderEnhance
   enhanceMethod?: EnhanceMethod
+  /** Read by the server tier (phase 8); browser presets ignore it. */
   enhanceServer?: EnhanceServer
+  /** The reader's preload window: the spread on screen and the pages after it, in reading order. */
+  preload?: number[]
 }) {
   const { t } = useLingui()
   // In right-to-left reading the lower page number belongs on the right.
@@ -262,6 +303,86 @@ export default function PagedView({
           part: single && splitWide === 'split' ? ((half === 0) === rtl ? 'right' : 'left') : 'whole',
           rotate: single && splitWide === 'rotate' ? (rtl ? -90 : 90) : 0,
         }
+  const enhanceOn = enhance !== 'off'
+  const engineState = useEnhanceEngine(enhanceOn)
+  const engine = engineState.status === 'ready' ? engineState.engine : null
+  useCompareKey(enhanceOn)
+  // Bumped when a page on screen reports the size it is shown at, which is what the pages ahead are
+  // enhanced at.
+  const [sized, setSized] = useState(0)
+  const [scope] = useState(() => new EnhanceScope(() => setSized((n) => n + 1)))
+  useEffect(() => {
+    scope.attach(engine)
+    return () => scope.release()
+  }, [scope, engine, urls])
+  const layout = `${fit}|${zoom}|${scale}`
+  const pageEnhance = useMemo<PageEnhance | null>(
+    () =>
+      engine && enhance !== 'off'
+        ? { mode: enhance, preset: presetFor(enhanceMethod), engine, scope, layout }
+        : null,
+    [engine, enhance, enhanceMethod, scope, layout],
+  )
+
+  // Pages that leave the window around the spread are evicted from the engine's cache. The two
+  // before it stay, so turning back is instant.
+  const lead = Math.min(...spread)
+  useEffect(() => {
+    const keep = new Set<string>()
+    for (const page of [...spread, ...(preload ?? []), lead - 1, lead - 2]) {
+      if (urls[page]) keep.add(urls[page])
+    }
+    scope.retain(keep)
+  }, [scope, urls, spread, preload, lead])
+
+  // The pages ahead are enhanced at the size a page of the same pixel size is shown at now, so a
+  // turn finds them in the cache. Pages of another size wait until they are on screen.
+  const { crop: shapeCrop, part: shapePart, rotate: shapeRotate } = shaping
+  useEffect(() => {
+    if (!pageEnhance || !preload?.length) return
+    const { engine: live, scope: owner, preset, mode } = pageEnhance
+    const controller = new AbortController()
+    const { signal } = controller
+    const shown = new Set(spread)
+    const images: HTMLImageElement[] = []
+    preload
+      .filter((page) => !shown.has(page))
+      .forEach((page, order) => {
+        const src = urls[page]
+        if (!src) return
+        const image = new Image()
+        image.src = src
+        images.push(image)
+        void image
+          .decode()
+          .then(async () => {
+            if (signal.aborted) return
+            if (image.naturalWidth > image.naturalHeight && (shapePart !== 'whole' || shapeRotate !== 0)) return
+            const region = (shapeCrop ? cropRegion(image) : null) ?? FULL_REGION
+            const target = owner.sizeFor(image.naturalWidth * region.w, image.naturalHeight * region.h)
+            if (!target || (mode === 'auto' && !target.stretched)) return
+            const key = enhanceKey(src, region)
+            if (live.peek(key, preset, target.width, target.height)) return
+            owner.note(src, key)
+            const bitmap = await regionBitmap(image, region)
+            if (signal.aborted) return bitmap.close()
+            await live.enhance(bitmap, {
+              preset,
+              targetWidth: target.width,
+              targetHeight: target.height,
+              key,
+              priority: order + 1,
+              signal,
+            })
+          })
+          .catch(() => {})
+      })
+    return () => {
+      controller.abort()
+      for (const image of images) image.src = ''
+    }
+  }, [pageEnhance, preload, spread, urls, shapeCrop, shapePart, shapeRotate, sized])
+
   const rtlRef = useRef(rtl)
   rtlRef.current = rtl
   const pinRight = useRef(false)
@@ -330,6 +451,7 @@ export default function PagedView({
             tone={tone}
             fit={fit}
             shaping={shaping}
+            enhance={pageEnhance}
             onLoaded={(image) => onMeasure(page, image)}
           />
         )

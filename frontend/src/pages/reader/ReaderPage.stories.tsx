@@ -423,3 +423,40 @@ export const PageFailsToLoad: Story = {
     await expect(await canvas.findByRole('button', { name: 'Try again' })).toBeVisible()
   },
 }
+
+/** Enhance Always from the resolved prefs: the page is drawn by the engine, and the toolbar's hold button shows the original. */
+export const EnhanceAlways: Story = {
+  parameters: {
+    ...open(1132),
+    msw: [
+      withManifest({
+        ...chapters[1132],
+        prefs: { ...chapters[1132].prefs, enhance: 'always', enhanceMethod: 'a4k-s' },
+      }),
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    const { loadEnhanceEngine } = await import('../../lib/enhance')
+    const engine = await loadEnhanceEngine()
+    if (!engine.supported || engine.broken) return
+    const enhanced = await waitFor(
+      () => {
+        const element = canvasElement.querySelector<HTMLCanvasElement>('canvas.reader-enhanced')
+        expect(element?.dataset.enhanced).toBe('true')
+        return element!
+      },
+      { timeout: 60_000 },
+    )
+    await expect(enhanced).toHaveAccessibleName('Chapter 132 - page 6')
+
+    await summonChrome({ canvasElement, userEvent })
+    const hold = await canvas.findByRole('button', { name: 'Hold to compare' })
+    await userEvent.pointer({ keys: '[MouseLeft>]', target: hold })
+    await waitFor(() => expect(hold).toHaveAttribute('aria-pressed', 'true'))
+    await expect(enhanced).not.toBeVisible()
+    await userEvent.pointer({ keys: '[/MouseLeft]', target: hold })
+    await waitFor(() => expect(hold).toHaveAttribute('aria-pressed', 'false'))
+    await waitFor(() => expect(enhanced).toBeVisible())
+  },
+}

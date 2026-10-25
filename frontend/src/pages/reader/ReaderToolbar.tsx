@@ -23,6 +23,7 @@ import {
   IconMaximize,
   IconMinimize,
   IconSettings,
+  IconSquareHalf,
   IconZoomIn,
   IconZoomOut,
   IconZoomReset,
@@ -43,6 +44,8 @@ import {
   serverModelId,
 } from './enhanceMethods'
 import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
+import { setCompareHeld, useCompareHeld } from './compareHold'
+import { useEnhanceEngine } from './enhanceRuntime'
 
 /**
  * The reader renders above Mantine's popover layer, so anything that portals to <body> has to
@@ -155,9 +158,13 @@ export default function ReaderToolbar({
         ? t`Changes retune "${inForceName}", so every series using it.`
         : t`Changes apply to your reader defaults.`
 
+  const enhanceOn = prefs.enhance !== 'off'
+  const engineStatus = useEnhanceEngine(enhanceOn).status
+  const browserUnsupported = engineStatus === 'unsupported'
+  const compareHeld = useCompareHeld()
   const enhanceModels = manifest.enhanceServer?.models
   const enhanceOptions = [
-    ...BROWSER_ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label), disabled: false })),
+    ...BROWSER_ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label), disabled: browserUnsupported })),
     ...SERVER_ENHANCE_METHODS.flatMap((m) => {
       const model = enhanceModels?.find((entry) => entry.id === serverModelId(m.id))
       if (!model && m.id !== prefs.enhanceMethod) return []
@@ -169,6 +176,8 @@ export default function ReaderToolbar({
     if (serverModelId(value) !== null) {
       if (!model) return t`Not available`
       if (!model.ready) return t`Downloading`
+    } else if (browserUnsupported) {
+      return t`Not supported on this device`
     }
     const info = enhanceMethodInfo(value)
     return info ? renderLabel(info.hint) : undefined
@@ -293,6 +302,38 @@ export default function ReaderToolbar({
               )}
             </Group>
           </div>
+          {enhanceOn && engineStatus !== 'unsupported' && engineStatus !== 'broken' && (
+            <Tooltip label={t`Hold to compare with the original (H)`} withArrow zIndex={OVERLAY_Z}>
+              <ActionIcon
+                variant={compareHeld ? 'light' : 'subtle'}
+                color="gray"
+                aria-label={t`Hold to compare`}
+                aria-pressed={compareHeld}
+                style={{ touchAction: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
+                onPointerDown={(event) => {
+                  event.currentTarget.setPointerCapture?.(event.pointerId)
+                  setCompareHeld(true)
+                }}
+                onPointerUp={() => setCompareHeld(false)}
+                onPointerCancel={() => setCompareHeld(false)}
+                onLostPointerCapture={() => setCompareHeld(false)}
+                onPointerLeave={() => setCompareHeld(false)}
+                onKeyDown={(event) => {
+                  if ((event.key === ' ' || event.key === 'Enter') && !event.repeat) {
+                    event.preventDefault()
+                    setCompareHeld(true)
+                  }
+                }}
+                onKeyUp={(event) => {
+                  if (event.key === ' ' || event.key === 'Enter') setCompareHeld(false)
+                }}
+                onBlur={() => setCompareHeld(false)}
+                onContextMenu={(event) => event.preventDefault()}
+              >
+                <IconSquareHalf size={18} />
+              </ActionIcon>
+            </Tooltip>
+          )}
           {incognito && (
             <Tooltip label={t`Incognito, this session isn't being recorded`} withArrow zIndex={OVERLAY_Z}>
               <IconEyeOff size={18} opacity={0.7} />

@@ -850,6 +850,10 @@ msgstr "{fileCount, plural, one {# single file} other {# single files}}"
 msgid "{fileName} replaced {filesText}"
 msgstr "{fileName} replaced {filesText}"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{files, plural, one {{used} of {limit}, # page} other {{used} of {limit}, # pages}}"
+msgstr "{files, plural, one {{used} of {limit}, # page} other {{used} of {limit}, # pages}}"
+
 #: src/pages/rewind/slides.tsx
 msgid "{finishedCount, plural, one {# series finished} other {# series finished}}"
 msgstr "{finishedCount, plural, one {# series finished} other {# series finished}}"
@@ -1427,6 +1431,10 @@ msgstr "{samples, plural, one {Measured from # chapter across {series} series in
 #: src/components/CatalogueBrowser.tsx
 msgid "{searchCap}+ matches"
 msgstr "{searchCap}+ matches"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{seconds} s per sample page"
+msgstr "{seconds} s per sample page"
 
 #: src/pages/ImportPage.tsx
 msgid "{selectedCount, plural, one {# folder selected} other {# folders selected}}"
@@ -3407,6 +3415,10 @@ msgstr "C:\\Manga or /library"
 msgid "Cache progress"
 msgstr "Cache progress"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Cache size (MB)"
+msgstr "Cache size (MB)"
+
 #: src/components/ImportReviewModal.tsx
 msgid "Can't load this import"
 msgstr "Can't load this import"
@@ -4038,6 +4050,10 @@ msgstr "Clear all filters"
 #: src/pages/NotificationsPage.tsx
 msgid "Clear all notifications?"
 msgstr "Clear all notifications?"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Clear cache"
+msgstr "Clear cache"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Clear chapter search"
@@ -4754,6 +4770,10 @@ msgstr "Covers chapters Maki doesn't know about"
 msgid "covers, posters, artwork, thumbnails, rebuild image cache, missing covers, broken cover, clear cache, mediacover"
 msgstr "covers, posters, artwork, thumbnails, rebuild image cache, missing covers, broken cover, clear cache, mediacover"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "CPU threads used for one page."
+msgstr "CPU threads used for one page."
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -5011,6 +5031,7 @@ msgstr "Defining"
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 msgid "Delete"
 msgstr "Delete"
 
@@ -5382,6 +5403,7 @@ msgid "Down"
 msgstr "Down"
 
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 msgid "Download"
 msgstr "Download"
 
@@ -5495,6 +5517,7 @@ msgstr "Downloaded the prebuilt index"
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/settings/UpscalingSection.tsx
 msgid "Downloading"
 msgstr "Downloading"
 
@@ -5583,6 +5606,10 @@ msgstr "Each language you pick is searched separately."
 #: src/components/import/MihonReview.tsx
 msgid "Each Mihon category becomes a tag on the series. Manga in Mihon's Default category get no tag."
 msgstr "Each Mihon category becomes a tag on the series. Manga in Mihon's Default category get no tag."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on."
+msgstr "Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on."
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -5708,6 +5735,10 @@ msgstr "Enable {name}"
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Enable import lists for everyone"
 msgstr "Enable import lists for everyone"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Enable server upscaling"
+msgstr "Enable server upscaling"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Enable single sign-on"
@@ -6023,6 +6054,7 @@ msgstr "expected to link as <0/>"
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 msgid "Failed"
 msgstr "Failed"
 
@@ -6993,6 +7025,15 @@ msgstr "Historical"
 #: src/pages/SeriesDetailPage.tsx
 msgid "History"
 msgstr "History"
+
+#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Hold to compare"
+msgstr "Hold to compare"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Hold to compare with the original (H)"
+msgstr "Hold to compare with the original (H)"
 
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
@@ -8741,6 +8782,7 @@ msgstr "missing"
 #: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 msgid "Missing"
 msgstr "Missing"
 
@@ -8772,6 +8814,10 @@ msgstr "Model download progress"
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Model switch: {modelSwitchError}"
 msgstr "Model switch: {modelSwitchError}"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Models"
+msgstr "Models"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
@@ -9931,6 +9977,10 @@ msgstr "Not set up yet."
 #: src/pages/ScrobblePage.tsx
 msgid "Not set up yet. An admin can add it in Settings."
 msgstr "Not set up yet. An admin can add it in Settings."
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Not supported on this device"
+msgstr "Not supported on this device"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Not synced yet"
@@ -11587,6 +11637,10 @@ msgstr "Reader profiles"
 msgid "Reader settings"
 msgstr "Reader settings"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Readers can pick the ticked models. Saving a ticked model that isn't downloaded yet starts its download."
+msgstr "Readers can pick the ticked models. Saving a ticked model that isn't downloaded yet starts its download."
+
 #: src/api/hooks.ts
 msgid "Readers like you"
 msgstr "Readers like you"
@@ -11669,6 +11723,10 @@ msgstr "Reading your ratings from {label}…"
 #: src/pages/HealthPage.tsx
 msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
 msgstr "Reads every byte to catch rotted files. About half an hour per 100 GB."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Ready"
+msgstr "Ready"
 
 #: src/pages/reader/enhanceMethods.ts
 msgid "Real-ESRGAN; flattens screentone"
@@ -12890,6 +12948,7 @@ msgstr "Save your recovery codes"
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
 #: src/pages/settings/SystemCards.tsx
+#: src/pages/settings/UpscalingSection.tsx
 msgid "Saved"
 msgstr "Saved"
 
@@ -13578,6 +13637,11 @@ msgstr "Server local time, 0 to 23."
 msgid "Server methods apply only when the admin has enabled them; otherwise Balanced is used."
 msgstr "Server methods apply only when the admin has enabled them; otherwise Balanced is used."
 
+#: src/pages/settings/registry.ts
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Server upscaling"
+msgstr "Server upscaling"
+
 #: src/components/NotificationsSection.tsx
 msgid "Server URL"
 msgstr "Server URL"
@@ -13703,6 +13767,10 @@ msgstr "Sharp (server)"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source."
 msgstr "Sharpen soft pages. Auto does it only when a page is shown larger than its source."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Sharpens soft pages in the reader with models that run on this server."
+msgstr "Sharpens soft pages in the reader with models that run on this server."
 
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Shift + Space"
@@ -14602,6 +14670,10 @@ msgstr "Test notification sent"
 msgid "Test notification sent."
 msgstr "Test notification sent."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Test speed"
+msgstr "Test speed"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Thai"
 msgstr "Thai"
@@ -14832,6 +14904,10 @@ msgstr "The linked file has not been inventoried yet, so its pages cannot be sho
 msgid "The local MangaBaka database is still downloading. Setup finishes once it is in."
 msgstr "The local MangaBaka database is still downloading. Setup finishes once it is in."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "The models are third-party files under their own licences. The non-commercial ones bind anyone who receives them."
+msgstr "The models are third-party files under their own licences. The non-commercial ones bind anyone who receives them."
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
 msgid "The most explicit rating shown outside your own library."
@@ -14857,6 +14933,10 @@ msgstr "The odd one out"
 #: src/api/queue.ts
 msgid "The old file could not be moved aside for the upgrade"
 msgstr "The old file could not be moved aside for the upgrade"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "The oldest pages are dropped past this."
+msgstr "The oldest pages are dropped past this."
 
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "The preview expired. Try again."
@@ -15097,6 +15177,10 @@ msgstr "They will have to link single sign-on again, or use a password, to sign 
 msgid "They will no longer be able to sign in. This can't be undone."
 msgstr "They will no longer be able to sign in. This can't be undone."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Third-party notices"
+msgstr "Third-party notices"
+
 #: src/api/ssoErrors.ts
 msgid "This account already has a single sign-on login. Remove it before linking another."
 msgstr "This account already has a single sign-on login. Remove it before linking another."
@@ -15297,6 +15381,10 @@ msgstr "This year"
 #: src/pages/LibraryPage.tsx
 msgid "Those series are already being matched."
 msgstr "Those series are already being matched."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Threads"
+msgstr "Threads"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Thresholds"
@@ -15603,6 +15691,7 @@ msgstr "Try a shorter or alternative query."
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #: src/pages/reader/ReaderPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Try again"
 msgstr "Try again"
@@ -16075,6 +16164,11 @@ msgstr "Upload image"
 #: src/components/NamingTokenModal.tsx
 msgid "Upper Case"
 msgstr "Upper Case"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
+msgstr "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
 
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/downloadClientFields.ts

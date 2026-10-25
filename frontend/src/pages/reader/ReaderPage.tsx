@@ -837,6 +837,7 @@ export default function ReaderPage() {
               enhance={prefs.enhance}
               enhanceMethod={prefs.enhanceMethod}
               enhanceServer={manifest.enhanceServer}
+              preload={preloadPages}
             />
           )}
         </div>
