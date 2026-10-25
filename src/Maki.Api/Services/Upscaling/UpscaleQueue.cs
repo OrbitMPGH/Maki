@@ -223,6 +223,15 @@ public sealed class UpscaleQueue
     /// while it ran. A failed or skipped page is remembered for a while so it is not queued again
     /// on every page turn.
     /// </summary>
+    /// <summary>Who is waiting on <paramref name="job"/> right now.</summary>
+    public IReadOnlyList<KeyValuePair<int, UpscaleTarget>> WaitersOf(UpscaleJob job)
+    {
+        lock (_gate)
+        {
+            return job.Waiters.ToList();
+        }
+    }
+
     public IReadOnlyList<KeyValuePair<int, UpscaleTarget>> Complete(UpscaleJob job, UpscaleOutcome outcome, string? reason)
     {
         lock (_gate)

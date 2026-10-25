@@ -20,6 +20,7 @@ import ChapterBanner from './ChapterBanner'
 import ChapterEnd from './ChapterEnd'
 import ShortcutSheet from './ShortcutSheet'
 import ContinuousView from './ContinuousView'
+import ServerEnhanceStatus from './ServerEnhanceStatus'
 import { serverModelFor, useServerEnhance } from './useServerEnhance'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
@@ -867,6 +868,13 @@ export default function ReaderPage() {
             />
           )}
         </div>
+      )}
+      {!atEnd && (
+        <ServerEnhanceStatus
+          server={server}
+          pages={mode === 'vertical' ? [page] : (spreads[spreadIndex] ?? [page])}
+          method={prefs.enhanceMethod}
+        />
       )}
 
       {stripOpen && (

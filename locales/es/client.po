@@ -5700,6 +5700,10 @@ msgstr "No se pudo deshacer: {reason}"
 msgid "Could not update feedback: {reason}"
 msgstr "No se pudo guardar la valoración: {reason}"
 
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Could not upscale this page"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "Could not write the chapter to disk"
@@ -8162,8 +8166,8 @@ msgid "Genres in the library"
 msgstr "Géneros de la biblioteca"
 
 #: src/pages/reader/enhanceMethods.ts
-msgid "Gentle (server)"
-msgstr ""
+#~ msgid "Gentle (server)"
+#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -10037,6 +10041,10 @@ msgstr "Cargando capítulos…"
 #, fuzzy
 msgid "loading search by meaning, title matches for now"
 msgstr "cargando la búsqueda por significado; por ahora, solo coincidencias de título"
+
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Loading the upscaled page"
+msgstr ""
 
 #: src/components/ActivityButton.tsx
 #: src/components/DiscoverPresets.tsx
@@ -19762,7 +19770,20 @@ msgstr "Mayúsculas"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
+msgid "upscale, upscaling, enhance, sharpen, model, onnx, real-esrgan, span, cpu threads, page cache"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+#~ msgid "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
+#~ msgstr ""
+
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Upscaled page shown"
+msgstr ""
+
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Upscaling this page"
 msgstr ""
 
 #: src/components/NotificationsSection.tsx
@@ -20188,8 +20209,8 @@ msgid "vs {fromLabel} to {toLabel}"
 msgstr "frente a {fromLabel} y {toLabel}"
 
 #: src/pages/reader/enhanceMethods.ts
-msgid "waifu2x art; slowest, cleanest"
-msgstr ""
+#~ msgid "waifu2x art; slowest, cleanest"
+#~ msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx
@@ -20206,6 +20227,10 @@ msgstr "Esperando a que se descargue primero la instantánea de MangaBaka."
 #, fuzzy
 msgid "Waiting for the metadata database."
 msgstr "Esperando la base de datos de metadatos."
+
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Waiting for the server"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

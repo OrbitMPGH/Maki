@@ -74,7 +74,7 @@ public class UpscaleModelStoreTests : IDisposable
         Assert.Equal(ModelFile, store.PathOf(UpscaleModelId.SpanS));
         Assert.Equal(UpscaleFixture.Sha256Of(UpscaleFixture.IdentityModelPath), UpscaleFixture.Sha256Of(ModelFile));
         Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(ModelFile)!, "*.partial"));
-        Assert.Equal(UpscaleModelState.Missing, store.GetStatus(UpscaleModelId.Waifu2xArt).State);
+        Assert.Equal(UpscaleModelState.Missing, store.GetStatus(UpscaleModelId.RealEsrganAv3).State);
     }
 
     [Fact]
@@ -253,11 +253,12 @@ public class UpscaleModelStoreTests : IDisposable
     [Fact]
     public void Model_ids_parse_only_for_catalogue_entries()
     {
-        Assert.True(UpscaleModelId.TryParse("Waifu2x-Art", out var id));
-        Assert.Equal(UpscaleModelId.Waifu2xArt, id);
+        Assert.True(UpscaleModelId.TryParse("RealESRGAN-AV3", out var id));
+        Assert.Equal(UpscaleModelId.RealEsrganAv3, id);
+        Assert.False(UpscaleModelId.TryParse("waifu2x-art", out _));
         Assert.False(UpscaleModelId.TryParse("bogus", out _));
         Assert.False(UpscaleModelId.TryParse(null, out _));
-        Assert.Equal(3, new UpscaleModelCatalog().All.Count);
+        Assert.Equal(2, new UpscaleModelCatalog().All.Count);
     }
 
     [Fact]
@@ -271,11 +272,11 @@ public class UpscaleModelStoreTests : IDisposable
         Assert.Null(defaults.ManifestUrl);
 
         _settings.Set(SettingKeys.UpscalingEnabled, "true")
-            .Set(SettingKeys.UpscalingModels, "span-s, nope ,span-s,waifu2x-art")
+            .Set(SettingKeys.UpscalingModels, "span-s, nope ,span-s,realesrgan-av3")
             .Set(SettingKeys.UpscalingCacheMb, "5");
         var set = await UpscaleOptions.LoadAsync(_settings, default);
         Assert.True(set.Enabled);
-        Assert.Equal([UpscaleModelId.SpanS, UpscaleModelId.Waifu2xArt], set.Models);
+        Assert.Equal([UpscaleModelId.SpanS, UpscaleModelId.RealEsrganAv3], set.Models);
         Assert.Equal(UpscaleOptions.MinCacheMb, set.CacheMb);
     }
 

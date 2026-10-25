@@ -101,7 +101,6 @@ public class ReaderPrefsTests
     [InlineData("a4k-a")]
     [InlineData("server:span-s")]
     [InlineData("server:realesrgan-av3")]
-    [InlineData("server:waifu2x-art")]
     public void Sanitized_keeps_every_known_enhance_method(string method)
     {
         Assert.Equal(method, new ReaderPrefsSpec(EnhanceMethod: method).Sanitized().EnhanceMethod);

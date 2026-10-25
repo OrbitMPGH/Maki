@@ -7311,7 +7311,8 @@ body.reader-open {
   inset: auto;
 }
 
-.reader-next-chapter-hint {
+.reader-next-chapter-hint,
+.reader-enhance-status {
   position: fixed;
   left: 50%;
   bottom: calc(32px + env(safe-area-inset-bottom, 0px));
@@ -7345,6 +7346,55 @@ body.reader-open {
   background: var(--brand);
   border-radius: var(--radius-pill);
   transition: width 60ms linear;
+}
+
+/* Server enhance progress (ServerEnhanceStatus): the next-chapter pill's shape, with a sweep while
+   the page waits or runs and a fill once it is loading. */
+.reader-enhance-status {
+  animation: reader-enhance-status-in var(--dur-medium) var(--ease);
+}
+.reader-enhance-status-method {
+  margin-right: 8px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.reader-enhance-status-fill {
+  width: 100%;
+  transition: width var(--dur-slow) var(--ease);
+}
+.reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill,
+.reader-enhance-status[data-phase='working'] .reader-enhance-status-fill {
+  width: 35%;
+  animation: reader-enhance-sweep 1.4s var(--ease) infinite;
+}
+.reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill {
+  opacity: 0.45;
+  animation-duration: 2.4s;
+}
+.reader-enhance-status[data-phase='loading'] .reader-enhance-status-fill {
+  width: 85%;
+}
+.reader-enhance-status[data-phase='failed'] {
+  color: rgba(255, 255, 255, 0.72);
+}
+@keyframes reader-enhance-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(290%);
+  }
+}
+@keyframes reader-enhance-status-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill,
+  .reader-enhance-status[data-phase='working'] .reader-enhance-status-fill {
+    width: 100%;
+    animation: none;
+  }
 }
 
 /* Auto-hiding chrome. Pointer events are dropped when hidden so the bars never eat a tap

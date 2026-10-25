@@ -71,29 +71,41 @@ public sealed class UpscaleWorker(
             return false;
         }
 
-        var (outcome, reason) = UpscaleModelId.TryParse(job.Key.Model, out var model) && options.Models.Contains(model)
-            ? await RunAsync(job, model, ct)
-            : (UpscaleOutcome.Failed, UpscaleReasons.ModelUnavailable);
-        var state = outcome switch
+        (UpscaleOutcome Outcome, string? Reason) result;
+        if (UpscaleModelId.TryParse(job.Key.Model, out var model) && options.Models.Contains(model))
+        {
+            await TellAsync(queue.WaitersOf(job), job.Key.Model, "working");
+            result = await RunAsync(job, model, ct);
+        }
+        else
+        {
+            result = (UpscaleOutcome.Failed, UpscaleReasons.ModelUnavailable);
+        }
+
+        var state = result.Outcome switch
         {
             UpscaleOutcome.Ready => "ready",
             UpscaleOutcome.Skipped => "skipped",
             _ => "failed"
         };
+        await TellAsync(queue.Complete(job, result.Outcome, result.Reason), job.Key.Model, state);
 
-        foreach (var (userId, target) in queue.Complete(job, outcome, reason))
+        return true;
+    }
+
+    private async Task TellAsync(IEnumerable<KeyValuePair<int, UpscaleTarget>> waiters, string model, string state)
+    {
+        foreach (var (userId, target) in waiters)
         {
             try
             {
-                await broadcaster.PageEnhanced(userId, target.ChapterId, target.Page, job.Key.Model, state);
+                await broadcaster.PageEnhanced(userId, target.ChapterId, target.Page, model, state);
             }
             catch (Exception ex)
             {
                 logger.LogDebug(ex, "Could not tell user {UserId} about an upscaled page", userId);
             }
         }
-
-        return true;
     }
 
     private async Task<(UpscaleOutcome Outcome, string? Reason)> RunAsync(UpscaleJob job, UpscaleModelId model, CancellationToken ct)

@@ -77,10 +77,10 @@ screen. It is off until a reader turns it on. Library files are never modified.
 
 - **Two tiers, one setting.** Browser methods (**Light**, **Balanced**, **Strong**) run Anime4K
   shaders on the reader's own device. They are always available and need WebGL2. Server methods
-  (**Sharp**, **Crisp line art**, **Gentle**) run ONNX models on the Maki server and appear in the
-  Method list once an admin has enabled them. Sharp is IllustrationJaNai SPAN-S, Crisp line art is
-  Real-ESRGAN animevideov3 (it flattens screentone) and Gentle is waifu2x art, the slowest and
-  cleanest.
+  (**Sharp**, **Crisp line art**) run ONNX models on the Maki server and appear in the Method list
+  once an admin has enabled them. Sharp is IllustrationJaNai SPAN-S and Crisp line art is
+  Real-ESRGAN animevideov3 (it flattens screentone). A greyscale page stays greyscale whichever
+  method draws it.
 - **Turning it on.** In the reader toolbar's settings popover, set **Enhance** to Off, Auto or
   Always and pick a **Method**. The same two fields are in reading profiles and in per-series
   overrides, so they follow the usual order: series override, pinned profile, type profile, your
@@ -88,6 +88,8 @@ screen. It is off until a reader turns it on. Library files are never modified.
   source, so a small window stays plain and a large monitor does not.
 - **Hold to compare.** Hold **H** or the toolbar's compare button to see the original page, and
   let go to return to the enhanced one.
+- **Server progress.** While a server method is still working on the page on screen, a pill at
+  the bottom says whether it is waiting, upscaling or loading, and Balanced shows meanwhile.
 - **Fallbacks.** A server method shows **Balanced** on this device while its page is not ready,
   and for good when the reader is offline, the admin tier is off or the model is not downloaded. A
   device without WebGL2 shows plain pages and the browser methods read "Not supported on this

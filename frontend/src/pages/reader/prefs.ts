@@ -17,7 +17,6 @@ export type EnhanceMethod =
   | 'a4k-a'
   | 'server:span-s'
   | 'server:realesrgan-av3'
-  | 'server:waifu2x-art'
 
 export interface ReaderPrefs {
   mode: ReaderMode

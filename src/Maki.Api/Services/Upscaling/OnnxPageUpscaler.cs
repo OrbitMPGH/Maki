@@ -49,6 +49,7 @@ public sealed class OnnxPageUpscaler(
             return UpscaleResult.Skipped(skip ?? UpscaleReasons.Unreadable);
         }
 
+        var grey = UpscalePixels.IsGreyscale(source.Pixels);
         var threads = (await UpscaleOptions.LoadAsync(settings, ct)).Threads;
         StitchedPage stitched;
         try
@@ -73,7 +74,7 @@ public sealed class OnnxPageUpscaler(
         try
         {
             var encoded = await ImageWorkGate.RunAsync(
-                () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Rgb, stitched.Width, stitched.Height)), ct);
+                () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Rgb, stitched.Width, stitched.Height, grey)), ct);
             return UpscaleResult.Ready(encoded);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -160,8 +161,7 @@ public sealed class OnnxPageUpscaler(
     private StitchedPage RunTiles(LoadedModel loaded, Raster source, UpscaleModelInfo info, CancellationToken ct)
     {
         var tiles = UpscaleTiling.Plan(source.Width, source.Height,
-            multiple: info.Adapter == UpscaleAdapter.Plain4xThenHalve ? 1 : 4,
-            border: info.Adapter == UpscaleAdapter.Waifu2xSwin ? UpscaleTiling.Waifu2xBorder : 0);
+            multiple: info.Adapter == UpscaleAdapter.Plain4xThenHalve ? 1 : 4);
         var scale = info.OutputScale;
         var width = source.Width * scale;
         var height = source.Height * scale;
@@ -213,8 +213,8 @@ public sealed class OnnxPageUpscaler(
 
     private static OrtValue CreateInput(TensorElementType type, Raster source, UpscaleTile tile)
     {
-        var w = tile.InputWidth;
-        var h = tile.InputHeight;
+        var w = tile.ContextWidth;
+        var h = tile.ContextHeight;
         var plane = w * h;
         var columns = new int[w];
         for (var x = 0; x < w; x++)

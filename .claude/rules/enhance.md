@@ -5,6 +5,7 @@ paths:
   - "frontend/src/pages/reader/enhanceRuntime*"
   - "frontend/src/pages/reader/compareHold*"
   - "frontend/src/pages/reader/useServerEnhance*"
+  - "frontend/src/pages/reader/ServerEnhanceStatus*"
   - "frontend/src/pages/reader/enhanceMethods.ts"
   - "src/Maki.Api/Services/Upscaling/**"
   - "src/Maki.Core/Images/Upscaling/**"
@@ -28,10 +29,12 @@ User-facing summary in `docs/features.md`. Two tiers share one reader setting: `
 
 ## Models and tiling
 
-- waifu2x swin_unet outputs `2·in − 32` per axis. The adapter reflect-pads the multiple-of-4-rounded context tile by a further 8 px per side (`Waifu2xBorder`), so the output is exactly 2x the context tile.
+- waifu2x swin_unet art was dropped before release: 19 MB and about 4x slower than SPAN-S (25 s a page on a 9950X3D, minutes on a NAS).
 - SPAN-S takes and returns float16. The engine reads tensor types from the model file, not the catalogue.
 - Real-ESRGAN is a 4x model. Each tile's 4x output is Lanczos-halved to 2x before the context crop and stitch (`Plain4xThenHalve`), so a full 4x page never sits in memory. Per-tile halving differs from whole-page halving by at most a few levels near tile edges.
 - Greyscale detection (`UpscalePixels.IsGreyscale`) is a fraction test, not a mean: a page is colour when more than 1 in 2000 sampled pixels has a channel spread over 16, or the mean spread passes 6. A red title on a grey page must stay red.
+- Run it on the decoded source, never on the model output. The server models can tint flat screentone (purple on grey), and a tinted output fails the test and keeps the tint.
+- The browser's final resample takes luma from the shader chain and chroma from the source tile. Restore CNN tints screentone the same way; a grey page must come out grey.
 - `manifesturl` has no API. In dev it is a row in the `AppConfig` table of the config dir's SQLite database (key `library.upscaling.manifesturl`).
 - Server tiling is 384 px with a 16 px context pad. Browser tiling is `min(MAX_TEXTURE_SIZE, 4096)/2` with a 16 px overlap.
 - The browser hook sizing stays at 2x (`OUTPUT` is 2w x 2h) and `//!WHEN` is not parsed. The reader's Auto gate (display at 1.2x source) replaces it.
@@ -43,12 +46,14 @@ User-facing summary in `docs/features.md`. Two tiers share one reader setting: `
 
 - `ReaderController` is a primary-constructor class built by hand in several tests. New services go in through `[FromServices]` on the action, not the constructor.
 - The reader POST replaces the user's pending window. Failed and skipped outcomes are remembered for 10 minutes so a bad page is not re-queued forever.
+- `pageEnhanced` is pushed twice per page: `working` when the worker starts it, then the outcome. The push often beats the POST's own `queued` answer, so `useServerEnhance` never walks `working` back to `queued`. `ServerEnhanceStatus` reads those states plus `shown` (the upscale is decoded and drawn) for the reader pill.
 - `HostStartupTests` fails on any WRN/ERR at boot. The store and the cache must start silently with no models and no cache folder.
 
 ## Reader
 
 - Crop and split keep measuring the original `<img>` (`pageShape.ts` caches by `currentSrc`). Regions are fractions and apply unchanged to the enhanced canvas.
 - `pageUrl()` must not change shape. Offline saving, `useWarmChapter` and the service worker regexes depend on it. The enhanced URL (`.../page/{n}/enhanced`) is deliberately outside every service-worker list, so offline it gets the synthetic 503 and the reader shows Balanced.
+- `EnhancedPage` reports `onShowing` from a layout effect. The canvas hides in the same commit that holding H starts, so a passive effect paints one frame with neither the canvas nor the host's image.
 - The engine's `enhance()` closes the source bitmap. A result produced with a `key` belongs to the engine's LRU: draw it with `drawImage`, never close or transfer it.
 
 ## Model delivery

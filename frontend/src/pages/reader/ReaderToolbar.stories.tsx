@@ -136,10 +136,9 @@ export const EnhanceOn: Story = {
     await userEvent.click(method)
     await expect(await body.findByRole('option', { name: /Light/ })).toBeVisible()
     await expect(body.getByRole('option', { name: /Sharp \(server\)/ })).not.toHaveAttribute('data-combobox-disabled', 'true')
-    const downloading = body.getByRole('option', { name: /Gentle \(server\)/ })
+    const downloading = body.getByRole('option', { name: /Crisp line art \(server\)/ })
     await expect(downloading).toHaveAttribute('data-combobox-disabled', 'true')
     await expect(within(downloading).getByText('Downloading')).toBeVisible()
-    await expect(body.queryByRole('option', { name: /Crisp line art/ })).toBeNull()
 
     await userEvent.click(body.getByRole('option', { name: /Sharp \(server\)/ }))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceMethod: 'server:span-s' }))

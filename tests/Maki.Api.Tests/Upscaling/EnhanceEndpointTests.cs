@@ -110,12 +110,12 @@ public sealed class EnhanceEndpointTests : IDisposable
     }
 
     [Theory]
-    [InlineData("waifu2x-art")]
-    [InlineData("realesrgan-av3")]
-    [InlineData("nonsense")]
-    public async Task A_model_not_enabled_or_not_downloaded_answers_409(string model)
+    [InlineData("realesrgan-av3", "span-s,realesrgan-av3")]
+    [InlineData("realesrgan-av3", "span-s")]
+    [InlineData("nonsense", "span-s")]
+    public async Task A_model_not_enabled_or_not_downloaded_answers_409(string model, string enabled)
     {
-        _settings.Set(SettingKeys.UpscalingModels, "span-s,waifu2x-art");
+        _settings.Set(SettingKeys.UpscalingModels, enabled);
         using var db = _db.NewContext(1);
 
         var post = await Post(db, 1, model, 0);
@@ -141,7 +141,7 @@ public sealed class EnhanceEndpointTests : IDisposable
         var worker = new UpscaleWorker(_queue, _cache, upscaler, _store, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
             _paths, _settings, _broadcaster, NullLogger<UpscaleWorker>.Instance);
         Assert.True(await worker.RunOnceAsync(default));
-        Assert.Equal([(1, _chapterId, 1, "span-s", "ready")], _broadcaster.Sent);
+        Assert.Equal([(1, _chapterId, 1, "span-s", "working"), (1, _chapterId, 1, "span-s", "ready")], _broadcaster.Sent);
 
         var slice = (await new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!,
             new ReadingSessionService(db), NullLogger<ReaderService>.Instance).PageSliceAsync(_chapterId, default))!;
@@ -223,7 +223,7 @@ public sealed class EnhanceEndpointTests : IDisposable
         Assert.Equal(512, settings.GetProperty("cacheMb").GetInt32());
 
         var catalog = status.GetProperty("catalog").EnumerateArray().ToList();
-        Assert.Equal(["span-s", "realesrgan-av3", "waifu2x-art"], catalog.Select(c => c.GetProperty("id").GetString()));
+        Assert.Equal(["span-s", "realesrgan-av3"], catalog.Select(c => c.GetProperty("id").GetString()));
         foreach (var name in (string[])["id", "bytes", "license", "author", "source", "status", "error"])
         {
             Assert.True(catalog[0].TryGetProperty(name, out _), name);

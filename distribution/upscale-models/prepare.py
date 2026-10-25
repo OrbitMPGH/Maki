@@ -6,14 +6,13 @@ Requirements (Python 3, nothing else): torch, onnx, onnxruntime, numpy.
     python -c "import torch, onnx, onnxruntime, numpy"
 
 What it does:
-  1. Downloads the three upstream files into --work and checks their sha256 against the pinned
+  1. Downloads the two upstream files into --work and checks their sha256 against the pinned
      values below. A mismatch stops the run before anything is built.
   2. Extracts SPAN-S from the MangaJaNai zip and names it span-s-2x.onnx.
   3. Rebuilds SRVGGNetCompact, loads realesr-animevideov3.pth with weights_only=True, exports
      realesrgan-av3-4x.onnx (opset 17, fp32, dynamic H and W) and compares ONNX Runtime with
      PyTorch on a 128x128 random tile (max abs difference must stay under 1e-3).
-  4. Copies the waifu2x swin_unet model as waifu2x-art-2x.onnx.
-  5. Writes manifest.json (sha256 and size of each file) and LICENSES.txt into --out.
+  4. Writes manifest.json (sha256 and size of each file) and LICENSES.txt into --out.
 
 Upload the result with distribution/publish-upscale-models.ps1.
 
@@ -46,11 +45,6 @@ SPAN_MEMBER = {
     "name": "2x_IllustrationJaNai_V3denoise_SPAN_S_30k_fp16_1x3xHxW_dyn-HW_strong_fp16_op23.onnx",
     "sha256": "cd0344ebae36281206827954b730e0f944ce961dbbe059a41a083014f3e7c03a",
 }
-WAIFU2X = {
-    "name": "noise1_scale2x.onnx",
-    "url": "https://unlimited.waifu2x.net/models/swin_unet/art/noise1_scale2x.onnx",
-    "sha256": "ac5d366c5ca73c58c40a0ecd7199298521867c9d374a27d57a4bd67a241c4885",
-}
 REALESRGAN = {
     "name": "realesr-animevideov3.pth",
     "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-animevideov3.pth",
@@ -71,13 +65,6 @@ MODELS = [
         "license": "BSD-3-Clause",
         "author": "Xintao Wang et al. (Real-ESRGAN animevideov3)",
         "source": "https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0",
-    },
-    {
-        "id": "waifu2x-art",
-        "file": "waifu2x-art-2x.onnx",
-        "license": "MIT (code); the weights carry no licence beyond the repository's MIT",
-        "author": "nagadomi (waifu2x, nunif)",
-        "source": "https://github.com/nagadomi/nunif",
     },
 ]
 
@@ -195,21 +182,10 @@ def licenses_text() -> str:
         "   Source: https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0",
         "   Licence: BSD 3-Clause (full text below).",
         "",
-        "3. waifu2x-art-2x.onnx",
-        "   waifu2x swin_unet art noise1 2x, by nagadomi, from https://unlimited.waifu2x.net/",
-        "   Source: https://github.com/nagadomi/nunif",
-        "   Licence: MIT (full text below). The repository's MIT licence covers the code. The model",
-        "   weights carry no licence of their own beyond that, and are included here as published.",
-        "",
         "-" * 70,
         "Real-ESRGAN: BSD 3-Clause",
         "-" * 70,
         read("BSD-3-Clause-Real-ESRGAN.txt"),
-        "",
-        "-" * 70,
-        "waifu2x (nunif): MIT",
-        "-" * 70,
-        read("MIT-waifu2x.txt"),
         "",
         "-" * 70,
         "SPAN-S (IllustrationJaNai V3): Creative Commons Attribution-NonCommercial 4.0 International",
@@ -232,7 +208,6 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
 
     zip_path = fetch(SPAN_ZIP, work)
-    w2x_path = fetch(WAIFU2X, work)
     pth_path = fetch(REALESRGAN, work)
 
     span_out = out / "span-s-2x.onnx"
@@ -247,8 +222,6 @@ def main() -> None:
     print("extracted span-s-2x.onnx")
 
     export_realesrgan(pth_path, out / "realesrgan-av3-4x.onnx")
-
-    shutil.copyfile(w2x_path, out / "waifu2x-art-2x.onnx")
 
     manifest = {"version": 1, "models": []}
     for model in MODELS:

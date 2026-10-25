@@ -31,15 +31,6 @@ the release carries a `LICENSES.txt` with the full licence texts. The same texts
 - Converted from the original `.pth` file to ONNX (opset 17, fp32, dynamic height and width) by
   `distribution/upscale-models/prepare.py`. The weights are unchanged.
 
-### waifu2x swin_unet art (noise 1, 2x)
-
-- File: `waifu2x-art-2x.onnx`
-- Author: nagadomi
-- Licence: MIT (the waifu2x and nunif repository)
-- Source: https://github.com/nagadomi/nunif, model published at https://unlimited.waifu2x.net/
-- The repository's MIT licence covers its code. The model weights carry no licence beyond that, and are
-  redistributed here as published.
-
 ## Browser shaders
 
 ### Anime4K

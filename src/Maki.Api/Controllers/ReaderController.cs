@@ -304,7 +304,7 @@ public class ReaderController(
     /// Asks for server upscales of a window of pages. Pages already cached answer <c>ready</c>; a page
     /// that just failed or was skipped answers that instead of queueing again. The rest become this
     /// reader's pending work, replacing what they had pending for another chapter or model. Each one
-    /// that finishes is pushed as <c>pageEnhanced</c>.
+    /// is pushed as <c>pageEnhanced</c> when the worker starts it (<c>working</c>) and when it finishes.
     /// </summary>
     [HttpPost("chapter/{id:int}/enhance")]
     public async Task<IActionResult> Enhance(

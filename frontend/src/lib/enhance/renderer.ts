@@ -120,7 +120,7 @@ export class EnhanceRenderer {
           const dy1 = Math.round((y.inEnd * dh) / sh)
           gl.enable(gl.SCISSOR_TEST)
           gl.scissor(dx0, dh - dy1, dx1 - dx0, dy1 - dy0)
-          this.runner.resample(main, dw, dh, [sw / dw / tw, sh / dh / th], [-x.start / tw, -y.start / th])
+          this.runner.resample(main, this.src, dw, dh, [sw / dw / tw, sh / dh / th], [-x.start / tw, -y.start / th])
           gl.disable(gl.SCISSOR_TEST)
           this.runner.releaseTex(main)
         })

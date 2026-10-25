@@ -56,7 +56,7 @@ public sealed class UpscaleWorkerTests : IDisposable
         Assert.NotNull(cached);
         Assert.EndsWith(".span-s.webp", cached);
         Assert.Equal(
-            [(1, 7, 1, "span-s", "ready"), (2, 7, 1, "span-s", "ready")],
+            [(1, 7, 1, "span-s", "working"), (1, 7, 1, "span-s", "ready"), (2, 7, 1, "span-s", "working"), (2, 7, 1, "span-s", "ready")],
             _broadcaster.Sent.OrderBy(s => s.UserId));
         Assert.Equal(0, _queue.Snapshot().Pending + _queue.Snapshot().Working);
     }
@@ -73,7 +73,7 @@ public sealed class UpscaleWorkerTests : IDisposable
         try
         {
             var deadline = DateTime.UtcNow.AddSeconds(20);
-            while (_broadcaster.Sent.Count < 2 && DateTime.UtcNow < deadline)
+            while (_broadcaster.Sent.Count < 4 && DateTime.UtcNow < deadline)
             {
                 await Task.Delay(20);
             }
@@ -83,7 +83,9 @@ public sealed class UpscaleWorkerTests : IDisposable
             await worker.StopAsync(default);
         }
 
-        Assert.Equal([(1, 7, 0, "span-s", "failed"), (1, 7, 2, "span-s", "ready")], _broadcaster.Sent);
+        Assert.Equal(
+            [(1, 7, 0, "span-s", "working"), (1, 7, 0, "span-s", "failed"), (1, 7, 2, "span-s", "working"), (1, 7, 2, "span-s", "ready")],
+            _broadcaster.Sent);
         Assert.Equal(UpscaleOutcome.Failed, _queue.RecentOutcome(Item(0).Key));
         Assert.NotNull(_cache.TryGet(Item(2).Key));
     }
@@ -104,7 +106,7 @@ public sealed class UpscaleWorkerTests : IDisposable
     [Fact]
     public async Task A_page_for_a_model_the_admin_unticked_fails_without_running()
     {
-        _settings.Set(SettingKeys.UpscalingModels, "waifu2x-art");
+        _settings.Set(SettingKeys.UpscalingModels, "realesrgan-av3");
         var upscaler = new FakeUpscaler();
         _queue.Replace(1, 7, "span-s", [Item(0)]);
 
@@ -124,7 +126,7 @@ public sealed class UpscaleWorkerTests : IDisposable
         Assert.True(await NewWorker(upscaler).RunOnceAsync(default));
 
         Assert.Null(_cache.TryGet(Item(0).Key));
-        Assert.Equal([(1, 7, 0, "span-s", "failed")], _broadcaster.Sent);
+        Assert.Equal([(1, 7, 0, "span-s", "working"), (1, 7, 0, "span-s", "failed")], _broadcaster.Sent);
         Assert.Null(_queue.RecentOutcome(Item(0).Key));
     }
 
@@ -137,7 +139,7 @@ public sealed class UpscaleWorkerTests : IDisposable
 
         Assert.True(await NewWorker(new FakeUpscaler()).RunOnceAsync(default));
 
-        Assert.Equal([(1, 7, 0, "span-s", "failed")], _broadcaster.Sent);
+        Assert.Equal([(1, 7, 0, "span-s", "working"), (1, 7, 0, "span-s", "failed")], _broadcaster.Sent);
         Assert.Null(_queue.RecentOutcome(Item(0).Key));
     }
 

@@ -31,7 +31,7 @@ public class UpscaleTilingTests
 
         Assert.All(covered, c => Assert.Equal(1, c));
         Assert.Equal(3 * 4, tiles.Count);
-        Assert.Equal(new UpscaleTile(768, 1152, 132, 148, 16, 164, 180, 0), tiles[^1]);
+        Assert.Equal(new UpscaleTile(768, 1152, 132, 148, 16, 164, 180), tiles[^1]);
     }
 
     [Theory]
@@ -45,33 +45,6 @@ public class UpscaleTilingTests
         Assert.Equal(context, tile.ContextWidth);
         Assert.Equal(context, tile.ContextHeight);
         Assert.Equal(0, tile.ContextWidth % 4);
-        Assert.Equal(context, tile.InputWidth);
-    }
-
-    [Theory]
-    [InlineData(384)]
-    [InlineData(105)]
-    [InlineData(1)]
-    public void The_waifu2x_border_makes_its_shrunk_output_exactly_twice_the_context_tile(int interior)
-    {
-        var tile = UpscaleTiling.Plan(interior, interior, multiple: 4, border: UpscaleTiling.Waifu2xBorder).Single();
-
-        Assert.Equal(tile.ContextWidth + 16, tile.InputWidth);
-        var waifu2xOutput = 2 * tile.InputWidth - 32;
-        Assert.Equal(2 * tile.ContextWidth, waifu2xOutput);
-        Assert.True(2 * tile.Pad + 2 * interior <= waifu2xOutput);
-    }
-
-    [Fact]
-    public void The_waifu2x_border_reflects_the_context_tile_not_the_page()
-    {
-        var tile = UpscaleTiling.Plan(1000, 1000, multiple: 4, border: UpscaleTiling.Waifu2xBorder)[1];
-        Assert.Equal(384, tile.X);
-
-        // Input column 0 is 8 px left of the context tile, mirrored inside it: context column 8.
-        Assert.Equal(384 - 16 + 8, tile.SourceX(0, 1000));
-        Assert.Equal(384 - 16, tile.SourceX(8, 1000));
-        Assert.Equal(384 - 16 + tile.ContextWidth - 1 - 8, tile.SourceX(tile.InputWidth - 1, 1000));
     }
 
     [Fact]
@@ -153,7 +126,7 @@ public class UpscaleTilingTests
     public void An_upscaled_page_is_webp_with_one_band_when_grey_and_jpeg_past_the_webp_limit()
     {
         var grey = Enumerable.Repeat((byte)90, 30 * 20 * 3).ToArray();
-        var webp = ImageCodec.EncodeUpscaled(grey, 30, 20);
+        var webp = ImageCodec.EncodeUpscaled(grey, 30, 20, grey: true);
         Assert.Equal(("webp", 1), (webp.Extension, webp.Bands));
         Assert.Equal(ImageFormat.Webp, ImageCodec.DetectFormat(webp.Bytes));
         // WebP has no greyscale mode, so it decodes to three equal bands; the saving is the empty chroma.
@@ -165,10 +138,13 @@ public class UpscaleTilingTests
 
         var colour = new byte[30 * 20 * 3];
         for (var i = 0; i < colour.Length; i += 3) colour[i] = 255;
-        var red = ImageCodec.EncodeUpscaled(colour, 30, 20);
+        var red = ImageCodec.EncodeUpscaled(colour, 30, 20, grey: false);
         Assert.Equal(("webp", 3), (red.Extension, red.Bands));
+        // A model's tint on a grey source page is dropped with the chroma.
+        var tinted = ImageCodec.EncodeUpscaled(colour, 30, 20, grey: true);
+        Assert.Equal(("webp", 1), (tinted.Extension, tinted.Bands));
 
-        var tall = ImageCodec.EncodeUpscaled(new byte[2 * (ImageCodec.MaxWebpEdge + 1) * 3], 2, ImageCodec.MaxWebpEdge + 1);
+        var tall = ImageCodec.EncodeUpscaled(new byte[2 * (ImageCodec.MaxWebpEdge + 1) * 3], 2, ImageCodec.MaxWebpEdge + 1, grey: true);
         Assert.Equal(("jpg", 1), (tall.Extension, tall.Bands));
         Assert.Equal(ImageFormat.Jpeg, ImageCodec.DetectFormat(tall.Bytes));
         using var jpeg = NetVips.Image.NewFromBuffer(tall.Bytes);

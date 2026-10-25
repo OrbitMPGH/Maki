@@ -3,7 +3,7 @@
   Uploads the server upscale models to the upscale-models-v1 GitHub release.
 
 .DESCRIPTION
-  Run distribution/upscale-models/prepare.py first. It writes the three .onnx files, manifest.json
+  Run distribution/upscale-models/prepare.py first. It writes the two .onnx files, manifest.json
   and LICENSES.txt into one folder; this script uploads that folder's *.onnx, manifest.json and
   LICENSES.txt to the release, creating the release when it does not exist yet. Existing assets
   with the same name are replaced.

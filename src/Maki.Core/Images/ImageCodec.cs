@@ -280,12 +280,11 @@ public static class ImageCodec
 
     /// <summary>
     /// Encodes an upscaled page from interleaved 8-bit RGB: WebP q85, or JPEG q90 when either edge is
-    /// over <see cref="MaxWebpEdge"/>. A grey page (<see cref="UpscalePixels.IsGreyscale"/>) is saved
-    /// with one band.
+    /// over <see cref="MaxWebpEdge"/>. A <paramref name="grey"/> page is saved with one band. The caller
+    /// decides that from the source page: models tint flat screentone, so the output can fail the test.
     /// </summary>
-    public static UpscaledImage EncodeUpscaled(byte[] rgb, int width, int height)
+    public static UpscaledImage EncodeUpscaled(byte[] rgb, int width, int height, bool grey)
     {
-        var grey = UpscalePixels.IsGreyscale(rgb);
         var pixels = grey ? UpscalePixels.ToSingleBand(rgb) : rgb;
         var bands = grey ? 1 : 3;
         using var raw = FromMemory(pixels, width, height, bands);

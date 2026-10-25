@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { serverEnhancedUrl } from '../../api/reader'
 import { useCompareHeld } from './compareHold'
 import {
@@ -237,12 +237,22 @@ export default function EnhancedPage({
     return () => serverImage.removeAttribute('src')
   }, [serverImage])
 
-  const serverShowing = serverWanted && decoded === serverUrl && !held
+  const serverDecoded = serverWanted && decoded === serverUrl
+  const reportServer = server?.reportShown
+  useEffect(() => {
+    if (!serverDecoded || !reportServer) return
+    reportServer(page, true)
+    return () => reportServer(page, false)
+  }, [serverDecoded, reportServer, page])
+
+  const serverShowing = serverDecoded && !held
   const showing = active && drawn === identity && !held && !serverShowing
   const covering = showing || serverShowing
   const reportShowing = useRef(onShowing)
   reportShowing.current = onShowing
-  useEffect(() => {
+  // Before paint: the canvas hides in this commit, and a passive effect would leave one frame with
+  // neither it nor the host's image showing.
+  useLayoutEffect(() => {
     reportShowing.current(covering)
   }, [covering])
   useEffect(() => () => reportShowing.current(false), [])

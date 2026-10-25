@@ -107,7 +107,7 @@ public record ReaderPrefsSpec(
     private static readonly string[] SplitModes = [SplitOff, "split", "rotate"];
     private static readonly string[] EnhanceModes = [EnhanceOff, "auto", "always"];
     private static readonly string[] EnhanceMethods =
-        ["a4k-s", EnhanceMethodDefault, "a4k-a", "server:span-s", "server:realesrgan-av3", "server:waifu2x-art"];
+        ["a4k-s", EnhanceMethodDefault, "a4k-a", "server:span-s", "server:realesrgan-av3"];
 
     /// <summary>Clamps free-text fields back onto known values so a bad write can't wedge the reader.</summary>
     public ReaderPrefsSpec Sanitized() => this with

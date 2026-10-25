@@ -213,7 +213,7 @@ public class OnnxPageUpscalerTests : IDisposable
         var png = Pattern(20, 20).EncodePng();
 
         var unknown = await upscaler.UpscaleAsync(png, "nope", CancellationToken.None);
-        var missing = await upscaler.UpscaleAsync(png, "waifu2x-art", CancellationToken.None);
+        var missing = await upscaler.UpscaleAsync(png, "realesrgan-av3", CancellationToken.None);
 
         Assert.Equal((UpscaleOutcome.Failed, UpscaleReasons.UnknownModel), (unknown.Outcome, unknown.Reason));
         Assert.Equal((UpscaleOutcome.Failed, UpscaleReasons.ModelUnavailable), (missing.Outcome, missing.Reason));

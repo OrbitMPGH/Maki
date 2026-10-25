@@ -4656,6 +4656,10 @@ msgstr "Could not undo: {reason}"
 msgid "Could not update feedback: {reason}"
 msgstr "Could not update feedback: {reason}"
 
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Could not upscale this page"
+msgstr "Could not upscale this page"
+
 #: src/api/queue.ts
 msgid "Could not write the chapter to disk"
 msgstr "Could not write the chapter to disk"
@@ -6679,8 +6683,8 @@ msgid "Genres in the library"
 msgstr "Genres in the library"
 
 #: src/pages/reader/enhanceMethods.ts
-msgid "Gentle (server)"
-msgstr "Gentle (server)"
+#~ msgid "Gentle (server)"
+#~ msgstr "Gentle (server)"
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -8210,6 +8214,10 @@ msgstr "Loading chapters…"
 #: src/components/CatalogueBrowser.tsx
 msgid "loading search by meaning, title matches for now"
 msgstr "loading search by meaning, title matches for now"
+
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Loading the upscaled page"
+msgstr "Loading the upscaled page"
 
 #: src/components/ActivityButton.tsx
 #: src/components/DiscoverPresets.tsx
@@ -16167,8 +16175,21 @@ msgstr "Upper Case"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
-msgstr "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
+msgid "upscale, upscaling, enhance, sharpen, model, onnx, real-esrgan, span, cpu threads, page cache"
+msgstr "upscale, upscaling, enhance, sharpen, model, onnx, real-esrgan, span, cpu threads, page cache"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+#~ msgid "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
+#~ msgstr "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
+
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Upscaled page shown"
+msgstr "Upscaled page shown"
+
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Upscaling this page"
+msgstr "Upscaling this page"
 
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/downloadClientFields.ts
@@ -16518,8 +16539,8 @@ msgid "vs {fromLabel} to {toLabel}"
 msgstr "vs {fromLabel} to {toLabel}"
 
 #: src/pages/reader/enhanceMethods.ts
-msgid "waifu2x art; slowest, cleanest"
-msgstr "waifu2x art; slowest, cleanest"
+#~ msgid "waifu2x art; slowest, cleanest"
+#~ msgstr "waifu2x art; slowest, cleanest"
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx
@@ -16533,6 +16554,10 @@ msgstr "Waiting for the MangaBaka snapshot to download first."
 #: src/components/SetupWizard.tsx
 msgid "Waiting for the metadata database."
 msgstr "Waiting for the metadata database."
+
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Waiting for the server"
+msgstr "Waiting for the server"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Want"

@@ -49,11 +49,11 @@ public class UpscaleQueueTests
     public void Replacing_drops_pending_pages_of_another_chapter_or_model()
     {
         _queue.Replace(1, 1, "span-s", [Item(0), Item(1)]);
-        _queue.Replace(1, 1, "waifu2x-art", [Item(0, model: "waifu2x-art")]);
-        _queue.Replace(1, 2, "waifu2x-art", [Item(7, chapterId: 2, fileId: 2, model: "waifu2x-art")]);
+        _queue.Replace(1, 1, "realesrgan-av3", [Item(0, model: "realesrgan-av3")]);
+        _queue.Replace(1, 2, "realesrgan-av3", [Item(7, chapterId: 2, fileId: 2, model: "realesrgan-av3")]);
 
         var job = Assert.IsType<UpscaleJob>(_queue.TryDequeue());
-        Assert.Equal(new UpscaleWorkKey(2, "1000-5", 7, "waifu2x-art"), job.Key);
+        Assert.Equal(new UpscaleWorkKey(2, "1000-5", 7, "realesrgan-av3"), job.Key);
         Assert.Null(_queue.TryDequeue());
         Assert.Equal(1, _queue.Snapshot().Working);
         Assert.Equal(0, _queue.Snapshot().Pending);

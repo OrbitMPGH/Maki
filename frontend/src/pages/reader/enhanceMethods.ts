@@ -31,7 +31,6 @@ export const SERVER_ENHANCE_METHODS: EnhanceMethodInfo[] = [
     label: msg`Crisp line art (server)`,
     hint: msg`Real-ESRGAN; flattens screentone`,
   },
-  { id: 'server:waifu2x-art', label: msg`Gentle (server)`, hint: msg`waifu2x art; slowest, cleanest` },
 ]
 
 export const ENHANCE_METHODS: EnhanceMethodInfo[] = [...BROWSER_ENHANCE_METHODS, ...SERVER_ENHANCE_METHODS]

@@ -27,10 +27,8 @@ export const ReadyAndDownloading: Story = {
     await waitFor(() => expect(canvas.getByRole('switch', { name: /Enable server upscaling/ })).toBeChecked())
     await expect(await canvas.findByRole('checkbox', { name: 'Sharp (server)' })).toBeChecked()
     await expect(canvas.getByRole('checkbox', { name: 'Crisp line art (server)' })).toBeChecked()
-    await expect(canvas.getByRole('checkbox', { name: 'Gentle (server)' })).not.toBeChecked()
     await expect(canvas.getByText('Ready')).toBeVisible()
     await expect(canvas.getByText('Downloading')).toBeVisible()
-    await expect(canvas.getByText('Missing')).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Delete' })).toBeEnabled()
     await expect(canvas.getAllByRole('button', { name: 'Test speed' })[0]).toBeEnabled()
     await expect(await canvas.findByText('312 MB of 1,024 MB, 280 pages')).toBeVisible()
@@ -62,11 +60,11 @@ export const SwitchingOnMarksUnsaved: Story = {
     await expect(await canvas.findByText('Unsaved')).toBeVisible()
     await expect(await canvas.findByRole('checkbox', { name: 'Sharp (server)' })).not.toBeChecked()
     await expect(canvas.getByRole('button', { name: 'Save' })).toBeEnabled()
-    // waifu2x has no size until its manifest is read, so its line goes straight to the licence.
-    const waifu2x = (await canvas.findByRole('link', { name: 'nagadomi (waifu2x)' })).parentElement!
+    // A model with no size until its manifest is read goes straight to the licence.
+    const unsized = (await canvas.findByRole('link', { name: 'xinntao (Real-ESRGAN)' })).parentElement!
     await waitFor(() => {
-      expect(waifu2x).toHaveTextContent(/MIT ·/)
-      expect(waifu2x.textContent).not.toMatch(/·\s*-?\s*·/)
+      expect(unsized).toHaveTextContent(/BSD-3-Clause ·/)
+      expect(unsized.textContent).not.toMatch(/·\s*-?\s*·/)
     })
   },
 }

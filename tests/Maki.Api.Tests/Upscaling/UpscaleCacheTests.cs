@@ -86,11 +86,11 @@ public sealed class UpscaleCacheTests : IDisposable
     {
         var cache = NewCache();
         await cache.WriteAsync(Key(0), [1], "webp", default);
-        await cache.WriteAsync(Key(0, model: "waifu2x-art"), [1], "webp", default);
+        await cache.WriteAsync(Key(0, model: "realesrgan-av3"), [1], "webp", default);
 
         await cache.RemoveModelAsync("span-s", default);
         Assert.Null(cache.TryGet(Key(0)));
-        Assert.NotNull(cache.TryGet(Key(0, model: "waifu2x-art")));
+        Assert.NotNull(cache.TryGet(Key(0, model: "realesrgan-av3")));
 
         await cache.ClearAsync(default);
         Assert.Equal((0L, 0), cache.Stats());

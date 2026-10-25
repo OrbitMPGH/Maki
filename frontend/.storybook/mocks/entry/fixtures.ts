@@ -65,7 +65,7 @@ export function makeManifest(overrides: Partial<ReaderManifest> & Pick<ReaderMan
       enabled: true,
       models: [
         { id: 'span-s', ready: true },
-        { id: 'waifu2x-art', ready: false },
+        { id: 'realesrgan-av3', ready: false },
       ],
     },
     ...overrides,

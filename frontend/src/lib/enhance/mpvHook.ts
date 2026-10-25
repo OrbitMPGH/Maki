@@ -96,12 +96,17 @@ const RESAMPLE = `#version 300 es
 precision highp float;
 out vec4 o;
 uniform sampler2D A_raw;
+uniform sampler2D S_raw;
 uniform float dest_h;
 uniform vec2 uv_scale;
 uniform vec2 uv_offset;
+const vec3 LUMA = vec3(0.299, 0.587, 0.114);
 void main(){
   vec2 p = vec2(gl_FragCoord.x, dest_h - gl_FragCoord.y);
-  o = vec4(clamp(texture(A_raw, p * uv_scale + uv_offset).rgb, 0.0, 1.0), 1.0);
+  vec2 uv = p * uv_scale + uv_offset;
+  vec3 a = texture(A_raw, uv).rgb;
+  vec3 s = texture(S_raw, uv).rgb;
+  o = vec4(clamp(s + (dot(a, LUMA) - dot(s, LUMA)), 0.0, 1.0), 1.0);
 }`
 
 interface Program {
@@ -295,8 +300,10 @@ export class HookRunner {
   /**
    * Bilinear resample of `a` into the bound default framebuffer. Destination pixel (x, y), counted
    * from the top, samples `a` at `(x, y) * uvScale + uvOffset`. The caller sets the scissor.
+   * Only the brightness comes from `a`; colour comes from `source`, which covers the same area.
+   * The Restore shaders tint flat screentone, and a grey page has to stay grey.
    */
-  resample(a: Tex, destW: number, destH: number, uvScale: [number, number], uvOffset: [number, number]) {
+  resample(a: Tex, source: Tex, destW: number, destH: number, uvScale: [number, number], uvOffset: [number, number]) {
     const gl = this.gl
     const p = this.program(RESAMPLE)
     gl.useProgram(p.prog)
@@ -306,6 +313,9 @@ export class HookRunner {
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, a.tex)
     gl.uniform1i(this.uniform(p, 'A_raw'), 0)
+    gl.activeTexture(gl.TEXTURE1)
+    gl.bindTexture(gl.TEXTURE_2D, source.tex)
+    gl.uniform1i(this.uniform(p, 'S_raw'), 1)
     gl.uniform1f(this.uniform(p, 'dest_h'), destH)
     gl.uniform2f(this.uniform(p, 'uv_scale'), uvScale[0], uvScale[1])
     gl.uniform2f(this.uniform(p, 'uv_offset'), uvOffset[0], uvOffset[1])
