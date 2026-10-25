@@ -36,7 +36,8 @@
   Wide pages in single-page mode can be shown whole, split into two halves in reading order, or
   rotated. **Crop borders** (shortcut C) trims plain white or black margins. Chapters with very
   tall pages open in continuous mode on their own, and on touch you pull past the end of a
-  chapter to open the next one.
+  chapter to open the next one. The page bar has one segment per page, lit up to the page
+  on screen; hovering a segment shows that page's thumbnail, and clicking or dragging jumps to it.
 - **Reading profiles.** Per-user defaults for page fit, direction, and mode by series type, with
   per-series overrides on top.
 - **Home.** Opens on one large card for the series you read last, with the rest of **Continue
@@ -89,7 +90,9 @@ screen. It is off until a reader turns it on. Library files are never modified.
 - **Hold to compare.** Hold **H** or the toolbar's compare button to see the original page, and
   let go to return to the enhanced one.
 - **Server progress.** While a server method is still working on the page on screen, a pill at
-  the bottom says whether it is waiting, upscaling or loading, and Balanced shows meanwhile.
+  the bottom says whether it is waiting, upscaling or loading, and Balanced shows meanwhile. The
+  page bar marks the pages ahead that are already upscaled in light grey, like the buffered part
+  of a video.
 - **Fallbacks.** A server method shows **Balanced** on this device while its page is not ready,
   and for good when the reader is offline, the admin tier is off or the model is not downloaded. A
   device without WebGL2 shows plain pages and the browser methods read "Not supported on this

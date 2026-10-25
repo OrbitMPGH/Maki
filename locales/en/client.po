@@ -10739,9 +10739,14 @@ msgid "Packaging"
 msgstr "Packaging"
 
 #: src/components/CommandPalette.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/PageScrubber.tsx
 msgid "Page"
 msgstr "Page"
+
+#. placeholder {0}: page + 1
+#: src/pages/reader/PageScrubber.tsx
+msgid "Page {0} of {count}"
+msgstr "Page {0} of {count}"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Page {pageIndex}/{pageCount}"

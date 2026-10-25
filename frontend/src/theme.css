@@ -7311,6 +7311,94 @@ body.reader-open {
   inset: auto;
 }
 
+/* The page scrubber (PageScrubber): one segment per page, lit up to the page on screen, which
+   stands taller. Upscaled pages ahead show lighter, like a video's buffer. The padding is the hit
+   area; the track itself stays thin. */
+.reader-scrub {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 10px 0;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+.reader-scrub-track {
+  display: flex;
+  height: 6px;
+  border-radius: var(--radius-pill);
+}
+.reader-scrub-track[data-rtl] {
+  flex-direction: row-reverse;
+}
+.reader-scrub[data-gaps] .reader-scrub-track {
+  gap: 2px;
+}
+.reader-scrub:focus-visible .reader-scrub-track {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 5px;
+}
+.reader-scrub-segment {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.16);
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.reader-scrub[data-gaps] .reader-scrub-segment {
+  border-radius: 2px;
+}
+.reader-scrub-segment:first-child {
+  border-start-start-radius: var(--radius-pill);
+  border-end-start-radius: var(--radius-pill);
+}
+.reader-scrub-segment:last-child {
+  border-start-end-radius: var(--radius-pill);
+  border-end-end-radius: var(--radius-pill);
+}
+.reader-scrub-segment[data-ready] {
+  background: rgba(255, 255, 255, 0.38);
+}
+.reader-scrub-segment[data-lit] {
+  background: var(--mantine-primary-color-filled);
+}
+.reader-scrub-segment[data-current] {
+  transform: scaleY(1.75);
+}
+.reader-scrub-segment[data-hover]:not([data-lit]) {
+  background: rgba(255, 255, 255, 0.6);
+}
+.reader-scrub-segment[data-hover][data-lit] {
+  background: color-mix(in srgb, var(--mantine-primary-color-filled) 70%, #fff);
+}
+/* Page thumbnail above the segment under the pointer. */
+.reader-scrub-preview {
+  position: fixed;
+  z-index: 1;
+  transform: translate(-50%, calc(-100% - 14px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #0a0a0b;
+  color: #fff;
+  font-size: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.reader-scrub-preview img {
+  display: block;
+  width: 120px;
+  height: 172px;
+  object-fit: contain;
+  border-radius: calc(var(--mantine-radius-md) - 2px);
+  background: #000;
+}
+
 .reader-next-chapter-hint,
 .reader-enhance-status {
   position: fixed;

@@ -13132,10 +13132,15 @@ msgid "Packaging"
 msgstr "Упаковка"
 
 #: src/components/CommandPalette.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/PageScrubber.tsx
 #, fuzzy
 msgid "Page"
 msgstr "Страница"
+
+#. placeholder {0}: page + 1
+#: src/pages/reader/PageScrubber.tsx
+msgid "Page {0} of {count}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy

@@ -46,6 +46,7 @@ import {
 import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
 import { setCompareHeld, useCompareHeld } from './compareHold'
 import { useEnhanceEngine } from './enhanceRuntime'
+import PageScrubber from './PageScrubber'
 
 /**
  * The reader renders above Mantine's popover layer, so anything that portals to <body> has to
@@ -93,6 +94,9 @@ export default function ReaderToolbar({
   onReveal,
   onShortcuts,
   serverEnhancing = false,
+  enhancedPages,
+  thumbs = [],
+  shownTo,
 }: {
   manifest: ReaderManifest
   page: number
@@ -135,6 +139,12 @@ export default function ReaderToolbar({
   onShortcuts: () => void
   /** A server method is in use, so pages can show the server's upscale even without the browser engine. */
   serverEnhancing?: boolean
+  /** Pages the server has upscaled; the ones ahead are marked on the slider like a video's buffer. */
+  enhancedPages?: ReadonlySet<number>
+  /** Thumbnail URL per page, shown above the slider under the pointer. */
+  thumbs?: string[]
+  /** The last page on screen, past `page` when a spread shows two. */
+  shownTo?: number
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -144,12 +154,6 @@ export default function ReaderToolbar({
   // so each chevron's disabled state follows the chapter it actually opens.
   const rtl = prefs.direction === 'rtl'
   const [settingsOpen, setSettingsOpen] = useState(false)
-  // The thumb follows the pointer through this, and the page only moves once it is released.
-  const [scrub, setScrub] = useState<number | null>(null)
-  // A cancelled touch drag never fires onChangeEnd, so any page move also drops a stuck scrub.
-  useEffect(() => {
-    setScrub(null)
-  }, [page])
 
   // "Auto" names the profile the series' type resolves to, so choosing it says what it will do.
   const autoProfile = profiles.find((p) => p.id === autoProfileId)
@@ -391,27 +395,14 @@ export default function ReaderToolbar({
             </ActionIcon>
           </Tooltip>
 
-          {/*
-            Right-to-left reading puts page 1 at the right end of the track. That has to be done
-            by inverting the value, not with CSS `direction`: Mantine positions the thumb with an
-            inline `left: %`, so a flipped container moves the fill but leaves the thumb sliding
-            the wrong way. `inverted` then moves the filled portion to the right of the thumb, so
-            it still grows from where you started reading rather than from the far end.
-          */}
-          <Slider
-            thumbLabel={t`Page`}
-            className="reader-slider"
-            min={1}
-            max={Math.max(1, manifest.pageCount)}
-            value={scrub ?? (rtl ? manifest.pageCount - page : page + 1)}
-            onChange={setScrub}
-            onChangeEnd={(value) => {
-              setScrub(null)
-              onSeek(rtl ? manifest.pageCount - value : value - 1)
-            }}
-            label={(value) => `${rtl ? manifest.pageCount - value + 1 : value} / ${manifest.pageCount}`}
-            inverted={rtl}
-            style={{ flex: 1 }}
+          <PageScrubber
+            count={manifest.pageCount}
+            page={page}
+            shownTo={shownTo ?? page}
+            rtl={rtl}
+            onSeek={onSeek}
+            enhanced={enhancedPages}
+            thumbs={thumbs}
           />
 
           {/* Dropped on a phone: seven controls plus this counter leave the slider about 100px of

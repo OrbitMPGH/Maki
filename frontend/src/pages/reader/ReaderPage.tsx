@@ -145,7 +145,7 @@ export default function ReaderPage() {
 
   const pageCount = manifest?.pageCount ?? 0
   const urls = usePageUrls(chapterId, pageCount, manifest?.pageVersion)
-  const thumbs = usePageUrls(chapterId, stripOpen ? pageCount : 0, manifest?.pageVersion, true)
+  const thumbs = usePageUrls(chapterId, pageCount, manifest?.pageVersion, true)
   const { wide, measure } = usePageAspects(urls)
 
   const autoWanted = prefs.autoWebtoon && prefs.mode !== 'vertical' && !picked?.mode && pageCount > 0
@@ -236,6 +236,15 @@ export default function ReaderPage() {
     enhanceWindow,
     current?.pageVersion,
     prefs.enhance === 'auto' ? stretchedPages : null,
+  )
+
+  const serverStates = server?.states
+  const enhancedPages = useMemo(
+    () =>
+      serverStates
+        ? new Set([...serverStates].filter(([, state]) => state === 'ready').map(([index]) => index))
+        : undefined,
+    [serverStates],
   )
 
   const tone = useMemo(() => toneFilter(prefs), [prefs])
@@ -803,6 +812,9 @@ export default function ReaderPage() {
         onReveal={() => setChrome(true)}
         onShortcuts={() => setShortcutsOpen(true)}
         serverEnhancing={server !== null}
+        enhancedPages={enhancedPages}
+        thumbs={thumbs}
+        shownTo={shownTo}
       />
 
       {atEnd ? (
