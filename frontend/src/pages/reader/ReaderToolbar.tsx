@@ -54,6 +54,10 @@ import { useEnhanceEngine } from './enhanceRuntime'
  */
 const OVERLAY_Z = 500
 
+// Inside the settings popover, a portalled list counts as outside it: the first touch on the list
+// closed both, so it could never be scrolled. Rendered in place, fixed so the popover does not clip it.
+const NESTED_COMBOBOX = { zIndex: OVERLAY_Z + 1, withinPortal: false, floatingStrategy: 'fixed' } as const
+
 export default function ReaderToolbar({
   manifest,
   page,
@@ -630,7 +634,7 @@ export default function ReaderToolbar({
                     <Select
                       aria-label={t`Method`}
                       size="xs"
-                      comboboxProps={{ zIndex: OVERLAY_Z + 1 }}
+                      comboboxProps={NESTED_COMBOBOX}
                       allowDeselect={false}
                       value={prefs.enhanceMethod}
                       onChange={(value) => value && onPrefs({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })}
@@ -704,7 +708,7 @@ export default function ReaderToolbar({
                   <Select
                     aria-label={t`Reading profile`}
                     size="xs"
-                    comboboxProps={{ zIndex: OVERLAY_Z + 1 }}
+                    comboboxProps={NESTED_COMBOBOX}
                     allowDeselect={false}
                     value={String(selection)}
                     onChange={(value) => {

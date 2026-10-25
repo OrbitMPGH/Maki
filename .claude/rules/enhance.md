@@ -33,7 +33,8 @@ User-facing summary in `docs/features.md`. Two tiers share one reader setting: `
 - SPAN-S takes and returns float16. The engine reads tensor types from the model file, not the catalogue.
 - Real-ESRGAN is a 4x model. Each tile's 4x output is Lanczos-halved to 2x before the context crop and stitch (`Plain4xThenHalve`), so a full 4x page never sits in memory. Per-tile halving differs from whole-page halving by at most a few levels near tile edges.
 - Greyscale detection (`UpscalePixels.IsGreyscale`) is a fraction test, not a mean: a page is colour when more than 1 in 2000 sampled pixels has a channel spread over 16, or the mean spread passes 6. A red title on a grey page must stay red.
-- Run it on the decoded source, never on the model output. The server models can tint flat screentone (purple on grey), and a tinted output fails the test and keeps the tint.
+- Run it on the decoded source, never on the model output. Real-ESRGAN tints flat screentone purple (SPAN-S barely), and a tinted output fails the test. Before encoding, `UpscalePixels.TakeColourFrom` keeps the model's luma and takes colour from the Lanczos-resized source, so grey areas stay grey on colour pages too.
+- `UpscaleCache.Generation` (`g2`) is part of every cached name. Raise it, with the regex, whenever the pipeline's output changes: old names are then never served and housekeeping prunes them. Without it, tinted pages made by an older build keep being served.
 - The browser's final resample takes luma from the shader chain and chroma from the source tile. Restore CNN tints screentone the same way; a grey page must come out grey.
 - `manifesturl` has no API. In dev it is a row in the `AppConfig` table of the config dir's SQLite database (key `library.upscaling.manifesturl`).
 - Server tiling is 384 px with a 16 px context pad. Browser tiling is `min(MAX_TEXTURE_SIZE, 4096)/2` with a 16 px overlap.

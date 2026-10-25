@@ -73,6 +73,14 @@ public sealed class OnnxPageUpscaler(
 
         try
         {
+            var original = await ImageWorkGate.RunAsync(() => Task.FromResult(ImageCodec.ResizeRgb(
+                source.Pixels, source.Width, source.Height, (double)stitched.Width / source.Width)), ct);
+            if ((original.Width, original.Height) != (stitched.Width, stitched.Height))
+            {
+                throw new InvalidDataException("The resized source does not match the upscaled page.");
+            }
+
+            UpscalePixels.TakeColourFrom(stitched.Rgb, original.Rgb);
             var encoded = await ImageWorkGate.RunAsync(
                 () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Rgb, stitched.Width, stitched.Height, grey)), ct);
             return UpscaleResult.Ready(encoded);

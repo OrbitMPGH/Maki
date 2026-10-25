@@ -21,7 +21,14 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
     private long _bytes;
     private Task? _seeding;
 
-    [GeneratedRegex(@"^(\d+)-(\d+)-(\d+)\.([a-z0-9-]+)\.(webp|jpg)$")]
+    /// <summary>
+    /// Part of every page's name, raised whenever the pipeline's output changes so pages made before
+    /// it stop being served and are pruned as unknown names. Change the regex with it. g2: colour comes
+    /// from the source page, so grey pages carry no model tint.
+    /// </summary>
+    internal const string Generation = "g2";
+
+    [GeneratedRegex(@"^(\d+)-(\d+)-(\d+)\.([a-z0-9-]+)\.g2\.(webp|jpg)$")]
     internal static partial Regex FileName();
 
     public string Root { get; } = Path.GetFullPath(Path.Combine(paths.CacheDir, "upscale"));
@@ -31,7 +38,7 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
 
     public string PathFor(UpscaleWorkKey key, string extension) => Path.Combine(
         Root, key.ChapterFileId.ToString(CultureInfo.InvariantCulture),
-        $"{key.ArchiveVersion}-{key.AbsIndex.ToString(CultureInfo.InvariantCulture)}.{key.Model}.{extension}");
+        $"{key.ArchiveVersion}-{key.AbsIndex.ToString(CultureInfo.InvariantCulture)}.{key.Model}.{Generation}.{extension}");
 
     public static string ContentType(string path) =>
         path.EndsWith(".webp", StringComparison.OrdinalIgnoreCase) ? "image/webp" : "image/jpeg";

@@ -91,4 +91,29 @@ public class UpscalePixelsTests
 
         Assert.False(UpscalePixels.IsGreyscale(rgb));
     }
+
+    [Fact]
+    public void A_model_tint_on_grey_is_dropped_and_its_brightness_kept()
+    {
+        byte[] source = [100, 100, 100, 30, 30, 30];
+        byte[] output = [120, 104, 140, 10, 0, 20];
+
+        UpscalePixels.TakeColourFrom(output, source);
+
+        // Luma of (120, 104, 140) rounds to 113 and of (10, 0, 20) to 5.
+        Assert.Equal([113, 113, 113, 5, 5, 5], output);
+    }
+
+    [Fact]
+    public void A_colour_source_keeps_its_colour_under_the_new_brightness()
+    {
+        byte[] source = [200, 40, 40];
+        byte[] output = [230, 70, 70];
+
+        UpscalePixels.TakeColourFrom(output, source);
+
+        // Source luma 88, output luma 118: every channel moves up by 30.
+        Assert.Equal([230, 70, 70], output);
+        Assert.Throws<ArgumentException>(() => UpscalePixels.TakeColourFrom(new byte[6], new byte[3]));
+    }
 }
