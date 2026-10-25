@@ -816,6 +816,9 @@ export default function ReaderPage() {
               tone={tone}
               gap={prefs.pageGap}
               label={manifest.label}
+              enhance={prefs.enhance}
+              enhanceMethod={prefs.enhanceMethod}
+              enhanceServer={manifest.enhanceServer}
             />
           ) : (
             <PagedView
@@ -831,6 +834,9 @@ export default function ReaderPage() {
               cropBorders={prefs.cropBorders}
               splitWide={mode === 'paged' ? prefs.splitWide : 'off'}
               half={half}
+              enhance={prefs.enhance}
+              enhanceMethod={prefs.enhanceMethod}
+              enhanceServer={manifest.enhanceServer}
             />
           )}
         </div>

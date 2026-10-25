@@ -42,6 +42,14 @@ export interface ReaderManifest {
   autoProfileId: number | null
   /** Identifies the file behind the pages; page URLs carry it so they can be cached until a re-download. */
   pageVersion: string
+  /** Whether the admin turned on server upscaling, and which of its models this reader can pick. Absent on a manifest saved offline before it existed. */
+  enhanceServer?: EnhanceServer
+}
+
+export interface EnhanceServer {
+  enabled: boolean
+  /** Model ids as the server knows them, without the `server:` prefix. */
+  models: { id: string; ready: boolean }[]
 }
 
 /** Which layer answered "what does this series look like". Mirrors `ReaderPrefsSource`. */

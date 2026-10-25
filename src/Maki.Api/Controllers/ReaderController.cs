@@ -2,6 +2,7 @@
 using Maki.Api.Dtos;
 using Maki.Api.Localization;
 using Maki.Api.Services;
+using Maki.Api.Services.Upscaling;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Images;
@@ -167,7 +168,7 @@ public class ReaderController(
     }
 
     [HttpGet("chapter/{id:int}")]
-    public async Task<IActionResult> Manifest(int id, CancellationToken ct)
+    public async Task<IActionResult> Manifest(int id, [FromServices] EnhanceAvailability enhanceAvailability, CancellationToken ct)
     {
         var slice = await reader.SliceAsync(id, ct);
         if (slice is null)
@@ -212,6 +213,8 @@ public class ReaderController(
                 .FirstOrDefaultAsync(ct)
             : null;
 
+        var enhanceServer = await enhanceAvailability.GetAsync(ct);
+
         return Ok(new
         {
             chapterId = slice.Chapter.Id,
@@ -237,7 +240,8 @@ public class ReaderController(
             profileId = resolved.ProfileId,
             pinnedProfileId = resolved.PinnedProfileId,
             autoProfileId = resolved.AutoProfileId,
-            pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion)
+            pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion),
+            enhanceServer
         });
     }
 

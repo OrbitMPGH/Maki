@@ -74,6 +74,8 @@ export const readerPrefs: ReaderPrefs = {
   splitWide: 'off',
   cropBorders: false,
   autoWebtoon: true,
+  enhance: 'off',
+  enhanceMethod: 'a4k-m',
 }
 
 export const readerSettings: ReaderSettings = {

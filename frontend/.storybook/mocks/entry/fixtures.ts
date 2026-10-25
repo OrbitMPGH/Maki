@@ -61,6 +61,13 @@ export function makeManifest(overrides: Partial<ReaderManifest> & Pick<ReaderMan
     pinnedProfileId: null,
     autoProfileId: 1,
     pageVersion: 'v1',
+    enhanceServer: {
+      enabled: true,
+      models: [
+        { id: 'span-s', ready: true },
+        { id: 'waifu2x-art', ready: false },
+      ],
+    },
     ...overrides,
   }
 }

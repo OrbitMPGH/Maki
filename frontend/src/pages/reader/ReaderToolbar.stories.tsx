@@ -122,6 +122,62 @@ export const ProfileDropdown: Story = {
   },
 }
 
+export const EnhanceOn: Story = {
+  args: { prefs: { ...mangaPrefs, enhance: 'always', enhanceMethod: 'a4k-m' } },
+  parameters: { realMotion: true },
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
+    const body = within(canvasElement.ownerDocument.body)
+    const level = await body.findByRole('radiogroup', { name: 'Enhance' })
+    await waitFor(() => expect(within(level).getByLabelText('Always')).toBeChecked())
+    const method = await body.findByLabelText('Method', { selector: 'input' })
+    await expect(method).toHaveValue('Balanced')
+
+    await userEvent.click(method)
+    await expect(await body.findByRole('option', { name: /Light/ })).toBeVisible()
+    await expect(body.getByRole('option', { name: /Sharp \(server\)/ })).not.toHaveAttribute('data-combobox-disabled', 'true')
+    const downloading = body.getByRole('option', { name: /Gentle \(server\)/ })
+    await expect(downloading).toHaveAttribute('data-combobox-disabled', 'true')
+    await expect(within(downloading).getByText('Downloading')).toBeVisible()
+    await expect(body.queryByRole('option', { name: /Crisp line art/ })).toBeNull()
+
+    await userEvent.click(body.getByRole('option', { name: /Sharp \(server\)/ }))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceMethod: 'server:span-s' }))
+  },
+}
+
+export const EnhanceOffHidesMethod: Story = {
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
+    const body = within(canvasElement.ownerDocument.body)
+    const level = await body.findByRole('radiogroup', { name: 'Enhance' })
+    await waitFor(() => expect(within(level).getByLabelText('Off')).toBeChecked())
+    await expect(body.queryByLabelText('Method', { selector: 'input' })).toBeNull()
+    await userEvent.click(within(level).getByText('Auto'))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhance: 'auto' }))
+    await expect(await body.findByLabelText('Method', { selector: 'input' })).toBeVisible()
+  },
+}
+
+export const EnhanceSavedServerModelGone: Story = {
+  args: {
+    prefs: { ...mangaPrefs, enhance: 'always', enhanceMethod: 'server:realesrgan-av3' },
+    manifest: makeManifest({ ...chapters[1132], enhanceServer: { enabled: false, models: [] } }),
+  },
+  parameters: { realMotion: true },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
+    const body = within(canvasElement.ownerDocument.body)
+    const method = await body.findByLabelText('Method', { selector: 'input' })
+    await expect(method).toHaveValue('Crisp line art (server)')
+    await userEvent.click(method)
+    const gone = await body.findByRole('option', { name: /Crisp line art/ })
+    await expect(gone).toHaveAttribute('data-combobox-disabled', 'true')
+    await expect(within(gone).getByText('Not available')).toBeVisible()
+    await expect(body.queryByRole('option', { name: /Sharp \(server\)/ })).toBeNull()
+  },
+}
+
 export const SeriesOverride: Story = {
   args: { selection: 'series', source: 'Series' },
   play: async ({ canvas, canvasElement, userEvent }) => {

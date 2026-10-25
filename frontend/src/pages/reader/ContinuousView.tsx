@@ -1,7 +1,8 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
-import type { ReaderFit } from './prefs'
+import type { EnhanceServer } from '../../api/reader'
+import type { EnhanceMethod, ReaderEnhance, ReaderFit } from './prefs'
 
 const FIT_CLASS: Record<ReaderFit, string> = {
   width: 'reader-fit-width',
@@ -172,6 +173,10 @@ export default function ContinuousView({
   tone?: string
   gap: number
   label: string
+  /** Page enhancement, not drawn yet: the views accept these so the reader can already pass them. */
+  enhance?: ReaderEnhance
+  enhanceMethod?: EnhanceMethod
+  enhanceServer?: EnhanceServer
 }) {
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])

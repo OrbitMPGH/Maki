@@ -34,6 +34,14 @@ import { plural } from '@lingui/core/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
 import { wakeLockSupported } from '../../lib/wakeLock'
+import { useLabel } from '../../i18n-context'
+import {
+  BROWSER_ENHANCE_METHODS,
+  ENHANCE_LEVELS,
+  SERVER_ENHANCE_METHODS,
+  enhanceMethodInfo,
+  serverModelId,
+} from './enhanceMethods'
 import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
 
 /**
@@ -119,6 +127,7 @@ export default function ReaderToolbar({
   onShortcuts: () => void
 }) {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const { scale } = prefs
 
   // The slider and the chapter chevrons mirror in RTL: the left chevron goes to the next chapter,
@@ -145,6 +154,25 @@ export default function ReaderToolbar({
       : source === 'Profile' && inForce
         ? t`Changes retune "${inForceName}", so every series using it.`
         : t`Changes apply to your reader defaults.`
+
+  const enhanceModels = manifest.enhanceServer?.models
+  const enhanceOptions = [
+    ...BROWSER_ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label), disabled: false })),
+    ...SERVER_ENHANCE_METHODS.flatMap((m) => {
+      const model = enhanceModels?.find((entry) => entry.id === serverModelId(m.id))
+      if (!model && m.id !== prefs.enhanceMethod) return []
+      return [{ value: m.id, label: renderLabel(m.label), disabled: !model || !model.ready }]
+    }),
+  ]
+  const enhanceNote = (value: string): string | undefined => {
+    const model = enhanceModels?.find((entry) => entry.id === serverModelId(value))
+    if (serverModelId(value) !== null) {
+      if (!model) return t`Not available`
+      if (!model.ready) return t`Downloading`
+    }
+    const info = enhanceMethodInfo(value)
+    return info ? renderLabel(info.hint) : undefined
+  }
 
   // Shared between the tooltip and the icon button's own aria-label, which say the same thing.
   const backChapterLabel = rtl ? t`Next chapter` : t`Previous chapter`
@@ -537,6 +565,43 @@ export default function ReaderToolbar({
                     ]}
                   />
                 </div>
+                <div>
+                  <Text fz="xs" c="var(--ink-3)" mb={4}>
+                    <Trans>Enhance</Trans>
+                  </Text>
+                  <SegmentedControl
+                    aria-label={t`Enhance`}
+                    fullWidth
+                    size="xs"
+                    value={prefs.enhance}
+                    onChange={(value) => onPrefs({ enhance: value as ReaderPrefs['enhance'] })}
+                    data={ENHANCE_LEVELS.map((level) => ({ label: renderLabel(level.label), value: level.value }))}
+                  />
+                </div>
+                {prefs.enhance !== 'off' && (
+                  <div>
+                    <Text fz="xs" c="var(--ink-3)" mb={4}>
+                      <Trans>Method</Trans>
+                    </Text>
+                    <Select
+                      aria-label={t`Method`}
+                      size="xs"
+                      comboboxProps={{ zIndex: OVERLAY_Z + 1 }}
+                      allowDeselect={false}
+                      value={prefs.enhanceMethod}
+                      onChange={(value) => value && onPrefs({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })}
+                      data={enhanceOptions}
+                      renderOption={({ option }) => (
+                        <div>
+                          <Text fz="xs">{option.label}</Text>
+                          <Text fz="xs" c="var(--ink-3)">
+                            {enhanceNote(option.value)}
+                          </Text>
+                        </div>
+                      )}
+                    />
+                  </div>
+                )}
                 <Switch
                   size="xs"
                   label={t`Crop borders`}

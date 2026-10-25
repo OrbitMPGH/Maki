@@ -2,7 +2,14 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { cropRegion, isFull, partOf, type PagePart, type Region } from './pageShape'
-import type { ReaderDirection, ReaderFit, ReaderSplitWide } from './prefs'
+import type { EnhanceServer } from '../../api/reader'
+import type {
+  EnhanceMethod,
+  ReaderDirection,
+  ReaderEnhance,
+  ReaderFit,
+  ReaderSplitWide,
+} from './prefs'
 import type { Spread } from './useSpreads'
 
 const FIT_CLASS: Record<ReaderFit, string> = {
@@ -229,6 +236,10 @@ export default function PagedView({
   splitWide?: ReaderSplitWide
   /** Which half of a split wide page is up, in reading order. */
   half?: 0 | 1
+  /** Page enhancement, not drawn yet: the views accept these so the reader can already pass them. */
+  enhance?: ReaderEnhance
+  enhanceMethod?: EnhanceMethod
+  enhanceServer?: EnhanceServer
 }) {
   const { t } = useLingui()
   // In right-to-left reading the lower page number belongs on the right.

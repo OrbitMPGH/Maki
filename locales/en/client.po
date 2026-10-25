@@ -2713,6 +2713,10 @@ msgstr "Also needs the daily scan on."
 msgid "Alt titles"
 msgstr "Alt titles"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Always"
+msgstr "Always"
+
 #: src/theme-context.tsx
 msgid "Amber"
 msgstr "Amber"
@@ -3006,6 +3010,7 @@ msgid "Attribute Kavita's reading to"
 msgstr "Attribute Kavita's reading to"
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/pages/reader/enhanceMethods.ts
 msgid "Auto"
 msgstr "Auto"
 
@@ -3177,6 +3182,7 @@ msgid "balanced"
 msgstr "balanced"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/reader/enhanceMethods.ts
 msgid "Balanced"
 msgstr "Balanced"
 
@@ -4816,6 +4822,10 @@ msgstr "Creators you return to"
 msgid "Creators, type, status, content rating"
 msgstr "Creators, type, status, content rating"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Crisp line art (server)"
+msgstr "Crisp line art (server)"
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Crop borders"
@@ -5484,6 +5494,7 @@ msgstr "Downloaded the prebuilt index"
 #: src/components/SetupWizard.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/ReaderToolbar.tsx
 msgid "Downloading"
 msgstr "Downloading"
 
@@ -5739,6 +5750,15 @@ msgstr "English (MangaBaka default)"
 #: src/pages/settings/LibraryCards.tsx
 msgid "English markers like v01 and Ch. 12 are always read. Turn on a language to read its markers too."
 msgstr "English markers like v01 and Ch. 12 are always read. Turn on a language to read its markers too."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Enhance"
+msgstr "Enhance"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "enhance {level}, {methodLabel}"
+msgstr "enhance {level}, {methodLabel}"
 
 #: src/pages/LoginPage.tsx
 msgid "Enter one of your recovery codes"
@@ -6075,6 +6095,10 @@ msgstr "Fantasy"
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Faster animations"
 msgstr "Faster animations"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Fastest, on this device"
+msgstr "Fastest, on this device"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Feed URL"
@@ -6622,6 +6646,10 @@ msgstr "Genres and tags"
 msgid "Genres in the library"
 msgstr "Genres in the library"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Gentle (server)"
+msgstr "Gentle (server)"
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 msgid "German"
@@ -7104,6 +7132,10 @@ msgstr "Ignored on {since}"
 #: src/components/ImportReviewModal.tsx
 msgid "Ignoring"
 msgstr "Ignoring"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "IllustrationJaNai SPAN-S"
+msgstr "IllustrationJaNai SPAN-S"
 
 #: src/pages/settings/registry.ts
 #: src/pages/settings/SystemCards.tsx
@@ -7992,6 +8024,7 @@ msgstr "library path, storage, disk, free space, folder"
 msgid "Library title"
 msgstr "Library title"
 
+#: src/pages/reader/enhanceMethods.ts
 #: src/theme-context.tsx
 msgid "Light"
 msgstr "Light"
@@ -8636,6 +8669,11 @@ msgstr "Metadata refresh"
 msgid "Metadata saved"
 msgstr "Metadata saved"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Method"
+msgstr "Method"
+
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Mid-way"
 msgstr "Mid-way"
@@ -8877,10 +8915,12 @@ msgstr "Move"
 msgid "Move {label}"
 msgstr "Move {label}"
 
+#: src/components/PriorityList.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Move {label} down"
 msgstr "Move {label} down"
 
+#: src/components/PriorityList.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Move {label} up"
 msgstr "Move {label} up"
@@ -9726,6 +9766,10 @@ msgstr "Not an upgrade: {reason}"
 msgid "Not analyzed"
 msgstr "Not analyzed"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Not available"
+msgstr "Not available"
+
 #: src/api/client.ts
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -10248,6 +10292,7 @@ msgstr "of reading time"
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/reader/enhanceMethods.ts
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Off"
 msgstr "Off"
@@ -10344,12 +10389,17 @@ msgid "On shelf"
 msgstr "On shelf"
 
 #: src/components/series/ChapterTableRows.tsx
+#: src/pages/reader/enhanceMethods.ts
 msgid "On this device"
 msgstr "On this device"
 
 #: src/components/settings/PushNotificationsSection.tsx
 msgid "On this device, even when Maki is closed."
 msgstr "On this device, even when Maki is closed."
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "On this device; best on clean line art, can mottle screentone"
+msgstr "On this device; best on clean line art, can mottle screentone"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "On your shelf, not used for ranking"
@@ -11619,6 +11669,10 @@ msgstr "Reading your ratings from {label}…"
 #: src/pages/HealthPage.tsx
 msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
 msgstr "Reads every byte to catch rotted files. About half an hour per 100 GB."
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Real-ESRGAN; flattens screentone"
+msgstr "Real-ESRGAN; flattens screentone"
 
 #: src/components/QueueActions.tsx
 msgid "Reason"
@@ -13520,6 +13574,10 @@ msgstr "Server address copied"
 msgid "Server local time, 0 to 23."
 msgstr "Server local time, 0 to 23."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Server methods apply only when the admin has enabled them; otherwise Balanced is used."
+msgstr "Server methods apply only when the admin has enabled them; otherwise Balanced is used."
+
 #: src/components/NotificationsSection.tsx
 msgid "Server URL"
 msgstr "Server URL"
@@ -13637,6 +13695,14 @@ msgstr "Share of the series you've read."
 #: src/api/upgrades.ts
 msgid "Shares a file with another chapter"
 msgstr "Shares a file with another chapter"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Sharp (server)"
+msgstr "Sharp (server)"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source."
+msgstr "Sharpen soft pages. Auto does it only when a page is shown larger than its source."
 
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Shift + Space"
@@ -14328,6 +14394,10 @@ msgstr "Story"
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "Streak"
 msgstr "Streak"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Strong"
+msgstr "Strong"
 
 #: src/components/CreditPicker.tsx
 msgid "Studio"
@@ -16352,6 +16422,10 @@ msgstr "Volumes: {volumes}"
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "vs {fromLabel} to {toLabel}"
 msgstr "vs {fromLabel} to {toLabel}"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "waifu2x art; slowest, cleanest"
+msgstr "waifu2x art; slowest, cleanest"
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx
