@@ -191,6 +191,8 @@ public class SettingsController(
     public record UserModeSettings(bool SingleUser, bool Available);
 
     public record SetUserModeRequest(bool SingleUser);
+
+    public record LoginNameSettings(bool Visible);
     public record BackupSettings(int Retention, bool? Scheduled = null);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -1132,6 +1134,19 @@ public class SettingsController(
         }
         await settings.SetAsync(SettingKeys.SingleUserMode, request.SingleUser ? "true" : "false", ct);
         return await GetUserMode(ct);
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("loginnames")]
+    public async Task<IActionResult> GetLoginNames(CancellationToken ct) =>
+        Ok(new LoginNameSettings(await UserNameVisibility.LoginNamesVisibleAsync(settings, ct)));
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("loginnames")]
+    public async Task<IActionResult> SetLoginNames([FromBody] LoginNameSettings request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.LoginNamesVisible, request.Visible ? "true" : "false", ct);
+        return await GetLoginNames(ct);
     }
 
     [Authorize(Policy = Policies.Admin)]

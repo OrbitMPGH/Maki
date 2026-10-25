@@ -17,6 +17,7 @@ public sealed class NotesControllerTests : IDisposable
     private readonly TestDb _db = new TestDb().WithDistinctSeriesIds();
     private readonly RecordingInbox _inbox = new();
     private readonly NotesBroadcaster _events = new();
+    private readonly FakeAppSettings _settings = new();
     private readonly int _alice;
     private readonly int _bob;
     private readonly int _carol;
@@ -49,6 +50,7 @@ public sealed class NotesControllerTests : IDisposable
             new TestCurrentUser(userId, name, permissions, allRootFolders: allRootFolders),
             _inbox,
             _events,
+            _settings,
             NullLogger<NotesController>.Instance);
     }
 
@@ -223,6 +225,19 @@ public sealed class NotesControllerTests : IDisposable
         Assert.Equal("Bobby", asCarol.Single(n => n.Id == bobs.Id).Author!.Name);
         Assert.Equal("alice", (await ListAsync(Admin())).Single(n => n.Author!.Id == _alice).Author!.Name);
         Assert.Equal("alice", (await ListAsync(As(_alice))).Single(n => n.Author!.Id == _alice).Author!.Name);
+    }
+
+    [Fact]
+    public async Task An_instance_that_shows_login_names_shows_them_on_notes_and_in_the_bell()
+    {
+        await _settings.SetAsync(Maki.Core.Configuration.SettingKeys.LoginNamesVisible, "true");
+        var note = await CreateAsync(_alice, "shared");
+
+        Assert.Equal("alice", Assert.Single(await ListAsync(As(_carol))).Author!.Name);
+        await ReplyAsync(_carol, note.Id);
+        var raised = Assert.Single(_inbox.Raised);
+        Assert.Equal("carol", raised.Message.Params!["userName"]);
+        Assert.Equal("yes", raised.Message.Params["hasName"]);
     }
 
     [Fact]

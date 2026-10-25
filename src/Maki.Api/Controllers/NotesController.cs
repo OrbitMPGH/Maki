@@ -1,6 +1,7 @@
 using Maki.Api.Hubs;
 using Maki.Api.Localization;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Reading;
@@ -61,6 +62,7 @@ public class NotesController(
     ICurrentUser currentUser,
     InboxService inbox,
     EventBroadcaster events,
+    IAppSettings appSettings,
     ILogger<NotesController> logger) : ControllerBase
 {
     [HttpGet("chapters/{chapterId:int}/notes")]
@@ -446,12 +448,14 @@ public class NotesController(
             .Select(u => new { u.Id, u.Permissions })
             .ToListAsync(ct);
         var replier = await db.Users.Where(u => u.Id == me).Select(u => new { u.DisplayName, u.UserName }).FirstAsync(ct);
+        var loginNamesVisible = await UserNameVisibility.LoginNamesVisibleAsync(appSettings, ct);
         var chapter = await db.Chapters.AsNoTracking().FirstAsync(c => c.Id == root.ChapterId, ct);
         var label = ChapterLabel.For(chapter);
 
         foreach (var recipient in recipients)
         {
-            var name = replier.DisplayName ?? (recipient.Permissions.Grants(MakiPermission.Admin) ? replier.UserName : null);
+            var name = replier.DisplayName ??
+                       (loginNamesVisible || recipient.Permissions.Grants(MakiPermission.Admin) ? replier.UserName : null);
             inbox.Raise(InboxEventType.NoteReply, new InboxMessage(
                 Key: "inbox.noteReply",
                 Params: InboxMessage.Args(new { userName = name ?? string.Empty, hasName = name is null ? "no" : "yes", chapter = label }),
@@ -470,6 +474,7 @@ public class NotesController(
             .Select(u => new { u.Id, u.DisplayName, u.UserName })
             .ToDictionaryAsync(u => u.Id, ct);
         var admin = currentUser.Has(MakiPermission.Admin);
+        var loginNamesVisible = await UserNameVisibility.LoginNamesVisibleAsync(appSettings, ct);
 
         NoteDto Map(ChapterNote n, IReadOnlyList<NoteDto>? replies)
         {
@@ -477,7 +482,7 @@ public class NotesController(
             var live = n.DeletedAt is null;
             var author = n.AuthorId is { } authorId
                 ? new NoteAuthorDto(authorId, authors.TryGetValue(authorId, out var a)
-                    ? UserNameVisibility.For(currentUser, authorId, a.DisplayName, a.UserName)
+                    ? UserNameVisibility.For(currentUser, authorId, a.DisplayName, a.UserName, loginNamesVisible)
                     : null)
                 : null;
             return new NoteDto(

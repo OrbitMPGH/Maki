@@ -15,4 +15,13 @@ public class UserNameVisibilityTests
     {
         Assert.Equal(expected, UserNameVisibility.For(new TestCurrentUser(1, permissions: reader), subject, display, login));
     }
+
+    [Theory]
+    [InlineData("Ed", "Ed")]
+    [InlineData(null, "ed-login")]
+    public void An_instance_that_shows_login_names_shows_them_to_everyone(string? display, string expected)
+    {
+        Assert.Equal(expected, UserNameVisibility.For(
+            new TestCurrentUser(1, permissions: MakiPermission.None), 2, display, "ed-login", loginNamesVisible: true));
+    }
 }

@@ -19,7 +19,8 @@ public static class UserDtoMapper
             .ToList();
 
     public static MeDto ToMe(
-        MakiUser user, IReadOnlyList<int> rootFolderIds, bool oidcLinked, string? oidcUserName, bool singleUser) => new(
+        MakiUser user, IReadOnlyList<int> rootFolderIds, bool oidcLinked, string? oidcUserName, bool singleUser,
+        bool loginNamesVisible) => new(
         user.Id,
         user.UserName ?? string.Empty,
         user.DisplayName,
@@ -32,7 +33,8 @@ public static class UserDtoMapper
         user.TwoFactorEnabled,
         oidcLinked,
         oidcUserName,
-        singleUser);
+        singleUser,
+        loginNamesVisible);
 
     public static UserSummaryDto ToSummary(MakiUser user, IReadOnlyList<int> rootFolderIds, bool oidcLinked = false) => new(
         user.Id,

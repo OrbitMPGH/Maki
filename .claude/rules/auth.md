@@ -15,6 +15,7 @@ paths:
   - "src/Maki.Api/Controllers/Settings*.cs"
   - "src/Maki.Api/Controllers/SignIn*.cs"
   - "src/Maki.Api/Services/SignIn*.cs"
+  - "src/Maki.Api/Services/UserNameVisibility.cs"
   - "src/Maki.Core/Sources/CoverHostPolicy.cs"
   - "src/Maki.Sources/Suwayomi/**"
   - "src/Maki.Data/Identity/**"
@@ -55,5 +56,6 @@ paths:
 ## Single-user mode
 
 - **`SingleUserMode.IsOnAsync` is decided per request, never stored as a flag.** On when `instance.singleusermode` is anything but `"false"` (unset counts as on) and at most one account is enabled (`!Disabled`). Adding a second account turns it off without anyone touching the setting. `PUT` of the switch is refused while more than one account is enabled. `/auth/me` and the settings payload carry the result; the SPA treats a missing field as multi-user.
+- **Another user's name goes through `UserNameVisibility.For` and nowhere else** (leaderboard, metadata history, notes, the `NoteReply` inbox name): display name, else the login name for an admin, the user themself, or everyone while `instance.loginnamesvisible` is `"true"` (off unless set, Settings > Users), else null rendered as "Another reader". A login name is half of a password login, so a new surface showing names reads the setting through `LoginNamesVisibleAsync` rather than deciding for itself. `/auth/me` carries `loginNamesVisible` for the composer's notice.
 - **It only hides surfaces, it grants and removes nothing.** Hidden: the Requests nav item and its count query, the leaderboard and reader picker on Stats, the Requests category in notification prefs and filters, the leaderboard switch, the Kavita owner field and the request webhook events. Still there: the Users tab, Add user, API keys and the account's own password, so there is no dead end. `/requests` is still reachable by URL and the request endpoints still work.
 - A new multi-user-only surface should check the same flag in the SPA; nothing server-side needs it.

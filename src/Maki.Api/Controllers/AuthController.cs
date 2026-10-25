@@ -92,7 +92,8 @@ public class AuthController(
         var oidcLogin = await OidcLoginAsync(user);
         return Ok(UserDtoMapper.ToMe(
             user, await RootFolderIdsAsync(user, ct), oidcLogin is not null, oidcLogin?.ProviderDisplayName,
-            await SingleUserMode.IsOnAsync(db, appSettings, ct)));
+            await SingleUserMode.IsOnAsync(db, appSettings, ct),
+            await UserNameVisibility.LoginNamesVisibleAsync(appSettings, ct)));
     }
 
     private const string UnknownName = "?";
@@ -750,7 +751,8 @@ public class AuthController(
         var oidcLogin = await OidcLoginAsync(user);
         return UserDtoMapper.ToMe(
             user, await RootFolderIdsAsync(user, ct), oidcLogin is not null, oidcLogin?.ProviderDisplayName,
-            await SingleUserMode.IsOnAsync(db, HttpContext.RequestServices?.GetService<IAppSettings>(), ct));
+            await SingleUserMode.IsOnAsync(db, HttpContext.RequestServices?.GetService<IAppSettings>(), ct),
+            await UserNameVisibility.LoginNamesVisibleAsync(HttpContext.RequestServices?.GetService<IAppSettings>(), ct));
     }
 
     private async Task<IReadOnlyList<int>> RootFolderIdsAsync(MakiUser user, CancellationToken ct) =>
