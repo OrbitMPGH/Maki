@@ -256,6 +256,17 @@
   --brand-fg: #0a5e58;
   --brand-fg-on-art: #8fe5da;
 }
+/* Mantine rings in the primary fill, which Emerald and Amber keep pale in Light (2.4:1 on the page).
+   Light takes the text shade instead; dark keeps the fill, which is brighter than Mantine's shade. */
+:root {
+  --focus-ring: var(--brand);
+}
+:root[data-theme='light'] {
+  --focus-ring: var(--brand-fg);
+}
+:root :is(.mantine-focus-auto, .mantine-focus-always):focus-visible {
+  outline-color: var(--focus-ring);
+}
 :root[data-accent='plum'] {
   --brand: #b84cbc;
   --brand-hover: #9e3aa3;
@@ -509,6 +520,16 @@ body {
 .field-default-value input:not(:disabled)::placeholder {
   color: var(--mantine-color-text);
   opacity: 1;
+}
+/* iOS zooms the page into any focused field set below 16px and the installed app never zooms back
+   out, so touch screens get 16px fields whatever size the field asks for. */
+@media (pointer: coarse) {
+  :root :where(input:not([type='checkbox'], [type='radio'], [type='range']), textarea, select) {
+    font-size: max(1rem, 1em);
+  }
+  :root .mantine-Input-input {
+    font-size: max(1rem, var(--input-fz, 1rem));
+  }
 }
 
 /* Elevate surfaces above the app body so cards/modals read as layers. */
@@ -2063,7 +2084,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   );
 }
 .discover-card:has(.discover-card-action:focus-visible) {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .discover-card-action {
@@ -2590,7 +2611,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: var(--surface-hover);
 }
 .next-up-row:focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
 .next-up-thumb {
@@ -2762,7 +2783,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   transform: translateY(-5px);
 }
 .home-read-button:focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 /* Quick-add / owned cue, top-right of the poster. The poster's full-card button owns the action,
@@ -4623,6 +4644,11 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 /* Same size and shape so the pair sits as a set, a step down in weight so it doesn't compete with
    the state beside it: hairline instead of a fill, ink-3 instead of a colour. The faint ground is
    what keeps the border legible where the backdrop art runs light behind it. */
+/* Light art shows through the 15% tint and pulls the status words under 4:1, so light grounds lay an
+   opaque surface-and-tint layer over it. An inset shadow paints above the inline background. */
+[data-theme='light'] .series-hero-status:not([data-quiet]) {
+  box-shadow: inset 0 0 0 100px color-mix(in srgb, currentColor 10%, var(--surface));
+}
 .series-hero-status[data-quiet] {
   color: var(--ink-3);
   background: color-mix(in srgb, var(--app-bg) 45%, transparent);
@@ -4936,7 +4962,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   border-color: var(--border-strong);
 }
 .tag-chip[data-interactive]:focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .tag-chip[data-active] {
@@ -5147,6 +5173,16 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .section-header-end:not(:has(> .section-header-action)):has(> .section-header-arrows:empty) {
   display: none;
 }
+/* A status line in the action slot (Scrobble's sync times) wraps instead of pushing a phone page
+   wider than the screen. */
+.section-header-end:has(.section-header-status),
+.section-header-action:has(> .section-header-status) {
+  flex-shrink: 1;
+  min-width: 0;
+}
+.section-header-status {
+  text-align: end;
+}
 .section-header-icon {
   display: grid;
   flex-shrink: 0;
@@ -5248,7 +5284,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--ink-hi);
 }
 .rail-arrow:focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .rail-arrow:disabled {
@@ -5666,6 +5702,14 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 .panel-table tbody tr:last-child td {
   border-bottom: none;
 }
+/* A disabled account or a file gone from disk reads quieter through the muted ink rather than
+   opacity, which faded its words under 4.5:1. Pictures and icons still fade. */
+tr[data-muted] > td {
+  color: var(--ink-3);
+}
+tr[data-muted] :is(img, svg, .mantine-Avatar-root) {
+  opacity: 0.55;
+}
 
 /* A table standing on the page gets a panel for its edge. The panel clips, so the header band and
    the last row keep its corners. */
@@ -5766,7 +5810,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 .chapter-span-line:focus-visible,
 .chapter-span-badge:focus-visible,
 .chapter-row-selectable:focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
   border-radius: var(--radius-2xs);
 }
@@ -6337,7 +6381,7 @@ body.column-resizing * {
   color: var(--ink-hi);
 }
 .stats-rail-link:focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
   border-radius: var(--radius-control);
 }
@@ -8649,7 +8693,7 @@ tr:hover .mono-value-copy {
   font-weight: var(--fw-semibold);
 }
 .settings-jump-button:focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .settings-jump-icon {
@@ -8689,7 +8733,7 @@ tr:hover .mono-value-copy {
   color: var(--ink-hi);
 }
 .disclosure-head:focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .disclosure-text {
@@ -10641,7 +10685,7 @@ tr:hover .mono-value-copy {
 .layout-edit-grip:focus-visible,
 .layout-edit-body:focus-visible,
 .layout-edit-add:focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
 .layout-edit-body {
@@ -11176,6 +11220,20 @@ tr:hover .mono-value-copy {
 }
 @media (hover: none) {
   .source-rail-moves {
+    opacity: 1;
+  }
+}
+.priority-moves {
+  display: flex;
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease);
+}
+.priority-row:hover .priority-moves,
+.priority-row:focus-within .priority-moves {
+  opacity: 1;
+}
+@media (hover: none) {
+  .priority-moves {
     opacity: 1;
   }
 }

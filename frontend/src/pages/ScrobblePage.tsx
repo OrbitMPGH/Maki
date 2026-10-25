@@ -494,7 +494,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
                   <Button size="compact-xs" variant="light" onClick={() => assign(c.id)}>
                     <Trans>Use</Trans>
                   </Button>
-                  <Text size="sm" component="a" href={c.url} target="_blank" rel="noopener" c="brand.4">
+                  <Text size="sm" component="a" href={c.url} target="_blank" rel="noopener" c="var(--brand-fg)">
                     {c.title}
                   </Text>
                 </Group>
@@ -596,7 +596,7 @@ export default function ScrobblePage() {
   )
 
   const syncTimes = (
-    <Text size="xs" c="var(--ink-3)" className="tnum">
+    <Text size="xs" c="var(--ink-3)" className="tnum section-header-status">
       {data?.running ? (
         <Trans>
           sync running… · last {lastSync} · next {nextSync}

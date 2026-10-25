@@ -273,7 +273,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                     const v = fileStatusVisual(f.status)
                     const { fileName } = f
                     return (
-                      <Table.Tr key={f.relativePath} opacity={f.status === 'missing' ? 0.6 : 1}>
+                      <Table.Tr key={f.relativePath} data-muted={f.status === 'missing' || undefined}>
                         {selectMode && (
                           <Table.Td>
                             <Checkbox

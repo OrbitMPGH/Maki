@@ -90,40 +90,42 @@ export function RootFoldersSection() {
     >
       <Stack>
         {rootFolders && rootFolders.length > 0 && (
-          <Table className="panel-table ops-table">
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th><Trans>Path</Trans></Table.Th>
-                <Table.Th><Trans>Free space</Trans></Table.Th>
-                <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {rootFolders.map((f) => (
-                <Table.Tr key={f.id}>
-                  <Table.Td>
-                    <MonoValue value={f.path} copy minWidth="10rem" />
-                    {!f.accessible && (
-                      <Text span c="var(--danger)" size="xs" ml="xs">
-                        <Trans>(inaccessible)</Trans>
-                      </Text>
-                    )}
-                  </Table.Td>
-                  <Table.Td>{formatBytes(f.freeSpace)}</Table.Td>
-                  <Table.Td>
-                    <ActionIcon
-                      variant="subtle"
-                      color="var(--danger)"
-                      onClick={() => setDeleting({ id: f.id, path: f.path })}
-                      aria-label={t`Remove root folder`}
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  </Table.Td>
+          <Table.ScrollContainer minWidth={420}>
+            <Table className="panel-table ops-table">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th><Trans>Path</Trans></Table.Th>
+                  <Table.Th><Trans>Free space</Trans></Table.Th>
+                  <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                 </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
+              </Table.Thead>
+              <Table.Tbody>
+                {rootFolders.map((f) => (
+                  <Table.Tr key={f.id}>
+                    <Table.Td>
+                      <MonoValue value={f.path} copy minWidth="10rem" />
+                      {!f.accessible && (
+                        <Text span c="var(--danger)" size="xs" ml="xs">
+                          <Trans>(inaccessible)</Trans>
+                        </Text>
+                      )}
+                    </Table.Td>
+                    <Table.Td>{formatBytes(f.freeSpace)}</Table.Td>
+                    <Table.Td>
+                      <ActionIcon
+                        variant="subtle"
+                        color="var(--danger)"
+                        onClick={() => setDeleting({ id: f.id, path: f.path })}
+                        aria-label={t`Remove root folder`}
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
         )}
         <Group
           component="form"

@@ -159,7 +159,7 @@ export function UsersSection() {
             {users?.map((user) => {
               const granted = user.permissionNames.length
               return (
-                <Table.Tr key={user.id} opacity={user.disabled ? 0.5 : 1}>
+                <Table.Tr key={user.id} data-muted={user.disabled || undefined}>
                   <Table.Td>
                     <Group gap={6}>
                       <Text fz="sm">{user.displayName?.trim() || user.userName}</Text>

@@ -393,14 +393,14 @@ function ActionPill({ item }: { item: FeedbackActivity }) {
   const { t } = useLingui()
   const [label, color] = ((): [string, string] => {
     switch (item.action) {
-      case 'like': return [t`👍 Liked`, 'teal']
-      case 'dislike': return [t`👎 Disliked`, 'red']
-      case 'hide': return [t`Hidden`, 'yellow']
+      case 'like': return [t`👍 Liked`, 'var(--ok)']
+      case 'dislike': return [t`👎 Disliked`, 'var(--danger)']
+      case 'hide': return [t`Hidden`, 'var(--warn)']
       case 'dismiss': {
         const until = item.dismissedUntilUtc ? formatDate(item.dismissedUntilUtc) : ''
-        return [until ? t`Dismissed until ${until}` : t`Dismissed`, 'yellow']
+        return [until ? t`Dismissed until ${until}` : t`Dismissed`, 'var(--warn)']
       }
-      case 'mark-exposed': return [t`Seen elsewhere`, 'blue']
+      case 'mark-exposed': return [t`Seen elsewhere`, 'var(--info)']
       case 'clear-suppression': return [t`Restored`, 'gray']
       case 'clear-exposure': return [t`Seen cleared`, 'gray']
       case 'clear-sentiment': return [t`Rating cleared`, 'gray']
