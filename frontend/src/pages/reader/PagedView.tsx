@@ -12,7 +12,7 @@ import {
   useEnhanceEngine,
   type PageEnhance,
 } from './enhanceRuntime'
-import type { EnhanceServer } from '../../api/reader'
+import { useWarmServerPages, type ServerEnhance } from './useServerEnhance'
 import type {
   EnhanceMethod,
   ReaderDirection,
@@ -60,6 +60,8 @@ function RegionPage({
   region,
   rotate,
   enhance,
+  page,
+  server,
 }: {
   src: string
   url: string
@@ -72,6 +74,8 @@ function RegionPage({
   region: Region
   rotate: 0 | 90 | -90
   enhance: PageEnhance | null
+  page: number
+  server: ServerEnhance | null
 }) {
   const [box, setBox] = useState<HTMLDivElement | null>(null)
   const [covered, setCovered] = useState(false)
@@ -122,6 +126,8 @@ function RegionPage({
             alt={alt}
             tone={tone}
             enhance={enhance}
+            page={page}
+            server={server}
             priority={0}
             box={box}
             onShowing={setCovered}
@@ -146,6 +152,8 @@ function PagedPage({
   fit,
   shaping,
   enhance,
+  page,
+  server,
   onLoaded,
 }: {
   src: string
@@ -156,6 +164,8 @@ function PagedPage({
   fit: ReaderFit
   shaping: PageShaping
   enhance: PageEnhance | null
+  page: number
+  server: ServerEnhance | null
   onLoaded: (image: HTMLImageElement) => void
 }) {
   const [state, setState] = useState<PageState>('loading')
@@ -232,6 +242,8 @@ function PagedPage({
           region={region}
           rotate={rotate}
           enhance={enhance}
+          page={page}
+          server={server}
         />
       )}
     </>
@@ -257,6 +269,7 @@ export default function PagedView({
   half = 0,
   enhance = 'off',
   enhanceMethod = 'a4k-m',
+  server = null,
   preload,
 }: {
   urls: string[]
@@ -277,8 +290,8 @@ export default function PagedView({
   half?: 0 | 1
   enhance?: ReaderEnhance
   enhanceMethod?: EnhanceMethod
-  /** Read by the server tier (phase 8); browser presets ignore it. */
-  enhanceServer?: EnhanceServer
+  /** Set while a server method is in use and the server tier can serve it. */
+  server?: ServerEnhance | null
   /** The reader's preload window: the spread on screen and the pages after it, in reading order. */
   preload?: number[]
 }) {
@@ -316,12 +329,13 @@ export default function PagedView({
     return () => scope.release()
   }, [scope, engine, urls])
   const layout = `${fit}|${zoom}|${scale}`
+  const serverOn = server !== null
   const pageEnhance = useMemo<PageEnhance | null>(
     () =>
-      engine && enhance !== 'off'
+      (engine || serverOn) && enhance !== 'off'
         ? { mode: enhance, preset: presetFor(enhanceMethod), engine, scope, layout }
         : null,
-    [engine, enhance, enhanceMethod, scope, layout],
+    [engine, serverOn, enhance, enhanceMethod, scope, layout],
   )
 
   // Pages that leave the window around the spread are evicted from the engine's cache. The two
@@ -339,7 +353,7 @@ export default function PagedView({
   // turn finds them in the cache. Pages of another size wait until they are on screen.
   const { crop: shapeCrop, part: shapePart, rotate: shapeRotate } = shaping
   useEffect(() => {
-    if (!pageEnhance || !preload?.length) return
+    if (!pageEnhance?.engine || !preload?.length) return
     const { engine: live, scope: owner, preset, mode } = pageEnhance
     const controller = new AbortController()
     const { signal } = controller
@@ -382,6 +396,9 @@ export default function PagedView({
       for (const image of images) image.src = ''
     }
   }, [pageEnhance, preload, spread, urls, shapeCrop, shapePart, shapeRotate, sized])
+
+  const ahead = useMemo(() => (preload ?? []).filter((page) => !spread.includes(page)), [preload, spread])
+  useWarmServerPages(pageEnhance ? server : null, ahead)
 
   const rtlRef = useRef(rtl)
   rtlRef.current = rtl
@@ -452,6 +469,8 @@ export default function PagedView({
             fit={fit}
             shaping={shaping}
             enhance={pageEnhance}
+            page={page}
+            server={server}
             onLoaded={(image) => onMeasure(page, image)}
           />
         )

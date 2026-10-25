@@ -3,7 +3,7 @@ import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import { chapters } from '../../../.storybook/mocks/entry/fixtures'
-import type { ReaderManifest } from '../../api/reader'
+import type { ReaderManifest, ServerPageState } from '../../api/reader'
 import ReaderPage from './ReaderPage'
 
 const meta = {
@@ -458,5 +458,108 @@ export const EnhanceAlways: Story = {
     await userEvent.pointer({ keys: '[/MouseLeft]', target: hold })
     await waitFor(() => expect(hold).toHaveAttribute('aria-pressed', 'false'))
     await waitFor(() => expect(enhanced).toBeVisible())
+  },
+}
+
+const serverMethod = (chapterId: number, enhanceServer = chapters[1132].enhanceServer) =>
+  withManifest({
+    ...chapters[1132],
+    chapterId,
+    prefs: { ...chapters[1132].prefs, enhance: 'always', enhanceMethod: 'server:span-s' },
+    enhanceServer,
+  })
+
+/** Answers the window POST with one state for every page, and keeps what was asked for. */
+const enhanceAnswer = (chapterId: number, state: ServerPageState, asked: number[][] = []) =>
+  http.post(api(`/reader/chapter/${chapterId}/enhance`), async ({ request }) => {
+    const { pages } = (await request.json()) as { pages: number[] }
+    asked.push(pages)
+    return HttpResponse.json({ pages: pages.map((page) => ({ page, state })) })
+  })
+
+async function engineWorks(): Promise<boolean> {
+  const { loadEnhanceEngine } = await import('../../lib/enhance')
+  const engine = await loadEnhanceEngine()
+  return engine.supported && !engine.broken
+}
+
+/** Shows Balanced from the browser engine where it runs, else the plain page, and never a server image. */
+async function expectFallback(canvasElement: HTMLElement, canvas: PlayArgs['canvas']) {
+  const page = await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+  if (await engineWorks()) {
+    await waitFor(
+      () => expect(canvasElement.querySelector<HTMLCanvasElement>('canvas.reader-enhanced')?.dataset.enhanced).toBe('true'),
+      { timeout: 60_000 },
+    )
+  } else {
+    await expect(page).toBeVisible()
+  }
+  await expect(canvasElement.querySelector('img.reader-enhanced-server')).toBeNull()
+}
+
+const readyAsked: number[][] = []
+
+/** Sharp (server) with every page upscaled already: the server's image replaces the page once decoded, and compare still shows the original. */
+export const ServerEnhanceReady: Story = {
+  parameters: {
+    ...open(7711),
+    msw: [
+      serverMethod(7711),
+      enhanceAnswer(7711, 'ready', readyAsked),
+      http.get(api('/reader/chapter/7711/page/:n/enhanced'), ({ params }) => HttpResponse.redirect(`/mock/page/7711/${Number(params.n) + 1}.svg`)),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    const server = await waitFor(() => {
+      const element = canvasElement.querySelector<HTMLImageElement>('img.reader-enhanced-server')
+      expect(element?.dataset.enhanced).toBe('true')
+      return element!
+    })
+    await expect(server.getAttribute('src')).toContain('/reader/chapter/7711/page/5/enhanced?model=span-s&v=v1')
+    await expect(server.naturalWidth).toBeGreaterThan(0)
+    await waitFor(() => expect(readyAsked[0]?.[0]).toBe(5))
+    await waitFor(() => expect(canvas.getByRole('img', { name: 'Chapter 132 - page 6' })).toBe(server))
+    await expect(canvasElement.querySelector<HTMLCanvasElement>('canvas.reader-enhanced')?.dataset.enhanced).toBe('false')
+
+    const original = canvasElement.querySelector<HTMLImageElement>('img.reader-region-image:not(.reader-enhanced-server)')!
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'h' }))
+    await waitFor(() => expect(original).toBeVisible())
+    await expect(server).not.toBeVisible()
+    window.dispatchEvent(new KeyboardEvent('keyup', { key: 'h' }))
+    await waitFor(() => expect(server).toBeVisible())
+  },
+}
+
+const waitingAsked: number[][] = []
+
+/** Still queued on the server and not in its cache: the reader asks for the window and shows Balanced meanwhile. */
+export const ServerEnhanceWaiting: Story = {
+  parameters: {
+    ...open(7712),
+    msw: [
+      serverMethod(7712),
+      enhanceAnswer(7712, 'queued', waitingAsked),
+      http.get(api('/reader/chapter/7712/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await waitFor(() => expect(waitingAsked[0]?.slice(0, 2)).toEqual([5, 6]))
+    await expectFallback(canvasElement, canvas)
+  },
+}
+
+const offAsked: number[][] = []
+
+/** The admin switched the server tier off: Balanced stands in and nothing is asked of the server. */
+export const ServerEnhanceTierOff: Story = {
+  parameters: {
+    ...open(7713),
+    msw: [serverMethod(7713, { enabled: false, models: [] }), enhanceAnswer(7713, 'ready', offAsked)],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await expectFallback(canvasElement, canvas)
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    await expect(offAsked).toHaveLength(0)
   },
 }

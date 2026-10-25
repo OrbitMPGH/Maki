@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { serverEnhancedUrl } from '../../api/reader'
 import { useCompareHeld } from './compareHold'
 import {
   enhanceKey,
@@ -10,6 +11,7 @@ import {
   type PageEnhance,
 } from './enhanceRuntime'
 import type { Region } from './pageShape'
+import type { ServerEnhance } from './useServerEnhance'
 
 const SETTLE_MS = 300
 
@@ -23,6 +25,10 @@ export interface EnhancedPageProps {
   alt: string
   tone?: string
   enhance: PageEnhance
+  /** The page's index in the chapter, which names its server upscale. */
+  page: number
+  /** Set while a server method is in use; until this page is ready there, the engine's Balanced result shows. */
+  server?: ServerEnhance | null
   /** 0 for a page on screen, then its distance in reading order. */
   priority: number
   /** The layout box the region is displayed in, measured for the auto gate and the target size. */
@@ -39,7 +45,8 @@ const sameTarget = (a: EnhanceTarget | null, b: EnhanceTarget) =>
 /**
  * A page region run through the enhance engine and drawn into a canvas. Until the result is in,
  * while compare is held, or when `auto` finds the page shown at about its own size, the canvas is
- * hidden and the host's image shows instead.
+ * hidden and the host's image shows instead. With a server method, the server's upscale replaces
+ * the canvas once it is ready and decoded.
  */
 export default function EnhancedPage({
   image,
@@ -49,6 +56,8 @@ export default function EnhancedPage({
   alt,
   tone,
   enhance,
+  page,
+  server = null,
   priority,
   box,
   overlay = false,
@@ -102,25 +111,29 @@ export default function EnhancedPage({
     return () => clearTimeout(timer)
   }, [layout])
 
+  const [serverImage, setServerImage] = useState<HTMLImageElement | null>(null)
+
   // In the strip the canvas sits over the page image, which moves whenever a page above it loads.
   useEffect(() => {
-    const element = canvas.current
+    const elements = [canvas.current, serverImage].filter((element) => element !== null)
     const parent = box?.parentElement
-    if (!overlay || !box || !element || !parent) return
+    if (!overlay || !box || !parent || elements.length === 0) return
     const place = () => {
       const at = box.getBoundingClientRect()
       const origin = parent.getBoundingClientRect()
-      element.style.left = `${at.left - origin.left - parent.clientLeft}px`
-      element.style.top = `${at.top - origin.top - parent.clientTop}px`
-      element.style.width = `${at.width}px`
-      element.style.height = `${at.height}px`
+      for (const element of elements) {
+        element.style.left = `${at.left - origin.left - parent.clientLeft}px`
+        element.style.top = `${at.top - origin.top - parent.clientTop}px`
+        element.style.width = `${at.width}px`
+        element.style.height = `${at.height}px`
+      }
     }
     place()
     const observer = new ResizeObserver(place)
     observer.observe(box)
     observer.observe(parent)
     return () => observer.disconnect()
-  }, [overlay, box])
+  }, [overlay, box, serverImage])
 
   const active = target !== null && (mode === 'always' || target.stretched)
   const priorityRef = useRef(priority)
@@ -130,7 +143,7 @@ export default function EnhancedPage({
   regionRef.current = region
 
   useEffect(() => {
-    if (!active || !target) return
+    if (!active || !target || !engine) return
     const draw = (bitmap: ImageBitmap) => {
       const element = canvas.current
       if (!element) return
@@ -172,7 +185,7 @@ export default function EnhancedPage({
   }, [active, target, engine, scope, image, identity, key, preset, src])
 
   useEffect(() => {
-    engine.setPriority(key, priority)
+    engine?.setPriority(key, priority)
   }, [engine, key, priority])
 
   // Drop the canvas's pixels with it, rather than waiting for the element to be collected.
@@ -185,22 +198,87 @@ export default function EnhancedPage({
     }
   }, [])
 
-  const showing = active && drawn === identity && !held
+  const serverChapter = server?.chapterId
+  const serverModel = server?.model
+  const serverVersion = server?.pageVersion
+  const serverReady = server?.states.get(page) === 'ready'
+  const serverKey = serverReady ? `${serverChapter}|${page}|${serverModel}|${serverVersion}` : null
+  const [resolved, setResolved] = useState<{ key: string; url: string } | null>(null)
+  useEffect(() => {
+    if (!serverKey || serverChapter === undefined || !serverModel || serverVersion === undefined) return
+    let live = true
+    void serverEnhancedUrl(serverChapter, page, serverModel, serverVersion).then((url) => {
+      if (live) setResolved({ key: serverKey, url })
+    })
+    return () => {
+      live = false
+    }
+  }, [serverKey, serverChapter, page, serverModel, serverVersion])
+  const serverUrl = resolved && resolved.key === serverKey ? resolved.url : null
+  const [decoded, setDecoded] = useState<string | null>(null)
+  const [failed, setFailed] = useState<string | null>(null)
+  const serverWanted = active && serverUrl !== null && failed !== serverUrl
+
+  // A server image that leaves the window lets go of its pixels with it.
+  useEffect(() => {
+    if (!serverImage) return
+    return () => serverImage.removeAttribute('src')
+  }, [serverImage])
+
+  const serverShowing = serverWanted && decoded === serverUrl && !held
+  const showing = active && drawn === identity && !held && !serverShowing
+  const covering = showing || serverShowing
   const reportShowing = useRef(onShowing)
   reportShowing.current = onShowing
   useEffect(() => {
-    reportShowing.current(showing)
-  }, [showing])
+    reportShowing.current(covering)
+  }, [covering])
   useEffect(() => () => reportShowing.current(false), [])
 
   return (
-    <canvas
-      ref={canvas}
-      className={overlay ? 'reader-enhanced reader-enhanced-overlay' : 'reader-enhanced'}
-      role="img"
-      aria-label={alt}
-      data-enhanced={showing}
-      style={{ filter: tone, visibility: showing ? undefined : 'hidden' }}
-    />
+    <>
+      <canvas
+        ref={canvas}
+        className={overlay ? 'reader-enhanced reader-enhanced-overlay' : 'reader-enhanced'}
+        role="img"
+        aria-label={alt}
+        data-enhanced={showing}
+        style={{ filter: tone, visibility: showing ? undefined : 'hidden' }}
+      />
+      {serverWanted && (
+        <img
+          ref={setServerImage}
+          src={serverUrl}
+          alt={alt}
+          className={
+            overlay ? 'reader-enhanced reader-enhanced-overlay reader-enhanced-server' : 'reader-region-image reader-enhanced-server'
+          }
+          data-enhanced={serverShowing}
+          data-no-cover-fallback
+          decoding="async"
+          draggable={false}
+          style={{
+            ...(overlay
+              ? undefined
+              : {
+                  left: `${(-region.x / region.w) * 100}%`,
+                  top: `${(-region.y / region.h) * 100}%`,
+                  width: `${100 / region.w}%`,
+                  height: `${100 / region.h}%`,
+                }),
+            filter: tone,
+            visibility: serverShowing ? undefined : 'hidden',
+          }}
+          onLoad={(event) => {
+            const url = serverUrl
+            event.currentTarget.decode().then(
+              () => setDecoded(url),
+              () => setFailed(url),
+            )
+          }}
+          onError={() => setFailed(serverUrl)}
+        />
+      )}
+    </>
   )
 }

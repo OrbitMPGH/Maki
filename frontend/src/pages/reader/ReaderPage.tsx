@@ -10,6 +10,7 @@ import { getConnectivity, useConnectivity } from '../../lib/connectivity'
 import { settleQueuedProgress } from '../../pwa/progressQueue'
 import {
   flushProgress,
+  manifestServedOffline,
   useBookmarks,
   useReaderManifest,
   useToggleBookmark,
@@ -19,6 +20,7 @@ import ChapterBanner from './ChapterBanner'
 import ChapterEnd from './ChapterEnd'
 import ShortcutSheet from './ShortcutSheet'
 import ContinuousView from './ContinuousView'
+import { serverModelFor, useServerEnhance } from './useServerEnhance'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
 import ReaderToolbar from './ReaderToolbar'
@@ -197,7 +199,8 @@ export default function ReaderPage() {
   const { data: bookmarks } = useBookmarks(chapterId)
   const toggleBookmark = useToggleBookmark(chapterId)
   // A toggle cannot be replayed safely, so bookmarks wait for the connection.
-  const bookmarkOffline = useConnectivity() === 'offline'
+  const offline = useConnectivity() === 'offline'
+  const bookmarkOffline = offline
   const bookmarkedPages = useMemo(
     () => new Set((bookmarks ?? []).map((b) => b.pageIndex)),
     [bookmarks],
@@ -213,6 +216,17 @@ export default function ReaderPage() {
     [spreads, spreadIndex, mode, prefs.preload],
   )
   usePreload(urls, preloadPages, measure)
+
+  const current = manifest?.chapterId === chapterId ? manifest : undefined
+  const serverModel = current
+    ? serverModelFor(prefs.enhance, prefs.enhanceMethod, current.enhanceServer, offline || manifestServedOffline(chapterId))
+    : null
+  const enhanceWindow = useMemo(() => {
+    if (!serverModel) return []
+    if (mode !== 'vertical') return preloadPages.length > 0 ? preloadPages : (spreads[spreadIndex] ?? [])
+    return [0, 1, 2, -1, -2].map((offset) => page + offset).filter((index) => index >= 0 && index < pageCount)
+  }, [serverModel, mode, preloadPages, spreads, spreadIndex, page, pageCount])
+  const server = useServerEnhance(chapterId, serverModel, enhanceWindow, current?.pageVersion)
 
   const tone = useMemo(() => toneFilter(prefs), [prefs])
   useWakeLock(prefs.keepAwake)
@@ -818,7 +832,7 @@ export default function ReaderPage() {
               label={manifest.label}
               enhance={prefs.enhance}
               enhanceMethod={prefs.enhanceMethod}
-              enhanceServer={manifest.enhanceServer}
+              server={server}
             />
           ) : (
             <PagedView
@@ -836,7 +850,7 @@ export default function ReaderPage() {
               half={half}
               enhance={prefs.enhance}
               enhanceMethod={prefs.enhanceMethod}
-              enhanceServer={manifest.enhanceServer}
+              server={server}
               preload={preloadPages}
             />
           )}

@@ -52,7 +52,7 @@ export function useEnhanceEngine(active: boolean): EngineState {
   return active ? current : OFF
 }
 
-/** The browser preset a method runs as. Server methods fall back to Balanced until the server tier lands. */
+/** The browser preset a method runs as. A server method shows Balanced until its upscale is ready, and whenever the server tier cannot be used. */
 export function presetFor(method: EnhanceMethod): EnhancePreset {
   return isServerMethod(method) ? 'a4k-m' : (method as EnhancePreset)
 }
@@ -173,7 +173,8 @@ export class EnhanceScope {
 export interface PageEnhance {
   mode: 'auto' | 'always'
   preset: EnhancePreset
-  engine: EnhanceEngine
+  /** Null while a server method runs without a usable engine: pages stay plain until the server's upscale is ready. */
+  engine: EnhanceEngine | null
   scope: EnhanceScope
   /** Changes with fit, zoom and scale; a change re-measures the page after a short settle. */
   layout: string

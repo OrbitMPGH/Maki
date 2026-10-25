@@ -1,12 +1,12 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
-import type { EnhanceServer } from '../../api/reader'
 import type { EnhanceMethod, ReaderEnhance, ReaderFit } from './prefs'
 import EnhancedPage from './EnhancedPage'
 import { useCompareKey } from './compareHold'
 import { EnhanceScope, presetFor, useEnhanceEngine, type PageEnhance } from './enhanceRuntime'
 import { FULL_REGION } from './pageShape'
+import type { ServerEnhance } from './useServerEnhance'
 
 const FIT_CLASS: Record<ReaderFit, string> = {
   width: 'reader-fit-width',
@@ -57,6 +57,8 @@ interface StripPageProps {
   eager: boolean
   /** Set only for pages in the eager window while Enhance is on. */
   enhance: PageEnhance | null
+  /** Set with `enhance` while a server method is in use. */
+  server: ServerEnhance | null
   /** Distance from the current page in reading order; pages after it come first. */
   priority: number
   register: (index: number, element: HTMLImageElement | null) => void
@@ -76,6 +78,7 @@ const StripPage = memo(function StripPage({
   tone,
   eager,
   enhance,
+  server,
   priority,
   register,
   onSettled,
@@ -145,6 +148,8 @@ const StripPage = memo(function StripPage({
           alt={alt}
           tone={tone}
           enhance={enhance}
+          page={index}
+          server={server}
           priority={priority}
           box={loaded}
           overlay
@@ -185,6 +190,7 @@ export default function ContinuousView({
   pastEndLabel,
   enhance = 'off',
   enhanceMethod = 'a4k-m',
+  server = null,
 }: {
   urls: string[]
   page: number
@@ -210,8 +216,8 @@ export default function ContinuousView({
   label: string
   enhance?: ReaderEnhance
   enhanceMethod?: EnhanceMethod
-  /** Read by the server tier (phase 8); browser presets ignore it. */
-  enhanceServer?: EnhanceServer
+  /** Set while a server method is in use and the server tier can serve it. */
+  server?: ServerEnhance | null
 }) {
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
@@ -243,12 +249,13 @@ export default function ContinuousView({
     return () => scope.release()
   }, [scope, engine, urls])
   const layout = `${fit}|${scale}`
+  const serverOn = server !== null
   const pageEnhance = useMemo<PageEnhance | null>(
     () =>
-      engine && enhance !== 'off'
+      (engine || serverOn) && enhance !== 'off'
         ? { mode: enhance, preset: presetFor(enhanceMethod), engine, scope, layout }
         : null,
-    [engine, enhance, enhanceMethod, scope, layout],
+    [engine, serverOn, enhance, enhanceMethod, scope, layout],
   )
   const isEager = (index: number) => index < 3 || Math.abs(index - page) <= 2
   useEffect(() => {
@@ -558,6 +565,7 @@ export default function ContinuousView({
             tone={tone}
             eager={isEager(index)}
             enhance={pageEnhance && isEager(index) ? pageEnhance : null}
+            server={pageEnhance && isEager(index) ? server : null}
             priority={pageEnhance && isEager(index) ? (index >= page ? (index - page) * 2 : (page - index) * 2 + 1) : 0}
             register={registerPage}
             onSettled={onPageSettled}

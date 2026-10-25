@@ -5,7 +5,7 @@ import { t } from '@lingui/core/macro'
 import { getConnectivity } from '../lib/connectivity'
 import { randomUUID } from '../lib/uuid'
 import { queueOfflineWrite } from '../pwa/progressQueue'
-import { api, ApiError, authHeaders, getInitialize, trackedFetch } from './client'
+import { api, ApiError, apiWithOrigin, authHeaders, getInitialize, trackedFetch } from './client'
 
 export interface ReaderManifest {
   chapterId: number
@@ -98,10 +98,39 @@ export async function pageUrl(chapterId: number, page: number, thumb = false, ve
   return `${init.apiRoot}/reader/chapter/${chapterId}/${kind}/${page}${query}`
 }
 
+/** Where a page upscaled on the server is served from. A 404 there means not upscaled yet; it never queues one. */
+export async function serverEnhancedUrl(chapterId: number, page: number, model: string, pageVersion: string): Promise<string> {
+  const init = await getInitialize()
+  const query = `?model=${encodeURIComponent(model)}&v=${encodeURIComponent(pageVersion)}`
+  return `${init.apiRoot}/reader/chapter/${chapterId}/page/${page}/enhanced${query}`
+}
+
+export type ServerPageState = 'ready' | 'queued' | 'working' | 'failed' | 'skipped'
+
+/** Asks the server to upscale a window of pages, current page first. At most 12 are taken. */
+export function requestServerEnhance(chapterId: number, model: string, pages: number[]) {
+  return api<{ pages: { page: number; state: ServerPageState }[] }>(`/reader/chapter/${chapterId}/enhance`, {
+    method: 'POST',
+    body: JSON.stringify({ model, pages }),
+  })
+}
+
+// Chapters whose manifest this tab last got from the device's offline copy rather than the server.
+const offlineManifests = new Set<number>()
+
+export function manifestServedOffline(chapterId: number): boolean {
+  return offlineManifests.has(chapterId)
+}
+
 export function useReaderManifest(chapterId: number) {
   return useQuery({
     queryKey: ['reader-manifest', chapterId],
-    queryFn: () => api<ReaderManifest>(`/reader/chapter/${chapterId}`),
+    queryFn: async () => {
+      const { data, servedOffline } = await apiWithOrigin<ReaderManifest>(`/reader/chapter/${chapterId}`)
+      if (servedOffline) offlineManifests.add(chapterId)
+      else offlineManifests.delete(chapterId)
+      return data
+    },
     enabled: Number.isFinite(chapterId) && chapterId > 0,
     // The reader draws its own failure state, so the global error toast would only double it.
     meta: { silent: true },
