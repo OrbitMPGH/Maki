@@ -4263,6 +4263,10 @@ msgid "Cancelled"
 msgstr "Annulé"
 
 #: src/pages/HealthPage.tsx
+msgid "Cancelled. Nothing in the library was changed."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Candidate page {pageNumber}"
 msgstr "Page candidate {pageNumber}"
@@ -6349,6 +6353,7 @@ msgstr "Dossier racine de destination"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "Les CBZ détachés restent dans la section Fichiers, sauf si vous choisissez de les supprimer."
 
+#: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6481,6 +6486,10 @@ msgstr "Espace disque utilisé"
 #, fuzzy
 msgid "Dismiss"
 msgstr "Ignorer"
+
+#: src/pages/HealthPage.tsx
+msgid "Dismiss all"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -12239,6 +12248,10 @@ msgstr "Le fichier ne fournit aucune information sur ces chapitres ; l'associati
 msgid "Nothing in the history yet."
 msgstr "Rien dans l'historique pour l'instant."
 
+#: src/pages/HealthPage.tsx
+msgid "Nothing in the library was changed."
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Nothing in the library yet."
@@ -12927,6 +12940,10 @@ msgstr ""
 #, fuzzy
 msgid "Operation"
 msgstr "Opération"
+
+#: src/pages/HealthPage.tsx
+msgid "Operation details"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -14988,6 +15005,14 @@ msgstr "Demande envoyée"
 msgid "Requested"
 msgstr "Demandé"
 
+#: src/pages/HealthPage.tsx
+msgid "Requested {requested}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Requested {requested}, finished {finishedAt}"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Requested {title}"
@@ -15262,6 +15287,7 @@ msgstr "Nouvelle tentative {retryCount}x - prochain essai {nextAttemptTime}"
 #: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
@@ -17852,6 +17878,10 @@ msgstr "La source de réparation approuvée n'est plus disponible, demandez un n
 msgid "The approved source no longer has these pages"
 msgstr "La source approuvée ne propose plus ces pages"
 
+#: src/pages/HealthPage.tsx
+msgid "The archive was deleted."
+msgstr ""
+
 #: src/components/settings/OfflineReadingSection.tsx
 #, fuzzy
 msgid "The browser keeps saved chapters even when space runs low."
@@ -17936,6 +17966,14 @@ msgstr "Le téléchargement n'a pas encore commencé."
 #, fuzzy
 msgid "The download is no longer in the download client"
 msgstr "Le téléchargement n'est plus dans le client de téléchargement"
+
+#: src/pages/HealthPage.tsx
+msgid "The file has changed or is gone since, so this cannot run again."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "The file has not changed since, so you can run this again."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -18092,6 +18130,10 @@ msgstr "Le fournisseur associe ces chapitres à ce volume. C'est généralement 
 msgid "The push service did not accept the test notification."
 msgstr "Le service push n'a pas accepté la notification de test."
 
+#: src/pages/HealthPage.tsx
+msgid "The record of the missing archive was removed."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "The recycle bin is empty."
@@ -18101,6 +18143,10 @@ msgstr "La corbeille est vide."
 #, fuzzy
 msgid "The repair is no longer accepting candidates"
 msgstr "La réparation n'accepte plus de candidats"
+
+#: src/pages/HealthPage.tsx
+msgid "The replacement was applied."
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -18445,11 +18491,6 @@ msgstr "ce mois-ci"
 #, fuzzy
 msgid "This month"
 msgstr "Ce mois-ci"
-
-#: src/pages/HealthPage.tsx
-#, fuzzy
-msgid "This operation is {opStatus} and needs no further action."
-msgstr "Cette opération est {opStatus} et ne nécessite aucune autre action."
 
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx

@@ -4263,6 +4263,10 @@ msgid "Cancelled"
 msgstr "已取消"
 
 #: src/pages/HealthPage.tsx
+msgid "Cancelled. Nothing in the library was changed."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Candidate page {pageNumber}"
 msgstr "候选页 {pageNumber}"
@@ -6349,6 +6353,7 @@ msgstr "目标根文件夹"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "已取消关联的 CBZ 会保留在文件部分，除非你选择删除它们。"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6481,6 +6486,10 @@ msgstr "磁盘使用量"
 #, fuzzy
 msgid "Dismiss"
 msgstr "忽略"
+
+#: src/pages/HealthPage.tsx
+msgid "Dismiss all"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -12239,6 +12248,10 @@ msgstr "文件中没有信息可以确定这些章节，因此保留当前关联
 msgid "Nothing in the history yet."
 msgstr "历史中暂无内容。"
 
+#: src/pages/HealthPage.tsx
+msgid "Nothing in the library was changed."
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Nothing in the library yet."
@@ -12927,6 +12940,10 @@ msgstr ""
 #, fuzzy
 msgid "Operation"
 msgstr "操作"
+
+#: src/pages/HealthPage.tsx
+msgid "Operation details"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -14988,6 +15005,14 @@ msgstr "申请已提交"
 msgid "Requested"
 msgstr "已请求"
 
+#: src/pages/HealthPage.tsx
+msgid "Requested {requested}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Requested {requested}, finished {finishedAt}"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Requested {title}"
@@ -15262,6 +15287,7 @@ msgstr "已重试 {retryCount} 次 - 下次尝试时间 {nextAttemptTime}"
 #: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
@@ -17852,6 +17878,10 @@ msgstr "已批准的修复来源已不可用，请重新请求替换"
 msgid "The approved source no longer has these pages"
 msgstr "批准的来源不再有这些页面"
 
+#: src/pages/HealthPage.tsx
+msgid "The archive was deleted."
+msgstr ""
+
 #: src/components/settings/OfflineReadingSection.tsx
 #, fuzzy
 msgid "The browser keeps saved chapters even when space runs low."
@@ -17936,6 +17966,14 @@ msgstr "下载尚未开始。"
 #, fuzzy
 msgid "The download is no longer in the download client"
 msgstr "下载客户端中已不存在此下载"
+
+#: src/pages/HealthPage.tsx
+msgid "The file has changed or is gone since, so this cannot run again."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "The file has not changed since, so you can run this again."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -18092,6 +18130,10 @@ msgstr "元数据提供方将这些章节分配给此卷。通常准确，但合
 msgid "The push service did not accept the test notification."
 msgstr "推送服务未接受此测试通知。"
 
+#: src/pages/HealthPage.tsx
+msgid "The record of the missing archive was removed."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "The recycle bin is empty."
@@ -18101,6 +18143,10 @@ msgstr "回收站是空的。"
 #, fuzzy
 msgid "The repair is no longer accepting candidates"
 msgstr "修复不再接受候选项"
+
+#: src/pages/HealthPage.tsx
+msgid "The replacement was applied."
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -18445,11 +18491,6 @@ msgstr "本月"
 #, fuzzy
 msgid "This month"
 msgstr "本月"
-
-#: src/pages/HealthPage.tsx
-#, fuzzy
-msgid "This operation is {opStatus} and needs no further action."
-msgstr "此操作为 {opStatus}，无需进一步操作。"
 
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx

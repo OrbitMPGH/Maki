@@ -4878,6 +4878,16 @@ msgid "error.health.operationNotReady"
 msgstr "操作の準備ができていないか、確認が古くなっています。"
 
 #: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Only a failed operation can be retried.
+msgid "error.health.operationNotRetryable"
+msgstr ""
+
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: This operation is still running. Cancel it first.
+msgid "error.health.operationNotFinished"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
 #. English: The replacement must cover every linked chapter.
 #, fuzzy
 msgid "error.health.replacementIncomplete"

@@ -7908,8 +7908,11 @@ body.reader-open {
   gap: var(--mantine-spacing-lg);
   align-items: start;
 }
+/* A one-line path inside would otherwise size the column instead of truncating. */
 .health-review-column {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   grid-auto-rows: max-content;
   gap: var(--mantine-spacing-md);
 }

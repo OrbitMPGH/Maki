@@ -155,6 +155,9 @@ const PAGE_SIZE = 30
 
 const RUNNING_STATES = ['pending', 'running', 'applying', 'deleting', 'downloading']
 
+/** Operation states with nothing left to do, which the Repairs list lets you dismiss. */
+const FINISHED_STATES = ['completed', 'cancelled', 'failed']
+
 /** HealthScanService's finding kinds, in the order the filter lists them. */
 const FINDING_LABEL: Record<string, MessageDescriptor> = {
   missing: msg`Missing`,
@@ -727,7 +730,7 @@ export default function HealthPage() {
         />
       )}
       {operationId != null && (
-        <OperationReview key={operationId} id={operationId} close={() => setOperationId(null)} />
+        <OperationReview key={operationId} id={operationId} close={() => setOperationId(null)} open={setOperationId} />
       )}
 
       <BulkDeleteModal
@@ -1837,31 +1840,51 @@ function OperationGroup({ group, onReview }: { group: OperationGroupData; onRevi
     `/operations/group?key=${encodeURIComponent(group.key)}&take=${Math.min(group.count, GROUP_ROWS_MAX)}`,
     expanded,
   )
+  const dismiss = useHealthAction()
   const count = group.count
   const max = GROUP_ROWS_MAX
   const shown = expanded && all.data ? all.data.items : group.rows
+  const finished = FINISHED_STATES.includes(group.status)
   return (
     <Panel p={0} className="health-op-group">
       <div className="health-op-head">
-        <Group gap="sm">
-          <Text fw={650}>
-            {group.kind === 'delete' ? (
-              count === 1 ? (
-                <Trans>Deletion</Trans>
+        <Group justify="space-between" wrap="nowrap">
+          <Group gap="sm">
+            <Text fw={650}>
+              {group.kind === 'delete' ? (
+                count === 1 ? (
+                  <Trans>Deletion</Trans>
+                ) : (
+                  <Plural value={count} one="# deletion" other="# deletions" />
+                )
+              ) : count === 1 ? (
+                <Trans>Replacement</Trans>
               ) : (
-                <Plural value={count} one="# deletion" other="# deletions" />
-              )
-            ) : count === 1 ? (
-              <Trans>Replacement</Trans>
-            ) : (
-              <Plural value={count} one="# replacement" other="# replacements" />
-            )}
-          </Text>
-          <Status value={group.status} />
+                <Plural value={count} one="# replacement" other="# replacements" />
+              )}
+            </Text>
+            <Status value={group.status} />
+          </Group>
+          {finished && (
+            <Button
+              size="compact-sm"
+              variant="subtle"
+              color="var(--neutral)"
+              loading={dismiss.isPending}
+              onClick={() => dismiss.mutate({ path: '/operations/group/dismiss', body: { key: group.key } })}
+            >
+              {count === 1 ? <Trans>Dismiss</Trans> : <Trans>Dismiss all</Trans>}
+            </Button>
+          )}
         </Group>
         {group.error && (
           <Text size="sm" c="var(--ink-3)">
             {group.error}
+          </Text>
+        )}
+        {dismiss.error && (
+          <Text size="sm" c="var(--danger)">
+            {dismiss.error.message}
           </Text>
         )}
       </div>
@@ -1885,7 +1908,7 @@ function OperationGroup({ group, onReview }: { group: OperationGroupData; onRevi
                 {formatDateTime(op.createdAt)}
               </Text>
               <Button size="compact-sm" variant="default" onClick={() => onReview(op.id)}>
-                <Trans>Review</Trans>
+                {op.status === 'review' ? <Trans>Review</Trans> : <Trans>Details</Trans>}
               </Button>
             </li>
           )
@@ -1916,7 +1939,7 @@ function OperationGroup({ group, onReview }: { group: OperationGroupData; onRevi
   )
 }
 
-function OperationReview({ id, close }: { id: number; close: () => void }) {
+function OperationReview({ id, close, open }: { id: number; close: () => void; open: (id: number) => void }) {
   const { t } = useLingui()
   const { data, error } = useHealthData<OperationDetail>(`/operations/${id}`, true, (detail) =>
     detail && RUNNING_STATES.includes(detail.operation.status) ? 3000 : false,
@@ -1925,13 +1948,13 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
   const [confirm, setConfirm] = useState(false)
   const [reset, setReset] = useState(false)
   const chaptersCount = data?.chapters.length ?? 0
-  const opStatus = data?.operation.status
+  const finished = !!data && FINISHED_STATES.includes(data.operation.status)
 
   return (
     <Modal
       opened
       onClose={close}
-      title={t`Review operation`}
+      title={finished ? t`Operation details` : t`Review operation`}
       size="min(1060px, 94vw)"
       centered
     >
@@ -1943,7 +1966,9 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
           <div className="health-review">
             <div className="health-review-column">
               {data.operation.error && <Alert color="var(--danger)">{data.operation.error}</Alert>}
-              {data.operation.kind === 'delete' ? (
+              {finished ? (
+                <OperationOutcome detail={data} />
+              ) : data.operation.kind === 'delete' ? (
                 <Alert color={data.file.size < 0 ? 'var(--warn)' : 'var(--danger)'}>
                   {data.file.size < 0 ? (
                     <Trans>
@@ -2017,72 +2042,130 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
               </Panel>
 
               <Panel p="md">
-                <Stack gap="sm">
-                  {data.operation.kind === 'repair' && data.requiresReset && (
-                    <Checkbox
-                      checked={reset}
-                      onChange={(e) => setReset(e.currentTarget.checked)}
-                      label={t`Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved.`}
-                    />
-                  )}
-                  {data.operation.status === 'review' && (
-                    <>
-                      <Checkbox
-                        checked={confirm}
-                        onChange={(e) => setConfirm(e.currentTarget.checked)}
-                        label={
-                          data.operation.kind !== 'delete'
-                            ? t`I approve applying these replacement files.`
-                            : data.file.size < 0
-                              ? t`I confirm removing the file links for this missing archive.`
-                              : t`I confirm permanent deletion of this archive and all its file links.`
-                        }
-                      />
+                {finished ? (
+                  <Group gap="sm">
+                    {data.retryable && (
                       <Button
-                        color={data.operation.kind === 'delete' ? 'var(--danger)' : 'brand'}
-                        loading={action.isPending && action.variables?.path.endsWith('/apply')}
-                        disabled={!confirm || (data.operation.kind === 'repair' && data.requiresReset && !reset)}
+                        loading={action.isPending && action.variables?.path.endsWith('/retry')}
                         onClick={() =>
-                          action.mutate(
-                            {
-                              path: `/operations/${id}/apply`,
-                              body: { version: data.operation.version, confirmed: confirm, resetPositions: reset },
-                            },
-                            { onSuccess: close },
-                          )
+                          action.mutate({ path: `/operations/${id}/retry` }, { onSuccess: (next) => open(next.id) })
                         }
                       >
-                        {data.operation.kind !== 'delete' ? (
-                          <Trans>Apply replacement</Trans>
-                        ) : data.file.size < 0 ? (
-                          <Trans>Remove the record</Trans>
-                        ) : (
-                          <Trans>Permanently delete</Trans>
-                        )}
+                        <Trans>Retry</Trans>
                       </Button>
-                    </>
-                  )}
-                  {!['completed', 'cancelled', 'failed'].includes(data.operation.status) && (
+                    )}
+                    <Button
+                      variant="default"
+                      loading={action.isPending && action.variables?.path.endsWith('/dismiss')}
+                      onClick={() => action.mutate({ path: `/operations/${id}/dismiss` }, { onSuccess: close })}
+                    >
+                      <Trans>Dismiss</Trans>
+                    </Button>
+                  </Group>
+                ) : (
+                  <Stack gap="sm">
+                    {data.operation.kind === 'repair' && data.requiresReset && (
+                      <Checkbox
+                        checked={reset}
+                        onChange={(e) => setReset(e.currentTarget.checked)}
+                        label={t`Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved.`}
+                      />
+                    )}
+                    {data.operation.status === 'review' && (
+                      <>
+                        <Checkbox
+                          checked={confirm}
+                          onChange={(e) => setConfirm(e.currentTarget.checked)}
+                          label={
+                            data.operation.kind !== 'delete'
+                              ? t`I approve applying these replacement files.`
+                              : data.file.size < 0
+                                ? t`I confirm removing the file links for this missing archive.`
+                                : t`I confirm permanent deletion of this archive and all its file links.`
+                          }
+                        />
+                        <Button
+                          color={data.operation.kind === 'delete' ? 'var(--danger)' : 'brand'}
+                          loading={action.isPending && action.variables?.path.endsWith('/apply')}
+                          disabled={!confirm || (data.operation.kind === 'repair' && data.requiresReset && !reset)}
+                          onClick={() =>
+                            action.mutate(
+                              {
+                                path: `/operations/${id}/apply`,
+                                body: { version: data.operation.version, confirmed: confirm, resetPositions: reset },
+                              },
+                              { onSuccess: close },
+                            )
+                          }
+                        >
+                          {data.operation.kind !== 'delete' ? (
+                            <Trans>Apply replacement</Trans>
+                          ) : data.file.size < 0 ? (
+                            <Trans>Remove the record</Trans>
+                          ) : (
+                            <Trans>Permanently delete</Trans>
+                          )}
+                        </Button>
+                      </>
+                    )}
                     <Button
                       variant="default"
                       onClick={() => action.mutate({ path: `/operations/${id}/cancel` }, { onSuccess: close })}
                     >
                       <Trans>Cancel operation</Trans>
                     </Button>
-                  )}
-                  {['completed', 'cancelled', 'failed'].includes(data.operation.status) &&
-                    data.operation.status !== 'review' && (
-                      <Text size="sm" c="var(--ink-4)">
-                        <Trans>This operation is {opStatus} and needs no further action.</Trans>
-                      </Text>
-                    )}
-                </Stack>
+                  </Stack>
+                )}
               </Panel>
             </div>
           </div>
         )}
       </Stack>
     </Modal>
+  )
+}
+
+/** What a finished operation did, in place of the review it no longer needs. */
+function OperationOutcome({ detail }: { detail: OperationDetail }) {
+  const { operation, file, retryable } = detail
+  const requested = formatDateTime(operation.createdAt)
+  const finishedAt = operation.finishedAt ? formatDateTime(operation.finishedAt) : null
+  return (
+    <Stack gap="xs">
+      <Text>
+        {operation.status === 'completed' ? (
+          operation.kind !== 'delete' ? (
+            <Trans>The replacement was applied.</Trans>
+          ) : file.size < 0 ? (
+            <Trans>The record of the missing archive was removed.</Trans>
+          ) : (
+            <Trans>The archive was deleted.</Trans>
+          )
+        ) : operation.status === 'cancelled' ? (
+          <Trans>Cancelled. Nothing in the library was changed.</Trans>
+        ) : (
+          <Trans>Nothing in the library was changed.</Trans>
+        )}
+      </Text>
+      {operation.status === 'failed' && (
+        <Text size="sm" c="var(--ink-3)">
+          {retryable ? (
+            <Trans>The file has not changed since, so you can run this again.</Trans>
+          ) : (
+            <Trans>The file has changed or is gone since, so this cannot run again.</Trans>
+          )}
+        </Text>
+      )}
+      <Text size="sm" c="var(--ink-3)">
+        {finishedAt ? (
+          <Trans>
+            Requested {requested}, finished {finishedAt}
+          </Trans>
+        ) : (
+          <Trans>Requested {requested}</Trans>
+        )}
+      </Text>
+    </Stack>
   )
 }
 

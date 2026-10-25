@@ -4263,6 +4263,10 @@ msgid "Cancelled"
 msgstr "キャンセル済み"
 
 #: src/pages/HealthPage.tsx
+msgid "Cancelled. Nothing in the library was changed."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Candidate page {pageNumber}"
 msgstr "候補ページ {pageNumber}"
@@ -6349,6 +6353,7 @@ msgstr "保存先のルートフォルダー"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "リンク解除されたCBZは、削除を選ばない限りFilesセクションに残ります。"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6481,6 +6486,10 @@ msgstr "使用ディスク"
 #, fuzzy
 msgid "Dismiss"
 msgstr "閉じる"
+
+#: src/pages/HealthPage.tsx
+msgid "Dismiss all"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -12239,6 +12248,10 @@ msgstr "ファイルにこれらの章の説明がないため、現在のリン
 msgid "Nothing in the history yet."
 msgstr "まだ履歴はありません。"
 
+#: src/pages/HealthPage.tsx
+msgid "Nothing in the library was changed."
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Nothing in the library yet."
@@ -12927,6 +12940,10 @@ msgstr ""
 #, fuzzy
 msgid "Operation"
 msgstr "操作"
+
+#: src/pages/HealthPage.tsx
+msgid "Operation details"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -14988,6 +15005,14 @@ msgstr "リクエストが送信されました"
 msgid "Requested"
 msgstr "リクエスト済み"
 
+#: src/pages/HealthPage.tsx
+msgid "Requested {requested}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Requested {requested}, finished {finishedAt}"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Requested {title}"
@@ -15262,6 +15287,7 @@ msgstr "{retryCount}回再試行 - 次の試行{nextAttemptTime}"
 #: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
@@ -17852,6 +17878,10 @@ msgstr "承認された修復元のソースはもう利用できません。新
 msgid "The approved source no longer has these pages"
 msgstr "承認したソースにはもうこれらのページがありません"
 
+#: src/pages/HealthPage.tsx
+msgid "The archive was deleted."
+msgstr ""
+
 #: src/components/settings/OfflineReadingSection.tsx
 #, fuzzy
 msgid "The browser keeps saved chapters even when space runs low."
@@ -17936,6 +17966,14 @@ msgstr "ダウンロードはまだ開始されていません。"
 #, fuzzy
 msgid "The download is no longer in the download client"
 msgstr "ダウンロードはダウンロードクライアントにもうありません"
+
+#: src/pages/HealthPage.tsx
+msgid "The file has changed or is gone since, so this cannot run again."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "The file has not changed since, so you can run this again."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -18092,6 +18130,10 @@ msgstr "プロバイダーはこれらの章をこの巻に割り当てていま
 msgid "The push service did not accept the test notification."
 msgstr "プッシュサービスがテスト通知を受け付けませんでした。"
 
+#: src/pages/HealthPage.tsx
+msgid "The record of the missing archive was removed."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "The recycle bin is empty."
@@ -18101,6 +18143,10 @@ msgstr "ごみ箱は空です。"
 #, fuzzy
 msgid "The repair is no longer accepting candidates"
 msgstr "この修復は候補を受け付けなくなりました"
+
+#: src/pages/HealthPage.tsx
+msgid "The replacement was applied."
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -18445,11 +18491,6 @@ msgstr "今月"
 #, fuzzy
 msgid "This month"
 msgstr "今月"
-
-#: src/pages/HealthPage.tsx
-#, fuzzy
-msgid "This operation is {opStatus} and needs no further action."
-msgstr "この操作は{opStatus}で、これ以上の操作は必要ありません。"
 
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx

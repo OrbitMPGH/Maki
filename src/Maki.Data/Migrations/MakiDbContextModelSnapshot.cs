@@ -719,6 +719,9 @@ namespace Maki.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("DismissedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Error")
                         .HasColumnType("TEXT");
 

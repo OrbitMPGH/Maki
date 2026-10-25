@@ -3449,6 +3449,14 @@ msgid "error.health.operationNotReady"
 msgstr "The operation is not ready, or its review is out of date."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.operationNotRetryable"
+msgstr "Only a failed operation can be retried."
+
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.operationNotFinished"
+msgstr "This operation is still running. Cancel it first."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.replacementIncomplete"
 msgstr "The replacement must cover every linked chapter."
 

@@ -530,9 +530,9 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     [HttpGet("operations")]
     public async Task<IActionResult> Operations([FromServices] IUserSettings userSettings, [FromQuery] int page = 1, CancellationToken ct = default)
     {
-        var keys = db.HealthOperations.AsNoTracking()
+        var keys = Listed()
             .Select(o => new { o.Kind, o.Status, o.ErrorKey, o.ErrorParamsJson, o.Error });
-        var groups = await db.HealthOperations.AsNoTracking()
+        var groups = await Listed()
             .GroupBy(o => new { o.Kind, o.Status, o.ErrorKey, o.ErrorParamsJson, o.Error })
             .Select(g => new { g.Key.Kind, g.Key.Status, g.Key.ErrorKey, g.Key.ErrorParamsJson, g.Key.Error, Count = g.Count(), Newest = g.Max(o => o.Id) })
             .OrderByDescending(g => g.Newest)
@@ -543,7 +543,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         foreach (var g in groups)
         {
             var key = OperationGroupKey.From(g.Kind, g.Status, g.ErrorKey, g.ErrorParamsJson, g.Error);
-            previews.Add(await (await key.ApplyAsync(db.HealthOperations.AsNoTracking(), ct)).OrderByDescending(o => o.Id).Take(OperationGroupPreview).ToListAsync(ct));
+            previews.Add(await (await key.ApplyAsync(Listed(), ct)).OrderByDescending(o => o.Id).Take(OperationGroupPreview).ToListAsync(ct));
         }
 
         var rendered = await RenderedOperationsAsync(previews.SelectMany(p => p).ToList(), userSettings, ct);
@@ -567,13 +567,36 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         return Ok(new { total = await keys.Distinct().CountAsync(ct), items });
     }
 
+    /// <summary>
+    /// What the Repairs list shows: nothing dismissed, and no failure on a file that has since been
+    /// removed or changed. A retry validates against the version that failed, so such a failure can
+    /// never run again and would only sit on the list.
+    /// </summary>
+    private IQueryable<HealthOperation> Listed() => db.HealthOperations.AsNoTracking()
+        .Where(o => o.DismissedAt == null
+            && !(o.Status == "failed" && db.HealthFiles.Any(f => f.Id == o.FileId && (f.Removed || f.Version != o.Version))));
+
+    public record DismissGroup(string Key);
+
+    /// <summary>Clears every operation in a finished group off the list.</summary>
+    [HttpPost("operations/group/dismiss")]
+    public async Task<IActionResult> DismissOperationGroup(DismissGroup request, CancellationToken ct)
+    {
+        var group = OperationGroupKey.Decode(request.Key);
+        if (group is null) return BadRequest();
+        if (!HealthOperationService.Terminal(group.Status)) return this.Conflict(localizer, "error.health.operationNotFinished");
+        var query = await group.ApplyAsync(db.HealthOperations.Where(o => o.DismissedAt == null), ct);
+        var now = DateTime.UtcNow;
+        return Ok(new { dismissed = await query.ExecuteUpdateAsync(s => s.SetProperty(o => o.DismissedAt, now), ct) });
+    }
+
     /// <summary>One group's rows, newest first: what "Show all" on a group loads.</summary>
     [HttpGet("operations/group")]
     public async Task<IActionResult> OperationGroup([FromServices] IUserSettings userSettings, [FromQuery] string key, [FromQuery] int take = OperationGroupPage, CancellationToken ct = default)
     {
         var group = OperationGroupKey.Decode(key);
         if (group is null) return BadRequest();
-        var query = await group.ApplyAsync(db.HealthOperations.AsNoTracking(), ct);
+        var query = await group.ApplyAsync(Listed(), ct);
         var rows = await query.OrderByDescending(o => o.Id).Take(Math.Clamp(take, 1, OperationGroupRowsMax)).ToListAsync(ct);
         return Ok(new { total = await query.CountAsync(ct), items = await RenderedOperationsAsync(rows, userSettings, ct) });
     }
@@ -676,8 +699,28 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             chapters,
             candidates = candidates.Select(c => new { c.ChapterId, c.RelativePath, c.Hash, Analysis = RenderedAnalysis(c.Analysis), c.FinalPath, c.SourceMappingId }),
             requiresReset = file != null && HealthOperationService.RequiresReset(file, candidates, chapters.Count),
+            retryable = HealthOperationService.Retryable(op, file),
         });
     }
+
+    [HttpPost("operations/{id:int}/dismiss")]
+    public async Task<IActionResult> DismissOperation(int id, CancellationToken ct)
+    {
+        var op = await db.HealthOperations.FindAsync([id], ct);
+        if (op == null) return NotFound();
+        if (!HealthOperationService.Terminal(op.Status)) return this.Conflict(localizer, "error.health.operationNotFinished");
+        op.DismissedAt ??= DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return Ok(Rendered(op));
+    }
+
+    [HttpPost("operations/{id:int}/retry")]
+    public Task<IActionResult> RetryOperation(int id, CancellationToken ct) =>
+        ConflictGuard($"operation {id}", async () =>
+        {
+            try { return Ok(Rendered(await operations.RetryAsync(id, user.UserId, ct))); }
+            catch (PdfRepairUnsupportedException) { return this.Fail(localizer, "health.repair.pdfUnsupported"); }
+        });
     [HttpGet("operations/{id:int}/candidates/{chapterId:int}/pages/{page:int}")]
     public async Task<IActionResult> CandidatePreview(int id, int chapterId, int page, CancellationToken ct)
     {

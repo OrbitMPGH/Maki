@@ -3478,6 +3478,10 @@ msgid "Cancelled"
 msgstr "Cancelled"
 
 #: src/pages/HealthPage.tsx
+msgid "Cancelled. Nothing in the library was changed."
+msgstr "Cancelled. Nothing in the library was changed."
+
+#: src/pages/HealthPage.tsx
 msgid "Candidate page {pageNumber}"
 msgstr "Candidate page {pageNumber}"
 
@@ -5180,6 +5184,7 @@ msgstr "Destination root folder"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "Detached CBZs stay in the Files section unless you choose to delete them."
 
+#: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Details"
@@ -5289,6 +5294,10 @@ msgstr "Disk used"
 #: src/pages/NotificationsPage.tsx
 msgid "Dismiss"
 msgstr "Dismiss"
+
+#: src/pages/HealthPage.tsx
+msgid "Dismiss all"
+msgstr "Dismiss all"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Dismiss for 30 days"
@@ -9986,6 +9995,10 @@ msgstr "Nothing in the file explains these chapters, so the link you have today 
 msgid "Nothing in the history yet."
 msgstr "Nothing in the history yet."
 
+#: src/pages/HealthPage.tsx
+msgid "Nothing in the library was changed."
+msgstr "Nothing in the library was changed."
+
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Nothing in the library yet."
 msgstr "Nothing in the library yet."
@@ -10549,6 +10562,10 @@ msgstr "Opens in every reader Maki works with."
 #: src/pages/HealthPage.tsx
 msgid "Operation"
 msgstr "Operation"
+
+#: src/pages/HealthPage.tsx
+msgid "Operation details"
+msgstr "Operation details"
 
 #: src/components/SetupWizard.tsx
 msgid "Optional"
@@ -12233,6 +12250,14 @@ msgstr "Request submitted"
 msgid "Requested"
 msgstr "Requested"
 
+#: src/pages/HealthPage.tsx
+msgid "Requested {requested}"
+msgstr "Requested {requested}"
+
+#: src/pages/HealthPage.tsx
+msgid "Requested {requested}, finished {finishedAt}"
+msgstr "Requested {requested}, finished {finishedAt}"
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Requested {title}"
 msgstr "Requested {title}"
@@ -12458,6 +12483,7 @@ msgstr "Retried {retryCount}x - next attempt {nextAttemptTime}"
 #: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
@@ -14575,6 +14601,10 @@ msgstr "The approved repair source is no longer available, request a new replace
 msgid "The approved source no longer has these pages"
 msgstr "The approved source no longer has these pages"
 
+#: src/pages/HealthPage.tsx
+msgid "The archive was deleted."
+msgstr "The archive was deleted."
+
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "The browser keeps saved chapters even when space runs low."
 msgstr "The browser keeps saved chapters even when space runs low."
@@ -14643,6 +14673,14 @@ msgstr "The download has not started yet."
 #: src/api/queue.ts
 msgid "The download is no longer in the download client"
 msgstr "The download is no longer in the download client"
+
+#: src/pages/HealthPage.tsx
+msgid "The file has changed or is gone since, so this cannot run again."
+msgstr "The file has changed or is gone since, so this cannot run again."
+
+#: src/pages/HealthPage.tsx
+msgid "The file has not changed since, so you can run this again."
+msgstr "The file has not changed since, so you can run this again."
 
 #: src/pages/HealthPage.tsx
 msgid "The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page."
@@ -14770,6 +14808,10 @@ msgstr "The provider assigns these chapters to this volume. Usually right, compi
 msgid "The push service did not accept the test notification."
 msgstr "The push service did not accept the test notification."
 
+#: src/pages/HealthPage.tsx
+msgid "The record of the missing archive was removed."
+msgstr "The record of the missing archive was removed."
+
 #: src/pages/settings/LibraryCards.tsx
 msgid "The recycle bin is empty."
 msgstr "The recycle bin is empty."
@@ -14777,6 +14819,10 @@ msgstr "The recycle bin is empty."
 #: src/api/queue.ts
 msgid "The repair is no longer accepting candidates"
 msgstr "The repair is no longer accepting candidates"
+
+#: src/pages/HealthPage.tsx
+msgid "The replacement was applied."
+msgstr "The replacement was applied."
 
 #: src/pages/RequestsPage.tsx
 msgid "The request for {removingTitle} is removed. This can't be undone."
@@ -15054,10 +15100,6 @@ msgstr "this month"
 #: src/pages/stats/StatsRange.ts
 msgid "This month"
 msgstr "This month"
-
-#: src/pages/HealthPage.tsx
-msgid "This operation is {opStatus} and needs no further action."
-msgstr "This operation is {opStatus} and needs no further action."
 
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx

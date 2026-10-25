@@ -139,6 +139,9 @@ public class HealthOperation
     public string? Error { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? FinishedAt { get; set; }
+
+    /// <summary>Set when someone cleared a finished operation off the Repairs list. The row stays for the record.</summary>
+    public DateTime? DismissedAt { get; set; }
 }
 
 public class HealthHistory

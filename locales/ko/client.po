@@ -4263,6 +4263,10 @@ msgid "Cancelled"
 msgstr "취소됨"
 
 #: src/pages/HealthPage.tsx
+msgid "Cancelled. Nothing in the library was changed."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Candidate page {pageNumber}"
 msgstr "후보 페이지 {pageNumber}"
@@ -6349,6 +6353,7 @@ msgstr "대상 루트 폴더"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "분리된 CBZ는 삭제하도록 선택하지 않는 한 파일 섹션에 유지됩니다."
 
+#: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6481,6 +6486,10 @@ msgstr "디스크 사용량"
 #, fuzzy
 msgid "Dismiss"
 msgstr "해제"
+
+#: src/pages/HealthPage.tsx
+msgid "Dismiss all"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -12239,6 +12248,10 @@ msgstr "파일에서 이 챕터를 확인할 수 없어 현재 연결을 신뢰�
 msgid "Nothing in the history yet."
 msgstr "아직 기록이 없습니다."
 
+#: src/pages/HealthPage.tsx
+msgid "Nothing in the library was changed."
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Nothing in the library yet."
@@ -12927,6 +12940,10 @@ msgstr ""
 #, fuzzy
 msgid "Operation"
 msgstr "작업"
+
+#: src/pages/HealthPage.tsx
+msgid "Operation details"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -14988,6 +15005,14 @@ msgstr "요청 제출됨"
 msgid "Requested"
 msgstr "요청됨"
 
+#: src/pages/HealthPage.tsx
+msgid "Requested {requested}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Requested {requested}, finished {finishedAt}"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Requested {title}"
@@ -15262,6 +15287,7 @@ msgstr "{retryCount}회 재시도함 - 다음 시도 {nextAttemptTime}"
 #: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
@@ -17852,6 +17878,10 @@ msgstr "승인된 복구 소스를 더 이상 쓸 수 없습니다. 새 대체 �
 msgid "The approved source no longer has these pages"
 msgstr "승인된 소스에 더 이상 페이지가 없습니다"
 
+#: src/pages/HealthPage.tsx
+msgid "The archive was deleted."
+msgstr ""
+
 #: src/components/settings/OfflineReadingSection.tsx
 #, fuzzy
 msgid "The browser keeps saved chapters even when space runs low."
@@ -17936,6 +17966,14 @@ msgstr "다운로드가 아직 시작되지 않았습니다."
 #, fuzzy
 msgid "The download is no longer in the download client"
 msgstr "다운로드가 더 이상 다운로드 클라이언트에 없습니다"
+
+#: src/pages/HealthPage.tsx
+msgid "The file has changed or is gone since, so this cannot run again."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "The file has not changed since, so you can run this again."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -18092,6 +18130,10 @@ msgstr "제공자가 이 챕터들을 이 권에 배정했습니다. 대체로 �
 msgid "The push service did not accept the test notification."
 msgstr "푸시 서비스가 테스트 알림을 받아들이지 않았습니다."
 
+#: src/pages/HealthPage.tsx
+msgid "The record of the missing archive was removed."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "The recycle bin is empty."
@@ -18101,6 +18143,10 @@ msgstr "휴지통이 비어 있습니다."
 #, fuzzy
 msgid "The repair is no longer accepting candidates"
 msgstr "복구가 더 이상 후보를 받지 않습니다"
+
+#: src/pages/HealthPage.tsx
+msgid "The replacement was applied."
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -18445,11 +18491,6 @@ msgstr "이번 달"
 #, fuzzy
 msgid "This month"
 msgstr "이번 달"
-
-#: src/pages/HealthPage.tsx
-#, fuzzy
-msgid "This operation is {opStatus} and needs no further action."
-msgstr "이 작업은 {opStatus} 상태이며 추가 조치가 필요하지 않습니다."
 
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
