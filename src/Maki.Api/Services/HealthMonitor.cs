@@ -269,8 +269,9 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 row.ParamsJson = check.ParamsJson;
                 row.Message = string.Empty;
                 row.Url = check.Url;
+                var announced = row.NotifiedStatus;
                 if (HealthTransitions.Observe(row, check.Status, check.Connectivity, DateTime.UtcNow))
-                    await NotifyAsync(row, !HealthTransitions.IsIssue(check.Status), ct);
+                    await NotifyAsync(row, !HealthTransitions.IsIssue(check.Status), announced, ct);
             }
             foreach (var legacyRow in old.Where(r => r.Id is "qBittorrent" or "Prowlarr").ToList())
                 db.HealthChecks.Remove(legacyRow);
@@ -292,9 +293,10 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                     // Same the other way: an outage row whose count fell under the threshold has
                     // its remaining failures back on their own rows, so the site has not recovered.
                     if (folded.Contains(row.Id) || stillFailingSources.Contains(row.Id)) { db.HealthChecks.Remove(row); continue; }
+                    var announced = row.NotifiedStatus;
                     row.Status = row.NotifiedStatus = "healthy";
                     row.ChangedAt = row.CheckedAt = DateTime.UtcNow;
-                    await NotifyAsync(row, true, ct);
+                    await NotifyAsync(row, true, announced, ct);
                 }
             await db.SaveChangesAsync(ct);
 
@@ -396,7 +398,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
     /// One check changed state. The inbox row stores the check's own key and values and is worded
     /// per reader; the Discord copy renders once, in the instance's language.
     /// </summary>
-    private async Task NotifyAsync(HealthCheckRecord row, bool recovered, CancellationToken ct)
+    private async Task NotifyAsync(HealthCheckRecord row, bool recovered, string? from, CancellationToken ct)
     {
         var level = row.Status == "error" ? NotificationLevel.Error
             : recovered ? NotificationLevel.Info
@@ -414,11 +416,22 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             ? localizer.GetFor(locale, "notify.health.recovered.body", new { detail })
             : detail;
 
+        // The check's own key and values, worded per reader like the inbox row, so the audit trail
+        // names the problem instead of the check's id. The page shows the move from one status to
+        // the other beside it.
         db.HealthHistory.Add(new()
         {
             Kind = "transition",
-            MessageKey = recovered ? "health.history.recovered" : "health.history.degraded",
-            ParamsJson = JsonSerializer.Serialize(new { check = row.Id, status = row.Status }),
+            MessageKey = "health.history.transition",
+            ParamsJson = JsonSerializer.Serialize(new
+            {
+                check = row.Id,
+                from,
+                status = row.Status,
+                detailKey = row.MessageKey,
+                detailParams = row.ParamsJson,
+                detailMessage = row.Message,
+            }),
         });
         notifications.Dispatch(NotificationEventType.HealthIssue,
             new(NotificationEventType.HealthIssue, title, body, Level: level));
@@ -467,14 +480,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             using var doc = JsonDocument.Parse(json);
             foreach (var property in doc.RootElement.EnumerateObject())
             {
-                into[property.Name] = property.Value.ValueKind switch
-                {
-                    JsonValueKind.Number => property.Value.TryGetInt64(out var l) ? l : property.Value.GetDouble(),
-                    JsonValueKind.True => true,
-                    JsonValueKind.False => false,
-                    JsonValueKind.Null => null,
-                    _ => property.Value.GetString(),
-                };
+                into[property.Name] = Localization.InboxRenderer.ParamValue(property.Value);
             }
         }
         catch (JsonException)

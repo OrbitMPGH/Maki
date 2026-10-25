@@ -26,11 +26,15 @@ import {
   VisuallyHidden,
 } from '@mantine/core'
 import {
+  IconAlertOctagon,
+  IconAlertTriangle,
   IconBooks,
+  IconCircleCheck,
   IconChevronDown,
   IconClockPlay,
   IconDatabase,
   IconDownload,
+  IconEye,
   IconFileImport,
   IconPlugConnected,
   IconPhotoScan,
@@ -70,7 +74,7 @@ import { FigureStrip } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
 import { MonoValue } from '../components/ui/MonoValue'
 import { SeriesCell } from '../components/SeriesCell'
-import { formatBytes, formatDateTime, formatNumber } from '../format'
+import { formatBytes, formatDateTime, formatNumber, formatTime, formatWeekdayDate } from '../format'
 import { useLabel } from '../i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
@@ -174,6 +178,36 @@ const HISTORY_KIND_LABEL: Record<string, MessageDescriptor> = {
   delete: msg`Delete`,
   job: msg`Job`,
   transition: msg`Status change`,
+  review: msg`Review`,
+}
+
+const HISTORY_KIND_ICON: Record<string, Icon> = {
+  scan: IconScan,
+  repair: IconRefresh,
+  delete: IconTrash,
+  job: IconClockPlay,
+  transition: IconStethoscope,
+  review: IconEye,
+}
+
+/** Keyed by tone, so every status that reads as fixed, a warning or broken shares a shape. */
+const TRANSITION_ICON: Record<string, Icon> = {
+  ok: IconCircleCheck,
+  warn: IconAlertTriangle,
+  danger: IconAlertOctagon,
+}
+
+const TODAY = msg`Today`
+const YESTERDAY = msg`Yesterday`
+
+interface HistoryEntry {
+  id: number
+  createdAt: string
+  kind: string
+  message: string
+  status?: string | null
+  /** The status a status change left. Unknown for a check's first change. */
+  from?: string | null
 }
 
 function Status({ value, hint }: { value: string; hint?: boolean }) {
@@ -227,10 +261,10 @@ export default function HealthPage() {
     tab === 'repairs',
     (data) => (data?.items.some((g) => RUNNING_STATES.includes(g.status)) ? 5000 : false),
   )
-  const history = useHealthData<{
-    items: { id: number; createdAt: string; kind: string; message: string }[]
-    total: number
-  }>(`/history?page=${historyPage}`, tab === 'history')
+  const history = useHealthData<{ items: HistoryEntry[]; total: number }>(
+    `/history?page=${historyPage}`,
+    tab === 'history',
+  )
 
   // Separate instances so one control's pending state does not spin the others.
   const action = useHealthAction()
@@ -664,17 +698,8 @@ export default function HealthPage() {
 
         <Tabs.Panel value="history">
           <Stack>
-            {history.data?.items.map((entry) => (
-              <Group key={entry.id} align="flex-start">
-                <Badge variant="light">{renderLabel(HISTORY_KIND_LABEL[entry.kind] ?? entry.kind)}</Badge>
-                <div>
-                  <Text size="sm">{entry.message}</Text>
-                  <Text size="xs" c="var(--ink-3)">
-                    {formatDateTime(entry.createdAt)}
-                  </Text>
-                </div>
-              </Group>
-            ))}
+            {history.isLoading && <TableSkeleton columns={2} />}
+            {!!history.data?.items.length && <HistoryTimeline entries={history.data.items} />}
             {history.data?.items.length === 0 && (
               <Text c="var(--ink-3)">
                 <Trans>Nothing in the history yet.</Trans>
@@ -733,6 +758,81 @@ export default function HealthPage() {
         }
       />
     </SurfaceFrame>
+  )
+}
+
+/** The audit trail as a timeline, one block per day, newest first as the server pages it. */
+function HistoryTimeline({ entries }: { entries: HistoryEntry[] }) {
+  const { i18n } = useLingui()
+  const renderLabel = useLabel()
+  const days = useMemo(() => {
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    const today = startOfDay(new Date())
+    const groups: { key: number; label: string; entries: HistoryEntry[] }[] = []
+    for (const entry of entries) {
+      const key = startOfDay(new Date(entry.createdAt))
+      let group = groups.at(-1)
+      if (group?.key !== key) {
+        const ago = Math.round((today - key) / 86_400_000)
+        const label = ago === 0 ? i18n._(TODAY) : ago === 1 ? i18n._(YESTERDAY) : formatWeekdayDate(entry.createdAt)
+        group = { key, label, entries: [] }
+        groups.push(group)
+      }
+      group.entries.push(entry)
+    }
+    return groups
+  }, [entries, i18n])
+
+  return (
+    <Panel p={0} className="health-history">
+      {days.map((day) => (
+        <section key={day.key} className="health-history-day">
+          <h3 className="health-history-date">{day.label}</h3>
+          <ol className="health-history-rows">
+            {day.entries.map((entry) => {
+              const change = entry.kind === 'transition' && entry.status ? entry.status : null
+              // A status change shows where it ended by shape as well as colour, so a fix and a
+              // breakage never differ by hue alone.
+              const KindIcon = change
+                ? (TRANSITION_ICON[tone(change)] ?? IconStethoscope)
+                : (HISTORY_KIND_ICON[entry.kind] ?? IconStethoscope)
+              // A clean scan is routine; colour only what changed state or came back partial.
+              const routine = !entry.status || (entry.kind === 'scan' && entry.status === 'completed')
+              const entryTone = routine ? 'neutral' : tone(entry.status!)
+              const previous = entry.from ? renderLabel(STATUS_LABEL[entry.from] ?? entry.from) : null
+              return (
+                <li key={entry.id} className="health-history-row" data-tone={entryTone}>
+                  <span className="health-history-icon" aria-hidden>
+                    <KindIcon size={15} stroke={1.8} />
+                  </span>
+                  <div className="health-history-body">
+                    <Text size="sm" className="health-history-message">
+                      {entry.message}
+                    </Text>
+                    <Text size="xs" c="var(--ink-3)" className="health-history-meta">
+                      <span>{renderLabel(HISTORY_KIND_LABEL[entry.kind] ?? entry.kind)}</span>
+                      {change && (
+                        <>
+                          <span className="health-history-status">{renderLabel(STATUS_LABEL[change] ?? change)}</span>
+                          {previous && (
+                            <span>
+                              <Trans>from {previous}</Trans>
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </Text>
+                  </div>
+                  <time dateTime={entry.createdAt} title={formatDateTime(entry.createdAt)} className="health-history-time">
+                    {formatTime(entry.createdAt)}
+                  </time>
+                </li>
+              )
+            })}
+          </ol>
+        </section>
+      ))}
+    </Panel>
   )
 }
 

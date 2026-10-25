@@ -915,11 +915,6 @@ msgid "{days, plural, one {Usually every day.} other {Usually every # days.}}"
 msgstr "{days, plural, one {Sort en général chaque jour.} many {Sort en général tous les # jours.} other {Sort en général tous les # jours.}}"
 
 #: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
-#~ msgstr "{daysLeft, plural, one {Fichier retiré dans # jour} many {Fichier retiré dans # jours} other {Fichier retiré dans # jours}}"
-
-#: src/components/series/ChapterTableRows.tsx
 msgid "{daysLeft, plural, one {Removed in # day} other {Removed in # days}}"
 msgstr ""
 
@@ -7554,11 +7549,6 @@ msgstr "fichier présent sur le disque, non associé"
 msgid "File removed"
 msgstr "Fichier retiré"
 
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "File removed soon"
-#~ msgstr "Fichier bientôt retiré"
-
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -7976,6 +7966,10 @@ msgstr "De"
 #, fuzzy
 msgid "From {origins}"
 msgstr "Depuis {origins}"
+
+#: src/pages/HealthPage.tsx
+msgid "from {previous}"
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -9176,13 +9170,6 @@ msgstr "JPEG, PNG, GIF ou WebP, jusqu'à 10 Mo."
 #, fuzzy
 msgid "Judge the scans, not the site"
 msgstr "Évaluez les scans, pas le site"
-
-#: src/api/hooks.ts
-#: src/components/home/ContinueHero.tsx
-#: src/pages/HomePage.tsx
-#, fuzzy
-#~ msgid "Jump back in"
-#~ msgstr "Reprendre"
 
 #: src/components/settings/SettingsIndex.tsx
 #, fuzzy
@@ -11309,12 +11296,6 @@ msgstr "Source suivante"
 #, fuzzy
 msgid "Next tier at {nextValue}"
 msgstr "Niveau suivant à {nextValue}"
-
-#: src/components/home/ContinueHero.tsx
-#: src/components/home/NextUpList.tsx
-#, fuzzy
-#~ msgid "Next to jump back in"
-#~ msgstr "À reprendre ensuite"
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
@@ -14030,11 +14011,6 @@ msgstr ""
 msgid "Read file cleanup is going to delete this file"
 msgstr ""
 
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "Read file cleanup is on for this series"
-#~ msgstr "Le nettoyage des fichiers lus est activé pour cette série"
-
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
 msgid "Read first chapter"
@@ -14686,11 +14662,6 @@ msgstr "Retirer le dossier"
 #, fuzzy
 msgid "Remove from Continue reading"
 msgstr "Retirer de Continuer la lecture"
-
-#: src/components/home/ReadingCardMenu.tsx
-#, fuzzy
-#~ msgid "Remove from Jump back in"
-#~ msgstr "Retirer de Reprendre la lecture"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -16520,11 +16491,6 @@ msgstr ""
 msgid "Series whose anime you finished, starting after the last adapted chapter."
 msgstr "Séries dont vous avez fini l'anime, en commençant après le dernier chapitre adapté."
 
-#: src/components/home/homeSectionDefs.ts
-#, fuzzy
-#~ msgid "Series with a chapter part-way through."
-#~ msgstr "Séries dont un chapitre est en cours de lecture."
-
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
 msgid "Series with any of these never show up on Discover: not in rails, search, recommendations, or creator pages. Only you see this list."
@@ -16544,11 +16510,6 @@ msgstr "Séries sans aucun de vos tags"
 #, fuzzy
 msgid "Series you already have that match these filters."
 msgstr "Séries de votre bibliothèque correspondant à ces filtres."
-
-#: src/components/home/homeSectionDefs.ts
-#, fuzzy
-#~ msgid "Series you finished a chapter of that still have more to read."
-#~ msgstr "Séries dont vous avez terminé un chapitre et qu'il vous reste à lire."
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -18825,6 +18786,7 @@ msgid "To"
 msgstr "À"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/NotificationsPage.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -20378,6 +20340,7 @@ msgid "Year: {yearRangeMin}–{yearRangeMax}"
 msgstr "Année : {yearRangeMin}–{yearRangeMax}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Yesterday"

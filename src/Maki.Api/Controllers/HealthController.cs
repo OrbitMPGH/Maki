@@ -56,15 +56,50 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         row.CreatedAt,
     };
 
-    private object Rendered(HealthHistory row) => new
+    /// <param name="from">The status a status change left, worked out by the caller for rows
+    /// written before history recorded it.</param>
+    private object Rendered(HealthHistory row, IReadOnlyDictionary<string, HealthCheckRecord> checks, string? from)
     {
-        row.Id,
-        row.CreatedAt,
-        row.Kind,
-        Message = Render(row.MessageKey, row.ParamsJson, row.Message),
-        row.FileId,
-        row.UserId,
-    };
+        var values = HealthMonitor.HealthParams(row.ParamsJson);
+        return new
+        {
+            row.Id,
+            row.CreatedAt,
+            row.Kind,
+            Message = RenderedHistory(row, values, checks),
+            // What a scan or status change ended as, so the timeline can colour it and show the move.
+            Status = values.GetValueOrDefault("status") as string,
+            From = values.GetValueOrDefault("from") as string ?? from,
+            row.FileId,
+            row.UserId,
+        };
+    }
+
+    /// <summary>
+    /// A status change names the problem in the check's own words. Rows written before history
+    /// stored those words borrow the check's current message while it still has the status the row
+    /// recorded, so it describes the same state; otherwise they keep the bare check id. A
+    /// <c>legacy:</c> check only exists while failing and keeps its problem message after it clears,
+    /// so its message fits whatever the status.
+    /// </summary>
+    private string RenderedHistory(HealthHistory row, Dictionary<string, object?> values, IReadOnlyDictionary<string, HealthCheckRecord> checks)
+    {
+        if (row.MessageKey == "health.history.transition")
+        {
+            var detail = Render(values.GetValueOrDefault("detailKey") as string, values.GetValueOrDefault("detailParams") as string,
+                values.GetValueOrDefault("detailMessage") as string ?? "");
+            return localizer.Get(row.MessageKey, new { detail });
+        }
+        if (row.MessageKey is "health.history.degraded" or "health.history.recovered"
+            && values.GetValueOrDefault("check") is string id
+            && checks.GetValueOrDefault(id) is { } check
+            && (check.Status == values.GetValueOrDefault("status") as string || id.StartsWith("legacy:", StringComparison.Ordinal)))
+        {
+            var detail = Render(check.MessageKey, check.ParamsJson, check.Message);
+            return localizer.Get("health.history.transition", new { detail });
+        }
+        return Render(row.MessageKey, row.ParamsJson, row.Message);
+    }
 
     private string Render(string? key, string? paramsJson, string stored)
     {
@@ -547,14 +582,25 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     {
         var fileIds = rows.Select(o => o.FileId).Distinct().ToList();
         var files = await db.HealthFiles.AsNoTracking().Where(f => fileIds.Contains(f.Id))
-            .Select(f => new { f.Id, f.RelativePath, f.SeriesId }).ToDictionaryAsync(f => f.Id, ct);
-        var seriesIds = files.Values.Where(f => f.SeriesId != null).Select(f => f.SeriesId!.Value).Distinct().ToList();
+            .Select(f => new { f.Id, f.RelativePath, f.SeriesId, f.RootFolderId }).ToDictionaryAsync(f => f.Id, ct);
+        // An archive with no ChapterFile has no SeriesId; name the series whose folder holds it,
+        // the same containment rule HealthMatchService uses, so the row still gets a poster. Any
+        // root will do when its own has no match: a root re-added under a new path keeps its
+        // old rows. It only picks a poster, so a wrong guess costs nothing.
+        var folders = files.Values.Any(f => f.SeriesId == null)
+            ? await db.Series.AsNoTracking().Select(s => new { s.Id, s.RootFolderId, s.FolderName }).ToListAsync(ct)
+            : [];
+        var ownerOf = files.Values.ToDictionary(f => f.Id, f => f.SeriesId ?? folders
+            .Where(s => HealthMatchService.Contains(s.FolderName, f.RelativePath))
+            .OrderByDescending(s => s.RootFolderId == f.RootFolderId).ThenByDescending(s => s.FolderName.Length)
+            .Select(s => (int?)s.Id).FirstOrDefault());
+        var seriesIds = ownerOf.Values.OfType<int>().Distinct().ToList();
         var series = await db.Series.AsNoTracking().Where(s => seriesIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, ct);
         var titleLanguage = await userSettings.GetAsync(SettingKeys.UiTitleLanguage, ct);
         return rows.Select(op =>
         {
             var file = files.GetValueOrDefault(op.FileId);
-            var owner = file?.SeriesId is { } id ? series.GetValueOrDefault(id) : null;
+            var owner = ownerOf.GetValueOrDefault(op.FileId) is { } id ? series.GetValueOrDefault(id) : null;
             return Rendered(op, file?.RelativePath, owner, titleLanguage);
         }).ToList();
     }
@@ -670,12 +716,26 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         finally { HealthOperationService.MutationGate.Release(); }
     }
     [HttpGet("history")]
-    public async Task<IActionResult> History([FromQuery] int page = 1, CancellationToken ct = default) => Ok(new
+    public async Task<IActionResult> History([FromQuery] int page = 1, CancellationToken ct = default)
     {
-        total = await db.HealthHistory.CountAsync(ct),
-        items = (await db.HealthHistory.OrderByDescending(h => h.Id).Skip((Math.Max(1, page) - 1) * 30).Take(30).ToListAsync(ct))
-            .Select(Rendered)
-    });
+        var rows = await db.HealthHistory.AsNoTracking().OrderByDescending(h => h.Id).Skip((Math.Max(1, page) - 1) * 30).Take(30).ToListAsync(ct);
+        var checkOf = (string? json) => HealthMonitor.HealthParams(json).GetValueOrDefault("check") as string;
+        var checkIds = rows.Where(r => r.Kind == "transition").Select(r => checkOf(r.ParamsJson)).OfType<string>().Distinct().ToList();
+        var checks = await db.HealthChecks.AsNoTracking().Where(c => checkIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id, ct);
+
+        // Rows from before history recorded the status a change left: the check's previous
+        // transition ended in it. Transitions are rare, so a fixed look back covers years of them.
+        var maxId = rows.Count == 0 ? 0 : rows[0].Id;
+        var earlier = checkIds.Count == 0 ? [] : (await db.HealthHistory.AsNoTracking()
+                .Where(h => h.Kind == "transition" && h.Id < maxId).OrderByDescending(h => h.Id).Take(1000)
+                .Select(h => new { h.Id, h.ParamsJson }).ToListAsync(ct))
+            .Select(h => (h.Id, Check: checkOf(h.ParamsJson), Status: HealthMonitor.HealthParams(h.ParamsJson).GetValueOrDefault("status") as string))
+            .ToList();
+        string? From(HealthHistory row) => row.Kind != "transition" || checkOf(row.ParamsJson) is not { } check ? null
+            : earlier.FirstOrDefault(e => e.Id < row.Id && e.Check == check).Status;
+
+        return Ok(new { total = await db.HealthHistory.CountAsync(ct), items = rows.Select(r => Rendered(r, checks, From(r))) });
+    }
     private async Task<IActionResult> ConflictGuard(string target, Func<Task<IActionResult>> action)
     {
         try { return await action(); }

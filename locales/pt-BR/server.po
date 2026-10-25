@@ -5163,25 +5163,34 @@ msgstr "O banco local do MangaBaka ainda não foi baixado. Até lá, só o leito
 msgid "health.issue.dumpDamaged"
 msgstr "O banco local do MangaBaka falhou na verificação de integridade, então a busca de metadados e a adição de séries podem falhar. O Maki baixa de novo sozinho; verifique em Configurações → Biblioteca → Banco de metadados."
 
+#. {at} is the last refresh, formatted as a date in the reader's language.
 #: src/Maki.Api/Services/HealthCheckService.cs
-#. English: The MangaBaka local database is out of date, last refreshed {at}. The refresh may be failing.
+#. English: The MangaBaka local database is out of date, last refreshed {at, date, short}. The refresh may be failing.
 #, fuzzy
 msgid "health.issue.dumpStale"
 msgstr "O banco de dados local do MangaBaka está desatualizado, atualizado pela última vez em {at}. A atualização pode estar falhando."
 
 #. The health audit trail. {check} is a check's id, {kind} an operation's own name, {state} a review
 #. decision: all three are stored values the page has its own words for, so they stay as they are.
-#: src/Maki.Api/Services/HealthMonitor.cs
+#. degraded and recovered are only for rows written before history stored the check's message.
+#: src/Maki.Api/Controllers/HealthController.cs
 #. English: {check} changed to {status}
 #, fuzzy
 msgid "health.history.degraded"
 msgstr "{check} mudou para {status}"
 
-#: src/Maki.Api/Services/HealthMonitor.cs
+#: src/Maki.Api/Controllers/HealthController.cs
 #. English: {check} recovered
 #, fuzzy
 msgid "health.history.recovered"
 msgstr "{check} se recuperou"
+
+#. A check changed status. {detail} is the check's own message, already worded; the page shows the
+#. old and new status beside it.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {detail}
+msgid "health.history.transition"
+msgstr ""
 
 #: src/Maki.Api/Controllers/HealthController.cs
 #. English: PDFs are read in place and can't be repaired by replacement

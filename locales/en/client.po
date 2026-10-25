@@ -754,10 +754,6 @@ msgid "{days, plural, one {Usually every day.} other {Usually every # days.}}"
 msgstr "{days, plural, one {Usually every day.} other {Usually every # days.}}"
 
 #: src/components/series/ChapterTableRows.tsx
-#~ msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
-#~ msgstr "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
-
-#: src/components/series/ChapterTableRows.tsx
 msgid "{daysLeft, plural, one {Removed in # day} other {Removed in # days}}"
 msgstr "{daysLeft, plural, one {Removed in # day} other {Removed in # days}}"
 
@@ -6164,10 +6160,6 @@ msgstr "file on disk, not linked"
 msgid "File removed"
 msgstr "File removed"
 
-#: src/components/series/ChapterTableRows.tsx
-#~ msgid "File removed soon"
-#~ msgstr "File removed soon"
-
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -6513,6 +6505,10 @@ msgstr "From"
 #: src/pages/LibraryPage.tsx
 msgid "From {origins}"
 msgstr "From {origins}"
+
+#: src/pages/HealthPage.tsx
+msgid "from {previous}"
+msgstr "from {previous}"
 
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "From {source}. You can keep browsing while it downloads."
@@ -7492,12 +7488,6 @@ msgstr "JPEG, PNG, GIF or WebP, up to 10 MB."
 #: src/components/SourceCompareModal.tsx
 msgid "Judge the scans, not the site"
 msgstr "Judge the scans, not the site"
-
-#: src/api/hooks.ts
-#: src/components/home/ContinueHero.tsx
-#: src/pages/HomePage.tsx
-#~ msgid "Jump back in"
-#~ msgstr "Jump back in"
 
 #: src/components/settings/SettingsIndex.tsx
 msgid "Jump to a section"
@@ -9232,11 +9222,6 @@ msgstr "Next source"
 #: src/pages/stats/AchievementGrid.tsx
 msgid "Next tier at {nextValue}"
 msgstr "Next tier at {nextValue}"
-
-#: src/components/home/ContinueHero.tsx
-#: src/components/home/NextUpList.tsx
-#~ msgid "Next to jump back in"
-#~ msgstr "Next to jump back in"
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
@@ -11452,10 +11437,6 @@ msgstr "Read file cleanup deleted the file on {removedOn} after everyone read it
 msgid "Read file cleanup is going to delete this file"
 msgstr "Read file cleanup is going to delete this file"
 
-#: src/components/series/ChapterTableRows.tsx
-#~ msgid "Read file cleanup is on for this series"
-#~ msgstr "Read file cleanup is on for this series"
-
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "Read first chapter"
 msgstr "Read first chapter"
@@ -11987,10 +11968,6 @@ msgstr "Remove folder"
 #: src/components/home/ReadingCardMenu.tsx
 msgid "Remove from Continue reading"
 msgstr "Remove from Continue reading"
-
-#: src/components/home/ReadingCardMenu.tsx
-#~ msgid "Remove from Jump back in"
-#~ msgstr "Remove from Jump back in"
 
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Remove from library"
@@ -13489,10 +13466,6 @@ msgstr "Series types no profile covers use Default."
 msgid "Series whose anime you finished, starting after the last adapted chapter."
 msgstr "Series whose anime you finished, starting after the last adapted chapter."
 
-#: src/components/home/homeSectionDefs.ts
-#~ msgid "Series with a chapter part-way through."
-#~ msgstr "Series with a chapter part-way through."
-
 #: src/components/DiscoverPresets.tsx
 msgid "Series with any of these never show up on Discover: not in rails, search, recommendations, or creator pages. Only you see this list."
 msgstr "Series with any of these never show up on Discover: not in rails, search, recommendations, or creator pages. Only you see this list."
@@ -13508,10 +13481,6 @@ msgstr "Series with none of your tags"
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Series you already have that match these filters."
 msgstr "Series you already have that match these filters."
-
-#: src/components/home/homeSectionDefs.ts
-#~ msgid "Series you finished a chapter of that still have more to read."
-#~ msgstr "Series you finished a chapter of that still have more to read."
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Server address"
@@ -15361,6 +15330,7 @@ msgid "To"
 msgstr "To"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/NotificationsPage.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "Today"
@@ -16633,6 +16603,7 @@ msgid "Year: {yearRangeMin}–{yearRangeMax}"
 msgstr "Year: {yearRangeMin}–{yearRangeMax}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/NotificationsPage.tsx
 msgid "Yesterday"
 msgstr "Yesterday"

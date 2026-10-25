@@ -100,7 +100,7 @@ public class HealthMatchService(MakiDbContext db)
             counterparts);
     }
 
-    private static bool Contains(string folderName, string relativePath) =>
+    internal static bool Contains(string folderName, string relativePath) =>
         folderName.Length > 0 && relativePath.Length > folderName.Length &&
         relativePath.StartsWith(folderName, Compare) &&
         (relativePath[folderName.Length] == Path.DirectorySeparatorChar || relativePath[folderName.Length] == '/');
