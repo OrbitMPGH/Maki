@@ -2530,6 +2530,16 @@ msgstr "해당 권 릴리스 제안은 이미 가져왔거나, 해제되었거�
 msgid "error.upgrades.volumeGuard"
 msgstr "{file}을(를) 검토를 위해 보류했습니다: {reason, select, fewer_pages {교체하려는 파일보다 페이지 수가 적습니다} other {페이지를 측정할 수 없었습니다}}"
 
+#: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
+#. English: The downloaded model did not match its checksum, so it was deleted. Try the download again.
+msgid "error.upscaling.checksumMismatch"
+msgstr ""
+
+#: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
+#. English: The model could not be downloaded. Check that this server can reach GitHub, then try again.
+msgid "error.upscaling.downloadFailed"
+msgstr ""
+
 #: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot delete your own account
 #, fuzzy

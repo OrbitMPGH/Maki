@@ -2530,6 +2530,16 @@ msgstr "その巻リリースの提案は、すでに取得、却下、または
 msgid "error.upgrades.volumeGuard"
 msgstr "{file}はレビュー待ちで保留されました：{reason, select, fewer_pages {置き換え対象のファイルよりページ数が少ないため} other {ページを測定できなかったため}}"
 
+#: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
+#. English: The downloaded model did not match its checksum, so it was deleted. Try the download again.
+msgid "error.upscaling.checksumMismatch"
+msgstr ""
+
+#: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
+#. English: The model could not be downloaded. Check that this server can reach GitHub, then try again.
+msgid "error.upscaling.downloadFailed"
+msgstr ""
+
 #: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot delete your own account
 #, fuzzy

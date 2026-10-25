@@ -2530,6 +2530,16 @@ msgstr "该卷资源提议已被抓取、忽略或已过期"
 msgid "error.upgrades.volumeGuard"
 msgstr "{file} 已暂缓等待审核：{reason, select, fewer_pages {它的页数少于将被它替换的文件} other {无法测量它的页面}}"
 
+#: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
+#. English: The downloaded model did not match its checksum, so it was deleted. Try the download again.
+msgid "error.upscaling.checksumMismatch"
+msgstr ""
+
+#: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
+#. English: The model could not be downloaded. Check that this server can reach GitHub, then try again.
+msgid "error.upscaling.downloadFailed"
+msgstr ""
+
 #: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot delete your own account
 #, fuzzy

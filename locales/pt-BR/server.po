@@ -2530,6 +2530,16 @@ msgstr "Essa proposta de lançamento de volume já foi obtida, dispensada ou exp
 msgid "error.upgrades.volumeGuard"
 msgstr "{file} foi retido para revisão: {reason, select, fewer_pages {ele tem menos páginas que os arquivos que substituiria} other {não foi possível medir as páginas dele}}"
 
+#: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
+#. English: The downloaded model did not match its checksum, so it was deleted. Try the download again.
+msgid "error.upscaling.checksumMismatch"
+msgstr ""
+
+#: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
+#. English: The model could not be downloaded. Check that this server can reach GitHub, then try again.
+msgid "error.upscaling.downloadFailed"
+msgstr ""
+
 #: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot delete your own account
 #, fuzzy

@@ -2530,6 +2530,16 @@ msgstr "Bu cilt sürümü teklifi zaten alındı, reddedildi veya süresi doldu"
 msgid "error.upgrades.volumeGuard"
 msgstr "{file} inceleme için bekletildi: {reason, select, fewer_pages {yerini alacağı dosyalardan daha az sayfası var} other {sayfaları ölçülemedi}}"
 
+#: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
+#. English: The downloaded model did not match its checksum, so it was deleted. Try the download again.
+msgid "error.upscaling.checksumMismatch"
+msgstr ""
+
+#: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
+#. English: The model could not be downloaded. Check that this server can reach GitHub, then try again.
+msgid "error.upscaling.downloadFailed"
+msgstr ""
+
 #: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot delete your own account
 #, fuzzy
