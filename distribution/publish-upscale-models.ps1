@@ -57,8 +57,13 @@ foreach ($model in $manifest.models) {
     if ($actual -ne $model.sha256) { throw "$($model.file) does not match the sha256 in manifest.json." }
 }
 
-gh release view $Tag --repo $Repo *> $null
-if ($LASTEXITCODE -ne 0) {
+# gh reports a missing release on stderr. Under 'Stop' PowerShell 5.1 turns that into a
+# terminating error before the exit code is read, so the check runs with errors continuing.
+$ErrorActionPreference = 'Continue'
+$null = & gh release view $Tag --repo $Repo 2>&1
+$releaseExists = $LASTEXITCODE -eq 0
+$ErrorActionPreference = 'Stop'
+if (-not $releaseExists) {
     Write-Host "Creating release $Tag on $Repo"
     gh release create $Tag --repo $Repo --title 'Upscale models v1' `
         --notes 'Models for the optional server-side Page Enhance. Downloaded by Maki on first use. See LICENSES.txt: the SPAN-S model is CC BY-NC 4.0.' `
