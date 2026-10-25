@@ -233,9 +233,9 @@ public sealed class NotesControllerTests : IDisposable
         await CreateAsync(_bob, "shared");
 
         var mine = Assert.Single(Body<List<NoteCountDto>>(await As(_alice).Counts(_seriesId, default)));
-        Assert.Equal((2, 2), (mine.Mine, mine.Shared));
+        Assert.Equal((2, 2, 3), (mine.Mine, mine.Shared, mine.Total));
         var theirs = Assert.Single(Body<List<NoteCountDto>>(await As(_carol).Counts(_seriesId, default)));
-        Assert.Equal((0, 2), (theirs.Mine, theirs.Shared));
+        Assert.Equal((0, 2, 2), (theirs.Mine, theirs.Shared, theirs.Total));
     }
 
     [Fact]

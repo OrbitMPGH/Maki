@@ -40,7 +40,8 @@ public record NoteDto(
     string? Deleted,
     IReadOnlyList<NoteDto>? Replies);
 
-public record NoteCountDto(int ChapterId, int Mine, int Shared);
+/// <param name="Total">Distinct visible roots: a shared root of mine is in both <paramref name="Mine"/> and <paramref name="Shared"/>.</param>
+public record NoteCountDto(int ChapterId, int Mine, int Shared, int Total);
 
 /// <summary>
 /// Chapter notes: private ones only their author sees, shared ones everyone who can see the series
@@ -85,7 +86,8 @@ public class NotesController(
             .Select(g => new NoteCountDto(
                 g.Key,
                 g.Count(n => n.AuthorId == me),
-                g.Count(n => n.Visibility == NoteVisibility.Shared)))
+                g.Count(n => n.Visibility == NoteVisibility.Shared),
+                g.Count()))
             .ToListAsync(ct);
         return Ok(counts);
     }
