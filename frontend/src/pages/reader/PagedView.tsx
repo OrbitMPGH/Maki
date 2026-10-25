@@ -271,6 +271,7 @@ export default function PagedView({
   enhanceMethod = 'a4k-m',
   server = null,
   preload,
+  onStretched,
 }: {
   urls: string[]
   spread: Spread
@@ -294,6 +295,8 @@ export default function PagedView({
   server?: ServerEnhance | null
   /** The reader's preload window: the spread on screen and the pages after it, in reading order. */
   preload?: number[]
+  /** The pages shown at 1.2x their size or more, measured on screen or matched to a measured size. */
+  onStretched?: (pages: ReadonlySet<number>) => void
 }) {
   const { t } = useLingui()
   // In right-to-left reading the lower page number belongs on the right.
@@ -323,11 +326,20 @@ export default function PagedView({
   // Bumped when a page on screen reports the size it is shown at, which is what the pages ahead are
   // enhanced at.
   const [sized, setSized] = useState(0)
-  const [scope] = useState(() => new EnhanceScope(() => setSized((n) => n + 1)))
+  const stretchedRef = useRef(onStretched)
+  stretchedRef.current = onStretched
+  const [scope] = useState(
+    () =>
+      new EnhanceScope(
+        () => setSized((n) => n + 1),
+        (pages) => stretchedRef.current?.(pages),
+      ),
+  )
   useEffect(() => {
     scope.attach(engine)
     return () => scope.release()
   }, [scope, engine, urls])
+  useEffect(() => () => scope.forgetPages(), [scope, urls])
   const layout = `${fit}|${zoom}|${scale}`
   const serverOn = server !== null
   const pageEnhance = useMemo<PageEnhance | null>(
@@ -353,7 +365,7 @@ export default function PagedView({
   // turn finds them in the cache. Pages of another size wait until they are on screen.
   const { crop: shapeCrop, part: shapePart, rotate: shapeRotate } = shaping
   useEffect(() => {
-    if (!pageEnhance?.engine || !preload?.length) return
+    if (!pageEnhance || !preload?.length) return
     const { engine: live, scope: owner, preset, mode } = pageEnhance
     const controller = new AbortController()
     const { signal } = controller
@@ -374,7 +386,9 @@ export default function PagedView({
             if (image.naturalWidth > image.naturalHeight && (shapePart !== 'whole' || shapeRotate !== 0)) return
             const region = (shapeCrop ? cropRegion(image) : null) ?? FULL_REGION
             const target = owner.sizeFor(image.naturalWidth * region.w, image.naturalHeight * region.h)
-            if (!target || (mode === 'auto' && !target.stretched)) return
+            if (!target) return
+            owner.notePage(page, target.stretched)
+            if (!live || (mode === 'auto' && !target.stretched)) return
             const key = enhanceKey(src, region)
             if (live.peek(key, preset, target.width, target.height)) return
             owner.note(src, key)

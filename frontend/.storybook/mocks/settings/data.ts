@@ -924,7 +924,7 @@ const upscaleCatalog = {
 
 export const upscalingOff = {
   settings: { enabled: false, models: [], threads: 2, cacheMb: 1024, maxThreads: 8 },
-  catalog: [upscaleCatalog.spanS, upscaleCatalog.realesrganAv3, upscaleCatalog.waifu2xArt].map((m) => ({
+  catalog: [upscaleCatalog.spanS, upscaleCatalog.realesrganAv3, { ...upscaleCatalog.waifu2xArt, bytes: null }].map((m) => ({
     ...m,
     status: 'missing',
   })),

@@ -191,6 +191,7 @@ export default function ContinuousView({
   enhance = 'off',
   enhanceMethod = 'a4k-m',
   server = null,
+  onStretched,
 }: {
   urls: string[]
   page: number
@@ -218,6 +219,8 @@ export default function ContinuousView({
   enhanceMethod?: EnhanceMethod
   /** Set while a server method is in use and the server tier can serve it. */
   server?: ServerEnhance | null
+  /** The pages shown at 1.2x their size or more, as measured on screen. */
+  onStretched?: (pages: ReadonlySet<number>) => void
 }) {
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
@@ -243,11 +246,14 @@ export default function ContinuousView({
   const engineState = useEnhanceEngine(enhanceOn)
   const engine = engineState.status === 'ready' ? engineState.engine : null
   useCompareKey(enhanceOn)
-  const [scope] = useState(() => new EnhanceScope())
+  const stretchedRef = useRef(onStretched)
+  stretchedRef.current = onStretched
+  const [scope] = useState(() => new EnhanceScope(undefined, (pages) => stretchedRef.current?.(pages)))
   useEffect(() => {
     scope.attach(engine)
     return () => scope.release()
   }, [scope, engine, urls])
+  useEffect(() => () => scope.forgetPages(), [scope, urls])
   const layout = `${fit}|${scale}`
   const serverOn = server !== null
   const pageEnhance = useMemo<PageEnhance | null>(

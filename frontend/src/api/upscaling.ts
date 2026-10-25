@@ -14,7 +14,8 @@ export interface UpscalingSettings {
 export interface UpscaleCatalogEntry {
   id: string
   name?: string
-  bytes: number
+  /** Null until the model's manifest has been read. */
+  bytes: number | null
   license: string
   author: string
   source: string

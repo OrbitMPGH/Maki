@@ -5,6 +5,7 @@ import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import { chapters } from '../../../.storybook/mocks/entry/fixtures'
 import type { ReaderManifest, ServerPageState } from '../../api/reader'
 import ReaderPage from './ReaderPage'
+import type { ReaderPrefs } from './prefs'
 
 const meta = {
   component: ReaderPage,
@@ -461,11 +462,15 @@ export const EnhanceAlways: Story = {
   },
 }
 
-const serverMethod = (chapterId: number, enhanceServer = chapters[1132].enhanceServer) =>
+const serverMethod = (
+  chapterId: number,
+  enhanceServer = chapters[1132].enhanceServer,
+  prefs: Partial<ReaderPrefs> = {},
+) =>
   withManifest({
     ...chapters[1132],
     chapterId,
-    prefs: { ...chapters[1132].prefs, enhance: 'always', enhanceMethod: 'server:span-s' },
+    prefs: { ...chapters[1132].prefs, enhance: 'always', enhanceMethod: 'server:span-s', ...prefs },
     enhanceServer,
   })
 
@@ -561,5 +566,45 @@ export const ServerEnhanceTierOff: Story = {
     await expectFallback(canvasElement, canvas)
     await new Promise((resolve) => setTimeout(resolve, 500))
     await expect(offAsked).toHaveLength(0)
+  },
+}
+
+const unstretchedAsked: number[][] = []
+
+/** Auto with Sharp (server) and the page shown at 1:1: nothing is stretched, so nothing is asked of the server. */
+export const ServerEnhanceAutoUnstretched: Story = {
+  parameters: {
+    ...open(7714),
+    msw: [
+      serverMethod(7714, undefined, { enhance: 'auto', fit: 'original', scale: 100 }),
+      enhanceAnswer(7714, 'queued', unstretchedAsked),
+      http.get(api('/reader/chapter/7714/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await waitFor(() => expect(canvasElement.querySelector('canvas.reader-enhanced')).not.toBeNull())
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    await expect(unstretchedAsked).toHaveLength(0)
+  },
+}
+
+const stretchedAsked: number[][] = []
+
+/** Auto with Sharp (server) at 200%: the page on screen is asked for first, then the pages ahead of the same size. */
+export const ServerEnhanceAutoStretched: Story = {
+  parameters: {
+    ...open(7715),
+    msw: [
+      serverMethod(7715, undefined, { enhance: 'auto', fit: 'original', scale: 200 }),
+      enhanceAnswer(7715, 'queued', stretchedAsked),
+      http.get(api('/reader/chapter/7715/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
+    ],
+  },
+  play: async ({ canvas }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await waitFor(() => expect(stretchedAsked[0]?.[0]).toBe(5))
+    await waitFor(() => expect(stretchedAsked.flat()).toContain(6))
+    await waitFor(() => expect(stretchedAsked.every((pages) => pages.length <= 12 && pages.every((page) => page >= 5))).toBe(true))
   },
 }

@@ -78,6 +78,7 @@ export default function EnhancedPage({
     const next = measureTarget(box, rotate, { width: image.naturalWidth, height: image.naturalHeight }, region)
     if (!next) return
     scope.noteSize(image.naturalWidth * region.w, image.naturalHeight * region.h, next)
+    scope.notePage(page, next.stretched)
     setTarget((previous) => (sameTarget(previous, next) ? previous : next))
   }
 
@@ -141,6 +142,17 @@ export default function EnhancedPage({
   // `key` carries the region's values; the object itself may be rebuilt on every render.
   const regionRef = useRef(region)
   regionRef.current = region
+
+  // A page `auto` no longer stretches lets go of its pixels, and is drawn again if it comes back.
+  useEffect(() => {
+    if (active) return
+    const element = canvas.current
+    if (element) {
+      element.width = 0
+      element.height = 0
+    }
+    setDrawn(null)
+  }, [active])
 
   useEffect(() => {
     if (!active || !target || !engine) return

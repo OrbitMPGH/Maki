@@ -30,6 +30,9 @@ User-facing summary in `docs/features.md`. Two tiers share one reader setting: `
 
 - waifu2x swin_unet outputs `2·in − 32` per axis. The adapter reflect-pads the multiple-of-4-rounded context tile by a further 8 px per side (`Waifu2xBorder`), so the output is exactly 2x the context tile.
 - SPAN-S takes and returns float16. The engine reads tensor types from the model file, not the catalogue.
+- Real-ESRGAN is a 4x model. Each tile's 4x output is Lanczos-halved to 2x before the context crop and stitch (`Plain4xThenHalve`), so a full 4x page never sits in memory. Per-tile halving differs from whole-page halving by at most a few levels near tile edges.
+- Greyscale detection (`UpscalePixels.IsGreyscale`) is a fraction test, not a mean: a page is colour when more than 1 in 2000 sampled pixels has a channel spread over 16, or the mean spread passes 6. A red title on a grey page must stay red.
+- `manifesturl` has no API. In dev it is a row in the `AppConfig` table of the config dir's SQLite database (key `library.upscaling.manifesturl`).
 - Server tiling is 384 px with a 16 px context pad. Browser tiling is `min(MAX_TEXTURE_SIZE, 4096)/2` with a 16 px overlap.
 - The browser hook sizing stays at 2x (`OUTPUT` is 2w x 2h) and `//!WHEN` is not parsed. The reader's Auto gate (display at 1.2x source) replaces it.
 - `UpscaleModelStore.DeleteAsync` throws if the ORT session still holds the file. Call `OnnxPageUpscaler.ReleaseModel` first.

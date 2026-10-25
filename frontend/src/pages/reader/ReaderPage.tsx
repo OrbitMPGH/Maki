@@ -42,6 +42,7 @@ const DOUBLE_TAP_SLOP = 40
 // How many pages from the end of a chapter the next chapter's first pages start loading.
 const WARM_NEXT_WITHIN = 3
 const CHROME_HIDE_MS = 4000
+const NO_PAGES: ReadonlySet<number> = new Set()
 // A page turn this soon after moving to another chapter or the end screen is the tail of a double tap,
 // a fling or a held key, and must not carry on through the next chapter boundary.
 const CHAPTER_SETTLE_MS = 800
@@ -226,7 +227,15 @@ export default function ReaderPage() {
     if (mode !== 'vertical') return preloadPages.length > 0 ? preloadPages : (spreads[spreadIndex] ?? [])
     return [0, 1, 2, -1, -2].map((offset) => page + offset).filter((index) => index >= 0 && index < pageCount)
   }, [serverModel, mode, preloadPages, spreads, spreadIndex, page, pageCount])
-  const server = useServerEnhance(chapterId, serverModel, enhanceWindow, current?.pageVersion)
+  // On `auto` the server is asked only for pages a view has measured as stretched.
+  const [stretchedPages, setStretchedPages] = useState<ReadonlySet<number>>(NO_PAGES)
+  const server = useServerEnhance(
+    chapterId,
+    serverModel,
+    enhanceWindow,
+    current?.pageVersion,
+    prefs.enhance === 'auto' ? stretchedPages : null,
+  )
 
   const tone = useMemo(() => toneFilter(prefs), [prefs])
   useWakeLock(prefs.keepAwake)
@@ -792,6 +801,7 @@ export default function ReaderPage() {
         onHold={setToolbarHeld}
         onReveal={() => setChrome(true)}
         onShortcuts={() => setShortcutsOpen(true)}
+        serverEnhancing={server !== null}
       />
 
       {atEnd ? (
@@ -833,6 +843,7 @@ export default function ReaderPage() {
               enhance={prefs.enhance}
               enhanceMethod={prefs.enhanceMethod}
               server={server}
+              onStretched={setStretchedPages}
             />
           ) : (
             <PagedView
@@ -852,6 +863,7 @@ export default function ReaderPage() {
               enhanceMethod={prefs.enhanceMethod}
               server={server}
               preload={preloadPages}
+              onStretched={setStretchedPages}
             />
           )}
         </div>

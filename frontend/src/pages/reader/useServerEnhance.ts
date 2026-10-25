@@ -49,16 +49,19 @@ interface Tracked {
 
 /**
  * Asks the server to upscale the reading window (current page first, at most 12) a moment after
- * each page change, and follows each page from `queued` or `working` to `ready`, `failed` or
- * `skipped` through the response and the `pageEnhanced` push. If the live connection has been down
- * for 10 s, the window's unfinished pages are polled every 5 s instead. A 409 (tier switched off or
- * model gone) stops asking for the rest of the visit. Null whenever `model` is.
+ * each page change. With `only` set (Enhance on `auto`), only the window's pages in it are asked
+ * for, and a page joining it asks again. Each page is followed from `queued` or `working` to
+ * `ready`, `failed` or `skipped` through the response and the `pageEnhanced` push. If the live
+ * connection has been down for 10 s, the window's unfinished pages are polled every 5 s instead. A
+ * 409 (tier switched off or model gone) stops asking for the rest of the visit. Null whenever
+ * `model` is.
  */
 export function useServerEnhance(
   chapterId: number,
   model: string | null,
   pages: number[],
   pageVersion: string | undefined,
+  only: ReadonlySet<number> | null = null,
 ): ServerEnhance | null {
   const scope = model && pageVersion !== undefined ? `${chapterId}|${model}|${pageVersion}` : null
   const scopeRef = useRef(scope)
@@ -91,7 +94,7 @@ export function useServerEnhance(
 
   const windowKey = pages
     .filter((page) => Number.isInteger(page) && page >= 0)
-    .filter((page, index, all) => all.indexOf(page) === index)
+    .filter((page, index, all) => all.indexOf(page) === index && (only === null || only.has(page)))
     .slice(0, MAX_PAGES)
     .join(',')
   const connected = useHubConnected()

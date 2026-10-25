@@ -186,7 +186,7 @@ function ModelRow({
   const info = enhanceMethodInfo(`server:${model.id}`)
   const name = info ? label(info.label) : model.id
   const hint = info ? label(info.hint) : null
-  const size = formatBytes(model.bytes)
+  const size = model.bytes === null ? null : formatBytes(model.bytes)
   const ready = model.status === 'ready'
   const seconds = benchmark.data ? formatDecimal(benchmark.data.seconds) : null
 
@@ -198,7 +198,8 @@ function ModelRow({
       </Group>
       <Text size="xs" c="var(--ink-3)">
         {hint && `${hint} \u00b7 `}
-        {`${size} \u00b7 ${model.license} \u00b7 `}
+        {size && `${size} \u00b7 `}
+        {`${model.license} \u00b7 `}
         <Anchor href={model.source} target="_blank" rel="noreferrer" size="xs">
           {model.author}
         </Anchor>

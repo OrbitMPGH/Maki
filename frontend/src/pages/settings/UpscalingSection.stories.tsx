@@ -62,6 +62,12 @@ export const SwitchingOnMarksUnsaved: Story = {
     await expect(await canvas.findByText('Unsaved')).toBeVisible()
     await expect(await canvas.findByRole('checkbox', { name: 'Sharp (server)' })).not.toBeChecked()
     await expect(canvas.getByRole('button', { name: 'Save' })).toBeEnabled()
+    // waifu2x has no size until its manifest is read, so its line goes straight to the licence.
+    const waifu2x = (await canvas.findByRole('link', { name: 'nagadomi (waifu2x)' })).parentElement!
+    await waitFor(() => {
+      expect(waifu2x).toHaveTextContent(/MIT ·/)
+      expect(waifu2x.textContent).not.toMatch(/·\s*-?\s*·/)
+    })
   },
 }
 

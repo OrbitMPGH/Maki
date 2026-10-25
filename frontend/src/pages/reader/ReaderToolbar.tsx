@@ -88,6 +88,7 @@ export default function ReaderToolbar({
   onHold,
   onReveal,
   onShortcuts,
+  serverEnhancing = false,
 }: {
   manifest: ReaderManifest
   page: number
@@ -128,6 +129,8 @@ export default function ReaderToolbar({
   /** Brings the chrome up; called when a keyboard user tabs onto a control while it is hidden. */
   onReveal: () => void
   onShortcuts: () => void
+  /** A server method is in use, so pages can show the server's upscale even without the browser engine. */
+  serverEnhancing?: boolean
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -302,7 +305,7 @@ export default function ReaderToolbar({
               )}
             </Group>
           </div>
-          {enhanceOn && engineStatus !== 'unsupported' && engineStatus !== 'broken' && (
+          {enhanceOn && (serverEnhancing || (engineStatus !== 'unsupported' && engineStatus !== 'broken')) && (
             <Tooltip label={t`Hold to compare with the original (H)`} withArrow zIndex={OVERLAY_Z}>
               <ActionIcon
                 variant={compareHeld ? 'light' : 'subtle'}

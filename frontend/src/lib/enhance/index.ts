@@ -201,8 +201,9 @@ class Engine implements EnhanceEngine {
           bitmap.close()
           return
         }
-        if (job.key !== undefined) this.store(job.key, { bitmap, preset: job.preset, w: job.w, h: job.h })
-        else if (!job.waiters.length) bitmap.close()
+        // Every waiter gave up while it ran, so its scope has already let go of the key.
+        if (!job.waiters.length) bitmap.close()
+        else if (job.key !== undefined) this.store(job.key, { bitmap, preset: job.preset, w: job.w, h: job.h })
         this.settle(job, { bitmap })
         this.pump()
       },

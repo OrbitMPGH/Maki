@@ -120,16 +120,20 @@ export function isEnhanceError(error: unknown, code: string): boolean {
 /**
  * The cache keys one view has asked the engine for, grouped by page URL, so pages that leave the
  * view's window are evicted. It also remembers what each region size was last measured at, which
- * is how a page not yet on screen can be enhanced ahead at the size it will be shown.
+ * is how a page not yet on screen can be enhanced ahead at the size it will be shown, and which
+ * pages are shown stretched, which is all `auto` asks the server for.
  */
 export class EnhanceScope {
   private readonly keys = new Map<string, Set<string>>()
   private readonly sizes = new Map<string, EnhanceTarget>()
+  private readonly stretched = new Map<number, boolean>()
   private engine: EnhanceEngine | null = null
   private readonly onSize: () => void
+  private readonly onStretched: (pages: ReadonlySet<number>) => void
 
-  constructor(onSize: () => void = () => {}) {
+  constructor(onSize: () => void = () => {}, onStretched: (pages: ReadonlySet<number>) => void = () => {}) {
     this.onSize = onSize
+    this.onStretched = onStretched
   }
 
   attach(engine: EnhanceEngine | null) {
@@ -152,6 +156,25 @@ export class EnhanceScope {
 
   sizeFor(regionWidth: number, regionHeight: number): EnhanceTarget | undefined {
     return this.sizes.get(`${Math.round(regionWidth)}x${Math.round(regionHeight)}`)
+  }
+
+  notePage(page: number, stretched: boolean) {
+    if (this.stretched.get(page) === stretched) return
+    this.stretched.set(page, stretched)
+    this.reportPages()
+  }
+
+  /** Drops every page's stretched state, for a new chapter or a view going away. */
+  forgetPages() {
+    if (this.stretched.size === 0) return
+    this.stretched.clear()
+    this.reportPages()
+  }
+
+  private reportPages() {
+    const pages = new Set<number>()
+    for (const [page, stretched] of this.stretched) if (stretched) pages.add(page)
+    this.onStretched(pages)
   }
 
   /** Evicts every page whose URL is not in `srcs`. */
