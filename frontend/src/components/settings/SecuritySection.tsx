@@ -29,6 +29,7 @@ import { useCopyText } from '../ui/useCopyText'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { savedToast, useSliceSync } from '../../pages/settings/sharedRecord'
 import { SettingsNumberInput } from './SettingsNumberInput'
+import { useHostInfo, useRestartMaki, useSetNetworkAccess } from '../../api/hooks'
 
 /**
  * Instance security settings. Admin-only.
@@ -171,25 +172,102 @@ export function NetworkSection() {
     trustedProxies: s.trustedProxies,
   }))
   const [confirmingHttps, setConfirmingHttps] = useState(false)
+  const { data: host } = useHostInfo()
+  const setNetworkAccess = useSetNetworkAccess()
+  const restart = useRestartMaki()
+  const [allowNetwork, setAllowNetwork] = useState<boolean | null>(null)
+  const configuredNetworkAccess = host?.configuredNetworkAccess
+
+  useEffect(() => {
+    if (configuredNetworkAccess !== undefined) setAllowNetwork(configuredNetworkAccess)
+  }, [configuredNetworkAccess])
 
   if (!draft) return <SecurityCardShell id="network" title={<Trans>Network</Trans>} />
 
   // Sign-in is refused over plain HTTP once this is on, so switching it on from an http page that
   // is not loopback locks the admin out of this very address after the restart.
-  const onPlainHttp = window.location.protocol === 'http:' && !LOOPBACK_HOSTS.includes(window.location.hostname)
+  const onLoopback = LOOPBACK_HOSTS.includes(window.location.hostname)
+  const onPlainHttp = window.location.protocol === 'http:' && !onLoopback
   const turningOnHttps = onPlainHttp && draft.requireHttps && saved?.requireHttps === false
+
+  // Inside a container the port mapping decides who can reach Maki, so the switch only exists for
+  // the desktop build and plain installs.
+  const accessEditable = !!host && host.runtime !== 'docker' && allowNetwork !== null
+  const accessDirty = accessEditable && allowNetwork !== host.configuredNetworkAccess
+  const restartPending = !!host && host.configuredNetworkAccess !== host.networkAccess
+  const port = host?.port ?? 8990
+
+  const save = () => {
+    if (dirty) commit()
+    if (accessDirty && allowNetwork !== null) {
+      setNetworkAccess.mutate(allowNetwork, {
+        onSuccess: () =>
+          notifications.show({ message: now`Saved. Restart Maki to apply it.`, color: 'var(--ok)' }),
+      })
+    }
+  }
 
   return (
     <SettingsSection
       id="network"
       title={<Trans>Network</Trans>}
       description={<Trans>Changes take effect after Maki restarts.</Trans>}
-      dirty={dirty}
-      saving={saving}
-      onDiscard={discard}
-      onSave={() => (turningOnHttps ? setConfirmingHttps(true) : commit())}
+      dirty={dirty || accessDirty}
+      saving={saving || setNetworkAccess.isPending}
+      onDiscard={() => {
+        discard()
+        if (host) setAllowNetwork(host.configuredNetworkAccess)
+      }}
+      onSave={() => (turningOnHttps ? setConfirmingHttps(true) : save())}
     >
       <Stack gap="md">
+        {accessEditable && (
+          <Switch
+            label={t`Allow other devices on your network`}
+            description={
+              host.runtime === 'desktop'
+                ? t`Phones and other computers can open Maki at this computer's address, port ${port}. If Windows blocked Maki once, allow it under Windows Security, Firewall, "Allow an app through firewall".`
+                : t`Phones and other computers can open Maki at this computer's address, port ${port}. Off means only this computer can.`
+            }
+            checked={allowNetwork}
+            onChange={(e) => setAllowNetwork(e.currentTarget.checked)}
+          />
+        )}
+        {accessEditable && !allowNetwork && host.configuredNetworkAccess && !onLoopback && (
+          <Alert color="var(--warn)" variant="light">
+            <Trans>
+              You are on this page from another device. After the restart, Maki only answers on the
+              computer it runs on.
+            </Trans>
+          </Alert>
+        )}
+        {restartPending && (
+          <Alert color="var(--warn)" variant="light">
+            <Group justify="space-between" wrap="nowrap" gap="sm">
+              <Text size="sm">
+                <Trans>Network access changes after Maki restarts.</Trans>
+              </Text>
+              {host.supervised && (
+                <Button
+                  size="xs"
+                  variant="default"
+                  loading={restart.isPending}
+                  onClick={() =>
+                    restart.mutate(undefined, {
+                      onSuccess: () =>
+                        notifications.show({
+                          message: now`Maki is restarting. This page reconnects when it is back.`,
+                          color: 'var(--ok)',
+                        }),
+                    })
+                  }
+                >
+                  <Trans>Restart now</Trans>
+                </Button>
+              )}
+            </Group>
+          </Alert>
+        )}
         <Switch
           label={t`Require HTTPS`}
           description={t`Only turn this on once Maki is behind TLS.`}
@@ -222,7 +300,7 @@ export function NetworkSection() {
         loading={saving}
         onConfirm={() => {
           setConfirmingHttps(false)
-          commit()
+          save()
         }}
       >
         <Trans>

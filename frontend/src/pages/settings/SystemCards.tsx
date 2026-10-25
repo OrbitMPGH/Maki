@@ -44,6 +44,7 @@ import {
   useSaveBackupSettings,
   useUploadRestore,
   downloadBackup,
+  useApplyUpdate,
   useCheckForUpdatesNow,
   useImageCache,
   useRebuildImageCache,
@@ -352,7 +353,9 @@ export function UpdatesSection() {
   const latestVersion = status?.latestVersion
   const skippedVersion = useSyncExternalStore(subscribeSkippedVersion, getSkippedVersion)
   const isSkipped = !!status?.updateAvailable && !!latestVersion && skippedVersion === latestVersion
+  const applyUpdate = useApplyUpdate()
   const checkedAtLabel = status?.checkedAt ? formatDateTime(status.checkedAt) : undefined
+  const desktop = status?.runtime === 'desktop'
   const howToUpdate = status?.isDocker
     ? t`pull the new image and recreate the container`
     : t`pull the latest code and rebuild`
@@ -362,7 +365,11 @@ export function UpdatesSection() {
       id="updates"
       title={<Trans>Updates</Trans>}
       description={
-        <Trans>Updating is manual: {howToUpdate}.</Trans>
+        desktop ? (
+          <Trans>Maki downloads updates in the background and installs them when you restart it.</Trans>
+        ) : (
+          <Trans>Updating is manual: {howToUpdate}.</Trans>
+        )
       }
     >
       <Stack gap="sm">
@@ -405,6 +412,33 @@ export function UpdatesSection() {
             <Trans>Check now</Trans>
           </Button>
         </Group>
+        {desktop && status?.updateAvailable && !status.isDevBuild && (
+          <Group justify="space-between">
+            <Text size="sm" c="var(--ink-3)">
+              {status.updateReady ? (
+                <Trans>The update is downloaded. Maki is offline for about a minute while it installs.</Trans>
+              ) : (
+                <Trans>Downloading the update in the background.</Trans>
+              )}
+            </Text>
+            <Button
+              size="xs"
+              disabled={!status.updateReady}
+              loading={applyUpdate.isPending}
+              onClick={() =>
+                applyUpdate.mutate(undefined, {
+                  onSuccess: () =>
+                    notifications.show({
+                      message: now`Installing the update. This page reconnects when Maki is back.`,
+                      color: 'var(--ok)',
+                    }),
+                })
+              }
+            >
+              <Trans>Restart to update</Trans>
+            </Button>
+          </Group>
+        )}
         {status?.updateAvailable && !status.isDevBuild && status.releaseNotes?.trim() && (
           <ReleaseNotes notes={status.releaseNotes} />
         )}

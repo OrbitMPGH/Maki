@@ -50,6 +50,7 @@ import type {
   TagDto,
   UpdateSettingsDto,
   UpdateStatusDto,
+  HostInfoDto,
 } from './types'
 
 export function useSeries(enabled = true) {
@@ -2786,6 +2787,37 @@ export function useSaveUpdateSettings() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'updates'] })
     },
+  })
+}
+
+export function useHostInfo(enabled = true) {
+  return useQuery({
+    queryKey: ['system', 'host'],
+    queryFn: () => api<HostInfoDto>('/system/host'),
+    enabled,
+  })
+}
+
+export function useSetNetworkAccess() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (allowNetwork: boolean) =>
+      api<HostInfoDto>('/system/host/network', { method: 'PUT', body: JSON.stringify({ allowNetwork }) }),
+    onSuccess: (data) => queryClient.setQueryData(['system', 'host'], data),
+  })
+}
+
+/** Stops Maki so whatever supervises it starts it again. The page loses its connection meanwhile. */
+export function useRestartMaki() {
+  return useMutation({
+    mutationFn: () => api<void>('/system/restart', { method: 'POST' }),
+  })
+}
+
+/** Desktop build: restarts into the update the tray app has downloaded. */
+export function useApplyUpdate() {
+  return useMutation({
+    mutationFn: () => api<void>('/system/update/apply', { method: 'POST' }),
   })
 }
 

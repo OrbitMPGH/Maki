@@ -41,6 +41,7 @@ import type {
   TagDto,
   UpdateSettingsDto,
   UpdateStatusDto,
+  HostInfoDto,
 } from '../../../src/api/types'
 import type { InboxPrefs } from '../../../src/api/inbox'
 import type { ReaderSettings } from '../../../src/api/reader'
@@ -844,6 +845,8 @@ export const updateStatusCurrent: UpdateStatusDto = {
   releaseUrl: null,
   releaseNotes: null,
   checkedAt: hoursAgo(6),
+  runtime: 'docker',
+  updateReady: false,
 }
 
 export const updateStatusAvailable: UpdateStatusDto = {
@@ -855,6 +858,26 @@ export const updateStatusAvailable: UpdateStatusDto = {
 }
 
 export const updateSettings: UpdateSettingsDto = { checkForUpdates: true }
+
+export const hostDocker: HostInfoDto = {
+  runtime: 'docker',
+  supervised: true,
+  port: 8990,
+  bindAddress: '*',
+  configuredBindAddress: '*',
+  networkAccess: true,
+  configuredNetworkAccess: true,
+}
+
+/** The Windows tray build on a fresh install: this computer only. */
+export const hostDesktop: HostInfoDto = {
+  ...hostDocker,
+  runtime: 'desktop',
+  bindAddress: 'localhost',
+  configuredBindAddress: 'localhost',
+  networkAccess: false,
+  configuredNetworkAccess: false,
+}
 
 export const pageConversionIdle: PageConversionStatus = {
   settings: { format: 'webp', webpQuality: 80, avifQuality: 55 },

@@ -8,15 +8,21 @@ namespace Maki.Sources.Common;
 /// hold two. Reference counted: the driver starts with the first browser and ends with the last,
 /// which keeps the idle shutdown's saving intact when only one of them is in use.
 /// </summary>
-public sealed class SharedPlaywright : IDisposable
+public sealed class SharedPlaywright(BrowserInstaller? installer = null) : IDisposable
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
     private IPlaywright? _current;
     private int _holders;
 
-    public async Task<IPlaywright> AcquireAsync()
+    /// <summary>Installs the browser first if this build shipped without it; see <see cref="BrowserInstaller"/>.</summary>
+    public async Task<IPlaywright> AcquireAsync(CancellationToken ct = default)
     {
-        await _lock.WaitAsync();
+        if (installer is not null)
+        {
+            await installer.EnsureInstalledAsync(ct);
+        }
+
+        await _lock.WaitAsync(ct);
         try
         {
             _current ??= await Playwright.CreateAsync();

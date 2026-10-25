@@ -195,7 +195,11 @@ public enum SourceCapabilities
     /// language": MANGA Plus publishes nine and declares this false, because each of them is a
     /// separate series id rather than a filter over one list.
     /// </summary>
-    SupportsLanguageFilter = 2
+    SupportsLanguageFilter = 2,
+
+    /// <summary>Launches a headless browser through Playwright. Native builds install it on first use;
+    /// <c>HealthMonitor</c> reports the install while such a source is enabled.</summary>
+    NeedsBrowser = 4
 }
 
 /// <summary>
