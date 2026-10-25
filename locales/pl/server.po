@@ -1221,6 +1221,46 @@ msgstr "Kavita nie jest skonfigurowana (Ustawienia → Kavita)."
 msgid "error.reader.nothingToRead"
 msgstr "Nie zostało nic do przeczytania"
 
+#: src/Maki.Api/Controllers/NotesController.cs
+#. English: Write something first
+msgid "error.notes.empty"
+msgstr ""
+
+#: src/Maki.Api/Controllers/NotesController.cs
+#. English: Notes can be at most {max} characters
+msgid "error.notes.tooLong"
+msgstr ""
+
+#: src/Maki.Api/Controllers/NotesController.cs
+#. English: That page is not one this note can be pinned to
+msgid "error.notes.badPage"
+msgstr ""
+
+#: src/Maki.Api/Controllers/NotesController.cs
+#. English: A note is either private or shared
+msgid "error.notes.badVisibility"
+msgstr ""
+
+#: src/Maki.Api/Controllers/NotesController.cs
+#. English: Other readers replied to this note, so it has to stay shared
+msgid "error.notes.hasReplies"
+msgstr ""
+
+#: src/Maki.Api/Controllers/NotesController.cs
+#. English: This note was deleted
+msgid "error.notes.deleted"
+msgstr ""
+
+#: src/Maki.Api/Controllers/NotesController.cs
+#. English: This chapter changed while you were writing. Reload and try again
+msgid "error.notes.chapterGone"
+msgstr ""
+
+#: src/Maki.Api/Controllers/NotesController.cs
+#. English: Only the person who wrote this note can change it
+msgid "error.notes.notYours"
+msgstr ""
+
 #: src/Maki.Api/Controllers/ReaderController.cs
 #. English: Page is outside this chapter
 #, fuzzy
@@ -3541,6 +3581,16 @@ msgstr "Poziom {level}"
 #, fuzzy
 msgid "inbox.levelUpJump.body"
 msgstr "Osiągnięto poziom {level}, awansując z {previous}."
+
+#: src/Maki.Api/Controllers/NotesController.cs
+#. English: New reply to a note
+msgid "inbox.noteReply.title"
+msgstr ""
+
+#: src/Maki.Api/Controllers/NotesController.cs
+#. English: {hasName, select, yes {{userName}} other {Another reader}} replied on {series}, {chapter}
+msgid "inbox.noteReply.body"
+msgstr ""
 
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: New chapter downloaded

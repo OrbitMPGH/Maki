@@ -18,4 +18,12 @@ public static class DbErrors
         SqliteException { SqliteExtendedErrorCode: 2067 or 1555 } => true,
         _ => false,
     };
+
+    /// <summary>Whether a SQLite foreign-key constraint failed (787), such as a row whose parent was just deleted.</summary>
+    public static bool IsForeignKeyViolation(Exception e) => e switch
+    {
+        DbUpdateException { InnerException: SqliteException { SqliteExtendedErrorCode: 787 } } => true,
+        SqliteException { SqliteExtendedErrorCode: 787 } => true,
+        _ => false,
+    };
 }

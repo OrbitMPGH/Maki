@@ -689,6 +689,14 @@ public class ChapterSyncServiceTests : IDisposable
         }
 
         SeedProgress(reader, seriesId, dupId, page: 7);
+        using (var db = _db.NewContext())
+        {
+            db.ChapterNotes.Add(new ChapterNote
+            {
+                AuthorId = reader, SeriesId = seriesId, ChapterId = dupId, PageIndex = 3, Body = "kept", CreatedAt = DateTime.UtcNow,
+            });
+            db.SaveChanges();
+        }
 
         await BuildService(null, new FakeSource { Name = "fake" }).SyncSeriesAsync(seriesId);
 
@@ -698,6 +706,10 @@ public class ChapterSyncServiceTests : IDisposable
         var progress = Assert.Single(ProgressOf(seriesId));
         Assert.Equal(keeperId, progress.ChapterId);
         Assert.Equal(7, progress.PageIndex);
+        using var check = _db.NewContext();
+        var note = Assert.Single(check.ChapterNotes);
+        Assert.Equal(keeperId, note.ChapterId);
+        Assert.Equal(3, note.PageIndex);
     }
 
     [Fact]

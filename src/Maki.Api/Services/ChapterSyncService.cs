@@ -512,13 +512,14 @@ public class ChapterSyncService(
     }
 
     /// <summary>
-    /// Every reader's progress and bookmarks on the series, loaded only once a merge needs them.
+    /// Every reader's progress, bookmarks and notes on the series, loaded only once a merge needs them.
     /// Unfiltered, since a sync started from one user's request must not drop another user's reads.
     /// </summary>
     private sealed class ReadRows(MakiDbContext db, int seriesId)
     {
         private List<ChapterProgress>? _progress;
         private List<ReaderBookmark>? _bookmarks;
+        private List<ChapterNote>? _notes;
 
         /// <summary>Whether one row can absorb the other without dropping a file or a reader's progress.</summary>
         public async Task<bool> CanMergeAsync(Chapter a, Chapter b, CancellationToken ct)
@@ -560,6 +561,14 @@ public class ChapterSyncService(
                 {
                     mark.ChapterId = to.Id;
                 }
+            }
+
+            var notes = _notes ??= await db.ChapterNotes.IgnoreQueryFilters()
+                .Where(n => n.SeriesId == seriesId)
+                .ToListAsync(ct);
+            foreach (var note in notes.Where(n => n.ChapterId == from.Id))
+            {
+                note.ChapterId = to.Id;
             }
         }
 

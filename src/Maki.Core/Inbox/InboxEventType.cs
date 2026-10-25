@@ -48,6 +48,9 @@ public enum InboxEventType
 
     /// <summary>A series' publication status changed, for example from ongoing to completed.</summary>
     SeriesStatusChanged = 23,
+
+    /// <summary>Someone replied in a shared note thread the user wrote in.</summary>
+    NoteReply = 24,
 }
 
 /// <summary>

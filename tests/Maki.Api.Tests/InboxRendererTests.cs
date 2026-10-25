@@ -62,7 +62,20 @@ public class InboxRendererTests
         { "inbox.account.ssoLinked", new { account = "alice@idp" } },
         { "inbox.series.statusChanged", new { from = "ongoing", to = "completed" } },
         { "inbox.series.statusChanged", new { from = "ongoing", to = "completed" } },
+        { "inbox.noteReply", new { userName = "Ana", hasName = "yes", chapter = "Ch.12" } },
+        { "inbox.noteReply", new { userName = "", hasName = "no", chapter = "Ch.12" } },
     };
+
+    [Fact]
+    public void A_reply_from_someone_unnamed_reads_as_another_reader()
+    {
+        var (_, named) = Render("inbox.noteReply", new { userName = "Ana", hasName = "yes", chapter = "Ch.12" });
+        var (_, unnamed) = Render("inbox.noteReply", new { userName = "", hasName = "no", chapter = "Ch.12" });
+
+        Assert.StartsWith("Ana replied", named, StringComparison.Ordinal);
+        Assert.StartsWith("Another reader replied", unnamed, StringComparison.Ordinal);
+        Assert.EndsWith("Ch.12", unnamed, StringComparison.Ordinal);
+    }
 
     [Fact]
     public void A_torrent_proposal_words_its_size()

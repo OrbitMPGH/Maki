@@ -212,6 +212,12 @@ public class ReaderController(
                 .FirstOrDefaultAsync(ct)
             : null;
 
+        // Drawn with the first paint, so the toolbar badge and the page markers need no second request.
+        var notePages = await db.ChapterNotes
+            .Where(n => n.ChapterId == id && n.ParentId == null && n.DeletedAt == null)
+            .Select(n => n.PageIndex)
+            .ToListAsync(ct);
+
         return Ok(new
         {
             chapterId = slice.Chapter.Id,
@@ -237,7 +243,9 @@ public class ReaderController(
             profileId = resolved.ProfileId,
             pinnedProfileId = resolved.PinnedProfileId,
             autoProfileId = resolved.AutoProfileId,
-            pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion)
+            pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion),
+            noteCount = notePages.Count,
+            notedPages = notePages.OfType<int>().Where(p => p < slice.PageCount).Distinct().Order().ToList()
         });
     }
 

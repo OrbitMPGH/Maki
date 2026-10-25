@@ -69,6 +69,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<ChapterProgress> ChapterProgress => Set<ChapterProgress>();
     public DbSet<PendingReadImport> PendingReadImports => Set<PendingReadImport>();
     public DbSet<ReaderBookmark> ReaderBookmarks => Set<ReaderBookmark>();
+    public DbSet<ChapterNote> ChapterNotes => Set<ChapterNote>();
     public DbSet<ReadingSession> ReadingSessions => Set<ReadingSession>();
     public DbSet<ReadingProfile> ReadingProfiles => Set<ReadingProfile>();
     public DbSet<Notification> Notifications => Set<Notification>();
@@ -819,6 +820,28 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne<Chapter>().WithMany().HasForeignKey(b => b.ChapterId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(b => b.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(b => _scope.Unrestricted || b.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<ChapterNote>(e =>
+        {
+            e.HasIndex(n => n.ChapterId);
+            e.HasIndex(n => n.SeriesId);
+            e.HasIndex(n => n.AuthorId);
+            e.HasIndex(n => n.ParentId);
+            e.Property(n => n.Body).HasMaxLength(ChapterNote.MaxBodyLength);
+            e.HasOne<Series>().WithMany().HasForeignKey(n => n.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Chapter>().WithMany().HasForeignKey(n => n.ChapterId).OnDelete(DeleteBehavior.Cascade);
+
+            // Not Cascade: a tombstoned root keeps its author, so a cascade would delete it and the
+            // self-reference would take everyone else's replies with it. Account deletion cleans up
+            // first (ChapterNoteService.ForgetAuthorAsync).
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(n => n.AuthorId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne<ChapterNote>().WithMany().HasForeignKey(n => n.ParentId).OnDelete(DeleteBehavior.Cascade);
+
+            // Mine, or shared on a series I can see. Admins get no bypass: private means private.
+            e.HasQueryFilter(n => _scope.Unrestricted ||
+                (Series.Any(s => s.Id == n.SeriesId) &&
+                 (n.AuthorId == _scope.UserId || n.Visibility == NoteVisibility.Shared)));
         });
 
         modelBuilder.Entity<ReadingSession>(e =>
