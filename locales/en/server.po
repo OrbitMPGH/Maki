@@ -1756,6 +1756,19 @@ msgstr ""
 "{file} was held back for review: {reason, select, fewer_pages {it has fewer pages than the files it "
 "would replace} other {its pages could not be measured}}"
 
+#: src/Maki.Api/Controllers/ReaderController.cs
+msgid "error.enhance.disabled"
+msgstr "Server page enhancement is turned off on this server."
+
+#. The reader asked for a server model the admin has not enabled or that has not finished downloading.
+#: src/Maki.Api/Controllers/ReaderController.cs
+msgid "error.enhance.modelUnavailable"
+msgstr "This enhancement model is not available on the server."
+
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.benchmarkFailed"
+msgstr "The speed test could not run the sample page through this model."
+
 #: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
 msgid "error.upscaling.checksumMismatch"
 msgstr "The downloaded model did not match its checksum, so it was deleted. Try the download again."
@@ -1763,6 +1776,23 @@ msgstr "The downloaded model did not match its checksum, so it was deleted. Try 
 #: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
 msgid "error.upscaling.downloadFailed"
 msgstr "The model could not be downloaded. Check that this server can reach GitHub, then try again."
+
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.invalidCache"
+msgstr "The cache size must be between {min} and {max} MB."
+
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.invalidThreads"
+msgstr "Threads must be between {min} and {max}."
+
+#. Deleting a model whose file is still open because a page is being upscaled with it right now.
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.modelInUse"
+msgstr "The model is busy with a page right now. Try again in a moment."
+
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.unknownModel"
+msgstr "Maki does not know that model."
 
 #: src/Maki.Api/Controllers/UsersController.cs
 msgid "error.users.cannotDeleteSelf"

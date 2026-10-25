@@ -967,6 +967,10 @@ try
     builder.Services.AddSingleton<Maki.Api.Services.Upscaling.OnnxPageUpscaler>();
     builder.Services.AddSingleton<Maki.Core.Images.Upscaling.IPageUpscaler>(sp =>
         sp.GetRequiredService<Maki.Api.Services.Upscaling.OnnxPageUpscaler>());
+    builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleCache>();
+    builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleQueue>();
+    builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleWorker>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<Maki.Api.Services.Upscaling.UpscaleWorker>());
     builder.Services.AddScoped<ReadingTimeEstimateService>();
     builder.Services.AddScoped<OpdsCatalogService>();
     builder.Services.AddScoped<OpdsAccessService>();
