@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using Maki.Core.Configuration;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
+using SQLitePCL;
 using ZstdSharp;
 
 namespace Maki.Metadata.MangaBaka;
@@ -93,6 +94,11 @@ public class MangaBakaDumpService(
 
     private async Task<bool> RefreshCoreAsync(CancellationToken ct)
     {
+        // A run killed mid-build (a SIGKILL once Docker's stop grace runs out) leaves up to 4 GB behind,
+        // and an unchanged dump never downloads again to overwrite it.
+        var stagingPath = Path.Combine(options.StagingDirectory, "mangabaka.db.partial");
+        DeleteStaging(stagingPath);
+
         var client = httpClientFactory.CreateClient(HttpClientName);
         var dumpPath = await DumpPathAsync(ct);
 
@@ -120,7 +126,6 @@ public class MangaBakaDumpService(
         }
 
         Directory.CreateDirectory(options.StagingDirectory);
-        var stagingPath = Path.Combine(options.StagingDirectory, "mangabaka.db.partial");
 
         try
         {
@@ -132,13 +137,13 @@ public class MangaBakaDumpService(
             }
 
             status.SetPhase("indexing");
-            PrepareStagedDatabase(stagingPath);
+            PrepareStagedDatabase(stagingPath, ct);
             status.SetPhase("installing");
             await SwapIntoPlaceAsync(stagingPath, ct);
         }
         catch
         {
-            TryDelete(stagingPath);
+            DeleteStaging(stagingPath);
             throw;
         }
 
@@ -238,22 +243,50 @@ public class MangaBakaDumpService(
     }
 
     /// <summary>Sanity-checks the staged database and builds the FTS5 index over all title variants.</summary>
-    private void PrepareStagedDatabase(string stagingPath)
+    private void PrepareStagedDatabase(string stagingPath, CancellationToken ct)
     {
         using var conn = new SqliteConnection($"Data Source={stagingPath};Pooling=False");
         conn.Open();
 
-        var count = (long)Scalar(conn, "SELECT COUNT(*) FROM series")!;
-        if (count < 1000)
+        Interruptible(conn, ct, () =>
         {
-            throw new InvalidOperationException($"MangaBaka dump looks broken: only {count} series rows");
+            var count = (long)Scalar(conn, "SELECT COUNT(*) FROM series")!;
+            if (count < 1000)
+            {
+                throw new InvalidOperationException($"MangaBaka dump looks broken: only {count} series rows");
+            }
+
+            logger.LogInformation("Building MangaBaka search index over {Count} series…", count);
+            BuildSearchIndex(conn);
+
+            logger.LogInformation("Building MangaBaka browse indexes…");
+            BuildBrowseIndexes(conn, logger);
+        });
+    }
+
+    /// <summary>
+    /// Runs <paramref name="work"/> so that <paramref name="ct"/> stops the statement in flight.
+    /// Microsoft.Data.Sqlite never looks at a token once a statement is running, and the builds here
+    /// are single statements over the whole 3.5 GB file that take minutes, so a shutdown would wait
+    /// out all of it. The progress handler aborts the statement with SQLITE_INTERRUPT within a few
+    /// thousand VM steps of cancellation, which is rethrown as the cancellation it is.
+    /// </summary>
+    internal static void Interruptible(SqliteConnection conn, CancellationToken ct, Action work)
+    {
+        ct.ThrowIfCancellationRequested();
+        raw.sqlite3_progress_handler(conn.Handle, 10_000, _ => ct.IsCancellationRequested ? 1 : 0, null);
+        try
+        {
+            work();
         }
-
-        logger.LogInformation("Building MangaBaka search index over {Count} series…", count);
-        BuildSearchIndex(conn);
-
-        logger.LogInformation("Building MangaBaka browse indexes…");
-        BuildBrowseIndexes(conn, logger);
+        catch (SqliteException ex) when (ex.SqliteErrorCode == raw.SQLITE_INTERRUPT && ct.IsCancellationRequested)
+        {
+            throw new OperationCanceledException("The MangaBaka index build was cancelled", ex, ct);
+        }
+        finally
+        {
+            raw.sqlite3_progress_handler(conn.Handle, 0, null, null);
+        }
     }
 
     /// <summary>The names of the indexes <see cref="BuildBrowseIndexes"/> creates.</summary>
@@ -510,7 +543,7 @@ public class MangaBakaDumpService(
             "Backfilling MangaBaka browse indexes ({Existing} of {Expected} present)…",
             expected.Count(existing.Contains), expected.Count);
         var started = DateTime.UtcNow;
-        BuildBrowseIndexes(conn, logger, onlyMissing: true);
+        Interruptible(conn, ct, () => BuildBrowseIndexes(conn, logger, onlyMissing: true));
         logger.LogInformation(
             "MangaBaka browse indexes built in {Elapsed:F1}s", (DateTime.UtcNow - started).TotalSeconds);
         return true;
@@ -586,14 +619,18 @@ public class MangaBakaDumpService(
         cmd.ExecuteNonQuery();
     }
 
-    private static void TryDelete(string path)
+    /// <summary>Removes the staged file and the rollback journal an interrupted build leaves beside it.</summary>
+    private static void DeleteStaging(string stagingPath)
     {
-        try
+        foreach (var path in new[] { stagingPath, stagingPath + "-journal" })
         {
-            File.Delete(path);
-        }
-        catch (IOException)
-        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
         }
     }
 }
@@ -725,6 +762,11 @@ internal sealed class HashingReadStream(
 
         return read;
     }
+
+    // ZstdSharp's DecompressionStream reads through this overload. Stream's default runs the
+    // synchronous Read on the pool, which drops the token and skips StallTimeoutStream's timer.
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct) =>
+        ReadAsync(buffer.AsMemory(offset, count), ct).AsTask();
 
     public override void Flush()
     {

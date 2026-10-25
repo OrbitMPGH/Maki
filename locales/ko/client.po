@@ -1034,6 +1034,10 @@ msgstr "{fileCount, plural, other {단일 챕터 파일 #개}}"
 msgid "{fileName} replaced {filesText}"
 msgstr "{fileName}(으)로 {filesText} 교체"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{files, plural, one {{used} of {limit}, # page} other {{used} of {limit}, # pages}}"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{finishedCount, plural, one {# series finished} other {# series finished}}"
@@ -1751,6 +1755,10 @@ msgstr "{samples, plural, other {라이브러리의 시리즈 {series}개에 걸
 #, fuzzy
 msgid "{searchCap}+ matches"
 msgstr "{searchCap}개 이상 일치"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{seconds} s per sample page"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -3337,6 +3345,10 @@ msgstr "일일 스캔도 켜져 있어야 합니다."
 msgid "Alt titles"
 msgstr "대체 제목"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Always"
+msgstr ""
+
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Amber"
@@ -3692,6 +3704,7 @@ msgid "Attribute Kavita's reading to"
 msgstr "Kavita 읽기 기록의 사용자"
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/pages/reader/enhanceMethods.ts
 #, fuzzy
 msgid "Auto"
 msgstr "자동"
@@ -3902,6 +3915,7 @@ msgid "balanced"
 msgstr "균형"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/reader/enhanceMethods.ts
 #, fuzzy
 msgid "Balanced"
 msgstr "균형"
@@ -4178,6 +4192,10 @@ msgstr "C:\\Manga 또는 /library"
 #, fuzzy
 msgid "Cache progress"
 msgstr "캐시 진행 상황"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Cache size (MB)"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -4948,6 +4966,10 @@ msgstr "모든 필터 지우기"
 #, fuzzy
 msgid "Clear all notifications?"
 msgstr "모든 알림을 지울까요?"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Clear cache"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5823,6 +5845,10 @@ msgstr "Maki가 모르는 챕터를 포함합니다"
 msgid "covers, posters, artwork, thumbnails, rebuild image cache, missing covers, broken cover, clear cache, mediacover"
 msgstr "표지, 포스터, 아트워크, 썸네일, 이미지 캐시 재빌드, 누락된 표지, 손상된 표지, 캐시 지우기, mediacover"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "CPU threads used for one page."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -5905,6 +5931,10 @@ msgstr "다시 찾는 작가"
 #, fuzzy
 msgid "Creators, type, status, content rating"
 msgstr "작가, 유형, 연재 상태, 콘텐츠 등급"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Crisp line art (server)"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -6132,6 +6162,7 @@ msgstr "정의 중"
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Delete"
 msgstr "삭제"
@@ -6584,6 +6615,7 @@ msgid "Down"
 msgstr "아래로"
 
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Download"
 msgstr "다운로드"
@@ -6721,6 +6753,8 @@ msgstr "사전 제작 인덱스 다운로드됨"
 #: src/components/SetupWizard.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Downloading"
 msgstr "다운로드 중"
@@ -6830,6 +6864,10 @@ msgstr ""
 #, fuzzy
 msgid "Each Mihon category becomes a tag on the series. Manga in Mihon's Default category get no tag."
 msgstr "Mihon의 각 카테고리는 시리즈의 태그가 됩니다. Mihon의 기본 카테고리에 있는 만화에는 태그가 붙지 않습니다."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -6985,6 +7023,10 @@ msgstr "{name} 사용"
 msgid "Enable import lists for everyone"
 msgstr "모두에게 가져오기 목록 활성화"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Enable server upscaling"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Enable single sign-on"
@@ -7034,6 +7076,15 @@ msgstr "영어 (MangaBaka 기본값)"
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "English markers like v01 and Ch. 12 are always read. Turn on a language to read its markers too."
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Enhance"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "enhance {level}, {methodLabel}"
 msgstr ""
 
 #: src/pages/LoginPage.tsx
@@ -7360,6 +7411,7 @@ msgstr "<0/>(으)로 연결될 것으로 예상됨"
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Failed"
 msgstr "실패"
@@ -7450,6 +7502,10 @@ msgstr "판타지"
 #, fuzzy
 msgid "Faster animations"
 msgstr "빠른 애니메이션"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Fastest, on this device"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -8113,6 +8169,10 @@ msgstr "장르 및 태그"
 msgid "Genres in the library"
 msgstr "라이브러리의 장르"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Gentle (server)"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -8534,6 +8594,15 @@ msgstr "과거"
 msgid "History"
 msgstr "기록"
 
+#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Hold to compare"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Hold to compare with the original (H)"
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/HomePage.tsx
@@ -8702,6 +8771,10 @@ msgstr "{since}에 무시됨"
 #, fuzzy
 msgid "Ignoring"
 msgstr "무시 중"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "IllustrationJaNai SPAN-S"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #: src/pages/settings/SystemCards.tsx
@@ -9796,6 +9869,7 @@ msgstr "라이브러리 경로, 저장 공간, 디스크, 여유 공간, 폴더"
 msgid "Library title"
 msgstr "라이브러리 제목"
 
+#: src/pages/reader/enhanceMethods.ts
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Light"
@@ -10598,6 +10672,11 @@ msgstr "메타데이터 새로 고침"
 msgid "Metadata saved"
 msgstr "메타데이터 저장됨"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Method"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Mid-way"
@@ -10680,6 +10759,7 @@ msgstr "누락됨"
 #: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Missing"
 msgstr "누락"
@@ -10719,6 +10799,10 @@ msgstr "모델 다운로드 진행 상황"
 #, fuzzy
 msgid "Model switch: {modelSwitchError}"
 msgstr "모델 전환: {modelSwitchError}"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Models"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
@@ -11943,6 +12027,10 @@ msgstr "업그레이드가 아님: {reason}"
 msgid "Not analyzed"
 msgstr "분석되지 않음"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Not available"
+msgstr ""
+
 #: src/api/client.ts
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -12141,6 +12229,10 @@ msgstr "아직 설정되지 않았습니다."
 #, fuzzy
 msgid "Not set up yet. An admin can add it in Settings."
 msgstr "아직 설정되지 않았습니다. 관리자가 설정에서 추가할 수 있습니다."
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Not supported on this device"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -12584,6 +12676,7 @@ msgstr "독서 시간 중"
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/reader/enhanceMethods.ts
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Off"
@@ -12701,12 +12794,17 @@ msgid "On shelf"
 msgstr "라이브러리에 있음"
 
 #: src/components/series/ChapterTableRows.tsx
+#: src/pages/reader/enhanceMethods.ts
 #, fuzzy
 msgid "On this device"
 msgstr "이 기기에 있음"
 
 #: src/components/settings/PushNotificationsSection.tsx
 msgid "On this device, even when Maki is closed."
+msgstr ""
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "On this device; best on clean line art, can mottle screentone"
 msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -14164,6 +14262,10 @@ msgstr "리더 프로필"
 msgid "Reader settings"
 msgstr "리더 설정"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Readers can pick the ticked models. Saving a ticked model that isn't downloaded yet starts its download."
+msgstr ""
+
 #: src/api/hooks.ts
 #, fuzzy
 msgid "Readers like you"
@@ -14262,6 +14364,14 @@ msgstr "{label}에서 평점 읽는 중…"
 
 #: src/pages/HealthPage.tsx
 msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
+msgstr ""
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Ready"
+msgstr ""
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Real-ESRGAN; flattens screentone"
 msgstr ""
 
 #: src/components/QueueActions.tsx
@@ -15754,6 +15864,7 @@ msgstr "복구 코드 저장"
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
 #: src/pages/settings/SystemCards.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Saved"
 msgstr "저장됨"
@@ -16597,6 +16708,15 @@ msgstr "서버 주소를 복사했습니다"
 msgid "Server local time, 0 to 23."
 msgstr "서버 현지 시간, 0부터 23까지."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Server methods apply only when the admin has enabled them; otherwise Balanced is used."
+msgstr ""
+
+#: src/pages/settings/registry.ts
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Server upscaling"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Server URL"
@@ -16742,6 +16862,18 @@ msgstr "읽은 시리즈의 비율입니다."
 #, fuzzy
 msgid "Shares a file with another chapter"
 msgstr "다른 챕터와 파일을 공유합니다"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Sharp (server)"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source."
+msgstr ""
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Sharpens soft pages in the reader with models that run on this server."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -17589,6 +17721,10 @@ msgstr "이야기"
 msgid "Streak"
 msgstr "연속 기록"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Strong"
+msgstr ""
+
 #: src/components/CreditPicker.tsx
 #, fuzzy
 msgid "Studio"
@@ -17837,6 +17973,10 @@ msgstr "테스트 알림 전송됨"
 #, fuzzy
 msgid "Test notification sent."
 msgstr "테스트 알림을 보냈습니다."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Test speed"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -18119,6 +18259,10 @@ msgstr "연결된 파일의 목록이 아직 작성되지 않아 페이지를 �
 msgid "The local MangaBaka database is still downloading. Setup finishes once it is in."
 msgstr "로컬 MangaBaka 데이터베이스를 아직 다운로드하는 중입니다. 데이터가 들어오면 설정이 끝납니다."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "The models are third-party files under their own licences. The non-commercial ones bind anyone who receives them."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
 msgid "The most explicit rating shown outside your own library."
@@ -18149,6 +18293,10 @@ msgstr "특이한 항목"
 #, fuzzy
 msgid "The old file could not be moved aside for the upgrade"
 msgstr "업그레이드를 위해 기존 파일을 옆으로 옮기지 못했습니다"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "The oldest pages are dropped past this."
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -18449,6 +18597,10 @@ msgstr "로그인하려면 싱글 사인온을 다시 연결하거나 비밀번�
 msgid "They will no longer be able to sign in. This can't be undone."
 msgstr "해당 사용자는 더 이상 로그인할 수 없습니다. 되돌릴 수 없습니다."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Third-party notices"
+msgstr ""
+
 #: src/api/ssoErrors.ts
 #, fuzzy
 msgid "This account already has a single sign-on login. Remove it before linking another."
@@ -18698,6 +18850,10 @@ msgstr "올해"
 #, fuzzy
 msgid "Those series are already being matched."
 msgstr "해당 시리즈는 이미 일치 작업 중입니다."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Threads"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -19071,6 +19227,7 @@ msgstr "더 짧거나 다른 검색어를 사용해 보세요."
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #: src/pages/reader/ReaderPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Try again"
@@ -19650,6 +19807,11 @@ msgstr "이미지 업로드"
 msgid "Upper Case"
 msgstr "대문자"
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/downloadClientFields.ts
 #: src/components/settings/IndexerForm.tsx
@@ -20071,6 +20233,10 @@ msgstr "권: {volumes}"
 #, fuzzy
 msgid "vs {fromLabel} to {toLabel}"
 msgstr "{fromLabel}~{toLabel} 대비"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "waifu2x art; slowest, cleanest"
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx

@@ -1034,6 +1034,10 @@ msgstr "{fileCount, plural, other {# 个单独的文件}}"
 msgid "{fileName} replaced {filesText}"
 msgstr "{fileName} 替换了 {filesText}"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{files, plural, one {{used} of {limit}, # page} other {{used} of {limit}, # pages}}"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{finishedCount, plural, one {# series finished} other {# series finished}}"
@@ -1751,6 +1755,10 @@ msgstr "{samples, plural, other {根据你资料库中 {series} 个系列的 # �
 #, fuzzy
 msgid "{searchCap}+ matches"
 msgstr "{searchCap}+ 个匹配"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{seconds} s per sample page"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -3337,6 +3345,10 @@ msgstr "同样需要开启每日扫描。"
 msgid "Alt titles"
 msgstr "别名标题"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Always"
+msgstr ""
+
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Amber"
@@ -3692,6 +3704,7 @@ msgid "Attribute Kavita's reading to"
 msgstr "将 Kavita 的阅读归属于"
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/pages/reader/enhanceMethods.ts
 #, fuzzy
 msgid "Auto"
 msgstr "自动"
@@ -3902,6 +3915,7 @@ msgid "balanced"
 msgstr "均衡"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/reader/enhanceMethods.ts
 #, fuzzy
 msgid "Balanced"
 msgstr "均衡"
@@ -4178,6 +4192,10 @@ msgstr "C:\\Manga 或 /library"
 #, fuzzy
 msgid "Cache progress"
 msgstr "缓存进度"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Cache size (MB)"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -4948,6 +4966,10 @@ msgstr "清除所有筛选条件"
 #, fuzzy
 msgid "Clear all notifications?"
 msgstr "清除所有通知？"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Clear cache"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5823,6 +5845,10 @@ msgstr "包含 Maki 未知的章节"
 msgid "covers, posters, artwork, thumbnails, rebuild image cache, missing covers, broken cover, clear cache, mediacover"
 msgstr "封面，海报，画作，缩略图，重建图像缓存，缺失封面，损坏封面，清除缓存，mediacover"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "CPU threads used for one page."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -5905,6 +5931,10 @@ msgstr "反复阅读的创作者"
 #, fuzzy
 msgid "Creators, type, status, content rating"
 msgstr "作者、类型、状态、内容分级"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Crisp line art (server)"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -6132,6 +6162,7 @@ msgstr "定义中"
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Delete"
 msgstr "删除"
@@ -6584,6 +6615,7 @@ msgid "Down"
 msgstr "下移"
 
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Download"
 msgstr "下载"
@@ -6721,6 +6753,8 @@ msgstr "已下载预构建索引"
 #: src/components/SetupWizard.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Downloading"
 msgstr "下载中"
@@ -6830,6 +6864,10 @@ msgstr ""
 #, fuzzy
 msgid "Each Mihon category becomes a tag on the series. Manga in Mihon's Default category get no tag."
 msgstr "每个 Mihon 分类都会成为系列的一个标签。位于 Mihon 默认分类中的漫画不会添加标签。"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -6985,6 +7023,10 @@ msgstr "启用 {name}"
 msgid "Enable import lists for everyone"
 msgstr "为所有人启用列表导入"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Enable server upscaling"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Enable single sign-on"
@@ -7034,6 +7076,15 @@ msgstr "英文（MangaBaka 默认）"
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "English markers like v01 and Ch. 12 are always read. Turn on a language to read its markers too."
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Enhance"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "enhance {level}, {methodLabel}"
 msgstr ""
 
 #: src/pages/LoginPage.tsx
@@ -7360,6 +7411,7 @@ msgstr "预期关联为 <0/>"
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Failed"
 msgstr "失败"
@@ -7450,6 +7502,10 @@ msgstr "奇幻"
 #, fuzzy
 msgid "Faster animations"
 msgstr "加快动画"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Fastest, on this device"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -8113,6 +8169,10 @@ msgstr "类型和标签"
 msgid "Genres in the library"
 msgstr "资料库中的类型"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Gentle (server)"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -8534,6 +8594,15 @@ msgstr "历史"
 msgid "History"
 msgstr "历史记录"
 
+#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Hold to compare"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Hold to compare with the original (H)"
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/HomePage.tsx
@@ -8702,6 +8771,10 @@ msgstr "自 {since} 起已忽略"
 #, fuzzy
 msgid "Ignoring"
 msgstr "正在忽略"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "IllustrationJaNai SPAN-S"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #: src/pages/settings/SystemCards.tsx
@@ -9796,6 +9869,7 @@ msgstr "资料库路径，存储，磁盘，可用空间，文件夹"
 msgid "Library title"
 msgstr "资料库标题"
 
+#: src/pages/reader/enhanceMethods.ts
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Light"
@@ -10598,6 +10672,11 @@ msgstr "元数据刷新"
 msgid "Metadata saved"
 msgstr "元数据已保存"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Method"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Mid-way"
@@ -10680,6 +10759,7 @@ msgstr "缺失"
 #: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Missing"
 msgstr "缺失"
@@ -10719,6 +10799,10 @@ msgstr "模型下载进度"
 #, fuzzy
 msgid "Model switch: {modelSwitchError}"
 msgstr "模型切换：{modelSwitchError}"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Models"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
@@ -11943,6 +12027,10 @@ msgstr "不是升级：{reason}"
 msgid "Not analyzed"
 msgstr "未分析"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Not available"
+msgstr ""
+
 #: src/api/client.ts
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -12141,6 +12229,10 @@ msgstr "尚未设置。"
 #, fuzzy
 msgid "Not set up yet. An admin can add it in Settings."
 msgstr "尚未设置。管理员可以在设置中添加。"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Not supported on this device"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -12584,6 +12676,7 @@ msgstr "阅读时间的"
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/reader/enhanceMethods.ts
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Off"
@@ -12701,12 +12794,17 @@ msgid "On shelf"
 msgstr "在书架上"
 
 #: src/components/series/ChapterTableRows.tsx
+#: src/pages/reader/enhanceMethods.ts
 #, fuzzy
 msgid "On this device"
 msgstr "在此设备上"
 
 #: src/components/settings/PushNotificationsSection.tsx
 msgid "On this device, even when Maki is closed."
+msgstr ""
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "On this device; best on clean line art, can mottle screentone"
 msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -14164,6 +14262,10 @@ msgstr "阅读器配置"
 msgid "Reader settings"
 msgstr "阅读器设置"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Readers can pick the ticked models. Saving a ticked model that isn't downloaded yet starts its download."
+msgstr ""
+
 #: src/api/hooks.ts
 #, fuzzy
 msgid "Readers like you"
@@ -14262,6 +14364,14 @@ msgstr "正在读取你在 {label} 上的评分……"
 
 #: src/pages/HealthPage.tsx
 msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
+msgstr ""
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Ready"
+msgstr ""
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Real-ESRGAN; flattens screentone"
 msgstr ""
 
 #: src/components/QueueActions.tsx
@@ -15754,6 +15864,7 @@ msgstr "保存你的恢复代码"
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
 #: src/pages/settings/SystemCards.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Saved"
 msgstr "已保存"
@@ -16597,6 +16708,15 @@ msgstr "服务器地址已复制"
 msgid "Server local time, 0 to 23."
 msgstr "服务器本地时间，0 到 23。"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Server methods apply only when the admin has enabled them; otherwise Balanced is used."
+msgstr ""
+
+#: src/pages/settings/registry.ts
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Server upscaling"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Server URL"
@@ -16742,6 +16862,18 @@ msgstr "你读过的系列占比。"
 #, fuzzy
 msgid "Shares a file with another chapter"
 msgstr "与另一个章节共用同一个文件"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Sharp (server)"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source."
+msgstr ""
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Sharpens soft pages in the reader with models that run on this server."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -17589,6 +17721,10 @@ msgstr "故事"
 msgid "Streak"
 msgstr "连续记录"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Strong"
+msgstr ""
+
 #: src/components/CreditPicker.tsx
 #, fuzzy
 msgid "Studio"
@@ -17837,6 +17973,10 @@ msgstr "测试通知已发送"
 #, fuzzy
 msgid "Test notification sent."
 msgstr "测试通知已发送。"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Test speed"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -18119,6 +18259,10 @@ msgstr "关联文件尚未盘点，因此无法显示其页面。运行“扫描
 msgid "The local MangaBaka database is still downloading. Setup finishes once it is in."
 msgstr "本地 MangaBaka 数据库仍在下载。下载完成后即完成设置。"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "The models are third-party files under their own licences. The non-commercial ones bind anyone who receives them."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
 msgid "The most explicit rating shown outside your own library."
@@ -18149,6 +18293,10 @@ msgstr "与众不同"
 #, fuzzy
 msgid "The old file could not be moved aside for the upgrade"
 msgstr "无法为升级移开旧文件"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "The oldest pages are dropped past this."
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -18449,6 +18597,10 @@ msgstr "他们需要重新关联单点登录，或使用密码，才能登录。
 msgid "They will no longer be able to sign in. This can't be undone."
 msgstr "此用户将无法再登录。此操作无法撤销。"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Third-party notices"
+msgstr ""
+
 #: src/api/ssoErrors.ts
 #, fuzzy
 msgid "This account already has a single sign-on login. Remove it before linking another."
@@ -18698,6 +18850,10 @@ msgstr "今年"
 #, fuzzy
 msgid "Those series are already being matched."
 msgstr "这些系列已经在匹配中。"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Threads"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -19071,6 +19227,7 @@ msgstr "尝试更短或不同的查询。"
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #: src/pages/reader/ReaderPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Try again"
@@ -19650,6 +19807,11 @@ msgstr "上传图片"
 msgid "Upper Case"
 msgstr "大写"
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/downloadClientFields.ts
 #: src/components/settings/IndexerForm.tsx
@@ -20071,6 +20233,10 @@ msgstr "卷：{volumes}"
 #, fuzzy
 msgid "vs {fromLabel} to {toLabel}"
 msgstr "与 {fromLabel} 至 {toLabel} 相比"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "waifu2x art; slowest, cleanest"
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx

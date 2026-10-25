@@ -1,5 +1,6 @@
 using Maki.Api.Configuration;
 using Maki.Api.Services;
+using Maki.Api.Services.Upscaling;
 using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,8 @@ namespace Maki.Api.Jobs;
 /// <summary>Daily cleanup: orphaned page caches, old finished queue rows, WAL checkpoint, SQLite pool.</summary>
 [DisallowConcurrentExecution]
 public class HousekeepingJob(
-    MakiDbContext db, AppPaths paths, UpgradeTrashService upgradeTrash, ILogger<HousekeepingJob> logger) : IJob
+    MakiDbContext db, AppPaths paths, UpgradeTrashService upgradeTrash, UpscaleCache upscaleCache,
+    ILogger<HousekeepingJob> logger) : IJob
 {
     /// <summary>Most in-app notifications kept per user, read or not. Well past what anyone scrolls.</summary>
     private const int InboxCap = 200;
@@ -163,6 +165,21 @@ public class HousekeepingJob(
                 {
                     logger.LogDebug(ex, "Could not clean reader cache dir {Dir}", dir);
                 }
+            }
+        }
+
+        // Server upscales, under their own root. Same two kinds of garbage as the reader cache above,
+        // then the size cap.
+        if (Directory.Exists(upscaleCache.Root))
+        {
+            try
+            {
+                var sizes = await db.ChapterFiles.Select(f => new { f.Id, f.Size }).ToDictionaryAsync(f => f.Id, f => f.Size, ct);
+                await upscaleCache.PruneAsync(sizes, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogDebug(ex, "Could not clean the upscale cache");
             }
         }
 

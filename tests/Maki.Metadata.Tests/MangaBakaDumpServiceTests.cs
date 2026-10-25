@@ -248,6 +248,93 @@ public class MangaBakaDumpServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Refresh_cancelled_mid_download_stops_promptly_and_removes_the_staged_file()
+    {
+        using var source = new DumpDbBuilder();
+        source.AddSeries(377, "ONE PIECE").AddFillerSeries(1000);
+        var (compressed, sha1) = CompressDb(source.Path);
+
+        using var cts = new CancellationTokenSource();
+        var service = new MangaBakaDumpService(
+            new DribblingDumpHttpClientFactory($"{sha1}  series.sqlite.zst", compressed, cts.Cancel),
+            new MangaBakaDumpOptions(Path.Combine(_workDir, "mangabaka.db"), _workDir),
+            _settings,
+            _status,
+            NullLogger<MangaBakaDumpService>.Instance);
+
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.RefreshAsync(cts.Token));
+
+        // The whole body would take well over ten seconds at the dribble rate.
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(3), $"took {watch.Elapsed}");
+        Assert.False(File.Exists(Path.Combine(_workDir, "mangabaka.db.partial")));
+        Assert.Null(_status.Snapshot().LastError);
+    }
+
+    [Fact]
+    public void Interruptible_stops_a_running_statement_when_cancelled()
+    {
+        using var conn = new SqliteConnection($"Data Source={Path.Combine(_workDir, "slow.db")};Pooling=False");
+        conn.Open();
+        using (var create = conn.CreateCommand())
+        {
+            create.CommandText = "CREATE TABLE t (x INTEGER)";
+            create.ExecuteNonQuery();
+        }
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+
+        // One statement inside a transaction, the shape of the FTS build. Runs for minutes uninterrupted.
+        Assert.ThrowsAny<OperationCanceledException>(() => MangaBakaDumpService.Interruptible(conn, cts.Token, () =>
+        {
+            using var tx = conn.BeginTransaction();
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = """
+                INSERT INTO t
+                WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c LIMIT 2000000000)
+                SELECT x FROM c
+                """;
+            cmd.ExecuteNonQuery();
+            tx.Commit();
+        }));
+
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(5), $"took {watch.Elapsed}");
+
+        // The handler is removed again, so the connection stays usable.
+        using var count = conn.CreateCommand();
+        count.CommandText = "SELECT COUNT(*) FROM t";
+        Assert.Equal(0L, (long)count.ExecuteScalar()!);
+    }
+
+    [Fact]
+    public async Task Refresh_removes_a_staged_file_left_by_a_killed_run()
+    {
+        var dbPath = Path.Combine(_workDir, "mangabaka.db");
+        using (var installed = new DumpDbBuilder())
+        {
+            installed.AddSeries(377, "ONE PIECE").BuildSearchIndex();
+            SqliteConnection.ClearAllPools();
+            File.Copy(installed.Path, dbPath);
+        }
+
+        var staged = Path.Combine(_workDir, "mangabaka.db.partial");
+        await File.WriteAllTextAsync(staged, "half a dump");
+        await File.WriteAllTextAsync(staged + "-journal", "journal");
+        _settings.Values[SettingKeys.MangaBakaDumpSha1] = "abc123";
+        var service = CreateService(new Dictionary<string, byte[]>
+        {
+            ["series.sqlite.zst.sha1"] = "abc123  series.sqlite.zst"u8.ToArray()
+        });
+
+        Assert.False(await service.RefreshAsync());
+
+        Assert.False(File.Exists(staged));
+        Assert.False(File.Exists(staged + "-journal"));
+    }
+
+    [Fact]
     public async Task Refresh_rejects_checksum_mismatch_and_cleans_up()
     {
         using var source = new DumpDbBuilder();
@@ -336,5 +423,76 @@ public class HangingDumpHttpClientFactory(string sha1Line, TimeSpan? timeout = n
             await Task.Delay(Timeout.Infinite, ct);
             throw new InvalidOperationException("unreachable");
         }
+    }
+}
+
+/// <summary>
+/// Answers the checksum, then serves the dump a kilobyte at a time with a pause between reads, calling
+/// <paramref name="onFirstRead"/> once the first chunk is out so a test can cancel mid-body.
+/// </summary>
+public class DribblingDumpHttpClientFactory(string sha1Line, byte[] body, Action onFirstRead) : IHttpClientFactory
+{
+    public HttpClient CreateClient(string name) => new(new Handler(sha1Line, body, onFirstRead))
+    {
+        BaseAddress = new Uri("https://fixture.test/"),
+    };
+
+    private class Handler(string sha1Line, byte[] body, Action onFirstRead) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            HttpContent content = request.RequestUri!.ToString().EndsWith(".sha1", StringComparison.OrdinalIgnoreCase)
+                ? new StringContent(sha1Line)
+                : new StreamContent(new DribbleStream(body, onFirstRead));
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = content });
+        }
+    }
+
+    private class DribbleStream(byte[] body, Action onFirstRead) : Stream
+    {
+        private int _position;
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
+        {
+            if (_position > 0)
+            {
+                await Task.Delay(250, ct);
+            }
+
+            var read = Math.Min(Math.Min(buffer.Length, 1024), body.Length - _position);
+            body.AsMemory(_position, read).CopyTo(buffer);
+            if (_position == 0)
+            {
+                onFirstRead();
+            }
+
+            _position += read;
+            return read;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct) =>
+            ReadAsync(buffer.AsMemory(offset, count), ct).AsTask();
+
+        // Synchronous reads would bypass the token, which is the thing under test.
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override void Flush()
+        {
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }

@@ -142,6 +142,14 @@ export const settingsHandlers: HttpHandler[] = [
   http.post(api('/pageconversion/pause'), () =>
     HttpResponse.json({ ...d.pageConversionRunning, pass: { ...d.pageConversionRunning.pass, state: 'paused', currentFile: null } }),
   ),
+  http.get(api('/upscaling'), () => HttpResponse.json(d.upscalingOn)),
+  http.put(api('/upscaling/settings'), async ({ request }) =>
+    HttpResponse.json({ ...d.upscalingOn, settings: await request.json() }),
+  ),
+  http.post(api('/upscaling/models/:id/download'), () => HttpResponse.json(d.upscalingOn)),
+  http.delete(api('/upscaling/models/:id'), () => HttpResponse.json(d.upscalingOn)),
+  http.post(api('/upscaling/cache/clear'), () => HttpResponse.json({ ...d.upscalingOn, cache: { bytes: 0, files: 0 } })),
+  http.post(api('/upscaling/benchmark'), () => HttpResponse.json({ seconds: 5.5 })),
   http.get(api('/recyclebin'), () => HttpResponse.json(d.recycleBin)),
   http.get(api('/recyclebin/retention'), () => HttpResponse.json({ days: 14 })),
   http.put(api('/recyclebin/retention'), ok),

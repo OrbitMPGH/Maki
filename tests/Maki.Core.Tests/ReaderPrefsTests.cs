@@ -76,4 +76,54 @@ public class ReaderPrefsTests
         Assert.True(spec.CropBorders);
         Assert.False(spec.AutoWebtoon);
     }
+
+    [Fact]
+    public void Parse_of_a_blob_from_before_enhance_uses_off_and_the_balanced_preset()
+    {
+        var spec = ReaderPrefsSpec.Parse("""{"mode":"double","splitWide":"split"}""");
+
+        Assert.Equal("off", spec.Enhance);
+        Assert.Equal("a4k-m", spec.EnhanceMethod);
+    }
+
+    [Fact]
+    public void Sanitized_maps_unknown_enhance_values_to_the_defaults()
+    {
+        var spec = new ReaderPrefsSpec(Enhance: "max", EnhanceMethod: "server:nope").Sanitized();
+
+        Assert.Equal("off", spec.Enhance);
+        Assert.Equal("a4k-m", spec.EnhanceMethod);
+    }
+
+    [Theory]
+    [InlineData("a4k-s")]
+    [InlineData("a4k-m")]
+    [InlineData("a4k-a")]
+    [InlineData("server:span-s")]
+    [InlineData("server:realesrgan-av3")]
+    [InlineData("server:waifu2x-art")]
+    public void Sanitized_keeps_every_known_enhance_method(string method)
+    {
+        Assert.Equal(method, new ReaderPrefsSpec(EnhanceMethod: method).Sanitized().EnhanceMethod);
+    }
+
+    [Theory]
+    [InlineData("off")]
+    [InlineData("auto")]
+    [InlineData("always")]
+    public void Sanitized_keeps_every_known_enhance_mode(string mode)
+    {
+        Assert.Equal(mode, new ReaderPrefsSpec(Enhance: mode).Sanitized().Enhance);
+    }
+
+    [Fact]
+    public void Serialize_round_trips_the_enhance_fields()
+    {
+        var json = ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(Enhance: "auto", EnhanceMethod: "server:span-s"));
+        var spec = ReaderPrefsSpec.Parse(json);
+
+        Assert.Equal("auto", spec.Enhance);
+        Assert.Equal("server:span-s", spec.EnhanceMethod);
+        Assert.Contains("\"enhanceMethod\":\"server:span-s\"", json);
+    }
 }

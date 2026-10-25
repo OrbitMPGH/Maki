@@ -299,6 +299,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'upscaling',
+    tab: 'library',
+    title: msg`Server upscaling`,
+    admin: true,
+    keywords: msg({
+      message: `upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'recycle-bin',
     tab: 'library',
     title: msg`Recycle bin`,

@@ -130,3 +130,55 @@ export const PageFailsToLoad: Story = {
     await waitFor(() => expect((canvas.getAllByText('This page failed to load.')).length).toBeGreaterThan(0))
   },
 }
+
+// SwiftShader runs the shaders on the CPU when the runner has no GPU, which can take a while.
+const ENGINE_TIMEOUT = 60_000
+
+async function engineWorks(): Promise<boolean> {
+  const { loadEnhanceEngine } = await import('../../lib/enhance')
+  const engine = await loadEnhanceEngine()
+  return engine.supported && !engine.broken
+}
+
+const compareKey = (type: 'keydown' | 'keyup') => window.dispatchEvent(new KeyboardEvent(type, { key: 'h' }))
+
+/**
+ * Only the eager window is enhanced, each canvas drawn over its page image, which stays in the
+ * strip's flow. Holding H shows the originals.
+ */
+export const Enhanced: Story = {
+  args: { enhance: 'always', enhanceMethod: 'a4k-s' },
+  play: async ({ canvas, canvasElement }) => {
+    if (!(await engineWorks())) {
+      await expect(await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })).toBeVisible()
+      return
+    }
+    const original = await waitFor(() => {
+      const element = canvasElement.querySelector<HTMLImageElement>('img[data-page="0"]')
+      expect(element).toHaveAttribute('data-loaded')
+      return element!
+    })
+    const enhanced = await waitFor(
+      () => {
+        const element = original.nextElementSibling as HTMLCanvasElement | null
+        expect(element?.dataset.enhanced).toBe('true')
+        return element!
+      },
+      { timeout: ENGINE_TIMEOUT },
+    )
+    await expect(enhanced).toHaveAccessibleName('Chapter 40 - page 1')
+    await waitFor(() => expect(original).not.toBeVisible())
+    const a = original.getBoundingClientRect()
+    const b = enhanced.getBoundingClientRect()
+    await expect(Math.abs(a.top - b.top) + Math.abs(a.left - b.left) + Math.abs(a.width - b.width)).toBeLessThan(2)
+    await expect(canvasElement.querySelectorAll('canvas.reader-enhanced').length).toBeLessThanOrEqual(3)
+
+    compareKey('keydown')
+    await waitFor(() => expect(original).toBeVisible())
+    await expect(enhanced).not.toBeVisible()
+
+    compareKey('keyup')
+    await waitFor(() => expect(enhanced).toBeVisible())
+    await waitFor(() => expect(original).not.toBeVisible())
+  },
+}

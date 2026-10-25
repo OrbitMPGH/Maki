@@ -1034,6 +1034,10 @@ msgstr "{fileCount, plural, one {# einzelne Datei} other {# einzelne Dateien}}"
 msgid "{fileName} replaced {filesText}"
 msgstr "{fileName} hat {filesText} ersetzt"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{files, plural, one {{used} of {limit}, # page} other {{used} of {limit}, # pages}}"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{finishedCount, plural, one {# series finished} other {# series finished}}"
@@ -1751,6 +1755,10 @@ msgstr "{samples, plural, one {Gemessen an # Kapitel aus {series} Serien in dein
 #, fuzzy
 msgid "{searchCap}+ matches"
 msgstr "{searchCap}+ Treffer"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{seconds} s per sample page"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -3337,6 +3345,10 @@ msgstr "Benötigt außerdem den täglichen Scan."
 msgid "Alt titles"
 msgstr "Alternative Titel"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Always"
+msgstr ""
+
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Amber"
@@ -3692,6 +3704,7 @@ msgid "Attribute Kavita's reading to"
 msgstr "Kavitas Leseaktivität zuordnen"
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/pages/reader/enhanceMethods.ts
 #, fuzzy
 msgid "Auto"
 msgstr "Automatisch"
@@ -3902,6 +3915,7 @@ msgid "balanced"
 msgstr "ausgewogen"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/reader/enhanceMethods.ts
 #, fuzzy
 msgid "Balanced"
 msgstr "Ausgewogen"
@@ -4178,6 +4192,10 @@ msgstr "C:\\Manga oder /library"
 #, fuzzy
 msgid "Cache progress"
 msgstr "Cache-Fortschritt"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Cache size (MB)"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -4948,6 +4966,10 @@ msgstr "Alle Filter leeren"
 #, fuzzy
 msgid "Clear all notifications?"
 msgstr "Alle Benachrichtigungen löschen?"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Clear cache"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5823,6 +5845,10 @@ msgstr "Deckt Kapitel ab, die Maki nicht kennt"
 msgid "covers, posters, artwork, thumbnails, rebuild image cache, missing covers, broken cover, clear cache, mediacover"
 msgstr "Cover, Poster, Artwork, Thumbnails, Bild-Cache neu erstellen, fehlende Cover, defektes Cover, Cache leeren, Mediacover"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "CPU threads used for one page."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -5905,6 +5931,10 @@ msgstr "Creators, zu denen du zurückkehrst"
 #, fuzzy
 msgid "Creators, type, status, content rating"
 msgstr "Creator, Typ, Status, Inhaltseinstufung"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Crisp line art (server)"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -6132,6 +6162,7 @@ msgstr "Definierend"
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Delete"
 msgstr "Löschen"
@@ -6584,6 +6615,7 @@ msgid "Down"
 msgstr "Nach unten"
 
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Download"
 msgstr "Herunterladen"
@@ -6721,6 +6753,8 @@ msgstr "Vorgefertigten Index heruntergeladen"
 #: src/components/SetupWizard.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Downloading"
 msgstr "Wird heruntergeladen"
@@ -6830,6 +6864,10 @@ msgstr ""
 #, fuzzy
 msgid "Each Mihon category becomes a tag on the series. Manga in Mihon's Default category get no tag."
 msgstr "Jede Mihon-Kategorie wird zu einem Tag der Serie. Manga in Mihons Standardkategorie bekommen keinen Tag."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -6985,6 +7023,10 @@ msgstr "{name} aktivieren"
 msgid "Enable import lists for everyone"
 msgstr "Listenimporte für alle aktivieren"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Enable server upscaling"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Enable single sign-on"
@@ -7034,6 +7076,15 @@ msgstr "Englisch (MangaBaka-Standard)"
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "English markers like v01 and Ch. 12 are always read. Turn on a language to read its markers too."
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Enhance"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "enhance {level}, {methodLabel}"
 msgstr ""
 
 #: src/pages/LoginPage.tsx
@@ -7360,6 +7411,7 @@ msgstr "wird voraussichtlich verknüpft als <0/>"
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Failed"
 msgstr "Fehlgeschlagen"
@@ -7450,6 +7502,10 @@ msgstr "Fantasy"
 #, fuzzy
 msgid "Faster animations"
 msgstr "Schnellere Animationen"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Fastest, on this device"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -8113,6 +8169,10 @@ msgstr "Genres und Tags"
 msgid "Genres in the library"
 msgstr "Genres in der Bibliothek"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Gentle (server)"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -8534,6 +8594,15 @@ msgstr "Historisch"
 msgid "History"
 msgstr "Verlauf"
 
+#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Hold to compare"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Hold to compare with the original (H)"
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/HomePage.tsx
@@ -8702,6 +8771,10 @@ msgstr "Ignoriert seit {since}"
 #, fuzzy
 msgid "Ignoring"
 msgstr "Wird ignoriert"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "IllustrationJaNai SPAN-S"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #: src/pages/settings/SystemCards.tsx
@@ -9796,6 +9869,7 @@ msgstr "Bibliothekspfad, Speicher, Festplatte, freier Speicher, Ordner"
 msgid "Library title"
 msgstr "Bibliothekstitel"
 
+#: src/pages/reader/enhanceMethods.ts
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Light"
@@ -10598,6 +10672,11 @@ msgstr "Metadaten-Aktualisierung"
 msgid "Metadata saved"
 msgstr "Metadaten gespeichert"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Method"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Mid-way"
@@ -10680,6 +10759,7 @@ msgstr "fehlend"
 #: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Missing"
 msgstr "Fehlend"
@@ -10719,6 +10799,10 @@ msgstr "Fortschritt des Modell-Downloads"
 #, fuzzy
 msgid "Model switch: {modelSwitchError}"
 msgstr "Modellwechsel: {modelSwitchError}"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Models"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
@@ -11943,6 +12027,10 @@ msgstr "Kein Upgrade: {reason}"
 msgid "Not analyzed"
 msgstr "Nicht analysiert"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Not available"
+msgstr ""
+
 #: src/api/client.ts
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -12141,6 +12229,10 @@ msgstr "Noch nicht eingerichtet."
 #, fuzzy
 msgid "Not set up yet. An admin can add it in Settings."
 msgstr "Noch nicht eingerichtet. Ein Admin kann es in den Einstellungen hinzufügen."
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Not supported on this device"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -12584,6 +12676,7 @@ msgstr "der Lesezeit"
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/reader/enhanceMethods.ts
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Off"
@@ -12701,12 +12794,17 @@ msgid "On shelf"
 msgstr "Im Regal"
 
 #: src/components/series/ChapterTableRows.tsx
+#: src/pages/reader/enhanceMethods.ts
 #, fuzzy
 msgid "On this device"
 msgstr "Auf diesem Gerät"
 
 #: src/components/settings/PushNotificationsSection.tsx
 msgid "On this device, even when Maki is closed."
+msgstr ""
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "On this device; best on clean line art, can mottle screentone"
 msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -14164,6 +14262,10 @@ msgstr "Reader-Profile"
 msgid "Reader settings"
 msgstr "Reader-Einstellungen"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Readers can pick the ticked models. Saving a ticked model that isn't downloaded yet starts its download."
+msgstr ""
+
 #: src/api/hooks.ts
 #, fuzzy
 msgid "Readers like you"
@@ -14262,6 +14364,14 @@ msgstr "Deine Bewertungen von {label} werden gelesen…"
 
 #: src/pages/HealthPage.tsx
 msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
+msgstr ""
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Ready"
+msgstr ""
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Real-ESRGAN; flattens screentone"
 msgstr ""
 
 #: src/components/QueueActions.tsx
@@ -15754,6 +15864,7 @@ msgstr "Deine Wiederherstellungscodes speichern"
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
 #: src/pages/settings/SystemCards.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Saved"
 msgstr "Gespeichert"
@@ -16597,6 +16708,15 @@ msgstr "Serveradresse kopiert"
 msgid "Server local time, 0 to 23."
 msgstr "Lokale Serverzeit, 0 bis 23."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Server methods apply only when the admin has enabled them; otherwise Balanced is used."
+msgstr ""
+
+#: src/pages/settings/registry.ts
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Server upscaling"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Server URL"
@@ -16742,6 +16862,18 @@ msgstr "Anteil der Serien, die du gelesen hast."
 #, fuzzy
 msgid "Shares a file with another chapter"
 msgstr "Teilt eine Datei mit einem anderen Kapitel"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Sharp (server)"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source."
+msgstr ""
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Sharpens soft pages in the reader with models that run on this server."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -17589,6 +17721,10 @@ msgstr "Story"
 msgid "Streak"
 msgstr "Streak"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Strong"
+msgstr ""
+
 #: src/components/CreditPicker.tsx
 #, fuzzy
 msgid "Studio"
@@ -17837,6 +17973,10 @@ msgstr "Testbenachrichtigung gesendet"
 #, fuzzy
 msgid "Test notification sent."
 msgstr "Test-Benachrichtigung gesendet."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Test speed"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -18119,6 +18259,10 @@ msgstr "Die verknüpfte Datei wurde noch nicht erfasst, daher können ihre Seite
 msgid "The local MangaBaka database is still downloading. Setup finishes once it is in."
 msgstr "Die lokale MangaBaka-Datenbank wird noch heruntergeladen. Die Einrichtung ist abgeschlossen, sobald sie vorhanden ist."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "The models are third-party files under their own licences. The non-commercial ones bind anyone who receives them."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
 msgid "The most explicit rating shown outside your own library."
@@ -18149,6 +18293,10 @@ msgstr "Der Ausreißer"
 #, fuzzy
 msgid "The old file could not be moved aside for the upgrade"
 msgstr "Die alte Datei konnte für das Upgrade nicht beiseitegeschoben werden"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "The oldest pages are dropped past this."
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -18449,6 +18597,10 @@ msgstr "Sie müssen Single Sign-on erneut verknüpfen oder ein Passwort verwende
 msgid "They will no longer be able to sign in. This can't be undone."
 msgstr "Die Person kann sich danach nicht mehr anmelden. Das lässt sich nicht rückgängig machen."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Third-party notices"
+msgstr ""
+
 #: src/api/ssoErrors.ts
 #, fuzzy
 msgid "This account already has a single sign-on login. Remove it before linking another."
@@ -18698,6 +18850,10 @@ msgstr "Dieses Jahr"
 #, fuzzy
 msgid "Those series are already being matched."
 msgstr "Diese Serien werden bereits zugeordnet."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Threads"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -19071,6 +19227,7 @@ msgstr "Versuche eine kürzere oder alternative Suchanfrage."
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #: src/pages/reader/ReaderPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Try again"
@@ -19650,6 +19807,11 @@ msgstr "Bild hochladen"
 msgid "Upper Case"
 msgstr "Großschreibung"
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/downloadClientFields.ts
 #: src/components/settings/IndexerForm.tsx
@@ -20071,6 +20233,10 @@ msgstr "Bände: {volumes}"
 #, fuzzy
 msgid "vs {fromLabel} to {toLabel}"
 msgstr "im Vergleich zu {fromLabel} bis {toLabel}"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "waifu2x art; slowest, cleanest"
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx

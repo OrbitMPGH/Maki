@@ -2,7 +2,7 @@
 
 See [README.md](README.md) for overview. Before a release, or when asked to smoke-test one, work through [docs/release-checklist.md](docs/release-checklist.md).
 
-Subsystem gotchas live in `.claude/rules/*.md` and load automatically when you touch matching files: `auth.md`, `series-matching.md`, `reader-progress.md`, `recommendations.md`, `opds.md`, `komga.md`, `downloads.md`, `stats-notifications.md`, `i18n.md`, `infra.md`, `design-system.md`, `pwa.md`, `storybook.md`, `native.md`. `distribution/CLAUDE.md` and `src/Maki.Sources/CLAUDE.md` are separate nested files, same deal.
+Subsystem gotchas live in `.claude/rules/*.md` and load automatically when you touch matching files: `auth.md`, `series-matching.md`, `reader-progress.md`, `recommendations.md`, `opds.md`, `komga.md`, `downloads.md`, `stats-notifications.md`, `i18n.md`, `infra.md`, `design-system.md`, `pwa.md`, `storybook.md`, `enhance.md`, `native.md`. `distribution/CLAUDE.md` and `src/Maki.Sources/CLAUDE.md` are separate nested files, same deal.
 
 **Adding a file to one of those subsystems? Check its rule file's `paths` frontmatter.** The globs are prefix/suffix wildcards (e.g. `Services/*Download*.cs`), not a static list — most naturally-named new files match automatically. If a new file doesn't fit any existing pattern (unusual name, new area within the subsystem), add its path to that rule file's frontmatter so future sessions actually load the gotchas instead of silently missing them.
 

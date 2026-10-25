@@ -43,6 +43,7 @@ import {
   RootFoldersSection,
 } from './settings/LibraryCards'
 import { PageConversionSection } from './settings/PageConversionSection'
+import { UpscalingSection } from './settings/UpscalingSection'
 import {
   DownloadQueueSection,
   FlareSolverrCard,
@@ -96,6 +97,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       'name-parsing': <NameParsingSection />,
       'library-files': <LibraryFilesSection />,
       'page-conversion': <PageConversionSection />,
+      upscaling: <UpscalingSection />,
       'recycle-bin': <RecycleBinSection />,
       monitoring: <NewSeriesDefaultsSection />,
       metadata: <MetadataSection />,

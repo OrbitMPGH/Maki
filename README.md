@@ -216,3 +216,5 @@ industry: buy official releases.
 ## License
 
 [GPL-3.0](LICENSE)
+
+The optional page-enhance models and shaders are separate files with their own licences, one of them non-commercial; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
