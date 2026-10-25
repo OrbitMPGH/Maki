@@ -1,7 +1,12 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
-import type { ReaderFit } from './prefs'
+import type { EnhanceMethod, ReaderEnhance, ReaderFit } from './prefs'
+import EnhancedPage from './EnhancedPage'
+import { useCompareKey } from './compareHold'
+import { EnhanceScope, presetFor, useEnhanceEngine, type PageEnhance } from './enhanceRuntime'
+import { FULL_REGION } from './pageShape'
+import type { ServerEnhance } from './useServerEnhance'
 
 const FIT_CLASS: Record<ReaderFit, string> = {
   width: 'reader-fit-width',
@@ -50,6 +55,12 @@ interface StripPageProps {
   scale: number
   tone: string | undefined
   eager: boolean
+  /** Set only for pages in the eager window while Enhance is on. */
+  enhance: PageEnhance | null
+  /** Set with `enhance` while a server method is in use. */
+  server: ServerEnhance | null
+  /** Distance from the current page in reading order; pages after it come first. */
+  priority: number
   register: (index: number, element: HTMLImageElement | null) => void
   onSettled: (index: number, element: HTMLImageElement) => void
 }
@@ -66,12 +77,17 @@ const StripPage = memo(function StripPage({
   scale,
   tone,
   eager,
+  enhance,
+  server,
+  priority,
   register,
   onSettled,
 }: StripPageProps) {
   const { t } = useLingui()
   const image = useRef<HTMLImageElement | null>(null)
   const [failed, setFailed] = useState(false)
+  const [loaded, setLoaded] = useState<HTMLImageElement | null>(null)
+  const [covered, setCovered] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const pageNumber = index + 1
   const url = attempt === 0 ? src : `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`
@@ -86,10 +102,12 @@ const StripPage = memo(function StripPage({
 
   const retry = () => {
     image.current?.removeAttribute('data-loaded')
+    setLoaded(null)
     setFailed(false)
     setAttempt((n) => n + 1)
   }
 
+  const alt = t`${label} - page ${pageNumber}`
   return (
     <>
       <img
@@ -97,12 +115,13 @@ const StripPage = memo(function StripPage({
         data-page={index}
         data-no-cover-fallback
         src={url}
-        alt={t`${label} - page ${pageNumber}`}
+        alt={alt}
         className={`reader-page ${FIT_CLASS[fit]}`}
         style={{
           ...(fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined),
           ...(tone ? { filter: tone } : undefined),
           ...(failed ? { display: 'none' } : undefined),
+          ...(enhance && covered ? { visibility: 'hidden' } : undefined),
         }}
         // A window around the current page rather than the whole prefix: resuming at page 300
         // of a webtoon strip would otherwise fetch and decode 300 pages at once. Only the
@@ -111,12 +130,32 @@ const StripPage = memo(function StripPage({
         loading={eager ? 'eager' : 'lazy'}
         decoding="async"
         draggable={false}
-        onLoad={(event) => onSettled(index, event.currentTarget)}
+        onLoad={(event) => {
+          setLoaded(event.currentTarget)
+          onSettled(index, event.currentTarget)
+        }}
         onError={(event) => {
           setFailed(true)
           onSettled(index, event.currentTarget)
         }}
       />
+      {enhance && loaded && !failed && (
+        <EnhancedPage
+          image={loaded}
+          src={src}
+          region={FULL_REGION}
+          rotate={0}
+          alt={alt}
+          tone={tone}
+          enhance={enhance}
+          page={index}
+          server={server}
+          priority={priority}
+          box={loaded}
+          overlay
+          onShowing={setCovered}
+        />
+      )}
       {failed && (
         <Stack align="center" gap="xs" py="xl">
           <Text c="var(--ink-3)" size="sm">
@@ -149,6 +188,10 @@ export default function ContinuousView({
   gap,
   label,
   pastEndLabel,
+  enhance = 'off',
+  enhanceMethod = 'a4k-m',
+  server = null,
+  onStretched,
 }: {
   urls: string[]
   page: number
@@ -172,6 +215,12 @@ export default function ContinuousView({
   tone?: string
   gap: number
   label: string
+  enhance?: ReaderEnhance
+  enhanceMethod?: EnhanceMethod
+  /** Set while a server method is in use and the server tier can serve it. */
+  server?: ServerEnhance | null
+  /** The pages shown at 1.2x their size or more, as measured on screen. */
+  onStretched?: (pages: ReadonlySet<number>) => void
 }) {
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
@@ -190,6 +239,34 @@ export default function ContinuousView({
   // one of those would re-scroll to wherever the user just scrolled from.
   const pageRef = useRef(page)
   pageRef.current = page
+
+  // Only the eager window around the current page is enhanced; a page leaving it drops its canvas
+  // and its cached result.
+  const enhanceOn = enhance !== 'off'
+  const engineState = useEnhanceEngine(enhanceOn)
+  const engine = engineState.status === 'ready' ? engineState.engine : null
+  useCompareKey(enhanceOn)
+  const stretchedRef = useRef(onStretched)
+  stretchedRef.current = onStretched
+  const [scope] = useState(() => new EnhanceScope(undefined, (pages) => stretchedRef.current?.(pages)))
+  useEffect(() => {
+    scope.attach(engine)
+    return () => scope.release()
+  }, [scope, engine, urls])
+  useEffect(() => () => scope.forgetPages(), [scope, urls])
+  const layout = `${fit}|${scale}`
+  const serverOn = server !== null
+  const pageEnhance = useMemo<PageEnhance | null>(
+    () =>
+      (engine || serverOn) && enhance !== 'off'
+        ? { mode: enhance, preset: presetFor(enhanceMethod), engine, scope, layout }
+        : null,
+    [engine, serverOn, enhance, enhanceMethod, scope, layout],
+  )
+  const isEager = (index: number) => index < 3 || Math.abs(index - page) <= 2
+  useEffect(() => {
+    scope.retain(new Set(urls.filter((_, index) => index < 3 || Math.abs(index - page) <= 2)))
+  }, [scope, urls, page])
 
   // Set by the sentinel effect below; image load handlers re-run it once a page settles.
   const reportEnd = useRef<() => void>(() => {})
@@ -492,7 +569,10 @@ export default function ContinuousView({
             fit={fit}
             scale={scale}
             tone={tone}
-            eager={index < 3 || Math.abs(index - page) <= 2}
+            eager={isEager(index)}
+            enhance={pageEnhance && isEager(index) ? pageEnhance : null}
+            server={pageEnhance && isEager(index) ? server : null}
+            priority={pageEnhance && isEager(index) ? (index >= page ? (index - page) * 2 : (page - index) * 2 + 1) : 0}
             register={registerPage}
             onSettled={onPageSettled}
           />

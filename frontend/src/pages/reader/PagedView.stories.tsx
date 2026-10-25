@@ -164,3 +164,71 @@ export const CroppedDoublePage: Story = {
     await waitFor(() => expect(canvasElement.querySelectorAll('.reader-region')).toHaveLength(2))
   },
 }
+
+// SwiftShader runs the shaders on the CPU when the runner has no GPU, which can take a while.
+const ENGINE_TIMEOUT = 60_000
+
+async function engineWorks(): Promise<boolean> {
+  const { loadEnhanceEngine } = await import('../../lib/enhance')
+  const engine = await loadEnhanceEngine()
+  return engine.supported && !engine.broken
+}
+
+const compareKey = (type: 'keydown' | 'keyup') => window.dispatchEvent(new KeyboardEvent(type, { key: 'h' }))
+
+/** Enhance Always: the page is drawn by the engine, and holding H shows the original until released. */
+export const Enhanced: Story = {
+  args: { enhance: 'always', enhanceMethod: 'a4k-s' },
+  play: async ({ canvas, canvasElement }) => {
+    if (!(await engineWorks())) {
+      await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible()
+      return
+    }
+    const enhanced = await waitFor(
+      () => {
+        const element = canvasElement.querySelector<HTMLCanvasElement>('canvas.reader-enhanced')
+        expect(element?.dataset.enhanced).toBe('true')
+        return element!
+      },
+      { timeout: ENGINE_TIMEOUT },
+    )
+    const original = canvasElement.querySelector<HTMLImageElement>('img.reader-region-image')!
+    await waitFor(() => expect(canvas.getByRole('img', { name: 'Chapter 132 - page 6' })).toBe(enhanced))
+    await waitFor(() => expect(original).not.toBeVisible())
+    await expect(enhanced.width).toBeGreaterThan(0)
+
+    compareKey('keydown')
+    await waitFor(() => expect(original).toBeVisible())
+    await expect(enhanced).not.toBeVisible()
+    await expect(canvas.getByRole('img', { name: 'Chapter 132 - page 6' })).toBe(original)
+
+    compareKey('keyup')
+    await waitFor(() => expect(enhanced).toBeVisible())
+    await waitFor(() => expect(original).not.toBeVisible())
+  },
+}
+
+/** A split half goes through the same canvas, enhanced from just that half. */
+export const EnhancedSplitHalf: Story = {
+  args: { urls: spreads, spread: [2], splitWide: 'split', half: 0, label: 'Chapter 7', enhance: 'always', enhanceMethod: 'a4k-s' },
+  play: async ({ canvasElement }) => {
+    if (!(await engineWorks())) return
+    await waitFor(
+      () => expect(canvasElement.querySelector<HTMLCanvasElement>('canvas.reader-enhanced')?.dataset.enhanced).toBe('true'),
+      { timeout: ENGINE_TIMEOUT },
+    )
+    await expect(canvasElement.querySelector<HTMLElement>('img.reader-region-image')?.style.left).toBe('-100%')
+  },
+}
+
+/** Auto leaves a page alone when it is shown smaller than its source (1200px tall in an 800px view). */
+export const EnhanceAutoAtSourceSize: Story = {
+  args: { enhance: 'auto', enhanceMethod: 'a4k-s' },
+  play: async ({ canvas, canvasElement }) => {
+    if (!(await engineWorks())) return
+    await waitFor(() => expect(canvasElement.querySelector('canvas.reader-enhanced')).not.toBeNull())
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    await expect(canvasElement.querySelector<HTMLCanvasElement>('canvas.reader-enhanced')?.dataset.enhanced).toBe('false')
+    await expect(canvas.getByRole('img', { name: 'Chapter 132 - page 6' })).toHaveClass('reader-region-image')
+  },
+}

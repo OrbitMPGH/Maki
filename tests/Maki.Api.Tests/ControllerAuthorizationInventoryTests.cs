@@ -189,6 +189,7 @@ public sealed class ControllerAuthorizationInventoryTests
         "PushController.Test",
         "PushController.Unsubscribe",
         "ReaderController.ChapterVersions",
+        "ReaderController.Enhance",
         "ReaderController.MarkRead",
         "ReaderController.MarkUnread",
         "ReaderController.SaveProgress",

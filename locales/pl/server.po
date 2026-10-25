@@ -2531,6 +2531,53 @@ msgstr "Ta propozycja wydania tomu została już pobrana, odrzucona lub wygasła
 msgid "error.upgrades.volumeGuard"
 msgstr "{file} wstrzymano do przeglądu: {reason, select, fewer_pages {ma mniej stron niż pliki, które by zastąpił} other {nie udało się zmierzyć jego stron}}"
 
+#: src/Maki.Api/Controllers/ReaderController.cs
+#. English: Server page enhancement is turned off on this server.
+msgid "error.enhance.disabled"
+msgstr ""
+
+#. The reader asked for a server model the admin has not enabled or that has not finished downloading.
+#: src/Maki.Api/Controllers/ReaderController.cs
+#. English: This enhancement model is not available on the server.
+msgid "error.enhance.modelUnavailable"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpscalingController.cs
+#. English: The speed test could not run the sample page through this model.
+msgid "error.upscaling.benchmarkFailed"
+msgstr ""
+
+#: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
+#. English: The downloaded model did not match its checksum, so it was deleted. Try the download again.
+msgid "error.upscaling.checksumMismatch"
+msgstr ""
+
+#: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
+#. English: The model could not be downloaded. Check that this server can reach GitHub, then try again.
+msgid "error.upscaling.downloadFailed"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpscalingController.cs
+#. English: The cache size must be between {min} and {max} MB.
+msgid "error.upscaling.invalidCache"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpscalingController.cs
+#. English: Threads must be between {min} and {max}.
+msgid "error.upscaling.invalidThreads"
+msgstr ""
+
+#. Deleting a model whose file is still open because a page is being upscaled with it right now.
+#: src/Maki.Api/Controllers/UpscalingController.cs
+#. English: The model is busy with a page right now. Try again in a moment.
+msgid "error.upscaling.modelInUse"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpscalingController.cs
+#. English: Maki does not know that model.
+msgid "error.upscaling.unknownModel"
+msgstr ""
+
 #: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot delete your own account
 #, fuzzy

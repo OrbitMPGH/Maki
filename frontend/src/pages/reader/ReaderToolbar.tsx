@@ -23,6 +23,7 @@ import {
   IconMaximize,
   IconMinimize,
   IconSettings,
+  IconSquareHalf,
   IconZoomIn,
   IconZoomOut,
   IconZoomReset,
@@ -34,7 +35,17 @@ import { plural } from '@lingui/core/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
 import { wakeLockSupported } from '../../lib/wakeLock'
+import { useLabel } from '../../i18n-context'
+import {
+  BROWSER_ENHANCE_METHODS,
+  ENHANCE_LEVELS,
+  SERVER_ENHANCE_METHODS,
+  enhanceMethodInfo,
+  serverModelId,
+} from './enhanceMethods'
 import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
+import { setCompareHeld, useCompareHeld } from './compareHold'
+import { useEnhanceEngine } from './enhanceRuntime'
 
 /**
  * The reader renders above Mantine's popover layer, so anything that portals to <body> has to
@@ -77,6 +88,7 @@ export default function ReaderToolbar({
   onHold,
   onReveal,
   onShortcuts,
+  serverEnhancing = false,
 }: {
   manifest: ReaderManifest
   page: number
@@ -117,8 +129,11 @@ export default function ReaderToolbar({
   /** Brings the chrome up; called when a keyboard user tabs onto a control while it is hidden. */
   onReveal: () => void
   onShortcuts: () => void
+  /** A server method is in use, so pages can show the server's upscale even without the browser engine. */
+  serverEnhancing?: boolean
 }) {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const { scale } = prefs
 
   // The slider and the chapter chevrons mirror in RTL: the left chevron goes to the next chapter,
@@ -145,6 +160,31 @@ export default function ReaderToolbar({
       : source === 'Profile' && inForce
         ? t`Changes retune "${inForceName}", so every series using it.`
         : t`Changes apply to your reader defaults.`
+
+  const enhanceOn = prefs.enhance !== 'off'
+  const engineStatus = useEnhanceEngine(enhanceOn).status
+  const browserUnsupported = engineStatus === 'unsupported'
+  const compareHeld = useCompareHeld()
+  const enhanceModels = manifest.enhanceServer?.models
+  const enhanceOptions = [
+    ...BROWSER_ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label), disabled: browserUnsupported })),
+    ...SERVER_ENHANCE_METHODS.flatMap((m) => {
+      const model = enhanceModels?.find((entry) => entry.id === serverModelId(m.id))
+      if (!model && m.id !== prefs.enhanceMethod) return []
+      return [{ value: m.id, label: renderLabel(m.label), disabled: !model || !model.ready }]
+    }),
+  ]
+  const enhanceNote = (value: string): string | undefined => {
+    const model = enhanceModels?.find((entry) => entry.id === serverModelId(value))
+    if (serverModelId(value) !== null) {
+      if (!model) return t`Not available`
+      if (!model.ready) return t`Downloading`
+    } else if (browserUnsupported) {
+      return t`Not supported on this device`
+    }
+    const info = enhanceMethodInfo(value)
+    return info ? renderLabel(info.hint) : undefined
+  }
 
   // Shared between the tooltip and the icon button's own aria-label, which say the same thing.
   const backChapterLabel = rtl ? t`Next chapter` : t`Previous chapter`
@@ -265,6 +305,38 @@ export default function ReaderToolbar({
               )}
             </Group>
           </div>
+          {enhanceOn && (serverEnhancing || (engineStatus !== 'unsupported' && engineStatus !== 'broken')) && (
+            <Tooltip label={t`Hold to compare with the original (H)`} withArrow zIndex={OVERLAY_Z}>
+              <ActionIcon
+                variant={compareHeld ? 'light' : 'subtle'}
+                color="gray"
+                aria-label={t`Hold to compare`}
+                aria-pressed={compareHeld}
+                style={{ touchAction: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
+                onPointerDown={(event) => {
+                  event.currentTarget.setPointerCapture?.(event.pointerId)
+                  setCompareHeld(true)
+                }}
+                onPointerUp={() => setCompareHeld(false)}
+                onPointerCancel={() => setCompareHeld(false)}
+                onLostPointerCapture={() => setCompareHeld(false)}
+                onPointerLeave={() => setCompareHeld(false)}
+                onKeyDown={(event) => {
+                  if ((event.key === ' ' || event.key === 'Enter') && !event.repeat) {
+                    event.preventDefault()
+                    setCompareHeld(true)
+                  }
+                }}
+                onKeyUp={(event) => {
+                  if (event.key === ' ' || event.key === 'Enter') setCompareHeld(false)
+                }}
+                onBlur={() => setCompareHeld(false)}
+                onContextMenu={(event) => event.preventDefault()}
+              >
+                <IconSquareHalf size={18} />
+              </ActionIcon>
+            </Tooltip>
+          )}
           {incognito && (
             <Tooltip label={t`Incognito, this session isn't being recorded`} withArrow zIndex={OVERLAY_Z}>
               <IconEyeOff size={18} opacity={0.7} />
@@ -537,6 +609,43 @@ export default function ReaderToolbar({
                     ]}
                   />
                 </div>
+                <div>
+                  <Text fz="xs" c="var(--ink-3)" mb={4}>
+                    <Trans>Enhance</Trans>
+                  </Text>
+                  <SegmentedControl
+                    aria-label={t`Enhance`}
+                    fullWidth
+                    size="xs"
+                    value={prefs.enhance}
+                    onChange={(value) => onPrefs({ enhance: value as ReaderPrefs['enhance'] })}
+                    data={ENHANCE_LEVELS.map((level) => ({ label: renderLabel(level.label), value: level.value }))}
+                  />
+                </div>
+                {prefs.enhance !== 'off' && (
+                  <div>
+                    <Text fz="xs" c="var(--ink-3)" mb={4}>
+                      <Trans>Method</Trans>
+                    </Text>
+                    <Select
+                      aria-label={t`Method`}
+                      size="xs"
+                      comboboxProps={{ zIndex: OVERLAY_Z + 1 }}
+                      allowDeselect={false}
+                      value={prefs.enhanceMethod}
+                      onChange={(value) => value && onPrefs({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })}
+                      data={enhanceOptions}
+                      renderOption={({ option }) => (
+                        <div>
+                          <Text fz="xs">{option.label}</Text>
+                          <Text fz="xs" c="var(--ink-3)">
+                            {enhanceNote(option.value)}
+                          </Text>
+                        </div>
+                      )}
+                    />
+                  </div>
+                )}
                 <Switch
                   size="xs"
                   label={t`Crop borders`}

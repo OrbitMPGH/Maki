@@ -143,6 +143,7 @@ RUN NODE_ARCH="$([ "$(uname -m)" = "aarch64" ] && echo linux-arm64 || echo linux
 COPY distribution/docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 COPY --from=trimmed-publish /app ./
+COPY THIRD_PARTY_NOTICES.md ./
 COPY --from=frontend /src/frontend/dist ./wwwroot/
 
 # The runtime maps JIT-generated code twice, so a page is never both writable and executable: the

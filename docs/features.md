@@ -70,6 +70,38 @@
   offline syncs when the connection returns. Push notifications can announce new chapters. See
   [Offline reading](offline-reading.md).
 
+## Enhance
+
+Enhance sharpens soft, low-resolution pages in the built-in reader, which helps most on a large
+screen. It is off until a reader turns it on. Library files are never modified.
+
+- **Two tiers, one setting.** Browser methods (**Light**, **Balanced**, **Strong**) run Anime4K
+  shaders on the reader's own device. They are always available and need WebGL2. Server methods
+  (**Sharp**, **Crisp line art**, **Gentle**) run ONNX models on the Maki server and appear in the
+  Method list once an admin has enabled them. Sharp is IllustrationJaNai SPAN-S, Crisp line art is
+  Real-ESRGAN animevideov3 (it flattens screentone) and Gentle is waifu2x art, the slowest and
+  cleanest.
+- **Turning it on.** In the reader toolbar's settings popover, set **Enhance** to Off, Auto or
+  Always and pick a **Method**. The same two fields are in reading profiles and in per-series
+  overrides, so they follow the usual order: series override, pinned profile, type profile, your
+  default. **Auto** enhances a page only when it is shown at least 1.2 times larger than its
+  source, so a small window stays plain and a large monitor does not.
+- **Hold to compare.** Hold **H** or the toolbar's compare button to see the original page, and
+  let go to return to the enhanced one.
+- **Fallbacks.** A server method shows **Balanced** on this device while its page is not ready,
+  and for good when the reader is offline, the admin tier is off or the model is not downloaded. A
+  device without WebGL2 shows plain pages and the browser methods read "Not supported on this
+  device".
+- **Server upscaling (admins).** Settings, Library, **Server upscaling** has the on switch, the
+  list of models readers may use, **Threads**, the cache cap (1 GB by default), **Clear cache**
+  and **Test speed**, which times one built-in sample page. Models are not bundled. Maki downloads
+  each one on first use from a Maki GitHub release and checks its SHA-256. Some are licensed for
+  non-commercial use only; the per-model licences are in
+  [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). A page takes seconds of server CPU, a
+  few times longer on a NAS, so the queue is capped per reader and shared fairly between readers.
+- **Privacy.** Nothing leaves your server or your device. Upscaled pages are a disposable cache
+  under the config folder, oldest-used dropped first, and they can be cleared at any time.
+
 ## Discover
 
 - **Recommendations.** Local ONNX embeddings over the MangaBaka dump find titles similar to your

@@ -35,6 +35,7 @@ import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SettingsNumberInput } from './SettingsNumberInput'
 import { useReportUnsaved } from './SaveButton'
+import { ENHANCE_LEVELS, ENHANCE_METHODS, enhanceMethodInfo, isServerMethod } from '../../pages/reader/enhanceMethods'
 
 const MODE_LABELS: Record<ReaderPrefs['mode'], MessageDescriptor> = {
   paged: msg`Single page`,
@@ -56,7 +57,19 @@ const FIT_LABELS: Record<ReaderPrefs['fit'], MessageDescriptor> = {
 
 /** `renderLabel` comes from the caller's own `useLabel()` so this stays a plain function, not a hook. */
 function summarize(prefs: ReaderPrefs, renderLabel: (label: MessageDescriptor) => string): string {
-  return `${renderLabel(MODE_LABELS[prefs.mode])}, ${renderLabel(DIRECTION_LABELS[prefs.direction])}, ${renderLabel(FIT_LABELS[prefs.fit])}`
+  const parts = [
+    renderLabel(MODE_LABELS[prefs.mode]),
+    renderLabel(DIRECTION_LABELS[prefs.direction]),
+    renderLabel(FIT_LABELS[prefs.fit]),
+  ]
+  if (prefs.enhance !== 'off') {
+    const method = enhanceMethodInfo(prefs.enhanceMethod)
+    const levelInfo = ENHANCE_LEVELS.find((l) => l.value === prefs.enhance)
+    const level = levelInfo ? renderLabel(levelInfo.label) : prefs.enhance
+    const methodLabel = method ? renderLabel(method.label) : prefs.enhanceMethod
+    parts.push(now`enhance ${level}, ${methodLabel}`)
+  }
+  return parts.join(', ')
 }
 
 /**
@@ -296,6 +309,7 @@ function ProfileEditor({
   const [types, setTypes] = useState<string[]>(initial.seriesTypes)
   const [prefs, setPrefs] = useState<ReaderPrefs>(initial.prefs)
   const set = (patch: Partial<ReaderPrefs>) => setPrefs((current) => ({ ...current, ...patch }))
+  const methodInfo = enhanceMethodInfo(prefs.enhanceMethod)
   useReportUnsaved(
     JSON.stringify({ name, types, prefs }) !==
       JSON.stringify({ name: initial.name, types: initial.seriesTypes, prefs: initial.prefs }),
@@ -441,6 +455,31 @@ function ProfileEditor({
             { value: 'rotate', label: t`Rotate to fit` },
           ]}
         />
+      </Group>
+
+      <Group grow align="flex-start">
+        <Select
+          label={t`Enhance`}
+          description={t`Sharpen soft pages. Auto does it only when a page is shown larger than its source.`}
+          allowDeselect={false}
+          value={prefs.enhance}
+          onChange={(value) => value && set({ enhance: value as ReaderPrefs['enhance'] })}
+          data={ENHANCE_LEVELS.map((level) => ({ value: level.value, label: renderLabel(level.label) }))}
+        />
+        {prefs.enhance !== 'off' && (
+          <Select
+            label={t`Method`}
+            description={
+              isServerMethod(prefs.enhanceMethod)
+                ? t`Server methods apply only when the admin has enabled them; otherwise Balanced is used.`
+                : methodInfo && renderLabel(methodInfo.hint)
+            }
+            allowDeselect={false}
+            value={prefs.enhanceMethod}
+            onChange={(value) => value && set({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })}
+            data={ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label) }))}
+          />
+        )}
       </Group>
 
       <Switch

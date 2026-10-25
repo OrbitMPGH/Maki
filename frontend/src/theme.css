@@ -7205,6 +7205,8 @@ body.reader-open {
 }
 
 .reader-continuous {
+  /* The containing block for enhanced pages drawn over their images. */
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: safe center;
@@ -7294,6 +7296,19 @@ body.reader-open {
   max-width: none;
   user-select: none;
   -webkit-user-drag: none;
+}
+/* Enhance output (EnhancedPage). In a RegionPage it fills the region's frame; in the continuous
+   strip it is placed over its page image, which stays in the flow and keeps the strip's layout. */
+.reader-enhanced {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  user-select: none;
+}
+.reader-enhanced-overlay {
+  inset: auto;
 }
 
 .reader-next-chapter-hint {

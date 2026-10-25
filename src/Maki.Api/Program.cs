@@ -321,6 +321,13 @@ try
     });
     builder.Services.AddSingleton<PrebuiltIndexInstaller>();
 
+    // Models are 1 to 20 MB each, but the line may be slow.
+    builder.Services.AddHttpClient(Maki.Api.Services.Upscaling.UpscaleModelStore.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(30);
+    });
+
     // Live model switching: swaps the active model (and downloads its files + index) without a
     // restart, mutating the shared EmbeddingOptions.Model the services above read.
     builder.Services.AddSingleton<EmbeddingModelSwitcher>();
@@ -954,6 +961,16 @@ try
     builder.Services.AddScoped<ReaderService>();
     builder.Services.AddScoped<ContinueReadingService>();
     builder.Services.AddScoped<ReadingProfileService>();
+    builder.Services.AddScoped<Maki.Api.Services.Upscaling.EnhanceAvailability>();
+    builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleModelCatalog>();
+    builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleModelStore>();
+    builder.Services.AddSingleton<Maki.Api.Services.Upscaling.OnnxPageUpscaler>();
+    builder.Services.AddSingleton<Maki.Core.Images.Upscaling.IPageUpscaler>(sp =>
+        sp.GetRequiredService<Maki.Api.Services.Upscaling.OnnxPageUpscaler>());
+    builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleCache>();
+    builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleQueue>();
+    builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleWorker>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<Maki.Api.Services.Upscaling.UpscaleWorker>());
     builder.Services.AddScoped<ReadingTimeEstimateService>();
     builder.Services.AddScoped<OpdsCatalogService>();
     builder.Services.AddScoped<OpdsAccessService>();
@@ -1261,6 +1278,14 @@ try
             .WithIdentity("embedder-idle-unload-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(8))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+
+        q.AddJob<Maki.Api.Jobs.UpscalerIdleUnloadJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.UpscalerIdleUnloadJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.UpscalerIdleUnloadJob.Key)
+            .WithIdentity("upscaler-idle-unload-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         // The same for the discovery artifacts, which are ~72 MB between them. Started well after
         // the warm-up job so a fresh instance is not unloading what it is still building, and the

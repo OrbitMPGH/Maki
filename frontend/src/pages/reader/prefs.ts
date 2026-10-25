@@ -10,6 +10,14 @@ export type ReaderDirection = 'ltr' | 'rtl'
 export type ReaderFit = 'width' | 'height' | 'screen' | 'original'
 export type ReaderFilter = 'none' | 'grayscale' | 'sepia' | 'invert'
 export type ReaderSplitWide = 'off' | 'split' | 'rotate'
+export type ReaderEnhance = 'off' | 'auto' | 'always'
+export type EnhanceMethod =
+  | 'a4k-s'
+  | 'a4k-m'
+  | 'a4k-a'
+  | 'server:span-s'
+  | 'server:realesrgan-av3'
+  | 'server:waifu2x-art'
 
 export interface ReaderPrefs {
   mode: ReaderMode
@@ -38,6 +46,10 @@ export interface ReaderPrefs {
   cropBorders: boolean
   /** Open a chapter of very tall pages in continuous mode. The server fills it per layer: on for the defaults, off for a profile or override that never set it. */
   autoWebtoon: boolean
+  /** Sharpen soft pages: never, only when a page is shown larger than its source, or always. */
+  enhance: ReaderEnhance
+  /** Browser shader preset (`a4k-*`) or a model on the server (`server:*`). */
+  enhanceMethod: EnhanceMethod
 }
 
 /** The two page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. */
@@ -69,6 +81,8 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   splitWide: 'off',
   cropBorders: false,
   autoWebtoon: true,
+  enhance: 'off',
+  enhanceMethod: 'a4k-m',
 }
 
 /** The CSS filter for the page images, or undefined when the prefs ask for none. */

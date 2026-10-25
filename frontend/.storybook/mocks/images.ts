@@ -118,4 +118,6 @@ export const imageHandlers = (titleFor: (seed: string) => string = (seed) => see
   http.get('/mock/banner/:seed', ({ params }) => bannerSvg(String(params.seed).replace(/\.svg$/, ''))),
   http.get(api('/reader/chapter/:id/page/:n'), ({ params }) => pageSvg(String(params.id), String(params.n), titleFor)),
   http.get(api('/reader/chapter/:id/thumb/:n'), ({ params }) => pageSvg(String(params.id), String(params.n), titleFor)),
+  // A server upscale: the same page, so a swap is visible only through the element that shows it.
+  http.get(api('/reader/chapter/:id/page/:n/enhanced'), ({ params }) => pageSvg(String(params.id), String(params.n), titleFor)),
 ]

@@ -10,6 +10,7 @@ import { getConnectivity, useConnectivity } from '../../lib/connectivity'
 import { settleQueuedProgress } from '../../pwa/progressQueue'
 import {
   flushProgress,
+  manifestServedOffline,
   useBookmarks,
   useReaderManifest,
   useToggleBookmark,
@@ -19,6 +20,7 @@ import ChapterBanner from './ChapterBanner'
 import ChapterEnd from './ChapterEnd'
 import ShortcutSheet from './ShortcutSheet'
 import ContinuousView from './ContinuousView'
+import { serverModelFor, useServerEnhance } from './useServerEnhance'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
 import ReaderToolbar from './ReaderToolbar'
@@ -40,6 +42,7 @@ const DOUBLE_TAP_SLOP = 40
 // How many pages from the end of a chapter the next chapter's first pages start loading.
 const WARM_NEXT_WITHIN = 3
 const CHROME_HIDE_MS = 4000
+const NO_PAGES: ReadonlySet<number> = new Set()
 // A page turn this soon after moving to another chapter or the end screen is the tail of a double tap,
 // a fling or a held key, and must not carry on through the next chapter boundary.
 const CHAPTER_SETTLE_MS = 800
@@ -197,7 +200,8 @@ export default function ReaderPage() {
   const { data: bookmarks } = useBookmarks(chapterId)
   const toggleBookmark = useToggleBookmark(chapterId)
   // A toggle cannot be replayed safely, so bookmarks wait for the connection.
-  const bookmarkOffline = useConnectivity() === 'offline'
+  const offline = useConnectivity() === 'offline'
+  const bookmarkOffline = offline
   const bookmarkedPages = useMemo(
     () => new Set((bookmarks ?? []).map((b) => b.pageIndex)),
     [bookmarks],
@@ -213,6 +217,25 @@ export default function ReaderPage() {
     [spreads, spreadIndex, mode, prefs.preload],
   )
   usePreload(urls, preloadPages, measure)
+
+  const current = manifest?.chapterId === chapterId ? manifest : undefined
+  const serverModel = current
+    ? serverModelFor(prefs.enhance, prefs.enhanceMethod, current.enhanceServer, offline || manifestServedOffline(chapterId))
+    : null
+  const enhanceWindow = useMemo(() => {
+    if (!serverModel) return []
+    if (mode !== 'vertical') return preloadPages.length > 0 ? preloadPages : (spreads[spreadIndex] ?? [])
+    return [0, 1, 2, -1, -2].map((offset) => page + offset).filter((index) => index >= 0 && index < pageCount)
+  }, [serverModel, mode, preloadPages, spreads, spreadIndex, page, pageCount])
+  // On `auto` the server is asked only for pages a view has measured as stretched.
+  const [stretchedPages, setStretchedPages] = useState<ReadonlySet<number>>(NO_PAGES)
+  const server = useServerEnhance(
+    chapterId,
+    serverModel,
+    enhanceWindow,
+    current?.pageVersion,
+    prefs.enhance === 'auto' ? stretchedPages : null,
+  )
 
   const tone = useMemo(() => toneFilter(prefs), [prefs])
   useWakeLock(prefs.keepAwake)
@@ -778,6 +801,7 @@ export default function ReaderPage() {
         onHold={setToolbarHeld}
         onReveal={() => setChrome(true)}
         onShortcuts={() => setShortcutsOpen(true)}
+        serverEnhancing={server !== null}
       />
 
       {atEnd ? (
@@ -816,6 +840,10 @@ export default function ReaderPage() {
               tone={tone}
               gap={prefs.pageGap}
               label={manifest.label}
+              enhance={prefs.enhance}
+              enhanceMethod={prefs.enhanceMethod}
+              server={server}
+              onStretched={setStretchedPages}
             />
           ) : (
             <PagedView
@@ -831,6 +859,11 @@ export default function ReaderPage() {
               cropBorders={prefs.cropBorders}
               splitWide={mode === 'paged' ? prefs.splitWide : 'off'}
               half={half}
+              enhance={prefs.enhance}
+              enhanceMethod={prefs.enhanceMethod}
+              server={server}
+              preload={preloadPages}
+              onStretched={setStretchedPages}
             />
           )}
         </div>

@@ -51,6 +51,28 @@ export const NewProfile: Story = {
   },
 }
 
+export const EnhanceFields: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'New profile' }))
+    const level = await canvas.findByLabelText('Enhance', { selector: 'input' })
+    await waitFor(() => expect(level).toHaveValue('Off'))
+    await expect(canvas.queryByLabelText('Method', { selector: 'input' })).toBeNull()
+
+    await userEvent.click(level)
+    await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole('option', { name: 'Always' }))
+    const method = await canvas.findByLabelText('Method', { selector: 'input' })
+    await waitFor(() => expect(method).toHaveValue('Balanced'))
+
+    await userEvent.click(method)
+    const body = within(canvasElement.ownerDocument.body)
+    await waitFor(() => expect(body.getAllByRole('option')).toHaveLength(6))
+    await userEvent.click(await body.findByRole('option', { name: 'Gentle (server)' }))
+    await expect(
+      await canvas.findByText('Server methods apply only when the admin has enabled them; otherwise Balanced is used.'),
+    ).toBeVisible()
+  },
+}
+
 export const DeleteAProfile: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByText('Manga, right to left')
