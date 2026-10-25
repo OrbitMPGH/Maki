@@ -47,6 +47,7 @@ import type { ReaderSettings } from '../../../src/api/reader'
 import type { ReadingProfile } from '../../../src/api/readingProfiles'
 import type { RecycleBin } from '../../../src/api/recycleBin'
 import type { PageConversionStatus } from '../../../src/api/pageConversion'
+import type { UpscaleCatalogEntry, UpscalingState } from '../../../src/api/upscaling'
 import type { SuwayomiConnection } from '../../../src/api/suwayomi'
 import type { FormatScoreDto, QualityFormatDto, UpgradeProfileDto, UpgradeSettings } from '../../../src/api/upgrades'
 import type { ReaderPrefs } from '../../../src/pages/reader/prefs'
@@ -893,6 +894,67 @@ export const pageConversionOff: PageConversionStatus = {
   pass: { state: 'idle', hold: null, currentFile: null, totals: null },
   library: { convertedFiles: 0, savedBytes: 0, pendingFiles: 1739, trashBytes: 0, trashFiles: 0, trashDays: 14 },
 }
+
+const upscaleCatalog = {
+  spanS: {
+    id: 'span-s',
+    bytes: 0.9 * MB,
+    license: 'CC BY-NC 4.0',
+    author: 'the-database (IllustrationJaNai V3)',
+    source: 'https://github.com/the-database/MangaJaNai/releases/tag/3.0.0',
+    status: 'ready',
+  },
+  realesrganAv3: {
+    id: 'realesrgan-av3',
+    bytes: 2.4 * MB,
+    license: 'BSD-3-Clause',
+    author: 'xinntao (Real-ESRGAN)',
+    source: 'https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0',
+    status: 'missing',
+  },
+  waifu2xArt: {
+    id: 'waifu2x-art',
+    bytes: 38 * MB,
+    license: 'MIT',
+    author: 'nagadomi (waifu2x)',
+    source: 'https://github.com/nagadomi/nunif',
+    status: 'missing',
+  },
+} satisfies Record<string, UpscaleCatalogEntry>
+
+export const upscalingOff = {
+  settings: { enabled: false, models: [], threads: 2, cacheMb: 1024, maxThreads: 8 },
+  catalog: [upscaleCatalog.spanS, upscaleCatalog.realesrganAv3, upscaleCatalog.waifu2xArt].map((m) => ({
+    ...m,
+    status: 'missing',
+  })),
+  cache: { bytes: 0, files: 0 },
+  queue: { pending: 0, working: 0 },
+} satisfies UpscalingState
+
+export const upscalingOn = {
+  settings: { enabled: true, models: ['span-s', 'realesrgan-av3'], threads: 2, cacheMb: 1024, maxThreads: 8 },
+  catalog: [
+    upscaleCatalog.spanS,
+    { ...upscaleCatalog.realesrganAv3, status: 'downloading' },
+    upscaleCatalog.waifu2xArt,
+  ],
+  cache: { bytes: 312 * MB, files: 280 },
+  queue: { pending: 3, working: 1 },
+} satisfies UpscalingState
+
+export const upscalingFailed = {
+  ...upscalingOn,
+  catalog: [
+    upscaleCatalog.spanS,
+    {
+      ...upscaleCatalog.realesrganAv3,
+      status: 'failed',
+      error: 'The download did not match its checksum and was removed.',
+    },
+    upscaleCatalog.waifu2xArt,
+  ],
+} satisfies UpscalingState
 
 export const recycleBin: RecycleBin = {
   retentionDays: 14,
