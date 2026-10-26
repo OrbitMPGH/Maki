@@ -517,7 +517,8 @@ public class KomgaController(
 
         try
         {
-            var converted = await ImageWorkGate.RunAsync(() => Task.FromResult(ImageCodec.Transcode(bytes, format)), ct);
+            var converted = await ImageWorkGate.RunAsync(
+                () => Task.FromResult(ImageCodec.Transcode(bytes, format)), ImageWorkGate.Weigh(bytes), ct);
             return File(converted, wanted, lastModified: null, entityTag: etag);
         }
         catch (NetVips.VipsException)

@@ -254,7 +254,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
             // MangaDenizi image URL ends in .webp - re-encoding to JPEG here would write JPEG bytes
             // under a .webp name, which Maki would then serve back as image/webp.
             return Task.FromResult(descrambled.EncodeWebp(90));
-        }, ct);
+        }, 2 * ImageWorkGate.Weigh(raw), ct);
     }
 
     private async Task<byte[]> FetchImageBytesAsync(string url, CancellationToken ct)

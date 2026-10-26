@@ -349,6 +349,8 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
         using var response = await ImageClient.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
         var bytes = await response.Content.ReadAsByteArrayAsync(ct);
-        return await ImageWorkGate.RunAsync(() => Task.FromResult(GigaViewerDescrambler.Descramble(bytes)), ct);
+        // A descramble holds the decoded page twice: the source and the reassembled copy.
+        return await ImageWorkGate.RunAsync(
+            () => Task.FromResult(GigaViewerDescrambler.Descramble(bytes)), 2 * ImageWorkGate.Weigh(bytes), ct);
     }
 }

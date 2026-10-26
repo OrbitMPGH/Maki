@@ -93,7 +93,8 @@ public static class ArchivePageConverter
                     {
                         var extension = Path.GetExtension(name);
                         var page = await ImageWorkGate.RunAsync(
-                            () => Task.FromResult(PageConversion.Convert(bytes, extension, settings)), ct);
+                            () => Task.FromResult(PageConversion.Convert(bytes, extension, settings)),
+                            ImageWorkGate.Weigh(bytes), ct);
                         sourceFormats.Add(page.SourceFormat);
                         if (page.Converted)
                         {

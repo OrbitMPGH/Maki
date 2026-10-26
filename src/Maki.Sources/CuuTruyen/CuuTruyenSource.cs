@@ -364,7 +364,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
             }
 
             return Task.FromResult(Encode(destination, ImageCodec.DetectFormat(imageBytes), imageBytes));
-        }, ct);
+        }, 2 * ImageWorkGate.Weigh(imageBytes), ct);
     }
 
     private const int ReencodeQuality = 90;
