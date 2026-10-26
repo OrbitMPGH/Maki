@@ -71,15 +71,15 @@ public static class ImageCodec
     public static long TrackedMemoryBytes => Stats.Mem;
 
     /// <summary>Reads width, height and format from the header. Throws when the bytes are not an image a permitted loader accepts.</summary>
-    public static ImageHeader Identify(byte[] bytes)
+    public static ImageHeader Identify(byte[] bytes) => Identify(bytes.AsSpan());
+
+    /// <inheritdoc cref="Identify(byte[])"/>
+    public static ImageHeader Identify(ReadOnlySpan<byte> bytes)
     {
         if (TryBmp(bytes, out var bmp)) return bmp;
         using var image = VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
         return Header(image, bytes);
     }
-
-    /// <inheritdoc cref="Identify(byte[])"/>
-    public static ImageHeader Identify(ReadOnlySpan<byte> bytes) => Identify(bytes.ToArray());
 
     /// <inheritdoc cref="Identify(byte[])"/>
     public static ImageHeader IdentifyFile(string path)
@@ -142,7 +142,7 @@ public static class ImageCodec
     public static ImageFormat? DetectFormat(ReadOnlySpan<byte> bytes)
     {
         if (TryBmp(bytes, out _)) return ImageFormat.Bmp;
-        var loader = VipsImage.FindLoadBuffer(bytes.ToArray());
+        var loader = VipsImage.FindLoadBuffer(bytes);
         return loader is null ? null : FormatOf(loader, bytes);
     }
 
@@ -313,7 +313,7 @@ public static class ImageCodec
     internal static VipsImage FromMemory(byte[] pixels, int width, int height, int bands) =>
         VipsImage.NewFromMemory(pixels, width, height, bands, Enums.BandFormat.Uchar);
 
-    private static ImageHeader Header(VipsImage image, byte[]? bytes)
+    private static ImageHeader Header(VipsImage image, ReadOnlySpan<byte> bytes)
     {
         var loader = image.Contains("vips-loader") ? image.Get("vips-loader") as string : null;
         return new ImageHeader(image.Width, image.Height, loader is null ? null : FormatOf(loader, bytes));

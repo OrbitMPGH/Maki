@@ -5,6 +5,7 @@ using Maki.Core.Download;
 using Maki.Core.Images;
 using Maki.Core.Opds;
 using Maki.Core.Reading;
+using Maki.Core.Io;
 using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -504,7 +505,7 @@ public class KomgaController(
         byte[] bytes;
         await using (stream)
         {
-            using var buffer = new MemoryStream();
+            using var buffer = PooledStreams.Get("komga-convert");
             await stream.CopyToAsync(buffer, ct);
             bytes = buffer.ToArray();
         }
