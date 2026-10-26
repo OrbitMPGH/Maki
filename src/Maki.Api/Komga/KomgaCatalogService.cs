@@ -447,6 +447,10 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
         return KomgaPage<KomgaBook>.Slice(books, cut.TotalElements, cut.Number, cut.Size, cut.Pageable.Unpaged);
     }
 
+    /// <summary>Whether the chapter has a file and its series is still in the library.</summary>
+    public Task<bool> ServesChapterAsync(int chapterId, CancellationToken ct) =>
+        db.Chapters.Active().AnyAsync(c => c.Id == chapterId && c.ChapterFileId != null, ct);
+
     public async Task<KomgaBook?> BookAsync(int chapterId, CancellationToken ct) =>
         (await BooksByIdAsync([chapterId], ct)).FirstOrDefault();
 
@@ -458,7 +462,7 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
             return [];
         }
 
-        var seriesIds = await db.Chapters.AsNoTracking()
+        var seriesIds = await db.Chapters.AsNoTracking().Active()
             .Where(c => chapterIds.Contains(c.Id) && c.ChapterFileId != null)
             .Select(c => c.SeriesId)
             .Distinct()
@@ -548,7 +552,7 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
 
     public async Task<KomgaBook?> NeighbourAsync(int chapterId, bool next, CancellationToken ct)
     {
-        var seriesId = await db.Chapters.AsNoTracking()
+        var seriesId = await db.Chapters.AsNoTracking().Active()
             .Where(c => c.Id == chapterId && c.ChapterFileId != null)
             .Select(c => (int?)c.SeriesId)
             .FirstOrDefaultAsync(ct);
@@ -573,8 +577,7 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
 
     public async Task<List<KomgaPageInfo>?> PagesAsync(int chapterId, CancellationToken ct)
     {
-        var slice = await reader.PageSliceAsync(chapterId, ct);
-        if (slice is null)
+        if (!await ServesChapterAsync(chapterId, ct) || await reader.PageSliceAsync(chapterId, ct) is not { } slice)
         {
             return null;
         }
@@ -678,7 +681,7 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
     /// <summary>Every downloaded chapter id of a visible series, or null when there is no such series.</summary>
     public async Task<List<int>?> SeriesChapterIdsAsync(int seriesId, CancellationToken ct)
     {
-        var ids = await db.Chapters.AsNoTracking()
+        var ids = await db.Chapters.AsNoTracking().Active()
             .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
             .Select(c => c.Id)
             .ToListAsync(ct);
@@ -703,7 +706,7 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
     /// <summary>Each series' downloaded chapters in reading order, with Komga's numbering.</summary>
     private async Task<Dictionary<int, List<Placed>>> PlaceAsync(IReadOnlyCollection<int> seriesIds, CancellationToken ct)
     {
-        var rows = await db.Chapters.AsNoTracking()
+        var rows = await db.Chapters.AsNoTracking().Active()
             .Where(c => seriesIds.Contains(c.SeriesId) && c.ChapterFileId != null)
             .Select(c => new ChapterRow(
                 c.Id, c.SeriesId, c.Number, c.NumberRaw, c.Volume, c.Title, c.IsOneShot, c.Language, c.ReleaseDate,

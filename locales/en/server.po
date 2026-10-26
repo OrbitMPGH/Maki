@@ -1110,6 +1110,11 @@ msgstr "Folder does not exist: {path}"
 msgid "error.rootFolder.inUse"
 msgstr "Root folder is in use by one or more series"
 
+#. Every series left in the folder is archived, so the user has to delete or move them before the folder can go. {count} is how many.
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.inUseArchived"
+msgstr "{count, plural, one {# archived series still uses} other {# archived series still use}} this folder. Delete or move them first."
+
 #: src/Maki.Api/Controllers/RootFolderController.cs
 msgid "error.rootFolder.pathRequired"
 msgstr "Path is required"

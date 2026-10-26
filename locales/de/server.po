@@ -1596,6 +1596,12 @@ msgstr "Ordner existiert nicht: {path}"
 msgid "error.rootFolder.inUse"
 msgstr "Der Stammordner wird von mindestens einer Serie verwendet"
 
+#. Every series left in the folder is archived, so the user has to delete or move them before the folder can go. {count} is how many.
+#: src/Maki.Api/Controllers/RootFolderController.cs
+#. English: {count, plural, one {# archived series still uses} other {# archived series still use}} this folder. Delete or move them first.
+msgid "error.rootFolder.inUseArchived"
+msgstr ""
+
 #: src/Maki.Api/Controllers/RootFolderController.cs
 #. English: Path is required
 #, fuzzy

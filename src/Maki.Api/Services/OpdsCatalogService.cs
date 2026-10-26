@@ -249,6 +249,7 @@ public class OpdsCatalogService(
     {
         var series = await db.Series
             .AsNoTracking()
+            .Active()
             .Where(s => s.Id == seriesId)
             .Select(s => new { s.Id, s.Title, s.CoverPath })
             .FirstOrDefaultAsync(ct);
