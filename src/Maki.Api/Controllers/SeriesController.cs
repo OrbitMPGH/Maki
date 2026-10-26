@@ -1071,11 +1071,6 @@ public class SeriesController(
             RemovedChapterCount = counts?.Removed ?? 0,
             ReadFileCleanupActive = ReadFileCleanupService.AppliesTo(series.ReadFileCleanup, await readFileCleanup.OptionsAsync(ct)),
             PendingProposalId = pendingProposalId,
-            ArchiveFreeableBytes = series.ArchivedAt is null
-                ? await SeriesArchiveService.FreeableBytesAsync(db, series, ct)
-                : 0,
-            OtherActiveReaders = await SeriesArchiveService.OtherActiveReadersAsync(
-                db, id, currentUser.UserId, DateTime.UtcNow, ct),
             ReadTimeEstimate = estimate is null
                 ? null
                 : new ReadingTimeEstimateDto(
@@ -1244,6 +1239,29 @@ public class SeriesController(
     public record RemoveArchivedFilesRequest(bool Permanent = false);
 
     public record RestoreSeriesRequest(bool RedownloadRemoved = false);
+
+    /// <summary>
+    /// The figures the archive and restore dialogs show. Its own endpoint because the size stats every
+    /// chapter file, which the series GET (polled while a source match runs) should not do.
+    /// </summary>
+    [Authorize(Policy = Policies.ArchiveSeries)]
+    [HttpGet("{id:int}/archive-preview")]
+    public async Task<IActionResult> ArchivePreview(int id, CancellationToken ct)
+    {
+        var series = await db.Series.AsNoTracking().Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(new ArchivePreviewDto(
+            FreeableBytes: await SeriesArchiveService.FreeableBytesAsync(db, series, ct),
+            OtherActiveReaders: await SeriesArchiveService.OtherActiveReadersAsync(
+                db, id, currentUser.UserId, DateTime.UtcNow, ct),
+            RedownloadableChapters: await SeriesArchiveService.RedownloadableChaptersAsync(db, id, ct)));
+    }
+
+    public sealed record ArchivePreviewDto(long FreeableBytes, int OtherActiveReaders, int RedownloadableChapters);
 
     /// <summary>
     /// Moves a series out of the library: it stops talking to sources and the queue and keeps every

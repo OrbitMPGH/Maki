@@ -77,6 +77,9 @@ export const libraryHandlers: HttpHandler[] = [
  */
 export const archivedLibraryHandlers: HttpHandler[] = [
   http.get(api('/series'), () => HttpResponse.json(librarySeriesWithArchived)),
+  http.get(api('/series/12/archive-preview'), () =>
+    HttpResponse.json({ freeableBytes: 0, otherActiveReaders: 0, redownloadableChapters: 75 }),
+  ),
   http.get(api('/reader/series/4/progress'), () => {
     const gap = new Set([4030, 4050])
     return HttpResponse.json(progressFor(4, chaptersFor(4)).filter((p) => !gap.has(p.chapterId)))

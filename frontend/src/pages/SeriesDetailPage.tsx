@@ -183,6 +183,8 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
 import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
+import { activeSeries } from '../lib/series'
+import { showRestoreResult } from '../components/series/restoreToast'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 import { cleanSynopsis } from '../lib/synopsis'
 import { useIncognitoOptions } from '../components/ui/incognito'
@@ -358,6 +360,9 @@ const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
 // Errors are reported globally (see main.tsx); only success needs saying here. `info` is for
 // outcomes that aren't failures but aren't wins either — a download action that found nothing
 // left to queue, which would otherwise report a cheerful "Queued 0".
+// Hover alone leaves keyboard users without the reason a control is switched off.
+const TOOLTIP_EVENTS = { hover: true, focus: true, touch: true }
+
 const notify = {
   ok: (message: string) => notifications.show({ message, color: 'var(--ok)' }),
   info: (message: string) => notifications.show({ message, color: 'var(--warn)' }),
@@ -1370,7 +1375,7 @@ function SeriesDetailBody() {
   const { data: library } = useSeries()
   const luckyPool = useMemo(
     () =>
-      (library ?? [])
+      activeSeries(library ?? [])
         .filter((s) => s.id !== seriesId && isUnfinished(s))
         .map((s) => ({ key: String(s.id), title: s.displayTitle, coverUrl: s.coverUrl })),
     [library, seriesId],
@@ -1699,9 +1704,9 @@ function SeriesDetailBody() {
     restoreSeries.mutate(
       { id: series.id, redownloadRemoved },
       {
-        onSuccess: () => {
+        onSuccess: (result) => {
           setRestoreModalOpen(false)
-          notify.ok(staticT({ message: 'Restored to the library', context: 'series' }))
+          showRestoreResult(result, redownloadRemoved)
         },
       },
     )
@@ -1812,7 +1817,7 @@ function SeriesDetailBody() {
                         <Button.Group>
                         {/* data-disabled rather than disabled: a disabled button gets no hover, so the
                             tooltip saying why an archived series cannot download would never show. */}
-                        <Tooltip label={archivedReason} withArrow disabled={!archived}>
+                        <Tooltip label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
                         <Button
                             variant="default"
                             size="md"
@@ -1835,7 +1840,7 @@ function SeriesDetailBody() {
                         </Button>
                         </Tooltip>
                         {archived ? (
-                        <Tooltip label={archivedReason} withArrow>
+                        <Tooltip label={archivedReason} withArrow events={TOOLTIP_EVENTS}>
                           <Button
                               variant="default"
                               size="md"
@@ -1875,23 +1880,33 @@ function SeriesDetailBody() {
                         )}
                         </Button.Group>
                       )}
+                      <Tooltip label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
                       <Button
                           variant="default"
                           size="md"
                           radius="md"
                           leftSection={<IconSearch size={17} />}
-                          onClick={() => setReleaseModalOpen(true)}
+                          data-disabled={archived || undefined}
+                          aria-disabled={archived || undefined}
+                          onClick={() => {
+                            if (!archived) setReleaseModalOpen(true)
+                          }}
                       >
                         <Trans>Search releases</Trans>
                       </Button>
+                      </Tooltip>
                     </>
                 ) : (
+                    <Tooltip label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
                     <Button
                         variant="default"
                         size="md"
                         radius="md"
                         leftSection={<IconSend size={17} />}
+                        data-disabled={archived || undefined}
+                        aria-disabled={archived || undefined}
                         onClick={() => {
+                          if (archived) return
                           setRequestStart('')
                           setRequestEnd('')
                           setRequestNote('')
@@ -1900,6 +1915,7 @@ function SeriesDetailBody() {
                     >
                       <Trans>Request chapters</Trans>
                     </Button>
+                    </Tooltip>
                 )}
                 <SeriesActionsMenu
                     monitorMode={series.monitorNewItems}
@@ -2223,7 +2239,7 @@ function SeriesDetailBody() {
                       {/* The inner div is inert rather than every control inside getting a disabled
                           prop: the section is shared, and the outer one stays hoverable so the reason
                           can show. */}
-                      <Tooltip label={archivedReason} withArrow disabled={!archived}>
+                      <Tooltip label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
                         <div style={archived ? { cursor: 'not-allowed' } : undefined}>
                           <div inert={archived} style={archived ? { opacity: 0.55 } : undefined}>
                             <SourceMappingsSection
@@ -2664,27 +2680,32 @@ function SeriesDetailBody() {
                     </Group>
                     <Group gap="xs">
                       {canDownload && (
+                          <Tooltip label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
                           <Button
                               size="xs"
                               variant="light"
                               leftSection={<IconDownload size={15} />}
                               disabled={selected.size === 0}
+                              data-disabled={archived || undefined}
+                              aria-disabled={archived || undefined}
                               loading={downloadChapters.isPending}
-                              onClick={() =>
-                                  downloadChapters.mutate([...selected], {
-                                    onSuccess: (r) =>
-                                        r.queued > 0
-                                            ? notify.ok(
-                                                plural(r.queued, { one: 'Queued # chapter', other: 'Queued # chapters' }),
-                                            )
-                                            : notify.info(
-                                                r.error ?? staticT`Nothing to queue, those chapters are already on disk`,
-                                            ),
-                                  })
-                              }
+                              onClick={() => {
+                                if (archived) return
+                                downloadChapters.mutate([...selected], {
+                                  onSuccess: (r) =>
+                                      r.queued > 0
+                                          ? notify.ok(
+                                              plural(r.queued, { one: 'Queued # chapter', other: 'Queued # chapters' }),
+                                          )
+                                          : notify.info(
+                                              r.error ?? staticT`Nothing to queue, those chapters are already on disk`,
+                                          ),
+                                })
+                              }}
                           >
                             <Trans>Download</Trans>
                           </Button>
+                          </Tooltip>
                       )}
                       {canEditMetadata && (
                           <>
@@ -3116,8 +3137,7 @@ function SeriesDetailBody() {
             setBinRefused(null)
           }}
           title={seriesTitle}
-          sizeBytes={series.archiveFreeableBytes ?? 0}
-          otherReaders={series.otherActiveReaders ?? 0}
+          seriesId={series.id}
           removeFiles={archiveRemoveFiles}
           onRemoveFilesChange={setArchiveRemoveFiles}
           canRemoveFiles={canDelete}
@@ -3141,7 +3161,7 @@ function SeriesDetailBody() {
         <RestoreSeriesDialog
           opened={restoreModalOpen}
           onClose={() => setRestoreModalOpen(false)}
-          removedCount={series.removedChapterCount}
+          seriesId={series.id}
           canDownload={canDownload}
           loading={restoreSeries.isPending}
           onRestore={restoreArchived}

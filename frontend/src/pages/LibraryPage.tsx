@@ -96,7 +96,7 @@ import { useLingui } from '@lingui/react'
 import { Trans, Plural, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import type { LibraryFilterSpec, SavedFilterDto, SeriesDto } from '../api/types'
+import type { LibraryFilterSpec, RestoreSeriesResponse, SavedFilterDto, SeriesDto } from '../api/types'
 import { PosterSkeletons } from '../components/CatalogueBrowser'
 import { TYPE_LABELS, TYPE_OPTIONS } from '../components/CatalogueFilters'
 import { CoverCard, type OfflineAvailability } from '../components/ui/CoverCard'
@@ -117,6 +117,7 @@ import { ArchiveSeriesDialog } from '../components/series/ArchiveSeriesDialog'
 import { RestoreSeriesDialog } from '../components/series/RestoreSeriesDialog'
 import { RemoveArchivedFilesDialog } from '../components/series/RemoveArchivedFilesDialog'
 import { ArchivedSeriesCard, type ArchivedCardAction } from '../components/series/ArchivedSeriesCard'
+import { showBulkRestoreQueued, showRestoreResult } from '../components/series/restoreToast'
 import {
   DensityMenuItems,
   POSTER_COLS_BY_DENSITY,
@@ -1035,9 +1036,9 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       restoreMutate(
         { id, redownloadRemoved },
         {
-          onSuccess: () => {
+          onSuccess: (result) => {
             setRestoreAsk(null)
-            notifications.show({ color: 'var(--ok)', message: now({ message: 'Restored to the library', context: 'series' }) })
+            showRestoreResult(result, redownloadRemoved)
           },
         },
       ),
@@ -1046,12 +1047,17 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
 
   const runRestoreBulk = (redownload: boolean) => {
     setRestoreAsk(null)
-    void runBulk('Restore', (id) =>
-      api(`/series/${id}/restore`, {
+    let queued = 0
+    let queueError: string | null = null
+    void runBulk('Restore', async (id) => {
+      const result = await api<RestoreSeriesResponse>(`/series/${id}/restore`, {
         method: 'POST',
         body: JSON.stringify({ redownloadRemoved: redownload && needsRedownloadChoice(seriesById(id)) }),
-      }),
-    ).then(() => {
+      })
+      queued += result.queued
+      queueError ??= result.queueError
+    }).then(() => {
+      if (redownload || queueError) showBulkRestoreQueued(queued, queueError)
       invalidateArchiveSide()
       exitSelectMode()
     })
@@ -1163,6 +1169,9 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           if (binRefused.length === 0) {
             setArchiveModalOpen(false)
             exitSelectMode()
+          } else {
+            // The archived ones leave this view; only the refused ones stay picked for the retry.
+            setSelected(new Set(binRefused))
           }
           const name = _(BULK_ACTION_LABELS.Archive)
           const ok = archived.length
@@ -1450,10 +1459,11 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const archiveCount = archiveBinRefused.length || selectedCount
   const seriesTitle = deleteOne?.series.displayTitle ?? ''
   const removeFilesTitle = removeFilesAsk?.series?.displayTitle ?? ''
-  const archivedFilesRemoved = (series ?? []).reduce((n, s) => (s.chapterFileCount === 0 ? n + 1 : n), 0)
+  const archivedFilesRemoved = (series ?? []).reduce((n, s) => (needsRedownloadChoice(s) ? n + 1 : n), 0)
+  const archivedFilesKept = (series ?? []).reduce((n, s) => (s.chapterFileCount > 0 ? n + 1 : n), 0)
   const archivedFigures = [
     { label: t({ message: 'Archived', context: 'series' }), value: series?.length ?? 0 },
-    { label: t`Files kept`, value: (series?.length ?? 0) - archivedFilesRemoved, tone: 'ok' as const },
+    { label: t`Files kept`, value: archivedFilesKept, tone: 'ok' as const },
     { label: t`Files removed`, value: archivedFilesRemoved },
   ]
 
@@ -1760,10 +1770,12 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                       }}
                     />
                   </Box>
-                  <LuckyButton
-                    candidates={luckyPool}
-                    onPick={(id) => navigate(`/series/${id}`, { state: { lucky: true } })}
-                  />
+                  {!archivedScope && (
+                    <LuckyButton
+                      candidates={luckyPool}
+                      onPick={(id) => navigate(`/series/${id}`, { state: { lucky: true } })}
+                    />
+                  )}
                   <Menu position="bottom-end" withinPortal>
                     <Menu.Target>
                       <ToolbarMenuButton />
@@ -2399,8 +2411,6 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           setArchiveBinRefused([])
         }}
         title={plural(archiveCount, { one: '# series', other: '# series' })}
-        sizeBytes={0}
-        otherReaders={0}
         removeFiles={archiveRemoveFiles}
         onRemoveFilesChange={setArchiveRemoveFiles}
         canRemoveFiles={canDelete}
@@ -2412,6 +2422,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       <RestoreSeriesDialog
         opened={restoreAsk != null}
         onClose={() => setRestoreAsk(null)}
+        seriesId={restoreAsk?.series?.id ?? null}
         removedCount={restoreAsk?.removed ?? 0}
         canDownload={can('DownloadChapters')}
         loading={restoreSeries.isPending}

@@ -350,6 +350,14 @@ export function DiscoverHero({
                       <Trans context="series">Archived</Trans>
                     </Badge>
                     <RestoreArchivedButton seriesId={ownedSeriesId} aria-label={t({ message: `Restore ${title}`, context: 'series' })} />
+                    <Button
+                      variant="default"
+                      rightSection={<IconArrowRight size={16} />}
+                      onClick={() => navigate(`/series/${ownedSeriesId}`)}
+                      aria-label={t`View series: ${title}`}
+                    >
+                      <Trans>View series</Trans>
+                    </Button>
                   </>
                 ) : ownedSeriesId != null ? (
                   <Button

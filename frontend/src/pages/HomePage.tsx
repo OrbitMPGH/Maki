@@ -37,6 +37,7 @@ import {
   type HomeSectionKey,
   type RecommendationItem,
 } from '../api/hooks'
+import { activeSeries } from '../lib/series'
 import { useCustomRails } from '../api/customRails'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
 import { PageLayoutEditor, PageLayoutEditorLoading } from '../components/layout/PageLayoutEditor'
@@ -104,7 +105,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   // settings load stops the Discover tab flickering in and out. Here it would fire two requests
   // that 400 on an install with no local MangaBaka database, and both surface as error toasts.
   const discoverAvailable = Boolean(metadata?.dumpPresent)
-  const hasLibrary = (series?.length ?? 0) > 0
+  const hasLibrary = activeSeries(series ?? []).length > 0
 
   const { data: homeRails, isError: railsFailed } = useCustomRails('home')
 

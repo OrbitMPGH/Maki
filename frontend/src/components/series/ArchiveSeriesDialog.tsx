@@ -2,6 +2,7 @@ import { Checkbox, Stack, Text } from '@mantine/core'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { useRecycleBinDays } from '../../api/recycleBin'
+import { useArchivePreview } from '../../api/hooks'
 import { formatBytes } from '../../format'
 import { PermanentDeleteFallback } from '../PermanentDeleteFallback'
 
@@ -10,8 +11,7 @@ export function ArchiveSeriesDialog({
   opened,
   onClose,
   title,
-  sizeBytes,
-  otherReaders,
+  seriesId = null,
   removeFiles,
   onRemoveFilesChange,
   canRemoveFiles = true,
@@ -22,10 +22,11 @@ export function ArchiveSeriesDialog({
   opened: boolean
   onClose: () => void
   title: string
-  /** What removing the files would free, hardlinked files left out. Zero hides the figure from the label. */
-  sizeBytes: number
-  /** Other users with unfinished progress in the last 30 days. */
-  otherReaders: number
+  /**
+   * The one series being archived: the dialog then fetches what removing its files would free and
+   * whether someone else is partway through it. Null for a bulk archive, which shows neither.
+   */
+  seriesId?: number | null
   removeFiles: boolean
   onRemoveFilesChange: (value: boolean) => void
   /** DeleteSeries: removing the files is a delete, so the box stays off for anyone without it. */
@@ -37,6 +38,9 @@ export function ArchiveSeriesDialog({
 }) {
   const { t } = useLingui()
   const binDays = useRecycleBinDays(opened && removeFiles)
+  const { data: preview } = useArchivePreview(seriesId, opened)
+  const sizeBytes = preview?.freeableBytes ?? 0
+  const otherReaders = preview?.otherActiveReaders ?? 0
   const size = formatBytes(sizeBytes)
 
   return (

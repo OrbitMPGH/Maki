@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, waitFor, within } from 'storybook/test'
+import { archivePreview } from '../../../.storybook/mocks/series'
 import { RestoreSeriesDialog } from './RestoreSeriesDialog'
 
 const meta = {
@@ -48,6 +49,28 @@ export const WithoutDownloadPermission: Story = {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
     await expect(await within(dialog).findByRole('button', { name: 'Restore only' })).toBeVisible()
     await expect(within(dialog).queryByRole('button', { name: 'Restore and download' })).toBeNull()
+  },
+}
+
+/** One series: the count is what the server would queue, removed chapters no longer wanted left out. */
+export const SingleSeries: Story = {
+  args: { seriesId: 1, removedCount: undefined },
+  parameters: { msw: [archivePreview({ redownloadableChapters: 96 })] },
+  play: async ({ canvasElement }) => {
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
+    await expect(await within(dialog).findByText('Download the 96 removed chapters again?')).toBeVisible()
+    await expect(await within(dialog).findByRole('button', { name: 'Restore and download' })).toBeVisible()
+  },
+}
+
+/** Every removed chapter was unwanted since: nothing to download, so only a plain restore is offered. */
+export const NothingToDownload: Story = {
+  args: { seriesId: 1, removedCount: undefined },
+  parameters: { msw: [archivePreview({ redownloadableChapters: 0 })] },
+  play: async ({ canvasElement }) => {
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
+    await expect(await within(dialog).findByText('Download the removed chapters again?')).toBeVisible()
+    await waitFor(() => expect(within(dialog).queryByRole('button', { name: 'Restore and download' })).toBeNull())
   },
 }
 

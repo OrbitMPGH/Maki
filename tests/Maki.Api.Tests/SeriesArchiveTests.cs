@@ -197,6 +197,17 @@ public sealed class SeriesArchiveTests : IDisposable
         Assert.Equal(new FileInfo(kept!).Length, freeable);
     }
 
+    private void SeedProgress(int seriesId, int chapterId, int userId, DateTime updated, bool completed = false)
+    {
+        using var db = _db.NewContext();
+        db.ChapterProgress.Add(new ChapterProgress
+        {
+            UserId = userId, SeriesId = seriesId, ChapterId = chapterId, PageIndex = completed ? 19 : 1, PageCount = 20,
+            StartedAt = updated, UpdatedAt = updated, Completed = completed,
+        });
+        db.SaveChanges();
+    }
+
     [Fact]
     public async Task OtherActiveReaders_counts_other_users_with_recent_unfinished_progress()
     {
@@ -206,23 +217,35 @@ public sealed class SeriesArchiveTests : IDisposable
         var recent = _db.SeedUser("recent");
         var stale = _db.SeedUser("stale");
         var finished = _db.SeedUser("finished");
-        var unread = _db.SeedUser("unread");
+        SeedProgress(seriesId, chapterId, 1, now.AddDays(-1));
+        SeedProgress(seriesId, chapterId, recent, now.AddDays(-2));
+        SeedProgress(seriesId, chapterId, stale, now.AddDays(-45));
+        SeedProgress(seriesId, chapterId, finished, now.AddDays(-1), completed: true);
         using (var db = _db.NewContext())
         {
-            void Progress(int userId, DateTime updated, bool completed = false, DateTime? unreadAt = null) =>
-                db.ChapterProgress.Add(new ChapterProgress
-                {
-                    UserId = userId, SeriesId = seriesId, ChapterId = chapterId, PageIndex = 1, PageCount = 20,
-                    StartedAt = updated, UpdatedAt = updated, Completed = completed, UnreadAt = unreadAt,
-                });
-
-            Progress(1, now.AddDays(-1));
-            Progress(recent, now.AddDays(-2));
-            Progress(stale, now.AddDays(-45));
-            Progress(finished, now.AddDays(-1), completed: true);
-            Progress(unread, now.AddDays(-1), unreadAt: now.AddDays(-1));
+            db.ReadingStates.Add(new ReadingState
+            {
+                UserId = finished, SeriesId = seriesId, Title = "Berserk", MaxChapter = 1, Finished = true,
+                LastProgressAt = now, UpdatedAt = now,
+            });
             db.SaveChanges();
         }
+
+        using var read = _db.NewContext(1);
+        var others = await SeriesArchiveService.OtherActiveReadersAsync(read, seriesId, 1, now, CancellationToken.None);
+
+        Assert.Equal(1, others);
+    }
+
+    [Fact]
+    public async Task OtherActiveReaders_counts_a_reader_between_chapters()
+    {
+        var seriesId = SeedSeries();
+        var (first, _) = SeedChapter(seriesId, 1m);
+        SeedChapter(seriesId, 2m);
+        var now = DateTime.UtcNow;
+        var between = _db.SeedUser("between");
+        SeedProgress(seriesId, first, between, now.AddDays(-3), completed: true);
 
         using var read = _db.NewContext(1);
         var others = await SeriesArchiveService.OtherActiveReadersAsync(read, seriesId, 1, now, CancellationToken.None);
@@ -823,6 +846,27 @@ public sealed class SeriesArchiveTests : IDisposable
         notifications: new RecordingNotifications(),
         locales: new TestUserLocaleResolver(),
         logger: NullLogger<SeriesController>.Instance);
+
+    [Fact]
+    public async Task ArchivePreview_counts_the_chapters_restore_would_queue()
+    {
+        var seriesId = SeedSeries(configure: s => s.ArchivedAt = DateTime.UtcNow);
+        SeedChapter(seriesId, 1m);
+        SeedChapter(seriesId, 2m, withFile: false, removedAt: DateTime.UtcNow);
+        SeedChapter(seriesId, 3m, withFile: false, removedAt: DateTime.UtcNow);
+        SeedChapter(seriesId, 4m, withFile: false, wanted: false, removedAt: DateTime.UtcNow);
+        SeedChapter(seriesId, 5m, withFile: false);
+
+        using var db = _db.NewContext();
+        var ok = Assert.IsType<OkObjectResult>(
+            await Controller(db, MakiPermission.ArchiveSeries).ArchivePreview(seriesId, default));
+        var preview = Assert.IsType<SeriesController.ArchivePreviewDto>(ok.Value);
+
+        Assert.Equal(2, preview.RedownloadableChapters);
+        Assert.True(preview.FreeableBytes > 0);
+        Assert.Equal(0, preview.OtherActiveReaders);
+        Assert.IsType<NotFoundResult>(await Controller(db, MakiPermission.ArchiveSeries).ArchivePreview(9999, default));
+    }
 
     [Fact]
     public async Task Archive_with_removeFiles_is_forbidden_without_DeleteSeries()

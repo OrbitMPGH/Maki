@@ -310,20 +310,32 @@ public class SeriesArchiveService(
     }
 
     /// <summary>
-    /// Other users with unfinished progress on the series inside <see cref="ActiveReaderWindow"/>.
-    /// Counts people only; reading is private, so nothing identifies them.
+    /// Other users who read the series inside <see cref="ActiveReaderWindow"/> and have not finished it
+    /// (<see cref="ReadingState.Finished"/>). A reader between chapters counts: archiving stops the next
+    /// one for them too. Counts people only; reading is private, so nothing identifies them.
     /// </summary>
     public static Task<int> OtherActiveReadersAsync(
         MakiDbContext db, int seriesId, int userId, DateTime nowUtc, CancellationToken ct)
     {
         var since = nowUtc - ActiveReaderWindow;
+        var finished = db.ReadingStates.IgnoreQueryFilters()
+            .Where(r => r.SeriesId == seriesId && r.Finished)
+            .Select(r => r.UserId);
         return db.ChapterProgress.IgnoreQueryFilters().AsNoTracking()
-            .Where(p => p.SeriesId == seriesId && p.UserId != userId && !p.Completed && p.UnreadAt == null &&
-                        p.UpdatedAt >= since)
+            .Where(p => p.SeriesId == seriesId && p.UserId != userId && p.UpdatedAt >= since &&
+                        !finished.Contains(p.UserId))
             .Select(p => p.UserId)
             .Distinct()
             .CountAsync(ct);
     }
+
+    /// <summary>
+    /// The chapters <see cref="RestoreAsync"/> would queue again: removed by archive or cleanup, no
+    /// file, and still wanted.
+    /// </summary>
+    public static Task<int> RedownloadableChaptersAsync(MakiDbContext db, int seriesId, CancellationToken ct) =>
+        db.Chapters.AsNoTracking()
+            .CountAsync(c => c.SeriesId == seriesId && c.ChapterFileId == null && c.FileRemovedAt != null && c.Wanted, ct);
 
     private SeriesArchiveResult? RemovalRefusal(Series series, IReadOnlyList<ChapterFile> files, bool permanent)
     {

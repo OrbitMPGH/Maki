@@ -118,10 +118,6 @@ export interface SeriesDto {
   /** When the series was archived out of the active library, or null while it is active. */
   archivedAt: string | null
   archivedByUserId: number | null
-  /** Bytes removing the series' files would free, leaving out hardlinked files. Detail endpoint only. */
-  archiveFreeableBytes?: number
-  /** Other users with unfinished progress here in the last 30 days. Detail endpoint only. */
-  otherActiveReaders?: number
   /** Personal time left from comparable timed chapters in the built-in reader. Detail endpoint only. */
   readTimeEstimate?: {
     seconds: number
@@ -666,7 +662,18 @@ export interface RestoreSeriesRequest {
 
 export interface RestoreSeriesResponse {
   queued: number
+  /** Localized reason the removed chapters could not be queued, or null. */
   queueError: string | null
+}
+
+/** GET series/{id}/archive-preview: what the archive and restore dialogs show. */
+export interface ArchivePreview {
+  /** Bytes removing the series' files would free, leaving out hardlinked files. */
+  freeableBytes: number
+  /** Other users who read the series in the last 30 days and have not finished it. */
+  otherActiveReaders: number
+  /** Chapters a restore with redownload would queue: removed, no file, still wanted. */
+  redownloadableChapters: number
 }
 
 export interface AddSeriesRequest {

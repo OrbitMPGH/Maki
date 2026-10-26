@@ -1,5 +1,5 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { SeriesDto } from '../../src/api/types'
+import type { ArchivePreview, SeriesDto } from '../../src/api/types'
 import type { ChapterShape } from './series/fixtures'
 import {
   chaptersFor,
@@ -59,8 +59,15 @@ export const archivedSeriesDto = (id = 1) =>
 
 const notFound = () => failWith(404, 'Series not found', 'error.series.notFound')
 
+/** What the archive and restore dialogs fetch when they open; nothing removed and nobody else reading by default. */
+export const archivePreview = (preview: Partial<ArchivePreview> = {}): HttpHandler =>
+  http.get(api('/series/:id/archive-preview'), () =>
+    HttpResponse.json({ freeableBytes: 2_400_000_000, otherActiveReaders: 0, redownloadableChapters: 0, ...preview } satisfies ArchivePreview),
+  )
+
 /** What every write on the series page answers, so a play function can click through without a 501. */
 const seriesMutations: HttpHandler[] = [
+  archivePreview(),
   http.post(api('/series/:id/refresh'), () => HttpResponse.json({ newChapters: 3 })),
   http.post(api('/series/:id/refreshmetadata'), ({ params }) => HttpResponse.json(seriesFor(idOf(params)))),
   http.post(api('/series/:id/rescan'), () => HttpResponse.json({ newFiles: 2, relinked: 1, removed: 0, unrecognized: 1 })),

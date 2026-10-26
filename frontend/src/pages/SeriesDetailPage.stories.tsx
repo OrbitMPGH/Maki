@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
-import { animeResume, archivedSeriesDto, providerDetail, seriesDto, seriesMsw, torrentProposal } from '../../.storybook/mocks/series'
+import { animeResume, archivePreview, archivedSeriesDto, providerDetail, seriesDto, seriesMsw, torrentProposal } from '../../.storybook/mocks/series'
 import SeriesDetailPage from './SeriesDetailPage'
 import { monoText } from '../../.storybook/monoText'
 
@@ -44,6 +44,10 @@ export const Archived: Story = {
     await waitFor(() => expect(download).toHaveAttribute('aria-disabled', 'true'))
     await userEvent.click(download)
     await expect(canvas.queryByRole('dialog')).toBeNull()
+    const releases = await canvas.findByRole('button', { name: 'Search releases' })
+    await waitFor(() => expect(releases).toHaveAttribute('aria-disabled', 'true'))
+    await userEvent.click(releases)
+    await expect(canvas.queryByRole('dialog')).toBeNull()
   },
 }
 
@@ -53,12 +57,34 @@ export const ArchivedRestoreAsksAboutFiles: Story = {
       http.get(api('/series/:id'), () =>
         HttpResponse.json({ ...archivedSeriesDto(1), chapterFileCount: 0, removedChapterCount: 142 }),
       ),
+      archivePreview({ redownloadableChapters: 142 }),
     ),
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Restore to library' }))
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
     await expect(await within(dialog).findByText('Download the 142 removed chapters again?')).toBeVisible()
+  },
+}
+
+/** The restore went through but the download could not be queued: the toast says why. */
+export const ArchivedRestoreQueueError: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/series/:id'), () =>
+        HttpResponse.json({ ...archivedSeriesDto(1), chapterFileCount: 0, removedChapterCount: 142 }),
+      ),
+      archivePreview({ redownloadableChapters: 142 }),
+      http.post(api('/series/:id/restore'), () => HttpResponse.json({ queued: 0, queueError: 'Downloads are paused' })),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Restore to library' }))
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Restore and download' }))
+    await expect(
+      await within(canvasElement.ownerDocument.body).findByText(/the removed chapters were not queued: Downloads are paused/),
+    ).toBeVisible()
   },
 }
 

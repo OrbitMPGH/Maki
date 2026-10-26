@@ -2,8 +2,11 @@ import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
-import { api } from '../../../.storybook/mocks/api'
+import { api, neverResolve } from '../../../.storybook/mocks/api'
+import { archivePreview } from '../../../.storybook/mocks/series'
 import { ArchiveSeriesDialog } from './ArchiveSeriesDialog'
+
+const retention = http.get(api('/recyclebin/retention'), () => HttpResponse.json({ days: 14 }))
 
 const meta = {
   component: ArchiveSeriesDialog,
@@ -15,10 +18,9 @@ const meta = {
     onRemoveFilesChange: fn(),
     removeFiles: false,
     title: 'Lanterns Over Kasumi',
-    sizeBytes: 2_400_000_000,
-    otherReaders: 0,
+    seriesId: 1,
   },
-  parameters: { msw: [http.get(api('/recyclebin/retention'), () => HttpResponse.json({ days: 14 }))] },
+  parameters: { msw: [retention, archivePreview()] },
 } satisfies Meta<typeof ArchiveSeriesDialog>
 
 export default meta
@@ -54,7 +56,7 @@ export const TogglesFiles: Story = {
 }
 
 export const OtherReadersWarning: Story = {
-  args: { otherReaders: 2 },
+  parameters: { msw: [retention, archivePreview({ otherActiveReaders: 2 })] },
   play: async ({ canvasElement }) => {
     await expect(
       await within(canvasElement.ownerDocument.body).findByText(/2 other readers are partway through this series/),
@@ -63,7 +65,28 @@ export const OtherReadersWarning: Story = {
 }
 
 export const NoFilesToFree: Story = {
-  args: { sizeBytes: 0 },
+  parameters: { msw: [retention, archivePreview({ freeableBytes: 0 })] },
+  play: async ({ canvasElement }) => {
+    await expect(
+      await within(canvasElement.ownerDocument.body).findByRole('checkbox', { name: 'Also remove the files' }),
+    ).toBeVisible()
+  },
+}
+
+/** The size is fetched when the dialog opens; until it arrives the box reads without it. */
+export const SizeLoading: Story = {
+  parameters: { msw: [retention, http.get(api('/series/:id/archive-preview'), () => neverResolve())] },
+  play: async ({ canvasElement }) => {
+    await expect(
+      await within(canvasElement.ownerDocument.body).findByRole('checkbox', { name: 'Also remove the files' }),
+    ).toBeVisible()
+  },
+}
+
+/** Several series at once: no size and no other-readers warning, so nothing is fetched. */
+export const Bulk: Story = {
+  args: { seriesId: null, title: '3 series' },
+  parameters: { msw: [retention] },
   play: async ({ canvasElement }) => {
     await expect(
       await within(canvasElement.ownerDocument.body).findByRole('checkbox', { name: 'Also remove the files' }),

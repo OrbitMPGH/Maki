@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react'
-import { ActionIcon, Badge, Group, Menu, Rating, Stack, Text } from '@mantine/core'
-import { IconArchiveOff, IconArrowRight, IconDots, IconFileOff, IconTrash } from '@tabler/icons-react'
+import { ActionIcon, Badge, Group, Menu, Rating, Stack, Text, Tooltip } from '@mantine/core'
+import { IconArchiveOff, IconArrowRight, IconDots, IconFileOff, IconTrash, IconX } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useChapters } from '../../api/hooks'
@@ -54,7 +54,7 @@ export const ArchivedSeriesCard = memo(function ArchivedSeriesCard({
   const read = series.readChapterCount ?? 0
   const total = series.wantedChapterCount || series.knownChapterCount || 0
   const date = series.archivedAt ? formatDate(series.archivedAt) : ''
-  const filesRemoved = series.chapterFileCount === 0
+  const filesRemoved = series.chapterFileCount === 0 && series.removedChapterCount > 0
 
   // Skipped chapters need a finished one to be skipped past, so a series with nothing read asks for neither list.
   const wantsSkipped = readTracking && read > 0
@@ -81,7 +81,7 @@ export const ArchivedSeriesCard = memo(function ArchivedSeriesCard({
             <Trans context="series">Restore to library</Trans>
           </Menu.Item>
         )}
-        {canRemoveFiles && !filesRemoved && (
+        {canRemoveFiles && series.chapterFileCount > 0 && (
           <Menu.Item leftSection={<IconFileOff size={14} />} onClick={() => onAction('removeFiles', series)}>
             <Trans>Remove files</Trans>
           </Menu.Item>
@@ -103,14 +103,31 @@ export const ArchivedSeriesCard = memo(function ArchivedSeriesCard({
   )
 
   const rating = (
-    <Rating
-      size="sm"
-      count={5}
-      fractions={2}
-      value={series.rating ? series.rating / 2 : 0}
-      readOnly={selectMode}
-      onChange={(v) => onRate(series.id, Math.round(v * 2) || null)}
-    />
+    <Group gap={2} wrap="nowrap">
+      <Rating
+        size="sm"
+        count={5}
+        fractions={2}
+        value={series.rating ? series.rating / 2 : 0}
+        readOnly={selectMode}
+        role="group"
+        aria-label={t`Your rating for ${displayTitle}`}
+        onChange={(v) => onRate(series.id, Math.round(v * 2) || null)}
+      />
+      {series.rating && !selectMode ? (
+        <Tooltip label={t`Clear rating`} withArrow>
+          <ActionIcon
+            size="xs"
+            variant="subtle"
+            color="var(--neutral)"
+            onClick={() => onRate(series.id, null)}
+            aria-label={t`Clear rating`}
+          >
+            <IconX size={12} />
+          </ActionIcon>
+        </Tooltip>
+      ) : null}
+    </Group>
   )
 
   const facts = (

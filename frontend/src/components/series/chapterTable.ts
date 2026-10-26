@@ -70,27 +70,35 @@ export function readLanguagesOf(
   return languages.size > 0 ? languages : null
 }
 
-/** Highest finished chapter number per language (lower-cased code), the one fact `isSkipped` needs. */
-export type FinishedHighWater = ReadonlyMap<string, number>
+/**
+ * What `isSkipped` needs from the finished chapters: the highest finished number per language
+ * (lower-cased code), and every finished number in any language.
+ */
+export type FinishedHighWater = {
+  byLanguage: ReadonlyMap<string, number>
+  numbers: ReadonlySet<number>
+}
 
 export function finishedHighWater(
   chapters: readonly ChapterDto[],
   progress: ReadonlyMap<number, ChapterProgressDto>,
 ): FinishedHighWater {
-  const high = new Map<string, number>()
+  const byLanguage = new Map<string, number>()
+  const numbers = new Set<number>()
   for (const c of chapters) {
     if (c.isOneShot || c.number === null || !readStateOf(progress.get(c.id)).read) continue
     const language = c.language.toLowerCase()
-    if (c.number > (high.get(language) ?? -Infinity)) high.set(language, c.number)
+    numbers.add(c.number)
+    if (c.number > (byLanguage.get(language) ?? -Infinity)) byLanguage.set(language, c.number)
   }
-  return high
+  return { byLanguage, numbers }
 }
 
 /**
  * A chapter the reader walked past: numbered, wanted, unfinished, in a language they read, while a
  * higher-numbered chapter in that same language is finished. Volume entries and one-shots have no
- * number to be passed, and a finished row in another language never counts. `readLanguages` of
- * null means any language reads.
+ * number to be passed, and a chapter whose number was finished in another language was read, not
+ * skipped. `readLanguages` of null means any language reads.
  */
 export function isSkipped(
   chapter: ChapterDto,
@@ -102,7 +110,8 @@ export function isSkipped(
   const language = chapter.language.toLowerCase()
   if (readLanguages !== null && !readLanguages.has(language)) return false
   if (readStateOf(progress.get(chapter.id)).read) return false
-  return chapter.number < (highWater.get(language) ?? -Infinity)
+  if (highWater.numbers.has(chapter.number)) return false
+  return chapter.number < (highWater.byLanguage.get(language) ?? -Infinity)
 }
 
 export function countSkipped(

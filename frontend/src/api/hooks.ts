@@ -20,6 +20,7 @@ import { obtainedCount } from '../lib/chapterCounts'
 import { activeSeries } from '../lib/series'
 import type {
   AddSeriesRequest,
+  ArchivePreview,
   ArchiveSeriesRequest,
   ArchiveSeriesResponse,
   BulkArchiveSeriesRequest,
@@ -1726,12 +1727,23 @@ export function useDeleteSeries() {
 function invalidateArchiveQueries(queryClient: ReturnType<typeof useQueryClient>, seriesIds: number[]) {
   void queryClient.invalidateQueries({ queryKey: ['series'] })
   void queryClient.invalidateQueries({ queryKey: ['recycle-bin'] })
+  void queryClient.invalidateQueries({ queryKey: ['archive-preview'] })
   for (const id of seriesIds) {
     void queryClient.invalidateQueries({ queryKey: ['series', id] })
     void queryClient.invalidateQueries({ queryKey: ['chapters', id] })
     void queryClient.invalidateQueries({ queryKey: ['series-files', id] })
   }
   for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
+}
+
+/** The archive and restore dialogs' figures. Fetched only while a dialog is open: the size stats every file. */
+export function useArchivePreview(id: number | null, enabled = true) {
+  return useQuery({
+    queryKey: ['archive-preview', id],
+    queryFn: () => api<ArchivePreview>(`/series/${id}/archive-preview`),
+    enabled: enabled && id !== null,
+    staleTime: 0,
+  })
 }
 
 export function useArchiveSeries() {

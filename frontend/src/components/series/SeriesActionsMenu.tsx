@@ -157,7 +157,7 @@ export function SeriesActionsMenu({
     }
     const withReason = (item: ReactElement) =>
         toolsOff ? (
-            <Tooltip label={sourceToolsDisabledReason} position="left" withArrow>
+            <Tooltip label={sourceToolsDisabledReason} position="left" withArrow events={{ hover: true, focus: true, touch: true }}>
                 {item}
             </Tooltip>
         ) : (

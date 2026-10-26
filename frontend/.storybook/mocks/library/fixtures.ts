@@ -197,7 +197,7 @@ function archived(id: number, patch: Partial<SeriesDto>): SeriesDto {
 /** Three archived series: files kept with the reading gap, files kept and fully read, and files removed. */
 export const archivedLibrarySeries: SeriesDto[] = [
   archived(2, { rating: 8 }),
-  archived(4, { rating: 9, archiveFreeableBytes: 1_400_000_000 }),
+  archived(4, { rating: 9 }),
   archived(12, { rating: null, chapterFileCount: 0, removedChapterCount: 75, readChapterCount: 75 }),
 ]
 

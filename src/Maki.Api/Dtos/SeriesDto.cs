@@ -207,12 +207,6 @@ public record SeriesDto(
 
     public int? ArchivedByUserId { get; init; }
 
-    /// <summary>Bytes removing the series' files would free, leaving out hardlinked files. Detail endpoint only; 0 once archived.</summary>
-    public long ArchiveFreeableBytes { get; init; }
-
-    /// <summary>Other users with unfinished progress here in the last 30 days. Detail endpoint only.</summary>
-    public int OtherActiveReaders { get; init; }
-
     /// <summary>"Default" | "On" | "Off": this series' choice about deleting read chapter files.</summary>
     public string ReadFileCleanup { get; init; } = nameof(Core.Entities.ReadFileCleanup.Default);
 

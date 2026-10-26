@@ -495,7 +495,7 @@ export const ChapterRow = memo(function ChapterRow({
                     )}
                     {canSaveOffline && (canDownload || canDelete) && <Menu.Divider />}
                     {canDownload && c.number !== null && canFindBetterCopy && !removing && (
-                        <Tooltip label={sourceToolsDisabledReason} position="left" withArrow disabled={sourceToolsDisabledReason === null}>
+                        <Tooltip label={sourceToolsDisabledReason} position="left" withArrow disabled={sourceToolsDisabledReason === null} events={{ hover: true, focus: true, touch: true }}>
                         <Menu.Item
                             leftSection={<IconPhotoSearch size={14} />}
                             data-disabled={sourceToolsDisabledReason !== null || undefined}
@@ -516,7 +516,7 @@ export const ChapterRow = memo(function ChapterRow({
                         </Tooltip>
                     )}
                     {canDownload && !removing && (
-                    <Tooltip label={sourceToolsDisabledReason} position="left" withArrow disabled={sourceToolsDisabledReason === null}>
+                    <Tooltip label={sourceToolsDisabledReason} position="left" withArrow disabled={sourceToolsDisabledReason === null} events={{ hover: true, focus: true, touch: true }}>
                     <Menu.Item
                         leftSection={upgradingThis ? <Loader size={14} /> : <IconSparkles size={14} />}
                         disabled={upgradePending}
