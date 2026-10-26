@@ -594,6 +594,7 @@ function AppShellRoutes() {
               element={homeEnabled ? <HomePage /> : <Navigate to="/library" replace />}
             />
             <Route path="/library" element={<LibraryPage />} />
+            <Route path="/library/archived" element={<LibraryPage scope="archived" />} />
             <Route path="/series/:id" element={<SeriesDetailPage />} />
             <Route path="/add" element={<AddSeriesPage />} />
             <Route path="/creator/:name" element={<CreatorPage />} />

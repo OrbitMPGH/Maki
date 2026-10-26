@@ -17,8 +17,16 @@ import type { RequestSummaryDto, SourceReliabilityDto } from './stats'
 import type { IncognitoMode } from '../components/ui/incognito'
 import type { ReleaseParsedDto } from './upgrades'
 import { obtainedCount } from '../lib/chapterCounts'
+import { activeSeries } from '../lib/series'
 import type {
   AddSeriesRequest,
+  ArchivePreview,
+  ArchiveSeriesRequest,
+  ArchiveSeriesResponse,
+  BulkArchiveSeriesRequest,
+  BulkArchiveSeriesResponse,
+  RestoreSeriesRequest,
+  RestoreSeriesResponse,
   ChapterDto,
   LocalizedTitle,
   CompareSnapshot,
@@ -91,7 +99,7 @@ export interface LibraryStats {
 export function useLibraryStats(): LibraryStats {
   const { data: series } = useSeries()
   return useMemo(() => {
-    const list = series ?? []
+    const list = activeSeries(series ?? [])
     let downloaded = 0
     let missing = 0
     let monitored = 0
@@ -1715,10 +1723,90 @@ export function useDeleteSeries() {
   })
 }
 
-export function useChapters(seriesId: number) {
+/** What an archive, restore or file removal changes: the lists, the one series, its chapters and the recycle bin. */
+function invalidateArchiveQueries(queryClient: ReturnType<typeof useQueryClient>, seriesIds: number[]) {
+  void queryClient.invalidateQueries({ queryKey: ['series'] })
+  void queryClient.invalidateQueries({ queryKey: ['recycle-bin'] })
+  void queryClient.invalidateQueries({ queryKey: ['archive-preview'] })
+  for (const id of seriesIds) {
+    void queryClient.invalidateQueries({ queryKey: ['series', id] })
+    void queryClient.invalidateQueries({ queryKey: ['chapters', id] })
+    void queryClient.invalidateQueries({ queryKey: ['series-files', id] })
+  }
+  for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
+}
+
+/** The archive and restore dialogs' figures. Fetched only while a dialog is open: the size stats every file. */
+export function useArchivePreview(id: number | null, enabled = true) {
+  return useQuery({
+    queryKey: ['archive-preview', id],
+    queryFn: () => api<ArchivePreview>(`/series/${id}/archive-preview`),
+    enabled: enabled && id !== null,
+    staleTime: 0,
+  })
+}
+
+export function useArchiveSeries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, removeFiles, permanent = false }: { id: number } & ArchiveSeriesRequest) =>
+      api<ArchiveSeriesResponse>(`/series/${id}/archive`, {
+        method: 'POST',
+        body: JSON.stringify({ removeFiles, permanent }),
+      }),
+    onSuccess: (_, { id }) => invalidateArchiveQueries(queryClient, [id]),
+  })
+}
+
+export function useBulkArchiveSeries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesIds, removeFiles, permanent = false }: BulkArchiveSeriesRequest) =>
+      api<BulkArchiveSeriesResponse>('/series/archive/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ seriesIds, removeFiles, permanent }),
+      }),
+    onSuccess: (_, { seriesIds }) => invalidateArchiveQueries(queryClient, seriesIds),
+  })
+}
+
+export function useRestoreSeries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, redownloadRemoved = false }: { id: number } & Partial<RestoreSeriesRequest>) =>
+      api<RestoreSeriesResponse>(`/series/${id}/restore`, {
+        method: 'POST',
+        body: JSON.stringify({ redownloadRemoved }),
+      }),
+    onSuccess: (_, { id }) => invalidateArchiveQueries(queryClient, [id]),
+  })
+}
+
+export function useDismissArchiveHint() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/series/${id}/archive-hint/dismiss`, { method: 'POST' }),
+    onSuccess: (_, id) => void queryClient.invalidateQueries({ queryKey: ['series', id] }),
+  })
+}
+
+export function useRemoveArchivedFiles() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, permanent = false }: { id: number; permanent?: boolean }) =>
+      api<ArchiveSeriesResponse>(`/series/${id}/archive/removefiles`, {
+        method: 'POST',
+        body: JSON.stringify({ permanent }),
+      }),
+    onSuccess: (_, { id }) => invalidateArchiveQueries(queryClient, [id]),
+  })
+}
+
+export function useChapters(seriesId: number, enabled = true) {
   return useQuery({
     queryKey: ['chapters', seriesId],
     queryFn: () => api<ChapterDto[]>(`/chapter?seriesId=${seriesId}`),
+    enabled,
   })
 }
 

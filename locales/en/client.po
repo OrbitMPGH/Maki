@@ -587,6 +587,15 @@ msgstr "{announcedBy} has it scheduled for {when}"
 msgid "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
 msgstr "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
 
+#: src/pages/LibraryPage.tsx
+msgid "{archiveCount, plural, one {# series} other {# series}}"
+msgstr "{archiveCount, plural, one {# series} other {# series}}"
+
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "{archivedCount, plural, one {Archived (#)} other {Archived (#)}}"
+msgstr "{archivedCount, plural, one {Archived (#)} other {Archived (#)}}"
+
 #: src/pages/ActivityPage.tsx
 msgid "{beforeLabel} to {afterLabel}"
 msgstr "{beforeLabel} to {afterLabel}"
@@ -611,6 +620,8 @@ msgstr "{binDays, plural, one {Files can be restored from Settings for # day, th
 msgid "{binDays, plural, one {It can be restored from Settings for # day.} other {It can be restored from Settings for # days.}}"
 msgstr "{binDays, plural, one {It can be restored from Settings for # day.} other {It can be restored from Settings for # days.}}"
 
+#: src/components/series/ArchiveSeriesDialog.tsx
+#: src/components/series/RemoveArchivedFilesDialog.tsx
 #: src/components/series/RemoveSeriesDialog.tsx
 msgid "{binDays, plural, one {The files go to the recycle bin for # day and can be restored from Settings until then.} other {The files go to the recycle bin for # days and can be restored from Settings until then.}}"
 msgstr "{binDays, plural, one {The files go to the recycle bin for # day and can be restored from Settings until then.} other {The files go to the recycle bin for # days and can be restored from Settings until then.}}"
@@ -796,6 +807,10 @@ msgstr "{count, plural, one {A chapter is saved on this device, but this tab can
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "{count, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
+msgstr "{count, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "{count, plural, one {Hidden # title} other {Hidden # titles}}"
@@ -1350,6 +1365,14 @@ msgstr "{newChapterCount, plural, one {# recent chapter file} other {# recent ch
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 
+#: src/pages/LibraryPage.tsx
+msgid "{ok, plural, one {Archived # series} other {Archived # series}}"
+msgstr "{ok, plural, one {Archived # series} other {Archived # series}}"
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "{otherReaders, plural, one {# other reader is partway through this series. Archiving stops new chapters for everyone.} other {# other readers are partway through this series. Archiving stops new chapters for everyone.}}"
+msgstr "{otherReaders, plural, one {# other reader is partway through this series. Archiving stops new chapters for everyone.} other {# other readers are partway through this series. Archiving stops new chapters for everyone.}}"
+
 #: src/components/series/SeriesHero.tsx
 #: src/components/TagBuckets.tsx
 msgid "{overflow, plural, one {+# more} other {+# more}}"
@@ -1429,6 +1452,15 @@ msgstr "{pushingDown} kept out of your taste"
 #: src/pages/LibraryPage.tsx
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
+
+#: src/components/series/restoreToast.tsx
+msgid "{queued, plural, one {Queued # removed chapter} other {Queued # removed chapters}}"
+msgstr "{queued, plural, one {Queued # removed chapter} other {Queued # removed chapters}}"
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "{queued, plural, one {Restored to the library, # chapter queued} other {Restored to the library, # chapters queued}}"
+msgstr "{queued, plural, one {Restored to the library, # chapter queued} other {Restored to the library, # chapters queued}}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
@@ -1610,6 +1642,10 @@ msgid "{selectedCount, plural, one {Remove # series?} other {Remove # series?}}"
 msgstr "{selectedCount, plural, one {Remove # series?} other {Remove # series?}}"
 
 #: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Remove the files of # series?} other {Remove the files of # series?}}"
+msgstr "{selectedCount, plural, one {Remove the files of # series?} other {Remove the files of # series?}}"
+
+#: src/pages/LibraryPage.tsx
 msgid "{selectedCount, plural, one {Set monitoring for # series} other {Set monitoring for # series}}"
 msgstr "{selectedCount, plural, one {Set monitoring for # series} other {Set monitoring for # series}}"
 
@@ -1690,6 +1726,10 @@ msgstr "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}
 #: src/components/pageconversion/CompareStep.tsx
 msgid "{size}, {percent} of the original"
 msgstr "{size}, {percent} of the original"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "{skipped, plural, one {# skipped} other {# skipped}}"
+msgstr "{skipped, plural, one {# skipped} other {# skipped}}"
 
 #: src/components/import/MihonReview.tsx
 msgid "{skippedNonLibrary, plural, one {# manga that is not in the library was skipped.} other {# manga that are not in the library were skipped.}}"
@@ -2359,6 +2399,10 @@ msgstr "A series shows up here once its chapters come out on a steady enough rhy
 msgid "A series that has been downloaded into or read since cannot be undone. ComicInfo.xml changes Maki wrote inside your own CBZs are not reverted."
 msgstr "A series that has been downloaded into or read since cannot be undone. ComicInfo.xml changes Maki wrote inside your own CBZs are not reverted."
 
+#: src/components/NotificationsSection.tsx
+msgid "A series was archived."
+msgstr "A series was archived."
+
 #: src/components/discover/discoverSectionDefs.ts
 msgid "A short strip of what your library leans towards."
 msgstr "A short strip of what your library leans towards."
@@ -2487,6 +2531,10 @@ msgstr "Action for rule {number}"
 #: src/pages/settings/SystemCards.tsx
 msgid "Actions"
 msgstr "Actions"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "Actions for {displayTitle}"
+msgstr "Actions for {displayTitle}"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Actions for {spanLabel}"
@@ -2880,6 +2928,14 @@ msgstr "Also match every tag filed under this one"
 msgid "Also needs the daily scan on."
 msgstr "Also needs the daily scan on."
 
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Also remove the files"
+msgstr "Also remove the files"
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Also remove the files to free {size}"
+msgstr "Also remove the files to free {size}"
+
 #: src/components/series/UndoConversionModal.tsx
 msgid "Also set this series to Never"
 msgstr "Also set this series to Never"
@@ -3136,9 +3192,58 @@ msgstr "Arabic"
 msgid "Archive"
 msgstr "Archive"
 
+#: src/components/series/ArchiveHint.tsx
+#: src/components/series/ArchiveSeriesDialog.tsx
+#: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Archive"
+msgstr "Archive"
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgctxt "series"
+msgid "Archive {title}?"
+msgstr "Archive {title}?"
+
+#: src/components/settings/UsersSection.tsx
+msgctxt "series"
+msgid "Archive series"
+msgstr "Archive series"
+
+#: src/components/CommandPalette.tsx
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverLibraryRail.tsx
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgctxt "series"
+msgid "Archived"
+msgstr "Archived"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgctxt "series"
+msgid "Archived {date}"
+msgstr "Archived {date}"
+
+#: src/components/series/ArchivedBanner.tsx
+msgid "Archived on {date} by {archivedBy}. Maki is not checking sources for this series."
+msgstr "Archived on {date} by {archivedBy}. Maki is not checking sources for this series."
+
+#: src/components/series/ArchivedBanner.tsx
+msgid "Archived on {date}. Maki is not checking sources for this series."
+msgstr "Archived on {date}. Maki is not checking sources for this series."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Archived series are not checked against sources. Restore it first."
+msgstr "Archived series are not checked against sources. Restore it first."
+
 #: src/pages/HealthPage.tsx
 msgid "Archives inventoried"
 msgstr "Archives inventoried"
+
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Archiving a finished series stops Maki checking its sources and keeps your reading history and rating. Archived series show up here."
+msgstr "Archiving a finished series stops Maki checking its sources and keeps your reading history and rating. Archived series show up here."
 
 #: src/pages/HomePage.tsx
 msgid "Arrange what Home shows."
@@ -3310,6 +3415,10 @@ msgstr "Back to series"
 #: src/pages/PageConversionWizardPage.tsx
 msgid "Back to settings"
 msgstr "Back to settings"
+
+#: src/pages/LibraryPage.tsx
+msgid "Back to the library"
+msgstr "Back to the library"
 
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Back to the series"
@@ -3656,6 +3765,7 @@ msgstr "Can't sign in with the saved details."
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/series/UndoConversionModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -4289,6 +4399,7 @@ msgstr "Clear filters"
 msgid "Clear queue"
 msgstr "Clear queue"
 
+#: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Clear rating"
@@ -5323,9 +5434,11 @@ msgstr "Defining"
 
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/rails/DeleteRailDialog.tsx
+#: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Delete"
 msgstr "Delete"
@@ -5613,6 +5726,7 @@ msgid "Disk used"
 msgstr "Disk used"
 
 #: src/components/layout/SidebarFooter.tsx
+#: src/components/series/ArchiveHint.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -5781,6 +5895,10 @@ msgstr "Download queue"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Download the next"
 msgstr "Download the next"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "Download the removed chapters again?"
+msgstr "Download the removed chapters again?"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Download this chapter"
@@ -6572,10 +6690,20 @@ msgstr "Files already on disk keep their names until you rename them."
 msgid "Files in this download"
 msgstr "Files in this download"
 
+#: src/pages/LibraryPage.tsx
+msgid "Files kept"
+msgstr "Files kept"
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 msgid "Files on disk are not touched. Every user's access to this folder is removed, and adding it back later starts with no grants."
 msgstr "Files on disk are not touched. Every user's access to this folder is removed, and adding it back later starts with no grants."
+
+#: src/components/series/ArchivedSeriesCard.tsx
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Files removed"
+msgstr "Files removed"
 
 #: src/pages/ActivityPage.tsx
 msgid "Files replaced by the automatic upgrader show up here."
@@ -8452,6 +8580,10 @@ msgstr "library path, storage, disk, free space, folder"
 msgid "Library title"
 msgstr "Library title"
 
+#: src/pages/LibraryPage.tsx
+msgid "Library view"
+msgstr "Library view"
+
 #: src/pages/reader/enhanceMethods.ts
 #: src/theme-context.tsx
 msgid "Light"
@@ -8789,6 +8921,11 @@ msgstr "Maki is using {used} of {quota} here. Remove some saved chapters and try
 #: src/components/LanguageAnnouncementModal.tsx
 msgid "Maki speaks your language"
 msgstr "Maki speaks your language"
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgctxt "series"
+msgid "Maki stops checking sources for new chapters and moves it to Archived. Your reading history, rating and chapters stay. You can restore it any time."
+msgstr "Maki stops checking sources for new chapters and moves it to Archived. Your reading history, rating and chapters stay. You can restore it any time."
 
 #: src/components/QueuePause.tsx
 msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to the download client keep downloading."
@@ -10260,6 +10397,10 @@ msgstr "None linked"
 msgid "None listed"
 msgstr "None listed"
 
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "None of the removed chapters are still wanted, so nothing would be downloaded."
+msgstr "None of the removed chapters are still wanted, so nothing would be downloaded."
+
 #: src/pages/CreatorPage.tsx
 msgid "None of their titles match these filters. Try loosening one of them."
 msgstr "None of their titles match these filters. Try loosening one of them."
@@ -10512,6 +10653,11 @@ msgstr "Not yet synced"
 #: src/pages/RequestsPage.tsx
 msgid "Note (optional)"
 msgstr "Note (optional)"
+
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Nothing archived"
+msgstr "Nothing archived"
 
 #: src/components/CatalogueBrowser.tsx
 msgid "Nothing close enough. Try describing it differently, or use fewer words."
@@ -11082,6 +11228,7 @@ msgstr "Only you can see this."
 msgid "OPDS catalogue"
 msgstr "OPDS catalogue"
 
+#: src/components/series/ArchivedSeriesCard.tsx
 #: src/pages/HealthPage.tsx
 msgid "Open"
 msgstr "Open"
@@ -12079,6 +12226,7 @@ msgstr "Rated"
 msgid "Rated {rated}"
 msgstr "Rated {rated}"
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Rated {rating}/10"
 msgstr "Rated {rating}/10"
@@ -12098,6 +12246,7 @@ msgid "Rating"
 msgstr "Rating"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Rating cleared"
 msgstr "Rating cleared"
@@ -12156,6 +12305,10 @@ msgstr "Read {nextChapter}"
 #: src/pages/reader/ChapterEnd.tsx
 msgid "Read {nextChapterLabel}"
 msgstr "Read {nextChapterLabel}"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "Read {read} of {total}"
+msgstr "Read {read} of {total}"
 
 #: src/pages/stats/ReadTrackingEmpty.tsx
 msgid "Read a chapter in Maki's reader and it starts tracking. An admin can also connect Kavita in Settings. Downloads and library changes are tracked either way."
@@ -12425,6 +12578,11 @@ msgstr "Recent upgrades"
 #: src/pages/LibraryPage.tsx
 msgid "Recently added"
 msgstr "Recently added"
+
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Recently archived"
+msgstr "Recently archived"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Recently changed"
@@ -12724,6 +12882,13 @@ msgstr "Remove failed"
 msgid "Remove failed downloads"
 msgstr "Remove failed downloads"
 
+#: src/components/series/ArchivedBanner.tsx
+#: src/components/series/ArchivedSeriesCard.tsx
+#: src/components/series/RemoveArchivedFilesDialog.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Remove files"
+msgstr "Remove files"
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 msgid "Remove folder"
@@ -12774,6 +12939,7 @@ msgstr "Remove rule"
 msgid "Remove rule {number}"
 msgstr "Remove rule {number}"
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Remove series?"
 msgstr "Remove series?"
@@ -12801,6 +12967,14 @@ msgstr "Remove source without cleanup?"
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove source?"
 msgstr "Remove source?"
+
+#: src/pages/LibraryPage.tsx
+msgid "Remove the files of {removeFilesTitle}?"
+msgstr "Remove the files of {removeFilesTitle}?"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Remove the files of {seriesTitle}?"
+msgstr "Remove the files of {seriesTitle}?"
 
 #: src/pages/HealthPage.tsx
 msgid "Remove the record"
@@ -13147,6 +13321,21 @@ msgstr "Restart"
 msgid "Restore"
 msgstr "Restore"
 
+#: src/components/discover/ArchivedRestore.tsx
+#: src/components/series/RestoreSeriesDialog.tsx
+#: src/pages/ImportPage.tsx
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Restore"
+msgstr "Restore"
+
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/import/ImportPlanModal.tsx
+#: src/pages/ImportPage.tsx
+msgctxt "series"
+msgid "Restore {title}"
+msgstr "Restore {title}"
+
 #: src/pages/settings/SystemCards.tsx
 msgid "Restore & restart"
 msgstr "Restore & restart"
@@ -13154,6 +13343,11 @@ msgstr "Restore & restart"
 #: src/components/series/UndoConversionModal.tsx
 msgid "Restore and convert again with the current settings"
 msgstr "Restore and convert again with the current settings"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgctxt "series"
+msgid "Restore and download"
+msgstr "Restore and download"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Restore any of them from Manage signals."
@@ -13175,6 +13369,11 @@ msgstr "Restore from file…"
 msgid "Restore hidden or dismissed title"
 msgstr "Restore hidden or dismissed title"
 
+#: src/components/series/RestoreSeriesDialog.tsx
+msgctxt "series"
+msgid "Restore only"
+msgstr "Restore only"
+
 #: src/pages/settings/SystemCards.tsx
 msgid "Restore staged"
 msgstr "Restore staged"
@@ -13186,6 +13385,18 @@ msgstr "Restore the originals"
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Restore this title"
 msgstr "Restore this title"
+
+#: src/components/series/ArchivedBanner.tsx
+#: src/components/series/ArchivedSeriesCard.tsx
+#: src/components/series/SeriesActionsMenu.tsx
+msgctxt "series"
+msgid "Restore to library"
+msgstr "Restore to library"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgctxt "series"
+msgid "Restore to the library?"
+msgstr "Restore to the library?"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Restored"
@@ -13202,6 +13413,21 @@ msgstr "Restored from the original"
 #: src/components/series/EditMetadataModal.tsx
 msgid "Restored from the provider"
 msgstr "Restored from the provider"
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "Restored to the library"
+msgstr "Restored to the library"
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "Restored to the library, but the removed chapters were not queued: {queueError}"
+msgstr "Restored to the library, but the removed chapters were not queued: {queueError}"
+
+#: src/pages/ImportPage.tsx
+msgctxt "series"
+msgid "Restoring an archived series needs the Archive series permission"
+msgstr "Restoring an archived series needs the Archive series permission"
 
 #: src/pages/ScrobblePage.tsx
 msgid "Result"
@@ -14259,6 +14485,15 @@ msgstr "Series already in your library are not added again. Importing them only 
 msgid "Series and chapters you have asked an admin for."
 msgstr "Series and chapters you have asked an admin for."
 
+#: src/components/NotificationsSection.tsx
+msgid "Series archived"
+msgstr "Series archived"
+
+#: src/pages/settings/LibraryCards.tsx
+msgctxt "series"
+msgid "Series archived"
+msgstr "Series archived"
+
 #: src/components/discover/DiscoverDetailModal.tsx
 msgid "Series details"
 msgstr "Series details"
@@ -14294,6 +14529,7 @@ msgid "Series page"
 msgstr "Series page"
 
 #: src/components/NotificationsSection.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Series removed"
 msgstr "Series removed"
@@ -14819,6 +15055,10 @@ msgstr "Skip to content"
 msgid "skipped"
 msgstr "skipped"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Skipped ({skippedFilterCount})"
+msgstr "Skipped ({skippedFilterCount})"
+
 #: src/pages/settings/SystemCards.tsx
 msgid "Skipped {latestVersion}"
 msgstr "Skipped {latestVersion}"
@@ -14878,6 +15118,10 @@ msgstr "Snapshot on disk: {snapshotSize}, refreshed {refreshedAtLabel}"
 #: src/pages/settings/LibraryCards.tsx
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
+
+#: src/components/series/restoreToast.tsx
+msgid "Some removed chapters were not queued: {queueError}"
+msgstr "Some removed chapters were not queued: {queueError}"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Some sources could not be searched"
@@ -15802,6 +16046,11 @@ msgstr "The selected series will be removed from Maki and stop being monitored."
 msgid "The send failed"
 msgstr "The send failed"
 
+#: src/components/series/RemoveArchivedFilesDialog.tsx
+msgctxt "series"
+msgid "The series stays in Archived with its chapters, reading history and rating. Restoring it later can download the chapters again."
+msgstr "The series stays in Archived with its chapters, reading history and rating. Restoring it later can download the chapters again."
+
 #: src/api/queue.ts
 msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
 msgstr "The series was deleted or moved while this download was being imported, so nothing was imported"
@@ -16100,6 +16349,7 @@ msgstr "This queue item has no chapter to find a source for"
 msgid "This rail needs the local MangaBaka database, which is switched off or still downloading."
 msgstr "This rail needs the local MangaBaka database, which is switched off or still downloading."
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "This removes \"{seriesTitle}\" and its chapters from Maki."
 msgstr "This removes \"{seriesTitle}\" and its chapters from Maki."
@@ -17250,6 +17500,15 @@ msgstr "View in library"
 msgid "View in library: {title}"
 msgstr "View in library: {title}"
 
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "View series"
+msgstr "View series"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "View series: {title}"
+msgstr "View series: {title}"
+
 #: src/components/series/ChapterTableRows.tsx
 msgid "Vol. {fileVolume}"
 msgstr "Vol. {fileVolume}"
@@ -17836,6 +18095,10 @@ msgstr "You're offline. Showing what's saved on this device."
 msgid "You're set"
 msgstr "You're set"
 
+#: src/components/series/ArchiveHint.tsx
+msgid "You've finished this. Archive it?"
+msgstr "You've finished this. Archive it?"
+
 #: src/pages/rewind/slides.tsx
 msgid "Your {label}"
 msgstr "Your {label}"
@@ -17900,6 +18163,10 @@ msgstr "Your pick"
 #: src/pages/settings/DownloadCards.tsx
 msgid "Your priority order"
 msgstr "Your priority order"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "Your rating for {displayTitle}"
+msgstr "Your rating for {displayTitle}"
 
 #: src/pages/LibraryPage.tsx
 msgid "Your rating, score, how much you've read"

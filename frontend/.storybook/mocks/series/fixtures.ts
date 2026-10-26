@@ -148,6 +148,8 @@ export function seriesDto(id: number, overrides: Partial<SeriesDto> = {}): Serie
     tagIds: entry.id % 2 === 1 ? [1, 2] : [3],
     monitored: entry.status === 'Ongoing',
     monitorNewItems: 'all',
+    archivedAt: null,
+    archivedByUserId: null,
     rootFolderId: entry.type === 'Manhwa' ? 2 : 1,
     folderName: entry.title,
     rootFolderPath: `/library/${entry.type === 'Manhwa' ? 'manhwa' : 'manga'}/${entry.title}`,

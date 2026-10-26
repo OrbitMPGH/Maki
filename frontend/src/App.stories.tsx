@@ -83,6 +83,7 @@ export const StartPageRedirect: Story = mirror('/', LibraryStories, LibraryStori
   http.get(api('/settings/ui'), () => HttpResponse.json({ ...uiSettings, startPage: 'library' })),
 ])
 export const Library: Story = library()
+export const LibraryArchived: Story = mirror('/library/archived', LibraryStories, LibraryStories.ArchivedView)
 export const Series: Story = mirror('/series/1', SeriesStories, SeriesStories.Ongoing)
 export const AddSeries: Story = mirror('/add', AddSeriesStories, AddSeriesStories.BrowsingTheCatalogue)
 export const Creator: Story = mirror('/creator/Aoi%20Mizuhara', CreatorStories, CreatorStories.Default)

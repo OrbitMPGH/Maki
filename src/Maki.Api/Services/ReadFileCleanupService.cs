@@ -161,6 +161,7 @@ public class ReadFileCleanupService(
     {
         var options = await OptionsAsync(ct);
         var seriesIds = await db.Series.IgnoreQueryFilters()
+            .Active()
             .Where(s => s.ReadFileCleanup == ReadFileCleanup.On ||
                         (options.Enabled && s.ReadFileCleanup == ReadFileCleanup.Default))
             .Select(s => s.Id)

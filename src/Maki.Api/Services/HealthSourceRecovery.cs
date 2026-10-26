@@ -38,7 +38,7 @@ public class HealthSourceRecovery(
     }
 
     public static IQueryable<Core.Entities.SourceMapping> Failing(MakiDbContext db, string source) =>
-        db.SourceMappings.Where(m => m.SourceName == source && m.Enabled && m.LastError != null);
+        db.SourceMappings.Where(m => m.SourceName == source && m.Enabled && m.LastError != null && m.Series!.ArchivedAt == null);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

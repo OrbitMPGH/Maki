@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text.Json;
 using Maki.Api.Hubs;
 using Maki.Api.Jobs;
@@ -348,6 +349,62 @@ public class CompletedDownloadJobTests : IDisposable
     [InlineData("  ", "")]
     public void Names_compare_without_case_punctuation_or_a_file_extension(string name, string expected) =>
         Assert.Equal(expected, CompletedDownloadJob.ComparableName(name));
+
+    /// <summary>
+    /// The archive cancels the row, then the import gets the lock it was waiting on and sees the archive.
+    /// That row stays Cancelled: it is not a failed download, so nothing is announced and no release is declined.
+    /// </summary>
+    [Fact]
+    public async Task A_series_archived_while_its_import_waited_for_the_lock_leaves_the_row_cancelled_and_silent()
+    {
+        var content = Path.Combine(Path.GetTempPath(), "maki-job-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(content);
+        try
+        {
+            using (var archive = ZipFile.Open(Path.Combine(content, "Berserk v01 (Digital).cbz"), ZipArchiveMode.Create))
+            {
+                using var writer = new StreamWriter(archive.CreateEntry("Berserk - c001 - p001 [Oak].png").Open());
+                writer.Write("page");
+            }
+
+            using (var db = _db.NewContext())
+            {
+                db.Chapters.Add(new Chapter { SeriesId = _seriesId, Number = 1, Volume = 1, Language = "en" });
+                db.SaveChanges();
+            }
+
+            var id = SeedItem(QueueStatus.Downloading, "abc123", DateTime.UtcNow.AddHours(-1));
+            _client.Torrents.Add(new ClientTorrent(
+                "abc123", "Berserk v01 (Digital)", 1.0, true, content, DateTimeOffset.UtcNow.AddHours(-1), false, null));
+
+            Task run;
+            using (await SeriesLocks.SeriesAsync(_seriesId, CancellationToken.None))
+            {
+                run = RunAsync();
+                await Wait.UntilAsync(() => run.IsCompleted || SeriesLocks.SeriesUsers(_seriesId) >= 2,
+                    "the import never asked for the series lock");
+                Assert.False(run.IsCompleted);
+
+                using var db = _db.NewContext();
+                db.Series.Single(s => s.Id == _seriesId).ArchivedAt = DateTime.UtcNow;
+                db.DownloadQueue.Single(q => q.Id == id).Status = QueueStatus.Cancelled;
+                db.SaveChanges();
+            }
+
+            await run;
+
+            var item = Reload(id);
+            Assert.Equal(QueueStatus.Cancelled, item.Status);
+            Assert.Empty(_notifications.Sent);
+            Assert.Empty(_inbox.RaisedForSeries);
+            using var check = _db.NewContext();
+            Assert.Empty(check.TorrentProposals);
+        }
+        finally
+        {
+            Directory.Delete(content, recursive: true);
+        }
+    }
 
     [Fact]
     public async Task A_finished_torrent_waiting_for_an_import_decision_is_not_advanced()

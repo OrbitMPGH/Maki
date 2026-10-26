@@ -67,13 +67,22 @@ export class ApiError extends Error {
   readonly code: string | null
   /** A delete the recycle bin refused, which the same request with `permanent=true` may carry out instead. */
   readonly permanentDeleteAvailable: boolean
+  /** The series a refusal is about (`error.series.archivedExists`), when the body names one. */
+  readonly seriesId: number | null
 
-  constructor(status: number, message: string, code: string | null = null, permanentDeleteAvailable = false) {
+  constructor(
+    status: number,
+    message: string,
+    code: string | null = null,
+    permanentDeleteAvailable = false,
+    seriesId: number | null = null,
+  ) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
     this.permanentDeleteAvailable = permanentDeleteAvailable
+    this.seriesId = seriesId
   }
 }
 
@@ -285,6 +294,7 @@ async function readResponse<T>(res: Response, generation: number): Promise<T> {
       errorMessage(body) ?? t`The server returned an error (${status}).`,
       code,
       offersPermanentDelete(body),
+      errorSeriesId(body),
     )
   }
   // 204, and any 200 whose handler wrote no body, have nothing to parse.
@@ -323,6 +333,21 @@ function offersPermanentDelete(body: string): boolean {
     return (JSON.parse(body) as { permanentDeleteAvailable?: boolean }).permanentDeleteAvailable === true
   } catch {
     return false
+  }
+}
+
+/** The archived series an add or an approval ran into, so the caller can offer Restore. */
+export function archivedExistsSeriesId(error: unknown): number | null {
+  return error instanceof ApiError && error.code === 'error.series.archivedExists' ? error.seriesId : null
+}
+
+function errorSeriesId(body: string): number | null {
+  if (!body) return null
+  try {
+    const id = (JSON.parse(body) as { seriesId?: unknown }).seriesId
+    return typeof id === 'number' ? id : null
+  } catch {
+    return null
   }
 }
 

@@ -63,6 +63,7 @@ const GRANTABLE_DEFS: { value: Exclude<Permission, 'Admin'>; label: MessageDescr
   { value: 'UseTrackers', label: msg`Use trackers` },
   { value: 'UseOpds', label: msg`Use OPDS` },
   { value: 'ImportLibrary', label: msg`Import library` },
+  { value: 'ArchiveSeries', label: msg({ message: 'Archive series', context: 'series' }) },
 ]
 
 function useGrantablePermissions() {
@@ -87,6 +88,7 @@ const BIT: Record<Permission, number> = {
   UseTrackers: 1 << 9,
   UseOpds: 1 << 10,
   ImportLibrary: 1 << 11,
+  ArchiveSeries: 1 << 12,
 }
 
 /**

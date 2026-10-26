@@ -3,6 +3,7 @@ import type { LibrarySettings } from '../../../src/api/hooks'
 import type {
   IgnoredImportFolder,
   ImportBatch,
+  ImportCandidateKind,
   ImportPlan,
   ImportUndoOutcome,
 } from '../../../src/api/libraryImport'
@@ -18,6 +19,7 @@ export interface ScanCandidateFixture {
   recognizedCount: number
   matches: MetadataSearchResult[]
   existingSeriesId: number | null
+  kind: ImportCandidateKind
 }
 
 export const starlitFerry = metadataHit('mb-30011', 'Starlit Ferry', 2023, 'Ongoing', 41)
@@ -31,6 +33,7 @@ export const scanCandidates: ScanCandidateFixture[] = [
     recognizedCount: 41,
     matches: [starlitFerry, metadataHit('mb-30013', 'Starlit Ferry: Night Crossing', 2024, 'Hiatus', 9)],
     existingSeriesId: null,
+    kind: 'new',
   },
   {
     folderName: 'Moth Orchard',
@@ -39,6 +42,7 @@ export const scanCandidates: ScanCandidateFixture[] = [
     recognizedCount: 80,
     matches: [mothOrchard],
     existingSeriesId: null,
+    kind: 'new',
   },
   {
     folderName: 'Tidewater Almanac vol 1-8 (Maki Scans)',
@@ -47,6 +51,7 @@ export const scanCandidates: ScanCandidateFixture[] = [
     recognizedCount: 8,
     matches: [metadataHit('mb-30014', 'Tidewater Almanac', 2021, 'Completed', 8)],
     existingSeriesId: null,
+    kind: 'new',
   },
   {
     folderName: 'clockwork tea house',
@@ -55,6 +60,16 @@ export const scanCandidates: ScanCandidateFixture[] = [
     recognizedCount: 12,
     matches: [metadataHit('10007', 'Clockwork Tea House', 2021, 'Completed', 120)],
     existingSeriesId: 7,
+    kind: 'inLibrary',
+  },
+  {
+    folderName: 'Lantern Keepers',
+    cleanedTitle: 'Lantern Keepers',
+    comicCount: 6,
+    recognizedCount: 6,
+    matches: [metadataHit('10009', 'Lantern Keepers', 2018, 'Completed', 60)],
+    existingSeriesId: 9,
+    kind: 'restore',
   },
   {
     folderName: 'zz_unsorted_scans_2019',
@@ -63,6 +78,7 @@ export const scanCandidates: ScanCandidateFixture[] = [
     recognizedCount: 0,
     matches: [],
     existingSeriesId: null,
+    kind: 'new',
   },
 ]
 
@@ -95,6 +111,7 @@ export const importPlans = (items: { folderName: string; metadataProviderId: str
         files: null,
         skipped: null,
         writesCover: false,
+        kind: 'new',
       }
     }
     return {
@@ -107,6 +124,7 @@ export const importPlans = (items: { folderName: string; metadataProviderId: str
       seriesFolderName: 'Starlit Ferry (2023)',
       linkDeferred: true,
       writesCover: true,
+      kind: 'new',
       files: [
         {
           name: 'Starlit Ferry - Ch.1.cbz',
@@ -202,6 +220,7 @@ export const importPlansLinked = (items: { folderName: string; metadataProviderI
     seriesFolderName: 'Clockwork Tea House (2021)',
     linkDeferred: false,
     writesCover: false,
+    kind: 'inLibrary',
     files: [
       {
         name: 'Clockwork Tea House - Ch.1.cbz',
@@ -235,6 +254,39 @@ export const importPlansLinked = (items: { folderName: string; metadataProviderI
       },
     ],
     skipped: [{ name: 'Ch 15.cbz', reason: 'leftBehind' }],
+  }))
+
+/** The folder of an archived series whose files were removed: importing restores it. */
+export const importPlansRestore = (items: { folderName: string; metadataProviderId: string }[]): ImportPlan[] =>
+  items.map((i) => ({
+    folderName: i.folderName,
+    error: null,
+    seriesTitle: 'Lantern Keepers',
+    existingSeriesId: 9,
+    folderAction: 'keep',
+    targetFolderName: 'Lantern Keepers',
+    seriesFolderName: 'Lantern Keepers',
+    linkDeferred: false,
+    writesCover: false,
+    kind: 'restore',
+    files: [
+      {
+        name: 'Lantern Keepers - Ch.1.cbz',
+        source: 'Lantern Keepers - Ch.1.cbz',
+        entry: null,
+        kind: 'cbz',
+        action: 'register',
+        aside: null,
+        size: 18_000_000,
+        number: '1',
+        volume: null,
+        volumeEnd: null,
+        chapters: ['1'],
+        unlinked: null,
+        loneFile: false,
+      },
+    ],
+    skipped: null,
   }))
 
 export const batches: ImportBatch[] = [

@@ -159,6 +159,24 @@ public class ImportListServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task An_archived_series_counts_as_already_in_the_library()
+    {
+        var user = Adder();
+        _db.SeedSeries("Existing", configure: s =>
+        {
+            s.MangaBakaId = 101;
+            s.ArchivedAt = DateTime.UtcNow;
+        });
+        _tracker.Entries = [Entry("r1", mangaBaka: 101)];
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(0, result!.Added);
+        Assert.Equal(1, result.AlreadyPresent);
+        Assert.Single(LibraryIds());
+    }
+
+    [Fact]
     public async Task A_run_is_capped_and_a_full_run_ignores_the_cap()
     {
         var user = Adder(maxPerRun: 2);

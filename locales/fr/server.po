@@ -1607,6 +1607,12 @@ msgstr "Le dossier n'existe pas : {path}"
 msgid "error.rootFolder.inUse"
 msgstr "Le dossier racine est utilisé par une ou plusieurs séries"
 
+#. Every series left in the folder is archived, so the user has to delete or move them before the folder can go. {count} is how many.
+#: src/Maki.Api/Controllers/RootFolderController.cs
+#. English: {count, plural, one {# archived series still uses} other {# archived series still use}} this folder. Delete or move them first.
+msgid "error.rootFolder.inUseArchived"
+msgstr ""
+
 #: src/Maki.Api/Controllers/RootFolderController.cs
 #. English: Path is required
 #, fuzzy
@@ -1712,6 +1718,12 @@ msgstr "Trop de redirections"
 msgid "error.search.unknownSource"
 msgstr "Source inconnue : {sourceName}"
 
+#. Archiving waits while a download is being written, or while a library import is still matching or linking the series.
+#: src/Maki.Api/Services/SeriesArchiveService.cs
+#. English: Series has a download or import in progress. Wait for it to finish before archiving.
+msgid "error.series.activeDownloadArchive"
+msgstr ""
+
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series has a download in progress. Wait for it to finish before deleting.
 #, fuzzy
@@ -1748,6 +1760,18 @@ msgstr "La série existe déjà dans la bibliothèque"
 #, fuzzy
 msgid "error.series.alreadyInRootFolder"
 msgstr "La série se trouve déjà dans ce dossier racine"
+
+#. Refresh, search and download tools refuse an archived series, since it no longer talks to its sources.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: This series is archived. Restore it to the library first.
+msgid "error.series.archived"
+msgstr ""
+
+#. Adding or approving a series that is already in the library as an archived one; the client offers Restore.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: This series is archived. Restore it instead.
+msgid "error.series.archivedExists"
+msgstr ""
 
 #. {folder} is an absolute filesystem path and is never translated.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1852,6 +1876,11 @@ msgstr "Aucun fichier sélectionné"
 #, fuzzy
 msgid "error.series.noRootFolder"
 msgstr "La série n'a pas de dossier racine"
+
+#: src/Maki.Api/Services/SeriesArchiveService.cs
+#. English: This series is not archived.
+msgid "error.series.notArchived"
+msgstr ""
 
 #. Shown when a series create/move request names a root folder id that doesn't exist.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -4555,6 +4584,18 @@ msgstr "Série ajoutée"
 #, fuzzy
 msgid "notify.series.added.body"
 msgstr "{series} a été ajoutée à la bibliothèque{hasRequester, select, yes {. Demandée par {user}} other {}}"
+
+#: src/Maki.Api/Services/SeriesArchiveService.cs
+#. English: Series archived
+msgid "notify.series.archived.title"
+msgstr ""
+
+#. {files} is "kept" when the files stayed on disk, "binned" when they went to the recycle bin and
+#. "deleted" when they were deleted for good.
+#: src/Maki.Api/Services/SeriesArchiveService.cs
+#. English: {series} was archived{files, select, binned {, files moved to the recycle bin} deleted {, files deleted} other {, files kept on disk}}
+msgid "notify.series.archived.body"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series removed

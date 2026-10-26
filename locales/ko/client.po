@@ -681,6 +681,15 @@ msgstr "{announcedBy}이(가) {when}로 예정해 두었습니다."
 msgid "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
 msgstr "{applied, plural, other {평점 #개 가져옴}}"
 
+#: src/pages/LibraryPage.tsx
+msgid "{archiveCount, plural, one {# series} other {# series}}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "{archivedCount, plural, one {Archived (#)} other {Archived (#)}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{beforeLabel} to {afterLabel}"
@@ -711,6 +720,8 @@ msgstr "{binDays, plural, other {파일은 #일 동안 설정에서 복원할 �
 msgid "{binDays, plural, one {It can be restored from Settings for # day.} other {It can be restored from Settings for # days.}}"
 msgstr "{binDays, plural, other {설정에서 #일 동안 복원할 수 있습니다.}}"
 
+#: src/components/series/ArchiveSeriesDialog.tsx
+#: src/components/series/RemoveArchivedFilesDialog.tsx
 #: src/components/series/RemoveSeriesDialog.tsx
 #, fuzzy
 msgid "{binDays, plural, one {The files go to the recycle bin for # day and can be restored from Settings until then.} other {The files go to the recycle bin for # days and can be restored from Settings until then.}}"
@@ -941,6 +952,10 @@ msgstr "{count, plural, other {이 기기에 저장된 챕터 #개를 이 탭에
 #, fuzzy
 msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr "{count, plural, other {보관 파일 #개를 삭제할까요?}}"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "{count, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -1625,6 +1640,14 @@ msgstr "{newChapterCount, plural, other {최근 챕터 파일 #개}}"
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, other {목록에 #개 더, 원하지 않음}}"
 
+#: src/pages/LibraryPage.tsx
+msgid "{ok, plural, one {Archived # series} other {Archived # series}}"
+msgstr ""
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "{otherReaders, plural, one {# other reader is partway through this series. Archiving stops new chapters for everyone.} other {# other readers are partway through this series. Archiving stops new chapters for everyone.}}"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -1721,6 +1744,15 @@ msgstr "취향에서 제외 유지됨 {pushingDown}개"
 #, fuzzy
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, other {백그라운드에서 시리즈 #개 자동 일치 중.}}"
+
+#: src/components/series/restoreToast.tsx
+msgid "{queued, plural, one {Queued # removed chapter} other {Queued # removed chapters}}"
+msgstr ""
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "{queued, plural, one {Restored to the library, # chapter queued} other {Restored to the library, # chapters queued}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1942,6 +1974,10 @@ msgid "{selectedCount, plural, one {Remove # series?} other {Remove # series?}}"
 msgstr "{selectedCount, plural, other {시리즈 #개를 제거할까요?}}"
 
 #: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Remove the files of # series?} other {Remove the files of # series?}}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {Set monitoring for # series} other {Set monitoring for # series}}"
 msgstr "{selectedCount, plural, other {시리즈 #개의 모니터링 설정}}"
@@ -2040,6 +2076,10 @@ msgstr "{size, plural, other {시리즈 #개, 이 보기의 {shareLabel}, {coher
 
 #: src/components/pageconversion/CompareStep.tsx
 msgid "{size}, {percent} of the original"
+msgstr ""
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "{skipped, plural, one {# skipped} other {# skipped}}"
 msgstr ""
 
 #: src/components/import/MihonReview.tsx
@@ -2867,6 +2907,10 @@ msgstr "시리즈는 챕터가 일정한 간격으로 나오거나, 소스가 �
 msgid "A series that has been downloaded into or read since cannot be undone. ComicInfo.xml changes Maki wrote inside your own CBZs are not reverted."
 msgstr "다운로드하거나 읽은 적이 있는 시리즈는 되돌릴 수 없습니다. Maki가 사용자의 CBZ 안에 쓴 ComicInfo.xml 변경 사항은 되돌려지지 않습니다."
 
+#: src/components/NotificationsSection.tsx
+msgid "A series was archived."
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "A short strip of what your library leans towards."
@@ -3020,6 +3064,10 @@ msgstr ""
 #, fuzzy
 msgid "Actions"
 msgstr "작업"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "Actions for {displayTitle}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -3498,6 +3546,14 @@ msgstr "이 태그에 속한 태그도 모두 일치시킵니다"
 msgid "Also needs the daily scan on."
 msgstr "일일 스캔도 켜져 있어야 합니다."
 
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Also remove the files"
+msgstr ""
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Also remove the files to free {size}"
+msgstr ""
+
 #: src/components/series/UndoConversionModal.tsx
 msgid "Also set this series to Never"
 msgstr ""
@@ -3802,10 +3858,59 @@ msgstr "아랍어"
 msgid "Archive"
 msgstr "보관 파일"
 
+#: src/components/series/ArchiveHint.tsx
+#: src/components/series/ArchiveSeriesDialog.tsx
+#: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Archive"
+msgstr ""
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgctxt "series"
+msgid "Archive {title}?"
+msgstr ""
+
+#: src/components/settings/UsersSection.tsx
+msgctxt "series"
+msgid "Archive series"
+msgstr ""
+
+#: src/components/CommandPalette.tsx
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverLibraryRail.tsx
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgctxt "series"
+msgid "Archived"
+msgstr ""
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgctxt "series"
+msgid "Archived {date}"
+msgstr ""
+
+#: src/components/series/ArchivedBanner.tsx
+msgid "Archived on {date} by {archivedBy}. Maki is not checking sources for this series."
+msgstr ""
+
+#: src/components/series/ArchivedBanner.tsx
+msgid "Archived on {date}. Maki is not checking sources for this series."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Archived series are not checked against sources. Restore it first."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Archives inventoried"
 msgstr "보관 파일 확인 완료"
+
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Archiving a finished series stops Maki checking its sources and keeps your reading history and rating. Archived series show up here."
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -4012,6 +4117,10 @@ msgstr "시리즈로 돌아가기"
 
 #: src/pages/PageConversionWizardPage.tsx
 msgid "Back to settings"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Back to the library"
 msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
@@ -4433,6 +4542,7 @@ msgstr "저장된 정보로는 로그인할 수 없습니다."
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/series/UndoConversionModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -5203,6 +5313,7 @@ msgstr "필터 지우기"
 msgid "Clear queue"
 msgstr "대기열 지우기"
 
+#: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -6448,9 +6559,11 @@ msgstr "정의 중"
 
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/rails/DeleteRailDialog.tsx
+#: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Delete"
@@ -6802,6 +6915,7 @@ msgid "Disk used"
 msgstr "디스크 사용량"
 
 #: src/components/layout/SidebarFooter.tsx
+#: src/components/series/ArchiveHint.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -7006,6 +7120,10 @@ msgstr "다운로드 대기열"
 #, fuzzy
 msgid "Download the next"
 msgstr "다음 항목 다운로드"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "Download the removed chapters again?"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -7961,11 +8079,21 @@ msgstr ""
 msgid "Files in this download"
 msgstr "이 다운로드의 파일"
 
+#: src/pages/LibraryPage.tsx
+msgid "Files kept"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Files on disk are not touched. Every user's access to this folder is removed, and adding it back later starts with no grants."
 msgstr "디스크의 파일은 건드리지 않습니다. 이 폴더에 대한 모든 사용자의 접근 권한이 제거되며, 나중에 다시 추가하면 권한 없이 시작합니다."
+
+#: src/components/series/ArchivedSeriesCard.tsx
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Files removed"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -10243,6 +10371,10 @@ msgstr "라이브러리 경로, 저장 공간, 디스크, 여유 공간, 폴더"
 msgid "Library title"
 msgstr "라이브러리 제목"
 
+#: src/pages/LibraryPage.tsx
+msgid "Library view"
+msgstr ""
+
 #: src/pages/reader/enhanceMethods.ts
 #: src/theme-context.tsx
 #, fuzzy
@@ -10653,6 +10785,11 @@ msgstr "이 기기에서 Maki가 {used}/{quota}를 사용 중입니다. 저장�
 #, fuzzy
 msgid "Maki speaks your language"
 msgstr "Maki가 이제 당신의 언어를 지원합니다"
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgctxt "series"
+msgid "Maki stops checking sources for new chapters and moves it to Archived. Your reading history, rating and chapters stay. You can restore it any time."
+msgstr ""
 
 #: src/components/QueuePause.tsx
 #, fuzzy
@@ -12441,6 +12578,10 @@ msgstr "연결된 항목 없음"
 msgid "None listed"
 msgstr "나열된 항목 없음"
 
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "None of the removed chapters are still wanted, so nothing would be downloaded."
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "None of their titles match these filters. Try loosening one of them."
@@ -12746,6 +12887,11 @@ msgstr "아직 동기화되지 않음"
 #, fuzzy
 msgid "Note (optional)"
 msgstr "메모 (선택 사항)"
+
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Nothing archived"
+msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -13435,6 +13581,7 @@ msgstr "나만 볼 수 있습니다."
 msgid "OPDS catalogue"
 msgstr "OPDS 카탈로그"
 
+#: src/components/series/ArchivedSeriesCard.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Open"
@@ -14629,6 +14776,7 @@ msgstr "평가함"
 msgid "Rated {rated}"
 msgstr "평가: {rated}"
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rated {rating}/10"
@@ -14652,6 +14800,7 @@ msgid "Rating"
 msgstr "평점"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rating cleared"
@@ -14722,6 +14871,10 @@ msgstr "{nextChapter} 읽음"
 #, fuzzy
 msgid "Read {nextChapterLabel}"
 msgstr "{nextChapterLabel} 읽기"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "Read {read} of {total}"
+msgstr ""
 
 #: src/pages/stats/ReadTrackingEmpty.tsx
 #, fuzzy
@@ -15048,6 +15201,11 @@ msgstr "최근 업그레이드"
 #, fuzzy
 msgid "Recently added"
 msgstr "최근 추가됨"
+
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Recently archived"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -15413,6 +15571,13 @@ msgstr "실패 항목 제거"
 msgid "Remove failed downloads"
 msgstr "실패한 다운로드 제거"
 
+#: src/components/series/ArchivedBanner.tsx
+#: src/components/series/ArchivedSeriesCard.tsx
+#: src/components/series/RemoveArchivedFilesDialog.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Remove files"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -15474,6 +15639,7 @@ msgstr "규칙 삭제"
 msgid "Remove rule {number}"
 msgstr ""
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Remove series?"
@@ -15508,6 +15674,14 @@ msgstr "정리하지 않고 소스를 제거할까요?"
 #, fuzzy
 msgid "Remove source?"
 msgstr "소스를 제거할까요?"
+
+#: src/pages/LibraryPage.tsx
+msgid "Remove the files of {removeFilesTitle}?"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Remove the files of {seriesTitle}?"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -15930,6 +16104,21 @@ msgstr ""
 msgid "Restore"
 msgstr "복원"
 
+#: src/components/discover/ArchivedRestore.tsx
+#: src/components/series/RestoreSeriesDialog.tsx
+#: src/pages/ImportPage.tsx
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Restore"
+msgstr ""
+
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/import/ImportPlanModal.tsx
+#: src/pages/ImportPage.tsx
+msgctxt "series"
+msgid "Restore {title}"
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Restore & restart"
@@ -15937,6 +16126,11 @@ msgstr "복원 및 다시 시작"
 
 #: src/components/series/UndoConversionModal.tsx
 msgid "Restore and convert again with the current settings"
+msgstr ""
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgctxt "series"
+msgid "Restore and download"
 msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
@@ -15964,6 +16158,11 @@ msgstr "파일에서 복원…"
 msgid "Restore hidden or dismissed title"
 msgstr "숨겨지거나 일시 숨김 처리된 작품 복원"
 
+#: src/components/series/RestoreSeriesDialog.tsx
+msgctxt "series"
+msgid "Restore only"
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Restore staged"
@@ -15977,6 +16176,18 @@ msgstr ""
 #, fuzzy
 msgid "Restore this title"
 msgstr "이 작품 복원"
+
+#: src/components/series/ArchivedBanner.tsx
+#: src/components/series/ArchivedSeriesCard.tsx
+#: src/components/series/SeriesActionsMenu.tsx
+msgctxt "series"
+msgid "Restore to library"
+msgstr ""
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgctxt "series"
+msgid "Restore to the library?"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -15996,6 +16207,21 @@ msgstr ""
 #, fuzzy
 msgid "Restored from the provider"
 msgstr "제공자에서 복원됨"
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "Restored to the library"
+msgstr ""
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "Restored to the library, but the removed chapters were not queued: {queueError}"
+msgstr ""
+
+#: src/pages/ImportPage.tsx
+msgctxt "series"
+msgid "Restoring an archived series needs the Archive series permission"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -17270,6 +17496,15 @@ msgstr "라이브러리에 이미 있는 시리즈는 다시 추가하지 않습
 msgid "Series and chapters you have asked an admin for."
 msgstr "관리자에게 요청한 시리즈와 챕터입니다."
 
+#: src/components/NotificationsSection.tsx
+msgid "Series archived"
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
+msgctxt "series"
+msgid "Series archived"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
 msgid "Series details"
@@ -17313,6 +17548,7 @@ msgid "Series page"
 msgstr "시리즈 페이지"
 
 #: src/components/NotificationsSection.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Series removed"
@@ -17944,6 +18180,10 @@ msgstr "본문으로 건너뛰기"
 msgid "skipped"
 msgstr "건너뜀"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Skipped ({skippedFilterCount})"
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Skipped {latestVersion}"
@@ -18013,6 +18253,10 @@ msgstr "디스크의 스냅샷: {snapshotSize}, {refreshedAtLabel}에 새로 고
 #, fuzzy
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "디스크의 스냅샷: {snapshotSize}, 새로 고침 시간 알 수 없음"
+
+#: src/components/series/restoreToast.tsx
+msgid "Some removed chapters were not queued: {queueError}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -19130,6 +19374,11 @@ msgstr "선택한 시리즈는 Maki에서 제거되고 모니터링도 중지됩
 msgid "The send failed"
 msgstr "전송에 실패했습니다"
 
+#: src/components/series/RemoveArchivedFilesDialog.tsx
+msgctxt "series"
+msgid "The series stays in Archived with its chapters, reading history and rating. Restoring it later can download the chapters again."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
@@ -19495,6 +19744,7 @@ msgstr "이 대기열 항목에는 소스를 찾을 챕터가 없습니다"
 msgid "This rail needs the local MangaBaka database, which is switched off or still downloading."
 msgstr "이 섹션에는 로컬 MangaBaka 데이터베이스가 필요합니다. 데이터베이스가 꺼져 있거나 아직 다운로드 중입니다."
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "This removes \"{seriesTitle}\" and its chapters from Maki."
@@ -20891,6 +21141,15 @@ msgstr "라이브러리에서 보기"
 msgid "View in library: {title}"
 msgstr "라이브러리에서 보기: {title}"
 
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "View series"
+msgstr ""
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "View series: {title}"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Vol. {fileVolume}"
@@ -21606,6 +21865,10 @@ msgstr "오프라인 상태입니다. 이 기기에 저장된 항목을 보여 �
 msgid "You're set"
 msgstr "준비되었습니다"
 
+#: src/components/series/ArchiveHint.tsx
+msgid "You've finished this. Archive it?"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "Your {label}"
@@ -21685,6 +21948,10 @@ msgstr ""
 #, fuzzy
 msgid "Your priority order"
 msgstr "내 우선순위 순서"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "Your rating for {displayTitle}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy

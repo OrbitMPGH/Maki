@@ -246,6 +246,8 @@ export function librarySeries(entry: CatalogueEntry): SeriesDto {
     tagIds: [],
     monitored: true,
     monitorNewItems: 'All',
+    archivedAt: null,
+    archivedByUserId: null,
     rootFolderId: 1,
     folderName: entry.title,
     rootFolderPath: `/library/${entry.title}`,

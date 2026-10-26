@@ -40,6 +40,8 @@ function toSeries(entry: CatalogueEntry): SeriesDto {
     tagIds: [],
     monitored: entry.id !== 11,
     monitorNewItems: 'All',
+    archivedAt: null,
+    archivedByUserId: null,
     rootFolderId: 1,
     folderName: entry.title,
     rootFolderPath: `/library/${entry.title}`,

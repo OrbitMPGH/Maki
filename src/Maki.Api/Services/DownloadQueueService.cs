@@ -367,6 +367,10 @@ public class DownloadQueueService(
         }
 
         var seriesIds = seriesOf.Values.Distinct().ToList();
+        var archived = await db.Series
+            .Where(s => seriesIds.Contains(s.Id) && s.ArchivedAt != null)
+            .Select(s => s.Id)
+            .ToListAsync(ct);
         var reviewed = await db.HealthFiles
             .Where(f => f.SeriesId != null && seriesIds.Contains(f.SeriesId.Value) &&
                         db.HealthOperations.Any(o => o.FileId == f.Id && o.Status != "completed" &&
@@ -392,8 +396,8 @@ public class DownloadQueueService(
             .ToHashSet();
 
         var toQueue = ids
-            .Where(id => seriesOf.TryGetValue(id, out var seriesId) && !reviewed.Contains(seriesId) &&
-                         mapped.Contains(seriesId) && !active.Contains(id))
+            .Where(id => seriesOf.TryGetValue(id, out var seriesId) && !archived.Contains(seriesId) &&
+                         !reviewed.Contains(seriesId) && mapped.Contains(seriesId) && !active.Contains(id))
             .ToList();
         if (toQueue.Count == 0)
         {
@@ -504,6 +508,11 @@ public class DownloadQueueService(
 
         var chapter = await db.Chapters.FirstOrDefaultAsync(c => c.Id == chapterId, ct)
             ?? throw new EnqueueRefusedException(EnqueueRefusedException.ChapterGone, $"Chapter {chapterId} not found");
+        if (await db.Series.AnyAsync(s => s.Id == chapter.SeriesId && s.ArchivedAt != null, ct))
+        {
+            return null;
+        }
+
         if (await db.HealthOperations.AnyAsync(o => db.HealthFiles.Any(f => f.Id == o.FileId && f.SeriesId == chapter.SeriesId)
             && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
             throw new EnqueueRefusedException(EnqueueRefusedException.HealthReview, "A health review is active for this series");
@@ -626,6 +635,11 @@ public class DownloadQueueService(
 
         if (await db.DownloadQueue.AnyAsync(q => q.ChapterId == chapterId &&
                 q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled, ct))
+        {
+            return null;
+        }
+
+        if (await db.Series.AnyAsync(s => s.Id == chapter.SeriesId && s.ArchivedAt != null, ct))
         {
             return null;
         }
@@ -1310,6 +1324,7 @@ public class DownloadQueueService(
             .Include(q => q.SourceMapping)
             .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
                         q.HealthOperationId == null &&
+                        q.Series!.ArchivedAt == null &&
                         q.RetryCount < maxAttempts &&
                         (q.ErrorKey == null || !PermanentErrorKeys.Contains(q.ErrorKey)) &&
                         (manual || q.NextAttempt == null || q.NextAttempt <= now) &&

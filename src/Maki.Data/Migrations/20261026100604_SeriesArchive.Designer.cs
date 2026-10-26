@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    [Migration("20261026151255_PageConversionRules")]
-    partial class PageConversionRules
+    [Migration("20261026100604_SeriesArchive")]
+    partial class SeriesArchive
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -161,9 +161,6 @@ namespace Maki.Data.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("CheckedWith")
-                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("ConversionCheckedAtUtc")
                         .HasColumnType("TEXT");
@@ -1063,34 +1060,6 @@ namespace Maki.Data.Migrations
                     b.ToTable("NotificationTags", (string)null);
                 });
 
-            modelBuilder.Entity("Maki.Core.Entities.PageConversionRule", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ConditionsJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("Skip")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("Stop")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("PageConversionRules");
-                });
-
             modelBuilder.Entity("Maki.Core.Entities.PendingReadImport", b =>
                 {
                     b.Property<int>("Id")
@@ -1889,6 +1858,12 @@ namespace Maki.Data.Migrations
                     b.Property<string>("AnimeStart")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ArchivedByUserId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("AuthorArt")
                         .HasColumnType("TEXT");
 
@@ -1972,9 +1947,6 @@ namespace Maki.Data.Migrations
                     b.Property<string>("Overview")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("PageConversion")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("PendingImportLink")
                         .HasColumnType("INTEGER");
 
@@ -2024,6 +1996,10 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ArchivedAt");
+
+                    b.HasIndex("ArchivedByUserId");
 
                     b.HasIndex("MangaBakaId");
 
@@ -3392,6 +3368,11 @@ namespace Maki.Data.Migrations
 
             modelBuilder.Entity("Maki.Core.Entities.Series", b =>
                 {
+                    b.HasOne("Maki.Data.Identity.MakiUser", null)
+                        .WithMany()
+                        .HasForeignKey("ArchivedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Maki.Core.Entities.RootFolder", "RootFolder")
                         .WithMany()
                         .HasForeignKey("RootFolderId")

@@ -27,6 +27,7 @@ public class SideInterestRailService(
         db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
         var allowed = ContentRating.Allowed(scope.MaxContentRating);
         var rows = await db.Series.AsNoTracking()
+            .Active()
             .Where(s => s.MangaBakaId != null && s.Incognito != IncognitoMode.Full
                 && allowed.Contains(s.ContentRating ?? ContentRating.Safe)
                 && !db.UserSeriesStates.Any(u => u.SeriesId == s.Id && u.Rating < 5))
