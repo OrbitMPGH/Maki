@@ -331,6 +331,32 @@ public class SeriesArchiveService(
     }
 
     /// <summary>
+    /// Whether the series page offers "finished, archive it?" to the caller: the series is completed
+    /// and active, the caller has not dismissed the hint, and everyone who has a reading state for it
+    /// has finished it. <paramref name="db"/> is the caller's scoped context, so the dismissal read is
+    /// theirs. The permission check stays with the caller.
+    /// </summary>
+    public static async Task<bool> FinishedHintAsync(MakiDbContext db, Series series, CancellationToken ct)
+    {
+        if (series.Status != SeriesStatus.Completed || series.ArchivedAt != null)
+        {
+            return false;
+        }
+
+        var dismissed = await db.UserSeriesStates.AsNoTracking()
+            .Where(s => s.SeriesId == series.Id)
+            .Select(s => s.ArchiveHintDismissedAt)
+            .FirstOrDefaultAsync(ct);
+        if (dismissed != null)
+        {
+            return false;
+        }
+
+        var readers = db.ReadingStates.IgnoreQueryFilters().AsNoTracking().Where(r => r.SeriesId == series.Id);
+        return await readers.AnyAsync(ct) && !await readers.AnyAsync(r => !r.Finished, ct);
+    }
+
+    /// <summary>
     /// The chapters <see cref="RestoreAsync"/> would queue again: removed by archive or cleanup, no
     /// file, and still wanted.
     /// </summary>

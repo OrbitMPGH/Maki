@@ -25,6 +25,7 @@ paths:
   - "src/Maki.Api/Services/ReleaseService.cs"
   - "tests/Maki.Api.Tests/ArchiveGuardTests.cs"
   - "tests/Maki.Api.Tests/SeriesArchiveTests.cs"
+  - "tests/Maki.Api.Tests/ArchiveFinishedHintTests.cs"
 ---
 
 # Series archive

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
-import { animeResume, archivePreview, archivedSeriesDto, providerDetail, seriesDto, seriesMsw, torrentProposal } from '../../.storybook/mocks/series'
+import { animeResume, archivePreview, archivedSeriesDto, hintedSeriesDto, providerDetail, seriesDto, seriesMsw, torrentProposal } from '../../.storybook/mocks/series'
 import SeriesDetailPage from './SeriesDetailPage'
 import { monoText } from '../../.storybook/monoText'
 
@@ -30,6 +30,42 @@ export const Completed: Story = {
   parameters: at(2),
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: /The Ninth Kitchen/ })).toBeVisible()
+    await expect(canvas.queryByText(/You've finished this/)).toBeNull()
+  },
+}
+
+/** Completed and finished by every reader: a quiet line offers the archive and opens the same dialog as the menu. */
+export const FinishedArchiveHint: Story = {
+  parameters: { ...at(2), msw: seriesMsw(http.get(api('/series/:id'), () => HttpResponse.json(hintedSeriesDto(2)))) },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(await canvas.findByText("You've finished this. Archive it?")).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Archive' }))
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
+    await expect(within(dialog).getByRole('button', { name: 'Archive' })).toBeVisible()
+  },
+}
+
+let hintDismissed = false
+
+/** Dismissing posts once and the line goes away on the refetch. */
+export const FinishedArchiveHintDismissed: Story = {
+  beforeEach: () => {
+    hintDismissed = false
+  },
+  parameters: {
+    ...at(2),
+    msw: seriesMsw(
+      http.get(api('/series/:id'), () => HttpResponse.json({ ...hintedSeriesDto(2), archiveHintEligible: !hintDismissed })),
+      http.post(api('/series/:id/archive-hint/dismiss'), () => {
+        hintDismissed = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    ),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Dismiss' }))
+    await waitFor(() => expect(canvas.queryByText(/You've finished this/)).toBeNull())
+    await expect(hintDismissed).toBe(true)
   },
 }
 

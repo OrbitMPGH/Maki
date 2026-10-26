@@ -207,6 +207,12 @@ public record SeriesDto(
 
     public int? ArchivedByUserId { get; init; }
 
+    /// <summary>
+    /// The series page should offer "finished, archive it?" to this caller. Detail endpoint only, and
+    /// already false for a caller without ArchiveSeries.
+    /// </summary>
+    public bool ArchiveHintEligible { get; init; }
+
     /// <summary>"Default" | "On" | "Off": this series' choice about deleting read chapter files.</summary>
     public string ReadFileCleanup { get; init; } = nameof(Core.Entities.ReadFileCleanup.Default);
 

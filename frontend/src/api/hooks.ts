@@ -1782,6 +1782,14 @@ export function useRestoreSeries() {
   })
 }
 
+export function useDismissArchiveHint() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/series/${id}/archive-hint/dismiss`, { method: 'POST' }),
+    onSuccess: (_, id) => void queryClient.invalidateQueries({ queryKey: ['series', id] }),
+  })
+}
+
 export function useRemoveArchivedFiles() {
   const queryClient = useQueryClient()
   return useMutation({

@@ -64,6 +64,7 @@ import {
   useSourceMappings,
   useSources,
   useArchiveSeries,
+  useDismissArchiveHint,
   useDeleteSeries,
   useRemoveArchivedFiles,
   useRestoreSeries,
@@ -151,6 +152,7 @@ import {
   type FileOrigin,
 } from '../components/series/chapterTable'
 import { ArchivedBanner } from '../components/series/ArchivedBanner'
+import { ArchiveHint } from '../components/series/ArchiveHint'
 import { RemoveArchivedFilesDialog } from '../components/series/RemoveArchivedFilesDialog'
 import { ArchiveSeriesDialog } from '../components/series/ArchiveSeriesDialog'
 import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
@@ -514,6 +516,7 @@ function SeriesDetailBody() {
   )
   const deleteSeries = useDeleteSeries()
   const archiveSeries = useArchiveSeries()
+  const dismissArchiveHint = useDismissArchiveHint()
   const restoreSeries = useRestoreSeries()
   const removeArchivedFiles = useRemoveArchivedFiles()
   const refresh = useRefreshSeries()
@@ -1700,6 +1703,12 @@ function SeriesDetailBody() {
       },
     )
 
+  const openArchiveDialog = () => {
+    setArchiveRemoveFiles(false)
+    setBinRefused(null)
+    setArchiveModalOpen(true)
+  }
+
   const restoreArchived = (redownloadRemoved: boolean) =>
     restoreSeries.mutate(
       { id: series.id, redownloadRemoved },
@@ -2019,11 +2028,7 @@ function SeriesDetailBody() {
                     canArchive={canArchive}
                     archived={archived}
                     sourceToolsDisabledReason={archivedReason}
-                    onArchive={() => {
-                      setArchiveRemoveFiles(false)
-                      setBinRefused(null)
-                      setArchiveModalOpen(true)
-                    }}
+                    onArchive={openArchiveDialog}
                     onRestore={restoreFromMenu}
                     canRemove={can('DeleteSeries')}
                     onRemove={() => {
@@ -2072,6 +2077,13 @@ function SeriesDetailBody() {
               </Tabs.List>
             }
         />
+
+        {series.archiveHintEligible && series.archivedAt == null && canArchive && (
+          <ArchiveHint
+            onArchive={openArchiveDialog}
+            onDismiss={() => dismissArchiveHint.mutate(series.id)}
+          />
+        )}
 
         {series.archivedAt != null && (
           <ArchivedBanner

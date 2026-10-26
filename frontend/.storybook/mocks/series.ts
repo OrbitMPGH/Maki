@@ -57,6 +57,9 @@ export const seriesFor = (id: number) => seriesDto(id, scenarios[id]?.overrides)
 export const archivedSeriesDto = (id = 1) =>
   seriesDto(id, { ...scenarios[id]?.overrides, monitored: false, archivedAt: hoursAgo(24 * 12), archivedByUserId: 1 })
 
+/** A completed series every reader has finished, so the page offers to archive it. */
+export const hintedSeriesDto = (id = 2) => ({ ...seriesFor(id), archiveHintEligible: true })
+
 const notFound = () => failWith(404, 'Series not found', 'error.series.notFound')
 
 /** What the archive and restore dialogs fetch when they open; nothing removed and nobody else reading by default. */
@@ -92,6 +95,7 @@ const seriesMutations: HttpHandler[] = [
     HttpResponse.json({ deleted: ((await request.json().catch(() => [])) as string[]).length, failed: 0 }),
   ),
   http.post(api('/series/:id/archive'), () => HttpResponse.json({ deleted: 0, failed: 0 })),
+  http.post(api('/series/:id/archive-hint/dismiss'), () => noContent()),
   http.post(api('/series/archive/bulk'), async ({ request }) => {
     const ids = ((await bodyOf(request)).seriesIds as number[] | undefined) ?? []
     return HttpResponse.json({

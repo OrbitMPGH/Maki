@@ -118,6 +118,8 @@ export interface SeriesDto {
   /** When the series was archived out of the active library, or null while it is active. */
   archivedAt: string | null
   archivedByUserId: number | null
+  /** The "finished, archive it?" hint applies to you. Detail endpoint only; false without ArchiveSeries or once dismissed. */
+  archiveHintEligible?: boolean
   /** Personal time left from comparable timed chapters in the built-in reader. Detail endpoint only. */
   readTimeEstimate?: {
     seconds: number

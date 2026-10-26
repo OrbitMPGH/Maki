@@ -1071,6 +1071,8 @@ public class SeriesController(
             RemovedChapterCount = counts?.Removed ?? 0,
             ReadFileCleanupActive = ReadFileCleanupService.AppliesTo(series.ReadFileCleanup, await readFileCleanup.OptionsAsync(ct)),
             PendingProposalId = pendingProposalId,
+            ArchiveHintEligible = currentUser.Has(MakiPermission.ArchiveSeries) &&
+                                  await SeriesArchiveService.FinishedHintAsync(db, series, ct),
             ReadTimeEstimate = estimate is null
                 ? null
                 : new ReadingTimeEstimateDto(
@@ -2143,6 +2145,19 @@ public class SeriesController(
         // The scrobble log records what synced.
         scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0);
         return Ok(new { rating = state.Rating });
+    }
+
+    /// <summary>Hides the "finished, archive it?" hint on this series for the caller, on every device.</summary>
+    [HttpPost("{id:int}/archive-hint/dismiss")]
+    public async Task<IActionResult> DismissArchiveHint(int id, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        await UpsertUserStateAsync(id, s => s.ArchiveHintDismissedAt = DateTime.UtcNow, ct);
+        return NoContent();
     }
 
     /// <summary>
