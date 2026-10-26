@@ -26,6 +26,8 @@ import {
   Tooltip,
 } from '@mantine/core'
 import {
+  IconArchive,
+  IconArchiveOff,
   IconBookmark,
   IconCheck,
   IconChevronDown,
@@ -33,6 +35,7 @@ import {
   IconDeviceMobileCheck,
   IconEye,
   IconStars,
+  IconFileOff,
   IconFileText,
   IconFilter,
   IconFolderDown,
@@ -66,17 +69,24 @@ import {
   CONTENT_RATING_LABELS,
   missingCount,
   useAutoMatchSources,
+  useBulkArchiveSeries,
   useBulkSetSeriesNotificationMode,
   useBulkSetUpgradeProfile,
   useBulkTag,
   useDeleteSavedFilter,
+  useDeleteSeries,
   useLibraryStats,
+  useRemoveArchivedFiles,
+  useRestoreSeries,
   useRootFolders,
   useSavedFilters,
   useSaveFilter,
   useSeries,
+  useSetRating,
   useTags,
 } from '../api/hooks'
+import { offersPermanentDelete } from '../api/recycleBin'
+import { affectedKeys } from '../api/recommendationFeedback'
 import { useUpgradeProfiles } from '../api/upgrades'
 import { useReadTracking } from '../api/reader'
 import { useAuth } from '../auth/AuthProvider'
@@ -103,6 +113,10 @@ import { isUnfinished } from '../lib/lucky'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
 import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
+import { ArchiveSeriesDialog } from '../components/series/ArchiveSeriesDialog'
+import { RestoreSeriesDialog } from '../components/series/RestoreSeriesDialog'
+import { RemoveArchivedFilesDialog } from '../components/series/RemoveArchivedFilesDialog'
+import { ArchivedSeriesCard, type ArchivedCardAction } from '../components/series/ArchivedSeriesCard'
 import {
   DensityMenuItems,
   POSTER_COLS_BY_DENSITY,
@@ -116,7 +130,15 @@ import { formatNumber } from '../format'
 import { useOfflineAvailableSeriesIds, useOfflineSeriesIds } from '../pwa/offlineChapters'
 import { useConnectivity } from '../lib/connectivity'
 
-const SORT_VALUES = ['added', 'title', 'incomplete', 'status', 'read', 'rating', 'downloaded'] as const
+const SORT_VALUES = ['added', 'title', 'incomplete', 'status', 'read', 'rating', 'downloaded', 'archived'] as const
+
+type LibraryScope = 'library' | 'archived'
+
+/** Which sorts each scope offers. The first is the scope's default. */
+const SCOPE_SORTS: Record<LibraryScope, readonly string[]> = {
+  library: SORT_VALUES.filter((v) => v !== 'archived'),
+  archived: ['archived', 'title', 'rating', 'read'],
+}
 
 const SORT_LABELS: Record<string, MessageDescriptor> = {
   added: msg`Recently added`,
@@ -126,6 +148,7 @@ const SORT_LABELS: Record<string, MessageDescriptor> = {
   read: msg`Recently read`,
   rating: msg`My rating`,
   downloaded: msg`Last downloaded`,
+  archived: msg({ message: 'Recently archived', context: 'series' }),
 }
 
 type SortDir = 'asc' | 'desc'
@@ -139,6 +162,7 @@ const SORT_DEFAULT_DIR: Record<string, SortDir> = {
   read: 'desc',
   rating: 'desc',
   downloaded: 'desc',
+  archived: 'desc',
 }
 
 function toTime(iso: string | null | undefined): number | null {
@@ -172,16 +196,26 @@ function compareSeries(sort: string, dir: SortDir): (a: SeriesDto, b: SeriesDto)
       return nullable((s) => s.rating)
     case 'downloaded':
       return nullable((s) => toTime(s.lastDownloadedAt))
+    case 'archived':
+      return nullable((s) => toTime(s.archivedAt))
     default:
       return (a, b) => (new Date(a.added).getTime() - new Date(b.added).getTime()) * sign
   }
 }
 
+/** A series with every file gone that had some: restoring it is a choice about downloading them again. */
+function needsRedownloadChoice(s: SeriesDto | undefined): boolean {
+  return s != null && s.chapterFileCount === 0 && s.removedChapterCount > 0
+}
+
 type ViewMode = 'grid' | 'list'
 type Density = 'compact' | 'default' | 'comfortable'
 
-/** Where the library's filters are remembered between visits, see usePageState. */
-const MEM = 'library'
+/**
+ * Where the library's filters are remembered between visits, see usePageState. The Archived view
+ * keeps its own set, so its sort and filters never leak into the library or back.
+ */
+const MEM_BY_SCOPE: Record<LibraryScope, string> = { library: 'library', archived: 'library:archived' }
 
 const LS_VIEW = 'library-view'
 const LS_DENSITY = 'library-density'
@@ -345,6 +379,10 @@ const BULK_ACTION_LABELS: Record<string, MessageDescriptor> = {
   'Set monitoring': msg`Set monitoring`,
   'Quality profile': msg`Quality profile`,
   Move: msg`Move`,
+  Archive: msg({ message: 'Archive', context: 'series' }),
+  Restore: msg({ message: 'Restore', context: 'series' }),
+  'Remove files': msg`Remove files`,
+  Delete: msg`Delete`,
 }
 
 const MATCH_MODE_LABELS: Record<string, MessageDescriptor> = {
@@ -352,14 +390,31 @@ const MATCH_MODE_LABELS: Record<string, MessageDescriptor> = {
   all: msg`All`,
 }
 
-export default function LibraryPage() {
+// Keyed by scope: the two routes render the same component in the same place, and selection, open
+// dialogs and the filter state must not carry from one view into the other.
+export default function LibraryPage({ scope = 'library' }: { scope?: LibraryScope }) {
+  return <LibraryBody key={scope} scope={scope} />
+}
+
+function LibraryBody({ scope }: { scope: LibraryScope }) {
+  const archivedScope = scope === 'archived'
+  const MEM = MEM_BY_SCOPE[scope]
   const renderLabel = useLabel()
   const { i18n, _ } = useLingui()
   const { t } = useLinguiMacro()
   const notificationOptions = useSeriesNotificationOptions()
   const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
   const [density, setDensity] = useState<Density>(() => readStored(LS_DENSITY, ['compact', 'default', 'comfortable'], 'default'))
-  const { data: series, isLoading, error, refetch: refetchSeries, isRefetching: isRefetchingSeries } = useSeries()
+  const { data: allSeries, isLoading, error, refetch: refetchSeries, isRefetching: isRefetchingSeries } = useSeries()
+  // useSeries answers with every series; each view keeps only its own half.
+  const series = useMemo(
+    () => allSeries?.filter((s) => (s.archivedAt != null) === archivedScope),
+    [allSeries, archivedScope],
+  )
+  const archivedCount = useMemo(
+    () => (allSeries ?? []).reduce((n, s) => (s.archivedAt != null ? n + 1 : n), 0),
+    [allSeries],
+  )
   const { me, can } = useAuth()
   const { data: rootFolders } = useRootFolders()
   const { data: tags } = useTags()
@@ -374,6 +429,13 @@ export default function LibraryPage() {
   const autoMatch = useAutoMatchSources()
   const readTracking = useReadTracking()
   const stats = useLibraryStats()
+  const bulkArchive = useBulkArchiveSeries()
+  const restoreSeries = useRestoreSeries()
+  const removeArchivedFiles = useRemoveArchivedFiles()
+  const deleteSeries = useDeleteSeries()
+  const { mutate: rate } = useSetRating()
+  const canArchive = can('ArchiveSeries')
+  const canDelete = can('DeleteSeries')
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const luckyPool = useMemo(
@@ -391,7 +453,11 @@ export default function LibraryPage() {
   // Re-filtering (and re-sorting) a few thousand series on every keystroke is what made typing
   // in here feel sticky: the input itself stays instant, the grid catches up a frame later.
   const [debouncedQuery] = useDebouncedValue(query, 200)
-  const [sort, setSort] = usePageState(`${MEM}:sort`, 'added')
+  const scopeSorts = SCOPE_SORTS[scope]
+  const defaultSort = scopeSorts[0]
+  const [storedSort, setSort] = usePageState(`${MEM}:sort`, defaultSort)
+  // A saved filter or a cleared spec can carry a sort this view does not offer.
+  const sort = scopeSorts.includes(storedSort) ? storedSort : defaultSort
   // Empty means the key's own default, so switching key never leaves a stale direction behind.
   const [sortDirOverride, setSortDirOverride] = usePageState<SortDir | ''>(`${MEM}:sort-dir`, '')
   const sortDir: SortDir = sortDirOverride || SORT_DEFAULT_DIR[sort] || 'desc'
@@ -460,6 +526,15 @@ export default function LibraryPage() {
   const [moveModalOpen, setMoveModalOpen] = useState(false)
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
   const [moveFiles, setMoveFiles] = useState(true)
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false)
+  const [archiveRemoveFiles, setArchiveRemoveFiles] = useState(false)
+  // Ids the recycle bin refused during a bulk archive with files; the dialog then offers to delete them for good.
+  const [archiveBinRefused, setArchiveBinRefused] = useState<number[]>([])
+  // Restore and file removal ask first in some cases; `series` null means the selection, otherwise one card.
+  const [restoreAsk, setRestoreAsk] = useState<{ series: SeriesDto | null; removed: number } | null>(null)
+  const [removeFilesAsk, setRemoveFilesAsk] = useState<{ series: SeriesDto | null; binRefused: boolean } | null>(null)
+  const [deleteOne, setDeleteOne] = useState<{ series: SeriesDto; binRefused: boolean } | null>(null)
+  const [deleteOneFiles, setDeleteOneFiles] = useState(false)
 
   const visible = useMemo(() => {
     let list = [...(series ?? [])]
@@ -618,8 +693,8 @@ export default function LibraryPage() {
   )
 
   const sortOptions = useMemo(
-    () => SORT_VALUES.map((value) => ({ value, label: _(SORT_LABELS[value]) })),
-    [_, i18n.locale],
+    () => scopeSorts.map((value) => ({ value, label: _(SORT_LABELS[value]) })),
+    [scopeSorts, _, i18n.locale],
   )
   const sourceStateOptions = useMemo(
     () => SOURCE_STATE_VALUES.map((value) => ({ value, label: _(SOURCE_STATE_LABELS[value]) })),
@@ -946,6 +1021,190 @@ export default function LibraryPage() {
     void queryClient.invalidateQueries({ queryKey: ['chapters'] })
   }
 
+  // runBulk refreshes the list and chapters; archiving, restoring and removing files also touch these.
+  const invalidateArchiveSide = () => {
+    void queryClient.invalidateQueries({ queryKey: ['recycle-bin'] })
+    void queryClient.invalidateQueries({ queryKey: ['series-files'] })
+    for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
+  }
+  const seriesById = (id: number) => allSeries?.find((s) => s.id === id)
+
+  const { mutate: restoreMutate } = restoreSeries
+  const restoreOne = useCallback(
+    (id: number, redownloadRemoved: boolean) =>
+      restoreMutate(
+        { id, redownloadRemoved },
+        {
+          onSuccess: () => {
+            setRestoreAsk(null)
+            notifications.show({ color: 'var(--ok)', message: now({ message: 'Restored to the library', context: 'series' }) })
+          },
+        },
+      ),
+    [restoreMutate],
+  )
+
+  const runRestoreBulk = (redownload: boolean) => {
+    setRestoreAsk(null)
+    void runBulk('Restore', (id) =>
+      api(`/series/${id}/restore`, {
+        method: 'POST',
+        body: JSON.stringify({ redownloadRemoved: redownload && needsRedownloadChoice(seriesById(id)) }),
+      }),
+    ).then(() => {
+      invalidateArchiveSide()
+      exitSelectMode()
+    })
+  }
+
+  const restoreSelected = () => {
+    const removed = [...selected]
+      .map(seriesById)
+      .reduce((n, s) => (s && needsRedownloadChoice(s) ? n + s.removedChapterCount : n), 0)
+    if (removed > 0) setRestoreAsk({ series: null, removed })
+    else runRestoreBulk(false)
+  }
+
+  const onRate = useCallback(
+    (seriesId: number, rating: number | null) =>
+      rate(
+        { seriesId, rating },
+        {
+          onSuccess: () =>
+            notifications.show({
+              color: 'var(--ok)',
+              message: rating === null ? now`Rating cleared` : now`Rated ${rating}/10`,
+            }),
+        },
+      ),
+    [rate],
+  )
+
+  const onCardAction = useCallback(
+    (action: ArchivedCardAction, s: SeriesDto) => {
+      if (action === 'restore') {
+        if (needsRedownloadChoice(s)) setRestoreAsk({ series: s, removed: s.removedChapterCount })
+        else restoreOne(s.id, false)
+      } else if (action === 'removeFiles') {
+        setRemoveFilesAsk({ series: s, binRefused: false })
+      } else {
+        setDeleteOneFiles(false)
+        setDeleteOne({ series: s, binRefused: false })
+      }
+    },
+    [restoreOne],
+  )
+
+  const removeFilesOne = (s: SeriesDto, permanent: boolean) =>
+    removeArchivedFiles.mutate(
+      { id: s.id, permanent },
+      {
+        onSuccess: () => {
+          setRemoveFilesAsk(null)
+          notifications.show({ color: 'var(--ok)', message: now`Files removed` })
+        },
+        onError: (err) => {
+          if (offersPermanentDelete(err)) setRemoveFilesAsk({ series: s, binRefused: true })
+        },
+      },
+    )
+
+  const removeFilesSelected = () => {
+    setRemoveFilesAsk(null)
+    void runBulk('Remove files', (id) =>
+      (seriesById(id)?.chapterFileCount ?? 0) > 0
+        ? api(`/series/${id}/archive/removefiles`, { method: 'POST', body: JSON.stringify({ permanent: false }) })
+        : Promise.resolve(),
+    ).then(invalidateArchiveSide)
+  }
+
+  const deleteOneNow = (permanent: boolean) => {
+    if (!deleteOne) return
+    const target = deleteOne.series
+    deleteSeries.mutate(
+      { id: target.id, deleteFiles: deleteOneFiles, permanent },
+      {
+        onSuccess: () => {
+          setDeleteOne(null)
+          notifications.show({ color: 'var(--ok)', message: now`Series removed` })
+        },
+        onError: (err) => {
+          if (offersPermanentDelete(err)) setDeleteOne({ series: target, binRefused: true })
+        },
+      },
+    )
+  }
+
+  /** Undo for a bulk archive that kept the files: puts each one back, stopping at the first failure. */
+  const undoArchive = async (ids: number[]) => {
+    try {
+      for (const id of ids) {
+        await api(`/series/${id}/restore`, { method: 'POST', body: JSON.stringify({ redownloadRemoved: false }) })
+      }
+    } catch (err) {
+      notifications.show({ color: 'var(--danger)', message: errorText(err) })
+    }
+    void queryClient.invalidateQueries({ queryKey: ['series'] })
+    void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+    invalidateArchiveSide()
+  }
+
+  const archiveSelected = (permanent = false) => {
+    const ids = permanent ? archiveBinRefused : [...selected]
+    const removeFiles = archiveRemoveFiles && canDelete
+    bulkArchive.mutate(
+      { seriesIds: ids, removeFiles, permanent },
+      {
+        onSuccess: ({ results }) => {
+          const archived = results.filter((r) => r.ok).map((r) => r.seriesId)
+          const binRefused = results.filter((r) => !r.ok && r.permanentDeleteAvailable).map((r) => r.seriesId)
+          const refused = results.filter((r) => !r.ok && !r.permanentDeleteAvailable)
+          setArchiveBinRefused(binRefused)
+          if (binRefused.length === 0) {
+            setArchiveModalOpen(false)
+            exitSelectMode()
+          }
+          const name = _(BULK_ACTION_LABELS.Archive)
+          const ok = archived.length
+          const total = ids.length
+          const firstError = refused[0]?.error ?? refused[0]?.code ?? ''
+          if (refused.length > 0) {
+            notifications.show({
+              color: 'var(--warn)',
+              autoClose: 8000,
+              message: now`${name}: ${ok}/${total} succeeded, first error: ${firstError}`,
+            })
+          } else if (ok > 0) {
+            const toastId = notifications.show({
+              color: 'var(--ok)',
+              autoClose: removeFiles ? 4000 : 8000,
+              message: (
+                <Group gap="xs" wrap="nowrap" justify="space-between">
+                  <Text size="sm">
+                    <Plural value={ok} one="Archived # series" other="Archived # series" />
+                  </Text>
+                  {!removeFiles && (
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      style={{ flexShrink: 0 }}
+                      onClick={() => {
+                        notifications.hide(toastId)
+                        void undoArchive(archived)
+                      }}
+                    >
+                      <Trans>Undo</Trans>
+                    </Button>
+                  )}
+                </Group>
+              ),
+            })
+          }
+        },
+      },
+    )
+  }
+
   /**
    * A multi-value facet plus its AND/OR switch. The switch only appears once two values are
    * picked: with one selected, "any" and "all" mean the same thing and it's just noise.
@@ -1033,7 +1292,22 @@ export default function LibraryPage() {
   // `label` is what actually renders, so it's the only part that gets translated.
   // In priority order: the first four the user may run are buttons, the rest sit under More.
   // Remove is not in here; it stays a button of its own, apart from the rest.
-  const bulkActions: { key: string; label: ReactNode; icon: ReactNode; run: () => void }[] = [
+  type BulkAction = { key: string; label: ReactNode; icon: ReactNode; run: () => void }
+  const archivedBulkActions: (BulkAction | false)[] = [
+    canArchive && {
+      key: 'Restore',
+      label: <Trans context="series">Restore</Trans>,
+      icon: <IconArchiveOff size={15} />,
+      run: restoreSelected,
+    },
+    canDelete && {
+      key: 'Remove files',
+      label: <Trans>Remove files</Trans>,
+      icon: <IconFileOff size={15} />,
+      run: () => setRemoveFilesAsk({ series: null, binRefused: false }),
+    },
+  ]
+  const bulkActions: BulkAction[] = (archivedScope ? archivedBulkActions : [
     can('DownloadChapters') && {
       key: 'Search missing',
       label: <Trans>Search missing</Trans>,
@@ -1106,7 +1380,15 @@ export default function LibraryPage() {
         setMoveModalOpen(true)
       },
     },
-  ].filter((a) => a !== false)
+  ]).filter((a) => a !== false)
+  // The danger button's busy key and toast name; it reads Delete in Archived, beside Remove files.
+  const removeKey = archivedScope ? 'Delete' : 'Remove'
+  const bulkArchiveOffered = !archivedScope && canArchive
+  const openArchive = () => {
+    setArchiveRemoveFiles(false)
+    setArchiveBinRefused([])
+    setArchiveModalOpen(true)
+  }
   const primaryActions = bulkActions.slice(0, 4)
   const moreActions = bulkActions.slice(4)
   const bulkDisabled = (key: string) => selected.size === 0 || (busy !== null && busy !== key)
@@ -1139,8 +1421,8 @@ export default function LibraryPage() {
 
   // Hoisted so the "X of Y series" messages below get named placeholders instead of `{0}`/`{1}`.
   const visibleCount = formatNumber(visible.length)
-  const totalCount = formatNumber(stats.total)
-  const totalSeries = stats.total
+  const totalCount = formatNumber(series?.length ?? 0)
+  const totalSeries = series?.length ?? 0
   const shownCount = visible.length
   const totalSeriesShown = series?.length ?? 0
   const loadErrorMessage = error ? (error instanceof Error ? error.message : String(error)) : null
@@ -1164,6 +1446,38 @@ export default function LibraryPage() {
     setSortDirOverride(next === SORT_DEFAULT_DIR[sort] ? '' : next)
   }
 
+  // The library's figures count monitoring and downloads, which archived series no longer do.
+  const archiveCount = archiveBinRefused.length || selectedCount
+  const seriesTitle = deleteOne?.series.displayTitle ?? ''
+  const removeFilesTitle = removeFilesAsk?.series?.displayTitle ?? ''
+  const archivedFilesRemoved = (series ?? []).reduce((n, s) => (s.chapterFileCount === 0 ? n + 1 : n), 0)
+  const archivedFigures = [
+    { label: t({ message: 'Archived', context: 'series' }), value: series?.length ?? 0 },
+    { label: t`Files kept`, value: (series?.length ?? 0) - archivedFilesRemoved, tone: 'ok' as const },
+    { label: t`Files removed`, value: archivedFilesRemoved },
+  ]
+
+  // Absent while nothing is archived, so the library looks exactly as it did before archiving existed.
+  const showScopeSwitch = (archivedScope || archivedCount > 0) && !selectMode
+  const scopeSwitch = (phone: boolean) => (
+    <SegmentedControl
+      aria-label={t`Library view`}
+      visibleFrom={phone ? undefined : 'sm'}
+      hiddenFrom={phone ? 'sm' : undefined}
+      fullWidth={phone}
+      mb={phone ? 'md' : undefined}
+      value={scope}
+      onChange={(v) => navigate(v === 'archived' ? '/library/archived' : '/library')}
+      data={[
+        { value: 'library', label: t`Library` },
+        {
+          value: 'archived',
+          label: <Plural value={archivedCount} one="Archived (#)" other="Archived (#)" context="series" />,
+        },
+      ]}
+    />
+  )
+
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
@@ -1172,6 +1486,7 @@ export default function LibraryPage() {
         actions={
           showChrome && !selectMode ? (
             <>
+              {showScopeSwitch && scopeSwitch(false)}
               <Button
                 variant="default"
                 className="library-select-button"
@@ -1181,19 +1496,24 @@ export default function LibraryPage() {
               >
                 <Trans>Select</Trans>
               </Button>
-              <Button
-                component={Link}
-                to="/add"
-                className="library-add-button"
-                aria-label={can('AddSeries') ? t`Add series` : t`Request series`}
-                leftSection={<IconPlus size={16} />}
-              >
-                {can('AddSeries') ? <Trans>Add series</Trans> : <Trans>Request series</Trans>}
-              </Button>
+              {!archivedScope && (
+                <Button
+                  component={Link}
+                  to="/add"
+                  className="library-add-button"
+                  aria-label={can('AddSeries') ? t`Add series` : t`Request series`}
+                  leftSection={<IconPlus size={16} />}
+                >
+                  {can('AddSeries') ? <Trans>Add series</Trans> : <Trans>Request series</Trans>}
+                </Button>
+              )}
             </>
+          ) : showScopeSwitch ? (
+            scopeSwitch(false)
           ) : undefined
         }
       />
+      {showScopeSwitch && scopeSwitch(true)}
 
       {showChrome && (
         <Panel ref={indexRef} p={0} className="library-index layer-sunken">
@@ -1201,7 +1521,7 @@ export default function LibraryPage() {
             flush
             loading={isLoading}
             className="library-index-metrics"
-            figures={[
+            figures={archivedScope ? archivedFigures : [
               { label: t`Series`, value: stats.total },
               { label: t`Monitored`, value: stats.monitored },
               { label: t`On disk`, value: stats.downloaded, tone: 'ok' },
@@ -1298,26 +1618,48 @@ export default function LibraryPage() {
                         {a.label}
                       </Menu.Item>
                     ))}
+                    {/* On a phone Archive joins the menu, so the row stays one menu and Remove. */}
+                    {bulkArchiveOffered && (
+                      <>
+                        <Menu.Divider hiddenFrom="sm" />
+                        <Menu.Item hiddenFrom="sm" leftSection={<IconArchive size={15} />} onClick={openArchive}>
+                          <Trans context="series">Archive</Trans>
+                        </Menu.Item>
+                      </>
+                    )}
                   </Menu.Dropdown>
                 </Menu>
-                {can('DeleteSeries') && (
-                  <>
-                    <Divider orientation="vertical" className="library-bulk-divider" />
-                    <Button
-                      size="xs"
-                      variant="light"
-                      color="var(--danger)"
-                      leftSection={<IconTrash size={15} />}
-                      disabled={bulkDisabled('Remove')}
-                      loading={busy === 'Remove'}
-                      onClick={() => {
-                        setDeleteFiles(false)
-                        setDeleteModalOpen(true)
-                      }}
-                    >
-                      <Trans>Remove</Trans>
-                    </Button>
-                  </>
+                {(canDelete || bulkArchiveOffered) && (
+                  <Divider orientation="vertical" className="library-bulk-divider" />
+                )}
+                {bulkArchiveOffered && (
+                  <Button
+                    visibleFrom="sm"
+                    size="xs"
+                    variant="light"
+                    leftSection={<IconArchive size={15} />}
+                    disabled={bulkDisabled('Archive')}
+                    loading={bulkArchive.isPending}
+                    onClick={openArchive}
+                  >
+                    <Trans context="series">Archive</Trans>
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="var(--danger)"
+                    leftSection={<IconTrash size={15} />}
+                    disabled={bulkDisabled(removeKey)}
+                    loading={busy === removeKey}
+                    onClick={() => {
+                      setDeleteFiles(false)
+                      setDeleteModalOpen(true)
+                    }}
+                  >
+                    {archivedScope ? <Trans>Delete</Trans> : <Trans>Remove</Trans>}
+                  </Button>
                 )}
                 <Button
                   visibleFrom="sm"
@@ -1382,7 +1724,7 @@ export default function LibraryPage() {
                     data={sortOptions}
                     value={sort}
                     onChange={(v) => {
-                      setSort(v ?? 'added')
+                      setSort(v ?? defaultSort)
                       setSortDirOverride('')
                     }}
                     comboboxProps={{ withinPortal: true }}
@@ -2042,12 +2384,76 @@ export default function LibraryPage() {
         onDeleteFilesChange={setDeleteFiles}
         onConfirm={() => {
           setDeleteModalOpen(false)
-          void runBulk('Remove', (id) =>
+          void runBulk(removeKey, (id) =>
             api(`/series/${id}?deleteFiles=${deleteFiles}`, { method: 'DELETE' }),
           ).then(exitSelectMode)
         }}
       >
         <Trans>The selected series will be removed from Maki and stop being monitored.</Trans>
+      </RemoveSeriesDialog>
+
+      <ArchiveSeriesDialog
+        opened={archiveModalOpen}
+        onClose={() => {
+          setArchiveModalOpen(false)
+          setArchiveBinRefused([])
+        }}
+        title={plural(archiveCount, { one: '# series', other: '# series' })}
+        sizeBytes={0}
+        otherReaders={0}
+        removeFiles={archiveRemoveFiles}
+        onRemoveFilesChange={setArchiveRemoveFiles}
+        canRemoveFiles={canDelete}
+        loading={bulkArchive.isPending}
+        onConfirm={() => archiveSelected()}
+        onConfirmPermanent={archiveBinRefused.length > 0 ? () => archiveSelected(true) : undefined}
+      />
+
+      <RestoreSeriesDialog
+        opened={restoreAsk != null}
+        onClose={() => setRestoreAsk(null)}
+        removedCount={restoreAsk?.removed ?? 0}
+        canDownload={can('DownloadChapters')}
+        loading={restoreSeries.isPending}
+        onRestore={(redownload) => {
+          const target = restoreAsk?.series
+          if (target) restoreOne(target.id, redownload)
+          else runRestoreBulk(redownload)
+        }}
+      />
+
+      <RemoveArchivedFilesDialog
+        opened={removeFilesAsk != null}
+        onClose={() => setRemoveFilesAsk(null)}
+        title={
+          removeFilesAsk?.series
+            ? t`Remove the files of ${removeFilesTitle}?`
+            : plural(selectedCount, { one: 'Remove the files of # series?', other: 'Remove the files of # series?' })
+        }
+        loading={removeArchivedFiles.isPending}
+        onConfirm={() => {
+          const target = removeFilesAsk?.series
+          if (target) removeFilesOne(target, false)
+          else removeFilesSelected()
+        }}
+        onConfirmPermanent={
+          removeFilesAsk?.series && removeFilesAsk.binRefused
+            ? () => removeFilesAsk.series && removeFilesOne(removeFilesAsk.series, true)
+            : undefined
+        }
+      />
+
+      <RemoveSeriesDialog
+        opened={deleteOne != null}
+        onClose={() => setDeleteOne(null)}
+        title={<Trans>Remove series?</Trans>}
+        deleteFiles={deleteOneFiles}
+        onDeleteFilesChange={setDeleteOneFiles}
+        loading={deleteSeries.isPending}
+        onConfirm={() => deleteOneNow(false)}
+        onConfirmPermanent={deleteOne?.binRefused ? () => deleteOneNow(true) : undefined}
+      >
+        <Trans>This removes "{seriesTitle}" and its chapters from Maki.</Trans>
       </RemoveSeriesDialog>
 
       <Modal
@@ -2284,7 +2690,20 @@ export default function LibraryPage() {
           onAction={() => void refetchSeries()}
         />
       )}
-      {series && series.length === 0 && (
+      {archivedScope && series && series.length === 0 && (
+        <EmptyState
+          art="shelf"
+          title={t({ message: 'Nothing archived', context: 'series' })}
+          description={t({
+            message:
+              'Archiving a finished series stops Maki checking its sources and keeps your reading history and rating. Archived series show up here.',
+            context: 'series',
+          })}
+          actionLabel={t`Back to the library`}
+          actionTo="/library"
+        />
+      )}
+      {!archivedScope && series && series.length === 0 && (
         <EmptyState
           art="shelf"
           title={t`Your library is empty`}
@@ -2314,18 +2733,37 @@ export default function LibraryPage() {
       {visible.length > 0 && viewMode === 'grid' && (
         <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
           <SimpleGrid ref={windowed.innerRef} cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
-            {visible.slice(windowed.start, windowed.end).map((s) => (
-              <CoverCard
-                key={s.id}
-                series={s}
-                selectMode={selectMode}
-                selected={selected.has(s.id)}
-                readTracking={readTracking}
-                onToggle={toggle}
-                offline={offlineOf(s.id)}
-              />
-            ))}
-            {!selectMode && (series?.length ?? 0) < 12 && (
+            {visible.slice(windowed.start, windowed.end).map((s) =>
+              archivedScope ? (
+                <ArchivedSeriesCard
+                  key={s.id}
+                  series={s}
+                  variant="grid"
+                  density={density}
+                  selectMode={selectMode}
+                  selected={selected.has(s.id)}
+                  readTracking={readTracking}
+                  onToggle={toggle}
+                  offline={offlineOf(s.id)}
+                  canRestore={canArchive}
+                  canRemoveFiles={canDelete}
+                  canDelete={canDelete}
+                  onRate={onRate}
+                  onAction={onCardAction}
+                />
+              ) : (
+                <CoverCard
+                  key={s.id}
+                  series={s}
+                  selectMode={selectMode}
+                  selected={selected.has(s.id)}
+                  readTracking={readTracking}
+                  onToggle={toggle}
+                  offline={offlineOf(s.id)}
+                />
+              ),
+            )}
+            {!archivedScope && !selectMode && (series?.length ?? 0) < 12 && (
               <Link
                 to="/add"
                 className="library-add-cell"
@@ -2340,18 +2778,37 @@ export default function LibraryPage() {
       {visible.length > 0 && viewMode === 'list' && (
         <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
           <Stack ref={windowed.innerRef} gap="xs">
-            {visible.slice(windowed.start, windowed.end).map((s) => (
-              <SeriesRow
-                key={s.id}
-                series={s}
-                selectMode={selectMode}
-                selected={selected.has(s.id)}
-                readTracking={readTracking}
-                density={density}
-                onToggle={toggle}
-                offline={offlineOf(s.id)}
-              />
-            ))}
+            {visible.slice(windowed.start, windowed.end).map((s) =>
+              archivedScope ? (
+                <ArchivedSeriesCard
+                  key={s.id}
+                  series={s}
+                  variant="list"
+                  density={density}
+                  selectMode={selectMode}
+                  selected={selected.has(s.id)}
+                  readTracking={readTracking}
+                  onToggle={toggle}
+                  offline={offlineOf(s.id)}
+                  canRestore={canArchive}
+                  canRemoveFiles={canDelete}
+                  canDelete={canDelete}
+                  onRate={onRate}
+                  onAction={onCardAction}
+                />
+              ) : (
+                <SeriesRow
+                  key={s.id}
+                  series={s}
+                  selectMode={selectMode}
+                  selected={selected.has(s.id)}
+                  readTracking={readTracking}
+                  density={density}
+                  onToggle={toggle}
+                  offline={offlineOf(s.id)}
+                />
+              ),
+            )}
           </Stack>
         </div>
       )}
