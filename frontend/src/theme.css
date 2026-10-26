@@ -11458,3 +11458,115 @@ tr:hover .mono-value-copy {
   font-size: var(--type-micro);
   color: var(--ink-4);
 }
+
+/* --- Page conversion wizard --- */
+.pc-compare {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface-2);
+}
+.pc-compare[data-loupe] .pc-compare-viewport {
+  cursor: crosshair;
+}
+.pc-compare-viewport {
+  height: clamp(320px, 62vh, 620px);
+  overflow: auto;
+}
+.pc-compare-content {
+  position: relative;
+  margin-inline: auto;
+}
+.pc-compare-content img {
+  display: block;
+  max-width: none;
+}
+.pc-compare-layer {
+  position: absolute;
+  inset: 0 auto auto 0;
+}
+.pc-compare-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  margin-left: -14px;
+  display: grid;
+  place-items: center;
+  cursor: ew-resize;
+  touch-action: none;
+}
+.pc-compare-divider::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--brand);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--app-bg) 70%, transparent);
+}
+.pc-compare-divider:focus-visible {
+  outline: none;
+}
+.pc-compare-divider:focus-visible .pc-compare-handle {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 40%, transparent);
+}
+.pc-compare-handle {
+  position: relative;
+  width: 18px;
+  height: 36px;
+  border: 2px solid var(--brand);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.pc-compare-tag {
+  position: absolute;
+  top: 8px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-strong);
+  color: var(--ink-2);
+  pointer-events: none;
+}
+.pc-compare-tag[data-side='left'] {
+  left: 8px;
+}
+.pc-compare-tag[data-side='right'] {
+  right: 22px;
+}
+.pc-compare-lens {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  width: 176px;
+  height: 176px;
+  border: 2px solid var(--brand);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+  box-shadow: var(--shadow-object);
+  pointer-events: none;
+}
+.pc-compare-busy {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-left: -14px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  pointer-events: none;
+}
+.pc-pick-list {
+  max-height: 320px;
+  overflow: auto;
+}

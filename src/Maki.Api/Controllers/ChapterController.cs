@@ -86,6 +86,8 @@ public class ChapterController(
                     ImageFormat = c.ChapterFile.ImageFormat,
                     OriginalImageFormat = c.ChapterFile.OriginalImageFormat,
                     ConversionSavedBytes = c.ChapterFile.ConversionSavedBytes,
+                    ConversionCheckedAtUtc = c.ChapterFile.ConversionCheckedAtUtc,
+                    CheckedWith = c.ChapterFile.CheckedWith,
                     MeasuredAtUtc = c.ChapterFile.MeasuredAtUtc,
                     Trusted = c.ChapterFile.Trusted
                 }

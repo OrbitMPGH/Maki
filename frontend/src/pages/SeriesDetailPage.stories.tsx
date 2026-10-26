@@ -2,7 +2,17 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
-import { animeResume, archivePreview, archivedSeriesDto, hintedSeriesDto, providerDetail, seriesDto, seriesMsw, torrentProposal } from '../../.storybook/mocks/series'
+import {
+  animeResume,
+  archivePreview,
+  archivedSeriesDto,
+  hintedSeriesDto,
+  providerDetail,
+  seriesConversionRestorable,
+  seriesDto,
+  seriesMsw,
+  torrentProposal,
+} from '../../.storybook/mocks/series'
 import SeriesDetailPage from './SeriesDetailPage'
 import { monoText } from '../../.storybook/monoText'
 
@@ -354,6 +364,29 @@ export const RenameFilesDialog: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
     await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Rename files' }))
     await expect(await body(canvasElement).findByRole('dialog', { name: 'Rename files' })).toBeVisible()
+  },
+}
+
+export const UndoConversionDialog: Story = {
+  parameters: {
+    msw: seriesMsw(http.get(api('/series/:id/pageconversion/history'), () => HttpResponse.json(seriesConversionRestorable))),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('heading', { name: /Lanterns Over Kasumi/ })
+    await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Undo conversion...' }))
+    const dialog = await body(canvasElement).findByRole('dialog', { name: 'Undo conversion' })
+    await expect(await within(dialog).findByText(/48 files have their original in the trash/)).toBeVisible()
+  },
+}
+
+export const UndoConversionAbsentWithoutRestorableFiles: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('heading', { name: /Lanterns Over Kasumi/ })
+    await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
+    const menu = await body(canvasElement).findByRole('menu')
+    await expect(await within(menu).findByRole('menuitem', { name: /Page conversion/ })).toBeVisible()
+    await expect(within(menu).queryByRole('menuitem', { name: /Undo conversion/ })).toBeNull()
   },
 }
 

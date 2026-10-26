@@ -166,7 +166,9 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
             .Select(h => new { h.SeriesId, h.TrashPath, h.TrashBytes })
             .ToListAsync(ct);
         var files = rows.GroupBy(r => (r.SeriesId, r.TrashPath)).Select(g => g.Max(r => r.TrashBytes)).ToList();
-        return (files.Sum(), files.Count);
+        var originals = db.PageConversionHistory.Where(h => h.TrashPath != null);
+        return (files.Sum() + await originals.SumAsync(h => h.TrashBytes ?? 0, ct),
+            files.Count + await originals.CountAsync(ct));
     }
 
     /// <summary>
@@ -210,12 +212,43 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
             row.TrashBytes = 0;
         }
 
+        var converted = await db.PageConversionHistory.IgnoreQueryFilters()
+            .Where(h => h.TrashPath != null && h.CreatedAtUtc < cutoff)
+            .ToListAsync(ct);
+        foreach (var row in converted)
+        {
+            if (roots.TryGetValue(row.SeriesId, out var rootPath) &&
+                LibraryPaths.Resolve(rootPath, row.TrashPath!) is { } path)
+            {
+                try
+                {
+                    if (File.Exists(path))
+                    {
+                        File.Delete(path);
+                        purged++;
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    logger.LogDebug(ex, "Could not purge converted original {Path}", path);
+                    continue;
+                }
+            }
+
+            row.TrashPath = null;
+            row.TrashBytes = null;
+        }
+
         await db.SaveChangesAsync(ct);
 
-        var referenced = await db.UpgradeHistory.IgnoreQueryFilters()
-            .Where(h => h.TrashPath != null)
-            .Select(h => new { h.SeriesId, h.TrashPath })
-            .ToListAsync(ct);
+        var referenced = (await db.UpgradeHistory.IgnoreQueryFilters()
+                .Where(h => h.TrashPath != null)
+                .Select(h => new { h.SeriesId, h.TrashPath })
+                .ToListAsync(ct))
+            .Concat(await db.PageConversionHistory.IgnoreQueryFilters()
+                .Where(h => h.TrashPath != null)
+                .Select(h => new { h.SeriesId, h.TrashPath })
+                .ToListAsync(ct));
         var binned = await db.RecycleBin.IgnoreQueryFilters().AsNoTracking()
             .Select(e => new { e.RootPath, e.BinPath })
             .ToListAsync(ct);

@@ -2510,6 +2510,22 @@ export function useSetReadFileCleanup() {
   })
 }
 
+/** Pins how this series' files are converted: follow the rules, never, or a fixed quality. */
+export function useSetSeriesPageConversion() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, mode }: { seriesId: number; mode: string }) =>
+      api<{ pageConversion: string }>(`/series/${seriesId}/pageconversion`, {
+        method: 'POST',
+        body: JSON.stringify({ mode }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['page-conversion'], exact: true })
+    },
+  })
+}
+
 export interface ReadFileCleanupSettings {
   enabled: boolean
   days: number

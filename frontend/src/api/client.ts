@@ -181,6 +181,25 @@ export async function apiWithOrigin<T>(
   return { data: await readResponse<T>(res, generation), servedOffline: servedOffline(res) }
 }
 
+/**
+ * `api` for an endpoint that answers with bytes: the body as a Blob plus the response headers, for
+ * a caller that reads sizes off them. Errors come back the same way as from `api`.
+ */
+export async function apiBlob(
+  path: string,
+  options: RequestInit = {},
+): Promise<{ blob: Blob; headers: Headers }> {
+  const generation = sessionGeneration
+  const init = await getInitialize()
+  const res = await trackedFetch(`${init.apiRoot}${path}`, {
+    ...options,
+    credentials: 'same-origin',
+    headers: authHeaders(options.headers),
+  })
+  if (!res.ok) await readResponse<never>(res, generation)
+  return { blob: await res.blob(), headers: res.headers }
+}
+
 /** True when the service worker answered from the device (or queued a write) instead of the server. */
 export function servedOffline(res: Response): boolean {
   return res.headers.has(OFFLINE_HEADER) || res.headers.has(QUEUED_HEADER)

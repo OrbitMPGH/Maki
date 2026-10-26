@@ -13,12 +13,14 @@ import {
     IconEye,
     IconPencil,
     IconPhoto,
+    IconPhotoCog,
     IconRefresh,
     IconScan,
     IconSearch,
     IconSparkles,
     IconTrash,
     IconTrashX,
+    IconArrowBackUp,
 } from '@tabler/icons-react'
 import { useIncognitoOptions } from '../ui/incognito'
 import { useSeriesNotificationOptions } from '../ui/seriesNotifications'
@@ -27,9 +29,14 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../../i18n-context'
 import type { UpgradeProfileDto } from '../../api/upgrades'
+import { PAGE_CONVERSION_STOPS, type PageConversionStop } from '../../api/pageConversion'
+import { STOP_LABELS } from '../pageconversion/labels'
 
 /** Sentinel for "Instance default" in the profile RadioGroup, which only carries strings. */
 const INSTANCE_DEFAULT = ''
+
+/** The series endpoint names a fixed quality the way the enum does: "Balanced". */
+const stopMode = (stop: PageConversionStop) => stop.charAt(0).toUpperCase() + stop.slice(1)
 
 /** Mirrors the labels the old monitor Select carried, so the toast after a change still matches. */
 export const MONITOR_OPTIONS = [
@@ -56,6 +63,8 @@ export function SeriesActionsMenu({
                                       upgradeProfiles,
                                       readFileCleanup,
                                       readFileCleanupActive,
+                                      pageConversion,
+                                      canSetPageConversion,
                                       canEdit,
                                       canCleanUpReadFiles,
                                       canScanUpgrades,
@@ -73,6 +82,8 @@ export function SeriesActionsMenu({
                                       onSetNotify,
                                       onSetUpgradeProfile,
                                       onSetReadFileCleanup,
+                                      onSetPageConversion,
+                                      onUndoConversion,
                                       onScanUpgrades,
                                       onSearchVolumes,
                                       canArchive,
@@ -96,6 +107,10 @@ export function SeriesActionsMenu({
     readFileCleanup: string
     /** The choice and the instance switch combined, for the value shown inline. */
     readFileCleanupActive: boolean
+    /** "Default" | "Never" | "Smallest" | "Compact" | "Balanced" | "High" | "Lossless". */
+    pageConversion: string
+    /** Admin: page conversion is a library-wide setting, so the per-series override is too. */
+    canSetPageConversion: boolean
     /** EditMetadata: gates every item that changes the series itself. Notify is per user and stays. */
     canEdit: boolean
     /** DeleteSeries: "On" overrides the instance switch, and the cleanup deletes files for good. */
@@ -116,6 +131,9 @@ export function SeriesActionsMenu({
     onSetNotify: (mode: string) => void
     onSetUpgradeProfile: (upgradeProfileId: number | null) => void
     onSetReadFileCleanup: (mode: string) => void
+    onSetPageConversion: (mode: string) => void
+    /** Set only when some of this series' converted files still have their original in the trash. */
+    onUndoConversion?: () => void
     onScanUpgrades: () => void
     onSearchVolumes: () => void
     /** ArchiveSeries: gates both the Archive and the Restore to library entry. */
@@ -142,6 +160,12 @@ export function SeriesActionsMenu({
         value: string,
     ) => options.find((o) => o.value === value)?.label ?? value
     const instanceDefaultLabel = t`Instance default`
+    const pageConversionValue =
+        pageConversion === 'Default'
+            ? t`Rules`
+            : pageConversion === 'Never'
+              ? t`Never`
+              : renderLabel(STOP_LABELS[pageConversion.toLowerCase() as PageConversionStop] ?? pageConversion)
     const upgradeProfileValue = upgradeProfileId == null ? INSTANCE_DEFAULT : String(upgradeProfileId)
     const upgradeProfileLabel =
         upgradeProfiles.find((p) => p.id === upgradeProfileId)?.name ?? instanceDefaultLabel
@@ -213,7 +237,7 @@ export function SeriesActionsMenu({
                         <Menu.Divider />
                     </>
                 )}
-                {(canEdit || canCleanUpReadFiles) && (
+                {(canEdit || canCleanUpReadFiles || canSetPageConversion) && (
                     <>
                         <Menu.Label><Trans>Files</Trans></Menu.Label>
                         {canEdit && (
@@ -261,6 +285,46 @@ export function SeriesActionsMenu({
                                     <Menu.Label><Trans>Read history stays, and the chapters aren't downloaded again.</Trans></Menu.Label>
                                 </Menu.Sub.Dropdown>
                             </Menu.Sub>
+                        )}
+                        {canSetPageConversion && (
+                            <Menu.Sub floatingStrategy="fixed">
+                                <Menu.Sub.Target>
+                                    <Menu.Sub.Item
+                                        leftSection={<IconPhotoCog size={16} />}
+                                        rightSection={
+                                            <Text size="xs" c="var(--ink-3)">
+                                                {pageConversionValue}
+                                            </Text>
+                                        }
+                                    >
+                                        <Trans>Page conversion</Trans>
+                                    </Menu.Sub.Item>
+                                </Menu.Sub.Target>
+                                <Menu.Sub.Dropdown maw={264}>
+                                    <Menu.Label>
+                                        <Trans>How this series' pages are stored</Trans>
+                                    </Menu.Label>
+                                    <Menu.RadioGroup value={pageConversion} onChange={onSetPageConversion}>
+                                        <Menu.RadioItem value="Default">
+                                            <Trans>Follow the rules</Trans>
+                                        </Menu.RadioItem>
+                                        <Menu.RadioItem value="Never">
+                                            <Trans>Never</Trans>
+                                        </Menu.RadioItem>
+                                        {PAGE_CONVERSION_STOPS.map((stop) => (
+                                            <Menu.RadioItem key={stop} value={stopMode(stop)}>
+                                                {renderLabel(STOP_LABELS[stop])}
+                                            </Menu.RadioItem>
+                                        ))}
+                                    </Menu.RadioGroup>
+                                    <Menu.Label><Trans>Wins over the rules. Files already converted stay as they are.</Trans></Menu.Label>
+                                </Menu.Sub.Dropdown>
+                            </Menu.Sub>
+                        )}
+                        {canSetPageConversion && onUndoConversion && (
+                            <Menu.Item leftSection={<IconArrowBackUp size={16} />} onClick={onUndoConversion}>
+                                <Trans>Undo conversion...</Trans>
+                            </Menu.Item>
                         )}
 
                         <Menu.Divider />

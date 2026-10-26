@@ -219,6 +219,9 @@ public record SeriesDto(
     /// <summary>Whether read files are actually being deleted, the series' choice and the instance switch combined. Detail endpoint only.</summary>
     public bool ReadFileCleanupActive { get; init; }
 
+    /// <summary>"Default" (follow the rules), "Never", or a stop every file of the series is converted at.</summary>
+    public string PageConversion { get; init; } = nameof(PageConversionOverride.Default);
+
     /// <summary>The last upgrade scan pass over this series, or null when it has never been scanned.</summary>
     public LastUpgradeScanDto? LastUpgradeScan { get; init; }
 
@@ -341,6 +344,7 @@ public record SeriesDto(
         ArchivedAt = s.ArchivedAt,
         ArchivedByUserId = s.ArchivedByUserId,
         ReadFileCleanup = s.ReadFileCleanup.ToString(),
+        PageConversion = s.PageConversion.ToString(),
         LockedFields = LockedFieldNames(s.LockedFields),
         LastUpgradeScan = s.LastUpgradeScanUtc is { } at
             ? new LastUpgradeScanDto(at, s.LastUpgradeScanProbed ?? 0, s.LastUpgradeScanQueued ?? 0,

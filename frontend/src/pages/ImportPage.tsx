@@ -18,7 +18,6 @@ import {
   VisuallyHidden,
 } from '@mantine/core'
 import {
-  IconCheck,
   IconEye,
   IconEyeOff,
   IconFolders,
@@ -52,6 +51,7 @@ import { ImportMatchFinder } from '../components/import/ImportMatchFinder'
 import { ImportPlanModal } from '../components/import/ImportPlanModal'
 import { MihonImport } from '../components/import/MihonImport'
 import { RecentImports, UndoBatchButton } from '../components/import/RecentImports'
+import { StepStrip, type Step } from '../components/StepStrip'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
@@ -171,42 +171,6 @@ export default function ImportPage() {
       )}
       {mihonMode ? <MihonImport /> : <FolderImport />}
     </SurfaceFrame>
-  )
-}
-
-interface ImportStep {
-  label: string
-  hint: string
-  state: 'todo' | 'current' | 'done'
-}
-
-/**
- * Where the import stands, in the setup wizard's step style laid out across the toolbar: a number
- * that turns into a check, the current step tinted. The second line says what that step holds now
- * (the root scanned, how many are selected, how many imported) rather than repeating its name.
- */
-function ImportSteps({ steps }: { steps: ImportStep[] }) {
-  const { t } = useLingui()
-  return (
-    <ol className="import-steps" aria-label={t`Import progress`}>
-      {steps.map((step, i) => (
-        <li
-          key={step.label}
-          className="import-step"
-          data-state={step.state}
-          aria-current={step.state === 'current' ? 'step' : undefined}
-        >
-          <span className="import-step-index">
-            {step.state === 'done' ? <IconCheck size={13} stroke={2.6} /> : i + 1}
-          </span>
-          <span className="import-step-text">
-            <span className="import-step-label">{step.label}</span>
-            <span className="import-step-hint">{step.hint}</span>
-          </span>
-          {i < steps.length - 1 && <span className="import-step-thread" aria-hidden />}
-        </li>
-      ))}
-    </ol>
   )
 }
 
@@ -402,7 +366,7 @@ function FolderImport() {
 
   const importing = Object.keys(progress).length > 0 || doImport.isPending
   const scannedPath = rootFolders?.find((f) => String(f.id) === scannedRootFolderId)?.path
-  const steps: ImportStep[] = [
+  const steps: Step[] = [
     {
       label: t`Scan`,
       hint: scannedPath ?? t`Pick a root folder and scan it`,
@@ -431,7 +395,7 @@ function FolderImport() {
   return (
     <Stack gap="xl">
       <Panel p="sm" className="import-toolbar">
-        <ImportSteps steps={steps} />
+        <StepStrip steps={steps} label={t`Import progress`} />
         <Group gap="sm" wrap="wrap">
           <Select
             className="import-root-select"
