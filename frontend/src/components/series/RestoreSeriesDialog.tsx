@@ -1,4 +1,4 @@
-import { Button, Group, Modal } from '@mantine/core'
+import { Button, Group, Modal, Stack, Text } from '@mantine/core'
 import { Plural, Trans } from '@lingui/react/macro'
 import { useArchivePreview } from '../../api/hooks'
 
@@ -31,6 +31,7 @@ export function RestoreSeriesDialog({
 }) {
   const { data: preview } = useArchivePreview(seriesId, opened)
   const count = seriesId === null ? removedCount : preview?.redownloadableChapters
+  const nothingWanted = seriesId !== null && count === 0
   const offerDownload = canDownload && count !== 0
 
   return (
@@ -38,7 +39,9 @@ export function RestoreSeriesDialog({
       opened={opened}
       onClose={onClose}
       title={
-        count ? (
+        nothingWanted ? (
+          <Trans context="series">Restore to the library?</Trans>
+        ) : count ? (
           <Plural value={count} one="Download the # removed chapter again?" other="Download the # removed chapters again?" />
         ) : (
           <Trans>Download the removed chapters again?</Trans>
@@ -46,19 +49,26 @@ export function RestoreSeriesDialog({
       }
       centered
     >
-      <Group justify="flex-end">
-        <Button variant="default" onClick={onClose} disabled={loading}>
-          <Trans>Cancel</Trans>
-        </Button>
-        <Button variant={offerDownload ? 'default' : 'filled'} disabled={loading} onClick={() => onRestore(false)}>
-          <Trans context="series">Restore only</Trans>
-        </Button>
-        {offerDownload && (
-          <Button loading={loading} onClick={() => onRestore(true)}>
-            <Trans context="series">Restore and download</Trans>
-          </Button>
+      <Stack gap="md">
+        {nothingWanted && (
+          <Text size="sm" c="dimmed">
+            <Trans>None of the removed chapters are still wanted, so nothing would be downloaded.</Trans>
+          </Text>
         )}
-      </Group>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={onClose} disabled={loading}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button variant={offerDownload ? 'default' : 'filled'} loading={!offerDownload && loading} disabled={loading} onClick={() => onRestore(false)}>
+            {nothingWanted ? <Trans context="series">Restore</Trans> : <Trans context="series">Restore only</Trans>}
+          </Button>
+          {offerDownload && (
+            <Button loading={loading} onClick={() => onRestore(true)}>
+              <Trans context="series">Restore and download</Trans>
+            </Button>
+          )}
+        </Group>
+      </Stack>
     </Modal>
   )
 }

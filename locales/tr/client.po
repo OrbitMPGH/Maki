@@ -12094,6 +12094,10 @@ msgstr "Hiçbiri bağlı değil"
 msgid "None listed"
 msgstr "Listelenen yok"
 
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "None of the removed chapters are still wanted, so nothing would be downloaded."
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "None of their titles match these filters. Try loosening one of them."
@@ -15468,6 +15472,7 @@ msgid "Restore"
 msgstr "Geri yükle"
 
 #: src/components/discover/ArchivedRestore.tsx
+#: src/components/series/RestoreSeriesDialog.tsx
 #: src/pages/LibraryPage.tsx
 msgctxt "series"
 msgid "Restore"
@@ -15533,6 +15538,11 @@ msgstr "Bu başlığı geri yükle"
 #: src/components/series/SeriesActionsMenu.tsx
 msgctxt "series"
 msgid "Restore to library"
+msgstr ""
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgctxt "series"
+msgid "Restore to the library?"
 msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx

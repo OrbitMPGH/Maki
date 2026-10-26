@@ -12094,6 +12094,10 @@ msgstr "リンクなし"
 msgid "None listed"
 msgstr "一覧にありません"
 
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "None of the removed chapters are still wanted, so nothing would be downloaded."
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "None of their titles match these filters. Try loosening one of them."
@@ -15468,6 +15472,7 @@ msgid "Restore"
 msgstr "復元"
 
 #: src/components/discover/ArchivedRestore.tsx
+#: src/components/series/RestoreSeriesDialog.tsx
 #: src/pages/LibraryPage.tsx
 msgctxt "series"
 msgid "Restore"
@@ -15533,6 +15538,11 @@ msgstr "このタイトルを復元"
 #: src/components/series/SeriesActionsMenu.tsx
 msgctxt "series"
 msgid "Restore to library"
+msgstr ""
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgctxt "series"
+msgid "Restore to the library?"
 msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx

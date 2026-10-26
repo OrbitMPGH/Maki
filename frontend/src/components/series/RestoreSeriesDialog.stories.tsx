@@ -69,7 +69,8 @@ export const NothingToDownload: Story = {
   parameters: { msw: [archivePreview({ redownloadableChapters: 0 })] },
   play: async ({ canvasElement }) => {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
-    await expect(await within(dialog).findByText('Download the removed chapters again?')).toBeVisible()
+    await expect(await within(dialog).findByText('Restore to the library?')).toBeVisible()
+    await expect(within(dialog).getByRole('button', { name: 'Restore' })).toBeVisible()
     await waitFor(() => expect(within(dialog).queryByRole('button', { name: 'Restore and download' })).toBeNull())
   },
 }

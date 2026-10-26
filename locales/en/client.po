@@ -9911,6 +9911,10 @@ msgstr "None linked"
 msgid "None listed"
 msgstr "None listed"
 
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "None of the removed chapters are still wanted, so nothing would be downloaded."
+msgstr "None of the removed chapters are still wanted, so nothing would be downloaded."
+
 #: src/pages/CreatorPage.tsx
 msgid "None of their titles match these filters. Try loosening one of them."
 msgstr "None of their titles match these filters. Try loosening one of them."
@@ -12682,6 +12686,7 @@ msgid "Restore"
 msgstr "Restore"
 
 #: src/components/discover/ArchivedRestore.tsx
+#: src/components/series/RestoreSeriesDialog.tsx
 #: src/pages/LibraryPage.tsx
 msgctxt "series"
 msgid "Restore"
@@ -12740,6 +12745,11 @@ msgstr "Restore this title"
 msgctxt "series"
 msgid "Restore to library"
 msgstr "Restore to library"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgctxt "series"
+msgid "Restore to the library?"
+msgstr "Restore to the library?"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Restored"
