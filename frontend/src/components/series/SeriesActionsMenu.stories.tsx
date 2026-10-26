@@ -20,6 +20,8 @@ const meta = {
     scanningUpgrades: false,
     searchingVolumes: false,
     busy: false,
+    canArchive: true,
+    archived: false,
     canRemove: true,
     onRefreshChapters: fn(),
     onRefreshMetadata: fn(),
@@ -34,6 +36,8 @@ const meta = {
     onSetReadFileCleanup: fn(),
     onScanUpgrades: fn(),
     onSearchVolumes: fn(),
+    onArchive: fn(),
+    onRestore: fn(),
     onRemove: fn(),
   },
   decorators: [
@@ -80,7 +84,7 @@ export const Remove: Story = {
 }
 
 export const ReaderPermissions: Story = {
-  args: { canEdit: false, canCleanUpReadFiles: false, canScanUpgrades: false, canRemove: false },
+  args: { canEdit: false, canCleanUpReadFiles: false, canScanUpgrades: false, canArchive: false, canRemove: false },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
     const menu = await body(canvasElement).findByRole('menu')

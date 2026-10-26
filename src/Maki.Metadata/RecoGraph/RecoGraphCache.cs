@@ -185,7 +185,7 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
                 return null;
             }
 
-            var graph = PairGraphBuilder.Build(pairs, ReadGeneratedAt(conn));
+            var graph = PairGraphBuilder.Build(() => pairs, ReadGeneratedAt(conn));
             logger.LogInformation(
                 "Loaded co-recommendation graph: {Series} series, {Pairs} pairs in {Elapsed:F0}ms",
                 graph.Count, pairs.Count, (DateTime.UtcNow - started).TotalMilliseconds);

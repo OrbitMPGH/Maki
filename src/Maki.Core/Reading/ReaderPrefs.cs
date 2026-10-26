@@ -66,7 +66,12 @@ public record ReaderPrefsSpec(
     /// (<c>server:*</c>). A server method is kept even when the server tier is off, so the choice
     /// survives an admin toggling it; the client decides the fallback.
     /// </summary>
-    string EnhanceMethod = ReaderPrefsSpec.EnhanceMethodDefault)
+    string EnhanceMethod = ReaderPrefsSpec.EnhanceMethodDefault,
+    /// <summary>
+    /// The browser preset a server <see cref="EnhanceMethod"/> shows until its upscale is ready, and
+    /// whenever the server tier cannot be used: an <c>a4k-*</c> preset, or <c>off</c> for the plain page.
+    /// </summary>
+    string EnhanceFallback = ReaderPrefsSpec.EnhanceMethodDefault)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";
@@ -107,7 +112,8 @@ public record ReaderPrefsSpec(
     private static readonly string[] SplitModes = [SplitOff, "split", "rotate"];
     private static readonly string[] EnhanceModes = [EnhanceOff, "auto", "always"];
     private static readonly string[] EnhanceMethods =
-        ["a4k-s", EnhanceMethodDefault, "a4k-a", "server:span-s", "server:realesrgan-av3", "server:waifu2x-art"];
+        ["a4k-s", EnhanceMethodDefault, "a4k-a", "server:span-s", "server:realesrgan-av3"];
+    private static readonly string[] EnhanceFallbacks = ["a4k-s", EnhanceMethodDefault, "a4k-a", EnhanceOff];
 
     /// <summary>Clamps free-text fields back onto known values so a bad write can't wedge the reader.</summary>
     public ReaderPrefsSpec Sanitized() => this with
@@ -123,6 +129,7 @@ public record ReaderPrefsSpec(
         SplitWide = SplitModes.Contains(SplitWide) ? SplitWide : SplitOff,
         Enhance = EnhanceModes.Contains(Enhance) ? Enhance : EnhanceOff,
         EnhanceMethod = EnhanceMethods.Contains(EnhanceMethod) ? EnhanceMethod : EnhanceMethodDefault,
+        EnhanceFallback = EnhanceFallbacks.Contains(EnhanceFallback) ? EnhanceFallback : EnhanceMethodDefault,
     };
 
     /// <summary>Fills an unset <see cref="AutoWebtoon"/> with the layer's default: on for the global defaults only.</summary>

@@ -62,6 +62,7 @@ import { formatDateTime } from '../format'
 interface EventField {
   key: keyof NotificationRequest['events']
   label: MessageDescriptor
+  description?: MessageDescriptor
 }
 
 const EVENT_GROUPS: { title: MessageDescriptor; fields: EventField[]; multiUserOnly?: boolean }[] = [
@@ -79,6 +80,11 @@ const EVENT_GROUPS: { title: MessageDescriptor; fields: EventField[]; multiUserO
     fields: [
       { key: 'seriesAdded', label: msg`Series added` },
       { key: 'seriesRemoved', label: msg`Series removed` },
+      {
+        key: 'seriesArchived',
+        label: msg`Series archived`,
+        description: msg`A series was archived.`,
+      },
       { key: 'manualMatchNeeded', label: msg`Manual match needed` },
       { key: 'seriesStatusChanged', label: msg`Series status changed` },
     ],
@@ -202,6 +208,7 @@ const EMPTY_EVENTS: NotificationRequest['events'] = {
   updateAvailable: false,
   seriesAdded: false,
   seriesRemoved: false,
+  seriesArchived: false,
   requestSubmitted: false,
   requestResolved: false,
   manualMatchNeeded: false,
@@ -619,6 +626,7 @@ export function NotificationsSection() {
                   <Switch
                     key={f.key}
                     label={renderLabel(f.label)}
+                    description={f.description ? renderLabel(f.description) : undefined}
                     checked={form.events[f.key]}
                     onChange={(e) => setEvent(f.key, e.currentTarget.checked)}
                   />

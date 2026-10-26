@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react'
 import type { EnhanceEngine, EnhancePreset } from '../../lib/enhance'
 import { isServerMethod } from './enhanceMethods'
 import type { Region } from './pageShape'
-import type { EnhanceMethod } from './prefs'
+import type { EnhanceFallback, EnhanceMethod } from './prefs'
 
 export type EngineState =
   | { status: 'off' }
@@ -52,9 +52,13 @@ export function useEnhanceEngine(active: boolean): EngineState {
   return active ? current : OFF
 }
 
-/** The browser preset a method runs as. A server method shows Balanced until its upscale is ready, and whenever the server tier cannot be used. */
-export function presetFor(method: EnhanceMethod): EnhancePreset {
-  return isServerMethod(method) ? 'a4k-m' : (method as EnhancePreset)
+/**
+ * The browser preset a method runs as. A server method shows its fallback until its upscale is
+ * ready, and whenever the server tier cannot be used; null when that fallback is the plain page.
+ */
+export function presetFor(method: EnhanceMethod, fallback: EnhanceFallback): EnhancePreset | null {
+  if (!isServerMethod(method)) return method as EnhancePreset
+  return fallback === 'off' ? null : fallback
 }
 
 export function enhanceKey(src: string, region: Region): string {
@@ -195,8 +199,9 @@ export class EnhanceScope {
 /** What a view hands each page while Enhance is on and the engine is ready. */
 export interface PageEnhance {
   mode: 'auto' | 'always'
-  preset: EnhancePreset
-  /** Null while a server method runs without a usable engine: pages stay plain until the server's upscale is ready. */
+  /** Null with an engine-less server method: pages stay plain until the server's upscale is ready. */
+  preset: EnhancePreset | null
+  /** Null while a server method runs without a usable engine or fallback: pages stay plain until the server's upscale is ready. */
   engine: EnhanceEngine | null
   scope: EnhanceScope
   /** Changes with fit, zoom and scale; a change re-measures the page after a short settle. */

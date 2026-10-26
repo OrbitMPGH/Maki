@@ -115,6 +115,11 @@ export interface SeriesDto {
    * defers to the `seriesDefault` on your inbox prefs.
    */
   notificationMode: string
+  /** When the series was archived out of the active library, or null while it is active. */
+  archivedAt: string | null
+  archivedByUserId: number | null
+  /** The "finished, archive it?" hint applies to you. Detail endpoint only; false without ArchiveSeries or once dismissed. */
+  archiveHintEligible?: boolean
   /** Personal time left from comparable timed chapters in the built-in reader. Detail endpoint only. */
   readTimeEstimate?: {
     seconds: number
@@ -620,6 +625,59 @@ export interface CompareSnapshot {
   panels: ComparePanel[]
 }
 
+export interface ArchiveSeriesRequest {
+  removeFiles: boolean
+  /** Set once the server said the files cannot go to the recycle bin and the user chose to delete them. */
+  permanent?: boolean
+}
+
+export interface ArchiveSeriesResponse {
+  deleted: number
+  failed: number
+}
+
+export interface BulkArchiveSeriesRequest extends ArchiveSeriesRequest {
+  seriesIds: number[]
+}
+
+export interface BulkArchiveSeriesResult {
+  seriesId: number
+  ok: boolean
+  notFound: boolean
+  /** Catalogue key of the refusal, e.g. error.series.archived. */
+  code: string | null
+  error: string | null
+  /** The recycle bin refused this one's files; archiving it again with permanent: true would work. */
+  permanentDeleteAvailable: boolean
+  deleted: number
+  failed: number
+}
+
+export interface BulkArchiveSeriesResponse {
+  results: BulkArchiveSeriesResult[]
+}
+
+export interface RestoreSeriesRequest {
+  /** Queue the chapters whose files were removed for download again. */
+  redownloadRemoved: boolean
+}
+
+export interface RestoreSeriesResponse {
+  queued: number
+  /** Localized reason the removed chapters could not be queued, or null. */
+  queueError: string | null
+}
+
+/** GET series/{id}/archive-preview: what the archive and restore dialogs show. */
+export interface ArchivePreview {
+  /** Bytes removing the series' files would free, leaving out hardlinked files. */
+  freeableBytes: number
+  /** Other users who read the series in the last 30 days and have not finished it. */
+  otherActiveReaders: number
+  /** Chapters a restore with redownload would queue: removed, no file, still wanted. */
+  redownloadableChapters: number
+}
+
 export interface AddSeriesRequest {
   metadataProviderId: string
   rootFolderId: number
@@ -677,6 +735,7 @@ export interface NotificationEvents {
   updateAvailable: boolean
   seriesAdded: boolean
   seriesRemoved: boolean
+  seriesArchived: boolean
   requestSubmitted: boolean
   requestResolved: boolean
   manualMatchNeeded: boolean

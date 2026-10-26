@@ -9,63 +9,61 @@ namespace Maki.Metadata.RecoGraph;
 internal static class PairGraphBuilder
 {
     /// <summary>
-    /// Materializes both directions of every pair into CSR form. Two counting passes rather than a
-    /// dictionary of lists: the node count is six figures and the per-node degree is a handful, so
-    /// the list-per-node form would allocate more headers than data.
+    /// Materializes both directions of every pair into CSR form, in two passes over
+    /// <paramref name="pairs"/>: one for the ids and their degrees, one to fill the slices. The
+    /// source is enumerated twice so a caller can stream a table straight into the final arrays;
+    /// collecting the co-read graph's two million pairs first cost a 48 MB list, doubled while it grew.
     /// </summary>
-    public static PairGraphIndex Build(
-        List<(long A, long B, float Weight)> pairs, DateTime? generatedAt)
+    public static PairGraphIndex Build(Func<IEnumerable<(long A, long B, float Weight)>> pairs, DateTime? generatedAt)
     {
-        // Unsized: a capacity of pairs.Count was ~24 MB of slots for some 41k distinct ids.
-        var idSet = new HashSet<long>();
-        foreach (var (a, b, _) in pairs)
+        var degrees = new Dictionary<long, int>();
+        var edges = 0;
+        foreach (var (a, b, _) in pairs())
         {
-            idSet.Add(a);
-            idSet.Add(b);
+            degrees[a] = degrees.GetValueOrDefault(a) + 1;
+            degrees[b] = degrees.GetValueOrDefault(b) + 1;
+            edges += 2;
         }
 
-        var ids = idSet.ToArray();
+        var ids = degrees.Keys.ToArray();
         Array.Sort(ids);
 
         var nodeById = new Dictionary<long, int>(ids.Length);
+        var offsets = new int[ids.Length + 1];
         for (var i = 0; i < ids.Length; i++)
         {
             nodeById[ids[i]] = i;
+            offsets[i + 1] = offsets[i] + degrees[ids[i]];
         }
 
-        // Pass 1: degrees, accumulated into the offset array shifted by one so the prefix sum
-        // below turns it into the offsets directly.
-        var offsets = new int[ids.Length + 1];
-        foreach (var (a, b, _) in pairs)
-        {
-            offsets[nodeById[a] + 1]++;
-            offsets[nodeById[b] + 1]++;
-        }
-
-        for (var i = 0; i < ids.Length; i++)
-        {
-            offsets[i + 1] += offsets[i];
-        }
-
-        // Pass 2: fill. `cursor` walks each node's slice as entries land in it.
-        var neighbours = new int[pairs.Count * 2];
-        var weights = new float[pairs.Count * 2];
+        var narrow = ids.Length <= ushort.MaxValue + 1 ? new ushort[edges] : null;
+        var wide = narrow is null ? new int[edges] : null;
+        var weights = new Half[edges];
         var cursor = new int[ids.Length];
 
-        foreach (var (a, b, weight) in pairs)
+        foreach (var (a, b, weight) in pairs())
         {
             var na = nodeById[a];
             var nb = nodeById[b];
+            var stored = (Half)Math.Min(weight, (float)Half.MaxValue);
 
             var slotA = offsets[na] + cursor[na]++;
-            neighbours[slotA] = nb;
-            weights[slotA] = weight;
-
             var slotB = offsets[nb] + cursor[nb]++;
-            neighbours[slotB] = na;
-            weights[slotB] = weight;
+            if (narrow is not null)
+            {
+                narrow[slotA] = (ushort)nb;
+                narrow[slotB] = (ushort)na;
+            }
+            else
+            {
+                wide![slotA] = nb;
+                wide[slotB] = na;
+            }
+
+            weights[slotA] = stored;
+            weights[slotB] = stored;
         }
 
-        return new PairGraphIndex(ids, offsets, neighbours, weights, generatedAt);
+        return new PairGraphIndex(ids, offsets, narrow, wide, weights, generatedAt);
     }
 }

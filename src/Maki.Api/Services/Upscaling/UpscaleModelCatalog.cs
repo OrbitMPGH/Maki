@@ -5,8 +5,7 @@ namespace Maki.Api.Services.Upscaling;
 public enum UpscaleAdapter
 {
     Plain2x,
-    Plain4xThenHalve,
-    Waifu2xSwin
+    Plain4xThenHalve
 }
 
 public enum UpscaleTensorType
@@ -20,7 +19,6 @@ public readonly record struct UpscaleModelId
 {
     public static readonly UpscaleModelId SpanS = new("span-s");
     public static readonly UpscaleModelId RealEsrganAv3 = new("realesrgan-av3");
-    public static readonly UpscaleModelId Waifu2xArt = new("waifu2x-art");
 
     private UpscaleModelId(string value) => Value = value;
 
@@ -48,7 +46,7 @@ public readonly record struct UpscaleModelId
 }
 
 /// <param name="ModelScale">What the network itself produces (4 for Real-ESRGAN).</param>
-/// <param name="OutputScale">What the reader gets after any resize (2 for all three).</param>
+/// <param name="OutputScale">What the reader gets after any resize (2 for both).</param>
 public sealed record UpscaleModelInfo(
     UpscaleModelId Id,
     UpscaleAdapter Adapter,
@@ -72,10 +70,7 @@ public sealed class UpscaleModelCatalog
             "the-database (IllustrationJaNai V3)", "https://github.com/the-database/MangaJaNai/releases/tag/3.0.0"),
         new(UpscaleModelId.RealEsrganAv3, UpscaleAdapter.Plain4xThenHalve, 4, 2, "input", UpscaleTensorType.Float32,
             "realesrgan-av3-4x.onnx", "Real-ESRGAN animevideov3", "BSD-3-Clause",
-            "Xintao Wang et al.", "https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0"),
-        new(UpscaleModelId.Waifu2xArt, UpscaleAdapter.Waifu2xSwin, 2, 2, "x", UpscaleTensorType.Float32,
-            "waifu2x-art-2x.onnx", "waifu2x swin_unet art", "MIT",
-            "nagadomi", "https://github.com/nagadomi/nunif")
+            "Xintao Wang et al.", "https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0")
     ];
 
     internal static IEnumerable<UpscaleModelId> Ids => Entries.Select(e => e.Id);

@@ -78,6 +78,7 @@ export const readerPrefs: ReaderPrefs = {
   autoWebtoon: true,
   enhance: 'off',
   enhanceMethod: 'a4k-m',
+  enhanceFallback: 'a4k-m',
 }
 
 export const readerSettings: ReaderSettings = {
@@ -752,6 +753,7 @@ const allEvents = {
   updateAvailable: false,
   seriesAdded: false,
   seriesRemoved: false,
+  seriesArchived: false,
   requestSubmitted: false,
   requestResolved: false,
   manualMatchNeeded: true,
@@ -935,19 +937,11 @@ const upscaleCatalog = {
     source: 'https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0',
     status: 'missing',
   },
-  waifu2xArt: {
-    id: 'waifu2x-art',
-    bytes: 38 * MB,
-    license: 'MIT',
-    author: 'nagadomi (waifu2x)',
-    source: 'https://github.com/nagadomi/nunif',
-    status: 'missing',
-  },
 } satisfies Record<string, UpscaleCatalogEntry>
 
 export const upscalingOff = {
   settings: { enabled: false, models: [], threads: 2, cacheMb: 1024, maxThreads: 8 },
-  catalog: [upscaleCatalog.spanS, upscaleCatalog.realesrganAv3, { ...upscaleCatalog.waifu2xArt, bytes: null }].map((m) => ({
+  catalog: [upscaleCatalog.spanS, { ...upscaleCatalog.realesrganAv3, bytes: null }].map((m) => ({
     ...m,
     status: 'missing',
   })),
@@ -960,7 +954,6 @@ export const upscalingOn = {
   catalog: [
     upscaleCatalog.spanS,
     { ...upscaleCatalog.realesrganAv3, status: 'downloading' },
-    upscaleCatalog.waifu2xArt,
   ],
   cache: { bytes: 312 * MB, files: 280 },
   queue: { pending: 3, working: 1 },
@@ -975,7 +968,6 @@ export const upscalingFailed = {
       status: 'failed',
       error: 'The download did not match its checksum and was removed.',
     },
-    upscaleCatalog.waifu2xArt,
   ],
 } satisfies UpscalingState
 

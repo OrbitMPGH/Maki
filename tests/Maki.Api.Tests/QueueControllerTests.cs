@@ -152,6 +152,19 @@ public class QueueControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Retrying_a_torrent_row_ends_the_torrent_poll_idle_state()
+    {
+        var id = SeedItem(QueueStatus.Failed);
+        var poll = new TorrentPollState(TimeProvider.System);
+        poll.MarkIdle(poll.Generation);
+        Assert.True(poll.CanSkip);
+
+        await Controller().Retry(id, CancellationToken.None, poll);
+
+        Assert.False(poll.CanSkip);
+    }
+
+    [Fact]
     public async Task Remove_deletes_a_queued_item()
     {
         var id = SeedItem(QueueStatus.Queued);

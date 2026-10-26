@@ -395,6 +395,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(s => s.SortTitle);
             e.HasIndex(s => s.MangaBakaId);
             e.HasIndex(s => s.NextCheckAt);
+            e.HasIndex(s => s.ArchivedAt);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.ArchivedByUserId).OnDelete(DeleteBehavior.SetNull);
             e.Property(s => s.Genres).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
             e.Property(s => s.Tags).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
             e.Property(s => s.AltTitles).HasConversion(LocalizedTitleListConverter.Instance, LocalizedTitleListComparer.Instance);

@@ -155,7 +155,7 @@ public class DiscoverServiceOrderRowsTests
                 Authors: JaggedInts.From(new int[count][]),
                 Artists: JaggedInts.From(new int[count][]),
                 Popularity: popularity ?? Enumerable.Repeat(VectorIndex.Unknown, count).ToArray(),
-                TagBlobs: new byte[]?[count],
+                Tags: PackedTags.From(new byte[]?[count]),
                 ContentRatings: new byte[count],
                 Franchise: Enumerable.Repeat(VectorIndex.Unknown, count).ToArray(),
                 StartDays: startDays),

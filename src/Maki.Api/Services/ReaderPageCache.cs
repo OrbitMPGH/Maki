@@ -10,6 +10,28 @@ namespace Maki.Api.Services;
 public static class ReaderPageCache
 {
     /// <summary>
+    /// Deletes the cached page renders and thumbnails of these chapter files. Best effort: a folder
+    /// that cannot be deleted now is left for the housekeeping sweep.
+    /// </summary>
+    public static void Evict(AppPaths paths, IEnumerable<int> chapterFileIds)
+    {
+        foreach (var id in chapterFileIds)
+        {
+            var dir = Path.Combine(paths.ReaderCacheDir, id.ToString());
+            try
+            {
+                if (Directory.Exists(dir))
+                {
+                    Directory.Delete(dir, recursive: true);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
     /// One page's bytes, read the way the reader's page endpoint serves them: a PDF page from its
     /// cached full render, anything else out of the archive. Null when the page cannot be read.
     /// </summary>

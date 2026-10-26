@@ -53,6 +53,16 @@ public static class ApiResults
         controller.Conflict(Body(localizer, key, args));
 
     /// <summary>
+    /// 409 for adding a series that exists archived. <c>seriesId</c> lets the client offer Restore on
+    /// that series instead of a dead-end message.
+    /// </summary>
+    public static IActionResult ArchivedExists(this ControllerBase controller, ILocalizer localizer, int seriesId)
+    {
+        const string key = "error.series.archivedExists";
+        return controller.Conflict(new { code = key, error = localizer.Get(key, null), seriesId });
+    }
+
+    /// <summary>
     /// 410, for an operation that really did happen and whose result has since been removed. Not
     /// 409: there is nothing to conflict with any more.
     /// </summary>

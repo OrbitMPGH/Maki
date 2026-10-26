@@ -16,6 +16,7 @@ import {
   statusToken,
 } from '../ui/status'
 import { relationPhrase } from '../ui/DiscoverRail'
+import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
 import { useLabel } from '../../i18n-context'
 import { formatFixedDecimal } from '../../format'
 import { onRovingKeyDown } from '../../lib/rovingFocus'
@@ -143,6 +144,7 @@ export function DiscoverHero({
   const item = picks[active] as RecommendationItem | undefined
   const { data: detail } = useRecommendationDetail(item?.providerId ?? null)
   const titleRef = useTitleFit(item?.title)
+  const ownedArchived = useIsArchivedSeries(item ? seriesIdFor?.(item) : null)
 
   const choose = useCallback((n: number) => {
     setAutoRotate(false)
@@ -342,7 +344,22 @@ export function DiscoverHero({
               <Group gap="xs" className="discover-hero-actions">
                 {/* Adding needs a root folder, the caller's permissions and the request path for
                     non-admins, all of which `DiscoverLibraryRail` handles inside the detail card. */}
-                {ownedSeriesId != null ? (
+                {ownedSeriesId != null && ownedArchived ? (
+                  <>
+                    <Badge color="gray" variant="light" size="lg">
+                      <Trans context="series">Archived</Trans>
+                    </Badge>
+                    <RestoreArchivedButton seriesId={ownedSeriesId} aria-label={t({ message: `Restore ${title}`, context: 'series' })} />
+                    <Button
+                      variant="default"
+                      rightSection={<IconArrowRight size={16} />}
+                      onClick={() => navigate(`/series/${ownedSeriesId}`)}
+                      aria-label={t`View series: ${title}`}
+                    >
+                      <Trans>View series</Trans>
+                    </Button>
+                  </>
+                ) : ownedSeriesId != null ? (
                   <Button
                     color="var(--ok)"
                     variant="light"

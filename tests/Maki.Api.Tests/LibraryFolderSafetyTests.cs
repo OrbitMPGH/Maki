@@ -142,7 +142,7 @@ public class LibraryFolderSafetyTests : IDisposable
                 db, [new FixedProvider(42)], null!, LinkService(db), new SourceMatchQueue(),
                 new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()),
                 _settings, new NamingService(_settings), null!, null!, new TestLocalizer(),
-                new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
+                new TestCurrentUser(1), null!, NullLogger<LibraryImportService>.Instance);
             result = await service.ImportAsync(rootId, new ImportRequestItem("chainsaw man", "42"));
         }
 
@@ -286,7 +286,7 @@ public class LibraryFolderSafetyTests : IDisposable
                 new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()),
                 _settings, new NamingService(_settings), new StatsEventService(db),
                 new SeriesIdentityService(db, NullLogger<SeriesIdentityService>.Instance), new TestLocalizer(),
-                new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
+                new TestCurrentUser(1), null!, NullLogger<LibraryImportService>.Instance);
             result = await service.ImportAsync(rootId, new ImportRequestItem("Chainsaw Man", "42"));
         }
 

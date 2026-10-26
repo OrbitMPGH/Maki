@@ -16,18 +16,23 @@ export interface ServerEnhance {
   model: string
   pageVersion: string
   states: ReadonlyMap<number, ServerPageState>
+  /** Pages whose server upscale is decoded and drawn in place of the original. */
+  shown: ReadonlySet<number>
+  /** Called by a view as a page's server upscale starts and stops being drawn. */
+  reportShown: (page: number, shown: boolean) => void
 }
 
-const MAX_PAGES = 12
+const MAX_PAGES = 32
 const DEBOUNCE_MS = 250
 const HUB_GRACE_MS = 10_000
 const POLL_MS = 5_000
 const SETTLED: ReadonlySet<ServerPageState | undefined> = new Set<ServerPageState>(['ready', 'failed', 'skipped'])
 const NONE: ReadonlyMap<number, ServerPageState> = new Map()
+const NO_PAGES: ReadonlySet<number> = new Set()
 
 /**
  * The server model a reader's method runs on, or null when the server tier cannot be used and the
- * browser's Balanced preset stands in: the tier is off, the model is not enabled or not downloaded,
+ * browser fallback preset stands in: the tier is off, the model is not enabled or not downloaded,
  * or this device is offline or opened the chapter from its offline copy.
  */
 export function serverModelFor(
@@ -48,7 +53,7 @@ interface Tracked {
 }
 
 /**
- * Asks the server to upscale the reading window (current page first, at most 12) a moment after
+ * Asks the server to upscale the reading window (current page first, at most 32) a moment after
  * each page change. With `only` set (Enhance on `auto`), only the window's pages in it are asked
  * for, and a page joining it asks again. Each page is followed from `queued` or `working` to
  * `ready`, `failed` or `skipped` through the response and the `pageEnhanced` push. If the live
@@ -78,8 +83,8 @@ export function useServerEnhance(
       let next: Map<number, ServerPageState> | null = null
       for (const { page, state } of updates) {
         const known = base.states.get(page)
-        // A late response must not walk a page back from a push that already settled it.
-        if (known === state || (SETTLED.has(known) && !SETTLED.has(state))) continue
+        // A late response must not walk a page back from a push that already started or settled it.
+        if (known === state || (SETTLED.has(known) && !SETTLED.has(state)) || (known === 'working' && state === 'queued')) continue
         next ??= new Map(base.states)
         next.set(page, state)
       }
@@ -157,10 +162,27 @@ export function useServerEnhance(
     }
   }, [connected, active, scope, chapterId, model, pageVersion, windowKey, merge, refuse])
 
+  const [shownFor, setShownFor] = useState<{ scope: string | null; pages: ReadonlySet<number> }>({ scope: null, pages: NO_PAGES })
+  const reportShown = useCallback((page: number, on: boolean) => {
+    const live = scopeRef.current
+    setShownFor((previous) => {
+      const pages = previous.scope === live ? previous.pages : NO_PAGES
+      if (pages.has(page) === on) return previous.scope === live ? previous : { scope: live, pages }
+      const next = new Set(pages)
+      if (on) next.add(page)
+      else next.delete(page)
+      return { scope: live, pages: next }
+    })
+  }, [])
+  const shown = shownFor.scope === scope ? shownFor.pages : NO_PAGES
+
   const states = current.states
   return useMemo(
-    () => (active && model && pageVersion !== undefined ? { chapterId, model, pageVersion, states } : null),
-    [active, chapterId, model, pageVersion, states],
+    () =>
+      active && model && pageVersion !== undefined
+        ? { chapterId, model, pageVersion, states, shown, reportShown }
+        : null,
+    [active, chapterId, model, pageVersion, states, shown, reportShown],
   )
 }
 

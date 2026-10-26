@@ -84,6 +84,8 @@ type ChapterRowProps = {
   canDownload: boolean
   canDelete: boolean
   canFindBetterCopy: boolean
+  /** Why the actions that talk to a source are switched off (an archived series), or null while they work. */
+  sourceToolsDisabledReason?: string | null
   /** This browser can keep chapters for offline reading (a secure context with a service worker). */
   canSaveOffline: boolean
   /** This device's copy of the chapter, if it keeps one. */
@@ -113,6 +115,7 @@ export const ChapterRow = memo(function ChapterRow({
   canDownload,
   canDelete,
   canFindBetterCopy,
+  sourceToolsDisabledReason = null,
   canSaveOffline,
   offline,
   offlineSaving,
@@ -447,11 +450,15 @@ export const ChapterRow = memo(function ChapterRow({
                 </HoverTooltip>
             )}
             {!c.hasFile && canDownload && (
-                <HoverTooltip label={t`Download this chapter`} withArrow>
+                <HoverTooltip label={sourceToolsDisabledReason ?? t`Download this chapter`} withArrow>
                   <LightActionIcon
                       variant="subtle"
                       color="brand"
-                      onClick={() => actions.download(c.id, chapterLbl)}
+                      data-disabled={sourceToolsDisabledReason !== null || undefined}
+                      aria-disabled={sourceToolsDisabledReason !== null || undefined}
+                      onClick={() => {
+                        if (sourceToolsDisabledReason === null) actions.download(c.id, chapterLbl)
+                      }}
                       aria-label={t`Download ${chapterLbl}`}
                   >
                     <IconDownload size={17} />
@@ -488,28 +495,41 @@ export const ChapterRow = memo(function ChapterRow({
                     )}
                     {canSaveOffline && (canDownload || canDelete) && <Menu.Divider />}
                     {canDownload && c.number !== null && canFindBetterCopy && !removing && (
+                        <Tooltip label={sourceToolsDisabledReason} position="left" withArrow disabled={sourceToolsDisabledReason === null} events={{ hover: true, focus: true, touch: true }}>
                         <Menu.Item
                             leftSection={<IconPhotoSearch size={14} />}
-                            onClick={() =>
-                                actions.pickChapter({
-                                  id: c.id,
-                                  number: c.number!,
-                                  label: chapterLbl,
-                                  currentSourceName: c.fileSourceName,
-                                })
-                            }
+                            data-disabled={sourceToolsDisabledReason !== null || undefined}
+                            aria-disabled={sourceToolsDisabledReason !== null || undefined}
+                            closeMenuOnClick={sourceToolsDisabledReason === null}
+                            onClick={() => {
+                              if (sourceToolsDisabledReason !== null) return
+                              actions.pickChapter({
+                                id: c.id,
+                                number: c.number!,
+                                label: chapterLbl,
+                                currentSourceName: c.fileSourceName,
+                              })
+                            }}
                         >
                           <Trans>Find better copy</Trans>
                         </Menu.Item>
+                        </Tooltip>
                     )}
                     {canDownload && !removing && (
+                    <Tooltip label={sourceToolsDisabledReason} position="left" withArrow disabled={sourceToolsDisabledReason === null} events={{ hover: true, focus: true, touch: true }}>
                     <Menu.Item
                         leftSection={upgradingThis ? <Loader size={14} /> : <IconSparkles size={14} />}
                         disabled={upgradePending}
-                        onClick={() => actions.upgradeNow(c.id)}
+                        data-disabled={sourceToolsDisabledReason !== null || undefined}
+                        aria-disabled={sourceToolsDisabledReason !== null || undefined}
+                        closeMenuOnClick={sourceToolsDisabledReason === null}
+                        onClick={() => {
+                          if (sourceToolsDisabledReason === null) actions.upgradeNow(c.id)
+                        }}
                     >
                       <Trans>Upgrade now</Trans>
                     </Menu.Item>
+                    </Tooltip>
                     )}
                     {canDownload && c.fileQuality && (
                         <Menu.Item

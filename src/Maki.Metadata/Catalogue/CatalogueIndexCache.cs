@@ -54,6 +54,9 @@ public sealed class CatalogueIndexCache(
     /// <summary>How long since anything last read it. Meaningless while unloaded.</summary>
     public TimeSpan IdleFor => _idle.Idle;
 
+    /// <summary>Whether anything read it within <paramref name="window"/>, loaded now or not.</summary>
+    public bool UsedWithin(TimeSpan window) => _idle.UsedWithin(window);
+
     /// <summary>Drops the cached indexes so the next read rebuilds. Cheap; safe any time.</summary>
     public void Invalidate()
     {

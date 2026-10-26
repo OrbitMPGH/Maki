@@ -7311,7 +7311,113 @@ body.reader-open {
   inset: auto;
 }
 
-.reader-next-chapter-hint {
+/* The page scrubber (PageScrubber): one segment per page, lit up to the page on screen, which
+   carries a light thumb. Upscaled pages ahead show lighter, like a video's buffer. The padding is the hit
+   area; the track itself stays thin. */
+.reader-scrub {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 10px 0;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+.reader-scrub-track {
+  --gap: 0px;
+  position: relative;
+  display: flex;
+  gap: var(--gap);
+  height: 6px;
+  border-radius: var(--radius-pill);
+}
+.reader-scrub-track[data-rtl] {
+  flex-direction: row-reverse;
+}
+.reader-scrub[data-gaps] .reader-scrub-track {
+  --gap: 2px;
+}
+.reader-scrub:focus-visible .reader-scrub-track {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 5px;
+}
+.reader-scrub-segment {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.16);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.reader-scrub[data-gaps] .reader-scrub-segment {
+  border-radius: 2px;
+}
+.reader-scrub-segment:first-child {
+  border-start-start-radius: var(--radius-pill);
+  border-end-start-radius: var(--radius-pill);
+}
+.reader-scrub-segment:last-child {
+  border-start-end-radius: var(--radius-pill);
+  border-end-end-radius: var(--radius-pill);
+}
+.reader-scrub-segment[data-ready] {
+  background: rgba(255, 255, 255, 0.38);
+}
+.reader-scrub-segment[data-lit] {
+  background: var(--mantine-primary-color-filled);
+}
+.reader-scrub-segment[data-hover]:not([data-lit]) {
+  background: rgba(255, 255, 255, 0.6);
+}
+.reader-scrub-segment[data-hover][data-lit] {
+  background: color-mix(in srgb, var(--mantine-primary-color-filled) 70%, #fff);
+}
+/* Covers the page(s) on screen. With a gap, segment i starts at i * (track + gap) / count. The
+   minimum width keeps it findable in a long chapter whose segments are a pixel or two wide. */
+.reader-scrub-thumb {
+  position: absolute;
+  top: 50%;
+  left: calc((100% + var(--gap)) * var(--from) / var(--count));
+  width: max(6px, calc((100% + var(--gap)) * var(--span) / var(--count) - var(--gap)));
+  height: 16px;
+  transform: translateY(-50%);
+  border-radius: 3px;
+  background: #fff;
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 1px 6px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  transition:
+    left var(--dur-fast) var(--ease),
+    width var(--dur-fast) var(--ease);
+}
+/* Page thumbnail above the segment under the pointer. */
+.reader-scrub-preview {
+  position: fixed;
+  z-index: 1;
+  transform: translate(-50%, calc(-100% - 14px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #0a0a0b;
+  color: #fff;
+  font-size: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.reader-scrub-preview img {
+  display: block;
+  width: 120px;
+  height: 172px;
+  object-fit: contain;
+  border-radius: calc(var(--mantine-radius-md) - 2px);
+  background: #000;
+}
+
+.reader-next-chapter-hint,
+.reader-enhance-status {
   position: fixed;
   left: 50%;
   bottom: calc(32px + env(safe-area-inset-bottom, 0px));
@@ -7345,6 +7451,55 @@ body.reader-open {
   background: var(--brand);
   border-radius: var(--radius-pill);
   transition: width 60ms linear;
+}
+
+/* Server enhance progress (ServerEnhanceStatus): the next-chapter pill's shape, with a sweep while
+   the page waits or runs and a fill once it is loading. */
+.reader-enhance-status {
+  animation: reader-enhance-status-in var(--dur-medium) var(--ease);
+}
+.reader-enhance-status-method {
+  margin-right: 8px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.reader-enhance-status-fill {
+  width: 100%;
+  transition: width var(--dur-slow) var(--ease);
+}
+.reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill,
+.reader-enhance-status[data-phase='working'] .reader-enhance-status-fill {
+  width: 35%;
+  animation: reader-enhance-sweep 1.4s var(--ease) infinite;
+}
+.reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill {
+  opacity: 0.45;
+  animation-duration: 2.4s;
+}
+.reader-enhance-status[data-phase='loading'] .reader-enhance-status-fill {
+  width: 85%;
+}
+.reader-enhance-status[data-phase='failed'] {
+  color: rgba(255, 255, 255, 0.72);
+}
+@keyframes reader-enhance-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(290%);
+  }
+}
+@keyframes reader-enhance-status-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill,
+  .reader-enhance-status[data-phase='working'] .reader-enhance-status-fill {
+    width: 100%;
+    animation: none;
+  }
 }
 
 /* Auto-hiding chrome. Pointer events are dropped when hidden so the bars never eat a tap

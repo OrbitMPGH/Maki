@@ -286,8 +286,11 @@ function AppShellRoutes() {
       openPinned()
     }
   }
+  // The burger can appear under a mouse that has not moved: leaving the reader puts its back button
+  // right there. Chrome still sends pointerenter then, so a closed drawer opens only on real movement.
   const peekEnter = (e: React.PointerEvent) => {
     if (e.pointerType !== 'mouse') return
+    if (!opened && e.movementX === 0 && e.movementY === 0) return
     window.clearTimeout(peekTimer.current)
     if (!opened) setReveal('hover')
     setPeeking(true)
@@ -450,6 +453,7 @@ function AppShellRoutes() {
               opened={opened}
               onClick={toggle}
               onPointerEnter={peekEnter}
+              onPointerMove={peeking ? undefined : peekEnter}
               onPointerLeave={peekLeave}
               size="sm"
               aria-label={t`Menu`}
@@ -589,6 +593,7 @@ function AppShellRoutes() {
               element={homeEnabled ? <HomePage /> : <Navigate to="/library" replace />}
             />
             <Route path="/library" element={<LibraryPage />} />
+            <Route path="/library/archived" element={<LibraryPage scope="archived" />} />
             <Route path="/series/:id" element={<SeriesDetailPage />} />
             <Route path="/add" element={<AddSeriesPage />} />
             <Route path="/creator/:name" element={<CreatorPage />} />

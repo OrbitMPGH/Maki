@@ -15,8 +15,11 @@ Group=maki
 WorkingDirectory=/opt/maki
 ExecStart=/opt/maki/Maki.Api
 Environment=MAKI_CONFIG_DIR=/var/lib/maki
-# Without this, native heap grows with the machine's core count rather than with Maki's work.
+# The same glibc settings as the Docker image: without them native heap grows with the machine's
+# core count, and freed ONNX and libvips buffers stay in the arenas.
 Environment=MALLOC_ARENA_MAX=2
+Environment=MALLOC_MMAP_THRESHOLD_=131072
+Environment=MALLOC_TRIM_THRESHOLD_=131072
 Restart=always
 RestartSec=5
 TimeoutStopSec=30

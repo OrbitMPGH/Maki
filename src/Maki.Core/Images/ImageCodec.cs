@@ -53,6 +53,12 @@ public static class ImageCodec
         Cache.MaxMem = 0;
         Cache.MaxFiles = 0;
 
+        // libvips otherwise starts one worker per core for every pipeline, on top of the parallelism
+        // ImageWorkGate already allows, and each worker keeps its own buffers. On a 16-core host
+        // that is four gated decodes times sixteen threads of native heap that glibc never gives
+        // back. One cover or thumbnail on its own gets slower; throughput comes from the gate.
+        global::NetVips.NetVips.Concurrency = 1;
+
         global::NetVips.NetVips.BlockUntrusted = true;
         Operation.Block("VipsForeignLoad", true);
         foreach (var loader in AllowedLoaders)
@@ -61,16 +67,19 @@ public static class ImageCodec
         }
     }
 
+    /// <summary>Bytes libvips has allocated through its own tracker: pixel buffers, not every malloc it makes.</summary>
+    public static long TrackedMemoryBytes => Stats.Mem;
+
     /// <summary>Reads width, height and format from the header. Throws when the bytes are not an image a permitted loader accepts.</summary>
-    public static ImageHeader Identify(byte[] bytes)
+    public static ImageHeader Identify(byte[] bytes) => Identify(bytes.AsSpan());
+
+    /// <inheritdoc cref="Identify(byte[])"/>
+    public static ImageHeader Identify(ReadOnlySpan<byte> bytes)
     {
         if (TryBmp(bytes, out var bmp)) return bmp;
         using var image = VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
         return Header(image, bytes);
     }
-
-    /// <inheritdoc cref="Identify(byte[])"/>
-    public static ImageHeader Identify(ReadOnlySpan<byte> bytes) => Identify(bytes.ToArray());
 
     /// <inheritdoc cref="Identify(byte[])"/>
     public static ImageHeader IdentifyFile(string path)
@@ -133,7 +142,7 @@ public static class ImageCodec
     public static ImageFormat? DetectFormat(ReadOnlySpan<byte> bytes)
     {
         if (TryBmp(bytes, out _)) return ImageFormat.Bmp;
-        var loader = VipsImage.FindLoadBuffer(bytes.ToArray());
+        var loader = VipsImage.FindLoadBuffer(bytes);
         return loader is null ? null : FormatOf(loader, bytes);
     }
 
@@ -280,12 +289,11 @@ public static class ImageCodec
 
     /// <summary>
     /// Encodes an upscaled page from interleaved 8-bit RGB: WebP q85, or JPEG q90 when either edge is
-    /// over <see cref="MaxWebpEdge"/>. A grey page (<see cref="UpscalePixels.IsGreyscale"/>) is saved
-    /// with one band.
+    /// over <see cref="MaxWebpEdge"/>. A <paramref name="grey"/> page is saved with one band. The caller
+    /// decides that from the source page: models tint flat screentone, so the output can fail the test.
     /// </summary>
-    public static UpscaledImage EncodeUpscaled(byte[] rgb, int width, int height)
+    public static UpscaledImage EncodeUpscaled(byte[] rgb, int width, int height, bool grey)
     {
-        var grey = UpscalePixels.IsGreyscale(rgb);
         var pixels = grey ? UpscalePixels.ToSingleBand(rgb) : rgb;
         var bands = grey ? 1 : 3;
         using var raw = FromMemory(pixels, width, height, bands);
@@ -305,7 +313,7 @@ public static class ImageCodec
     internal static VipsImage FromMemory(byte[] pixels, int width, int height, int bands) =>
         VipsImage.NewFromMemory(pixels, width, height, bands, Enums.BandFormat.Uchar);
 
-    private static ImageHeader Header(VipsImage image, byte[]? bytes)
+    private static ImageHeader Header(VipsImage image, ReadOnlySpan<byte> bytes)
     {
         var loader = image.Contains("vips-loader") ? image.Get("vips-loader") as string : null;
         return new ImageHeader(image.Width, image.Height, loader is null ? null : FormatOf(loader, bytes));

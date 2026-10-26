@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Maki.Core.Configuration;
 using Maki.Core.Images;
 using Maki.Core.Images.Upscaling;
+using Maki.Metadata.Embedding;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 
@@ -42,13 +43,15 @@ public sealed class OnnxPageUpscaler(
             return UpscaleResult.Failed(UpscaleReasons.ModelUnavailable);
         }
 
-        var (source, skip) = await ImageWorkGate.RunAsync(() => Task.FromResult(ImageCodec.DecodeForUpscale(page)), ct);
+        var (source, skip) = await ImageWorkGate.RunAsync(
+            () => Task.FromResult(ImageCodec.DecodeForUpscale(page)), ImageWorkGate.Weigh(page), ct);
         if (source is null)
         {
             logger.LogDebug("Skipped upscaling a page with {Model}: {Reason}", model, skip);
             return UpscaleResult.Skipped(skip ?? UpscaleReasons.Unreadable);
         }
 
+        var grey = UpscalePixels.IsGreyscale(source.Pixels);
         var threads = (await UpscaleOptions.LoadAsync(settings, ct)).Threads;
         StitchedPage stitched;
         try
@@ -72,8 +75,18 @@ public sealed class OnnxPageUpscaler(
 
         try
         {
+            var outputWeight = ImageWorkGate.Weigh(stitched.Width, stitched.Height);
+            var original = await ImageWorkGate.RunAsync(() => Task.FromResult(ImageCodec.ResizeRgb(
+                source.Pixels, source.Width, source.Height, (double)stitched.Width / source.Width)), outputWeight, ct);
+            if ((original.Width, original.Height) != (stitched.Width, stitched.Height))
+            {
+                throw new InvalidDataException("The resized source does not match the upscaled page.");
+            }
+
+            UpscalePixels.TakeColourFrom(stitched.Rgb, original.Rgb);
             var encoded = await ImageWorkGate.RunAsync(
-                () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Rgb, stitched.Width, stitched.Height)), ct);
+                () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Rgb, stitched.Width, stitched.Height, grey)),
+                outputWeight, ct);
             return UpscaleResult.Ready(encoded);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -160,8 +173,7 @@ public sealed class OnnxPageUpscaler(
     private StitchedPage RunTiles(LoadedModel loaded, Raster source, UpscaleModelInfo info, CancellationToken ct)
     {
         var tiles = UpscaleTiling.Plan(source.Width, source.Height,
-            multiple: info.Adapter == UpscaleAdapter.Plain4xThenHalve ? 1 : 4,
-            border: info.Adapter == UpscaleAdapter.Waifu2xSwin ? UpscaleTiling.Waifu2xBorder : 0);
+            multiple: info.Adapter == UpscaleAdapter.Plain4xThenHalve ? 1 : 4);
         var scale = info.OutputScale;
         var width = source.Width * scale;
         var height = source.Height * scale;
@@ -213,8 +225,8 @@ public sealed class OnnxPageUpscaler(
 
     private static OrtValue CreateInput(TensorElementType type, Raster source, UpscaleTile tile)
     {
-        var w = tile.InputWidth;
-        var h = tile.InputHeight;
+        var w = tile.ContextWidth;
+        var h = tile.ContextHeight;
         var plane = w * h;
         var columns = new int[w];
         for (var x = 0; x < w; x++)
@@ -357,8 +369,7 @@ public sealed class OnnxPageUpscaler(
         InferenceSession? session = null;
         try
         {
-            using var options = new Microsoft.ML.OnnxRuntime.SessionOptions { IntraOpNumThreads = threads, InterOpNumThreads = 1 };
-            options.AddSessionConfigEntry("session.intra_op.allow_spinning", "0");
+            using var options = OnnxMemoryOptions.Create(threads, fixedShapes: true);
             session = new InferenceSession(store.PathOf(info.Id), options);
             var output = session.OutputNames[0];
             var inputType = ElementType(session.InputMetadata[info.InputName]);

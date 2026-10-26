@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { serverEnhancedUrl } from '../../api/reader'
 import { useCompareHeld } from './compareHold'
 import {
@@ -27,7 +27,7 @@ export interface EnhancedPageProps {
   enhance: PageEnhance
   /** The page's index in the chapter, which names its server upscale. */
   page: number
-  /** Set while a server method is in use; until this page is ready there, the engine's Balanced result shows. */
+  /** Set while a server method is in use; until this page is ready there, the engine's fallback result shows. */
   server?: ServerEnhance | null
   /** 0 for a page on screen, then its distance in reading order. */
   priority: number
@@ -155,7 +155,7 @@ export default function EnhancedPage({
   }, [active])
 
   useEffect(() => {
-    if (!active || !target || !engine) return
+    if (!active || !target || !engine || !preset) return
     const draw = (bitmap: ImageBitmap) => {
       const element = canvas.current
       if (!element) return
@@ -237,12 +237,22 @@ export default function EnhancedPage({
     return () => serverImage.removeAttribute('src')
   }, [serverImage])
 
-  const serverShowing = serverWanted && decoded === serverUrl && !held
+  const serverDecoded = serverWanted && decoded === serverUrl
+  const reportServer = server?.reportShown
+  useEffect(() => {
+    if (!serverDecoded || !reportServer) return
+    reportServer(page, true)
+    return () => reportServer(page, false)
+  }, [serverDecoded, reportServer, page])
+
+  const serverShowing = serverDecoded && !held
   const showing = active && drawn === identity && !held && !serverShowing
   const covering = showing || serverShowing
   const reportShowing = useRef(onShowing)
   reportShowing.current = onShowing
-  useEffect(() => {
+  // Before paint: the canvas hides in this commit, and a passive effect would leave one frame with
+  // neither it nor the host's image showing.
+  useLayoutEffect(() => {
     reportShowing.current(covering)
   }, [covering])
   useEffect(() => () => reportShowing.current(false), [])

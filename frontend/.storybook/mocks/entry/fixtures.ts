@@ -65,7 +65,7 @@ export function makeManifest(overrides: Partial<ReaderManifest> & Pick<ReaderMan
       enabled: true,
       models: [
         { id: 'span-s', ready: true },
-        { id: 'waifu2x-art', ready: false },
+        { id: 'realesrgan-av3', ready: false },
       ],
     },
     ...overrides,
@@ -246,6 +246,8 @@ export function librarySeries(entry: CatalogueEntry): SeriesDto {
     tagIds: [],
     monitored: true,
     monitorNewItems: 'All',
+    archivedAt: null,
+    archivedByUserId: null,
     rootFolderId: 1,
     folderName: entry.title,
     rootFolderPath: `/library/${entry.title}`,

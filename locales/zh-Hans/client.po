@@ -577,6 +577,15 @@ msgstr "{announcedBy} 安排在 {when} 更新"
 msgid "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
 msgstr "{applied, plural, other {已导入 # 个评分}}"
 
+#: src/pages/LibraryPage.tsx
+msgid "{archiveCount, plural, one {# series} other {# series}}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "{archivedCount, plural, one {Archived (#)} other {Archived (#)}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{beforeLabel} to {afterLabel}"
@@ -607,6 +616,8 @@ msgstr "{binDays, plural, other {文件可在设置中恢复 # 天，之后将�
 msgid "{binDays, plural, one {It can be restored from Settings for # day.} other {It can be restored from Settings for # days.}}"
 msgstr "{binDays, plural, other {可在设置中恢复，保留 # 天。}}"
 
+#: src/components/series/ArchiveSeriesDialog.tsx
+#: src/components/series/RemoveArchivedFilesDialog.tsx
 #: src/components/series/RemoveSeriesDialog.tsx
 #, fuzzy
 msgid "{binDays, plural, one {The files go to the recycle bin for # day and can be restored from Settings until then.} other {The files go to the recycle bin for # days and can be restored from Settings until then.}}"
@@ -833,6 +844,10 @@ msgstr "{count, plural, other {本设备上已保存 # 个章节，但此标签�
 #, fuzzy
 msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr "{count, plural, other {删除 # 个归档？}}"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "{count, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -1500,6 +1515,14 @@ msgstr "{newChapterCount, plural, other {最近新增的 # 个章节文件}}"
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, other {另有 # 个列出，但不想要}}"
 
+#: src/pages/LibraryPage.tsx
+msgid "{ok, plural, one {Archived # series} other {Archived # series}}"
+msgstr ""
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "{otherReaders, plural, one {# other reader is partway through this series. Archiving stops new chapters for everyone.} other {# other readers are partway through this series. Archiving stops new chapters for everyone.}}"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -1588,6 +1611,15 @@ msgstr "{pushingDown} 个被排除在品味之外"
 #, fuzzy
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, other {正在后台自动匹配 # 个系列。}}"
+
+#: src/components/series/restoreToast.tsx
+msgid "{queued, plural, one {Queued # removed chapter} other {Queued # removed chapters}}"
+msgstr ""
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "{queued, plural, one {Restored to the library, # chapter queued} other {Restored to the library, # chapters queued}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1801,6 +1833,10 @@ msgid "{selectedCount, plural, one {Remove # series?} other {Remove # series?}}"
 msgstr "{selectedCount, plural, other {要移除 # 个系列吗？}}"
 
 #: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Remove the files of # series?} other {Remove the files of # series?}}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {Set monitoring for # series} other {Set monitoring for # series}}"
 msgstr "{selectedCount, plural, other {为 # 个系列设置监控}}"
@@ -1896,6 +1932,10 @@ msgstr "{siteName}的语言"
 #, fuzzy
 msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 msgstr "{size, plural, other {# 个系列，占此视图的 {shareLabel}，{coherenceWord}}}"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "{skipped, plural, one {# skipped} other {# skipped}}"
+msgstr ""
 
 #: src/components/import/MihonReview.tsx
 #, fuzzy
@@ -2719,6 +2759,10 @@ msgstr "当系列的章节以足够稳定的节奏更新，或来源公布了下
 msgid "A series that has been downloaded into or read since cannot be undone. ComicInfo.xml changes Maki wrote inside your own CBZs are not reverted."
 msgstr "已下载过或阅读过的系列无法撤销。Maki 写入你自有 CBZ 中的 ComicInfo.xml 更改不会被还原。"
 
+#: src/components/NotificationsSection.tsx
+msgid "A series was archived."
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "A short strip of what your library leans towards."
@@ -2864,6 +2908,10 @@ msgstr "动作"
 #, fuzzy
 msgid "Actions"
 msgstr "操作"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "Actions for {displayTitle}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -3340,6 +3388,14 @@ msgstr "同时匹配归在此项下的所有标签"
 msgid "Also needs the daily scan on."
 msgstr "同样需要开启每日扫描。"
 
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Also remove the files"
+msgstr ""
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Also remove the files to free {size}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Alt titles"
@@ -3620,10 +3676,59 @@ msgstr "阿拉伯语"
 msgid "Archive"
 msgstr "归档"
 
+#: src/components/series/ArchiveHint.tsx
+#: src/components/series/ArchiveSeriesDialog.tsx
+#: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Archive"
+msgstr ""
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgctxt "series"
+msgid "Archive {title}?"
+msgstr ""
+
+#: src/components/settings/UsersSection.tsx
+msgctxt "series"
+msgid "Archive series"
+msgstr ""
+
+#: src/components/CommandPalette.tsx
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverLibraryRail.tsx
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgctxt "series"
+msgid "Archived"
+msgstr ""
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgctxt "series"
+msgid "Archived {date}"
+msgstr ""
+
+#: src/components/series/ArchivedBanner.tsx
+msgid "Archived on {date} by {archivedBy}. Maki is not checking sources for this series."
+msgstr ""
+
+#: src/components/series/ArchivedBanner.tsx
+msgid "Archived on {date}. Maki is not checking sources for this series."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Archived series are not checked against sources. Restore it first."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Archives inventoried"
 msgstr "已盘点归档"
+
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Archiving a finished series stops Maki checking its sources and keeps your reading history and rating. Archived series show up here."
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -3829,6 +3934,10 @@ msgstr "返回资料库"
 #, fuzzy
 msgid "Back to series"
 msgstr "返回系列"
+
+#: src/pages/LibraryPage.tsx
+msgid "Back to the library"
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy
@@ -4235,6 +4344,7 @@ msgstr "无法使用已保存的信息登录。"
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -4992,6 +5102,7 @@ msgstr "清除筛选"
 msgid "Clear queue"
 msgstr "清除队列"
 
+#: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -5704,6 +5815,10 @@ msgstr "无法撤销：{reason}"
 msgid "Could not update feedback: {reason}"
 msgstr "无法更新反馈：{reason}"
 
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Could not upscale this page"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "Could not write the chapter to disk"
@@ -6159,9 +6274,11 @@ msgstr "定义中"
 
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/rails/DeleteRailDialog.tsx
+#: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Delete"
@@ -6513,6 +6630,7 @@ msgid "Disk used"
 msgstr "磁盘使用量"
 
 #: src/components/layout/SidebarFooter.tsx
+#: src/components/series/ArchiveHint.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -6717,6 +6835,10 @@ msgstr "下载队列"
 #, fuzzy
 msgid "Download the next"
 msgstr "下载后续章节"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "Download the removed chapters again?"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -7483,6 +7605,10 @@ msgstr "更新标签失败：{detail}"
 msgid "Fair quality"
 msgstr "质量一般"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Fallback"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Falling means you moved."
@@ -7642,11 +7768,21 @@ msgstr ""
 msgid "Files in this download"
 msgstr "此下载中的文件"
 
+#: src/pages/LibraryPage.tsx
+msgid "Files kept"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Files on disk are not touched. Every user's access to this folder is removed, and adding it back later starts with no grants."
 msgstr "磁盘上的文件不会被改动。所有用户对此文件夹的访问权限都会被移除，之后重新添加时不会自动授予任何权限。"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Files removed"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -8168,10 +8304,6 @@ msgstr "类型和标签"
 #, fuzzy
 msgid "Genres in the library"
 msgstr "资料库中的类型"
-
-#: src/pages/reader/enhanceMethods.ts
-msgid "Gentle (server)"
-msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -9869,6 +10001,10 @@ msgstr "资料库路径，存储，磁盘，可用空间，文件夹"
 msgid "Library title"
 msgstr "资料库标题"
 
+#: src/pages/LibraryPage.tsx
+msgid "Library view"
+msgstr ""
+
 #: src/pages/reader/enhanceMethods.ts
 #: src/theme-context.tsx
 #, fuzzy
@@ -10048,6 +10184,10 @@ msgstr "正在加载章节…"
 #, fuzzy
 msgid "loading search by meaning, title matches for now"
 msgstr "正在加载按含义搜索，目前仅按标题匹配"
+
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Loading the upscaled page"
+msgstr ""
 
 #: src/components/ActivityButton.tsx
 #: src/components/DiscoverPresets.tsx
@@ -10259,6 +10399,11 @@ msgstr "Maki 在此处已使用 {used}，配额为 {quota}。请移除部分已�
 #, fuzzy
 msgid "Maki speaks your language"
 msgstr "Maki 支持你的语言"
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgctxt "series"
+msgid "Maki stops checking sources for new chapters and moves it to Archived. Your reading history, rating and chapters stay. You can restore it any time."
+msgstr ""
 
 #: src/components/QueuePause.tsx
 #, fuzzy
@@ -11951,6 +12096,7 @@ msgstr "无"
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
@@ -11977,6 +12123,10 @@ msgstr "未关联任何内容"
 #, fuzzy
 msgid "None listed"
 msgstr "未列出"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "None of the removed chapters are still wanted, so nothing would be downloaded."
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -12273,6 +12423,11 @@ msgstr "尚未同步"
 #, fuzzy
 msgid "Note (optional)"
 msgstr "备注（可选）"
+
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Nothing archived"
+msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -12935,6 +13090,7 @@ msgstr "只有你能看到此内容。"
 msgid "OPDS catalogue"
 msgstr "OPDS 目录"
 
+#: src/components/series/ArchivedSeriesCard.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Open"
@@ -13147,10 +13303,15 @@ msgid "Packaging"
 msgstr "打包中"
 
 #: src/components/CommandPalette.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/PageScrubber.tsx
 #, fuzzy
 msgid "Page"
 msgstr "页面"
+
+#. placeholder {0}: page + 1
+#: src/pages/reader/PageScrubber.tsx
+msgid "Page {0} of {count}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -14036,6 +14197,7 @@ msgstr "已评分"
 msgid "Rated {rated}"
 msgstr "评分 {rated}"
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rated {rating}/10"
@@ -14059,6 +14221,7 @@ msgid "Rating"
 msgstr "评分"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rating cleared"
@@ -14125,6 +14288,10 @@ msgstr "阅读 {nextChapter}"
 #, fuzzy
 msgid "Read {nextChapterLabel}"
 msgstr "阅读 {nextChapterLabel}"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "Read {read} of {total}"
+msgstr ""
 
 #: src/pages/stats/ReadTrackingEmpty.tsx
 #, fuzzy
@@ -14451,6 +14618,11 @@ msgstr "最近的升级"
 #, fuzzy
 msgid "Recently added"
 msgstr "最近添加"
+
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Recently archived"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -14812,6 +14984,13 @@ msgstr "移除失败项"
 msgid "Remove failed downloads"
 msgstr "移除失败的下载"
 
+#: src/components/series/ArchivedBanner.tsx
+#: src/components/series/ArchivedSeriesCard.tsx
+#: src/components/series/RemoveArchivedFilesDialog.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Remove files"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -14869,6 +15048,7 @@ msgstr "移除根文件夹"
 msgid "Remove rule"
 msgstr "删除规则"
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Remove series?"
@@ -14903,6 +15083,14 @@ msgstr "移除来源但不清理？"
 #, fuzzy
 msgid "Remove source?"
 msgstr "移除来源？"
+
+#: src/pages/LibraryPage.tsx
+msgid "Remove the files of {removeFilesTitle}?"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Remove the files of {seriesTitle}?"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -15329,10 +15517,30 @@ msgstr ""
 msgid "Restore"
 msgstr "恢复"
 
+#: src/components/discover/ArchivedRestore.tsx
+#: src/components/series/RestoreSeriesDialog.tsx
+#: src/pages/ImportPage.tsx
+#: src/pages/LibraryPage.tsx
+msgctxt "series"
+msgid "Restore"
+msgstr ""
+
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/import/ImportPlanModal.tsx
+#: src/pages/ImportPage.tsx
+msgctxt "series"
+msgid "Restore {title}"
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Restore & restart"
 msgstr "恢复并重启"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgctxt "series"
+msgid "Restore and download"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -15359,6 +15567,11 @@ msgstr "从文件恢复……"
 msgid "Restore hidden or dismissed title"
 msgstr "恢复已隐藏或忽略的标题"
 
+#: src/components/series/RestoreSeriesDialog.tsx
+msgctxt "series"
+msgid "Restore only"
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Restore staged"
@@ -15368,6 +15581,18 @@ msgstr "恢复已暂存内容"
 #, fuzzy
 msgid "Restore this title"
 msgstr "恢复此标题"
+
+#: src/components/series/ArchivedBanner.tsx
+#: src/components/series/ArchivedSeriesCard.tsx
+#: src/components/series/SeriesActionsMenu.tsx
+msgctxt "series"
+msgid "Restore to library"
+msgstr ""
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgctxt "series"
+msgid "Restore to the library?"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -15383,6 +15608,21 @@ msgstr "已恢复为未关联文件。健康检查可以将其导入。"
 #, fuzzy
 msgid "Restored from the provider"
 msgstr "已从提供方恢复"
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "Restored to the library"
+msgstr ""
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "Restored to the library, but the removed chapters were not queued: {queueError}"
+msgstr ""
+
+#: src/pages/ImportPage.tsx
+msgctxt "series"
+msgid "Restoring an archived series needs the Archive series permission"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -16610,6 +16850,15 @@ msgstr "资料库中已有的系列不会再次添加。导入它们只会应用
 msgid "Series and chapters you have asked an admin for."
 msgstr "你向管理员请求的系列和章节。"
 
+#: src/components/NotificationsSection.tsx
+msgid "Series archived"
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
+msgctxt "series"
+msgid "Series archived"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
 msgid "Series details"
@@ -16653,6 +16902,7 @@ msgid "Series page"
 msgstr "系列页面"
 
 #: src/components/NotificationsSection.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Series removed"
@@ -16709,7 +16959,7 @@ msgid "Server local time, 0 to 23."
 msgstr "服务器本地时间，0 到 23。"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-msgid "Server methods apply only when the admin has enabled them; otherwise Balanced is used."
+msgid "Server methods apply only when the admin has enabled them; otherwise the fallback is used."
 msgstr ""
 
 #: src/pages/settings/registry.ts
@@ -17010,6 +17260,10 @@ msgstr "显示 {shownQueueCount}/{totalQueueCount} 个排队项目。其余项�
 msgid "showing results for <0>{corrected}</0>"
 msgstr "显示 <0>{corrected}</0> 的结果"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Shown on this device until the server's page is ready, and whenever the server can't be used."
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Shown to whoever asked"
@@ -17240,6 +17494,10 @@ msgstr "跳到内容"
 msgid "skipped"
 msgstr "已跳过"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Skipped ({skippedFilterCount})"
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Skipped {latestVersion}"
@@ -17297,6 +17555,10 @@ msgstr "磁盘上的快照：{snapshotSize}，刷新于 {refreshedAtLabel}"
 #, fuzzy
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "磁盘上的快照：{snapshotSize}，刷新时间未知"
+
+#: src/components/series/restoreToast.tsx
+msgid "Some removed chapters were not queued: {queueError}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -18376,6 +18638,11 @@ msgstr "所选系列将从 Maki 中移除并停止监控。"
 msgid "The send failed"
 msgstr "发送失败"
 
+#: src/components/series/RemoveArchivedFilesDialog.tsx
+msgctxt "series"
+msgid "The series stays in Archived with its chapters, reading history and rating. Restoring it later can download the chapters again."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
@@ -18729,6 +18996,7 @@ msgstr "此队列项目没有可查找来源的章节"
 msgid "This rail needs the local MangaBaka database, which is switched off or still downloading."
 msgstr "此推荐栏需要本地 MangaBaka 数据库，但数据库已关闭或仍在下载。"
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "This removes \"{seriesTitle}\" and its chapters from Maki."
@@ -19809,7 +20077,15 @@ msgstr "大写"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
+msgid "upscale, upscaling, enhance, sharpen, model, onnx, real-esrgan, span, cpu threads, page cache"
+msgstr ""
+
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Upscaled page shown"
+msgstr ""
+
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Upscaling this page"
 msgstr ""
 
 #: src/components/NotificationsSection.tsx
@@ -20090,6 +20366,15 @@ msgstr "在资料库中查看"
 msgid "View in library: {title}"
 msgstr "在资料库中查看：{title}"
 
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "View series"
+msgstr ""
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "View series: {title}"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Vol. {fileVolume}"
@@ -20234,10 +20519,6 @@ msgstr "卷：{volumes}"
 msgid "vs {fromLabel} to {toLabel}"
 msgstr "与 {fromLabel} 至 {toLabel} 相比"
 
-#: src/pages/reader/enhanceMethods.ts
-msgid "waifu2x art; slowest, cleanest"
-msgstr ""
-
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -20253,6 +20534,10 @@ msgstr "正在等待 MangaBaka 快照先完成下载。"
 #, fuzzy
 msgid "Waiting for the metadata database."
 msgstr "正在等待元数据数据库。"
+
+#: src/pages/reader/ServerEnhanceStatus.tsx
+msgid "Waiting for the server"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20486,6 +20771,10 @@ msgstr "阅读时"
 #, fuzzy
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "阅读时仅会在你阅读系列期间通知你新章节。"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "While the server works"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -20793,6 +21082,10 @@ msgstr "你当前处于离线状态。正在显示此设备上已保存的内容
 msgid "You're set"
 msgstr "设置完成"
 
+#: src/components/series/ArchiveHint.tsx
+msgid "You've finished this. Archive it?"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "Your {label}"
@@ -20868,6 +21161,10 @@ msgstr "你的密码"
 #, fuzzy
 msgid "Your priority order"
 msgstr "你的优先级顺序"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "Your rating for {displayTitle}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy

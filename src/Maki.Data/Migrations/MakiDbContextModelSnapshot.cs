@@ -1025,6 +1025,9 @@ namespace Maki.Data.Migrations
                     b.Property<bool>("OnSeriesAdded")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("OnSeriesArchived")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("OnSeriesRemoved")
                         .HasColumnType("INTEGER");
 
@@ -1855,6 +1858,12 @@ namespace Maki.Data.Migrations
                     b.Property<string>("AnimeStart")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ArchivedByUserId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("AuthorArt")
                         .HasColumnType("TEXT");
 
@@ -1947,6 +1956,9 @@ namespace Maki.Data.Migrations
                     b.Property<int>("ReadFileCleanup")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("RestoredAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("RootFolderId")
                         .HasColumnType("INTEGER");
 
@@ -1987,6 +1999,10 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ArchivedAt");
+
+                    b.HasIndex("ArchivedByUserId");
 
                     b.HasIndex("MangaBakaId");
 
@@ -2896,6 +2912,9 @@ namespace Maki.Data.Migrations
                     b.Property<double?>("AnimeWatchPendingTo")
                         .HasColumnType("REAL");
 
+                    b.Property<DateTime?>("ArchiveHintDismissedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("HiddenFromHomeAt")
                         .HasColumnType("TEXT");
 
@@ -3355,6 +3374,11 @@ namespace Maki.Data.Migrations
 
             modelBuilder.Entity("Maki.Core.Entities.Series", b =>
                 {
+                    b.HasOne("Maki.Data.Identity.MakiUser", null)
+                        .WithMany()
+                        .HasForeignKey("ArchivedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Maki.Core.Entities.RootFolder", "RootFolder")
                         .WithMany()
                         .HasForeignKey("RootFolderId")

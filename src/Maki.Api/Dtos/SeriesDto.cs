@@ -202,6 +202,17 @@ public record SeriesDto(
     /// <summary>The series' own upgrade profile pin. Null means it follows the instance default.</summary>
     public int? UpgradeProfileId { get; init; }
 
+    /// <summary>When the series was archived, or null while it is active.</summary>
+    public DateTime? ArchivedAt { get; init; }
+
+    public int? ArchivedByUserId { get; init; }
+
+    /// <summary>
+    /// The series page should offer "finished, archive it?" to this caller. Detail endpoint only, and
+    /// already false for a caller without ArchiveSeries.
+    /// </summary>
+    public bool ArchiveHintEligible { get; init; }
+
     /// <summary>"Default" | "On" | "Off": this series' choice about deleting read chapter files.</summary>
     public string ReadFileCleanup { get; init; } = nameof(Core.Entities.ReadFileCleanup.Default);
 
@@ -327,6 +338,8 @@ public record SeriesDto(
         notificationMode.ToString())
     {
         UpgradeProfileId = s.UpgradeProfileId,
+        ArchivedAt = s.ArchivedAt,
+        ArchivedByUserId = s.ArchivedByUserId,
         ReadFileCleanup = s.ReadFileCleanup.ToString(),
         LockedFields = LockedFieldNames(s.LockedFields),
         LastUpgradeScan = s.LastUpgradeScanUtc is { } at

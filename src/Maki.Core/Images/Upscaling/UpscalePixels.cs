@@ -44,6 +44,30 @@ public static class UpscalePixels
         return spreadSum <= (long)samples * MaxMeanSpread;
     }
 
+    /// <summary>
+    /// Keeps the brightness (Rec. 601 luma) of interleaved RGB <paramref name="output"/> and takes
+    /// its colour from <paramref name="source"/>, the original page resized to the same size. The
+    /// models tint flat screentone; with this a grey page comes out exactly grey and a colour page
+    /// keeps its own colour.
+    /// </summary>
+    public static void TakeColourFrom(Span<byte> output, ReadOnlySpan<byte> source)
+    {
+        if (output.Length != source.Length)
+        {
+            throw new ArgumentException("The source must be the output's size.", nameof(source));
+        }
+
+        for (var i = 0; i + 2 < output.Length; i += 3)
+        {
+            var shift = Luma(output[i], output[i + 1], output[i + 2]) - Luma(source[i], source[i + 1], source[i + 2]);
+            output[i] = (byte)Math.Clamp(source[i] + shift, 0, 255);
+            output[i + 1] = (byte)Math.Clamp(source[i + 1] + shift, 0, 255);
+            output[i + 2] = (byte)Math.Clamp(source[i + 2] + shift, 0, 255);
+        }
+    }
+
+    private static int Luma(int r, int g, int b) => (299 * r + 587 * g + 114 * b + 500) / 1000;
+
     /// <summary>One band per pixel, the rounded mean of the three channels.</summary>
     public static byte[] ToSingleBand(ReadOnlySpan<byte> rgb)
     {

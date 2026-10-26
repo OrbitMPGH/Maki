@@ -17,7 +17,7 @@ export type EnhanceMethod =
   | 'a4k-a'
   | 'server:span-s'
   | 'server:realesrgan-av3'
-  | 'server:waifu2x-art'
+export type EnhanceFallback = 'a4k-s' | 'a4k-m' | 'a4k-a' | 'off'
 
 export interface ReaderPrefs {
   mode: ReaderMode
@@ -50,6 +50,8 @@ export interface ReaderPrefs {
   enhance: ReaderEnhance
   /** Browser shader preset (`a4k-*`) or a model on the server (`server:*`). */
   enhanceMethod: EnhanceMethod
+  /** The browser preset a server method shows until its upscale is ready, or `off` for the plain page. */
+  enhanceFallback: EnhanceFallback
 }
 
 /** The two page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. */
@@ -83,6 +85,7 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   autoWebtoon: true,
   enhance: 'off',
   enhanceMethod: 'a4k-m',
+  enhanceFallback: 'a4k-m',
 }
 
 /** The CSS filter for the page images, or undefined when the prefs ask for none. */

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
-import { animeResume, providerDetail, seriesDto, seriesMsw, torrentProposal } from '../../.storybook/mocks/series'
+import { animeResume, archivePreview, archivedSeriesDto, hintedSeriesDto, providerDetail, seriesDto, seriesMsw, torrentProposal } from '../../.storybook/mocks/series'
 import SeriesDetailPage from './SeriesDetailPage'
 import { monoText } from '../../.storybook/monoText'
 
@@ -30,6 +30,97 @@ export const Completed: Story = {
   parameters: at(2),
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: /The Ninth Kitchen/ })).toBeVisible()
+    await expect(canvas.queryByText(/You've finished this/)).toBeNull()
+  },
+}
+
+/** Completed and finished by every reader: a quiet line offers the archive and opens the same dialog as the menu. */
+export const FinishedArchiveHint: Story = {
+  parameters: { ...at(2), msw: seriesMsw(http.get(api('/series/:id'), () => HttpResponse.json(hintedSeriesDto(2)))) },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(await canvas.findByText("You've finished this. Archive it?")).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Archive' }))
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
+    await expect(within(dialog).getByRole('button', { name: 'Archive' })).toBeVisible()
+  },
+}
+
+let hintDismissed = false
+
+/** Dismissing posts once and the line goes away on the refetch. */
+export const FinishedArchiveHintDismissed: Story = {
+  beforeEach: () => {
+    hintDismissed = false
+  },
+  parameters: {
+    ...at(2),
+    msw: seriesMsw(
+      http.get(api('/series/:id'), () => HttpResponse.json({ ...hintedSeriesDto(2), archiveHintEligible: !hintDismissed })),
+      http.post(api('/series/:id/archive-hint/dismiss'), () => {
+        hintDismissed = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    ),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Dismiss' }))
+    await waitFor(() => expect(canvas.queryByText(/You've finished this/)).toBeNull())
+    await expect(hintDismissed).toBe(true)
+  },
+}
+
+export const Archived: Story = {
+  parameters: { msw: seriesMsw(http.get(api('/series/:id'), () => HttpResponse.json(archivedSeriesDto(1)))) },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByRole('heading', { name: /Lanterns Over Kasumi/ })).toBeVisible()
+    await expect(await canvas.findByText(/Archived on .*\. Maki is not checking sources for this series\./)).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Restore to library' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Remove files' })).toBeVisible()
+    const download = await canvas.findByRole('button', { name: /^Download .* wanted$/ })
+    await waitFor(() => expect(download).toHaveAttribute('aria-disabled', 'true'))
+    await userEvent.click(download)
+    await expect(canvas.queryByRole('dialog')).toBeNull()
+    const releases = await canvas.findByRole('button', { name: 'Search releases' })
+    await waitFor(() => expect(releases).toHaveAttribute('aria-disabled', 'true'))
+    await userEvent.click(releases)
+    await expect(canvas.queryByRole('dialog')).toBeNull()
+  },
+}
+
+export const ArchivedRestoreAsksAboutFiles: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/series/:id'), () =>
+        HttpResponse.json({ ...archivedSeriesDto(1), chapterFileCount: 0, removedChapterCount: 142 }),
+      ),
+      archivePreview({ redownloadableChapters: 142 }),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Restore to library' }))
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
+    await expect(await within(dialog).findByText('Download the 142 removed chapters again?')).toBeVisible()
+  },
+}
+
+/** The restore went through but the download could not be queued: the toast says why. */
+export const ArchivedRestoreQueueError: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/series/:id'), () =>
+        HttpResponse.json({ ...archivedSeriesDto(1), chapterFileCount: 0, removedChapterCount: 142 }),
+      ),
+      archivePreview({ redownloadableChapters: 142 }),
+      http.post(api('/series/:id/restore'), () => HttpResponse.json({ queued: 0, queueError: 'Downloads are paused' })),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Restore to library' }))
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Restore and download' }))
+    await expect(
+      await within(canvasElement.ownerDocument.body).findByText(/the removed chapters were not queued: Downloads are paused/),
+    ).toBeVisible()
   },
 }
 

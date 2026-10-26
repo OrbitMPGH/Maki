@@ -38,14 +38,17 @@ import { wakeLockSupported } from '../../lib/wakeLock'
 import { useLabel } from '../../i18n-context'
 import {
   BROWSER_ENHANCE_METHODS,
+  ENHANCE_FALLBACKS,
   ENHANCE_LEVELS,
   SERVER_ENHANCE_METHODS,
   enhanceMethodInfo,
+  isServerMethod,
   serverModelId,
 } from './enhanceMethods'
 import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
 import { setCompareHeld, useCompareHeld } from './compareHold'
 import { useEnhanceEngine } from './enhanceRuntime'
+import PageScrubber from './PageScrubber'
 
 /**
  * The reader renders above Mantine's popover layer, so anything that portals to <body> has to
@@ -53,6 +56,10 @@ import { useEnhanceEngine } from './enhanceRuntime'
  * control simply doesn't work.
  */
 const OVERLAY_Z = 500
+
+// Inside the settings popover, a portalled list counts as outside it: the first touch on the list
+// closed both, so it could never be scrolled. Rendered in place, fixed so the popover does not clip it.
+const NESTED_COMBOBOX = { zIndex: OVERLAY_Z + 1, withinPortal: false, floatingStrategy: 'fixed' } as const
 
 export default function ReaderToolbar({
   manifest,
@@ -89,6 +96,9 @@ export default function ReaderToolbar({
   onReveal,
   onShortcuts,
   serverEnhancing = false,
+  enhancedPages,
+  thumbs = [],
+  shownTo,
 }: {
   manifest: ReaderManifest
   page: number
@@ -131,6 +141,12 @@ export default function ReaderToolbar({
   onShortcuts: () => void
   /** A server method is in use, so pages can show the server's upscale even without the browser engine. */
   serverEnhancing?: boolean
+  /** Pages the server has upscaled; the ones ahead are marked on the slider like a video's buffer. */
+  enhancedPages?: ReadonlySet<number>
+  /** Thumbnail URL per page, shown above the slider under the pointer. */
+  thumbs?: string[]
+  /** The last page on screen, past `page` when a spread shows two. */
+  shownTo?: number
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -140,12 +156,6 @@ export default function ReaderToolbar({
   // so each chevron's disabled state follows the chapter it actually opens.
   const rtl = prefs.direction === 'rtl'
   const [settingsOpen, setSettingsOpen] = useState(false)
-  // The thumb follows the pointer through this, and the page only moves once it is released.
-  const [scrub, setScrub] = useState<number | null>(null)
-  // A cancelled touch drag never fires onChangeEnd, so any page move also drops a stuck scrub.
-  useEffect(() => {
-    setScrub(null)
-  }, [page])
 
   // "Auto" names the profile the series' type resolves to, so choosing it says what it will do.
   const autoProfile = profiles.find((p) => p.id === autoProfileId)
@@ -387,27 +397,14 @@ export default function ReaderToolbar({
             </ActionIcon>
           </Tooltip>
 
-          {/*
-            Right-to-left reading puts page 1 at the right end of the track. That has to be done
-            by inverting the value, not with CSS `direction`: Mantine positions the thumb with an
-            inline `left: %`, so a flipped container moves the fill but leaves the thumb sliding
-            the wrong way. `inverted` then moves the filled portion to the right of the thumb, so
-            it still grows from where you started reading rather than from the far end.
-          */}
-          <Slider
-            thumbLabel={t`Page`}
-            className="reader-slider"
-            min={1}
-            max={Math.max(1, manifest.pageCount)}
-            value={scrub ?? (rtl ? manifest.pageCount - page : page + 1)}
-            onChange={setScrub}
-            onChangeEnd={(value) => {
-              setScrub(null)
-              onSeek(rtl ? manifest.pageCount - value : value - 1)
-            }}
-            label={(value) => `${rtl ? manifest.pageCount - value + 1 : value} / ${manifest.pageCount}`}
-            inverted={rtl}
-            style={{ flex: 1 }}
+          <PageScrubber
+            count={manifest.pageCount}
+            page={page}
+            shownTo={shownTo ?? page}
+            rtl={rtl}
+            onSeek={onSeek}
+            enhanced={enhancedPages}
+            thumbs={thumbs}
           />
 
           {/* Dropped on a phone: seven controls plus this counter leave the slider about 100px of
@@ -630,7 +627,7 @@ export default function ReaderToolbar({
                     <Select
                       aria-label={t`Method`}
                       size="xs"
-                      comboboxProps={{ zIndex: OVERLAY_Z + 1 }}
+                      comboboxProps={NESTED_COMBOBOX}
                       allowDeselect={false}
                       value={prefs.enhanceMethod}
                       onChange={(value) => value && onPrefs({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })}
@@ -643,6 +640,25 @@ export default function ReaderToolbar({
                           </Text>
                         </div>
                       )}
+                    />
+                  </div>
+                )}
+                {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
+                  <div>
+                    <Text fz="xs" c="var(--ink-3)" mb={4}>
+                      <Trans>While the server works</Trans>
+                    </Text>
+                    <SegmentedControl
+                      aria-label={t`While the server works`}
+                      fullWidth
+                      size="xs"
+                      value={prefs.enhanceFallback}
+                      onChange={(value) => onPrefs({ enhanceFallback: value as ReaderPrefs['enhanceFallback'] })}
+                      data={ENHANCE_FALLBACKS.map((f) => ({
+                        label: renderLabel(f.label),
+                        value: f.value,
+                        disabled: browserUnsupported && f.value !== 'off',
+                      }))}
                     />
                   </div>
                 )}
@@ -704,7 +720,7 @@ export default function ReaderToolbar({
                   <Select
                     aria-label={t`Reading profile`}
                     size="xs"
-                    comboboxProps={{ zIndex: OVERLAY_Z + 1 }}
+                    comboboxProps={NESTED_COMBOBOX}
                     allowDeselect={false}
                     value={String(selection)}
                     onChange={(value) => {

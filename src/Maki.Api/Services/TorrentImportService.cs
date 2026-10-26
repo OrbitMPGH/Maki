@@ -208,6 +208,9 @@ public class TorrentImportService(
     /// <summary>The series was deleted or moved between planning and taking its lock.</summary>
     public const string SeriesChangedKey = "error.torrentImport.seriesChanged";
 
+    /// <summary>The series was archived between planning and taking its lock; the row fails with this.</summary>
+    public const string SeriesArchivedKey = "error.series.archived";
+
     /// <summary>
     /// Where the download client put this item's data, as Maki sees it. Null when the torrent is gone,
     /// or its path isn't reachable from here (the client in a container with a different mount).
@@ -433,13 +436,22 @@ public class TorrentImportService(
         // folder recreated and filled with files no row can own.
         var current = await db.Series.IgnoreQueryFilters()
             .Where(s => s.Id == series.Id)
-            .Select(s => new { s.FolderName, s.RootFolderId })
+            .Select(s => new { s.FolderName, s.RootFolderId, s.ArchivedAt })
             .FirstOrDefaultAsync(ct);
         if (current is null || current.FolderName != series.FolderName || current.RootFolderId != series.RootFolderId)
         {
             logger.LogWarning("Not importing '{Title}': series {SeriesId} was deleted or moved while it was planned",
                 item.Title, series.Id);
             return new TorrentImportOutcome(false, null, 0, 0, 0, 0, skipped, [], SeriesChangedKey);
+        }
+
+        // The archive's in-flight check can run before this import registers, and then this waited on
+        // the lock the archive held.
+        if (current.ArchivedAt is not null)
+        {
+            logger.LogWarning("Not importing '{Title}': series {SeriesId} was archived while it was planned",
+                item.Title, series.Id);
+            return new TorrentImportOutcome(false, null, 0, 0, 0, 0, skipped, [], SeriesArchivedKey);
         }
 
         Directory.CreateDirectory(seriesDir);

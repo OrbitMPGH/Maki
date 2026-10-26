@@ -10,6 +10,7 @@ using Maki.Core.Images.Upscaling;
 using Maki.Core.Progress;
 using Maki.Core.Reading;
 using Maki.Core.Security;
+using Maki.Core.Io;
 using Maki.Data;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -304,7 +305,7 @@ public class ReaderController(
     /// Asks for server upscales of a window of pages. Pages already cached answer <c>ready</c>; a page
     /// that just failed or was skipped answers that instead of queueing again. The rest become this
     /// reader's pending work, replacing what they had pending for another chapter or model. Each one
-    /// that finishes is pushed as <c>pageEnhanced</c>.
+    /// is pushed as <c>pageEnhanced</c> when the worker starts it (<c>working</c>) and when it finishes.
     /// </summary>
     [HttpPost("chapter/{id:int}/enhance")]
     public async Task<IActionResult> Enhance(
@@ -458,12 +459,22 @@ public class ReaderController(
                         return;
                     }
 
+                    // One copy into an array of the exact size: the thumbnailer takes nothing else,
+                    // and a growing MemoryStream allocated a series of large buffers per page.
                     byte[] bytes;
                     await using (source)
                     {
-                        using var copy = new MemoryStream();
-                        await source.CopyToAsync(copy, ct);
-                        bytes = copy.ToArray();
+                        if (source.CanSeek)
+                        {
+                            bytes = new byte[source.Length - source.Position];
+                            await source.ReadExactlyAsync(bytes, ct);
+                        }
+                        else
+                        {
+                            using var copy = PooledStreams.Get("thumbnail");
+                            await source.CopyToAsync(copy, ct);
+                            bytes = copy.ToArray();
+                        }
                     }
 
                     var thumbnail = ReaderThumbnail(bytes);

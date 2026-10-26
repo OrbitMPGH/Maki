@@ -20,6 +20,7 @@ import ChapterBanner from './ChapterBanner'
 import ChapterEnd from './ChapterEnd'
 import ShortcutSheet from './ShortcutSheet'
 import ContinuousView from './ContinuousView'
+import ServerEnhanceStatus from './ServerEnhanceStatus'
 import { serverModelFor, useServerEnhance } from './useServerEnhance'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
@@ -144,7 +145,7 @@ export default function ReaderPage() {
 
   const pageCount = manifest?.pageCount ?? 0
   const urls = usePageUrls(chapterId, pageCount, manifest?.pageVersion)
-  const thumbs = usePageUrls(chapterId, stripOpen ? pageCount : 0, manifest?.pageVersion, true)
+  const thumbs = usePageUrls(chapterId, pageCount, manifest?.pageVersion, true)
   const { wide, measure } = usePageAspects(urls)
 
   const autoWanted = prefs.autoWebtoon && prefs.mode !== 'vertical' && !picked?.mode && pageCount > 0
@@ -222,11 +223,13 @@ export default function ReaderPage() {
   const serverModel = current
     ? serverModelFor(prefs.enhance, prefs.enhanceMethod, current.enhanceServer, offline || manifestServedOffline(chapterId))
     : null
+  // The strip sizes its own range from the pages' pixels, so the server follows it there.
+  const [stripRange, setStripRange] = useState<number[]>([])
   const enhanceWindow = useMemo(() => {
     if (!serverModel) return []
     if (mode !== 'vertical') return preloadPages.length > 0 ? preloadPages : (spreads[spreadIndex] ?? [])
-    return [0, 1, 2, -1, -2].map((offset) => page + offset).filter((index) => index >= 0 && index < pageCount)
-  }, [serverModel, mode, preloadPages, spreads, spreadIndex, page, pageCount])
+    return stripRange
+  }, [serverModel, mode, preloadPages, spreads, spreadIndex, stripRange])
   // On `auto` the server is asked only for pages a view has measured as stretched.
   const [stretchedPages, setStretchedPages] = useState<ReadonlySet<number>>(NO_PAGES)
   const server = useServerEnhance(
@@ -235,6 +238,15 @@ export default function ReaderPage() {
     enhanceWindow,
     current?.pageVersion,
     prefs.enhance === 'auto' ? stretchedPages : null,
+  )
+
+  const serverStates = server?.states
+  const enhancedPages = useMemo(
+    () =>
+      serverStates
+        ? new Set([...serverStates].filter(([, state]) => state === 'ready').map(([index]) => index))
+        : undefined,
+    [serverStates],
   )
 
   const tone = useMemo(() => toneFilter(prefs), [prefs])
@@ -802,6 +814,9 @@ export default function ReaderPage() {
         onReveal={() => setChrome(true)}
         onShortcuts={() => setShortcutsOpen(true)}
         serverEnhancing={server !== null}
+        enhancedPages={enhancedPages}
+        thumbs={thumbs}
+        shownTo={shownTo}
       />
 
       {atEnd ? (
@@ -842,8 +857,10 @@ export default function ReaderPage() {
               label={manifest.label}
               enhance={prefs.enhance}
               enhanceMethod={prefs.enhanceMethod}
+              enhanceFallback={prefs.enhanceFallback}
               server={server}
               onStretched={setStretchedPages}
+              onEnhanceRange={setStripRange}
             />
           ) : (
             <PagedView
@@ -861,12 +878,20 @@ export default function ReaderPage() {
               half={half}
               enhance={prefs.enhance}
               enhanceMethod={prefs.enhanceMethod}
+              enhanceFallback={prefs.enhanceFallback}
               server={server}
               preload={preloadPages}
               onStretched={setStretchedPages}
             />
           )}
         </div>
+      )}
+      {!atEnd && (
+        <ServerEnhanceStatus
+          server={server}
+          pages={mode === 'vertical' ? [page] : (spreads[spreadIndex] ?? [page])}
+          method={prefs.enhanceMethod}
+        />
       )}
 
       {stripOpen && (

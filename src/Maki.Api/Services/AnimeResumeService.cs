@@ -195,7 +195,7 @@ public class AnimeResumeService(
     private async Task<List<HomeAnimeResumeItem>> LibraryRailAsync(
         List<AnimeSignalRow> rows, List<int> candidates, CancellationToken ct)
     {
-        var series = await SeriesQuery(s => s.MangaBakaId != null && candidates.Contains(s.MangaBakaId.Value))
+        var series = await SeriesQuery(s => s.ArchivedAt == null && s.MangaBakaId != null && candidates.Contains(s.MangaBakaId.Value))
             .ToListAsync(ct);
         if (series.Count == 0) return [];
 
@@ -252,7 +252,7 @@ public class AnimeResumeService(
         if (ids.Count == 0 || !await catalogue.IsAvailableAsync(ct)) return [];
 
         var suppressed = await RecommendationFeedbackService.SuppressedAsync(db, UserId, ct);
-        var isHidden = await hidden.PredicateAsync(ct);
+        var isHidden = await hidden.PredicateAsync(ids, ct);
         ids = ids.Where(id => !suppressed.Contains(id) && isHidden?.Invoke(id) != true).ToList();
         if (ids.Count == 0) return [];
 

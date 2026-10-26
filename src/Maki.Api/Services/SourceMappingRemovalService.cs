@@ -258,26 +258,11 @@ public class SourceMappingRemovalService(
         IReadOnlyCollection<Chapter> removedChapters,
         CancellationToken ct)
     {
+        var mappingId = mapping.Id;
         var removedIds = removedChapters.Select(c => c.Id).ToList();
-        var active = await db.DownloadQueue
-            .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled &&
-                        (q.SourceMappingId == mapping.Id ||
-                         (q.ChapterId != null && removedIds.Contains(q.ChapterId.Value))))
-            .ToListAsync(ct);
-
-        foreach (var item in active)
-        {
-            queue.CancelWork(item.Id);
-            await batches.DiscardAsync(item.SeriesId, item.Id);
-
-            if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving)
-            {
-                db.DownloadQueue.Remove(item);
-            }
-            else
-            {
-                item.Status = QueueStatus.Cancelled;
-            }
-        }
+        await QueueItemCancellation.CancelAsync(db, queue, batches,
+            q => q.SourceMappingId == mappingId ||
+                 (q.ChapterId != null && removedIds.Contains(q.ChapterId.Value)),
+            ct);
     }
 }

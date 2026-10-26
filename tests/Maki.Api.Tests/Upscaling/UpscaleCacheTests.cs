@@ -30,7 +30,7 @@ public sealed class UpscaleCacheTests : IDisposable
 
         var path = await cache.WriteAsync(Key(3, fileId: 12), [1, 2, 3], "webp", default);
 
-        Assert.Equal(Path.Combine(_configDir, "cache", "upscale", "12", "1000-5-3.span-s.webp"), path);
+        Assert.Equal(Path.Combine(_configDir, "cache", "upscale", "12", "1000-5-3.span-s.g2.webp"), path);
         Assert.Equal(path, cache.TryGet(Key(3, fileId: 12)));
         Assert.Equal((3L, 1), cache.Stats());
         Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(path)!, "*.tmp"));
@@ -86,11 +86,11 @@ public sealed class UpscaleCacheTests : IDisposable
     {
         var cache = NewCache();
         await cache.WriteAsync(Key(0), [1], "webp", default);
-        await cache.WriteAsync(Key(0, model: "waifu2x-art"), [1], "webp", default);
+        await cache.WriteAsync(Key(0, model: "realesrgan-av3"), [1], "webp", default);
 
         await cache.RemoveModelAsync("span-s", default);
         Assert.Null(cache.TryGet(Key(0)));
-        Assert.NotNull(cache.TryGet(Key(0, model: "waifu2x-art")));
+        Assert.NotNull(cache.TryGet(Key(0, model: "realesrgan-av3")));
 
         await cache.ClearAsync(default);
         Assert.Equal((0L, 0), cache.Stats());
@@ -155,6 +155,10 @@ public sealed class UpscaleCacheTests : IDisposable
         await File.WriteAllBytesAsync(readerFile, [1]);
         var foreign = Path.Combine(cache.Root, liveId.ToString(), "notes.txt");
         await File.WriteAllBytesAsync(foreign, [1]);
+        // Same page from before the pipeline's last change: never served, pruned as an unknown name.
+        var oldGeneration = Path.Combine(cache.Root, liveId.ToString(), "500-200-2.span-s.webp");
+        await File.WriteAllBytesAsync(oldGeneration, [1]);
+        Assert.Null(cache.TryGet(Key(2, fileId: liveId, version: "500-200")));
 
         using (var db = testDb.NewContext())
         {
@@ -166,7 +170,7 @@ public sealed class UpscaleCacheTests : IDisposable
 
         var left = Directory.GetFiles(cache.Root, "*", SearchOption.AllDirectories)
             .Select(f => Path.GetRelativePath(cache.Root, f).Replace('\\', '/')).Order().ToArray();
-        Assert.Equal([$"{liveId}/500-200-0.span-s.webp", $"{liveId}/500-200-1.span-s.jpg"], left);
+        Assert.Equal([$"{liveId}/500-200-0.span-s.g2.webp", $"{liveId}/500-200-1.span-s.g2.jpg"], left);
         Assert.False(Directory.Exists(Path.Combine(cache.Root, (liveId + 50).ToString())));
         Assert.Equal((2L, 2), cache.Stats());
         Assert.True(File.Exists(readerFile));
