@@ -1,24 +1,11 @@
 name: Native builds
 
 on:
-  # A published release, not a tag push: release.ps1 pushes the tag first and creates the release
-  # several confirmations later, and these jobs upload into the release, so it has to exist. A
-  # release created with the owner's own gh credentials triggers this; one created by a workflow's
-  # GITHUB_TOKEN would not.
-  release:
-    types: [published]
-  # A change to the packaging itself is built and smoke-tested on push, under a CI version number
-  # (0.0.1-ci.N, since Velopack refuses anything below 0.0.1), and never uploaded anywhere but the
-  # run's own artifacts.
+  # Tags only, like docker.yml. A branch push is not a release and has no version to stamp.
   push:
-    paths:
-      - 'src/Maki.Desktop/**'
-      - 'distribution/native/**'
-      - '.github/workflows/native.yml'
-      # A dependency change can break the bundled web UI as easily as a packaging change.
-      - 'frontend/package-lock.json'
-  # Rebuild an existing release, or try the pipeline without one (upload: false). GitHub only offers
-  # this once the workflow is on the default branch, and the tag has to contain the packaging.
+    tags:
+      - 'v*'
+  # Escape hatch for rebuilding an existing tag (a flaky runner, a feed that needs re-uploading).
   workflow_dispatch:
     inputs:
       tag:
@@ -26,13 +13,13 @@ on:
         required: true
         type: string
       upload:
-        description: Upload the packages to that release
+        description: Upload the packages to that tag's release
         required: true
         type: boolean
-        default: false
+        default: true
 
 concurrency:
-  group: native-${{ inputs.tag || github.event.release.tag_name || github.ref }}
+  group: native-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -41,35 +28,36 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
-      ref: ${{ steps.release.outputs.ref }}
       tag: ${{ steps.release.outputs.tag }}
       version: ${{ steps.release.outputs.version }}
       prerelease: ${{ steps.release.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.tag || github.event.release.tag_name || github.sha }}
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Resolve version
         id: release
         env:
-          TAG: ${{ inputs.tag || github.event.release.tag_name }}
-          RUN: ${{ github.run_number }}
+          INPUT_TAG: ${{ inputs.tag }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
         shell: bash
         run: |
           set -euo pipefail
-          if [ -z "$TAG" ]; then
-            echo "ref=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-            echo "version=0.0.1-ci.$RUN" >> "$GITHUB_OUTPUT"
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
-            exit 0
+          if [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
+          elif [ "$REF_TYPE" = "tag" ]; then
+            TAG="$REF_NAME"
+          else
+            echo "::error::A release tag is required when this workflow is run manually."
+            exit 1
           fi
           if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
             echo "::error::Tag must look like vX.Y.Z or vX.Y.Z-<prerelease>: $TAG"
             exit 1
           fi
           version="${TAG#v}"
-          echo "ref=$TAG" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           if printf '%s' "$version" | grep -q -- '-'; then
@@ -102,11 +90,11 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 45
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ needs.frontend.outputs.ref }}
+          ref: ${{ needs.frontend.outputs.tag }}
 
       - uses: actions/setup-dotnet@v5
         with:
@@ -120,16 +108,16 @@ jobs:
       - name: Install vpk
         run: dotnet tool install -g vpk --version 1.2.161
 
-      # Always packed, so a change that breaks vpk shows up before a release. A release candidate's
-      # feed files are harmless: the tray reads releases through GithubSource with prereleases off.
-      # Only a stable release fetches the previous one to build a delta from.
+      # A release candidate's feed files are harmless: the tray reads releases through GithubSource
+      # with prereleases off. Only a stable release fetches the previous one to build a delta from,
+      # which works because this runs on the tag push, before this version's release exists.
       - name: Build, self-test and pack
         shell: pwsh
         env:
-          STABLE_RELEASE: ${{ github.event_name == 'release' && needs.frontend.outputs.prerelease == 'false' }}
+          STABLE: ${{ needs.frontend.outputs.prerelease == 'false' }}
         run: |
           ./distribution/native/build-windows.ps1 -Version '${{ needs.frontend.outputs.version }}' `
-            -FrontendDist frontend-dist -Pack -PreviousReleases:($env:STABLE_RELEASE -eq 'true')
+            -FrontendDist frontend-dist -Pack -PreviousReleases:($env:STABLE -eq 'true')
 
       - name: Name the downloads
         shell: pwsh
@@ -155,13 +143,6 @@ jobs:
           path: out/native/win-x64/upload
           retention-days: 7
 
-      - name: Upload to the release
-        if: github.event_name == 'release' || inputs.upload
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: pwsh
-        run: gh release upload '${{ needs.frontend.outputs.tag }}' (Get-ChildItem out/native/win-x64/upload).FullName --clobber
-
   linux:
     name: Linux ${{ matrix.arch }}
     needs: frontend
@@ -178,11 +159,11 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ needs.frontend.outputs.ref }}
+          ref: ${{ needs.frontend.outputs.tag }}
 
       - uses: actions/setup-dotnet@v5
         with:
@@ -202,8 +183,42 @@ jobs:
           path: out/native/linux-${{ matrix.arch }}/*.tar.gz
           retention-days: 7
 
-      - name: Upload to the release
-        if: github.event_name == 'release' || inputs.upload
+  # One upload once every platform has built, so a release never carries half a set. release.ps1
+  # pushes the tag several confirmations before it creates the GitHub release, so this waits for
+  # the release to appear rather than racing it. If it never does, the packages stay on this run
+  # as artifacts and a manual run with upload on attaches them later.
+  publish:
+    name: Attach to the release
+    needs: [frontend, windows, linux]
+    if: github.event_name == 'push' || inputs.upload
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    permissions:
+      contents: write
+    steps:
+      # One folder per artifact, so frontend-dist can never end up attached to the release.
+      - uses: actions/download-artifact@v4
+        with:
+          path: packages
+
+      - name: Wait for the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload '${{ needs.frontend.outputs.tag }}' out/native/linux-${{ matrix.arch }}/*.tar.gz --clobber
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.frontend.outputs.tag }}
+        run: |
+          for _ in $(seq 1 180); do
+            if gh release view "$TAG" > /dev/null 2>&1; then exit 0; fi
+            sleep 30
+          done
+          echo "::error::No GitHub release for $TAG after 90 minutes. Create it, then run this workflow by hand with upload on."
+          exit 1
+
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.frontend.outputs.tag }}
+        run: |
+          ls -la packages/windows-x64 packages/linux-x64 packages/linux-arm64
+          gh release upload "$TAG" packages/windows-x64/* packages/linux-x64/*.tar.gz packages/linux-arm64/*.tar.gz --clobber

@@ -269,9 +269,9 @@ builds some on the old version first.
 
 ## 10. Native builds
 
-The `Native builds` workflow runs when the GitHub release is published and uploads into it. A
-release candidate gets the same files, but installed copies never update to it: the tray only
-follows stable releases.
+The `Native builds` workflow runs on the tag push, like the Docker one, and attaches its files to the
+GitHub release once that exists (it waits up to 90 minutes for it). A release candidate gets the
+same files, but installed copies never update to it: the tray only follows stable releases.
 
 - [ ] **10.1** The workflow is green, and the release carries the Windows setup and portable zip,
       the Velopack feed (`releases.win.json`, `assets.win.json`, `RELEASES`, the `.nupkg` files)
