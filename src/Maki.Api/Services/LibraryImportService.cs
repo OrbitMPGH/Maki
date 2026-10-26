@@ -43,13 +43,18 @@ public static class ImportStage
 /// Set when the folder is the folder of a series already in the library that has no files yet.
 /// Importing it links its comics into that series; the page hides these rows unless asked.
 /// </param>
+/// <param name="Kind">
+/// One of <see cref="ImportCandidateKind"/>. An archived series' folder is a restore: importing
+/// brings the series back into the library before linking.
+/// </param>
 public record ImportScanCandidate(
     string FolderName,
     string CleanedTitle,
     int ComicCount,
     int RecognizedCount,
     IReadOnlyList<MetadataSearchResult> Matches,
-    int? ExistingSeriesId = null);
+    int? ExistingSeriesId = null,
+    string Kind = ImportCandidateKind.New);
 
 public record ImportRequestItem(string FolderName, string MetadataProviderId);
 
@@ -111,6 +116,7 @@ public class LibraryImportService(
     SeriesIdentityService identity,
     ILocalizer localizer,
     ICurrentUser currentUser,
+    SeriesArchiveService archive,
     ILogger<LibraryImportService> logger)
 {
 
@@ -383,8 +389,15 @@ public class LibraryImportService(
         }
 
         return new ImportScanCandidate(
-            folderName, cleanedTitle, comics.Count, recognized, matches, existing?.Id);
+            folderName, cleanedTitle, comics.Count, recognized, matches, existing?.Id, KindOf(existing));
     }
+
+    private static string KindOf(Series? existing) => existing switch
+    {
+        null => ImportCandidateKind.New,
+        { ArchivedAt: not null } => ImportCandidateKind.Restore,
+        _ => ImportCandidateKind.InLibrary,
+    };
 
     /// <summary>
     /// What importing <paramref name="item"/> would do, worked out without writing anything: the
@@ -415,6 +428,11 @@ public class LibraryImportService(
         {
             return new LibraryImportPlan(item.FolderName,
                 localizer.Get("error.libraryImport.alreadyInLibrary", new { title = metadata.Title }));
+        }
+
+        if (existingSeries?.ArchivedAt is not null && !currentUser.Has(MakiPermission.ArchiveSeries))
+        {
+            return new LibraryImportPlan(item.FolderName, localizer.Get("error.series.archived"));
         }
 
         var series = existingSeries ?? SeriesMetadataMapper.NewFromMetadata(metadata);
@@ -513,7 +531,7 @@ public class LibraryImportService(
                           await appSettings.GetAsync(SettingKeys.LibraryWriteCoverToFolder, ct) == "true";
         return new LibraryImportPlan(
             item.FolderName, null, metadata.Title, existingSeries?.Id, decision.Action, decision.TargetName,
-            decision.SeriesFolderName, linkDeferred, files, skipped, writesCover);
+            decision.SeriesFolderName, linkDeferred, files, skipped, writesCover, KindOf(existingSeries));
     }
 
     /// <summary>The cover <see cref="CoverService.WriteLibraryCoverAsync(int, string, CancellationToken)"/> writes.</summary>
@@ -557,6 +575,28 @@ public class LibraryImportService(
         {
             return new ImportResult(item.FolderName, false,
                 localizer.Get("error.libraryImport.alreadyInLibrary", new { title = metadata.Title }));
+        }
+
+        if (existingSeries?.ArchivedAt is not null)
+        {
+            if (await db.ChapterFiles.AnyAsync(f => f.SeriesId == existingSeries.Id, ct))
+            {
+                return new ImportResult(item.FolderName, false,
+                    localizer.Get("error.libraryImport.alreadyInLibrary", new { title = metadata.Title }));
+            }
+
+            if (!currentUser.Has(MakiPermission.ArchiveSeries))
+            {
+                return new ImportResult(item.FolderName, false, localizer.Get("error.series.archived"));
+            }
+
+            // Linked into the archived row as it is, the files would sit in a series that never syncs.
+            // Restore takes the series lock itself, so it runs before the link below takes it.
+            var restored = await archive.RestoreAsync(existingSeries.Id, redownloadRemoved: false, ct);
+            if (restored.Status == SeriesArchiveStatus.NotFound)
+            {
+                return new ImportResult(item.FolderName, false, localizer.Get("error.libraryImport.failed"));
+            }
         }
 
         var owedLink = updateComicInfo ? PendingImportLink.LinkAndComicInfo : PendingImportLink.Link;

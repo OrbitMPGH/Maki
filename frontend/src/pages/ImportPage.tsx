@@ -39,6 +39,7 @@ import {
   IMPORT_SKIP_REASONS,
   useIgnoreImportFolder,
   useIgnoredImportFolders,
+  type ImportCandidateKind,
   type ImportRequestItem,
 } from '../api/libraryImport'
 import { useHubEvent } from '../api/signalr'
@@ -83,6 +84,8 @@ interface ScanCandidate {
   matches: MetadataSearchResult[]
   /** Set when the folder belongs to a series already in the library that has no files yet. */
   existingSeriesId: number | null
+  /** `restore` is an archived series' folder: importing puts the series back in the library. */
+  kind: ImportCandidateKind
 }
 
 interface ImportResultDto {
@@ -381,14 +384,19 @@ function FolderImport() {
   const linkingTotal = linkingIds.length
   const linkingDone = linkingIds.filter((id) => linkedSeries[id] !== undefined).length
 
-  const inLibraryCount = candidates?.filter((c) => c.existingSeriesId !== null).length ?? 0
-  const visibleCandidates = candidates?.filter((c) => showInLibrary || c.existingSeriesId === null) ?? null
+  // An archived series is out of the library, so its folder is shown like a new one.
+  const inLibrary = (c: ScanCandidate) => c.existingSeriesId !== null && c.kind !== 'restore'
+  const inLibraryCount = candidates?.filter(inLibrary).length ?? 0
+  const visibleCandidates = candidates?.filter((c) => showInLibrary || !inLibrary(c)) ?? null
   const visibleFolders = new Set(visibleCandidates?.map((c) => c.folderName))
   // A hidden row never imports, even if it was ticked while the toggle was on.
   const selectedItems = Object.entries(selection)
     .filter(([folderName, providerId]) => providerId !== '' && visibleFolders.has(folderName))
     .map(([folderName, metadataProviderId]) => ({ folderName, metadataProviderId }))
   const selectedCount = selectedItems.length
+  const restoresOnly =
+    selectedCount > 0 &&
+    selectedItems.every((i) => candidates?.find((c) => c.folderName === i.folderName)?.kind === 'restore')
 
   const importing = Object.keys(progress).length > 0 || doImport.isPending
   const scannedPath = rootFolders?.find((f) => String(f.id) === scannedRootFolderId)?.path
@@ -515,7 +523,7 @@ function FolderImport() {
               }
             }}
           >
-            <Trans>Import</Trans>
+            {restoresOnly ? <Trans context="series">Restore</Trans> : <Trans>Import</Trans>}
           </Button>
         </Group>
       </Modal>
@@ -718,11 +726,14 @@ function FolderImport() {
                   const rowProgress = progress[c.folderName]
                   const { cleanedTitle, comicCount, recognizedCount, folderName } = c
                   const unrecognizedCount = comicCount - recognizedCount
+                  const title = c.matches[0]?.title ?? cleanedTitle
+                  const restoreLabel =
+                    c.kind === 'restore' ? t({ message: `Restore ${title}`, context: 'series' }) : null
                   return (
                     <Table.Tr key={c.folderName}>
                       <Table.Td>
                         <Checkbox
-                          aria-label={t`Import ${folderName}`}
+                          aria-label={restoreLabel ?? t`Import ${folderName}`}
                           checked={selected !== ''}
                           disabled={matches.length === 0 || doImport.isPending}
                           onChange={(e) => {
@@ -773,7 +784,11 @@ function FolderImport() {
                             )}
                           </Group>
                         </Group>
-                        {c.existingSeriesId !== null ? (
+                        {restoreLabel ? (
+                          <Badge size="xs" variant="light">
+                            {restoreLabel}
+                          </Badge>
+                        ) : c.existingSeriesId !== null ? (
                           <Badge size="xs" variant="light">
                             <Trans>In library</Trans>
                           </Badge>
