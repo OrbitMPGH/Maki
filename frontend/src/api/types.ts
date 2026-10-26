@@ -115,6 +115,9 @@ export interface SeriesDto {
    * defers to the `seriesDefault` on your inbox prefs.
    */
   notificationMode: string
+  /** When the series was archived out of the active library, or null while it is active. */
+  archivedAt: string | null
+  archivedByUserId: number | null
   /** Personal time left from comparable timed chapters in the built-in reader. Detail endpoint only. */
   readTimeEstimate?: {
     seconds: number

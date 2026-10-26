@@ -95,6 +95,8 @@ function toSeries(e: CatalogueEntry): SeriesDto {
     tagIds: tagIdsBySeries[e.id] ?? [],
     monitored: o.monitored ?? true,
     monitorNewItems: 'All',
+    archivedAt: null,
+    archivedByUserId: null,
     rootFolderId: e.type === 'Manga' ? 1 : 2,
     folderName: e.title,
     rootFolderPath: `/library/${e.type === 'Manga' ? 'manga' : 'manhwa'}/${e.title}`,

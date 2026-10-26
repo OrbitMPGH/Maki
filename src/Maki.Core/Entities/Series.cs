@@ -85,6 +85,12 @@ public class Series
     /// <summary>When the monitored refresh next syncs this series. Null means due now.</summary>
     public DateTime? NextCheckAt { get; set; }
 
+    /// <summary>When the series was archived, or null while it is active. See <c>SeriesQueries.Active</c>.</summary>
+    public DateTime? ArchivedAt { get; set; }
+
+    /// <summary>Who archived it. Set to null if that user is later deleted.</summary>
+    public int? ArchivedByUserId { get; set; }
+
     public int RootFolderId { get; set; }
     public RootFolder? RootFolder { get; set; }
     public string FolderName { get; set; } = string.Empty;
