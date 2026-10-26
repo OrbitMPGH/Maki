@@ -10,6 +10,7 @@ import { CompareStep } from '../components/pageconversion/CompareStep'
 import { emptyCompareChoice, type CompareChoice } from '../components/pageconversion/compareChoice'
 import { FormatStep } from '../components/pageconversion/FormatStep'
 import { toRuleDraft, type RuleDraft } from '../components/pageconversion/ruleTemplates'
+import { ReviewStep } from '../components/pageconversion/ReviewStep'
 import { ScopeStep } from '../components/pageconversion/ScopeStep'
 import { StartStep } from '../components/pageconversion/StartStep'
 import { FORMAT_LABELS, STOP_LABELS } from '../components/pageconversion/labels'
@@ -19,10 +20,9 @@ import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 const SETTINGS_URL = '/settings?tab=library&s=page-conversion'
 
-type StepId = 'format' | 'compare' | 'scope' | 'start'
+type StepId = 'format' | 'compare' | 'scope' | 'review' | 'start'
 
-/** The wizard's steps in order. A later phase adds "Review" here and nowhere else. */
-const STEP_IDS: readonly StepId[] = ['format', 'compare', 'scope', 'start']
+const STEP_IDS: readonly StepId[] = ['format', 'compare', 'scope', 'review', 'start']
 
 /**
  * Sets up page conversion: the format, then one of the admin's own pages before and after at each
@@ -58,12 +58,14 @@ export default function PageConversionWizardPage() {
       : rules.length === 0
         ? t`No rules`
         : plural(rules.length, { one: '# rule', other: '# rules' }),
+    review: draft?.format ? t`Sizes and time` : t`Nothing to estimate`,
     start: t`Save and begin`,
   }
   const labels: Record<StepId, string> = {
     format: t`Format`,
     compare: t`Compare`,
     scope: t`What to convert`,
+    review: t`Review`,
     start: t`Start`,
   }
   const steps: Step[] = STEP_IDS.map((id, i) => ({
@@ -100,6 +102,7 @@ export default function PageConversionWizardPage() {
               <CompareStep value={draft} onChange={change} choice={compare} onChoiceChange={setCompare} />
             )}
             {current === 'scope' && <ScopeStep value={draft} rules={rules} onRulesChange={setRuleEdits} rulesFailed={rulesFailed} />}
+            {current === 'review' && <ReviewStep value={draft} rules={rules} />}
             {current === 'start' && (
               <StartStep
                 value={draft}

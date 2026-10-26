@@ -18,6 +18,7 @@ import {
     IconSparkles,
     IconTrash,
     IconTrashX,
+    IconArrowBackUp,
 } from '@tabler/icons-react'
 import { useIncognitoOptions } from '../ui/incognito'
 import { useSeriesNotificationOptions } from '../ui/seriesNotifications'
@@ -80,6 +81,7 @@ export function SeriesActionsMenu({
                                       onSetUpgradeProfile,
                                       onSetReadFileCleanup,
                                       onSetPageConversion,
+                                      onUndoConversion,
                                       onScanUpgrades,
                                       onSearchVolumes,
                                       canRemove,
@@ -123,6 +125,8 @@ export function SeriesActionsMenu({
     onSetUpgradeProfile: (upgradeProfileId: number | null) => void
     onSetReadFileCleanup: (mode: string) => void
     onSetPageConversion: (mode: string) => void
+    /** Set only when some of this series' converted files still have their original in the trash. */
+    onUndoConversion?: () => void
     onScanUpgrades: () => void
     onSearchVolumes: () => void
     canRemove: boolean
@@ -282,6 +286,11 @@ export function SeriesActionsMenu({
                                     <Menu.Label><Trans>Wins over the rules. Files already converted stay as they are.</Trans></Menu.Label>
                                 </Menu.Sub.Dropdown>
                             </Menu.Sub>
+                        )}
+                        {canSetPageConversion && onUndoConversion && (
+                            <Menu.Item leftSection={<IconArrowBackUp size={16} />} onClick={onUndoConversion}>
+                                <Trans>Undo conversion...</Trans>
+                            </Menu.Item>
                         )}
 
                         <Menu.Divider />

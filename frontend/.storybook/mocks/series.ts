@@ -17,11 +17,13 @@ import {
   rootFolders,
   scanStatusDone,
   scrobble,
+  seriesConversionNone,
   seriesDto,
   similarItems,
   sourceInfos,
   sourceOrderFor,
   tags,
+  undoRestored,
   upgradeProfiles,
 } from './series/fixtures'
 import { api, failWith, hoursAgo } from './api'
@@ -67,6 +69,13 @@ const seriesMutations: HttpHandler[] = [
   http.post(api('/series/:id/pageconversion'), async ({ request }) =>
     HttpResponse.json({ pageConversion: (await bodyOf(request)).mode }),
   ),
+  http.post(api('/series/:id/pageconversion/undo'), async ({ request }) => {
+    const { convertAgain } = (await bodyOf(request)) as { convertAgain?: boolean }
+    return HttpResponse.json({
+      ...undoRestored,
+      reasons: convertAgain ? [`${undoRestored.restored} files are queued for conversion.`] : [],
+    })
+  }),
   http.post(api('/series/:id/upgradeprofile'), async ({ request }) =>
     HttpResponse.json({ upgradeProfileId: (await bodyOf(request)).upgradeProfileId ?? null }),
   ),
@@ -188,6 +197,7 @@ export const seriesHandlers: HttpHandler[] = [
     const id = idOf(params)
     return known(id) ? HttpResponse.json(filesFor(id, chaptersFor(id, shapeOf(id)))) : notFound()
   }),
+  http.get(api('/series/:id/pageconversion/history'), () => HttpResponse.json(seriesConversionNone)),
   http.get(api('/series/:id/related'), ({ params }) => HttpResponse.json(relatedItems(idOf(params)))),
   http.get(api('/series/:id/similar'), ({ params }) => HttpResponse.json(similarItems(idOf(params)))),
   http.get(api('/series/:id/scrobble'), () => HttpResponse.json(scrobble)),

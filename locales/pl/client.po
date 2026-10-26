@@ -61,6 +61,11 @@ msgstr "(niedostępne)"
 msgid "(no longer in the library)"
 msgstr "(już nie w bibliotece)"
 
+#. placeholder {0}: line.files
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {{settings}: # file, {saved} saved} other {{settings}: # files, {saved} saved}}"
+msgstr ""
+
 #. placeholder {0}: spans.length
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -136,9 +141,39 @@ msgstr "{0, plural, one {Nie udało się usunąć # plik (z powodu blokady lub b
 msgid "{0, plural, one {# file deleted} other {# files deleted}}"
 msgstr "{0, plural, one {Usunięto # plik} few {Usunięto # pliki} many {Usunięto # plików} other {Usunięto # pliku}}"
 
+#. placeholder {0}: history.restorableFiles
+#: src/components/series/UndoConversionModal.tsx
+msgid "{0, plural, one {# file has its original in the trash ({size}).} other {# files have their original in the trash ({size}).}}"
+msgstr ""
+
 #. placeholder {0}: scope.alreadyCompact.files
 #: src/components/pageconversion/ScopeStep.tsx
 msgid "{0, plural, one {# file is already WebP or AVIF and is left as it is ({compactSize}).} other {# files are already WebP or AVIF and are left as they are ({compactSize}).}}"
+msgstr ""
+
+#. placeholder {0}: passed.alreadyCompact
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is already WebP or AVIF} other {# files are already WebP or AVIF}}"
+msgstr ""
+
+#. placeholder {0}: passed.cleanupDue
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is due for read-file cleanup} other {# files are due for read-file cleanup}}"
+msgstr ""
+
+#. placeholder {0}: passed.hardlinkedFiles
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is hardlinked to a torrent and stays as it is ({hardlinked})} other {# files are hardlinked to torrents and stay as they are ({hardlinked})}}"
+msgstr ""
+
+#. placeholder {0}: passed.neverFiles
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is in a series set to Never ({never})} other {# files are in {neverSeries} series set to Never ({never})}}"
+msgstr ""
+
+#. placeholder {0}: passed.downloadInFlight
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is in a series with a download in flight} other {# files are in series with a download in flight}}"
 msgstr ""
 
 #. placeholder {0}: scope.overrides.files
@@ -152,15 +187,35 @@ msgstr ""
 msgid "{0, plural, one {# file is left out} other {# files are left out}}"
 msgstr "{0, plural, one {# plik zostanie pominięty} few {# pliki zostaną pominięte} many {# plików zostanie pominiętych} other {# pliku zostanie pominięty}}"
 
+#. placeholder {0}: passed.skippedByRule
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is skipped by a rule ({skipped})} other {# files are skipped by a rule ({skipped})}}"
+msgstr ""
+
+#. placeholder {0}: passed.pendingImport
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is waiting on an import link} other {# files are waiting on an import link}}"
+msgstr ""
+
 #. placeholder {0}: r.kept
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "{0, plural, one {# file kept on disk because another series still uses it} other {# files kept on disk because another series still uses them}}"
 msgstr "{0, plural, one {# plik zostaje na dysku, bo używa go inna seria} few {# pliki zostają na dysku, bo używają ich inne serie} many {# plików zostaje na dysku, bo używają ich inne serie} other {# pliku zostaje na dysku, bo używa go inna seria}}"
 
+#. placeholder {0}: passed.alreadyChecked
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file was already checked with these settings ({checked})} other {# files were already checked with these settings ({checked})}}"
+msgstr ""
+
 #. placeholder {0}: scope.convertedEarlier.files
 #: src/components/pageconversion/ScopeStep.tsx
 msgid "{0, plural, one {# file was converted earlier and stays as it is ({earlierSize}).} other {# files were converted earlier and stay as they are ({earlierSize}).}}"
+msgstr ""
+
+#. placeholder {0}: passed.undone
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file was put back by an undo and stays as it is} other {# files were put back by an undo and stay as they are}}"
 msgstr ""
 
 #. placeholder {0}: bucket.files
@@ -475,6 +530,11 @@ msgstr "{0, plural, one {Usunięto # rozdział} few {Usunięto # rozdziały} man
 msgid "{0, plural, one {Removed # unsupported chapter} other {Removed # unsupported chapters}}"
 msgstr "{0, plural, one {Usunięto # nieobsługiwany rozdział} few {Usunięto # nieobsługiwane rozdziały} many {Usunięto # nieobsługiwanych rozdziałów} other {Usunięto # nieobsługiwanego rozdziału}}"
 
+#. placeholder {0}: result.restored
+#: src/components/series/UndoConversionModal.tsx
+msgid "{0, plural, one {Restored # file} other {Restored # files}}"
+msgstr ""
+
 #. placeholder {0}: r.chapters
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -492,6 +552,11 @@ msgstr "{0, plural, one {Zaznacz wszystkie # w tym widoku} few {Zaznacz wszystki
 #, fuzzy
 msgid "{0, plural, one {Show all #} other {Show all #}}"
 msgstr "{0, plural, one {Pokaż wszystkie #} few {Pokaż wszystkie #} many {Pokaż wszystkie #} other {Pokaż wszystkie #}}"
+
+#. placeholder {0}: bucket.files
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "{0, plural, one {Skipped: # file, {size}} other {Skipped: # files, {size}}}"
+msgstr ""
 
 #. placeholder {0}: parsed.skippedNonLibrary
 #: src/components/import/MihonImport.tsx
@@ -1129,6 +1194,10 @@ msgstr ""
 msgid "{format}, {stop}, {rules}"
 msgstr ""
 
+#: src/components/pageconversion/labels.ts
+msgid "{format}, {stop}, PNG lossless"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
@@ -1139,6 +1208,7 @@ msgstr "{forwardKey} lub Spacja otwiera stronę, Esc wraca do serii."
 msgid "{free} free"
 msgstr "{free} wolnego miejsca"
 
+#: src/components/pageconversion/EstimateTable.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #, fuzzy
 msgid "{from} to {to}"
@@ -1228,6 +1298,10 @@ msgstr "{installed, plural, =0 {Nie ma jeszcze źródeł Suwayomi.} one {# źró
 #, fuzzy
 msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "{intoLevel} / {levelSpan} XP do poziomu {nextLevel}"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -2183,6 +2257,10 @@ msgstr "{total, plural, one {Ponownie powiąż # rozdział i usuń plik} few {Po
 msgid "{total, plural, one {Relink # chapter} other {Relink # chapters}}"
 msgstr "{total, plural, one {Ponownie powiąż # rozdział} few {Ponownie powiąż # rozdziały} many {Ponownie powiąż # rozdziałów} other {Ponownie powiąż # rozdziału}}"
 
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{total, plural, one {Sampling {done} of # file} other {Sampling {done} of # files}}"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "{total, plural, one {Search # source} other {Search # sources}}"
@@ -2829,6 +2907,10 @@ msgstr "archiwum zip"
 msgid "Abandoned"
 msgstr "Porzucone"
 
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "About {hardlinked} are hardlinked to torrents and stay as they are."
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "about {hourPhrase} {restPhrase} left"
@@ -3415,6 +3497,10 @@ msgstr "Uwzględnij też wszystkie tagi podrzędne tego tagu"
 #, fuzzy
 msgid "Also needs the daily scan on."
 msgstr "Wymaga też włączonego codziennego skanowania."
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "Also set this series to Never"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4347,6 +4433,7 @@ msgstr "Nie można się zalogować zapisanymi danymi."
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/UndoConversionModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -5016,6 +5103,14 @@ msgstr "Sprawdzane raz dziennie, gdy jest ciche."
 msgid "Checked right after the announced time."
 msgstr "Sprawdzane zaraz po zapowiedzianym czasie."
 
+#: src/components/pageconversion/labels.ts
+msgid "Checked, cannot be converted"
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Checked, not converted"
+msgstr ""
+
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Checking for a new metadata snapshot"
@@ -5636,6 +5731,10 @@ msgstr ""
 msgid "Conversion is off, so there is nothing to compare. Go back to pick a format."
 msgstr ""
 
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Conversion is off, so there is nothing to estimate. Continue to save that choice."
+msgstr ""
+
 #: src/components/pageconversion/RuleCard.tsx
 msgid "Convert at {stopLabel}"
 msgstr ""
@@ -5649,8 +5748,16 @@ msgstr "Konwertuj bibliotekę"
 msgid "Converted"
 msgstr ""
 
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Converted earlier"
+msgstr ""
+
 #: src/components/pageconversion/CompareView.tsx
 msgid "Converted page"
+msgstr ""
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "Converted with {list}."
 msgstr ""
 
 #: src/components/pageconversion/labels.ts
@@ -5986,6 +6093,10 @@ msgstr "Nie udało się uruchomić wyszukiwania tomów"
 
 #: src/components/pageconversion/RuleCard.tsx
 msgid "Counting files"
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Counting the files to sample"
 msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
@@ -7317,6 +7428,10 @@ msgstr "Esc"
 msgid "Esc closes"
 msgstr "Esc zamyka"
 
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Estimate progress"
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "Estimated"
@@ -7464,6 +7579,7 @@ msgstr "Wszystko"
 msgid "Everything else"
 msgstr "Wszystko inne"
 
+#: src/components/pageconversion/EstimateTable.tsx
 #: src/components/pageconversion/ScopeStep.tsx
 msgid "Everything else: {stopLabel}"
 msgstr ""
@@ -7582,6 +7698,10 @@ msgstr "Rozwiń"
 #, fuzzy
 msgid "Expand {spanLabel}"
 msgstr "Rozwiń {spanLabel}"
+
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Expected"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -7816,6 +7936,7 @@ msgstr ""
 msgid "File size in MB, under"
 msgstr ""
 
+#: src/components/pageconversion/EstimateTable.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -11877,6 +11998,10 @@ msgstr "Brak jeszcze danych demograficznych"
 msgid "No difference we could see."
 msgstr ""
 
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "No files"
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
 msgid "No files found in the series folder."
@@ -12536,6 +12661,7 @@ msgstr "Nie polecaj ponownie"
 msgid "Not run yet"
 msgstr "Jeszcze nie uruchomiono"
 
+#: src/components/pageconversion/EstimateTable.tsx
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Not sampled"
@@ -12842,6 +12968,10 @@ msgstr ""
 msgid "Nothing to compare"
 msgstr ""
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Nothing to estimate"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -12914,6 +13044,10 @@ msgstr "Nie ma nieukończonych serii do pokazania."
 msgid "Nothing unmatched."
 msgstr "Brak niedopasowanych wpisów."
 
+#: src/components/series/UndoConversionModal.tsx
+msgid "Nothing was restored"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Nothing worth grabbing in the results"
@@ -12980,6 +13114,10 @@ msgstr "Powiadamiaj"
 #, fuzzy
 msgid "Notify this device"
 msgstr "Powiadamiaj to urządzenie"
+
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Now"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -13679,6 +13817,10 @@ msgstr "Rozpoznany"
 #, fuzzy
 msgid "Partial"
 msgstr "Częściowe"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Passed over"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -14529,6 +14671,10 @@ msgstr "Oceny i czytanie"
 #, fuzzy
 msgid "Re-download {staleChapters} from {winnerDisplayName}"
 msgstr "Pobierz ponownie {staleChapters} z {winnerDisplayName}"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Re-estimate"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -15784,6 +15930,10 @@ msgstr "Przywróć"
 msgid "Restore & restart"
 msgstr "Przywróć i uruchom ponownie"
 
+#: src/components/series/UndoConversionModal.tsx
+msgid "Restore and convert again with the current settings"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Restore any of them from Manage signals."
@@ -15814,6 +15964,10 @@ msgstr "Przywróć ukryty lub odrzucony tytuł"
 msgid "Restore staged"
 msgstr "Przygotowano przywracanie"
 
+#: src/components/series/UndoConversionModal.tsx
+msgid "Restore the originals"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Restore this title"
@@ -15828,6 +15982,10 @@ msgstr "Przywrócono"
 #, fuzzy
 msgid "Restored as an unlinked file. Health can import it."
 msgstr "Przywrócono jako niepowiązany plik. Kondycja może go zaimportować."
+
+#: src/components/pageconversion/labels.ts
+msgid "Restored from the original"
+msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -15960,6 +16118,7 @@ msgstr "Cofnięte przez użytkownika"
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Review"
 msgstr "Przejrzyj"
@@ -16097,8 +16256,16 @@ msgstr "Obróć, by dopasować"
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "Wiersz {zoomRowNumber} z {zoomTotalPages}"
 
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Rule"
+msgstr ""
+
 #: src/components/pageconversion/RuleCard.tsx
 msgid "Rule {number}"
+msgstr ""
+
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Rule {position}"
 msgstr ""
 
 #: src/components/CatalogueRules.tsx
@@ -17184,6 +17351,10 @@ msgstr "Serie z nowo dodanymi rozdziałami."
 msgid "Series with none of your tags"
 msgstr "Serie bez Twoich tagów"
 
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Series with their own stop"
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Series you already have that match these filters."
@@ -17326,6 +17497,10 @@ msgstr "Ustawienia › {tabName}"
 #, fuzzy
 msgid "Settings not loaded"
 msgstr "Nie wczytano ustawień"
+
+#: src/components/pageconversion/labels.ts
+msgid "Settings not recorded"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -17707,6 +17882,14 @@ msgstr "Rozmiar"
 #, fuzzy
 msgid "Size mismatch"
 msgstr "Niezgodny rozmiar"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Sizes and time"
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Sizes come from encoding a sample of the files each rule covers. Nothing is changed. Times depend on how busy this server is."
+msgstr ""
 
 #: src/components/pageconversion/RuleCard.tsx
 msgid "Skip"
@@ -18098,6 +18281,10 @@ msgstr "Zacznij czytać od rozdz. {startReadingAt}."
 #, fuzzy
 msgid "Started"
 msgstr "Rozpoczęte"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Starting the estimate"
+msgstr ""
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -18686,6 +18873,22 @@ msgstr "Pobieranie jeszcze się nie zaczęło."
 msgid "The download is no longer in the download client"
 msgstr "Pobranie nie znajduje się już w kliencie pobierania"
 
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "The estimate could not be started"
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "The estimate failed"
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "The estimate failed on this server. Try again, or check the log."
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "The estimate was cancelled"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "The file has changed or is gone since, so this cannot run again."
 msgstr ""
@@ -18834,6 +19037,10 @@ msgstr "Nie udało się przenieść starego pliku na czas ulepszenia"
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "The oldest pages are dropped past this."
+msgstr ""
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "The others were converted on download or their original has been purged."
 msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
@@ -19099,6 +19306,10 @@ msgstr "To strony typu long-strip, a oba wydania przecinają je w różnych miej
 #, fuzzy
 msgid "These are long-strip pages and the two releases cut them at different points, so page {page} on the left is not page {page} on the right. Stacked height is the comparable number: they differ by {driftPercent}%, so one of them is missing or gaining content."
 msgstr "To strony typu long-strip, a oba wydania przecinają je w różnych miejscach, więc strona {page} po lewej nie jest tym samym, co strona {page} po prawej. Łączna wysokość to porównywalna wartość: różnią się o {driftPercent}%, więc jedno z nich traci lub zyskuje treść."
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "These are never converted again."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -19470,6 +19681,7 @@ msgstr "Zaznacza je od razu, gdy pojawi się lista rozdziałów. Obejrzane rozdz
 msgid "Tier order"
 msgstr "Kolejność poziomów"
 
+#: src/components/pageconversion/EstimateTable.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time"
@@ -19780,6 +19992,7 @@ msgstr "Spróbuj krótszego lub innego zapytania."
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
 #: src/components/MetadataDumpProgress.tsx
+#: src/components/pageconversion/ReviewStep.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
@@ -19950,6 +20163,7 @@ msgstr "Podkreślenie (_)"
 #: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/import/RecentImports.tsx
+#: src/components/series/UndoConversionModal.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -19961,6 +20175,14 @@ msgstr "Cofnij"
 #, fuzzy
 msgid "Undo all"
 msgstr "Cofnij wszystkie"
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "Undo conversion"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Undo conversion..."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20937,6 +21159,10 @@ msgstr "Co kształtuje Twoje rekomendacje"
 
 #: src/pages/PageConversionWizardPage.tsx
 msgid "What to convert"
+msgstr ""
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "What to do with them"
 msgstr ""
 
 #: src/components/SetupWizard.tsx

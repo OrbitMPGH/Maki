@@ -20,6 +20,12 @@ public class HousekeepingJob(
     private static readonly string[] TmpPatterns = ["*.cbz", "*.cbz.partial", "*.cbz.converted", "*.cbz.converted.partial"];
 
     /// <summary>
+    /// The converted copy a failed undo rollback left in tmp (<see cref="PageConversionUndoService.AsideExtension"/>)
+    /// may be the only one, and the next undo puts it back, so it waits a month rather than a day.
+    /// </summary>
+    internal static readonly TimeSpan AsideRetention = TimeSpan.FromDays(30);
+
+    /// <summary>
     /// Failed rows that are not waiting on a retry. A failure stamps neither <c>CompletedAt</c> nor
     /// resets <c>QueuedAt</c>, so a chapter that failed once and is parked behind a backoff or an
     /// early-access date is still live work however old the row is.
@@ -34,6 +40,54 @@ public class HousekeepingJob(
     /// <summary>Settled failures from the last 30 days, which is what the downloads health check reports.</summary>
     internal static IQueryable<DownloadQueueItem> RecentFailures(IQueryable<DownloadQueueItem> queue, DateTime now, DateTime cutoff) =>
         SettledFailures(queue, now).Where(q => (q.NextAttempt ?? q.CompletedAt ?? q.QueuedAt) >= cutoff);
+
+    /// <summary>
+    /// Deletes the tmp leftovers older than a day (aside copies after <see cref="AsideRetention"/>) that no
+    /// live queue row names. False when cancelled.
+    /// </summary>
+    internal static bool SweepTmp(string tmpDir, IReadOnlySet<string> liveTmp, DateTime now, ILogger logger,
+        CancellationToken ct)
+    {
+        if (!Directory.Exists(tmpDir))
+        {
+            return true;
+        }
+
+        try
+        {
+            var files = TmpPatterns
+                .SelectMany(pattern => Directory.GetFiles(tmpDir, pattern).Select(file => (file, cutoff: now.AddDays(-1))))
+                .Concat(Directory.GetFiles(tmpDir, "*" + PageConversionUndoService.AsideExtension)
+                    .Select(file => (file, cutoff: now - AsideRetention)));
+            foreach (var (file, cutoff) in files)
+            {
+                if (ct.IsCancellationRequested)
+                {
+                    return false;
+                }
+
+                try
+                {
+                    if (File.GetLastWriteTimeUtc(file) < cutoff &&
+                        !liveTmp.Contains(Path.GetFileName(file).Split('.')[0]))
+                    {
+                        File.Delete(file);
+                    }
+                }
+                // One file still held open must not keep the rest of the folder from being swept.
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    logger.LogDebug(ex, "Could not delete {File}", file);
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogDebug(ex, "Could not clean {Dir}", tmpDir);
+        }
+
+        return true;
+    }
 
     public async Task Execute(IJobExecutionContext context)
     {
@@ -83,7 +137,6 @@ public class HousekeepingJob(
 
         // Packaged chapters, their converted copies, and the .partial files of both from a kill mid-write,
         // left in a library share's .maki/tmp by an item that was cleared or whose process died mid-import. Named after the queue row, so one still active is left alone.
-        var tmpCutoff = DateTime.UtcNow.AddDays(-1);
         var liveTmp = (await db.DownloadQueue
                 .Where(q => q.Status != QueueStatus.Completed &&
                             q.Status != QueueStatus.Failed &&
@@ -94,39 +147,9 @@ public class HousekeepingJob(
             .ToHashSet();
         foreach (var rootPath in await db.RootFolders.IgnoreQueryFilters().Select(r => r.Path).ToListAsync(ct))
         {
-            var tmpDir = Path.Combine(rootPath, ".maki", "tmp");
-            if (!Directory.Exists(tmpDir))
+            if (!SweepTmp(Path.Combine(rootPath, ".maki", "tmp"), liveTmp, DateTime.UtcNow, logger, ct))
             {
-                continue;
-            }
-
-            try
-            {
-                foreach (var file in TmpPatterns.SelectMany(pattern => Directory.GetFiles(tmpDir, pattern)))
-                {
-                    if (ct.IsCancellationRequested)
-                    {
-                        return;
-                    }
-
-                    try
-                    {
-                        if (File.GetLastWriteTimeUtc(file) < tmpCutoff &&
-                            !liveTmp.Contains(Path.GetFileName(file).Split('.')[0]))
-                        {
-                            File.Delete(file);
-                        }
-                    }
-                    // One file still held open must not keep the rest of the folder from being swept.
-                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                    {
-                        logger.LogDebug(ex, "Could not delete {File}", file);
-                    }
-                }
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                logger.LogDebug(ex, "Could not clean {Dir}", tmpDir);
+                return;
             }
         }
 

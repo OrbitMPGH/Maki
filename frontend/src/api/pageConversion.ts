@@ -303,3 +303,182 @@ export function usePreviewPage(request: PreviewRequest | null) {
 
   return { data, isFetching: query.isFetching, isPlaceholder: query.isPlaceholderData, isError: query.isError, error: query.error }
 }
+
+export interface EstimateBucket {
+  skip: boolean
+  files: number
+  bytes: number
+  sampledFiles: number
+  /** Expected size after the pass for the whole bucket: the 25th and 75th percentile of the sampled files. */
+  expectedLow: number
+  expectedHigh: number
+  /** Never counted as saving. */
+  hardlinkedBytes: number
+  secondsLow: number
+  secondsHigh: number
+}
+
+export interface EstimatePassedOver {
+  hardlinkedFiles: number
+  hardlinkedBytes: number
+  cleanupDue: number
+  alreadyCompact: number
+  downloadInFlight: number
+  pendingImport: number
+  skippedByRule: number
+  skippedByRuleBytes: number
+  neverSeries: number
+  neverFiles: number
+  neverBytes: number
+  /** Files an undo put back, which stay as they are. */
+  undone: number
+  /** Files an earlier pass already checked with the same answer, which this pass will not revisit. */
+  alreadyChecked: number
+  alreadyCheckedBytes: number
+}
+
+export interface EstimateConvertedEarlier {
+  /** The wire name of the settings, or "unknown". */
+  checkedWith: string
+  files: number
+  savedBytes: number
+}
+
+export interface EstimateResult {
+  /** One per rule, in the order the request listed them. */
+  rules: EstimateBucket[]
+  default: EstimateBucket
+  overrides: EstimateBucket
+  passedOver: EstimatePassedOver
+  convertedEarlier: EstimateConvertedEarlier[]
+  convertedWithOriginalInTrash: number
+  msPerMegapixel: number
+}
+
+export type EstimateState = 'idle' | 'running' | 'done' | 'failed' | 'cancelled'
+
+export interface PageConversionEstimate {
+  state: EstimateState
+  /** Sampled files so far, out of total. */
+  done: number
+  total: number
+  result: EstimateResult | null
+  error: string | null
+  startedAtUtc: string | null
+  finishedAtUtc: string | null
+  /** Identifies the request the result belongs to. */
+  planHash: string | null
+}
+
+export interface PageConversionPlanRequest {
+  settings: PageConversionSettings
+  rules: PageConversionRule[]
+}
+
+const estimateKey = [...key, 'estimate']
+const ESTIMATE_POLL_MS = 2000
+
+/** The one estimate the server holds. Polls every two seconds while it runs. */
+export function usePageConversionEstimate() {
+  return useQuery({
+    queryKey: estimateKey,
+    queryFn: () => api<PageConversionEstimate>('/pageconversion/estimate'),
+    refetchInterval: (query) => (query.state.data?.state === 'running' ? ESTIMATE_POLL_MS : false),
+    retry: false,
+  })
+}
+
+/** What `useStartPageConversionEstimate` last started: the request as sent and the server's hash for it. */
+export interface EstimateRequestMark {
+  requestKey: string
+  planHash: string | null
+}
+
+const estimateMarkKey = [...estimateKey, 'mark']
+
+/** The request as the server tells plans apart: rule names and ids do not change what an estimate says. */
+export function estimateRequestKey(plan: PageConversionPlanRequest): string {
+  return JSON.stringify({
+    settings: plan.settings,
+    rules: plan.rules.map((r) => ({ conditions: r.conditions, action: r.action, stop: r.stop })),
+  })
+}
+
+/** Which request the estimate on the server was started for, as far as this tab knows. */
+export function useEstimateMark() {
+  return useQuery({
+    queryKey: estimateMarkKey,
+    queryFn: () => null as EstimateRequestMark | null,
+    enabled: false,
+    staleTime: Infinity,
+    gcTime: Infinity,
+  })
+}
+
+/** Starts an estimate for a plan that is not saved, replacing any that is running. */
+export function useStartPageConversionEstimate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (plan: PageConversionPlanRequest) =>
+      api<PageConversionEstimate>('/pageconversion/estimate', { method: 'POST', body: JSON.stringify(plan) }),
+    onMutate: () => queryClient.cancelQueries({ queryKey: estimateKey }),
+    onSuccess: (estimate, plan) => {
+      queryClient.setQueryData(estimateKey, estimate)
+      queryClient.setQueryData<EstimateRequestMark>(estimateMarkKey, {
+        requestKey: estimateRequestKey(plan),
+        planHash: estimate.planHash,
+      })
+    },
+  })
+}
+
+export interface SeriesConversion {
+  convertedFiles: number
+  savedBytes: number
+  /** Files whose original is still in the trash. */
+  restorableFiles: number
+  restorableBytes: number
+  /** The wire names of the settings the restorable files were converted with. */
+  checkedWith: string[]
+}
+
+export interface UndoConversionRequest {
+  setNever: boolean
+  convertAgain: boolean
+}
+
+export interface UndoConversionResult {
+  restored: number
+  skipped: number
+  reasons: string[]
+}
+
+const seriesConversionKey = (seriesId: number) => [...key, 'series', seriesId]
+
+/** What a series' converted files can go back to. Only the admin who may undo it asks. */
+export function useSeriesConversion(seriesId: number, enabled = true) {
+  return useQuery({
+    queryKey: seriesConversionKey(seriesId),
+    queryFn: () => api<SeriesConversion>(`/series/${seriesId}/pageconversion/history`),
+    enabled,
+    retry: false,
+    meta: { silent: true },
+  })
+}
+
+export function useUndoSeriesConversion() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, ...request }: UndoConversionRequest & { seriesId: number }) =>
+      api<UndoConversionResult>(`/series/${seriesId}/pageconversion/undo`, {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }),
+    onSuccess: (_result, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: key, exact: true })
+      void queryClient.invalidateQueries({ queryKey: seriesConversionKey(seriesId) })
+    },
+  })
+}

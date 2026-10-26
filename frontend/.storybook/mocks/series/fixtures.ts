@@ -27,6 +27,7 @@ import type {
   TorrentProposalDto,
   UpgradeProfileDto,
 } from '../../../src/api/upgrades'
+import type { SeriesConversion, UndoConversionResult } from '../../../src/api/pageConversion'
 import { catalogue, seriesById, type CatalogueEntry } from '../shared'
 import { cover, daysAgo, hoursAgo } from '../api'
 
@@ -924,3 +925,21 @@ export const resolvedSourceUrl: ResolvedSourceUrl = {
   url: 'https://comick.example/comic/a1',
   coverUrl: cover(1),
 }
+
+export const seriesConversionNone = {
+  convertedFiles: 0,
+  savedBytes: 0,
+  restorableFiles: 0,
+  restorableBytes: 0,
+  checkedWith: [],
+} satisfies SeriesConversion
+
+export const seriesConversionRestorable = {
+  convertedFiles: 64,
+  savedBytes: 3_221_225_472,
+  restorableFiles: 48,
+  restorableBytes: 2_684_354_560,
+  checkedWith: ['webp:high', 'avif:balanced+png'],
+} satisfies SeriesConversion
+
+export const undoRestored = { restored: 48, skipped: 0, reasons: [] } satisfies UndoConversionResult

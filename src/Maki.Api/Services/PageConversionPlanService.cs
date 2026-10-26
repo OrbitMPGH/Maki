@@ -77,7 +77,8 @@ public class PageConversionPlanService(MakiDbContext db)
     /// <summary>
     /// Puts back in line every checked, unconverted file the plan now answers differently for, and
     /// every one checked before answers were recorded. Converted files are never touched, nor files
-    /// stamped <see cref="PlanAction.HardSkipName"/>, which no plan converts; with conversion off
+    /// stamped <see cref="PlanAction.HardSkipName"/>, which no plan converts, or
+    /// <see cref="PlanAction.UndoneName"/>, which an admin put back by hand; with conversion off
     /// nothing is. Returns how many files were put back.
     /// </summary>
     public Task<int> RecheckAsync(PageConversionPlan? plan, int? seriesId, CancellationToken ct) =>
@@ -96,7 +97,7 @@ public class PageConversionPlanService(MakiDbContext db)
 
         var query = (scoped ?? db.ChapterFiles).IgnoreQueryFilters().AsNoTracking()
             .Where(f => f.ConversionCheckedAtUtc != null && f.OriginalImageFormat == null &&
-                        f.CheckedWith != PlanAction.HardSkipName);
+                        f.CheckedWith != PlanAction.HardSkipName && f.CheckedWith != PlanAction.UndoneName);
         var rows = await query
             .Select(f => new
             {
@@ -120,7 +121,8 @@ public class PageConversionPlanService(MakiDbContext db)
         foreach (var chunk in stale.Chunk(500))
         {
             await db.ChapterFiles.IgnoreQueryFilters()
-                .Where(f => chunk.Contains(f.Id) && f.ConversionCheckedAtUtc != null && f.OriginalImageFormat == null)
+                .Where(f => chunk.Contains(f.Id) && f.ConversionCheckedAtUtc != null && f.OriginalImageFormat == null &&
+                            f.CheckedWith != PlanAction.UndoneName)
                 .ExecuteUpdateAsync(set => set
                     .SetProperty(f => f.ConversionCheckedAtUtc, (DateTime?)null)
                     .SetProperty(f => f.CheckedWith, (string?)null), ct);
@@ -129,51 +131,98 @@ public class PageConversionPlanService(MakiDbContext db)
         return stale.Count;
     }
 
-    /// <summary>Where the library's archives would land under <paramref name="plan"/>, counted in memory over one query.</summary>
-    public async Task<Scope> ScopeAsync(PageConversionPlan plan, CancellationToken ct)
+    /// <summary>A library archive as the scope and the estimate read it.</summary>
+    /// <param name="PendingImport">The series still waits on an import link, so the pass leaves it alone.</param>
+    /// <param name="ConversionCheckedAtUtc">Set once the pass has decided the file; it does not revisit it.</param>
+    public sealed record ScopeFile(
+        int Id, int SeriesId, string RelativePath, string Root, QualityTier Tier, string SourceName, string? ImageFormat,
+        long Size, int? PageCount, int? MedianWidth, int? MedianHeight, string? OriginalImageFormat, string? CheckedWith,
+        long ConversionSavedBytes, bool PendingImport, DateTime? ConversionCheckedAtUtc)
+    {
+        public FileFacts Facts => new(Id, SeriesId, Tier, SourceName, ImageFormat, Size, PageCount, MedianWidth, MedianHeight);
+    }
+
+    public enum Place
+    {
+        ConvertedEarlier,
+        Override,
+        AlreadyCompact,
+        Rule,
+        Default
+    }
+
+    /// <param name="Rule">Index into the plan's rules in order when <paramref name="Place"/> is <see cref="Place.Rule"/>, else -1.</param>
+    public sealed record Placement(Place Place, int Rule, PlanAction? Action);
+
+    /// <summary>Every cbz or zip on a root folder it resolves under, in one query.</summary>
+    public async Task<List<ScopeFile>> ScopeFilesAsync(CancellationToken ct)
     {
         var rows = await db.ChapterFiles.IgnoreQueryFilters().AsNoTracking()
-            .Where(f => (f.RelativePath.ToLower().EndsWith(".cbz") || f.RelativePath.ToLower().EndsWith(".zip")) &&
-                        !db.Series.IgnoreQueryFilters().Any(s =>
-                            s.Id == f.SeriesId && s.PendingImportLink != PendingImportLink.None))
+            .Where(f => f.RelativePath.ToLower().EndsWith(".cbz") || f.RelativePath.ToLower().EndsWith(".zip"))
             .Select(f => new
             {
                 f.Id, f.SeriesId, f.RelativePath, f.Tier, f.SourceName, f.ImageFormat, f.Size, f.PageCount,
-                f.MedianWidth, f.MedianHeight, f.OriginalImageFormat,
+                f.MedianWidth, f.MedianHeight, f.OriginalImageFormat, f.CheckedWith, f.ConversionSavedBytes,
+                f.ConversionCheckedAtUtc,
+                PendingImport = db.Series.IgnoreQueryFilters().Any(s =>
+                    s.Id == f.SeriesId && s.PendingImportLink != PendingImportLink.None),
                 Root = db.Series.IgnoreQueryFilters().Where(s => s.Id == f.SeriesId).Select(s => s.RootFolder!.Path).FirstOrDefault()
             })
             .ToListAsync(ct);
+        return rows
+            .Where(r => r.Root is not null && LibraryPaths.Resolve(r.Root, r.RelativePath) is not null)
+            .Select(r => new ScopeFile(r.Id, r.SeriesId, r.RelativePath, r.Root!, r.Tier, r.SourceName, r.ImageFormat, r.Size,
+                r.PageCount, r.MedianWidth, r.MedianHeight, r.OriginalImageFormat, r.CheckedWith, r.ConversionSavedBytes,
+                r.PendingImport, r.ConversionCheckedAtUtc))
+            .ToList();
+    }
+
+    /// <summary>Which bucket of the wizard a file lands in under <paramref name="plan"/>; <paramref name="rules"/> is the plan's rules in order.</summary>
+    public static Placement Classify(PageConversionPlan plan, List<PlanRule> rules, ScopeFile file, SeriesFacts? series)
+    {
+        if (file.OriginalImageFormat is not null)
+        {
+            return new Placement(Place.ConvertedEarlier, -1, null);
+        }
+
+        var candidate = Candidate(file.Facts, series ?? NoSeries);
+        var action = plan.Resolve(candidate);
+        return action switch
+        {
+            PlanAction.Skip { Reason: "override" } or PlanAction.Convert { Source: "override" } =>
+                new Placement(Place.Override, -1, action),
+            PlanAction.Skip { Reason: "alreadycompact" } => new Placement(Place.AlreadyCompact, -1, action),
+            PlanAction.Skip { Reason: "rule" } or PlanAction.Convert { Source: "rule" } =>
+                new Placement(Place.Rule, rules.IndexOf(plan.MatchingRule(candidate)!), action),
+            _ => new Placement(Place.Default, -1, action)
+        };
+    }
+
+    /// <summary>Where the library's archives would land under <paramref name="plan"/>, counted in memory over one query.</summary>
+    public async Task<Scope> ScopeAsync(PageConversionPlan plan, CancellationToken ct)
+    {
+        var rows = await ScopeFilesAsync(ct);
         var series = await SeriesFactsAsync(db, null, ct);
         var rules = plan.Rules.OrderBy(r => r.Order).ToList();
         var perRule = new (int Files, long Bytes)[rules.Count];
         (int Files, long Bytes) fallthrough = default, overrides = default, compact = default, converted = default;
 
-        foreach (var row in rows)
+        foreach (var row in rows.Where(r => !r.PendingImport))
         {
-            if (row.Root is null || LibraryPaths.Resolve(row.Root, row.RelativePath) is null)
+            var placement = Classify(plan, rules, row, series.GetValueOrDefault(row.SeriesId));
+            switch (placement.Place)
             {
-                continue;
-            }
-
-            if (row.OriginalImageFormat is not null)
-            {
-                Add(ref converted, row.Size);
-                continue;
-            }
-
-            var candidate = Candidate(new FileFacts(row.Id, row.SeriesId, row.Tier, row.SourceName, row.ImageFormat, row.Size,
-                row.PageCount, row.MedianWidth, row.MedianHeight), series.GetValueOrDefault(row.SeriesId, NoSeries));
-            switch (plan.Resolve(candidate))
-            {
-                case PlanAction.Skip { Reason: "override" } or PlanAction.Convert { Source: "override" }:
+                case Place.ConvertedEarlier:
+                    Add(ref converted, row.Size);
+                    break;
+                case Place.Override:
                     Add(ref overrides, row.Size);
                     break;
-                case PlanAction.Skip { Reason: "alreadycompact" }:
+                case Place.AlreadyCompact:
                     Add(ref compact, row.Size);
                     break;
-                case PlanAction.Skip { Reason: "rule" } or PlanAction.Convert { Source: "rule" }:
-                    var index = rules.IndexOf(plan.MatchingRule(candidate)!);
-                    Add(ref perRule[index], row.Size);
+                case Place.Rule:
+                    Add(ref perRule[placement.Rule], row.Size);
                     break;
                 default:
                     Add(ref fallthrough, row.Size);

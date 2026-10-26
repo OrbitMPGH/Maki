@@ -1,5 +1,8 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import type {
+  EstimateBucket,
+  PageConversionEstimate,
+  PageConversionPlanRequest,
   PageConversionRule,
   PageConversionRules,
   PageConversionSample,
@@ -97,6 +100,133 @@ const scopeFor = (request: PageConversionScopeRequest): PageConversionScope => (
   rules: request.rules.map((_, i) => ruleBuckets[i] ?? { files: 12, bytes: 400 * MB }),
 })
 
+const noBucket = {
+  skip: false,
+  files: 0,
+  bytes: 0,
+  sampledFiles: 0,
+  expectedLow: 0,
+  expectedHigh: 0,
+  hardlinkedBytes: 0,
+  secondsLow: 0,
+  secondsHigh: 0,
+} satisfies EstimateBucket
+
+export const estimateSkipBucket = {
+  ...noBucket,
+  skip: true,
+  files: 1527,
+  bytes: Math.round(18.1 * GB),
+} satisfies EstimateBucket
+
+export const estimateConvertBucket = {
+  ...noBucket,
+  files: 365,
+  bytes: Math.round(73.8 * GB),
+  sampledFiles: 12,
+  expectedLow: Math.round(48 * GB),
+  expectedHigh: Math.round(53 * GB),
+  hardlinkedBytes: Math.round(32.9 * GB),
+  secondsLow: 35 * 60,
+  secondsHigh: 70 * 60,
+} satisfies EstimateBucket
+
+export const estimateDefaultBucket = {
+  ...noBucket,
+  files: 94,
+  bytes: Math.round(1.9 * GB),
+  sampledFiles: 12,
+  expectedLow: Math.round(1.2 * GB),
+  expectedHigh: Math.round(1.4 * GB),
+  secondsLow: 4 * 60,
+  secondsHigh: 9 * 60,
+} satisfies EstimateBucket
+
+export const estimateResult = {
+  rules: [estimateSkipBucket, estimateConvertBucket],
+  default: estimateDefaultBucket,
+  overrides: { ...noBucket, files: 18, bytes: Math.round(2.1 * GB), sampledFiles: 6, expectedLow: Math.round(1.1 * GB), expectedHigh: Math.round(1.3 * GB), secondsLow: 90, secondsHigh: 240 },
+  passedOver: {
+    hardlinkedFiles: 143,
+    hardlinkedBytes: Math.round(32.9 * GB),
+    cleanupDue: 22,
+    alreadyCompact: 41,
+    downloadInFlight: 3,
+    pendingImport: 9,
+    skippedByRule: 1527,
+    skippedByRuleBytes: Math.round(18.1 * GB),
+    neverSeries: 2,
+    neverFiles: 56,
+    neverBytes: Math.round(4.2 * GB),
+    undone: 7,
+    alreadyChecked: 212,
+    alreadyCheckedBytes: Math.round(5.6 * GB),
+  },
+  convertedEarlier: [
+    { checkedWith: 'webp:high', files: 1204, savedBytes: Math.round(9.8 * GB) },
+    { checkedWith: 'avif:balanced+png', files: 80, savedBytes: Math.round(2.4 * GB) },
+    { checkedWith: 'unknown', files: 12, savedBytes: Math.round(0.3 * GB) },
+  ],
+  convertedWithOriginalInTrash: 37,
+  msPerMegapixel: 410,
+} satisfies NonNullable<PageConversionEstimate['result']>
+
+const stamp = '2026-10-19T11:50:00Z'
+
+export const estimateIdle = {
+  state: 'idle',
+  done: 0,
+  total: 0,
+  result: null,
+  error: null,
+  startedAtUtc: null,
+  finishedAtUtc: null,
+  planHash: null,
+} satisfies PageConversionEstimate
+
+export const estimateDone = {
+  state: 'done',
+  done: 36,
+  total: 36,
+  result: estimateResult,
+  error: null,
+  startedAtUtc: stamp,
+  finishedAtUtc: '2026-10-19T11:52:10Z',
+  planHash: 'plan-a',
+} satisfies PageConversionEstimate
+
+export const estimateRunning = {
+  ...estimateIdle,
+  state: 'running',
+  done: 14,
+  total: 36,
+  startedAtUtc: stamp,
+  planHash: 'plan-a',
+} satisfies PageConversionEstimate
+
+export const estimateFailed = {
+  ...estimateIdle,
+  state: 'failed',
+  done: 9,
+  total: 36,
+  error: 'The library could not be read while sampling.',
+  startedAtUtc: stamp,
+  finishedAtUtc: '2026-10-19T11:50:40Z',
+  planHash: 'plan-a',
+} satisfies PageConversionEstimate
+
+/** What the estimate would be for a request: skip rules count their files, convert rules get the sampled figures. */
+const estimateFor = (request: PageConversionPlanRequest): PageConversionEstimate => ({
+  ...estimateDone,
+  result: {
+    ...estimateResult,
+    rules: request.rules.map((rule) => (rule.action === 'skip' ? estimateSkipBucket : estimateConvertBucket)),
+  },
+})
+
+/** Starting an estimate answers as the server does: running, with nothing sampled yet. */
+export const startedEstimate = { ...estimateRunning, done: 0 } satisfies PageConversionEstimate
+
 export const ORIGINAL_BYTES = 1_240_000
 
 /** Median page's share of the original per stop, from the design doc's calibration. */
@@ -162,6 +292,10 @@ export const pageConversionHandlers: HttpHandler[] = [
   }),
   http.post(api('/pageconversion/scope'), async ({ request }) =>
     HttpResponse.json(scopeFor((await request.json()) as PageConversionScopeRequest)),
+  ),
+  http.get(api('/pageconversion/estimate'), () => HttpResponse.json(estimateIdle)),
+  http.post(api('/pageconversion/estimate'), async ({ request }) =>
+    HttpResponse.json(estimateFor((await request.json()) as PageConversionPlanRequest)),
   ),
   http.get(api('/pageconversion/samples'), () => HttpResponse.json(pageConversionSamples)),
   http.get(api('/pageconversion/samples/:fileId'), ({ params }) => {

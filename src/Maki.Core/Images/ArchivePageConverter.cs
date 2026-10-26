@@ -166,51 +166,10 @@ public static class ArchivePageConverter
     {
         try
         {
-            var picked = new List<(byte[] Bytes, string Extension)>();
+            List<(byte[] Bytes, string Extension)> picked;
             using (var zip = ZipFile.OpenRead(path))
             {
-                var order = CbzReader.PageNames(zip);
-                var entries = zip.Entries
-                    .GroupBy(e => e.FullName, StringComparer.Ordinal)
-                    .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
-                var formats = new Dictionary<string, List<(byte[] Bytes, string Extension)>>(StringComparer.Ordinal);
-                var looked = 0;
-                for (var i = order.Count / 3; i < Math.Max(order.Count / 3 + 1, order.Count * 2 / 3); i++)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    if (formats.Count == 2 || looked >= MaxProbeReads)
-                    {
-                        break;
-                    }
-
-                    if (i >= order.Count || !entries.TryGetValue(order[i], out var entry) || entry.Length < PageConversion.MinPageBytes)
-                    {
-                        continue;
-                    }
-
-                    // Two pages of a format are all it needs of that one; read on only for the other.
-                    if (ExtensionFormat(entry.FullName) is { } named && formats.TryGetValue(named, out var have) && have.Count >= 2)
-                    {
-                        continue;
-                    }
-
-                    looked++;
-                    var bytes = ReadAll(entry, entry.Length);
-                    var extension = Path.GetExtension(entry.FullName);
-                    var format = PageConversion.FormatOf(bytes, extension);
-                    if (format is "jpg" or "png")
-                    {
-                        var list = formats.TryGetValue(format, out var found) ? found : formats[format] = [];
-                        if (list.Count < 2)
-                        {
-                            list.Add((bytes, extension));
-                        }
-                    }
-                }
-
-                picked = formats.Count > 1
-                    ? [.. formats.Values.Select(l => l[0])]
-                    : [.. formats.Values.SelectMany(l => l)];
+                picked = MiddlePages(zip, 2, ct);
             }
 
             if (picked.Count == 0)
@@ -235,6 +194,68 @@ public static class ArchivePageConverter
         {
             return true;
         }
+    }
+
+    /// <summary>
+    /// Up to <paramref name="wanted"/> JPEG or PNG pages of at least <see cref="PageConversion.MinPageBytes"/>
+    /// from the middle third of the archive, so never a cover or a credits page. When the archive mixes
+    /// the two formats the pages alternate between them. Reads at most twelve entries. Throws what
+    /// reading a damaged archive throws.
+    /// </summary>
+    public static List<(byte[] Bytes, string Extension)> MiddlePages(ZipArchive zip, int wanted, CancellationToken ct)
+    {
+        var order = CbzReader.PageNames(zip);
+        var entries = zip.Entries
+            .GroupBy(e => e.FullName, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        var formats = new Dictionary<string, List<(byte[] Bytes, string Extension)>>(StringComparer.Ordinal);
+        var looked = 0;
+        for (var i = order.Count / 3; i < Math.Max(order.Count / 3 + 1, order.Count * 2 / 3); i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            if ((formats.Count == 2 && formats.Values.Sum(l => l.Count) >= wanted) || looked >= MaxProbeReads)
+            {
+                break;
+            }
+
+            if (i >= order.Count || !entries.TryGetValue(order[i], out var entry) || entry.Length < PageConversion.MinPageBytes)
+            {
+                continue;
+            }
+
+            // Enough pages of a format are all it needs of that one; read on only for the other.
+            if (ExtensionFormat(entry.FullName) is { } named && formats.TryGetValue(named, out var have) && have.Count >= wanted)
+            {
+                continue;
+            }
+
+            looked++;
+            var bytes = ReadAll(entry, entry.Length);
+            var extension = Path.GetExtension(entry.FullName);
+            var format = PageConversion.FormatOf(bytes, extension);
+            if (format is "jpg" or "png")
+            {
+                var list = formats.TryGetValue(format, out var found) ? found : formats[format] = [];
+                if (list.Count < wanted)
+                {
+                    list.Add((bytes, extension));
+                }
+            }
+        }
+
+        var picked = new List<(byte[] Bytes, string Extension)>();
+        for (var round = 0; picked.Count < wanted && formats.Values.Any(l => l.Count > round); round++)
+        {
+            foreach (var list in formats.Values)
+            {
+                if (round < list.Count && picked.Count < wanted)
+                {
+                    picked.Add(list[round]);
+                }
+            }
+        }
+
+        return picked;
     }
 
     private static string? ExtensionFormat(string name) => Path.GetExtension(name).ToLowerInvariant() switch

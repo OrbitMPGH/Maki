@@ -1060,6 +1060,59 @@ namespace Maki.Data.Migrations
                     b.ToTable("NotificationTags", (string)null);
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.PageConversionHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("BytesAfter")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("BytesBefore")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ChapterFileId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ChapterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PassId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ResultFormat")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SourceFormat")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("TrashBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TrashPath")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UndoneAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeriesId", "UndoneAtUtc");
+
+                    b.ToTable("PageConversionHistory");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.PageConversionRule", b =>
                 {
                     b.Property<int>("Id")
@@ -3198,6 +3251,15 @@ namespace Maki.Data.Migrations
                     b.HasOne("Maki.Core.Entities.Tag", null)
                         .WithMany()
                         .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.PageConversionHistory", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

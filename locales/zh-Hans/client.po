@@ -61,6 +61,11 @@ msgstr "（无法访问）"
 msgid "(no longer in the library)"
 msgstr "（已不在资料库中）"
 
+#. placeholder {0}: line.files
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {{settings}: # file, {saved} saved} other {{settings}: # files, {saved} saved}}"
+msgstr ""
+
 #. placeholder {0}: spans.length
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -136,9 +141,39 @@ msgstr "{0, plural, other {# 个文件无法删除（已锁定或权限不足）
 msgid "{0, plural, one {# file deleted} other {# files deleted}}"
 msgstr "{0, plural, other {已删除 # 个文件}}"
 
+#. placeholder {0}: history.restorableFiles
+#: src/components/series/UndoConversionModal.tsx
+msgid "{0, plural, one {# file has its original in the trash ({size}).} other {# files have their original in the trash ({size}).}}"
+msgstr ""
+
 #. placeholder {0}: scope.alreadyCompact.files
 #: src/components/pageconversion/ScopeStep.tsx
 msgid "{0, plural, one {# file is already WebP or AVIF and is left as it is ({compactSize}).} other {# files are already WebP or AVIF and are left as they are ({compactSize}).}}"
+msgstr ""
+
+#. placeholder {0}: passed.alreadyCompact
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is already WebP or AVIF} other {# files are already WebP or AVIF}}"
+msgstr ""
+
+#. placeholder {0}: passed.cleanupDue
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is due for read-file cleanup} other {# files are due for read-file cleanup}}"
+msgstr ""
+
+#. placeholder {0}: passed.hardlinkedFiles
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is hardlinked to a torrent and stays as it is ({hardlinked})} other {# files are hardlinked to torrents and stay as they are ({hardlinked})}}"
+msgstr ""
+
+#. placeholder {0}: passed.neverFiles
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is in a series set to Never ({never})} other {# files are in {neverSeries} series set to Never ({never})}}"
+msgstr ""
+
+#. placeholder {0}: passed.downloadInFlight
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is in a series with a download in flight} other {# files are in series with a download in flight}}"
 msgstr ""
 
 #. placeholder {0}: scope.overrides.files
@@ -152,15 +187,35 @@ msgstr ""
 msgid "{0, plural, one {# file is left out} other {# files are left out}}"
 msgstr "{0, plural, other {# 个文件将被跳过}}"
 
+#. placeholder {0}: passed.skippedByRule
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is skipped by a rule ({skipped})} other {# files are skipped by a rule ({skipped})}}"
+msgstr ""
+
+#. placeholder {0}: passed.pendingImport
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is waiting on an import link} other {# files are waiting on an import link}}"
+msgstr ""
+
 #. placeholder {0}: r.kept
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "{0, plural, one {# file kept on disk because another series still uses it} other {# files kept on disk because another series still uses them}}"
 msgstr "{0, plural, other {# 个文件仍保留在磁盘上，因为另一个系列仍在使用它们}}"
 
+#. placeholder {0}: passed.alreadyChecked
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file was already checked with these settings ({checked})} other {# files were already checked with these settings ({checked})}}"
+msgstr ""
+
 #. placeholder {0}: scope.convertedEarlier.files
 #: src/components/pageconversion/ScopeStep.tsx
 msgid "{0, plural, one {# file was converted earlier and stays as it is ({earlierSize}).} other {# files were converted earlier and stay as they are ({earlierSize}).}}"
+msgstr ""
+
+#. placeholder {0}: passed.undone
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file was put back by an undo and stays as it is} other {# files were put back by an undo and stay as they are}}"
 msgstr ""
 
 #. placeholder {0}: bucket.files
@@ -475,6 +530,11 @@ msgstr "{0, plural, other {已移除 # 个章节}}"
 msgid "{0, plural, one {Removed # unsupported chapter} other {Removed # unsupported chapters}}"
 msgstr "{0, plural, other {已移除 # 个不受支持的章节}}"
 
+#. placeholder {0}: result.restored
+#: src/components/series/UndoConversionModal.tsx
+msgid "{0, plural, one {Restored # file} other {Restored # files}}"
+msgstr ""
+
 #. placeholder {0}: r.chapters
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -492,6 +552,11 @@ msgstr "{0, plural, other {选择此视图中的全部 # 项}}"
 #, fuzzy
 msgid "{0, plural, one {Show all #} other {Show all #}}"
 msgstr "{0, plural, other {显示全部 # 条}}"
+
+#. placeholder {0}: bucket.files
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "{0, plural, one {Skipped: # file, {size}} other {Skipped: # files, {size}}}"
+msgstr ""
 
 #. placeholder {0}: parsed.skippedNonLibrary
 #: src/components/import/MihonImport.tsx
@@ -1129,6 +1194,10 @@ msgstr ""
 msgid "{format}, {stop}, {rules}"
 msgstr ""
 
+#: src/components/pageconversion/labels.ts
+msgid "{format}, {stop}, PNG lossless"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
@@ -1139,6 +1208,7 @@ msgstr "按 {forwardKey} 或空格键打开，按 Esc 返回系列。"
 msgid "{free} free"
 msgstr "{free} 可用"
 
+#: src/components/pageconversion/EstimateTable.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #, fuzzy
 msgid "{from} to {to}"
@@ -1228,6 +1298,10 @@ msgstr "{installed, plural, =0 {尚未安装 Suwayomi 来源。} other {共 # �
 #, fuzzy
 msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "距离等级 {nextLevel} 还需 {intoLevel} / {levelSpan} XP"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -2183,6 +2257,10 @@ msgstr "{total, plural, other {重新关联 # 个章节并删除}}"
 msgid "{total, plural, one {Relink # chapter} other {Relink # chapters}}"
 msgstr "{total, plural, other {重新关联 # 个章节}}"
 
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{total, plural, one {Sampling {done} of # file} other {Sampling {done} of # files}}"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "{total, plural, one {Search # source} other {Search # sources}}"
@@ -2829,6 +2907,10 @@ msgstr "zip 压缩包"
 msgid "Abandoned"
 msgstr "已放弃"
 
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "About {hardlinked} are hardlinked to torrents and stay as they are."
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "about {hourPhrase} {restPhrase} left"
@@ -3415,6 +3497,10 @@ msgstr "同时匹配归在此项下的所有标签"
 #, fuzzy
 msgid "Also needs the daily scan on."
 msgstr "同样需要开启每日扫描。"
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "Also set this series to Never"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4347,6 +4433,7 @@ msgstr "无法使用已保存的信息登录。"
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/UndoConversionModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -5016,6 +5103,14 @@ msgstr "更新较少时，每天检查一次。"
 msgid "Checked right after the announced time."
 msgstr "在公布的时间之后立即检查。"
 
+#: src/components/pageconversion/labels.ts
+msgid "Checked, cannot be converted"
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Checked, not converted"
+msgstr ""
+
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Checking for a new metadata snapshot"
@@ -5636,6 +5731,10 @@ msgstr ""
 msgid "Conversion is off, so there is nothing to compare. Go back to pick a format."
 msgstr ""
 
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Conversion is off, so there is nothing to estimate. Continue to save that choice."
+msgstr ""
+
 #: src/components/pageconversion/RuleCard.tsx
 msgid "Convert at {stopLabel}"
 msgstr ""
@@ -5649,8 +5748,16 @@ msgstr "转换资料库"
 msgid "Converted"
 msgstr ""
 
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Converted earlier"
+msgstr ""
+
 #: src/components/pageconversion/CompareView.tsx
 msgid "Converted page"
+msgstr ""
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "Converted with {list}."
 msgstr ""
 
 #: src/components/pageconversion/labels.ts
@@ -5986,6 +6093,10 @@ msgstr "无法启动卷搜索"
 
 #: src/components/pageconversion/RuleCard.tsx
 msgid "Counting files"
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Counting the files to sample"
 msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
@@ -7317,6 +7428,10 @@ msgstr "Esc"
 msgid "Esc closes"
 msgstr "按 Esc 关闭"
 
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Estimate progress"
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "Estimated"
@@ -7464,6 +7579,7 @@ msgstr "全部"
 msgid "Everything else"
 msgstr "其他所有内容"
 
+#: src/components/pageconversion/EstimateTable.tsx
 #: src/components/pageconversion/ScopeStep.tsx
 msgid "Everything else: {stopLabel}"
 msgstr ""
@@ -7582,6 +7698,10 @@ msgstr "展开"
 #, fuzzy
 msgid "Expand {spanLabel}"
 msgstr "展开 {spanLabel}"
+
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Expected"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -7816,6 +7936,7 @@ msgstr ""
 msgid "File size in MB, under"
 msgstr ""
 
+#: src/components/pageconversion/EstimateTable.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -11877,6 +11998,10 @@ msgstr "尚无受众类型数据"
 msgid "No difference we could see."
 msgstr ""
 
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "No files"
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
 msgid "No files found in the series folder."
@@ -12536,6 +12661,7 @@ msgstr "不再推荐"
 msgid "Not run yet"
 msgstr "尚未运行"
 
+#: src/components/pageconversion/EstimateTable.tsx
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Not sampled"
@@ -12842,6 +12968,10 @@ msgstr ""
 msgid "Nothing to compare"
 msgstr ""
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Nothing to estimate"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -12914,6 +13044,10 @@ msgstr "没有未读完的系列可供统计。"
 msgid "Nothing unmatched."
 msgstr "没有未匹配项。"
 
+#: src/components/series/UndoConversionModal.tsx
+msgid "Nothing was restored"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Nothing worth grabbing in the results"
@@ -12980,6 +13114,10 @@ msgstr "通知"
 #, fuzzy
 msgid "Notify this device"
 msgstr "通知此设备"
+
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Now"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -13679,6 +13817,10 @@ msgstr "已解析"
 #, fuzzy
 msgid "Partial"
 msgstr "部分完成"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Passed over"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -14529,6 +14671,10 @@ msgstr "评分与阅读"
 #, fuzzy
 msgid "Re-download {staleChapters} from {winnerDisplayName}"
 msgstr "从 {winnerDisplayName} 重新下载 {staleChapters}"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Re-estimate"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -15784,6 +15930,10 @@ msgstr "恢复"
 msgid "Restore & restart"
 msgstr "恢复并重启"
 
+#: src/components/series/UndoConversionModal.tsx
+msgid "Restore and convert again with the current settings"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Restore any of them from Manage signals."
@@ -15814,6 +15964,10 @@ msgstr "恢复已隐藏或忽略的标题"
 msgid "Restore staged"
 msgstr "恢复已暂存内容"
 
+#: src/components/series/UndoConversionModal.tsx
+msgid "Restore the originals"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Restore this title"
@@ -15828,6 +15982,10 @@ msgstr "已恢复"
 #, fuzzy
 msgid "Restored as an unlinked file. Health can import it."
 msgstr "已恢复为未关联文件。健康检查可以将其导入。"
+
+#: src/components/pageconversion/labels.ts
+msgid "Restored from the original"
+msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -15960,6 +16118,7 @@ msgstr "已由用户还原"
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Review"
 msgstr "审核"
@@ -16097,8 +16256,16 @@ msgstr "旋转以适应"
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "第 {zoomRowNumber}/{zoomTotalPages} 行"
 
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Rule"
+msgstr ""
+
 #: src/components/pageconversion/RuleCard.tsx
 msgid "Rule {number}"
+msgstr ""
+
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Rule {position}"
 msgstr ""
 
 #: src/components/CatalogueRules.tsx
@@ -17184,6 +17351,10 @@ msgstr "有新增章节的作品。"
 msgid "Series with none of your tags"
 msgstr "没有你任何标签的系列"
 
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Series with their own stop"
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Series you already have that match these filters."
@@ -17326,6 +17497,10 @@ msgstr "设置 › {tabName}"
 #, fuzzy
 msgid "Settings not loaded"
 msgstr "设置尚未加载"
+
+#: src/components/pageconversion/labels.ts
+msgid "Settings not recorded"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -17707,6 +17882,14 @@ msgstr "大小"
 #, fuzzy
 msgid "Size mismatch"
 msgstr "大小不匹配"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Sizes and time"
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Sizes come from encoding a sample of the files each rule covers. Nothing is changed. Times depend on how busy this server is."
+msgstr ""
 
 #: src/components/pageconversion/RuleCard.tsx
 msgid "Skip"
@@ -18098,6 +18281,10 @@ msgstr "从第 {startReadingAt} 章开始阅读。"
 #, fuzzy
 msgid "Started"
 msgstr "已开始"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Starting the estimate"
+msgstr ""
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -18686,6 +18873,22 @@ msgstr "下载尚未开始。"
 msgid "The download is no longer in the download client"
 msgstr "下载客户端中已不存在此下载"
 
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "The estimate could not be started"
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "The estimate failed"
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "The estimate failed on this server. Try again, or check the log."
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "The estimate was cancelled"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "The file has changed or is gone since, so this cannot run again."
 msgstr ""
@@ -18834,6 +19037,10 @@ msgstr "无法为升级移开旧文件"
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "The oldest pages are dropped past this."
+msgstr ""
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "The others were converted on download or their original has been purged."
 msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
@@ -19099,6 +19306,10 @@ msgstr "这些是长条页面，两个发布版本在不同位置进行了裁切
 #, fuzzy
 msgid "These are long-strip pages and the two releases cut them at different points, so page {page} on the left is not page {page} on the right. Stacked height is the comparable number: they differ by {driftPercent}%, so one of them is missing or gaining content."
 msgstr "这些是长条页面，两个发布版本在不同位置进行了裁切，因此左侧的第 {page} 页并不是右侧的第 {page} 页。可比较的数值是叠加高度：两者相差 {driftPercent}%，因此其中一个版本缺少或增加了内容。"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "These are never converted again."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -19470,6 +19681,7 @@ msgstr "章节列表一到就会将它们标记为已看过。看过的章节不
 msgid "Tier order"
 msgstr "层级顺序"
 
+#: src/components/pageconversion/EstimateTable.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time"
@@ -19780,6 +19992,7 @@ msgstr "尝试更短或不同的查询。"
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
 #: src/components/MetadataDumpProgress.tsx
+#: src/components/pageconversion/ReviewStep.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
@@ -19950,6 +20163,7 @@ msgstr "下划线（_）"
 #: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/import/RecentImports.tsx
+#: src/components/series/UndoConversionModal.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -19961,6 +20175,14 @@ msgstr "撤销"
 #, fuzzy
 msgid "Undo all"
 msgstr "全部撤销"
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "Undo conversion"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Undo conversion..."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20937,6 +21159,10 @@ msgstr "哪些因素影响你的推荐"
 
 #: src/pages/PageConversionWizardPage.tsx
 msgid "What to convert"
+msgstr ""
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "What to do with them"
 msgstr ""
 
 #: src/components/SetupWizard.tsx

@@ -36,12 +36,16 @@ public sealed class PageConversionPassCache
 
     /// <summary>Per series, the files read-file cleanup deletes within <see cref="PageConversionService.CleanupHorizonDays"/>.</summary>
     public Dictionary<int, HashSet<int>> CleanupDue { get; } = [];
+
+    /// <summary>The pass's start stamp, recorded on each history row it writes.</summary>
+    public string? PassId { get; init; }
 }
 
 /// <summary>
 /// Converts the pages of one library file in place. The original goes to the upgrade trash
-/// (<c>.maki-trash/&lt;SeriesId&gt;/conv-&lt;FileId&gt;-&lt;name&gt;</c>) with no history row, so the
-/// trash purge removes it after <c>upgrades.trashRetentionDays</c>. The converted copy is built
+/// (<c>.maki-trash/&lt;SeriesId&gt;/conv-&lt;FileId&gt;-&lt;name&gt;</c>) and a
+/// <see cref="PageConversionHistory"/> row records it, so an undo can put it back until the trash
+/// purge removes it after <c>upgrades.trashRetentionDays</c>. The converted copy is built
 /// under <c>&lt;root&gt;/.maki/tmp</c>, outside the series lock, and swapped in under it with a rename,
 /// so a crash leaves the library path holding one complete archive or the other.
 /// </summary>
@@ -193,14 +197,19 @@ public class PageConversionService(
         {
             using var seriesLock = await SeriesLocks.SeriesAsync(file.SeriesId, ct);
             var current = await db.ChapterFiles.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == fileId, ct);
-            var now = new FileInfo(path);
+            var onDisk = new FileInfo(path);
             if (current is null || current.RelativePath != file.RelativePath || current.ConversionCheckedAtUtc is not null ||
-                !now.Exists || now.Length != length || now.LastWriteTimeUtc != written || await BusyAsync(file.SeriesId, ct))
+                !onDisk.Exists || onDisk.Length != length || onDisk.LastWriteTimeUtc != written || await BusyAsync(file.SeriesId, ct))
             {
                 return new FileConversion(FileConversionStatus.Busy);
             }
 
-            if (!Swap(row.Root, current, path, tmp, hardlinks))
+            var chapterId = await db.Chapters.IgnoreQueryFilters()
+                .Where(c => c.ChapterFileId == current.Id)
+                .OrderBy(c => c.Id)
+                .Select(c => (int?)c.Id)
+                .FirstOrDefaultAsync(ct);
+            if (Swap(row.Root, current, path, tmp, hardlinks) is not { } trashRelative)
             {
                 return new FileConversion(FileConversionStatus.Failed);
             }
@@ -208,8 +217,24 @@ public class PageConversionService(
             // The bytes have changed: from here the row has to be saved whatever happens.
             archives.Invalidate(current.Id);
             var acquired = current.MeasuredAtUtc is null ? null : current.ImageFormat;
-            PageConversionOptions.Apply(current, result, acquired, action.Name, DateTime.UtcNow);
+            var now = DateTime.UtcNow;
+            PageConversionOptions.Apply(current, result, acquired, action.Name, now);
             current.Size = new FileInfo(path).Length;
+            db.PageConversionHistory.Add(new PageConversionHistory
+            {
+                ChapterFileId = current.Id,
+                SeriesId = current.SeriesId,
+                ChapterId = chapterId,
+                PassId = cache.PassId,
+                TrashPath = trashRelative,
+                TrashBytes = length,
+                Action = action.Name,
+                BytesBefore = length,
+                BytesAfter = current.Size,
+                SourceFormat = result.SourceFormat,
+                ResultFormat = result.ResultFormat,
+                CreatedAtUtc = now
+            });
             await db.SaveChangesAsync(CancellationToken.None);
         }
         finally
@@ -228,9 +253,10 @@ public class PageConversionService(
     /// Puts the original into the trash and the converted copy at its path: a hardlink (or, where the
     /// probe found none that hold up, a copy) into the trash first, then a rename over the original, so the
     /// library path holds a whole archive at every step. Moving the original out instead would leave
-    /// the path empty whenever moving a file back in failed too.
+    /// the path empty whenever moving a file back in failed too. Returns the trash copy's root-relative
+    /// path, or null when the file was left as it was.
     /// </summary>
-    private bool Swap(string root, ChapterFile file, string path, string converted, bool hardlinks)
+    private string? Swap(string root, ChapterFile file, string path, string converted, bool hardlinks)
     {
         UpgradeTrash.EnsureFolder(root, file.SeriesId);
         var trashRelative = UpgradeTrash.NewRelativePath(root, file.SeriesId,
@@ -257,7 +283,7 @@ public class PageConversionService(
         {
             TryDelete(trash);
             logger.LogWarning(ex, "Could not replace {Path} with its converted copy; left as it was", path);
-            return false;
+            return null;
         }
 
         try
@@ -269,7 +295,7 @@ public class PageConversionService(
             logger.LogDebug(ex, "Could not stamp {Path} with its trash time", trash);
         }
 
-        return true;
+        return trashRelative;
     }
 
     /// <summary>
@@ -352,21 +378,28 @@ public class PageConversionService(
     {
         if (!cache.CleanupDue.TryGetValue(file.SeriesId, out var due))
         {
-            var horizon = DateTime.UtcNow.AddDays(CleanupHorizonDays);
-            var chapters = (await ReadFileCleanupService.PendingAsync(db, appSettings, file.SeriesId, ct))
-                .Where(c => c.Value <= horizon)
-                .Select(c => c.Key)
-                .ToList();
-            due = chapters.Count == 0
-                ? []
-                : (await db.Chapters.IgnoreQueryFilters()
-                    .Where(c => chapters.Contains(c.Id) && c.ChapterFileId != null)
-                    .Select(c => c.ChapterFileId!.Value)
-                    .ToListAsync(ct)).ToHashSet();
+            due = await CleanupDueFilesAsync(db, appSettings, file.SeriesId, ct);
             cache.CleanupDue[file.SeriesId] = due;
         }
 
         return due.Contains(file.Id);
+    }
+
+    /// <summary>The files of a series read-file cleanup deletes within <see cref="CleanupHorizonDays"/>.</summary>
+    public static async Task<HashSet<int>> CleanupDueFilesAsync(MakiDbContext db, IAppSettings appSettings, int seriesId,
+        CancellationToken ct)
+    {
+        var horizon = DateTime.UtcNow.AddDays(CleanupHorizonDays);
+        var chapters = (await ReadFileCleanupService.PendingAsync(db, appSettings, seriesId, ct))
+            .Where(c => c.Value <= horizon)
+            .Select(c => c.Key)
+            .ToList();
+        return chapters.Count == 0
+            ? []
+            : (await db.Chapters.IgnoreQueryFilters()
+                .Where(c => chapters.Contains(c.Id) && c.ChapterFileId != null)
+                .Select(c => c.ChapterFileId!.Value)
+                .ToListAsync(ct)).ToHashSet();
     }
 
     /// <summary>Matches nothing when a download or relink changed the row since it was read.</summary>

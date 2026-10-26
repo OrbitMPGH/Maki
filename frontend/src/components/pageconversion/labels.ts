@@ -72,3 +72,30 @@ export function useSettingsSummary() {
     return t`${format}, ${stop}, ${rules}`
   }
 }
+
+const CHECKED_WITH_NAMES: Record<string, MessageDescriptor> = {
+  lossless: msg`Lossless`,
+  skip: msg`Checked, not converted`,
+  'skip:hard': msg`Checked, cannot be converted`,
+  undone: msg`Restored from the original`,
+  unknown: msg`Settings not recorded`,
+}
+
+/**
+ * Names the settings a file was checked or converted with, from the wire name the server stamps:
+ * "webp:high" is "WebP, High", "avif:balanced+png" is "AVIF, Balanced, PNG lossless". A name this
+ * client does not know comes back as it arrived.
+ */
+export function useCheckedWithLabel() {
+  const { t } = useLingui()
+  return (name: string | null | undefined): string => {
+    if (!name) return t(CHECKED_WITH_NAMES.unknown)
+    const fixed = CHECKED_WITH_NAMES[name]
+    if (fixed) return t(fixed)
+    const match = /^(webp|avif):(smallest|compact|balanced|high)(\+png)?$/.exec(name)
+    if (!match) return name
+    const format = t(FORMAT_LABELS[match[1] as PageConversionFormat])
+    const stop = t(STOP_LABELS[match[2] as PageConversionStop])
+    return match[3] ? t`${format}, ${stop}, PNG lossless` : t`${format}, ${stop}`
+  }
+}

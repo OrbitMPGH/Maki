@@ -1986,6 +1986,31 @@ public class SeriesController(
         return Ok(new { pageConversion = mode.ToString() });
     }
 
+    /// <summary>What page conversion did to the series, and how much of it an undo can still put back.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("{id:int}/pageconversion/history")]
+    public async Task<IActionResult> PageConversionHistory(int id, [FromServices] PageConversionUndoService undo,
+        CancellationToken ct) =>
+        await undo.HistoryAsync(id, ct) is { } history ? Ok(history) : NotFound();
+
+    /// <param name="SetNever">Also set the series to Never afterwards.</param>
+    /// <param name="ConvertAgain">Convert the restored originals again under the current plan.</param>
+    public record PageConversionUndoRequest(bool SetNever, bool ConvertAgain);
+
+    /// <summary>Puts back the originals of the series' converted files that are still in the trash.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("{id:int}/pageconversion/undo")]
+    public async Task<IActionResult> UndoPageConversion(int id, [FromBody] PageConversionUndoRequest request,
+        [FromServices] PageConversionUndoService undo, CancellationToken ct)
+    {
+        if (request.SetNever && request.ConvertAgain)
+        {
+            return this.Fail(localizer, "error.pageConversion.undoConflict");
+        }
+
+        return await undo.UndoAsync(id, request.SetNever, request.ConvertAgain, ct) is { } result ? Ok(result) : NotFound();
+    }
+
     /// <param name="UpgradeProfileId">Null clears every pin so the series follow the instance default.</param>
     public record BulkUpgradeProfileRequest(List<int>? SeriesIds, int? UpgradeProfileId);
 

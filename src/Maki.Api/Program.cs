@@ -903,6 +903,8 @@ try
     builder.Services.AddScoped<PageConversionService>();
     builder.Services.AddScoped<PageConversionPlanService>();
     builder.Services.AddScoped<PageConversionPreviewService>();
+    builder.Services.AddScoped<PageConversionUndoService>();
+    builder.Services.AddSingleton<PageConversionEstimateService>();
     builder.Services.AddSingleton<PageConversionWorker>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<PageConversionWorker>());
     builder.Services.AddScoped<UpgradeEvaluationService>();

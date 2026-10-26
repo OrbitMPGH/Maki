@@ -134,6 +134,35 @@ export const PageConversionFixedStop: Story = {
   },
 }
 
+export const UndoConversion: Story = {
+  args: { onUndoConversion: fn() },
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
+    const menu = await body(canvasElement).findByRole('menu')
+    await userEvent.click(await within(menu).findByRole('menuitem', { name: 'Undo conversion...' }))
+    await expect(args.onUndoConversion).toHaveBeenCalledOnce()
+  },
+}
+
+export const UndoConversionHiddenWhenNothingRestorable: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
+    const menu = await body(canvasElement).findByRole('menu')
+    await expect(await within(menu).findByRole('menuitem', { name: /Page conversion/ })).toBeVisible()
+    await expect(within(menu).queryByRole('menuitem', { name: /Undo conversion/ })).toBeNull()
+  },
+}
+
+export const UndoConversionHiddenForNonAdmin: Story = {
+  args: { onUndoConversion: fn(), canSetPageConversion: false },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
+    const menu = await body(canvasElement).findByRole('menu')
+    await expect(await within(menu).findByRole('menuitem', { name: 'Rescan files' })).toBeVisible()
+    await expect(within(menu).queryByRole('menuitem', { name: /Undo conversion/ })).toBeNull()
+  },
+}
+
 export const ScanRunning: Story = {
   args: { scanningUpgrades: true, searchingVolumes: true },
   play: async ({ canvas, userEvent }) => {

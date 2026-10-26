@@ -1,14 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { api } from '../../.storybook/mocks/api'
 import { settingsMsw } from '../../.storybook/mocks/settings'
 import { pageConversionIdle, pageConversionRunning } from '../../.storybook/mocks/settings/data'
 import {
+  estimateDone,
+  estimateFailed,
+  estimateIdle,
+  estimateResult,
+  estimateRunning,
   keptPreviewHandler,
   pageConversionRules,
   pageConversionScope,
   ruleLeaveScraped,
+  startedEstimate,
 } from '../../.storybook/mocks/settings/pageConversion'
 import PageConversionWizardPage from './PageConversionWizardPage'
 
@@ -351,6 +357,8 @@ export const StartSavesOnePlan: Story = {
     savedRules = []
     await userEvent.click(await canvas.findByRole('button', { name: 'Keep scanlator releases exact' }))
     await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+    await expect(await canvas.findByRole('button', { name: 'Re-estimate' })).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
     await expect(await canvas.findByText('3 rules, then everything else at the quality above')).toBeVisible()
 
     await userEvent.click(canvas.getByRole('button', { name: 'Save only' }))
@@ -369,7 +377,7 @@ export const StartSavesOnePlan: Story = {
 
 export const StartSendsFullPlanWhenRulesUnchanged: Story = {
   parameters: {
-    ...atStep(4),
+    ...atStep(5),
     msw: settingsMsw(
       http.put(api('/pageconversion/plan'), async ({ request }) => {
         const plan = (await request.json()) as { rules: typeof savedRules }
@@ -398,8 +406,240 @@ export const ScopeWhenRulesFailToLoad: Story = {
   },
 }
 
-export const Start: Story = {
+let posts = 0
+
+const estimateMsw = (
+  onPost: (n: number) => Response | Promise<Response>,
+  onGet: (posted: number) => object = () => estimateIdle,
+) =>
+  settingsMsw(
+    http.get(api('/pageconversion/estimate'), () => HttpResponse.json(onGet(posts))),
+    http.post(api('/pageconversion/estimate'), () => {
+      posts += 1
+      return onPost(posts)
+    }),
+  )
+
+const json = (value: object) => HttpResponse.json(value)
+
+const resetPosts = () => {
+  posts = 0
+}
+
+export const Review: Story = {
   parameters: atStep(4),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('columnheader', { name: 'Expected' })).toBeVisible()
+    await expect(canvas.getByText('Leave scraped chapters alone')).toBeVisible()
+    await expect(canvas.getByText('Skipped: 1,527 files, 18.1 GB')).toBeVisible()
+    await expect(canvas.getByText('Squeeze volumes harder')).toBeVisible()
+    await expect(canvas.getByText('48 GB to 53 GB')).toBeVisible()
+    await expect(canvas.getByText('35m to 1h 10m')).toBeVisible()
+    await expect(canvas.getByText('About 32.9 GB are hardlinked to torrents and stay as they are.')).toBeVisible()
+    await expect(canvas.getByText('Everything else: Balanced')).toBeVisible()
+    await expect(canvas.getByText('Series with their own stop')).toBeVisible()
+
+    await expect(canvas.getByText('Passed over')).toBeVisible()
+    await expect(canvas.getByText('143 files are hardlinked to torrents and stay as they are (32.9 GB)')).toBeVisible()
+    await expect(canvas.getByText('22 files are due for read-file cleanup')).toBeVisible()
+    await expect(canvas.getByText('41 files are already WebP or AVIF')).toBeVisible()
+    await expect(canvas.getByText('3 files are in series with a download in flight')).toBeVisible()
+    await expect(canvas.getByText('9 files are waiting on an import link')).toBeVisible()
+    await expect(canvas.getByText('1,527 files are skipped by a rule (18.1 GB)')).toBeVisible()
+    await expect(canvas.getByText('56 files are in 2 series set to Never (4.2 GB)')).toBeVisible()
+    await expect(canvas.getByText('7 files were put back by an undo and stay as they are')).toBeVisible()
+    await expect(canvas.getByText('212 files were already checked with these settings (5.6 GB)')).toBeVisible()
+
+    await expect(canvas.getByText('Converted earlier')).toBeVisible()
+    await expect(canvas.getByText('WebP, High: 1,204 files, 9.8 GB saved')).toBeVisible()
+    await expect(canvas.getByText('AVIF, Balanced, PNG lossless: 80 files, 2.4 GB saved')).toBeVisible()
+    await expect(canvas.getByText('Settings not recorded: 12 files, 307 MB saved')).toBeVisible()
+    await expect(canvas.getByText(/37 of them still have their original in the trash/)).toBeVisible()
+  },
+}
+
+export const ReviewRunning: Story = {
+  parameters: { ...atStep(4), msw: estimateMsw(() => json(estimateRunning), () => estimateRunning) },
+  beforeEach: resetPosts,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Sampling 14 of 36 files')).toBeVisible()
+    await expect(canvas.getByRole('progressbar', { name: 'Estimate progress' })).toBeVisible()
+    await expect(canvas.queryByRole('columnheader', { name: 'Expected' })).toBeNull()
+    await expect(canvas.getByRole('button', { name: 'Next' })).toBeEnabled()
+  },
+}
+
+export const ReviewRunningThenDone: Story = {
+  parameters: {
+    ...atStep(4),
+    msw: estimateMsw(
+      () => json(startedEstimate),
+      (n) => (n === 0 ? estimateIdle : estimateDone),
+    ),
+  },
+  beforeEach: resetPosts,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Sampling 0 of 36 files')).toBeVisible()
+    await expect(await canvas.findByRole('columnheader', { name: 'Expected' })).toBeVisible()
+    await expect(canvas.queryByText(/Sampling/)).toBeNull()
+  },
+}
+
+export const ReviewReestimateKeepsResult: Story = {
+  parameters: {
+    ...atStep(4),
+    msw: estimateMsw(
+      (n) => json(n === 1 ? estimateDone : estimateRunning),
+      (n) => (n < 2 ? estimateIdle : estimateRunning),
+    ),
+  },
+  beforeEach: resetPosts,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Re-estimate' }))
+    await expect(await canvas.findByText('Sampling 14 of 36 files')).toBeVisible()
+    await expect(canvas.getByRole('columnheader', { name: 'Expected' })).toBeVisible()
+    await expect(canvas.getByText('48 GB to 53 GB')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Re-estimate' })).toBeDisabled()
+  },
+}
+
+export const ReviewFailedThenRetry: Story = {
+  parameters: { ...atStep(4), msw: estimateMsw((n) => json(n === 1 ? estimateFailed : estimateDone)) },
+  beforeEach: resetPosts,
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('The estimate failed')).toBeVisible()
+    await expect(canvas.getByText('The estimate failed on this server. Try again, or check the log.')).toBeVisible()
+    await expect(canvas.queryByText('The library could not be read while sampling.')).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: 'Try again' }))
+    await expect(await canvas.findByRole('columnheader', { name: 'Expected' })).toBeVisible()
+    await expect(canvas.queryByText('The estimate failed')).toBeNull()
+    await waitFor(() => expect(posts).toBe(2))
+  },
+}
+
+export const ReviewCancelled: Story = {
+  parameters: { ...atStep(4), msw: estimateMsw(() => json({ ...estimateFailed, state: 'cancelled', error: null })) },
+  beforeEach: resetPosts,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('The estimate was cancelled')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Try again' })).toBeVisible()
+  },
+}
+
+export const ReviewCouldNotStart: Story = {
+  parameters: {
+    ...atStep(4),
+    msw: estimateMsw(() => HttpResponse.json({ error: 'The plan is not valid.' }, { status: 400 })),
+  },
+  beforeEach: resetPosts,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('The estimate could not be started')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Try again' })).toBeVisible()
+  },
+}
+
+export const ReviewKeepsResultWhenRevisited: Story = {
+  parameters: {
+    ...atStep(4),
+    msw: estimateMsw(
+      () => json(estimateDone),
+      (n) => (n === 0 ? estimateIdle : estimateDone),
+    ),
+  },
+  beforeEach: resetPosts,
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByRole('columnheader', { name: 'Expected' })).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'Back' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await expect(await canvas.findByRole('columnheader', { name: 'Expected' })).toBeVisible()
+    expect(posts).toBe(1)
+  },
+}
+
+let gets = 0
+
+export const ReviewRevisitedWithSlowRefetchShowsNewEstimate: Story = {
+  parameters: {
+    ...atStep(3),
+    msw: settingsMsw(
+      http.get(api('/pageconversion/estimate'), async () => {
+        gets += 1
+        if (gets === 1) return json(estimateIdle)
+        await delay(600)
+        return json(estimateDone)
+      }),
+      http.post(api('/pageconversion/estimate'), () => {
+        posts += 1
+        return json(posts === 1 ? estimateDone : { ...estimateRunning, done: 5, total: 20, planHash: 'plan-b' })
+      }),
+    ),
+  },
+  beforeEach: () => {
+    posts = 0
+    gets = 0
+  },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await expect(await canvas.findByRole('columnheader', { name: 'Expected' })).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'Back' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Keep scanlator releases exact' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+
+    await expect(await canvas.findByText('Sampling 5 of 20 files')).toBeVisible()
+    await waitFor(() => expect(gets).toBeGreaterThanOrEqual(2))
+    await new Promise((resolve) => setTimeout(resolve, 900))
+    await expect(canvas.getByText('Sampling 5 of 20 files')).toBeVisible()
+    expect(posts).toBe(2)
+  },
+}
+
+export const ReviewNothingSampledNothingPassedOver: Story = {
+  parameters: {
+    ...atStep(4),
+    msw: estimateMsw(() =>
+      json({
+        ...estimateDone,
+        result: {
+          ...estimateResult,
+          rules: [
+            { ...estimateResult.rules[0], skip: false, files: 0, bytes: 0 },
+            { ...estimateResult.rules[1], sampledFiles: 0, hardlinkedBytes: 0 },
+          ],
+          overrides: { ...estimateResult.overrides, files: 0, bytes: 0 },
+          passedOver: {
+            hardlinkedFiles: 0,
+            hardlinkedBytes: 0,
+            cleanupDue: 0,
+            alreadyCompact: 0,
+            downloadInFlight: 0,
+            pendingImport: 0,
+            skippedByRule: 0,
+            skippedByRuleBytes: 0,
+            neverSeries: 0,
+            neverFiles: 0,
+            neverBytes: 0,
+            undone: 0,
+            alreadyChecked: 0,
+            alreadyCheckedBytes: 0,
+          },
+          convertedEarlier: [],
+          convertedWithOriginalInTrash: 0,
+        },
+      }),
+    ),
+  },
+  beforeEach: resetPosts,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Not sampled')).toBeVisible()
+    await expect(canvas.getByText('No files')).toBeVisible()
+    await expect(canvas.queryByText('Passed over')).toBeNull()
+    await expect(canvas.queryByText('Converted earlier')).toBeNull()
+    await expect(canvas.queryByText('Series with their own stop')).toBeNull()
+  },
+}
+
+export const Start: Story = {
+  parameters: atStep(5),
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(await canvas.findByText(/Balanced\. Tone is a little lighter/)).toBeVisible()
     await expect(canvas.getByText('Kept lossless')).toBeVisible()
@@ -413,7 +653,7 @@ export const Start: Story = {
 
 export const StartWithoutRules: Story = {
   parameters: {
-    ...atStep(4),
+    ...atStep(5),
     msw: settingsMsw(http.get(api('/pageconversion/rules'), () => HttpResponse.json({ rules: [] }))),
   },
   play: async ({ canvas }) => {
@@ -429,6 +669,8 @@ export const StartWithConversionOff: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
     await expect(await canvas.findByText(/Conversion is off, so there is nothing to choose/)).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+    await expect(await canvas.findByText(/Conversion is off, so there is nothing to estimate/)).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
     await expect(await canvas.findByRole('button', { name: 'Save only' })).toBeEnabled()
     await expect(canvas.queryByRole('button', { name: 'Save and start' })).toBeNull()
   },
@@ -443,6 +685,7 @@ export const StartWhilePassRuns: Story = {
     await waitFor(() => expect(canvas.getByRole('radio', { name: /AVIF/ })).toBeChecked())
     await userEvent.click(canvas.getByRole('radio', { name: /WebP/ }))
     await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Save and start' }))
@@ -470,6 +713,7 @@ export const SaveOnlyWhilePassRunsThenRestart: Story = {
     await waitFor(() => expect(canvas.getByRole('radio', { name: /AVIF/ })).toBeChecked())
     await userEvent.click(canvas.getByRole('radio', { name: /WebP/ }))
     await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Save only' }))

@@ -68,7 +68,9 @@ public class PageConversionController(
         var convertedFiles = await converted.CountAsync(ct);
         var savedBytes = await converted.SumAsync(f => f.ConversionSavedBytes, ct);
         var pending = await PageConversionWorker.PendingQuery(db).CountAsync(ct);
-        var (trashBytes, trashFiles) = TrashedOriginals(await db.RootFolders.Select(r => r.Path).ToListAsync(ct));
+        var trashed = db.PageConversionHistory.IgnoreQueryFilters().Where(h => h.TrashPath != null);
+        var trashFiles = await trashed.CountAsync(ct);
+        var trashBytes = await trashed.SumAsync(h => h.TrashBytes ?? 0, ct);
         var options = await UpgradeOptions.LoadAsync(settings, ct);
         var ruleCount = (await PageConversionOptions.LoadRulesAsync(db, ct)).Count;
         var overrideSeries = await db.Series.IgnoreQueryFilters()
@@ -299,6 +301,30 @@ public class PageConversionController(
         return Ok(await plans.ScopeAsync(new PageConversionPlan(format, stop, request.PngLossless, rules), ct));
     }
 
+    /// <summary>
+    /// Starts measuring what a plan the wizard has not saved would do, cancelling an estimate still
+    /// running for another plan. Nothing is saved; the wizard polls <c>GET estimate</c>.
+    /// </summary>
+    [HttpPost("estimate")]
+    public IActionResult StartEstimate([FromBody] PlanDto request, [FromServices] PageConversionEstimateService estimates)
+    {
+        if (request.Settings is null || ParseSettings(request.Settings) is not { } stored)
+        {
+            return InvalidSettings(request.Settings);
+        }
+
+        if (ParseRules(request.Rules) is not { } parsed)
+        {
+            return this.Fail(localizer, "error.pageConversion.ruleInvalid");
+        }
+
+        return Ok(estimates.Start(
+            new PageConversionPlan(stored.Format ?? PageConversionFormat.Webp, stored.Stop, stored.PngLossless, parsed)));
+    }
+
+    [HttpGet("estimate")]
+    public IActionResult Estimate([FromServices] PageConversionEstimateService estimates) => Ok(estimates.Current);
+
     private async Task<RulesDto> RulesAsync(CancellationToken ct)
     {
         var rows = await db.PageConversionRules.AsNoTracking().OrderBy(r => r.Order).ThenBy(r => r.Id).ToListAsync(ct);
@@ -459,32 +485,4 @@ public class PageConversionController(
         PageConversionPassState.Paused => "paused",
         _ => "idle"
     };
-
-    /// <summary>The <c>conv-</c> files under each root's upgrade trash, which no history row counts.</summary>
-    private static (long Bytes, int Files) TrashedOriginals(IEnumerable<string> roots)
-    {
-        long bytes = 0;
-        var files = 0;
-        foreach (var root in roots)
-        {
-            var trash = Path.Combine(root, UpgradeTrash.FolderName);
-            try
-            {
-                if (!Directory.Exists(trash)) continue;
-                foreach (var series in Directory.EnumerateDirectories(trash))
-                {
-                    foreach (var file in new DirectoryInfo(series).EnumerateFiles(PageConversionService.TrashPrefix + "*"))
-                    {
-                        bytes += file.Length;
-                        files++;
-                    }
-                }
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-            }
-        }
-
-        return (bytes, files);
-    }
 }

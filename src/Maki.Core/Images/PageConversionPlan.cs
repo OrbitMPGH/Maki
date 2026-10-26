@@ -144,6 +144,12 @@ public abstract record PlanAction
     /// </summary>
     public const string HardSkipName = "skip:hard";
 
+    /// <summary>
+    /// What an undo records on a file it put the original back for. Like <see cref="HardSkipName"/>, the
+    /// pass and rechecks leave it alone until new bytes reset the row.
+    /// </summary>
+    public const string UndoneName = "undone";
+
     /// <param name="Reason">"override", "rule" or "alreadycompact".</param>
     public sealed record Skip(string Reason) : PlanAction;
 

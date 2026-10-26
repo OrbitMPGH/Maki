@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -156,13 +157,15 @@ public class PageConversionWorker(
     internal async Task<bool> RunPassAsync(CancellationToken ct)
     {
         var generation = Volatile.Read(ref _generation);
+        DateTime started;
         lock (_sync)
         {
             _current ??= new PageConversionPassTotals(DateTime.UtcNow, null, 0, 0, 0, 0, 0);
+            started = _current.StartedAtUtc;
         }
 
         var lastId = 0;
-        var cache = new PageConversionPassCache();
+        var cache = new PageConversionPassCache { PassId = started.ToString("O", CultureInfo.InvariantCulture) };
         PageConversionPlan? plan = null;
         try
         {
