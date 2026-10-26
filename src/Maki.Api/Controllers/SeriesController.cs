@@ -1071,6 +1071,11 @@ public class SeriesController(
             RemovedChapterCount = counts?.Removed ?? 0,
             ReadFileCleanupActive = ReadFileCleanupService.AppliesTo(series.ReadFileCleanup, await readFileCleanup.OptionsAsync(ct)),
             PendingProposalId = pendingProposalId,
+            ArchiveFreeableBytes = series.ArchivedAt is null
+                ? await SeriesArchiveService.FreeableBytesAsync(db, series, ct)
+                : 0,
+            OtherActiveReaders = await SeriesArchiveService.OtherActiveReadersAsync(
+                db, id, currentUser.UserId, DateTime.UtcNow, ct),
             ReadTimeEstimate = estimate is null
                 ? null
                 : new ReadingTimeEstimateDto(

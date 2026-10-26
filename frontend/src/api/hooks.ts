@@ -19,6 +19,12 @@ import type { ReleaseParsedDto } from './upgrades'
 import { obtainedCount } from '../lib/chapterCounts'
 import type {
   AddSeriesRequest,
+  ArchiveSeriesRequest,
+  ArchiveSeriesResponse,
+  BulkArchiveSeriesRequest,
+  BulkArchiveSeriesResponse,
+  RestoreSeriesRequest,
+  RestoreSeriesResponse,
   ChapterDto,
   LocalizedTitle,
   CompareSnapshot,
@@ -1712,6 +1718,66 @@ export function useDeleteSeries() {
       void queryClient.invalidateQueries({ queryKey: ['recycle-bin'] })
       for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
+  })
+}
+
+/** What an archive, restore or file removal changes: the lists, the one series, its chapters and the recycle bin. */
+function invalidateArchiveQueries(queryClient: ReturnType<typeof useQueryClient>, seriesIds: number[]) {
+  void queryClient.invalidateQueries({ queryKey: ['series'] })
+  void queryClient.invalidateQueries({ queryKey: ['recycle-bin'] })
+  for (const id of seriesIds) {
+    void queryClient.invalidateQueries({ queryKey: ['series', id] })
+    void queryClient.invalidateQueries({ queryKey: ['chapters', id] })
+    void queryClient.invalidateQueries({ queryKey: ['series-files', id] })
+  }
+  for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
+}
+
+export function useArchiveSeries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, removeFiles, permanent = false }: { id: number } & ArchiveSeriesRequest) =>
+      api<ArchiveSeriesResponse>(`/series/${id}/archive`, {
+        method: 'POST',
+        body: JSON.stringify({ removeFiles, permanent }),
+      }),
+    onSuccess: (_, { id }) => invalidateArchiveQueries(queryClient, [id]),
+  })
+}
+
+export function useBulkArchiveSeries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesIds, removeFiles, permanent = false }: BulkArchiveSeriesRequest) =>
+      api<BulkArchiveSeriesResponse>('/series/archive/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ seriesIds, removeFiles, permanent }),
+      }),
+    onSuccess: (_, { seriesIds }) => invalidateArchiveQueries(queryClient, seriesIds),
+  })
+}
+
+export function useRestoreSeries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, redownloadRemoved = false }: { id: number } & Partial<RestoreSeriesRequest>) =>
+      api<RestoreSeriesResponse>(`/series/${id}/restore`, {
+        method: 'POST',
+        body: JSON.stringify({ redownloadRemoved }),
+      }),
+    onSuccess: (_, { id }) => invalidateArchiveQueries(queryClient, [id]),
+  })
+}
+
+export function useRemoveArchivedFiles() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, permanent = false }: { id: number; permanent?: boolean }) =>
+      api<ArchiveSeriesResponse>(`/series/${id}/archive/removefiles`, {
+        method: 'POST',
+        body: JSON.stringify({ permanent }),
+      }),
+    onSuccess: (_, { id }) => invalidateArchiveQueries(queryClient, [id]),
   })
 }
 

@@ -285,6 +285,46 @@ public class SeriesArchiveService(
         return result with { Refresh = StartRefresh(seriesId) };
     }
 
+    /// <summary>How long ago another reader's unfinished progress still counts as "reading it now".</summary>
+    public static readonly TimeSpan ActiveReaderWindow = TimeSpan.FromDays(30);
+
+    /// <summary>
+    /// What removing the series' files would free: the recorded size of every file that is not
+    /// hardlinked to something else, since a seeded copy keeps the bytes alive.
+    /// </summary>
+    public static async Task<long> FreeableBytesAsync(MakiDbContext db, Series series, CancellationToken ct)
+    {
+        if (series.RootFolder is null)
+        {
+            return 0;
+        }
+
+        var files = await db.ChapterFiles.AsNoTracking()
+            .Where(f => f.SeriesId == series.Id)
+            .Select(f => new { f.RelativePath, f.Size })
+            .ToListAsync(ct);
+        return files.Sum(f =>
+            LibraryPaths.ResolveForDelete(series.RootFolder.Path, f.RelativePath) is { } path && HardLinks.IsShared(path)
+                ? 0
+                : f.Size);
+    }
+
+    /// <summary>
+    /// Other users with unfinished progress on the series inside <see cref="ActiveReaderWindow"/>.
+    /// Counts people only; reading is private, so nothing identifies them.
+    /// </summary>
+    public static Task<int> OtherActiveReadersAsync(
+        MakiDbContext db, int seriesId, int userId, DateTime nowUtc, CancellationToken ct)
+    {
+        var since = nowUtc - ActiveReaderWindow;
+        return db.ChapterProgress.IgnoreQueryFilters().AsNoTracking()
+            .Where(p => p.SeriesId == seriesId && p.UserId != userId && !p.Completed && p.UnreadAt == null &&
+                        p.UpdatedAt >= since)
+            .Select(p => p.UserId)
+            .Distinct()
+            .CountAsync(ct);
+    }
+
     private SeriesArchiveResult? RemovalRefusal(Series series, IReadOnlyList<ChapterFile> files, bool permanent)
     {
         if (files.Count == 0)

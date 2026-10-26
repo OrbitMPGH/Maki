@@ -1,6 +1,8 @@
 import { ActionIcon, Loader, Menu, Text } from '@mantine/core'
 import { useState } from 'react'
 import {
+    IconArchive,
+    IconArchiveOff,
     IconBell,
     IconDeviceMobileDown,
     IconDeviceMobileOff,
@@ -73,6 +75,10 @@ export function SeriesActionsMenu({
                                       onSetReadFileCleanup,
                                       onScanUpgrades,
                                       onSearchVolumes,
+                                      canArchive,
+                                      archived,
+                                      onArchive,
+                                      onRestore,
                                       canRemove,
                                       onRemove,
                                       offlineSaved,
@@ -111,6 +117,11 @@ export function SeriesActionsMenu({
     onSetReadFileCleanup: (mode: string) => void
     onScanUpgrades: () => void
     onSearchVolumes: () => void
+    /** ArchiveSeries: gates both the Archive and the Restore to library entry. */
+    canArchive: boolean
+    archived: boolean
+    onArchive: () => void
+    onRestore: () => void
     canRemove: boolean
     onRemove: () => void
     /** Chapters of this series saved on this device; undefined where the browser cannot save any. */
@@ -389,21 +400,34 @@ export function SeriesActionsMenu({
                     </Menu.Item>
                 )}
 
+                {(canArchive || canRemove) && <Menu.Divider />}
+
+                {canArchive && (
+                    <Menu.Item
+                        leftSection={archived ? <IconArchiveOff size={16} /> : <IconArchive size={16} />}
+                        closeMenuOnClick={false}
+                        onClick={() => {
+                            setOpened(false)
+                            if (archived) onRestore()
+                            else onArchive()
+                        }}
+                    >
+                        {archived ? <Trans context="series">Restore to library</Trans> : <Trans context="series">Archive</Trans>}
+                    </Menu.Item>
+                )}
+
                 {canRemove && (
-                    <>
-                        <Menu.Divider />
-                        <Menu.Item
-                            color="var(--danger)"
-                            leftSection={<IconTrash size={16} />}
-                            closeMenuOnClick={false}
-                            onClick={() => {
-                                setOpened(false)
-                                onRemove()
-                            }}
-                        >
-                            <Trans>Remove from library</Trans>
-                        </Menu.Item>
-                    </>
+                    <Menu.Item
+                        color="var(--danger)"
+                        leftSection={<IconTrash size={16} />}
+                        closeMenuOnClick={false}
+                        onClick={() => {
+                            setOpened(false)
+                            onRemove()
+                        }}
+                    >
+                        <Trans>Remove from library</Trans>
+                    </Menu.Item>
                 )}
             </Menu.Dropdown>
         </Menu>

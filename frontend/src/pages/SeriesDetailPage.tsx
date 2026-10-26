@@ -63,7 +63,9 @@ import {
   useChapters,
   useSourceMappings,
   useSources,
+  useArchiveSeries,
   useDeleteSeries,
+  useRestoreSeries,
   useMoveSeries,
   useRefreshMetadata,
   useRefreshSeries,
@@ -140,7 +142,9 @@ import {
   type ChapterSpanRowActions,
 } from '../components/series/ChapterTableRows'
 import { chapterLabel, readStateOf, type FileOrigin } from '../components/series/chapterTable'
+import { ArchiveSeriesDialog } from '../components/series/ArchiveSeriesDialog'
 import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
+import { RestoreSeriesDialog } from '../components/series/RestoreSeriesDialog'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
 import { EditMetadataModal, MetadataLock } from '../components/series/EditMetadataModal'
 import { MetadataHistoryModal } from '../components/series/MetadataHistoryModal'
@@ -506,6 +510,8 @@ function SeriesDetailBody() {
       [readStateFor],
   )
   const deleteSeries = useDeleteSeries()
+  const archiveSeries = useArchiveSeries()
+  const restoreSeries = useRestoreSeries()
   const refresh = useRefreshSeries()
   const refreshMetadata = useRefreshMetadata()
   const rescan = useRescanSeries()
@@ -660,10 +666,13 @@ function SeriesDetailBody() {
   const [deleteFileIds, setDeleteFileIds] = useState<number[] | null>(null)
   const [deleteSeriesModalOpen, setDeleteSeriesModalOpen] = useState(false)
   const [deleteSeriesFiles, setDeleteSeriesFiles] = useState(false)
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false)
+  const [archiveRemoveFiles, setArchiveRemoveFiles] = useState(false)
+  const [restoreModalOpen, setRestoreModalOpen] = useState(false)
   const binDays = useRecycleBinDays(deleteChaptersModalOpen || deleteFileIds !== null)
   // Which delete dialog the server answered with "the recycle bin cannot take these".
-  const [binRefused, setBinRefused] = useState<'chapters' | 'files' | 'series' | null>(null)
-  const onBinRefused = (dialog: 'chapters' | 'files' | 'series') => (error: unknown) => {
+  const [binRefused, setBinRefused] = useState<'chapters' | 'files' | 'series' | 'archive' | null>(null)
+  const onBinRefused = (dialog: 'chapters' | 'files' | 'series' | 'archive') => (error: unknown) => {
     if (offersPermanentDelete(error)) setBinRefused(dialog)
   }
 
@@ -672,6 +681,7 @@ function SeriesDetailBody() {
   const canDownload = can('DownloadChapters')
   const canEditMetadata = can('EditMetadata')
   const canDelete = can('DeleteSeries')
+  const canArchive = can('ArchiveSeries')
   const pendingProposalId = series?.pendingProposalId ?? null
   const { data: seriesProposals } = useTorrentProposals(seriesId, canDownload && pendingProposalId != null)
   const pendingProposal = seriesProposals?.find((p) => p.id === pendingProposalId) ?? null
@@ -1664,6 +1674,61 @@ function SeriesDetailBody() {
       },
     )
 
+  const restoreArchived = (redownloadRemoved: boolean) =>
+    restoreSeries.mutate(
+      { id: series.id, redownloadRemoved },
+      {
+        onSuccess: () => {
+          setRestoreModalOpen(false)
+          notify.ok(staticT({ message: 'Restored to the library', context: 'series' }))
+        },
+      },
+    )
+
+  // With every file gone there is a choice to make about fetching them again; otherwise nothing to ask.
+  const restoreFromMenu = () =>
+    series.chapterFileCount === 0 && series.removedChapterCount > 0 ? setRestoreModalOpen(true) : restoreArchived(false)
+
+  const showArchivedToast = (filesKept: boolean) => {
+    const id = notifications.show({
+      color: 'var(--ok)',
+      autoClose: filesKept ? 8000 : 4000,
+      message: (
+        <Group gap="xs" wrap="nowrap" justify="space-between">
+          <Text size="sm">
+            <Trans context="series">Archived</Trans>
+          </Text>
+          {filesKept && (
+            <Button
+              size="xs"
+              variant="subtle"
+              style={{ flexShrink: 0 }}
+              onClick={() => {
+                notifications.hide(id)
+                restoreArchived(false)
+              }}
+            >
+              <Trans>Undo</Trans>
+            </Button>
+          )}
+        </Group>
+      ),
+    })
+  }
+
+  const archiveCurrent = (permanent = false) =>
+    archiveSeries.mutate(
+      { id: series.id, removeFiles: archiveRemoveFiles, permanent },
+      {
+        onSuccess: () => {
+          setArchiveModalOpen(false)
+          setBinRefused(null)
+          showArchivedToast(!archiveRemoveFiles)
+        },
+        onError: onBinRefused('archive'),
+      },
+    )
+
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       <Tabs
@@ -1872,6 +1937,14 @@ function SeriesDetailBody() {
                     onScanUpgrades={scanSeriesForUpgrades}
                     searchingVolumes={runVolumeSearch.isPending}
                     onSearchVolumes={searchSeriesVolumes}
+                    canArchive={canArchive}
+                    archived={series.archivedAt != null}
+                    onArchive={() => {
+                      setArchiveRemoveFiles(false)
+                      setBinRefused(null)
+                      setArchiveModalOpen(true)
+                    }}
+                    onRestore={restoreFromMenu}
                     canRemove={can('DeleteSeries')}
                     onRemove={() => {
                       setDeleteSeriesFiles(false)
@@ -2945,6 +3018,32 @@ function SeriesDetailBody() {
         </Tabs.Panel>
 
         {/* This action lives in the hero, so its dialog must not be deactivated with any tab panel. */}
+        <ArchiveSeriesDialog
+          opened={archiveModalOpen}
+          onClose={() => {
+            setArchiveModalOpen(false)
+            setBinRefused(null)
+          }}
+          title={seriesTitle}
+          sizeBytes={series.archiveFreeableBytes ?? 0}
+          otherReaders={series.otherActiveReaders ?? 0}
+          removeFiles={archiveRemoveFiles}
+          onRemoveFilesChange={setArchiveRemoveFiles}
+          canRemoveFiles={canDelete}
+          loading={archiveSeries.isPending}
+          onConfirm={() => archiveCurrent()}
+          onConfirmPermanent={binRefused === 'archive' ? () => archiveCurrent(true) : undefined}
+        />
+
+        <RestoreSeriesDialog
+          opened={restoreModalOpen}
+          onClose={() => setRestoreModalOpen(false)}
+          removedCount={series.removedChapterCount}
+          canDownload={canDownload}
+          loading={restoreSeries.isPending}
+          onRestore={restoreArchived}
+        />
+
         <RemoveSeriesDialog
           opened={deleteSeriesModalOpen}
           onClose={() => {

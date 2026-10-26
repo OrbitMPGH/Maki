@@ -180,6 +180,56 @@ public sealed class SeriesArchiveTests : IDisposable
         return db.Series.AsNoTracking().Single(s => s.Id == seriesId);
     }
 
+    // ---- dialog figures ----
+
+    [Fact]
+    public async Task FreeableBytes_leaves_out_hardlinked_files()
+    {
+        var seriesId = SeedSeries();
+        var (_, kept) = SeedChapter(seriesId, 1m);
+        var (_, seeded) = SeedChapter(seriesId, 2m);
+        Assert.True(FileLinker.TryHardlink(seeded!, Path.Combine(_tmp, "seeding.cbz")), "this filesystem cannot hardlink");
+        using var db = _db.NewContext();
+        var series = await db.Series.Include(s => s.RootFolder).SingleAsync(s => s.Id == seriesId);
+
+        var freeable = await SeriesArchiveService.FreeableBytesAsync(db, series, CancellationToken.None);
+
+        Assert.Equal(new FileInfo(kept!).Length, freeable);
+    }
+
+    [Fact]
+    public async Task OtherActiveReaders_counts_other_users_with_recent_unfinished_progress()
+    {
+        var seriesId = SeedSeries();
+        var (chapterId, _) = SeedChapter(seriesId, 1m);
+        var now = DateTime.UtcNow;
+        var recent = _db.SeedUser("recent");
+        var stale = _db.SeedUser("stale");
+        var finished = _db.SeedUser("finished");
+        var unread = _db.SeedUser("unread");
+        using (var db = _db.NewContext())
+        {
+            void Progress(int userId, DateTime updated, bool completed = false, DateTime? unreadAt = null) =>
+                db.ChapterProgress.Add(new ChapterProgress
+                {
+                    UserId = userId, SeriesId = seriesId, ChapterId = chapterId, PageIndex = 1, PageCount = 20,
+                    StartedAt = updated, UpdatedAt = updated, Completed = completed, UnreadAt = unreadAt,
+                });
+
+            Progress(1, now.AddDays(-1));
+            Progress(recent, now.AddDays(-2));
+            Progress(stale, now.AddDays(-45));
+            Progress(finished, now.AddDays(-1), completed: true);
+            Progress(unread, now.AddDays(-1), unreadAt: now.AddDays(-1));
+            db.SaveChanges();
+        }
+
+        using var read = _db.NewContext(1);
+        var others = await SeriesArchiveService.OtherActiveReadersAsync(read, seriesId, 1, now, CancellationToken.None);
+
+        Assert.Equal(1, others);
+    }
+
     // ---- archive ----
 
     [Fact]

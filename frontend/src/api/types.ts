@@ -118,6 +118,10 @@ export interface SeriesDto {
   /** When the series was archived out of the active library, or null while it is active. */
   archivedAt: string | null
   archivedByUserId: number | null
+  /** Bytes removing the series' files would free, leaving out hardlinked files. Detail endpoint only. */
+  archiveFreeableBytes?: number
+  /** Other users with unfinished progress here in the last 30 days. Detail endpoint only. */
+  otherActiveReaders?: number
   /** Personal time left from comparable timed chapters in the built-in reader. Detail endpoint only. */
   readTimeEstimate?: {
     seconds: number
@@ -621,6 +625,48 @@ export interface CompareSnapshot {
   chapterNumber: number | null
   commonChapters: number[]
   panels: ComparePanel[]
+}
+
+export interface ArchiveSeriesRequest {
+  removeFiles: boolean
+  /** Set once the server said the files cannot go to the recycle bin and the user chose to delete them. */
+  permanent?: boolean
+}
+
+export interface ArchiveSeriesResponse {
+  deleted: number
+  failed: number
+}
+
+export interface BulkArchiveSeriesRequest extends ArchiveSeriesRequest {
+  seriesIds: number[]
+}
+
+export interface BulkArchiveSeriesResult {
+  seriesId: number
+  ok: boolean
+  notFound: boolean
+  /** Catalogue key of the refusal, e.g. error.series.archived. */
+  code: string | null
+  error: string | null
+  /** The recycle bin refused this one's files; archiving it again with permanent: true would work. */
+  permanentDeleteAvailable: boolean
+  deleted: number
+  failed: number
+}
+
+export interface BulkArchiveSeriesResponse {
+  results: BulkArchiveSeriesResult[]
+}
+
+export interface RestoreSeriesRequest {
+  /** Queue the chapters whose files were removed for download again. */
+  redownloadRemoved: boolean
+}
+
+export interface RestoreSeriesResponse {
+  queued: number
+  queueError: string | null
 }
 
 export interface AddSeriesRequest {
