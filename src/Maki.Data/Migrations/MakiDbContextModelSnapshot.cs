@@ -1025,6 +1025,9 @@ namespace Maki.Data.Migrations
                     b.Property<bool>("OnSeriesAdded")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("OnSeriesArchived")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("OnSeriesRemoved")
                         .HasColumnType("INTEGER");
 
