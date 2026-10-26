@@ -7312,7 +7312,7 @@ body.reader-open {
 }
 
 /* The page scrubber (PageScrubber): one segment per page, lit up to the page on screen, which
-   stands taller. Upscaled pages ahead show lighter, like a video's buffer. The padding is the hit
+   carries a light thumb. Upscaled pages ahead show lighter, like a video's buffer. The padding is the hit
    area; the track itself stays thin. */
 .reader-scrub {
   position: relative;
@@ -7324,7 +7324,10 @@ body.reader-open {
   outline: none;
 }
 .reader-scrub-track {
+  --gap: 0px;
+  position: relative;
   display: flex;
+  gap: var(--gap);
   height: 6px;
   border-radius: var(--radius-pill);
 }
@@ -7332,7 +7335,7 @@ body.reader-open {
   flex-direction: row-reverse;
 }
 .reader-scrub[data-gaps] .reader-scrub-track {
-  gap: 2px;
+  --gap: 2px;
 }
 .reader-scrub:focus-visible .reader-scrub-track {
   outline: 2px solid var(--focus-ring);
@@ -7342,9 +7345,7 @@ body.reader-open {
   flex: 1;
   min-width: 0;
   background: rgba(255, 255, 255, 0.16);
-  transition:
-    background-color var(--dur-fast) var(--ease),
-    transform var(--dur-fast) var(--ease);
+  transition: background-color var(--dur-fast) var(--ease);
 }
 .reader-scrub[data-gaps] .reader-scrub-segment {
   border-radius: 2px;
@@ -7363,14 +7364,30 @@ body.reader-open {
 .reader-scrub-segment[data-lit] {
   background: var(--mantine-primary-color-filled);
 }
-.reader-scrub-segment[data-current] {
-  transform: scaleY(1.75);
-}
 .reader-scrub-segment[data-hover]:not([data-lit]) {
   background: rgba(255, 255, 255, 0.6);
 }
 .reader-scrub-segment[data-hover][data-lit] {
   background: color-mix(in srgb, var(--mantine-primary-color-filled) 70%, #fff);
+}
+/* Covers the page(s) on screen. With a gap, segment i starts at i * (track + gap) / count. The
+   minimum width keeps it findable in a long chapter whose segments are a pixel or two wide. */
+.reader-scrub-thumb {
+  position: absolute;
+  top: 50%;
+  left: calc((100% + var(--gap)) * var(--from) / var(--count));
+  width: max(6px, calc((100% + var(--gap)) * var(--span) / var(--count) - var(--gap)));
+  height: 16px;
+  transform: translateY(-50%);
+  border-radius: 3px;
+  background: #fff;
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 1px 6px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  transition:
+    left var(--dur-fast) var(--ease),
+    width var(--dur-fast) var(--ease);
 }
 /* Page thumbnail above the segment under the pointer. */
 .reader-scrub-preview {
