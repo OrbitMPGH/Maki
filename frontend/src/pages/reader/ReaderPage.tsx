@@ -223,11 +223,13 @@ export default function ReaderPage() {
   const serverModel = current
     ? serverModelFor(prefs.enhance, prefs.enhanceMethod, current.enhanceServer, offline || manifestServedOffline(chapterId))
     : null
+  // The strip sizes its own range from the pages' pixels, so the server follows it there.
+  const [stripRange, setStripRange] = useState<number[]>([])
   const enhanceWindow = useMemo(() => {
     if (!serverModel) return []
     if (mode !== 'vertical') return preloadPages.length > 0 ? preloadPages : (spreads[spreadIndex] ?? [])
-    return [0, 1, 2, -1, -2].map((offset) => page + offset).filter((index) => index >= 0 && index < pageCount)
-  }, [serverModel, mode, preloadPages, spreads, spreadIndex, page, pageCount])
+    return stripRange
+  }, [serverModel, mode, preloadPages, spreads, spreadIndex, stripRange])
   // On `auto` the server is asked only for pages a view has measured as stretched.
   const [stretchedPages, setStretchedPages] = useState<ReadonlySet<number>>(NO_PAGES)
   const server = useServerEnhance(
@@ -857,6 +859,7 @@ export default function ReaderPage() {
               enhanceMethod={prefs.enhanceMethod}
               server={server}
               onStretched={setStretchedPages}
+              onEnhanceRange={setStripRange}
             />
           ) : (
             <PagedView

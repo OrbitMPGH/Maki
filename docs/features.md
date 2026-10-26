@@ -93,6 +93,9 @@ screen. It is off until a reader turns it on. Library files are never modified.
   the bottom says whether it is waiting, upscaling or loading, and Balanced shows meanwhile. The
   page bar marks the pages ahead that are already upscaled in light grey, like the buffered part
   of a video.
+- **Working ahead.** Paged mode enhances the pages in the preload window. Continuous mode sizes its
+  range by pixels instead of pages, so a chapter of many short slices is enhanced well down the
+  strip and one of a few very tall slices only a page or two ahead, within what the device can hold.
 - **Fallbacks.** A server method shows **Balanced** on this device while its page is not ready,
   and for good when the reader is offline, the admin tier is off or the model is not downloaded. A
   device without WebGL2 shows plain pages and the browser methods read "Not supported on this

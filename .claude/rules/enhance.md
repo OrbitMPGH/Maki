@@ -2,6 +2,7 @@
 paths:
   - "frontend/src/lib/enhance/**"
   - "frontend/src/pages/reader/EnhancedPage*"
+  - "frontend/src/pages/reader/ContinuousView.tsx"
   - "frontend/src/pages/reader/enhanceRuntime*"
   - "frontend/src/pages/reader/compareHold*"
   - "frontend/src/pages/reader/useServerEnhance*"
@@ -55,6 +56,7 @@ User-facing summary in `docs/features.md`. Two tiers share one reader setting: `
 - Crop and split keep measuring the original `<img>` (`pageShape.ts` caches by `currentSrc`). Regions are fractions and apply unchanged to the enhanced canvas.
 - `pageUrl()` must not change shape. Offline saving, `useWarmChapter` and the service worker regexes depend on it. The enhanced URL (`.../page/{n}/enhanced`) is deliberately outside every service-worker list, so offline it gets the synthetic 503 and the reader shows Balanced.
 - `EnhancedPage` reports `onShowing` from a layout effect. The canvas hides in the same commit that holding H starts, so a passive effect paints one frame with neither the canvas nor the host's image.
+- The strip's enhance range (`enhanceRange` in `ContinuousView`) is sized in displayed device pixels against `enhanceBudget()` (three quarters ahead, the rest behind, 32 pages at most), never a page count: webtoon chapters run from a handful of 15000 px slices to 100 short ones. The same range is the server's window in vertical mode, so `MAX_PAGES` in `useServerEnhance` and `UpscaleQueue.MaxPendingPerUser` move together.
 - The engine's `enhance()` closes the source bitmap. A result produced with a `key` belongs to the engine's LRU: draw it with `drawImage`, never close or transfer it.
 
 ## Model delivery
