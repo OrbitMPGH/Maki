@@ -187,7 +187,7 @@ public class ReleaseService(
             var indexer = indexers.For(await ActiveBackendAsync(ct));
             link = await indexer.FetchTorrentAsync(url, timeout.Token);
         }
-        catch (Exception ex) when (ex is HttpRequestException or InvalidDataException ||
+        catch (Exception ex) when (ex is HttpRequestException or InvalidDataException or UriFormatException ||
                                    (ex is TaskCanceledException && !ct.IsCancellationRequested))
         {
             logger.LogWarning("Could not fetch the torrent file for '{Title}' ({Error}); handing {Client} the link instead",

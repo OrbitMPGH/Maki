@@ -991,6 +991,10 @@ try
             .AddHttpMessageHandler(() => new TransientRetryHandler());
     }
 
+    builder.Services.AddHttpClient(Maki.Core.Indexers.ReleaseIndexerBase.DownloadHttpClientName)
+        .ConfigurePrimaryHttpMessageHandler(Maki.Core.Indexers.ReleaseIndexerBase.CreateDownloadLinkHandler)
+        .AddHttpMessageHandler(() => new TransientRetryHandler());
+
     builder.Services.AddSingleton<Maki.Core.Indexers.IReleaseIndexer, Maki.Core.Indexers.ProwlarrClient>();
     builder.Services.AddSingleton<Maki.Core.Indexers.IReleaseIndexer, Maki.Core.Indexers.JackettClient>();
     builder.Services.AddSingleton<Maki.Core.Indexers.IndexerRegistry>();
