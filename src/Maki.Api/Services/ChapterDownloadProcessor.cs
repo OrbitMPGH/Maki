@@ -330,6 +330,18 @@ public class ChapterDownloadProcessor(
             // The series was loaded when the item was claimed. A rename or move that held the lock
             // meanwhile changed where the folder is, so the path is built from what it is now.
             await db.Entry(series).ReloadAsync(ct);
+
+            // Archived between the claim and the lock: the archive's queue sweep may have missed this
+            // row, and a file placed now would land in a series that no longer takes downloads.
+            if (series.ArchivedAt is not null)
+            {
+                await batches.DiscardAsync(series.Id, item.Id);
+                item.Status = QueueStatus.Cancelled;
+                await db.SaveChangesAsync(CancellationToken.None);
+                TryDeleteDirectory(workingDir);
+                return DownloadOutcome.Settled;
+            }
+
             if (series.RootFolderId != rootFolder.Id)
             {
                 rootFolder = await db.RootFolders.FindAsync([series.RootFolderId], ct) ?? rootFolder;
