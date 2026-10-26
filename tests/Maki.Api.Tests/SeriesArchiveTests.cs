@@ -6,6 +6,7 @@ using Maki.Api.Services;
 using Maki.Api.Configuration;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Notifications;
 using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Core.Storage;
@@ -238,6 +239,19 @@ public sealed class SeriesArchiveTests : IDisposable
         var series = Load(seriesId);
         Assert.NotNull(series.ArchivedAt);
         Assert.Equal(1, series.ArchivedByUserId);
+    }
+
+    [Fact]
+    public async Task Archive_dispatches_a_series_archived_notification()
+    {
+        var seriesId = SeedSeries("Berserk");
+
+        await ArchiveAsync(seriesId);
+
+        var (type, message) = Assert.Single(_notifications.Sent);
+        Assert.Equal(NotificationEventType.SeriesArchived, type);
+        Assert.Equal(seriesId, message.SeriesId);
+        Assert.Equal("Berserk", message.SeriesTitle);
     }
 
     [Fact]

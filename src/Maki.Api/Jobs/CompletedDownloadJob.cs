@@ -623,6 +623,13 @@ public class CompletedDownloadJob(
             return;
         }
 
+        if (outcome.ErrorKey == TorrentImportService.SeriesArchivedKey)
+        {
+            // The archive already cancelled this row. Cancelled is not announced and blames no release.
+            item.Status = QueueStatus.Cancelled;
+            return;
+        }
+
         if (!outcome.Applied)
         {
             item.Status = QueueStatus.Failed;
