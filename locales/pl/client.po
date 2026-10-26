@@ -845,6 +845,10 @@ msgstr "{count, plural, one {Rozdział jest zapisany na tym urządzeniu, ale ta 
 msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr "{count, plural, one {Usunąć # archiwum?} few {Usunąć # archiwa?} many {Usunąć # archiwów?} other {Usunąć # archiwum?}}"
 
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "{count, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "{count, plural, one {Hidden # title} other {Hidden # titles}}"
@@ -1608,6 +1612,15 @@ msgstr "{pushingDown} wykluczonych z Twojego profilu gustu"
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, one {Automatyczne dopasowywanie # serii w tle.} few {Automatyczne dopasowywanie # serii w tle.} many {Automatyczne dopasowywanie # serii w tle.} other {Automatyczne dopasowywanie # serii w tle.}}"
 
+#: src/components/series/restoreToast.tsx
+msgid "{queued, plural, one {Queued # removed chapter} other {Queued # removed chapters}}"
+msgstr ""
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "{queued, plural, one {Restored to the library, # chapter queued} other {Restored to the library, # chapters queued}}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
@@ -1695,10 +1708,6 @@ msgstr "{reasonText} - {measurement}"
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {Pozostał # rozdział} few {Pozostały # rozdziały} many {Pozostało # rozdziałów} other {Pozostało # rozdziału}}"
-
-#: src/components/series/RestoreSeriesDialog.tsx
-msgid "{removedCount, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
-msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -5088,6 +5097,7 @@ msgstr "Wyczyść filtry"
 msgid "Clear queue"
 msgstr "Wyczyść kolejkę"
 
+#: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -6819,6 +6829,10 @@ msgstr "Kolejka pobierania"
 #, fuzzy
 msgid "Download the next"
 msgstr "Pobierz następne"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "Download the removed chapters again?"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -15536,11 +15550,14 @@ msgstr "Przywrócono jako niepowiązany plik. Kondycja może go zaimportować."
 msgid "Restored from the provider"
 msgstr "Przywrócono od dostawcy"
 
-#: src/components/discover/ArchivedRestore.tsx
-#: src/pages/LibraryPage.tsx
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/restoreToast.tsx
 msgctxt "series"
 msgid "Restored to the library"
+msgstr ""
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "Restored to the library, but the removed chapters were not queued: {queueError}"
 msgstr ""
 
 #: src/pages/ScrobblePage.tsx
@@ -17466,6 +17483,10 @@ msgstr "Migawka na dysku: {snapshotSize}, odświeżona {refreshedAtLabel}"
 #, fuzzy
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "Migawka na dysku: {snapshotSize}, odświeżona o nieznanej porze"
+
+#: src/components/series/restoreToast.tsx
+msgid "Some removed chapters were not queued: {queueError}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -20269,8 +20290,13 @@ msgstr "Pokaż w bibliotece"
 msgid "View in library: {title}"
 msgstr "Zobacz w bibliotece: {title}"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "View series"
+msgstr ""
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "View series: {title}"
 msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
@@ -21047,6 +21073,10 @@ msgstr "Twoje hasło"
 #, fuzzy
 msgid "Your priority order"
 msgstr "Twoja kolejność priorytetów"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "Your rating for {displayTitle}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy

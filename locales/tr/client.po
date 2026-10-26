@@ -845,6 +845,10 @@ msgstr "{count, plural, one {Bu cihazda bir bölüm kayıtlı, ama bu sekme onu 
 msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr "{count, plural, one {# arşiv silinsin mi?} other {# arşiv silinsin mi?}}"
 
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "{count, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "{count, plural, one {Hidden # title} other {Hidden # titles}}"
@@ -1608,6 +1612,15 @@ msgstr "{pushingDown} zevk profilinizden çıkarıldı"
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, one {Arka planda # seri otomatik eşleştiriliyor.} other {Arka planda # seri otomatik eşleştiriliyor.}}"
 
+#: src/components/series/restoreToast.tsx
+msgid "{queued, plural, one {Queued # removed chapter} other {Queued # removed chapters}}"
+msgstr ""
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "{queued, plural, one {Restored to the library, # chapter queued} other {Restored to the library, # chapters queued}}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
@@ -1695,10 +1708,6 @@ msgstr "{reasonText} - {measurement}"
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {# bölüm kaldı} other {# bölüm kaldı}}"
-
-#: src/components/series/RestoreSeriesDialog.tsx
-msgid "{removedCount, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
-msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -5088,6 +5097,7 @@ msgstr "Filtreleri temizle"
 msgid "Clear queue"
 msgstr "Kuyruğu temizle"
 
+#: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -6819,6 +6829,10 @@ msgstr "İndirme kuyruğu"
 #, fuzzy
 msgid "Download the next"
 msgstr "Sonrakini indir"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "Download the removed chapters again?"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -15536,11 +15550,14 @@ msgstr "Bağlantısız bir dosya olarak geri yüklendi. Sağlık bunu içe aktar
 msgid "Restored from the provider"
 msgstr "Sağlayıcıdan geri yüklendi"
 
-#: src/components/discover/ArchivedRestore.tsx
-#: src/pages/LibraryPage.tsx
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/restoreToast.tsx
 msgctxt "series"
 msgid "Restored to the library"
+msgstr ""
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "Restored to the library, but the removed chapters were not queued: {queueError}"
 msgstr ""
 
 #: src/pages/ScrobblePage.tsx
@@ -17466,6 +17483,10 @@ msgstr "Diskteki anlık görüntü: {snapshotSize}, yenilenme {refreshedAtLabel}
 #, fuzzy
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "Diskteki anlık görüntü: {snapshotSize}, bilinmeyen bir zamanda yenilendi"
+
+#: src/components/series/restoreToast.tsx
+msgid "Some removed chapters were not queued: {queueError}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -20269,8 +20290,13 @@ msgstr "Kitaplıkta görüntüle"
 msgid "View in library: {title}"
 msgstr "Kitaplıkta görüntüle: {title}"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "View series"
+msgstr ""
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "View series: {title}"
 msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
@@ -21047,6 +21073,10 @@ msgstr "Parolanız"
 #, fuzzy
 msgid "Your priority order"
 msgstr "Öncelik sıranız"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "Your rating for {displayTitle}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy

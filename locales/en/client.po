@@ -700,6 +700,10 @@ msgstr "{count, plural, one {A chapter is saved on this device, but this tab can
 msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "{count, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
+msgstr "{count, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "{count, plural, one {Hidden # title} other {Hidden # titles}}"
 msgstr "{count, plural, one {Hidden # title} other {Hidden # titles}}"
@@ -1316,6 +1320,15 @@ msgstr "{pushingDown} kept out of your taste"
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 
+#: src/components/series/restoreToast.tsx
+msgid "{queued, plural, one {Queued # removed chapter} other {Queued # removed chapters}}"
+msgstr "{queued, plural, one {Queued # removed chapter} other {Queued # removed chapters}}"
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "{queued, plural, one {Restored to the library, # chapter queued} other {Restored to the library, # chapters queued}}"
+msgstr "{queued, plural, one {Restored to the library, # chapter queued} other {Restored to the library, # chapters queued}}"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
 msgstr "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
@@ -1386,10 +1399,6 @@ msgstr "{reasonText} - {measurement}"
 #: src/pages/SeriesDetailPage.tsx
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
-
-#: src/components/series/RestoreSeriesDialog.tsx
-msgid "{removedCount, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
-msgstr "{removedCount, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "{renamed, plural, one {Renamed # series, {failedCount} failed} other {Renamed # series, {failedCount} failed}}"
@@ -4172,6 +4181,7 @@ msgstr "Clear filters"
 msgid "Clear queue"
 msgstr "Clear queue"
 
+#: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Clear rating"
@@ -5592,6 +5602,10 @@ msgstr "Download queue"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Download the next"
 msgstr "Download the next"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "Download the removed chapters again?"
+msgstr "Download the removed chapters again?"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Download this chapter"
@@ -12739,12 +12753,15 @@ msgstr "Restored as an unlinked file. Health can import it."
 msgid "Restored from the provider"
 msgstr "Restored from the provider"
 
-#: src/components/discover/ArchivedRestore.tsx
-#: src/pages/LibraryPage.tsx
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/restoreToast.tsx
 msgctxt "series"
 msgid "Restored to the library"
 msgstr "Restored to the library"
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "Restored to the library, but the removed chapters were not queued: {queueError}"
+msgstr "Restored to the library, but the removed chapters were not queued: {queueError}"
 
 #: src/pages/ScrobblePage.tsx
 msgid "Result"
@@ -14328,6 +14345,10 @@ msgstr "Snapshot on disk: {snapshotSize}, refreshed {refreshedAtLabel}"
 #: src/pages/settings/LibraryCards.tsx
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
+
+#: src/components/series/restoreToast.tsx
+msgid "Some removed chapters were not queued: {queueError}"
+msgstr "Some removed chapters were not queued: {queueError}"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Some sources could not be searched"
@@ -16625,9 +16646,14 @@ msgstr "View in library"
 msgid "View in library: {title}"
 msgstr "View in library: {title}"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "View series"
 msgstr "View series"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "View series: {title}"
+msgstr "View series: {title}"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Vol. {fileVolume}"
@@ -17258,6 +17284,10 @@ msgstr "Your password"
 #: src/pages/settings/DownloadCards.tsx
 msgid "Your priority order"
 msgstr "Your priority order"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "Your rating for {displayTitle}"
+msgstr "Your rating for {displayTitle}"
 
 #: src/pages/LibraryPage.tsx
 msgid "Your rating, score, how much you've read"

@@ -845,6 +845,10 @@ msgstr "{count, plural, other {本设备上已保存 # 个章节，但此标签�
 msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr "{count, plural, other {删除 # 个归档？}}"
 
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "{count, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "{count, plural, one {Hidden # title} other {Hidden # titles}}"
@@ -1608,6 +1612,15 @@ msgstr "{pushingDown} 个被排除在品味之外"
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, other {正在后台自动匹配 # 个系列。}}"
 
+#: src/components/series/restoreToast.tsx
+msgid "{queued, plural, one {Queued # removed chapter} other {Queued # removed chapters}}"
+msgstr ""
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "{queued, plural, one {Restored to the library, # chapter queued} other {Restored to the library, # chapters queued}}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
@@ -1695,10 +1708,6 @@ msgstr "{reasonText} - {measurement}"
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, other {剩余 # 个章节}}"
-
-#: src/components/series/RestoreSeriesDialog.tsx
-msgid "{removedCount, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
-msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -5088,6 +5097,7 @@ msgstr "清除筛选"
 msgid "Clear queue"
 msgstr "清除队列"
 
+#: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -6819,6 +6829,10 @@ msgstr "下载队列"
 #, fuzzy
 msgid "Download the next"
 msgstr "下载后续章节"
+
+#: src/components/series/RestoreSeriesDialog.tsx
+msgid "Download the removed chapters again?"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -15536,11 +15550,14 @@ msgstr "已恢复为未关联文件。健康检查可以将其导入。"
 msgid "Restored from the provider"
 msgstr "已从提供方恢复"
 
-#: src/components/discover/ArchivedRestore.tsx
-#: src/pages/LibraryPage.tsx
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/restoreToast.tsx
 msgctxt "series"
 msgid "Restored to the library"
+msgstr ""
+
+#: src/components/series/restoreToast.tsx
+msgctxt "series"
+msgid "Restored to the library, but the removed chapters were not queued: {queueError}"
 msgstr ""
 
 #: src/pages/ScrobblePage.tsx
@@ -17466,6 +17483,10 @@ msgstr "磁盘上的快照：{snapshotSize}，刷新于 {refreshedAtLabel}"
 #, fuzzy
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "磁盘上的快照：{snapshotSize}，刷新时间未知"
+
+#: src/components/series/restoreToast.tsx
+msgid "Some removed chapters were not queued: {queueError}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -20269,8 +20290,13 @@ msgstr "在资料库中查看"
 msgid "View in library: {title}"
 msgstr "在资料库中查看：{title}"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "View series"
+msgstr ""
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "View series: {title}"
 msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
@@ -21047,6 +21073,10 @@ msgstr "你的密码"
 #, fuzzy
 msgid "Your priority order"
 msgstr "你的优先级顺序"
+
+#: src/components/series/ArchivedSeriesCard.tsx
+msgid "Your rating for {displayTitle}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
