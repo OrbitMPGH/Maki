@@ -980,15 +980,16 @@ export interface HomeReadingResponse {
   continueReading: HomeReadingItem[]
 }
 
-/** A series that recently gained chapter files. */
+/** A series that recently gained chapter files it still has unread. */
 export interface HomeRecentSeriesItem {
   seriesId: number
   seriesTitle: string
   coverUrl: string | null
   addedAt: string
+  /** Unread files in the series' latest batch of downloads. */
   newChapterCount: number
   newestChapterLabel: string | null
-  /** Next unread downloaded chapter; null once everything downloaded has been read. */
+  /** Next unread downloaded chapter. The server drops fully read series, so null is only defensive. */
   readChapterId: number | null
 }
 
