@@ -1,5 +1,5 @@
-import { ActionIcon, Loader, Menu, Text } from '@mantine/core'
-import { useState } from 'react'
+import { ActionIcon, Loader, Menu, Text, Tooltip } from '@mantine/core'
+import { useState, type ReactElement } from 'react'
 import {
     IconArchive,
     IconArchiveOff,
@@ -77,6 +77,7 @@ export function SeriesActionsMenu({
                                       onSearchVolumes,
                                       canArchive,
                                       archived,
+                                      sourceToolsDisabledReason = null,
                                       onArchive,
                                       onRestore,
                                       canRemove,
@@ -120,6 +121,8 @@ export function SeriesActionsMenu({
     /** ArchiveSeries: gates both the Archive and the Restore to library entry. */
     canArchive: boolean
     archived: boolean
+    /** Why the items that talk to a source are switched off (an archived series), or null while they work. */
+    sourceToolsDisabledReason?: string | null
     onArchive: () => void
     onRestore: () => void
     canRemove: boolean
@@ -142,6 +145,24 @@ export function SeriesActionsMenu({
     const upgradeProfileValue = upgradeProfileId == null ? INSTANCE_DEFAULT : String(upgradeProfileId)
     const upgradeProfileLabel =
         upgradeProfiles.find((p) => p.id === upgradeProfileId)?.name ?? instanceDefaultLabel
+
+    const toolsOff = sourceToolsDisabledReason !== null
+    const offProps = {
+        'data-disabled': toolsOff || undefined,
+        'aria-disabled': toolsOff || undefined,
+        closeMenuOnClick: !toolsOff,
+    }
+    const whenOn = (action: () => void) => () => {
+        if (!toolsOff) action()
+    }
+    const withReason = (item: ReactElement) =>
+        toolsOff ? (
+            <Tooltip label={sourceToolsDisabledReason} position="left" withArrow>
+                {item}
+            </Tooltip>
+        ) : (
+            item
+        )
 
     return (
         // Taller than a phone screen, so it opens toward the roomier side, stops at the screen edge
@@ -177,9 +198,11 @@ export function SeriesActionsMenu({
                 {canEdit && (
                     <>
                         <Menu.Label><Trans>Series</Trans></Menu.Label>
-                        <Menu.Item leftSection={<IconRefresh size={16} />} onClick={onRefreshChapters}>
-                            <Trans>Refresh chapters</Trans>
-                        </Menu.Item>
+                        {withReason(
+                            <Menu.Item leftSection={<IconRefresh size={16} />} onClick={whenOn(onRefreshChapters)} {...offProps}>
+                                <Trans>Refresh chapters</Trans>
+                            </Menu.Item>,
+                        )}
                         <Menu.Item leftSection={<IconPhoto size={16} />} onClick={onRefreshMetadata}>
                             <Trans>Refresh metadata and poster</Trans>
                         </Menu.Item>
@@ -262,7 +285,21 @@ export function SeriesActionsMenu({
                 )}
                 <Menu.Label><Trans>Automation</Trans></Menu.Label>
 
-                {canEdit && (
+                {canEdit && toolsOff && withReason(
+                    <Menu.Item
+                        leftSection={<IconEye size={16} />}
+                        rightSection={
+                            <Text size="xs" c="var(--ink-3)">
+                                {renderLabel(label(MONITOR_OPTIONS, monitorMode))}
+                            </Text>
+                        }
+                        {...offProps}
+                    >
+                        <Trans>Monitor</Trans>
+                    </Menu.Item>,
+                )}
+
+                {canEdit && !toolsOff && (
                     <Menu.Sub floatingStrategy="fixed">
                         <Menu.Sub.Target>
                             <Menu.Sub.Item
@@ -381,23 +418,29 @@ export function SeriesActionsMenu({
                 )}
 
                 {canScanUpgrades && (
-                    <Menu.Item
-                        leftSection={scanningUpgrades ? <Loader size={14} /> : <IconRefresh size={16} />}
-                        disabled={scanningUpgrades}
-                        onClick={onScanUpgrades}
-                    >
-                        <Trans>Scan for upgrades</Trans>
-                    </Menu.Item>
+                    withReason(
+                        <Menu.Item
+                            leftSection={scanningUpgrades ? <Loader size={14} /> : <IconRefresh size={16} />}
+                            disabled={scanningUpgrades}
+                            onClick={whenOn(onScanUpgrades)}
+                            {...offProps}
+                        >
+                            <Trans>Scan for upgrades</Trans>
+                        </Menu.Item>,
+                    )
                 )}
 
                 {canScanUpgrades && (
-                    <Menu.Item
-                        leftSection={searchingVolumes ? <Loader size={14} /> : <IconSearch size={16} />}
-                        disabled={searchingVolumes}
-                        onClick={onSearchVolumes}
-                    >
-                        <Trans>Search volume releases</Trans>
-                    </Menu.Item>
+                    withReason(
+                        <Menu.Item
+                            leftSection={searchingVolumes ? <Loader size={14} /> : <IconSearch size={16} />}
+                            disabled={searchingVolumes}
+                            onClick={whenOn(onSearchVolumes)}
+                            {...offProps}
+                        >
+                            <Trans>Search volume releases</Trans>
+                        </Menu.Item>,
+                    )
                 )}
 
                 {(canArchive || canRemove) && <Menu.Divider />}
