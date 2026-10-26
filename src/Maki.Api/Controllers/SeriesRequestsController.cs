@@ -323,7 +323,14 @@ public class SeriesRequestsController(
                 {
                     // Everything except "somebody already added it" leaves the request unresolved, so
                     // the claim has to go back or it sits in Processing until the stale window expires.
-                    if (result.Error is not SeriesCreationError.AlreadyInLibrary)
+                    if (result.Error is SeriesCreationError.ArchivedInLibrary && result.ExistingSeriesId is int archivedId
+                        && await db.Series.AnyAsync(s => s.Id == archivedId, ct))
+                    {
+                        await ReleaseClaimAsync(request);
+                        return this.ArchivedExists(localizer, archivedId);
+                    }
+
+                    if (result.Error is not (SeriesCreationError.AlreadyInLibrary or SeriesCreationError.ArchivedInLibrary))
                     {
                         await ReleaseClaimAsync(request);
                         return result.Error switch

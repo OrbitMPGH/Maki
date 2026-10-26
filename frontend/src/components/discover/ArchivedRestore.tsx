@@ -23,8 +23,9 @@ export function useIsArchivedSeries(seriesId: number | null | undefined): boolea
  */
 export function RestoreArchivedButton({
   seriesId,
+  onRestored,
   ...buttonProps
-}: { seriesId: number } & Omit<ButtonProps, 'onClick' | 'loading' | 'children'>) {
+}: { seriesId: number; onRestored?: () => void } & Omit<ButtonProps, 'onClick' | 'loading' | 'children'>) {
   const { can } = useAuth()
   const restore = useRestoreSeries()
   const { data: library } = useSeries()
@@ -39,6 +40,7 @@ export function RestoreArchivedButton({
         onSuccess: (result) => {
           setAsking(false)
           showRestoreResult(result, redownloadRemoved)
+          onRestored?.()
         },
       },
     )

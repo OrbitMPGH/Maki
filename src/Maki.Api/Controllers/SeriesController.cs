@@ -1113,6 +1113,13 @@ public class SeriesController(
 
         if (result.Series is null)
         {
+            // Only when the caller can open that series: otherwise it is the plain "already exists".
+            if (result.Error is SeriesCreationError.ArchivedInLibrary && result.ExistingSeriesId is int archivedId
+                && await db.Series.AnyAsync(s => s.Id == archivedId, ct))
+            {
+                return this.ArchivedExists(localizer, archivedId);
+            }
+
             return result.Error switch
             {
                 SeriesCreationError.RootFolderNotFound => this.Fail(localizer, "error.series.rootFolderNotFound"),

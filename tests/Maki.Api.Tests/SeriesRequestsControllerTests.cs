@@ -525,6 +525,30 @@ public class SeriesRequestsControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Approving_a_request_for_an_archived_series_answers_archivedExists_and_keeps_it_pending()
+    {
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "556"), default));
+        var archivedId = _db.SeedSeries(configure: s =>
+        {
+            s.MangaBakaId = 556;
+            s.ArchivedAt = DateTime.UtcNow;
+        });
+        int rootFolderId;
+        using (var db = _db.NewContext())
+            rootFolderId = (await db.Series.SingleAsync(s => s.Id == archivedId)).RootFolderId;
+
+        var result = await AsAdmin().Approve(created.Id, new ApproveSeriesRequestBody(RootFolderId: rootFolderId), default);
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        var body = System.Text.Json.JsonSerializer.SerializeToElement(conflict.Value);
+        Assert.Equal("error.series.archivedExists", body.GetProperty("code").GetString());
+        Assert.Equal(archivedId, body.GetProperty("seriesId").GetInt32());
+        using var verify = _db.NewContext();
+        Assert.Equal(SeriesRequestStatus.Pending, (await verify.SeriesRequests.SingleAsync(r => r.Id == created.Id)).Status);
+    }
+
+    [Fact]
     public async Task New_series_approval_credits_the_requester_once_and_resumes_without_recreating()
     {
         var rootSeriesId = _db.SeedSeries();

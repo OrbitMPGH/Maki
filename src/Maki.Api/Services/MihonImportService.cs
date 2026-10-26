@@ -321,7 +321,8 @@ public class MihonImportService(
             {
                 (seriesId, title, outcome) = (created.Id, created.Title, "created");
             }
-            else if (result.Error == SeriesCreationError.AlreadyInLibrary && result.ExistingSeriesId is { } existingId)
+            else if (result.Error is SeriesCreationError.AlreadyInLibrary or SeriesCreationError.ArchivedInLibrary
+                     && result.ExistingSeriesId is { } existingId)
             {
                 if (await VisibleCopyAsync(existingId, ct) is not { } visible)
                 {

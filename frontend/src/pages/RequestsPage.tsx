@@ -1,4 +1,5 @@
 import { errorText } from '../api/errorText'
+import { archivedExistsSeriesId } from '../api/client'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -42,6 +43,7 @@ import {
   type SeriesRequest,
 } from '../api/requests'
 import { useAuth } from '../auth/AuthProvider'
+import { RestoreArchivedButton } from '../components/discover/ArchivedRestore'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -131,6 +133,10 @@ export default function RequestsPage() {
   // A new-series request has to land somewhere; a chapter request already has its series.
   const needsRootFolder = approving?.kind === 'NewSeries' && approving.seriesId == null
 
+  // The modal offers Restore for this one, so the page-level alert would only repeat it.
+  const archivedSeriesId = archivedExistsSeriesId(approve.error)
+  const shownApproveError = approve.isError && archivedSeriesId == null ? approve.error : null
+
   const submitApprove = () => {
     if (!approving) return
     approve.mutate(
@@ -207,9 +213,9 @@ export default function RequestsPage() {
         </Tabs.List>
       </Tabs>
 
-      {(approve.isError || reject.isError || remove.isError || edit.isError) && (
+      {(shownApproveError || reject.isError || remove.isError || edit.isError) && (
         <Alert color="var(--danger)" variant="light" mb="md">
-          {errorText(approve.error ?? reject.error ?? remove.error ?? edit.error)}
+          {errorText(shownApproveError ?? reject.error ?? remove.error ?? edit.error)}
         </Alert>
       )}
 
@@ -408,6 +414,15 @@ export default function RequestsPage() {
               value={rootFolderId}
               onChange={setRootFolderId}
             />
+          )}
+
+          {archivedSeriesId != null && (
+            <Alert color="var(--warn)" variant="light">
+              <Stack gap="xs" align="flex-start">
+                <Text size="sm">{errorText(approve.error)}</Text>
+                <RestoreArchivedButton seriesId={archivedSeriesId} size="xs" onRestored={() => approve.reset()} />
+              </Stack>
+            </Alert>
           )}
 
           <Textarea

@@ -85,6 +85,30 @@ export const InLibraryArchived: Story = {
   },
 }
 
+export const AddRunsIntoArchivedCopy: Story = {
+  parameters: {
+    msw: discoverPage(
+      http.post(api('/series'), () =>
+        HttpResponse.json(
+          { code: 'error.series.archivedExists', error: 'This series is archived. Restore it instead.', seriesId: 1 },
+          { status: 409 },
+        ),
+      ),
+      http.get(api('/series'), () =>
+        HttpResponse.json(
+          librarySeries.map((s) => (s.id === 1 ? { ...s, archivedAt: '2026-10-07T09:00:00Z', archivedByUserId: 1 } : s)),
+        ),
+      ),
+    ),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add' }))
+    await expect(await canvas.findByText('Archived')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Restore' })).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: 'Add' })).toBeNull()
+  },
+}
+
 export const WithAnimeWatched: Story = {
   args: { item: catalogueItem(6), detail: detailFor(ANIME_PROVIDER_ID) },
   play: async ({ canvas }) => {

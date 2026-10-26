@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
+import { librarySeriesList } from '../../.storybook/mocks/entry/fixtures'
 import { ownRequests, requestsFor } from '../../.storybook/mocks/operations/requests'
 import RequestsPage from './RequestsPage'
 
@@ -78,6 +79,35 @@ export const ApproveFails: Story = {
     const dialog = await body.findByRole('dialog', { name: 'Approve request' })
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Approve and queue' }))
     await expect(await canvas.findByText('This request was already handled by someone else')).toBeVisible()
+  },
+}
+
+export const ApproveArchivedSeries: Story = {
+  parameters: {
+    msw: [
+      http.post(api('/requests/:id/approve'), () =>
+        HttpResponse.json(
+          { code: 'error.series.archivedExists', error: 'This series is archived. Restore it instead.', seriesId: 1 },
+          { status: 409 },
+        ),
+      ),
+      http.get(api('/series'), () =>
+        HttpResponse.json(
+          librarySeriesList.map((s) => (s.id === 1 ? { ...s, archivedAt: '2026-10-07T09:00:00Z', archivedByUserId: 1 } : s)),
+        ),
+      ),
+      http.post(api('/series/:id/restore'), () => HttpResponse.json({ queued: 0, queueError: null })),
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Approve' }))[1])
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog', { name: 'Approve request' })
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Approve and queue' }))
+    await expect(await within(dialog).findByText('This series is archived. Restore it instead.')).toBeVisible()
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Restore' }))
+    await waitFor(async () => expect(await body.findByText('Restored to the library')).toBeVisible())
+    await waitFor(() => expect(within(dialog).queryByText('This series is archived. Restore it instead.')).not.toBeInTheDocument())
   },
 }
 

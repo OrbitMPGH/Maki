@@ -1756,6 +1756,12 @@ msgstr "La série se trouve déjà dans ce dossier racine"
 msgid "error.series.archived"
 msgstr ""
 
+#. Adding or approving a series that is already in the library as an archived one; the client offers Restore.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: This series is archived. Restore it instead.
+msgid "error.series.archivedExists"
+msgstr ""
+
 #. {folder} is an absolute filesystem path and is never translated.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Destination folder already exists: {folder}
