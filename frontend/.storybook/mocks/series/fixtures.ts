@@ -169,6 +169,7 @@ export function seriesDto(id: number, overrides: Partial<SeriesDto> = {}): Serie
     removedChapterCount: 0,
     readFileCleanup: 'Default',
     readFileCleanupActive: false,
+    pageConversion: 'Default',
     knownChapterCount: entry.chapters,
     queuedCount: 0,
     downloadingCount: 0,

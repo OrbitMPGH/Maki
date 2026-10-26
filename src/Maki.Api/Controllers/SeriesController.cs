@@ -1952,6 +1952,40 @@ public class SeriesController(
         return Ok(new { readFileCleanup = mode.ToString() });
     }
 
+    /// <param name="Mode">"Default", "Never", "Smallest", "Compact", "Balanced", "High" or "Lossless".</param>
+    public record PageConversionRequest(string Mode);
+
+    /// <summary>
+    /// The series' own page conversion choice. Files already checked that the plan now decides
+    /// differently are put back in line for the next pass; converted ones stay as they are.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("{id:int}/pageconversion")]
+    public async Task<IActionResult> SetPageConversion(int id, [FromBody] PageConversionRequest request,
+        [FromServices] PageConversionPlanService plans, CancellationToken ct)
+    {
+        if (!Enum.TryParse<PageConversionOverride>(request.Mode, true, out var mode) || !Enum.IsDefined(mode) ||
+            int.TryParse(request.Mode, out _))
+        {
+            return this.Fail(localizer, "error.series.invalidPageConversion");
+        }
+
+        var series = await db.Series.FindAsync([id], ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (series.PageConversion != mode)
+        {
+            series.PageConversion = mode;
+            await db.SaveChangesAsync(ct);
+            await plans.RecheckAsync(await PageConversionOptions.LoadPlanAsync(db, ct), id, ct);
+        }
+
+        return Ok(new { pageConversion = mode.ToString() });
+    }
+
     /// <param name="UpgradeProfileId">Null clears every pin so the series follow the instance default.</param>
     public record BulkUpgradeProfileRequest(List<int>? SeriesIds, int? UpgradeProfileId);
 

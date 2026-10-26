@@ -64,6 +64,9 @@ const seriesMutations: HttpHandler[] = [
   http.delete(api('/series/:id'), () => noContent()),
   http.post(api('/series/:id/monitormode'), async ({ request }) => HttpResponse.json({ mode: (await bodyOf(request)).mode })),
   http.post(api('/series/:id/readcleanup'), async ({ request }) => HttpResponse.json({ readFileCleanup: (await bodyOf(request)).mode })),
+  http.post(api('/series/:id/pageconversion'), async ({ request }) =>
+    HttpResponse.json({ pageConversion: (await bodyOf(request)).mode }),
+  ),
   http.post(api('/series/:id/upgradeprofile'), async ({ request }) =>
     HttpResponse.json({ upgradeProfileId: (await bodyOf(request)).upgradeProfileId ?? null }),
   ),

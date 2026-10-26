@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, apiBlob } from './client'
+import type { QualityTierName } from './upgrades'
 
 export type PageConversionFormat = 'webp' | 'avif'
 
@@ -52,7 +53,7 @@ export interface PageConversionStatus {
   pass: {
     state: 'idle' | 'running' | 'paused'
     /** Why a pass paused itself rather than being paused. */
-    hold: 'lowDisk' | 'conversionOff' | null
+    hold: 'lowDisk' | 'conversionOff' | 'settingsChanged' | null
     currentFile: string | null
     /** The pass in progress, or the last one that finished. */
     totals: PageConversionPassTotals | null
@@ -64,6 +65,10 @@ export interface PageConversionStatus {
     trashBytes: number
     trashFiles: number
     trashDays: number
+    /** How many rules decide which files are converted. */
+    ruleCount: number
+    /** Series whose own menu choice (Never or a fixed quality) wins over the rules. */
+    overrideSeries: number
   }
 }
 
@@ -85,21 +90,117 @@ function useStatusMutation<T>(fn: (input: T) => Promise<PageConversionStatus>) {
   })
 }
 
-export function useSavePageConversion() {
-  return useStatusMutation((settings: PageConversionSettings) =>
-    api<PageConversionStatus>('/pageconversion/settings', {
-      method: 'PUT',
-      body: JSON.stringify(settings),
-    }),
-  )
-}
-
 export function useStartPageConversion() {
   return useStatusMutation(() => api<PageConversionStatus>('/pageconversion/start', { method: 'POST' }))
 }
 
 export function usePausePageConversion() {
   return useStatusMutation(() => api<PageConversionStatus>('/pageconversion/pause', { method: 'POST' }))
+}
+
+/** Every present field must match. A missing field matches anything. */
+export interface PageConversionConditions {
+  tiers?: QualityTierName[]
+  /** ChapterFile source names, case-insensitive, with a trailing `*` as the only wildcard. */
+  sources?: string[]
+  /** jpg | png | mixed. */
+  formats?: string[]
+  seriesTypes?: string[]
+  /** Any of the series' user tags, by label. */
+  tags?: string[]
+  bppUnder?: number
+  bppOver?: number
+  sizeOverBytes?: number
+  sizeUnderBytes?: number
+}
+
+export interface PageConversionRule {
+  /** Null on a rule that has not been saved yet. */
+  id?: number | null
+  name: string
+  conditions: PageConversionConditions
+  action: 'skip' | 'convert'
+  /** Required when the action is convert, null for skip. */
+  stop: PageConversionStop | null
+}
+
+export interface PageConversionRules {
+  rules: PageConversionRule[]
+}
+
+export interface PageConversionScopeRequest {
+  format: PageConversionFormat | null
+  stop: PageConversionStop
+  pngLossless: boolean
+  rules: PageConversionRule[]
+}
+
+export interface ScopeBucket {
+  files: number
+  bytes: number
+}
+
+export interface PageConversionScope {
+  /** One bucket per rule, in the order the request listed them. */
+  rules: ScopeBucket[]
+  /** Files no rule matched, which take the default quality. */
+  default: ScopeBucket
+  /** Files in series whose own choice decides. */
+  overrides: ScopeBucket
+  alreadyCompact: ScopeBucket
+  convertedEarlier: ScopeBucket
+}
+
+export const MAX_PAGE_CONVERSION_RULES = 50
+
+const rulesKey = [...key, 'rules']
+
+export function usePageConversionRules() {
+  return useQuery({
+    queryKey: rulesKey,
+    queryFn: () => api<PageConversionRules>('/pageconversion/rules'),
+  })
+}
+
+export function useSavePageConversionPlan() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (plan: { settings: PageConversionSettings; rules: PageConversionRule[] }) =>
+      api<PageConversionStatus>('/pageconversion/plan', {
+        method: 'PUT',
+        body: JSON.stringify(plan),
+      }),
+    onSuccess: (status) => {
+      queryClient.setQueryData(key, status)
+      void queryClient.invalidateQueries({ queryKey: rulesKey, exact: true })
+    },
+  })
+}
+
+export type PageConversionScopeResult = PageConversionScope & {
+  /** The caller's identifiers for the request's rules, so the counts follow a rule that moved. */
+  ruleKeys: string[]
+}
+
+/**
+ * How many files and bytes each rule would decide, before anything is saved. The previous answer
+ * stays in place while the next one loads. The caller debounces what it passes in.
+ */
+export function usePageConversionScope(request: PageConversionScopeRequest | null, ruleKeys: readonly string[]) {
+  const body = JSON.stringify(request)
+  return useQuery({
+    queryKey: [...key, 'scope', body, ruleKeys.join(',')],
+    queryFn: async (): Promise<PageConversionScopeResult> => ({
+      ...(await api<PageConversionScope>('/pageconversion/scope', { method: 'POST', body })),
+      ruleKeys: [...ruleKeys],
+    }),
+    enabled: request !== null,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+    gcTime: 60_000,
+    retry: false,
+    meta: { silent: true },
+  })
 }
 
 export function usePageConversionSamples() {

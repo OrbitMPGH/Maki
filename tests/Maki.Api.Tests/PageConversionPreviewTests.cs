@@ -212,7 +212,7 @@ public sealed class PageConversionPreviewTests : IDisposable
             new PageConversionWorker(_world.Db.ScopeFactory(), new SettingsService(_world.Db.ScopeFactory()),
                 NullLogger<PageConversionWorker>.Instance),
             new PageConversionPreviewService(db, _world.Paths, NullLogger<PageConversionPreviewService>.Instance),
-            new TestLocalizer())
+            new PageConversionPlanService(db), new TestLocalizer())
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };

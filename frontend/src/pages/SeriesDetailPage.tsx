@@ -81,6 +81,7 @@ import {
   useSetMonitorMode,
   useSetUpgradeProfile,
   useSetReadFileCleanup,
+  useSetSeriesPageConversion,
   useSetRating,
   useToggleChapterWanted,
   useUnlinkChapters,
@@ -528,6 +529,7 @@ function SeriesDetailBody() {
   const setMonitorMode = useSetMonitorMode()
   const setUpgradeProfile = useSetUpgradeProfile()
   const setReadFileCleanup = useSetReadFileCleanup()
+  const setSeriesPageConversion = useSetSeriesPageConversion()
   const { data: upgradeProfiles } = useUpgradeProfiles()
   const setFileTrusted = useSetFileTrusted()
   const upgradeChapterNow = useUpgradeChapterNow()
@@ -1783,6 +1785,11 @@ function SeriesDetailBody() {
                     readFileCleanupActive={series.readFileCleanupActive}
                     onSetReadFileCleanup={(mode) =>
                         setReadFileCleanup.mutate({ seriesId, mode }, { onSuccess: () => notify.ok(staticT`Saved`) })
+                    }
+                    pageConversion={series.pageConversion}
+                    canSetPageConversion={can('Admin')}
+                    onSetPageConversion={(mode) =>
+                        setSeriesPageConversion.mutate({ seriesId, mode }, { onSuccess: () => notify.ok(staticT`Saved`) })
                     }
                     canEdit={canEditMetadata}
                     canCleanUpReadFiles={canDelete}

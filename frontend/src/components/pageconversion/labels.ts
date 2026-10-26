@@ -1,5 +1,6 @@
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { plural } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
 import type {
   PageConversionFormat,
@@ -30,6 +31,15 @@ export const FORMAT_LABELS: Record<PageConversionFormat, MessageDescriptor> = {
   avif: msg`AVIF`,
 }
 
+/** The page formats a rule can name. Wire values, so lowercase. */
+export const RULE_PAGE_FORMATS = ['jpg', 'png', 'mixed'] as const
+
+export const PAGE_FORMAT_LABELS: Record<(typeof RULE_PAGE_FORMATS)[number], MessageDescriptor> = {
+  jpg: msg`JPEG`,
+  png: msg`PNG`,
+  mixed: msg`Mixed JPEG and PNG`,
+}
+
 export const SAMPLE_REASONS: Record<PageConversionSample['reason'], MessageDescriptor> = {
   greyscale: msg`Greyscale page`,
   colour: msg`Colour page`,
@@ -50,13 +60,15 @@ export const KEPT_REASONS: Record<string, MessageDescriptor> = {
 
 export const KEPT_FALLBACK: MessageDescriptor = msg`This page is kept as it is.`
 
-/** "WebP, High", or "Off". */
+/** "WebP, High", "WebP, High, 2 rules", or "Off". */
 export function useSettingsSummary() {
   const { t } = useLingui()
-  return (settings: PageConversionSettings): string => {
+  return (settings: PageConversionSettings, ruleCount = 0): string => {
     if (!settings.format) return t`Off`
     const format = t(FORMAT_LABELS[settings.format])
     const stop = t(STOP_LABELS[settings.stop])
-    return t`${format}, ${stop}`
+    if (ruleCount === 0) return t`${format}, ${stop}`
+    const rules = plural(ruleCount, { one: '# rule', other: '# rules' })
+    return t`${format}, ${stop}, ${rules}`
   }
 }

@@ -100,7 +100,39 @@ public class PageConversionStopsMigrationTests : IDisposable
         Assert.Equal(["library.pageconversion.pass"], values.Keys);
     }
 
-    /// <summary>The schema before and after is the same, so the row is seeded through the model.</summary>
+    /// <summary>
+    /// Inserts a row into the schema as it is at this point of the migrations, filling every other
+    /// required column with an empty value, since the current model has columns that schema lacks.
+    /// </summary>
+    private long Insert(string table, Dictionary<string, object> values)
+    {
+        var row = new Dictionary<string, object>(values);
+        using (var info = _connection.CreateCommand())
+        {
+            info.CommandText = $"""PRAGMA table_info("{table}")""";
+            using var reader = info.ExecuteReader();
+            while (reader.Read())
+            {
+                var (name, type, notNull, hasDefault, key) =
+                    (reader.GetString(1), reader.GetString(2), reader.GetInt32(3) == 1, !reader.IsDBNull(4), reader.GetInt32(5) > 0);
+                if (notNull && !hasDefault && !key && !row.ContainsKey(name))
+                {
+                    row[name] = type == "TEXT" ? "" : 0;
+                }
+            }
+        }
+
+        using var insert = _connection.CreateCommand();
+        var names = row.Keys.ToList();
+        insert.CommandText = $"""INSERT INTO "{table}" ({string.Join(", ", names.Select(n => $"\"{n}\""))}) VALUES ({string.Join(", ", names.Select((_, i) => $"$p{i}"))}); SELECT last_insert_rowid();""";
+        for (var i = 0; i < names.Count; i++)
+        {
+            insert.Parameters.AddWithValue($"$p{i}", row[names[i]]);
+        }
+
+        return (long)insert.ExecuteScalar()!;
+    }
+
     [Fact]
     public void Checked_files_stay_checked()
     {
@@ -108,19 +140,19 @@ public class PageConversionStopsMigrationTests : IDisposable
         using (var db = new MakiDbContext(_options))
         {
             db.Database.GetInfrastructure().GetRequiredService<IMigrator>().Migrate(PreStops);
-            db.AppConfig.Add(new AppConfigEntry { Key = "library.pageconversion.format", Value = "webp" });
-            var root = new RootFolder { Path = "/manga" };
-            db.RootFolders.Add(root);
-            db.SaveChanges();
-            var series = new Series { Title = "One", SortTitle = "one", FolderName = "One", RootFolderId = root.Id };
-            db.Series.Add(series);
-            db.SaveChanges();
-            db.ChapterFiles.Add(new ChapterFile
-            {
-                SeriesId = series.Id, RelativePath = "One/1.cbz", SourceName = "x", ConversionCheckedAtUtc = checkedAt
-            });
-            db.SaveChanges();
         }
+
+        Insert("AppConfig", new() { ["Key"] = "library.pageconversion.format", ["Value"] = "webp" });
+        var root = Insert("RootFolders", new() { ["Path"] = "/manga" });
+        var series = Insert("Series", new()
+        {
+            ["Title"] = "One", ["SortTitle"] = "one", ["FolderName"] = "One", ["RootFolderId"] = root
+        });
+        Insert("ChapterFiles", new()
+        {
+            ["SeriesId"] = series, ["RelativePath"] = "One/1.cbz", ["SourceName"] = "x", ["DateAdded"] = "2026-01-01 00:00:00",
+            ["ConversionCheckedAtUtc"] = "2026-02-01 00:00:00"
+        });
 
         using (var db = new MakiDbContext(_options))
         {

@@ -14,6 +14,8 @@ const meta = {
     upgradeProfiles,
     readFileCleanup: 'Default',
     readFileCleanupActive: false,
+    pageConversion: 'Default',
+    canSetPageConversion: true,
     canEdit: true,
     canCleanUpReadFiles: true,
     canScanUpgrades: true,
@@ -32,6 +34,7 @@ const meta = {
     onSetNotify: fn(),
     onSetUpgradeProfile: fn(),
     onSetReadFileCleanup: fn(),
+    onSetPageConversion: fn(),
     onScanUpgrades: fn(),
     onSearchVolumes: fn(),
     onRemove: fn(),
@@ -80,12 +83,54 @@ export const Remove: Story = {
 }
 
 export const ReaderPermissions: Story = {
-  args: { canEdit: false, canCleanUpReadFiles: false, canScanUpgrades: false, canRemove: false },
+  args: { canEdit: false, canCleanUpReadFiles: false, canSetPageConversion: false, canScanUpgrades: false, canRemove: false },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
     const menu = await body(canvasElement).findByRole('menu')
     await expect(within(menu).queryByRole('menuitem', { name: 'Edit metadata' })).toBeNull()
     await expect(within(menu).queryByRole('menuitem', { name: /remove/i })).toBeNull()
+    await expect(within(menu).queryByRole('menuitem', { name: /Page conversion/ })).toBeNull()
+  },
+}
+
+export const PickPageConversion: Story = {
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
+    const menu = await body(canvasElement).findByRole('menu')
+    const item = await within(menu).findByRole('menuitem', { name: /Page conversion/ })
+    await expect(item).toHaveTextContent('Rules')
+    await userEvent.hover(item)
+    const follow = await body(canvasElement).findByRole('menuitemradio', { name: 'Follow the rules' })
+    await expect(follow).toHaveAttribute('aria-checked', 'true')
+    for (const name of ['Never', 'Smallest', 'Compact', 'Balanced', 'High', 'Lossless']) {
+      await expect(body(canvasElement).getByRole('menuitemradio', { name })).toBeVisible()
+    }
+    const balanced = body(canvasElement).getByRole('menuitemradio', { name: 'Balanced' })
+    balanced.focus()
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(args.onSetPageConversion).toHaveBeenCalledWith('Balanced'))
+  },
+}
+
+export const PageConversionNever: Story = {
+  args: { pageConversion: 'Never' },
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
+    const menu = await body(canvasElement).findByRole('menu')
+    const item = await within(menu).findByRole('menuitem', { name: /Page conversion/ })
+    await expect(item).toHaveTextContent('Never')
+    await userEvent.hover(item)
+    await expect(await body(canvasElement).findByRole('menuitemradio', { name: 'Never' })).toHaveAttribute('aria-checked', 'true')
+    await expect(args.onSetPageConversion).not.toHaveBeenCalled()
+  },
+}
+
+export const PageConversionFixedStop: Story = {
+  args: { pageConversion: 'Lossless' },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
+    const menu = await body(canvasElement).findByRole('menu')
+    await expect(await within(menu).findByRole('menuitem', { name: /Page conversion/ })).toHaveTextContent('Lossless')
   },
 }
 

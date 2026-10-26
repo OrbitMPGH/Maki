@@ -62,6 +62,7 @@ function toSeries(entry: CatalogueEntry): SeriesDto {
     removedChapterCount: 0,
     readFileCleanup: 'Default',
     readFileCleanupActive: false,
+    pageConversion: 'Default',
     knownChapterCount: entry.chapters,
     queuedCount: queue.queued,
     downloadingCount: queue.downloading,

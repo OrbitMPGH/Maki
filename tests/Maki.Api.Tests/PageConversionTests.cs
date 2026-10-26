@@ -19,7 +19,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-public sealed class PageConversionTests : IDisposable
+public sealed partial class PageConversionTests : IDisposable
 {
     private readonly UpgradeWorld _world = new UpgradeWorld().Seed();
     private static readonly PageConversionSettings Webp = new(PageConversionFormat.Webp, PageConversionStop.Balanced, false);
@@ -80,7 +80,7 @@ public sealed class PageConversionTests : IDisposable
         new(db, _world.Archives,
             new KavitaScanService(new KavitaClient(new StubHttpClientFactory("{}")), _world.Settings, _world.Db.ScopeFactory(),
                 NullLogger<KavitaScanService>.Instance),
-            NullLogger<PageConversionService>.Instance)
+            _world.Settings, NullLogger<PageConversionService>.Instance)
         {
             Hardlink = hardlink ?? FileLinker.TryHardlink,
             MoveOver = moveOver ?? ((from, to) => File.Move(from, to, overwrite: true)),
@@ -287,6 +287,7 @@ public sealed class PageConversionTests : IDisposable
         Assert.Equal(QueueStatus.Completed, check.DownloadQueue.Single(q => q.Id == itemId).Status);
         var file = check.Chapters.Include(c => c.ChapterFile).Single(c => c.Id == chapterId).ChapterFile!;
         Assert.Equal(("jpg", "webp"), (file.OriginalImageFormat, file.ImageFormat));
+        Assert.Equal("webp:high", file.CheckedWith);
         Assert.True(file.ConversionSavedBytes > 0);
         Assert.Equal(new FileInfo(Path.Combine(_world.Library, file.RelativePath)).Length, file.Size);
         var sample = check.SourceQualitySamples.Single(s => s.ChapterId == chapterId);
@@ -311,6 +312,7 @@ public sealed class PageConversionTests : IDisposable
         Assert.Equal(QueueStatus.Completed, check.DownloadQueue.Single(q => q.Id == itemId).Status);
         var file = check.ChapterFiles.Single(f => f.Id == fileId);
         Assert.Equal(("jpg", "webp"), (file.OriginalImageFormat, file.ImageFormat));
+        Assert.Equal("webp:high", file.CheckedWith);
         var history = check.UpgradeHistory.Single();
         var after = QualitySnapshot.Parse(history.AfterJson)!;
         Assert.Equal(("jpg", file.QualitySize), (after.ImageFormat, after.SizeBytes));
@@ -361,11 +363,12 @@ public sealed class PageConversionTests : IDisposable
         Assert.Equal(PageConversionPassState.Paused, (await worker.SnapshotAsync(CancellationToken.None)).State);
     }
 
-    private PageConversionController Controller(MakiDbContext db) => new(db, new SettingsService(_world.Db.ScopeFactory()),
-        new PageConversionWorker(_world.Db.ScopeFactory(), new SettingsService(_world.Db.ScopeFactory()),
+    private PageConversionController Controller(MakiDbContext db, PageConversionWorker? worker = null) => new(db,
+        new SettingsService(_world.Db.ScopeFactory()),
+        worker ?? new PageConversionWorker(_world.Db.ScopeFactory(), new SettingsService(_world.Db.ScopeFactory()),
             NullLogger<PageConversionWorker>.Instance),
         new PageConversionPreviewService(db, _world.Paths, NullLogger<PageConversionPreviewService>.Instance),
-        new TestLocalizer());
+        new PageConversionPlanService(db), new TestLocalizer());
 
     [Fact]
     public async Task Changing_the_format_puts_files_left_as_they_were_back_in_line_but_not_converted_ones()
@@ -605,7 +608,7 @@ public sealed class PageConversionTests : IDisposable
         var first = JpegChapter(1);
         var second = JpegChapter(2);
         var probes = 0;
-        var verdicts = new Dictionary<string, bool>();
+        var cache = new PageConversionPassCache();
 
         foreach (var fileId in new[] { first.FileId, second.FileId })
         {
@@ -619,11 +622,11 @@ public sealed class PageConversionTests : IDisposable
 
                 return FileLinker.TryHardlink(source, target);
             });
-            Assert.Equal(FileConversionStatus.Converted, (await service.ConvertAsync(fileId, Webp, verdicts, CancellationToken.None)).Status);
+            Assert.Equal(FileConversionStatus.Converted, (await service.ConvertAsync(fileId, Webp, cache, CancellationToken.None)).Status);
         }
 
         Assert.Equal(1, probes);
-        Assert.Single(verdicts);
+        Assert.Single(cache.Hardlinks);
     }
 
     [WindowsFact]

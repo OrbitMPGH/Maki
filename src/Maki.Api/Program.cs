@@ -901,6 +901,7 @@ try
     builder.Services.AddSingleton<ChapterFileQualityService>();
     builder.Services.AddScoped<ChapterFileMeasureService>();
     builder.Services.AddScoped<PageConversionService>();
+    builder.Services.AddScoped<PageConversionPlanService>();
     builder.Services.AddScoped<PageConversionPreviewService>();
     builder.Services.AddSingleton<PageConversionWorker>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<PageConversionWorker>());

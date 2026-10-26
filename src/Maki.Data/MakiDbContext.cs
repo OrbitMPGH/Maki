@@ -95,6 +95,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<UpgradeAttempt> UpgradeAttempts => Set<UpgradeAttempt>();
     public DbSet<SourceQualitySample> SourceQualitySamples => Set<SourceQualitySample>();
     public DbSet<UpgradeHistory> UpgradeHistory => Set<UpgradeHistory>();
+    public DbSet<PageConversionRule> PageConversionRules => Set<PageConversionRule>();
     public DbSet<RecycleBinEntry> RecycleBin => Set<RecycleBinEntry>();
     public DbSet<TorrentProposal> TorrentProposals => Set<TorrentProposal>();
     public DbSet<SeriesMetadataChange> SeriesMetadataChanges => Set<SeriesMetadataChange>();

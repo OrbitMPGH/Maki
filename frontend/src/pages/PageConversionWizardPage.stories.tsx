@@ -4,7 +4,12 @@ import { http, HttpResponse } from 'msw'
 import { api } from '../../.storybook/mocks/api'
 import { settingsMsw } from '../../.storybook/mocks/settings'
 import { pageConversionIdle, pageConversionRunning } from '../../.storybook/mocks/settings/data'
-import { keptPreviewHandler } from '../../.storybook/mocks/settings/pageConversion'
+import {
+  keptPreviewHandler,
+  pageConversionRules,
+  pageConversionScope,
+  ruleLeaveScraped,
+} from '../../.storybook/mocks/settings/pageConversion'
 import PageConversionWizardPage from './PageConversionWizardPage'
 
 const meta = {
@@ -158,15 +163,261 @@ export const PickAnotherPage: Story = {
   },
 }
 
-export const Start: Story = {
+const scopeRequests: Array<{ rules: Array<{ conditions: Record<string, unknown>; action: string; stop: string | null }> }> = []
+const saves: string[] = []
+let savedSettings: unknown = null
+let savedRules: Array<{ id?: number | null; name: string; action: string; stop: string | null }> = []
+
+const noRules = http.get(api('/pageconversion/rules'), () => HttpResponse.json({ rules: [] }))
+
+const recordScope = http.post(api('/pageconversion/scope'), async ({ request }) => {
+  const body = (await request.json()) as (typeof scopeRequests)[number]
+  scopeRequests.push(body)
+  return HttpResponse.json({
+    ...pageConversionScope,
+    rules: body.rules.map(() => ({ files: 12, bytes: 400 * 1024 ** 2 })),
+  })
+})
+
+const ruleCard = (canvas: ReturnType<typeof within>, n: number) => {
+  const li = canvas.getByRole('textbox', { name: `Name of rule ${n}` }).closest('li')
+  if (!li) throw new Error(`Rule ${n} has no card`)
+  return within(li)
+}
+
+export const Scope: Story = {
   parameters: atStep(3),
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByRole('textbox', { name: 'Name of rule 1' })).toHaveValue(ruleLeaveScraped.name)
+    await expect(canvas.getByRole('textbox', { name: 'Name of rule 2' })).toHaveValue('Squeeze volumes harder')
+    await waitFor(() => expect(ruleCard(canvas, 1).getByText(/1.?240 files, 3\.6 GB/)).toBeVisible())
+    await waitFor(() => expect(ruleCard(canvas, 2).getByText(/365 files, 73\.8 GB/)).toBeVisible())
+    await expect(ruleCard(canvas, 1).getByRole('combobox', { name: 'Action for rule 1' })).toHaveValue('Skip')
+    await expect(ruleCard(canvas, 2).getByRole('combobox', { name: 'Action for rule 2' })).toHaveValue('Convert at Balanced')
+    await expect(canvas.queryByText(/No conditions, so this rule matches/)).toBeNull()
+
+    await expect(canvas.getByText('Everything else: Balanced')).toBeVisible()
+    await expect(canvas.getByText(/94 files, 1\.9 GB/)).toBeVisible()
+    await expect(canvas.getByText(/18 files are in series with their own setting/)).toBeVisible()
+    await expect(canvas.getByText(/41 files are already WebP or AVIF/)).toBeVisible()
+    await expect(canvas.getByText(/412 files were converted earlier/)).toBeVisible()
+
+    await expect(canvas.getByRole('button', { name: 'Move rule 1 up' })).toBeDisabled()
+    await expect(canvas.getByRole('button', { name: 'Move rule 2 down' })).toBeDisabled()
+    await userEvent.click(canvas.getByRole('button', { name: 'Move rule 2 up' }))
+    await expect(canvas.getByRole('textbox', { name: 'Name of rule 1' })).toHaveValue('Squeeze volumes harder')
+    await expect(ruleCard(canvas, 1).getByText(/365 files/)).toBeVisible()
+    await expect(ruleCard(canvas, 2).getByText(/1.?240 files/)).toBeVisible()
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove rule 1' }))
+    await expect(canvas.queryByRole('textbox', { name: 'Name of rule 2' })).toBeNull()
+    await expect(canvas.getByRole('textbox', { name: 'Name of rule 1' })).toHaveValue(ruleLeaveScraped.name)
+  },
+}
+
+export const ScopeEmpty: Story = {
+  parameters: { ...atStep(3), msw: settingsMsw(noRules) },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('No rules yet. Every file is converted at Balanced.')).toBeVisible()
+    await expect(canvas.getByText('Everything else: Balanced')).toBeVisible()
+    for (const name of [
+      'Leave scraped chapters alone',
+      'Squeeze volumes harder',
+      'Keep scanlator releases exact',
+      'Never touch tagged series',
+    ]) {
+      await expect(canvas.getByRole('button', { name })).toBeEnabled()
+    }
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Never touch tagged series' }))
+    await expect(canvas.getByRole('textbox', { name: 'Name of rule 1' })).toHaveValue('Never touch tagged series')
+    await expect(canvas.getByRole('combobox', { name: 'Action for rule 1' })).toHaveValue('Skip')
+    await expect(canvas.getByText('keep-original')).toBeVisible()
+    await expect(canvas.queryByText('No rules yet. Every file is converted at Balanced.')).toBeNull()
+  },
+}
+
+export const ScopeAddRuleWarnsWhenItMatchesEverything: Story = {
+  parameters: { ...atStep(3), msw: settingsMsw(noRules, recordScope) },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    scopeRequests.length = 0
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add rule' }))
+    await expect(await canvas.findByText(/No conditions, so this rule matches every file that reaches it/)).toBeVisible()
+    await expect(canvas.getByRole('combobox', { name: 'Action for rule 1' })).toHaveValue('Convert at Balanced')
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Add condition to rule 1' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Bits per pixel' }))
+    await expect(await canvas.findByRole('textbox', { name: 'Bits per pixel, under' })).toBeVisible()
+    await expect(canvas.getByText(/No conditions, so this rule matches/)).toBeVisible()
+
+    await userEvent.type(canvas.getByRole('textbox', { name: 'Bits per pixel, under' }), '1.5')
+    await waitFor(() => expect(canvas.queryByText(/No conditions, so this rule matches/)).toBeNull())
+    await waitFor(() => expect(scopeRequests.at(-1)?.rules[0].conditions).toEqual({ bppUnder: 1.5 }))
+    // The editor that was opened but left empty was never sent.
+    expect(scopeRequests.some((r) => r.rules.some((rule) => 'bppOver' in rule.conditions))).toBe(false)
+    await waitFor(() => expect(canvas.getByText(/12 files, 400 MB/)).toBeVisible())
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove condition: Bits per pixel' }))
+    await expect(canvas.queryByRole('textbox', { name: 'Bits per pixel, under' })).toBeNull()
+    await expect(await canvas.findByText(/No conditions, so this rule matches/)).toBeVisible()
+  },
+}
+
+export const ScopePickConditions: Story = {
+  parameters: { ...atStep(3), msw: settingsMsw(noRules, recordScope) },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    scopeRequests.length = 0
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add rule' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Add condition to rule 1' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Page format' }))
+
+    await userEvent.click(await canvas.findByRole('combobox', { name: 'Page format' }))
+    await userEvent.click(await body(canvasElement).findByRole('option', { name: 'JPEG' }))
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Add condition to rule 1' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'File size' }))
+    await userEvent.type(await canvas.findByRole('textbox', { name: 'File size in MB, over' }), '100')
+
+    await waitFor(() =>
+      expect(scopeRequests.at(-1)?.rules[0].conditions).toEqual({ formats: ['jpg'], sizeOverBytes: 104_857_600 }),
+    )
+
+    await userEvent.click(canvas.getByRole('combobox', { name: 'Action for rule 1' }))
+    await userEvent.click(await body(canvasElement).findByRole('option', { name: 'Skip' }))
+    await waitFor(() => expect(scopeRequests.at(-1)?.rules[0]).toMatchObject({ action: 'skip', stop: null }))
+  },
+}
+
+export const ScopeWithNothingToReport: Story = {
+  parameters: {
+    ...atStep(3),
+    msw: settingsMsw(
+      http.post(api('/pageconversion/scope'), () =>
+        HttpResponse.json({
+          rules: [pageConversionScope.rules[0], { files: 0, bytes: 0 }],
+          default: pageConversionScope.default,
+          overrides: { files: 0, bytes: 0 },
+          alreadyCompact: { files: 0, bytes: 0 },
+          convertedEarlier: { files: 0, bytes: 0 },
+        }),
+      ),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await waitFor(() => expect(canvas.getByText('No files match')).toBeVisible())
+    await expect(canvas.getByText(/94 files, 1\.9 GB/)).toBeVisible()
+    await expect(canvas.queryByText(/their own setting/)).toBeNull()
+    await expect(canvas.queryByText(/already WebP or AVIF/)).toBeNull()
+    await expect(canvas.queryByText(/converted earlier/)).toBeNull()
+  },
+}
+
+export const ScopeCountsFail: Story = {
+  parameters: {
+    ...atStep(3),
+    msw: settingsMsw(http.post(api('/pageconversion/scope'), () => HttpResponse.json({ error: 'No' }, { status: 500 }))),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/The counts could not be loaded/)).toBeVisible()
+  },
+}
+
+export const ScopeWithConversionOff: Story = {
+  parameters: atStep(1),
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('radio', { name: /Off/ }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await expect(await canvas.findByText(/Conversion is off, so there is nothing to choose/)).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: 'Add rule' })).toBeNull()
+  },
+}
+
+export const StartSavesOnePlan: Story = {
+  parameters: {
+    ...atStep(3),
+    msw: settingsMsw(
+      http.put(api('/pageconversion/plan'), async ({ request }) => {
+        const plan = (await request.json()) as { settings: unknown; rules: typeof savedRules }
+        saves.push('plan')
+        savedRules = plan.rules
+        savedSettings = plan.settings
+        return HttpResponse.json(pageConversionIdle)
+      }),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    saves.length = 0
+    savedRules = []
+    await userEvent.click(await canvas.findByRole('button', { name: 'Keep scanlator releases exact' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+    await expect(await canvas.findByText('3 rules, then everything else at the quality above')).toBeVisible()
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Save only' }))
+    await expect(await body(canvasElement).findByText('Saved')).toBeVisible()
+    expect(saves).toEqual(['plan'])
+    expect(savedSettings).toEqual({ format: 'webp', stop: 'balanced', pngLossless: true })
+    expect(savedRules.map((r) => r.name)).toEqual([
+      pageConversionRules.rules[0].name,
+      pageConversionRules.rules[1].name,
+      'Keep scanlator releases exact',
+    ])
+    expect(savedRules[2]).toMatchObject({ action: 'convert', stop: 'lossless' })
+    expect(savedRules[0]).toMatchObject({ id: 1 })
+  },
+}
+
+export const StartSendsFullPlanWhenRulesUnchanged: Story = {
+  parameters: {
+    ...atStep(4),
+    msw: settingsMsw(
+      http.put(api('/pageconversion/plan'), async ({ request }) => {
+        const plan = (await request.json()) as { rules: typeof savedRules }
+        saves.push(`plan:${plan.rules.length}`)
+        return HttpResponse.json(pageConversionIdle)
+      }),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    saves.length = 0
+    await userEvent.click(await canvas.findByRole('button', { name: 'Save only' }))
+    await expect(await body(canvasElement).findByText('Saved')).toBeVisible()
+    expect(saves).toEqual(['plan:2'])
+  },
+}
+
+export const ScopeWhenRulesFailToLoad: Story = {
+  parameters: {
+    ...atStep(3),
+    msw: settingsMsw(http.get(api('/pageconversion/rules'), () => HttpResponse.json({ error: 'No' }, { status: 500 }))),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Saved rules could not be loaded; saving will replace them.')).toBeVisible()
+    await expect(canvas.getByText(/No rules yet/)).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Add rule' })).toBeEnabled()
+  },
+}
+
+export const Start: Story = {
+  parameters: atStep(4),
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(await canvas.findByText(/Balanced\. Tone is a little lighter/)).toBeVisible()
     await expect(canvas.getByText('Kept lossless')).toBeVisible()
+    await expect(await canvas.findByText('2 rules, then everything else at the quality above')).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Save and start' })).toBeEnabled()
 
     await userEvent.click(canvas.getByRole('button', { name: 'Save only' }))
     await expect(await body(canvasElement).findByText('Saved')).toBeVisible()
+  },
+}
+
+export const StartWithoutRules: Story = {
+  parameters: {
+    ...atStep(4),
+    msw: settingsMsw(http.get(api('/pageconversion/rules'), () => HttpResponse.json({ rules: [] }))),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('None, every file uses the quality above')).toBeVisible()
   },
 }
 
@@ -176,6 +427,8 @@ export const StartWithConversionOff: Story = {
     await userEvent.click(await canvas.findByRole('radio', { name: /Off/ }))
     await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await expect(await canvas.findByText(/Conversion is off, so there is nothing to choose/)).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
     await expect(await canvas.findByRole('button', { name: 'Save only' })).toBeEnabled()
     await expect(canvas.queryByRole('button', { name: 'Save and start' })).toBeNull()
   },
@@ -190,6 +443,7 @@ export const StartWhilePassRuns: Story = {
     await waitFor(() => expect(canvas.getByRole('radio', { name: /AVIF/ })).toBeChecked())
     await userEvent.click(canvas.getByRole('radio', { name: /WebP/ }))
     await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Save and start' }))
 
@@ -216,6 +470,7 @@ export const SaveOnlyWhilePassRunsThenRestart: Story = {
     await waitFor(() => expect(canvas.getByRole('radio', { name: /AVIF/ })).toBeChecked())
     await userEvent.click(canvas.getByRole('radio', { name: /WebP/ }))
     await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Save only' }))
 

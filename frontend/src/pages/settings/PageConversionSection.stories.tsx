@@ -24,7 +24,8 @@ type Story = StoryObj<typeof meta>
 
 export const AfterAPass: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('WebP, Balanced')).toBeVisible()
+    await expect(await canvas.findByText('WebP, Balanced, 2 rules')).toBeVisible()
+    await expect(canvas.getByText('1 series has its own setting in its menu.')).toBeVisible()
     await expect(canvas.getByText('PNG pages are kept lossless.')).toBeVisible()
     await expect(canvas.getByRole('link', { name: 'Change settings' })).toHaveAttribute(
       'href',
@@ -83,5 +84,21 @@ export const PausedForDisk: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/less than 1 GB free/)).toBeVisible()
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Resume' })).toBeEnabled())
+  },
+}
+
+export const PausedForSettingsChange: Story = {
+  parameters: {
+    msw: settingsMsw(
+      http.get(api('/pageconversion'), () =>
+        HttpResponse.json({
+          ...pageConversionRunning,
+          pass: { ...pageConversionRunning.pass, state: 'paused', hold: 'settingsChanged', currentFile: null },
+        }),
+      ),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/Paused because the settings changed\. Restart the pass to use them\./)).toBeVisible()
   },
 }

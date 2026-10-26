@@ -30,10 +30,19 @@ export function PageConversionSection() {
               <Text fw={500} size="sm">
                 <Trans>Current setting</Trans>
               </Text>
-              <Text size="sm">{summarize(status.settings)}</Text>
+              <Text size="sm">{summarize(status.settings, status.library.ruleCount)}</Text>
               {status.settings.format && status.settings.pngLossless && (
                 <Text size="xs" c="var(--ink-3)">
                   <Trans>PNG pages are kept lossless.</Trans>
+                </Text>
+              )}
+              {status.settings.format && status.library.overrideSeries > 0 && (
+                <Text size="xs" c="var(--ink-3)">
+                  <Plural
+                    value={status.library.overrideSeries}
+                    one="# series has its own setting in its menu."
+                    other="# series have their own setting in their menus."
+                  />
                 </Text>
               )}
             </Stack>
@@ -163,6 +172,9 @@ function PausedLine({ hold, pending }: { hold: PageConversionStatus['pass']['hol
   }
   if (hold === 'conversionOff') {
     return <Trans>Paused because page conversion was switched off.</Trans>
+  }
+  if (hold === 'settingsChanged') {
+    return <Trans>Paused because the settings changed. Restart the pass to use them.</Trans>
   }
   return <Plural value={pending} one="Paused, # file left to check." other="Paused, # files left to check." />
 }

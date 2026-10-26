@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button, Group, Skeleton, Stack } from '@mantine/core'
 import { IconArrowLeft, IconArrowRight } from '@tabler/icons-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { plural } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { usePageConversion, type PageConversionSettings } from '../api/pageConversion'
+import { usePageConversion, usePageConversionRules, type PageConversionSettings } from '../api/pageConversion'
 import { StepStrip, type Step } from '../components/StepStrip'
 import { CompareStep } from '../components/pageconversion/CompareStep'
 import { emptyCompareChoice, type CompareChoice } from '../components/pageconversion/compareChoice'
 import { FormatStep } from '../components/pageconversion/FormatStep'
+import { toRuleDraft, type RuleDraft } from '../components/pageconversion/ruleTemplates'
+import { ScopeStep } from '../components/pageconversion/ScopeStep'
 import { StartStep } from '../components/pageconversion/StartStep'
 import { FORMAT_LABELS, STOP_LABELS } from '../components/pageconversion/labels'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -16,10 +19,10 @@ import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 const SETTINGS_URL = '/settings?tab=library&s=page-conversion'
 
-type StepId = 'format' | 'compare' | 'start'
+type StepId = 'format' | 'compare' | 'scope' | 'start'
 
-/** The wizard's steps in order. A later phase adds "What to convert" and "Review" here and nowhere else. */
-const STEP_IDS: readonly StepId[] = ['format', 'compare', 'start']
+/** The wizard's steps in order. A later phase adds "Review" here and nowhere else. */
+const STEP_IDS: readonly StepId[] = ['format', 'compare', 'scope', 'start']
 
 /**
  * Sets up page conversion: the format, then one of the admin's own pages before and after at each
@@ -32,24 +35,35 @@ export default function PageConversionWizardPage() {
   const { data: status } = usePageConversion()
   const [edits, setEdits] = useState<Partial<PageConversionSettings>>({})
   const [compare, setCompare] = useState<CompareChoice>(emptyCompareChoice)
+  const { data: savedRules, isError: rulesFailed } = usePageConversionRules()
+  const [ruleEdits, setRuleEdits] = useState<RuleDraft[] | null>(null)
+  const loadedRules = useMemo(() => (savedRules?.rules ?? []).map(toRuleDraft), [savedRules])
+  const rulesReady = savedRules !== undefined || rulesFailed
+  const rules = ruleEdits ?? loadedRules
 
   const requested = Number(params.get('step'))
   const index = Number.isInteger(requested) ? Math.min(Math.max(requested, 1), STEP_IDS.length) - 1 : 0
   const current = STEP_IDS[index]
   const goTo = (next: number) => setParams({ step: String(next + 1) })
 
-  const draft: PageConversionSettings | null = status
+  const draft: PageConversionSettings | null = status && rulesReady
     ? { ...status.settings, format: status.settings.format ?? 'webp', ...edits }
     : null
 
   const hints: Record<StepId, string> = {
     format: draft?.format ? t(FORMAT_LABELS[draft.format]) : t`Off`,
     compare: draft?.format ? t(STOP_LABELS[draft.stop]) : t`Nothing to compare`,
+    scope: !draft?.format
+      ? t`Nothing to choose`
+      : rules.length === 0
+        ? t`No rules`
+        : plural(rules.length, { one: '# rule', other: '# rules' }),
     start: t`Save and begin`,
   }
   const labels: Record<StepId, string> = {
     format: t`Format`,
     compare: t`Compare`,
+    scope: t`What to convert`,
     start: t`Start`,
   }
   const steps: Step[] = STEP_IDS.map((id, i) => ({
@@ -85,9 +99,12 @@ export default function PageConversionWizardPage() {
             {current === 'compare' && (
               <CompareStep value={draft} onChange={change} choice={compare} onChoiceChange={setCompare} />
             )}
+            {current === 'scope' && <ScopeStep value={draft} rules={rules} onRulesChange={setRuleEdits} rulesFailed={rulesFailed} />}
             {current === 'start' && (
               <StartStep
                 value={draft}
+                rules={rules}
+                savedRules={savedRules?.rules ?? []}
                 status={status}
                 onDone={() => navigate(SETTINGS_URL)}
               />

@@ -733,6 +733,11 @@ msgstr "Choose WebP, AVIF or off"
 msgid "error.pageConversion.off"
 msgstr "Choose a format for page conversion first"
 
+#. A page conversion rule that cannot be saved: an unknown action, kind of release or page format, a convert rule without a quality, a size or bits-per-pixel bound of zero or less, or more than 50 rules.
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.ruleInvalid"
+msgstr "One of the rules is not valid. Check its conditions and what it does."
+
 #: src/Maki.Api/Controllers/PageConversionController.cs
 msgid "error.pageConversion.stopInvalid"
 msgstr "Choose Smallest, Compact, Balanced, High or Lossless"
@@ -1266,6 +1271,10 @@ msgstr "That mutation ID was already used for a different add"
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.invalidReadCleanup"
 msgstr "Read file cleanup must be Default, On or Off"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.invalidPageConversion"
+msgstr "Page conversion must be Default, Never, Smallest, Compact, Balanced, High or Lossless"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.noFilesSelected"

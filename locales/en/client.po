@@ -17,6 +17,10 @@ msgstr ""
 msgid " · Acknowledged, hidden from the header badge"
 msgstr " · Acknowledged, hidden from the header badge"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid " MB"
+msgstr " MB"
+
 #: src/pages/ImportPage.tsx
 msgid "- skip -"
 msgstr "- skip -"
@@ -112,6 +116,16 @@ msgstr "{0, plural, one {# file could not be deleted (locked or permission denie
 msgid "{0, plural, one {# file deleted} other {# files deleted}}"
 msgstr "{0, plural, one {# file deleted} other {# files deleted}}"
 
+#. placeholder {0}: scope.alreadyCompact.files
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "{0, plural, one {# file is already WebP or AVIF and is left as it is ({compactSize}).} other {# files are already WebP or AVIF and are left as they are ({compactSize}).}}"
+msgstr "{0, plural, one {# file is already WebP or AVIF and is left as it is ({compactSize}).} other {# files are already WebP or AVIF and are left as they are ({compactSize}).}}"
+
+#. placeholder {0}: scope.overrides.files
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "{0, plural, one {# file is in a series with its own setting, which wins over the rules ({overridesSize}).} other {# files are in series with their own setting, which wins over the rules ({overridesSize}).}}"
+msgstr "{0, plural, one {# file is in a series with its own setting, which wins over the rules ({overridesSize}).} other {# files are in series with their own setting, which wins over the rules ({overridesSize}).}}"
+
 #. placeholder {0}: skipped.length
 #: src/components/import/ImportPlanModal.tsx
 msgid "{0, plural, one {# file is left out} other {# files are left out}}"
@@ -121,6 +135,16 @@ msgstr "{0, plural, one {# file is left out} other {# files are left out}}"
 #: src/components/RelinkFilesModal.tsx
 msgid "{0, plural, one {# file kept on disk because another series still uses it} other {# files kept on disk because another series still uses them}}"
 msgstr "{0, plural, one {# file kept on disk because another series still uses it} other {# files kept on disk because another series still uses them}}"
+
+#. placeholder {0}: scope.convertedEarlier.files
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "{0, plural, one {# file was converted earlier and stays as it is ({earlierSize}).} other {# files were converted earlier and stay as they are ({earlierSize}).}}"
+msgstr "{0, plural, one {# file was converted earlier and stays as it is ({earlierSize}).} other {# files were converted earlier and stay as they are ({earlierSize}).}}"
+
+#. placeholder {0}: bucket.files
+#: src/components/pageconversion/RuleCard.tsx
+msgid "{0, plural, one {# file, {size}} other {# files, {size}}}"
+msgstr "{0, plural, one {# file, {size}} other {# files, {size}}}"
 
 #. placeholder {0}: entries.length
 #: src/pages/settings/LibraryCards.tsx
@@ -196,6 +220,11 @@ msgstr "{0, plural, one {# page} other {# pages}}"
 msgid "{0, plural, one {# recovery code left. A new set replaces the old codes.} other {# recovery codes left. A new set replaces the old codes.}}"
 msgstr "{0, plural, one {# recovery code left. A new set replaces the old codes.} other {# recovery codes left. A new set replaces the old codes.}}"
 
+#. placeholder {0}: rules.length
+#: src/pages/PageConversionWizardPage.tsx
+msgid "{0, plural, one {# rule} other {# rules}}"
+msgstr "{0, plural, one {# rule} other {# rules}}"
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "{0, plural, one {# season} other {# seasons}}"
@@ -222,6 +251,11 @@ msgstr "{0, plural, one {# series finished} other {# series finished}}"
 #: src/components/import/MihonSummary.tsx
 msgid "{0, plural, one {# series had problems applying tags or read marks} other {# series had problems applying tags or read marks}}"
 msgstr "{0, plural, one {# series had problems applying tags or read marks} other {# series had problems applying tags or read marks}}"
+
+#. placeholder {0}: status.library.overrideSeries
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{0, plural, one {# series has its own setting in its menu.} other {# series have their own setting in their menus.}}"
+msgstr "{0, plural, one {# series has its own setting in its menu.} other {# series have their own setting in their menus.}}"
 
 #. placeholder {0}: skipped.length
 #: src/components/import/MihonSummary.tsx
@@ -899,6 +933,10 @@ msgstr "{folderLabel}: linked {linkedCount} of {linkTotal, plural, one {# file} 
 msgid "{format}, {stop}"
 msgstr "{format}, {stop}"
 
+#: src/components/pageconversion/labels.ts
+msgid "{format}, {stop}, {rules}"
+msgstr "{format}, {stop}, {rules}"
+
 #: src/pages/reader/ChapterEnd.tsx
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
 msgstr "{forwardKey} or Space opens it, Esc goes back to the series."
@@ -1436,6 +1474,14 @@ msgstr "{review, plural, one {# download waiting for an import decision} other {
 #: src/components/ActivityButton.tsx
 msgid "{review, plural, one {Activity, # download waiting for an import decision} other {Activity, # downloads waiting for an import decision}}"
 msgstr "{review, plural, one {Activity, # download waiting for an import decision} other {Activity, # downloads waiting for an import decision}}"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "{ruleCount, plural, one {# rule, then everything else at the quality above} other {# rules, then everything else at the quality above}}"
+msgstr "{ruleCount, plural, one {# rule, then everything else at the quality above} other {# rules, then everything else at the quality above}}"
+
+#: src/components/pageconversion/labels.ts
+msgid "{ruleCount, plural, one {# rule} other {# rules}}"
+msgstr "{ruleCount, plural, one {# rule} other {# rules}}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{sampleChapters, plural, one {based on # chapter from this series} other {based on # chapters from this series}}"
@@ -2341,6 +2387,10 @@ msgstr "Acknowledged"
 msgid "Action"
 msgstr "Action"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Action for rule {number}"
+msgstr "Action for rule {number}"
+
 #: src/components/NotificationsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -2407,9 +2457,14 @@ msgstr "Add a series"
 msgid "Add a series and Maki will start tracking chapters for it. This page fills up as you read and download."
 msgstr "Add a series and Maki will start tracking chapters for it. This page fills up as you read and download."
 
+#: src/components/pageconversion/RuleCard.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Add condition"
 msgstr "Add condition"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Add condition to rule {number}"
+msgstr "Add condition to rule {number}"
 
 #: src/components/NotificationsSection.tsx
 msgid "Add connection"
@@ -2432,6 +2487,7 @@ msgid "Add rail"
 msgstr "Add rail"
 
 #: src/components/CatalogueRules.tsx
+#: src/components/pageconversion/ScopeStep.tsx
 msgid "Add rule"
 msgstr "Add rule"
 
@@ -2855,9 +2911,25 @@ msgstr "any"
 msgid "Any"
 msgstr "Any"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Any format"
+msgstr "Any format"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Any kind"
+msgstr "Any kind"
+
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "Any series can be set differently from its own page."
 msgstr "Any series can be set differently from its own page."
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Any tags"
+msgstr "Any tags"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Any type"
+msgstr "Any type"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Anyone with the feed URL can read everything your account can."
@@ -3315,6 +3387,18 @@ msgstr "Biggest day"
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Biggest on disk"
 msgstr "Biggest on disk"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Bits per pixel"
+msgstr "Bits per pixel"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Bits per pixel, over"
+msgstr "Bits per pixel, over"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Bits per pixel, under"
+msgstr "Bits per pixel, under"
 
 #: src/components/settings/PushNotificationsSection.tsx
 msgid "Blocked for Maki in your browser settings. Allow notifications there, then come back."
@@ -4543,9 +4627,17 @@ msgstr "Continuous vertical (webtoon)"
 msgid "Continuous, because this chapter's pages are very tall."
 msgstr "Continuous, because this chapter's pages are very tall."
 
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "Conversion is off, so there is nothing to choose. Continue to save that choice."
+msgstr "Conversion is off, so there is nothing to choose. Continue to save that choice."
+
 #: src/components/pageconversion/CompareStep.tsx
 msgid "Conversion is off, so there is nothing to compare. Go back to pick a format."
 msgstr "Conversion is off, so there is nothing to compare. Go back to pick a format."
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Convert at {stopLabel}"
+msgstr "Convert at {stopLabel}"
 
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Convert library"
@@ -4562,6 +4654,14 @@ msgstr "Converted page"
 #: src/components/pageconversion/labels.ts
 msgid "Converting would not make this page at least 5% smaller, so the pass keeps it as it is."
 msgstr "Converting would not make this page at least 5% smaller, so the pass keeps it as it is."
+
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Converts imported volumes at Balanced, where the biggest savings are."
+msgstr "Converts imported volumes at Balanced, where the biggest savings are."
+
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Converts scanlator chapters at Lossless, so no pixel changes."
+msgstr "Converts scanlator chapters at Lossless, so no pixel changes."
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -4820,6 +4920,10 @@ msgstr "Couldn't start the scan"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Couldn't start the volume search"
 msgstr "Couldn't start the volume search"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Counting files"
+msgstr "Counting files"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "counts a little more than the rest"
@@ -6037,6 +6141,10 @@ msgstr "Everything"
 msgid "Everything else"
 msgstr "Everything else"
 
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "Everything else: {stopLabel}"
+msgstr "Everything else: {stopLabel}"
+
 #: src/pages/HealthPage.tsx
 msgid "Everything is passing"
 msgstr "Everything is passing"
@@ -6308,6 +6416,18 @@ msgstr "file on disk, not linked"
 #: src/components/series/ChapterTableRows.tsx
 msgid "File removed"
 msgstr "File removed"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "File size"
+msgstr "File size"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "File size in MB, over"
+msgstr "File size in MB, over"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "File size in MB, under"
+msgstr "File size in MB, under"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -6584,6 +6704,10 @@ msgstr "Follow someone from their creator page."
 #: src/components/pageconversion/StartStep.tsx
 msgid "Follow the quality"
 msgstr "Follow the quality"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Follow the rules"
+msgstr "Follow the rules"
 
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Follow the setting"
@@ -7182,6 +7306,10 @@ msgstr "How far through a series you were when it stalled."
 msgid "How far through a series you were when it stalled. Median {stopPointPct}."
 msgstr "How far through a series you were when it stalled. Median {stopPointPct}."
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "How hard the pages are compressed. A low number means a small, heavily compressed file."
+msgstr "How hard the pages are compressed. A low number means a small, heavily compressed file."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "How many"
 msgstr "How many"
@@ -7197,6 +7325,10 @@ msgstr "How much they count"
 #: src/pages/discover/FeedbackLab.tsx
 msgid "How signals work"
 msgstr "How signals work"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "How this series' pages are stored"
+msgstr "How this series' pages are stored"
 
 #: src/components/ImportReviewModal.tsx
 msgid "How to import"
@@ -7666,6 +7798,10 @@ msgid "Josei"
 msgstr "Josei"
 
 #: src/components/pageconversion/labels.ts
+msgid "JPEG"
+msgstr "JPEG"
+
+#: src/components/pageconversion/labels.ts
 msgid "JPEG pages are kept as they are at Lossless."
 msgstr "JPEG pages are kept as they are at Lossless."
 
@@ -7739,6 +7875,10 @@ msgstr "Keep manual priority, but renumber it to follow the measured order."
 msgid "Keep PNG pages lossless"
 msgstr "Keep PNG pages lossless"
 
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Keep scanlator releases exact"
+msgstr "Keep scanlator releases exact"
+
 #: src/App.tsx
 msgid "Keep sidebar open"
 msgstr "Keep sidebar open"
@@ -7811,6 +7951,10 @@ msgstr "Keyboard shortcuts (?)"
 #: src/pages/settings/SystemCards.tsx
 msgid "Kind"
 msgstr "Kind"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Kind of release"
+msgstr "Kind of release"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Kinds"
@@ -8089,6 +8233,10 @@ msgstr "Leave empty to use this profile only on series you pin it to."
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Leave out series in your library"
 msgstr "Leave out series in your library"
+
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Leave scraped chapters alone"
+msgstr "Leave scraped chapters alone"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "left to right"
@@ -8705,6 +8853,10 @@ msgstr "Match the series already in your library folders."
 msgid "Matched"
 msgstr "Matched"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Matches a series with any of these tags."
+msgstr "Matches a series with any of these tags."
+
 #: src/components/CatalogueBrowser.tsx
 msgid "Matches by meaning, description, and vibe. Falls back to title search on instances with no recommendation index."
 msgstr "Matches by meaning, description, and vibe. Falls back to title search on instances with no recommendation index."
@@ -8949,6 +9101,10 @@ msgstr "Missing posters"
 msgid "Mixed"
 msgstr "Mixed"
 
+#: src/components/pageconversion/labels.ts
+msgid "Mixed JPEG and PNG"
+msgstr "Mixed JPEG and PNG"
+
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Model download progress"
 msgstr "Model download progress"
@@ -9129,6 +9285,14 @@ msgstr "Move down"
 msgid "Move down in queue"
 msgstr "Move down in queue"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Move rule {number} down"
+msgstr "Move rule {number} down"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Move rule {number} up"
+msgstr "Move rule {number} up"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Move series"
 msgstr "Move series"
@@ -9233,9 +9397,21 @@ msgstr "n/a"
 msgid "Name"
 msgstr "Name"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Name of rule {number}"
+msgstr "Name of rule {number}"
+
 #: src/pages/SetupAccountPage.tsx
 msgid "Name your reverse proxy under Trusted proxies, or rate limiting and the audit log will see the proxy instead of the client."
 msgstr "Name your reverse proxy under Trusted proxies, or rate limiting and the audit log will see the proxy instead of the client."
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Name, optional"
+msgstr "Name, optional"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Names such as import or mangafire. End with * to match a prefix, like torrent:*."
+msgstr "Names such as import or mangafire. End with * to match a prefix, like torrent:*."
 
 #: src/components/NamingTokenModal.tsx
 msgid "Naming format"
@@ -9310,6 +9486,10 @@ msgstr "neutral, seeds at shelf weight"
 msgid "never"
 msgstr "never"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Never"
+msgstr "Never"
+
 #: src/components/NotificationsSection.tsx
 msgid "Never delivered."
 msgstr "Never delivered."
@@ -9325,6 +9505,10 @@ msgstr "Never scanned for upgrades"
 #: src/components/settings/ProgressSection.tsx
 msgid "Never shows which series you read."
 msgstr "Never shows which series you read."
+
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Never touch tagged series"
+msgstr "Never touch tagged series"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Never upgrades"
@@ -9576,6 +9760,10 @@ msgstr "No comics found in the completed download (found {census})"
 msgid "No comics found in the completed download (it is empty)"
 msgstr "No comics found in the completed download (it is empty)"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "No conditions, so this rule matches every file that reaches it."
+msgstr "No conditions, so this rule matches every file that reaches it."
+
 #: src/pages/discover/TasteTab.tsx
 msgid "No creator shows up often enough yet."
 msgstr "No creator shows up often enough yet."
@@ -9595,6 +9783,10 @@ msgstr "No files found in the series folder."
 #: src/components/SeriesFilesSection.tsx
 msgid "No files in the series folder."
 msgstr "No files in the series folder."
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "No files match"
+msgstr "No files match"
 
 #: src/pages/HealthPage.tsx
 msgid "No files match these filters. Run a scan to inventory the library."
@@ -9789,9 +9981,17 @@ msgstr "No reviews on MyAnimeList yet."
 msgid "No root folders yet"
 msgstr "No root folders yet"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "No rules"
+msgstr "No rules"
+
 #: src/components/CatalogueRules.tsx
 msgid "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
 msgstr "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
+
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "No rules yet. Every file is converted at {stopLabel}."
+msgstr "No rules yet. Every file is converted at {stopLabel}."
 
 #: src/components/ui/incognito.ts
 msgid "No scrobble"
@@ -9857,6 +10057,10 @@ msgstr "No synopsis yet."
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "No tag data yet"
 msgstr "No tag data yet"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "No tags"
+msgstr "No tags"
 
 #: src/components/TagManagerModal.tsx
 #: src/pages/discover/TasteTab.tsx
@@ -9941,6 +10145,10 @@ msgstr "None selected means an empty library."
 #: src/pages/settings/ReadingCards.tsx
 msgid "none yet"
 msgstr "none yet"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "None, every file uses the quality above"
+msgstr "None, every file uses the quality above"
 
 #: src/pages/LibraryPage.tsx
 msgid "Not {excluded}"
@@ -10351,6 +10559,10 @@ msgstr "Nothing slow enough to call savoured yet."
 #: src/pages/DiscoverPage.tsx
 msgid "Nothing to browse yet"
 msgstr "Nothing to browse yet"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Nothing to choose"
+msgstr "Nothing to choose"
 
 #: src/pages/PageConversionWizardPage.tsx
 msgid "Nothing to compare"
@@ -10849,6 +11061,10 @@ msgstr "or"
 msgid "or paste an id or link"
 msgstr "or paste an id or link"
 
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "Or start from one of these"
+msgstr "Or start from one of these"
+
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Order changed"
 msgstr "Order changed"
@@ -10887,6 +11103,10 @@ msgstr "Other picks for you"
 #: src/components/settings/AccountSection.tsx
 msgid "Other sessions signed out"
 msgstr "Other sessions signed out"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Over"
+msgstr "Over"
 
 #: src/components/NotificationsSection.tsx
 msgid "Overrides the default channel of the webhook."
@@ -10933,6 +11153,7 @@ msgstr "Page {pageIndex}/{pageCount}"
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "Page {pageNumber} of {pageCount}"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/registry.ts
 msgid "Page conversion"
@@ -10950,6 +11171,10 @@ msgstr "page conversion, webp, avif, convert pages, compress, disk space, file s
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Page fit"
 msgstr "Page fit"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Page format"
+msgstr "Page format"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Page gap"
@@ -11141,6 +11366,10 @@ msgstr "Paused"
 msgid "Paused because page conversion was switched off."
 msgstr "Paused because page conversion was switched off."
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Paused because the settings changed. Restart the pass to use them."
+msgstr "Paused because the settings changed. Restart the pass to use them."
+
 #: src/components/ui/status.tsx
 msgid "Paused or dropped"
 msgstr "Paused or dropped"
@@ -11288,6 +11517,10 @@ msgstr "Play the {rewindYear} retrospective"
 #: src/theme-context.tsx
 msgid "Plum"
 msgstr "Plum"
+
+#: src/components/pageconversion/labels.ts
+msgid "PNG"
+msgstr "PNG"
 
 #: src/components/pageconversion/StartStep.tsx
 msgid "PNG pages"
@@ -12316,6 +12549,10 @@ msgstr "Remove chapters?"
 msgid "Remove condition"
 msgstr "Remove condition"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Remove condition: {conditionLabel}"
+msgstr "Remove condition: {conditionLabel}"
+
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Remove everything"
 msgstr "Remove everything"
@@ -12381,6 +12618,10 @@ msgstr "Remove root folder"
 #: src/components/CatalogueRules.tsx
 msgid "Remove rule"
 msgstr "Remove rule"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Remove rule {number}"
+msgstr "Remove rule {number}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Remove series?"
@@ -13017,17 +13258,31 @@ msgstr "Rotate to fit"
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "Row {zoomRowNumber} of {zoomTotalPages}"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Rule {number}"
+msgstr "Rule {number}"
+
 #: src/components/CatalogueRules.tsx
 msgid "Rule editor view"
 msgstr "Rule editor view"
+
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "Rule templates"
+msgstr "Rule templates"
 
 #: src/components/CatalogueRules.tsx
 msgid "Rule type"
 msgstr "Rule type"
 
 #: src/components/CatalogueRules.tsx
+#: src/components/pageconversion/StartStep.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 msgid "Rules"
 msgstr "Rules"
+
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "Rules are checked from the top, and the first one a file matches decides what happens to it. A series set to Never or to a fixed quality in its menu ignores the rules."
+msgstr "Rules are checked from the top, and the first one a file matches decides what happens to it. A series set to Never or to a fixed quality in its menu ignores the rules."
 
 #: src/components/ImportListsSection.tsx
 msgid "Run now"
@@ -13256,6 +13511,10 @@ msgstr "Saved on this device for offline reading"
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Saved on this device only."
 msgstr "Saved on this device only."
+
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "Saved rules could not be loaded; saving will replace them."
+msgstr "Saved rules could not be loaded; saving will replace them."
 
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "Saved. Leave empty to keep it."
@@ -13872,6 +14131,14 @@ msgstr "Series removed"
 msgid "Series status changed"
 msgstr "Series status changed"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Series tags"
+msgstr "Series tags"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Series type"
+msgstr "Series type"
+
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Series types no profile covers use Default."
 msgstr "Series types no profile covers use Default."
@@ -14324,6 +14591,10 @@ msgstr "Size"
 msgid "Size mismatch"
 msgstr "Size mismatch"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Skip"
+msgstr "Skip"
+
 #: src/components/layout/SidebarFooter.tsx
 msgid "Skip {latestVersion}"
 msgstr "Skip {latestVersion}"
@@ -14359,6 +14630,14 @@ msgstr "skipped"
 #: src/pages/settings/SystemCards.tsx
 msgid "Skipped {latestVersion}"
 msgstr "Skipped {latestVersion}"
+
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Skips chapters from aggregator sites, which are usually small already."
+msgstr "Skips chapters from aggregator sites, which are usually small already."
+
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Skips every series you tag keep-original."
+msgstr "Skips every series you tag keep-original."
 
 #: src/components/CatalogueFilters.tsx
 msgid "Slice of Life"
@@ -14443,6 +14722,7 @@ msgstr "Sort newest first"
 msgid "Sort oldest first"
 msgstr "Sort oldest first"
 
+#: src/components/pageconversion/RuleCard.tsx
 #: src/components/QueueActions.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -14566,6 +14846,10 @@ msgstr "Sports"
 #: src/api/hooks.ts
 msgid "Spotlight"
 msgstr "Spotlight"
+
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Squeeze volumes harder"
+msgstr "Squeeze volumes harder"
 
 #: src/pages/HealthPage.tsx
 msgid "Stacked height"
@@ -15071,6 +15355,10 @@ msgstr "The chapter numbers are in the archive's page file names. Certain."
 msgid "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
 msgstr "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
 
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "The counts could not be loaded. The rules still save as you wrote them."
+msgstr "The counts could not be loaded. The rules still save as you wrote them."
+
 #: src/pages/settings/ReadingCards.tsx
 msgid "The current feed URL stops working immediately. Every app using it needs the new one."
 msgstr "The current feed URL stops working immediately. Every app using it needs the new one."
@@ -15428,6 +15716,10 @@ msgstr "Their second factor is turned off and the authenticator reset, so a pass
 #: src/pages/settings/registry.ts
 msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, faster animations, speed, reduce motion"
 msgstr "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, faster animations, speed, reduce motion"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Then"
+msgstr "Then"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "There is no safe automatic merge."
@@ -16131,6 +16423,10 @@ msgstr "Unavailable"
 #: src/components/RelinkFilesModal.tsx
 msgid "unchanged"
 msgstr "unchanged"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Under"
+msgstr "Under"
 
 #: src/components/NamingTokenModal.tsx
 msgid "Underscore (_)"
@@ -16947,6 +17243,10 @@ msgstr "What readers who finished the same series as you went on to finish."
 msgid "What shapes your recommendations"
 msgstr "What shapes your recommendations"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "What to convert"
+msgstr "What to convert"
+
 #: src/components/SetupWizard.tsx
 msgid "What to download"
 msgstr "What to download"
@@ -17077,6 +17377,10 @@ msgstr "Wide pages"
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Width"
 msgstr "Width"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Wins over the rules. Files already converted stay as they are."
+msgstr "Wins over the rules. Files already converted stay as they are."
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."

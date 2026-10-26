@@ -2,43 +2,53 @@ import { useState, type ReactNode } from 'react'
 import { Button, Group, Modal, Stack, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import { t as now } from '@lingui/core/macro'
+import { plural, t as now } from '@lingui/core/macro'
 import {
   usePausePageConversion,
-  useSavePageConversion,
+  useSavePageConversionPlan,
   useStartPageConversion,
+  type PageConversionRule,
   type PageConversionSettings,
   type PageConversionStatus,
 } from '../../api/pageConversion'
 import { FORMAT_LABELS, STOP_HINTS, STOP_LABELS } from './labels'
+import { sameRules, toRuleDtos } from './ruleTemplates'
 
 type Action = 'save' | 'start'
 
 /** Last step: what will be saved, and the only place anything is written or started. */
 export function StartStep({
   value,
+  rules,
+  savedRules,
   status,
   onDone,
 }: {
   value: PageConversionSettings
+  rules: PageConversionRule[]
+  savedRules: PageConversionRule[]
   status: PageConversionStatus
   onDone: () => void
 }) {
-  const save = useSavePageConversion()
+  const save = useSavePageConversionPlan()
   const start = useStartPageConversion()
   const pause = usePausePageConversion()
   const [asking, setAsking] = useState<Action | null>(null)
 
   const saved = status.settings
+  const rulesChanged = !sameRules(rules, savedRules)
   const changed =
-    value.format !== saved.format || value.stop !== saved.stop || value.pngLossless !== saved.pngLossless
+    value.format !== saved.format ||
+    value.stop !== saved.stop ||
+    value.pngLossless !== saved.pngLossless ||
+    rulesChanged
   const running = status.pass.state === 'running'
   const busy = save.isPending || start.isPending || pause.isPending
 
   const run = async (action: Action, withPass: 'leave' | 'pause' | 'restart') => {
     try {
       if (running && withPass !== 'leave') await pause.mutateAsync(undefined)
-      await save.mutateAsync(value)
+      await save.mutateAsync({ settings: value, rules: toRuleDtos(rules) })
       if (value.format && (withPass === 'restart' || (action === 'start' && !running))) {
         await start.mutateAsync(undefined)
       }
@@ -57,7 +67,7 @@ export function StartStep({
 
   return (
     <Stack gap="lg">
-      <Summary value={value} />
+      <Summary value={value} ruleCount={rules.length} />
 
       <Text size="sm" c="var(--ink-3)">
         {value.format ? (
@@ -109,7 +119,7 @@ export function StartStep({
   )
 }
 
-function Summary({ value }: { value: PageConversionSettings }) {
+function Summary({ value, ruleCount }: { value: PageConversionSettings; ruleCount: number }) {
   const { t } = useLingui()
   const stop = t(STOP_LABELS[value.stop])
   const hint = t(STOP_HINTS[value.stop])
@@ -123,6 +133,14 @@ function Summary({ value }: { value: PageConversionSettings }) {
           <Row
             label={<Trans>PNG pages</Trans>}
             value={value.pngLossless || value.stop === 'lossless' ? t`Kept lossless` : t`Follow the quality`}
+          />
+          <Row
+            label={<Trans>Rules</Trans>}
+            value={
+              ruleCount === 0
+                ? t`None, every file uses the quality above`
+                : plural(ruleCount, { one: '# rule, then everything else at the quality above', other: '# rules, then everything else at the quality above' })
+            }
           />
         </>
       )}

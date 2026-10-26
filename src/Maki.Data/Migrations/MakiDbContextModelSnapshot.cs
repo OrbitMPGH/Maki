@@ -159,6 +159,9 @@ namespace Maki.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("CheckedWith")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("ConversionCheckedAtUtc")
                         .HasColumnType("TEXT");
 
@@ -1057,6 +1060,34 @@ namespace Maki.Data.Migrations
                     b.ToTable("NotificationTags", (string)null);
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.PageConversionRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConditionsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Skip")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("Stop")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PageConversionRules");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.PendingReadImport", b =>
                 {
                     b.Property<int>("Id")
@@ -1937,6 +1968,9 @@ namespace Maki.Data.Migrations
 
                     b.Property<string>("Overview")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("PageConversion")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("PendingImportLink")
                         .HasColumnType("INTEGER");

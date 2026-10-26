@@ -268,6 +268,7 @@ export function librarySeries(entry: CatalogueEntry): SeriesDto {
     removedChapterCount: 0,
     readFileCleanup: 'Off',
     readFileCleanupActive: false,
+    pageConversion: 'Default',
     knownChapterCount: entry.chapters,
     queuedCount: 0,
     downloadingCount: 0,

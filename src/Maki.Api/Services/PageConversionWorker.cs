@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Images;
 using Maki.Core.Storage;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +20,10 @@ public enum PageConversionHold
 {
     None,
     LowDisk,
-    ConversionOff
+    ConversionOff,
+
+    /// <summary>The settings or rules were saved while it ran; a restart runs under the new plan.</summary>
+    SettingsChanged
 }
 
 /// <summary>Totals of one pass over the library, kept after it ends.</summary>
@@ -55,6 +59,13 @@ public class PageConversionWorker(
     private string? _currentFile;
     private PageConversionHold _hold;
 
+    // Bumped by every start and pause, so a run that outlives one (busy on a file while the wizard
+    // pauses, saves and starts again) stops after that file instead of finishing under the old plan.
+    private int _generation;
+
+    // The file a run was busy with when it was stopped, decided by the old plan after the save's recheck ran.
+    private int? _recheckFileId;
+
     public sealed record Snapshot(
         PageConversionPassState State, PageConversionHold Hold, string? CurrentFile, PageConversionPassTotals? Pass);
 
@@ -76,15 +87,31 @@ public class PageConversionWorker(
             _hold = PageConversionHold.None;
         }
 
+        Interlocked.Increment(ref _generation);
         await settings.SetAsync(SettingKeys.PageConversionPass, "running", ct);
         _wake.Release();
     }
 
     public async Task PauseAsync(CancellationToken ct)
     {
+        Interlocked.Increment(ref _generation);
         if (await StateAsync(ct) == PageConversionPassState.Running)
         {
             await settings.SetAsync(SettingKeys.PageConversionPass, "paused", ct);
+        }
+    }
+
+    /// <summary>
+    /// A running pass decides every file by the plan it started with, so new settings stop it until it
+    /// is restarted: <see cref="PageConversionHold.SettingsChanged"/>, or <see cref="PageConversionHold.ConversionOff"/>
+    /// when conversion was turned off.
+    /// </summary>
+    public async Task PauseForSettingsAsync(PageConversionHold hold, CancellationToken ct)
+    {
+        Interlocked.Increment(ref _generation);
+        if (await StateAsync(ct) == PageConversionPassState.Running)
+        {
+            await HoldAsync(hold, ct);
         }
     }
 
@@ -102,9 +129,10 @@ public class PageConversionWorker(
         {
             try
             {
-                if (await StateAsync(stoppingToken) == PageConversionPassState.Running)
+                if (await StateAsync(stoppingToken) == PageConversionPassState.Running &&
+                    await RunPassAsync(stoppingToken))
                 {
-                    await RunPassAsync(stoppingToken);
+                    continue;
                 }
 
                 await _wake.WaitAsync(TimeSpan.FromMinutes(1), stoppingToken);
@@ -121,22 +149,39 @@ public class PageConversionWorker(
         }
     }
 
-    /// <summary>Runs until the library has nothing left to look at, or the pass is paused.</summary>
-    internal async Task RunPassAsync(CancellationToken ct)
+    /// <summary>
+    /// Runs until the library has nothing left to look at, or the pass is paused. True when a start or
+    /// pause came in meanwhile: the run stopped after its current file, and a fresh one has to look again.
+    /// </summary>
+    internal async Task<bool> RunPassAsync(CancellationToken ct)
     {
+        var generation = Volatile.Read(ref _generation);
         lock (_sync)
         {
             _current ??= new PageConversionPassTotals(DateTime.UtcNow, null, 0, 0, 0, 0, 0);
         }
 
         var lastId = 0;
-        var hardlinkVerdicts = new Dictionary<string, bool>(StringComparer.Ordinal);
+        var cache = new PageConversionPassCache();
+        PageConversionPlan? plan = null;
         try
         {
             while (true)
             {
                 using var scope = scopes.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+                int? stopped;
+                lock (_sync)
+                {
+                    (stopped, _recheckFileId) = (_recheckFileId, null);
+                }
+
+                if (stopped is not null)
+                {
+                    await new PageConversionPlanService(db).RecheckFileAsync(
+                        await PageConversionOptions.LoadPlanAsync(db, ct), stopped.Value, ct);
+                }
+
                 var batch = await PendingQuery(db).Where(f => f.Id > lastId)
                     .OrderBy(f => f.Id)
                     .Select(f => new
@@ -148,31 +193,42 @@ public class PageConversionWorker(
                     })
                     .Take(BatchSize)
                     .ToListAsync(ct);
+                if (Volatile.Read(ref _generation) != generation)
+                {
+                    return true;
+                }
+
                 if (batch.Count == 0)
                 {
                     await FinishAsync(ct);
-                    return;
+                    return false;
                 }
 
                 foreach (var file in batch)
                 {
                     lastId = file.Id;
-                    if (await StateAsync(ct) != PageConversionPassState.Running)
+                    if (Volatile.Read(ref _generation) != generation)
                     {
-                        return;
+                        return true;
                     }
 
-                    if (await PageConversionOptions.LoadAsync(db, ct) is not { } options)
+                    if (await StateAsync(ct) != PageConversionPassState.Running)
+                    {
+                        return false;
+                    }
+
+                    plan ??= await PageConversionOptions.LoadPlanAsync(db, ct);
+                    if (plan is null)
                     {
                         await HoldAsync(PageConversionHold.ConversionOff, ct);
-                        return;
+                        return false;
                     }
 
                     if (file.Root is not null && DiskSpace.AvailableFor(file.Root) is { } free &&
                         free < file.Size + DiskReserveBytes)
                     {
                         await HoldAsync(PageConversionHold.LowDisk, ct);
-                        return;
+                        return false;
                     }
 
                     lock (_sync)
@@ -185,7 +241,7 @@ public class PageConversionWorker(
                     {
                         using var fileScope = scopes.CreateScope();
                         result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
-                            .ConvertAsync(file.Id, options, hardlinkVerdicts, ct);
+                            .ConvertAsync(file.Id, plan, cache, ct);
                     }
                     // One file that throws every time must not restart the pass on it forever.
                     catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
@@ -195,6 +251,15 @@ public class PageConversionWorker(
                     }
 
                     Count(result);
+                    if (Volatile.Read(ref _generation) != generation)
+                    {
+                        lock (_sync)
+                        {
+                            _recheckFileId = file.Id;
+                        }
+
+                        return true;
+                    }
 
                     if (DelayBetweenFiles > TimeSpan.Zero)
                     {

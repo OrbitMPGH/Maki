@@ -1,11 +1,18 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import type {
+  PageConversionRule,
+  PageConversionRules,
   PageConversionSample,
   PageConversionSamples,
+  PageConversionSettings,
+  PageConversionStatus,
+  PageConversionScope,
+  PageConversionScopeRequest,
   PageConversionStop,
 } from '../../../src/api/pageConversion'
 import { api } from '../api'
 import { seriesById } from '../shared'
+import { pageConversionIdle } from './data'
 
 export const sampleGreyscale = {
   fileId: 1090,
@@ -49,6 +56,46 @@ export const sampleHeaviest = {
 export const pageConversionSamples = {
   samples: [sampleGreyscale, sampleColour, sampleHeaviest],
 } satisfies PageConversionSamples
+
+export const ruleLeaveScraped = {
+  id: 1,
+  name: 'Leave scraped chapters alone',
+  conditions: { tiers: ['aggregator'] },
+  action: 'skip',
+  stop: null,
+} satisfies PageConversionRule
+
+export const ruleSqueezeVolumes = {
+  id: 2,
+  name: 'Squeeze volumes harder',
+  conditions: { tiers: ['volume'], sizeOverBytes: 100 * 1024 * 1024 },
+  action: 'convert',
+  stop: 'balanced',
+} satisfies PageConversionRule
+
+export const pageConversionRules = { rules: [ruleLeaveScraped, ruleSqueezeVolumes] } satisfies PageConversionRules
+
+const GB = 1024 ** 3
+const MB = 1024 ** 2
+
+/** Counts for the first rules; a rule added after those gets a small one. */
+const ruleBuckets = [
+  { files: 1240, bytes: Math.round(3.6 * GB) },
+  { files: 365, bytes: Math.round(73.8 * GB) },
+]
+
+export const pageConversionScope = {
+  rules: ruleBuckets,
+  default: { files: 94, bytes: Math.round(1.9 * GB) },
+  overrides: { files: 18, bytes: Math.round(2.1 * GB) },
+  alreadyCompact: { files: 41, bytes: Math.round(0.9 * GB) },
+  convertedEarlier: { files: 412, bytes: Math.round(31.4 * GB) },
+} satisfies PageConversionScope
+
+const scopeFor = (request: PageConversionScopeRequest): PageConversionScope => ({
+  ...pageConversionScope,
+  rules: request.rules.map((_, i) => ruleBuckets[i] ?? { files: 12, bytes: 400 * MB }),
+})
 
 export const ORIGINAL_BYTES = 1_240_000
 
@@ -104,6 +151,18 @@ export const keptPreviewHandler = (reason: string) =>
   })
 
 export const pageConversionHandlers: HttpHandler[] = [
+  http.put(api('/pageconversion/plan'), async ({ request }) => {
+    const { settings } = (await request.json()) as { settings: PageConversionSettings }
+    return HttpResponse.json({ ...pageConversionIdle, settings } satisfies PageConversionStatus)
+  }),
+  http.get(api('/pageconversion/rules'), () => HttpResponse.json(pageConversionRules)),
+  http.put(api('/pageconversion/rules'), async ({ request }) => {
+    const { rules } = (await request.json()) as PageConversionRules
+    return HttpResponse.json({ rules: rules.map((rule, i) => ({ ...rule, id: rule.id ?? 100 + i })) } satisfies PageConversionRules)
+  }),
+  http.post(api('/pageconversion/scope'), async ({ request }) =>
+    HttpResponse.json(scopeFor((await request.json()) as PageConversionScopeRequest)),
+  ),
   http.get(api('/pageconversion/samples'), () => HttpResponse.json(pageConversionSamples)),
   http.get(api('/pageconversion/samples/:fileId'), ({ params }) => {
     const fileId = Number(params.fileId)

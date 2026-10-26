@@ -154,6 +154,96 @@ public static class ArchivePageConverter
         }
     }
 
+    private const int MaxProbeReads = 12;
+
+    /// <summary>
+    /// Whether a full conversion is worth running: encodes up to two pages over
+    /// <see cref="PageConversion.MinPageBytes"/> from the middle third of the archive, one per source
+    /// format when it mixes JPEG and PNG, and answers whether any came out smaller by the page floor.
+    /// Anything it cannot read, or a file with nothing to probe, answers true so the full pass decides.
+    /// </summary>
+    public static async Task<bool> ProbeAsync(string path, PageConversionSettings settings, CancellationToken ct)
+    {
+        try
+        {
+            var picked = new List<(byte[] Bytes, string Extension)>();
+            using (var zip = ZipFile.OpenRead(path))
+            {
+                var order = CbzReader.PageNames(zip);
+                var entries = zip.Entries
+                    .GroupBy(e => e.FullName, StringComparer.Ordinal)
+                    .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+                var formats = new Dictionary<string, List<(byte[] Bytes, string Extension)>>(StringComparer.Ordinal);
+                var looked = 0;
+                for (var i = order.Count / 3; i < Math.Max(order.Count / 3 + 1, order.Count * 2 / 3); i++)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    if (formats.Count == 2 || looked >= MaxProbeReads)
+                    {
+                        break;
+                    }
+
+                    if (i >= order.Count || !entries.TryGetValue(order[i], out var entry) || entry.Length < PageConversion.MinPageBytes)
+                    {
+                        continue;
+                    }
+
+                    // Two pages of a format are all it needs of that one; read on only for the other.
+                    if (ExtensionFormat(entry.FullName) is { } named && formats.TryGetValue(named, out var have) && have.Count >= 2)
+                    {
+                        continue;
+                    }
+
+                    looked++;
+                    var bytes = ReadAll(entry, entry.Length);
+                    var extension = Path.GetExtension(entry.FullName);
+                    var format = PageConversion.FormatOf(bytes, extension);
+                    if (format is "jpg" or "png")
+                    {
+                        var list = formats.TryGetValue(format, out var found) ? found : formats[format] = [];
+                        if (list.Count < 2)
+                        {
+                            list.Add((bytes, extension));
+                        }
+                    }
+                }
+
+                picked = formats.Count > 1
+                    ? [.. formats.Values.Select(l => l[0])]
+                    : [.. formats.Values.SelectMany(l => l)];
+            }
+
+            if (picked.Count == 0)
+            {
+                return true;
+            }
+
+            foreach (var (bytes, extension) in picked)
+            {
+                var page = await ImageWorkGate.RunAsync(
+                    () => Task.FromResult(PageConversion.Convert(bytes, extension, settings)), ct);
+                if (page.Converted)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch (Exception ex) when (ex is VipsException or InvalidDataException or EndOfStreamException or IOException
+                                       or UnauthorizedAccessException or NotSupportedException)
+        {
+            return true;
+        }
+    }
+
+    private static string? ExtensionFormat(string name) => Path.GetExtension(name).ToLowerInvariant() switch
+    {
+        ".jpg" or ".jpeg" => "jpg",
+        ".png" => "png",
+        _ => null
+    };
+
     /// <summary>
     /// The written archive has to list the same pages in the same order, each under its new name,
     /// and no two entries may share a name.
