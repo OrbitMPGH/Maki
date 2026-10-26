@@ -580,6 +580,35 @@ public class SeriesRequestsControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Approving_a_chapter_request_on_an_archived_series_the_admin_cannot_see_is_the_plain_already_exists()
+    {
+        var seriesId = SeedSeriesWithChapters(1, 2, 3);
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("Chapters", SeriesId: seriesId, ChapterStart: 2), default));
+        var otherSeriesId = _db.SeedSeries("Elsewhere");
+        int granted;
+        var scopedAdmin = _db.SeedUser("scopedadmin", MakiPermission.Admin, allRootFolders: false);
+        using (var db = _db.NewContext())
+        {
+            (await db.Series.SingleAsync(s => s.Id == seriesId)).ArchivedAt = DateTime.UtcNow;
+            granted = (await db.Series.SingleAsync(s => s.Id == otherSeriesId)).RootFolderId;
+            db.UserRootFolders.Add(new Maki.Data.Identity.UserRootFolder { UserId = scopedAdmin, RootFolderId = granted });
+            await db.SaveChangesAsync();
+        }
+
+        var result = await Controller(scopedAdmin, "scopedadmin", MakiPermission.Admin, new HashSet<int> { granted })
+            .Approve(created.Id, new ApproveSeriesRequestBody(), default);
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        var body = System.Text.Json.JsonSerializer.SerializeToElement(conflict.Value);
+        Assert.Equal("error.series.alreadyExists", body.GetProperty("code").GetString());
+        Assert.False(body.TryGetProperty("seriesId", out _));
+        using var verify = _db.NewContext();
+        Assert.Equal(SeriesRequestStatus.Pending, (await verify.SeriesRequests.SingleAsync(r => r.Id == created.Id)).Status);
+        Assert.Empty(verify.DownloadQueue.Where(q => q.SeriesId == seriesId));
+    }
+
+    [Fact]
     public async Task Approving_a_chapter_request_on_a_series_archived_since_answers_archivedExists_and_queues_nothing()
     {
         var seriesId = SeedSeriesWithChapters(1, 2, 3);

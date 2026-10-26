@@ -309,6 +309,25 @@ public class LibraryImportScanTests : IDisposable
     }
 
     [Fact]
+    public async Task ADeferredRestoreImportRestoresTheSeriesInTheSaveThatSetsTheLinkFlags()
+    {
+        var root = SeedRoot();
+        var seriesId = SeedArchived(root, "Vagabond", 2);
+        WriteComic("Vagabond", "Vagabond 001.cbz");
+
+        var result = await LinkingImportAsync(root, "Vagabond", "2");
+
+        Assert.True(result.Success, result.Error);
+        Assert.True(result.LinkPending);
+        await using var check = _db.NewContext();
+        var series = await check.Series.SingleAsync(s => s.Id == seriesId);
+        Assert.Null(series.ArchivedAt);
+        Assert.NotNull(series.RestoredAt);
+        Assert.True(series.SourceMatchPending);
+        Assert.NotEqual(PendingImportLink.None, series.PendingImportLink);
+    }
+
+    [Fact]
     public async Task AnArchivedSeriesThatKeptItsFilesStillRefusesAnImportAsAlreadyInTheLibrary()
     {
         var root = SeedRoot();

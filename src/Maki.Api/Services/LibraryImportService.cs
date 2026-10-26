@@ -777,7 +777,7 @@ public class LibraryImportService(
             Dictionary<int, string> Registered)>
         RegisterAndDeferLinkAsync(
             Series series, ImportRequestItem item, string targetDir, PendingImportLink owedLink, string? operationId,
-            CancellationToken ct, bool locked = false)
+            CancellationToken ct, bool locked = false, bool restore = false)
     {
         using var seriesLock = locked ? null : await SeriesLocks.SeriesAsync(series.Id, ct);
         await events.ImportProgress(item.FolderName, ImportStage.AddingFiles, operationId: operationId);
@@ -785,6 +785,13 @@ public class LibraryImportService(
         var added = await cbzLinkService.RegisterFilesAsync(series, targetDir, cbzFiles, "import", ct);
         series.SourceMatchPending = true;
         series.PendingImportLink = owedLink;
+        // In the save that sets the flags: the match worker and its startup recovery pass over an
+        // archived series, so flags on one still archived would never be linked.
+        if (restore)
+        {
+            archive.ClearArchive(series);
+        }
+
         await db.SaveChangesAsync(ct);
         var registered = await RegisteredFilesAsync(series.Id, ct);
         sourceMatchQueue.Enqueue(series.Id, SourceMatchLane.Background);
@@ -1101,15 +1108,10 @@ public class LibraryImportService(
         {
             var owedLink = updateComicInfo ? PendingImportLink.LinkAndComicInfo : PendingImportLink.Link;
             var (added, unreadableSkipped, deferredBuilt, deferredFiles) = await RegisterAndDeferLinkAsync(
-                series, item, targetDir, owedLink, operationId, ct, locked: true);
+                series, item, targetDir, owedLink, operationId, ct, locked: true, restore: restore);
             operations.Built = deferredBuilt;
             operations.RegisteredFileIds = deferredFiles.Keys.ToList();
             operations.RegisteredPaths = deferredFiles;
-            if (restore)
-            {
-                await archive.RestoreUnderLockAsync(series, redownloadRemoved: false, CancellationToken.None);
-            }
-
             await RecordBatchFolderAsync(
                 rootFolder.Id, operationId, series, created: false, item.FolderName, targetDir, operations);
             return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName,
@@ -1131,13 +1133,14 @@ public class LibraryImportService(
         operations.Built = BuiltFiles(targetDir, built);
         operations.RegisteredPaths = await RegisteredFilesAsync(series.Id, ct);
         operations.RegisteredFileIds = operations.RegisteredPaths.Keys.ToList();
+        await RecordBatchFolderAsync(
+            rootFolder.Id, operationId, series, created: false, item.FolderName, targetDir, operations);
+
+        // Last, so anything above that throws leaves the series archived.
         if (restore)
         {
             await archive.RestoreUnderLockAsync(series, redownloadRemoved: false, CancellationToken.None);
         }
-
-        await RecordBatchFolderAsync(
-            rootFolder.Id, operationId, series, created: false, item.FolderName, targetDir, operations);
 
         return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName, linked, unrecognized,
             warnings.Count > 0 ? warnings : null, skipped.Count > 0 ? skipped : null);

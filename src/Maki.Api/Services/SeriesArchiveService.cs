@@ -261,10 +261,7 @@ public class SeriesArchiveService(
         }
 
         var result = new SeriesArchiveResult(SeriesArchiveStatus.Ok);
-        series.ArchivedAt = null;
-        series.ArchivedByUserId = null;
-        series.NextCheckAt = null;
-        series.RestoredAt = time.GetUtcNow().UtcDateTime;
+        ClearArchive(series);
         await db.SaveChangesAsync(ct);
 
         if (redownloadRemoved)
@@ -298,6 +295,18 @@ public class SeriesArchiveService(
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// The columns a restore changes, left unsaved so a caller under the series lock can write them in
+    /// the same save as its own changes. Queues nothing and starts no refresh.
+    /// </summary>
+    public void ClearArchive(Series series)
+    {
+        series.ArchivedAt = null;
+        series.ArchivedByUserId = null;
+        series.NextCheckAt = null;
+        series.RestoredAt = time.GetUtcNow().UtcDateTime;
     }
 
     /// <summary>How long ago another reader's unfinished progress still counts as "reading it now".</summary>

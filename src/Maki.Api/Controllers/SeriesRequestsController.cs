@@ -388,10 +388,14 @@ public class SeriesRequestsController(
 
             // The queue would drop every chapter of an archived series, and the request would read
             // as approved with nothing on the way.
-            if (await db.Series.AnyAsync(s => s.Id == seriesId && s.ArchivedAt != null, ct))
+            // Unfiltered, or a series outside the caller's root folders reads as active.
+            if (await db.Series.IgnoreQueryFilters().AnyAsync(s => s.Id == seriesId && s.ArchivedAt != null, ct))
             {
                 await ReleaseClaimAsync(request);
-                return this.ArchivedExists(localizer, seriesId);
+                // Like Add: the id only goes to a caller who can open the series.
+                return await db.Series.AnyAsync(s => s.Id == seriesId, ct)
+                    ? this.ArchivedExists(localizer, seriesId)
+                    : this.Conflict(localizer, "error.series.alreadyExists");
             }
 
             queued = await QueueRangeAsync(
