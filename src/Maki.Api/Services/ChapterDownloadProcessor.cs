@@ -679,6 +679,17 @@ public class ChapterDownloadProcessor(
 
         using var seriesLock = await SeriesLocks.SeriesAsync(series.Id, ct);
 
+        // Archived between the claim and the lock, as on the placement path.
+        if (await db.Series.Where(s => s.Id == series.Id).Select(s => s.ArchivedAt).FirstOrDefaultAsync(ct) is not null)
+        {
+            await batches.DiscardAsync(series.Id, item.Id);
+            item.Status = QueueStatus.Cancelled;
+            await db.SaveChangesAsync(CancellationToken.None);
+            TryDeleteFile(tmpCbz);
+            TryDeleteDirectory(workingDir);
+            return DownloadOutcome.Settled;
+        }
+
         // The chapter was read when the item started, long before the lock: a link made since is
         // only visible after a reload.
         await db.Entry(chapter).ReloadAsync(ct);

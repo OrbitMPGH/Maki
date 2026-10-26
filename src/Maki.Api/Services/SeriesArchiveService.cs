@@ -116,13 +116,20 @@ public class SeriesArchiveService(
                 return refused;
             }
 
-            await QueueItemCancellation.CancelAsync(db, queue, batches, q => q.SeriesId == seriesId, ct);
+            // From here the request no longer decides: a drop between the queue sweep and the save
+            // below would fire the batch summary and leave the rows Queued.
+            ct.ThrowIfCancellationRequested();
+
+            // A health repair of a kept file stays allowed, and its operation only settles once its
+            // rows do, so those rows are left to finish.
+            await QueueItemCancellation.CancelAsync(db, queue, batches,
+                q => q.SeriesId == seriesId && q.HealthOperationId == null, CancellationToken.None);
 
             var now = time.GetUtcNow().UtcDateTime;
             int? userId = currentUser.UserId > 0 ? currentUser.UserId : null;
             var proposals = await db.TorrentProposals
                 .Where(p => p.SeriesId == seriesId && p.Status == TorrentProposalStatus.Pending)
-                .ToListAsync(ct);
+                .ToListAsync(CancellationToken.None);
             foreach (var proposal in proposals)
             {
                 proposal.Status = TorrentProposalStatus.Dismissed;
@@ -132,7 +139,7 @@ public class SeriesArchiveService(
 
             series.ArchivedAt = now;
             series.ArchivedByUserId = userId;
-            await db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(CancellationToken.None);
 
             // The series is archived from here on, so a dropped request must not stop halfway.
             result = new SeriesArchiveResult(SeriesArchiveStatus.Ok);
@@ -188,7 +195,8 @@ public class SeriesArchiveService(
             return SeriesArchiveResult.Conflict("error.series.notArchived");
         }
 
-        // A health repair may still be queued for an archived series and would put a file back.
+        // Only a running worker or import is refused here. A queued health repair stages its copy
+        // under .maki/health and puts nothing in the series folder until an admin applies it.
         if (await SeriesLocks.InFlight(db.DownloadQueue).AnyAsync(q => q.SeriesId == seriesId, ct))
         {
             return SeriesArchiveResult.Conflict("error.series.activeDownloadDelete");

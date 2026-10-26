@@ -312,9 +312,11 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     {
         limit = Math.Clamp(limit, 1, MaxRailItems);
 
+        // Archived series are left out before the take, or a burst of their files would crowd the rail.
         var recentFiles = await db.ChapterFiles
             .AsNoTracking()
             .Where(ChapterFile.IsNewContent)
+            .Where(f => db.Series.Active().Any(s => s.Id == f.SeriesId))
             .OrderByDescending(f => f.DateAdded)
             .Take(RecentFileScan)
             .Select(f => new { f.Id, f.SeriesId, f.DateAdded })
@@ -342,7 +344,6 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
 
         var titles = await db.Series
             .AsNoTracking()
-            .Active()
             .Where(s => seriesIds.Contains(s.Id))
             .Select(s => new { s.Id, s.Title, s.CoverPath, s.LastMetadataRefresh })
             .ToDictionaryAsync(s => s.Id, ct);

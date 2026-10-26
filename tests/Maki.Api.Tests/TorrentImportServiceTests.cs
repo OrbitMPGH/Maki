@@ -481,6 +481,41 @@ public class TorrentImportServiceTests : IDisposable
         Assert.False(Directory.Exists(Path.Combine(_root, "Berserk")));
     }
 
+    /// <summary>
+    /// An automatic import can register after the archive's in-flight check and then wait on the lock
+    /// the archive holds. Once it gets the lock it must see the archive and place nothing.
+    /// </summary>
+    [Fact]
+    public async Task A_series_archived_while_the_import_waited_for_its_lock_is_not_imported()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        SeedVolumeDownload(1, 2, 3);
+        var service = Service();
+        var plan = await service.PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        Task<TorrentImportOutcome> import;
+        using (await SeriesLocks.SeriesAsync(series.Id, CancellationToken.None))
+        {
+            import = service.ImportAsync(item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None, plan);
+            await Wait.UntilAsync(() => import.IsCompleted || SeriesLocks.SeriesUsers(series.Id) >= 2,
+                "the import never asked for the series lock");
+            Assert.False(import.IsCompleted);
+
+            using var db = _db.NewContext();
+            db.Series.Single(s => s.Id == series.Id).ArchivedAt = DateTime.UtcNow;
+            db.SaveChanges();
+        }
+
+        var outcome = await import;
+
+        Assert.False(outcome.Applied);
+        Assert.Equal(TorrentImportService.SeriesArchivedKey, outcome.ErrorKey);
+        Assert.Empty(Directory.GetFiles(Path.Combine(_root, "Berserk")));
+        using var check = _db.NewContext();
+        Assert.Empty(check.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
+        Assert.All(check.Chapters.Where(c => c.SeriesId == series.Id).ToList(), c => Assert.Null(c.ChapterFileId));
+    }
+
     [Fact]
     public async Task A_series_moved_after_planning_is_not_imported_into_either_folder()
     {

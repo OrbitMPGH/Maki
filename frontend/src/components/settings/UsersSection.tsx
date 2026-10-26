@@ -63,7 +63,7 @@ const GRANTABLE_DEFS: { value: Exclude<Permission, 'Admin'>; label: MessageDescr
   { value: 'UseTrackers', label: msg`Use trackers` },
   { value: 'UseOpds', label: msg`Use OPDS` },
   { value: 'ImportLibrary', label: msg`Import library` },
-  { value: 'ArchiveSeries', label: msg`Archive series` },
+  { value: 'ArchiveSeries', label: msg({ message: 'Archive series', context: 'series' }) },
 ]
 
 function useGrantablePermissions() {

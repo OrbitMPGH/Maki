@@ -20,6 +20,7 @@ using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -261,17 +262,36 @@ public sealed class ArchiveGuardTests : IDisposable
             db.SaveChanges();
         }
 
-        var service = new ScrobbleService(
-            _db.ScopeFactory(), settings: null!, new PlanToReadSettings(), kavitaUser: null!, kavita: null!,
-            volumeBoundaries: null!, anilist: null!, mal: null!, mangaBaka: null!, kitsu: null!, mangaUpdates: null!,
-            logger: NullLogger<ScrobbleService>.Instance);
         var tracker = new PushRecorder();
 
-        await service.NativePassAsync(1, [tracker], ownsKavita: false, CancellationToken.None);
+        await Scrobbler().NativePassAsync(1, [tracker], ownsKavita: false, CancellationToken.None);
 
-        Assert.Contains("100", tracker.RemoteIds);
+        Assert.Contains(("100", ScrobbleStatus.PlanToRead), tracker.Pushes);
         Assert.DoesNotContain("200", tracker.RemoteIds);
     }
+
+    [Fact]
+    public async Task NativePass_still_pushes_the_completion_of_an_archived_finished_one_shot()
+    {
+        var (_, archived) = Pair();
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == archived).MangaBakaId = 200;
+            db.SaveChanges();
+        }
+
+        var tracker = new PushRecorder();
+
+        await Scrobbler().NativePassAsync(1, [tracker], ownsKavita: false, CancellationToken.None,
+            oneShots: new Dictionary<int, bool> { [archived] = true });
+
+        Assert.Equal([("200", ScrobbleStatus.Completed)], tracker.Pushes);
+    }
+
+    private ScrobbleService Scrobbler() => new(
+        _db.ScopeFactory(), settings: null!, new PlanToReadSettings(), kavitaUser: null!, kavita: null!,
+        volumeBoundaries: null!, anilist: null!, mal: null!, mangaBaka: null!, kitsu: null!, mangaUpdates: null!,
+        logger: NullLogger<ScrobbleService>.Instance);
 
     [Fact]
     public async Task Home_reading_rail_skips_archived_series()
@@ -303,8 +323,9 @@ public sealed class ArchiveGuardTests : IDisposable
         SeedDownloaded(active, 1m);
         SeedDownloaded(archived, 1m);
 
+        // The archived file is the newer one, so a filter after the take would leave the rail empty.
         var items = Assert.IsType<List<HomeRecentSeriesItem>>(Assert.IsType<OkObjectResult>(
-            await Home().RecentlyAdded(ct: CancellationToken.None)).Value);
+            await Home().RecentlyAdded(limit: 1, ct: CancellationToken.None)).Value);
 
         Assert.Equal([active], items.Select(i => i.SeriesId));
     }
@@ -432,11 +453,61 @@ public sealed class ArchiveGuardTests : IDisposable
         var (active, archived) = Pair();
         SeedDownloaded(active, 1m);
         SeedDownloaded(archived, 1m);
+        SeedFileRows(archived, OpdsCatalogService.ShelfSize, DateTime.UtcNow.AddHours(1));
 
         var feed = await Opds().RecentFeedAsync(new OpdsContext(string.Empty, "tok3n"), CancellationToken.None);
 
         var entry = Assert.Single(feed.Entries);
         Assert.Contains("Active", entry.Title);
+    }
+
+    [Fact]
+    public async Task OpdsOnDeckShelf_skips_archived_series()
+    {
+        var (active, _) = Pair();
+        var (activeChapter, _, _) = SeedDownloaded(active, 1m);
+        SeedDownloaded(active, 2m);
+        Progress(active, activeChapter, ArchivedAt);
+        for (var i = 0; i < OpdsCatalogService.ShelfSize; i++)
+        {
+            var id = _db.SeedSeries($"Archived {i}", configure: s => s.ArchivedAt = ArchivedAt);
+            var (chapterId, _, _) = SeedDownloaded(id, 1m);
+            Progress(id, chapterId, ArchivedAt.AddDays(1));
+        }
+
+        var feed = await Opds().OnDeckFeedAsync(new OpdsContext(string.Empty, "tok3n"), CancellationToken.None);
+
+        var entry = Assert.Single(feed.Entries);
+        Assert.Contains("Active", entry.Title);
+    }
+
+    private void Progress(int seriesId, int chapterId, DateTime at)
+    {
+        using var db = _db.NewContext();
+        db.ChapterProgress.Add(new ChapterProgress
+        {
+            UserId = 1, SeriesId = seriesId, ChapterId = chapterId, PageIndex = 20, PageCount = 20, Completed = true,
+            StartedAt = at, UpdatedAt = at,
+        });
+        db.SaveChanges();
+    }
+
+    /// <summary>Chapter and file rows only, with nothing on disk: enough to fill a shelf before its filter.</summary>
+    private void SeedFileRows(int seriesId, int count, DateTime added)
+    {
+        using var db = _db.NewContext();
+        for (var i = 0; i < count; i++)
+        {
+            var file = new ChapterFile
+            {
+                SeriesId = seriesId, RelativePath = $"rows/{i}.cbz", Size = 1, SourceName = "Test", DateAdded = added,
+            };
+            db.ChapterFiles.Add(file);
+            db.SaveChanges();
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 100 + i, Language = "en", ChapterFileId = file.Id });
+        }
+
+        db.SaveChanges();
     }
 
     private OpdsCatalogService Opds()
@@ -700,6 +771,138 @@ public sealed class ArchiveGuardTests : IDisposable
         Assert.NotNull(scout.Snapshot(active));
     }
 
+    // ---- chapter endpoints ----
+
+    private ChapterController Chapters(MakiDbContext db, params FakeSource[] sources)
+    {
+        var registry = new SourceRegistry(sources);
+        return new ChapterController(
+            new TestLocalizer(), db, Queue(), new StatsEventService(db),
+            new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), registry,
+            new SourceAvailability(new FakeAppSettings(), registry),
+            new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
+            new DownloadBatchNotifier(new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(),
+                new TestUserLocaleResolver(), TimeProvider.System, NullLogger<DownloadBatchNotifier>.Instance),
+            new TestCurrentUser(1), NullLogger<ChapterController>.Instance);
+    }
+
+    [Fact]
+    public async Task ChapterSearch_refuses_a_chapter_of_an_archived_series()
+    {
+        var (_, archived) = Pair();
+        var chapterId = SeedChapter(archived, 1m);
+
+        using var db = _db.NewContext();
+        AssertArchived(await Chapters(db).Search(chapterId, default));
+        Assert.Equal(0, QueueRows(archived));
+    }
+
+    [Fact]
+    public async Task ChapterDownloadFrom_refuses_a_chapter_of_an_archived_series()
+    {
+        var (_, archived) = Pair();
+        var chapterId = SeedChapter(archived, 1m);
+
+        using var db = _db.NewContext();
+        var mappingId = db.SourceMappings.Single(m => m.SeriesId == archived).Id;
+        AssertArchived(await Chapters(db).DownloadFrom(chapterId, new DownloadChapterFromRequest(mappingId), null!, default));
+        Assert.Equal(0, QueueRows(archived));
+    }
+
+    [Fact]
+    public async Task ChapterRedownload_refuses_an_archived_series_before_listing_the_source()
+    {
+        var (_, archived) = Pair();
+        var (_, fileId, _) = SeedDownloaded(archived, 1m);
+        using (var db = _db.NewContext())
+        {
+            db.ChapterFiles.Single(f => f.Id == fileId).SourceName = "other";
+            db.SaveChanges();
+        }
+
+        var listed = 0;
+        var fake = new FakeSource
+        {
+            Name = "fake",
+            OnListChapters = _ =>
+            {
+                listed++;
+                return [];
+            },
+        };
+
+        using var context = _db.NewContext();
+        AssertArchived(await Chapters(context, fake, new FakeSource { Name = "other" })
+            .Redownload(new RedownloadRequest(archived, "fake"), null!, default));
+        Assert.Equal(0, listed);
+    }
+
+    [Fact]
+    public async Task ChapterDownloadBulk_refuses_only_a_selection_made_of_archived_series()
+    {
+        var (active, archived) = Pair();
+        var activeChapter = SeedChapter(active, 1m);
+        var archivedChapter = SeedChapter(archived, 1m);
+
+        using var db = _db.NewContext();
+        AssertArchived(await Chapters(db).DownloadBulk(new DownloadChaptersRequest([archivedChapter]), default));
+
+        var mixed = Assert.IsType<OkObjectResult>(
+            await Chapters(db).DownloadBulk(new DownloadChaptersRequest([archivedChapter, activeChapter]), default));
+        Assert.Equal(1, JsonSerializer.SerializeToElement(mixed.Value).GetProperty("queued").GetInt32());
+        Assert.Equal(0, QueueRows(archived));
+    }
+
+    // ---- torrent releases ----
+
+    private readonly FakeTorrentClient _torrentClient = new();
+
+    private ReleaseService Releases(MakiDbContext db) => new(
+        db, TestIndexers.Registry(new StubHttpClientFactory("[]")), _torrentClient.Registry(),
+        new SettingsService(_db.ScopeFactory()), NullLogger<ReleaseService>.Instance);
+
+    private ReleaseController ReleaseApi(MakiDbContext db) => new(
+        Releases(db), new ReleaseSearchCache(new MemoryCache(new MemoryCacheOptions())), new TestLocalizer(),
+        NullLogger<ReleaseController>.Instance);
+
+    [Fact]
+    public async Task ReleaseSearch_refuses_an_archived_series()
+    {
+        var (_, archived) = Pair();
+
+        using var db = _db.NewContext();
+        AssertArchived(await ReleaseApi(db).Search(archived, null, torrents: null!, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ReleaseGrab_refuses_an_archived_series()
+    {
+        var (_, archived) = Pair();
+
+        using var db = _db.NewContext();
+        AssertArchived(await ReleaseApi(db).Grab(
+            new ReleaseController.GrabRequest(archived, new ReleaseController.GrabRelease("g")), new TestCurrentUser(1),
+            db, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ReleaseService_GrabAsync_refuses_an_archived_series()
+    {
+        var (active, archived) = Pair();
+        await new SettingsService(_db.ScopeFactory()).SetAsync(SettingKeys.DownloadClientUrl, "http://client.test");
+        const string magnet = "magnet:?xt=urn:btih:0123456789ABCDEF0123456789ABCDEF01234567";
+        var release = new ReleaseDto("g", "Series v01", 1000, "Nyaa", 10, 1, "torrent", null, magnet, null);
+
+        using var db = _db.NewContext();
+        Assert.NotNull(await Releases(db).GrabAsync(active, release, DownloadOrigin.Manual, 1, null));
+        var refused = await Assert.ThrowsAsync<ReleaseRefusedException>(() =>
+            Releases(db).GrabAsync(archived, release, DownloadOrigin.Upgrade, null, null));
+
+        Assert.Equal(ArchivedKey, refused.Key);
+        Assert.Single(_torrentClient.AddedLinks);
+        Assert.Equal(0, QueueRows(archived));
+    }
+
     // ---- queue backstop ----
 
     private DownloadQueueService Queue() => new(
@@ -823,6 +1026,9 @@ public sealed class ArchiveGuardTests : IDisposable
         "MetadataRefreshJob.RefreshSeriesAsync",
     ];
 
+    // Insert their own torrent rows, past the queue backstop, so they check ArchivedAt themselves.
+    private static readonly string[] GuardedReleaseMembers = ["SearchAsync", "GrabAsync"];
+
     [Fact]
     public void Every_queue_entry_point_and_series_job_member_is_on_the_guard_list()
     {
@@ -839,8 +1045,15 @@ public sealed class ArchiveGuardTests : IDisposable
                 .Select(m => $"{t.Name}.{m.Name}"))
             .Distinct();
 
+        var releaseMembers = typeof(ReleaseService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Where(m => m.GetParameters().Any(p => p.Name == "seriesId" && p.ParameterType == typeof(int)))
+            .Select(m => $"ReleaseService.{m.Name}")
+            .Distinct();
+
         var missing = queueMembers.Except(GuardedQueueEntryPoints)
             .Concat(jobMembers.Except(SeriesIdJobMembers))
+            .Concat(releaseMembers.Except(GuardedReleaseMembers.Select(m => $"ReleaseService.{m}")))
             .ToList();
 
         Assert.True(missing.Count == 0,
@@ -877,7 +1090,9 @@ public sealed class ArchiveGuardTests : IDisposable
 
     private sealed class PushRecorder : IScrobbleTracker
     {
-        public List<string> RemoteIds { get; } = [];
+        public List<(string RemoteId, ScrobbleStatus Status)> Pushes { get; } = [];
+
+        public IEnumerable<string> RemoteIds => Pushes.Select(p => p.RemoteId);
 
         public string Name => "mangabaka";
         public string Label => "MangaBaka";
@@ -893,7 +1108,7 @@ public sealed class ArchiveGuardTests : IDisposable
         public Task UpdateAsync(int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
             CancellationToken ct = default, bool keepStatus = false)
         {
-            RemoteIds.Add(remoteId);
+            Pushes.Add((remoteId, status));
             return Task.CompletedTask;
         }
 
@@ -1022,5 +1237,37 @@ public sealed class ArchiveGuardWorkerTests : IDisposable
         Assert.Empty(check.ChapterFiles);
         Assert.Null(check.Chapters.Single(c => c.Id == chapterId).ChapterFileId);
         Assert.Empty(Directory.EnumerateFiles(_world.Library, "*.cbz", SearchOption.AllDirectories));
+    }
+
+    [Fact]
+    public async Task Processor_does_not_apply_an_upgrade_to_a_series_archived_while_it_waited_for_the_lock()
+    {
+        _world.Seed(minWidth: 150);
+        var (chapterId, fileId) = _world.Chapter(1, onDisk: true, pages: 4, width: 80);
+        _world.OfficialPages = UpgradeWorld.InlinePages(4, 160);
+        var path = Path.Combine(_world.Library, "Series", "Series 001.cbz");
+        var original = File.ReadAllBytes(path);
+        var itemId = _world.QueueUpgrade(chapterId, fileId!.Value);
+
+        Task<DownloadOutcome> run;
+        using (await SeriesLocks.SeriesAsync(_world.SeriesId, CancellationToken.None))
+        {
+            run = _world.ProcessAsync(itemId);
+            await Wait.UntilAsync(() => run.IsCompleted || SeriesLocks.SeriesUsers(_world.SeriesId) >= 2,
+                "the upgrade never asked for the series lock to apply");
+            Assert.False(run.IsCompleted);
+
+            using var db = _world.Db.NewContext();
+            db.Series.Single(s => s.Id == _world.SeriesId).ArchivedAt = DateTime.UtcNow;
+            db.SaveChanges();
+        }
+
+        Assert.Equal(DownloadOutcome.Settled, await run);
+        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.False(Directory.Exists(Path.Combine(_world.Library, ".maki-trash", _world.SeriesId.ToString())));
+        Assert.False(File.Exists(Path.Combine(_world.Library, ".maki", "tmp", $"{itemId}.cbz")));
+        using var check = _world.Db.NewContext();
+        Assert.Equal(QueueStatus.Cancelled, check.DownloadQueue.Single(q => q.Id == itemId).Status);
+        Assert.Equal(fileId, check.Chapters.Single(c => c.Id == chapterId).ChapterFileId);
     }
 }

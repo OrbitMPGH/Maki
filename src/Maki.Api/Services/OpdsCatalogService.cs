@@ -301,6 +301,7 @@ public class OpdsCatalogService(
         var recentFiles = await db.ChapterFiles
             .AsNoTracking()
             .Where(ChapterFile.IsNewContent)
+            .Where(f => db.Series.Active().Any(s => s.Id == f.SeriesId))
             .OrderByDescending(f => f.DateAdded)
             .Take(RecentFileScan)
             .Select(f => new { f.Id, f.DateAdded })
@@ -334,6 +335,7 @@ public class OpdsCatalogService(
         var recent = await db.ChapterProgress
             .AsNoTracking()
             .OwnedByScopeUser(db)
+            .Where(p => db.Series.Active().Any(s => s.Id == p.SeriesId))
             .OrderByDescending(p => p.UpdatedAt)
             .Take(RecentProgressScan)
             .Select(p => new { p.SeriesId, p.UpdatedAt })
@@ -367,13 +369,13 @@ public class OpdsCatalogService(
         return await ShelfAsync(ctx, "on-deck", localizer.Get("opds.onDeck.title"), ordered, ct);
     }
 
+    /// <param name="rows">Already free of archived series, filtered before the shelf was cut to size.</param>
     private async Task<OpdsFeed> ShelfAsync(
         OpdsContext ctx, string slug, string title, IReadOnlyList<ChapterRow> rows, CancellationToken ct)
     {
         var seriesIds = rows.Select(r => r.SeriesId).Distinct().ToList();
         var titles = await db.Series
             .AsNoTracking()
-            .Active()
             .Where(s => seriesIds.Contains(s.Id))
             .Select(s => new { s.Id, s.Title })
             .ToDictionaryAsync(s => s.Id, s => s.Title, ct);

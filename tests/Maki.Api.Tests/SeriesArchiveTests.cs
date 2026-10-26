@@ -1,14 +1,20 @@
+using System.Data.Common;
 using System.IO.Compression;
+using System.Text.Json;
+using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Api.Configuration;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Core.Sources;
+using Maki.Core.Storage;
 using Maki.Data;
 using Maki.Data.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
@@ -102,18 +108,21 @@ public sealed class SeriesArchiveTests : IDisposable
         return (chapter.Id, path);
     }
 
-    private void SeedQueueRow(int seriesId, int chapterId, QueueStatus status)
+    private int SeedQueueRow(int seriesId, int? chapterId, QueueStatus status,
+        AcquisitionProtocol protocol = AcquisitionProtocol.Scraper, int? healthOperationId = null)
     {
         using var db = _db.NewContext();
-        db.DownloadQueue.Add(new DownloadQueueItem
+        var item = new DownloadQueueItem
         {
-            SeriesId = seriesId, ChapterId = chapterId, Protocol = AcquisitionProtocol.Scraper, Status = status,
-            QueuedAt = DateTime.UtcNow, Origin = DownloadOrigin.Manual,
-        });
+            SeriesId = seriesId, ChapterId = chapterId, Protocol = protocol, Status = status,
+            QueuedAt = DateTime.UtcNow, Origin = DownloadOrigin.Manual, HealthOperationId = healthOperationId,
+        };
+        db.DownloadQueue.Add(item);
         db.SaveChanges();
+        return item.Id;
     }
 
-    private SeriesArchiveService Service(MakiDbContext db)
+    private SeriesArchiveService Service(MakiDbContext db, RecycleBinMover? mover = null)
     {
         var fake = new FakeSource { Name = "fake", OnListChapters = _ => _listing() };
         var registry = new SourceRegistry([fake]);
@@ -139,7 +148,7 @@ public sealed class SeriesArchiveTests : IDisposable
         services.AddScoped<ChapterSyncService>();
 
         return new SeriesArchiveService(
-            db, TestDeletion.For(db), queue, _batches, archives,
+            db, TestDeletion.For(db, mover is null ? null : TestRecycleBin.For(db, mover: mover)), queue, _batches, archives,
             new CoverService(null!, paths, new FakeAppSettings(), NullLogger<CoverService>.Instance),
             _notifications, localizer, new TestUserLocaleResolver(), new TestCurrentUser(1), paths, TimeProvider.System,
             services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(),
@@ -431,6 +440,160 @@ public sealed class SeriesArchiveTests : IDisposable
         Assert.NotNull(Load(idle).ArchivedAt);
     }
 
+    [Fact]
+    public async Task Archive_refused_by_the_bin_leaves_the_series_in_the_library_and_its_queue_untouched()
+    {
+        var seriesId = SeedSeries();
+        var (_, path) = SeedChapter(seriesId, 1m);
+        SeedQueueRow(seriesId, SeedChapter(seriesId, 2m, withFile: false).ChapterId, QueueStatus.Queued);
+        var crossVolume = new ScriptedMover(() => new MoveOutcome(MoveResult.CrossVolume));
+
+        SeriesArchiveResult result;
+        using (var db = _db.NewContext())
+        {
+            result = await Service(db, crossVolume).ArchiveAsync(seriesId, removeFiles: true, permanent: false, CancellationToken.None);
+        }
+
+        Assert.Equal(SeriesArchiveStatus.BinRefused, result.Status);
+        Assert.Equal("error.recycleBin.crossVolume", result.ErrorKey);
+        Assert.Null(Load(seriesId).ArchivedAt);
+        Assert.True(File.Exists(path));
+        using var check = _db.NewContext();
+        Assert.Equal(QueueStatus.Queued, Assert.Single(check.DownloadQueue.Where(q => q.SeriesId == seriesId)).Status);
+    }
+
+    [Fact]
+    public async Task Archive_with_removeFiles_prunes_the_series_folder()
+    {
+        var seriesId = SeedSeries("Berserk");
+        var (_, path) = SeedChapter(seriesId, 1m);
+        var folder = Path.GetDirectoryName(path)!;
+
+        Assert.True((await ArchiveAsync(seriesId, removeFiles: true)).Succeeded);
+
+        Assert.False(Directory.Exists(folder));
+    }
+
+    [Fact]
+    public async Task Archive_with_removeFiles_leaves_a_folder_another_series_shares()
+    {
+        var seriesId = SeedSeries("Berserk");
+        var (_, path) = SeedChapter(seriesId, 1m);
+        var rootFolderId = Load(seriesId).RootFolderId;
+        var otherId = SeedSeries("Berserk Deluxe", configure: s =>
+        {
+            s.RootFolderId = rootFolderId;
+            s.FolderName = "Berserk";
+        });
+        var (_, otherPath) = SeedChapter(otherId, 2m);
+
+        Assert.True((await ArchiveAsync(seriesId, removeFiles: true)).Succeeded);
+
+        Assert.False(File.Exists(path));
+        Assert.True(File.Exists(otherPath));
+    }
+
+    [Fact]
+    public async Task Archive_cancels_torrent_rows_the_client_still_holds_instead_of_deleting_them()
+    {
+        var seriesId = SeedSeries();
+        var downloading = SeedQueueRow(seriesId, null, QueueStatus.Downloading, AcquisitionProtocol.Torrent);
+        var awaiting = SeedQueueRow(seriesId, null, QueueStatus.AwaitingImport, AcquisitionProtocol.Torrent);
+
+        Assert.True((await ArchiveAsync(seriesId)).Succeeded);
+
+        using var db = _db.NewContext();
+        var rows = db.DownloadQueue.Where(q => q.SeriesId == seriesId).ToDictionary(q => q.Id, q => q.Status);
+        Assert.Equal(QueueStatus.Cancelled, rows[downloading]);
+        Assert.Equal(QueueStatus.Cancelled, rows[awaiting]);
+    }
+
+    [Fact]
+    public async Task Archive_leaves_a_queued_health_repair_to_finish_and_restore_then_queues_normally()
+    {
+        var seriesId = SeedSeries();
+        var (repaired, path) = SeedChapter(seriesId, 1m);
+        var (removed, _) = SeedChapter(seriesId, 2m, withFile: false, removedAt: DateTime.UtcNow);
+        var plain = SeedQueueRow(seriesId, SeedChapter(seriesId, 3m, withFile: false).ChapterId, QueueStatus.Queued);
+        int operationId;
+        using (var db = _db.NewContext())
+        {
+            var file = new HealthFile
+            {
+                RootFolderId = db.Series.Single(s => s.Id == seriesId).RootFolderId, SeriesId = seriesId,
+                RelativePath = Path.GetRelativePath(_tmp, path!),
+            };
+            db.HealthFiles.Add(file);
+            db.SaveChanges();
+            var operation = new HealthOperation
+            {
+                Kind = "repair", Status = "downloading", FileId = file.Id, Version = file.Version, UserId = 1,
+            };
+            db.HealthOperations.Add(operation);
+            db.SaveChanges();
+            operationId = operation.Id;
+        }
+
+        var repair = SeedQueueRow(seriesId, repaired, QueueStatus.Queued, healthOperationId: operationId);
+
+        Assert.True((await ArchiveAsync(seriesId)).Succeeded);
+
+        using (var db = _db.NewContext())
+        {
+            Assert.Equal(QueueStatus.Queued, db.DownloadQueue.Single(q => q.Id == repair).Status);
+            Assert.False(db.DownloadQueue.Any(q => q.Id == plain));
+
+            // What the health worker does once the repair's row settles; with the row deleted it never could.
+            db.DownloadQueue.Single(q => q.Id == repair).Status = QueueStatus.Completed;
+            db.HealthOperations.Single(o => o.Id == operationId).Status = "completed";
+            db.SaveChanges();
+        }
+
+        var restored = await RestoreAsync(seriesId, redownloadRemoved: true);
+
+        Assert.Null(restored.QueueError);
+        Assert.Equal(1, restored.Queued);
+        using var check = _db.NewContext();
+        Assert.True(check.DownloadQueue.Any(q => q.ChapterId == removed && q.Status != QueueStatus.Completed));
+    }
+
+    [Fact]
+    public async Task Archive_finishes_once_the_queue_sweep_started_even_when_the_request_drops()
+    {
+        var seriesId = SeedSeries();
+        SeedQueueRow(seriesId, SeedChapter(seriesId, 1m, withFile: false).ChapterId, QueueStatus.Queued);
+        using var dropped = new CancellationTokenSource();
+        var options = new DbContextOptionsBuilder<MakiDbContext>(_db.Options)
+            .AddInterceptors(new CancelOnQuery("TorrentProposals", dropped))
+            .Options;
+
+        SeriesArchiveResult result;
+        using (var db = new MakiDbContext(options))
+        {
+            result = await Service(db).ArchiveAsync(seriesId, removeFiles: false, permanent: false, dropped.Token);
+        }
+
+        Assert.True(dropped.IsCancellationRequested);
+        Assert.True(result.Succeeded);
+        Assert.NotNull(Load(seriesId).ArchivedAt);
+        using var check = _db.NewContext();
+        Assert.Empty(check.DownloadQueue.Where(q => q.SeriesId == seriesId));
+    }
+
+    [Fact]
+    public async Task The_recycle_bin_lists_files_removed_by_an_archive_as_seriesArchive()
+    {
+        var seriesId = SeedSeries();
+        SeedChapter(seriesId, 1m);
+        await ArchiveAsync(seriesId, removeFiles: true);
+
+        using var db = _db.NewContext();
+        var list = Assert.IsType<OkObjectResult>(
+            await new RecycleBinController(db, TestRecycleBin.For(db), new FakeAppSettings(), new TestLocalizer()).List(default));
+
+        Assert.Equal("seriesArchive", Assert.Single(Assert.IsType<RecycleBinController.BinDto>(list.Value).Entries).Reason);
+    }
+
     // ---- restore ----
 
     [Fact]
@@ -565,6 +728,117 @@ public sealed class SeriesArchiveTests : IDisposable
         using var db = _db.NewContext();
         Assert.NotNull(db.Chapters.Single(c => c.Id == chapterId).FileRemovedAt);
         Assert.Empty(db.DownloadQueue.Where(q => q.SeriesId == seriesId));
+    }
+
+    // ---- controller ----
+
+    private SeriesController Controller(MakiDbContext db, MakiPermission permissions) => new(
+        localizer: new TestLocalizer(),
+        db: db,
+        coverService: new CoverService(null!, new AppPaths(_tmp), new FakeAppSettings(), NullLogger<CoverService>.Instance),
+        chapterSyncService: null!,
+        cbzLinkService: null!,
+        relinkPlanner: null!,
+        seriesCreation: null!,
+        seriesRename: null!,
+        metadataRefresh: null!,
+        downloadQueue: null!,
+        downloadBatches: null!,
+        appSettings: null!,
+        kavitaScans: null!,
+        scrobbler: null!,
+        stats: new StatsEventService(db),
+        mangaBakaStore: null!,
+        similarSeries: null!,
+        recommendationFeedback: null!,
+        readingProfiles: null!,
+        readingTimeEstimates: null!,
+        sourceAvailability: null!,
+        currentUser: new TestCurrentUser(1, permissions: permissions),
+        userSettings: null!,
+        notifications: new RecordingNotifications(),
+        locales: new TestUserLocaleResolver(),
+        logger: NullLogger<SeriesController>.Instance);
+
+    [Fact]
+    public async Task Archive_with_removeFiles_is_forbidden_without_DeleteSeries()
+    {
+        var seriesId = SeedSeries();
+        var (_, path) = SeedChapter(seriesId, 1m);
+
+        using (var db = _db.NewContext())
+        {
+            var result = await Controller(db, MakiPermission.ArchiveSeries)
+                .Archive(seriesId, new SeriesController.ArchiveSeriesRequest(RemoveFiles: true), Service(db), default);
+            Assert.IsType<ForbidResult>(result);
+        }
+
+        Assert.Null(Load(seriesId).ArchivedAt);
+        Assert.True(File.Exists(path));
+    }
+
+    [Fact]
+    public async Task Restore_with_redownload_is_forbidden_without_DownloadChapters()
+    {
+        var seriesId = SeedSeries(configure: s => s.ArchivedAt = DateTime.UtcNow);
+        SeedChapter(seriesId, 1m, withFile: false, removedAt: DateTime.UtcNow);
+
+        using (var db = _db.NewContext())
+        {
+            var result = await Controller(db, MakiPermission.ArchiveSeries)
+                .Restore(seriesId, new SeriesController.RestoreSeriesRequest(RedownloadRemoved: true), Service(db), default);
+            Assert.IsType<ForbidResult>(result);
+        }
+
+        Assert.NotNull(Load(seriesId).ArchivedAt);
+        using var check = _db.NewContext();
+        Assert.Empty(check.DownloadQueue.Where(q => q.SeriesId == seriesId));
+    }
+
+    [Fact]
+    public async Task ArchiveBulk_answers_one_outcome_per_id()
+    {
+        var idle = SeedSeries("Idle");
+        var busy = SeedSeries("Busy");
+        SeedQueueRow(busy, SeedChapter(busy, 1m, withFile: false).ChapterId, QueueStatus.Importing);
+
+        using var db = _db.NewContext();
+        var ok = Assert.IsType<OkObjectResult>(await Controller(db, MakiPermission.ArchiveSeries)
+            .ArchiveBulk(new SeriesController.BulkArchiveSeriesRequest([idle, busy]), Service(db), default));
+
+        var results = JsonSerializer.SerializeToElement(ok.Value).GetProperty("results").EnumerateArray().ToList();
+        Assert.Equal(2, results.Count);
+        Assert.Equal(idle, results[0].GetProperty("seriesId").GetInt32());
+        Assert.True(results[0].GetProperty("ok").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, results[0].GetProperty("code").ValueKind);
+        Assert.Equal(busy, results[1].GetProperty("seriesId").GetInt32());
+        Assert.False(results[1].GetProperty("ok").GetBoolean());
+        Assert.False(results[1].GetProperty("notFound").GetBoolean());
+        Assert.Equal("error.series.activeDownloadArchive", results[1].GetProperty("code").GetString());
+        Assert.False(string.IsNullOrEmpty(results[1].GetProperty("error").GetString()));
+        Assert.False(results[1].GetProperty("permanentDeleteAvailable").GetBoolean());
+    }
+
+    // ---- fakes ----
+
+    private sealed class ScriptedMover(Func<MoveOutcome> outcome) : RecycleBinMover
+    {
+        public override MoveOutcome Move(string source, string target) => outcome();
+    }
+
+    /// <summary>Cancels the request's token right after the first query that reads <c>table</c>.</summary>
+    private sealed class CancelOnQuery(string table, CancellationTokenSource request) : DbCommandInterceptor
+    {
+        public override ValueTask<DbDataReader> ReaderExecutedAsync(
+            DbCommand command, CommandExecutedEventData eventData, DbDataReader result, CancellationToken ct = default)
+        {
+            if (command.CommandText.Contains($"\"{table}\"", StringComparison.Ordinal))
+            {
+                request.Cancel();
+            }
+
+            return ValueTask.FromResult(result);
+        }
     }
 
     // ---- permission ----

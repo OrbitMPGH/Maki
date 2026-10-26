@@ -710,6 +710,7 @@ public class ScrobbleService(
     {
         List<NativeProgress> rows;
         List<NativeProgress> zeroProgress;
+        HashSet<int> archived;
         using (var scope = scopeFactory.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -737,15 +738,21 @@ public class ScrobbleService(
                     .ToListAsync(ct)
                 : [];
 
-            zeroProgress = await db.Series
-                .Active()
+            // Archived series stay in: a finished one-shot among them still reports its completion.
+            var candidates = await db.Series
                 .Where(s => s.Incognito == IncognitoMode.Off &&
                     (s.MalId != null || s.AniListId != null || s.MangaBakaId != null || s.KitsuId != null ||
                         s.MangaUpdatesId != null))
-                .Select(s => new NativeProgress(
-                    s.Id, s.Title, 0, 0, s.MalId, s.AniListId, s.MangaBakaId, s.KitsuId, s.MangaUpdatesId))
+                .Select(s => new
+                {
+                    Row = new NativeProgress(
+                        s.Id, s.Title, 0, 0, s.MalId, s.AniListId, s.MangaBakaId, s.KitsuId, s.MangaUpdatesId),
+                    Archived = s.ArchivedAt != null,
+                })
                 .ToListAsync(ct);
-            zeroProgress = zeroProgress
+            archived = candidates.Where(c => c.Archived).Select(c => c.Row.SeriesId).ToHashSet();
+            zeroProgress = candidates
+                .Select(c => c.Row)
                 .Where(s => !trackedSeriesIds.Contains(s.SeriesId) && !kavitaTrackedSeriesIds.Contains(s.SeriesId))
                 .ToList();
         }
@@ -772,13 +779,14 @@ public class ScrobbleService(
         {
             ct.ThrowIfCancellationRequested();
             await batcher.FlushStaleAsync();
+            var planToReadRow = planToRead && !archived.Contains(row.SeriesId);
             if (oneShots.TryGetValue(row.SeriesId, out var completedLocally))
             {
                 await PushNativeRowAsync(
-                    userId, row, 0, 0, planToRead ? ScrobbleStatus.PlanToRead : null, trackers, ct, Counters,
+                    userId, row, 0, 0, planToReadRow ? ScrobbleStatus.PlanToRead : null, trackers, ct, Counters,
                     finished: true, completedLocally, batcher);
             }
-            else if (planToRead)
+            else if (planToReadRow)
             {
                 await PushNativeRowAsync(
                     userId, row, 0, 0, ScrobbleStatus.PlanToRead, trackers, ct, Counters, batcher: batcher);

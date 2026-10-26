@@ -12,6 +12,17 @@ paths:
   - "src/Maki.Api/Services/ScrobbleService.cs"
   - "src/Maki.Api/Jobs/*.cs"
   - "src/Maki.Data/SeriesQueries.cs"
+  - "src/Maki.Api/Controllers/SeriesController.cs"
+  - "src/Maki.Api/Controllers/SourceMappingController.cs"
+  - "src/Maki.Api/Controllers/UpgradesController.cs"
+  - "src/Maki.Api/Controllers/ChapterController.cs"
+  - "src/Maki.Api/Controllers/ReleaseController.cs"
+  - "src/Maki.Api/Controllers/HomeController.cs"
+  - "src/Maki.Api/Services/OpdsCatalogService.cs"
+  - "src/Maki.Api/Komga/*.cs"
+  - "src/Maki.Api/Services/TorrentImportService.cs"
+  - "src/Maki.Api/Services/ChapterDownloadProcessor.cs"
+  - "src/Maki.Api/Services/ReleaseService.cs"
   - "tests/Maki.Api.Tests/ArchiveGuardTests.cs"
   - "tests/Maki.Api.Tests/SeriesArchiveTests.cs"
 ---
@@ -19,7 +30,9 @@ paths:
 # Series archive
 
 - **`Series.ArchivedAt != null` means out of the library.** An archived series stops talking to its sources and the download queue, and nothing else changes. Every new series selector, and every per-series endpoint that reaches a source or the download queue, must use `.Active()` (`SeriesQueries`) or check `ArchivedAt`, and gets a fact in `ArchiveGuardTests`. Mapping queries that start from `SourceMapping` use `m.Series!.ArchivedAt == null`. Anything that only reads the database leaves archived series alone.
-- **Entry points answer 409 `error.series.archived`.** The queue backstop in `DownloadQueueService` returns the same "not enqueued" shape a disabled source does, so callers need no new branch.
+- **Entry points answer 409 `error.series.archived`.** The queue backstop in `DownloadQueueService` is only a safety net: it returns the same "not enqueued" shape an already queued chapter does, so a user-facing action checks `ArchivedAt` first or the user gets the wrong message.
+- **`ReleaseService` inserts torrent rows itself**, past the queue backstop, so `SearchAsync` and `GrabAsync` refuse an archived series with `ReleaseRefusedException.SeriesArchived`.
+- **The torrent import re-reads `ArchivedAt` under the series lock**: an automatic import can register after the archive's in-flight check and then wait on its lock.
 
 ## Deliberately left alone
 
@@ -29,7 +42,7 @@ paths:
 - `ImportListService` and `FollowedCreatorReleaseService` must still see the series as owned, or they would add it again.
 - Scrobbling of progress and ratings keeps running. Only the plan-to-read push stops.
 - `UserSeriesState.HiddenFromHomeAt` is a per-user hide, separate from archive.
-- `EnqueueRepairAsync` stays open: repairing a kept file is an explicit admin fix.
+- `EnqueueRepairAsync` stays open: repairing a kept file is an explicit admin fix. Archive leaves queue rows with `HealthOperationId` alone, or the operation would never settle.
 
 ## What restore relies on
 

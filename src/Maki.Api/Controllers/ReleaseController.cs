@@ -50,7 +50,7 @@ public class ReleaseController(
         }
         catch (ReleaseRefusedException ex)
         {
-            return this.Fail(localizer, ex.Key);
+            return Refused(ex);
         }
         catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException)
         {
@@ -64,6 +64,11 @@ public class ReleaseController(
         [FromBody] GrabRequest request, [FromServices] ICurrentUser user, [FromServices] MakiDbContext db,
         CancellationToken ct)
     {
+        if (await db.Series.AnyAsync(s => s.Id == request.SeriesId && s.ArchivedAt != null, ct))
+        {
+            return this.Conflict(localizer, ReleaseRefusedException.SeriesArchived);
+        }
+
         var backend = await releaseService.ActiveBackendAsync(ct);
         if (searches.Find(request.SeriesId, backend, request.Release.Guid) is not { } release)
         {
@@ -90,7 +95,7 @@ public class ReleaseController(
         }
         catch (ReleaseRefusedException ex)
         {
-            return this.Fail(localizer, ex.Key);
+            return Refused(ex);
         }
         catch (TorrentClientException ex)
         {
@@ -109,6 +114,10 @@ public class ReleaseController(
             return this.BadGateway(localizer, "error.release.grabFailed");
         }
     }
+
+    private IActionResult Refused(ReleaseRefusedException ex) => ex.Key == ReleaseRefusedException.SeriesArchived
+        ? this.Conflict(localizer, ex.Key)
+        : this.Fail(localizer, ex.Key);
 
     private static ReleaseParsedDto Parsed(TorrentCandidateView v) => new(
         ReleaseSpanDto.From(v.Parsed.Span, v.WholeSeries),

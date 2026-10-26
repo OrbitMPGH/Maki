@@ -1302,13 +1302,19 @@ public class SeriesController(
 
     /// <summary>
     /// Puts an archived series back in the library with its old monitoring mode and refreshes it in
-    /// the background.
+    /// the background. Downloading the removed chapters again also needs
+    /// <see cref="MakiPermission.DownloadChapters"/>.
     /// </summary>
     [Authorize(Policy = Policies.ArchiveSeries)]
     [HttpPost("{id:int}/restore")]
     public async Task<IActionResult> Restore(
         int id, [FromBody] RestoreSeriesRequest request, [FromServices] SeriesArchiveService archive, CancellationToken ct)
     {
+        if (request.RedownloadRemoved && !currentUser.Permissions.Grants(MakiPermission.DownloadChapters))
+        {
+            return Forbid();
+        }
+
         var result = await archive.RestoreAsync(id, request.RedownloadRemoved, ct);
         return ArchiveResponse(result, () => Ok(new
         {

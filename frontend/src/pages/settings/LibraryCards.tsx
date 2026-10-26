@@ -604,6 +604,7 @@ const RECYCLE_REASON_LABELS: Record<RecycleReason, MessageDescriptor> = {
   deleteFile: msg`Deleted file`,
   removeChapter: msg`Removed chapter`,
   seriesDelete: msg`Removed series`,
+  seriesArchive: msg({ message: 'Series archived', context: 'series' }),
 }
 
 function daysLeft(expiresAt: string): number {
