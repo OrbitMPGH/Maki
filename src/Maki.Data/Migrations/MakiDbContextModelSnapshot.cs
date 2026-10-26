@@ -1956,6 +1956,9 @@ namespace Maki.Data.Migrations
                     b.Property<int>("ReadFileCleanup")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("RestoredAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("RootFolderId")
                         .HasColumnType("INTEGER");
 

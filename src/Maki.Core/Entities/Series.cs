@@ -91,6 +91,12 @@ public class Series
     /// <summary>Who archived it. Set to null if that user is later deleted.</summary>
     public int? ArchivedByUserId { get; set; }
 
+    /// <summary>
+    /// Set by restore and cleared by the first full chapter sync after it. That sync stamps no
+    /// <see cref="ChapterSourceLink.FirstSeenAt"/>: what it finds was released while nobody looked.
+    /// </summary>
+    public DateTime? RestoredAt { get; set; }
+
     public int RootFolderId { get; set; }
     public RootFolder? RootFolder { get; set; }
     public string FolderName { get; set; } = string.Empty;

@@ -68,6 +68,55 @@ public class ReleaseAwareRefreshTests : IDisposable
     }
 
     [Fact]
+    public async Task The_first_sync_after_a_restore_stamps_nothing_and_the_second_stamps_as_usual()
+    {
+        var id = _db.SeedSeries(mappings: Mapping());
+        var chapters = new List<decimal> { 1, 2 };
+        var source = new FakeSource { Name = "fake" };
+        source = new FakeSource { Name = "fake", OnListChapters = _ => chapters.Select(n => source.Chapter(n)).ToList() };
+        await Service(source).SyncSeriesAsync(id);
+
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == id).RestoredAt = DateTime.UtcNow;
+            db.SaveChanges();
+        }
+
+        chapters.AddRange([3, 4, 5]);
+        await Service(source).SyncSeriesAsync(id);
+
+        Assert.All(FirstSeen(id).Values, Assert.Null);
+        Assert.Null(SeriesRow(id).RestoredAt);
+
+        chapters.Add(6);
+        await Service(source).SyncSeriesAsync(id);
+
+        var stamps = FirstSeen(id);
+        Assert.Null(stamps[5]);
+        Assert.NotNull(stamps[6]);
+    }
+
+    [Fact]
+    public async Task A_sync_that_reaches_no_source_keeps_the_restore_marker()
+    {
+        var id = _db.SeedSeries(mappings: Mapping());
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == id).RestoredAt = DateTime.UtcNow;
+            db.SaveChanges();
+        }
+
+        var failing = new FakeSource
+        {
+            Name = "fake",
+            OnListChapters = _ => throw new InvalidOperationException("down")
+        };
+        await Service(failing).SyncSeriesAsync(id);
+
+        Assert.NotNull(SeriesRow(id).RestoredAt);
+    }
+
+    [Fact]
     public async Task An_older_chapter_a_source_adds_later_is_not_a_release()
     {
         var id = _db.SeedSeries(mappings: Mapping());

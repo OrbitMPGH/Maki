@@ -249,6 +249,7 @@ public class SeriesArchiveService(
             series.ArchivedAt = null;
             series.ArchivedByUserId = null;
             series.NextCheckAt = null;
+            series.RestoredAt = time.GetUtcNow().UtcDateTime;
             await db.SaveChangesAsync(ct);
 
             if (redownloadRemoved)

@@ -714,6 +714,29 @@ public sealed class SeriesArchiveTests : IDisposable
     }
 
     [Fact]
+    public async Task Restore_marks_the_series_so_the_first_sync_stamps_no_first_seen()
+    {
+        var seriesId = SeedSeries();
+        await ArchiveAsync(seriesId);
+        Assert.Null(Load(seriesId).RestoredAt);
+
+        using var gate = new ManualResetEventSlim();
+        _listing = () =>
+        {
+            gate.Wait(TimeSpan.FromSeconds(10));
+            return [];
+        };
+
+        using var db = _db.NewContext();
+        var result = await Service(db).RestoreAsync(seriesId, redownloadRemoved: false, CancellationToken.None);
+        var restoredAt = Load(seriesId).RestoredAt;
+        gate.Set();
+        await result.Refresh!;
+
+        Assert.NotNull(restoredAt);
+    }
+
+    [Fact]
     public async Task Restore_of_an_active_series_answers_not_archived()
     {
         var seriesId = SeedSeries();

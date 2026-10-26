@@ -48,6 +48,7 @@ paths:
 
 - **Archive never changes `MonitorNewItems`**, so restore brings the old mode back on its own.
 - **Restore goes through `RefreshMonitoredSeriesJob.RefreshSeriesAsync`, never `ChapterSyncService.SyncSeriesAsync`.** A burst of chapters released in the meantime is then bulk-held and announced instead of inserted as known.
+- **`Series.RestoredAt` makes the first full chapter sync after a restore stamp no `FirstSeenAt`**, so the chapters released while nobody looked do not read as a burst to `ReleaseCadence`. The sync clears it once a source answered, so a failed or skipped first refresh leaves it for the scheduled one.
 
 ## Queue and files
 

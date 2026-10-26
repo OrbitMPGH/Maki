@@ -180,7 +180,7 @@ public class ChapterSyncService(
 
                 var fileGroups = ReplaceSnapshot(
                     mapping, snapshotLinks, ChapterFileQualityService.SiteGroup(source),
-                    firstSnapshot ? null : listedUpTo ?? decimal.MinValue);
+                    firstSnapshot || series.RestoredAt is not null ? null : listedUpTo ?? decimal.MinValue);
                 await BackfillFileGroupsAsync(mapping.SourceName, fileGroups, ct);
 
                 mapping.LastRefresh = DateTime.UtcNow;
@@ -236,6 +236,11 @@ public class ChapterSyncService(
 
                 series.NumberingClash = value;
             }
+        }
+
+        if (mappingIds is null && series.RestoredAt is not null && (numbersBySource.Count > 0 || liveMappings.Count == 0))
+        {
+            series.RestoredAt = null;
         }
 
         await db.SaveChangesAsync(ct);
