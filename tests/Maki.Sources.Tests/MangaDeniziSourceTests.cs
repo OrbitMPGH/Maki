@@ -98,17 +98,17 @@ public class MangaDeniziSourceTests
         var pages = await source.GetPagesAsync(chapter);
 
         Assert.Equal(9, pages.Pages.Count);
-        Assert.All(pages.Pages, p =>
+        Assert.All(pages.Pages, p => Assert.Equal("https://mangadenizi.net/", p.Headers!["Referer"]));
+        var fetched = await Task.WhenAll(pages.Pages.Select(p => p.Fetch!(CancellationToken.None)));
+        Assert.All(fetched, data =>
         {
-            Assert.NotNull(p.Data);
-            Assert.NotEmpty(p.Data!);
-            Assert.Equal("https://mangadenizi.net/", p.Headers!["Referer"]);
+            Assert.NotEmpty(data);
             // PageDownloader names the saved file from the .webp extension on the page's own URL,
             // so the bytes returned here must actually be WebP - never JPEG under a .webp name,
             // and never the raw scrambled bytes.
-            Assert.Equal("RIFF", System.Text.Encoding.ASCII.GetString(p.Data!, 0, 4));
-            Assert.Equal("WEBP", System.Text.Encoding.ASCII.GetString(p.Data!, 8, 4));
-            var decoded = ImageCodec.Identify(p.Data!);
+            Assert.Equal("RIFF", System.Text.Encoding.ASCII.GetString(data, 0, 4));
+            Assert.Equal("WEBP", System.Text.Encoding.ASCII.GetString(data, 8, 4));
+            var decoded = ImageCodec.Identify(data);
             Assert.True(decoded.Width > 0 && decoded.Height > 0);
         });
     }
@@ -130,6 +130,7 @@ public class MangaDeniziSourceTests
         Assert.All(pages.Pages, p =>
         {
             Assert.Null(p.Data);
+            Assert.Null(p.Fetch);
             Assert.Equal("https://mangadenizi.net/", p.Headers!["Referer"]);
             Assert.Equal(BrowserUserAgent.Value, p.Headers["User-Agent"]);
         });

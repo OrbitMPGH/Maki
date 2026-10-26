@@ -222,8 +222,7 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
 
             if (choJuGiga == "baku")
             {
-                var bytes = await FetchAndDescrambleAsync(src, episodeUrl, ct);
-                pages.Add(new PageRequest(src, headers, Data: bytes));
+                pages.Add(new PageRequest(src, headers, Fetch: token => FetchAndDescrambleAsync(src, episodeUrl, token)));
             }
             else
             {

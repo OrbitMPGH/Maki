@@ -197,9 +197,10 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
                 continue;
             }
 
-            var raw = await FetchImageBytesAsync(imageUrl, ct);
-            var data = await ProcessPageAsync(raw, pageEl, imageUrl, ct);
-            pages.Add(new PageRequest(imageUrl, headers, Data: data));
+            // Cloned: the document behind pageEl is disposed before the downloader asks for the page.
+            var page = pageEl.Clone();
+            pages.Add(new PageRequest(imageUrl, headers, Fetch: async token =>
+                await ProcessPageAsync(await FetchImageBytesAsync(imageUrl, token), page, imageUrl, token)));
         }
 
         return new ChapterPages(pages);
