@@ -292,6 +292,30 @@ public sealed class TopManhuaImageBrowser(
 
         await context.AddInitScriptAsync("Object.defineProperty(navigator,'webdriver',{get:()=>undefined});");
 
+        // Images are the point here, so they pass; fonts, media, frames and the tag manager are
+        // renderer work for nothing. Verified live: every page image still arrives.
+        await context.RouteAsync("**/*", async route =>
+        {
+            try
+            {
+                var request = route.Request;
+                if (request.ResourceType is "font" or "media" ||
+                    (request.IsNavigationRequest && request.Frame.ParentFrame is not null) ||
+                    BrowserSupport.IsUnneeded(request.Url))
+                {
+                    await route.AbortAsync();
+                }
+                else
+                {
+                    await route.ContinueAsync();
+                }
+            }
+            catch (PlaywrightException)
+            {
+                // the page closed under the request; nothing left to route
+            }
+        });
+
         await context.AddCookiesAsync(session.Cookies.Select(c => new Cookie
         {
             Name = c.Key,
