@@ -12,7 +12,9 @@ namespace Maki.Api.Tests;
 
 public class MangaBakaDumpRetryTests : IAsyncLifetime
 {
-    private static readonly DateTimeOffset Now = new(2026, 10, 24, 12, 0, 0, TimeSpan.Zero);
+    // Quartz weighs trigger times against the real clock, so "now" has to stay ahead of it: a fixed
+    // date turns every test here into a failure once the wall clock passes it.
+    private readonly DateTimeOffset Now = DateTimeOffset.FromUnixTimeSeconds(DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeSeconds());
 
     private IScheduler _scheduler = null!;
 
