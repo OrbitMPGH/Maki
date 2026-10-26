@@ -742,6 +742,11 @@ msgstr "One of the rules is not valid. Check its conditions and what it does."
 msgid "error.pageConversion.stopInvalid"
 msgstr "Choose Smallest, Compact, Balanced, High or Lossless"
 
+#. {max} is the server's core count.
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.parallelInvalid"
+msgstr "Pages converted at once must be between 1 and {max}"
+
 #. Undoing a series' page conversion with both "convert again" and "set this series to Never" chosen.
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.pageConversion.undoConflict"

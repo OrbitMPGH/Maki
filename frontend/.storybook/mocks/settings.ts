@@ -140,6 +140,10 @@ export const settingsHandlers: HttpHandler[] = [
   http.put(api('/pageconversion/settings'), async ({ request }) =>
     HttpResponse.json({ ...d.pageConversionIdle, settings: await request.json() }),
   ),
+  http.put(api('/pageconversion/parallel'), async ({ request }) => {
+    const { limit } = (await request.json()) as { limit: number | null }
+    return HttpResponse.json({ ...d.pageConversionIdle, parallel: { ...d.pageConversionIdle.parallel, limit } })
+  }),
   http.post(api('/pageconversion/start'), () => HttpResponse.json(d.pageConversionRunning)),
   http.post(api('/pageconversion/pause'), () =>
     HttpResponse.json({ ...d.pageConversionRunning, pass: { ...d.pageConversionRunning.pass, state: 'paused', currentFile: null } }),

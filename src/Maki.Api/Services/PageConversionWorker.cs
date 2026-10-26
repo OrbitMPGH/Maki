@@ -126,6 +126,8 @@ public class PageConversionWorker(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        ImageWorkGate.SetConversionLimit(
+            PageConversionOptions.ParseParallel(await settings.GetAsync(SettingKeys.PageConversionParallel, stoppingToken)));
         while (!stoppingToken.IsCancellationRequested)
         {
             try

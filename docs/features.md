@@ -167,7 +167,8 @@ screen. It is off until a reader turns it on. Library files are never modified.
 - **Page conversion.** Off by default (Settings, Library, Page conversion). Pick WebP or AVIF and
   a quality, and new downloads are stored with their JPEG pages in that format and their PNG pages
   as lossless WebP. A pausable library pass converts the files already on disk, one at a time, and
-  shows what it saved. A page or file that would not come out at least 5% smaller is kept as it
+  shows what it saved. Several pages of a file are encoded at once; the card sets how many (by
+  default half the cores, at most 4). A page or file that would not come out at least 5% smaller is kept as it
   was, and so are WebP and AVIF pages, animations, pages under 16 KB and pages over 16,383 pixels
   on a side. Files hardlinked to a torrent client's copy are skipped. Originals wait in the upgrade
   trash (`.maki-trash/<series id>/conv-*`) for the trash retention period, and the pass pauses

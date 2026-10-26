@@ -411,6 +411,34 @@ public sealed partial class PageConversionTests : IDisposable
         Assert.IsType<ConflictObjectResult>(await controller.Start(CancellationToken.None));
     }
 
+    [Fact]
+    public async Task The_parallel_limit_round_trips_and_reaches_the_gate_at_once()
+    {
+        using var db = _world.Db.NewContext();
+        var controller = Controller(db);
+        try
+        {
+            var saved = Saved(await controller.SaveParallel(new PageConversionController.ParallelRequest(1), CancellationToken.None));
+            Assert.Equal(new PageConversionController.ParallelDto(1, ImageWorkGate.Parallelism, ImageWorkGate.MaxConversionLimit),
+                saved.Parallel);
+            Assert.Equal(1, ImageWorkGate.ConversionLimit);
+
+            Assert.IsType<BadRequestObjectResult>(
+                await controller.SaveParallel(new PageConversionController.ParallelRequest(0), CancellationToken.None));
+            Assert.IsType<BadRequestObjectResult>(await controller.SaveParallel(
+                new PageConversionController.ParallelRequest(ImageWorkGate.MaxConversionLimit + 1), CancellationToken.None));
+            Assert.Equal(1, Saved(await controller.Status(CancellationToken.None)).Parallel.Limit);
+
+            saved = Saved(await controller.SaveParallel(new PageConversionController.ParallelRequest(null), CancellationToken.None));
+            Assert.Null(saved.Parallel.Limit);
+            Assert.Equal(ImageWorkGate.Parallelism, ImageWorkGate.ConversionLimit);
+        }
+        finally
+        {
+            ImageWorkGate.SetConversionLimit(null);
+        }
+    }
+
     private PageConversionController.StatusDto Saved(IActionResult result) =>
         Assert.IsType<PageConversionController.StatusDto>(Assert.IsType<OkObjectResult>(result).Value);
 

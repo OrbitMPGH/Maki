@@ -3786,6 +3786,10 @@ msgstr "Gilt automatisch für"
 msgid "Applies to chapters released later."
 msgstr "Gilt für später veröffentlichte Kapitel."
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Applies to the library pass and to new downloads. Higher finishes sooner but uses more of the server's CPU while it runs."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/RatingImportModal.tsx
 #: src/pages/DiscoverPage.tsx
@@ -4046,6 +4050,10 @@ msgstr ""
 #, fuzzy
 msgid "Automatic"
 msgstr "Automatisch"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Automatic ({auto})"
+msgstr ""
 
 #: src/components/ui/language.ts
 #, fuzzy
@@ -13920,6 +13928,10 @@ msgstr ""
 msgid "Pages are matched by image content, so each row is the same drawing in every column."
 msgstr ""
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Pages converted at once"
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Pages decoded at once"
@@ -16739,6 +16751,7 @@ msgstr "Deine Wiederherstellungscodes speichern"
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
 #: src/pages/settings/SystemCards.tsx

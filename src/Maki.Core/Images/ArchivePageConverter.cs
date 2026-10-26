@@ -118,7 +118,7 @@ public static class ArchivePageConverter
                     await stream.WriteAsync(bytes, ct);
                 }
 
-                // Pages encode ahead of the writer, as many at once as the gate allows, and are
+                // Pages encode ahead of the writer, as many at once as the conversion limit allows, and are
                 // written in the source order. AV1 is the slow part, and one page at a time left
                 // all but one core idle.
                 foreach (var entry in source.Entries)
@@ -136,13 +136,13 @@ public static class ArchivePageConverter
                     if (pages.Contains(entry.FullName))
                     {
                         var extension = Path.GetExtension(entry.FullName);
-                        page = Task.Run(() => ImageWorkGate.RunAsync(
-                            () => Task.FromResult(PageConversion.Convert(bytes, extension, settings)),
+                        page = Task.Run(() => ImageWorkGate.RunConversionAsync(
+                            () => PageConversion.Convert(bytes, extension, settings),
                             ImageWorkGate.Weigh(bytes), encodes.Token), encodes.Token);
                     }
 
                     pending.Enqueue(new Pending(entry, bytes, page));
-                    while (pending.Count(p => p.Page is not null) > ImageWorkGate.Parallelism)
+                    while (pending.Count(p => p.Page is not null) > ImageWorkGate.ConversionLimit)
                     {
                         await WriteAsync(pending.Peek());
                         pending.Dequeue();
@@ -224,8 +224,8 @@ public static class ArchivePageConverter
 
             foreach (var (bytes, extension) in picked)
             {
-                var page = await ImageWorkGate.RunAsync(
-                    () => Task.FromResult(PageConversion.Convert(bytes, extension, settings)), ct);
+                var page = await ImageWorkGate.RunConversionAsync(
+                    () => PageConversion.Convert(bytes, extension, settings), ImageWorkGate.Weigh(bytes), ct);
                 if (page.Converted)
                 {
                     return true;

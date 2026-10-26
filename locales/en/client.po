@@ -3133,6 +3133,10 @@ msgstr "Applies automatically to"
 msgid "Applies to chapters released later."
 msgstr "Applies to chapters released later."
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Applies to the library pass and to new downloads. Higher finishes sooner but uses more of the server's CPU while it runs."
+msgstr "Applies to the library pass and to new downloads. Higher finishes sooner but uses more of the server's CPU while it runs."
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/RatingImportModal.tsx
 #: src/pages/DiscoverPage.tsx
@@ -3355,6 +3359,10 @@ msgstr "Auto-removed"
 #: src/pages/settings/SystemCards.tsx
 msgid "Automatic"
 msgstr "Automatic"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Automatic ({auto})"
+msgstr "Automatic ({auto})"
 
 #: src/components/ui/language.ts
 msgid "Automatic (match my browser)"
@@ -11516,6 +11524,10 @@ msgstr "Pages already stored as WebP or AVIF are kept as they are."
 msgid "Pages are matched by image content, so each row is the same drawing in every column."
 msgstr "Pages are matched by image content, so each row is the same drawing in every column."
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Pages converted at once"
+msgstr "Pages converted at once"
+
 #: src/pages/settings/SystemCards.tsx
 msgid "Pages decoded at once"
 msgstr "Pages decoded at once"
@@ -13865,6 +13877,7 @@ msgstr "Save your recovery codes"
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
 #: src/pages/settings/SystemCards.tsx

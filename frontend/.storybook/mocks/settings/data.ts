@@ -878,6 +878,7 @@ export const pageConversionIdle: PageConversionStatus = {
     },
   },
   library: { convertedFiles: 412, savedBytes: 9.4 * GB, pendingFiles: 64, trashBytes: 21.7 * GB, trashFiles: 412, trashDays: 14, ruleCount: 2, overrideSeries: 1 },
+  parallel: { limit: null, default: 4, max: 16 },
 }
 
 export const pageConversionRunning: PageConversionStatus = {
@@ -889,12 +890,14 @@ export const pageConversionRunning: PageConversionStatus = {
     totals: { startedAtUtc: minutesAgo(40), finishedAtUtc: null, converted: 118, unchanged: 9, hardlinked: 0, failed: 0, savedBytes: 1.6 * GB },
   },
   library: { convertedFiles: 118, savedBytes: 1.6 * GB, pendingFiles: 1530, trashBytes: 6.1 * GB, trashFiles: 118, trashDays: 14, ruleCount: 0, overrideSeries: 0 },
+  parallel: { limit: null, default: 4, max: 16 },
 }
 
 export const pageConversionOff: PageConversionStatus = {
   settings: { format: null, stop: 'high', pngLossless: false },
   pass: { state: 'idle', hold: null, currentFile: null, totals: null },
   library: { convertedFiles: 0, savedBytes: 0, pendingFiles: 1739, trashBytes: 0, trashFiles: 0, trashDays: 14, ruleCount: 0, overrideSeries: 0 },
+  parallel: { limit: null, default: 4, max: 16 },
 }
 
 const upscaleCatalog = {

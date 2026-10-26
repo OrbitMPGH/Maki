@@ -463,7 +463,7 @@ public class PageConversionEstimateService(
     /// <summary>
     /// Measured files count their pages times the median page; unmeasured ones are extrapolated by
     /// bytes. Hardlinked files are never encoded, so their share is left out. Samples are timed one
-    /// page at a time, and the pass encodes as many pages at once as the gate allows.
+    /// page at a time, and the pass encodes as many pages at once as the conversion limit allows.
     /// </summary>
     private static double Seconds(Group group, double hardShare, List<PageTime> pages, double p)
     {
@@ -494,6 +494,6 @@ public class PageConversionEstimateService(
         }
 
         var rate = rates[(int)Math.Clamp(Math.Round(p * (rates.Count - 1)), 0, rates.Count - 1)];
-        return megapixels * (1 - hardShare) * rate / 1000 / ImageWorkGate.Parallelism;
+        return megapixels * (1 - hardShare) * rate / 1000 / ImageWorkGate.ConversionLimit;
     }
 }

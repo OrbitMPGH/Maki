@@ -474,6 +474,12 @@ public static class SettingKeys
     /// <summary>"true" keeps PNG pages lossless at every stop. Unset is off.</summary>
     public const string PageConversionPngLossless = "library.pageconversion.pnglossless";
 
+    /// <summary>
+    /// Pages converted at once, 1 to the core count, across the library pass and downloads
+    /// (<c>ImageWorkGate.ConversionLimit</c>). Unset is <c>ImageWorkGate.Parallelism</c>.
+    /// </summary>
+    public const string PageConversionParallel = "library.pageconversion.parallel";
+
     /// <summary>"running" or "paused" while the library pass has work left; unset when idle.</summary>
     public const string PageConversionPass = "library.pageconversion.pass";
 
