@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -641,7 +640,7 @@ public class SemanticSearcher(
         // Tag blobs live in the in-memory index, so this is a scan over packed bytes rather than
         // a keyed read per candidate. Rented: a double per catalogue row is a megabyte, and a
         // Large Object Heap allocation of it per query never comes back to the OS.
-        var scores = ArrayPool<double>.Shared.Rent(index.Count);
+        var scores = ScanPools.Doubles.Rent(index.Count);
         var scored = new List<(int Row, double Score)>();
         try
         {
@@ -665,7 +664,7 @@ public class SemanticSearcher(
         }
         finally
         {
-            ArrayPool<double>.Shared.Return(scores);
+            ScanPools.Doubles.Return(scores);
         }
 
         scored.Sort((a, b) => b.Score.CompareTo(a.Score));

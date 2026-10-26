@@ -751,9 +751,9 @@ public sealed class VectorIndex(
         // Rented, not allocated: a float per row is half a megabyte at catalogue scale, which is
         // three Large Object Heap allocations on every keystroke-driven search. The LOH is not
         // compacted, so allocating them grew the process for the life of the install.
-        var scores = ArrayPool<float>.Shared.Rent(Count);
-        var keys = ArrayPool<float>.Shared.Rent(Count);
-        var values = ArrayPool<int>.Shared.Rent(Count);
+        var scores = ScanPools.Floats.Rent(Count);
+        var keys = ScanPools.Floats.Rent(Count);
+        var values = ScanPools.Ints.Rent(Count);
         try
         {
             Parallel.For(
@@ -790,9 +790,9 @@ public sealed class VectorIndex(
         }
         finally
         {
-            ArrayPool<float>.Shared.Return(scores);
-            ArrayPool<float>.Shared.Return(keys);
-            ArrayPool<int>.Shared.Return(values);
+            ScanPools.Floats.Return(scores);
+            ScanPools.Floats.Return(keys);
+            ScanPools.Ints.Return(values);
         }
     }
 
