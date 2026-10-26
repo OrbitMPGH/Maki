@@ -322,6 +322,11 @@ msgstr "{0, plural, one {Moves # file to the recycle bin.} other {Moves # files 
 msgid "{0, plural, one {No longer want # chapter} other {No longer want # chapters}}"
 msgstr "{0, plural, one {No longer want # chapter} other {No longer want # chapters}}"
 
+#. placeholder {0}: status.library.pendingFiles
+#: src/components/pageconversion/StartStep.tsx
+msgid "{0, plural, one {Nothing is saved until you press a button below. The pass will check # file that has not been looked at yet. Files converted earlier are not converted again.} other {Nothing is saved until you press a button below. The pass will check # files that have not been looked at yet. Files converted earlier are not converted again.}}"
+msgstr "{0, plural, one {Nothing is saved until you press a button below. The pass will check # file that has not been looked at yet. Files converted earlier are not converted again.} other {Nothing is saved until you press a button below. The pass will check # files that have not been looked at yet. Files converted earlier are not converted again.}}"
+
 #. placeholder {0}: result.queued
 #: src/components/SourceCompareModal.tsx
 msgid "{0, plural, one {Queued # chapter from {displayName}.} other {Queued # chapters from {displayName}.}}"
@@ -535,6 +540,10 @@ msgstr "{cellDate}: {chapters, plural, one {# chapter} other {# chapters}}"
 #: src/pages/stats/ReadingHeatmap.tsx
 msgid "{cellDate}: nothing read"
 msgstr "{cellDate}: nothing read"
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "{chapter}, {reason}"
+msgstr "{chapter}, {reason}"
 
 #: src/components/LinkChaptersModal.tsx
 msgid "{chapterCount, plural, one {# chapter} other {# chapters}}"
@@ -885,6 +894,10 @@ msgstr "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}
 #: src/pages/ImportPage.tsx
 msgid "{folderLabel}: linked {linkedCount} of {linkTotal, plural, one {# file} other {# files}}"
 msgstr "{folderLabel}: linked {linkedCount} of {linkTotal, plural, one {# file} other {# files}}"
+
+#: src/components/pageconversion/labels.ts
+msgid "{format}, {stop}"
+msgstr "{format}, {stop}"
 
 #: src/pages/reader/ChapterEnd.tsx
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
@@ -1245,6 +1258,14 @@ msgstr "{pageCount, plural, one {Downloading, {donePages} of # page} other {Down
 msgid "{pageCount, plural, one {Fetching from {source}, {readyPages} of # page} other {Fetching from {source}, {readyPages} of # pages}}"
 msgstr "{pageCount, plural, one {Fetching from {source}, {readyPages} of # page} other {Fetching from {source}, {readyPages} of # pages}}"
 
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "{pages, plural, one {# page, {name}} other {# pages, {name}}}"
+msgstr "{pages, plural, one {# page, {name}} other {# pages, {name}}}"
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "{pages, plural, one {# page} other {# pages}}"
+msgstr "{pages, plural, one {# page} other {# pages}}"
+
 #: src/components/layout/PageLayoutEditor.tsx
 msgid "{panelsOn} of {panelsTotal} panels"
 msgstr "{panelsOn} of {panelsTotal} panels"
@@ -1546,6 +1567,10 @@ msgstr "{siteName} languages"
 msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 msgstr "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 
+#: src/components/pageconversion/CompareStep.tsx
+msgid "{size}, {percent} of the original"
+msgstr "{size}, {percent} of the original"
+
 #: src/components/import/MihonReview.tsx
 msgid "{skippedNonLibrary, plural, one {# manga that is not in the library was skipped.} other {# manga that are not in the library were skipped.}}"
 msgstr "{skippedNonLibrary, plural, one {# manga that is not in the library was skipped.} other {# manga that are not in the library were skipped.}}"
@@ -1597,6 +1622,10 @@ msgstr "{start} to {end}"
 #: src/components/ui/CoverCard.tsx
 msgid "{statusLabel}, not monitored"
 msgstr "{statusLabel}, not monitored"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "{stop}. {hint}"
+msgstr "{stop}. {hint}"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "{stopKind, select, early {When you stop, it is usually early in, around {stopPointPct} of the way through.} midway {When you stop, it is usually midway in, around {stopPointPct} of the way through.} late {When you stop, it is usually late in, around {stopPointPct} of the way through.} other {}}"
@@ -2071,10 +2100,6 @@ msgstr "0 turns retry off."
 #: src/components/NotificationsSection.tsx
 msgid "1 (lowest) to 5 (highest)."
 msgstr "1 (lowest) to 5 (highest)."
-
-#: src/pages/settings/PageConversionSection.tsx
-msgid "1 to 100, higher keeps more detail. Default {fallback}."
-msgstr "1 to 100, higher keeps more detail. Default {fallback}."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "1:1"
@@ -2775,6 +2800,10 @@ msgstr "AniList"
 msgid "anilist, myanimelist, mal, mangabaka, kitsu, mangaupdates, mu, trackers, oauth, client id, client secret, sync interval, plan to read"
 msgstr "anilist, myanimelist, mal, mangabaka, kitsu, mangaupdates, mu, trackers, oauth, client id, client secret, sync interval, plan to read"
 
+#: src/components/pageconversion/labels.ts
+msgid "Animated PNG pages are kept as they are."
+msgstr "Animated PNG pages are kept as they are."
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "anime"
 msgstr "anime"
@@ -3085,20 +3114,19 @@ msgstr "Automatic upgrades are off, needs your call"
 msgid "Automation"
 msgstr "Automation"
 
-#: src/pages/settings/PageConversionSection.tsx
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/labels.ts
 msgid "AVIF"
 msgstr "AVIF"
-
-#: src/pages/settings/PageConversionSection.tsx
-msgid "AVIF quality"
-msgstr "AVIF quality"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Avoided"
 msgstr "Avoided"
 
+#: src/components/pageconversion/ComparePicker.tsx
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
+#: src/pages/PageConversionWizardPage.tsx
 msgid "Back"
 msgstr "Back"
 
@@ -3120,6 +3148,10 @@ msgstr "Back to library"
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Back to series"
 msgstr "Back to series"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Back to settings"
+msgstr "Back to settings"
 
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Back to the series"
@@ -3189,6 +3221,7 @@ msgstr "Badges"
 msgid "balanced"
 msgstr "balanced"
 
+#: src/components/pageconversion/labels.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/reader/enhanceMethods.ts
 msgid "Balanced"
@@ -3446,6 +3479,7 @@ msgstr "Can't sign in with the saved details."
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/pageconversion/StartStep.tsx
 #: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
@@ -3711,6 +3745,10 @@ msgstr "Change linked chapters"
 #: src/components/settings/UsersSection.tsx
 msgid "Change own content rating"
 msgstr "Change own content rating"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Change settings"
+msgstr "Change settings"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Change the chapter language of {label}"
@@ -4220,6 +4258,10 @@ msgstr "Colour {c}"
 msgid "Colour filter"
 msgstr "Colour filter"
 
+#: src/components/pageconversion/labels.ts
+msgid "Colour page"
+msgstr "Colour page"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Comedy"
 msgstr "Comedy"
@@ -4246,11 +4288,13 @@ msgstr "Comma separated Apprise URLs, used when there is no config key."
 msgid "Comma-separated IPs or CIDR networks. Needed behind a reverse proxy."
 msgstr "Comma-separated IPs or CIDR networks. Needed behind a reverse proxy."
 
+#: src/components/pageconversion/labels.ts
 #: src/components/ui/viewPrefs.tsx
 msgid "Compact"
 msgstr "Compact"
 
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/PageConversionWizardPage.tsx
 msgid "Compare"
 msgstr "Compare"
 
@@ -4258,9 +4302,21 @@ msgstr "Compare"
 msgid "Compare sources"
 msgstr "Compare sources"
 
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Compare this page"
+msgstr "Compare this page"
+
 #: src/components/settings/ProgressSection.tsx
 msgid "Compare with other users on this instance"
 msgstr "Compare with other users on this instance"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Compare your own pages at each quality before anything is rewritten."
+msgstr "Compare your own pages at each quality before anything is rewritten."
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Comparison divider"
+msgstr "Comparison divider"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Comparisons against the wider catalogue need the embedding index."
@@ -4487,9 +4543,25 @@ msgstr "Continuous vertical (webtoon)"
 msgid "Continuous, because this chapter's pages are very tall."
 msgstr "Continuous, because this chapter's pages are very tall."
 
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Conversion is off, so there is nothing to compare. Go back to pick a format."
+msgstr "Conversion is off, so there is nothing to compare. Go back to pick a format."
+
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Convert library"
 msgstr "Convert library"
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Converted"
+msgstr "Converted"
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Converted page"
+msgstr "Converted page"
+
+#: src/components/pageconversion/labels.ts
+msgid "Converting would not make this page at least 5% smaller, so the pass keeps it as it is."
+msgstr "Converting would not make this page at least 5% smaller, so the pass keeps it as it is."
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -4878,6 +4950,10 @@ msgstr "Current copy"
 #: src/pages/ActivityPage.tsx
 msgid "Current file"
 msgstr "Current file"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Current setting"
+msgstr "Current setting"
 
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "Current streak: <0>{streak, plural, one {# day} other {# days}}</0>. Best: <1>{best, plural, one {# day} other {# days}}</1>."
@@ -5762,6 +5838,10 @@ msgstr "Enabled"
 msgid "Enabling it creates the feed URL. Confirm your password to continue."
 msgstr "Enabling it creates the feed URL. Confirm your password to continue."
 
+#: src/components/pageconversion/CompareView.tsx
+msgid "Encoding the page"
+msgstr "Encoding the page"
+
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "End"
 msgstr "End"
@@ -6501,6 +6581,10 @@ msgstr "Follow"
 msgid "Follow someone from their creator page."
 msgstr "Follow someone from their creator page."
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Follow the quality"
+msgstr "Follow the quality"
+
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Follow the setting"
 msgstr "Follow the setting"
@@ -6533,7 +6617,9 @@ msgstr "For apps that only connect to Komga, like Tachimanga."
 msgid "For reading apps like Panels, KOReader and Mihon."
 msgstr "For reading apps like Panels, KOReader and Mihon."
 
-#: src/pages/settings/PageConversionSection.tsx
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/StartStep.tsx
+#: src/pages/PageConversionWizardPage.tsx
 msgid "Format"
 msgstr "Format"
 
@@ -6682,10 +6768,6 @@ msgstr "Genres and tags"
 msgid "Genres in the library"
 msgstr "Genres in the library"
 
-#: src/pages/reader/enhanceMethods.ts
-#~ msgid "Gentle (server)"
-#~ msgstr "Gentle (server)"
-
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 msgid "German"
@@ -6787,6 +6869,10 @@ msgstr "Gray"
 msgid "Grayscale"
 msgstr "Grayscale"
 
+#: src/components/pageconversion/labels.ts
+msgid "Greyscale page"
+msgstr "Greyscale page"
+
 #: src/components/ui/viewPrefs.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Grid view"
@@ -6883,6 +6969,10 @@ msgstr "health, scan, verify, reconciliation, scan hour, timezone, low disk, dis
 #: src/pages/HealthPage.tsx
 msgid "Healthy"
 msgstr "Healthy"
+
+#: src/components/pageconversion/labels.ts
+msgid "Heaviest kind of file"
+msgstr "Heaviest kind of file"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Height"
@@ -6999,6 +7089,10 @@ msgstr "Hide this title"
 #: src/components/settings/UsersSection.tsx
 msgid "Hides the controls for sharing the instance."
 msgstr "Hides the controls for sharing the instance."
+
+#: src/components/pageconversion/labels.ts
+msgid "High"
+msgstr "High"
 
 #: src/components/releases/outlookText.ts
 msgid "High confidence"
@@ -7136,6 +7230,10 @@ msgstr "I have copied it"
 #: src/components/settings/AccountSection.tsx
 msgid "I have saved them"
 msgstr "I have saved them"
+
+#: src/components/pageconversion/labels.ts
+msgid "Identical pixels."
+msgstr "Identical pixels."
 
 #: src/components/ImportListsSection.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -7567,6 +7665,10 @@ msgstr "Job"
 msgid "Josei"
 msgstr "Josei"
 
+#: src/components/pageconversion/labels.ts
+msgid "JPEG pages are kept as they are at Lossless."
+msgstr "JPEG pages are kept as they are at Lossless."
+
 #: src/components/series/EditMetadataModal.tsx
 msgid "JPEG, PNG, GIF or WebP, up to 10 MB."
 msgstr "JPEG, PNG, GIF or WebP, up to 10 MB."
@@ -7633,6 +7735,10 @@ msgstr "Keep editing"
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "Keep manual priority, but renumber it to follow the measured order."
 
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Keep PNG pages lossless"
+msgstr "Keep PNG pages lossless"
+
 #: src/App.tsx
 msgid "Keep sidebar open"
 msgstr "Keep sidebar open"
@@ -7684,6 +7790,10 @@ msgstr "kept"
 #: src/components/RelinkFilesModal.tsx
 msgid "Kept as linked"
 msgstr "Kept as linked"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Kept lossless"
+msgstr "Kept lossless"
 
 #: src/components/RelinkFilesModal.tsx
 msgid "kept where it is"
@@ -8215,6 +8325,10 @@ msgstr "Loading chapters…"
 msgid "loading search by meaning, title matches for now"
 msgstr "loading search by meaning, title matches for now"
 
+#: src/components/pageconversion/CompareView.tsx
+msgid "Loading the page"
+msgstr "Loading the page"
+
 #: src/pages/reader/ServerEnhanceStatus.tsx
 msgid "Loading the upscaled page"
 msgstr "Loading the upscaled page"
@@ -8270,6 +8384,14 @@ msgstr "loose"
 #: src/components/import/ImportPlanModal.tsx
 msgid "loose page images"
 msgstr "loose page images"
+
+#: src/components/pageconversion/labels.ts
+msgid "Lossless"
+msgstr "Lossless"
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Loupe, 2x"
+msgstr "Loupe, 2x"
 
 #: src/components/releases/outlookText.ts
 msgid "Low confidence"
@@ -8355,6 +8477,10 @@ msgstr "Maki {latestVersion} available"
 msgid "Maki {version}"
 msgstr "Maki {version}"
 
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
+msgstr "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
+
 #: src/auth/OfflineStartPage.tsx
 msgid "Maki can't reach the server, and nothing is saved on this device yet. Once the connection is back, sign in and save chapters for offline reading."
 msgstr "Maki can't reach the server, and nothing is saved on this device yet. Once the connection is back, sign in and save chapters for offline reading."
@@ -8370,6 +8496,14 @@ msgstr "Maki can't reach this folder"
 #: src/components/RelinkFilesModal.tsx
 msgid "Maki checked the folder against the chapter list. Tick what to trust and watch the map. Nothing changes until you press Relink."
 msgstr "Maki checked the folder against the chapter list. Tick what to trust and watch the map. Nothing changes until you press Relink."
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Maki could not encode this page. Try another page or another format."
+msgstr "Maki could not encode this page. Try another page or another format."
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Maki found no suitable pages to suggest. Pick one from your library."
+msgstr "Maki found no suitable pages to suggest. Pick one from your library."
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Maki is restarting to apply it. Reload in a moment."
@@ -9303,6 +9437,10 @@ msgstr "Newest first"
 msgid "Newly enabled sources join at the bottom."
 msgstr "Newly enabled sources join at the bottom."
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Next"
+msgstr "Next"
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -9445,6 +9583,10 @@ msgstr "No creator shows up often enough yet."
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "No demographic data yet"
 msgstr "No demographic data yet"
+
+#: src/components/pageconversion/labels.ts
+msgid "No difference we could see."
+msgstr "No difference we could see."
 
 #: src/components/LinkChaptersModal.tsx
 msgid "No files found in the series folder."
@@ -9654,6 +9796,10 @@ msgstr "No rules yet. Add one to require or rule out genres and tags. A series h
 #: src/components/ui/incognito.ts
 msgid "No scrobble"
 msgstr "No scrobble"
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "No series match that search."
+msgstr "No series match that search."
 
 #: src/pages/LibraryPage.tsx
 msgid "No series match the current filter. Try clearing the search or status filter."
@@ -9932,9 +10078,14 @@ msgid "Not matched or ignored"
 msgstr "Not matched or ignored"
 
 #: src/api/upgrades.ts
+#: src/components/pageconversion/ComparePicker.tsx
 #: src/components/series/FileQualityBadge.tsx
 msgid "Not measured yet"
 msgstr "Not measured yet"
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Not measured yet, {name}"
+msgstr "Not measured yet, {name}"
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -10129,6 +10280,10 @@ msgstr "Nothing is saved on this device yet. Once you're back online, save chapt
 msgid "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
 msgstr "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Nothing is saved until you press the button below. Files converted earlier stay as they are."
+msgstr "Nothing is saved until you press the button below. Files converted earlier stay as they are."
+
 #: src/components/NotificationsSection.tsx
 msgid "Nothing is sent to it any more. This can't be undone."
 msgstr "Nothing is sent to it any more. This can't be undone."
@@ -10196,6 +10351,10 @@ msgstr "Nothing slow enough to call savoured yet."
 #: src/pages/DiscoverPage.tsx
 msgid "Nothing to browse yet"
 msgstr "Nothing to browse yet"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Nothing to compare"
+msgstr "Nothing to compare"
 
 #: src/components/ImportReviewModal.tsx
 #: src/pages/ImportPage.tsx
@@ -10346,12 +10505,15 @@ msgstr "OEL"
 msgid "of reading time"
 msgstr "of reading time"
 
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/labels.ts
+#: src/components/pageconversion/StartStep.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/enhanceMethods.ts
-#: src/pages/settings/PageConversionSection.tsx
 msgid "Off"
 msgstr "Off"
 
@@ -10663,9 +10825,9 @@ msgstr "Opens a deletion review. Nothing is removed until you confirm it there."
 msgid "Opens a GitHub issue with the template."
 msgstr "Opens a GitHub issue with the template."
 
-#: src/pages/settings/PageConversionSection.tsx
-msgid "Opens in every reader Maki works with."
-msgstr "Opens in every reader Maki works with."
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Opens in every reader Maki works with. Recommended."
+msgstr "Opens in every reader Maki works with. Recommended."
 
 #: src/pages/HealthPage.tsx
 msgid "Operation"
@@ -10690,6 +10852,14 @@ msgstr "or paste an id or link"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Order changed"
 msgstr "Order changed"
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Original"
+msgstr "Original"
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Original page"
+msgstr "Original page"
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Original script"
@@ -10739,6 +10909,7 @@ msgid "Packaging"
 msgstr "Packaging"
 
 #: src/components/CommandPalette.tsx
+#: src/components/pageconversion/ComparePicker.tsx
 #: src/pages/reader/PageScrubber.tsx
 msgid "Page"
 msgstr "Page"
@@ -10747,6 +10918,10 @@ msgstr "Page"
 #: src/pages/reader/PageScrubber.tsx
 msgid "Page {0} of {count}"
 msgstr "Page {0} of {count}"
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Page {page} of {pageCount}"
+msgstr "Page {page} of {pageCount}"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Page {pageIndex}/{pageCount}"
@@ -10763,10 +10938,14 @@ msgstr "Page {pageNumber} of {pageCount}"
 msgid "Page conversion"
 msgstr "Page conversion"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Page conversion steps"
+msgstr "Page conversion steps"
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format"
-msgstr "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format"
+msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format, quality, stops, lossless, compare, preview, before and after, wizard"
+msgstr "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format, quality, stops, lossless, compare, preview, before and after, wizard"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Page fit"
@@ -10779,6 +10958,10 @@ msgstr "Page gap"
 #: src/App.tsx
 msgid "Page not found"
 msgstr "Page not found"
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Page preview, scrollable"
+msgstr "Page preview, scrollable"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
@@ -10806,6 +10989,14 @@ msgstr "Paged pace · {chaptersLeft} · {basis}"
 msgid "Pages"
 msgstr "Pages"
 
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Pages 1 to {pageCount}. The suggested page is {suggested}, from the middle of the file."
+msgstr "Pages 1 to {pageCount}. The suggested page is {suggested}, from the middle of the file."
+
+#: src/components/pageconversion/labels.ts
+msgid "Pages already stored as WebP or AVIF are kept as they are."
+msgstr "Pages already stored as WebP or AVIF are kept as they are."
+
 #: src/components/SourceCompareModal.tsx
 msgid "Pages are matched by image content, so each row is the same drawing in every column."
 msgstr "Pages are matched by image content, so each row is the same drawing in every column."
@@ -10821,6 +11012,22 @@ msgstr "Pages fetched ahead."
 #: src/components/SourceCompareModal.tsx
 msgid "Pages matched"
 msgstr "Pages matched"
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Pages stay as they are downloaded. Files already converted stay converted."
+msgstr "Pages stay as they are downloaded. Files already converted stay converted."
+
+#: src/components/pageconversion/labels.ts
+msgid "Pages under 16 KB are always kept as they are."
+msgstr "Pages under 16 KB are always kept as they are."
+
+#: src/components/pageconversion/labels.ts
+msgid "Pages wider or taller than 16383 px are kept as they are."
+msgstr "Pages wider or taller than 16383 px are kept as they are."
+
+#: src/components/pageconversion/labels.ts
+msgid "Pages with more than 8 bits per channel are kept as they are."
+msgstr "Pages with more than 8 bits per channel are kept as they are."
 
 #: src/components/layout/SectionProperties.tsx
 msgid "Panels"
@@ -10916,6 +11123,14 @@ msgstr "Pause downloads"
 msgid "Pause Rewind"
 msgstr "Pause Rewind"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Pause the running pass and restart it with the new settings?"
+msgstr "Pause the running pass and restart it with the new settings?"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Pause the running pass?"
+msgstr "Pause the running pass?"
+
 #: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -11008,6 +11223,11 @@ msgstr "Pick a time in the future"
 msgid "Pick another default profile first"
 msgstr "Pick another default profile first"
 
+#: src/components/pageconversion/ComparePicker.tsx
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Pick another page"
+msgstr "Pick another page"
+
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Pick languages"
 msgstr "Pick languages"
@@ -11068,6 +11288,18 @@ msgstr "Play the {rewindYear} retrospective"
 #: src/theme-context.tsx
 msgid "Plum"
 msgstr "Plum"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "PNG pages"
+msgstr "PNG pages"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "PNG pages are kept lossless."
+msgstr "PNG pages are kept lossless."
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "PNG pages are stored as lossless WebP at every stop, so no pixel changes. This saves little. Leave it off to let PNG pages follow the quality you choose."
+msgstr "PNG pages are stored as lossless WebP at every stop, so no pixel changes. This saves little. Leave it off to let PNG pages follow the quality you choose."
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Points for doubling each measurement. 0 turns it off."
@@ -11329,6 +11561,8 @@ msgstr "Put it behind HTTPS, then turn on Settings → System → Network → Re
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 msgstr "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 
+#: src/components/pageconversion/CompareStep.tsx
+#: src/components/pageconversion/StartStep.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
 msgid "Quality"
@@ -12511,6 +12745,10 @@ msgstr "Resolved using fuzzy title search. Medium accuracy"
 msgid "Resolved using ID. High accuracy"
 msgstr "Resolved using ID. High accuracy"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Restart"
+msgstr "Restart"
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -12885,6 +13123,18 @@ msgstr "Save a cover.jpg into each series folder"
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "Save a cover.jpg into each series' library folder"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Save and begin"
+msgstr "Save and begin"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Save and pause"
+msgstr "Save and pause"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Save and start"
+msgstr "Save and start"
+
 #: src/components/settings/SecuritySection.tsx
 msgid "Save anyway"
 msgstr "Save anyway"
@@ -12918,6 +13168,10 @@ msgstr "Save filters"
 msgid "Save for offline"
 msgstr "Save for offline"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Save only"
+msgstr "Save only"
+
 #: src/components/SourceCompareModal.tsx
 msgid "Save order"
 msgstr "Save order"
@@ -12948,6 +13202,7 @@ msgstr "Save your recovery codes"
 
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/pageconversion/StartStep.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/useIndexerForm.ts
@@ -12957,7 +13212,6 @@ msgstr "Save your recovery codes"
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
 #: src/pages/settings/SystemCards.tsx
@@ -13179,6 +13433,10 @@ msgstr "scrapers, manage sources, priority, source priority, source order, best 
 msgid "Screen"
 msgstr "Screen"
 
+#: src/components/pageconversion/labels.ts
+msgid "Screentone is smoothed away, lines stay intact."
+msgstr "Screentone is smoothed away, lines stay intact."
+
 #: src/nav.ts
 #: src/pages/ScrobblePage.tsx
 msgid "Scrobble"
@@ -13358,6 +13616,10 @@ msgstr "Search volume releases"
 #: src/pages/ActivityPage.tsx
 msgid "Search volumes now"
 msgstr "Search volumes now"
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Search your series"
+msgstr "Search your series"
 
 #: src/pages/ImportPage.tsx
 msgid "searched as “{cleanedTitle}”"
@@ -13708,9 +13970,17 @@ msgstr "Set to <0>0</0> to disable lockout."
 msgid "Set up"
 msgstr "Set up"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Set up conversion"
+msgstr "Set up conversion"
+
 #: src/pages/ScrobblePage.tsx
 msgid "Set up in Settings"
 msgstr "Set up in Settings"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Set up page conversion"
+msgstr "Set up page conversion"
 
 #: src/pages/ActivityPage.tsx
 msgid "Set up quality profiles"
@@ -13894,6 +14164,10 @@ msgstr "Showing {shownQueueCount} of {totalQueueCount} queued items. The rest ar
 #: src/components/CatalogueBrowser.tsx
 msgid "showing results for <0>{corrected}</0>"
 msgstr "showing results for <0>{corrected}</0>"
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Showing the first {MAX_SERIES_ROWS}. Type more of the title to narrow it down."
+msgstr "Showing the first {MAX_SERIES_ROWS}. Type more of the title to narrow it down."
 
 #: src/pages/RequestsPage.tsx
 msgid "Shown to whoever asked"
@@ -14094,9 +14368,13 @@ msgstr "Slice of Life"
 msgid "Sliding: activity extends it."
 msgstr "Sliding: activity extends it."
 
-#: src/pages/settings/PageConversionSection.tsx
-msgid "Smaller than WebP. KOReader and iOS before 16 can't open it."
-msgstr "Smaller than WebP. KOReader and iOS before 16 can't open it."
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Smaller than WebP at the same look. KOReader and some e-readers can't open AVIF pages."
+msgstr "Smaller than WebP at the same look. KOReader and some e-readers can't open AVIF pages."
+
+#: src/components/pageconversion/labels.ts
+msgid "Smallest"
+msgstr "Smallest"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "smart"
@@ -14315,6 +14593,7 @@ msgstr "Star on GitHub"
 
 #: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/pages/PageConversionWizardPage.tsx
 msgid "Start"
 msgstr "Start"
 
@@ -14939,6 +15218,10 @@ msgstr "The newest titles from the creators and studios you follow. Empty until 
 msgid "The next check is due."
 msgstr "The next check is due."
 
+#: src/components/pageconversion/FormatStep.tsx
+msgid "The next step shows your own pages in the format you pick here."
+msgstr "The next step shows your own pages in the format you pick here."
+
 #: src/pages/discover/TasteTab.tsx
 msgid "The odd one out"
 msgstr "The odd one out"
@@ -15268,6 +15551,10 @@ msgstr "this month"
 msgid "This month"
 msgstr "This month"
 
+#: src/components/pageconversion/labels.ts
+msgid "This page could not be read, so the pass would leave the file alone."
+msgstr "This page could not be read, so the pass would leave the file alone."
+
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 msgid "This page failed to load."
@@ -15276,6 +15563,10 @@ msgstr "This page failed to load."
 #: src/components/RouteErrorBoundary.tsx
 msgid "This page hit an error"
 msgstr "This page hit an error"
+
+#: src/components/pageconversion/labels.ts
+msgid "This page is kept as it is."
+msgstr "This page is kept as it is."
 
 #: src/pages/settings/PageConversionSection.tsx
 msgid "This pass:"
@@ -15312,6 +15603,10 @@ msgstr "This repair needs a source chosen by hand"
 #: src/pages/settings/SystemCards.tsx
 msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
 msgstr "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "This series has no chapter files to compare."
+msgstr "This series has no chapter files to compare."
 
 #: src/components/LinkFileToChaptersModal.tsx
 msgid "This series has no chapters yet. Add a source mapping first so Maki knows what to link."
@@ -15572,6 +15867,14 @@ msgstr "Token case"
 #: src/components/NamingTokenModal.tsx
 msgid "Token separator"
 msgstr "Token separator"
+
+#: src/components/pageconversion/labels.ts
+msgid "Tone is a little lighter. Fine at fit-to-screen."
+msgstr "Tone is a little lighter. Fine at fit-to-screen."
+
+#: src/components/pageconversion/labels.ts
+msgid "Tone thins out."
+msgstr "Tone thins out."
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Too few or too old to trust yet, so upgrade scans still sample this source first."
@@ -16183,11 +16486,6 @@ msgstr "Upper Case"
 msgid "upscale, upscaling, enhance, sharpen, model, onnx, real-esrgan, span, cpu threads, page cache"
 msgstr "upscale, upscaling, enhance, sharpen, model, onnx, real-esrgan, span, cpu threads, page cache"
 
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#~ msgid "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
-#~ msgstr "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
-
 #: src/pages/reader/ServerEnhanceStatus.tsx
 msgid "Upscaled page shown"
 msgstr "Upscaled page shown"
@@ -16543,10 +16841,6 @@ msgstr "Volumes: {volumes}"
 msgid "vs {fromLabel} to {toLabel}"
 msgstr "vs {fromLabel} to {toLabel}"
 
-#: src/pages/reader/enhanceMethods.ts
-#~ msgid "waifu2x art; slowest, cleanest"
-#~ msgstr "waifu2x art; slowest, cleanest"
-
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 msgid "Waiting"
@@ -16608,13 +16902,10 @@ msgstr "Webhook"
 msgid "Webhook URL"
 msgstr "Webhook URL"
 
-#: src/pages/settings/PageConversionSection.tsx
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/labels.ts
 msgid "WebP"
 msgstr "WebP"
-
-#: src/pages/settings/PageConversionSection.tsx
-msgid "WebP quality"
-msgstr "WebP quality"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Webtoon"
@@ -16790,6 +17081,10 @@ msgstr "Width"
 #: src/pages/settings/ReadingCards.tsx
 msgid "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."
 msgstr "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "With conversion off, there is nothing to compare. Continue to save that choice."
+msgstr "With conversion off, there is nothing to compare. Continue to save that choice."
 
 #: src/components/settings/SecuritySection.tsx
 msgid "With either claim set, your provider is the authority on permissions: they are recomputed on every sign-in, so changes made on the Users page are overwritten the next time that person signs in. Leave both empty to keep permissions here."
@@ -17054,6 +17349,10 @@ msgstr "Your next read"
 #: src/pages/settings/ReadingCards.tsx
 msgid "Your password"
 msgstr "Your password"
+
+#: src/components/pageconversion/labels.ts
+msgid "Your pick"
+msgstr "Your pick"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Your priority order"

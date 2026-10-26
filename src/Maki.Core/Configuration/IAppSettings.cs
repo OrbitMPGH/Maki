@@ -468,11 +468,11 @@ public static class SettingKeys
     /// <summary>"webp" or "avif" converts the pages of new downloads and lets the library pass run. Unset is off.</summary>
     public const string PageConversionFormat = "library.pageconversion.format";
 
-    /// <summary>1 to 100. Unset is <c>PageConversionSettings.DefaultWebpQuality</c>.</summary>
-    public const string PageConversionWebpQuality = "library.pageconversion.webpquality";
+    /// <summary>"smallest", "compact", "balanced", "high" or "lossless". Unset is <c>PageConversionSettings.DefaultStop</c>.</summary>
+    public const string PageConversionStop = "library.pageconversion.stop";
 
-    /// <summary>1 to 100. Unset is <c>PageConversionSettings.DefaultAvifQuality</c>.</summary>
-    public const string PageConversionAvifQuality = "library.pageconversion.avifquality";
+    /// <summary>"true" keeps PNG pages lossless at every stop. Unset is off.</summary>
+    public const string PageConversionPngLossless = "library.pageconversion.pnglossless";
 
     /// <summary>"running" or "paused" while the library pass has work left; unset when idle.</summary>
     public const string PageConversionPass = "library.pageconversion.pass";

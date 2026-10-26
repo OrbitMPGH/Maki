@@ -1051,10 +1051,9 @@ msgid "error.pageConversion.off"
 msgstr "Najpierw wybierz format konwersji stron"
 
 #: src/Maki.Api/Controllers/PageConversionController.cs
-#. English: Quality must be between {min} and {max}
-#, fuzzy
-msgid "error.pageConversion.qualityRange"
-msgstr "Jakość musi mieścić się między {min} a {max}"
+#. English: Choose Smallest, Compact, Balanced, High or Lossless
+msgid "error.pageConversion.stopInvalid"
+msgstr ""
 
 #: src/Maki.Api/Controllers/PreviewController.cs
 #. English: Other previews are loading right now. Try again in a moment.

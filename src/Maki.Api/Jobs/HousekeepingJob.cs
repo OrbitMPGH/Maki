@@ -211,6 +211,25 @@ public class HousekeepingJob(
             }
         }
 
+        if (Directory.Exists(paths.ConversionPreviewDir))
+        {
+            var stale = DateTime.UtcNow.AddDays(-1);
+            foreach (var file in Directory.EnumerateFiles(paths.ConversionPreviewDir))
+            {
+                try
+                {
+                    if (File.GetLastWriteTimeUtc(file) < stale)
+                    {
+                        File.Delete(file);
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    logger.LogDebug(ex, "Could not delete {File}", file);
+                }
+            }
+        }
+
         try
         {
             var purged = await upgradeTrash.PurgeAsync(ct);

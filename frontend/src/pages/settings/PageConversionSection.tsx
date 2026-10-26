@@ -1,85 +1,58 @@
-import { useState } from 'react'
-import { Button, Divider, Group, Radio, Stack, Text } from '@mantine/core'
-import { IconPlayerPause, IconPlayerPlay } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
-import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import { t as now } from '@lingui/core/macro'
+import { Button, Divider, Group, Stack, Text } from '@mantine/core'
+import { IconPlayerPause, IconPlayerPlay, IconSettings } from '@tabler/icons-react'
+import { Link } from 'react-router-dom'
+import { Plural, Trans } from '@lingui/react/macro'
 import { SettingsSection } from './SettingsSection'
-import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
+import { useSettingsSummary } from '../../components/pageconversion/labels'
 import { formatBytes, formatDateTime } from '../../format'
 import {
   usePageConversion,
   usePausePageConversion,
-  useSavePageConversion,
   useStartPageConversion,
-  type PageConversionSettings,
   type PageConversionStatus,
 } from '../../api/pageConversion'
 
-const DEFAULT_QUALITY = { webp: 80, avif: 55 } as const
-
-/** Converts stored pages to WebP or AVIF: the format for new downloads and the pass over the existing library. */
+/** Converts stored pages to WebP or AVIF: the current choice, the pass over the existing library, and the way into the wizard that changes either. */
 export function PageConversionSection() {
-  const { t } = useLingui()
   const { data: status } = usePageConversion()
-  const save = useSavePageConversion()
-  const [draft, setDraft] = useState<PageConversionSettings | null>(null)
-
-  const saved = status?.settings
-  const current = draft ?? saved
-  const dirty =
-    draft !== null &&
-    saved !== undefined &&
-    (draft.format !== saved.format ||
-      draft.webpQuality !== saved.webpQuality ||
-      draft.avifQuality !== saved.avifQuality)
-  const update = (changes: Partial<PageConversionSettings>) => {
-    if (current) setDraft({ ...current, ...changes })
-  }
+  const summarize = useSettingsSummary()
 
   return (
     <SettingsSection
       id="page-conversion"
       title={<Trans>Page conversion</Trans>}
-      description={
-        <Trans>Stores chapter pages in a smaller image format.</Trans>
-      }
-      dirty={dirty}
-      saving={save.isPending}
-      onSave={() => {
-        if (!draft) return
-        save.mutate(draft, {
-          onSuccess: () => {
-            setDraft(null)
-            notifications.show({ message: now`Saved`, color: 'var(--ok)' })
-          },
-        })
-      }}
-      onDiscard={() => setDraft(null)}
+      description={<Trans>Stores chapter pages in a smaller image format.</Trans>}
     >
-      {current && status && (
+      {status && (
         <Stack>
-          <Radio.Group
-            label={t`Format`}
-            value={current.format}
-            onChange={(format) => update({ format: format as PageConversionSettings['format'] })}
-          >
-            <Stack gap="sm" mt="xs">
-              <Radio value="off" label={t`Off`} />
-              <Radio
-                value="webp"
-                label={t`WebP`}
-                description={t`Opens in every reader Maki works with.`}
-              />
-              <Radio
-                value="avif"
-                label={t`AVIF`}
-                description={t`Smaller than WebP. KOReader and iOS before 16 can't open it.`}
-              />
+          <Group justify="space-between" wrap="wrap" gap="sm">
+            <Stack gap={2}>
+              <Text fw={500} size="sm">
+                <Trans>Current setting</Trans>
+              </Text>
+              <Text size="sm">{summarize(status.settings)}</Text>
+              {status.settings.format && status.settings.pngLossless && (
+                <Text size="xs" c="var(--ink-3)">
+                  <Trans>PNG pages are kept lossless.</Trans>
+                </Text>
+              )}
             </Stack>
-          </Radio.Group>
-
-          {current.format !== 'off' && <QualityInput settings={current} onChange={update} />}
+            {status.settings.format ? (
+              <Button
+                component={Link}
+                to="/settings/page-conversion?step=2"
+                variant="default"
+                size="xs"
+                leftSection={<IconSettings size={14} />}
+              >
+                <Trans>Change settings</Trans>
+              </Button>
+            ) : (
+              <Button component={Link} to="/settings/page-conversion" size="xs" leftSection={<IconSettings size={14} />}>
+                <Trans>Set up conversion</Trans>
+              </Button>
+            )}
+          </Group>
 
           <Divider />
           <LibraryPass status={status} />
@@ -89,48 +62,13 @@ export function PageConversionSection() {
   )
 }
 
-function QualityInput({
-  settings,
-  onChange,
-}: {
-  settings: PageConversionSettings
-  onChange: (changes: Partial<PageConversionSettings>) => void
-}) {
-  const { t } = useLingui()
-  if (settings.format === 'avif') {
-    const fallback = DEFAULT_QUALITY.avif
-    return (
-      <SettingsNumberInput
-        label={t`AVIF quality`}
-        description={t`1 to 100, higher keeps more detail. Default ${fallback}.`}
-        min={1}
-        max={100}
-        value={settings.avifQuality}
-        onChange={(avifQuality) => onChange({ avifQuality })}
-      />
-    )
-  }
-
-  const fallback = DEFAULT_QUALITY.webp
-  return (
-    <SettingsNumberInput
-      label={t`WebP quality`}
-      description={t`1 to 100, higher keeps more detail. Default ${fallback}.`}
-      min={1}
-      max={100}
-      value={settings.webpQuality}
-      onChange={(webpQuality) => onChange({ webpQuality })}
-    />
-  )
-}
-
 function LibraryPass({ status }: { status: PageConversionStatus }) {
   const start = useStartPageConversion()
   const pause = usePausePageConversion()
   const { pass, library } = status
   const { pendingFiles, convertedFiles } = library
   const totals = pass.totals
-  const off = status.settings.format === 'off'
+  const off = status.settings.format === null
   const saved = formatBytes(library.savedBytes)
   const trash = formatBytes(library.trashBytes)
   const days = library.trashDays

@@ -734,8 +734,8 @@ msgid "error.pageConversion.off"
 msgstr "Choose a format for page conversion first"
 
 #: src/Maki.Api/Controllers/PageConversionController.cs
-msgid "error.pageConversion.qualityRange"
-msgstr "Quality must be between {min} and {max}"
+msgid "error.pageConversion.stopInvalid"
+msgstr "Choose Smallest, Compact, Balanced, High or Lossless"
 
 #: src/Maki.Api/Controllers/PreviewController.cs
 msgid "error.preview.busy"

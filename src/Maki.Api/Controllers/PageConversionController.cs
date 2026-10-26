@@ -8,6 +8,7 @@ using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Net.Http.Headers;
 
 namespace Maki.Api.Controllers;
 
@@ -16,10 +17,14 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/pageconversion")]
 [Authorize(Policy = Policies.Admin)]
 public class PageConversionController(
-    MakiDbContext db, IAppSettings settings, PageConversionWorker worker, ILocalizer localizer) : ControllerBase
+    MakiDbContext db, IAppSettings settings, PageConversionWorker worker, PageConversionPreviewService previews,
+    ILocalizer localizer) : ControllerBase
 {
-    /// <param name="Format">"off", "webp" or "avif".</param>
-    public record SettingsDto(string Format, int WebpQuality, int AvifQuality);
+    /// <param name="Format">"webp", "avif", or null while conversion is off.</param>
+    /// <param name="Stop">"smallest", "compact", "balanced", "high" or "lossless"; sent while off too.</param>
+    public record SettingsDto(string? Format, string Stop, bool PngLossless);
+
+    public record SamplesDto(IReadOnlyList<PageConversionSample> Samples);
 
     /// <param name="ConvertedFiles">Library files whose pages Maki converted.</param>
     /// <param name="PendingFiles">Archives conversion has not looked at yet.</param>
@@ -57,7 +62,7 @@ public class PageConversionController(
     }
 
     /// <summary>
-    /// Changing the format puts the files the old one left as they were back in line for the next
+    /// Changing the settings puts the files the old ones left as they were back in line for the next
     /// pass: a JPEG that WebP could not shrink often shrinks as AVIF. Converted files stay converted,
     /// since converting a converted page again only loses detail.
     /// </summary>
@@ -65,27 +70,25 @@ public class PageConversionController(
     public async Task<IActionResult> Save([FromBody] SettingsDto request, CancellationToken ct)
     {
         PageConversionFormat? format = null;
-        if (!string.Equals(request.Format, "off", StringComparison.OrdinalIgnoreCase))
+        if (request.Format is not null && !string.Equals(request.Format, "off", StringComparison.OrdinalIgnoreCase))
         {
-            format = PageConversionSettings.Parse(request.Format);
+            format = PageConversionSettings.ParseFormat(request.Format);
             if (format is null)
             {
                 return this.Fail(localizer, "error.pageConversion.formatInvalid");
             }
         }
 
-        if (request.WebpQuality is < 1 or > 100 || request.AvifQuality is < 1 or > 100)
+        if (PageConversionSettings.ParseStop(request.Stop) is not { } stop)
         {
-            return this.Fail(localizer, "error.pageConversion.qualityRange", new { min = 1, max = 100 });
+            return this.Fail(localizer, "error.pageConversion.stopInvalid");
         }
 
         var before = await PageConversionOptions.ReadAsync(db, ct);
         await settings.SetAsync(SettingKeys.PageConversionFormat,
-            format is { } f ? PageConversionSettings.Name(f) : null, ct);
-        await settings.SetAsync(SettingKeys.PageConversionWebpQuality,
-            request.WebpQuality.ToString(CultureInfo.InvariantCulture), ct);
-        await settings.SetAsync(SettingKeys.PageConversionAvifQuality,
-            request.AvifQuality.ToString(CultureInfo.InvariantCulture), ct);
+            format is { } f ? PageConversionSettings.FormatName(f) : null, ct);
+        await settings.SetAsync(SettingKeys.PageConversionStop, PageConversionSettings.StopName(stop), ct);
+        await settings.SetAsync(SettingKeys.PageConversionPngLossless, request.PngLossless ? "true" : null, ct);
 
         var after = await PageConversionOptions.ReadAsync(db, ct);
         if (after.Active is { } active && active != before.Active)
@@ -96,6 +99,73 @@ public class PageConversionController(
         }
 
         return await Status(ct);
+    }
+
+    /// <summary>Up to three pages for the wizard to compare on: greyscale, colour and the heaviest tier.</summary>
+    [HttpGet("samples")]
+    public async Task<IActionResult> Samples(CancellationToken ct) =>
+        Ok(new SamplesDto(await previews.SamplesAsync(ct)));
+
+    [HttpGet("samples/{fileId:int}")]
+    public async Task<IActionResult> Sample(int fileId, CancellationToken ct) =>
+        await previews.SampleAsync(fileId, ct) is { } sample ? Ok(sample) : NotFound();
+
+    /// <summary>
+    /// One page as the pass would write it, or as stored with <paramref name="original"/>. The sizes
+    /// ride in headers; <c>X-Maki-Kept</c> is 1 when the page would be left as it is, and the body is
+    /// then the stored page. <c>X-Maki-Kept-Reason</c> then names why: notsmaller, toosmall, toolarge,
+    /// animated, highbitdepth, lossless, alreadycompact, or unreadable when it does not decode.
+    /// </summary>
+    [HttpGet("preview/{fileId:int}/{page:int}")]
+    public async Task<IActionResult> Preview(int fileId, int page, [FromQuery] string? format, [FromQuery] string? stop,
+        [FromQuery] bool pngLossless, [FromQuery] bool original, CancellationToken ct)
+    {
+        PageConversionSettings? wanted = null;
+        if (!original)
+        {
+            if (PageConversionSettings.ParseStop(stop) is not { } parsedStop)
+            {
+                return this.Fail(localizer, "error.pageConversion.stopInvalid");
+            }
+
+            var parsedFormat = format is null && parsedStop == PageConversionStop.Lossless
+                ? PageConversionFormat.Webp
+                : PageConversionSettings.ParseFormat(format);
+            if (parsedFormat is not { } f)
+            {
+                return this.Fail(localizer, "error.pageConversion.formatInvalid");
+            }
+
+            wanted = new PageConversionSettings(f, parsedStop, pngLossless);
+        }
+
+        var preview = await previews.PreviewAsync(fileId, page, wanted, ct);
+        if (preview is not null && !System.IO.File.Exists(preview.Path))
+        {
+            preview = await previews.PreviewAsync(fileId, page, wanted, ct);
+        }
+
+        if (preview is null || !System.IO.File.Exists(preview.Path))
+        {
+            return NotFound();
+        }
+
+        Response.Headers["X-Maki-Original-Bytes"] = preview.OriginalBytes.ToString(CultureInfo.InvariantCulture);
+        Response.Headers["X-Maki-Encoded-Bytes"] = preview.EncodedBytes.ToString(CultureInfo.InvariantCulture);
+        Response.Headers["X-Maki-Kept"] = preview.Kept ? "1" : "0";
+        if (preview.Kept && preview.KeptReason is { } reason)
+        {
+            Response.Headers["X-Maki-Kept-Reason"] = reason;
+        }
+
+        Response.Headers.CacheControl = "private, no-cache";
+        var etag = new EntityTagHeaderValue($"\"{preview.Key}\"");
+        if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        return PhysicalFile(preview.Path, preview.ContentType, lastModified: null, entityTag: etag);
     }
 
     [HttpPost("start")]
@@ -118,7 +188,8 @@ public class PageConversionController(
     }
 
     private static SettingsDto ToDto(PageConversionOptions.Stored stored) => new(
-        stored.Format is { } f ? PageConversionSettings.Name(f) : "off", stored.WebpQuality, stored.AvifQuality);
+        stored.Format is { } f ? PageConversionSettings.FormatName(f) : null, PageConversionSettings.StopName(stored.Stop),
+        stored.PngLossless);
 
     private static string Name(PageConversionPassState state) => state switch
     {

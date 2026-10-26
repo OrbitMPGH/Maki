@@ -860,7 +860,7 @@ export const updateStatusAvailable: UpdateStatusDto = {
 export const updateSettings: UpdateSettingsDto = { checkForUpdates: true }
 
 export const pageConversionIdle: PageConversionStatus = {
-  settings: { format: 'webp', webpQuality: 80, avifQuality: 55 },
+  settings: { format: 'webp', stop: 'balanced', pngLossless: true },
   pass: {
     state: 'idle',
     hold: null,
@@ -879,7 +879,7 @@ export const pageConversionIdle: PageConversionStatus = {
 }
 
 export const pageConversionRunning: PageConversionStatus = {
-  settings: { format: 'avif', webpQuality: 80, avifQuality: 55 },
+  settings: { format: 'avif', stop: 'high', pngLossless: false },
   pass: {
     state: 'running',
     hold: null,
@@ -890,7 +890,7 @@ export const pageConversionRunning: PageConversionStatus = {
 }
 
 export const pageConversionOff: PageConversionStatus = {
-  settings: { format: 'off', webpQuality: 80, avifQuality: 55 },
+  settings: { format: null, stop: 'high', pngLossless: false },
   pass: { state: 'idle', hold: null, currentFile: null, totals: null },
   library: { convertedFiles: 0, savedBytes: 0, pendingFiles: 1739, trashBytes: 0, trashFiles: 0, trashDays: 14 },
 }

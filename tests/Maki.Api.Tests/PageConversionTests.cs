@@ -22,7 +22,7 @@ namespace Maki.Api.Tests;
 public sealed class PageConversionTests : IDisposable
 {
     private readonly UpgradeWorld _world = new UpgradeWorld().Seed();
-    private static readonly PageConversionSettings Webp = new(PageConversionFormat.Webp, 80);
+    private static readonly PageConversionSettings Webp = new(PageConversionFormat.Webp, PageConversionStop.Balanced, false);
 
     public void Dispose() => _world.Dispose();
 
@@ -228,8 +228,8 @@ public sealed class PageConversionTests : IDisposable
 
         using (var db = _world.Db.NewContext())
         {
-            var result = await Service(db).ConvertAsync(fileId, new PageConversionSettings(PageConversionFormat.Webp, 100),
-                CancellationToken.None);
+            var result = await Service(db).ConvertAsync(fileId,
+                new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.High, false), CancellationToken.None);
             Assert.Equal((FileConversionStatus.Unchanged, ArchiveConversionOutcome.NotSmaller), (result.Status, result.Outcome));
         }
 
@@ -364,6 +364,7 @@ public sealed class PageConversionTests : IDisposable
     private PageConversionController Controller(MakiDbContext db) => new(db, new SettingsService(_world.Db.ScopeFactory()),
         new PageConversionWorker(_world.Db.ScopeFactory(), new SettingsService(_world.Db.ScopeFactory()),
             NullLogger<PageConversionWorker>.Instance),
+        new PageConversionPreviewService(db, _world.Paths, NullLogger<PageConversionPreviewService>.Instance),
         new TestLocalizer());
 
     [Fact]
@@ -382,9 +383,9 @@ public sealed class PageConversionTests : IDisposable
 
         using (var db = _world.Db.NewContext())
         {
-            var result = await Controller(db).Save(new PageConversionController.SettingsDto("avif", 80, 60), CancellationToken.None);
+            var result = await Controller(db).Save(new PageConversionController.SettingsDto("avif", "high", false), CancellationToken.None);
             var status = Assert.IsType<PageConversionController.StatusDto>(Assert.IsType<OkObjectResult>(result).Value);
-            Assert.Equal(new PageConversionController.SettingsDto("avif", 80, 60), status.Settings);
+            Assert.Equal(new PageConversionController.SettingsDto("avif", "high", false), status.Settings);
             Assert.Equal(1, status.Library.ConvertedFiles);
         }
 
@@ -399,10 +400,75 @@ public sealed class PageConversionTests : IDisposable
         var controller = Controller(db);
 
         Assert.IsType<BadRequestObjectResult>(
-            await controller.Save(new PageConversionController.SettingsDto("jxl", 80, 55), CancellationToken.None));
+            await controller.Save(new PageConversionController.SettingsDto("jxl", "high", false), CancellationToken.None));
         Assert.IsType<BadRequestObjectResult>(
-            await controller.Save(new PageConversionController.SettingsDto("webp", 0, 55), CancellationToken.None));
+            await controller.Save(new PageConversionController.SettingsDto("webp", "best", false), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(
+            await controller.Save(new PageConversionController.SettingsDto("webp", null!, false), CancellationToken.None));
         Assert.IsType<ConflictObjectResult>(await controller.Start(CancellationToken.None));
+    }
+
+    private PageConversionController.StatusDto Saved(IActionResult result) =>
+        Assert.IsType<PageConversionController.StatusDto>(Assert.IsType<OkObjectResult>(result).Value);
+
+    [Fact]
+    public async Task Settings_read_as_off_at_high_until_saved_and_round_trip_their_stop()
+    {
+        using var db = _world.Db.NewContext();
+        var controller = Controller(db);
+
+        var initial = Assert.IsType<PageConversionController.StatusDto>(Assert.IsType<OkObjectResult>(await controller.Status(CancellationToken.None)).Value);
+        Assert.Equal(new PageConversionController.SettingsDto(null, "high", false), initial.Settings);
+
+        var saved = Saved(await controller.Save(new PageConversionController.SettingsDto("webp", "compact", true), CancellationToken.None));
+        Assert.Equal(new PageConversionController.SettingsDto("webp", "compact", true), saved.Settings);
+        Assert.Equal(new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.Compact, true),
+            await PageConversionOptions.LoadAsync(db, CancellationToken.None));
+
+        var off = Saved(await controller.Save(new PageConversionController.SettingsDto(null, "balanced", false), CancellationToken.None));
+        Assert.Equal(new PageConversionController.SettingsDto(null, "balanced", false), off.Settings);
+        Assert.Null(await PageConversionOptions.LoadAsync(db, CancellationToken.None));
+        Assert.Null(await _world.Db.NewContext().AppConfig.SingleOrDefaultAsync(c => c.Key == SettingKeys.PageConversionPngLossless));
+    }
+
+    [Fact]
+    public async Task A_new_stop_puts_unconverted_files_back_in_line_and_the_same_settings_do_not()
+    {
+        var (_, untouched, _) = JpegChapter(1);
+        void Check()
+        {
+            using var db = _world.Db.NewContext();
+            db.ChapterFiles.Single(f => f.Id == untouched).ConversionCheckedAtUtc = DateTime.UtcNow;
+            db.SaveChanges();
+        }
+
+        using (var db = _world.Db.NewContext())
+        {
+            await Controller(db).Save(new PageConversionController.SettingsDto("webp", "high", false), CancellationToken.None);
+        }
+
+        Check();
+        using (var db = _world.Db.NewContext())
+        {
+            await Controller(db).Save(new PageConversionController.SettingsDto("webp", "high", false), CancellationToken.None);
+        }
+
+        Assert.NotNull(Row(untouched).ConversionCheckedAtUtc);
+
+        using (var db = _world.Db.NewContext())
+        {
+            await Controller(db).Save(new PageConversionController.SettingsDto("webp", "balanced", false), CancellationToken.None);
+        }
+
+        Assert.Null(Row(untouched).ConversionCheckedAtUtc);
+
+        Check();
+        using (var db = _world.Db.NewContext())
+        {
+            await Controller(db).Save(new PageConversionController.SettingsDto("webp", "balanced", true), CancellationToken.None);
+        }
+
+        Assert.Null(Row(untouched).ConversionCheckedAtUtc);
     }
 
     [Fact]

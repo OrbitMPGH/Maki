@@ -9,6 +9,7 @@ import * as AddSeriesStories from './pages/AddSeriesPage.stories'
 import * as CreatorStories from './pages/CreatorPage.stories'
 import * as DiscoverStories from './pages/DiscoverPage.stories'
 import * as HealthStories from './pages/HealthPage.stories'
+import * as PageConversionStories from './pages/PageConversionWizardPage.stories'
 import * as HomeStories from './pages/HomePage.stories'
 import * as ImportStories from './pages/ImportPage.stories'
 import * as LibraryStories from './pages/LibraryPage.stories'
@@ -96,6 +97,11 @@ export const Stats: Story = mirror('/stats', StatsStories, StatsStories.Default)
 export const Notifications: Story = mirror('/notifications', NotificationsStories, NotificationsStories.Default)
 export const Settings: Story = mirror('/settings', SettingsStories, SettingsStories.AdminAllTabs)
 export const Health: Story = mirror('/health', HealthStories, HealthStories.Healthy)
+export const PageConversion: Story = mirror(
+  '/settings/page-conversion',
+  PageConversionStories,
+  PageConversionStories.Format,
+)
 export const NotFound: Story = {
   parameters: { router: { initialEntries: ['/no/such/page'] } },
   play: async ({ canvas }) => {

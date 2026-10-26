@@ -98,6 +98,40 @@ public static class ImageCodec
         }
     }
 
+    /// <summary>
+    /// Whether a page is in colour, or null when it does not load. One band or a B_W header is grey
+    /// from the header alone. Three bands are checked on a small thumbnail, because scans are often
+    /// stored as RGB with equal channels: colour when more than 2% of it has an LCh chroma over 20,
+    /// which yellowed paper stays under.
+    /// </summary>
+    public static bool? IsColour(byte[] bytes)
+    {
+        try
+        {
+            using var header = VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
+            if (header.Bands < 3 || header.Interpretation is Enums.Interpretation.Bw or Enums.Interpretation.Grey16)
+            {
+                return false;
+            }
+
+            if ((long)header.Width * header.Height > Reading.ArchiveHealthAnalyzer.MaxPixels)
+            {
+                return null;
+            }
+
+            using var thumb = VipsImage.ThumbnailBuffer(bytes, 64);
+            using var rgb = thumb.HasAlpha() ? thumb.Flatten(background: [255, 255, 255]) : thumb.Copy();
+            using var lch = rgb.Colourspace(Enums.Interpretation.Lch);
+            using var chroma = lch[1];
+            using var colourful = chroma > 20;
+            return colourful.Avg() / 255 > 0.02;
+        }
+        catch (VipsException)
+        {
+            return null;
+        }
+    }
+
     private const int BmpHeaderBytes = 26;
 
     /// <summary>

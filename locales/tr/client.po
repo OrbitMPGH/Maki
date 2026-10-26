@@ -382,6 +382,11 @@ msgstr "{0, plural, one {# dosyayı geri dönüşüm kutusuna taşır.} other {#
 msgid "{0, plural, one {No longer want # chapter} other {No longer want # chapters}}"
 msgstr "{0, plural, one {# bölüm artık istenmiyor} other {# bölüm artık istenmiyor}}"
 
+#. placeholder {0}: status.library.pendingFiles
+#: src/components/pageconversion/StartStep.tsx
+msgid "{0, plural, one {Nothing is saved until you press a button below. The pass will check # file that has not been looked at yet. Files converted earlier are not converted again.} other {Nothing is saved until you press a button below. The pass will check # files that have not been looked at yet. Files converted earlier are not converted again.}}"
+msgstr ""
+
 #. placeholder {0}: result.queued
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -642,6 +647,10 @@ msgstr "{cellDate}: {chapters, plural, one {# bölüm} other {# bölüm}}"
 #, fuzzy
 msgid "{cellDate}: nothing read"
 msgstr "{cellDate}: bir şey okunmadı"
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "{chapter}, {reason}"
+msgstr ""
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -1077,6 +1086,10 @@ msgstr "{folderLabel}: {filesLinked, plural, one {# dosya bağlandı} other {# d
 #, fuzzy
 msgid "{folderLabel}: linked {linkedCount} of {linkTotal, plural, one {# file} other {# files}}"
 msgstr "{folderLabel}: {linkTotal, plural, one {# dosyadan} other {# dosyadan}} {linkedCount} tanesi bağlandı"
+
+#: src/components/pageconversion/labels.ts
+msgid "{format}, {stop}"
+msgstr ""
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -1524,6 +1537,14 @@ msgstr "{pageCount, plural, one {İndiriliyor, {donePages} / # sayfa} other {İn
 msgid "{pageCount, plural, one {Fetching from {source}, {readyPages} of # page} other {Fetching from {source}, {readyPages} of # pages}}"
 msgstr "{pageCount, plural, one {{source} kaynağından alınıyor, {readyPages} / # sayfa} other {{source} kaynağından alınıyor, {readyPages} / # sayfa}}"
 
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "{pages, plural, one {# page, {name}} other {# pages, {name}}}"
+msgstr ""
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "{pages, plural, one {# page} other {# pages}}"
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
 msgid "{panelsOn} of {panelsTotal} panels"
@@ -1897,6 +1918,10 @@ msgstr "{siteName} dilleri"
 msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 msgstr "{size, plural, one {# seri, bu görünümün {shareLabel} kadarı, {coherenceWord}} other {# seri, bu görünümün {shareLabel} kadarı, {coherenceWord}}}"
 
+#: src/components/pageconversion/CompareStep.tsx
+msgid "{size}, {percent} of the original"
+msgstr ""
+
 #: src/components/import/MihonReview.tsx
 #, fuzzy
 msgid "{skippedNonLibrary, plural, one {# manga that is not in the library was skipped.} other {# manga that are not in the library were skipped.}}"
@@ -1961,6 +1986,10 @@ msgstr "{start} ile {end} arası"
 #, fuzzy
 msgid "{statusLabel}, not monitored"
 msgstr "{statusLabel}, izlenmiyor"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "{stop}. {hint}"
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -2546,11 +2575,6 @@ msgstr ""
 #, fuzzy
 msgid "1 (lowest) to 5 (highest)."
 msgstr "1 (en düşük) ile 5 (en yüksek) arası."
-
-#: src/pages/settings/PageConversionSection.tsx
-#, fuzzy
-msgid "1 to 100, higher keeps more detail. Default {fallback}."
-msgstr "1 ile 100 arası, yüksek değer daha fazla ayrıntı tutar. Varsayılan {fallback}."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -3407,6 +3431,10 @@ msgstr "AniList"
 msgid "anilist, myanimelist, mal, mangabaka, kitsu, mangaupdates, mu, trackers, oauth, client id, client secret, sync interval, plan to read"
 msgstr "anilist, myanimelist, mal, mangabaka, kitsu, mangaupdates, mu, izleyiciler, oauth, client id, client secret, eşitleme aralığı, okumayı planla"
 
+#: src/components/pageconversion/labels.ts
+msgid "Animated PNG pages are kept as they are."
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "anime"
@@ -3782,23 +3810,21 @@ msgstr "Otomatik yükseltmeler kapalı, kararınız gerekiyor"
 msgid "Automation"
 msgstr "Otomasyon"
 
-#: src/pages/settings/PageConversionSection.tsx
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "AVIF"
 msgstr "AVIF"
-
-#: src/pages/settings/PageConversionSection.tsx
-#, fuzzy
-msgid "AVIF quality"
-msgstr "AVIF kalitesi"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Avoided"
 msgstr "Kaçınıldı"
 
+#: src/components/pageconversion/ComparePicker.tsx
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Back"
 msgstr "Geri"
@@ -3825,6 +3851,10 @@ msgstr "Kitaplığa dön"
 #, fuzzy
 msgid "Back to series"
 msgstr "Seriye dön"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Back to settings"
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy
@@ -3910,6 +3940,7 @@ msgstr "Rozetler"
 msgid "balanced"
 msgstr "dengeli"
 
+#: src/components/pageconversion/labels.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/reader/enhanceMethods.ts
 #, fuzzy
@@ -4225,6 +4256,7 @@ msgstr "Kaydedilmiş bilgilerle oturum açılamıyor."
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/pageconversion/StartStep.tsx
 #: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
@@ -4546,6 +4578,10 @@ msgstr "Bağlı bölümleri değiştir"
 #, fuzzy
 msgid "Change own content rating"
 msgstr "Kendi içerik derecelendirmesini değiştir"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Change settings"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -5168,6 +5204,10 @@ msgstr "Renk {c}"
 msgid "Colour filter"
 msgstr "Renk filtresi"
 
+#: src/components/pageconversion/labels.ts
+msgid "Colour page"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Comedy"
@@ -5199,12 +5239,14 @@ msgstr "Yapılandırma anahtarı yoksa kullanılan, virgülle ayrılmış Appris
 msgid "Comma-separated IPs or CIDR networks. Needed behind a reverse proxy."
 msgstr ""
 
+#: src/components/pageconversion/labels.ts
 #: src/components/ui/viewPrefs.tsx
 #, fuzzy
 msgid "Compact"
 msgstr "Sıkışık"
 
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Compare"
 msgstr "Karşılaştır"
@@ -5214,10 +5256,22 @@ msgstr "Karşılaştır"
 msgid "Compare sources"
 msgstr "Kaynakları karşılaştır"
 
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Compare this page"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Compare with other users on this instance"
 msgstr "Bu kurulumdaki diğer kullanıcılarla karşılaştır"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Compare your own pages at each quality before anything is rewritten."
+msgstr ""
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Comparison divider"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -5490,10 +5544,26 @@ msgstr "Sürekli dikey (webtoon)"
 msgid "Continuous, because this chapter's pages are very tall."
 msgstr "Sürekli, çünkü bu bölümün sayfaları çok uzun."
 
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Conversion is off, so there is nothing to compare. Go back to pick a format."
+msgstr ""
+
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Convert library"
 msgstr "Kitaplığı dönüştür"
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Converted"
+msgstr ""
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Converted page"
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Converting would not make this page at least 5% smaller, so the pass keeps it as it is."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -5971,6 +6041,10 @@ msgstr "Mevcut kopya"
 #, fuzzy
 msgid "Current file"
 msgstr "Mevcut dosya"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Current setting"
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -7045,6 +7119,10 @@ msgstr "Etkin"
 msgid "Enabling it creates the feed URL. Confirm your password to continue."
 msgstr "Etkinleştirmek akış URL'sini oluşturur. Devam etmek için parolanızı onaylayın."
 
+#: src/components/pageconversion/CompareView.tsx
+msgid "Encoding the page"
+msgstr ""
+
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "End"
@@ -7947,6 +8025,10 @@ msgstr "Takip et"
 msgid "Follow someone from their creator page."
 msgstr ""
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Follow the quality"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Follow the setting"
@@ -7984,7 +8066,9 @@ msgstr ""
 msgid "For reading apps like Panels, KOReader and Mihon."
 msgstr ""
 
-#: src/pages/settings/PageConversionSection.tsx
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/StartStep.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Format"
 msgstr "Biçim"
@@ -8165,10 +8249,6 @@ msgstr "Türler ve etiketler"
 msgid "Genres in the library"
 msgstr "Kitaplıktaki türler"
 
-#: src/pages/reader/enhanceMethods.ts
-#~ msgid "Gentle (server)"
-#~ msgstr ""
-
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -8293,6 +8373,10 @@ msgstr "Gri"
 msgid "Grayscale"
 msgstr "Gri tonlama"
 
+#: src/components/pageconversion/labels.ts
+msgid "Greyscale page"
+msgstr ""
+
 #: src/components/ui/viewPrefs.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8412,6 +8496,10 @@ msgstr "sağlık, tarama, doğrulama, mutabakat, tarama saati, saat dilimi, az d
 #, fuzzy
 msgid "Healthy"
 msgstr "Sağlıklı"
+
+#: src/components/pageconversion/labels.ts
+msgid "Heaviest kind of file"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -8552,6 +8640,10 @@ msgstr "Bu başlığı gizle"
 
 #: src/components/settings/UsersSection.tsx
 msgid "Hides the controls for sharing the instance."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "High"
 msgstr ""
 
 #: src/components/releases/outlookText.ts
@@ -8718,6 +8810,10 @@ msgstr "Kopyaladım"
 #, fuzzy
 msgid "I have saved them"
 msgstr "Kaydettim"
+
+#: src/components/pageconversion/labels.ts
+msgid "Identical pixels."
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -9247,6 +9343,10 @@ msgstr "Görev"
 msgid "Josei"
 msgstr "Josei"
 
+#: src/components/pageconversion/labels.ts
+msgid "JPEG pages are kept as they are at Lossless."
+msgstr ""
+
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
 msgid "JPEG, PNG, GIF or WebP, up to 10 MB."
@@ -9328,6 +9428,10 @@ msgstr "Düzenlemeye devam et"
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "Elle önceliği koru, ancak ölçülen sırayı izleyecek şekilde yeniden numaralandır."
 
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Keep PNG pages lossless"
+msgstr ""
+
 #: src/App.tsx
 #, fuzzy
 msgid "Keep sidebar open"
@@ -9392,6 +9496,10 @@ msgstr "tutuldu"
 #, fuzzy
 msgid "Kept as linked"
 msgstr "Mevcut bağlantı korundu"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Kept lossless"
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -10042,6 +10150,10 @@ msgstr "Bölümler yükleniyor…"
 msgid "loading search by meaning, title matches for now"
 msgstr "anlama göre arama yükleniyor, şimdilik yalnızca başlık eşleşmeleri"
 
+#: src/components/pageconversion/CompareView.tsx
+msgid "Loading the page"
+msgstr ""
+
 #: src/pages/reader/ServerEnhanceStatus.tsx
 msgid "Loading the upscaled page"
 msgstr ""
@@ -10109,6 +10221,14 @@ msgstr "gevşek"
 #, fuzzy
 msgid "loose page images"
 msgstr "serbest sayfa görselleri"
+
+#: src/components/pageconversion/labels.ts
+msgid "Lossless"
+msgstr ""
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Loupe, 2x"
+msgstr ""
 
 #: src/components/releases/outlookText.ts
 #, fuzzy
@@ -10214,6 +10334,10 @@ msgstr "Maki {latestVersion} sürümü mevcut"
 msgid "Maki {version}"
 msgstr "Maki {version}"
 
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
+msgstr ""
+
 #: src/auth/OfflineStartPage.tsx
 #, fuzzy
 msgid "Maki can't reach the server, and nothing is saved on this device yet. Once the connection is back, sign in and save chapters for offline reading."
@@ -10233,6 +10357,14 @@ msgstr "Maki bu klasöre erişemiyor"
 #, fuzzy
 msgid "Maki checked the folder against the chapter list. Tick what to trust and watch the map. Nothing changes until you press Relink."
 msgstr "Maki klasörü bölüm listesiyle karşılaştırdı. Güvenilecekleri işaretleyin ve eşleme görünümünü izleyin. Dosyaları yeniden bağla düğmesine basana kadar hiçbir şey değişmez."
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Maki could not encode this page. Try another page or another format."
+msgstr ""
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Maki found no suitable pages to suggest. Pick one from your library."
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -11372,6 +11504,10 @@ msgstr "Önce en yeni"
 msgid "Newly enabled sources join at the bottom."
 msgstr "Yeni etkinleştirilen kaynaklar listenin sonuna eklenir."
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Next"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -11548,6 +11684,10 @@ msgstr "Henüz yeterince sık görünen bir yaratıcı yok."
 #, fuzzy
 msgid "No demographic data yet"
 msgstr "Henüz demografik veri yok"
+
+#: src/components/pageconversion/labels.ts
+msgid "No difference we could see."
+msgstr ""
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -11808,6 +11948,10 @@ msgstr "Henüz kural yok. Türleri ve etiketleri zorunlu tutmak veya hariç tutm
 #, fuzzy
 msgid "No scrobble"
 msgstr "Senkronizasyon yok"
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "No series match that search."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -12148,10 +12292,15 @@ msgid "Not matched or ignored"
 msgstr "Eşleşmedi veya yok sayıldı"
 
 #: src/api/upgrades.ts
+#: src/components/pageconversion/ComparePicker.tsx
 #: src/components/series/FileQualityBadge.tsx
 #, fuzzy
 msgid "Not measured yet"
 msgstr "Henüz ölçülmedi"
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Not measured yet, {name}"
+msgstr ""
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -12389,6 +12538,10 @@ msgstr "Bu cihazda henüz hiçbir şey kaydedilmedi. Yeniden çevrimiçi olduğu
 msgid "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
 msgstr "Bu cihazda henüz hiçbir şey kaydedilmedi. Bir bölüm veya seri için Çevrimdışı için kaydet seçeneğini kullanın."
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Nothing is saved until you press the button below. Files converted earlier stay as they are."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Nothing is sent to it any more. This can't be undone."
@@ -12472,6 +12625,10 @@ msgstr "Henüz tadını çıkararak okunmuş sayılacak kadar yavaş bir okuma y
 #, fuzzy
 msgid "Nothing to browse yet"
 msgstr "Henüz göz atılacak bir şey yok"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Nothing to compare"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #: src/pages/ImportPage.tsx
@@ -12657,12 +12814,15 @@ msgstr "OEL"
 msgid "of reading time"
 msgstr "okuma süresinin"
 
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/labels.ts
+#: src/components/pageconversion/StartStep.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/enhanceMethods.ts
-#: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Off"
 msgstr "Kapalı"
@@ -13040,8 +13200,8 @@ msgstr "Bir silme incelemesi açar. Siz orada onaylayana kadar hiçbir şey kald
 msgid "Opens a GitHub issue with the template."
 msgstr "Şablonu kullanarak bir GitHub issue'su açar."
 
-#: src/pages/settings/PageConversionSection.tsx
-msgid "Opens in every reader Maki works with."
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Opens in every reader Maki works with. Recommended."
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -13072,6 +13232,14 @@ msgstr "veya bir kimlik ya da bağlantı yapıştırın"
 #, fuzzy
 msgid "Order changed"
 msgstr "Sıralama değişti"
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Original"
+msgstr ""
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Original page"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -13132,6 +13300,7 @@ msgid "Packaging"
 msgstr "Paketleniyor"
 
 #: src/components/CommandPalette.tsx
+#: src/components/pageconversion/ComparePicker.tsx
 #: src/pages/reader/PageScrubber.tsx
 #, fuzzy
 msgid "Page"
@@ -13140,6 +13309,10 @@ msgstr "Sayfa"
 #. placeholder {0}: page + 1
 #: src/pages/reader/PageScrubber.tsx
 msgid "Page {0} of {count}"
+msgstr ""
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Page {page} of {pageCount}"
 msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
@@ -13160,11 +13333,14 @@ msgstr "Sayfa {pageNumber} / {pageCount}"
 msgid "Page conversion"
 msgstr "Sayfa dönüştürme"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Page conversion steps"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format"
-msgstr "sayfa dönüştürme, webp, avif, sayfaları dönüştür, sıkıştır, disk alanı, dosya boyutu, yeniden kodla, görüntü biçimi"
+msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format, quality, stops, lossless, compare, preview, before and after, wizard"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -13180,6 +13356,10 @@ msgstr "Sayfa boşluğu"
 #, fuzzy
 msgid "Page not found"
 msgstr "Sayfa bulunamadı"
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Page preview, scrollable"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
@@ -13213,6 +13393,14 @@ msgstr "Sayfalı tempo · {chaptersLeft} · {basis}"
 msgid "Pages"
 msgstr "Sayfalar"
 
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Pages 1 to {pageCount}. The suggested page is {suggested}, from the middle of the file."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Pages already stored as WebP or AVIF are kept as they are."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 msgid "Pages are matched by image content, so each row is the same drawing in every column."
 msgstr ""
@@ -13230,6 +13418,22 @@ msgstr ""
 #, fuzzy
 msgid "Pages matched"
 msgstr "Eşleşen sayfalar"
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Pages stay as they are downloaded. Files already converted stay converted."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Pages under 16 KB are always kept as they are."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Pages wider or taller than 16383 px are kept as they are."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Pages with more than 8 bits per channel are kept as they are."
+msgstr ""
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
@@ -13346,6 +13550,14 @@ msgstr "İndirmeleri duraklat"
 msgid "Pause Rewind"
 msgstr "Rewind'ı duraklat"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Pause the running pass and restart it with the new settings?"
+msgstr ""
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Pause the running pass?"
+msgstr ""
+
 #: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -13459,6 +13671,11 @@ msgstr "Gelecekte bir zaman seçin"
 msgid "Pick another default profile first"
 msgstr "Önce başka bir varsayılan profil seçin"
 
+#: src/components/pageconversion/ComparePicker.tsx
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Pick another page"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Pick languages"
@@ -13532,6 +13749,18 @@ msgstr "{rewindYear} retrospektifini oynat"
 #, fuzzy
 msgid "Plum"
 msgstr "Erik"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "PNG pages"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "PNG pages are kept lossless."
+msgstr ""
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "PNG pages are stored as lossless WebP at every stop, so no pixel changes. This saves little. Leave it off to let PNG pages follow the quality you choose."
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Points for doubling each measurement. 0 turns it off."
@@ -13851,6 +14080,8 @@ msgstr "HTTPS'in arkasına yerleştirin, ardından Ayarlar → Sistem → Ağ �
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 msgstr "Bu kaynakları bu sırayla, yeni seriler otomatik eşleştiğinde kullanılan genel öncelik listesinin başına koyar."
 
+#: src/components/pageconversion/CompareStep.tsx
+#: src/components/pageconversion/StartStep.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -15296,6 +15527,10 @@ msgstr "Bulanık başlık aramasıyla çözüldü. Orta doğruluk"
 msgid "Resolved using ID. High accuracy"
 msgstr "Kimlik kullanılarak çözüldü. Yüksek doğruluk"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Restart"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -15748,6 +15983,18 @@ msgstr "Her seri klasörüne bir cover.jpg kaydet"
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "Her serinin kitaplık klasörüne bir cover.jpg kaydet"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Save and begin"
+msgstr ""
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Save and pause"
+msgstr ""
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Save and start"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Save anyway"
@@ -15789,6 +16036,10 @@ msgstr "Filtreleri kaydet"
 msgid "Save for offline"
 msgstr "Çevrimdışı için kaydet"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Save only"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Save order"
@@ -15825,6 +16076,7 @@ msgstr "Kurtarma kodlarınızı kaydedin"
 
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/pageconversion/StartStep.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/useIndexerForm.ts
@@ -15834,7 +16086,6 @@ msgstr "Kurtarma kodlarınızı kaydedin"
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
 #: src/pages/settings/SystemCards.tsx
@@ -16103,6 +16354,10 @@ msgstr "kazıyıcılar, kaynakları yönet, öncelik, kaynak önceliği, kaynak 
 msgid "Screen"
 msgstr "Ekran"
 
+#: src/components/pageconversion/labels.ts
+msgid "Screentone is smoothed away, lines stay intact."
+msgstr ""
+
 #: src/nav.ts
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -16326,6 +16581,10 @@ msgstr "Cilt sürümlerini ara"
 #, fuzzy
 msgid "Search volumes now"
 msgstr "Ciltleri şimdi ara"
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Search your series"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -16752,10 +17011,18 @@ msgstr "Kilitlenmeyi devre dışı bırakmak için <0>0</0> olarak ayarlayın."
 msgid "Set up"
 msgstr "Kur"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Set up conversion"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Set up in Settings"
 msgstr "Ayarlar'da kurun"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Set up page conversion"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16979,6 +17246,10 @@ msgstr "{totalQueueCount} kuyruktaki öğeden {shownQueueCount} tanesi gösteril
 #, fuzzy
 msgid "showing results for <0>{corrected}</0>"
 msgstr "<0>{corrected}</0> için sonuçlar gösteriliyor"
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Showing the first {MAX_SERIES_ROWS}. Type more of the title to narrow it down."
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -17225,8 +17496,12 @@ msgstr "Günlük Yaşam"
 msgid "Sliding: activity extends it."
 msgstr "Kayan: etkinlik onu uzatır."
 
-#: src/pages/settings/PageConversionSection.tsx
-msgid "Smaller than WebP. KOReader and iOS before 16 can't open it."
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Smaller than WebP at the same look. KOReader and some e-readers can't open AVIF pages."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Smallest"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -17494,6 +17769,7 @@ msgstr "GitHub'da yıldız ver"
 
 #: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Start"
 msgstr "Başlat"
@@ -18254,6 +18530,10 @@ msgstr "Takip ettiğiniz yaratıcı ve stüdyoların en yeni başlıkları. Biri
 msgid "The next check is due."
 msgstr "Sonraki kontrol zamanı geldi."
 
+#: src/components/pageconversion/FormatStep.tsx
+msgid "The next step shows your own pages in the format you pick here."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "The odd one out"
@@ -18659,6 +18939,10 @@ msgstr "bu ay"
 msgid "This month"
 msgstr "Bu ay"
 
+#: src/components/pageconversion/labels.ts
+msgid "This page could not be read, so the pass would leave the file alone."
+msgstr ""
+
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -18669,6 +18953,10 @@ msgstr "Bu sayfa yüklenemedi."
 #, fuzzy
 msgid "This page hit an error"
 msgstr "Bu sayfada bir hata oluştu"
+
+#: src/components/pageconversion/labels.ts
+msgid "This page is kept as it is."
+msgstr ""
 
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
@@ -18714,6 +19002,10 @@ msgstr "Bu onarım için elle seçilmiş bir kaynak gerekli"
 #, fuzzy
 msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
 msgstr "Geçerli kitaplığınız ve ayarlarınız <0>{backupName}</0> ile değiştirilir, ardından Maki yeniden başlatılır. Geçerli veriler saklanmaz; geri dönebilmek istiyorsanız önce yedek alın. Docker ve systemd Maki'yi kendileri yeniden başlatır; diğer durumlarda Maki'yi yeniden başlatmanız gerekir."
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "This series has no chapter files to compare."
+msgstr ""
 
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
@@ -19034,6 +19326,14 @@ msgstr "Belirteç büyük/küçük harfi"
 #, fuzzy
 msgid "Token separator"
 msgstr "Belirteç ayırıcı"
+
+#: src/components/pageconversion/labels.ts
+msgid "Tone is a little lighter. Fine at fit-to-screen."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Tone thins out."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -19778,11 +20078,6 @@ msgstr "Büyük Harf"
 msgid "upscale, upscaling, enhance, sharpen, model, onnx, real-esrgan, span, cpu threads, page cache"
 msgstr ""
 
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#~ msgid "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
-#~ msgstr ""
-
 #: src/pages/reader/ServerEnhanceStatus.tsx
 msgid "Upscaled page shown"
 msgstr ""
@@ -20213,10 +20508,6 @@ msgstr "Ciltler: {volumes}"
 msgid "vs {fromLabel} to {toLabel}"
 msgstr "{fromLabel} ile {toLabel} karşılaştırması"
 
-#: src/pages/reader/enhanceMethods.ts
-#~ msgid "waifu2x art; slowest, cleanest"
-#~ msgstr ""
-
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -20292,15 +20583,11 @@ msgstr "Webhook"
 msgid "Webhook URL"
 msgstr "Webhook URL'si"
 
-#: src/pages/settings/PageConversionSection.tsx
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "WebP"
 msgstr "WebP"
-
-#: src/pages/settings/PageConversionSection.tsx
-#, fuzzy
-msgid "WebP quality"
-msgstr "WebP kalitesi"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -20516,6 +20803,10 @@ msgstr "Genişlik"
 #, fuzzy
 msgid "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."
 msgstr "KOReader'da bir kitap açıkken Araçlar, sonra İlerleme eşitlemesi, sonra Özel eşitleme sunucusu yolunu izleyin ve yukarıdaki adresi girin."
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "With conversion off, there is nothing to compare. Continue to save that choice."
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -20842,6 +21133,10 @@ msgstr "Bir sonraki okumanız"
 #, fuzzy
 msgid "Your password"
 msgstr "Parolanız"
+
+#: src/components/pageconversion/labels.ts
+msgid "Your pick"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy

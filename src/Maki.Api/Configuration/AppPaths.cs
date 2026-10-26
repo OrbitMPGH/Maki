@@ -92,6 +92,12 @@ public class AppPaths
     /// Throwaway, same as <see cref="SourcePreviewDir"/>.
     /// </summary>
     public string SeriesPreviewDir => Path.Combine(CacheDir, "seriespreview");
+
+    /// <summary>
+    /// Pages encoded for the page conversion wizard, keyed by file, archive size and write time, page
+    /// and settings. Throwaway: HousekeepingJob drops anything written over a day ago.
+    /// </summary>
+    public string ConversionPreviewDir => Path.Combine(CacheDir, "conversion-preview");
     public string MediaCoverDir => Path.Combine(ConfigDir, "MediaCover");
     public string BackupDir => Path.Combine(ConfigDir, "backups");
 
