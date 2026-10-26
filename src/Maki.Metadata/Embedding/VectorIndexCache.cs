@@ -584,6 +584,12 @@ public sealed class VectorIndexCache(
             // which is exactly how the recommender behaved before this existed.
             logger.LogWarning(ex, "Could not build the franchise graph; collapse is off this build");
         }
+        finally
+        {
+            // A pass over the series table, a large share of the dump. Only covered before when the
+            // index load came from Discover, whose rail batches drop the file afterwards.
+            PageCache.DropAfterScan(dumpOptions.DatabasePath);
+        }
 
         return franchise;
     }
