@@ -120,7 +120,7 @@ public class OpdsCatalogService(
     {
         // Series with nothing downloaded are omitted: an OPDS reader has no concept of a series
         // Maki is merely tracking, so they would render as empty folders.
-        var source = db.Series.AsNoTracking().Where(s => s.Chapters.Any(c => c.ChapterFileId != null));
+        var source = db.Series.AsNoTracking().Active().Where(s => s.Chapters.Any(c => c.ChapterFileId != null));
 
         List<SeriesRow> rows;
         int total;
@@ -373,9 +373,11 @@ public class OpdsCatalogService(
         var seriesIds = rows.Select(r => r.SeriesId).Distinct().ToList();
         var titles = await db.Series
             .AsNoTracking()
+            .Active()
             .Where(s => seriesIds.Contains(s.Id))
             .Select(s => new { s.Id, s.Title })
             .ToDictionaryAsync(s => s.Id, s => s.Title, ct);
+        rows = [.. rows.Where(r => titles.ContainsKey(r.SeriesId))];
 
         var entries = await ChapterEntriesAsync(ctx, rows, titles, includeSeriesTitle: true, ct);
 

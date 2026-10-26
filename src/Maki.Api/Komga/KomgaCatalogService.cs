@@ -89,7 +89,7 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
 
     public async Task<List<KomgaLibrary>> LibrariesAsync(CancellationToken ct)
     {
-        var visible = db.Series.Where(s => s.Chapters.Any(c => c.ChapterFileId != null)).Select(s => s.RootFolderId);
+        var visible = db.Series.Active().Where(s => s.Chapters.Any(c => c.ChapterFileId != null)).Select(s => s.RootFolderId);
         var folders = await db.RootFolders.AsNoTracking()
             .Where(r => visible.Contains(r.Id))
             .OrderBy(r => r.Id)
@@ -136,7 +136,7 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
 
     private IQueryable<Series> VisibleSeries(IReadOnlyCollection<int>? libraryIds)
     {
-        var source = db.Series.AsNoTracking().Where(s => s.Chapters.Any(c => c.ChapterFileId != null));
+        var source = db.Series.AsNoTracking().Active().Where(s => s.Chapters.Any(c => c.ChapterFileId != null));
         return libraryIds is { Count: > 0 } ? source.Where(s => libraryIds.Contains(s.RootFolderId)) : source;
     }
 
@@ -479,7 +479,7 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
     /// </summary>
     public async Task<KomgaPage<KomgaBook>> BooksAsync(KomgaBookQuery query, int page, int? size, CancellationToken ct)
     {
-        var source = db.Chapters.AsNoTracking().Where(c => c.ChapterFileId != null);
+        var source = db.Chapters.AsNoTracking().Where(c => c.ChapterFileId != null && c.Series!.ArchivedAt == null);
         if (query.LibraryIds is { Count: > 0 } libraries)
         {
             source = source.Where(c => libraries.Contains(c.Series!.RootFolderId));

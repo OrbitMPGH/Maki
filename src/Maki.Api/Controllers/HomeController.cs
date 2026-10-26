@@ -174,6 +174,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         var seriesIds = candidates.Select(c => c.SeriesId).ToList();
         var titles = await db.Series
             .AsNoTracking()
+            .Active()
             .Where(s => seriesIds.Contains(s.Id))
             .Select(s => new { s.Id, s.Title, s.CoverPath, s.LastMetadataRefresh })
             .ToDictionaryAsync(s => s.Id, ct);
@@ -341,6 +342,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
 
         var titles = await db.Series
             .AsNoTracking()
+            .Active()
             .Where(s => seriesIds.Contains(s.Id))
             .Select(s => new { s.Id, s.Title, s.CoverPath, s.LastMetadataRefresh })
             .ToDictionaryAsync(s => s.Id, ct);

@@ -738,6 +738,7 @@ public class ScrobbleService(
                 : [];
 
             zeroProgress = await db.Series
+                .Active()
                 .Where(s => s.Incognito == IncognitoMode.Off &&
                     (s.MalId != null || s.AniListId != null || s.MangaBakaId != null || s.KitsuId != null ||
                         s.MangaUpdatesId != null))

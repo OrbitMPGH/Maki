@@ -515,6 +515,7 @@ public class TorrentUpgradeService(
     {
         var cutoff = time.GetUtcNow().UtcDateTime - SearchInterval;
         var rows = await db.Series.IgnoreQueryFilters()
+            .Active()
             .Where(s => s.LastVolumeSearchUtc == null || s.LastVolumeSearchUtc < cutoff)
             .Where(s => !db.TorrentProposals.IgnoreQueryFilters()
                 .Any(p => p.SeriesId == s.Id && p.Status == TorrentProposalStatus.Pending))
