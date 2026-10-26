@@ -37,7 +37,7 @@ public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice
 /// </summary>
 public sealed class UpscaleQueue
 {
-    public const int MaxPendingPerUser = 12;
+    public const int MaxPendingPerUser = 32;
 
     private const int MemoCapacity = 1024;
     private static readonly TimeSpan MemoLifetime = TimeSpan.FromMinutes(10);

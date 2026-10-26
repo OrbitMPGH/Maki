@@ -69,15 +69,16 @@ public class UpscaleQueueTests
     }
 
     [Fact]
-    public void A_reader_never_has_more_than_twelve_pages_pending()
+    public void A_reader_never_has_more_than_the_cap_pending()
     {
-        _queue.Replace(1, 1, "span-s", Enumerable.Range(0, 12).Select(p => Item(p)).ToList());
-        var states = _queue.Replace(1, 1, "span-s", Enumerable.Range(20, 15).Select(p => Item(p)).ToList());
+        var cap = UpscaleQueue.MaxPendingPerUser;
+        _queue.Replace(1, 1, "span-s", Enumerable.Range(0, cap).Select(p => Item(p)).ToList());
+        var states = _queue.Replace(1, 1, "span-s", Enumerable.Range(100, cap + 3).Select(p => Item(p)).ToList());
 
         Assert.Equal(UpscaleQueue.MaxPendingPerUser, states.Count);
         Assert.Equal(UpscaleQueue.MaxPendingPerUser, _queue.PendingFor(1));
         Assert.Equal(UpscaleQueue.MaxPendingPerUser, _queue.Snapshot().Pending);
-        Assert.Equal(Enumerable.Range(20, 12), DrainPages());
+        Assert.Equal(Enumerable.Range(100, cap), DrainPages());
     }
 
     [Fact]

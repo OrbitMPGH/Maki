@@ -22,7 +22,7 @@ export interface ServerEnhance {
   reportShown: (page: number, shown: boolean) => void
 }
 
-const MAX_PAGES = 12
+const MAX_PAGES = 32
 const DEBOUNCE_MS = 250
 const HUB_GRACE_MS = 10_000
 const POLL_MS = 5_000
@@ -53,7 +53,7 @@ interface Tracked {
 }
 
 /**
- * Asks the server to upscale the reading window (current page first, at most 12) a moment after
+ * Asks the server to upscale the reading window (current page first, at most 32) a moment after
  * each page change. With `only` set (Enhance on `auto`), only the window's pages in it are asked
  * for, and a page joining it asks again. Each page is followed from `queued` or `working` to
  * `ready`, `failed` or `skipped` through the response and the `pageEnhanced` push. If the live

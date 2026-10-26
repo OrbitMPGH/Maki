@@ -104,11 +104,16 @@ export default function PageScrubber({ count, page, shownTo, rtl, onSeek, enhanc
             key={index}
             className="reader-scrub-segment"
             data-lit={index <= to || undefined}
-            data-current={(index >= from && index <= to) || undefined}
             data-ready={(index > to && enhanced?.has(index)) || undefined}
             data-hover={index === hover || undefined}
           />
         ))}
+        {count > 0 && (
+          <span
+            className="reader-scrub-thumb"
+            style={{ '--from': rtl ? count - 1 - to : from, '--span': to - from + 1, '--count': count } as React.CSSProperties}
+          />
+        )}
       </div>
       {shown !== null && rect && (
         <div
