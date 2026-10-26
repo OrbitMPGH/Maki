@@ -85,6 +85,7 @@ import {
   useSetMonitorMode,
   useSetUpgradeProfile,
   useSetReadFileCleanup,
+  useSetSeriesPageConversion,
   useSetRating,
   useToggleChapterWanted,
   useUnlinkChapters,
@@ -156,6 +157,8 @@ import { ArchiveHint } from '../components/series/ArchiveHint'
 import { RemoveArchivedFilesDialog } from '../components/series/RemoveArchivedFilesDialog'
 import { ArchiveSeriesDialog } from '../components/series/ArchiveSeriesDialog'
 import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
+import { UndoConversionModal } from '../components/series/UndoConversionModal'
+import { useSeriesConversion } from '../api/pageConversion'
 import { RestoreSeriesDialog } from '../components/series/RestoreSeriesDialog'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
 import { EditMetadataModal, MetadataLock } from '../components/series/EditMetadataModal'
@@ -541,6 +544,7 @@ function SeriesDetailBody() {
   const setMonitorMode = useSetMonitorMode()
   const setUpgradeProfile = useSetUpgradeProfile()
   const setReadFileCleanup = useSetReadFileCleanup()
+  const setSeriesPageConversion = useSetSeriesPageConversion()
   const { data: upgradeProfiles } = useUpgradeProfiles()
   const setFileTrusted = useSetFileTrusted()
   const upgradeChapterNow = useUpgradeChapterNow()
@@ -686,6 +690,8 @@ function SeriesDetailBody() {
 
   // Without DownloadChapters the two buttons that queue downloads become one that asks an admin to.
   const { can, me, singleUser } = useAuth()
+  const { data: conversionHistory } = useSeriesConversion(seriesId, can('Admin'))
+  const [undoConversionOpen, setUndoConversionOpen] = useState(false)
   const canDownload = can('DownloadChapters')
   const canEditMetadata = can('EditMetadata')
   const canDelete = can('DeleteSeries')
@@ -1936,6 +1942,16 @@ function SeriesDetailBody() {
                     readFileCleanupActive={series.readFileCleanupActive}
                     onSetReadFileCleanup={(mode) =>
                         setReadFileCleanup.mutate({ seriesId, mode }, { onSuccess: () => notify.ok(staticT`Saved`) })
+                    }
+                    pageConversion={series.pageConversion}
+                    canSetPageConversion={can('Admin')}
+                    onSetPageConversion={(mode) =>
+                        setSeriesPageConversion.mutate({ seriesId, mode }, { onSuccess: () => notify.ok(staticT`Saved`) })
+                    }
+                    onUndoConversion={
+                        conversionHistory && conversionHistory.restorableFiles > 0
+                            ? () => setUndoConversionOpen(true)
+                            : undefined
                     }
                     canEdit={canEditMetadata}
                     canCleanUpReadFiles={canDelete}
@@ -3194,6 +3210,15 @@ function SeriesDetailBody() {
         >
           <Trans>This removes "{seriesTitle}" and its chapters from Maki.</Trans>
         </RemoveSeriesDialog>
+
+        {conversionHistory && (
+          <UndoConversionModal
+            opened={undoConversionOpen}
+            onClose={() => setUndoConversionOpen(false)}
+            seriesId={seriesId}
+            history={conversionHistory}
+          />
+        )}
 
         <Modal
             opened={requestModalOpen}

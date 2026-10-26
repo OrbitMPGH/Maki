@@ -62,6 +62,9 @@ public class Series
 
     /// <summary>Opts this series in or out of deleting read chapter files; see <c>ReadFileCleanupService</c>.</summary>
     public ReadFileCleanup ReadFileCleanup { get; set; }
+
+    /// <summary>Overrides the page conversion rules for this series' files; see <c>PageConversionPlan</c>.</summary>
+    public PageConversionOverride PageConversion { get; set; }
     public UpgradeProfile? UpgradeProfile { get; set; }
 
     /// <summary>Which source a download tries first. Null means the instance default from <c>SettingKeys.DownloadSourceOrder</c>.</summary>

@@ -18,6 +18,10 @@ msgstr ""
 msgid " · Acknowledged, hidden from the header badge"
 msgstr " · Bestätigt, im Header-Badge ausgeblendet"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid " MB"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "- skip -"
@@ -56,6 +60,11 @@ msgstr "(nicht zugänglich)"
 #, fuzzy
 msgid "(no longer in the library)"
 msgstr "(nicht mehr in der Bibliothek)"
+
+#. placeholder {0}: line.files
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {{settings}: # file, {saved} saved} other {{settings}: # files, {saved} saved}}"
+msgstr ""
 
 #. placeholder {0}: spans.length
 #: src/components/AnimeCoverageBar.tsx
@@ -132,17 +141,87 @@ msgstr "{0, plural, one {# Datei konnte nicht gelöscht werden (gesperrt oder ke
 msgid "{0, plural, one {# file deleted} other {# files deleted}}"
 msgstr "{0, plural, one {# Datei gelöscht} other {# Dateien gelöscht}}"
 
+#. placeholder {0}: history.restorableFiles
+#: src/components/series/UndoConversionModal.tsx
+msgid "{0, plural, one {# file has its original in the trash ({size}).} other {# files have their original in the trash ({size}).}}"
+msgstr ""
+
+#. placeholder {0}: scope.alreadyCompact.files
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "{0, plural, one {# file is already WebP or AVIF and is left as it is ({compactSize}).} other {# files are already WebP or AVIF and are left as they are ({compactSize}).}}"
+msgstr ""
+
+#. placeholder {0}: passed.alreadyCompact
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is already WebP or AVIF} other {# files are already WebP or AVIF}}"
+msgstr ""
+
+#. placeholder {0}: passed.cleanupDue
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is due for read-file cleanup} other {# files are due for read-file cleanup}}"
+msgstr ""
+
+#. placeholder {0}: passed.hardlinkedFiles
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is hardlinked to a torrent and stays as it is ({hardlinked})} other {# files are hardlinked to torrents and stay as they are ({hardlinked})}}"
+msgstr ""
+
+#. placeholder {0}: passed.neverFiles
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is in a series set to Never ({never})} other {# files are in {neverSeries} series set to Never ({never})}}"
+msgstr ""
+
+#. placeholder {0}: passed.downloadInFlight
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is in a series with a download in flight} other {# files are in series with a download in flight}}"
+msgstr ""
+
+#. placeholder {0}: scope.overrides.files
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "{0, plural, one {# file is in a series with its own setting, which wins over the rules ({overridesSize}).} other {# files are in series with their own setting, which wins over the rules ({overridesSize}).}}"
+msgstr ""
+
 #. placeholder {0}: skipped.length
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
 msgid "{0, plural, one {# file is left out} other {# files are left out}}"
 msgstr "{0, plural, one {# Datei wird nicht übernommen} other {# Dateien werden nicht übernommen}}"
 
+#. placeholder {0}: passed.skippedByRule
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is skipped by a rule ({skipped})} other {# files are skipped by a rule ({skipped})}}"
+msgstr ""
+
+#. placeholder {0}: passed.pendingImport
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file is waiting on an import link} other {# files are waiting on an import link}}"
+msgstr ""
+
 #. placeholder {0}: r.kept
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "{0, plural, one {# file kept on disk because another series still uses it} other {# files kept on disk because another series still uses them}}"
 msgstr "{0, plural, one {# Datei bleibt auf der Festplatte, weil eine andere Serie sie noch verwendet} other {# Dateien bleiben auf der Festplatte, weil eine andere Serie sie noch verwendet}}"
+
+#. placeholder {0}: passed.alreadyChecked
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file was already checked with these settings ({checked})} other {# files were already checked with these settings ({checked})}}"
+msgstr ""
+
+#. placeholder {0}: scope.convertedEarlier.files
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "{0, plural, one {# file was converted earlier and stays as it is ({earlierSize}).} other {# files were converted earlier and stay as they are ({earlierSize}).}}"
+msgstr ""
+
+#. placeholder {0}: passed.undone
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{0, plural, one {# file was put back by an undo and stays as it is} other {# files were put back by an undo and stay as they are}}"
+msgstr ""
+
+#. placeholder {0}: bucket.files
+#: src/components/pageconversion/RuleCard.tsx
+msgid "{0, plural, one {# file, {size}} other {# files, {size}}}"
+msgstr ""
 
 #. placeholder {0}: entries.length
 #: src/pages/settings/LibraryCards.tsx
@@ -232,6 +311,11 @@ msgstr "{0, plural, one {# Seite} other {# Seiten}}"
 msgid "{0, plural, one {# recovery code left. A new set replaces the old codes.} other {# recovery codes left. A new set replaces the old codes.}}"
 msgstr "{0, plural, one {# Wiederherstellungscode übrig. Ein neuer Satz ersetzt die alten Codes.} other {# Wiederherstellungscodes übrig. Ein neuer Satz ersetzt die alten Codes.}}"
 
+#. placeholder {0}: rules.length
+#: src/pages/PageConversionWizardPage.tsx
+msgid "{0, plural, one {# rule} other {# rules}}"
+msgstr ""
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -263,6 +347,11 @@ msgstr "{0, plural, one {# Serie abgeschlossen} other {# Serien abgeschlossen}}"
 #, fuzzy
 msgid "{0, plural, one {# series had problems applying tags or read marks} other {# series had problems applying tags or read marks}}"
 msgstr "{0, plural, one {# Serie hatte Probleme beim Anwenden von Tags oder Lesemarkierungen} other {# Serien hatten Probleme beim Anwenden von Tags oder Lesemarkierungen}}"
+
+#. placeholder {0}: status.library.overrideSeries
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{0, plural, one {# series has its own setting in its menu.} other {# series have their own setting in their menus.}}"
+msgstr ""
 
 #. placeholder {0}: skipped.length
 #: src/components/import/MihonSummary.tsx
@@ -382,6 +471,11 @@ msgstr "{0, plural, one {Verschiebt # Datei in den Papierkorb.} other {Verschieb
 msgid "{0, plural, one {No longer want # chapter} other {No longer want # chapters}}"
 msgstr "{0, plural, one {# Kapitel nicht mehr gewünscht} other {# Kapitel nicht mehr gewünscht}}"
 
+#. placeholder {0}: status.library.pendingFiles
+#: src/components/pageconversion/StartStep.tsx
+msgid "{0, plural, one {Nothing is saved until you press a button below. The pass will check # file that has not been looked at yet. Files converted earlier are not converted again.} other {Nothing is saved until you press a button below. The pass will check # files that have not been looked at yet. Files converted earlier are not converted again.}}"
+msgstr ""
+
 #. placeholder {0}: result.queued
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -436,6 +530,11 @@ msgstr "{0, plural, one {# Kapitel entfernt} other {# Kapitel entfernt}}"
 msgid "{0, plural, one {Removed # unsupported chapter} other {Removed # unsupported chapters}}"
 msgstr "{0, plural, one {# nicht unterstütztes Kapitel entfernt} other {# nicht unterstützte Kapitel entfernt}}"
 
+#. placeholder {0}: result.restored
+#: src/components/series/UndoConversionModal.tsx
+msgid "{0, plural, one {Restored # file} other {Restored # files}}"
+msgstr ""
+
 #. placeholder {0}: r.chapters
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -453,6 +552,11 @@ msgstr "{0, plural, one {# in dieser Ansicht auswählen} other {Alle # in dieser
 #, fuzzy
 msgid "{0, plural, one {Show all #} other {Show all #}}"
 msgstr "{0, plural, one {Alle # anzeigen} other {Alle # anzeigen}}"
+
+#. placeholder {0}: bucket.files
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "{0, plural, one {Skipped: # file, {size}} other {Skipped: # files, {size}}}"
+msgstr ""
 
 #. placeholder {0}: parsed.skippedNonLibrary
 #: src/components/import/MihonImport.tsx
@@ -653,6 +757,10 @@ msgstr "{cellDate}: {chapters, plural, one {# Kapitel} other {# Kapitel}}"
 #, fuzzy
 msgid "{cellDate}: nothing read"
 msgstr "{cellDate}: nichts gelesen"
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "{chapter}, {reason}"
+msgstr ""
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -1093,6 +1201,18 @@ msgstr "{folderLabel}: {filesLinked, plural, one {# Datei verknüpft} other {# D
 msgid "{folderLabel}: linked {linkedCount} of {linkTotal, plural, one {# file} other {# files}}"
 msgstr "{folderLabel}: {linkedCount} von {linkTotal, plural, one {# Datei} other {# Dateien}} verknüpft"
 
+#: src/components/pageconversion/labels.ts
+msgid "{format}, {stop}"
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "{format}, {stop}, {rules}"
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "{format}, {stop}, PNG lossless"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
@@ -1103,6 +1223,7 @@ msgstr "Mit {forwardKey} oder Leertaste öffnen, mit Esc zurück zur Serie."
 msgid "{free} free"
 msgstr "{free} frei"
 
+#: src/components/pageconversion/EstimateTable.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #, fuzzy
 msgid "{from} to {to}"
@@ -1192,6 +1313,10 @@ msgstr "{installed, plural, =0 {Noch keine Suwayomi-Quellen.} one {# Suwayomi-Qu
 #, fuzzy
 msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "{intoLevel} / {levelSpan} XP bis Level {nextLevel}"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1547,6 +1672,14 @@ msgstr "{pageCount, plural, one {Lade herunter, {donePages} von # Seite} other {
 msgid "{pageCount, plural, one {Fetching from {source}, {readyPages} of # page} other {Fetching from {source}, {readyPages} of # pages}}"
 msgstr "{pageCount, plural, one {Lade von {source}, {readyPages} von # Seite} other {Lade von {source}, {readyPages} von # Seiten}}"
 
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "{pages, plural, one {# page, {name}} other {# pages, {name}}}"
+msgstr ""
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "{pages, plural, one {# page} other {# pages}}"
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
 msgid "{panelsOn} of {panelsTotal} panels"
@@ -1768,6 +1901,14 @@ msgstr "{review, plural, one {# Download wartet auf eine Import-Entscheidung} ot
 msgid "{review, plural, one {Activity, # download waiting for an import decision} other {Activity, # downloads waiting for an import decision}}"
 msgstr "{review, plural, one {Aktivität, # Download wartet auf eine Importentscheidung} other {Aktivität, # Downloads warten auf eine Importentscheidung}}"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "{ruleCount, plural, one {# rule, then everything else at the quality above} other {# rules, then everything else at the quality above}}"
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "{ruleCount, plural, one {# rule} other {# rules}}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{sampleChapters, plural, one {based on # chapter from this series} other {based on # chapters from this series}}"
@@ -1933,6 +2074,10 @@ msgstr "{siteName}-Sprachen"
 msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 msgstr "{size, plural, one {# Serie, {shareLabel} dieser Ansicht, {coherenceWord}} other {# Serien, {shareLabel} dieser Ansicht, {coherenceWord}}}"
 
+#: src/components/pageconversion/CompareStep.tsx
+msgid "{size}, {percent} of the original"
+msgstr ""
+
 #: src/components/series/ArchivedSeriesCard.tsx
 msgid "{skipped, plural, one {# skipped} other {# skipped}}"
 msgstr ""
@@ -2001,6 +2146,10 @@ msgstr "{start} bis {end}"
 #, fuzzy
 msgid "{statusLabel}, not monitored"
 msgstr "{statusLabel}, nicht überwacht"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "{stop}. {hint}"
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -2147,6 +2296,10 @@ msgstr "{total, plural, one {# Kapitel neu verknüpfen und löschen} other {# Ka
 #, fuzzy
 msgid "{total, plural, one {Relink # chapter} other {Relink # chapters}}"
 msgstr "{total, plural, one {# Kapitel neu verknüpfen} other {# Kapitel neu verknüpfen}}"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "{total, plural, one {Sampling {done} of # file} other {Sampling {done} of # files}}"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -2587,11 +2740,6 @@ msgstr ""
 msgid "1 (lowest) to 5 (highest)."
 msgstr "1 (niedrigste) bis 5 (höchste)."
 
-#: src/pages/settings/PageConversionSection.tsx
-#, fuzzy
-msgid "1 to 100, higher keeps more detail. Default {fallback}."
-msgstr "1 bis 100, höher bewahrt mehr Details. Standard {fallback}."
-
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "1:1"
@@ -2803,6 +2951,10 @@ msgstr "eine ZIP-Datei"
 msgid "Abandoned"
 msgstr "Abgebrochen"
 
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "About {hardlinked} are hardlinked to torrents and stay as they are."
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "about {hourPhrase} {restPhrase} left"
@@ -2893,6 +3045,10 @@ msgstr "Bestätigt"
 msgid "Action"
 msgstr "Action"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Action for rule {number}"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -2975,10 +3131,15 @@ msgstr "Eine Serie hinzufügen"
 msgid "Add a series and Maki will start tracking chapters for it. This page fills up as you read and download."
 msgstr "Füge eine Serie hinzu, dann beginnt Maki, ihre Kapitel zu überwachen. Diese Seite füllt sich, während du liest und herunterlädst."
 
+#: src/components/pageconversion/RuleCard.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Add condition"
 msgstr "Bedingung hinzufügen"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Add condition to rule {number}"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3006,6 +3167,7 @@ msgid "Add rail"
 msgstr "Rail hinzufügen"
 
 #: src/components/CatalogueRules.tsx
+#: src/components/pageconversion/ScopeStep.tsx
 #, fuzzy
 msgid "Add rule"
 msgstr "Regel hinzufügen"
@@ -3396,6 +3558,10 @@ msgstr ""
 msgid "Also remove the files to free {size}"
 msgstr ""
 
+#: src/components/series/UndoConversionModal.tsx
+msgid "Also set this series to Never"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Alt titles"
@@ -3467,6 +3633,10 @@ msgstr "AniList"
 msgid "anilist, myanimelist, mal, mangabaka, kitsu, mangaupdates, mu, trackers, oauth, client id, client secret, sync interval, plan to read"
 msgstr "anilist, myanimelist, mal, mangabaka, kitsu, mangaupdates, mu, tracker, oauth, client-id, client-secret, synchronisierungsintervall, lesen geplant"
 
+#: src/components/pageconversion/labels.ts
+msgid "Animated PNG pages are kept as they are."
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "anime"
@@ -3529,8 +3699,24 @@ msgstr "beliebig"
 msgid "Any"
 msgstr "Beliebig"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Any format"
+msgstr ""
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Any kind"
+msgstr ""
+
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "Any series can be set differently from its own page."
+msgstr ""
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Any tags"
+msgstr ""
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Any type"
 msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
@@ -3891,23 +4077,21 @@ msgstr "Automatische Upgrades sind aus, du musst entscheiden"
 msgid "Automation"
 msgstr "Automatisierung"
 
-#: src/pages/settings/PageConversionSection.tsx
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "AVIF"
 msgstr "AVIF"
-
-#: src/pages/settings/PageConversionSection.tsx
-#, fuzzy
-msgid "AVIF quality"
-msgstr "AVIF-Qualität"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Avoided"
 msgstr "Gemieden"
 
+#: src/components/pageconversion/ComparePicker.tsx
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Back"
 msgstr "Zurück"
@@ -3934,6 +4118,10 @@ msgstr "Zurück zur Bibliothek"
 #, fuzzy
 msgid "Back to series"
 msgstr "Zurück zur Serie"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Back to settings"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 msgid "Back to the library"
@@ -4023,6 +4211,7 @@ msgstr "Abzeichen"
 msgid "balanced"
 msgstr "ausgewogen"
 
+#: src/components/pageconversion/labels.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/reader/enhanceMethods.ts
 #, fuzzy
@@ -4138,6 +4327,18 @@ msgstr "Stärkster Tag"
 #, fuzzy
 msgid "Biggest on disk"
 msgstr "Größte Dateien auf der Festplatte"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Bits per pixel"
+msgstr ""
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Bits per pixel, over"
+msgstr ""
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Bits per pixel, under"
+msgstr ""
 
 #: src/components/settings/PushNotificationsSection.tsx
 #, fuzzy
@@ -4338,6 +4539,7 @@ msgstr "Anmeldung mit den gespeicherten Daten nicht möglich."
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/pageconversion/StartStep.tsx
 #: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
@@ -4345,6 +4547,7 @@ msgstr "Anmeldung mit den gespeicherten Daten nicht möglich."
 #: src/components/RelinkFilesModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/RestoreSeriesDialog.tsx
+#: src/components/series/UndoConversionModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -4660,6 +4863,10 @@ msgstr "Verknüpfte Kapitel ändern"
 #, fuzzy
 msgid "Change own content rating"
 msgstr "Eigene Inhaltsbewertung ändern"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Change settings"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -5010,6 +5217,14 @@ msgstr "Wird einmal am Tag geprüft, solange es ruhig ist."
 msgid "Checked right after the announced time."
 msgstr "Wird direkt nach dem angekündigten Zeitpunkt geprüft."
 
+#: src/components/pageconversion/labels.ts
+msgid "Checked, cannot be converted"
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Checked, not converted"
+msgstr ""
+
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Checking for a new metadata snapshot"
@@ -5283,6 +5498,10 @@ msgstr "Farbe {c}"
 msgid "Colour filter"
 msgstr "Farbfilter"
 
+#: src/components/pageconversion/labels.ts
+msgid "Colour page"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Comedy"
@@ -5314,12 +5533,14 @@ msgstr "Kommagetrennte Apprise-URLs, wenn kein Konfigurationsschlüssel vorhande
 msgid "Comma-separated IPs or CIDR networks. Needed behind a reverse proxy."
 msgstr ""
 
+#: src/components/pageconversion/labels.ts
 #: src/components/ui/viewPrefs.tsx
 #, fuzzy
 msgid "Compact"
 msgstr "Kompakt"
 
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Compare"
 msgstr "Vergleichen"
@@ -5329,10 +5550,22 @@ msgstr "Vergleichen"
 msgid "Compare sources"
 msgstr "Quellen vergleichen"
 
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Compare this page"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Compare with other users on this instance"
 msgstr "Mit anderen Benutzern dieser Instanz vergleichen"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Compare your own pages at each quality before anything is rewritten."
+msgstr ""
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Comparison divider"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -5605,10 +5838,54 @@ msgstr "Kontinuierlich vertikal (Webtoon)"
 msgid "Continuous, because this chapter's pages are very tall."
 msgstr "Kontinuierlich, weil die Seiten dieses Kapitels sehr hoch sind."
 
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "Conversion is off, so there is nothing to choose. Continue to save that choice."
+msgstr ""
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Conversion is off, so there is nothing to compare. Go back to pick a format."
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Conversion is off, so there is nothing to estimate. Continue to save that choice."
+msgstr ""
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Convert at {stopLabel}"
+msgstr ""
+
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Convert library"
 msgstr "Bibliothek konvertieren"
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Converted"
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Converted earlier"
+msgstr ""
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Converted page"
+msgstr ""
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "Converted with {list}."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Converting would not make this page at least 5% smaller, so the pass keeps it as it is."
+msgstr ""
+
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Converts imported volumes at Balanced, where the biggest savings are."
+msgstr ""
+
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Converts scanlator chapters at Lossless, so no pixel changes."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -5929,6 +6206,14 @@ msgstr "Der Scan konnte nicht gestartet werden"
 msgid "Couldn't start the volume search"
 msgstr "Die Bandsuche konnte nicht gestartet werden"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Counting files"
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Counting the files to sample"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "counts a little more than the rest"
@@ -6086,6 +6371,10 @@ msgstr "Aktuelle Version"
 #, fuzzy
 msgid "Current file"
 msgstr "Aktuelle Datei"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Current setting"
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -7171,6 +7460,10 @@ msgstr "Aktiviert"
 msgid "Enabling it creates the feed URL. Confirm your password to continue."
 msgstr "Beim Aktivieren wird die Feed-URL erstellt. Bestätige dein Passwort, um fortzufahren."
 
+#: src/components/pageconversion/CompareView.tsx
+msgid "Encoding the page"
+msgstr ""
+
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "End"
@@ -7260,6 +7553,10 @@ msgstr "Esc"
 #, fuzzy
 msgid "Esc closes"
 msgstr "Esc schließt"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Estimate progress"
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -7408,6 +7705,11 @@ msgstr "Alles"
 msgid "Everything else"
 msgstr "Alles andere"
 
+#: src/components/pageconversion/EstimateTable.tsx
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "Everything else: {stopLabel}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Everything is passing"
@@ -7522,6 +7824,10 @@ msgstr "Aufklappen"
 #, fuzzy
 msgid "Expand {spanLabel}"
 msgstr "{spanLabel} aufklappen"
+
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Expected"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -7748,6 +8054,19 @@ msgstr "Datei auf dem Datenträger, nicht verknüpft"
 msgid "File removed"
 msgstr "Datei entfernt"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "File size"
+msgstr ""
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "File size in MB, over"
+msgstr ""
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "File size in MB, under"
+msgstr ""
+
+#: src/components/pageconversion/EstimateTable.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -8087,6 +8406,14 @@ msgstr "Folgen"
 msgid "Follow someone from their creator page."
 msgstr ""
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Follow the quality"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Follow the rules"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Follow the setting"
@@ -8124,7 +8451,9 @@ msgstr ""
 msgid "For reading apps like Panels, KOReader and Mihon."
 msgstr ""
 
-#: src/pages/settings/PageConversionSection.tsx
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/StartStep.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Format"
 msgstr "Format"
@@ -8429,6 +8758,10 @@ msgstr "Grau"
 msgid "Grayscale"
 msgstr "Graustufen"
 
+#: src/components/pageconversion/labels.ts
+msgid "Greyscale page"
+msgstr ""
+
 #: src/components/ui/viewPrefs.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8548,6 +8881,10 @@ msgstr "gesundheit, health, scan, prüfen, abgleich, scan-stunde, zeitzone, weni
 #, fuzzy
 msgid "Healthy"
 msgstr "In Ordnung"
+
+#: src/components/pageconversion/labels.ts
+msgid "Heaviest kind of file"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -8690,6 +9027,10 @@ msgstr "Diesen Titel ausblenden"
 msgid "Hides the controls for sharing the instance."
 msgstr ""
 
+#: src/components/pageconversion/labels.ts
+msgid "High"
+msgstr ""
+
 #: src/components/releases/outlookText.ts
 #, fuzzy
 msgid "High confidence"
@@ -8795,6 +9136,10 @@ msgstr "Wie weit du mit einer Serie warst, als du sie pausiert hast."
 msgid "How far through a series you were when it stalled. Median {stopPointPct}."
 msgstr "Wie weit du mit einer Serie warst, als du sie pausiert hast. Median: {stopPointPct}."
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "How hard the pages are compressed. A low number means a small, heavily compressed file."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "How many"
@@ -8814,6 +9159,10 @@ msgstr "Wie stark sie zählen"
 msgid "How signals work"
 msgstr "Wie Signale funktionieren"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "How this series' pages are stored"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "How to import"
@@ -8823,6 +9172,12 @@ msgstr "So importierst du"
 #, fuzzy
 msgid "How you read"
 msgstr "Wie du liest"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+#, fuzzy
+#~ msgid "https, require https, trusted proxies, hsts"
+#~ msgstr "https, https erzwingen, vertrauenswürdige proxys, hsts"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -8853,6 +9208,10 @@ msgstr "Ich habe es kopiert"
 #, fuzzy
 msgid "I have saved them"
 msgstr "Ich habe sie gespeichert"
+
+#: src/components/pageconversion/labels.ts
+msgid "Identical pixels."
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -9386,6 +9745,14 @@ msgstr "Job"
 msgid "Josei"
 msgstr "Josei"
 
+#: src/components/pageconversion/labels.ts
+msgid "JPEG"
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "JPEG pages are kept as they are at Lossless."
+msgstr ""
+
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
 msgid "JPEG, PNG, GIF or WebP, up to 10 MB."
@@ -9467,6 +9834,14 @@ msgstr "Weiter bearbeiten"
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "Die manuelle Priorität behalten, aber neu nummerieren, damit sie der gemessenen Reihenfolge folgt."
 
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Keep PNG pages lossless"
+msgstr ""
+
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Keep scanlator releases exact"
+msgstr ""
+
 #: src/App.tsx
 #, fuzzy
 msgid "Keep sidebar open"
@@ -9532,6 +9907,10 @@ msgstr "behalten"
 msgid "Kept as linked"
 msgstr "Verknüpfung beibehalten"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Kept lossless"
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "kept where it is"
@@ -9552,6 +9931,10 @@ msgstr "Tastenkombinationen (?)"
 #, fuzzy
 msgid "Kind"
 msgstr "Art"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Kind of release"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -9894,6 +10277,10 @@ msgstr "Leer lassen, damit dieses Profil nur bei Serien gilt, an die du es anhef
 msgid "Leave out series in your library"
 msgstr "Serien aus deiner Bibliothek ausschließen"
 
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Leave scraped chapters alone"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "left to right"
@@ -10185,6 +10572,10 @@ msgstr "Kapitel werden geladen…"
 msgid "loading search by meaning, title matches for now"
 msgstr "Suche nach Bedeutung wird geladen, vorerst nur Titeltreffer"
 
+#: src/components/pageconversion/CompareView.tsx
+msgid "Loading the page"
+msgstr ""
+
 #: src/pages/reader/ServerEnhanceStatus.tsx
 msgid "Loading the upscaled page"
 msgstr ""
@@ -10252,6 +10643,14 @@ msgstr "locker"
 #, fuzzy
 msgid "loose page images"
 msgstr "lose Seitenbilder"
+
+#: src/components/pageconversion/labels.ts
+msgid "Lossless"
+msgstr ""
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Loupe, 2x"
+msgstr ""
 
 #: src/components/releases/outlookText.ts
 #, fuzzy
@@ -10357,6 +10756,10 @@ msgstr "Maki {latestVersion} verfügbar"
 msgid "Maki {version}"
 msgstr "Maki {version}"
 
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
+msgstr ""
+
 #: src/auth/OfflineStartPage.tsx
 #, fuzzy
 msgid "Maki can't reach the server, and nothing is saved on this device yet. Once the connection is back, sign in and save chapters for offline reading."
@@ -10377,8 +10780,16 @@ msgstr "Maki kann auf diesen Ordner nicht zugreifen"
 msgid "Maki checked the folder against the chapter list. Tick what to trust and watch the map. Nothing changes until you press Relink."
 msgstr "Maki hat den Ordner mit der Kapitelliste abgeglichen. Markiere, was du als verlässlich einstufst, und behalte die Zuordnung im Blick. Bis du auf „Dateien neu verknüpfen“ klickst, ändert sich nichts."
 
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Maki could not encode this page. Try another page or another format."
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 msgid "Maki downloads updates in the background and installs them when you restart it."
+msgstr ""
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Maki found no suitable pages to suggest. Pick one from your library."
 msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
@@ -10633,6 +11044,10 @@ msgstr "Serien abgleichen, die bereits in deinen Bibliotheksordnern liegen."
 #, fuzzy
 msgid "Matched"
 msgstr "Zugeordnet"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Matches a series with any of these tags."
+msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -10935,6 +11350,10 @@ msgstr "Fehlende Poster"
 msgid "Mixed"
 msgstr "Gemischt"
 
+#: src/components/pageconversion/labels.ts
+msgid "Mixed JPEG and PNG"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Model download progress"
@@ -11154,6 +11573,14 @@ msgstr "Nach unten verschieben"
 msgid "Move down in queue"
 msgstr "In der Warteschlange nach unten verschieben"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Move rule {number} down"
+msgstr ""
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Move rule {number} up"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Move series"
@@ -11282,10 +11709,22 @@ msgstr "k. A."
 msgid "Name"
 msgstr "Name"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Name of rule {number}"
+msgstr ""
+
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "Name your reverse proxy under Trusted proxies, or rate limiting and the audit log will see the proxy instead of the client."
 msgstr "Trage deinen Reverse-Proxy unter Vertrauenswürdige Proxys ein, sonst sehen Ratenbegrenzung und Prüfprotokoll den Proxy statt des Clients."
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Name, optional"
+msgstr ""
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Names such as import or mangafire. End with * to match a prefix, like torrent:*."
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -11376,6 +11815,10 @@ msgstr "neutral, startet mit Regal-Gewicht"
 msgid "never"
 msgstr "nie"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Never"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Never delivered."
@@ -11393,6 +11836,10 @@ msgstr "Nie auf Upgrades gescannt"
 
 #: src/components/settings/ProgressSection.tsx
 msgid "Never shows which series you read."
+msgstr ""
+
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Never touch tagged series"
 msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -11531,6 +11978,10 @@ msgstr "Neueste zuerst"
 #, fuzzy
 msgid "Newly enabled sources join at the bottom."
 msgstr "Neu aktivierte Quellen werden am Ende eingefügt."
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Next"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/pages/reader/ChapterEnd.tsx
@@ -11699,6 +12150,10 @@ msgstr "Keine Comics im abgeschlossenen Download gefunden (gefunden: {census})"
 msgid "No comics found in the completed download (it is empty)"
 msgstr "Keine Comics im abgeschlossenen Download gefunden (er ist leer)"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "No conditions, so this rule matches every file that reaches it."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "No creator shows up often enough yet."
@@ -11709,6 +12164,14 @@ msgstr "Noch kein Ersteller erscheint häufig genug."
 msgid "No demographic data yet"
 msgstr "Noch keine demografischen Daten"
 
+#: src/components/pageconversion/labels.ts
+msgid "No difference we could see."
+msgstr ""
+
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "No files"
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
 msgid "No files found in the series folder."
@@ -11718,6 +12181,10 @@ msgstr "Keine Dateien im Serienordner gefunden."
 #, fuzzy
 msgid "No files in the series folder."
 msgstr "Keine Dateien im Serienordner."
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "No files match"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -11959,15 +12426,27 @@ msgstr "Noch keine Rezensionen auf MyAnimeList."
 msgid "No root folders yet"
 msgstr "Noch keine Stammordner"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "No rules"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
 msgstr "Noch keine Regeln. Füge eine hinzu, um Genres und Tags vorauszusetzen oder auszuschließen. Eine Serie muss alle Regeln erfüllen."
 
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "No rules yet. Every file is converted at {stopLabel}."
+msgstr ""
+
 #: src/components/ui/incognito.ts
 #, fuzzy
 msgid "No scrobble"
 msgstr "Kein Scrobble"
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "No series match that search."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -12039,6 +12518,10 @@ msgstr "Noch keine Zusammenfassung."
 #, fuzzy
 msgid "No tag data yet"
 msgstr "Noch keine Tag-Daten"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "No tags"
+msgstr ""
 
 #: src/components/TagManagerModal.tsx
 #: src/pages/discover/TasteTab.tsx
@@ -12146,6 +12629,10 @@ msgstr ""
 #, fuzzy
 msgid "none yet"
 msgstr "noch keine"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "None, every file uses the quality above"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -12313,10 +12800,15 @@ msgid "Not matched or ignored"
 msgstr "Nicht zugeordnet oder ignoriert"
 
 #: src/api/upgrades.ts
+#: src/components/pageconversion/ComparePicker.tsx
 #: src/components/series/FileQualityBadge.tsx
 #, fuzzy
 msgid "Not measured yet"
 msgstr "Noch nicht gemessen"
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Not measured yet, {name}"
+msgstr ""
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -12344,6 +12836,7 @@ msgstr "Wird nicht erneut empfohlen"
 msgid "Not run yet"
 msgstr "Noch nicht ausgeführt"
 
+#: src/components/pageconversion/EstimateTable.tsx
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Not sampled"
@@ -12559,6 +13052,10 @@ msgstr "Auf diesem Gerät ist noch nichts gespeichert. Sobald du wieder online b
 msgid "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
 msgstr "Auf diesem Gerät ist noch nichts gespeichert. Nutze „Offline speichern“ bei einem Kapitel oder einer Serie."
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Nothing is saved until you press the button below. Files converted earlier stay as they are."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Nothing is sent to it any more. This can't be undone."
@@ -12643,6 +13140,18 @@ msgstr "Noch nichts langsam genug gelesen, um es als genussvolles Tempo zu bezei
 msgid "Nothing to browse yet"
 msgstr "Noch nichts zu durchsuchen"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Nothing to choose"
+msgstr ""
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Nothing to compare"
+msgstr ""
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Nothing to estimate"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -12715,6 +13224,10 @@ msgstr "Nichts Unvollständiges für die Grafik."
 msgid "Nothing unmatched."
 msgstr "Nichts ohne Zuordnung."
 
+#: src/components/series/UndoConversionModal.tsx
+msgid "Nothing was restored"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Nothing worth grabbing in the results"
@@ -12782,6 +13295,10 @@ msgstr "Benachrichtigen"
 msgid "Notify this device"
 msgstr "Dieses Gerät benachrichtigen"
 
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Now"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Now {range}"
@@ -12827,12 +13344,15 @@ msgstr "OEL"
 msgid "of reading time"
 msgstr "der Lesezeit"
 
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/labels.ts
+#: src/components/pageconversion/StartStep.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/enhanceMethods.ts
-#: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Off"
 msgstr "Aus"
@@ -13211,8 +13731,8 @@ msgstr "Öffnet eine Löschprüfung. Nichts wird entfernt, bis du dort bestätig
 msgid "Opens a GitHub issue with the template."
 msgstr "Öffnet ein GitHub-Issue mit der Vorlage."
 
-#: src/pages/settings/PageConversionSection.tsx
-msgid "Opens in every reader Maki works with."
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Opens in every reader Maki works with. Recommended."
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -13239,10 +13759,22 @@ msgstr "oder"
 msgid "or paste an id or link"
 msgstr "oder eine ID bzw. einen Link einfügen"
 
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "Or start from one of these"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Order changed"
 msgstr "Reihenfolge geändert"
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Original"
+msgstr ""
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Original page"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -13277,6 +13809,10 @@ msgstr "Andere Tipps für dich"
 msgid "Other sessions signed out"
 msgstr "Andere Sitzungen abgemeldet"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Over"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Overrides the default channel of the webhook."
@@ -13303,6 +13839,7 @@ msgid "Packaging"
 msgstr "Verpacken"
 
 #: src/components/CommandPalette.tsx
+#: src/components/pageconversion/ComparePicker.tsx
 #: src/pages/reader/PageScrubber.tsx
 #, fuzzy
 msgid "Page"
@@ -13311,6 +13848,10 @@ msgstr "Seite"
 #. placeholder {0}: page + 1
 #: src/pages/reader/PageScrubber.tsx
 msgid "Page {0} of {count}"
+msgstr ""
+
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Page {page} of {pageCount}"
 msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
@@ -13325,22 +13866,30 @@ msgstr "Seite {pageIndex}/{pageCount}"
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "Seite {pageNumber} von {pageCount}"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Page conversion"
 msgstr "Seitenkonvertierung"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Page conversion steps"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format"
-msgstr "seitenkonvertierung, webp, avif, seiten konvertieren, komprimieren, speicherplatz, dateigröße, neu kodieren, bildformat"
+msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format, quality, stops, lossless, compare, preview, before and after, wizard"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Page fit"
 msgstr "Seiteneinpassung"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Page format"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -13351,6 +13900,10 @@ msgstr "Seitenabstand"
 #, fuzzy
 msgid "Page not found"
 msgstr "Seite nicht gefunden"
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Page preview, scrollable"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
@@ -13384,6 +13937,14 @@ msgstr "Lesetempo seitenweise · {chaptersLeft} · {basis}"
 msgid "Pages"
 msgstr "Seiten"
 
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Pages 1 to {pageCount}. The suggested page is {suggested}, from the middle of the file."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Pages already stored as WebP or AVIF are kept as they are."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 msgid "Pages are matched by image content, so each row is the same drawing in every column."
 msgstr ""
@@ -13401,6 +13962,22 @@ msgstr ""
 #, fuzzy
 msgid "Pages matched"
 msgstr "Seiten zugeordnet"
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Pages stay as they are downloaded. Files already converted stay converted."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Pages under 16 KB are always kept as they are."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Pages wider or taller than 16383 px are kept as they are."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Pages with more than 8 bits per channel are kept as they are."
+msgstr ""
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
@@ -13421,6 +13998,10 @@ msgstr "Analysiert"
 #, fuzzy
 msgid "Partial"
 msgstr "Teilweise"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Passed over"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13517,6 +14098,14 @@ msgstr "Downloads pausieren"
 msgid "Pause Rewind"
 msgstr "Rewind pausieren"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Pause the running pass and restart it with the new settings?"
+msgstr ""
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Pause the running pass?"
+msgstr ""
+
 #: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
@@ -13528,6 +14117,10 @@ msgstr "Pausiert"
 #, fuzzy
 msgid "Paused because page conversion was switched off."
 msgstr "Pausiert, weil die Seitenkonvertierung ausgeschaltet wurde."
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Paused because the settings changed. Restart the pass to use them."
+msgstr ""
 
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -13638,6 +14231,11 @@ msgstr "Wähle einen Zeitpunkt in der Zukunft"
 msgid "Pick another default profile first"
 msgstr "Wähle zuerst ein anderes Standardprofil"
 
+#: src/components/pageconversion/ComparePicker.tsx
+#: src/components/pageconversion/CompareStep.tsx
+msgid "Pick another page"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Pick languages"
@@ -13711,6 +14309,22 @@ msgstr "Die Retrospektive {rewindYear} abspielen"
 #, fuzzy
 msgid "Plum"
 msgstr "Pflaume"
+
+#: src/components/pageconversion/labels.ts
+msgid "PNG"
+msgstr ""
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "PNG pages"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "PNG pages are kept lossless."
+msgstr ""
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "PNG pages are stored as lossless WebP at every stop, so no pixel changes. This saves little. Leave it off to let PNG pages follow the quality you choose."
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Points for doubling each measurement. 0 turns it off."
@@ -14030,6 +14644,8 @@ msgstr "Stelle es hinter HTTPS und schalte dann unter Einstellungen → System �
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 msgstr "Stellt diese Quellen in dieser Reihenfolge an den Anfang der globalen Prioritätenliste, die bei der automatischen Zuordnung neuer Serien verwendet wird."
 
+#: src/components/pageconversion/CompareStep.tsx
+#: src/components/pageconversion/StartStep.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -14246,6 +14862,10 @@ msgstr "Bewertungen und Lesen"
 #, fuzzy
 msgid "Re-download {staleChapters} from {winnerDisplayName}"
 msgstr "{staleChapters} von {winnerDisplayName} erneut herunterladen"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Re-estimate"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -14959,6 +15579,10 @@ msgstr "Kapitel entfernen?"
 msgid "Remove condition"
 msgstr "Bedingung entfernen"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Remove condition: {conditionLabel}"
+msgstr ""
+
 #: src/components/settings/OfflineReadingSection.tsx
 #, fuzzy
 msgid "Remove everything"
@@ -15047,6 +15671,10 @@ msgstr "Stammordner entfernen"
 #, fuzzy
 msgid "Remove rule"
 msgstr "Regel entfernen"
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Remove rule {number}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -15502,6 +16130,10 @@ msgstr "Mit unscharfer Titelsuche aufgelöst. Mittlere Genauigkeit"
 msgid "Resolved using ID. High accuracy"
 msgstr "Mit ID aufgelöst. Hohe Genauigkeit"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Restart"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 msgid "Restart now"
 msgstr ""
@@ -15536,6 +16168,10 @@ msgstr ""
 #, fuzzy
 msgid "Restore & restart"
 msgstr "Wiederherstellen und neu starten"
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "Restore and convert again with the current settings"
+msgstr ""
 
 #: src/components/series/RestoreSeriesDialog.tsx
 msgctxt "series"
@@ -15577,6 +16213,10 @@ msgstr ""
 msgid "Restore staged"
 msgstr "Wiederherstellung vorbereitet"
 
+#: src/components/series/UndoConversionModal.tsx
+msgid "Restore the originals"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Restore this title"
@@ -15603,6 +16243,10 @@ msgstr "Wiederhergestellt"
 #, fuzzy
 msgid "Restored as an unlinked file. Health can import it."
 msgstr "Als nicht verknüpfte Datei wiederhergestellt. Gesundheit kann sie importieren."
+
+#: src/components/pageconversion/labels.ts
+msgid "Restored from the original"
+msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -15750,6 +16394,7 @@ msgstr "Von einem Benutzer rückgängig gemacht"
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Review"
 msgstr "Prüfen"
@@ -15887,10 +16532,26 @@ msgstr "Zum Einpassen drehen"
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "Zeile {zoomRowNumber} von {zoomTotalPages}"
 
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Rule"
+msgstr ""
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Rule {number}"
+msgstr ""
+
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Rule {position}"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Rule editor view"
 msgstr "Ansicht des Regeleditors"
+
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "Rule templates"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -15898,9 +16559,15 @@ msgid "Rule type"
 msgstr "Regeltyp"
 
 #: src/components/CatalogueRules.tsx
+#: src/components/pageconversion/StartStep.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Rules"
 msgstr "Regeln"
+
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "Rules are checked from the top, and the first one a file matches decides what happens to it. A series set to Never or to a fixed quality in its menu ignores the rules."
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -16014,6 +16681,18 @@ msgstr "Eine cover.jpg in jedem Serienordner speichern"
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "Eine cover.jpg in jedem Serienordner der Bibliothek speichern"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Save and begin"
+msgstr ""
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Save and pause"
+msgstr ""
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Save and start"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Save anyway"
@@ -16055,6 +16734,10 @@ msgstr "Filter speichern"
 msgid "Save for offline"
 msgstr "Offline speichern"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Save only"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Save order"
@@ -16091,6 +16774,7 @@ msgstr "Deine Wiederherstellungscodes speichern"
 
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/pageconversion/StartStep.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/useIndexerForm.ts
@@ -16100,7 +16784,6 @@ msgstr "Deine Wiederherstellungscodes speichern"
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
 #: src/pages/settings/SystemCards.tsx
@@ -16152,6 +16835,10 @@ msgstr "Auf diesem Gerät für das Offline-Lesen gespeichert"
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Saved on this device only."
+msgstr ""
+
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "Saved rules could not be loaded; saving will replace them."
 msgstr ""
 
 #: src/pages/settings/SuwayomiCards.tsx
@@ -16372,6 +17059,10 @@ msgstr "scraper, Quellen verwalten, Priorität, Quellenpriorität, Quellenreihen
 #, fuzzy
 msgid "Screen"
 msgstr "Bildschirm"
+
+#: src/components/pageconversion/labels.ts
+msgid "Screentone is smoothed away, lines stay intact."
+msgstr ""
 
 #: src/nav.ts
 #: src/pages/ScrobblePage.tsx
@@ -16596,6 +17287,10 @@ msgstr "Band-Releases suchen"
 #, fuzzy
 msgid "Search volumes now"
 msgstr "Jetzt Bände suchen"
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Search your series"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -16914,6 +17609,14 @@ msgstr "Serie entfernt"
 msgid "Series status changed"
 msgstr "Serienstatus geändert"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Series tags"
+msgstr ""
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Series type"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Series types no profile covers use Default."
 msgstr ""
@@ -16937,6 +17640,10 @@ msgstr "Serien mit neu hinzugefügten Kapiteln."
 #, fuzzy
 msgid "Series with none of your tags"
 msgstr "Serien ohne deine Tags"
+
+#: src/components/pageconversion/EstimateTable.tsx
+msgid "Series with their own stop"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -17032,10 +17739,18 @@ msgstr "Auf <0>0</0> setzen, um die Sperre zu deaktivieren."
 msgid "Set up"
 msgstr "Einrichten"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Set up conversion"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Set up in Settings"
 msgstr "In den Einstellungen einrichten"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Set up page conversion"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -17072,6 +17787,10 @@ msgstr "Einstellungen › {tabName}"
 #, fuzzy
 msgid "Settings not loaded"
 msgstr "Einstellungen nicht geladen"
+
+#: src/components/pageconversion/labels.ts
+msgid "Settings not recorded"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -17259,6 +17978,10 @@ msgstr "{shownQueueCount} von {totalQueueCount} eingereihten Elementen werden an
 #, fuzzy
 msgid "showing results for <0>{corrected}</0>"
 msgstr "Ergebnisse für <0>{corrected}</0> werden angezeigt"
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "Showing the first {MAX_SERIES_ROWS}. Type more of the title to narrow it down."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Shown on this device until the server's page is ready, and whenever the server can't be used."
@@ -17454,6 +18177,18 @@ msgstr "Größe"
 msgid "Size mismatch"
 msgstr "Abweichende Dateigröße"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Sizes and time"
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Sizes come from encoding a sample of the files each rule covers. Nothing is changed. Times depend on how busy this server is."
+msgstr ""
+
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Skip"
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
 msgid "Skip {latestVersion}"
@@ -17503,6 +18238,14 @@ msgstr ""
 msgid "Skipped {latestVersion}"
 msgstr "{latestVersion} übersprungen"
 
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Skips chapters from aggregator sites, which are usually small already."
+msgstr ""
+
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Skips every series you tag keep-original."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Slice of Life"
@@ -17513,8 +18256,12 @@ msgstr "Slice of Life"
 msgid "Sliding: activity extends it."
 msgstr "Gleitend: Aktivität verlängert ihn."
 
-#: src/pages/settings/PageConversionSection.tsx
-msgid "Smaller than WebP. KOReader and iOS before 16 can't open it."
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Smaller than WebP at the same look. KOReader and some e-readers can't open AVIF pages."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Smallest"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -17603,6 +18350,7 @@ msgstr "Neueste zuerst sortieren"
 msgid "Sort oldest first"
 msgstr "Älteste zuerst sortieren"
 
+#: src/components/pageconversion/RuleCard.tsx
 #: src/components/QueueActions.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -17754,6 +18502,10 @@ msgstr "Sport"
 msgid "Spotlight"
 msgstr "Im Fokus"
 
+#: src/components/pageconversion/ruleTemplates.ts
+msgid "Squeeze volumes harder"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Stacked height"
@@ -17786,6 +18538,7 @@ msgstr "Stern auf GitHub vergeben"
 
 #: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Start"
 msgstr "Starten"
@@ -17830,6 +18583,10 @@ msgstr "Lesen bei Kap. {startReadingAt} beginnen."
 #, fuzzy
 msgid "Started"
 msgstr "Begonnen"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "Starting the estimate"
+msgstr ""
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -18369,6 +19126,10 @@ msgstr "Die Kapitelnummern stehen in den Dateinamen der Seiten im Archiv. Sicher
 msgid "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
 msgstr "Die Kapitel bleiben mit ihrer Lesehistorie in der Liste, und Maki lädt sie nicht erneut herunter, außer du verlangst es."
 
+#: src/components/pageconversion/ScopeStep.tsx
+msgid "The counts could not be loaded. The rules still save as you wrote them."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "The current feed URL stops working immediately. Every app using it needs the new one."
@@ -18413,6 +19174,22 @@ msgstr "Der Download hat noch nicht begonnen."
 #, fuzzy
 msgid "The download is no longer in the download client"
 msgstr "Der Download ist nicht mehr im Download-Client"
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "The estimate could not be started"
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "The estimate failed"
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "The estimate failed on this server. Try again, or check the log."
+msgstr ""
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "The estimate was cancelled"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "The file has changed or is gone since, so this cannot run again."
@@ -18546,6 +19323,10 @@ msgstr "Die neuesten Titel der Creators und Studios, denen du folgst. Bleibt lee
 msgid "The next check is due."
 msgstr "Die nächste Prüfung steht an."
 
+#: src/components/pageconversion/FormatStep.tsx
+msgid "The next step shows your own pages in the format you pick here."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "The odd one out"
@@ -18558,6 +19339,10 @@ msgstr "Die alte Datei konnte für das Upgrade nicht beiseitegeschoben werden"
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "The oldest pages are dropped past this."
+msgstr ""
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "The others were converted on download or their original has been purged."
 msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
@@ -18809,6 +19594,10 @@ msgstr "Der zweite Faktor ist ausgeschaltet und die Authenticator-App zurückges
 msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, faster animations, speed, reduce motion"
 msgstr "design, dunkelmodus, hellmodus, akzentfarbe, farbe, system übernehmen, auto, systemeinstellung folgen, bewegung, animation, übergänge, seitenübergänge, bewegte cover, schnellere animationen, tempo, bewegung reduzieren"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Then"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "There is no safe automatic merge."
@@ -18828,6 +19617,10 @@ msgstr "Dies sind lange Streifenseiten, und die beiden Releases schneiden sie an
 #, fuzzy
 msgid "These are long-strip pages and the two releases cut them at different points, so page {page} on the left is not page {page} on the right. Stacked height is the comparable number: they differ by {driftPercent}%, so one of them is missing or gaining content."
 msgstr "Dies sind lange Streifenseiten, und die beiden Releases schneiden sie an unterschiedlichen Stellen. Daher ist Seite {page} links nicht Seite {page} rechts. Die gestapelte Höhe ist der vergleichbare Wert: Sie unterscheiden sich um {driftPercent} %, daher fehlt bei einer Seite Inhalt oder sie enthält zusätzlichen Inhalt."
+
+#: src/components/pageconversion/ReviewStep.tsx
+msgid "These are never converted again."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -18960,6 +19753,10 @@ msgstr "diesen Monat"
 msgid "This month"
 msgstr "Diesen Monat"
 
+#: src/components/pageconversion/labels.ts
+msgid "This page could not be read, so the pass would leave the file alone."
+msgstr ""
+
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -18970,6 +19767,10 @@ msgstr "Diese Seite konnte nicht geladen werden."
 #, fuzzy
 msgid "This page hit an error"
 msgstr "Auf dieser Seite ist ein Fehler aufgetreten"
+
+#: src/components/pageconversion/labels.ts
+msgid "This page is kept as it is."
+msgstr ""
 
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
@@ -19016,6 +19817,10 @@ msgstr "Für diese Reparatur muss eine Quelle manuell ausgewählt werden"
 #, fuzzy
 msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
 msgstr "Dies ersetzt deine aktuelle Bibliothek und Einstellungen durch <0>{backupName}</0> und startet Maki neu. Die aktuellen Daten bleiben nicht erhalten. Erstelle vorher eine Sicherung, wenn du zurückkehren können möchtest. Docker und systemd starten Maki selbstständig wieder. Andernfalls musst du es selbst erneut starten."
+
+#: src/components/pageconversion/ComparePicker.tsx
+msgid "This series has no chapter files to compare."
+msgstr ""
 
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
@@ -19188,6 +19993,7 @@ msgstr "Hakt sie ab, sobald die Kapitelliste da ist. Angesehene Kapitel zählen 
 msgid "Tier order"
 msgstr "Stufenreihenfolge"
 
+#: src/components/pageconversion/EstimateTable.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time"
@@ -19336,6 +20142,14 @@ msgstr "Token-Schreibweise"
 #, fuzzy
 msgid "Token separator"
 msgstr "Token-Trennzeichen"
+
+#: src/components/pageconversion/labels.ts
+msgid "Tone is a little lighter. Fine at fit-to-screen."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "Tone thins out."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -19490,6 +20304,7 @@ msgstr "Versuche eine kürzere oder alternative Suchanfrage."
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
 #: src/components/MetadataDumpProgress.tsx
+#: src/components/pageconversion/ReviewStep.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
@@ -19647,6 +20462,10 @@ msgstr "Nicht verfügbar"
 msgid "unchanged"
 msgstr "unverändert"
 
+#: src/components/pageconversion/RuleCard.tsx
+msgid "Under"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Underscore (_)"
@@ -19656,6 +20475,7 @@ msgstr "Unterstrich (_)"
 #: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/import/RecentImports.tsx
+#: src/components/series/UndoConversionModal.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -19667,6 +20487,14 @@ msgstr "Rückgängig"
 #, fuzzy
 msgid "Undo all"
 msgstr "Alle rückgängig machen"
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "Undo conversion"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Undo conversion..."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20594,15 +21422,11 @@ msgstr "Webhook"
 msgid "Webhook URL"
 msgstr "Webhook-URL"
 
-#: src/pages/settings/PageConversionSection.tsx
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "WebP"
 msgstr "WebP"
-
-#: src/pages/settings/PageConversionSection.tsx
-#, fuzzy
-msgid "WebP quality"
-msgstr "WebP-Qualität"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -20653,6 +21477,14 @@ msgstr "Was Leser, die dieselbe Serie wie du abgeschlossen haben, danach ebenfal
 #, fuzzy
 msgid "What shapes your recommendations"
 msgstr "Was deine Empfehlungen prägt"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "What to convert"
+msgstr ""
+
+#: src/components/series/UndoConversionModal.tsx
+msgid "What to do with them"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -20818,10 +21650,18 @@ msgstr "Breite Seiten"
 msgid "Width"
 msgstr "Breite"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Wins over the rules. Files already converted stay as they are."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."
 msgstr "Öffne in KOReader ein Buch, gehe zu Tools, dann Progress sync, dann Custom sync server, und trage die Adresse oben ein."
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "With conversion off, there is nothing to compare. Continue to save that choice."
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -21156,6 +21996,10 @@ msgstr "Deine nächste Lektüre"
 #, fuzzy
 msgid "Your password"
 msgstr "Dein Passwort"
+
+#: src/components/pageconversion/labels.ts
+msgid "Your pick"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy

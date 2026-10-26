@@ -87,6 +87,7 @@ public sealed class UpgradeEvaluator
         SizeBytes = file.QualitySize,
         StoredImageFormat = file.OriginalImageFormat is null ? null : file.ImageFormat,
         ConversionSavedBytes = file.OriginalImageFormat is null ? null : file.ConversionSavedBytes,
+        CheckedWith = file.ConversionCheckedAtUtc is null ? null : file.CheckedWith,
         Score = score,
         ReleaseName = file.ReleaseName,
         ReleaseHash = file.ReleaseHash
@@ -302,6 +303,8 @@ public class UpgradeEvaluationService(
                     ImageFormat = c.ChapterFile.ImageFormat,
                     OriginalImageFormat = c.ChapterFile.OriginalImageFormat,
                     ConversionSavedBytes = c.ChapterFile.ConversionSavedBytes,
+                    ConversionCheckedAtUtc = c.ChapterFile.ConversionCheckedAtUtc,
+                    CheckedWith = c.ChapterFile.CheckedWith,
                     MeasuredAtUtc = c.ChapterFile.MeasuredAtUtc,
                     Trusted = c.ChapterFile.Trusted
                 }

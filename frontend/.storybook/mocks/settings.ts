@@ -1,6 +1,7 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { api } from './api'
 import * as d from './settings/data'
+import { pageConversionHandlers } from './settings/pageConversion'
 import { healthOptions } from './operations/health'
 
 /** A PUT whose reply is the body it was sent, which is how most settings records answer. */
@@ -134,6 +135,7 @@ export const settingsHandlers: HttpHandler[] = [
   http.post(api('/settings/recommendations/build'), () => HttpResponse.json({ started: true })),
   http.get(api('/settings/metadata/dump-progress'), () => HttpResponse.json(d.dumpProgressIdle)),
   http.post(api('/settings/metadata/refresh'), () => HttpResponse.json({ started: true, alreadyRunning: false })),
+  ...pageConversionHandlers,
   http.get(api('/pageconversion'), () => HttpResponse.json(d.pageConversionIdle)),
   http.put(api('/pageconversion/settings'), async ({ request }) =>
     HttpResponse.json({ ...d.pageConversionIdle, settings: await request.json() }),

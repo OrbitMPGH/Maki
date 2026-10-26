@@ -733,9 +733,19 @@ msgstr "Choose WebP, AVIF or off"
 msgid "error.pageConversion.off"
 msgstr "Choose a format for page conversion first"
 
+#. A page conversion rule that cannot be saved: an unknown action, kind of release or page format, a convert rule without a quality, a size or bits-per-pixel bound of zero or less, or more than 50 rules.
 #: src/Maki.Api/Controllers/PageConversionController.cs
-msgid "error.pageConversion.qualityRange"
-msgstr "Quality must be between {min} and {max}"
+msgid "error.pageConversion.ruleInvalid"
+msgstr "One of the rules is not valid. Check its conditions and what it does."
+
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.stopInvalid"
+msgstr "Choose Smallest, Compact, Balanced, High or Lossless"
+
+#. Undoing a series' page conversion with both "convert again" and "set this series to Never" chosen.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.pageConversion.undoConflict"
+msgstr "Choose either to convert the files again or to set the series to Never, not both"
 
 #: src/Maki.Api/Controllers/PreviewController.cs
 msgid "error.preview.busy"
@@ -1286,6 +1296,10 @@ msgstr "That mutation ID was already used for a different add"
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.invalidReadCleanup"
 msgstr "Read file cleanup must be Default, On or Off"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.invalidPageConversion"
+msgstr "Page conversion must be Default, Never, Smallest, Compact, Balanced, High or Lossless"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.noFilesSelected"
@@ -2190,6 +2204,41 @@ msgstr "manga, manhwa, manhua and so on; blank when unknown"
 #: src/Maki.Core/Naming/NamingTokens.cs
 msgid "naming.token.seriesyear.description"
 msgstr "Release year; blank when unknown"
+
+#. A line in the result of undoing a series' page conversion: nothing was restored because a download for the series is running.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+msgid "pageConversion.undo.downloadInFlight"
+msgstr "A download for this series is running, so nothing was restored. Try again once it has finished."
+
+#. A file an undo of page conversion passed over. {name} is the file name, not translated.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+msgid "pageConversion.undo.fileChanged"
+msgstr "{name}: the file has changed since it was converted"
+
+#. A file an undo of page conversion passed over. {name} is the file name, not translated.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+msgid "pageConversion.undo.fileGone"
+msgstr "{name}: the file is no longer in the library"
+
+#. A file an undo of page conversion passed over. {name} is the file name, not translated.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+msgid "pageConversion.undo.moveFailed"
+msgstr "{name}: the original could not be moved back"
+
+#. The last line of an undo that restored originals and queued them to be converted again. {count} is a number of files.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+msgid "pageConversion.undo.queued"
+msgstr "{count, plural, one {# file is} other {# files are}} queued to be converted again with the current settings"
+
+#. A line in the result of undoing a series' page conversion: files whose conversion record no longer matches the file (downloaded again, upgraded or removed since), so there is nothing to restore. {count} is a number of files.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+msgid "pageConversion.undo.stale"
+msgstr "{count, plural, one {# older conversion no longer applies; its file was replaced or removed since} other {# older conversions no longer apply; their files were replaced or removed since}}"
+
+#. A file an undo of page conversion passed over. {name} is the file name, not translated.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+msgid "pageConversion.undo.trashGone"
+msgstr "{name}: the original is no longer in the trash"
 
 #: src/Maki.Api/Services/BackupService.cs
 msgid "error.system.backupMissingDb"

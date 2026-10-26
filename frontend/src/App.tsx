@@ -74,6 +74,7 @@ const StatsPage = lazyRoute(() => import('./pages/StatsPage'))
 const NotificationsPage = lazyRoute(() => import('./pages/NotificationsPage'))
 const SettingsPage = lazyRoute(() => import('./pages/SettingsPage'))
 const HealthPage = lazyRoute(() => import('./pages/HealthPage'))
+const PageConversionWizardPage = lazyRoute(() => import('./pages/PageConversionWizardPage'))
 const ReaderPage = lazyRoute(() => import('./pages/reader/ReaderPage'))
 
 const NAV_COLLAPSED_KEY = 'sidebar-collapsed'
@@ -614,6 +615,10 @@ function AppShellRoutes() {
                 already out there keep working. */}
             <Route path="/rewind" element={<Navigate replace to="/stats" />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route
+              path="/settings/page-conversion"
+              element={isAdmin ? <PageConversionWizardPage /> : <Navigate to="/" replace />}
+            />
             <Route path="/health" element={isAdmin ? <HealthPage /> : <Navigate to="/" replace />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

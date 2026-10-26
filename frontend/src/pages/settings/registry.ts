@@ -294,7 +294,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Page conversion`,
     admin: true,
     keywords: msg({
-      message: `page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format`,
+      message: `page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format, quality, stops, lossless, compare, preview, before and after, wizard`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },

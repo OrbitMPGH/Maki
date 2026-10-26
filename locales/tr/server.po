@@ -1049,11 +1049,22 @@ msgstr "WebP, AVIF veya kapalı seçin"
 msgid "error.pageConversion.off"
 msgstr "Önce sayfa dönüştürme için bir biçim seçin"
 
+#. A page conversion rule that cannot be saved: an unknown action, kind of release or page format, a convert rule without a quality, a size or bits-per-pixel bound of zero or less, or more than 50 rules.
 #: src/Maki.Api/Controllers/PageConversionController.cs
-#. English: Quality must be between {min} and {max}
-#, fuzzy
-msgid "error.pageConversion.qualityRange"
-msgstr "Kalite {min} ile {max} arasında olmalıdır"
+#. English: One of the rules is not valid. Check its conditions and what it does.
+msgid "error.pageConversion.ruleInvalid"
+msgstr ""
+
+#: src/Maki.Api/Controllers/PageConversionController.cs
+#. English: Choose Smallest, Compact, Balanced, High or Lossless
+msgid "error.pageConversion.stopInvalid"
+msgstr ""
+
+#. Undoing a series' page conversion with both "convert again" and "set this series to Never" chosen.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Choose either to convert the files again or to set the series to Never, not both
+msgid "error.pageConversion.undoConflict"
+msgstr ""
 
 #: src/Maki.Api/Controllers/PreviewController.cs
 #. English: Other previews are loading right now. Try again in a moment.
@@ -1848,6 +1859,11 @@ msgstr "Bu mutasyon kimliği başka bir ekleme için zaten kullanıldı"
 #, fuzzy
 msgid "error.series.invalidReadCleanup"
 msgstr "Okunmuş dosya temizliği Default, On veya Off olmalı"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Page conversion must be Default, Never, Smallest, Compact, Balanced, High or Lossless
+msgid "error.series.invalidPageConversion"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: No files selected
@@ -3144,6 +3160,48 @@ msgstr "manga, manhwa, manhua vb.; bilinmiyorsa boş"
 #, fuzzy
 msgid "naming.token.seriesyear.description"
 msgstr "Yayın yılı; bilinmiyorsa boş"
+
+#. A line in the result of undoing a series' page conversion: nothing was restored because a download for the series is running.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+#. English: A download for this series is running, so nothing was restored. Try again once it has finished.
+msgid "pageConversion.undo.downloadInFlight"
+msgstr ""
+
+#. A file an undo of page conversion passed over. {name} is the file name, not translated.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+#. English: {name}: the file has changed since it was converted
+msgid "pageConversion.undo.fileChanged"
+msgstr ""
+
+#. A file an undo of page conversion passed over. {name} is the file name, not translated.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+#. English: {name}: the file is no longer in the library
+msgid "pageConversion.undo.fileGone"
+msgstr ""
+
+#. A file an undo of page conversion passed over. {name} is the file name, not translated.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+#. English: {name}: the original could not be moved back
+msgid "pageConversion.undo.moveFailed"
+msgstr ""
+
+#. The last line of an undo that restored originals and queued them to be converted again. {count} is a number of files.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+#. English: {count, plural, one {# file is} other {# files are}} queued to be converted again with the current settings
+msgid "pageConversion.undo.queued"
+msgstr ""
+
+#. A line in the result of undoing a series' page conversion: files whose conversion record no longer matches the file (downloaded again, upgraded or removed since), so there is nothing to restore. {count} is a number of files.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+#. English: {count, plural, one {# older conversion no longer applies; its file was replaced or removed since} other {# older conversions no longer apply; their files were replaced or removed since}}
+msgid "pageConversion.undo.stale"
+msgstr ""
+
+#. A file an undo of page conversion passed over. {name} is the file name, not translated.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+#. English: {name}: the original is no longer in the trash
+msgid "pageConversion.undo.trashGone"
+msgstr ""
 
 #: src/Maki.Api/Services/BackupService.cs
 #. English: Backup is missing maki.db. This is not a Maki backup.

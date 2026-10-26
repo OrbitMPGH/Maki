@@ -81,6 +81,8 @@ export interface SeriesDto {
   readFileCleanup: string
   /** Whether read files are actually being deleted, the choice and the instance switch combined. Detail endpoint only. */
   readFileCleanupActive: boolean
+  /** "Default" | "Never" | "Smallest" | "Compact" | "Balanced" | "High" | "Lossless": this series' page conversion choice. */
+  pageConversion: string
   /** Every chapter known to exist, wanted or not. Denominator fallback when nothing is wanted. */
   knownChapterCount: number
   /** Chapters queued but not yet actively downloading (Queued / RateLimited). */

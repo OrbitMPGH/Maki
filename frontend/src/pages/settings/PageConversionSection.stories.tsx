@@ -24,8 +24,14 @@ type Story = StoryObj<typeof meta>
 
 export const AfterAPass: Story = {
   play: async ({ canvas }) => {
-    await waitFor(() => expect(canvas.getByRole('radio', { name: 'WebP' })).toBeChecked())
-    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'WebP quality' })).toHaveValue('80'))
+    await expect(await canvas.findByText('WebP, Balanced, 2 rules')).toBeVisible()
+    await expect(canvas.getByText('1 series has its own setting in its menu.')).toBeVisible()
+    await expect(canvas.getByText('PNG pages are kept lossless.')).toBeVisible()
+    await expect(canvas.getByRole('link', { name: 'Change settings' })).toHaveAttribute(
+      'href',
+      '/settings/page-conversion?step=2',
+    )
+    await expect(canvas.queryByRole('radio')).toBeNull()
     await expect(await canvas.findByText(/412 files converted so far/)).toBeVisible()
     await expect(await canvas.findByText(/wait in the upgrade trash for 14 days/)).toBeVisible()
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Convert library' })).toBeEnabled())
@@ -37,8 +43,12 @@ export const Off: Story = {
     msw: settingsMsw(http.get(api('/pageconversion'), () => HttpResponse.json(pageConversionOff))),
   },
   play: async ({ canvas }) => {
-    await waitFor(() => expect(canvas.getByRole('radio', { name: 'Off' })).toBeChecked())
-    await expect(canvas.queryByRole('textbox', { name: /quality/ })).toBeNull()
+    await expect(await canvas.findByText('Off')).toBeVisible()
+    await expect(canvas.getByRole('link', { name: 'Set up conversion' })).toHaveAttribute(
+      'href',
+      '/settings/page-conversion',
+    )
+    await expect(canvas.queryByRole('link', { name: 'Change settings' })).toBeNull()
     await expect(await canvas.findByText(/Choose a format to convert them/)).toBeVisible()
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Convert library' })).toBeDisabled())
   },
@@ -51,7 +61,7 @@ export const Running: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('button', { name: 'Pause' })).toBeVisible()
     await expect(await canvas.findByText('Lanterns Over Kasumi (2021)/Lanterns Over Kasumi - c040.cbz')).toBeVisible()
-    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'AVIF quality' })).toHaveValue('55'))
+    await expect(await canvas.findByText('AVIF, High')).toBeVisible()
   },
 }
 
@@ -77,10 +87,18 @@ export const PausedForDisk: Story = {
   },
 }
 
-export const SwitchingFormatMarksUnsaved: Story = {
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('radio', { name: 'AVIF' }))
-    await expect(await canvas.findByText('Unsaved')).toBeVisible()
-    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'AVIF quality' })).toHaveValue('55'))
+export const PausedForSettingsChange: Story = {
+  parameters: {
+    msw: settingsMsw(
+      http.get(api('/pageconversion'), () =>
+        HttpResponse.json({
+          ...pageConversionRunning,
+          pass: { ...pageConversionRunning.pass, state: 'paused', hold: 'settingsChanged', currentFile: null },
+        }),
+      ),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/Paused because the settings changed\. Restart the pass to use them\./)).toBeVisible()
   },
 }

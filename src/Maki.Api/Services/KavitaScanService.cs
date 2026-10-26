@@ -35,6 +35,8 @@ public class KavitaScanService(
     /// <summary>Queue a series folder (Maki-side absolute path) for a Kavita scan + metadata push on the next flush.</summary>
     public void QueueScan(string seriesFolderPath, int seriesId) => _pendingScans[seriesFolderPath] = seriesId;
 
+    internal IReadOnlyCollection<string> PendingScans => [.. _pendingScans.Keys];
+
     /// <summary>
     /// Queue only the metadata/cover push (no scan) — for when Maki-side
     /// metadata changed but the files didn't.

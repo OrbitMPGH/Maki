@@ -1,4 +1,3 @@
-using System.Globalization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Images;
@@ -12,13 +11,13 @@ public static class PageConversionOptions
 {
     private static readonly string[] Keys =
     [
-        SettingKeys.PageConversionFormat, SettingKeys.PageConversionWebpQuality, SettingKeys.PageConversionAvifQuality
+        SettingKeys.PageConversionFormat, SettingKeys.PageConversionStop, SettingKeys.PageConversionPngLossless
     ];
 
-    public sealed record Stored(PageConversionFormat? Format, int WebpQuality, int AvifQuality)
+    public sealed record Stored(PageConversionFormat? Format, PageConversionStop Stop, bool PngLossless)
     {
         public PageConversionSettings? Active => Format is { } format
-            ? new PageConversionSettings(format, format == PageConversionFormat.Avif ? AvifQuality : WebpQuality)
+            ? new PageConversionSettings(format, Stop, PngLossless)
             : null;
     }
 
@@ -29,29 +28,52 @@ public static class PageConversionOptions
             .Where(c => Keys.Contains(c.Key))
             .ToDictionaryAsync(c => c.Key, c => c.Value, ct);
         return new Stored(
-            PageConversionSettings.Parse(values.GetValueOrDefault(SettingKeys.PageConversionFormat)),
-            Quality(values.GetValueOrDefault(SettingKeys.PageConversionWebpQuality), PageConversionSettings.DefaultWebpQuality),
-            Quality(values.GetValueOrDefault(SettingKeys.PageConversionAvifQuality), PageConversionSettings.DefaultAvifQuality));
+            PageConversionSettings.ParseFormat(values.GetValueOrDefault(SettingKeys.PageConversionFormat)),
+            PageConversionSettings.ParseStop(values.GetValueOrDefault(SettingKeys.PageConversionStop)) ?? PageConversionSettings.DefaultStop,
+            string.Equals(values.GetValueOrDefault(SettingKeys.PageConversionPngLossless), "true", StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>Null while conversion is off.</summary>
     public static async Task<PageConversionSettings?> LoadAsync(MakiDbContext db, CancellationToken ct) =>
         (await ReadAsync(db, ct)).Active;
 
-    private static int Quality(string? value, int fallback) =>
-        int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var q) && q is >= 1 and <= 100
-            ? q
-            : fallback;
+    /// <summary>The settings and the rules together; null while conversion is off.</summary>
+    public static async Task<PageConversionPlan?> LoadPlanAsync(MakiDbContext db, CancellationToken ct)
+    {
+        var stored = await ReadAsync(db, ct);
+        if (stored.Format is not { } format)
+        {
+            return null;
+        }
+
+        return new PageConversionPlan(format, stored.Stop, stored.PngLossless, await LoadRulesAsync(db, ct));
+    }
+
+    /// <summary>The rules in order. One whose conditions no longer parse is left out rather than read as matching everything.</summary>
+    public static async Task<IReadOnlyList<PlanRule>> LoadRulesAsync(MakiDbContext db, CancellationToken ct)
+    {
+        var rows = await db.PageConversionRules.AsNoTracking().OrderBy(r => r.Order).ThenBy(r => r.Id).ToListAsync(ct);
+        return rows
+            .Where(r => r.Skip || r.Stop is not null)
+            .Select(r => PageConversionConditions.TryParse(r.ConditionsJson, out var conditions)
+                ? new PlanRule(r.Order, r.Name, conditions, r.Skip, r.Skip ? null : r.Stop)
+                : null)
+            .OfType<PlanRule>()
+            .ToList();
+    }
 
     /// <summary>
-    /// Records a conversion on the row whose bytes it describes. <paramref name="acquiredFormat"/> is
-    /// the format the row was measured in before; the result's own reading stands in when it was never measured.
+    /// Records a check on the row whose bytes it describes: a conversion result, or null when the plan
+    /// said to leave the file alone. <paramref name="acquiredFormat"/> is the format the row was measured
+    /// in before; the result's own reading stands in when it was never measured.
     /// </summary>
-    public static void Apply(ChapterFile file, ArchiveConversionResult result, string? acquiredFormat, DateTime now)
+    public static void Apply(ChapterFile file, ArchiveConversionResult? result, string? acquiredFormat, string checkedWith,
+        DateTime now)
     {
         file.ResetConversion();
         file.ConversionCheckedAtUtc = now;
-        if (result.Outcome != ArchiveConversionOutcome.Converted)
+        file.CheckedWith = checkedWith;
+        if (result?.Outcome != ArchiveConversionOutcome.Converted)
         {
             return;
         }
