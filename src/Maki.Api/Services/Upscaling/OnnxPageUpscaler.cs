@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Maki.Core.Configuration;
 using Maki.Core.Images;
 using Maki.Core.Images.Upscaling;
+using Maki.Metadata.Embedding;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 
@@ -365,8 +366,7 @@ public sealed class OnnxPageUpscaler(
         InferenceSession? session = null;
         try
         {
-            using var options = new Microsoft.ML.OnnxRuntime.SessionOptions { IntraOpNumThreads = threads, InterOpNumThreads = 1 };
-            options.AddSessionConfigEntry("session.intra_op.allow_spinning", "0");
+            using var options = OnnxMemoryOptions.Create(threads, fixedShapes: true);
             session = new InferenceSession(store.PathOf(info.Id), options);
             var output = session.OutputNames[0];
             var inputType = ElementType(session.InputMetadata[info.InputName]);
