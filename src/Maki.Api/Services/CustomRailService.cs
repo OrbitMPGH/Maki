@@ -177,6 +177,7 @@ public class CustomRailService(
 
         var rows = await db.Series
             .AsNoTracking()
+            .Active()
             .Select(s => new LibraryRailRow(
                 s.Id, s.MangaBakaId, s.Title, s.SortTitle, s.Genres, s.Tags, s.ContentRating, s.Year,
                 s.Status, s.Type, s.TotalChapters, s.Added, s.AuthorStory, s.AuthorArt, s.Publisher))

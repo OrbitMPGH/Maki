@@ -26,6 +26,9 @@ public enum SeriesCreationError
     MetadataNotFound,
     AlreadyInLibrary,
 
+    /// <summary>The series exists but is archived: restoring it is the way back, adding it again is not.</summary>
+    ArchivedInLibrary,
+
     /// <summary>
     /// This mutation id belongs to an add that committed and whose series has since been removed.
     /// <para>
@@ -55,6 +58,9 @@ public record SeriesCreationResult(Series? Series, SeriesCreationError? Error, L
     /// </summary>
     public static SeriesCreationResult AlreadyInLibrary(int seriesId, string title) =>
         new(null, SeriesCreationError.AlreadyInLibrary, [], ExistingSeriesId: seriesId, ExistingSeriesTitle: title);
+
+    public static SeriesCreationResult ArchivedInLibrary(int seriesId, string title) =>
+        new(null, SeriesCreationError.ArchivedInLibrary, [], ExistingSeriesId: seriesId, ExistingSeriesTitle: title);
 
     /// <summary>
     /// The mutation id an approved request's add operates under.
@@ -155,6 +161,8 @@ public class SeriesCreationService(
                 // does not prove they can still reach where it landed, and replaying a series
                 // out of a root folder their access was since revoked would hand it back anyway.
                 var priorSeries = await db.Series.FirstOrDefaultAsync(x => x.Id == priorSeriesId, ct);
+                if (priorSeries is { ArchivedAt: not null })
+                    return SeriesCreationResult.ArchivedInLibrary(priorSeries.Id, priorSeries.Title);
                 if (priorSeries is not null) return new SeriesCreationResult(priorSeries, null, [], Replayed: true);
             }
             return SeriesCreationResult.Failed(SeriesCreationError.OperationResultGone);
@@ -194,11 +202,13 @@ public class SeriesCreationService(
             var existing = await db.Series
                 .IgnoreQueryFilters()
                 .Where(s => s.MangaBakaId == existingId)
-                .Select(s => new { s.Id, s.Title })
+                .Select(s => new { s.Id, s.Title, Archived = s.ArchivedAt != null })
                 .FirstOrDefaultAsync(ct);
             if (existing is not null)
             {
-                return SeriesCreationResult.AlreadyInLibrary(existing.Id, existing.Title);
+                return existing.Archived
+                    ? SeriesCreationResult.ArchivedInLibrary(existing.Id, existing.Title)
+                    : SeriesCreationResult.AlreadyInLibrary(existing.Id, existing.Title);
             }
         }
 

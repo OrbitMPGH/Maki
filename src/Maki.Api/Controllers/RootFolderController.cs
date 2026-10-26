@@ -66,9 +66,15 @@ public class RootFolderController(
 
         // Past the library scope: an admin granted only some folders must still be refused for one
         // whose series they cannot see, not hit the foreign key.
-        if (await db.Series.IgnoreQueryFilters().AnyAsync(s => s.RootFolderId == id, ct))
+        var users = db.Series.IgnoreQueryFilters().Where(s => s.RootFolderId == id);
+        if (await users.Active().AnyAsync(ct))
         {
             return this.Conflict(localizer, "error.rootFolder.inUse");
+        }
+
+        if (await users.CountAsync(ct) is > 0 and var archived)
+        {
+            return this.Conflict(localizer, "error.rootFolder.inUseArchived", new { count = archived });
         }
 
         // The grants cascade away, but a cached snapshot still lists this id until it is evicted.

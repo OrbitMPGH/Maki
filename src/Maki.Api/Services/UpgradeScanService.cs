@@ -162,7 +162,7 @@ public class UpgradeScanService(
             var disabled = (await availability.DisabledAsync(ct)).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var seriesIds = onlySeries is { } id
                 ? [id]
-                : await db.Series.OrderBy(s => s.Id).Select(s => s.Id).ToListAsync(ct);
+                : await db.Series.Active().OrderBy(s => s.Id).Select(s => s.Id).ToListAsync(ct);
 
             foreach (var seriesId in seriesIds)
             {

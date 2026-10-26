@@ -752,6 +752,7 @@ const allEvents = {
   updateAvailable: false,
   seriesAdded: false,
   seriesRemoved: false,
+  seriesArchived: false,
   requestSubmitted: false,
   requestResolved: false,
   manualMatchNeeded: true,

@@ -169,6 +169,34 @@ public class RootFolderControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Delete_names_archived_series_only_when_no_active_series_remain()
+    {
+        var folderId = SeedFolder();
+        using (var db = _db.NewContext())
+        {
+            var archivedAt = DateTime.UtcNow;
+            db.Series.Add(new Series { Title = "A", RootFolderId = folderId, ArchivedAt = archivedAt });
+            db.Series.Add(new Series { Title = "B", RootFolderId = folderId, ArchivedAt = archivedAt });
+            db.SaveChanges();
+        }
+
+        Assert.Equal("error.rootFolder.inUseArchived(count=2)", ConflictError(
+            await Controller().Delete(folderId, CancellationToken.None)));
+
+        using (var db = _db.NewContext())
+        {
+            db.Series.Add(new Series { Title = "C", RootFolderId = folderId });
+            db.SaveChanges();
+        }
+
+        Assert.Equal("error.rootFolder.inUse", ConflictError(
+            await Controller().Delete(folderId, CancellationToken.None)));
+    }
+
+    private static string ConflictError(IActionResult result) =>
+        (string)((ConflictObjectResult)result).Value!.GetType().GetProperty("error")!.GetValue(((ConflictObjectResult)result).Value)!;
+
+    [Fact]
     public async Task Delete_rejects_a_folder_whose_series_are_outside_the_callers_scope()
     {
         var folderId = SeedFolder();

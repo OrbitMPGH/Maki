@@ -112,6 +112,10 @@ public class ChapterSyncService(
                 // Read before the snapshot changes: what the mapping listed until now decides which
                 // of its new links are releases and which are a catalogue arriving all at once.
                 var firstSnapshot = mapping.ChapterSnapshotAt is null && mapping.ChapterLinks.Count == 0;
+                // What a mapping lists for the first time since a restore was released while the series
+                // was archived. Decided per mapping, so one failing source keeps it for its own next sync.
+                var firstSinceRestore = series.RestoredAt is { } restoredAt &&
+                                        (mapping.ChapterSnapshotAt is null || mapping.ChapterSnapshotAt < restoredAt);
                 var listedUpTo = mapping.ChapterLinks.Max(l => l.Chapter?.Number);
 
                 chapterLists.Store(source, mapping.SourceSeriesId, mapping.LanguageFilter, sourceChapters);
@@ -180,7 +184,7 @@ public class ChapterSyncService(
 
                 var fileGroups = ReplaceSnapshot(
                     mapping, snapshotLinks, ChapterFileQualityService.SiteGroup(source),
-                    firstSnapshot ? null : listedUpTo ?? decimal.MinValue);
+                    firstSnapshot || firstSinceRestore ? null : listedUpTo ?? decimal.MinValue);
                 await BackfillFileGroupsAsync(mapping.SourceName, fileGroups, ct);
 
                 mapping.LastRefresh = DateTime.UtcNow;

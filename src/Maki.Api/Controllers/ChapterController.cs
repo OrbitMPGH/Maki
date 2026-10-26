@@ -214,8 +214,14 @@ public class ChapterController(
 
         var chapters = await db.Chapters
             .Where(c => request.ChapterIds.Contains(c.Id) && c.ChapterFileId == null)
-            .Select(c => new { c.Id, c.SeriesId, c.Number, SeriesTitle = c.Series!.Title })
+            .Select(c => new { c.Id, c.SeriesId, c.Number, SeriesTitle = c.Series!.Title, Archived = c.Series.ArchivedAt != null })
             .ToListAsync(ct);
+
+        // A mixed selection queues what it can; one made only of archived series would answer "0 queued".
+        if (chapters.Count > 0 && chapters.All(c => c.Archived))
+        {
+            return this.Conflict(localizer, "error.series.archived");
+        }
 
         // A selection can span series, and one unmapped series must not throw away the rest; the
         // bulk enqueue skips that series and reports why.
@@ -604,6 +610,12 @@ public class ChapterController(
     [HttpPost("{id:int}/search")]
     public async Task<IActionResult> Search(int id, CancellationToken ct)
     {
+        // The queue answers null for an archived series too, which would read as "already queued".
+        if (await db.Chapters.AnyAsync(c => c.Id == id && c.Series!.ArchivedAt != null, ct))
+        {
+            return this.Conflict(localizer, "error.series.archived");
+        }
+
         try
         {
             var item = await queue.EnqueueChapterAsync(id, ct, DownloadOrigin.Manual, currentUser.UserId);
@@ -644,6 +656,11 @@ public class ChapterController(
         if (chapter is null)
         {
             return NotFound();
+        }
+
+        if (await db.Series.AnyAsync(s => s.Id == chapter.SeriesId && s.ArchivedAt != null, ct))
+        {
+            return this.Conflict(localizer, "error.series.archived");
         }
 
         var mapping = await db.SourceMappings.FindAsync([request.SourceMappingId], ct);
@@ -725,6 +742,12 @@ public class ChapterController(
     public async Task<IActionResult> Redownload(
         [FromBody] RedownloadRequest request, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
     {
+        // Before the source listing below, which is a live request to the site.
+        if (await db.Series.AnyAsync(s => s.Id == request.SeriesId && s.ArchivedAt != null, ct))
+        {
+            return this.Conflict(localizer, "error.series.archived");
+        }
+
         var mapping = await db.SourceMappings
             .FirstOrDefaultAsync(m => m.SeriesId == request.SeriesId && m.SourceName == request.SourceName, ct);
         if (mapping is null || sourceRegistry.Find(request.SourceName) is not { } source)

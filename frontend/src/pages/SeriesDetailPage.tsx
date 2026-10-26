@@ -63,7 +63,11 @@ import {
   useChapters,
   useSourceMappings,
   useSources,
+  useArchiveSeries,
+  useDismissArchiveHint,
   useDeleteSeries,
+  useRemoveArchivedFiles,
+  useRestoreSeries,
   useMoveSeries,
   useRefreshMetadata,
   useRefreshSeries,
@@ -139,8 +143,20 @@ import {
   type ChapterRowActions,
   type ChapterSpanRowActions,
 } from '../components/series/ChapterTableRows'
-import { chapterLabel, readStateOf, type FileOrigin } from '../components/series/chapterTable'
+import {
+  chapterLabel,
+  finishedHighWater,
+  isSkipped,
+  readLanguagesOf,
+  readStateOf,
+  type FileOrigin,
+} from '../components/series/chapterTable'
+import { ArchivedBanner } from '../components/series/ArchivedBanner'
+import { ArchiveHint } from '../components/series/ArchiveHint'
+import { RemoveArchivedFilesDialog } from '../components/series/RemoveArchivedFilesDialog'
+import { ArchiveSeriesDialog } from '../components/series/ArchiveSeriesDialog'
 import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
+import { RestoreSeriesDialog } from '../components/series/RestoreSeriesDialog'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
 import { EditMetadataModal, MetadataLock } from '../components/series/EditMetadataModal'
 import { MetadataHistoryModal } from '../components/series/MetadataHistoryModal'
@@ -169,6 +185,8 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
 import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
+import { activeSeries } from '../lib/series'
+import { showRestoreResult } from '../components/series/restoreToast'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 import { cleanSynopsis } from '../lib/synopsis'
 import { useIncognitoOptions } from '../components/ui/incognito'
@@ -205,6 +223,7 @@ const CHAPTER_FILTERS = [
   'main',
   'specials',
   'cutoffUnmet',
+  'skipped',
 ] as const
 type ChapterFilter = (typeof CHAPTER_FILTERS)[number]
 
@@ -343,6 +362,9 @@ const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
 // Errors are reported globally (see main.tsx); only success needs saying here. `info` is for
 // outcomes that aren't failures but aren't wins either — a download action that found nothing
 // left to queue, which would otherwise report a cheerful "Queued 0".
+// Hover alone leaves keyboard users without the reason a control is switched off.
+const TOOLTIP_EVENTS = { hover: true, focus: true, touch: true }
+
 const notify = {
   ok: (message: string) => notifications.show({ message, color: 'var(--ok)' }),
   info: (message: string) => notifications.show({ message, color: 'var(--warn)' }),
@@ -492,20 +514,11 @@ function SeriesDetailBody() {
       () => new Map((queue?.items ?? []).filter((q) => q.seriesId === seriesId).map((q) => [q.chapterId, q])),
       [queue, seriesId],
   )
-  /**
-   * Read-aware filters, kept separate from `chapterFilters` because they need the progress map.
-   * Both only consider downloaded chapters, plus read ones whose file was removed: a missing chapter is
-   * neither read nor "left to read".
-   */
-  const filters = useMemo<Record<string, (c: ChapterDto) => boolean>>(
-      () => ({
-        ...chapterFilters,
-        unread: (c: ChapterDto) => c.hasFile && !readStateFor(c).read,
-        read: (c: ChapterDto) => (c.hasFile || c.fileRemovedAt != null) && readStateFor(c).read,
-      }),
-      [readStateFor],
-  )
   const deleteSeries = useDeleteSeries()
+  const archiveSeries = useArchiveSeries()
+  const dismissArchiveHint = useDismissArchiveHint()
+  const restoreSeries = useRestoreSeries()
+  const removeArchivedFiles = useRemoveArchivedFiles()
   const refresh = useRefreshSeries()
   const refreshMetadata = useRefreshMetadata()
   const rescan = useRescanSeries()
@@ -660,18 +673,23 @@ function SeriesDetailBody() {
   const [deleteFileIds, setDeleteFileIds] = useState<number[] | null>(null)
   const [deleteSeriesModalOpen, setDeleteSeriesModalOpen] = useState(false)
   const [deleteSeriesFiles, setDeleteSeriesFiles] = useState(false)
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false)
+  const [archiveRemoveFiles, setArchiveRemoveFiles] = useState(false)
+  const [restoreModalOpen, setRestoreModalOpen] = useState(false)
+  const [removeFilesModalOpen, setRemoveFilesModalOpen] = useState(false)
   const binDays = useRecycleBinDays(deleteChaptersModalOpen || deleteFileIds !== null)
   // Which delete dialog the server answered with "the recycle bin cannot take these".
-  const [binRefused, setBinRefused] = useState<'chapters' | 'files' | 'series' | null>(null)
-  const onBinRefused = (dialog: 'chapters' | 'files' | 'series') => (error: unknown) => {
+  const [binRefused, setBinRefused] = useState<'chapters' | 'files' | 'series' | 'archive' | 'archiveFiles' | null>(null)
+  const onBinRefused = (dialog: 'chapters' | 'files' | 'series' | 'archive' | 'archiveFiles') => (error: unknown) => {
     if (offersPermanentDelete(error)) setBinRefused(dialog)
   }
 
   // Without DownloadChapters the two buttons that queue downloads become one that asks an admin to.
-  const { can } = useAuth()
+  const { can, me, singleUser } = useAuth()
   const canDownload = can('DownloadChapters')
   const canEditMetadata = can('EditMetadata')
   const canDelete = can('DeleteSeries')
+  const canArchive = can('ArchiveSeries')
   const pendingProposalId = series?.pendingProposalId ?? null
   const { data: seriesProposals } = useTorrentProposals(seriesId, canDownload && pendingProposalId != null)
   const pendingProposal = seriesProposals?.find((p) => p.id === pendingProposalId) ?? null
@@ -681,6 +699,22 @@ function SeriesDetailBody() {
   const canManageSources = can('ManageSources')
   const { data: sourceMappings } = useSourceMappings(seriesId, canManageSources)
   const enabledMappings = (sourceMappings ?? []).filter((m) => m.enabled).length
+  /**
+   * Read-aware filters, kept separate from `chapterFilters` because they need the progress map.
+   * `unread` and `read` only consider downloaded chapters, plus read ones whose file was removed: a
+   * missing chapter is neither read nor "left to read". `skipped` is the opposite case, chapters
+   * passed over, so it looks at wanted ones whether or not a file exists.
+   */
+  const readLanguages = useMemo(() => readLanguagesOf(sourceMappings, sources), [sourceMappings, sources])
+  const filters = useMemo<Record<string, (c: ChapterDto) => boolean>>(() => {
+    const highWater = finishedHighWater(chapters ?? [], readProgress)
+    return {
+      ...chapterFilters,
+      unread: (c: ChapterDto) => c.hasFile && !readStateFor(c).read,
+      read: (c: ChapterDto) => (c.hasFile || c.fileRemovedAt != null) && readStateFor(c).read,
+      skipped: (c: ChapterDto) => isSkipped(c, highWater, readProgress, readLanguages),
+    }
+  }, [chapters, readProgress, readStateFor, readLanguages])
   const [pickChapter, setPickChapter] = useState<PickChapter | null>(null)
   const [requestModalOpen, setRequestModalOpen] = useState(false)
   const [requestStart, setRequestStart] = useState<number | ''>('')
@@ -733,6 +767,7 @@ function SeriesDetailBody() {
       (chapterFilterPreference === 'main' && !hasSpecials) ||
       (chapterFilterPreference === 'unread' && !canFilterUnread) ||
       (chapterFilterPreference === 'cutoffUnmet' && !cutoffUnmetChipVisible) ||
+      (chapterFilterPreference === 'skipped' && !readTracking) ||
       rememberedFilterMatchesNothing
           ? 'all'
           : chapterFilterPreference
@@ -1343,7 +1378,7 @@ function SeriesDetailBody() {
   const { data: library } = useSeries()
   const luckyPool = useMemo(
     () =>
-      (library ?? [])
+      activeSeries(library ?? [])
         .filter((s) => s.id !== seriesId && isUnfinished(s))
         .map((s) => ({ key: String(s.id), title: s.displayTitle, coverUrl: s.coverUrl })),
     [library, seriesId],
@@ -1446,6 +1481,7 @@ function SeriesDetailBody() {
   const mainFilterCount = chapters?.filter(chapterFilters.main).length ?? 0
   const readFilterCount = chapters?.filter(filters.read).length ?? 0
   const cutoffUnmetFilterCount = chapters?.filter(chapterFilters.cutoffUnmet).length ?? 0
+  const skippedFilterCount = chapters?.filter(filters.skipped).length ?? 0
   const selectedCount = selected.size
   const visibleAllCount = visibleChapters.length
   const visibleMainCount = visibleMain.length
@@ -1465,6 +1501,9 @@ function SeriesDetailBody() {
         { value: 'specials', label: t`Specials (${specialsFilterCount})` },
         ...(cutoffUnmetChipVisible
             ? [{ value: 'cutoffUnmet', label: t`Cutoff unmet (${cutoffUnmetFilterCount})` }]
+            : []),
+        ...(readTracking && skippedFilterCount > 0
+            ? [{ value: 'skipped', label: t`Skipped (${skippedFilterCount})` }]
             : []),
       ]
       : []
@@ -1664,6 +1703,85 @@ function SeriesDetailBody() {
       },
     )
 
+  const openArchiveDialog = () => {
+    setArchiveRemoveFiles(false)
+    setBinRefused(null)
+    setArchiveModalOpen(true)
+  }
+
+  const restoreArchived = (redownloadRemoved: boolean) =>
+    restoreSeries.mutate(
+      { id: series.id, redownloadRemoved },
+      {
+        onSuccess: (result) => {
+          setRestoreModalOpen(false)
+          showRestoreResult(result, redownloadRemoved)
+        },
+      },
+    )
+
+  // With every file gone there is a choice to make about fetching them again; otherwise nothing to ask.
+  const restoreFromMenu = () =>
+    series.chapterFileCount === 0 && series.removedChapterCount > 0 ? setRestoreModalOpen(true) : restoreArchived(false)
+
+  const removeArchivedSeriesFiles = (permanent = false) =>
+    removeArchivedFiles.mutate(
+      { id: series.id, permanent },
+      {
+        onSuccess: () => {
+          setRemoveFilesModalOpen(false)
+          setBinRefused(null)
+          notify.ok(staticT`Files removed`)
+        },
+        onError: onBinRefused('archiveFiles'),
+      },
+    )
+
+  const archived = series.archivedAt != null
+  const archivedReason = archived ? t`Archived series are not checked against sources. Restore it first.` : null
+  const archivedBy =
+    archived && !singleUser && me != null && series.archivedByUserId === me.id ? (me.displayName ?? me.userName) : null
+
+  const showArchivedToast = (filesKept: boolean) => {
+    const id = notifications.show({
+      color: 'var(--ok)',
+      autoClose: filesKept ? 8000 : 4000,
+      message: (
+        <Group gap="xs" wrap="nowrap" justify="space-between">
+          <Text size="sm">
+            <Trans context="series">Archived</Trans>
+          </Text>
+          {filesKept && (
+            <Button
+              size="xs"
+              variant="subtle"
+              style={{ flexShrink: 0 }}
+              onClick={() => {
+                notifications.hide(id)
+                restoreArchived(false)
+              }}
+            >
+              <Trans>Undo</Trans>
+            </Button>
+          )}
+        </Group>
+      ),
+    })
+  }
+
+  const archiveCurrent = (permanent = false) =>
+    archiveSeries.mutate(
+      { id: series.id, removeFiles: archiveRemoveFiles, permanent },
+      {
+        onSuccess: () => {
+          setArchiveModalOpen(false)
+          setBinRefused(null)
+          showArchivedToast(!archiveRemoveFiles)
+        },
+        onError: onBinRefused('archive'),
+      },
+    )
+
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       <Tabs
@@ -1706,13 +1824,20 @@ function SeriesDetailBody() {
                     "next N" queues in chapter-number order using the same selector Smart top-ups use. */}
                       {!allWantedOnDisk && (
                         <Button.Group>
+                        {/* data-disabled rather than disabled: a disabled button gets no hover, so the
+                            tooltip saying why an archived series cannot download would never show. */}
+                        <Tooltip label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
                         <Button
                             variant="default"
                             size="md"
                             radius="md"
                             leftSection={<IconDownload size={17} />}
                             loading={searchMissing.isPending || downloadNext.isPending}
-                            onClick={requestQueueAllWanted}
+                            data-disabled={archived || undefined}
+                            aria-disabled={archived || undefined}
+                            onClick={() => {
+                              if (!archived) requestQueueAllWanted()
+                            }}
                         >
                           {/* The count is the point of the label: it says what the click will actually
                         queue, so nobody has to open the Chapters tab to find out. */}
@@ -1722,6 +1847,22 @@ function SeriesDetailBody() {
                               <Trans>Download all wanted</Trans>
                           )}
                         </Button>
+                        </Tooltip>
+                        {archived ? (
+                        <Tooltip label={archivedReason} withArrow events={TOOLTIP_EVENTS}>
+                          <Button
+                              variant="default"
+                              size="md"
+                              radius="md"
+                              px={10}
+                              aria-label={t`More download options`}
+                              data-disabled
+                              aria-disabled
+                          >
+                            <IconChevronDown size={16} />
+                          </Button>
+                        </Tooltip>
+                        ) : (
                         <Menu position="bottom-end" withinPortal>
                           <Menu.Target>
                             <Button
@@ -1745,25 +1886,36 @@ function SeriesDetailBody() {
                             <Menu.Item onClick={() => setNextCountOpen(true)}><Trans>Next...</Trans></Menu.Item>
                           </Menu.Dropdown>
                         </Menu>
+                        )}
                         </Button.Group>
                       )}
+                      <Tooltip label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
                       <Button
                           variant="default"
                           size="md"
                           radius="md"
                           leftSection={<IconSearch size={17} />}
-                          onClick={() => setReleaseModalOpen(true)}
+                          data-disabled={archived || undefined}
+                          aria-disabled={archived || undefined}
+                          onClick={() => {
+                            if (!archived) setReleaseModalOpen(true)
+                          }}
                       >
                         <Trans>Search releases</Trans>
                       </Button>
+                      </Tooltip>
                     </>
                 ) : (
+                    <Tooltip label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
                     <Button
                         variant="default"
                         size="md"
                         radius="md"
                         leftSection={<IconSend size={17} />}
+                        data-disabled={archived || undefined}
+                        aria-disabled={archived || undefined}
                         onClick={() => {
+                          if (archived) return
                           setRequestStart('')
                           setRequestEnd('')
                           setRequestNote('')
@@ -1772,6 +1924,7 @@ function SeriesDetailBody() {
                     >
                       <Trans>Request chapters</Trans>
                     </Button>
+                    </Tooltip>
                 )}
                 <SeriesActionsMenu
                     monitorMode={series.monitorNewItems}
@@ -1872,6 +2025,11 @@ function SeriesDetailBody() {
                     onScanUpgrades={scanSeriesForUpgrades}
                     searchingVolumes={runVolumeSearch.isPending}
                     onSearchVolumes={searchSeriesVolumes}
+                    canArchive={canArchive}
+                    archived={archived}
+                    sourceToolsDisabledReason={archivedReason}
+                    onArchive={openArchiveDialog}
+                    onRestore={restoreFromMenu}
                     canRemove={can('DeleteSeries')}
                     onRemove={() => {
                       setDeleteSeriesFiles(false)
@@ -1919,6 +2077,30 @@ function SeriesDetailBody() {
               </Tabs.List>
             }
         />
+
+        {series.archiveHintEligible && series.archivedAt == null && canArchive && (
+          <ArchiveHint
+            onArchive={openArchiveDialog}
+            onDismiss={() => dismissArchiveHint.mutate(series.id)}
+          />
+        )}
+
+        {series.archivedAt != null && (
+          <ArchivedBanner
+            archivedAt={series.archivedAt}
+            archivedBy={archivedBy}
+            onRestore={canArchive ? restoreFromMenu : undefined}
+            restoring={restoreSeries.isPending}
+            onRemoveFiles={
+              canDelete && series.chapterFileCount > 0
+                ? () => {
+                    setBinRefused(null)
+                    setRemoveFilesModalOpen(true)
+                  }
+                : undefined
+            }
+          />
+        )}
 
         <Tabs.Panel value="details">
           <Stack className="series-detail-overview" gap="lg">
@@ -2066,11 +2248,20 @@ function SeriesDetailBody() {
                   )}
                   {canManageSources && (
                     <>
-                      <SourceMappingsSection
-                          seriesId={seriesId}
-                          seriesTitle={series.title}
-                          matching={series.sourceMatchPending}
-                      />
+                      {/* The inner div is inert rather than every control inside getting a disabled
+                          prop: the section is shared, and the outer one stays hoverable so the reason
+                          can show. */}
+                      <Tooltip label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
+                        <div style={archived ? { cursor: 'not-allowed' } : undefined}>
+                          <div inert={archived} style={archived ? { opacity: 0.55 } : undefined}>
+                            <SourceMappingsSection
+                                seriesId={seriesId}
+                                seriesTitle={series.title}
+                                matching={series.sourceMatchPending}
+                            />
+                          </div>
+                        </div>
+                      </Tooltip>
                       <Divider my="md" color="var(--hairline)" />
                     </>
                   )}
@@ -2501,27 +2692,32 @@ function SeriesDetailBody() {
                     </Group>
                     <Group gap="xs">
                       {canDownload && (
+                          <Tooltip label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
                           <Button
                               size="xs"
                               variant="light"
                               leftSection={<IconDownload size={15} />}
                               disabled={selected.size === 0}
+                              data-disabled={archived || undefined}
+                              aria-disabled={archived || undefined}
                               loading={downloadChapters.isPending}
-                              onClick={() =>
-                                  downloadChapters.mutate([...selected], {
-                                    onSuccess: (r) =>
-                                        r.queued > 0
-                                            ? notify.ok(
-                                                plural(r.queued, { one: 'Queued # chapter', other: 'Queued # chapters' }),
-                                            )
-                                            : notify.info(
-                                                r.error ?? staticT`Nothing to queue, those chapters are already on disk`,
-                                            ),
-                                  })
-                              }
+                              onClick={() => {
+                                if (archived) return
+                                downloadChapters.mutate([...selected], {
+                                  onSuccess: (r) =>
+                                      r.queued > 0
+                                          ? notify.ok(
+                                              plural(r.queued, { one: 'Queued # chapter', other: 'Queued # chapters' }),
+                                          )
+                                          : notify.info(
+                                              r.error ?? staticT`Nothing to queue, those chapters are already on disk`,
+                                          ),
+                                })
+                              }}
                           >
                             <Trans>Download</Trans>
                           </Button>
+                          </Tooltip>
                       )}
                       {canEditMetadata && (
                           <>
@@ -2869,6 +3065,7 @@ function SeriesDetailBody() {
                                           canDownload={canDownload}
                                           canDelete={canDelete}
                                           canFindBetterCopy={enabledMappings > 1}
+                                          sourceToolsDisabledReason={archivedReason}
                                           canSaveOffline={canSaveOffline}
                                           offline={offlineRecords.get(c.id)}
                                           offlineSaving={offlineProgress.get(c.id)}
@@ -2945,6 +3142,43 @@ function SeriesDetailBody() {
         </Tabs.Panel>
 
         {/* This action lives in the hero, so its dialog must not be deactivated with any tab panel. */}
+        <ArchiveSeriesDialog
+          opened={archiveModalOpen}
+          onClose={() => {
+            setArchiveModalOpen(false)
+            setBinRefused(null)
+          }}
+          title={seriesTitle}
+          seriesId={series.id}
+          removeFiles={archiveRemoveFiles}
+          onRemoveFilesChange={setArchiveRemoveFiles}
+          canRemoveFiles={canDelete}
+          loading={archiveSeries.isPending}
+          onConfirm={() => archiveCurrent()}
+          onConfirmPermanent={binRefused === 'archive' ? () => archiveCurrent(true) : undefined}
+        />
+
+        <RemoveArchivedFilesDialog
+          opened={removeFilesModalOpen}
+          onClose={() => {
+            setRemoveFilesModalOpen(false)
+            setBinRefused(null)
+          }}
+          title={t`Remove the files of ${seriesTitle}?`}
+          loading={removeArchivedFiles.isPending}
+          onConfirm={() => removeArchivedSeriesFiles()}
+          onConfirmPermanent={binRefused === 'archiveFiles' ? () => removeArchivedSeriesFiles(true) : undefined}
+        />
+
+        <RestoreSeriesDialog
+          opened={restoreModalOpen}
+          onClose={() => setRestoreModalOpen(false)}
+          seriesId={series.id}
+          canDownload={canDownload}
+          loading={restoreSeries.isPending}
+          onRestore={restoreArchived}
+        />
+
         <RemoveSeriesDialog
           opened={deleteSeriesModalOpen}
           onClose={() => {

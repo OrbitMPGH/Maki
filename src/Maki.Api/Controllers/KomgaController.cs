@@ -108,7 +108,7 @@ public class KomgaController(
     [HttpGet("v1/series/{id}/thumbnail")]
     public async Task<IActionResult> SeriesThumbnail(string id, CancellationToken ct)
     {
-        if (!int.TryParse(id, out var seriesId) || !await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        if (!int.TryParse(id, out var seriesId) || !await db.Series.Active().AnyAsync(s => s.Id == seriesId, ct))
         {
             return NotFound();
         }
@@ -294,7 +294,7 @@ public class KomgaController(
             return NotFound();
         }
 
-        var seriesId = await db.Chapters
+        var seriesId = await db.Chapters.Active()
             .Where(c => c.Id == chapterId && c.ChapterFileId != null)
             .Select(c => (int?)c.SeriesId)
             .FirstOrDefaultAsync(ct);
@@ -310,7 +310,8 @@ public class KomgaController(
     [HttpGet("v1/books/{id}/file")]
     public async Task<IActionResult> Download(string id, CancellationToken ct)
     {
-        if (!int.TryParse(id, out var chapterId) || await reader.SliceAsync(chapterId, ct) is not { } slice)
+        if (!int.TryParse(id, out var chapterId) || !await catalog.ServesChapterAsync(chapterId, ct) ||
+            await reader.SliceAsync(chapterId, ct) is not { } slice)
         {
             return NotFound();
         }
@@ -371,7 +372,8 @@ public class KomgaController(
             return BadRequest();
         }
 
-        if (!int.TryParse(id, out var chapterId) || await reader.SliceAsync(chapterId, ct) is not { } slice)
+        if (!int.TryParse(id, out var chapterId) || !await catalog.ServesChapterAsync(chapterId, ct) ||
+            await reader.SliceAsync(chapterId, ct) is not { } slice)
         {
             return NotFound();
         }
@@ -395,7 +397,7 @@ public class KomgaController(
     public async Task<IActionResult> ClearBookProgress(string id, CancellationToken ct)
     {
         if (!int.TryParse(id, out var chapterId) ||
-            !await db.Chapters.AnyAsync(c => c.Id == chapterId && c.ChapterFileId != null, ct))
+            !await catalog.ServesChapterAsync(chapterId, ct))
         {
             return NotFound();
         }
@@ -448,7 +450,7 @@ public class KomgaController(
 
     private async Task<IActionResult> PageAsync(int chapterId, int number, TranscodeFormat? target, CancellationToken ct)
     {
-        var slice = await reader.PageSliceAsync(chapterId, ct);
+        var slice = await catalog.ServesChapterAsync(chapterId, ct) ? await reader.PageSliceAsync(chapterId, ct) : null;
         var index = number - 1;
         if (slice is null || index < 0 || index >= slice.PageCount)
         {

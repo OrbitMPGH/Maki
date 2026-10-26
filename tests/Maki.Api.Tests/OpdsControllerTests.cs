@@ -55,6 +55,19 @@ public sealed class OpdsControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task RefusesACoverForAnArchivedSeries()
+    {
+        var (granted, _, token) = Seed();
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == granted).ArchivedAt = DateTime.UtcNow;
+            db.SaveChanges();
+        }
+
+        Assert.IsType<NotFoundResult>(await Controller().Cover(token, granted, default));
+    }
+
+    [Fact]
     public async Task ServesEveryCoverToATokenWhoseOwnerHoldsAllRootFolders()
     {
         var (granted, ungranted, _) = Seed();

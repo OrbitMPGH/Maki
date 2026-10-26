@@ -50,8 +50,8 @@ public class LibraryCompositionService(
 
     private async Task<LibraryCompositionDto> ComputeAsync(CancellationToken ct)
     {
-        var series = db.Series.AsNoTracking();
-        var files = db.ChapterFiles.AsNoTracking();
+        var series = db.Series.AsNoTracking().Active();
+        var files = db.ChapterFiles.AsNoTracking().Where(f => db.Series.Active().Any(s => s.Id == f.SeriesId));
 
         // An empty table gives no group at all, hence the null fallbacks.
         var seriesTotals = await series
@@ -63,7 +63,7 @@ public class LibraryCompositionService(
                 Completed = g.Count(s => s.Status == SeriesStatus.Completed),
             })
             .FirstOrDefaultAsync(ct);
-        var chapterTotals = await db.Chapters.AsNoTracking()
+        var chapterTotals = await db.Chapters.AsNoTracking().Active()
             .GroupBy(_ => 1)
             .Select(g => new { Total = g.Count(), Downloaded = g.Count(c => c.ChapterFileId != null) })
             .FirstOrDefaultAsync(ct);
@@ -210,8 +210,8 @@ public class LibraryCompositionService(
         var fromUtc = StatsInsightsService.ToUtc(from.ToDateTime(TimeOnly.MinValue), zone);
         var toUtc = StatsInsightsService.ToUtc(to.AddDays(1).ToDateTime(TimeOnly.MinValue), zone);
 
-        var series = db.Series.AsNoTracking();
-        var files = db.ChapterFiles.AsNoTracking();
+        var series = db.Series.AsNoTracking().Active();
+        var files = db.ChapterFiles.AsNoTracking().Where(f => db.Series.Active().Any(s => s.Id == f.SeriesId));
 
         var running = await series.CountAsync(s => s.Added < fromUtc, ct);
         var runningBytes = await files.Where(f => f.DateAdded < fromUtc).SumAsync(f => f.Size, ct);

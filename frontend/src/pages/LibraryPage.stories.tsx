@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent as userEventApi, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
-import { libraryHandlers, seedLibraryPrefs } from '../../.storybook/mocks/library'
+import { archivedLibraryHandlers, libraryHandlers, seedLibraryPrefs } from '../../.storybook/mocks/library'
 import { getConnectivity, onConnectivityChange, setConnectivity } from '../lib/connectivity'
 import LibraryPage from './LibraryPage'
 
@@ -44,6 +44,49 @@ export const Grid: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })).toBeVisible()
     await expect(await canvas.findByText('14 series')).toBeVisible()
+  },
+}
+
+/** The Archived view: three archived cards, one with files removed and one with chapters read past. */
+export const ArchivedView: Story = {
+  args: { scope: 'archived' },
+  parameters: { router: { path: '/library/archived', initialEntries: ['/library/archived'] }, msw: archivedLibraryHandlers },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('link', { name: /The Ninth Kitchen/ })).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: /Paper Moon Detective/ })).toBeVisible()
+    await expect(canvas.queryByRole('link', { name: /Lanterns Over Kasumi/ })).toBeNull()
+    await waitFor(() => expect(canvas.getAllByText(/^Archived \w+ \d+, \d{4}$/)).toHaveLength(3))
+    await expect(await canvas.findByText('Files removed', { selector: '.mantine-Badge-label' })).toBeVisible()
+    await expect(await canvas.findByText('2 skipped')).toBeVisible()
+  },
+}
+
+export const ArchivedViewList: Story = {
+  args: { scope: 'archived' },
+  parameters: { router: { path: '/library/archived', initialEntries: ['/library/archived'] }, msw: archivedLibraryHandlers },
+  beforeEach: () => seedLibraryPrefs({ view: 'list' }),
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(canvasElement.querySelectorAll('.series-row')).toHaveLength(3))
+  },
+}
+
+export const ArchivedRestoreAsksAboutFiles: Story = {
+  args: { scope: 'archived' },
+  parameters: { router: { path: '/library/archived', initialEntries: ['/library/archived'] }, msw: archivedLibraryHandlers },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('link', { name: /Under the Willow Gate/ })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Actions for Under the Willow Gate' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Restore to library' }))
+    const dialog = await body(canvasElement).findByRole('dialog')
+    await expect(await within(dialog).findByText('Download the 75 removed chapters again?')).toBeVisible()
+  },
+}
+
+export const NothingArchived: Story = {
+  args: { scope: 'archived' },
+  parameters: { router: { path: '/library/archived', initialEntries: ['/library/archived'] } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Nothing archived')).toBeVisible()
   },
 }
 

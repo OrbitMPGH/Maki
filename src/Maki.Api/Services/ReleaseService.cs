@@ -73,6 +73,7 @@ public sealed class ReleaseRefusedException(string key, string message) : Invali
     public const string NoDownloadLink = "error.release.noDownloadLink";
     public const string IndexerNotConfigured = "error.release.indexerNotConfigured";
     public const string DownloadClientNotConfigured = "error.release.downloadClientNotConfigured";
+    public const string SeriesArchived = "error.series.archived";
 
     public string Key { get; } = key;
 }
@@ -89,6 +90,10 @@ public class ReleaseService(
     {
         var series = await db.Series.FindAsync([seriesId], ct)
             ?? throw new ReleaseRefusedException(ReleaseRefusedException.SeriesNotFound, "Series not found");
+        if (series.ArchivedAt is not null)
+        {
+            throw new ReleaseRefusedException(ReleaseRefusedException.SeriesArchived, "Series is archived");
+        }
 
         var indexerSettings = await GetIndexerSettingsAsync(ct);
         var indexer = indexers.For(indexerSettings.Backend);
@@ -128,9 +133,16 @@ public class ReleaseService(
         int seriesId, ReleaseDto release, DownloadOrigin origin, int? queuedByUserId, string? upgradeInfoJson,
         CancellationToken ct = default)
     {
-        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        var series = await db.Series
+            .Where(s => s.Id == seriesId)
+            .Select(s => new { s.ArchivedAt })
+            .FirstOrDefaultAsync(ct)
+            ?? throw new ReleaseRefusedException(ReleaseRefusedException.SeriesNotFound, "Series not found");
+
+        // The queue's own backstop never sees this row: it is inserted here, not through an Enqueue method.
+        if (series.ArchivedAt is not null)
         {
-            throw new ReleaseRefusedException(ReleaseRefusedException.SeriesNotFound, "Series not found");
+            throw new ReleaseRefusedException(ReleaseRefusedException.SeriesArchived, "Series is archived");
         }
 
         var client = await GetClientSettingsAsync(ct);
