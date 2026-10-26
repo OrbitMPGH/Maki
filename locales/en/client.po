@@ -3005,6 +3005,7 @@ msgstr "Arabic"
 msgid "Archive"
 msgstr "Archive"
 
+#: src/components/series/ArchiveHint.tsx
 #: src/components/series/ArchiveSeriesDialog.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -5434,6 +5435,7 @@ msgid "Disk used"
 msgstr "Disk used"
 
 #: src/components/layout/SidebarFooter.tsx
+#: src/components/series/ArchiveHint.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -12687,12 +12689,15 @@ msgstr "Restore"
 
 #: src/components/discover/ArchivedRestore.tsx
 #: src/components/series/RestoreSeriesDialog.tsx
+#: src/pages/ImportPage.tsx
 #: src/pages/LibraryPage.tsx
 msgctxt "series"
 msgid "Restore"
 msgstr "Restore"
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/import/ImportPlanModal.tsx
+#: src/pages/ImportPage.tsx
 msgctxt "series"
 msgid "Restore {title}"
 msgstr "Restore {title}"
@@ -17233,6 +17238,10 @@ msgstr "You're offline. Showing what's saved on this device."
 #: src/components/SetupWizard.tsx
 msgid "You're set"
 msgstr "You're set"
+
+#: src/components/series/ArchiveHint.tsx
+msgid "You've finished this. Archive it?"
+msgstr "You've finished this. Archive it?"
 
 #: src/pages/rewind/slides.tsx
 msgid "Your {label}"

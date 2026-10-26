@@ -3672,6 +3672,7 @@ msgstr "阿拉伯语"
 msgid "Archive"
 msgstr "归档"
 
+#: src/components/series/ArchiveHint.tsx
 #: src/components/series/ArchiveSeriesDialog.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -6625,6 +6626,7 @@ msgid "Disk used"
 msgstr "磁盘使用量"
 
 #: src/components/layout/SidebarFooter.tsx
+#: src/components/series/ArchiveHint.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -15473,12 +15475,15 @@ msgstr "恢复"
 
 #: src/components/discover/ArchivedRestore.tsx
 #: src/components/series/RestoreSeriesDialog.tsx
+#: src/pages/ImportPage.tsx
 #: src/pages/LibraryPage.tsx
 msgctxt "series"
 msgid "Restore"
 msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/import/ImportPlanModal.tsx
+#: src/pages/ImportPage.tsx
 msgctxt "series"
 msgid "Restore {title}"
 msgstr ""
@@ -21007,6 +21012,10 @@ msgstr "你当前处于离线状态。正在显示此设备上已保存的内容
 #, fuzzy
 msgid "You're set"
 msgstr "设置完成"
+
+#: src/components/series/ArchiveHint.tsx
+msgid "You've finished this. Archive it?"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy

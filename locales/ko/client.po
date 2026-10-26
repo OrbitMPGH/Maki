@@ -3672,6 +3672,7 @@ msgstr "아랍어"
 msgid "Archive"
 msgstr "보관 파일"
 
+#: src/components/series/ArchiveHint.tsx
 #: src/components/series/ArchiveSeriesDialog.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -6625,6 +6626,7 @@ msgid "Disk used"
 msgstr "디스크 사용량"
 
 #: src/components/layout/SidebarFooter.tsx
+#: src/components/series/ArchiveHint.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -15473,12 +15475,15 @@ msgstr "복원"
 
 #: src/components/discover/ArchivedRestore.tsx
 #: src/components/series/RestoreSeriesDialog.tsx
+#: src/pages/ImportPage.tsx
 #: src/pages/LibraryPage.tsx
 msgctxt "series"
 msgid "Restore"
 msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/import/ImportPlanModal.tsx
+#: src/pages/ImportPage.tsx
 msgctxt "series"
 msgid "Restore {title}"
 msgstr ""
@@ -21007,6 +21012,10 @@ msgstr "오프라인 상태입니다. 이 기기에 저장된 항목을 보여 �
 #, fuzzy
 msgid "You're set"
 msgstr "준비되었습니다"
+
+#: src/components/series/ArchiveHint.tsx
+msgid "You've finished this. Archive it?"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
