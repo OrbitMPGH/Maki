@@ -121,6 +121,9 @@ public sealed class VectorIndexCache(
     /// <summary>How long since anything read them. Meaningless while unloaded.</summary>
     public TimeSpan IdleFor => _idle.Idle;
 
+    /// <summary>Whether anything read them within <paramref name="window"/>, loaded now or not.</summary>
+    public bool UsedWithin(TimeSpan window) => _idle.UsedWithin(window);
+
     /// <summary>
     /// Drops the built index when nothing has read it for <paramref name="idleFor"/>, and reports
     /// whether it did.
@@ -136,7 +139,7 @@ public sealed class VectorIndexCache(
     ///
     /// <para>
     /// The original reasoning survives in the window rather than in an exemption: this one is
-    /// deliberately much longer than the graphs' (<c>MAKI_VECTOR_IDLE_MINUTES</c>, default 60),
+    /// deliberately longer than the graphs' (<c>MAKI_VECTOR_IDLE_MINUTES</c>, default 15),
     /// because the rebuild is about eight seconds of reading every vector BLOB and a person who
     /// searches once tends to search again. No lock, for the same reason as the other caches: the
     /// index is immutable and a reader holds its own reference.

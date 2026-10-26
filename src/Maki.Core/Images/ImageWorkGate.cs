@@ -1,3 +1,5 @@
+using Maki.Core.Io;
+
 namespace Maki.Core.Images;
 
 /// <summary>
@@ -29,29 +31,62 @@ public static class ImageWorkGate
     private static readonly SemaphoreSlim Permits =
         new(Math.Clamp(Environment.ProcessorCount / 2, 2, 4));
 
+    /// <summary>
+    /// How long the gate has to stay empty before the decoders' freed buffers go back to the
+    /// kernel. Long enough that a reader paging through a chapter or a scan between files never
+    /// pays for it, short enough that a finished burst does not leave its heap behind for hours.
+    /// </summary>
+    private static readonly TimeSpan TrimAfter = TimeSpan.FromMinutes(2);
+
+    private static int _active;
+
+    private static readonly Timer IdleTrim = new(_ =>
+    {
+        if (Volatile.Read(ref _active) == 0)
+        {
+            NativeHeap.Trim();
+        }
+    });
+
     public static async Task<T> RunAsync<T>(Func<Task<T>> work, CancellationToken ct = default)
     {
-        await Permits.WaitAsync(ct);
+        await EnterAsync(ct);
         try
         {
             return await work();
         }
         finally
         {
-            Permits.Release();
+            Exit();
         }
     }
 
     public static async Task RunAsync(Func<Task> work, CancellationToken ct = default)
     {
-        await Permits.WaitAsync(ct);
+        await EnterAsync(ct);
         try
         {
             await work();
         }
         finally
         {
-            Permits.Release();
+            Exit();
+        }
+    }
+
+    private static async Task EnterAsync(CancellationToken ct)
+    {
+        await Permits.WaitAsync(ct);
+        Interlocked.Increment(ref _active);
+    }
+
+    private static void Exit()
+    {
+        Permits.Release();
+        if (Interlocked.Decrement(ref _active) == 0)
+        {
+            // Re-armed by every last release, so it fires once the burst is over, not during it.
+            IdleTrim.Change(TrimAfter, Timeout.InfiniteTimeSpan);
         }
     }
 }

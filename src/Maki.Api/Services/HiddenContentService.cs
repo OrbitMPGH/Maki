@@ -13,7 +13,8 @@ namespace Maki.Api.Services;
 /// a request's creator filter is resolved, since every filtered request already passes through here.
 /// </summary>
 public class HiddenContentService(
-    IUserSettings userSettings, VectorIndexCache vectorIndex, CatalogueIndexCache catalogueIndex)
+    IUserSettings userSettings, VectorIndexCache vectorIndex, CatalogueIndexCache catalogueIndex,
+    MangaBakaLocalStore store)
 {
     private IReadOnlyList<CatalogueTerm>? _terms;
     private bool _loaded;
@@ -75,20 +76,52 @@ public class HiddenContentService(
             CreditIds = null,
         };
 
+    /// <summary>Whether the caller has a never-show list at all, without testing anything against it.</summary>
+    public async Task<bool> HasTermsAsync(CancellationToken ct = default) =>
+        await TermsAsync(ct) is { Count: > 0 };
+
     /// <summary>
-    /// True for a MangaBaka id the caller has hidden. Null when nothing is hidden, or when the index
-    /// is not built: tags cannot be tested without it, and a row missing from it has nothing to
-    /// test, so both read as visible.
+    /// True for a MangaBaka id among <paramref name="candidates"/> the caller has hidden. Null when
+    /// nothing is hidden.
+    ///
+    /// <para>
+    /// Uses the vector index only when it is already loaded, and without counting as a read. This
+    /// runs on every series page, every recommendation endpoint and the Home anime rail, so asking
+    /// the index to load (or resetting its idle clock) kept 110 MB resident for as long as the reader
+    /// had a never-show list. Otherwise the candidates' own genres and tags are read from the dump.
+    /// </para>
     /// </summary>
-    public async Task<Func<long, bool>?> PredicateAsync(CancellationToken ct = default)
+    public async Task<Func<long, bool>?> PredicateAsync(IEnumerable<long> candidates, CancellationToken ct = default)
     {
-        if (await TermsAsync(ct) is not { Count: > 0 } terms || await vectorIndex.GetAsync(ct) is not { } index)
+        if (await TermsAsync(ct) is not { Count: > 0 } terms)
         {
             return null;
         }
 
-        var plan = index.Plan(new RecommendationFilters(Hidden: terms));
-        return id => index.TryGetRow(id, out var row) && !index.Matches(row, plan);
+        if (vectorIndex.TryGetLoaded() is { } index)
+        {
+            var plan = index.Plan(new RecommendationFilters(Hidden: terms));
+            return id => index.TryGetRow(id, out var row) && !index.Matches(row, plan);
+        }
+
+        var hidden = await store.GetHiddenIdsAsync(candidates.ToList(), terms, ct);
+        return hidden.Contains;
+    }
+
+    /// <inheritdoc cref="PredicateAsync(IEnumerable{long}, CancellationToken)"/>
+    public Task<Func<long, bool>?> PredicateAsync(
+        IEnumerable<MangaBakaRecommendation> candidates, CancellationToken ct = default) =>
+        PredicateAsync(Ids(candidates), ct);
+
+    private static IEnumerable<long> Ids(IEnumerable<MangaBakaRecommendation> items)
+    {
+        foreach (var item in items)
+        {
+            if (long.TryParse(item.ProviderId, out var id))
+            {
+                yield return id;
+            }
+        }
     }
 
     /// <summary>Drops hidden items from a list of catalogue picks.</summary>

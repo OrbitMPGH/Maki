@@ -1,3 +1,5 @@
+using Maki.Core.Io;
+using Maki.Core.Sources;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.Embedding;
@@ -27,15 +29,16 @@ namespace Maki.Api.Jobs;
 ///
 /// <para>
 /// The price is the rebuild on the next read: about nine seconds for the catalogue indexes, a
-/// second or two for the graphs. That is why the default window is generous rather than tight - it
-/// is meant to catch an instance that is genuinely idle overnight, not to interrupt somebody
-/// browsing. <c>MAKI_ARTIFACT_IDLE_MINUTES=0</c> keeps everything loaded forever, which is what a
-/// machine with RAM to spare wants.
+/// second or two for the graphs. The window was thirty minutes, sized to catch an instance idle
+/// overnight. It is ten because the process never handed the memory of a visit back afterwards,
+/// so every minute at the loaded peak was a minute the dashboard read 700 MB; ten still covers one
+/// browsing session. <c>MAKI_ARTIFACT_IDLE_MINUTES=0</c> keeps everything loaded forever, which is
+/// what a machine with RAM to spare wants.
 /// </para>
 ///
 /// <para>
 /// The search vectors go too, on their own longer window (<c>MAKI_VECTOR_IDLE_MINUTES</c>, default
-/// 60). They were originally left out of this on the grounds that every recommendation and every
+/// 15). They were originally left out of this on the grounds that every recommendation and every
 /// search needs them, so they are the likeliest to be wanted again straight after being dropped and
 /// the most expensive thing here to rebuild. Measuring a real instance is what changed that: at 16
 /// minutes it held 104 MB of large-object heap with the vectors the largest single part, and nobody
@@ -50,6 +53,7 @@ public class ArtifactIdleUnloadJob(
     CoReadCache coRead,
     RecoGraphCache recoGraph,
     ReaderCohortCache cohorts,
+    SourceChapterListCache chapterLists,
     ILogger<ArtifactIdleUnloadJob> logger) : IJob
 {
     public static readonly JobKey Key = new("artifact-idle-unload");
@@ -58,12 +62,16 @@ public class ArtifactIdleUnloadJob(
 
     public const string VectorIdleMinutesVariable = "MAKI_VECTOR_IDLE_MINUTES";
 
-    private const int DefaultIdleMinutes = 30;
+    private const int DefaultIdleMinutes = 10;
 
-    private const int DefaultVectorIdleMinutes = 60;
+    private const int DefaultVectorIdleMinutes = 15;
 
     public Task Execute(IJobExecutionContext context)
     {
+        // Not an artifact, but the same kind of leftover: chapter lists the scout and measure
+        // passes fetched, kept past their five-minute life until the cache filled up.
+        chapterLists.DropExpired();
+
         var minutes = Resolve(Environment.GetEnvironmentVariable(IdleMinutesVariable));
         var vectorMinutes = ResolveVector(Environment.GetEnvironmentVariable(VectorIdleMinutesVariable));
         if (minutes <= 0 && vectorMinutes <= 0)
@@ -101,6 +109,7 @@ public class ArtifactIdleUnloadJob(
             System.Runtime.GCSettings.LargeObjectHeapCompactionMode =
                 System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
             GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+            NativeHeap.Trim();
             logger.LogDebug("Released {Count} idle discovery artifact(s)", released);
         }
 

@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.MangaBaka;
@@ -77,9 +78,13 @@ public class SemanticSearcher(
     private const int MinIndexed = 1000;
 
     private readonly object _tagCacheGate = new();
-    private IReadOnlyDictionary<int, float[]>? _tagVectors;
-    private IReadOnlyDictionary<int, TagInfo>? _tagVocab;
-    private int _tagCacheStamp = -1;
+
+    // Keyed by the index they were read for, so they are collected with it after an idle unload.
+    // A plain field held about 20 MB of float vectors for the life of the process.
+    private readonly ConditionalWeakTable<VectorIndex, TagCache> _tagCaches = new();
+
+    private sealed record TagCache(
+        IReadOnlyDictionary<int, float[]> Vectors, IReadOnlyDictionary<int, TagInfo> Vocab, int Stamp);
 
     private int _embedderWarming;
 
@@ -596,7 +601,7 @@ public class SemanticSearcher(
     private IReadOnlyList<(int Row, int Rank)> RankByTagProfile(
         float[] queryVector, VectorIndex index, FilterPlan plan, int take, CancellationToken ct)
     {
-        var (tagVectors, vocab) = GetTagCache();
+        var (tagVectors, vocab) = GetTagCache(index);
         if (tagVectors.Count == 0)
         {
             return [];
@@ -758,24 +763,23 @@ public class SemanticSearcher(
     }
 
     /// <summary>
-    /// Tag vectors and vocabulary, cached per process. Both are rewritten only by an indexing
-    /// pass, so the stored row count is enough of a stamp to notice a rebuild or a downloaded
-    /// index landing underneath us.
+    /// Tag vectors and vocabulary, cached for as long as <paramref name="index"/> lives. Both are
+    /// rewritten only by an indexing pass, so the stored row count is enough of a stamp to notice a
+    /// rebuild or a downloaded index landing underneath us.
     /// </summary>
-    private (IReadOnlyDictionary<int, float[]> Vectors, IReadOnlyDictionary<int, TagInfo> Vocab) GetTagCache()
+    private (IReadOnlyDictionary<int, float[]> Vectors, IReadOnlyDictionary<int, TagInfo> Vocab) GetTagCache(
+        VectorIndex index)
     {
         var stamp = store.Count();
         lock (_tagCacheGate)
         {
-            if (_tagCacheStamp == stamp && _tagVectors is not null && _tagVocab is not null)
+            if (!_tagCaches.TryGetValue(index, out var cached) || cached.Stamp != stamp)
             {
-                return (_tagVectors, _tagVocab);
+                cached = new TagCache(store.GetTagVectors(), store.GetVocab(), stamp);
+                _tagCaches.AddOrUpdate(index, cached);
             }
 
-            _tagVectors = store.GetTagVectors();
-            _tagVocab = store.GetVocab();
-            _tagCacheStamp = stamp;
-            return (_tagVectors, _tagVocab);
+            return (cached.Vectors, cached.Vocab);
         }
     }
 

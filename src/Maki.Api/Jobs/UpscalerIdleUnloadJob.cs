@@ -1,4 +1,5 @@
 using Maki.Api.Services.Upscaling;
+using Maki.Core.Io;
 using Quartz;
 
 namespace Maki.Api.Jobs;
@@ -16,7 +17,11 @@ public class UpscalerIdleUnloadJob(OnnxPageUpscaler upscaler) : IJob
 
     public Task Execute(IJobExecutionContext context)
     {
-        upscaler.ReleaseIfIdle(IdleWindow);
+        if (upscaler.ReleaseIfIdle(IdleWindow) > 0)
+        {
+            NativeHeap.Trim();
+        }
+
         return Task.CompletedTask;
     }
 }

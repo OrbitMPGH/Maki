@@ -53,6 +53,12 @@ public static class ImageCodec
         Cache.MaxMem = 0;
         Cache.MaxFiles = 0;
 
+        // libvips otherwise starts one worker per core for every pipeline, on top of the parallelism
+        // ImageWorkGate already allows, and each worker keeps its own buffers. On a 16-core host
+        // that is four gated decodes times sixteen threads of native heap that glibc never gives
+        // back. One cover or thumbnail on its own gets slower; throughput comes from the gate.
+        global::NetVips.NetVips.Concurrency = 1;
+
         global::NetVips.NetVips.BlockUntrusted = true;
         Operation.Block("VipsForeignLoad", true);
         foreach (var loader in AllowedLoaders)
@@ -60,6 +66,9 @@ public static class ImageCodec
             Operation.Block(loader, false);
         }
     }
+
+    /// <summary>Bytes libvips has allocated through its own tracker: pixel buffers, not every malloc it makes.</summary>
+    public static long TrackedMemoryBytes => Stats.Mem;
 
     /// <summary>Reads width, height and format from the header. Throws when the bytes are not an image a permitted loader accepts.</summary>
     public static ImageHeader Identify(byte[] bytes)

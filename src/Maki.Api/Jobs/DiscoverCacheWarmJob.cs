@@ -41,6 +41,13 @@ public class DiscoverCacheWarmJob(
 
     public const string ScheduledTriggerName = "discover-cache-warm-trigger";
 
+    /// <summary>
+    /// How recently an index has to have been read for a dump install to rebuild it ahead of time.
+    /// Shorter than the gap between dump installs on purpose: the warm's own build counts as a
+    /// read, and a window that reached the next install would keep every instance warming forever.
+    /// </summary>
+    internal static readonly TimeSpan RecentUse = TimeSpan.FromHours(6);
+
     public async Task Execute(IJobExecutionContext context)
     {
         try
@@ -54,21 +61,22 @@ public class DiscoverCacheWarmJob(
                 await discover.GetGenreFeedsAsync(refresh: true, ceiling, context.CancellationToken);
             }
 
-            // A run triggered after a dump install builds both indexes so the cost never lands on the
-            // first keystroke. Scheduled runs only refresh an index somebody already has loaded:
-            // building one for an instance nobody is browsing costs ~9s of CPU and ~145 MB, only for
-            // the idle unload to drop it again. The first scheduled run after startup also builds
-            // them, but only when their source files changed since the last warm (a dump, vector
-            // database or taste file installed while the process was down); otherwise a restart
-            // would hold both for an hour whether or not anyone searches.
+            // Scheduled runs only refresh an index somebody already has loaded: building one for an
+            // instance nobody is browsing costs ~9s of CPU and ~145 MB, only for the idle unload to
+            // drop it again, and the freed memory used to stay with the process. A run triggered
+            // after a dump install builds an index ahead of time only if something read it within
+            // RecentUse, so the nightly install stops pushing idle instances into the used state.
+            // The first scheduled run after startup builds both when their source files changed
+            // since the last warm (a dump, vector database or taste file installed while the process
+            // was down).
             var stamp = SourceStamp();
-            var everything = context.Trigger.Key.Name != ScheduledTriggerName
-                || (context.PreviousFireTimeUtc is null
-                    && stamp != await settings.GetAsync(SettingKeys.DiscoverWarmedStamp, context.CancellationToken));
+            var installed = context.Trigger.Key.Name != ScheduledTriggerName;
+            var staleAfterRestart = !installed && context.PreviousFireTimeUtc is null
+                && stamp != await settings.GetAsync(SettingKeys.DiscoverWarmedStamp, context.CancellationToken);
 
             // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
             // the first natural-language query doesn't wear it.
-            if (everything || searchIndex.IsLoaded)
+            if (searchIndex.IsLoaded || staleAfterRestart || (installed && searchIndex.UsedWithin(RecentUse)))
             {
                 if (!searchIndex.IsCurrent)
                 {
@@ -80,7 +88,7 @@ public class DiscoverCacheWarmJob(
 
             // Same reasoning for the credit and title-vocabulary indexes: about 9s of scanning the
             // dump, which would otherwise land on whichever keystroke arrived first.
-            if (everything || catalogueIndex.IsLoaded)
+            if (catalogueIndex.IsLoaded || staleAfterRestart || (installed && catalogueIndex.UsedWithin(RecentUse)))
             {
                 if (!catalogueIndex.IsCurrent)
                 {
