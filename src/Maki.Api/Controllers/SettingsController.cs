@@ -1013,7 +1013,8 @@ public class SettingsController(
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("download")]
-    public async Task<IActionResult> SetDownload([FromBody] DownloadSettings request, CancellationToken ct)
+    public async Task<IActionResult> SetDownload(
+        [FromBody] DownloadSettings request, [FromServices] DownloadQueueService queue, CancellationToken ct)
     {
         if (request.ConcurrentChapters is < 1 or > 8)
         {
@@ -1070,6 +1071,7 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.DownloadItemTimeoutMinutes,
             request.ItemTimeoutMinutes.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.DownloadUseHardlinks, request.UseHardlinks ? "true" : "false", ct);
+        queue.NotifySettingsChanged();
         if (request.BulkHoldThreshold is { } bulkHold)
         {
             await settings.SetAsync(SettingKeys.MonitoringBulkHoldThreshold,

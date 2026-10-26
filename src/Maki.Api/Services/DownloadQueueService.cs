@@ -85,6 +85,42 @@ public class DownloadQueueService(
 
     public ChannelReader<int> Reader => _channel.Reader;
 
+    // False from the start of a claim until one finds nothing to hand out, so a claim that threw
+    // keeps the poll on its short interval until a clean one runs.
+    private volatile bool _lastClaimEmpty;
+
+    private TaskCompletionSource _settingsChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>
+    /// Whether the queue may have work the cooldown poll should keep checking on: an item in flight
+    /// or resolving, or a last claim that did not come back empty. False on an idle instance, where
+    /// the poll can sleep until the next cooldown or pause ends.
+    /// </summary>
+    public bool Busy => !_lastClaimEmpty || !_inFlight.IsEmpty || !_resolving.IsEmpty;
+
+    /// <summary>Completes the next time the download settings are saved.</summary>
+    public Task SettingsChanged => Volatile.Read(ref _settingsChanged).Task;
+
+    /// <summary>Wakes the cooldown poll so a changed worker count or item timeout applies at once.</summary>
+    public void NotifySettingsChanged() =>
+        Interlocked.Exchange(
+            ref _settingsChanged, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously))
+            .TrySetResult();
+
+    /// <summary>Now, by the clock cooldowns and pauses are measured against.</summary>
+    public DateTime UtcNow => time.GetUtcNow().UtcDateTime;
+
+    /// <summary>When the soonest active source cooldown lifts, or null when none is cooling down.</summary>
+    public DateTime? EarliestCooldownEnd()
+    {
+        lock (_cooldownLock)
+        {
+            var now = time.GetUtcNow().UtcDateTime.Ticks;
+            var soonest = _cooldowns.Values.Where(c => c.UntilTicks > now).Select(c => (long?)c.UntilTicks).Min();
+            return soonest is { } ticks ? new DateTime(ticks, DateTimeKind.Utc) : null;
+        }
+    }
+
     /// <summary>Cancellation token shared by every local owner of a queue item.</summary>
     public CancellationToken WorkCancellationToken(int queueItemId) =>
         _workCancellations.GetOrAdd(queueItemId, _ => new CancellationTokenSource()).Token;
@@ -945,9 +981,11 @@ public class DownloadQueueService(
     /// </summary>
     public async Task<int?> ClaimNextAsync(CancellationToken ct = default)
     {
+        _lastClaimEmpty = false;
         var pause = pauses is null ? DownloadPauseState.None : await pauses.ActiveAsync(ct);
         if (pause.All is not null)
         {
+            _lastClaimEmpty = true;
             return null;
         }
 
@@ -979,6 +1017,7 @@ public class DownloadQueueService(
             if (candidate is null)
             {
                 // Either nothing queued, or every remaining item's tracker is cooling down.
+                _lastClaimEmpty = true;
                 return null;
             }
 

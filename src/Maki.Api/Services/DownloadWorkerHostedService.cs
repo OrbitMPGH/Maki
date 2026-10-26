@@ -12,9 +12,10 @@ namespace Maki.Api.Services;
 /// chapter workers. On startup, in-flight items from a previous run are reset
 /// to Queued and re-signaled.
 /// <para>
-/// The worker count and the per-item timeout are re-read on every cooldown poll, so a change in
-/// Settings applies within a few seconds. All <see cref="MaxConcurrentChapters"/> loops exist from
-/// the start; the ones above the configured count stay parked and read nothing from the channel.
+/// The worker count and the per-item timeout are re-read on every cooldown poll, and saving them
+/// wakes the poll, so a change in Settings applies at once. All <see cref="MaxConcurrentChapters"/>
+/// loops exist from the start; the ones above the configured count wait for the count to change
+/// and read nothing from the channel.
 /// </para>
 /// </summary>
 public class DownloadWorkerHostedService(
@@ -28,10 +29,13 @@ public class DownloadWorkerHostedService(
     private const int MaxConcurrentChapters = 8;
     private const int DefaultItemTimeoutMinutes = 120;
     private static readonly TimeSpan CooldownPollInterval = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan IdlePollInterval = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan WorkerRestartDelay = TimeSpan.FromSeconds(10);
     private const int MaxRecoveryAttempts = 6;
 
     private volatile int _concurrency = DefaultConcurrentChapters;
+
+    private TaskCompletionSource _concurrencyChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     // Minutes rather than a TimeSpan so it can be volatile; 0 means no limit.
     private volatile int _itemTimeoutMinutes = DefaultItemTimeoutMinutes;
@@ -104,16 +108,53 @@ public class DownloadWorkerHostedService(
     /// A per-tracker cooldown lifting doesn't itself produce a channel signal, so a RateLimited item
     /// parked on a source that just cleared could otherwise sit until unrelated queue activity wakes
     /// a worker. Poking the channel periodically bounds how long that can stall.
+    /// <para>
+    /// Every five seconds while the queue is busy. Idle, it sleeps until the next cooldown or pause
+    /// ends, at most a minute: new work signals the channel itself, so the short tick was twelve
+    /// claim queries a minute on an empty queue for nothing.
+    /// </para>
     /// </summary>
     private async Task PeriodicWakeAsync(CancellationToken ct)
     {
-        using var timer = new PeriodicTimer(CooldownPollInterval);
-        while (await timer.WaitForNextTickAsync(ct))
+        while (!ct.IsCancellationRequested)
         {
+            var settingsChanged = queue.SettingsChanged;
+            await Task.WhenAny(Task.Delay(await NextPollDelayAsync(ct), ct), settingsChanged);
+            ct.ThrowIfCancellationRequested();
             await RefreshSettingsAsync(ct);
             await LiftElapsedPausesAsync(ct);
             await queue.SignalAsync(0, ct);
         }
+    }
+
+    internal async Task<TimeSpan> NextPollDelayAsync(CancellationToken ct)
+    {
+        if (queue.Busy)
+        {
+            return CooldownPollInterval;
+        }
+
+        var now = queue.UtcNow;
+        var next = now + IdlePollInterval;
+        if (queue.EarliestCooldownEnd() is { } cooldown && cooldown < next)
+        {
+            next = cooldown;
+        }
+
+        if (pauses is not null)
+        {
+            var state = await pauses.ActiveAsync(ct);
+            foreach (var entry in state.Sources.Values.Append(state.All))
+            {
+                if (entry?.Until is { } until && until < next)
+                {
+                    next = until;
+                }
+            }
+        }
+
+        var delay = next - now;
+        return delay < CooldownPollInterval ? CooldownPollInterval : delay;
     }
 
     /// <summary>
@@ -165,6 +206,9 @@ public class DownloadWorkerHostedService(
         {
             logger.LogInformation("Download concurrency now {Concurrency}", concurrency);
             _concurrency = concurrency;
+            Interlocked.Exchange(
+                ref _concurrencyChanged, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously))
+                .TrySetResult();
         }
 
         _itemTimeoutMinutes = await ResolveItemTimeoutMinutesAsync(ct);
@@ -296,9 +340,11 @@ public class DownloadWorkerHostedService(
         while (!ct.IsCancellationRequested)
         {
             // Parked above the configured count: read nothing, so the signal goes to a live worker.
+            // Taken before the check, so a change landing between the two still wakes this worker.
+            var concurrencyChanged = Volatile.Read(ref _concurrencyChanged).Task;
             if (workerId >= _concurrency)
             {
-                await Task.Delay(CooldownPollInterval, ct);
+                await concurrencyChanged.WaitAsync(ct);
                 continue;
             }
 
@@ -329,7 +375,8 @@ public class DownloadWorkerHostedService(
                     // Claiming sits in the loop *condition* no more: a throw here (transient DB
                     // error, a row the claim logic can't cope with) escaped the whole method and
                     // killed the worker for good. Drop back to waiting for the next signal instead;
-                    // PeriodicWakeAsync guarantees one arrives within CooldownPollInterval.
+                    // a claim that threw keeps the queue Busy, so PeriodicWakeAsync sends one within
+                    // CooldownPollInterval.
                     if (await queue.ClaimNextAsync(ct) is not { } claimed)
                     {
                         break;

@@ -82,7 +82,8 @@ public class ReleaseService(
     IndexerRegistry indexers,
     TorrentClientRegistry torrentClients,
     SettingsService settings,
-    ILogger<ReleaseService> logger)
+    ILogger<ReleaseService> logger,
+    TorrentPollState? pollState = null)
 {
     public virtual async Task<ReleaseSearchResult> SearchAsync(int seriesId, string? query = null, CancellationToken ct = default)
     {
@@ -155,6 +156,7 @@ public class ReleaseService(
         };
         db.DownloadQueue.Add(item);
         await db.SaveChangesAsync(ct);
+        pollState?.TorrentAdded();
 
         logger.LogInformation("Grabbed '{Title}' from {Indexer} for series {SeriesId}",
             release.Title, release.Indexer, seriesId);

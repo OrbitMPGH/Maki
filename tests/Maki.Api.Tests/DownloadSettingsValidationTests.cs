@@ -27,6 +27,10 @@ public class DownloadSettingsValidationTests : IDisposable
         kavitaUser: null!, kavitaLive: null!, schedulerFactory: null!, scopeFactory: _db.ScopeFactory(),
         logger: NullLogger<SettingsController>.Instance);
 
+    private DownloadQueueService Queue() => new(
+        _db.ScopeFactory(), TimeProvider.System, Sources.SingleChapterResolver(null, "x"),
+        NullLogger<DownloadQueueService>.Instance);
+
     private static SettingsController.DownloadSettings Payload(int chaptersLeft = 5, int chapters = 10) =>
         new(ConcurrentChapters: 2, RetryEnabled: true, RetryMaxAttempts: 5,
             SmartDownloadChaptersLeft: chaptersLeft, SmartDownloadChapters: chapters, ItemTimeoutMinutes: 120);
@@ -38,7 +42,7 @@ public class DownloadSettingsValidationTests : IDisposable
     [InlineData(5, 21)]
     public async Task Smart_download_values_outside_their_range_are_refused(int chaptersLeft, int chapters)
     {
-        var result = await Controller().SetDownload(Payload(chaptersLeft, chapters), CancellationToken.None);
+        var result = await Controller().SetDownload(Payload(chaptersLeft, chapters), Queue(), CancellationToken.None);
 
         Assert.IsNotType<OkObjectResult>(result);
     }
@@ -46,9 +50,13 @@ public class DownloadSettingsValidationTests : IDisposable
     [Fact]
     public async Task Smart_download_values_inside_their_range_are_saved()
     {
-        var result = await Controller().SetDownload(Payload(1, 20), CancellationToken.None);
+        var queue = Queue();
+        var changed = queue.SettingsChanged;
+
+        var result = await Controller().SetDownload(Payload(1, 20), queue, CancellationToken.None);
 
         Assert.IsType<OkObjectResult>(result);
+        Assert.True(changed.IsCompleted);
     }
 
     [Fact]

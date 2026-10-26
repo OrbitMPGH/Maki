@@ -278,6 +278,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                 db.HealthScans.Add(new() { RootFolderId = root.Id });
                 await db.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
+                HealthWorker.Wake();
             }
             catch
             {
