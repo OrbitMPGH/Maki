@@ -62,6 +62,7 @@ public class HealthScanService(MakiDbContext db)
                 var tracked = await db.ChapterFiles.AsNoTracking()
                     .Where(f => db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == root.Id))
                     .Where(f => scan.SeriesId == null || f.SeriesId == scan.SeriesId)
+                    .Select(f => new TrackedFile(f.Id, f.SeriesId, f.RelativePath))
                     .ToListAsync(ct);
                 // A series scan only ever reports that series' tracked files, so it needs only the
                 // inventory rows for them; a row still unlinked from the last full sweep is matched
@@ -70,11 +71,26 @@ public class HealthScanService(MakiDbContext db)
                     ? []
                     : tracked.SelectMany(f => new[] { f.RelativePath, f.RelativePath.Replace('\\', '/'), f.RelativePath.Replace('/', '\\') })
                         .Distinct().ToList();
-                var knownFiles = await db.HealthFiles
+                // Everything but AnalysisJson, then attached: this phase only moves paths and links,
+                // and a row's analysis is tens of KB of page fingerprints, about 100 MB over 50k
+                // files. Attached rows write back only the columns changed here.
+                var knownFiles = await db.HealthFiles.AsNoTracking()
                     .Where(f => f.RootFolderId == root.Id)
                     .Where(f => scan.SeriesId == null || f.SeriesId == scan.SeriesId || trackedSpellings.Contains(f.RelativePath))
+                    .Select(f => new HealthFile
+                    {
+                        Id = f.Id, RootFolderId = f.RootFolderId, SeriesId = f.SeriesId, ChapterFileId = f.ChapterFileId,
+                        RelativePath = f.RelativePath, Version = f.Version, Size = f.Size, ModifiedAt = f.ModifiedAt,
+                        ContentHash = f.ContentHash, AnalyzerVersion = f.AnalyzerVersion, VerifiedVersion = f.VerifiedVersion,
+                        Status = f.Status, AnalyzedAt = f.AnalyzedAt, Removed = f.Removed,
+                    })
                     .ToListAsync(ct);
-                var trackedByKey = new Dictionary<string, ChapterFile>(seen.Comparer);
+                for (var i = 0; i < knownFiles.Count; i++)
+                {
+                    if (db.HealthFiles.Local.FindEntry(knownFiles[i].Id) is { } entry) knownFiles[i] = entry.Entity;
+                    else db.HealthFiles.Attach(knownFiles[i]);
+                }
+                var trackedByKey = new Dictionary<string, TrackedFile>(seen.Comparer);
                 foreach (var f in tracked.OrderBy(f => f.Id)) trackedByKey.TryAdd(LibraryPaths.ComparisonKey(f.RelativePath), f);
                 var knownByKey = knownFiles
                     .GroupBy(f => LibraryPaths.ComparisonKey(f.RelativePath), seen.Comparer)
@@ -394,6 +410,8 @@ public class HealthScanService(MakiDbContext db)
         }
         await db.SaveChangesAsync(ct);
     }
+
+    private sealed record TrackedFile(int Id, int SeriesId, string RelativePath);
 }
 
 /// <summary>
