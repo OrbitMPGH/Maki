@@ -1701,6 +1701,12 @@ msgstr "Слишком много перенаправлений"
 msgid "error.search.unknownSource"
 msgstr "Неизвестный источник: {sourceName}"
 
+#. Archiving waits while a download is being written, or while a library import is still matching or linking the series.
+#: src/Maki.Api/Services/SeriesArchiveService.cs
+#. English: Series has a download or import in progress. Wait for it to finish before archiving.
+msgid "error.series.activeDownloadArchive"
+msgstr ""
+
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series has a download in progress. Wait for it to finish before deleting.
 #, fuzzy
@@ -1737,6 +1743,12 @@ msgstr "Серия уже есть в библиотеке"
 #, fuzzy
 msgid "error.series.alreadyInRootFolder"
 msgstr "Серия уже находится в этой корневой папке"
+
+#. Refresh, search and download tools refuse an archived series, since it no longer talks to its sources.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: This series is archived. Restore it to the library first.
+msgid "error.series.archived"
+msgstr ""
 
 #. {folder} is an absolute filesystem path and is never translated.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1836,6 +1848,11 @@ msgstr "Файлы не выбраны"
 #, fuzzy
 msgid "error.series.noRootFolder"
 msgstr "У серии нет корневой папки"
+
+#: src/Maki.Api/Services/SeriesArchiveService.cs
+#. English: This series is not archived.
+msgid "error.series.notArchived"
+msgstr ""
 
 #. Shown when a series create/move request names a root folder id that doesn't exist.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -4497,6 +4514,18 @@ msgstr "Серия добавлена"
 #, fuzzy
 msgid "notify.series.added.body"
 msgstr "В библиотеку добавлена серия «{series}»{hasRequester, select, yes {. Запрос от {user}} other {}}"
+
+#: src/Maki.Api/Services/SeriesArchiveService.cs
+#. English: Series archived
+msgid "notify.series.archived.title"
+msgstr ""
+
+#. {files} is "kept" when the files stayed on disk, "binned" when they went to the recycle bin and
+#. "deleted" when they were deleted for good.
+#: src/Maki.Api/Services/SeriesArchiveService.cs
+#. English: {series} was archived{files, select, binned {, files moved to the recycle bin} deleted {, files deleted} other {, files kept on disk}}
+msgid "notify.series.archived.body"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series removed
