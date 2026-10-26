@@ -740,9 +740,9 @@ public class SemanticSearcher(
     /// the profile alone — "how much of what the query wanted is present", not "how much of this
     /// series is what the query wanted".
     /// </summary>
-    private static double ScoreAgainstQueryTags(byte[]? candidateBlob, TagMath.Profile profile, Func<int, double> idf)
+    internal static double ScoreAgainstQueryTags(ReadOnlySpan<byte> candidateBlob, TagMath.Profile profile, Func<int, double> idf)
     {
-        if (candidateBlob is null || candidateBlob.Length % TagMath.EntrySize != 0 || profile.IsEmpty)
+        if (candidateBlob.Length % TagMath.EntrySize != 0 || profile.IsEmpty)
         {
             return 0;
         }
@@ -751,7 +751,7 @@ public class SemanticSearcher(
         var dot = 0.0;
         for (var i = 0; i < candidateBlob.Length; i += TagMath.EntrySize)
         {
-            var id = BinaryPrimitives.ReadInt32LittleEndian(candidateBlob.AsSpan(i));
+            var id = BinaryPrimitives.ReadInt32LittleEndian(candidateBlob[i..]);
             if (profile.IdfWeight.TryGetValue(id, out var wanted))
             {
                 dot += wanted * TagMath.ClassWeight(candidateBlob[i + 4]) * idf(id);

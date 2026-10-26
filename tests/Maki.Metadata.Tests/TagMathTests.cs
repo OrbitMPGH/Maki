@@ -1,4 +1,3 @@
-using System.Reflection;
 using Maki.Metadata.Embedding;
 using Xunit;
 
@@ -178,13 +177,9 @@ public class TagMathTests
         Assert.Equal(SearchScore(sparse, profile), SearchScore(rich, profile), 6);
     }
 
-    /// <summary>Invokes SemanticSearcher's private search-side tag scorer.</summary>
-    private static double SearchScore(byte[] blob, TagMath.Profile profile)
-    {
-        var method = typeof(SemanticSearcher).GetMethod(
-            "ScoreAgainstQueryTags", BindingFlags.NonPublic | BindingFlags.Static)!;
-        return (double)method.Invoke(null, [blob, profile, (Func<int, double>)FlatIdf])!;
-    }
+    /// <summary>SemanticSearcher's search-side tag scorer.</summary>
+    private static double SearchScore(byte[] blob, TagMath.Profile profile) =>
+        SemanticSearcher.ScoreAgainstQueryTags(blob, profile, FlatIdf);
 
     [Fact]
     public void Sharpening_ConcentratesTheProfileOnWhatTheSeedsAgreeAbout()

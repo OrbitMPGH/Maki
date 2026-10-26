@@ -481,7 +481,7 @@ public class VectorIndexTests
                 JaggedInts.From(authorIdx),
                 JaggedInts.From(artistIdx),
                 popularity ?? Enumerable.Repeat(1000, count).ToArray(),
-                tagBlobs,
+                PackedTags.From(tagBlobs),
                 new byte[count],
                 franchise ?? Enumerable.Repeat(VectorIndex.Unknown, count).ToArray(),
                 startDays),
