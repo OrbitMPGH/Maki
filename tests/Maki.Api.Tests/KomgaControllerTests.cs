@@ -161,11 +161,13 @@ public sealed class KomgaControllerTests : IDisposable
         Assert.IsType<NotFoundResult>(await controller.SeriesThumbnail(series, default));
         Assert.IsType<NotFoundResult>(await controller.SeriesBooks(series, null, null, unpaged: true));
         Assert.IsType<NotFoundResult>(await controller.MarkSeriesRead(series, default));
+        Assert.IsType<NotFoundResult>(await controller.MarkSeriesUnread(series, default));
         Assert.IsType<NotFoundResult>(await controller.TachiyomiProgressV2(series, default));
         Assert.IsType<NotFoundResult>(await controller.SetTachiyomiProgressV2(
             series, new KomgaTachiyomiUpdateV2(1), default));
         Assert.IsType<NotFoundResult>(await controller.Book(book, default));
         Assert.IsType<NotFoundResult>(await controller.NextBook(book, default));
+        Assert.IsType<NotFoundResult>(await controller.PreviousBook(seeded.Chapters[1].ToString(), default));
         Assert.IsType<NotFoundResult>(await controller.BookThumbnail(book, default));
         Assert.IsType<NotFoundResult>(await controller.Download(book, default));
         Assert.IsType<NotFoundResult>(await controller.Pages(book, default));
@@ -174,6 +176,27 @@ public sealed class KomgaControllerTests : IDisposable
         Assert.IsType<NotFoundResult>(await controller.ClearBookProgress(book, default));
         Assert.Null(Progress(seeded.Chapters[0]));
         Assert.IsAssignableFrom<FileResult>(await controller.Page(kept.Chapters[0].ToString(), 1, null, default));
+    }
+
+    [Fact]
+    public async Task On_deck_leaves_an_archived_series_out_of_its_total()
+    {
+        var shelved = SeedSeries("Shelved", 1m, 2m);
+        var kept = SeedSeries("Kept", 1m, 2m);
+        var (userId, _) = SeedReader();
+        var controller = Controller(userId);
+        await controller.SetBookProgress(shelved.Chapters[0].ToString(), new KomgaReadProgressUpdate(null, true), default);
+        await controller.SetBookProgress(kept.Chapters[0].ToString(), new KomgaReadProgressUpdate(null, true), default);
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == shelved.SeriesId).ArchivedAt = DateTime.UtcNow;
+            db.SaveChanges();
+        }
+
+        var deck = Assert.IsType<KomgaPage<KomgaBook>>(Ok(await Controller(userId).OnDeck(unpaged: true)));
+
+        Assert.Equal(1, deck.TotalElements);
+        Assert.Equal(kept.Chapters[1].ToString(), Assert.Single(deck.Content).Id);
     }
 
     [Fact]

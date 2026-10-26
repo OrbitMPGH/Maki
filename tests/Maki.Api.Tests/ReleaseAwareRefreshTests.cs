@@ -19,16 +19,36 @@ public class ReleaseAwareRefreshTests : IDisposable
     public void Dispose() => _db.Dispose();
 
     private ChapterSyncService Service(FakeSource source, FakeAppSettings? settings = null) =>
+        Service([source], settings);
+
+    private ChapterSyncService Service(FakeSource[] sources, FakeAppSettings? settings = null) =>
         new(
             _db.NewContext(),
-            new SourceRegistry([source]),
+            new SourceRegistry(sources),
             new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
             Sources.AllEnabled,
             new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
             settings ?? new FakeAppSettings(),
             NullLogger<ChapterSyncService>.Instance);
 
-    private static SourceMapping Mapping() => new() { SourceName = "fake", SourceSeriesId = "series", Url = "u" };
+    private static SourceMapping Mapping(string source = "fake") =>
+        new() { SourceName = source, SourceSeriesId = "series", Url = "u" };
+
+    private List<DateTime?> FirstSeenOn(int seriesId, string source)
+    {
+        using var db = _db.NewContext();
+        return db.ChapterSourceLinks
+            .Where(l => l.Chapter!.SeriesId == seriesId && l.SourceMapping!.SourceName == source)
+            .Select(l => l.FirstSeenAt)
+            .ToList();
+    }
+
+    private void MarkRestored(int seriesId, DateTime at)
+    {
+        using var db = _db.NewContext();
+        db.Series.Single(s => s.Id == seriesId).RestoredAt = at;
+        db.SaveChanges();
+    }
 
     private Dictionary<decimal, DateTime?> FirstSeen(int seriesId)
     {
@@ -86,7 +106,6 @@ public class ReleaseAwareRefreshTests : IDisposable
         await Service(source).SyncSeriesAsync(id);
 
         Assert.All(FirstSeen(id).Values, Assert.Null);
-        Assert.Null(SeriesRow(id).RestoredAt);
 
         chapters.Add(6);
         await Service(source).SyncSeriesAsync(id);
@@ -97,23 +116,50 @@ public class ReleaseAwareRefreshTests : IDisposable
     }
 
     [Fact]
-    public async Task A_sync_that_reaches_no_source_keeps_the_restore_marker()
+    public async Task A_mapping_that_failed_the_first_sync_after_a_restore_stamps_nothing_on_its_next()
+    {
+        var id = _db.SeedSeries(mappings: [Mapping("a"), Mapping("b")]);
+        var chapters = new List<decimal> { 1, 2 };
+        var bDown = false;
+        var a = new FakeSource { Name = "a" };
+        a = new FakeSource { Name = "a", OnListChapters = _ => chapters.Select(n => a.Chapter(n)).ToList() };
+        var b = new FakeSource { Name = "b" };
+        b = new FakeSource
+        {
+            Name = "b",
+            OnListChapters = _ => bDown
+                ? throw new InvalidOperationException("down")
+                : chapters.Select(n => b.Chapter(n)).ToList()
+        };
+        await Service([a, b]).SyncSeriesAsync(id);
+
+        MarkRestored(id, DateTime.UtcNow);
+        chapters.AddRange([3, 4, 5]);
+        bDown = true;
+        await Service([a, b]).SyncSeriesAsync(id);
+
+        bDown = false;
+        await Service([a, b]).SyncSeriesAsync(id);
+
+        Assert.Equal(5, FirstSeenOn(id, "b").Count);
+        Assert.All(FirstSeenOn(id, "b"), Assert.Null);
+        Assert.All(FirstSeenOn(id, "a"), Assert.Null);
+    }
+
+    [Fact]
+    public async Task A_mapping_listed_since_the_restore_stamps_as_usual()
     {
         var id = _db.SeedSeries(mappings: Mapping());
-        using (var db = _db.NewContext())
-        {
-            db.Series.Single(s => s.Id == id).RestoredAt = DateTime.UtcNow;
-            db.SaveChanges();
-        }
+        var chapters = new List<decimal> { 1, 2 };
+        var source = new FakeSource { Name = "fake" };
+        source = new FakeSource { Name = "fake", OnListChapters = _ => chapters.Select(n => source.Chapter(n)).ToList() };
+        MarkRestored(id, DateTime.UtcNow.AddMinutes(-5));
+        await Service(source).SyncSeriesAsync(id);
 
-        var failing = new FakeSource
-        {
-            Name = "fake",
-            OnListChapters = _ => throw new InvalidOperationException("down")
-        };
-        await Service(failing).SyncSeriesAsync(id);
+        chapters.Add(3);
+        await Service(source).SyncSeriesAsync(id);
 
-        Assert.NotNull(SeriesRow(id).RestoredAt);
+        Assert.NotNull(FirstSeen(id)[3]);
     }
 
     [Fact]

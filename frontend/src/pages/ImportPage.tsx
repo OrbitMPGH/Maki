@@ -33,6 +33,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { useAuth } from '../auth/AuthProvider'
 import { useLibrarySettings, useMetadataSettings, useRootFolders } from '../api/hooks'
 import {
   IMPORT_BATCH_SIZE,
@@ -228,6 +229,7 @@ function FolderImport() {
   // The run whose results are on screen, which is the batch its Undo button undoes.
   const [lastRunId, setLastRunId] = useState<string | null>(null)
   const queryClient = useQueryClient()
+  const { can } = useAuth()
   const scannedRoot = scannedRootFolderId === null ? null : Number(scannedRootFolderId)
   const { data: ignoredFolders } = useIgnoredImportFolders(scannedRoot)
   const ignoreFolder = useIgnoreImportFolder()
@@ -729,22 +731,36 @@ function FolderImport() {
                   const title = c.matches[0]?.title ?? cleanedTitle
                   const restoreLabel =
                     c.kind === 'restore' ? t({ message: `Restore ${title}`, context: 'series' }) : null
+                  const restoreLocked = c.kind === 'restore' && !can('ArchiveSeries')
                   return (
                     <Table.Tr key={c.folderName}>
                       <Table.Td>
-                        <Checkbox
-                          aria-label={restoreLabel ?? t`Import ${folderName}`}
-                          checked={selected !== ''}
-                          disabled={matches.length === 0 || doImport.isPending}
-                          onChange={(e) => {
-                            // Capture before setState: React nulls currentTarget after the handler.
-                            const checked = e.currentTarget.checked
-                            setSelection((s) => ({
-                              ...s,
-                              [c.folderName]: checked ? matches[0]?.providerId ?? '' : '',
-                            }))
-                          }}
-                        />
+                        <Tooltip
+                          label={t({
+                            message: 'Restoring an archived series needs the Archive series permission',
+                            context: 'series',
+                          })}
+                          disabled={!restoreLocked}
+                          multiline
+                          w={240}
+                          withArrow
+                        >
+                          <span style={{ display: 'inline-flex' }}>
+                            <Checkbox
+                              aria-label={restoreLabel ?? t`Import ${folderName}`}
+                              checked={selected !== ''}
+                              disabled={matches.length === 0 || doImport.isPending || restoreLocked}
+                              onChange={(e) => {
+                                // Capture before setState: React nulls currentTarget after the handler.
+                                const checked = e.currentTarget.checked
+                                setSelection((s) => ({
+                                  ...s,
+                                  [c.folderName]: checked ? matches[0]?.providerId ?? '' : '',
+                                }))
+                              }}
+                            />
+                          </span>
+                        </Tooltip>
                       </Table.Td>
                       <Table.Td>
                         <Group gap={4} wrap="nowrap" justify="space-between">

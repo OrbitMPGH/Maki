@@ -66,9 +66,10 @@ public class SeriesRequestsControllerTests : IDisposable
         _db.Dispose();
     }
 
-    private SeriesRequestsController Controller(int userId, string userName, MakiPermission permissions)
+    private SeriesRequestsController Controller(
+        int userId, string userName, MakiPermission permissions, IReadOnlySet<int>? rootFolderIds = null)
     {
-        var db = _db.NewContext(userId);
+        var db = _db.NewContext(userId, allRootFolders: rootFolderIds is null);
         var creation = new SeriesCreationService(
             db, [_metadata],
             coverService: null!, sourceMatchService: null!, chapterSyncService: null!,
@@ -85,7 +86,8 @@ public class SeriesRequestsControllerTests : IDisposable
             new SeriesRequestSubmitter(
                 db, [_metadata], _events, _inbox, _notifications, new TestUserLocaleResolver(), new TestLocalizer(),
                 NullLogger<SeriesRequestSubmitter>.Instance),
-            new TestCurrentUser(userId, userName, permissions),
+            new TestCurrentUser(userId, userName, permissions,
+                allRootFolders: rootFolderIds is null, rootFolderIds: rootFolderIds),
             NullLogger<SeriesRequestsController>.Instance);
     }
 
@@ -549,6 +551,60 @@ public class SeriesRequestsControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Approving_for_an_archived_series_the_admin_cannot_see_resolves_like_any_copy_already_there()
+    {
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "557"), default));
+        var archivedId = _db.SeedSeries(configure: s =>
+        {
+            s.MangaBakaId = 557;
+            s.ArchivedAt = DateTime.UtcNow;
+        });
+        var otherSeriesId = _db.SeedSeries("Elsewhere");
+        int granted;
+        var scopedAdmin = _db.SeedUser("scopedadmin", MakiPermission.Admin, allRootFolders: false);
+        using (var db = _db.NewContext())
+        {
+            granted = (await db.Series.SingleAsync(s => s.Id == otherSeriesId)).RootFolderId;
+            db.UserRootFolders.Add(new Maki.Data.Identity.UserRootFolder { UserId = scopedAdmin, RootFolderId = granted });
+            await db.SaveChangesAsync();
+        }
+
+        var result = await Controller(scopedAdmin, "scopedadmin", MakiPermission.Admin, new HashSet<int> { granted })
+            .Approve(created.Id, new ApproveSeriesRequestBody(RootFolderId: granted), default);
+
+        var approved = Body<SeriesRequestDto>(result);
+        Assert.Equal("Approved", approved.Status);
+        Assert.Equal(archivedId, approved.SeriesId);
+        Assert.Equal(0, approved.QueuedCount);
+    }
+
+    [Fact]
+    public async Task Approving_a_chapter_request_on_a_series_archived_since_answers_archivedExists_and_queues_nothing()
+    {
+        var seriesId = SeedSeriesWithChapters(1, 2, 3);
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("Chapters", SeriesId: seriesId, ChapterStart: 2), default));
+        using (var db = _db.NewContext())
+        {
+            (await db.Series.SingleAsync(s => s.Id == seriesId)).ArchivedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+        }
+
+        var result = await AsAdmin().Approve(created.Id, new ApproveSeriesRequestBody(), default);
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        var body = System.Text.Json.JsonSerializer.SerializeToElement(conflict.Value);
+        Assert.Equal("error.series.archivedExists", body.GetProperty("code").GetString());
+        Assert.Equal(seriesId, body.GetProperty("seriesId").GetInt32());
+        using var verify = _db.NewContext();
+        var request = await verify.SeriesRequests.SingleAsync(r => r.Id == created.Id);
+        Assert.Equal(SeriesRequestStatus.Pending, request.Status);
+        Assert.Null(request.ApprovalClaimedAtUtc);
+        Assert.Empty(verify.DownloadQueue.Where(q => q.SeriesId == seriesId));
+    }
+
+    [Fact]
     public async Task New_series_approval_credits_the_requester_once_and_resumes_without_recreating()
     {
         var rootSeriesId = _db.SeedSeries();
@@ -623,6 +679,41 @@ public class SeriesRequestsControllerTests : IDisposable
         // Released rather than left in Processing, so the admin can reject it.
         Assert.Equal(SeriesRequestStatus.Pending,
             (await check.SeriesRequests.SingleAsync(r => r.Id == created.Id)).Status);
+    }
+
+    [Fact]
+    public async Task Replaying_an_approval_whose_series_was_archived_since_answers_archived_in_library()
+    {
+        var rootSeriesId = _db.SeedSeries();
+        int rootFolderId;
+        using (var db = _db.NewContext())
+            rootFolderId = (await db.Series.SingleAsync(s => s.Id == rootSeriesId)).RootFolderId;
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "655"), default));
+        var approved = Body<SeriesRequestDto>(await AsAdmin().Approve(created.Id,
+            new ApproveSeriesRequestBody(RootFolderId: rootFolderId), default));
+
+        await using var scoped = _db.NewContext(_admin);
+        (await scoped.Series.SingleAsync(s => s.Id == approved.SeriesId)).ArchivedAt = DateTime.UtcNow;
+        await scoped.SaveChangesAsync();
+        var request = await scoped.SeriesRequests.IgnoreQueryFilters().SingleAsync(r => r.Id == created.Id);
+        var creation = new SeriesCreationService(
+            scoped, [_metadata],
+            coverService: null!, sourceMatchService: null!, chapterSyncService: null!,
+            sourceMatchQueue: new SourceMatchQueue(),
+            stats: null!, identity: null!, appSettings: new FakeAppSettings(),
+            naming: new NamingService(new FakeAppSettings()),
+            notifications: _notifications, locales: new TestUserLocaleResolver(), catalog: new TestLocalizer(),
+            localizer: new TestLocalizer(), logger: NullLogger<SeriesCreationService>.Instance);
+
+        var replay = await creation.CreateAsync(
+            "655", rootFolderId, monitored: true, null, default,
+            attributedUserId: request.UserId, addedFrom: "request", originatingRequest: request,
+            clientMutationId: SeriesCreationResult.MutationIdFor(request));
+
+        Assert.Null(replay.Series);
+        Assert.Equal(SeriesCreationError.ArchivedInLibrary, replay.Error);
+        Assert.Equal(approved.SeriesId, replay.ExistingSeriesId);
     }
 
     // ---- editing ----

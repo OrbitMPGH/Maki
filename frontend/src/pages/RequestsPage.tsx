@@ -125,6 +125,7 @@ export default function RequestsPage() {
   }
 
   const openApprove = (request: SeriesRequest) => {
+    approve.reset()
     setApproving(request)
     setApproveNote('')
     setRootFolderId(rootFolders && rootFolders.length > 0 ? String(rootFolders[0].id) : null)

@@ -232,7 +232,7 @@ public class SeriesArchiveService(
             return SeriesArchiveResult.NotFound;
         }
 
-        var result = new SeriesArchiveResult(SeriesArchiveStatus.Ok);
+        SeriesArchiveResult result;
         using (await SeriesLocks.SeriesAsync(seriesId, ct))
         {
             var series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
@@ -241,49 +241,63 @@ public class SeriesArchiveService(
                 return SeriesArchiveResult.NotFound;
             }
 
-            if (series.ArchivedAt is null)
+            result = await RestoreUnderLockAsync(series, redownloadRemoved, ct);
+        }
+
+        return result.Succeeded ? result with { Refresh = StartRestoreRefresh(seriesId) } : result;
+    }
+
+    /// <summary>
+    /// <see cref="RestoreAsync"/> for a caller that already holds the series lock and has
+    /// <paramref name="series"/> tracked by this scope's context. Starts no refresh: the caller runs
+    /// <see cref="StartRestoreRefresh"/> once whatever it is doing under the lock went through.
+    /// </summary>
+    public async Task<SeriesArchiveResult> RestoreUnderLockAsync(
+        Series series, bool redownloadRemoved, CancellationToken ct)
+    {
+        if (series.ArchivedAt is null)
+        {
+            return SeriesArchiveResult.Conflict("error.series.notArchived");
+        }
+
+        var result = new SeriesArchiveResult(SeriesArchiveStatus.Ok);
+        series.ArchivedAt = null;
+        series.ArchivedByUserId = null;
+        series.NextCheckAt = null;
+        series.RestoredAt = time.GetUtcNow().UtcDateTime;
+        await db.SaveChangesAsync(ct);
+
+        if (redownloadRemoved)
+        {
+            // Clearing the stamp is what makes them missing again; SetWantedBulk only does that on
+            // a false to true flip, and these are already wanted.
+            var removed = await db.Chapters
+                .Where(c => c.SeriesId == series.Id && c.ChapterFileId == null && c.FileRemovedAt != null && c.Wanted)
+                .ToListAsync(CancellationToken.None);
+            foreach (var chapter in removed)
             {
-                return SeriesArchiveResult.Conflict("error.series.notArchived");
+                chapter.FileRemovedAt = null;
             }
 
-            series.ArchivedAt = null;
-            series.ArchivedByUserId = null;
-            series.NextCheckAt = null;
-            series.RestoredAt = time.GetUtcNow().UtcDateTime;
-            await db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(CancellationToken.None);
 
-            if (redownloadRemoved)
+            var chapterIds = removed
+                .OrderBy(c => c.Number ?? decimal.MaxValue)
+                .ThenBy(c => c.Id)
+                .Select(c => c.Id)
+                .ToList();
+            if (chapterIds.Count > 0)
             {
-                // Clearing the stamp is what makes them missing again; SetWantedBulk only does that on
-                // a false to true flip, and these are already wanted.
-                var removed = await db.Chapters
-                    .Where(c => c.SeriesId == seriesId && c.ChapterFileId == null && c.FileRemovedAt != null && c.Wanted)
-                    .ToListAsync(CancellationToken.None);
-                foreach (var chapter in removed)
-                {
-                    chapter.FileRemovedAt = null;
-                }
-
-                await db.SaveChangesAsync(CancellationToken.None);
-
-                var chapterIds = removed
-                    .OrderBy(c => c.Number ?? decimal.MaxValue)
-                    .ThenBy(c => c.Id)
-                    .Select(c => c.Id)
-                    .ToList();
-                if (chapterIds.Count > 0)
-                {
-                    var enqueued = await queue.EnqueueChaptersAsync(
-                        chapterIds, DownloadOrigin.Manual, currentUser.UserId > 0 ? currentUser.UserId : null,
-                        CancellationToken.None);
-                    var itemIds = enqueued.Queued.Select(item => item.Id).ToList();
-                    await batches.QueuedAsync(seriesId, series.Title, itemIds);
-                    result = result with { Queued = itemIds.Count, QueueError = enqueued.Error };
-                }
+                var enqueued = await queue.EnqueueChaptersAsync(
+                    chapterIds, DownloadOrigin.Manual, currentUser.UserId > 0 ? currentUser.UserId : null,
+                    CancellationToken.None);
+                var itemIds = enqueued.Queued.Select(item => item.Id).ToList();
+                await batches.QueuedAsync(series.Id, series.Title, itemIds);
+                result = result with { Queued = itemIds.Count, QueueError = enqueued.Error };
             }
         }
 
-        return result with { Refresh = StartRefresh(seriesId) };
+        return result;
     }
 
     /// <summary>How long ago another reader's unfinished progress still counts as "reading it now".</summary>
@@ -332,9 +346,10 @@ public class SeriesArchiveService(
 
     /// <summary>
     /// Whether the series page offers "finished, archive it?" to the caller: the series is completed
-    /// and active, the caller has not dismissed the hint, and everyone who has a reading state for it
-    /// has finished it. <paramref name="db"/> is the caller's scoped context, so the dismissal read is
-    /// theirs. The permission check stays with the caller.
+    /// and active, the caller has finished it and not dismissed the hint, and everyone else who has a
+    /// reading state for it has finished it too. <paramref name="db"/> is the caller's scoped context,
+    /// so the dismissal and the caller's own reading state are theirs. The permission check stays
+    /// with the caller.
     /// </summary>
     public static async Task<bool> FinishedHintAsync(MakiDbContext db, Series series, CancellationToken ct)
     {
@@ -352,8 +367,13 @@ public class SeriesArchiveService(
             return false;
         }
 
-        var readers = db.ReadingStates.IgnoreQueryFilters().AsNoTracking().Where(r => r.SeriesId == series.Id);
-        return await readers.AnyAsync(ct) && !await readers.AnyAsync(r => !r.Finished, ct);
+        if (!await db.ReadingStates.AsNoTracking().AnyAsync(r => r.SeriesId == series.Id && r.Finished, ct))
+        {
+            return false;
+        }
+
+        return !await db.ReadingStates.IgnoreQueryFilters().AsNoTracking()
+            .AnyAsync(r => r.SeriesId == series.Id && !r.Finished, ct);
     }
 
     /// <summary>
@@ -497,7 +517,7 @@ public class SeriesArchiveService(
     /// then queued, bulk-held and announced like a scheduled pass, where a bare sync would insert
     /// them as known and never queue them.
     /// </summary>
-    private Task StartRefresh(int seriesId)
+    public Task StartRestoreRefresh(int seriesId)
     {
         var stopping = lifetime?.ApplicationStopping ?? CancellationToken.None;
         return Task.Run(async () =>

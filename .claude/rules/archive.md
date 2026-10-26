@@ -49,7 +49,8 @@ paths:
 
 - **Archive never changes `MonitorNewItems`**, so restore brings the old mode back on its own.
 - **Restore goes through `RefreshMonitoredSeriesJob.RefreshSeriesAsync`, never `ChapterSyncService.SyncSeriesAsync`.** A burst of chapters released in the meantime is then bulk-held and announced instead of inserted as known.
-- **`Series.RestoredAt` makes the first full chapter sync after a restore stamp no `FirstSeenAt`**, so the chapters released while nobody looked do not read as a burst to `ReleaseCadence`. The sync clears it once a source answered, so a failed or skipped first refresh leaves it for the scheduled one.
+- **`Series.RestoredAt` makes each mapping's first sync after a restore stamp no `FirstSeenAt`**, so the chapters released while nobody looked do not read as a burst to `ReleaseCadence`. It is decided per mapping (`ChapterSnapshotAt` null or older than `RestoredAt`) and never cleared, so a source that failed the first refresh still stamps nothing on its next one, and the next archive and restore moves it.
+- **The import restores under its own series lock, after the link** (`SeriesArchiveService.RestoreUnderLockAsync`, then `StartRestoreRefresh` once the lock is released). A folder refusal or a failed link leaves the series archived; `RestoreAsync` keeps doing both for every other caller.
 
 ## Queue and files
 

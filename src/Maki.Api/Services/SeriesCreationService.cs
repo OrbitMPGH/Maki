@@ -161,6 +161,8 @@ public class SeriesCreationService(
                 // does not prove they can still reach where it landed, and replaying a series
                 // out of a root folder their access was since revoked would hand it back anyway.
                 var priorSeries = await db.Series.FirstOrDefaultAsync(x => x.Id == priorSeriesId, ct);
+                if (priorSeries is { ArchivedAt: not null })
+                    return SeriesCreationResult.ArchivedInLibrary(priorSeries.Id, priorSeries.Title);
                 if (priorSeries is not null) return new SeriesCreationResult(priorSeries, null, [], Replayed: true);
             }
             return SeriesCreationResult.Failed(SeriesCreationError.OperationResultGone);

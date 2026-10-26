@@ -537,7 +537,14 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
             .Select(p => new { p.SeriesId, p.UpdatedAt })
             .ToListAsync(ct);
 
+        var recentIds = recent.Select(p => p.SeriesId).Distinct().ToList();
+        var active = (await db.Series.AsNoTracking().Active()
+                .Where(s => recentIds.Contains(s.Id))
+                .Select(s => s.Id)
+                .ToListAsync(ct))
+            .ToHashSet();
         var seriesOrder = recent
+            .Where(p => active.Contains(p.SeriesId))
             .GroupBy(p => p.SeriesId)
             .OrderByDescending(g => g.Max(p => p.UpdatedAt))
             .Select(g => g.Key)

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
-import { api } from '../../.storybook/mocks/api'
+import { adminMe, api, signedInAs } from '../../.storybook/mocks/api'
 import { rootFolders } from '../../.storybook/mocks/operations/common'
 import { scanCandidates } from '../../.storybook/mocks/operations/import'
 import ImportPage from './ImportPage'
@@ -81,6 +81,29 @@ export const RestoreAnArchivedSeries: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Import 1 selected' }))
     const dialog = await body.findByRole('dialog', { name: 'Import 1 folder?' })
     await expect(await within(dialog).findByRole('button', { name: 'Restore' })).toBeVisible()
+  },
+}
+
+export const RestoreNeedsArchivePermission: Story = {
+  parameters: {
+    msw: [
+      signedInAs({
+        ...adminMe,
+        isAdmin: false,
+        permissionNames: adminMe.permissionNames.filter((p) => p !== 'ArchiveSeries'),
+      }),
+      http.get(api('/libraryimport/scan'), () =>
+        HttpResponse.json(scanCandidates.filter((c) => c.kind === 'restore')),
+      ),
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByRole('combobox', { name: 'Root folder' }))
+    await userEvent.click(await body.findByRole('option', { name: '/library/manga' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Scan' }))
+    await canvas.findByRole('checkbox', { name: 'Restore Lantern Keepers' })
+    await waitFor(() => expect(canvas.getByRole('checkbox', { name: 'Restore Lantern Keepers' })).toBeDisabled())
   },
 }
 

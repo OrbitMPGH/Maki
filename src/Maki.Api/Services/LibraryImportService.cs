@@ -214,7 +214,42 @@ public class LibraryImportService(
             async (index, itemCt) =>
                 candidates[index] = await ScanFolderAsync(dirs[index], provider, withoutFiles, itemCt));
 
-        return candidates.OfType<ImportScanCandidate>().ToList();
+        return await ResolveByTopMatchAsync(candidates.OfType<ImportScanCandidate>().ToList(), ct);
+    }
+
+    /// <summary>
+    /// A folder no series is named after can still be one the import fills: the import finds the
+    /// series by the match's provider id, so the scan does too, and the row says restore the way the
+    /// import will act on it. Only archived series are resolved here; an active file-less match keeps
+    /// the row new, as before.
+    /// </summary>
+    private async Task<List<ImportScanCandidate>> ResolveByTopMatchAsync(
+        List<ImportScanCandidate> candidates, CancellationToken ct)
+    {
+        static int? TopMatchId(ImportScanCandidate c) =>
+            c.ExistingSeriesId is null && c.Matches.Count > 0 &&
+            int.TryParse(c.Matches[0].ProviderId, NumberStyles.None, CultureInfo.InvariantCulture, out var id)
+                ? id
+                : null;
+
+        var ids = candidates.Select(TopMatchId).OfType<int>().Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return candidates;
+        }
+
+        var series = await db.Series.AsNoTracking()
+            .Where(s => s.MangaBakaId != null && ids.Contains(s.MangaBakaId.Value) && s.ArchivedAt != null &&
+                        !db.ChapterFiles.Any(f => f.SeriesId == s.Id))
+            .ToListAsync(ct);
+        var byId = series
+            .GroupBy(s => s.MangaBakaId!.Value)
+            .ToDictionary(g => g.Key, g => g.OrderBy(s => s.Id).First());
+        return candidates
+            .Select(c => TopMatchId(c) is { } id && byId.TryGetValue(id, out var existing)
+                ? c with { ExistingSeriesId = existing.Id, Kind = KindOf(existing) }
+                : c)
+            .ToList();
     }
 
     private const int ScanConcurrency = 4;
@@ -589,36 +624,50 @@ public class LibraryImportService(
             {
                 return new ImportResult(item.FolderName, false, localizer.Get("error.series.archived"));
             }
-
-            // Linked into the archived row as it is, the files would sit in a series that never syncs.
-            // Restore takes the series lock itself, so it runs before the link below takes it.
-            var restored = await archive.RestoreAsync(existingSeries.Id, redownloadRemoved: false, ct);
-            if (restored.Status == SeriesArchiveStatus.NotFound)
-            {
-                return new ImportResult(item.FolderName, false, localizer.Get("error.libraryImport.failed"));
-            }
         }
 
         var owedLink = updateComicInfo ? PendingImportLink.LinkAndComicInfo : PendingImportLink.Link;
         if (existingSeries is not null)
         {
-            using var seriesLock = await SeriesLocks.SeriesAsync(existingSeries.Id, ct);
-            if (await db.ChapterFiles.AnyAsync(f => f.SeriesId == existingSeries.Id, ct))
+            ImportResult reimported;
+            bool restoring;
+            using (await SeriesLocks.SeriesAsync(existingSeries.Id, ct))
             {
-                return new ImportResult(item.FolderName, false,
-                    localizer.Get("error.libraryImport.alreadyInLibrary", new { title = metadata.Title }));
+                // Archived or restored by somebody else between the read above and the lock.
+                await db.Entry(existingSeries).ReloadAsync(ct);
+                if (await db.ChapterFiles.AnyAsync(f => f.SeriesId == existingSeries.Id, ct))
+                {
+                    return new ImportResult(item.FolderName, false,
+                        localizer.Get("error.libraryImport.alreadyInLibrary", new { title = metadata.Title }));
+                }
+
+                // Linked into the archived row as it is, the files would sit in a series that never
+                // syncs, so the import restores it once the files are in.
+                restoring = existingSeries.ArchivedAt is not null;
+                if (restoring && !currentUser.Has(MakiPermission.ArchiveSeries))
+                {
+                    return new ImportResult(item.FolderName, false, localizer.Get("error.series.archived"));
+                }
+
+                try
+                {
+                    reimported = await ReimportIntoExistingAsync(
+                        existingSeries, rootFolder, item, sourceDir, updateComicInfo, operationId, restoring, ct);
+                }
+                catch (Exception ex)
+                {
+                    return await RecoverFailedImportAsync(
+                        existingSeries, item, existingSeries.FolderName, created: false, ex, owedLink);
+                }
             }
 
-            try
+            // A deferred link is still to come; the match that runs it syncs the series itself.
+            if (restoring && reimported.Success && !reimported.LinkPending)
             {
-                return await ReimportIntoExistingAsync(
-                    existingSeries, rootFolder, item, sourceDir, updateComicInfo, operationId, ct);
+                _ = archive.StartRestoreRefresh(existingSeries.Id);
             }
-            catch (Exception ex)
-            {
-                return await RecoverFailedImportAsync(
-                    existingSeries, item, existingSeries.FolderName, created: false, ex, owedLink);
-            }
+
+            return reimported;
         }
 
         // Standardize the folder name to the configured series folder format, unless the folder
@@ -982,11 +1031,12 @@ public class LibraryImportService(
     /// Re-links the on-disk CBZ files in <paramref name="sourceDir"/> to a series that is
     /// already in the library but has no downloaded files yet — without re-adding the series
     /// or re-fetching its metadata. Reconciles the folder to the standardized name and ensures
-    /// chapters exist to link against.
+    /// chapters exist to link against. With <paramref name="restore"/> the archived series is put
+    /// back once its files are in, so a refusal or a failed link leaves it archived.
     /// </summary>
     private async Task<ImportResult> ReimportIntoExistingAsync(
         Series series, RootFolder rootFolder, ImportRequestItem item, string sourceDir,
-        bool updateComicInfo, string? operationId, CancellationToken ct)
+        bool updateComicInfo, string? operationId, bool restore, CancellationToken ct)
     {
         var standardName = await naming.BuildSeriesFolderNameAsync(series, ct);
         var namingMode = await GetFolderNamingModeAsync(ct);
@@ -1055,6 +1105,11 @@ public class LibraryImportService(
             operations.Built = deferredBuilt;
             operations.RegisteredFileIds = deferredFiles.Keys.ToList();
             operations.RegisteredPaths = deferredFiles;
+            if (restore)
+            {
+                await archive.RestoreUnderLockAsync(series, redownloadRemoved: false, CancellationToken.None);
+            }
+
             await RecordBatchFolderAsync(
                 rootFolder.Id, operationId, series, created: false, item.FolderName, targetDir, operations);
             return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName,
@@ -1076,6 +1131,11 @@ public class LibraryImportService(
         operations.Built = BuiltFiles(targetDir, built);
         operations.RegisteredPaths = await RegisteredFilesAsync(series.Id, ct);
         operations.RegisteredFileIds = operations.RegisteredPaths.Keys.ToList();
+        if (restore)
+        {
+            await archive.RestoreUnderLockAsync(series, redownloadRemoved: false, CancellationToken.None);
+        }
+
         await RecordBatchFolderAsync(
             rootFolder.Id, operationId, series, created: false, item.FolderName, targetDir, operations);
 

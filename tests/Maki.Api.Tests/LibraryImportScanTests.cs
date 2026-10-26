@@ -58,7 +58,9 @@ public class LibraryImportScanTests : IDisposable
     }
 
     /// <summary>An import that links files and restores an archived series for real.</summary>
-    private async Task<ImportResult> LinkingImportAsync(int rootFolderId, string folderName, string providerId)
+    private async Task<ImportResult> LinkingImportAsync(
+        int rootFolderId, string folderName, string providerId, bool linkThrows = false,
+        ICurrentUser? currentUser = null)
     {
         await using var db = _db.NewContext();
         var registry = new SourceRegistry([]);
@@ -74,13 +76,36 @@ public class LibraryImportScanTests : IDisposable
             db, null!, null!, null!, null!, null!, null!, null!, null!, new TestCurrentUser(1), null!,
             TimeProvider.System, _db.ScopeFactory(), NullLogger<SeriesArchiveService>.Instance);
         var service = new LibraryImportService(
-            db, [_provider], null!, link, new SourceMatchQueue(),
+            db, [_provider], null!, linkThrows ? null! : link, new SourceMatchQueue(),
             new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()), _settings, new NamingService(_settings),
-            new StatsEventService(db), null!, new TestLocalizer(), new TestCurrentUser(1), archive,
+            new StatsEventService(db), null!, new TestLocalizer(), currentUser ?? new TestCurrentUser(1), archive,
             NullLogger<LibraryImportService>.Instance);
         return await service.ImportAsync(
             rootFolderId, new ImportRequestItem(folderName, providerId), updateComicInfo: false);
     }
+
+    private async Task<LibraryImportPlan> PlanAsync(
+        int rootFolderId, string folderName, string providerId, ICurrentUser? currentUser = null)
+    {
+        await using var db = _db.NewContext();
+        var service = new LibraryImportService(
+            db, [_provider], null!, null!, new SourceMatchQueue(), null!, _settings, new NamingService(_settings),
+            null!, null!, new TestLocalizer(), currentUser ?? new TestCurrentUser(1), null!,
+            NullLogger<LibraryImportService>.Instance);
+        return await service.PlanAsync(rootFolderId, new ImportRequestItem(folderName, providerId));
+    }
+
+    private int SeedArchived(int rootFolderId, string folderName, int mangaBakaId)
+    {
+        var series = SeedSeries(rootFolderId, folderName, mangaBakaId);
+        using var db = _db.NewContext();
+        db.Series.Single(s => s.Id == series.Id).ArchivedAt = DateTime.UtcNow.AddDays(-3);
+        db.SaveChanges();
+        return series.Id;
+    }
+
+    private static readonly TestCurrentUser WithoutArchive =
+        new(1, permissions: MakiPermission.ImportLibrary | MakiPermission.AddSeries);
 
     private int SeedRoot()
     {
@@ -202,6 +227,85 @@ public class LibraryImportScanTests : IDisposable
         var chapter = await check.Chapters.SingleAsync(c => c.SeriesId == series.Id);
         Assert.NotNull(chapter.ChapterFileId);
         Assert.Null(chapter.FileRemovedAt);
+    }
+
+    [Fact]
+    public async Task AFolderWithAnotherNameWhoseTopMatchIsAnArchivedSeriesIsOfferedAsARestore()
+    {
+        var root = SeedRoot();
+        var series = SeedSeries(root, "Vagabond", 2);
+        await using (var db = _db.NewContext())
+        {
+            (await db.Series.SingleAsync(s => s.Id == series.Id)).ArchivedAt = DateTime.UtcNow.AddDays(-3);
+            await db.SaveChangesAsync();
+        }
+
+        _provider.Results.Add(new MetadataSearchResult("2", "Vagabond", null, null, SeriesStatus.Unknown, null, null));
+        WriteComic("vagabond raws", "Vagabond 001.cbz");
+
+        var candidate = Assert.Single(await ScanAsync(root));
+
+        Assert.Equal("vagabond raws", candidate.FolderName);
+        Assert.Equal(ImportCandidateKind.Restore, candidate.Kind);
+        Assert.Equal(series.Id, candidate.ExistingSeriesId);
+    }
+
+    [Fact]
+    public async Task ImportingIntoAnArchivedSeriesWithoutArchiveSeriesIsRefused()
+    {
+        var root = SeedRoot();
+        var seriesId = SeedArchived(root, "Vagabond", 1);
+        WriteComic("Vagabond", "Vagabond 001.cbz");
+
+        var result = await LinkingImportAsync(root, "Vagabond", "1", currentUser: WithoutArchive);
+
+        Assert.False(result.Success);
+        Assert.StartsWith("error.series.archived", result.Error);
+        await using var check = _db.NewContext();
+        Assert.NotNull((await check.Series.SingleAsync(s => s.Id == seriesId)).ArchivedAt);
+    }
+
+    [Fact]
+    public async Task ThePlanForAnArchivedSeriesIsARestoreAndIsRefusedWithoutArchiveSeries()
+    {
+        var root = SeedRoot();
+        var seriesId = SeedArchived(root, "Vagabond", 2);
+        WriteComic("Vagabond", "Vagabond 001.cbz");
+
+        var plan = await PlanAsync(root, "Vagabond", "2");
+        var refused = await PlanAsync(root, "Vagabond", "2", WithoutArchive);
+
+        Assert.Null(plan.Error);
+        Assert.Equal(ImportCandidateKind.Restore, plan.Kind);
+        Assert.Equal(seriesId, plan.ExistingSeriesId);
+        Assert.StartsWith("error.series.archived", refused.Error);
+    }
+
+    [Fact]
+    public async Task ARestoreImportWhoseLinkFailsLeavesTheSeriesArchived()
+    {
+        var root = SeedRoot();
+        var series = SeedSeries(root, "Vagabond", 2);
+        var archivedAt = new DateTime(2026, 10, 1, 12, 0, 0, DateTimeKind.Utc);
+        await using (var db = _db.NewContext())
+        {
+            var row = await db.Series.SingleAsync(s => s.Id == series.Id);
+            row.ArchivedAt = archivedAt;
+            row.ArchivedByUserId = 1;
+            db.Chapters.Add(new Chapter { SeriesId = series.Id, Number = 1, Language = "en" });
+            await db.SaveChangesAsync();
+        }
+
+        WriteComic("Vagabond", "Vagabond 001.cbz");
+
+        var result = await LinkingImportAsync(root, "Vagabond", "2", linkThrows: true);
+
+        Assert.False(result.Success);
+        await using var check = _db.NewContext();
+        var kept = await check.Series.IgnoreQueryFilters().SingleAsync(s => s.Id == series.Id);
+        Assert.Equal(archivedAt, DateTime.SpecifyKind(kept.ArchivedAt!.Value, DateTimeKind.Utc));
+        Assert.Equal(1, kept.ArchivedByUserId);
+        Assert.Null(kept.RestoredAt);
     }
 
     [Fact]
@@ -476,6 +580,8 @@ public class LibraryImportScanTests : IDisposable
     {
         public List<string> Queries { get; } = [];
 
+        public List<MetadataSearchResult> Results { get; } = [];
+
         public string Name => "fake";
 
         public Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(
@@ -486,7 +592,7 @@ public class LibraryImportScanTests : IDisposable
                 Queries.Add(query);
             }
 
-            return Task.FromResult<IReadOnlyList<MetadataSearchResult>>([]);
+            return Task.FromResult<IReadOnlyList<MetadataSearchResult>>(Results.ToList());
         }
 
         public Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default) =>

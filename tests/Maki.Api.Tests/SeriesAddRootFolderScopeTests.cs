@@ -113,4 +113,39 @@ public sealed class SeriesAddRootFolderScopeTests : IDisposable
         Assert.Equal("error.series.archivedExists", body.GetProperty("code").GetString());
         Assert.Equal(archived, body.GetProperty("seriesId").GetInt32());
     }
+
+    [Fact]
+    public async Task Add_of_an_archived_series_the_caller_cannot_see_is_the_plain_already_exists()
+    {
+        _db.SeedSeries("Berserk", configure: s =>
+        {
+            s.MangaBakaId = 42;
+            s.ArchivedAt = DateTime.UtcNow;
+        });
+        var granted = SeedFolder();
+        var userId = _db.SeedUser("scoped", MakiPermission.AddSeries, allRootFolders: false);
+        using (var db = _db.NewContext())
+        {
+            db.UserRootFolders.Add(new Maki.Data.Identity.UserRootFolder { UserId = userId, RootFolderId = granted });
+            db.SaveChanges();
+        }
+
+        var user = new TestCurrentUser(
+            userId, permissions: MakiPermission.AddSeries, allRootFolders: false, rootFolderIds: new HashSet<int> { granted });
+        var scoped = _db.NewContext(userId, allRootFolders: false);
+        var creation = new SeriesCreationService(
+            scoped, [new Provider()],
+            coverService: null!, sourceMatchService: null!, chapterSyncService: null!,
+            sourceMatchQueue: new SourceMatchQueue(),
+            stats: null!, identity: null!, appSettings: new FakeAppSettings(),
+            naming: new NamingService(new FakeAppSettings()),
+            notifications: new RecordingNotifications(), locales: new TestUserLocaleResolver(),
+            catalog: new TestLocalizer(), localizer: new TestLocalizer(), logger: NullLogger<SeriesCreationService>.Instance);
+
+        var result = await Series(user, creation, scoped).Add(
+            new AddSeriesRequest("42", granted, ClientMutationId: Guid.NewGuid()), default);
+
+        Assert.Equal("error.series.alreadyExists", Code(result));
+        Assert.False(JsonSerializer.SerializeToElement(((ObjectResult)result).Value).TryGetProperty("seriesId", out _));
+    }
 }

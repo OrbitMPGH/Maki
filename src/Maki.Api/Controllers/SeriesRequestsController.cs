@@ -386,6 +386,14 @@ public class SeriesRequestsController(
                 return this.Conflict(localizer, "error.requests.seriesGone");
             }
 
+            // The queue would drop every chapter of an archived series, and the request would read
+            // as approved with nothing on the way.
+            if (await db.Series.AnyAsync(s => s.Id == seriesId && s.ArchivedAt != null, ct))
+            {
+                await ReleaseClaimAsync(request);
+                return this.ArchivedExists(localizer, seriesId);
+            }
+
             queued = await QueueRangeAsync(
                 seriesId, request.Title, request.ChapterStart, request.ChapterEnd, request.UserId, ct);
 

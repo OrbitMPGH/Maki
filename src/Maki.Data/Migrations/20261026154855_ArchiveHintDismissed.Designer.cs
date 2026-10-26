@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    [Migration("20261026152421_ArchiveHintDismissed")]
+    [Migration("20261026154855_ArchiveHintDismissed")]
     partial class ArchiveHintDismissed
     {
         /// <inheritdoc />
@@ -1958,6 +1958,9 @@ namespace Maki.Data.Migrations
 
                     b.Property<int>("ReadFileCleanup")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("RestoredAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("RootFolderId")
                         .HasColumnType("INTEGER");

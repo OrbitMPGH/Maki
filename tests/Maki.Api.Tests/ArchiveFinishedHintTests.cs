@@ -79,6 +79,19 @@ public sealed class ArchiveFinishedHintTests : IDisposable
     }
 
     [Fact]
+    public async Task Not_offered_to_a_user_who_has_not_finished_it_themselves_even_when_every_reader_has()
+    {
+        var alice = _db.SeedUser("alice");
+        var bob = _db.SeedUser("bob");
+        var carol = _db.SeedUser("carol");
+        var seriesId = SeedCompleted();
+        SeedReader(alice, seriesId, finished: true);
+        SeedReader(bob, seriesId, finished: true);
+
+        Assert.False(await Offered(carol, seriesId));
+    }
+
+    [Fact]
     public async Task Not_offered_when_the_series_is_archived()
     {
         var alice = _db.SeedUser("alice");
