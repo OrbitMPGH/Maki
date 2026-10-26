@@ -66,7 +66,8 @@ public class CoverService(
             using var buffer = new MemoryStream();
             await stream.CopyToAsync(buffer, ct);
             var bytes = buffer.ToArray();
-            return await ImageWorkGate.RunAsync(() => Task.FromResult(SavePoster(seriesId, bytes)), ct);
+            return await ImageWorkGate.RunAsync(
+                () => Task.FromResult(SavePoster(seriesId, bytes)), ImageWorkGate.Weigh(bytes), ct);
         }
         catch (Exception ex)
         {

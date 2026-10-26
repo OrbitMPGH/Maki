@@ -488,7 +488,7 @@ async function engineWorks(): Promise<boolean> {
   return engine.supported && !engine.broken
 }
 
-/** Shows Balanced from the browser engine where it runs, else the plain page, and never a server image. */
+/** Shows the browser fallback where the engine runs, else the plain page, and never a server image. */
 async function expectFallback(canvasElement: HTMLElement, canvas: PlayArgs['canvas']) {
   const page = await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
   if (await engineWorks()) {
@@ -538,7 +538,7 @@ export const ServerEnhanceReady: Story = {
 
 const waitingAsked: number[][] = []
 
-/** Still queued on the server and not in its cache: the reader asks for the window and shows Balanced meanwhile. */
+/** Still queued on the server and not in its cache: the reader asks for the window and shows the fallback meanwhile. */
 export const ServerEnhanceWaiting: Story = {
   parameters: {
     ...open(7712),
@@ -554,9 +554,31 @@ export const ServerEnhanceWaiting: Story = {
   },
 }
 
+const plainAsked: number[][] = []
+
+/** Still queued, with the fallback set to None: the plain page shows until the server's upscale is ready. */
+export const ServerEnhanceFallbackNone: Story = {
+  parameters: {
+    ...open(7716),
+    msw: [
+      serverMethod(7716, undefined, { enhanceFallback: 'off' }),
+      enhanceAnswer(7716, 'queued', plainAsked),
+      http.get(api('/reader/chapter/7716/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    const page = await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await waitFor(() => expect(plainAsked[0]?.slice(0, 2)).toEqual([5, 6]))
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await expect(page).toBeVisible()
+    await expect(canvasElement.querySelector('canvas.reader-enhanced[data-enhanced="true"]')).toBeNull()
+    await expect(canvasElement.querySelector('img.reader-enhanced-server')).toBeNull()
+  },
+}
+
 const offAsked: number[][] = []
 
-/** The admin switched the server tier off: Balanced stands in and nothing is asked of the server. */
+/** The admin switched the server tier off: the fallback stands in and nothing is asked of the server. */
 export const ServerEnhanceTierOff: Story = {
   parameters: {
     ...open(7713),

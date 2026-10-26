@@ -927,6 +927,7 @@ try
     // so it has to outlive both the request that starts one and the job scope that runs it.
     builder.Services.AddSingleton<ImageCacheRebuildStatus>();
     builder.Services.AddScoped<ReleaseService>();
+    builder.Services.AddSingleton<TorrentPollState>();
     builder.Services.AddSingleton<ReleaseSearchCache>();
     builder.Services.AddScoped<StatsEventService>();
     builder.Services.AddScoped<StatsBackfillService>();
@@ -993,6 +994,10 @@ try
         builder.Services.AddHttpClient(indexerClient, client => client.Timeout = TimeSpan.FromSeconds(100))
             .AddHttpMessageHandler(() => new TransientRetryHandler());
     }
+
+    builder.Services.AddHttpClient(Maki.Core.Indexers.ReleaseIndexerBase.DownloadHttpClientName)
+        .ConfigurePrimaryHttpMessageHandler(Maki.Core.Indexers.ReleaseIndexerBase.CreateDownloadLinkHandler)
+        .AddHttpMessageHandler(() => new TransientRetryHandler());
 
     builder.Services.AddSingleton<Maki.Core.Indexers.IReleaseIndexer, Maki.Core.Indexers.ProwlarrClient>();
     builder.Services.AddSingleton<Maki.Core.Indexers.IReleaseIndexer, Maki.Core.Indexers.JackettClient>();
@@ -1698,8 +1703,6 @@ try
     // After the static files on purpose: they answer from the Vite build's precompressed siblings and
     // never reach it, so runtime compression is left to API responses.
     app.UseResponseCompression();
-
-    app.UseRateLimiter();
 
     app.UseAuthentication();
     // Before CurrentUserMiddleware, so the 401 that middleware answers with is localized too. It

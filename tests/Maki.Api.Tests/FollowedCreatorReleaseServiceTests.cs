@@ -36,13 +36,16 @@ public sealed class FollowedCreatorReleaseServiceTests : IDisposable
 
     /// <summary>A fresh service per pass: the credit index cache notices a changed dump by file stamp,
     /// which a test writing twice within one clock tick cannot rely on.</summary>
-    private Task RunAsync()
+    private Task RunAsync() => RunAsync(out _);
+
+    private Task RunAsync(out CatalogueIndexCache catalogue)
     {
         var options = new MangaBakaDumpOptions(_dump.Path, Path.GetTempPath());
+        catalogue = new CatalogueIndexCache(options, NullLogger<CatalogueIndexCache>.Instance);
         var service = new FollowedCreatorReleaseService(
             _db.ScopeFactory(),
             _settings,
-            new CatalogueIndexCache(options, NullLogger<CatalogueIndexCache>.Instance),
+            catalogue,
             new MangaBakaLocalStore(options, NullLogger<MangaBakaLocalStore>.Instance),
             _inbox,
             TimeProvider.System,
@@ -67,6 +70,22 @@ public sealed class FollowedCreatorReleaseServiceTests : IDisposable
 
         Assert.Empty(_inbox.Raised);
         Assert.Equal("2", await _settings.GetAsync(SettingKeys.DiscoverFollowingWatermark));
+    }
+
+    [Fact]
+    public async Task With_nobody_following_the_watermark_moves_without_building_the_catalogue_index()
+    {
+        Follower("reader");
+
+        await RunAsync(out var first);
+        _dump.AddSeries(10, "Dark Colors", year: ThisYear, authorsJson: """["Junji Ito"]""");
+        _dump.AddSeries(11, "Uncredited", year: ThisYear);
+        await RunAsync(out var second);
+
+        Assert.False(first.IsLoaded);
+        Assert.False(second.IsLoaded);
+        Assert.Empty(_inbox.Raised);
+        Assert.Equal("10", await _settings.GetAsync(SettingKeys.DiscoverFollowingWatermark));
     }
 
     [Fact]

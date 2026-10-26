@@ -84,15 +84,27 @@ public class ReaderPrefsTests
 
         Assert.Equal("off", spec.Enhance);
         Assert.Equal("a4k-m", spec.EnhanceMethod);
+        Assert.Equal("a4k-m", spec.EnhanceFallback);
     }
 
     [Fact]
     public void Sanitized_maps_unknown_enhance_values_to_the_defaults()
     {
-        var spec = new ReaderPrefsSpec(Enhance: "max", EnhanceMethod: "server:nope").Sanitized();
+        var spec = new ReaderPrefsSpec(Enhance: "max", EnhanceMethod: "server:nope", EnhanceFallback: "server:span-s").Sanitized();
 
         Assert.Equal("off", spec.Enhance);
         Assert.Equal("a4k-m", spec.EnhanceMethod);
+        Assert.Equal("a4k-m", spec.EnhanceFallback);
+    }
+
+    [Theory]
+    [InlineData("a4k-s")]
+    [InlineData("a4k-m")]
+    [InlineData("a4k-a")]
+    [InlineData("off")]
+    public void Sanitized_keeps_every_known_enhance_fallback(string fallback)
+    {
+        Assert.Equal(fallback, new ReaderPrefsSpec(EnhanceFallback: fallback).Sanitized().EnhanceFallback);
     }
 
     [Theory]
@@ -118,11 +130,13 @@ public class ReaderPrefsTests
     [Fact]
     public void Serialize_round_trips_the_enhance_fields()
     {
-        var json = ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(Enhance: "auto", EnhanceMethod: "server:span-s"));
+        var json = ReaderPrefsSpec.Serialize(
+            new ReaderPrefsSpec(Enhance: "auto", EnhanceMethod: "server:span-s", EnhanceFallback: "a4k-a"));
         var spec = ReaderPrefsSpec.Parse(json);
 
         Assert.Equal("auto", spec.Enhance);
         Assert.Equal("server:span-s", spec.EnhanceMethod);
+        Assert.Equal("a4k-a", spec.EnhanceFallback);
         Assert.Contains("\"enhanceMethod\":\"server:span-s\"", json);
     }
 }

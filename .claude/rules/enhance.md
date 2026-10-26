@@ -20,7 +20,7 @@ paths:
 
 # Enhance: browser shaders and server upscaling
 
-User-facing summary in `docs/features.md`. Two tiers share one reader setting: `a4k-*` methods run Anime4K in WebGL2 in the browser, `server:*` methods go through the ONNX queue and fall back to `a4k-m` until the server page is ready.
+User-facing summary in `docs/features.md`. Two tiers share one reader setting: `a4k-*` methods run Anime4K in WebGL2 in the browser, `server:*` methods go through the ONNX queue and show `enhanceFallback` (an `a4k-*` preset, default `a4k-m`, or `off` for the plain page) until the server page is ready. With `off` the engine never loads and `PageEnhance` carries a null `preset` and `engine`.
 
 ## Server output
 

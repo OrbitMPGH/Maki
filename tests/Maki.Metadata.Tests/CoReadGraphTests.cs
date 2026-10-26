@@ -63,7 +63,7 @@ public class CoReadGraphTests : IDisposable
         var graph = await Load((1, 2, 0.0125f));
 
         var node = Node(graph!, 1);
-        Assert.Equal(0.0125f, graph!.WeightsAt(node)[0], 5);
+        Assert.Equal(0.0125f, graph!.EdgesAt(node).Weight(0), 5);
     }
 
     [Fact]
@@ -306,12 +306,11 @@ public class CoReadGraphTests : IDisposable
 
     private static long[] Neighbours(PairGraphIndex graph, long id)
     {
-        var node = Node(graph, id);
-        var neighbours = graph.NeighboursAt(node);
-        var ids = new long[neighbours.Length];
-        for (var i = 0; i < neighbours.Length; i++)
+        var edges = graph.EdgesAt(Node(graph, id));
+        var ids = new long[edges.Length];
+        for (var i = 0; i < edges.Length; i++)
         {
-            ids[i] = graph.IdAt(neighbours[i]);
+            ids[i] = graph.IdAt(edges.Neighbour(i));
         }
 
         return ids;

@@ -7785,6 +7785,10 @@ msgstr "Не удалось обновить метки: {detail}"
 msgid "Fair quality"
 msgstr "Среднее качество"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Fallback"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Falling means you moved."
@@ -12409,6 +12413,7 @@ msgstr "нет"
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
@@ -17376,7 +17381,7 @@ msgid "Server local time, 0 to 23."
 msgstr "Местное время сервера, от 0 до 23."
 
 #: src/components/settings/ReadingProfilesSection.tsx
-msgid "Server methods apply only when the admin has enabled them; otherwise Balanced is used."
+msgid "Server methods apply only when the admin has enabled them; otherwise the fallback is used."
 msgstr ""
 
 #: src/pages/settings/registry.ts
@@ -17691,6 +17696,10 @@ msgstr "показаны результаты для <0>{corrected}</0>"
 
 #: src/components/pageconversion/ComparePicker.tsx
 msgid "Showing the first {MAX_SERIES_ROWS}. Type more of the title to narrow it down."
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Shown on this device until the server's page is ready, and whenever the server can't be used."
 msgstr ""
 
 #: src/pages/RequestsPage.tsx
@@ -21282,6 +21291,10 @@ msgstr "Во время чтения"
 #, fuzzy
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "Во время чтения сообщает о новых главах только пока вы находитесь в середине серии."
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "While the server works"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

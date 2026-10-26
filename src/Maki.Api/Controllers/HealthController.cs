@@ -408,6 +408,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
                 }),
             });
             await db.SaveChangesAsync(ct);
+            HealthWorker.Wake();
         }
         return Ok(new { files = files.Count, series = owners.Count, linked, unrecognized, orphans });
     });
@@ -420,7 +421,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     {
         if (request.FileIds?.Length > 500) return BadRequest();
         var scan = new HealthScan { RootFolderId = request.RootFolderId, SeriesId = request.SeriesId, FileIdsJson = JsonSerializer.Serialize(request.FileIds ?? []), Force = request.Force, Verify = request.Verify };
-        db.HealthScans.Add(scan); await db.SaveChangesAsync(ct); return Accepted(scan);
+        db.HealthScans.Add(scan); await db.SaveChangesAsync(ct); HealthWorker.Wake(); return Accepted(scan);
     }
     [HttpPost("scans/{id:int}/cancel")]
     public async Task<IActionResult> CancelScan(int id, CancellationToken ct)

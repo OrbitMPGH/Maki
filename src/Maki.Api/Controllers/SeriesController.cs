@@ -944,7 +944,7 @@ public class SeriesController(
         var suppressed = await recommendationFeedback.SuppressedAsync(currentUser.UserId, ct);
         return Ok(HiddenContentService.Without(
             related.Where(r => !long.TryParse(r.ProviderId, out var providerId) || !suppressed.Contains(providerId)).ToList(),
-            await hidden.PredicateAsync(ct)));
+            await hidden.PredicateAsync(related, ct)));
     }
 
     /// <summary>
@@ -988,7 +988,7 @@ public class SeriesController(
             .ToListAsync(ct);
         var ownedSet = new HashSet<long>(owned);
         var suppressed = await recommendationFeedback.SuppressedAsync(currentUser.UserId, ct);
-        var visible = HiddenContentService.Without(pool, await hidden.PredicateAsync(ct));
+        var visible = HiddenContentService.Without(pool, await hidden.PredicateAsync(pool, ct));
         return Ok(visible
             .Where(r => !long.TryParse(r.ProviderId, out var providerId) ||
                 !ownedSet.Contains(providerId) && !suppressed.Contains(providerId))

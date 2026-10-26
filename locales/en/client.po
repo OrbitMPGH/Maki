@@ -6424,6 +6424,10 @@ msgstr "Failed to update tags: {detail}"
 msgid "Fair quality"
 msgstr "Fair quality"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Fallback"
+msgstr "Fallback"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "Falling means you moved."
 msgstr "Falling means you moved."
@@ -10233,6 +10237,7 @@ msgstr "none"
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
@@ -14347,8 +14352,8 @@ msgid "Server local time, 0 to 23."
 msgstr "Server local time, 0 to 23."
 
 #: src/components/settings/ReadingProfilesSection.tsx
-msgid "Server methods apply only when the admin has enabled them; otherwise Balanced is used."
-msgstr "Server methods apply only when the admin has enabled them; otherwise Balanced is used."
+msgid "Server methods apply only when the admin has enabled them; otherwise the fallback is used."
+msgstr "Server methods apply only when the admin has enabled them; otherwise the fallback is used."
 
 #: src/pages/settings/registry.ts
 #: src/pages/settings/UpscalingSection.tsx
@@ -14610,6 +14615,10 @@ msgstr "showing results for <0>{corrected}</0>"
 #: src/components/pageconversion/ComparePicker.tsx
 msgid "Showing the first {MAX_SERIES_ROWS}. Type more of the title to narrow it down."
 msgstr "Showing the first {MAX_SERIES_ROWS}. Type more of the title to narrow it down."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Shown on this device until the server's page is ready, and whenever the server can't be used."
+msgstr "Shown on this device until the server's page is ready, and whenever the server can't be used."
 
 #: src/pages/RequestsPage.tsx
 msgid "Shown to whoever asked"
@@ -17569,6 +17578,10 @@ msgstr "While reading"
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "While reading only tells you about new chapters while you are partway through."
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "While the server works"
+msgstr "While the server works"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Whole"

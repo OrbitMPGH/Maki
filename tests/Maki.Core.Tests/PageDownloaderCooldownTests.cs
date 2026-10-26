@@ -33,6 +33,36 @@ public class PageDownloaderCooldownTests
         new([.. Enumerable.Range(1, count).Select(i => new PageRequest($"https://example.test/page/{i}.jpg"))]);
 
     [Fact]
+    public async Task A_page_the_source_fetches_itself_is_fetched_when_written_after_the_cooldown()
+    {
+        var cooldown = new FakeCooldown();
+        var waitsSeenAtFetch = -1;
+        var downloader = new PageDownloader(
+            new StubFactory(new RecordingHandler(() => Assert.Fail("a fetched page must not go over HTTP"))),
+            cooldown,
+            TimeProvider.System,
+            NullLogger<PageDownloader>.Instance);
+        var page = new PageRequest("https://example.test/page/1.jpg", Fetch: _ =>
+        {
+            waitsSeenAtFetch = Volatile.Read(ref cooldown.Waits);
+            return Task.FromResult<byte[]>([0xFF, 0xD8, 0xFF, 0xD9]);
+        });
+
+        var dir = Path.Combine(Path.GetTempPath(), "maki-pd-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var written = await downloader.DownloadAsync(new ChapterPages([page]), "fake", dir);
+
+            Assert.Equal(1, waitsSeenAtFetch);
+            Assert.Equal([0xFF, 0xD8, 0xFF, 0xD9], await File.ReadAllBytesAsync(written[0]));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task Waits_Out_The_Cooldown_Before_Every_Page()
     {
         var cooldown = new FakeCooldown();

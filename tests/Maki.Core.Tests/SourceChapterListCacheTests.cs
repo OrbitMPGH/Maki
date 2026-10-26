@@ -61,6 +61,26 @@ public class SourceChapterListCacheTests
         new(time ?? TimeProvider.System, NullLogger<SourceChapterListCache>.Instance);
 
     [Fact]
+    public async Task Expired_listings_are_dropped_well_below_the_cap()
+    {
+        var clock = new StoppedClock(DateTimeOffset.UtcNow);
+        var source = new CountingSource();
+        var cache = NewCache(clock);
+        await cache.GetAsync(source, "series-1", "en");
+        await cache.GetAsync(source, "series-2", "en");
+
+        Assert.Equal(0, cache.DropExpired());
+
+        clock.Now += SourceChapterListCache.Ttl;
+        await cache.GetAsync(source, "series-3", "en");
+
+        // series-3's own fetch already swept the other two.
+        Assert.Equal(0, cache.DropExpired());
+        clock.Now += SourceChapterListCache.Ttl;
+        Assert.Equal(1, cache.DropExpired());
+    }
+
+    [Fact]
     public async Task Repeated_lookups_for_one_series_list_it_once()
     {
         var source = new CountingSource();
