@@ -111,12 +111,12 @@ export const WithRerollDice: Story = {
   },
 }
 
-export const WithoutFeedbackMenu: Story = {
+export const OpenedOutsideRecommendations: Story = {
   args: { feedbackContext: undefined },
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
-    await within(dialog).findByText('Synopsis')
-    await expect(within(dialog).queryByRole('button', { name: 'Thumbs up' })).toBeNull()
+    await expect(await within(dialog).findByRole('button', { name: 'Thumbs up' })).toBeVisible()
+    await expect(await within(dialog).findByRole('button', { name: 'Thumbs down' })).toBeVisible()
   },
 }
 

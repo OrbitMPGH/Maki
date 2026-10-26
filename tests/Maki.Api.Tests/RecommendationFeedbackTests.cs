@@ -484,6 +484,68 @@ public class RecommendationFeedbackTests : IDisposable
     }
 
     /// <summary>
+    /// The Discover modal offers the thumbs however it was opened, so a vote can land on a title the
+    /// recommender never showed: one found through the Add page search, with no feedback row yet.
+    /// </summary>
+    [Fact]
+    public async Task A_thumbs_up_on_a_searched_title_becomes_a_positive_seed()
+    {
+        using var db = _fixture.NewContext(1);
+        var service = Catalogued(db, 1, dump => dump.AddSeries(7001, "Searched Manga"));
+
+        var result = await service.MutateAsync(1, 7001, new FeedbackCommand("like", Guid.NewGuid(), 0));
+        Assert.True(result.Changed);
+        Assert.Equal("liked", result.State.Sentiment);
+        Assert.Equal("positive-title", result.FeedbackEffect);
+
+        var tuning = TasteTuning.Default;
+        var snapshot = await new SeedWeightService(
+                new BehavioralTasteService(tuning), tuning, new FakeAppSettings())
+            .SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.Contains(7001L, snapshot.Effective.EligibleIds);
+        Assert.Equal(RecommendationFeedbackPolicy.LikedWeight, snapshot.Effective.Weights[7001]);
+        Assert.DoesNotContain(7001L, snapshot.Observed.EligibleIds);
+        Assert.False(snapshot.Avoided.ContainsKey(7001));
+    }
+
+    [Fact]
+    public async Task A_thumbs_down_on_a_searched_title_joins_the_avoided_set()
+    {
+        using var db = _fixture.NewContext(1);
+        var service = Catalogued(db, 1, dump => dump.AddSeries(7002, "Searched Miss"));
+
+        var result = await service.MutateAsync(1, 7002, new FeedbackCommand("dislike", Guid.NewGuid(), 0));
+        Assert.Equal("disliked", result.State.Sentiment);
+
+        var tuning = TasteTuning.Default;
+        var snapshot = await new SeedWeightService(
+                new BehavioralTasteService(tuning), tuning, new FakeAppSettings())
+            .SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.Equal(1.0, snapshot.Avoided[7002]);
+        Assert.DoesNotContain(7002L, snapshot.Effective.EligibleIds);
+    }
+
+    [Fact]
+    public async Task A_thumbs_up_on_a_shelf_title_raises_its_seed_weight()
+    {
+        _fixture.SeedSeries("Owned Favourite", configure: s => s.MangaBakaId = 7003);
+        using var db = _fixture.NewContext(1);
+        var service = Catalogued(db, 1, dump => dump.AddSeries(7003, "Owned Favourite"));
+
+        await service.MutateAsync(1, 7003, new FeedbackCommand("like", Guid.NewGuid(), 0));
+
+        var tuning = TasteTuning.Default;
+        var snapshot = await new SeedWeightService(
+                new BehavioralTasteService(tuning), tuning, new FakeAppSettings())
+            .SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.Contains(7003L, snapshot.Observed.EligibleIds);
+        Assert.True(snapshot.Effective.Weights[7003] >= RecommendationFeedbackPolicy.LikedWeight);
+    }
+
+    /// <summary>
     /// A dismissal is a cooldown, so the row still says "dismissed" long after the window closed.
     /// Manage signals counts its suppressed chip off this list, and the recommender stopped
     /// honouring the row the moment it expired.

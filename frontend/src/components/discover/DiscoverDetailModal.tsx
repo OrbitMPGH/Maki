@@ -70,6 +70,7 @@ export function DiscoverDetailModal({
   inLibrarySeriesId: number | null | undefined
   rootFolders: RootFolder[] | undefined
   onClose: () => void
+  /** Set by recommendation surfaces, so an add from here is recorded as a recommended pick. */
   feedbackContext?: { surface: string }
   /** Shows a dice beside the close button that swaps in another random pick. */
   onReroll?: () => void
@@ -408,9 +409,7 @@ export function DiscoverDetailModal({
                       onRead={() => setPreviewFor(item.providerId)}
                     />
                   )}
-                  {feedbackContext && (
-                    <RecommendationFeedbackMenu providerId={item.providerId} />
-                  )}
+                  <RecommendationFeedbackMenu providerId={item.providerId} />
                 </Stack>
               </div>
 
