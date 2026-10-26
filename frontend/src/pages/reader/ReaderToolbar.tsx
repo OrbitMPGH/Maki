@@ -38,9 +38,11 @@ import { wakeLockSupported } from '../../lib/wakeLock'
 import { useLabel } from '../../i18n-context'
 import {
   BROWSER_ENHANCE_METHODS,
+  ENHANCE_FALLBACKS,
   ENHANCE_LEVELS,
   SERVER_ENHANCE_METHODS,
   enhanceMethodInfo,
+  isServerMethod,
   serverModelId,
 } from './enhanceMethods'
 import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
@@ -638,6 +640,25 @@ export default function ReaderToolbar({
                           </Text>
                         </div>
                       )}
+                    />
+                  </div>
+                )}
+                {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
+                  <div>
+                    <Text fz="xs" c="var(--ink-3)" mb={4}>
+                      <Trans>While the server works</Trans>
+                    </Text>
+                    <SegmentedControl
+                      aria-label={t`While the server works`}
+                      fullWidth
+                      size="xs"
+                      value={prefs.enhanceFallback}
+                      onChange={(value) => onPrefs({ enhanceFallback: value as ReaderPrefs['enhanceFallback'] })}
+                      data={ENHANCE_FALLBACKS.map((f) => ({
+                        label: renderLabel(f.label),
+                        value: f.value,
+                        disabled: browserUnsupported && f.value !== 'off',
+                      }))}
                     />
                   </div>
                 )}

@@ -35,7 +35,13 @@ import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SettingsNumberInput } from './SettingsNumberInput'
 import { useReportUnsaved } from './SaveButton'
-import { ENHANCE_LEVELS, ENHANCE_METHODS, enhanceMethodInfo, isServerMethod } from '../../pages/reader/enhanceMethods'
+import {
+  ENHANCE_FALLBACKS,
+  ENHANCE_LEVELS,
+  ENHANCE_METHODS,
+  enhanceMethodInfo,
+  isServerMethod,
+} from '../../pages/reader/enhanceMethods'
 
 const MODE_LABELS: Record<ReaderPrefs['mode'], MessageDescriptor> = {
   paged: msg`Single page`,
@@ -471,7 +477,7 @@ function ProfileEditor({
             label={t`Method`}
             description={
               isServerMethod(prefs.enhanceMethod)
-                ? t`Server methods apply only when the admin has enabled them; otherwise Balanced is used.`
+                ? t`Server methods apply only when the admin has enabled them; otherwise the fallback is used.`
                 : methodInfo && renderLabel(methodInfo.hint)
             }
             allowDeselect={false}
@@ -481,6 +487,16 @@ function ProfileEditor({
           />
         )}
       </Group>
+      {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
+        <Select
+          label={t`Fallback`}
+          description={t`Shown on this device until the server's page is ready, and whenever the server can't be used.`}
+          allowDeselect={false}
+          value={prefs.enhanceFallback}
+          onChange={(value) => value && set({ enhanceFallback: value as ReaderPrefs['enhanceFallback'] })}
+          data={ENHANCE_FALLBACKS.map((f) => ({ value: f.value, label: renderLabel(f.label) }))}
+        />
+      )}
 
       <Switch
         size="sm"

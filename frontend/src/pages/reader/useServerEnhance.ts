@@ -32,7 +32,7 @@ const NO_PAGES: ReadonlySet<number> = new Set()
 
 /**
  * The server model a reader's method runs on, or null when the server tier cannot be used and the
- * browser's Balanced preset stands in: the tier is off, the model is not enabled or not downloaded,
+ * browser fallback preset stands in: the tier is off, the model is not enabled or not downloaded,
  * or this device is offline or opened the chapter from its offline copy.
  */
 export function serverModelFor(

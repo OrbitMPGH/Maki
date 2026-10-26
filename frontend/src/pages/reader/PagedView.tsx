@@ -14,6 +14,7 @@ import {
 } from './enhanceRuntime'
 import { useWarmServerPages, type ServerEnhance } from './useServerEnhance'
 import type {
+  EnhanceFallback,
   EnhanceMethod,
   ReaderDirection,
   ReaderEnhance,
@@ -269,6 +270,7 @@ export default function PagedView({
   half = 0,
   enhance = 'off',
   enhanceMethod = 'a4k-m',
+  enhanceFallback = 'a4k-m',
   server = null,
   preload,
   onStretched,
@@ -291,6 +293,8 @@ export default function PagedView({
   half?: 0 | 1
   enhance?: ReaderEnhance
   enhanceMethod?: EnhanceMethod
+  /** What a server method shows until its page is ready there. */
+  enhanceFallback?: EnhanceFallback
   /** Set while a server method is in use and the server tier can serve it. */
   server?: ServerEnhance | null
   /** The reader's preload window: the spread on screen and the pages after it, in reading order. */
@@ -320,7 +324,8 @@ export default function PagedView({
           rotate: single && splitWide === 'rotate' ? (rtl ? -90 : 90) : 0,
         }
   const enhanceOn = enhance !== 'off'
-  const engineState = useEnhanceEngine(enhanceOn)
+  const preset = presetFor(enhanceMethod, enhanceFallback)
+  const engineState = useEnhanceEngine(enhanceOn && preset !== null)
   const engine = engineState.status === 'ready' ? engineState.engine : null
   useCompareKey(enhanceOn)
   // Bumped when a page on screen reports the size it is shown at, which is what the pages ahead are
@@ -345,9 +350,9 @@ export default function PagedView({
   const pageEnhance = useMemo<PageEnhance | null>(
     () =>
       (engine || serverOn) && enhance !== 'off'
-        ? { mode: enhance, preset: presetFor(enhanceMethod), engine, scope, layout }
+        ? { mode: enhance, preset, engine, scope, layout }
         : null,
-    [engine, serverOn, enhance, enhanceMethod, scope, layout],
+    [engine, serverOn, enhance, preset, scope, layout],
   )
 
   // Pages that leave the window around the spread are evicted from the engine's cache. The two
@@ -388,7 +393,7 @@ export default function PagedView({
             const target = owner.sizeFor(image.naturalWidth * region.w, image.naturalHeight * region.h)
             if (!target) return
             owner.notePage(page, target.stretched)
-            if (!live || (mode === 'auto' && !target.stretched)) return
+            if (!live || !preset || (mode === 'auto' && !target.stretched)) return
             const key = enhanceKey(src, region)
             if (live.peek(key, preset, target.width, target.height)) return
             owner.note(src, key)

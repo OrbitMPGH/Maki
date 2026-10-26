@@ -7479,6 +7479,10 @@ msgstr "タグの更新に失敗しました: {detail}"
 msgid "Fair quality"
 msgstr "まずまずの品質"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Fallback"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Falling means you moved."
@@ -11932,6 +11936,7 @@ msgstr "なし"
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
@@ -16675,7 +16680,11 @@ msgid "Server local time, 0 to 23."
 msgstr "サーバーのローカル時刻（0～23）。"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-msgid "Server methods apply only when the admin has enabled them; otherwise Balanced is used."
+#~ msgid "Server methods apply only when the admin has enabled them; otherwise Balanced is used."
+#~ msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Server methods apply only when the admin has enabled them; otherwise the fallback is used."
 msgstr ""
 
 #: src/pages/settings/registry.ts
@@ -16975,6 +16984,10 @@ msgstr "キュー済み{totalQueueCount}件中{shownQueueCount}件を表示し�
 #, fuzzy
 msgid "showing results for <0>{corrected}</0>"
 msgstr "<0>{corrected}</0>の検索結果を表示"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Shown on this device until the server's page is ready, and whenever the server can't be used."
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -20456,6 +20469,10 @@ msgstr "読書中"
 #, fuzzy
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "読書中は、シリーズの途中にいる間だけ新しい章を知らせます。"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "While the server works"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

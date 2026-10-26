@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { enhanceBudget } from '../../lib/enhance/budget'
-import type { EnhanceMethod, ReaderEnhance, ReaderFit } from './prefs'
+import type { EnhanceFallback, EnhanceMethod, ReaderEnhance, ReaderFit } from './prefs'
 import EnhancedPage from './EnhancedPage'
 import { useCompareKey } from './compareHold'
 import { EnhanceScope, presetFor, useEnhanceEngine, type PageEnhance } from './enhanceRuntime'
@@ -229,6 +229,7 @@ export default function ContinuousView({
   pastEndLabel,
   enhance = 'off',
   enhanceMethod = 'a4k-m',
+  enhanceFallback = 'a4k-m',
   server = null,
   onStretched,
   onEnhanceRange,
@@ -257,6 +258,8 @@ export default function ContinuousView({
   label: string
   enhance?: ReaderEnhance
   enhanceMethod?: EnhanceMethod
+  /** What a server method shows until its page is ready there. */
+  enhanceFallback?: EnhanceFallback
   /** Set while a server method is in use and the server tier can serve it. */
   server?: ServerEnhance | null
   /** The pages shown at 1.2x their size or more, as measured on screen. */
@@ -285,7 +288,8 @@ export default function ContinuousView({
   // Only the enhance range around the current page is enhanced; a page leaving it drops its canvas
   // and its cached result.
   const enhanceOn = enhance !== 'off'
-  const engineState = useEnhanceEngine(enhanceOn)
+  const preset = presetFor(enhanceMethod, enhanceFallback)
+  const engineState = useEnhanceEngine(enhanceOn && preset !== null)
   const engine = engineState.status === 'ready' ? engineState.engine : null
   useCompareKey(enhanceOn)
   const stretchedRef = useRef(onStretched)
@@ -301,9 +305,9 @@ export default function ContinuousView({
   const pageEnhance = useMemo<PageEnhance | null>(
     () =>
       (engine || serverOn) && enhance !== 'off'
-        ? { mode: enhance, preset: presetFor(enhanceMethod), engine, scope, layout }
+        ? { mode: enhance, preset, engine, scope, layout }
         : null,
-    [engine, serverOn, enhance, enhanceMethod, scope, layout],
+    [engine, serverOn, enhance, preset, scope, layout],
   )
   const [range, setRange] = useState<number[]>(NO_RANGE)
   const inRange = useMemo(() => new Set(range), [range])

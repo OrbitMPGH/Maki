@@ -77,6 +77,7 @@ export const readerPrefs: ReaderPrefs = {
   autoWebtoon: true,
   enhance: 'off',
   enhanceMethod: 'a4k-m',
+  enhanceFallback: 'a4k-m',
 }
 
 export const readerSettings: ReaderSettings = {

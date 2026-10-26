@@ -27,7 +27,7 @@ export interface EnhancedPageProps {
   enhance: PageEnhance
   /** The page's index in the chapter, which names its server upscale. */
   page: number
-  /** Set while a server method is in use; until this page is ready there, the engine's Balanced result shows. */
+  /** Set while a server method is in use; until this page is ready there, the engine's fallback result shows. */
   server?: ServerEnhance | null
   /** 0 for a page on screen, then its distance in reading order. */
   priority: number
@@ -155,7 +155,7 @@ export default function EnhancedPage({
   }, [active])
 
   useEffect(() => {
-    if (!active || !target || !engine) return
+    if (!active || !target || !engine || !preset) return
     const draw = (bitmap: ImageBitmap) => {
       const element = canvas.current
       if (!element) return

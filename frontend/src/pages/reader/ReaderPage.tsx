@@ -857,6 +857,7 @@ export default function ReaderPage() {
               label={manifest.label}
               enhance={prefs.enhance}
               enhanceMethod={prefs.enhanceMethod}
+              enhanceFallback={prefs.enhanceFallback}
               server={server}
               onStretched={setStretchedPages}
               onEnhanceRange={setStripRange}
@@ -877,6 +878,7 @@ export default function ReaderPage() {
               half={half}
               enhance={prefs.enhance}
               enhanceMethod={prefs.enhanceMethod}
+              enhanceFallback={prefs.enhanceFallback}
               server={server}
               preload={preloadPages}
               onStretched={setStretchedPages}

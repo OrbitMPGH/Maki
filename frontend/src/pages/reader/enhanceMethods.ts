@@ -1,6 +1,6 @@
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import type { EnhanceMethod, ReaderEnhance } from './prefs'
+import type { EnhanceFallback, EnhanceMethod, ReaderEnhance } from './prefs'
 
 export interface EnhanceMethodInfo {
   id: EnhanceMethod
@@ -31,6 +31,11 @@ export const SERVER_ENHANCE_METHODS: EnhanceMethodInfo[] = [
     label: msg`Crisp line art (server)`,
     hint: msg`Real-ESRGAN; flattens screentone`,
   },
+]
+
+export const ENHANCE_FALLBACKS: { value: EnhanceFallback; label: MessageDescriptor }[] = [
+  ...BROWSER_ENHANCE_METHODS.map((m) => ({ value: m.id as EnhanceFallback, label: m.label })),
+  { value: 'off', label: msg`None` },
 ]
 
 export const ENHANCE_METHODS: EnhanceMethodInfo[] = [...BROWSER_ENHANCE_METHODS, ...SERVER_ENHANCE_METHODS]

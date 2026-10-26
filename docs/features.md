@@ -90,16 +90,17 @@ screen. It is off until a reader turns it on. Library files are never modified.
 - **Hold to compare.** Hold **H** or the toolbar's compare button to see the original page, and
   let go to return to the enhanced one.
 - **Server progress.** While a server method is still working on the page on screen, a pill at
-  the bottom says whether it is waiting, upscaling or loading, and Balanced shows meanwhile. The
+  the bottom says whether it is waiting, upscaling or loading, and the fallback shows meanwhile. The
   page bar marks the pages ahead that are already upscaled in light grey, like the buffered part
   of a video.
 - **Working ahead.** Paged mode enhances the pages in the preload window. Continuous mode sizes its
   range by pixels instead of pages, so a chapter of many short slices is enhanced well down the
   strip and one of a few very tall slices only a page or two ahead, within what the device can hold.
-- **Fallbacks.** A server method shows **Balanced** on this device while its page is not ready,
-  and for good when the reader is offline, the admin tier is off or the model is not downloaded. A
-  device without WebGL2 shows plain pages and the browser methods read "Not supported on this
-  device".
+- **Fallbacks.** A server method shows a browser method on this device while its page is not ready,
+  **Balanced** unless you pick **Light**, **Strong** or **None** (the plain page) under "While the
+  server works" in the reader settings, or "Fallback" in a reading profile. It stays on for good
+  when the reader is offline, the admin tier is off or the model is not downloaded. A device
+  without WebGL2 shows plain pages and the browser methods read "Not supported on this device".
 - **Server upscaling (admins).** Settings, Library, **Server upscaling** has the on switch, the
   list of models readers may use, **Threads**, the cache cap (1 GB by default), **Clear cache**
   and **Test speed**, which times one built-in sample page. Models are not bundled. Maki downloads

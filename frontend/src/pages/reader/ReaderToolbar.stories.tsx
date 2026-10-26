@@ -132,6 +132,7 @@ export const EnhanceOn: Story = {
     await waitFor(() => expect(within(level).getByLabelText('Always')).toBeChecked())
     const method = await body.findByLabelText('Method', { selector: 'input' })
     await expect(method).toHaveValue('Balanced')
+    await expect(body.queryByRole('radiogroup', { name: 'While the server works' })).toBeNull()
 
     await userEvent.click(method)
     await expect(await body.findByRole('option', { name: /Light/ })).toBeVisible()
@@ -142,6 +143,20 @@ export const EnhanceOn: Story = {
 
     await userEvent.click(body.getByRole('option', { name: /Sharp \(server\)/ }))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceMethod: 'server:span-s' }))
+  },
+}
+
+export const EnhanceServerFallback: Story = {
+  args: { prefs: { ...mangaPrefs, enhance: 'always', enhanceMethod: 'server:span-s', enhanceFallback: 'a4k-m' } },
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
+    const body = within(canvasElement.ownerDocument.body)
+    const fallback = await body.findByRole('radiogroup', { name: 'While the server works' })
+    await waitFor(() => expect(within(fallback).getByLabelText('Balanced')).toBeChecked())
+    await userEvent.click(within(fallback).getByText('Strong'))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceFallback: 'a4k-a' }))
+    await userEvent.click(within(fallback).getByText('None'))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceFallback: 'off' }))
   },
 }
 
