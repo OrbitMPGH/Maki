@@ -89,7 +89,7 @@ public class DownloadQueueService(
     // keeps the poll on its short interval until a clean one runs.
     private volatile bool _lastClaimEmpty;
 
-    private TaskCompletionSource _settingsChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private TaskCompletionSource _pollWake = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>
     /// Whether the queue may have work the cooldown poll should keep checking on: an item in flight
@@ -98,13 +98,18 @@ public class DownloadQueueService(
     /// </summary>
     public bool Busy => !_lastClaimEmpty || !_inFlight.IsEmpty || !_resolving.IsEmpty;
 
-    /// <summary>Completes the next time the download settings are saved.</summary>
-    public Task SettingsChanged => Volatile.Read(ref _settingsChanged).Task;
+    /// <summary>Completes the next time <see cref="WakePoll"/> runs.</summary>
+    public Task PollWake => Volatile.Read(ref _pollWake).Task;
 
-    /// <summary>Wakes the cooldown poll so a changed worker count or item timeout applies at once.</summary>
-    public void NotifySettingsChanged() =>
+    /// <summary>
+    /// Cuts the cooldown poll's sleep short so it works out its delay again: after a settings save, so
+    /// a changed worker count or item timeout applies at once; after a pause change, so a new resume
+    /// time is kept; and when an idle queue hands out work, so a cooldown it hits is checked on the
+    /// busy interval rather than at the end of an idle sleep.
+    /// </summary>
+    public void WakePoll() =>
         Interlocked.Exchange(
-            ref _settingsChanged, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously))
+            ref _pollWake, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously))
             .TrySetResult();
 
     /// <summary>Now, by the clock cooldowns and pauses are measured against.</summary>
@@ -981,6 +986,7 @@ public class DownloadQueueService(
     /// </summary>
     public async Task<int?> ClaimNextAsync(CancellationToken ct = default)
     {
+        var wasIdle = !Busy;
         _lastClaimEmpty = false;
         var pause = pauses is null ? DownloadPauseState.None : await pauses.ActiveAsync(ct);
         if (pause.All is not null)
@@ -1046,6 +1052,11 @@ public class DownloadQueueService(
 
             if (claimed == 1)
             {
+                if (wasIdle)
+                {
+                    WakePoll();
+                }
+
                 return candidate.Id;
             }
 

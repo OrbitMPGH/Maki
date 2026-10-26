@@ -1071,7 +1071,7 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.DownloadItemTimeoutMinutes,
             request.ItemTimeoutMinutes.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.DownloadUseHardlinks, request.UseHardlinks ? "true" : "false", ct);
-        queue.NotifySettingsChanged();
+        queue.WakePoll();
         if (request.BulkHoldThreshold is { } bulkHold)
         {
             await settings.SetAsync(SettingKeys.MonitoringBulkHoldThreshold,

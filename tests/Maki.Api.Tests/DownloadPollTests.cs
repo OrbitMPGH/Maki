@@ -1,4 +1,5 @@
 using Maki.Api.Services;
+using Maki.Core.Entities;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -79,5 +80,46 @@ public class DownloadPollTests : IDisposable
         Assert.Null(await _queue.ClaimNextAsync());
 
         Assert.Equal(TimeSpan.FromSeconds(5), await _worker.NextPollDelayAsync(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Work_handed_out_by_an_idle_queue_wakes_the_poll()
+    {
+        Assert.Null(await _queue.ClaimNextAsync());
+        var wake = _queue.PollWake;
+
+        var seriesId = _db.SeedSeries();
+        using (var db = _db.NewContext())
+        {
+            db.DownloadQueue.Add(new DownloadQueueItem
+            {
+                SeriesId = seriesId, Protocol = AcquisitionProtocol.Scraper, Status = QueueStatus.Queued,
+                QueuedAt = T0.UtcDateTime
+            });
+            db.SaveChanges();
+        }
+
+        Assert.NotNull(await _queue.ClaimNextAsync());
+        Assert.True(wake.IsCompleted);
+        Assert.Equal(TimeSpan.FromSeconds(5), await _worker.NextPollDelayAsync(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task A_busy_queue_handing_out_more_work_does_not_wake_the_poll_again()
+    {
+        var seriesId = _db.SeedSeries();
+        using (var db = _db.NewContext())
+        {
+            db.DownloadQueue.Add(new DownloadQueueItem
+            {
+                SeriesId = seriesId, Protocol = AcquisitionProtocol.Scraper, Status = QueueStatus.Queued,
+                QueuedAt = T0.UtcDateTime
+            });
+            db.SaveChanges();
+        }
+
+        var wake = _queue.PollWake;
+        Assert.NotNull(await _queue.ClaimNextAsync());
+        Assert.False(wake.IsCompleted);
     }
 }

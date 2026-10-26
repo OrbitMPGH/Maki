@@ -51,7 +51,7 @@ public class DownloadSettingsValidationTests : IDisposable
     public async Task Smart_download_values_inside_their_range_are_saved()
     {
         var queue = Queue();
-        var changed = queue.SettingsChanged;
+        var changed = queue.PollWake;
 
         var result = await Controller().SetDownload(Payload(1, 20), queue, CancellationToken.None);
 

@@ -118,8 +118,8 @@ public class DownloadWorkerHostedService(
     {
         while (!ct.IsCancellationRequested)
         {
-            var settingsChanged = queue.SettingsChanged;
-            await Task.WhenAny(Task.Delay(await NextPollDelayAsync(ct), ct), settingsChanged);
+            var wake = queue.PollWake;
+            await Task.WhenAny(Task.Delay(await NextPollDelayAsync(ct), ct), wake);
             ct.ThrowIfCancellationRequested();
             await RefreshSettingsAsync(ct);
             await LiftElapsedPausesAsync(ct);

@@ -5,10 +5,10 @@ namespace Maki.Api.Services;
 /// flight. It runs every 15 seconds, and on an instance that has no torrents, or none right now,
 /// every run read the queue to find nothing.
 /// <para>
-/// A grab (<see cref="ReleaseService"/>) is the only place a torrent row is created, and every row
-/// it parks or errors stays in flight, so a grab is the only thing that can end the idle state.
-/// The queue is still read every <see cref="RecheckWhileIdle"/>, so a path that adds one some other
-/// way only delays its import.
+/// A grab (<see cref="ReleaseService"/>) is the only place a torrent row is created, and a retry
+/// (<c>QueueController.Retry</c>) the only place a failed one comes back, so those two end the idle
+/// state. The queue is still read every <see cref="RecheckWhileIdle"/>, so a path that revives one
+/// some other way only delays its import.
 /// </para>
 /// </summary>
 public sealed class TorrentPollState(TimeProvider time)
