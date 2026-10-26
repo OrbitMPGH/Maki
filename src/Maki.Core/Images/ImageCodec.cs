@@ -227,6 +227,12 @@ public static class ImageCodec
     }
 
     /// <summary>
+    /// About four times faster than libvips' default of 4 for pages roughly 3% larger at the same
+    /// quality, measured on JPEG and PNG chapters. AV1 at 4 put a library pass at hundreds of hours.
+    /// </summary>
+    public const int AvifEffort = 3;
+
+    /// <summary>
     /// Decodes a JPEG or PNG page and encodes it as <paramref name="target"/>, or returns null with
     /// the reason it was left as it is. Orientation is applied, CMYK is converted to sRGB and an ICC
     /// profile is carried over; everything else in the metadata is dropped. Throws
@@ -259,7 +265,7 @@ public static class ImageCodec
             PageEncoding.LosslessWebp => image.WebpsaveBuffer(lossless: true, effort: 4, keep: Enums.ForeignKeep.Icc),
             PageEncoding.Webp => image.WebpsaveBuffer(q: quality, effort: 4, smartSubsample: true, keep: Enums.ForeignKeep.Icc),
             PageEncoding.Avif => image.HeifsaveBuffer(q: quality, bitdepth: 8, compression: Enums.ForeignHeifCompression.Av1,
-                effort: 4, keep: Enums.ForeignKeep.Icc),
+                effort: AvifEffort, keep: Enums.ForeignKeep.Icc),
             _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)
         };
     }

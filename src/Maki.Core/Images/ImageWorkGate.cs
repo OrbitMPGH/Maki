@@ -36,8 +36,9 @@ public static class ImageWorkGate
     /// because past that the limit is memory rather than CPU: four concurrent decodes of a large
     /// page is already ~100 MB of live pixels.
     /// </summary>
-    private static readonly SemaphoreSlim Permits =
-        new(Math.Clamp(Environment.ProcessorCount / 2, 2, 4));
+    public static readonly int Parallelism = Math.Clamp(Environment.ProcessorCount / 2, 2, 4);
+
+    private static readonly SemaphoreSlim Permits = new(Parallelism);
 
     /// <summary>About 256 MB of RGBA pixels in flight at most, or one page larger than that on its own.</summary>
     public const int BudgetMegapixels = 64;

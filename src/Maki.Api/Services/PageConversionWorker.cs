@@ -39,7 +39,7 @@ public sealed record PageConversionPassTotals(
 
 /// <summary>
 /// Converts the library that was there before conversion was switched on, one file at a time, at low
-/// priority: a short pause between files and one encode at a time through <c>ImageWorkGate</c>. The
+/// priority: a short pause between files, and pages encoded through <c>ImageWorkGate</c> alongside the reader's own decodes. The
 /// pass is started and paused from the settings card; its state survives a restart, and a file is done
 /// once <see cref="ChapterFile.ConversionCheckedAtUtc"/> is set, so a resumed pass picks up where it
 /// stopped. A file that is busy or unreadable is passed over until the next pass.
