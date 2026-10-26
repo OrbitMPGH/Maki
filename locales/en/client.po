@@ -12778,6 +12778,11 @@ msgctxt "series"
 msgid "Restored to the library, but the removed chapters were not queued: {queueError}"
 msgstr "Restored to the library, but the removed chapters were not queued: {queueError}"
 
+#: src/pages/ImportPage.tsx
+msgctxt "series"
+msgid "Restoring an archived series needs the Archive series permission"
+msgstr "Restoring an archived series needs the Archive series permission"
+
 #: src/pages/ScrobblePage.tsx
 msgid "Result"
 msgstr "Result"
