@@ -7601,11 +7601,6 @@ msgstr "How you read"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#~ msgid "https, require https, trusted proxies, hsts"
-#~ msgstr "https, require https, trusted proxies, hsts"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "https, require https, trusted proxies, hsts, other devices, lan, localhost, firewall, phone"
 msgstr "https, require https, trusted proxies, hsts, other devices, lan, localhost, firewall, phone"
 
