@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLabel } from '../../i18n-context'
 import { useDebouncedValue } from '@mantine/hooks'
@@ -23,6 +23,7 @@ import {
 import { IconRestore, IconTrash } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { SettingsSection } from './SettingsSection'
+import { activeSeries } from '../../lib/series'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { MonoValue } from '../../components/ui/MonoValue'
 import { RecommendationModelSwitch } from '../../components/RecommendationModelSwitch'
@@ -402,8 +403,9 @@ export function LibraryFilesSection() {
 export function NamingSection() {
   const { t } = useLingui()
   const { settings, patch } = useLibraryPatch()
-  const { data: allSeries } = useSeries()
-  const seriesCount = allSeries?.length ?? 0
+  const { data: everySeries } = useSeries()
+  const allSeries = useMemo(() => activeSeries(everySeries ?? []), [everySeries])
+  const seriesCount = allSeries.length
   const renameMany = useRenameManySeries()
   const [confirmRenameAll, setConfirmRenameAll] = useState(false)
 
@@ -468,7 +470,7 @@ export function NamingSection() {
         variant="default"
         size="xs"
         mb="lg"
-        disabled={!allSeries?.length}
+        disabled={!allSeries.length}
         onClick={() => setConfirmRenameAll(true)}
       >
         <Trans>Rename every series to current format</Trans>
@@ -494,7 +496,7 @@ export function NamingSection() {
             color="var(--danger-fill)"
             loading={renameMany.isPending}
             onClick={() =>
-              renameMany.mutate((allSeries ?? []).map((s) => s.id), {
+              renameMany.mutate(allSeries.map((s) => s.id), {
                 onSuccess: (results) => {
                   const renamed = results.filter((r) => r.applied).length
                   const failed = results.filter((r) => r.error).length

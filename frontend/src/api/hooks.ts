@@ -17,6 +17,7 @@ import type { RequestSummaryDto, SourceReliabilityDto } from './stats'
 import type { IncognitoMode } from '../components/ui/incognito'
 import type { ReleaseParsedDto } from './upgrades'
 import { obtainedCount } from '../lib/chapterCounts'
+import { activeSeries } from '../lib/series'
 import type {
   AddSeriesRequest,
   ArchiveSeriesRequest,
@@ -97,7 +98,7 @@ export interface LibraryStats {
 export function useLibraryStats(): LibraryStats {
   const { data: series } = useSeries()
   return useMemo(() => {
-    const list = series ?? []
+    const list = activeSeries(series ?? [])
     let downloaded = 0
     let missing = 0
     let monitored = 0

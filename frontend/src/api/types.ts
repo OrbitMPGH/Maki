@@ -726,6 +726,7 @@ export interface NotificationEvents {
   updateAvailable: boolean
   seriesAdded: boolean
   seriesRemoved: boolean
+  seriesArchived: boolean
   requestSubmitted: boolean
   requestResolved: boolean
   manualMatchNeeded: boolean
