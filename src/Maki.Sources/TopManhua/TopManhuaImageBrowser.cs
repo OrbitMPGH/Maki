@@ -30,6 +30,7 @@ public sealed class TopManhuaImageBrowser(
     private const string Host = "www.topmanhua.fan";
     private const int NavTimeoutMs = 30_000;
     private const int CaptureTimeoutMs = 45_000;
+    private const int MaxBodiesInFlight = 2;
 
     private readonly SemaphoreSlim _gate = new(1, 1);
     private IPlaywright? _playwright;
@@ -165,6 +166,12 @@ public sealed class TopManhuaImageBrowser(
         var wanted = new HashSet<string>(imageUrls, StringComparer.Ordinal);
         var captured = new ConcurrentDictionary<string, byte[]>(StringComparer.Ordinal);
 
+        // Each body travels Chromium to Node to .NET as base64 JSON, so a 1 MB page is roughly 8 to
+        // 10 MB of transient garbage, and starting every capture of a 50-page chapter at once put
+        // all of it in flight together. Not disposed: a late response can still be waiting on it
+        // after the capture has returned.
+        var inFlight = new SemaphoreSlim(MaxBodiesInFlight);
+
         async Task CaptureBodyAsync(IResponse response)
         {
             if (!wanted.Contains(response.Url) || !response.Ok)
@@ -174,7 +181,15 @@ public sealed class TopManhuaImageBrowser(
 
             try
             {
-                captured[response.Url] = await response.BodyAsync();
+                await inFlight.WaitAsync(ct);
+                try
+                {
+                    captured[response.Url] = await response.BodyAsync();
+                }
+                finally
+                {
+                    inFlight.Release();
+                }
             }
             catch (Exception)
             {
