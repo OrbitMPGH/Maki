@@ -190,16 +190,15 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
             // No floor on how small a graph may be, for the same reason RecoGraphCache has none:
             // judging an artifact too small to be real is the installer's job, since it is the only
             // thing that knows a download was meant to be complete.
-            var pairs = ReadPairs(conn, ct);
-            if (pairs.Count == 0)
+            var graph = PairGraphBuilder.Build(() => ReadPairs(conn, ct), ReadGeneratedAt(conn));
+            if (graph.Count == 0)
             {
                 return null;
             }
 
-            var graph = PairGraphBuilder.Build(pairs, ReadGeneratedAt(conn));
             logger.LogInformation(
                 "Loaded co-read graph: {Series} series, {Pairs} pairs in {Elapsed:F0}ms",
-                graph.Count, pairs.Count, (DateTime.UtcNow - started).TotalMilliseconds);
+                graph.Count, graph.EdgeCount / 2, (DateTime.UtcNow - started).TotalMilliseconds);
             return graph;
         }
         catch (SqliteException ex)
@@ -219,9 +218,8 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
     /// (<c>minSupport</c>) already applied to every row that reached the artifact, and a second
     /// array would double the index for a floor nothing has measured a use for.
     /// </summary>
-    private static List<(long A, long B, float Weight)> ReadPairs(SqliteConnection conn, CancellationToken ct)
+    private static IEnumerable<(long A, long B, float Weight)> ReadPairs(SqliteConnection conn, CancellationToken ct)
     {
-        var pairs = new List<(long, long, float)>(1_200_000);
         using var cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT a_id, b_id, strength FROM pair";
         cmd.CommandTimeout = 120;
@@ -244,10 +242,8 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
                 continue;
             }
 
-            pairs.Add((a, b, strength));
+            yield return (a, b, strength);
         }
-
-        return pairs;
     }
 
     private static DateTime? ReadGeneratedAt(SqliteConnection conn)

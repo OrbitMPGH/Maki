@@ -50,15 +50,49 @@ public class FollowedCreatorReleaseService(
 
     public async Task RunAsync(CancellationToken ct = default)
     {
-        if (!await store.IsAvailableAsync(ct) || await catalogueIndex.GetAsync(ct) is not { } catalogue ||
-            catalogue.Credits.IsEmpty)
+        if (!await store.IsAvailableAsync(ct))
+        {
+            return;
+        }
+
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        var follows = (await db.UserSettings
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(s => s.Key == SettingKeys.DiscoverFollowing)
+                .Join(db.Users.Where(u => !u.Disabled && !u.PendingSetup), s => s.UserId, u => u.Id,
+                    (s, u) => new { s.UserId, s.Value, u.MaxContentRating })
+                .ToListAsync(ct))
+            .Select(f => (f.UserId, f.MaxContentRating, Spec: FollowedCreatorsSpec.Parse(f.Value)))
+            .Where(f => !f.Spec.IsEmpty)
+            .ToList();
+
+        var stored = await settings.GetAsync(SettingKeys.DiscoverFollowingWatermark, ct);
+        var seeded = long.TryParse(stored, NumberStyles.Integer, CultureInfo.InvariantCulture, out var watermark);
+
+        if (follows.Count == 0)
+        {
+            // The watermark still has to move, or a follow made next month would announce everything
+            // added in between. The dump answers that without the catalogue index, which costs about
+            // nine seconds of CPU to build and is then held for the idle window, every day, on an
+            // instance where nobody follows anyone.
+            if (await store.GetHighestCreditedIdAsync(ct) is { } highest && (!seeded || highest > watermark))
+            {
+                await SetWatermarkAsync(highest, ct);
+            }
+
+            return;
+        }
+
+        if (await catalogueIndex.GetAsync(ct) is not { } catalogue || catalogue.Credits.IsEmpty)
         {
             return;
         }
 
         var credits = catalogue.Credits;
-        var stored = await settings.GetAsync(SettingKeys.DiscoverFollowingWatermark, ct);
-        if (!long.TryParse(stored, NumberStyles.Integer, CultureInfo.InvariantCulture, out var watermark))
+        if (!seeded)
         {
             await SetWatermarkAsync(credits.MaxSeriesId, ct);
             logger.LogInformation("Follow check seeded at MangaBaka id {Watermark}", credits.MaxSeriesId);
@@ -70,20 +104,8 @@ public class FollowedCreatorReleaseService(
             return;
         }
 
-        using var scope = scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
-
-        var follows = await db.UserSettings
-            .IgnoreQueryFilters()
-            .AsNoTracking()
-            .Where(s => s.Key == SettingKeys.DiscoverFollowing)
-            .Join(db.Users.Where(u => !u.Disabled && !u.PendingSetup), s => s.UserId, u => u.Id,
-                (s, u) => new { s.UserId, s.Value, u.MaxContentRating })
-            .ToListAsync(ct);
-
         var perUser = follows
-            .Select(f => (f.UserId, f.MaxContentRating,
-                Releases: Match(FollowedCreatorsSpec.Parse(f.Value), credits, watermark)))
+            .Select(f => (f.UserId, f.MaxContentRating, Releases: Match(f.Spec, credits, watermark)))
             .Where(f => f.Releases.Count > 0)
             .ToList();
 

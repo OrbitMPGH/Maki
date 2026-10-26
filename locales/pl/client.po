@@ -8165,10 +8165,6 @@ msgstr "Gatunki i tagi"
 msgid "Genres in the library"
 msgstr "Gatunki w bibliotece"
 
-#: src/pages/reader/enhanceMethods.ts
-#~ msgid "Gentle (server)"
-#~ msgstr ""
-
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -19778,11 +19774,6 @@ msgstr "Wielkie litery"
 msgid "upscale, upscaling, enhance, sharpen, model, onnx, real-esrgan, span, cpu threads, page cache"
 msgstr ""
 
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#~ msgid "upscale, upscaling, enhance, sharpen, model, onnx, waifu2x, real-esrgan, span, cpu threads, page cache"
-#~ msgstr ""
-
 #: src/pages/reader/ServerEnhanceStatus.tsx
 msgid "Upscaled page shown"
 msgstr ""
@@ -20212,10 +20203,6 @@ msgstr "Tomy: {volumes}"
 #, fuzzy
 msgid "vs {fromLabel} to {toLabel}"
 msgstr "w porównaniu z {fromLabel}–{toLabel}"
-
-#: src/pages/reader/enhanceMethods.ts
-#~ msgid "waifu2x art; slowest, cleanest"
-#~ msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx

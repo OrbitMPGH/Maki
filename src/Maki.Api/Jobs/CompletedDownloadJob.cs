@@ -40,7 +40,8 @@ public class CompletedDownloadJob(
     InboxService inbox,
     IMessageCatalog localizer,
     IUserLocaleResolver locales,
-    ILogger<CompletedDownloadJob> logger) : IJob
+    ILogger<CompletedDownloadJob> logger,
+    TorrentPollState? pollState = null) : IJob
 {
     /// <summary>How long a torrent whose hash is known may be missing from the client before its row fails.</summary>
     internal static readonly TimeSpan MissingTorrentGrace = TimeSpan.FromHours(6);
@@ -63,7 +64,12 @@ public class CompletedDownloadJob(
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
+        if (pollState?.CanSkip == true)
+        {
+            return;
+        }
 
+        var generation = pollState?.Generation ?? 0;
         var pending = await db.DownloadQueue
             .Where(q => q.Protocol == AcquisitionProtocol.Torrent &&
                         q.Status != QueueStatus.Completed &&
@@ -74,6 +80,7 @@ public class CompletedDownloadJob(
 
         if (pending.Count == 0)
         {
+            pollState?.MarkIdle(generation);
             return;
         }
 

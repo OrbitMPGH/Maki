@@ -12,8 +12,16 @@ public class HealthJobListenerTests : IDisposable
 
     public void Dispose() => _fixture.Dispose();
 
+    private sealed class Clock : TimeProvider
+    {
+        public DateTimeOffset Now { get; set; } = DateTimeOffset.UtcNow;
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
+
+    private readonly Clock _clock = new();
+
     private HealthJobListener Listener() =>
-        new(_fixture.ScopeFactory(), NullLogger<HealthJobListener>.Instance);
+        new(_fixture.ScopeFactory(), NullLogger<HealthJobListener>.Instance, _clock);
 
     private string? Status()
     {
@@ -70,15 +78,10 @@ public class HealthJobListenerTests : IDisposable
         await listener.JobWasExecuted(new TestJobContext(detail: _detail), null);
         Assert.Equal(first, Stamp());
 
-        using (var db = _fixture.NewContext())
-        {
-            var row = db.HealthChecks.Single(c => c.Id == $"job:{_detail.Key}");
-            row.CheckedAt = DateTime.UtcNow.AddMinutes(-6);
-            db.SaveChanges();
-        }
+        _clock.Now += TimeSpan.FromMinutes(6);
 
         await listener.JobWasExecuted(new TestJobContext(detail: _detail), null);
-        Assert.True(Stamp() > DateTime.UtcNow.AddMinutes(-1));
+        Assert.True(Stamp() > first.AddMinutes(5));
     }
 
     [Fact]

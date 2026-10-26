@@ -85,6 +85,47 @@ public class DownloadQueueService(
 
     public ChannelReader<int> Reader => _channel.Reader;
 
+    // False from the start of a claim until one finds nothing to hand out, so a claim that threw
+    // keeps the poll on its short interval until a clean one runs.
+    private volatile bool _lastClaimEmpty;
+
+    private TaskCompletionSource _pollWake = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>
+    /// Whether the queue may have work the cooldown poll should keep checking on: an item in flight
+    /// or resolving, or a last claim that did not come back empty. False on an idle instance, where
+    /// the poll can sleep until the next cooldown or pause ends.
+    /// </summary>
+    public bool Busy => !_lastClaimEmpty || !_inFlight.IsEmpty || !_resolving.IsEmpty;
+
+    /// <summary>Completes the next time <see cref="WakePoll"/> runs.</summary>
+    public Task PollWake => Volatile.Read(ref _pollWake).Task;
+
+    /// <summary>
+    /// Cuts the cooldown poll's sleep short so it works out its delay again: after a settings save, so
+    /// a changed worker count or item timeout applies at once; after a pause change, so a new resume
+    /// time is kept; and when an idle queue hands out work, so a cooldown it hits is checked on the
+    /// busy interval rather than at the end of an idle sleep.
+    /// </summary>
+    public void WakePoll() =>
+        Interlocked.Exchange(
+            ref _pollWake, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously))
+            .TrySetResult();
+
+    /// <summary>Now, by the clock cooldowns and pauses are measured against.</summary>
+    public DateTime UtcNow => time.GetUtcNow().UtcDateTime;
+
+    /// <summary>When the soonest active source cooldown lifts, or null when none is cooling down.</summary>
+    public DateTime? EarliestCooldownEnd()
+    {
+        lock (_cooldownLock)
+        {
+            var now = time.GetUtcNow().UtcDateTime.Ticks;
+            var soonest = _cooldowns.Values.Where(c => c.UntilTicks > now).Select(c => (long?)c.UntilTicks).Min();
+            return soonest is { } ticks ? new DateTime(ticks, DateTimeKind.Utc) : null;
+        }
+    }
+
     /// <summary>Cancellation token shared by every local owner of a queue item.</summary>
     public CancellationToken WorkCancellationToken(int queueItemId) =>
         _workCancellations.GetOrAdd(queueItemId, _ => new CancellationTokenSource()).Token;
@@ -945,9 +986,12 @@ public class DownloadQueueService(
     /// </summary>
     public async Task<int?> ClaimNextAsync(CancellationToken ct = default)
     {
+        var wasIdle = !Busy;
+        _lastClaimEmpty = false;
         var pause = pauses is null ? DownloadPauseState.None : await pauses.ActiveAsync(ct);
         if (pause.All is not null)
         {
+            _lastClaimEmpty = true;
             return null;
         }
 
@@ -979,6 +1023,7 @@ public class DownloadQueueService(
             if (candidate is null)
             {
                 // Either nothing queued, or every remaining item's tracker is cooling down.
+                _lastClaimEmpty = true;
                 return null;
             }
 
@@ -1007,6 +1052,11 @@ public class DownloadQueueService(
 
             if (claimed == 1)
             {
+                if (wasIdle)
+                {
+                    WakePoll();
+                }
+
                 return candidate.Id;
             }
 

@@ -5,6 +5,7 @@ using Maki.Core.Download;
 using Maki.Core.Images;
 using Maki.Core.Opds;
 using Maki.Core.Reading;
+using Maki.Core.Io;
 using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -504,7 +505,7 @@ public class KomgaController(
         byte[] bytes;
         await using (stream)
         {
-            using var buffer = new MemoryStream();
+            using var buffer = PooledStreams.Get("komga-convert");
             await stream.CopyToAsync(buffer, ct);
             bytes = buffer.ToArray();
         }
@@ -517,7 +518,8 @@ public class KomgaController(
 
         try
         {
-            var converted = await ImageWorkGate.RunAsync(() => Task.FromResult(ImageCodec.Transcode(bytes, format)), ct);
+            var converted = await ImageWorkGate.RunAsync(
+                () => Task.FromResult(ImageCodec.Transcode(bytes, format)), ImageWorkGate.Weigh(bytes), ct);
             return File(converted, wanted, lastModified: null, entityTag: etag);
         }
         catch (NetVips.VipsException)

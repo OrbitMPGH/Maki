@@ -188,6 +188,7 @@ public class QueueController(
             logger.LogWarning(ex, "Could not broadcast the download pause change");
         }
 
+        queue.WakePoll();
         await queue.WakeWorkersAsync(ct);
         return dto;
     }
@@ -240,7 +241,8 @@ public class QueueController(
 
     [Authorize(Policy = Policies.ManageDownloadQueue)]
     [HttpPost("{id:int}/retry")]
-    public async Task<IActionResult> Retry(int id, CancellationToken ct)
+    public async Task<IActionResult> Retry(
+        int id, CancellationToken ct, [FromServices] TorrentPollState? pollState = null)
     {
         var item = await db.DownloadQueue.FindAsync([id], ct);
         if (item is null)
@@ -297,6 +299,10 @@ public class QueueController(
             item.SetError("error.download.rateLimited", new { source = sourceName });
         }
         await db.SaveChangesAsync(ct);
+        if (item.Protocol == AcquisitionProtocol.Torrent)
+        {
+            pollState?.TorrentAdded();
+        }
         await queue.SignalAsync(item.Id, ct);
         return NoContent();
     }

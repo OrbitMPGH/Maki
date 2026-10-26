@@ -77,7 +77,7 @@ public class SideInterestRailService(
         return selected;
     }
 
-    internal static IReadOnlyList<string> CoreStoryTags(byte[]? blob, IReadOnlyDictionary<int, TagInfo> vocabulary) =>
+    internal static IReadOnlyList<string> CoreStoryTags(ReadOnlySpan<byte> blob, IReadOnlyDictionary<int, TagInfo> vocabulary) =>
         TagMath.Unpack(blob)
             .Where(t => t.Class == TagMath.Core && vocabulary.TryGetValue(t.Id, out var info)
                 && !info.IsSpoiler && TagMath.IsStoryCategory(info.Category))

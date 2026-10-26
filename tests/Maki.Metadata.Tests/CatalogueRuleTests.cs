@@ -175,7 +175,7 @@ public class CatalogueRuleTests
                 JaggedInts.From(new int[count][].Select(_ => Array.Empty<int>()).ToArray()),
                 JaggedInts.From(new int[count][].Select(_ => Array.Empty<int>()).ToArray()),
                 Enumerable.Repeat(1000, count).ToArray(),
-                blobs,
+                PackedTags.From(blobs),
                 new byte[count],
                 Enumerable.Repeat(VectorIndex.Unknown, count).ToArray()),
             new VectorIndexVocabularies(

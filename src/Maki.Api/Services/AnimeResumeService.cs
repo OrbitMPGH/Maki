@@ -252,7 +252,7 @@ public class AnimeResumeService(
         if (ids.Count == 0 || !await catalogue.IsAvailableAsync(ct)) return [];
 
         var suppressed = await RecommendationFeedbackService.SuppressedAsync(db, UserId, ct);
-        var isHidden = await hidden.PredicateAsync(ct);
+        var isHidden = await hidden.PredicateAsync(ids, ct);
         ids = ids.Where(id => !suppressed.Contains(id) && isHidden?.Invoke(id) != true).ToList();
         if (ids.Count == 0) return [];
 

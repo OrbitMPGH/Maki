@@ -102,11 +102,11 @@ public class MangaBakaDumpRetryTests : IAsyncLifetime
         {
             var http = new FailingDumpHttp();
             var status = new MangaBakaDumpStatus();
+            var dumpOptions = new MangaBakaDumpOptions(Path.Combine(dir.FullName, "mangabaka.db"), dir.FullName);
             var dumpService = new MangaBakaDumpService(
-                http, new MangaBakaDumpOptions(Path.Combine(dir.FullName, "mangabaka.db"), dir.FullName),
-                new FakeAppSettings(), status, NullLogger<MangaBakaDumpService>.Instance);
+                http, dumpOptions, new FakeAppSettings(), status, NullLogger<MangaBakaDumpService>.Instance);
             var job = new MangaBakaDumpRefreshJob(
-                dumpService, status, new EventBroadcaster(null!, null!), schedulerFactory: null!,
+                dumpService, dumpOptions, status, new EventBroadcaster(null!, null!), schedulerFactory: null!,
                 new ArtifactBuildGate(NullLogger<ArtifactBuildGate>.Instance),
                 new MangaBakaDumpRetry(TimeSpan.FromMilliseconds(200)),
                 NullLogger<MangaBakaDumpRefreshJob>.Instance);
