@@ -1,4 +1,3 @@
-using System.Threading.RateLimiting;
 using Maki.Api.Configuration;
 using Maki.Core.Security;
 using Maki.Data;
@@ -9,20 +8,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace Maki.Api.Auth;
-
-public static class RateLimitPolicies
-{
-    /// <summary>
-    /// Applied to sign-in, two-factor and first-run setup. Per client address, so one attacker
-    /// cannot lock every account out by exhausting a shared budget.
-    /// </summary>
-    public const string Auth = "auth";
-}
 
 public static class AuthServiceCollectionExtensions
 {
@@ -313,23 +302,8 @@ public static class AuthServiceCollectionExtensions
             o.Cookie.SameSite = SameSiteMode.Lax;
         });
 
-        services.AddRateLimiter(o =>
-        {
-            o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            o.AddPolicy(RateLimitPolicies.Auth, ctx => RateLimitPartition.GetFixedWindowLimiter(
-                // Partitioned by address so a flood against one account cannot deny sign-in to
-                // everyone else. Only meaningful behind a proxy once auth.trustedproxies is set —
-                // until then every request looks like it comes from the proxy itself.
-                ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = 10,
-                    Window = TimeSpan.FromMinutes(1),
-                    // No queue: a rejected sign-in attempt should fail immediately, not wait for a
-                    // slot and give the caller a free retry.
-                    QueueLimit = 0
-                }));
-        });
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<LoginRateLimiter>();
 
         return services;
     }

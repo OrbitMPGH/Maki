@@ -25,7 +25,6 @@ using Maki.Metadata.ReaderCohorts;
 using Maki.Metadata.RecoGraph;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using Quartz;
 
 namespace Maki.Api.Controllers;
@@ -467,7 +466,7 @@ public class SettingsController(
     /// </summary>
     [Authorize(Policy = Policies.UseOpds)]
     [CookieSessionOnly]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     [HttpPost("opds/token")]
     public async Task<IActionResult> RotateOpdsToken(
         [FromBody] Maki.Api.Dtos.ConfirmPasswordRequest? request,

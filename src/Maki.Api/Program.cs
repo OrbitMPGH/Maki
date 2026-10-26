@@ -1696,8 +1696,6 @@ try
     // never reach it, so runtime compression is left to API responses.
     app.UseResponseCompression();
 
-    app.UseRateLimiter();
-
     app.UseAuthentication();
     // Before CurrentUserMiddleware, so the 401 that middleware answers with is localized too. It
     // reads nothing but the request itself (a query parameter, two headers), and the stored
