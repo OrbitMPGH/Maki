@@ -210,7 +210,7 @@ public class JackettClientTests
 
         Assert.Equal(magnet, link.Magnet);
         Assert.Null(link.File);
-        Assert.Equal(["jackett"], factory.Names);
+        Assert.Equal([ReleaseIndexerBase.DownloadHttpClientName], factory.Names);
     }
 
     [Fact]
