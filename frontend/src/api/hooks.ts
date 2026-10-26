@@ -1782,10 +1782,11 @@ export function useRemoveArchivedFiles() {
   })
 }
 
-export function useChapters(seriesId: number) {
+export function useChapters(seriesId: number, enabled = true) {
   return useQuery({
     queryKey: ['chapters', seriesId],
     queryFn: () => api<ChapterDto[]>(`/chapter?seriesId=${seriesId}`),
+    enabled,
   })
 }
 

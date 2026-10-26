@@ -53,6 +53,10 @@ const shapeOf = (id: number): ChapterShape => scenarios[id]?.shape ?? {}
 
 export const seriesFor = (id: number) => seriesDto(id, scenarios[id]?.overrides)
 
+/** Series 1 as an archived series: unmonitored, files still on disk, archived by the signed-in admin. */
+export const archivedSeriesDto = (id = 1) =>
+  seriesDto(id, { ...scenarios[id]?.overrides, monitored: false, archivedAt: hoursAgo(24 * 12), archivedByUserId: 1 })
+
 const notFound = () => failWith(404, 'Series not found', 'error.series.notFound')
 
 /** What every write on the series page answers, so a play function can click through without a 501. */
@@ -80,6 +84,24 @@ const seriesMutations: HttpHandler[] = [
   http.delete(api('/series/:id/files'), async ({ request }) =>
     HttpResponse.json({ deleted: ((await request.json().catch(() => [])) as string[]).length, failed: 0 }),
   ),
+  http.post(api('/series/:id/archive'), () => HttpResponse.json({ deleted: 0, failed: 0 })),
+  http.post(api('/series/archive/bulk'), async ({ request }) => {
+    const ids = ((await bodyOf(request)).seriesIds as number[] | undefined) ?? []
+    return HttpResponse.json({
+      results: ids.map((seriesId) => ({
+        seriesId,
+        ok: true,
+        notFound: false,
+        code: null,
+        error: null,
+        permanentDeleteAvailable: false,
+        deleted: 0,
+        failed: 0,
+      })),
+    })
+  }),
+  http.post(api('/series/:id/archive/removefiles'), () => HttpResponse.json({ deleted: 96, failed: 0 })),
+  http.post(api('/series/:id/restore'), () => HttpResponse.json({ queued: 0, queueError: null })),
   http.put(api('/chapter/:id/wanted'), () => noContent()),
   http.put(api('/chapter/wanted'), async ({ request }) =>
     HttpResponse.json({ updated: ((await bodyOf(request)).chapterIds as number[] | undefined)?.length ?? 0 }),

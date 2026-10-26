@@ -1,12 +1,15 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import { ActionIcon, Badge, Group, Menu, Rating, Stack, Text } from '@mantine/core'
 import { IconArchiveOff, IconArrowRight, IconDots, IconFileOff, IconTrash } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { useChapters } from '../../api/hooks'
+import { useSeriesReadProgress } from '../../api/reader'
 import type { SeriesDto } from '../../api/types'
 import { formatDate } from '../../format'
 import { CoverCard, type OfflineAvailability } from '../ui/CoverCard'
 import { SeriesRow } from '../ui/SeriesRow'
+import { countSkipped } from './chapterTable'
 
 export type ArchivedCardAction = 'restore' | 'removeFiles' | 'delete'
 
@@ -52,6 +55,15 @@ export const ArchivedSeriesCard = memo(function ArchivedSeriesCard({
   const total = series.wantedChapterCount || series.knownChapterCount || 0
   const date = series.archivedAt ? formatDate(series.archivedAt) : ''
   const filesRemoved = series.chapterFileCount === 0
+
+  // Skipped chapters need a finished one to be skipped past, so a series with nothing read asks for neither list.
+  const wantsSkipped = readTracking && read > 0
+  const { data: chapters } = useChapters(series.id, wantsSkipped)
+  const { data: progressRows } = useSeriesReadProgress(series.id, wantsSkipped)
+  const skipped = useMemo(() => {
+    if (!chapters || !progressRows) return 0
+    return countSkipped(chapters, new Map(progressRows.map((p) => [p.chapterId, p])), null)
+  }, [chapters, progressRows])
 
   const menu = !selectMode && (
     <Menu withinPortal position="bottom-end" shadow="md">
@@ -117,6 +129,11 @@ export const ArchivedSeriesCard = memo(function ArchivedSeriesCard({
         {filesRemoved && (
           <Badge size="xs" variant="light" color="var(--neutral)">
             <Trans>Files removed</Trans>
+          </Badge>
+        )}
+        {skipped > 0 && (
+          <Badge size="xs" variant="light" color="var(--neutral)">
+            <Plural value={skipped} one="# skipped" other="# skipped" />
           </Badge>
         )}
       </Group>

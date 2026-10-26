@@ -9,6 +9,7 @@ import {
   discoverPage,
   resetTabState,
 } from '../../../.storybook/mocks/discover'
+import { librarySeries } from '../../../.storybook/mocks/home/fixtures'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 
 const item = catalogueItem(0)
@@ -62,6 +63,25 @@ export const InLibrary: Story = {
   args: { inLibrarySeriesId: 1 },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('button', { name: 'View in library' })).toBeVisible()
+  },
+}
+
+export const InLibraryArchived: Story = {
+  args: { inLibrarySeriesId: 1 },
+  parameters: {
+    msw: discoverPage(
+      http.get(api('/series'), () =>
+        HttpResponse.json(
+          librarySeries.map((s) => (s.id === 1 ? { ...s, archivedAt: '2026-10-07T09:00:00Z', archivedByUserId: 1 } : s)),
+        ),
+      ),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Archived')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Restore' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'View series' })).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: 'View in library' })).toBeNull()
   },
 }
 

@@ -1,7 +1,8 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import type { LibraryFilterSpec, SavedFilterDto, TagDto } from '../../src/api/types'
 import { api } from './api'
-import { libraryTags, librarySeries, rootFolders, savedFilters, sources, upgradeProfiles } from './library/fixtures'
+import { libraryTags, librarySeries, librarySeriesWithArchived, rootFolders, savedFilters, sources, upgradeProfiles } from './library/fixtures'
+import { chaptersFor, progressFor } from './series/fixtures'
 
 export * from './library/fixtures'
 
@@ -67,6 +68,20 @@ export const libraryHandlers: HttpHandler[] = [
   http.post(api('/series/:id/monitormode'), () => HttpResponse.json({})),
   http.post(api('/series/:id/move'), () => HttpResponse.json({})),
   http.delete(api('/series/:id'), noContent),
+]
+
+/**
+ * The Archived view: the library list with three series archived, and one of them (id 4) read with
+ * chapters 3 and 5 left behind, so its card shows a skipped badge. The other archived series answer
+ * the page-wide chapter and progress mocks.
+ */
+export const archivedLibraryHandlers: HttpHandler[] = [
+  http.get(api('/series'), () => HttpResponse.json(librarySeriesWithArchived)),
+  http.get(api('/reader/series/4/progress'), () => {
+    const gap = new Set([4030, 4050])
+    return HttpResponse.json(progressFor(4, chaptersFor(4)).filter((p) => !gap.has(p.chapterId)))
+  }),
+  ...libraryHandlers,
 ]
 
 /**

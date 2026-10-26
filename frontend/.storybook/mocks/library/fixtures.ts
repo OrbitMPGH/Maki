@@ -184,6 +184,28 @@ const longTitle: SeriesDto = {
 
 export const librarySeries: SeriesDto[] = [...catalogue.map(toSeries), unrefreshed, longTitle]
 
+function archived(id: number, patch: Partial<SeriesDto>): SeriesDto {
+  return {
+    ...toSeries(catalogue.find((e) => e.id === id)!),
+    monitored: false,
+    archivedAt: daysAgo(12 + id),
+    archivedByUserId: 1,
+    ...patch,
+  }
+}
+
+/** Three archived series: files kept with the reading gap, files kept and fully read, and files removed. */
+export const archivedLibrarySeries: SeriesDto[] = [
+  archived(2, { rating: 8 }),
+  archived(4, { rating: 9, archiveFreeableBytes: 1_400_000_000 }),
+  archived(12, { rating: null, chapterFileCount: 0, removedChapterCount: 75, readChapterCount: 75 }),
+]
+
+/** The library list with those three archived in place, so the Archived view has something to show. */
+export const librarySeriesWithArchived: SeriesDto[] = librarySeries.map(
+  (s) => archivedLibrarySeries.find((a) => a.id === s.id) ?? s,
+)
+
 export const libraryTags: TagDto[] = tagDefs.map((t) => ({
   ...t,
   seriesCount: librarySeries.filter((s) => s.tagIds.includes(t.id)).length,

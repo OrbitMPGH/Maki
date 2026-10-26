@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
-import { animeResume, providerDetail, seriesDto, seriesMsw, torrentProposal } from '../../.storybook/mocks/series'
+import { animeResume, archivedSeriesDto, providerDetail, seriesDto, seriesMsw, torrentProposal } from '../../.storybook/mocks/series'
 import SeriesDetailPage from './SeriesDetailPage'
 import { monoText } from '../../.storybook/monoText'
 
@@ -30,6 +30,35 @@ export const Completed: Story = {
   parameters: at(2),
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: /The Ninth Kitchen/ })).toBeVisible()
+  },
+}
+
+export const Archived: Story = {
+  parameters: { msw: seriesMsw(http.get(api('/series/:id'), () => HttpResponse.json(archivedSeriesDto(1)))) },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByRole('heading', { name: /Lanterns Over Kasumi/ })).toBeVisible()
+    await expect(await canvas.findByText(/Archived on .*\. Maki is not checking sources for this series\./)).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Restore to library' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Remove files' })).toBeVisible()
+    const download = await canvas.findByRole('button', { name: /^Download .* wanted$/ })
+    await waitFor(() => expect(download).toHaveAttribute('aria-disabled', 'true'))
+    await userEvent.click(download)
+    await expect(canvas.queryByRole('dialog')).toBeNull()
+  },
+}
+
+export const ArchivedRestoreAsksAboutFiles: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/series/:id'), () =>
+        HttpResponse.json({ ...archivedSeriesDto(1), chapterFileCount: 0, removedChapterCount: 142 }),
+      ),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Restore to library' }))
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
+    await expect(await within(dialog).findByText('Download the 142 removed chapters again?')).toBeVisible()
   },
 }
 
