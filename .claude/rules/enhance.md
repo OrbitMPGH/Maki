@@ -48,6 +48,7 @@ User-facing summary in `docs/features.md`. Two tiers share one reader setting: `
 
 - `ReaderController` is a primary-constructor class built by hand in several tests. New services go in through `[FromServices]` on the action, not the constructor.
 - The reader POST replaces the user's pending window. Failed and skipped outcomes are remembered for 10 minutes so a bad page is not re-queued forever.
+- Near a chapter's end the reader POST also carries `nextChapterId`/`nextPages`: the window's overflow past the last page (paged: missing preload spreads; strip: `beyond` from `enhanceRange`). They fill the room left under the cap with the next chapter as their target, so that chapter's own first POST finds them still pending (same-chapter keys are kept) or ready. They are not in the response.
 - `pageEnhanced` is pushed twice per page: `working` when the worker starts it, then the outcome. The push often beats the POST's own `queued` answer, so `useServerEnhance` never walks `working` back to `queued`. `ServerEnhanceStatus` reads those states plus `shown` (the upscale is decoded and drawn) for the reader pill.
 - `HostStartupTests` fails on any WRN/ERR at boot. The store and the cache must start silently with no models and no cache folder.
 

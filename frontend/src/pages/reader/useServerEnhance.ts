@@ -59,7 +59,9 @@ interface Tracked {
  * `ready`, `failed` or `skipped` through the response and the `pageEnhanced` push. If the live
  * connection has been down for 10 s, the window's unfinished pages are polled every 5 s instead. A
  * 409 (tier switched off or model gone) stops asking for the rest of the visit. Null whenever
- * `model` is.
+ * `model` is. Once the window runs past the last page, `next` names the next chapter's first pages,
+ * queued behind the window so that chapter opens already upscaled; on `auto` they go along while
+ * any page of the window is stretched.
  */
 export function useServerEnhance(
   chapterId: number,
@@ -67,6 +69,7 @@ export function useServerEnhance(
   pages: number[],
   pageVersion: string | undefined,
   only: ReadonlySet<number> | null = null,
+  next: { chapterId: number; pages: number[] } | null = null,
 ): ServerEnhance | null {
   const scope = model && pageVersion !== undefined ? `${chapterId}|${model}|${pageVersion}` : null
   const scopeRef = useRef(scope)
@@ -102,6 +105,9 @@ export function useServerEnhance(
     .filter((page, index, all) => all.indexOf(page) === index && (only === null || only.has(page)))
     .slice(0, MAX_PAGES)
     .join(',')
+  const room = MAX_PAGES - (windowKey ? windowKey.split(',').length : 0)
+  const nextChapterId = next && next.chapterId !== chapterId && room > 0 ? next.chapterId : null
+  const nextKey = nextChapterId === null ? '' : next!.pages.slice(0, room).join(',')
   const connected = useHubConnected()
   const active = scope !== null && model !== null && !current.refused
 
@@ -111,8 +117,9 @@ export function useServerEnhance(
     if (!active || !scope || !model || !windowKey) return
     const timer = setTimeout(() => {
       const wanted = windowKey.split(',').map(Number).filter((page) => !SETTLED.has(statesRef.current.get(page)))
-      if (wanted.length === 0) return
-      requestServerEnhance(chapterId, model, wanted).then(
+      const ahead = nextChapterId !== null && nextKey ? { chapterId: nextChapterId, pages: nextKey.split(',').map(Number) } : null
+      if (wanted.length === 0 && !ahead) return
+      requestServerEnhance(chapterId, model, wanted, ahead).then(
         (response) => merge(scope, response.pages),
         (error: unknown) => {
           if (error instanceof ApiError && error.status === 409) refuse(scope)
@@ -120,7 +127,7 @@ export function useServerEnhance(
       )
     }, DEBOUNCE_MS)
     return () => clearTimeout(timer)
-  }, [active, scope, chapterId, model, windowKey, connected, merge, refuse])
+  }, [active, scope, chapterId, model, windowKey, nextChapterId, nextKey, connected, merge, refuse])
 
   useHubEvent<PageEnhancedEvent>(PAGE_ENHANCED, (event) => {
     const live = scopeRef.current

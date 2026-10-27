@@ -107,11 +107,19 @@ export async function serverEnhancedUrl(chapterId: number, page: number, model: 
 
 export type ServerPageState = 'ready' | 'queued' | 'working' | 'failed' | 'skipped'
 
-/** Asks the server to upscale a window of pages, current page first. At most 12 are taken. */
-export function requestServerEnhance(chapterId: number, model: string, pages: number[]) {
+/**
+ * Asks the server to upscale a window of pages, current page first. At most 32 are taken; `next`
+ * fills whatever room is left with the next chapter's pages, which are not answered here.
+ */
+export function requestServerEnhance(
+  chapterId: number,
+  model: string,
+  pages: number[],
+  next: { chapterId: number; pages: number[] } | null = null,
+) {
   return api<{ pages: { page: number; state: ServerPageState }[] }>(`/reader/chapter/${chapterId}/enhance`, {
     method: 'POST',
-    body: JSON.stringify({ model, pages }),
+    body: JSON.stringify({ model, pages, ...(next && { nextChapterId: next.chapterId, nextPages: next.pages }) }),
   })
 }
 

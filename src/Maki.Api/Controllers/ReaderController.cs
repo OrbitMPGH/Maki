@@ -50,8 +50,11 @@ public record SeriesReadingProfileRequest(int? ProfileId);
 /// </summary>
 public record SetChaptersStateRequest(int[] ChapterIds, string State);
 
-/// <summary>Pages of a chapter to upscale on the server, current page first. See <see cref="ReaderController.Enhance"/>.</summary>
-public record EnhancePagesRequest(string? Model, int[]? Pages);
+/// <summary>
+/// Pages of a chapter to upscale on the server, current page first, plus the first pages of the
+/// next chapter once the window runs past the last page. See <see cref="ReaderController.Enhance"/>.
+/// </summary>
+public record EnhancePagesRequest(string? Model, int[]? Pages, int? NextChapterId = null, int[]? NextPages = null);
 
 /// <summary>Chapters a device holds offline copies of. See <see cref="ReaderController.ChapterVersions"/>.</summary>
 public record ChapterVersionsRequest(int[]? Ids);
@@ -306,6 +309,9 @@ public class ReaderController(
     /// that just failed or was skipped answers that instead of queueing again. The rest become this
     /// reader's pending work, replacing what they had pending for another chapter or model. Each one
     /// is pushed as <c>pageEnhanced</c> when the worker starts it (<c>working</c>) and when it finishes.
+    /// Pages of the next chapter queue after them in whatever room is left under the cap, so the next
+    /// chapter opens on pages already upscaled. They are not answered here; that chapter's own request
+    /// picks them up.
     /// </summary>
     [HttpPost("chapter/{id:int}/enhance")]
     public async Task<IActionResult> Enhance(
@@ -360,7 +366,24 @@ public class ReaderController(
             wanted.Add((i, new UpscaleRequestItem(key, new UpscaleTarget(id, page), slice)));
         }
 
-        var queued = queue.Replace(currentUser.UserId, id, model.Value, wanted.Select(w => w.Item).ToList());
+        var items = wanted.Select(w => w.Item).ToList();
+        var room = UpscaleQueue.MaxPendingPerUser - items.Count;
+        if (request.NextChapterId is { } nextId && nextId != id && request.NextPages is { Length: > 0 } nextPages && room > 0
+            && await reader.PageSliceAsync(nextId, ct) is { } next)
+        {
+            // Two chapters served from one whole archive share keys; the page asked for as this chapter's keeps its waiter.
+            var asked = items.Select(item => item.Key).ToHashSet();
+            items.AddRange(nextPages
+                .Distinct()
+                .Where(page => page >= 0 && page < next.PageCount)
+                .Select(page => new UpscaleRequestItem(
+                    new UpscaleWorkKey(next.ChapterFileId, next.ArchiveVersion, next.StartPage + page, model.Value),
+                    new UpscaleTarget(nextId, page), next))
+                .Where(item => !asked.Contains(item.Key) && cache.TryGet(item.Key) is null && queue.RecentOutcome(item.Key) is null)
+                .Take(room));
+        }
+
+        var queued = queue.Replace(currentUser.UserId, id, model.Value, items);
         for (var i = 0; i < wanted.Count; i++)
         {
             states[wanted[i].Index] = queued[i] == UpscaleJobState.Working ? "working" : "queued";

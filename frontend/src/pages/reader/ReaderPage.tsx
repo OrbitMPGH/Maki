@@ -224,12 +224,30 @@ export default function ReaderPage() {
     ? serverModelFor(prefs.enhance, prefs.enhanceMethod, current.enhanceServer, offline || manifestServedOffline(chapterId))
     : null
   // The strip sizes its own range from the pages' pixels, so the server follows it there.
-  const [stripRange, setStripRange] = useState<number[]>([])
+  const [stripRange, setStripRange] = useState<{ pages: number[]; beyond: number }>({ pages: [], beyond: 0 })
+  const onEnhanceRange = useCallback((pages: number[], beyond: number) => setStripRange({ pages, beyond }), [])
   const enhanceWindow = useMemo(() => {
     if (!serverModel) return []
     if (mode !== 'vertical') return preloadPages.length > 0 ? preloadPages : (spreads[spreadIndex] ?? [])
-    return stripRange
+    return stripRange.pages
   }, [serverModel, mode, preloadPages, spreads, spreadIndex, stripRange])
+  // A window that runs past the last page carries on into the next chapter's first pages.
+  const nextChapterId = current?.nextChapterId ?? null
+  const beyondEnd =
+    !serverModel || nextChapterId == null || resumedFor !== chapterId
+      ? 0
+      : mode === 'vertical'
+        ? stripRange.beyond
+        : prefs.preload > 0
+          ? Math.max(0, spreadIndex + 1 + prefs.preload - spreads.length) * (mode === 'double' ? 2 : 1)
+          : 0
+  const enhanceNext = useMemo(
+    () =>
+      nextChapterId != null && beyondEnd > 0
+        ? { chapterId: nextChapterId, pages: Array.from({ length: beyondEnd }, (_, index) => index) }
+        : null,
+    [nextChapterId, beyondEnd],
+  )
   // On `auto` the server is asked only for pages a view has measured as stretched.
   const [stretchedPages, setStretchedPages] = useState<ReadonlySet<number>>(NO_PAGES)
   const server = useServerEnhance(
@@ -238,6 +256,7 @@ export default function ReaderPage() {
     enhanceWindow,
     current?.pageVersion,
     prefs.enhance === 'auto' ? stretchedPages : null,
+    enhanceNext,
   )
 
   const serverStates = server?.states
@@ -860,7 +879,7 @@ export default function ReaderPage() {
               enhanceFallback={prefs.enhanceFallback}
               server={server}
               onStretched={setStretchedPages}
-              onEnhanceRange={setStripRange}
+              onEnhanceRange={onEnhanceRange}
             />
           ) : (
             <PagedView
