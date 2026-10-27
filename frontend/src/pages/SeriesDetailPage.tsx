@@ -2273,6 +2273,7 @@ function SeriesDetailBody() {
                             <SourceMappingsSection
                                 seriesId={seriesId}
                                 seriesTitle={series.title}
+                                altTitles={series.altTitles}
                                 matching={series.sourceMatchPending}
                             />
                           </div>

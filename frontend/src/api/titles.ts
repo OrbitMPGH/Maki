@@ -95,6 +95,25 @@ function sameLanguage(language: string, wanted: string): boolean {
 }
 
 /**
+ * Other English spellings of a series, for searching a source by hand. Untagged titles count, since
+ * MangaBaka leaves English respellings without a language (see `readableTitles`), but only Latin
+ * script ones, so a stray untagged Japanese title stays out.
+ */
+export function englishSearchTitles(alt: LocalizedTitle[], title: string, limit = 3): string[] {
+  const seen = new Set([title.trim().toLowerCase()])
+  const out: string[] = []
+  for (const t of alt) {
+    const english = t.language ? sameLanguage(t.language, 'en') : /^[\p{Script=Latin}\p{N}\p{P}\p{Zs}]+$/u.test(t.title)
+    const key = t.title.trim().toLowerCase()
+    if (!english || seen.has(key)) continue
+    seen.add(key)
+    out.push(t.title.trim())
+    if (out.length === limit) break
+  }
+  return out
+}
+
+/**
  * The alt titles worth putting in front of a reader: English, plus their interface language when
  * that isn't English. Providers tag dozens per series and a Vietnamese spelling of a title is noise
  * to everyone who doesn't read Vietnamese.

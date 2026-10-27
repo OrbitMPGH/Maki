@@ -10758,6 +10758,10 @@ msgstr "Mit der Serie verknüpft, aktiviert oder nicht"
 msgid "Linked, but nothing enabled"
 msgstr "Verknüpft, aber nichts aktiviert"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Linking and listing chapters…"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Linking files"
@@ -17566,6 +17570,7 @@ msgstr "Suche fehlgeschlagen"
 msgid "Search file paths"
 msgstr "Dateipfade suchen"
 
+#: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Search for"
 msgstr ""

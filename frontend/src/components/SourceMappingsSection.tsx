@@ -59,7 +59,8 @@ import {
   type SourceOrderMode,
 } from '../api/hooks'
 import { MeasureProgress, MeasureResult, ScoutCell } from './SourceMeasurePanel'
-import type { SourceMappingDto } from '../api/types'
+import type { LocalizedTitle, SourceMappingDto } from '../api/types'
+import { englishSearchTitles } from '../api/titles'
 import {
   QUALITY_TIER_COLOR,
   QUALITY_TIER_LABELS,
@@ -102,10 +103,13 @@ const ORIGIN_COLORS: Record<string, string> = {
 export function SourceMappingsSection({
   seriesId,
   seriesTitle,
+  altTitles = [],
   matching = false,
 }: {
   seriesId: number
   seriesTitle: string
+  /** Offered as one-click searches in the link modal, since a source may list the work under one. */
+  altTitles?: LocalizedTitle[]
   /**
    * Auto-matching is still running in the background (a series added seconds ago). Without it a
    * fresh series reads "No sources linked. Chapters cannot be synced or downloaded." for the half
@@ -169,6 +173,7 @@ export function SourceMappingsSection({
   const [compareOpen, setCompareOpen] = useState(false)
   const [sourceName, setSourceName] = useState<string | null>(null)
   const [query, setQuery] = useState(seriesTitle)
+  const otherEnglishTitles = useMemo(() => englishSearchTitles(altTitles, seriesTitle), [altTitles, seriesTitle])
   const [removing, setRemoving] = useState<SourceMappingDto | null>(null)
   const removingSourceName = removing ? sourceLabel(removing.sourceName) : undefined
   const [deleteFiles, setDeleteFiles] = useState(false)
@@ -241,7 +246,8 @@ export function SourceMappingsSection({
     ) ?? []
   const missingSnapshotNames = missingSnapshots.map((m) => sourceLabel(m.sourceName)).join(', ')
 
-  const link = (mappingName: string, sourceSeriesId: string, url: string) =>
+  const link = (mappingName: string, sourceSeriesId: string, url: string) => {
+    if (createMapping.isPending) return
     createMapping.mutate(
       { seriesId, sourceName: mappingName, sourceSeriesId, url },
       {
@@ -252,6 +258,7 @@ export function SourceMappingsSection({
         },
       },
     )
+  }
 
   return (
     <>
@@ -885,9 +892,28 @@ export function SourceMappingsSection({
               label={t`Search or paste a series URL`}
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
-              rightSection={isFetching || resolving ? <Loader size="xs" /> : null}
+              rightSection={isFetching || resolving || createMapping.isPending ? <Loader size="xs" /> : null}
             />
           </Group>
+          {createMapping.isPending && (
+            <Text size="xs" c="dimmed"><Trans>Linking and listing chapters…</Trans></Text>
+          )}
+          {otherEnglishTitles.length > 0 && (
+            <Group gap={6} wrap="wrap">
+              <Text size="xs" c="dimmed"><Trans>Search for</Trans></Text>
+              {[seriesTitle, ...otherEnglishTitles].map((title) => (
+                <Button
+                  key={title}
+                  size="compact-xs"
+                  variant={query.trim() === title ? 'light' : 'default'}
+                  onClick={() => setQuery(title)}
+                  maw="100%"
+                >
+                  <Text span size="xs" truncate>{title}</Text>
+                </Button>
+              ))}
+            </Group>
+          )}
           <Stack gap="xs">
             {pastedUrl && resolved && (
               <Card

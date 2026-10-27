@@ -10758,6 +10758,10 @@ msgstr "シリーズにリンク済み、有効かどうかを問わない"
 msgid "Linked, but nothing enabled"
 msgstr "リンク済みですが、有効なものはありません"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Linking and listing chapters…"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Linking files"
@@ -17566,6 +17570,7 @@ msgstr "検索に失敗しました"
 msgid "Search file paths"
 msgstr "ファイルパスを検索"
 
+#: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Search for"
 msgstr ""

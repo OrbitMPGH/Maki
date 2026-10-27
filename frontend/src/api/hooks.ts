@@ -3091,9 +3091,12 @@ export function useCreateMapping() {
       url: string
       priority?: number
     }) => api<SourceMappingDto>('/sourcemapping', { method: 'POST', body: JSON.stringify(mapping) }),
+    // The server lists the new source's chapters before it answers.
     onSuccess: (_d, v) => {
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['source-order', v.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters', v.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series', v.seriesId] })
     },
   })
 }
