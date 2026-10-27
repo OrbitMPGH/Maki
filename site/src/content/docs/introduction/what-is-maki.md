@@ -37,6 +37,5 @@ so the schema and API can still change between releases. Issues and pull request
 
 ## Legal
 
-Maki is a tool for organizing your library. Scraper sources access third-party websites. You are
-responsible for complying with those sites' terms of service and your local laws. Support the
-industry: buy official releases.
+Maki is a tool for organizing your library. You are responsible for the sources you connect and for
+the laws where you live. Read [Legal and responsible use](/Maki/introduction/legal/) before you add a source.

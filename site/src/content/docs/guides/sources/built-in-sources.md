@@ -5,27 +5,9 @@ description: The sources that ship with Maki, Suwayomi extensions and custom sou
 
 Sources are built into Maki, so there are no extensions to install.
 
-If you already run [Suwayomi](https://github.com/Suwayomi/Suwayomi-Server), or want more sites than
-the list below, Maki can also use the sources of the extensions installed there. This is optional:
-set Suwayomi's URL under **Settings → Integrations → Suwayomi**, and its sources show up next to
-the built-in ones in **Manage sources**, marked Suwayomi and switched off until you turn them on.
-A source that mixes languages asks which one to file its chapters under first. Extensions
-are installed and configured in Suwayomi itself. Maki reads search results, chapter lists and
-pages through Suwayomi's API, so a source that works in Suwayomi works here. Without a Suwayomi URL
-set, nothing changes. Suwayomi v2.1 or later is supported, v2.2 or later for its UI login mode.
+Maki can also use the sources of extensions installed in [Suwayomi](/Maki/guides/sources/suwayomi/), if you run it.
 
-A site that isn't built in can be added as a **custom source**: a JSON definition that tells Maki
-where the site's search, chapter list and page images are (CSS selectors, regular expressions or a
-path into JSON the page embeds). Admins add one in **Manage sources** with **Add source → Set up a
-site**: paste a series page and a chapter page, and Maki guesses the chapter list, the page images and
-the search, shows what each guess reads off the live site, and tests the result before it can be
-saved. Sites on the Madara, MangaThemesia, Keyoapp and HeanCMS themes are recognised and need no guessing. **Import definition**
-takes a definition someone else wrote. A saved source shows up marked Custom and works like any other
-source, and Health checks it every six hours. An admin can also start from a series page: paste a
-URL no source knows into **Link a source** and pick **Set up this site as a source**. **Add source → Repositories** adds a list of definitions someone publishes: install from it, review and apply its updates, or let an https repository keep its sources up to date on its own. An update that could change which chapters a linked series has always waits for you. Nothing in a definition runs as code, so sites that scramble their pages or need
-signed API calls still need a built-in source. A site with no search can still be added: link each
-series to it by pasting the series URL. The format is described in
-[custom-sources-plan.md](https://github.com/OrbitMPGH/Maki/blob/main/docs/custom-sources-plan.md).
+A site that isn't built in can be added as a [custom source](/Maki/guides/sources/custom-sources/).
 
 ## Source list
 
@@ -65,4 +47,4 @@ series to it by pasting the series URL. The format is described in
 | Cứu Truyện | Vietnamese, FlareSolverr when challenged, mirror override via `MAKI_SOURCE_CUUTRUYEN_BASEURL` |
 | Team-X | Arabic, requires FlareSolverr; the domain rotates, override it with `MAKI_SOURCE_TEAMX_BASEURL` |
 | Sen Manga | Japanese raws |
-| Rawkuma | Japanese raws, FlareSolverr when challenged, mirror override via `MAKI_SOURCE_RAWKUMA_BASEURL` |
+| Rawkuma | Japanese raws, requires FlareSolverr, mirror override via `MAKI_SOURCE_RAWKUMA_BASEURL` |

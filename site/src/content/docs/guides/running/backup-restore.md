@@ -3,7 +3,7 @@ title: Backup and restore
 description: Snapshots, migrations and restoring.
 ---
 
-**Settings → Backup & Restore** takes zip snapshots of the database plus `config.json`. Together
+**Settings → System → Backup & restore** takes zip snapshots of the database plus `config.json`. Together
 these are everything that cannot be cheaply regenerated. The MangaBaka dump, embeddings, covers,
 and cache are excluded so backups stay small. Backups are stored under `{ConfigDir}/backups`, and
 a setting controls how many are kept.

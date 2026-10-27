@@ -40,9 +40,15 @@ docker run -d --name maki \
   ghcr.io/orbitmpgh/maki:latest
 ```
   </TabItem>
+  <TabItem label="Synology / Portainer">
+Paste the compose file above into a Portainer stack, or into a Synology Container Manager project. Map
+`/config` and `/library` to shared folders that the user set in `PUID` and `PGID` can write to.
+  </TabItem>
 </Tabs>
 
-`PUID` and `PGID` set the user the container runs as. They should own both folders.
+`PUID` and `PGID` set the user the container runs as. Maki changes the ownership of `/config` to that user on
+every start, but not `/library`, so that user needs write access to your library folder already. See
+[Volumes, PUID and PGID](/Maki/installation/volumes-and-permissions/).
 
 ## Open Maki
 
@@ -61,63 +67,13 @@ search running together can briefly need close to 1 GB.
 
 ## Optional companions
 
-Kavita, FlareSolverr and Suwayomi are optional. This compose file runs all of them next to Maki.
+Kavita, FlareSolverr and Suwayomi are optional. The compose file for all three, and where each one is
+connected in Maki, is on [FlareSolverr and Suwayomi](/Maki/installation/companions/).
 
-```yaml
-services:
-  maki:
-    image: ghcr.io/orbitmpgh/maki:latest
-    container_name: maki
-    environment:
-      - PUID=1000
-      - PGID=1000
-    volumes:
-      - ./maki-config:/config
-      - /path/to/manga-library:/library
-    ports:
-      - "8990:8990"
-    mem_reservation: 512m
-    restart: unless-stopped
+## Upgrading
 
-  # Point a Kavita library at the same folder.
-  kavita:
-    image: jvmilazz0/kavita:latest
-    container_name: kavita
-    volumes:
-      - ./kavita-config:/kavita/config
-      - /path/to/manga-library:/library
-    ports:
-      - "5000:5000"
-    restart: unless-stopped
-
-  # Needed for Cloudflare-protected sources.
-  flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:latest
-    container_name: flaresolverr
-    ports:
-      - "8191:8191"
-    restart: unless-stopped
-
-  # Extension sources. Install extensions in its own UI.
-  suwayomi:
-    image: ghcr.io/suwayomi/suwayomi-server:stable
-    container_name: suwayomi
-    volumes:
-      - ./suwayomi-data:/home/suwayomi/.local/share/Tachidesk
-    ports:
-      - "4567:4567"
-    restart: unless-stopped
-```
-
-- **FlareSolverr:** set its URL under **Settings → Downloads → FlareSolverr** to
-  `http://flaresolverr:8191` and hit **Test**.
-- **Suwayomi:** set `http://suwayomi:4567` under **Settings → Integrations → Suwayomi**, hit **Test**,
-  then **Manage sources** to turn on the ones you want.
-
-## Upgrading from a single-user Maki
-
-The first page asks you to set a username and password. Your library, history and tracker
-connections are already attached to that account.
+Upgrading from a single-user Maki, and going back after a bad upgrade, are covered on
+[Upgrading](/Maki/installation/upgrading/).
 
 ## Next
 

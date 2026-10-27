@@ -23,15 +23,4 @@ For KOReader, which can also sync progress, see [KOReader](/Maki/guides/reading/
 ## Komga-compatible API
 
 Apps that only connect to a Komga server, like the Mihon Komga extension and Tachimanga, can use
-Maki instead.
-
-- Server address: `http://your-host:8990/komga`
-- API key: your OPDS token (or use it as the password with any username)
-
-Reading progress syncs both ways, including through Mihon's Komga tracker. A client that cannot
-decode a page's format (AVIF or WebP) can ask for it as JPEG or PNG, as it would from Komga.
-
-:::tip
-AVIF pages do not open in KOReader or on iOS. If you use those, keep page conversion on a format
-they support.
-:::
+Maki's Komga-compatible API instead. See [Komga-compatible apps](/Maki/guides/reading/komga-apps/).

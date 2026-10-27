@@ -58,16 +58,5 @@ EF Core migrations apply automatically on startup.
 
 ## Architecture
 
-```text
-src/
-├── Maki.Api/        ASP.NET Core host, REST /api/v1, SignalR, Quartz jobs, download workers
-├── Maki.Core/       Domain: entities, ISource/IMetadataProvider, parser, naming, CBZ pipeline
-├── Maki.Data/       EF Core + SQLite
-├── Maki.Sources/    One ISource implementation per site
-└── Maki.Metadata/   MangaBaka provider + local dump + ONNX embeddings
-frontend/            Vite + React + TypeScript + Mantine SPA
-```
-
-Sources implement a single `ISource` interface (search / series / chapters / pages) and are
-registered in DI. Adding a site is one class plus one registration. Page requests carry their own
-headers (Referer, cookies) through to the image fetch, so hotlink-protected CDNs work.
+Each project owns a different part of the code. [Architecture tour](/Maki/contribution/architecture/)
+explains what goes where before you change anything.

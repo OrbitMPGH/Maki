@@ -20,12 +20,11 @@ and popularity.
 ## Rails
 
 The Browse tab is a stack of rails. Every part can be reordered or switched off per user in the
-layout editor, and every rail has a fullscreen **Show more** view.
+layout editor, and every rail has a fullscreen **Show more** view. See [Discover rails](/Maki/guides/recommendations/rails/) for each one.
 
 - **Genre and catalogue rails** browse the MangaBaka catalogue.
-- **Blind spots** show what your library has little of.
 - **Readers like you** looks at what people with similar reading go on to read.
-- **Your Taste** shows your reading behaviour, grouped interests and how your taste has moved.
+- **Your taste** shows your reading behaviour, grouped interests and how your taste has moved.
 
 Detail cards show categorized tags, alternate titles, creators, per-source ratings and MyAnimeList
 reviews.
