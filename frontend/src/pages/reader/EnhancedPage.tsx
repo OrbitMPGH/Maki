@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { serverEnhancedUrl } from '../../api/reader'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { serverEnhancedUrl, serverEnhancedUrlNow } from '../../api/reader'
 import { useCompareHeld } from './compareHold'
 import {
   enhanceKey,
@@ -82,10 +82,12 @@ export default function EnhancedPage({
     setTarget((previous) => (sameTarget(previous, next) ? previous : next))
   }
 
-  // Measured at first layout, then again only once a resize has settled, so turning a phone does
-  // not flip pages between enhanced and plain on the way round.
-  useEffect(() => {
+  // Measured before the first paint, so a page turn can swap in a ready upscale without showing
+  // the plain page first, then again only once a resize has settled, so turning a phone does not
+  // flip pages between enhanced and plain on the way round.
+  useLayoutEffect(() => {
     if (!box) return
+    measure.current()
     let first = true
     let timer: ReturnType<typeof setTimeout> | undefined
     const observer = new ResizeObserver(() => {
@@ -215,9 +217,13 @@ export default function EnhancedPage({
   const serverVersion = server?.pageVersion
   const serverReady = server?.states.get(page) === 'ready'
   const serverKey = serverReady ? `${serverChapter}|${page}|${serverModel}|${serverVersion}` : null
+  const urlNow =
+    serverKey && serverChapter !== undefined && serverModel && serverVersion !== undefined
+      ? serverEnhancedUrlNow(serverChapter, page, serverModel, serverVersion)
+      : null
   const [resolved, setResolved] = useState<{ key: string; url: string } | null>(null)
   useEffect(() => {
-    if (!serverKey || serverChapter === undefined || !serverModel || serverVersion === undefined) return
+    if (urlNow || !serverKey || serverChapter === undefined || !serverModel || serverVersion === undefined) return
     let live = true
     void serverEnhancedUrl(serverChapter, page, serverModel, serverVersion).then((url) => {
       if (live) setResolved({ key: serverKey, url })
@@ -225,8 +231,8 @@ export default function EnhancedPage({
     return () => {
       live = false
     }
-  }, [serverKey, serverChapter, page, serverModel, serverVersion])
-  const serverUrl = resolved && resolved.key === serverKey ? resolved.url : null
+  }, [urlNow, serverKey, serverChapter, page, serverModel, serverVersion])
+  const serverUrl = urlNow ?? (resolved && resolved.key === serverKey ? resolved.url : null)
   const [decoded, setDecoded] = useState<string | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
   const serverWanted = active && serverUrl !== null && failed !== serverUrl
@@ -236,6 +242,16 @@ export default function EnhancedPage({
     if (!serverImage) return
     return () => serverImage.removeAttribute('src')
   }, [serverImage])
+
+  // A page warmed ahead (useWarmServerPages) is complete the moment its element mounts. Taken then,
+  // before paint, it replaces the plain page in the same frame instead of after a load and a decode.
+  const attachServerImage = useCallback(
+    (element: HTMLImageElement | null) => {
+      setServerImage(element)
+      if (element?.complete && element.naturalWidth > 0 && serverUrl) setDecoded(serverUrl)
+    },
+    [serverUrl],
+  )
 
   const serverDecoded = serverWanted && decoded === serverUrl
   const reportServer = server?.reportShown
@@ -269,7 +285,7 @@ export default function EnhancedPage({
       />
       {serverWanted && (
         <img
-          ref={setServerImage}
+          ref={attachServerImage}
           src={serverUrl}
           alt={alt}
           className={
@@ -277,7 +293,8 @@ export default function EnhancedPage({
           }
           data-enhanced={serverShowing}
           data-no-cover-fallback
-          decoding="async"
+          // Hidden until decoded, so this only matters on the warmed path: no blank frame while it paints.
+          decoding="sync"
           draggable={false}
           style={{
             ...(overlay

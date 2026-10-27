@@ -536,6 +536,41 @@ export const ServerEnhanceReady: Story = {
   },
 }
 
+const warmedPages = new Set<number>()
+
+/** A page turn onto a page warmed ahead shows its server upscale in the first frame, never the fallback or the plain page. */
+export const ServerEnhanceTurnShowsWarmedPage: Story = {
+  parameters: {
+    ...open(7717),
+    msw: [
+      serverMethod(7717),
+      enhanceAnswer(7717, 'ready'),
+      http.get(api('/reader/chapter/7717/page/:n/enhanced'), ({ params }) => {
+        warmedPages.add(Number(params.n))
+        return HttpResponse.redirect(`/mock/page/7717/${Number(params.n) + 1}.svg`)
+      }),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await waitFor(() =>
+      expect(canvasElement.querySelector<HTMLImageElement>('img.reader-enhanced-server')?.dataset.enhanced).toBe('true'),
+    )
+    await waitFor(() => expect(warmedPages.has(6)).toBe(true))
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    // Read before the frame paints: whatever is on screen here is what the reader sees first.
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    const server = canvasElement.querySelector<HTMLImageElement>('img.reader-enhanced-server')
+    const plain = canvasElement.querySelector<HTMLImageElement>('img.reader-region-image:not(.reader-enhanced-server)')
+    await expect(server?.getAttribute('src')).toContain('/reader/chapter/7717/page/6/enhanced')
+    await expect(server?.dataset.enhanced).toBe('true')
+    await expect(plain?.style.visibility).toBe('hidden')
+    await expect(canvasElement.querySelector('canvas.reader-enhanced[data-enhanced="true"]')).toBeNull()
+  },
+}
+
 const waitingAsked: number[][] = []
 
 /** Still queued on the server and not in its cache: the reader asks for the window and shows the fallback meanwhile. */

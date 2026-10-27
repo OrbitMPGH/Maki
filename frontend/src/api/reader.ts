@@ -5,7 +5,7 @@ import { t } from '@lingui/core/macro'
 import { getConnectivity } from '../lib/connectivity'
 import { randomUUID } from '../lib/uuid'
 import { queueOfflineWrite } from '../pwa/progressQueue'
-import { api, ApiError, apiWithOrigin, authHeaders, getInitialize, trackedFetch } from './client'
+import { api, ApiError, apiRootNow, apiWithOrigin, authHeaders, getInitialize, trackedFetch } from './client'
 
 export interface ReaderManifest {
   chapterId: number
@@ -98,11 +98,21 @@ export async function pageUrl(chapterId: number, page: number, thumb = false, ve
   return `${init.apiRoot}/reader/chapter/${chapterId}/${kind}/${page}${query}`
 }
 
+function enhancedUrl(apiRoot: string, chapterId: number, page: number, model: string, pageVersion: string): string {
+  const query = `?model=${encodeURIComponent(model)}&v=${encodeURIComponent(pageVersion)}`
+  return `${apiRoot}/reader/chapter/${chapterId}/page/${page}/enhanced${query}`
+}
+
 /** Where a page upscaled on the server is served from. A 404 there means not upscaled yet; it never queues one. */
 export async function serverEnhancedUrl(chapterId: number, page: number, model: string, pageVersion: string): Promise<string> {
   const init = await getInitialize()
-  const query = `?model=${encodeURIComponent(model)}&v=${encodeURIComponent(pageVersion)}`
-  return `${init.apiRoot}/reader/chapter/${chapterId}/page/${page}/enhanced${query}`
+  return enhancedUrl(init.apiRoot, chapterId, page, model, pageVersion)
+}
+
+/** `serverEnhancedUrl` without the wait, or null while the bootstrap has not loaded. */
+export function serverEnhancedUrlNow(chapterId: number, page: number, model: string, pageVersion: string): string | null {
+  const apiRoot = apiRootNow()
+  return apiRoot === null ? null : enhancedUrl(apiRoot, chapterId, page, model, pageVersion)
 }
 
 export type ServerPageState = 'ready' | 'queued' | 'working' | 'failed' | 'skipped'
