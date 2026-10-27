@@ -4907,7 +4907,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
    the synopsis wrapping early for no reason. */
 .detail-split {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(min-content, 3fr);
+  /* A `min-content` floor here let one unbroken string in a review widen the aside over the synopsis. */
+  grid-template-columns: minmax(0, 5fr) minmax(0, 3fr);
   gap: var(--mantine-spacing-lg);
   align-items: start;
 }
