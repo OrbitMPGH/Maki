@@ -12,7 +12,14 @@ export default defineConfig({
       favicon: '/favicon.svg',
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/OrbitMPGH/Maki' }],
       editLink: { baseUrl: 'https://github.com/OrbitMPGH/Maki/edit/main/site/' },
-      customCss: ['./src/styles/maki.css'],
+      customCss: [
+        '@fontsource/onest/400.css',
+        '@fontsource/onest/500.css',
+        '@fontsource/onest/600.css',
+        '@fontsource/onest/700.css',
+        '@fontsource/jetbrains-mono/400.css',
+        './src/styles/maki.css',
+      ],
       lastUpdated: true,
       sidebar: [
         {
