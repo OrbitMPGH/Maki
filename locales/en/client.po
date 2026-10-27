@@ -6564,8 +6564,8 @@ msgid "Everything is passing"
 msgstr "Everything is passing"
 
 #: src/components/discover/FollowingRail.tsx
-msgid "Everything they have in the catalogue is already in your library."
-msgstr "Everything they have in the catalogue is already in your library."
+#~ msgid "Everything they have in the catalogue is already in your library."
+#~ msgstr "Everything they have in the catalogue is already in your library."
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Everything you own"
@@ -11127,6 +11127,10 @@ msgstr "Nothing needs review."
 #: src/components/ImportReviewModal.tsx
 msgid "nothing new"
 msgstr "nothing new"
+
+#: src/components/discover/FollowingRail.tsx
+msgid "Nothing new from them in the last {FOLLOWING_RAIL_MONTHS} months that you have not seen already."
+msgstr "Nothing new from them in the last {FOLLOWING_RAIL_MONTHS} months that you have not seen already."
 
 #: src/pages/CreatorPage.tsx
 msgid "Nothing of theirs is in the searchable part of the catalogue."

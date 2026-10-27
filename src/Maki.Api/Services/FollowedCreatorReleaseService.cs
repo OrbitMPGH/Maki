@@ -1,5 +1,6 @@
 using System.Globalization;
 using Maki.Core.Configuration;
+using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Recommendations;
 using Maki.Data;
@@ -130,6 +131,7 @@ public class FollowedCreatorReleaseService(
             var byCeiling = new Dictionary<string, Dictionary<long, MangaBakaRecommendation>>(StringComparer.Ordinal);
             var releasedIds = perUser.SelectMany(u => u.Releases).Select(r => r.MangaBakaId).Distinct().ToList();
             var thisYear = time.GetUtcNow().Year;
+            var known = await KnownAsync(db, perUser.Select(u => u.UserId).ToList(), releasedIds, ct);
 
             foreach (var (userId, ceiling, releases) in perUser)
             {
@@ -144,7 +146,7 @@ public class FollowedCreatorReleaseService(
 
                 var hidden = new RecommendationFilters(Hidden: hiddenByUser.GetValueOrDefault(userId));
                 var wanted = releases
-                    .Where(r => !owned.Contains(r.MangaBakaId))
+                    .Where(r => !owned.Contains(r.MangaBakaId) && !known.Contains((userId, r.MangaBakaId)))
                     .Select(r => (Release: r, Item: hydrated.GetValueOrDefault(r.MangaBakaId)))
                     .Where(x => x.Item is not null)
                     .Where(x => x.Item!.Year is not int year || year >= thisYear - MaxAgeYears)
@@ -188,6 +190,27 @@ public class FollowedCreatorReleaseService(
         }
 
         return found;
+    }
+
+    /// <summary>
+    /// Which of <paramref name="ids"/> each reader has already given an opinion on: thumbed up or
+    /// down, marked seen, hidden, or dismissed for now. The same set the follow rail leaves out.
+    /// </summary>
+    private static async Task<HashSet<(int UserId, long MangaBakaId)>> KnownAsync(
+        MakiDbContext db, IReadOnlyList<int> userIds, IReadOnlyList<long> ids, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var rows = await db.RecommendationFeedback
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(x => userIds.Contains(x.UserId) && ids.Contains(x.ProviderId) &&
+                (x.Sentiment != RecommendationSentiment.None ||
+                 x.Exposure != RecommendationExposure.None ||
+                 x.Suppression == RecommendationSuppression.Hidden ||
+                 x.Suppression == RecommendationSuppression.Dismissed && x.DismissedUntilUtc > now))
+            .Select(x => new { x.UserId, x.ProviderId })
+            .ToListAsync(ct);
+        return rows.Select(x => (x.UserId, x.ProviderId)).ToHashSet();
     }
 
     /// <summary>

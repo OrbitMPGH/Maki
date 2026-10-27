@@ -641,6 +641,10 @@ export interface DiscoverRail {
   /** Set on a custom catalogue rail, so "Show more" keeps its order and owned-series setting. */
   sort?: BrowseSort
   excludeOwned?: boolean
+  /** Set on the follow rail, so "Show more" also leaves out what the reader liked, disliked or marked seen. */
+  excludeInteracted?: boolean
+  /** Set on the follow rail, so "Show more" keeps its release window. */
+  releasedWithinMonths?: number
 }
 
 /** A seed series as the Discover page draws it: the title, the position, and which state that is. */
@@ -664,6 +668,10 @@ export interface DiscoverFeedRequest {
   sort?: BrowseSort
   /** Leave out series already in the library. */
   excludeOwned?: boolean
+  /** Leave out owned series and anything thumbed up or down, on top of the hidden, dismissed and seen ones every feed drops. */
+  excludeInteracted?: boolean
+  /** Only titles first published this many months back or later. */
+  releasedWithinMonths?: number
 }
 
 export type BrowseSort = 'popular' | 'rating' | 'newest' | 'oldest'

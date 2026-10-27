@@ -7887,8 +7887,8 @@ msgstr "모든 항목이 통과했습니다"
 
 #: src/components/discover/FollowingRail.tsx
 #, fuzzy
-msgid "Everything they have in the catalogue is already in your library."
-msgstr "카탈로그에 있는 이들의 작품이 모두 라이브러리에 있습니다."
+#~ msgid "Everything they have in the catalogue is already in your library."
+#~ msgstr "카탈로그에 있는 이들의 작품이 모두 라이브러리에 있습니다."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -13392,6 +13392,10 @@ msgstr "검토할 항목이 없습니다."
 #, fuzzy
 msgid "nothing new"
 msgstr "새 항목 없음"
+
+#: src/components/discover/FollowingRail.tsx
+msgid "Nothing new from them in the last {FOLLOWING_RAIL_MONTHS} months that you have not seen already."
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy

@@ -25,7 +25,7 @@ public class DiscoverRailCacheTests
 
         public override async Task<IReadOnlyList<MangaBakaRecommendation>> GetBrowseAsync(
             BrowseFeed feed, int limit, string? genre = null,
-            RecommendationFilters? filters = null, CancellationToken ct = default)
+            RecommendationFilters? filters = null, CancellationToken ct = default, DateOnly? releasedSince = null)
         {
             Interlocked.Increment(ref _queries);
             if (Gate is { } gate)

@@ -397,7 +397,7 @@ public sealed class ArchiveGuardTests : IDisposable
     public async Task CustomRail_library_rows_skip_archived_series()
     {
         Pair();
-        var service = new CustomRailService(_db.NewContext(1), new TestCurrentUser(1), null!, null!, null!, null!, null!, null!);
+        var service = new CustomRailService(_db.NewContext(1), new TestCurrentUser(1), null!, null!, null!, null!, null!);
 
         var count = await service.CountAsync(new CustomRailSpec(Source: CustomRailSources.Library), CancellationToken.None);
 

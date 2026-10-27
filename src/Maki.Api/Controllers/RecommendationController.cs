@@ -233,7 +233,7 @@ public class RecommendationController(
         try
         {
             var clamped = await ScopeAsync(request.Filters, ct);
-            var exclude = await customRails.ExclusionsAsync(request.ExcludeOwned, ct);
+            var exclude = await customRails.ExclusionsAsync(request.ExcludeOwned, request.ExcludeInteracted, ct);
             return Ok(await discover.GetFeedAsync(request with { Filters = clamped }, ct, exclude));
         }
         catch (LocalCatalogueUnavailableException ex)
@@ -417,7 +417,7 @@ public class RecommendationController(
     public async Task<IActionResult> DiscoverCount([FromBody] DiscoverFeedRequest request, CancellationToken ct)
     {
         var scoped = await ScopeAsync(request.Filters, ct);
-        var exclude = await customRails.ExclusionsAsync(request.ExcludeOwned, ct);
+        var exclude = await customRails.ExclusionsAsync(request.ExcludeOwned, request.ExcludeInteracted, ct);
         return Ok(new { count = await discover.CountAsync(request with { Filters = scoped }, ct, exclude) });
     }
 

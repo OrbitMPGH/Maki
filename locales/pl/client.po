@@ -7887,8 +7887,8 @@ msgstr "Wszystko w porządku."
 
 #: src/components/discover/FollowingRail.tsx
 #, fuzzy
-msgid "Everything they have in the catalogue is already in your library."
-msgstr "Wszystko, co mają w katalogu, jest już w Twojej bibliotece."
+#~ msgid "Everything they have in the catalogue is already in your library."
+#~ msgstr "Wszystko, co mają w katalogu, jest już w Twojej bibliotece."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -13392,6 +13392,10 @@ msgstr "Nic nie wymaga sprawdzenia."
 #, fuzzy
 msgid "nothing new"
 msgstr "nic nowego"
+
+#: src/components/discover/FollowingRail.tsx
+msgid "Nothing new from them in the last {FOLLOWING_RAIL_MONTHS} months that you have not seen already."
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
