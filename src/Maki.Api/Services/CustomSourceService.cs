@@ -86,15 +86,31 @@ public sealed class CustomSourceService(
         return problems;
     }
 
-    public async Task<object> SaveAsync(CustomSourceDefinition definition, bool confirmed, CancellationToken ct)
+    /// <param name="fromRepository">
+    /// The definition's <c>origin</c>, <c>previous</c> and <c>detached</c> are the caller's (an
+    /// install, update or revert). Otherwise it is a hand edit: those three come from the stored
+    /// entry, and an entry installed from a repository is detached, so its updates stop applying.
+    /// </param>
+    public async Task<object> SaveAsync(CustomSourceDefinition definition, bool confirmed, CancellationToken ct, bool fromRepository = false)
     {
+        var existing = await FindAsync(definition.Id, ct);
+        if (!fromRepository)
+        {
+            var stored = existing?.Definition;
+            definition = definition with
+            {
+                Origin = stored?.Origin,
+                Detached = stored?.Origin is not null,
+                Previous = stored?.Previous
+            };
+        }
+
         var problems = Validate(definition);
         if (problems.Count > 0)
         {
             return new Refused(problems);
         }
 
-        var existing = await FindAsync(definition.Id, ct);
         if (!confirmed && existing?.Definition is { } before && IdentityMayChange(before, definition))
         {
             var linked = await LinkedSeriesAsync(definition.SourceName, ct);
@@ -166,6 +182,8 @@ public sealed class CustomSourceService(
     private static bool IdentityMayChange(CustomSourceDefinition before, CustomSourceDefinition after) =>
         !SourceLanguages.Same(before.Language, after.Language)
         || !SameHost(before.BaseUrl, after.BaseUrl)
+        || before.Engine != after.Engine
+        || Json(before.EngineOptions) != Json(after.EngineOptions)
         || Json(before.Series.Url) != Json(after.Series.Url)
         || Json(before.Chapters) != Json(after.Chapters)
         || Json(before.Pages) != Json(after.Pages);
@@ -258,6 +276,8 @@ public sealed class CustomSourceService(
     {
         var json = entry.Raw.DeepClone().AsObject();
         json.Remove("origin");
+        json.Remove("previous");
+        json.Remove("detached");
         return json;
     }
 }

@@ -115,7 +115,7 @@ public static partial class CustomSourceValidator
 
         if (d.Engine is not null)
         {
-            Engine(d, Add);
+            Engine(d, baseUri, Add);
         }
         else if (d.EngineOptions is not null)
         {
@@ -180,7 +180,7 @@ public static partial class CustomSourceValidator
     private static partial Regex PathSegmentPattern();
 
     /// <summary>An engine replaces the four sections, so a definition carrying both is ambiguous.</summary>
-    private static void Engine(CustomSourceDefinition d, Action<string, object?> add)
+    private static void Engine(CustomSourceDefinition d, Uri? baseUri, Action<string, object?> add)
     {
         if (!CustomEngines.All.Contains(d.Engine))
         {
@@ -195,9 +195,16 @@ public static partial class CustomSourceValidator
         }
 
         var options = d.EngineOptions ?? new CustomEngineOptions();
-        if (!PathSegmentPattern().IsMatch(options.SeriesPath))
+        if (options.SeriesPath is { } seriesPath && !PathSegmentPattern().IsMatch(seriesPath))
         {
             add("error.customSource.fieldInvalid", new { field = "engineOptions.seriesPath" });
+        }
+
+        // The API is the one other host a definition may read, so it has to be the site's own.
+        if (options.ApiUrl is not null && d.Engine != CustomEngines.HeanCms
+            || d.Engine == CustomEngines.HeanCms && baseUri is not null && CustomSource.HeanApi(options, baseUri) is null)
+        {
+            add("error.customSource.fieldInvalid", new { field = "engineOptions.apiUrl" });
         }
 
         if (options.ChapterList is not (CustomEngineOptions.Inline or CustomEngineOptions.Ajax))

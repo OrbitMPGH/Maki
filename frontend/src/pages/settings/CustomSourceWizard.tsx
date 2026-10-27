@@ -9,9 +9,10 @@ import {
 import { Trans, useLingui } from '@lingui/react/macro'
 import { errorText } from '../../api/errorText'
 import { languageName } from '../../api/titles'
-import { useSourceLanguages } from '../../api/hooks'
+import { useSourceLanguages, type CustomSourceState } from '../../api/hooks'
+import { CustomSourceUpdateDialog } from './CustomRepositoriesPanel'
 import {
-  compact, identityChangeOf, problemsOf, useProbeSearch, useProbeSite, useSaveCustomSource, useTestCustomSource,
+  compact, identityChangeOf, problemsOf, useProbeSearch, useProbeSite, useRevertCustomSource, useSaveCustomSource, useTestCustomSource,
   type CustomSourceDefinition, type CustomSourceTestReport, type CustomSourceTestStep, type IdentityReason,
   type ProbeSearchResult, type ProbeSiteResult, type Section,
 } from '../../api/customSources'
@@ -20,6 +21,15 @@ import { COMMON_LANGUAGES } from './sourceLanguages'
 export type WizardMode = 'setup' | 'import' | 'edit'
 
 const STEPS = ['site', 'chapters', 'pages', 'search', 'details'] as const
+
+/** Product names, never translated. */
+const ENGINE_NAMES: Record<string, string> = {
+  madara: 'Madara',
+  mangathemesia: 'MangaThemesia',
+  keyoapp: 'Keyoapp',
+  heancms: 'HeanCMS',
+}
+const engineName = (engine: string) => ENGINE_NAMES[engine] ?? engine
 const DETAILS = STEPS.indexOf('details')
 
 function parseJson(text: string): { value: Section | null; invalid: boolean } {
@@ -166,7 +176,7 @@ function ChapterTable({ rows, count }: { rows: { number: number | null; text: st
  * Save, which writes through the server on its own (not Manage sources' Save changes), because a
  * definition has to be tested and the registry reloaded before anything can use it.
  */
-export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, startUrl, onSaved, onEditExisting }: {
+export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, startUrl, onSaved, onEditExisting, state = null }: {
   opened: boolean
   onClose: () => void
   mode: WizardMode
@@ -179,6 +189,8 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
   onSaved: (sourceName: string, created: boolean) => void
   /** Opens an existing custom source instead, when the pasted site already has one. */
   onEditExisting?: (id: string) => void
+  /** The edited source as Manage sources lists it: where it came from, whether an update waits. */
+  state?: CustomSourceState | null
 }) {
   const { t } = useLingui()
   const [step, setStep] = useState(0)
@@ -198,6 +210,10 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
   const test = useTestCustomSource()
   const save = useSaveCustomSource()
   const { data: languageSettings } = useSourceLanguages(opened)
+  const revert = useRevertCustomSource()
+  const [updateOpen, setUpdateOpen] = useState(false)
+  const origin = mode === 'edit' ? state?.origin ?? null : null
+  const repositoryName = origin ? (origin.repositoryName ?? origin.repository) : ''
 
   useEffect(() => {
     if (!opened) return
@@ -218,6 +234,8 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
     probeSearch.reset()
     test.reset()
     save.reset()
+    revert.reset()
+    setUpdateOpen(false)
     // Reset only when the wizard opens on new content, not on every mutation identity change.
   }, [opened, mode, initial, startUrl])
 
@@ -241,6 +259,16 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
 
   function update(patch: Partial<CustomSourceDefinition>) {
     setDraft((current) => ({ ...(current ?? {}), ...patch }))
+  }
+
+  function finishedElsewhere() {
+    if (editingId) onSaved(`custom-${editingId}`, false)
+    onClose()
+  }
+
+  function runRevert(confirm: boolean) {
+    if (!editingId) return
+    revert.mutate({ id: editingId, confirm }, { onSuccess: finishedElsewhere })
   }
 
   function runTest() {
@@ -320,12 +348,14 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
     unverified: t`Maki could not list the sample series under both versions to compare them.`,
   }
 
+  const engineLabel = engine ? engineName(engine) : ''
   const presetNote = (
     <Text size="sm" c="var(--ink-3)">
-      <Trans>The {engine} preset reads this part of the site. Nothing to set up here.</Trans>
+      <Trans>The {engineLabel} preset reads this part of the site. Nothing to set up here.</Trans>
     </Text>
   )
 
+  const siteEngine = site?.engine ? engineName(site.engine.engine) : ''
   const stepBody: Record<(typeof STEPS)[number], ReactNode> = {
     site: mode !== 'setup' ? (
       <Stack gap="sm">
@@ -393,7 +423,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
             )}
             {site.engine && (
               <Alert color="blue" variant="light">
-                <Trans>This site runs the {site.engine.engine} theme, which Maki already knows how to read. The next steps are filled in.</Trans>
+                <Trans>This site runs {siteEngine}, which Maki already knows how to read. The next steps are filled in.</Trans>
               </Alert>
             )}
           </Stack>
@@ -522,6 +552,44 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
     ),
     details: (
       <Stack gap="sm">
+        {origin?.updateAvailable && (
+          <Alert color="blue" variant="light">
+            <Group justify="space-between" wrap="nowrap">
+              <Text size="sm"><Trans>Version {origin.latestVersion} is available from {repositoryName}.</Trans></Text>
+              <Button size="xs" variant="default" onClick={() => setUpdateOpen(true)}><Trans>Review update</Trans></Button>
+            </Group>
+          </Alert>
+        )}
+        {origin && !state?.detached && (
+          <Text size="xs" c="var(--ink-3)">
+            <Trans>Installed from {repositoryName}, version {origin.version}. Saving changes here detaches it, and its updates stop applying.</Trans>
+          </Text>
+        )}
+        {origin && state?.detached && (
+          <Text size="xs" c="var(--ink-3)">
+            <Trans>Edited locally, so updates from {repositoryName} no longer apply. Replace it from the repository panel to follow it again.</Trans>
+          </Text>
+        )}
+        {mode === 'edit' && state?.canRevert && (
+          <Group gap="xs">
+            <Button size="xs" variant="default" loading={revert.isPending && !identityChangeOf(revert.error)} onClick={() => runRevert(false)}>
+              <Trans>Revert to the previous version</Trans>
+            </Button>
+            {revert.error && !identityChangeOf(revert.error) && <Text size="xs" c="var(--danger)">{errorText(revert.error)}</Text>}
+          </Group>
+        )}
+        {identityChangeOf(revert.error) && (
+          <Alert color="yellow" variant="light" icon={<IconAlertTriangle size={16} />} title={identityChangeOf(revert.error)!.error}>
+            <List size="sm" spacing={2}>
+              {identityChangeOf(revert.error)!.reasons.map((r) => <List.Item key={r}>{reasonLabels[r] ?? r}</List.Item>)}
+            </List>
+            <Group justify="flex-end" mt="sm">
+              <Button size="xs" color="var(--warn)" loading={revert.isPending} onClick={() => runRevert(true)}>
+                <Trans>Revert anyway</Trans>
+              </Button>
+            </Group>
+          </Alert>
+        )}
         {jsonMode ? (
           <Stack gap="xs">
             <Group justify="space-between">
@@ -719,6 +787,12 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
             )}
           </Group>
         </Group>
+        <CustomSourceUpdateDialog
+          id={updateOpen ? editingId : null}
+          opened={updateOpen}
+          onClose={() => setUpdateOpen(false)}
+          onApplied={finishedElsewhere}
+        />
         {step === DETAILS && mode !== 'edit' && definition && !report?.passed && (
           <Text size="xs" c="var(--ink-4)" ta="right">
             <Trans>Saving a new source needs a test that passes.</Trans>

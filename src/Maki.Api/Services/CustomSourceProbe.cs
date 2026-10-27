@@ -83,7 +83,7 @@ public sealed partial class CustomSourceProbe(CustomSourceFetcher fetcher, Custo
         var canonical = chapterPage is null
             ? null
             : ChapterListGuesser.Resolve(chapter!, chapterPage.Document.QuerySelector("link[rel='canonical']")?.GetAttribute("href"));
-        var engine = EngineDetector.Run(seriesPage);
+        var engine = EngineDetector.Run(seriesPage) ?? await DetectHeanCmsAsync(baseUri, series, gate, ct);
         var chapters = ChapterListGuesser.Run(seriesPage, shape.SeriesId, chapter, canonical);
         var pages = chapterPage is null ? null : PageListGuesser.Run(chapterPage, seriesPage);
         var sampleChapter = chapters.FirstOrDefault()?.Rows
@@ -105,6 +105,8 @@ public sealed partial class CustomSourceProbe(CustomSourceFetcher fetcher, Custo
             Pages = engine is null ? pages?.Pages ?? new CustomPages() : new CustomPages(),
             Sample = new CustomSample { SeriesUrl = series.AbsoluteUri, ChapterUrl = sampleChapter, Query = title ?? (engine is null ? null : shape.SeriesId) }
         };
+
+        draft = draft with { CoverHosts = await CoverHostsAsync(draft, shape.SeriesId, baseUri, ct) };
 
         PagesResult? pagesResult = null;
         if (pages is not null)
@@ -145,6 +147,48 @@ public sealed partial class CustomSourceProbe(CustomSourceFetcher fetcher, Custo
                 return (null, ex.InnerException?.Message ?? ex.Message);
             }
         }, ct);
+    }
+
+    /// <summary>
+    /// HeanCMS renders its pages in the browser, so its series page says nothing; its API answering
+    /// <c>series/{slug}</c> with a <c>series_slug</c> does.
+    /// </summary>
+    private async Task<EngineDetector.Match?> DetectHeanCmsAsync(Uri baseUri, Uri series, SpacingGate gate, CancellationToken ct)
+    {
+        var segments = series.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length != 2 || CustomSource.HeanApi(new CustomEngineOptions(), baseUri) is not { } api)
+        {
+            return null;
+        }
+
+        await gate.WaitAsync(ct);
+        try
+        {
+            var body = (await fetcher.FetchDetailedAsync(new HtmlFetchRequest(new Uri(api, "series/" + segments[1]).AbsoluteUri), ct)).Html;
+            return body.Contains("\"series_slug\"", StringComparison.Ordinal)
+                ? new EngineDetector.Match(CustomEngines.HeanCms, new CustomEngineOptions { SeriesPath = segments[0] })
+                : null;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>The sample series' cover host when it isn't the site's own, so the cover proxy will fetch it.</summary>
+    private async Task<List<string>> CoverHostsAsync(CustomSourceDefinition draft, string seriesId, Uri baseUri, CancellationToken ct)
+    {
+        try
+        {
+            var cover = (await factory.Create(draft).GetSeriesAsync(seriesId, ct)).CoverUrl;
+            return Uri.TryCreate(cover, UriKind.Absolute, out var uri) && !CustomHost.Same(uri.Host, baseUri.Host)
+                ? [CustomHost.Strip(uri.Host).ToLowerInvariant()]
+                : [];
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            return [];
+        }
     }
 
     private SpacingGate Gate(Uri baseUri) =>

@@ -247,6 +247,23 @@ export const SetUpASite: Story = {
   },
 }
 
+export const Repositories: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await openDialog(canvasElement)
+    await userEvent.click(await dialog.findByRole('button', { name: 'Add source' }))
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Repositories' }))
+    await expect(await body.findByText('Quiet sources')).toBeVisible()
+    await expect(body.getByRole('button', { name: 'Install' })).toBeVisible()
+    await expect(body.getByRole('button', { name: 'Replace with repository version' })).toBeVisible()
+    await expect(body.getByText('Needs a newer Maki')).toBeVisible()
+    await userEvent.click(body.getByRole('button', { name: 'Update to version 2' }))
+    await expect(await body.findByText('Version 1 to 2. These parts of the definition change:')).toBeVisible()
+    await userEvent.click(body.getByRole('button', { name: 'Apply update' }))
+    await waitFor(() => expect(body.queryByRole('button', { name: 'Apply update' })).toBeNull())
+  },
+}
+
 export const ReaderSeesNoAddButton: Story = {
   parameters: { auth: 'reader' },
   play: async ({ canvasElement }) => {

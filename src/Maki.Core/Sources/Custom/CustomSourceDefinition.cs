@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace Maki.Core.Sources.Custom;
@@ -42,7 +43,15 @@ public sealed record CustomSourceDefinition
     public CustomChapters Chapters { get; init; } = new();
     public CustomPages Pages { get; init; } = new();
     public CustomSample Sample { get; init; } = new();
+    /// <summary>The repository this was installed from. Kept on a local edit, which sets <see cref="Detached"/>.</summary>
     public CustomOrigin? Origin { get; init; }
+
+    /// <summary>Edited here after it was installed, so the repository's updates no longer apply to it.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Detached { get; init; }
+
+    /// <summary>The definition an update replaced, for one step of revert.</summary>
+    public JsonObject? Previous { get; init; }
 
     public const int DefaultIntervalMs = 1000;
 
@@ -76,16 +85,34 @@ public static class CustomEngines
     /// <summary>The Madara WordPress theme most small scanlators run.</summary>
     public const string Madara = "madara";
 
-    public static readonly IReadOnlyList<string> All = [Madara];
+    /// <summary>The MangaReader WordPress theme by Themesia.</summary>
+    public const string MangaThemesia = "mangathemesia";
+
+    /// <summary>Keyoapp's hosted reader (<c>/series/{slug}/</c>, <c>/chapter/{id}/</c>).</summary>
+    public const string Keyoapp = "keyoapp";
+
+    /// <summary>HeanCMS: a Next.js site in front of a JSON API on its own host.</summary>
+    public const string HeanCms = "heancms";
+
+    public static readonly IReadOnlyList<string> All = [Madara, MangaThemesia, Keyoapp, HeanCms];
+
+    /// <summary>Where an engine's series live when <see cref="CustomEngineOptions.SeriesPath"/> doesn't say.</summary>
+    public static string DefaultSeriesPath(string engine) => engine is Keyoapp or HeanCms ? "series" : "manga";
 }
 
 public sealed record CustomEngineOptions
 {
-    /// <summary>The path segment series live under: <c>manga</c> on most Madara sites, <c>serie</c> on Toonily.</summary>
-    public string SeriesPath { get; init; } = "manga";
+    /// <summary>
+    /// The path segment series live under: <c>manga</c> on most Madara and MangaThemesia sites,
+    /// <c>serie</c> on Toonily, <c>series</c> on Keyoapp and HeanCMS. Null takes the engine's default.
+    /// </summary>
+    public string? SeriesPath { get; init; }
 
-    /// <summary><c>inline</c> when the series page renders the list, <c>ajax</c> when the theme loads it with a POST.</summary>
+    /// <summary>Madara only: <c>inline</c> when the series page renders the list, <c>ajax</c> when the theme loads it with a POST.</summary>
     public string ChapterList { get; init; } = Inline;
+
+    /// <summary>HeanCMS only: the API's origin, on the site's host or a subdomain of it. Null is <c>https://api.{host}</c>.</summary>
+    public string? ApiUrl { get; init; }
 
     public const string Inline = "inline";
     public const string Ajax = "ajax";

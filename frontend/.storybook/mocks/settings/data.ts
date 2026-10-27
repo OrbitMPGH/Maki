@@ -49,7 +49,9 @@ import type { RecycleBin } from '../../../src/api/recycleBin'
 import type { PageConversionStatus } from '../../../src/api/pageConversion'
 import type { UpscaleCatalogEntry, UpscalingState } from '../../../src/api/upscaling'
 import type { SuwayomiConnection } from '../../../src/api/suwayomi'
-import type { CustomSourceEntry, CustomSourceTestReport, ProbeSearchResult, ProbeSiteResult } from '../../../src/api/customSources'
+import type {
+  CustomRepository, CustomSourceEntry, CustomSourceTestReport, CustomSourceUpdatePreview, ProbeSearchResult, ProbeSiteResult,
+} from '../../../src/api/customSources'
 import type { FormatScoreDto, QualityFormatDto, UpgradeProfileDto, UpgradeSettings } from '../../../src/api/upgrades'
 import type { ReaderPrefs } from '../../../src/pages/reader/prefs'
 import { adminMe, daysAgo, hoursAgo, minutesAgo, readerMe, daysAhead } from '../api'
@@ -271,7 +273,12 @@ export const customSourceInfos: SourceInfo[] = [
     content: ['manga'],
     rating: 'general',
     defaultEnabled: true,
-    custom: { id: 'quietpen', hasSearch: false, invalid: false, problem: null },
+    custom: {
+      id: 'quietpen', hasSearch: false, invalid: false, problem: null,
+      origin: { repository: 'https://sources.example/index.json', repositoryName: 'Quiet sources', version: 1, updateAvailable: true, latestVersion: 2 },
+      detached: false,
+      canRevert: false,
+    },
   },
   {
     ...sourceBase,
@@ -337,6 +344,33 @@ export const customSourceSearchProbe: ProbeSearchResult = {
   results: 1,
   titles: ['Blue Hour'],
   tried: [{ url: 'https://quietpen.example/search/?q=Blue%20Hour', found: true, error: null }],
+}
+
+/** One repository with a definition in every state the panel draws. */
+export const customRepositories: CustomRepository[] = [
+  {
+    url: 'https://sources.example/index.json',
+    name: 'Quiet sources',
+    autoUpdate: false,
+    secure: true,
+    lastCheckedUtc: '2026-10-27T08:00:00Z',
+    lastError: null,
+    definitions: [
+      { id: 'quietpen', name: 'Quiet Pen', language: 'en', version: 2, state: 'updateAvailable', installedVersion: 1 },
+      { id: 'lantern', name: 'Lantern Scans', language: 'es', version: 4, state: 'available', installedVersion: null },
+      { id: 'marsh', name: 'Marsh Reader', language: 'en', version: 3, state: 'detached', installedVersion: 2 },
+      { id: 'future', name: 'Future Site', language: 'fr', version: 1, state: 'needsNewerMaki', installedVersion: null },
+    ],
+  },
+]
+
+export const customSourceUpdatePreview: CustomSourceUpdatePreview = {
+  id: 'quietpen',
+  fromVersion: 1,
+  toVersion: 2,
+  current: { name: 'Quiet Pen' },
+  next: { name: 'Quiet Pen Scans' },
+  changedFields: ['name'],
 }
 
 export const customSourceTestReport: CustomSourceTestReport = {

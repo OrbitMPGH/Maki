@@ -800,6 +800,9 @@ try
     builder.Services.AddSingleton<ISourceProvider, CustomSourceProvider>();
     builder.Services.AddScoped<CustomSourceService>();
     builder.Services.AddSingleton<CustomSourceProbe>();
+    builder.Services.AddSingleton<CustomRepositoryStore>();
+    builder.Services.AddSingleton<CustomRepositoryClient>();
+    builder.Services.AddScoped<CustomRepositoryService>();
     AddSuwayomiClient(SuwayomiClient.HttpClientName, TimeSpan.FromSeconds(60), perRequest: true);
     AddSuwayomiClient(SuwayomiClient.PagesHttpClientName, TimeSpan.FromMinutes(2), perRequest: false);
 
@@ -1158,6 +1161,11 @@ try
             .WithIdentity("custom-source-health")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(10))
             .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever()));
+
+        q.ScheduleJob<Maki.Api.Jobs.CustomSourceRepositoryJob>(t => t
+            .WithIdentity("custom-source-repositories")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
 
         // Stable job key so a failed Suwayomi search can run it early (HealthCheckJob.RequestSoonAsync).
         q.AddJob<Maki.Api.Jobs.HealthCheckJob>(j => j.WithIdentity(Maki.Api.Jobs.HealthCheckJob.Key));

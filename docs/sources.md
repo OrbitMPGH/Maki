@@ -16,10 +16,10 @@ where the site's search, chapter list and page images are (CSS selectors, regula
 path into JSON the page embeds). Admins add one in **Manage sources** with **Add source → Set up a
 site**: paste a series page and a chapter page, and Maki guesses the chapter list, the page images and
 the search, shows what each guess reads off the live site, and tests the result before it can be
-saved. Sites on the Madara WordPress theme are recognised and need no guessing. **Import definition**
+saved. Sites on the Madara, MangaThemesia, Keyoapp and HeanCMS themes are recognised and need no guessing. **Import definition**
 takes a definition someone else wrote. A saved source shows up marked Custom and works like any other
 source, and Health checks it every six hours. An admin can also start from a series page: paste a
-URL no source knows into **Link a source** and pick **Set up this site as a source**. Nothing in a definition runs as code, so sites that scramble their pages or need
+URL no source knows into **Link a source** and pick **Set up this site as a source**. **Add source → Repositories** adds a list of definitions someone publishes: install from it, review and apply its updates, or let an https repository keep its sources up to date on its own. An update that could change which chapters a linked series has always waits for you. Nothing in a definition runs as code, so sites that scramble their pages or need
 signed API calls still need a built-in source. A site with no search can still be added: link each
 series to it by pasting the series URL. The format is described in
 [custom-sources-plan.md](custom-sources-plan.md).

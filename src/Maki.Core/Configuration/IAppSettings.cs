@@ -90,6 +90,7 @@ public static class SettingKeys
     /// <c>CustomSourceStore</c>. Entries are kept verbatim, so one this build can't read survives.
     /// </summary>
     public const string CustomSources = "sources.custom";
+    public const string CustomRepositories = "sources.customrepositories";
 
     /// <summary>"true" → new series default to MonitorNewItems.MainOnly (specials unmonitored).</summary>
     public const string MonitoringUnmonitorSpecials = "monitoring.unmonitorspecials";

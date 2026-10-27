@@ -284,7 +284,8 @@ public class SearchController(
     private const int LibraryQualityMinSeries = 2;
 
     [HttpGet("sources")]
-    public async Task<IActionResult> ListSources([FromServices] MakiDbContext db, CancellationToken ct)
+    public async Task<IActionResult> ListSources(
+        [FromServices] MakiDbContext db, [FromServices] CustomRepositoryStore repositoryStore, CancellationToken ct)
     {
         // Enabled is the global switch, not a per-series one: a disabled source can't be
         // linked and none of its existing mappings run, but those mappings keep their flags.
@@ -303,6 +304,25 @@ public class SearchController(
                 .ToListAsync(ct))
             .Select(id => id[Jobs.CustomSourceHealthJob.Prefix.Length..])
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var repositories = await repositoryStore.ReadAsync(ct);
+        object? OriginOf(CustomSource custom)
+        {
+            if (custom.Definition.Origin is not { } origin)
+            {
+                return null;
+            }
+
+            var repository = repositories.FirstOrDefault(r => CustomRepositoryStore.SameUrl(r.Url, origin.Repository));
+            var latest = repository?.Index?.Definitions.FirstOrDefault(d => d.Id == custom.Definition.Id)?.Version;
+            return new
+            {
+                origin.Repository,
+                RepositoryName = repository?.Name,
+                origin.Version,
+                UpdateAvailable = !custom.Definition.Detached && latest > origin.Version,
+                LatestVersion = latest
+            };
+        }
 
         return Ok(sourceRegistry.All.Select(s => new
         {
@@ -319,8 +339,16 @@ public class SearchController(
             },
             Custom = s switch
             {
-                CustomSource custom => new { custom.Definition.Id, custom.HasSearch, Invalid = false, Problem = (string?)null, Failing = failing.Contains(custom.Name) },
-                InvalidCustomSource invalid => new { invalid.Id, HasSearch = false, Invalid = true, Problem = (string?)invalid.Reason, Failing = true },
+                CustomSource custom => new
+                {
+                    custom.Definition.Id, custom.HasSearch, Invalid = false, Problem = (string?)null, Failing = failing.Contains(custom.Name),
+                    Origin = OriginOf(custom), custom.Definition.Detached, CanRevert = custom.Definition.Previous is not null
+                },
+                InvalidCustomSource invalid => new
+                {
+                    invalid.Id, HasSearch = false, Invalid = true, Problem = (string?)invalid.Reason, Failing = true,
+                    Origin = (object?)null, Detached = false, CanRevert = false
+                },
                 _ => null
             },
             Suwayomi = s is SuwayomiSource suwayomi

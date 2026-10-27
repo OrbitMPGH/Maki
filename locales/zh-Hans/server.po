@@ -669,6 +669,109 @@ msgstr ""
 msgid "error.customSource.engineSections"
 msgstr ""
 
+#: src/Maki.Sources/Custom/CustomRepositoryStore.cs
+#. English: A repository address is a full http:// or https:// URL on a public host.
+msgid "error.customRepository.urlInvalid"
+msgstr ""
+
+#. {url} is the address Maki tried and {reason} is what the site or the connection said, untranslated.
+#: src/Maki.Sources/Custom/CustomRepositoryStore.cs
+#. English: Maki could not read {url}: {reason}
+msgid "error.customRepository.fetchFailed"
+msgstr ""
+
+#. {url} is an address and {reason} is the JSON parser's message, untranslated.
+#: src/Maki.Sources/Custom/CustomRepositoryStore.cs
+#. English: {url} is not a repository index: {reason}
+msgid "error.customRepository.indexInvalid"
+msgstr ""
+
+#. {url} is an address; {max} is a number of kilobytes.
+#: src/Maki.Sources/Custom/CustomRepositoryStore.cs
+#. English: {url} is larger than {max} KB.
+msgid "error.customRepository.tooLarge"
+msgstr ""
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: That repository is already added.
+msgid "error.customRepository.exists"
+msgstr ""
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: There is no repository with that address.
+msgid "error.customRepository.notFound"
+msgstr ""
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: The repository has no definition called {id}.
+msgid "error.customRepository.entryNotFound"
+msgstr ""
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: The file the repository serves for {id} does not match its checksum, so it was not used.
+msgid "error.customRepository.hashMismatch"
+msgstr ""
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: The repository's file for {id} defines a source with another id.
+msgid "error.customRepository.idMismatch"
+msgstr ""
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: A custom source called {id} already exists and was not installed from this repository.
+msgid "error.customRepository.idTaken"
+msgstr ""
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: {id} needs a newer version of Maki.
+msgid "error.customRepository.needsNewerMaki"
+msgstr ""
+
+#. {id} is a custom source id and {reason} is what the validator or parser said, untranslated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: The repository's definition of {id} is not valid: {reason}
+msgid "error.customRepository.definitionInvalid"
+msgstr ""
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: The definition did not pass its test against the site, so it was not installed.
+msgid "error.customRepository.installTestFailed"
+msgstr ""
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: An update of {id} did not pass its test against the site, so it waits for you.
+msgid "error.customRepository.testFailed"
+msgstr ""
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: An update of {id} could change which chapters its linked series have, so it waits for you.
+msgid "error.customRepository.updateNeedsReview"
+msgstr ""
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: Only a repository served over https can keep its sources up to date on its own.
+msgid "error.customRepository.autoUpdateNeedsHttps"
+msgstr ""
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: {id} has no update waiting.
+msgid "error.customRepository.noUpdate"
+msgstr ""
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: There is no earlier version of {id} to go back to.
+msgid "error.customRepository.nothingToRevert"
+msgstr ""
+
 #: src/Maki.Api/Services/CustomSourceProbe.cs
 #. English: Paste the full address of a series page on the site, starting with https://.
 msgid "error.customSource.probe.urlInvalid"
@@ -3808,6 +3911,17 @@ msgstr "新章节已保留"
 #, fuzzy
 msgid "inbox.chapters.held.body"
 msgstr "{series}：一次性发现 {count, plural, other {# 个新章节}}，未自动下载。如果确实是新章节，请从该系列页面下载。"
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: Custom source updated
+msgid "inbox.customSource.updated.title"
+msgstr ""
+
+#. {source} is a custom source's name; {from} and {to} are version numbers.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: {source} was updated from version {from} to {to} by its repository.
+msgid "inbox.customSource.updated.body"
+msgstr ""
 
 #: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
 #. English: Series status changed

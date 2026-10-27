@@ -196,3 +196,105 @@ export function useProbeSearch() {
       api<ProbeSearchResult>('/custom-sources/probe/search', { method: 'POST', body: JSON.stringify(body) }),
   })
 }
+
+export type RepositoryEntryState = 'available' | 'installed' | 'updateAvailable' | 'detached' | 'idTaken' | 'needsNewerMaki'
+
+export interface CustomRepositoryEntry {
+  id: string
+  name: string
+  language: string
+  version: number
+  state: RepositoryEntryState
+  installedVersion: number | null
+}
+
+export interface CustomRepository {
+  url: string
+  name: string
+  autoUpdate: boolean
+  /** Served over https, which "Keep up to date" needs. */
+  secure: boolean
+  lastCheckedUtc: string | null
+  /** Already worded: the last refresh's failure, or why an update waits. */
+  lastError: string | null
+  definitions: CustomRepositoryEntry[]
+}
+
+export interface CustomSourceUpdatePreview {
+  id: string
+  fromVersion: number
+  toVersion: number
+  current: Record<string, unknown>
+  next: Record<string, unknown>
+  changedFields: string[]
+}
+
+const repositoriesKey = ['custom-sources', 'repositories'] as const
+
+export function useCustomRepositories(enabled = true) {
+  return useQuery({
+    queryKey: repositoriesKey,
+    queryFn: () => api<CustomRepository[]>('/custom-sources/repositories'),
+    enabled,
+  })
+}
+
+function useRepositoryMutation<T, R>(fn: (body: T) => Promise<R>) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      invalidate(queryClient)
+      void queryClient.invalidateQueries({ queryKey: repositoriesKey })
+    },
+  })
+}
+
+export const useAddRepository = () =>
+  useRepositoryMutation((url: string) =>
+    api<CustomRepository>('/custom-sources/repositories', { method: 'POST', body: JSON.stringify({ url }) }))
+
+export const useRemoveRepository = () =>
+  useRepositoryMutation((url: string) =>
+    api<{ detached: number }>(`/custom-sources/repositories?url=${encodeURIComponent(url)}`, { method: 'DELETE' }))
+
+export const useSetRepositoryAutoUpdate = () =>
+  useRepositoryMutation((body: { url: string; autoUpdate: boolean }) =>
+    api<void>('/custom-sources/repositories/autoupdate', { method: 'PUT', body: JSON.stringify(body) }))
+
+export const useRefreshRepositories = () =>
+  useRepositoryMutation((url: string | null) =>
+    api<CustomRepository[]>('/custom-sources/repositories/refresh', { method: 'POST', body: JSON.stringify({ url }) }))
+
+export const useInstallFromRepository = () =>
+  useRepositoryMutation(({ url, id, confirm }: { url: string; id: string; confirm: boolean }) =>
+    api<{ created: boolean; sourceName: string }>(
+      `/custom-sources/repositories/install${confirm ? '?confirm=true' : ''}`,
+      { method: 'POST', body: JSON.stringify({ url, id }) },
+    ))
+
+export const useApplyCustomSourceUpdate = () =>
+  useRepositoryMutation(({ id, confirm }: { id: string; confirm: boolean }) =>
+    api<{ created: boolean; sourceName: string }>(
+      `/custom-sources/${encodeURIComponent(id)}/update${confirm ? '?confirm=true' : ''}`, { method: 'POST' }))
+
+export const useRevertCustomSource = () =>
+  useRepositoryMutation(({ id, confirm }: { id: string; confirm: boolean }) =>
+    api<{ created: boolean; sourceName: string }>(
+      `/custom-sources/${encodeURIComponent(id)}/revert${confirm ? '?confirm=true' : ''}`, { method: 'POST' }))
+
+export function useCustomSourceUpdatePreview(id: string | null) {
+  return useQuery({
+    queryKey: ['custom-sources', 'update', id],
+    queryFn: () => api<CustomSourceUpdatePreview>(`/custom-sources/${encodeURIComponent(id ?? '')}/update`),
+    enabled: id !== null,
+    retry: false,
+  })
+}
+
+/** The step results a 400 from an install carried when the definition failed its test. */
+export function failedStepsOf(error: unknown): CustomSourceTestStep[] | null {
+  if (!(error instanceof ApiError) || error.status !== 400) return null
+  const steps = (error.payload as { steps?: CustomSourceTestStep[] } | null)?.steps
+  return Array.isArray(steps) ? steps : null
+}

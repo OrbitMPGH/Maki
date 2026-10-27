@@ -2921,6 +2921,10 @@ msgstr "archiwum RAR, 7z lub tar"
 msgid "A refresh is already running"
 msgstr "Odświeżanie już trwa"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "A repository is a list of custom source definitions someone publishes. Maki installs from it, and can keep what it installed up to date. Only add repositories you trust: a definition decides which site Maki reads."
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "A row for each smaller theme on your shelf."
@@ -3140,6 +3144,7 @@ msgstr "Adaptacja"
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Add"
@@ -3729,6 +3734,10 @@ msgstr "Obejrzane przez Ciebie anime"
 msgid "Announced by the source"
 msgstr "Zapowiedziane przez źródło"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Another custom source already has this id"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
@@ -3871,6 +3880,14 @@ msgstr "Zastosuj kategorie jako tagi"
 #, fuzzy
 msgid "Apply replacement"
 msgstr "Zastosuj zastąpienie"
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Apply update"
+msgstr ""
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Apply updates that pass their test and don't change chapter identity. Anything else waits for you."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4625,6 +4642,7 @@ msgstr "Nie można się zalogować zapisanymi danymi."
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -5258,6 +5276,7 @@ msgid "Check in Settings"
 msgstr "Sprawdź w Ustawieniach"
 
 #: src/pages/HealthPage.tsx
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Check now"
@@ -5500,6 +5519,7 @@ msgstr "Sekret klienta"
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/theme-context.tsx
@@ -6504,6 +6524,10 @@ msgstr ""
 msgid "Custom rail"
 msgstr "Własna sekcja"
 
+#: src/api/inbox.ts
+msgid "Custom source updated by its repository"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Customize"
@@ -7105,6 +7129,7 @@ msgstr "Nie chcę"
 #: src/components/TagBrowserModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Done"
@@ -7497,6 +7522,19 @@ msgstr "Edytuj prośbę"
 #, fuzzy
 msgid "Edit request for {title}"
 msgstr "Edytuj prośbę o {title}"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Edited here after it was installed, so updates from its repository no longer apply."
+msgstr ""
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Edited locally"
+msgstr ""
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Edited locally, so updates from {repositoryName} no longer apply. Replace it from the repository panel to follow it again."
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -8831,6 +8869,10 @@ msgstr "Porzuć rozdział po (w minutach)"
 msgid "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
 msgstr "Przypisz serii profil jakości, a Maki zastąpi pliki, które mu nie odpowiadają, i pokaże tutaj każdą wymianę."
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Go ahead anyway"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Go to library"
@@ -9799,6 +9841,20 @@ msgstr "Indygo"
 msgid "Indonesian"
 msgstr "Indonezyjski"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Install"
+msgstr ""
+
+#. placeholder {0}: origin.version
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Installed from {repositoryName}, version {0}. Saving changes here detaches it, and its updates stop applying."
+msgstr ""
+
+#. placeholder {0}: entry.installedVersion
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Installed, version {0}"
+msgstr ""
+
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Installing metadata database"
@@ -10035,6 +10091,10 @@ msgstr "Nie wyłączaj ekranu podczas czytania"
 msgid "Keep this page open until it finishes. Leaving it stops the import; run it again to carry on."
 msgstr "Zostaw tę stronę otwartą, aż się zakończy. Wyjście z niej zatrzymuje import; uruchom go ponownie, aby kontynuować."
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Keep up to date"
+msgstr ""
+
 #: src/components/settings/OfflineReadingSection.tsx
 #, fuzzy
 msgid "Keep upcoming chapters"
@@ -10228,6 +10288,11 @@ msgstr "Ostatni rozdział na dysku"
 #, fuzzy
 msgid "Last chapter to mark watched"
 msgstr "Ostatni rozdział do oznaczenia jako obejrzany"
+
+#. placeholder {0}: formatDateTime(repository.lastCheckedUtc)
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Last checked {0}"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -10955,6 +11020,7 @@ msgstr ""
 msgid "Maki could not find the page images on the chapter page. Describe them under Advanced."
 msgstr ""
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Maki could not list the sample series under both versions to compare them."
 msgstr ""
@@ -11925,6 +11991,10 @@ msgstr "Format nazewnictwa"
 msgid "Naming tokens"
 msgstr "Tokeny nazewnictwa"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Needs a newer Maki"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Needs an indexer and a download client."
 msgstr ""
@@ -12601,6 +12671,10 @@ msgstr "Nie zażądano żadnych napraw ani usunięć."
 msgid "No repeat creators yet"
 msgstr "Brak jeszcze powracających twórców"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "No repositories yet."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "No results."
@@ -12885,6 +12959,7 @@ msgstr "Niedostępne offline"
 msgid "Not checked for new chapters: it is finished and complete, or has no source switched on."
 msgstr "Nie sprawdzane pod kątem nowych rozdziałów: seria jest ukończona i kompletna albo nie ma włączonego żadnego źródła."
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Not checked yet"
@@ -13431,6 +13506,10 @@ msgstr "Nie ma nieukończonych serii do pokazania."
 msgid "Nothing unmatched."
 msgstr "Brak niedopasowanych wpisów."
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Nothing was installed from it."
+msgstr ""
+
 #: src/components/series/UndoConversionModal.tsx
 msgid "Nothing was restored"
 msgstr ""
@@ -13736,6 +13815,10 @@ msgstr "W trakcie"
 #, fuzzy
 msgid "Only {scanRootPath}, the root chosen on the Files tab"
 msgstr "Tylko {scanRootPath}, folder główny wybrany na karcie Pliki"
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Only a repository served over https can keep its sources up to date on its own."
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -14119,6 +14202,7 @@ msgstr ""
 msgid "Page gap"
 msgstr "Odstęp między stronami"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Page images come from different hosts."
 msgstr ""
@@ -15776,9 +15860,15 @@ msgstr ""
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #, fuzzy
 msgid "Remove"
 msgstr "Usuń"
+
+#. placeholder {0}: repository.name
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Remove {0}?"
+msgstr ""
 
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
@@ -16151,6 +16241,10 @@ msgstr "Zastąp"
 msgid "Replace what it covers"
 msgstr "Zastąp to, co obejmuje"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Replace with repository version"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "replaced"
@@ -16169,6 +16263,15 @@ msgstr ""
 #, fuzzy
 msgid "Report a bug"
 msgstr "Zgłoś błąd"
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Repositories"
+msgstr ""
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Repository address"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16619,10 +16722,18 @@ msgstr "Konfiguracja odwrotnego proxy"
 msgid "Reverse sort order"
 msgstr "Odwróć kolejność sortowania"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Revert anyway"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Revert this upgrade"
 msgstr "Cofnij to ulepszenie"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Revert to the previous version"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16681,6 +16792,10 @@ msgstr "Przejrzyj trwałe usunięcie"
 #, fuzzy
 msgid "Review record removal"
 msgstr "Przejrzyj usunięcie wpisu"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Review update"
+msgstr ""
 
 #: src/components/discover/DiscoverReviews.tsx
 #: src/components/series/SeriesReviews.tsx
@@ -19347,7 +19462,7 @@ msgid "That's every chapter on disk."
 msgstr "To już wszystkie rozdziały na dysku."
 
 #: src/pages/settings/CustomSourceWizard.tsx
-msgid "The {engine} preset reads this part of the site. Nothing to set up here."
+msgid "The {engineLabel} preset reads this part of the site. Nothing to set up here."
 msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
@@ -19574,6 +19689,7 @@ msgstr "Dostawca tożsamości odrzucił żądanie logowania. Sprawdź konfigurac
 msgid "The identity provider returned no subject"
 msgstr "Dostawca tożsamości nie zwrócił podmiotu (subject)"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "The language changes."
 msgstr ""
@@ -19727,6 +19843,7 @@ msgstr "Te same liczby, które pokazuje strona Statystyki, zachowane tutaj, aby 
 msgid "The sample download failed"
 msgstr "Pobranie próbki nie powiodło się"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "The sample series lists different chapter numbers or ids."
 msgstr ""
@@ -19820,6 +19937,7 @@ msgstr "Logowanie się nie zakończyło. Spróbuj ponownie."
 msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr "Największa pojedyncza poprawa, jeśli Maki jest dostępne z internetu."
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "The site's address changes."
 msgstr ""
@@ -19967,6 +20085,10 @@ msgstr "Są one wyświetlane tylko raz. Przechowywane są w postaci hasza, więc
 #, fuzzy
 msgid "These files cannot go to the recycle bin. You can delete them permanently instead, and they cannot be restored afterwards."
 msgstr "Tych plików nie można przenieść do kosza. Zamiast tego możesz je usunąć na stałe, ale potem nie da się ich przywrócić."
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "These keep working as hand-made custom sources, and no longer get updates:"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -20158,6 +20280,10 @@ msgstr "Ta naprawa wymaga ręcznego wyboru źródła"
 msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
 msgstr "Zastąpi obecną bibliotekę i ustawienia zawartością <0>{backupName}</0>, a następnie uruchomi ponownie Maki. Obecne dane nie zostaną zachowane, więc wcześniej wykonaj kopię zapasową, jeśli chcesz móc je przywrócić. Docker i systemd uruchomią Maki ponownie automatycznie. W przeciwnym razie zrób to samodzielnie."
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "This repository lists no definitions."
+msgstr ""
+
 #: src/components/pageconversion/ComparePicker.tsx
 msgid "This series has no chapter files to compare."
 msgstr ""
@@ -20206,9 +20332,8 @@ msgstr "Profil tej serii nie dąży do wydań tomów"
 msgid "This site has no search, so Maki never finds series on it by itself. Link each series by pasting its URL."
 msgstr ""
 
-#. placeholder {0}: site.engine.engine
 #: src/pages/settings/CustomSourceWizard.tsx
-msgid "This site runs the {0} theme, which Maki already knows how to read. The next steps are filled in."
+msgid "This site runs {siteEngine}, which Maki already knows how to read. The next steps are filled in."
 msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
@@ -21106,6 +21231,10 @@ msgstr "Aktualne, ostatnio sprawdzono {checkedAtLabel}"
 msgid "Upcoming"
 msgstr "Nadchodzące"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Update {id}"
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
 msgid "Update {latestVersion} available"
@@ -21113,6 +21242,7 @@ msgstr "Dostępna aktualizacja {latestVersion}"
 
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Update available"
 msgstr "Dostępna aktualizacja"
@@ -21121,6 +21251,11 @@ msgstr "Dostępna aktualizacja"
 #, fuzzy
 msgid "Update available: {latestVersion}"
 msgstr "Dostępna aktualizacja: {latestVersion}"
+
+#. placeholder {0}: entry.version
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Update to version {0}"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -21510,6 +21645,22 @@ msgstr "Cynobrowy"
 #, fuzzy
 msgid "Version"
 msgstr "Wersja"
+
+#. placeholder {0}: entry.version
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "version {0}"
+msgstr ""
+
+#. placeholder {0}: origin.latestVersion
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Version {0} is available from {repositoryName}."
+msgstr ""
+
+#. placeholder {0}: preview.data.fromVersion
+#. placeholder {1}: preview.data.toVersion
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Version {0} to {1}. These parts of the definition change:"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

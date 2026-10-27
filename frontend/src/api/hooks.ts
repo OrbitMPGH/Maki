@@ -2956,6 +2956,19 @@ export interface CustomSourceState {
   problem: string | null
   /** The health job's last check failed, or the definition is invalid. Older servers leave it out. */
   failing?: boolean
+  /** The repository it was installed from, or null for a hand-made one. */
+  origin?: {
+    repository: string
+    repositoryName: string | null
+    version: number
+    /** A newer version waits, and the source isn't detached. */
+    updateAvailable: boolean
+    latestVersion: number | null
+  } | null
+  /** Edited here after it was installed, so the repository's updates no longer apply. */
+  detached?: boolean
+  /** An update replaced an earlier version that can be put back. */
+  canRevert?: boolean
 }
 
 export interface SuwayomiSourceState {

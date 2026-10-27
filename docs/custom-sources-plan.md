@@ -1,6 +1,6 @@
 # Custom sources: plan
 
-Status: phases 1 and 2 built on `feat/custom-sources` (2026-10-27), phases 3 and 4 not started. See [Phase 1 as built](#phase-1-as-built) and [Phase 2 as built](#phase-2-as-built) for where the code differs from the design below. Revision 3: the owner's answers to the first draft are folded in (see Decisions), and so is one review round against the code (an Opus 5.5 reviewer, 2026-10-27, three high and thirteen medium findings, all addressed below). Researched against `dev` (06e983ac) and silentquill.net on 2026-10-27.
+Status: all four phases built on `feat/custom-sources` (2026-10-27). See [Phase 1 as built](#phase-1-as-built), [Phase 2 as built](#phase-2-as-built) and [Phases 3 and 4 as built](#phases-3-and-4-as-built) for where the code differs from the design below. Revision 3: the owner's answers to the first draft are folded in (see Decisions), and so is one review round against the code (an Opus 5.5 reviewer, 2026-10-27, three high and thirteen medium findings, all addressed below). Researched against `dev` (06e983ac) and silentquill.net on 2026-10-27.
 
 ## Goal
 
@@ -457,6 +457,30 @@ Where it differs from the design:
 - **`error.search.noSourceRecognizesUrl`**, which `resolvesource` already answered with, is the structured key the series page reads; no new key.
 - **The language warning** reads the instance's enabled source languages (`GET settings/sources/languages`) and appears under the Language field in step 5.
 - **Corpus coverage.** Mangakakalot's series page has no chapter list (it loads one from an API) and Manhuagui's pages come from packed script, so neither has a page-list or chapter-list case; the guessers don't find them, as expected.
+
+## Phases 3 and 4 as built
+
+On `feat/custom-sources`, 2026-10-27.
+
+**Presets.** `engine` now takes `madara`, `mangathemesia`, `keyoapp` or `heancms`, each a partial of `CustomSource`. `engineOptions.seriesPath` defaults per engine (`manga`, or `series` for Keyoapp and HeanCMS), `chapterList` only means something to Madara, and `apiUrl` only to HeanCMS.
+
+- **MangaThemesia** (recorded from Arena Scans): search is `?s=` over `.bsx` cards. Chapters are `#chapterlist li` (and the theme's older list shapes) and live at the site root, so `chapters` is `/{chapterId}/`. Pages come from the `ts_reader.run({...})` JSON, with `#readerarea img` as the fallback.
+- **Keyoapp** (Kewn Scans): `/series/` lists every series, so search is a catalogue matched by title. Chapters are `#chapters > a` with the label in `title` and the date in `d`. One with a clock, coin or lock icon is upcoming or paid and is left out; an icon is the same on every site, whatever its language. Page images are `img[uid]` placeholders, and the CDN prefix is read from the chapter page's `realUrl` script. Covers go through wsrv.nl, and the engine unwraps them to the real image.
+- **HeanCMS** (Omega Scans' API): everything comes from the JSON API. The API is `https://api.{host}` unless `engineOptions.apiUrl` says otherwise, and it must be the site's host or a subdomain of it, because it is the one other host a definition may read. Paid chapters (`price` above 0) are left out. The website's own URLs are only links.
+- **Detection.** `EngineDetector` recognises MangaThemesia and Keyoapp from the series page. HeanCMS renders nothing recognisable server-side, so the probe asks `api.{host}/series/{slug}` and looks for `series_slug`. A live probe of all three sites detected the theme and passed the full test.
+- **Cover hosts.** The probe now reads the sample series' cover and adds its host to `coverHosts` when it isn't the site's own (Keyoapp's CDN, HeanCMS's media host).
+
+**Repositories.** Implemented as designed, with these differences:
+
+- **A local edit keeps `origin` and sets `detached`**, rather than clearing `origin`. Without the origin the repository panel couldn't tell a detached copy from a hand-made source with the same id, and "Replace with repository version" needs exactly that. Removing a repository clears `origin` on what it installed, which leaves them hand-made.
+- **The panel is a modal stacked over Manage sources**, opened from Add source → Repositories, the way the wizard is, rather than a pane swap inside the modal.
+- **Field-by-field diff** lists the changed top-level fields with both values. It opens from the panel and from the wizard's Edit, which also offers "Revert to the previous version" whenever `previous` is set.
+- **A hand apply doesn't run the test**; the daily automatic pass does. The admin can run Test in the wizard afterwards, and the identity check still asks first.
+- **A held automatic update** puts its reason on the repository's `lastError` (`testFailed`, `updateNeedsReview`, `hashMismatch` and so on). An applied one raises `InboxEventType.CustomSourceUpdated` (24, admin only) with `inbox.customSource.updated.*`.
+- **Endpoints** live in `CustomSourceRepositoriesController` under `api/v1/custom-sources`: `repositories` (GET, POST, DELETE), `repositories/autoupdate`, `repositories/refresh`, `repositories/install`, `{id}/update` (GET for the preview, POST to apply) and `{id}/revert`. All are `Policies.Admin`, pinned by `CustomRepositoryServiceTests`. `GET search/sources` adds `custom.origin` (repository, its name, version, `updateAvailable`, `latestVersion`), `custom.detached` and `custom.canRevert`, which the row tags read.
+- **The index is read leniently**: fields this build doesn't know are ignored, unlike a definition. Index and files go through the guarded `custom-sources` client.
+
+**Tests.** `CustomSourceEngineTests` (the three engines against recorded pages, detection, `apiUrl` refusals) and `CustomRepositoryServiceTests`. The latter runs a fake site and repository through the real store, save path, tester and registry: install, checksum, failed test, automatic update and revert, a held identity change, detach on edit, removal, http refusal and id conflicts. There is also the `Repositories` story.
 
 ## Phases
 

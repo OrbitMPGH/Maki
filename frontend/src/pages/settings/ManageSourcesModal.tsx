@@ -8,7 +8,7 @@ import { notifications } from '@mantine/notifications'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   IconArrowUp, IconChevronDown, IconChevronUp, IconDots, IconDownload, IconFileImport, IconFilter, IconGripVertical,
-  IconLanguage, IconPencil, IconPlus, IconPuzzle, IconSearch, IconShield, IconTool, IconTrash, IconWorldWww,
+  IconLanguage, IconPencil, IconPlus, IconPuzzle, IconSearch, IconShield, IconTool, IconTrash, IconWorldWww, IconPackages,
 } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -24,6 +24,7 @@ import { useAuth } from '../../auth/AuthProvider'
 import { errorText } from '../../api/errorText'
 import { fetchCustomSourceExport, useCustomSources, useDeleteCustomSource, type CustomSourceDefinition } from '../../api/customSources'
 import { CustomSourceWizard, type WizardMode } from './CustomSourceWizard'
+import { CustomRepositoriesPanel } from './CustomRepositoriesPanel'
 import { COMMON_LANGUAGES, LANGUAGE_CODE, MIXED_LANGUAGE } from './sourceLanguages'
 
 type StateFilter = 'all' | 'on' | 'off'
@@ -149,6 +150,27 @@ function SourceTags({ source, contentLabels, nameOfLanguage }: {
           w={280}
         >
           <span className="source-tag" data-tone="setup" tabIndex={0}><Trans>Link by URL</Trans></span>
+        </Tooltip>
+      )}
+      {source.custom?.origin && (
+        <Tooltip label={source.custom.origin.repository} events={{ hover: true, focus: true, touch: true }} withArrow>
+          <span className="source-tag" data-tone="kind" tabIndex={0}>
+            {source.custom.origin.repositoryName ?? sourceHost(source.custom.origin.repository)}
+          </span>
+        </Tooltip>
+      )}
+      {source.custom?.origin?.updateAvailable && (
+        <span className="source-tag" data-tone="setup"><Trans>Update available</Trans></span>
+      )}
+      {source.custom?.detached && (
+        <Tooltip
+          label={<Trans>Edited here after it was installed, so updates from its repository no longer apply.</Trans>}
+          events={{ hover: true, focus: true, touch: true }}
+          withArrow
+          multiline
+          w={280}
+        >
+          <span className="source-tag" data-tone="kind" tabIndex={0}><Trans>Edited locally</Trans></span>
         </Tooltip>
       )}
       {source.kind === 'official' && <span className="source-tag" data-tone="official"><Trans>Official</Trans></span>}
@@ -555,6 +577,7 @@ export function ManageSourcesModal({
     startUrl: string | null
   } | null>(null)
   const wizardOpened = useRef(false)
+  const [repositoriesOpen, setRepositoriesOpen] = useState(false)
   const [deleting, setDeleting] = useState<SourceInfo | null>(null)
 
   const suwayomiUrl = suwayomi?.url ?? null
@@ -1089,6 +1112,9 @@ export function ManageSourcesModal({
               <Menu.Item leftSection={<IconFileImport size={14} />} onClick={() => setWizard({ mode: 'import', id: null, initial: {}, startUrl: null })}>
                 <Trans>Import definition</Trans>
               </Menu.Item>
+              <Menu.Item leftSection={<IconPackages size={14} />} onClick={() => setRepositoriesOpen(true)}>
+                <Trans>Repositories</Trans>
+              </Menu.Item>
             </Menu.Dropdown>
           </Menu>
         )}
@@ -1221,7 +1247,11 @@ export function ManageSourcesModal({
         startUrl={wizard?.startUrl ?? null}
         onSaved={customSaved}
         onEditExisting={openEditById}
+        state={wizard?.id ? sources?.find((s) => s.custom?.id === wizard.id)?.custom ?? null : null}
       />
+    )}
+    {isAdmin && (
+      <CustomRepositoriesPanel opened={repositoriesOpen} onClose={() => setRepositoriesOpen(false)} />
     )}
     <ConfirmDialog
       opened={deleting !== null}

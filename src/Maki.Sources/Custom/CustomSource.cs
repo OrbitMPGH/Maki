@@ -29,7 +29,10 @@ public sealed partial class CustomSource : ISource
     private readonly Func<string, string, IReadOnlyDictionary<string, string>>? _sessionHeaders;
     private readonly Uri _base;
     private readonly SourceCatalog _catalogue = new(TimeSpan.FromHours(6));
-    private readonly CustomEngineOptions? _madara;
+    private readonly CustomEngineOptions? _engine;
+
+    /// <summary>HeanCMS's API origin, the one host besides the site's own that HTML and JSON may come from.</summary>
+    private readonly Uri? _api;
 
     /// <param name="sessionHeaders">
     /// Clearance cookies and UA for a host the fetcher solved a challenge for
@@ -49,11 +52,21 @@ public sealed partial class CustomSource : ISource
         _sessionHeaders = sessionHeaders;
         _base = new Uri(definition.BaseUrl.TrimEnd('/') + "/");
 
-        if (definition.Engine == CustomEngines.Madara)
+        if (definition.Engine is { } engine)
         {
-            _madara = definition.EngineOptions ?? new CustomEngineOptions();
-            SeriesTemplate = $"/{_madara.SeriesPath}/{CustomTemplate.SeriesId}/";
-            ChapterTemplate = $"/{_madara.SeriesPath}/{CustomTemplate.SeriesId}/{CustomTemplate.ChapterId}/";
+            _engine = definition.EngineOptions ?? new CustomEngineOptions();
+            var path = _engine.SeriesPath ?? CustomEngines.DefaultSeriesPath(engine);
+            SeriesTemplate = engine == CustomEngines.HeanCms
+                ? $"/{path}/{CustomTemplate.SeriesId}"
+                : $"/{path}/{CustomTemplate.SeriesId}/";
+            ChapterTemplate = engine switch
+            {
+                CustomEngines.MangaThemesia => $"/{CustomTemplate.ChapterId}/",
+                CustomEngines.Keyoapp => $"/chapter/{CustomTemplate.ChapterId}/",
+                CustomEngines.HeanCms => $"/{path}/{CustomTemplate.SeriesId}/{CustomTemplate.ChapterId}",
+                _ => $"/{path}/{CustomTemplate.SeriesId}/{CustomTemplate.ChapterId}/"
+            };
+            _api = engine == CustomEngines.HeanCms ? HeanApi(_engine, _base) : null;
         }
         else
         {
@@ -76,7 +89,9 @@ public sealed partial class CustomSource : ISource
     public SourceContent Content => CustomSourceEnums.Content(Definition.Content) ?? SourceContent.Manga;
     public SourceRating Rating => CustomSourceEnums.Rating(Definition.Rating) ?? SourceRating.General;
     public IReadOnlyList<string> SupportedLanguages => [SourceLanguages.Canonical(Definition.Language)];
-    public bool ReleaseDatesAreReliable => _madara is null && Definition.Chapters.Date is not { Format: "relative" };
+    public bool ReleaseDatesAreReliable => Definition.Engine is null
+        ? Definition.Chapters.Date is not { Format: "relative" }
+        : Definition.Engine != CustomEngines.Madara;
     public IReadOnlyList<string> CoverHosts => Definition.CoverHosts;
 
     /// <summary>False for a site with neither search nor a catalogue page: series are linked by URL only.</summary>
@@ -89,9 +104,12 @@ public sealed partial class CustomSource : ISource
 
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
-        if (_madara is not null)
+        switch (Definition.Engine)
         {
-            return await MadaraSearchAsync(title, ct);
+            case CustomEngines.Madara: return await MadaraSearchAsync(title, ct);
+            case CustomEngines.MangaThemesia: return await ThemesiaSearchAsync(title, ct);
+            case CustomEngines.Keyoapp: return await KeyoappSearchAsync(title, ct);
+            case CustomEngines.HeanCms: return await HeanSearchAsync(title, ct);
         }
 
         if (Definition.Search is { } search)
@@ -153,9 +171,12 @@ public sealed partial class CustomSource : ISource
 
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
-        if (_madara is not null)
+        switch (Definition.Engine)
         {
-            return await MadaraSeriesAsync(sourceSeriesId, ct);
+            case CustomEngines.Madara: return await MadaraSeriesAsync(sourceSeriesId, ct);
+            case CustomEngines.MangaThemesia: return await ThemesiaSeriesAsync(sourceSeriesId, ct);
+            case CustomEngines.Keyoapp: return await KeyoappSeriesAsync(sourceSeriesId, ct);
+            case CustomEngines.HeanCms: return await HeanSeriesAsync(sourceSeriesId, ct);
         }
 
         var series = Definition.Series;
@@ -186,9 +207,12 @@ public sealed partial class CustomSource : ISource
 
     public async Task<IReadOnlyList<ListedChapter>> ListEntriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
-        if (_madara is not null)
+        switch (Definition.Engine)
         {
-            return await MadaraEntriesAsync(sourceSeriesId, _madara, ct);
+            case CustomEngines.Madara: return await MadaraEntriesAsync(sourceSeriesId, _engine!, ct);
+            case CustomEngines.MangaThemesia: return await ThemesiaEntriesAsync(sourceSeriesId, ct);
+            case CustomEngines.Keyoapp: return await KeyoappEntriesAsync(sourceSeriesId, ct);
+            case CustomEngines.HeanCms: return await HeanEntriesAsync(sourceSeriesId, ct);
         }
 
         var chapters = Definition.Chapters;
@@ -250,9 +274,12 @@ public sealed partial class CustomSource : ISource
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
         var chapterUrl = ChapterUrl(chapter.SourceSeriesId, chapter.SourceChapterId);
-        if (_madara is not null)
+        switch (Definition.Engine)
         {
-            return Pages(await MadaraPagesAsync(chapterUrl, ct));
+            case CustomEngines.Madara: return Pages(await MadaraPagesAsync(chapterUrl, ct));
+            case CustomEngines.MangaThemesia: return Pages(await ThemesiaPagesAsync(chapterUrl, ct));
+            case CustomEngines.Keyoapp: return Pages(await KeyoappPagesAsync(chapterUrl, ct));
+            case CustomEngines.HeanCms: return Pages(await HeanPagesAsync(chapter, ct));
         }
 
         var pages = Definition.Pages;
@@ -350,7 +377,7 @@ public sealed partial class CustomSource : ISource
 
     private async Task<CustomPage> FetchAsync(Uri url, CancellationToken ct, string? formBody = null)
     {
-        if (!CustomHost.Same(url.Host, _base.Host))
+        if (!CustomHost.Same(url.Host, _base.Host) && !string.Equals(url.Host, _api?.Host, StringComparison.OrdinalIgnoreCase))
         {
             throw new SourceErrorException($"{DisplayName} only reads pages on {_base.Host}, not {url.Host}");
         }
