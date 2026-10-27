@@ -3526,6 +3526,10 @@ msgstr "Также удалить отсоединённые файлы с ди�
 msgid "Also delete files on disk"
 msgstr "Также удалить файлы с диска"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Also delete the downloaded files"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
 msgid "Also for you"
@@ -15720,6 +15724,10 @@ msgstr "Удалить эту серию с устройства"
 #, fuzzy
 msgid "Remove this torrent?"
 msgstr "Удалить этот торрент?"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Remove torrents from the download client after import"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy

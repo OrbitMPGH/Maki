@@ -1135,6 +1135,11 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddSeconds(15))
             .WithSimpleSchedule(s => s.WithIntervalInSeconds(15).RepeatForever()));
 
+        q.ScheduleJob<Maki.Api.Jobs.TorrentRemovalJob>(t => t
+            .WithIdentity("torrent-removal")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(2).RepeatForever()));
+
         q.ScheduleJob<Maki.Api.Jobs.RetryFailedDownloadsJob>(t => t
             .WithIdentity("retry-failed-downloads")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))

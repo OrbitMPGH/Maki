@@ -363,6 +363,21 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("ChapterId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ClientRemovalClient")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("ClientRemovalDeleteData")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ClientRemovalMode")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ClientRemovalPendingAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ClientRemovedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("TEXT");
 
@@ -435,6 +450,9 @@ namespace Maki.Data.Migrations
                         .IsUnique();
 
                     b.HasIndex("ChapterId");
+
+                    b.HasIndex("ClientRemovalPendingAt")
+                        .HasFilter("\"ClientRemovalPendingAt\" IS NOT NULL");
 
                     b.HasIndex("HealthOperationId");
 

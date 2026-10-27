@@ -52,12 +52,20 @@ public record ReleaseResultDto(
 
 public record ReleaseSearchResponse(string Query, IReadOnlyList<ReleaseResultDto> Releases);
 
-/// <summary>Payload persisted on torrent queue items (DownloadQueueItem.ReleaseInfoJson).</summary>
+/// <summary>
+/// Payload persisted on torrent queue items (DownloadQueueItem.ReleaseInfoJson). <see cref="ContentPath"/>
+/// is where the client said the finished download is, as the client sees it (before the path map), so
+/// the files can still be found once the client no longer lists the torrent. <see cref="AddedBeforeGrab"/>
+/// says the client already had the torrent when Maki grabbed it (a duplicate add the client accepted, or a
+/// torrent claimed by name), so it is the user's and Maki never removes it; null until the poll first sees it.
+/// </summary>
 public record ReleaseInfo(
     string Guid,
     string Title,
     string Indexer,
-    string? TorrentHash);
+    string? TorrentHash,
+    string? ContentPath = null,
+    bool? AddedBeforeGrab = null);
 
 public record ReleaseSearchResult(string Query, IReadOnlyList<ReleaseDto> Releases)
 {

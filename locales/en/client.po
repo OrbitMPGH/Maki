@@ -2912,6 +2912,10 @@ msgstr "Also delete detached files from disk"
 msgid "Also delete files on disk"
 msgstr "Also delete files on disk"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Also delete the downloaded files"
+msgstr "Also delete the downloaded files"
+
 #: src/components/discover/DiscoverHero.tsx
 msgid "Also for you"
 msgstr "Also for you"
@@ -13008,6 +13012,10 @@ msgstr "Remove this series from the device"
 #: src/pages/ActivityPage.tsx
 msgid "Remove this torrent?"
 msgstr "Remove this torrent?"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Remove torrents from the download client after import"
+msgstr "Remove torrents from the download client after import"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove without cleanup"

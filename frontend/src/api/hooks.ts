@@ -3810,7 +3810,13 @@ export interface DownloadSettings {
   scoutOnMatch: boolean
   /** Check each series on a tier picked from how recently it had a new chapter, instead of every 30 minutes. */
   adaptiveRefresh: boolean
+  /** When Maki removes an imported torrent from the download client. */
+  removeCompleted: TorrentRemovalMode
+  /** Delete the downloaded files with the torrent, where the library is known to hold its own copy. */
+  removeData: boolean
 }
+
+export type TorrentRemovalMode = 'never' | 'afterimport'
 
 /** `manual` follows each mapping's priority; `quality` ranks sources by the series' upgrade profile. */
 export type SourceOrderMode = 'manual' | 'quality'

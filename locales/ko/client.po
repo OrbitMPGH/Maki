@@ -3526,6 +3526,10 @@ msgstr "연결되지 않은 파일도 디스크에서 삭제"
 msgid "Also delete files on disk"
 msgstr "디스크의 파일도 삭제"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Also delete the downloaded files"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
 msgid "Also for you"
@@ -15720,6 +15724,10 @@ msgstr "이 기기에서 이 시리즈 제거"
 #, fuzzy
 msgid "Remove this torrent?"
 msgstr "이 토렌트를 제거할까요?"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Remove torrents from the download client after import"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy

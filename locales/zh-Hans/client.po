@@ -3526,6 +3526,10 @@ msgstr "同时从磁盘删除已脱离关联的文件"
 msgid "Also delete files on disk"
 msgstr "同时删除磁盘上的文件"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Also delete the downloaded files"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
 msgid "Also for you"
@@ -15720,6 +15724,10 @@ msgstr "从设备中移除此系列"
 #, fuzzy
 msgid "Remove this torrent?"
 msgstr "要移除此种子吗？"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Remove torrents from the download client after import"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy

@@ -34,7 +34,8 @@ public class CompletedDownloadJobTests : IDisposable
     private static ClientTorrent Torrent(string hash, double progress, DateTime addedAt, string name = "Berserk v01 (Digital)") => new(
         hash, name, progress, progress >= 1.0, "/dl/" + name, new DateTimeOffset(addedAt), false, null);
 
-    private int SeedItem(QueueStatus status, string? hash, DateTime queuedAt, string title = "Berserk v01")
+    private int SeedItem(
+        QueueStatus status, string? hash, DateTime queuedAt, string title = "Berserk v01", string? contentPath = null)
     {
         using var db = _db.NewContext();
         var item = new DownloadQueueItem
@@ -43,7 +44,8 @@ public class CompletedDownloadJobTests : IDisposable
             Protocol = AcquisitionProtocol.Torrent,
             Status = status,
             Title = title,
-            ReleaseInfoJson = JsonSerializer.Serialize(new ReleaseInfo("guid-" + Guid.NewGuid().ToString("N"), title, "Nyaa", hash)),
+            ReleaseInfoJson = JsonSerializer.Serialize(
+                new ReleaseInfo("guid-" + Guid.NewGuid().ToString("N"), title, "Nyaa", hash, contentPath)),
             QueuedAt = queuedAt,
             SortOrder = 1,
         };
@@ -78,6 +80,16 @@ public class CompletedDownloadJobTests : IDisposable
     {
         using var db = _db.NewContext();
         return db.DownloadQueue.Single(q => q.Id == id);
+    }
+
+    private string? ContentPathOf(int id) => JsonSerializer.Deserialize<ReleaseInfo>(Reload(id).ReleaseInfoJson!)!.ContentPath;
+
+    /// <summary>An empty folder standing in for a finished download, deleted with the test.</summary>
+    private static string EmptyDownload()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "maki-job-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(path);
+        return path;
     }
 
     [Fact]
@@ -417,5 +429,101 @@ public class CompletedDownloadJobTests : IDisposable
         var item = Reload(id);
         Assert.Equal(QueueStatus.AwaitingImport, item.Status);
         Assert.Null(item.ErrorKey);
+    }
+
+    [Fact]
+    public async Task A_finished_torrent_records_where_the_client_put_it_and_a_downloading_one_does_not()
+    {
+        var done = SeedItem(QueueStatus.AwaitingImport, "def456", DateTime.UtcNow.AddHours(-1));
+        var half = SeedItem(QueueStatus.Downloading, "abc123", DateTime.UtcNow.AddHours(-1));
+        _client.Torrents.Add(Torrent("def456", 1.0, DateTime.UtcNow.AddHours(-1)));
+        _client.Torrents.Add(Torrent("abc123", 0.6, DateTime.UtcNow.AddHours(-1), name: "Berserk v02 (Digital)"));
+
+        await RunAsync();
+
+        Assert.Equal("/dl/Berserk v01 (Digital)", ContentPathOf(done));
+        Assert.Null(ContentPathOf(half));
+    }
+
+    [Fact]
+    public async Task A_recorded_path_follows_the_torrent_when_the_client_moves_it()
+    {
+        var id = SeedItem(QueueStatus.AwaitingImport, "def456", DateTime.UtcNow.AddHours(-1), contentPath: "/incomplete/Berserk v01");
+        _client.Torrents.Add(Torrent("def456", 1.0, DateTime.UtcNow.AddHours(-1)));
+
+        await RunAsync();
+
+        Assert.Equal("/dl/Berserk v01 (Digital)", ContentPathOf(id));
+    }
+
+    [Fact]
+    public async Task A_retried_row_whose_torrent_the_client_dropped_imports_from_where_it_finished()
+    {
+        var download = EmptyDownload();
+        try
+        {
+            var id = SeedItem(QueueStatus.Queued, "abc123", DateTime.UtcNow.AddHours(-1), contentPath: download);
+
+            await RunAsync();
+
+            // The empty folder was read and found to hold nothing, rather than the row waiting six
+            // hours for a torrent that is never coming back.
+            var item = Reload(id);
+            Assert.Equal(QueueStatus.Failed, item.Status);
+            Assert.Equal("error.torrentImport.noComicsEmpty", item.ErrorKey);
+        }
+        finally
+        {
+            Directory.Delete(download, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task A_parked_row_whose_torrent_the_client_dropped_waits_for_the_user()
+    {
+        var download = EmptyDownload();
+        try
+        {
+            var id = SeedItem(QueueStatus.AwaitingImport, "abc123", DateTime.UtcNow.AddHours(-1), contentPath: download);
+
+            await RunAsync();
+
+            var item = Reload(id);
+            Assert.Equal(QueueStatus.AwaitingImport, item.Status);
+            Assert.Null(item.ErrorKey);
+        }
+        finally
+        {
+            Directory.Delete(download, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("/dl/gone since")]
+    public async Task A_missing_torrent_with_no_files_to_fall_back_on_waits_out_the_grace(string? contentPath)
+    {
+        var id = SeedItem(QueueStatus.Downloading, "abc123", DateTime.UtcNow.AddHours(-1), contentPath: contentPath);
+
+        await RunAsync();
+
+        var item = Reload(id);
+        Assert.Equal(QueueStatus.Downloading, item.Status);
+        Assert.Null(item.ErrorKey);
+    }
+
+    [Fact]
+    public async Task A_torrent_the_client_already_had_before_the_grab_is_recorded_as_the_users()
+    {
+        var grabbed = DateTime.UtcNow.AddHours(-1);
+        var old = SeedItem(QueueStatus.AwaitingImport, "def456", grabbed);
+        var own = SeedItem(QueueStatus.AwaitingImport, "abc123", grabbed);
+        _client.Torrents.Add(Torrent("def456", 1.0, grabbed.AddDays(-30)));
+        _client.Torrents.Add(Torrent("abc123", 1.0, grabbed.AddSeconds(-2), name: "Berserk v02 (Digital)"));
+
+        await RunAsync();
+
+        Assert.True(JsonSerializer.Deserialize<ReleaseInfo>(Reload(old).ReleaseInfoJson!)!.AddedBeforeGrab);
+        Assert.False(JsonSerializer.Deserialize<ReleaseInfo>(Reload(own).ReleaseInfoJson!)!.AddedBeforeGrab);
     }
 }

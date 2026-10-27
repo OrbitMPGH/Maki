@@ -287,6 +287,8 @@ export const downloadSettings: DownloadSettings = {
   sourceOrder: 'manual',
   scoutOnMatch: false,
   adaptiveRefresh: true,
+  removeCompleted: 'never',
+  removeData: true,
 }
 
 export const readFileCleanup: ReadFileCleanupSettings = { enabled: false, days: 7, keepLast: true }

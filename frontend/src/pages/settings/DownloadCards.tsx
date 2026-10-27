@@ -3,7 +3,7 @@ import { useEffect, useReducer, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
-import { Button, Checkbox, Group, MultiSelect, Select, SimpleGrid, Stack, Switch, Text } from '@mantine/core'
+import { Box, Button, Checkbox, Group, MultiSelect, Select, SimpleGrid, Stack, Switch, Text } from '@mantine/core'
 import { IconAdjustments } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { SettingsSection } from './SettingsSection'
@@ -430,12 +430,15 @@ export function ReadFileCleanupSection() {
   )
 }
 
-/** The hardlink switch inside the download client card. Part of the download settings record, saved on change. */
-function HardlinkField() {
+/** The finished-torrent switches inside the download client card. Part of the download settings record, saved on change. */
+function FinishedTorrentFields() {
   const { t } = useLingui()
   const { data: settings } = useDownloadSettings()
   const save = useSaveDownloadSettings()
-  const checked = save.isPending && save.variables ? save.variables.useHardlinks : (settings?.useHardlinks ?? true)
+  const pending = save.isPending ? save.variables : undefined
+  const useHardlinks = pending?.useHardlinks ?? settings?.useHardlinks ?? true
+  const removeCompleted = (pending?.removeCompleted ?? settings?.removeCompleted ?? 'never') === 'afterimport'
+  const removeData = pending?.removeData ?? settings?.removeData ?? true
 
   return (
     <Stack gap={0} mt="lg">
@@ -447,12 +450,46 @@ function HardlinkField() {
       </SettingsHelp>
       <Switch
         label={t`Hardlink imported torrents when possible`}
-        checked={checked}
+        checked={useHardlinks}
         disabled={!settings}
         onChange={(e) => {
           save.mutate({ useHardlinks: e.currentTarget.checked }, { onSuccess: savedToast })
         }}
       />
+      <Switch
+        mt="md"
+        label={t`Remove torrents from the download client after import`}
+        checked={removeCompleted}
+        disabled={!settings}
+        onChange={(e) => {
+          save.mutate(
+            { removeCompleted: e.currentTarget.checked ? 'afterimport' : 'never' },
+            { onSuccess: savedToast },
+          )
+        }}
+      />
+      <Group gap={8} wrap="nowrap" align="flex-start">
+        <Box
+          aria-hidden
+          w={10}
+          h={22}
+          ml={18}
+          style={{
+            borderInlineStart: '2px solid var(--border-strong)',
+            borderBottom: '2px solid var(--border-strong)',
+            borderEndStartRadius: 4,
+          }}
+        />
+        <Switch
+          mt={10}
+          label={t`Also delete the downloaded files`}
+          checked={removeData}
+          disabled={!settings || !removeCompleted}
+          onChange={(e) => {
+            save.mutate({ removeData: e.currentTarget.checked }, { onSuccess: savedToast })
+          }}
+        />
+      </Group>
     </Stack>
   )
 }
@@ -478,7 +515,7 @@ export function DownloadClientCard() {
       title={t`Download client`}
       fields={fields}
     >
-      <HardlinkField />
+      <FinishedTorrentFields />
     </ConnectionSettingsCard>
   )
 }
