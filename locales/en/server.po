@@ -432,6 +432,142 @@ msgstr "Library rails can only go on Home"
 msgid "error.customRails.tooMany"
 msgstr "You can keep at most {max} rails"
 
+#. {schema} is the definition format number the file says it uses.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.schemaUnsupported"
+msgstr "This definition uses format {schema}, which this version of Maki can't read. Update Maki or use a definition made for this version."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.idInvalid"
+msgstr "The id must be 2 to 40 lowercase letters, digits or hyphens, starting with a letter or digit."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.nameInvalid"
+msgstr "The name is required and can be at most 60 characters."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.baseUrlInvalid"
+msgstr "The base URL must be an http or https address on a domain name, with no path, such as https://example.com."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.languageInvalid"
+msgstr "The language must be one language code, such as en or pt-BR."
+
+#. {field} is the definition field name, such as kind or chapters.date.format, and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.fieldInvalid"
+msgstr "The value of {field} is not one Maki knows."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.intervalInvalid"
+msgstr "The request spacing must be between {min} and {max} milliseconds."
+
+#. {header} is an HTTP header name and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.headerRefused"
+msgstr "The header {header} can't be set by a definition."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.coverHostInvalid"
+msgstr "\"{host}\" is not a domain name."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.searchAndCatalogue"
+msgstr "Give either a search or a catalogue page, not both."
+
+#. {field} is the definition field name and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.fieldRequired"
+msgstr "{field} is required."
+
+#. {field} is the definition field name and {placeholder} a template placeholder such as seriesId in braces; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.templatePlaceholder"
+msgstr "{field} must contain {placeholder}."
+
+#. {field} is the definition field name and {host} the site's domain; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.templateHost"
+msgstr "{field} must point at {host}."
+
+#. {field} is the definition field name and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.listExtractorShape"
+msgstr "{field} needs exactly one of css, regex or json."
+
+#. {field} is the definition field name and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.fieldExtractorShape"
+msgstr "{field} reads something its list items don't have, or mixes a fixed value with other settings."
+
+#. {field} is the definition field name and {selector} the CSS selector; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.cssInvalid"
+msgstr "{field}: \"{selector}\" is not a valid CSS selector."
+
+#. {field} is the definition field name and {pattern} the regular expression; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.regexInvalid"
+msgstr "{field}: \"{pattern}\" is not a valid regular expression."
+
+#. {field} is the definition field name and {path} the JSON path; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.jsonPathInvalid"
+msgstr "{field}: \"{path}\" is not a valid JSON path. Use dot segments with [*] or [n]."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.sampleQueryRequired"
+msgstr "A source with search needs a sample search query."
+
+#. {max} is a size in kilobytes.
+#: src/Maki.Api/Services/CustomSourceService.cs
+msgid "error.customSource.tooLarge"
+msgstr "The definition is larger than {max} KB."
+
+#. {detail} is the JSON parser's own message and is never translated.
+#: src/Maki.Api/Services/CustomSourceService.cs
+msgid "error.customSource.jsonInvalid"
+msgstr "The definition is not valid JSON for a custom source: {detail}"
+
+#. {source} is the name of the source that already covers this site, never translated.
+#: src/Maki.Api/Services/CustomSourceService.cs
+msgid "error.customSource.hostTaken"
+msgstr "{source} already covers this site."
+
+#. {id} is a custom source id, never translated.
+#: src/Maki.Api/Controllers/CustomSourcesController.cs
+msgid "error.customSource.notFound"
+msgstr "There is no custom source \"{id}\"."
+
+#: src/Maki.Api/Controllers/CustomSourcesController.cs
+msgid "error.customSource.idMismatch"
+msgstr "The id in the definition does not match the one being saved."
+
+#. {count} is how many series are linked to the source.
+#: src/Maki.Api/Controllers/CustomSourcesController.cs
+msgid "error.customSource.identityChange"
+msgstr "This change could give {count, plural, one {# linked series} other {# linked series}} new chapter rows that download again. Check the differences, then save again to confirm."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleNotInSearch"
+msgstr "The search results do not include the sample series."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleSeriesUnresolved"
+msgstr "The sample series URL does not match the series URL template."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.urlTemplateMismatch"
+msgstr "The chapter URL template does not rebuild the links the chapter list shows."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleChapterNotListed"
+msgstr "The sample chapter URL is not in the chapter list."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.notAnImage"
+msgstr "The first page did not come back as an image."
+
 #. {title} is the metadata provider's title for the series, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.alreadyInLibrary"

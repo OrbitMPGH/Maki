@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import {
-  ActionIcon, Alert, Button, Chip, Group, Kbd, Loader, Modal, MultiSelect, Popover, SegmentedControl, Select, Stack,
+  ActionIcon, Alert, Button, Chip, Group, Kbd, Loader, Menu, Modal, MultiSelect, Popover, SegmentedControl, Select, Stack,
   Switch, Tabs, Text, TextInput, Tooltip,
 } from '@mantine/core'
 import { useHotkeys, useMediaQuery } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
+import { useQueryClient } from '@tanstack/react-query'
 import {
-  IconArrowUp, IconChevronDown, IconChevronUp, IconFilter, IconGripVertical, IconLanguage, IconPuzzle,
-  IconSearch, IconShield,
+  IconArrowUp, IconChevronDown, IconChevronUp, IconDots, IconDownload, IconFileImport, IconFilter, IconGripVertical,
+  IconLanguage, IconPencil, IconPlus, IconPuzzle, IconSearch, IconShield, IconTool, IconTrash,
 } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -19,9 +20,13 @@ import { languageName } from '../../api/titles'
 import { useRefreshSuwayomiSources, useSetSuwayomiSourceLanguage, useSuwayomiConnection } from '../../api/suwayomi'
 import { SourceIcon, baseLanguage, sourceHost } from '../../sourceIcons'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { useAuth } from '../../auth/AuthProvider'
+import { errorText } from '../../api/errorText'
+import { fetchCustomSourceExport, useCustomSources, useDeleteCustomSource } from '../../api/customSources'
+import { CustomSourceEditor } from './CustomSourceEditor'
 
 type StateFilter = 'all' | 'on' | 'off'
-export type ProviderFilter = 'builtin' | 'suwayomi'
+export type ProviderFilter = 'builtin' | 'suwayomi' | 'custom'
 
 /** One row in the catalogue: a source, or every language variant of one Suwayomi site. */
 interface CatalogueEntry {
@@ -128,6 +133,22 @@ function SourceTags({ source, contentLabels, nameOfLanguage }: {
       )}
       {source.suwayomi?.needsSetup && (
         <span className="source-tag" data-tone="setup"><Trans>Several languages, pick one</Trans></span>
+      )}
+      {source.custom?.invalid && (
+        <Tooltip label={source.custom.problem} disabled={!source.custom.problem} events={{ hover: true, focus: true, touch: true }} withArrow multiline w={320}>
+          <span className="source-tag" data-tone="adult" tabIndex={0}><Trans>Not working</Trans></span>
+        </Tooltip>
+      )}
+      {source.custom && !source.custom.invalid && !source.custom.hasSearch && (
+        <Tooltip
+          label={<Trans>This site has no search, so Maki never finds series on it by itself. Link each series by pasting its URL.</Trans>}
+          events={{ hover: true, focus: true, touch: true }}
+          withArrow
+          multiline
+          w={280}
+        >
+          <span className="source-tag" data-tone="setup" tabIndex={0}><Trans>Link by URL</Trans></span>
+        </Tooltip>
       )}
       {source.kind === 'official' && <span className="source-tag" data-tone="official"><Trans>Official</Trans></span>}
       {source.kind === 'scanlator' && <span className="source-tag" data-tone="kind"><Trans>Scanlator</Trans></span>}
@@ -458,6 +479,16 @@ function SuwayomiBadge() {
   )
 }
 
+/** A source an admin defined. Sits beside the host, which for a custom source is the real site. */
+function CustomBadge() {
+  return (
+    <span className="source-provider" data-provider="custom">
+      <IconTool size={12} stroke={2.2} />
+      <Trans>Custom</Trans>
+    </span>
+  )
+}
+
 const REFRESH_WAIT_MS = 4000
 
 /**
@@ -500,6 +531,13 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
   const [setupFor, setSetupFor] = useState<string | null>(null)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
+  const queryClient = useQueryClient()
+  const { can } = useAuth()
+  const isAdmin = can('Admin')
+  const { data: customSources } = useCustomSources(opened && isAdmin)
+  const deleteCustom = useDeleteCustomSource()
+  const [editor, setEditor] = useState<{ id: string | null; text: string } | null>(null)
+  const [deleting, setDeleting] = useState<SourceInfo | null>(null)
 
   const suwayomiUrl = suwayomi?.url ?? null
   useEffect(() => {
@@ -566,6 +604,7 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
   }, [sources])
 
   const hasSuwayomi = (sources ?? []).some((s) => s.provider === 'suwayomi')
+  const hasCustom = (sources ?? []).some((s) => s.provider === 'custom')
   const sites = useMemo(() => {
     const bySite = new Map<string, SourceInfo[]>()
     for (const source of sources ?? []) {
@@ -600,7 +639,8 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
       if (!haystack.includes(needle)) return false
     }
     if (providerFilter === 'suwayomi' && source.provider !== 'suwayomi') return false
-    if (providerFilter === 'builtin' && source.provider === 'suwayomi') return false
+    if (providerFilter === 'custom' && source.provider !== 'custom') return false
+    if (providerFilter === 'builtin' && source.provider) return false
     if (adultOnly && source.rating !== 'adult') return false
     if (contentFilter.length && !contentFilter.some((c) => source.content?.includes(c))) return false
     if (languageFilter && !(source.supportedLanguages ?? []).some((code) => baseLanguage(code) === languageFilter)) {
@@ -677,6 +717,61 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
     setAdultOnly(false)
     setLanguageFilter(null)
     setProviderFilter(null)
+  }
+
+  function openEdit(source: SourceInfo) {
+    const id = source.custom?.id
+    if (!id) return
+    const entry = customSources?.find((e) => e.id === id)
+    setEditor({ id, text: JSON.stringify(entry?.definition ?? {}, null, 2) })
+  }
+
+  async function exportDefinition(source: SourceInfo) {
+    const id = source.custom?.id
+    if (!id) return
+    try {
+      const definition = await fetchCustomSourceExport(id)
+      const url = URL.createObjectURL(new Blob([JSON.stringify(definition, null, 2)], { type: 'application/json' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${id}.json`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      notifications.show({ message: errorText(error), color: 'var(--danger)' })
+    }
+  }
+
+  /**
+   * The server saved it at once and a new one is already on, at the bottom of its priority list.
+   * Both copies of the rail get it, so it doesn't read as an unsaved change here.
+   */
+  function customSaved(sourceName: string, created: boolean) {
+    if (created) {
+      const add = (current: string[]) => (current.includes(sourceName) ? current : [...current, sourceName])
+      setRail(add)
+      setInitialRail(add)
+    }
+    notifications.show({ message: now`Saved`, color: 'var(--ok)' })
+  }
+
+  function confirmDelete() {
+    const target = deleting
+    const id = target?.custom?.id
+    if (!target || !id) return
+    deleteCustom.mutate(id, {
+      onSuccess: () => {
+        const drop = (current: string[]) => current.filter((name) => name !== target.name)
+        setRail(drop)
+        setInitialRail(drop)
+        // Until the refetch lands, Save would still send the deleted name and the server would refuse it.
+        queryClient.setQueryData<SourceInfo[]>(['sources'], (current) => current?.filter((s) => s.name !== target.name))
+        setDeleting(null)
+      },
+      onError: (error) => notifications.show({ message: errorText(error), color: 'var(--danger)' }),
+    })
   }
 
   function close() {
@@ -773,10 +868,31 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
             {source.provider === 'suwayomi'
               ? <SuwayomiBadge />
               : <span className="source-row-host">{sourceHost(source.baseUrl)}</span>}
+            {source.provider === 'custom' && <CustomBadge />}
           </div>
           <SourceTags source={source} contentLabels={contentLabels} nameOfLanguage={nameOfLanguage} />
         </div>
         <Group gap={8} wrap="nowrap">
+          {source.custom && isAdmin && (
+            <Menu position="bottom-end" withinPortal>
+              <Menu.Target>
+                <ActionIcon variant="subtle" color="var(--neutral)" aria-label={t`More for ${label}`}>
+                  <IconDots size={16} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item leftSection={<IconPencil size={14} />} onClick={() => openEdit(source)}>
+                  <Trans>Edit</Trans>
+                </Menu.Item>
+                <Menu.Item leftSection={<IconDownload size={14} />} onClick={() => void exportDefinition(source)}>
+                  <Trans>Export</Trans>
+                </Menu.Item>
+                <Menu.Item leftSection={<IconTrash size={14} />} color="var(--danger)" onClick={() => setDeleting(source)}>
+                  <Trans>Delete</Trans>
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          )}
           {source.suwayomi?.mixedLanguage && (
             <SuwayomiLanguageSetup
               source={source}
@@ -863,7 +979,7 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
                 <Trans>18+ only</Trans>
               </Chip>
             </div>
-            {hasSuwayomi && (
+            {(hasSuwayomi || hasCustom) && (
               <div>
                 <div className="source-filter-label"><Trans>Provider</Trans></div>
                 <Group gap={6}>
@@ -874,13 +990,24 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
                   >
                     <Trans>Built in</Trans>
                   </Chip>
-                  <Chip
-                    size="xs" variant="light"
-                    checked={providerFilter === 'suwayomi'}
-                    onChange={(checked) => setProviderFilter(checked ? 'suwayomi' : null)}
-                  >
-                    Suwayomi
-                  </Chip>
+                  {hasSuwayomi && (
+                    <Chip
+                      size="xs" variant="light"
+                      checked={providerFilter === 'suwayomi'}
+                      onChange={(checked) => setProviderFilter(checked ? 'suwayomi' : null)}
+                    >
+                      Suwayomi
+                    </Chip>
+                  )}
+                  {hasCustom && (
+                    <Chip
+                      size="xs" variant="light"
+                      checked={providerFilter === 'custom'}
+                      onChange={(checked) => setProviderFilter(checked ? 'custom' : null)}
+                    >
+                      <Trans>Custom</Trans>
+                    </Chip>
+                  )}
                 </Group>
               </div>
             )}
@@ -911,6 +1038,20 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
             </Group>
           </Popover.Dropdown>
         </Popover>
+        {isAdmin && (
+          <Menu position="bottom-end" withinPortal>
+            <Menu.Target>
+              <Button variant="default" leftSection={<IconPlus size={14} />}>
+                <Trans>Add source</Trans>
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item leftSection={<IconFileImport size={14} />} onClick={() => setEditor({ id: null, text: '' })}>
+                <Trans>Import definition</Trans>
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        )}
       </div>
       <div className="source-manager-list">
         {refresh.data && !refresh.data.reachable && (
@@ -1027,7 +1168,46 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
     >
       <Trans>Your source changes have not been saved. Closing now discards them.</Trans>
     </ConfirmDialog>
+    {isAdmin && (
+      <CustomSourceEditor
+        opened={editor !== null}
+        onClose={() => setEditor(null)}
+        editingId={editor?.id ?? null}
+        initialText={editor?.text ?? ''}
+        onSaved={customSaved}
+      />
+    )}
+    <ConfirmDialog
+      opened={deleting !== null}
+      onClose={() => setDeleting(null)}
+      title={<Trans>Delete custom source?</Trans>}
+      confirmLabel={<Trans>Delete</Trans>}
+      onConfirm={confirmDelete}
+      loading={deleteCustom.isPending}
+    >
+      <DeleteCustomSourceText
+        name={deleting?.displayName ?? ''}
+        linked={customSources?.find((e) => e.id === deleting?.custom?.id)?.linkedSeries ?? 0}
+      />
+    </ConfirmDialog>
     </>
+  )
+}
+
+function DeleteCustomSourceText({ name, linked }: { name: string; linked: number }) {
+  return (
+    <Stack gap={6}>
+      <span><Trans>Maki stops reading {name}. Export it first if you may want it back.</Trans></span>
+      {linked > 0 && (
+        <span>
+          <Plural
+            value={linked}
+            one="# series stays linked to it and stops updating from it. Importing the same definition again picks the link back up."
+            other="# series stay linked to it and stop updating from it. Importing the same definition again picks the links back up."
+          />
+        </span>
+      )}
+    </Stack>
   )
 }
 

@@ -1007,6 +1007,18 @@ msgstr "{count, plural, other {接下来 # 个未读章节}}"
 msgid "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
 msgstr "{count, plural, other {要撤销 # 个文件夹的导入吗？}}"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "{count} chapters"
+msgstr ""
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "{count} pages"
+msgstr ""
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "{count} results"
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {Posters: # files, {coverBytesLabel}}}"
@@ -1318,6 +1330,10 @@ msgstr "距离等级 {nextLevel} 还需 {intoLevel} / {levelSpan} XP"
 msgid "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
 msgstr ""
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "{kb} KB"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
@@ -1422,6 +1438,10 @@ msgstr "{left, plural, other {还剩 # 个}} · 约 {eta}"
 #, fuzzy
 msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · 点击收起"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{linked, plural, one {# series stays linked to it and stops updating from it. Importing the same definition again picks the link back up.} other {# series stay linked to it and stop updating from it. Importing the same definition again picks the links back up.}}"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -3187,6 +3207,10 @@ msgstr "添加系列"
 msgid "Add some series to your library first and Maki will suggest more like them."
 msgstr "先将一些系列添加到资料库，Maki 就会推荐更多相似内容。"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Add source"
+msgstr ""
+
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy
 msgid "Add the series to your library, or request it, to keep reading."
@@ -4565,6 +4589,7 @@ msgstr "无法使用已保存的信息登录。"
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
@@ -5011,10 +5036,18 @@ msgstr "{label} 的章节语言"
 msgid "Chapter languages"
 msgstr "章节语言"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Chapter list"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Chapter number and volume also take zero-padding: <0>{paddingExampleToken}</0> renders 24 as 024."
 msgstr "章节编号和卷号也支持补零：<0>{paddingExampleToken}</0> 会将 24 显示为 024。"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Chapter pages"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -5418,6 +5451,7 @@ msgstr "客户端密钥"
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/theme-context.tsx
 #, fuzzy
@@ -6411,6 +6445,10 @@ msgstr "当前：{tierLabel}，分数 {score}"
 msgid "Currently popular"
 msgstr "当前热门"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Custom"
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
 msgid "Custom rail"
@@ -6565,6 +6603,10 @@ msgstr "默认来源顺序已更新"
 msgid "Defining"
 msgstr "定义中"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Definition"
+msgstr ""
+
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/rails/DeleteRailDialog.tsx
 #: src/components/series/ArchivedSeriesCard.tsx
@@ -6572,6 +6614,7 @@ msgstr "定义中"
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Delete"
@@ -6613,6 +6656,10 @@ msgstr "删除备份"
 #, fuzzy
 msgid "Delete connection"
 msgstr "删除连接"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Delete custom source?"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -7309,6 +7356,7 @@ msgstr "Ecchi"
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
 #: src/components/settings/UsersSection.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Edit"
 msgstr "编辑"
@@ -7322,6 +7370,10 @@ msgstr "编辑 {editName}"
 #, fuzzy
 msgid "Edit connection"
 msgstr "编辑连接"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Edit custom source"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -7593,6 +7645,10 @@ msgstr "每个章节都已关联到当前可用的最佳文件。"
 msgid "Every chapter is already on the best file available. Nothing to change."
 msgstr "每个章节都已关联到当前可用的最佳文件。无需更改。"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Every check passed"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Every day"
@@ -7833,6 +7889,10 @@ msgstr ""
 #, fuzzy
 msgid "expected to link as <0/>"
 msgstr "预期关联为 <0/>"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Export"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
@@ -8298,6 +8358,10 @@ msgstr "你能看到的第一个文件夹"
 #, fuzzy
 msgid "First page"
 msgstr "第一页"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "First page image"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -9305,6 +9369,10 @@ msgstr "导入 {folderName}"
 msgid "Import {title}"
 msgstr "导入 {title}"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Import a custom source"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -9325,6 +9393,10 @@ msgstr "导入归档"
 #, fuzzy
 msgid "Import completed"
 msgstr "导入完成"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Import definition"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -10437,6 +10509,10 @@ msgstr "关联来源并刷新。"
 msgid "Link by hand"
 msgstr "手动关联"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Link by URL"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "Link chapters"
@@ -10775,6 +10851,10 @@ msgstr "Maki 已将文件夹与章节列表进行比对。勾选要信任的文�
 msgid "Maki could not encode this page. Try another page or another format."
 msgstr ""
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Maki could not list the sample series under both versions to compare them."
+msgstr ""
+
 #: src/components/pageconversion/CompareStep.tsx
 msgid "Maki found no suitable pages to suggest. Pick one from your library."
 msgstr ""
@@ -10797,6 +10877,10 @@ msgstr "Maki 支持你的语言"
 #: src/components/series/ArchiveSeriesDialog.tsx
 msgctxt "series"
 msgid "Maki stops checking sources for new chapters and moves it to Archived. Your reading history, rating and chapters stay. You can restore it any time."
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Maki stops reading {name}. Export it first if you may want it back."
 msgstr ""
 
 #: src/components/QueuePause.tsx
@@ -11432,6 +11516,10 @@ msgstr "更多下载选项"
 #, fuzzy
 msgid "More feedback options"
 msgstr "更多反馈选项"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "More for {label}"
+msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
@@ -12880,6 +12968,10 @@ msgstr "尚未使用"
 msgid "Not verified yet. Replacing or deleting this file needs a verify first."
 msgstr ""
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Not working"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "not yet synced"
@@ -13634,6 +13726,10 @@ msgstr "打开「发现」"
 msgid "Open entry"
 msgstr "打开条目"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Open file"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Open file findings"
@@ -13875,6 +13971,10 @@ msgstr ""
 msgid "Page gap"
 msgstr "页面间距"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Page images come from different hosts."
+msgstr ""
+
 #: src/App.tsx
 #, fuzzy
 msgid "Page not found"
@@ -14022,6 +14122,10 @@ msgstr "密码、修改密码、会话、退出登录、双重验证、2fa、tot
 #, fuzzy
 msgid "Passwords do not match"
 msgstr "密码不匹配"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Paste a definition or open a .json file. Test it against the site, then save. A definition only describes where Maki reads the site; nothing in it runs."
+msgstr ""
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -16627,6 +16731,7 @@ msgstr ""
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/SettingsSection.tsx
 #, fuzzy
@@ -16661,6 +16766,7 @@ msgid "Save and start"
 msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #, fuzzy
 msgid "Save anyway"
 msgstr "仍然保存"
@@ -16829,6 +16935,10 @@ msgstr "正在保存"
 #, fuzzy
 msgid "Saving {done}/{total}"
 msgstr "正在保存 {done}/{total}"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Saving a new source needs a test that passes."
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -17092,6 +17202,7 @@ msgstr "滚动速度 · {chaptersLeft} · {basis}"
 #: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #, fuzzy
 msgid "Search"
 msgstr "搜索"
@@ -17554,6 +17665,7 @@ msgstr "系列已移动"
 msgid "Series not found"
 msgstr "未找到系列"
 
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -18193,6 +18305,10 @@ msgstr "跳到内容"
 msgid "skipped"
 msgstr "已跳过"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Skipped"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Skipped ({skippedFilterCount})"
 msgstr ""
@@ -18266,6 +18382,10 @@ msgstr "磁盘上的快照：{snapshotSize}，刷新于 {refreshedAtLabel}"
 #, fuzzy
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "磁盘上的快照：{snapshotSize}，刷新时间未知"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Some checks failed"
+msgstr ""
 
 #: src/components/series/restoreToast.tsx
 msgid "Some removed chapters were not queued: {queueError}"
@@ -18937,6 +19057,7 @@ msgstr "无论默认设置如何，都会通知你每个新章节。"
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Test"
@@ -19113,6 +19234,10 @@ msgstr ""
 msgid "The days you read, your streak, chapters and time read, as a card in the hero."
 msgstr "阅读的天数、连续记录、章节数和阅读时长，显示在主视觉中的一张卡片里。"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The definition has problems"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "The download client reports an error on this torrent"
@@ -19212,6 +19337,10 @@ msgstr "文件夹和所有文件已经符合当前命名格式。"
 msgid "The full breakdown is waiting behind this slide."
 msgstr "完整明细就在此幻灯片之后。"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The id of a saved source can't change. Import it as a new source instead."
+msgstr ""
+
 #: src/api/ssoErrors.ts
 #, fuzzy
 msgid "The identity provider rejected the sign-in request. Check the OIDC client configuration."
@@ -19221,6 +19350,10 @@ msgstr "身份提供方拒绝了此登录请求。请检查 OIDC 客户端配置
 #, fuzzy
 msgid "The identity provider returned no subject"
 msgstr "身份提供方未返回主体（subject）"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The language changes."
+msgstr ""
 
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
@@ -19367,6 +19500,10 @@ msgstr "这里保留与统计页面相同的计数，让上面的分组有可供
 msgid "The sample download failed"
 msgstr "样本下载失败"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The sample series lists different chapter numbers or ids."
+msgstr ""
+
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
 msgid "The saved chapters wouldn't open"
@@ -19451,6 +19588,10 @@ msgstr "登录未完成，请重试。"
 #, fuzzy
 msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr "如果可以从互联网访问 Maki，这是最重要的一项改进。"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The site's address changes."
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -19697,6 +19838,10 @@ msgstr "此文件已经不在磁盘上，因此不会删除任何内容。它会
 msgid "This files a request for every matching entry from your {label} list, up to the per-run limit."
 msgstr "这会为你在{label}列表中每个匹配的条目提交申请，最多达到每次运行上限。"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "This is not valid JSON."
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "This link is missing the creator's name."
@@ -19821,6 +19966,10 @@ msgstr "此系列在最近一周内已搜索过"
 #, fuzzy
 msgid "This series' profile doesn't aim for volume releases"
 msgstr "此系列的配置不以卷资源为目标"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "This site has no search, so Maki never finds series on it by itself. Link each series by pasting its URL."
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy

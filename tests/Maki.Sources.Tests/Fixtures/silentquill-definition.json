@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "silentquill",
+  "name": "SilentQuill",
+  "baseUrl": "https://silentquill.net",
+  "language": "en",
+  "kind": "scanlator",
+  "content": ["manga"],
+  "rating": "general",
+  "minIntervalMs": 1000,
+
+  "search": {
+    "url": "/search/?q={query}",
+    "item": { "css": "a.block[href^='/series/']" },
+    "id": { "attr": "href", "regex": "^/series/([^/]+)/$" },
+    "title": { "css": "h3", "attr": "title" },
+    "cover": { "css": "img", "attr": "src" }
+  },
+
+  "series": {
+    "url": "/series/{seriesId}/",
+    "title": { "css": "h1" },
+    "cover": { "css": "meta[property='og:image']", "attr": "content" },
+    "description": { "css": "meta[name='description']", "attr": "content" }
+  },
+
+  "chapters": {
+    "item": { "css": "div.columns-1 a[href]" },
+    "id": { "attr": "href", "regex": "^/([^/]+)/$" },
+    "url": "/{chapterId}/",
+    "number": { "css": "span.truncate" },
+    "date": { "css": "span.text-right", "format": "relative" }
+  },
+
+  "pages": {
+    "list": { "regex": "/img/p/\\d+-[A-Za-z0-9_-]+" }
+  },
+
+  "sample": {
+    "seriesUrl": "https://silentquill.net/series/thus-the-seasons-learn-of-blue/",
+    "chapterUrl": "https://silentquill.net/thus-the-seasons-learn-of-blue-chapter-2/",
+    "query": "Thus, the Seasons Learn of Blue"
+  }
+}

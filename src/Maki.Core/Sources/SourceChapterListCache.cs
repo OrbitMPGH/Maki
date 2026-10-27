@@ -88,6 +88,22 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
         ISource source, string sourceSeriesId, string? languageFilter, IReadOnlyList<SourceChapter> chapters) =>
         Fill(_entries.GetOrAdd(Key(source, sourceSeriesId, languageFilter), _ => new Entry(time)), chapters);
 
+    /// <summary>
+    /// Forgets every listing of one source, for a source whose definition just changed: a listing the
+    /// old one made could carry chapter ids the new one no longer produces.
+    /// </summary>
+    public void EvictSource(string sourceName)
+    {
+        var prefix = sourceName + " ";
+        foreach (var key in _entries.Keys)
+        {
+            if (key.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                _entries.TryRemove(key, out _);
+            }
+        }
+    }
+
     private static string Key(ISource source, string sourceSeriesId, string? languageFilter) =>
         $"{source.Name} {sourceSeriesId} {languageFilter ?? string.Empty}";
 

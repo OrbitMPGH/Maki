@@ -49,6 +49,7 @@ import type { RecycleBin } from '../../../src/api/recycleBin'
 import type { PageConversionStatus } from '../../../src/api/pageConversion'
 import type { UpscaleCatalogEntry, UpscalingState } from '../../../src/api/upscaling'
 import type { SuwayomiConnection } from '../../../src/api/suwayomi'
+import type { CustomSourceEntry, CustomSourceTestReport } from '../../../src/api/customSources'
 import type { FormatScoreDto, QualityFormatDto, UpgradeProfileDto, UpgradeSettings } from '../../../src/api/upgrades'
 import type { ReaderPrefs } from '../../../src/pages/reader/prefs'
 import { adminMe, daysAgo, hoursAgo, minutesAgo, readerMe, daysAhead } from '../api'
@@ -256,6 +257,61 @@ export const sources: SourceInfo[] = [
     },
   },
 ]
+
+/** A custom source an admin defined, and one whose stored definition this build can't read. */
+export const customSourceInfos: SourceInfo[] = [
+  {
+    ...sourceBase,
+    name: 'custom-quietpen',
+    displayName: 'Quiet Pen',
+    baseUrl: 'https://quietpen.example',
+    provider: 'custom',
+    supportedLanguages: ['en'],
+    kind: 'scanlator',
+    content: ['manga'],
+    rating: 'general',
+    defaultEnabled: true,
+    custom: { id: 'quietpen', hasSearch: false, invalid: false, problem: null },
+  },
+  {
+    ...sourceBase,
+    name: 'custom-later',
+    displayName: 'Later Site',
+    baseUrl: 'https://later.example',
+    provider: 'custom',
+    supportedLanguages: ['en'],
+    kind: 'scanlator',
+    defaultEnabled: true,
+    custom: { id: 'later', hasSearch: false, invalid: true, problem: 'error.customSource.schemaUnsupported' },
+  },
+]
+
+const quietPenDefinition = {
+  schema: 1,
+  id: 'quietpen',
+  name: 'Quiet Pen',
+  baseUrl: 'https://quietpen.example',
+  series: { url: '/series/{seriesId}/' },
+  chapters: { item: { css: 'ul.chapters a[href]' }, id: { attr: 'href', regex: '^/([^/]+)/$' }, url: '/{chapterId}/' },
+  pages: { list: { css: 'div.reader img' } },
+  sample: { seriesUrl: 'https://quietpen.example/series/blue/', chapterUrl: 'https://quietpen.example/blue-chapter-2/' },
+}
+
+export const customSourcesList: CustomSourceEntry[] = [
+  { id: 'quietpen', sourceName: 'custom-quietpen', name: 'Quiet Pen', valid: true, problem: null, linkedSeries: 1, definition: quietPenDefinition },
+  { id: 'later', sourceName: 'custom-later', name: 'Later Site', valid: false, problem: 'schema 9', linkedSeries: 0, definition: { schema: 9, id: 'later', name: 'Later Site' } },
+]
+
+export const customSourceTestReport: CustomSourceTestReport = {
+  passed: true,
+  steps: [
+    { name: 'search', status: 'skipped', error: null, detail: null },
+    { name: 'series', status: 'ok', error: null, detail: { title: 'Blue Hour' } },
+    { name: 'chapters', status: 'ok', error: null, detail: { count: 2 } },
+    { name: 'pages', status: 'ok', error: null, detail: { count: 40 } },
+    { name: 'image', status: 'ok', error: null, detail: { bytes: 289582, format: 'webp' } },
+  ],
+}
 
 export const sourcePriority: SourcePrioritySettings = {
   order: ['mangadex', 'comick', 'asurascans', 'mangaplus', 'weebcentral', 'suwayomi-1001', 'suwayomi-1002', 'suwayomi-2001'],

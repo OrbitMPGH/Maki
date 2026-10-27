@@ -11256,6 +11256,10 @@ tr:hover .mono-value-copy {
   background: var(--watched-soft);
   color: var(--watched);
 }
+.source-provider[data-provider='custom'] {
+  background: var(--info-soft);
+  color: var(--info);
+}
 .source-tags {
   display: flex;
   flex-wrap: wrap;

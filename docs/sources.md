@@ -11,6 +11,15 @@ are installed and configured in Suwayomi itself. Maki reads search results, chap
 pages through Suwayomi's API, so a source that works in Suwayomi works here. Without a Suwayomi URL
 set, nothing changes. Suwayomi v2.1 or later is supported, v2.2 or later for its UI login mode.
 
+A site that isn't built in can be added as a **custom source**: a JSON definition that tells Maki
+where the site's search, chapter list and page images are (CSS selectors, regular expressions or a
+path into JSON the page embeds). Admins add one in **Manage sources** with **Add source → Import
+definition**, test it against the site and save it; it then shows up marked Custom and works like
+any other source. Nothing in a definition runs as code, so sites that scramble their pages or need
+signed API calls still need a built-in source. A site with no search can still be added: link each
+series to it by pasting the series URL. The format is described in
+[custom-sources-plan.md](custom-sources-plan.md).
+
 | Source | Notes |
 |---|---|
 | MangaDex | Official API, language filter |

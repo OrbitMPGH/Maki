@@ -1007,6 +1007,18 @@ msgstr "{count, plural, one {Sonraki okunmamış bölüm} other {Sonraki # okunm
 msgid "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
 msgstr "{count, plural, one {# klasörün içe aktarması geri alınsın mı?} other {# klasörün içe aktarması geri alınsın mı?}}"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "{count} chapters"
+msgstr ""
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "{count} pages"
+msgstr ""
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "{count} results"
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {Posters: # files, {coverBytesLabel}}}"
@@ -1318,6 +1330,10 @@ msgstr "Seviye {nextLevel} için {intoLevel} / {levelSpan} XP"
 msgid "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
 msgstr ""
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "{kb} KB"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
@@ -1422,6 +1438,10 @@ msgstr "{left, plural, one {# kaldı} other {# kaldı}} · ~{eta}"
 #, fuzzy
 msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · daraltmak için tıklayın"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{linked, plural, one {# series stays linked to it and stops updating from it. Importing the same definition again picks the link back up.} other {# series stay linked to it and stop updating from it. Importing the same definition again picks the links back up.}}"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -3187,6 +3207,10 @@ msgstr "Seri ekle"
 msgid "Add some series to your library first and Maki will suggest more like them."
 msgstr "Önce kitaplığınıza birkaç seri ekleyin, Maki de onlara benzer olanları önersin."
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Add source"
+msgstr ""
+
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy
 msgid "Add the series to your library, or request it, to keep reading."
@@ -4565,6 +4589,7 @@ msgstr "Kaydedilmiş bilgilerle oturum açılamıyor."
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
@@ -5011,10 +5036,18 @@ msgstr "{label} için bölüm dili"
 msgid "Chapter languages"
 msgstr "Bölüm dilleri"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Chapter list"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Chapter number and volume also take zero-padding: <0>{paddingExampleToken}</0> renders 24 as 024."
 msgstr "Bölüm numarası ve cilt de sıfır doldurma alabilir: <0>{paddingExampleToken}</0>, 24'ü 024 olarak görüntüler."
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Chapter pages"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -5418,6 +5451,7 @@ msgstr "İstemci gizli anahtarı"
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/theme-context.tsx
 #, fuzzy
@@ -6411,6 +6445,10 @@ msgstr "Mevcut: {tierLabel}, puan {score}"
 msgid "Currently popular"
 msgstr "Şu anda popüler"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Custom"
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
 msgid "Custom rail"
@@ -6565,6 +6603,10 @@ msgstr "Varsayılan kaynak sıralaması güncellendi"
 msgid "Defining"
 msgstr "Belirleyici"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Definition"
+msgstr ""
+
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/rails/DeleteRailDialog.tsx
 #: src/components/series/ArchivedSeriesCard.tsx
@@ -6572,6 +6614,7 @@ msgstr "Belirleyici"
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Delete"
@@ -6613,6 +6656,10 @@ msgstr "Yedeği sil"
 #, fuzzy
 msgid "Delete connection"
 msgstr "Bağlantıyı sil"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Delete custom source?"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -7309,6 +7356,7 @@ msgstr "Ecchi"
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
 #: src/components/settings/UsersSection.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Edit"
 msgstr "Düzenle"
@@ -7322,6 +7370,10 @@ msgstr "{editName} kullanıcısını düzenle"
 #, fuzzy
 msgid "Edit connection"
 msgstr "Bağlantıyı düzenle"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Edit custom source"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -7593,6 +7645,10 @@ msgstr "Her bölüm zaten kullanılabilecek en iyi dosyayla eşleşmiş."
 msgid "Every chapter is already on the best file available. Nothing to change."
 msgstr "Her bölüm zaten kullanılabilecek en iyi dosyayla eşleşmiş. Değiştirilecek bir şey yok."
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Every check passed"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Every day"
@@ -7833,6 +7889,10 @@ msgstr ""
 #, fuzzy
 msgid "expected to link as <0/>"
 msgstr "<0/> olarak bağlanması bekleniyor"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Export"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
@@ -8298,6 +8358,10 @@ msgstr "Görebildiğin ilk klasör"
 #, fuzzy
 msgid "First page"
 msgstr "İlk sayfa"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "First page image"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -9305,6 +9369,10 @@ msgstr "{folderName} içe aktar"
 msgid "Import {title}"
 msgstr "{title} içe aktar"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Import a custom source"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -9325,6 +9393,10 @@ msgstr "Arşivi içe aktar"
 #, fuzzy
 msgid "Import completed"
 msgstr "İçe aktarma tamamlandı"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Import definition"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -10437,6 +10509,10 @@ msgstr "Bir kaynak bağlayın ve yenileyin."
 msgid "Link by hand"
 msgstr "Elle bağla"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Link by URL"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "Link chapters"
@@ -10775,6 +10851,10 @@ msgstr "Maki klasörü bölüm listesiyle karşılaştırdı. Güvenilecekleri i
 msgid "Maki could not encode this page. Try another page or another format."
 msgstr ""
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Maki could not list the sample series under both versions to compare them."
+msgstr ""
+
 #: src/components/pageconversion/CompareStep.tsx
 msgid "Maki found no suitable pages to suggest. Pick one from your library."
 msgstr ""
@@ -10797,6 +10877,10 @@ msgstr "Maki sizin dilinizi konuşuyor"
 #: src/components/series/ArchiveSeriesDialog.tsx
 msgctxt "series"
 msgid "Maki stops checking sources for new chapters and moves it to Archived. Your reading history, rating and chapters stay. You can restore it any time."
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Maki stops reading {name}. Export it first if you may want it back."
 msgstr ""
 
 #: src/components/QueuePause.tsx
@@ -11432,6 +11516,10 @@ msgstr "Daha fazla indirme seçeneği"
 #, fuzzy
 msgid "More feedback options"
 msgstr "Daha fazla geri bildirim seçeneği"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "More for {label}"
+msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
@@ -12880,6 +12968,10 @@ msgstr "Henüz kullanılmadı"
 msgid "Not verified yet. Replacing or deleting this file needs a verify first."
 msgstr ""
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Not working"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "not yet synced"
@@ -13634,6 +13726,10 @@ msgstr "Keşfet'i aç"
 msgid "Open entry"
 msgstr "Kaydı aç"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Open file"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Open file findings"
@@ -13875,6 +13971,10 @@ msgstr ""
 msgid "Page gap"
 msgstr "Sayfa boşluğu"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Page images come from different hosts."
+msgstr ""
+
 #: src/App.tsx
 #, fuzzy
 msgid "Page not found"
@@ -14022,6 +14122,10 @@ msgstr "parola, parolayı değiştir, oturumlar, oturumu kapat, çıkış yap, i
 #, fuzzy
 msgid "Passwords do not match"
 msgstr "Parolalar eşleşmiyor"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Paste a definition or open a .json file. Test it against the site, then save. A definition only describes where Maki reads the site; nothing in it runs."
+msgstr ""
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -16627,6 +16731,7 @@ msgstr ""
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/SettingsSection.tsx
 #, fuzzy
@@ -16661,6 +16766,7 @@ msgid "Save and start"
 msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #, fuzzy
 msgid "Save anyway"
 msgstr "Yine de kaydet"
@@ -16829,6 +16935,10 @@ msgstr "Kaydediliyor"
 #, fuzzy
 msgid "Saving {done}/{total}"
 msgstr "Kaydediliyor {done}/{total}"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Saving a new source needs a test that passes."
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -17092,6 +17202,7 @@ msgstr "Kaydırmalı tempo · {chaptersLeft} · {basis}"
 #: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #, fuzzy
 msgid "Search"
 msgstr "Ara"
@@ -17554,6 +17665,7 @@ msgstr "Seri taşındı"
 msgid "Series not found"
 msgstr "Seri bulunamadı"
 
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -18193,6 +18305,10 @@ msgstr "İçeriğe geç"
 msgid "skipped"
 msgstr "atlandı"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Skipped"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Skipped ({skippedFilterCount})"
 msgstr ""
@@ -18266,6 +18382,10 @@ msgstr "Diskteki anlık görüntü: {snapshotSize}, yenilenme {refreshedAtLabel}
 #, fuzzy
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "Diskteki anlık görüntü: {snapshotSize}, bilinmeyen bir zamanda yenilendi"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Some checks failed"
+msgstr ""
 
 #: src/components/series/restoreToast.tsx
 msgid "Some removed chapters were not queued: {queueError}"
@@ -18937,6 +19057,7 @@ msgstr "Varsayılanınız ne olursa olsun her yeni bölüm hakkında bilgi verir
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Test"
@@ -19113,6 +19234,10 @@ msgstr ""
 msgid "The days you read, your streak, chapters and time read, as a card in the hero."
 msgstr "Okuduğunuz günler, okuma zinciriniz, bölümler ve okuma süresi; vitrinde bir kart olarak."
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The definition has problems"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "The download client reports an error on this torrent"
@@ -19212,6 +19337,10 @@ msgstr "Klasör ve her dosya zaten mevcut adlandırma biçimleriyle eşleşiyor.
 msgid "The full breakdown is waiting behind this slide."
 msgstr "Tam döküm bu slaydın arkasında bekliyor."
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The id of a saved source can't change. Import it as a new source instead."
+msgstr ""
+
 #: src/api/ssoErrors.ts
 #, fuzzy
 msgid "The identity provider rejected the sign-in request. Check the OIDC client configuration."
@@ -19221,6 +19350,10 @@ msgstr "Kimlik sağlayıcısı oturum açma isteğini reddetti. OIDC istemci yap
 #, fuzzy
 msgid "The identity provider returned no subject"
 msgstr "Kimlik sağlayıcısı bir konu döndürmedi"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The language changes."
+msgstr ""
 
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
@@ -19367,6 +19500,10 @@ msgstr "İstatistikler sayfasının gösterdiği aynı sayılar, yukarıdaki gru
 msgid "The sample download failed"
 msgstr "Örnek indirme başarısız oldu"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The sample series lists different chapter numbers or ids."
+msgstr ""
+
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
 msgid "The saved chapters wouldn't open"
@@ -19451,6 +19588,10 @@ msgstr "Oturum açma tamamlanmadı. Lütfen yeniden deneyin."
 #, fuzzy
 msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr "Maki internetten erişilebilirse yapılabilecek en büyük tek iyileştirme."
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The site's address changes."
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -19697,6 +19838,10 @@ msgstr "Bu dosya zaten diskten kalkmış, bu yüzden hiçbir şey silinmiyor. Bu
 msgid "This files a request for every matching entry from your {label} list, up to the per-run limit."
 msgstr "Bu, {label} listendeki her eşleşen kayıt için çalıştırma başına sınıra kadar istek oluşturur."
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "This is not valid JSON."
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "This link is missing the creator's name."
@@ -19821,6 +19966,10 @@ msgstr "Bu seri son bir hafta içinde arandı"
 #, fuzzy
 msgid "This series' profile doesn't aim for volume releases"
 msgstr "Bu serinin profili cilt sürümlerini hedeflemiyor"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "This site has no search, so Maki never finds series on it by itself. Link each series by pasting its URL."
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy

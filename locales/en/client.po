@@ -852,6 +852,18 @@ msgstr "{count, plural, one {The next unread chapter} other {The next # unread c
 msgid "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
 msgstr "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "{count} chapters"
+msgstr "{count} chapters"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "{count} pages"
+msgstr "{count} pages"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "{count} results"
+msgstr "{count} results"
+
 #: src/pages/settings/SystemCards.tsx
 msgid "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {Posters: # files, {coverBytesLabel}}}"
 msgstr "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {Posters: # files, {coverBytesLabel}}}"
@@ -1106,6 +1118,10 @@ msgstr "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgid "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
 msgstr "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "{kb} KB"
+msgstr "{kb} KB"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
 msgstr "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
@@ -1190,6 +1206,10 @@ msgstr "{left, plural, one {# left} other {# left}} · ~{eta}"
 #: src/pages/SeriesDetailPage.tsx
 msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · click to collapse"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{linked, plural, one {# series stays linked to it and stops updating from it. Importing the same definition again picks the link back up.} other {# series stay linked to it and stop updating from it. Importing the same definition again picks the links back up.}}"
+msgstr "{linked, plural, one {# series stays linked to it and stops updating from it. Importing the same definition again picks the link back up.} other {# series stay linked to it and stop updating from it. Importing the same definition again picks the links back up.}}"
 
 #: src/pages/ImportPage.tsx
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
@@ -2634,6 +2654,10 @@ msgstr "Add series"
 msgid "Add some series to your library first and Maki will suggest more like them."
 msgstr "Add some series to your library first and Maki will suggest more like them."
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Add source"
+msgstr "Add source"
+
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Add the series to your library, or request it, to keep reading."
 msgstr "Add the series to your library, or request it, to keep reading."
@@ -3788,6 +3812,7 @@ msgstr "Can't sign in with the saved details."
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
@@ -4152,9 +4177,17 @@ msgstr "Chapter language for {label}"
 msgid "Chapter languages"
 msgstr "Chapter languages"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Chapter list"
+msgstr "Chapter list"
+
 #: src/components/NamingTokenModal.tsx
 msgid "Chapter number and volume also take zero-padding: <0>{paddingExampleToken}</0> renders 24 as 024."
 msgstr "Chapter number and volume also take zero-padding: <0>{paddingExampleToken}</0> renders 24 as 024."
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Chapter pages"
+msgstr "Chapter pages"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Chapter snapshots refreshed"
@@ -4488,6 +4521,7 @@ msgstr "Client secret"
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/theme-context.tsx
 msgid "Close"
@@ -5314,6 +5348,10 @@ msgstr "Current: {tierLabel}, score {score}"
 msgid "Currently popular"
 msgstr "Currently popular"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Custom"
+msgstr "Custom"
+
 #: src/components/layout/PageLayoutEditor.tsx
 msgid "Custom rail"
 msgstr "Custom rail"
@@ -5440,6 +5478,10 @@ msgstr "Default source order updated"
 msgid "Defining"
 msgstr "Defining"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Definition"
+msgstr "Definition"
+
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/rails/DeleteRailDialog.tsx
 #: src/components/series/ArchivedSeriesCard.tsx
@@ -5447,6 +5489,7 @@ msgstr "Defining"
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Delete"
 msgstr "Delete"
@@ -5480,6 +5523,10 @@ msgstr "Delete backup"
 #: src/components/NotificationsSection.tsx
 msgid "Delete connection"
 msgstr "Delete connection"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Delete custom source?"
+msgstr "Delete custom source?"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Delete file"
@@ -6056,6 +6103,7 @@ msgstr "Ecchi"
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
 #: src/components/settings/UsersSection.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 msgid "Edit"
 msgstr "Edit"
 
@@ -6066,6 +6114,10 @@ msgstr "Edit {editName}"
 #: src/components/NotificationsSection.tsx
 msgid "Edit connection"
 msgstr "Edit connection"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Edit custom source"
+msgstr "Edit custom source"
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Edit Discover layout"
@@ -6291,6 +6343,10 @@ msgstr "Every chapter is already on the best file available."
 msgid "Every chapter is already on the best file available. Nothing to change."
 msgstr "Every chapter is already on the best file available. Nothing to change."
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Every check passed"
+msgstr "Every check passed"
+
 #: src/components/settings/ProgressSection.tsx
 msgid "Every day"
 msgstr "Every day"
@@ -6486,6 +6542,10 @@ msgstr "Expected"
 #: src/components/import/ImportPlanModal.tsx
 msgid "expected to link as <0/>"
 msgstr "expected to link as <0/>"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Export"
+msgstr "Export"
 
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
@@ -6872,6 +6932,10 @@ msgstr "First folder you can see"
 #: src/theme-context.tsx
 msgid "First page"
 msgstr "First page"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "First page image"
+msgstr "First page image"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Fit"
@@ -7708,6 +7772,10 @@ msgstr "Import {folderName}"
 msgid "Import {title}"
 msgstr "Import {title}"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Import a custom source"
+msgstr "Import a custom source"
+
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Import a folder"
@@ -7724,6 +7792,10 @@ msgstr "Import archive"
 #: src/components/NotificationsSection.tsx
 msgid "Import completed"
 msgstr "Import completed"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Import definition"
+msgstr "Import definition"
 
 #: src/components/ImportListsSection.tsx
 msgid "Import entries with status"
@@ -8636,6 +8708,10 @@ msgstr "Link a source and refresh."
 msgid "Link by hand"
 msgstr "Link by hand"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Link by URL"
+msgstr "Link by URL"
+
 #: src/components/SeriesFilesSection.tsx
 msgid "Link chapters"
 msgstr "Link chapters"
@@ -8914,6 +8990,10 @@ msgstr "Maki checked the folder against the chapter list. Tick what to trust and
 msgid "Maki could not encode this page. Try another page or another format."
 msgstr "Maki could not encode this page. Try another page or another format."
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Maki could not list the sample series under both versions to compare them."
+msgstr "Maki could not list the sample series under both versions to compare them."
+
 #: src/components/pageconversion/CompareStep.tsx
 msgid "Maki found no suitable pages to suggest. Pick one from your library."
 msgstr "Maki found no suitable pages to suggest. Pick one from your library."
@@ -8934,6 +9014,10 @@ msgstr "Maki speaks your language"
 msgctxt "series"
 msgid "Maki stops checking sources for new chapters and moves it to Archived. Your reading history, rating and chapters stay. You can restore it any time."
 msgstr "Maki stops checking sources for new chapters and moves it to Archived. Your reading history, rating and chapters stay. You can restore it any time."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Maki stops reading {name}. Export it first if you may want it back."
+msgstr "Maki stops reading {name}. Export it first if you may want it back."
 
 #: src/components/QueuePause.tsx
 msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to the download client keep downloading."
@@ -9453,6 +9537,10 @@ msgstr "More download options"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "More feedback options"
 msgstr "More feedback options"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "More for {label}"
+msgstr "More for {label}"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
@@ -10649,6 +10737,10 @@ msgstr "Not used yet"
 msgid "Not verified yet. Replacing or deleting this file needs a verify first."
 msgstr "Not verified yet. Replacing or deleting this file needs a verify first."
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Not working"
+msgstr "Not working"
+
 #: src/components/SeriesScrobbleSection.tsx
 msgid "not yet synced"
 msgstr "not yet synced"
@@ -11273,6 +11365,10 @@ msgstr "Open Discover"
 msgid "Open entry"
 msgstr "Open entry"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Open file"
+msgstr "Open file"
+
 #: src/pages/HealthPage.tsx
 msgid "Open file findings"
 msgstr "Open file findings"
@@ -11478,6 +11574,10 @@ msgstr "Page format"
 msgid "Page gap"
 msgstr "Page gap"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Page images come from different hosts."
+msgstr "Page images come from different hosts."
+
 #: src/App.tsx
 msgid "Page not found"
 msgstr "Page not found"
@@ -11606,6 +11706,10 @@ msgstr "password, change password, sessions, sign out, log out, two-factor authe
 #: src/pages/SetupAccountPage.tsx
 msgid "Passwords do not match"
 msgstr "Passwords do not match"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Paste a definition or open a .json file. Test it against the site, then save. A definition only describes where Maki reads the site; nothing in it runs."
+msgstr "Paste a definition or open a .json file. Test it against the site, then save. A definition only describes where Maki reads the site; nothing in it runs."
 
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Paste id or URL"
@@ -13771,6 +13875,7 @@ msgstr "Samples a few pages from every linked source."
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/SettingsSection.tsx
 msgid "Save"
@@ -13801,6 +13906,7 @@ msgid "Save and start"
 msgstr "Save and start"
 
 #: src/components/settings/SecuritySection.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 msgid "Save anyway"
 msgstr "Save anyway"
 
@@ -13943,6 +14049,10 @@ msgstr "Saving"
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Saving {done}/{total}"
 msgstr "Saving {done}/{total}"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Saving a new source needs a test that passes."
+msgstr "Saving a new source needs a test that passes."
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Saving for offline failed. Try again from the chapter's menu."
@@ -14159,6 +14269,7 @@ msgstr "Scrolling pace · {chaptersLeft} · {basis}"
 #: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 msgid "Search"
 msgstr "Search"
 
@@ -14536,6 +14647,7 @@ msgstr "Series moved"
 msgid "Series not found"
 msgstr "Series not found"
 
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
 msgid "Series page"
@@ -15068,6 +15180,10 @@ msgstr "Skip to content"
 msgid "skipped"
 msgstr "skipped"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Skipped"
+msgstr "Skipped"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Skipped ({skippedFilterCount})"
 msgstr "Skipped ({skippedFilterCount})"
@@ -15131,6 +15247,10 @@ msgstr "Snapshot on disk: {snapshotSize}, refreshed {refreshedAtLabel}"
 #: src/pages/settings/LibraryCards.tsx
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "Some checks failed"
+msgstr "Some checks failed"
 
 #: src/components/series/restoreToast.tsx
 msgid "Some removed chapters were not queued: {queueError}"
@@ -15683,6 +15803,7 @@ msgstr "Tells you about every new chapter, whatever your default is."
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
+#: src/pages/settings/CustomSourceEditor.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "Test"
 msgstr "Test"
@@ -15828,6 +15949,10 @@ msgstr "The database and <0>config.json</0>, without manga files or covers."
 msgid "The days you read, your streak, chapters and time read, as a card in the hero."
 msgstr "The days you read, your streak, chapters and time read, as a card in the hero."
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The definition has problems"
+msgstr "The definition has problems"
+
 #: src/api/queue.ts
 msgid "The download client reports an error on this torrent"
 msgstr "The download client reports an error on this torrent"
@@ -15913,6 +16038,10 @@ msgstr "The folder and every file already match the current naming formats."
 msgid "The full breakdown is waiting behind this slide."
 msgstr "The full breakdown is waiting behind this slide."
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The id of a saved source can't change. Import it as a new source instead."
+msgstr "The id of a saved source can't change. Import it as a new source instead."
+
 #: src/api/ssoErrors.ts
 msgid "The identity provider rejected the sign-in request. Check the OIDC client configuration."
 msgstr "The identity provider rejected the sign-in request. Check the OIDC client configuration."
@@ -15920,6 +16049,10 @@ msgstr "The identity provider rejected the sign-in request. Check the OIDC clien
 #: src/api/ssoErrors.ts
 msgid "The identity provider returned no subject"
 msgstr "The identity provider returned no subject"
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The language changes."
+msgstr "The language changes."
 
 #: src/pages/stats/StatsRange.ts
 msgid "the last 12 months"
@@ -16043,6 +16176,10 @@ msgstr "The same counts the Stats page shows, kept here so the groups above have
 msgid "The sample download failed"
 msgstr "The sample download failed"
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The sample series lists different chapter numbers or ids."
+msgstr "The sample series lists different chapter numbers or ids."
+
 #: src/components/home/OfflineHome.tsx
 msgid "The saved chapters wouldn't open"
 msgstr "The saved chapters wouldn't open"
@@ -16112,6 +16249,10 @@ msgstr "The sign-in did not complete. Please try again."
 #: src/components/settings/AccountSection.tsx
 msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr "The single biggest improvement if Maki is reachable from the internet."
+
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "The site's address changes."
+msgstr "The site's address changes."
 
 #: src/api/queue.ts
 msgid "The source answered with an error"
@@ -16312,6 +16453,10 @@ msgstr "This file is already gone from disk, so nothing is deleted. It drops the
 msgid "This files a request for every matching entry from your {label} list, up to the per-run limit."
 msgstr "This files a request for every matching entry from your {label} list, up to the per-run limit."
 
+#: src/pages/settings/CustomSourceEditor.tsx
+msgid "This is not valid JSON."
+msgstr "This is not valid JSON."
+
 #: src/pages/CreatorPage.tsx
 msgid "This link is missing the creator's name."
 msgstr "This link is missing the creator's name."
@@ -16414,6 +16559,10 @@ msgstr "This series was searched in the last week"
 #: src/api/upgrades.ts
 msgid "This series' profile doesn't aim for volume releases"
 msgstr "This series' profile doesn't aim for volume releases"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "This site has no search, so Maki never finds series on it by itself. Link each series by pasting its URL."
+msgstr "This site has no search, so Maki never finds series on it by itself. Link each series by pasting its URL."
 
 #: src/components/SourceMeasurePanel.tsx
 msgid "This source did not serve the sampled pages. It may be down or have changed."

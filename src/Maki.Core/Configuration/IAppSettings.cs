@@ -85,6 +85,12 @@ public static class SettingKeys
     /// </summary>
     public const string SuwayomiSources = "suwayomi.sources";
 
+    /// <summary>
+    /// JSON array of custom source definitions (<c>CustomSourceDefinition</c>), written only through
+    /// <c>CustomSourceStore</c>. Entries are kept verbatim, so one this build can't read survives.
+    /// </summary>
+    public const string CustomSources = "sources.custom";
+
     /// <summary>"true" → new series default to MonitorNewItems.MainOnly (specials unmonitored).</summary>
     public const string MonitoringUnmonitorSpecials = "monitoring.unmonitorspecials";
 

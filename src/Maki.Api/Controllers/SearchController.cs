@@ -10,6 +10,7 @@ using Maki.Core.Quality;
 using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Data;
+using Maki.Sources.Custom;
 using Maki.Sources.Suwayomi;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -301,7 +302,18 @@ public class SearchController(
             // A Suwayomi source's BaseUrl is the Suwayomi server, usually a LAN address, and every
             // signed-in user reads this list. The UI shows Provider for those instead of a host.
             BaseUrl = s is SuwayomiSource ? "" : s.BaseUrl,
-            Provider = s is SuwayomiSource ? "suwayomi" : null,
+            Provider = s switch
+            {
+                SuwayomiSource => "suwayomi",
+                CustomSource or InvalidCustomSource => "custom",
+                _ => null
+            },
+            Custom = s switch
+            {
+                CustomSource custom => new { custom.Definition.Id, custom.HasSearch, Invalid = false, Problem = (string?)null },
+                InvalidCustomSource invalid => new { invalid.Id, HasSearch = false, Invalid = true, Problem = (string?)invalid.Reason },
+                _ => null
+            },
             Suwayomi = s is SuwayomiSource suwayomi
                 ? new { suwayomi.SourceId, suwayomi.SiteName, suwayomi.Lang, suwayomi.MixedLanguage, suwayomi.ChapterLanguage, suwayomi.NeedsSetup, suwayomi.Missing }
                 : null,
