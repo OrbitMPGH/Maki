@@ -1,0 +1,33 @@
+---
+title: Maki documentation
+description: Add a series once and Maki keeps it complete. Docs for the self-hosted manga manager with a reader built in.
+template: splash
+hero:
+  tagline: Add a series once and Maki keeps it complete. Install it, point your reading apps at it, and learn how the pieces work.
+  actions:
+    - text: Install with Docker
+      link: /Maki/installation/docker-compose/
+      icon: right-arrow
+    - text: What is Maki
+      link: /Maki/introduction/what-is-maki/
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <Card title="Introduction" icon="open-book">
+    What Maki is, how a chapter gets from a site to your reader, and the full feature list.
+  </Card>
+  <Card title="Installation" icon="rocket">
+    Docker Compose, Unraid, HTTPS behind a reverse proxy and single sign-on.
+  </Card>
+  <Card title="Guides" icon="pencil">
+    Add a series, read in Maki or in KOReader, Panels, Chunky and Mihon, choose sources, understand recommendations, back up.
+  </Card>
+  <Card title="Contribution" icon="github">
+    Run Maki from source, find your way around the code, and help translate it.
+  </Card>
+</CardGrid>
+
+<LinkCard title="Q&A" description="Short answers to the questions that come up most." href="/Maki/qa/faq/" />
