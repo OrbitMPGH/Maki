@@ -2918,9 +2918,11 @@ export interface SourceInfo {
   displayName: string
   baseUrl: string
   /** Set for a source that is not built in. A Suwayomi source's `baseUrl` is the Suwayomi server, not the site. */
-  provider?: 'suwayomi' | null
+  provider?: 'suwayomi' | 'custom' | null
   /** Set for a Suwayomi source. */
   suwayomi?: SuwayomiSourceState | null
+  /** Set for a custom source an admin defined. */
+  custom?: CustomSourceState | null
   needsFlareSolverr: boolean
   /**
    * Whether this source honours a mapping's `languageFilter`, so the mappings card offers a
@@ -2942,6 +2944,32 @@ export interface SourceInfo {
   defaultRank?: number
   /** How this source's copies measure in general; null when nothing has measured it. */
   quality?: SourceQualitySummary | null
+}
+
+export interface CustomSourceState {
+  /** The definition's id, the part of `name` after `custom-`. */
+  id: string
+  /** False for a site with neither search nor a catalogue page: series are linked by URL only. */
+  hasSearch: boolean
+  /** The stored definition can't be used by this build; `problem` says why. */
+  invalid: boolean
+  problem: string | null
+  /** The health job's last check failed, or the definition is invalid. Older servers leave it out. */
+  failing?: boolean
+  /** The repository it was installed from, or null for a hand-made one. */
+  origin?: {
+    /** Admins only: a private repository's URL can carry a token. */
+    repository: string | null
+    repositoryName: string | null
+    version: number
+    /** A newer version waits, and the source isn't detached. */
+    updateAvailable: boolean
+    latestVersion: number | null
+  } | null
+  /** Edited here after it was installed, so the repository's updates no longer apply. */
+  detached?: boolean
+  /** An update replaced an earlier version that can be put back. */
+  canRevert?: boolean
 }
 
 export interface SuwayomiSourceState {

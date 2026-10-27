@@ -593,7 +593,9 @@ public partial class SourceMatchService(
         var work = orderedSources
             .Select((source, index) => (Source: source, Priority: index + 1))
             .Where(item => !disabledSources.Contains(item.Source.Name, StringComparer.OrdinalIgnoreCase)
-                           && !skip.Contains(item.Source.Name))
+                           && !skip.Contains(item.Source.Name)
+                           // A custom source with no search is linked by URL only; asking it would just read "No match".
+                           && item.Source is not Maki.Sources.Custom.CustomSource { HasSearch: false })
             .ToList();
 
         foreach (var (source, _) in work)

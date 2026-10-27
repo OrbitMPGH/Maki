@@ -80,7 +80,9 @@ import { msg, t as now, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../i18n-context'
 import { pressable } from '../lib/pressable'
-import { SOURCE_ICONS } from '../sourceIcons'
+import { SOURCE_ICONS, sourceHost } from '../sourceIcons'
+import { ApiError } from '../api/client'
+import { ManageSourcesModal, type WizardRequest } from '../pages/settings/ManageSourcesModal'
 import { useSourceLabel } from '../sourceLabels'
 import { MonoValue } from './ui/MonoValue'
 
@@ -183,6 +185,14 @@ export function SourceMappingsSection({
     isFetching: resolving,
     error: resolveError,
   } = useResolveSourceUrl(pastedUrl)
+  // No source knows the pasted address: an admin can set the site up as a custom source right here,
+  // or fix the one that already reads that host but whose series template didn't match.
+  const [setupSite, setSetupSite] = useState<WizardRequest | null>(null)
+  const unrecognised = resolveError instanceof ApiError && resolveError.code === 'error.search.noSourceRecognizesUrl'
+  const pastedHost = pastedUrl ? sourceHost(pastedUrl) : null
+  const ownerOfHost = pastedHost
+    ? sources?.find((s) => s.custom && sourceHost(s.baseUrl) === pastedHost) ?? null
+    : null
 
   // A source switched off in Settings can't be linked, and its existing mappings here are
   // inert: their own on/off state is kept and shown read-only rather than being rewritten.
@@ -913,6 +923,24 @@ export function SourceMappingsSection({
                 {errorText(resolveError)}
               </Text>
             )}
+            {pastedUrl && unrecognised && can('Admin') && (
+              <Group>
+                {ownerOfHost?.custom ? (
+                  <Button
+                    size="xs"
+                    variant="default"
+                    leftSection={<IconPencil size={14} />}
+                    onClick={() => setSetupSite({ editId: ownerOfHost.custom!.id })}
+                  >
+                    <Trans>Edit {ownerOfHost.displayName}</Trans>
+                  </Button>
+                ) : (
+                  <Button size="xs" variant="default" onClick={() => setSetupSite({ setupUrl: pastedUrl })}>
+                    <Trans>Set up this site as a source</Trans>
+                  </Button>
+                )}
+              </Group>
+            )}
             {!pastedUrl && results?.map((r) => (
               <Card
                 key={r.sourceSeriesId}
@@ -967,6 +995,16 @@ export function SourceMappingsSection({
         opened={compareOpen}
         onClose={() => setCompareOpen(false)}
       />
+      {can('Admin') && (
+        <ManageSourcesModal
+          opened={setupSite !== null}
+          onClose={() => setSetupSite(null)}
+          wizard={setupSite}
+          closeWithWizard
+          // The failed resolve is asked again, so the Link a source modal offers the new source.
+          onCustomSaved={() => void queryClient.invalidateQueries({ queryKey: ['resolve-source', pastedUrl] })}
+        />
+      )}
     </>
   )
 }

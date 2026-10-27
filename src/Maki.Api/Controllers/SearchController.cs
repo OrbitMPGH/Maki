@@ -10,9 +10,11 @@ using Maki.Core.Quality;
 using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Data;
+using Maki.Sources.Custom;
 using Maki.Sources.Suwayomi;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Controllers;
 
@@ -282,7 +284,8 @@ public class SearchController(
     private const int LibraryQualityMinSeries = 2;
 
     [HttpGet("sources")]
-    public async Task<IActionResult> ListSources([FromServices] MakiDbContext db, CancellationToken ct)
+    public async Task<IActionResult> ListSources(
+        [FromServices] MakiDbContext db, [FromServices] CustomRepositoryStore repositoryStore, CancellationToken ct)
     {
         // Enabled is the global switch, not a per-series one: a disabled source can't be
         // linked and none of its existing mappings run, but those mappings keep their flags.
@@ -293,6 +296,35 @@ public class SearchController(
         var defaultRank = SourceMatchService.OrderSources(sourceRegistry.All, null)
             .Select((s, i) => (s.Name, i))
             .ToDictionary(x => x.Name, x => x.i, StringComparer.OrdinalIgnoreCase);
+        // The custom source health job's last verdict, so the row can say "Not working" before a
+        // linked series stalls. Only the verdict: the reason is on the Health page, for admins.
+        var failing = (await db.HealthChecks.AsNoTracking()
+                .Where(r => r.Id.StartsWith(Jobs.CustomSourceHealthJob.Prefix) && r.Status == "error")
+                .Select(r => r.Id)
+                .ToListAsync(ct))
+            .Select(id => id[Jobs.CustomSourceHealthJob.Prefix.Length..])
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var repositories = await repositoryStore.ReadAsync(ct);
+        // Every signed-in user reads this list, and a private repository's URL can carry a token.
+        var isAdmin = currentUser.Has(MakiPermission.Admin);
+        object? OriginOf(CustomSource custom)
+        {
+            if (custom.Definition.Origin is not { } origin)
+            {
+                return null;
+            }
+
+            var repository = repositories.FirstOrDefault(r => CustomRepositoryStore.SameUrl(r.Url, origin.Repository));
+            var latest = repository?.Index?.Definitions.FirstOrDefault(d => d.Id == custom.Definition.Id)?.Version;
+            return new
+            {
+                Repository = isAdmin ? origin.Repository : null,
+                RepositoryName = repository?.Name,
+                origin.Version,
+                UpdateAvailable = !custom.Definition.Detached && latest > origin.Version,
+                LatestVersion = latest
+            };
+        }
 
         return Ok(sourceRegistry.All.Select(s => new
         {
@@ -301,7 +333,26 @@ public class SearchController(
             // A Suwayomi source's BaseUrl is the Suwayomi server, usually a LAN address, and every
             // signed-in user reads this list. The UI shows Provider for those instead of a host.
             BaseUrl = s is SuwayomiSource ? "" : s.BaseUrl,
-            Provider = s is SuwayomiSource ? "suwayomi" : null,
+            Provider = s switch
+            {
+                SuwayomiSource => "suwayomi",
+                CustomSource or InvalidCustomSource => "custom",
+                _ => null
+            },
+            Custom = s switch
+            {
+                CustomSource custom => new
+                {
+                    custom.Definition.Id, custom.HasSearch, Invalid = false, Problem = (string?)null, Failing = failing.Contains(custom.Name),
+                    Origin = OriginOf(custom), custom.Definition.Detached, CanRevert = custom.Definition.Previous is not null
+                },
+                InvalidCustomSource invalid => new
+                {
+                    invalid.Id, HasSearch = false, Invalid = true, Problem = (string?)invalid.Reason, Failing = true,
+                    Origin = (object?)null, Detached = false, CanRevert = false
+                },
+                _ => null
+            },
             Suwayomi = s is SuwayomiSource suwayomi
                 ? new { suwayomi.SourceId, suwayomi.SiteName, suwayomi.Lang, suwayomi.MixedLanguage, suwayomi.ChapterLanguage, suwayomi.NeedsSetup, suwayomi.Missing }
                 : null,

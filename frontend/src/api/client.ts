@@ -69,6 +69,8 @@ export class ApiError extends Error {
   readonly permanentDeleteAvailable: boolean
   /** The series a refusal is about (`error.series.archivedExists`), when the body names one. */
   readonly seriesId: number | null
+  /** The whole JSON body, for a refusal that carries more than a message (a list of problems, say). */
+  readonly payload: unknown
 
   constructor(
     status: number,
@@ -76,6 +78,7 @@ export class ApiError extends Error {
     code: string | null = null,
     permanentDeleteAvailable = false,
     seriesId: number | null = null,
+    payload: unknown = null,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -83,6 +86,7 @@ export class ApiError extends Error {
     this.code = code
     this.permanentDeleteAvailable = permanentDeleteAvailable
     this.seriesId = seriesId
+    this.payload = payload
   }
 }
 
@@ -295,6 +299,7 @@ async function readResponse<T>(res: Response, generation: number): Promise<T> {
       code,
       offersPermanentDelete(body),
       errorSeriesId(body),
+      parsedBody(body),
     )
   }
   // 204, and any 200 whose handler wrote no body, have nothing to parse.
@@ -346,6 +351,14 @@ function errorSeriesId(body: string): number | null {
   try {
     const id = (JSON.parse(body) as { seriesId?: unknown }).seriesId
     return typeof id === 'number' ? id : null
+  } catch {
+    return null
+  }
+}
+
+function parsedBody(body: string): unknown {
+  try {
+    return JSON.parse(body) as unknown
   } catch {
     return null
   }

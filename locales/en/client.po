@@ -516,10 +516,31 @@ msgstr "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgid "{0, plural, other {# ahead}}"
 msgstr "{0, plural, other {# ahead}}"
 
+#. placeholder {0}: site.hostTaken.displayName
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "{0} already reads this site."
+msgstr "{0} already reads this site."
+
 #. placeholder {0}: percent(item.measure)
 #: src/pages/discover/TasteTab.tsx
 msgid "{0} in"
 msgstr "{0} in"
+
+#. placeholder {0}: languageName(definition?.language) ?? definition?.language
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "{0} is switched off under source languages, so auto-match won't pick this source until it is on."
+msgstr "{0} is switched off under source languages, so auto-match won't pick this source until it is on."
+
+#. placeholder {0}: guess.count
+#. placeholder {1}: guess.rows[0]?.text ?? guess.rows[0]?.link ?? ''
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "{0} links, starting with {1}"
+msgstr "{0} links, starting with {1}"
+
+#. placeholder {0}: site.pages.count
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "{0} pages on the sample chapter."
+msgstr "{0} pages on the sample chapter."
 
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
@@ -852,6 +873,18 @@ msgstr "{count, plural, one {The next unread chapter} other {The next # unread c
 msgid "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
 msgstr "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "{count} chapters"
+msgstr "{count} chapters"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "{count} pages"
+msgstr "{count} pages"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "{count} results"
+msgstr "{count} results"
+
 #: src/pages/settings/SystemCards.tsx
 msgid "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {Posters: # files, {coverBytesLabel}}}"
 msgstr "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {Posters: # files, {coverBytesLabel}}}"
@@ -1106,6 +1139,10 @@ msgstr "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgid "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
 msgstr "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "{kb} KB"
+msgstr "{kb} KB"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
 msgstr "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
@@ -1190,6 +1227,10 @@ msgstr "{left, plural, one {# left} other {# left}} · ~{eta}"
 #: src/pages/SeriesDetailPage.tsx
 msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · click to collapse"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{linked, plural, one {# series stays linked to it and stops updating from it. Importing the same definition again picks the link back up.} other {# series stay linked to it and stop updating from it. Importing the same definition again picks the links back up.}}"
+msgstr "{linked, plural, one {# series stays linked to it and stops updating from it. Importing the same definition again picks the link back up.} other {# series stay linked to it and stop updating from it. Importing the same definition again picks the links back up.}}"
 
 #: src/pages/ImportPage.tsx
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
@@ -2113,10 +2154,6 @@ msgstr "{workCount, plural, one {Showing {shownCount} of # title. Filters and th
 msgid "{year} – present"
 msgstr "{year} – present"
 
-#: src/components/ui/DiscoverRail.tsx
-msgid "{year}, {status}"
-msgstr "{year}, {status}"
-
 #: src/components/settings/ProgressSection.tsx
 msgid "{zone} (this browser)"
 msgstr "{zone} (this browser)"
@@ -2377,6 +2414,10 @@ msgstr "a RAR, 7z or tar archive"
 msgid "A refresh is already running"
 msgstr "A refresh is already running"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "A repository is a list of custom source definitions someone publishes. Maki installs from it, and can keep what it installed up to date. Only add repositories you trust: a definition decides which site Maki reads."
+msgstr "A repository is a list of custom source definitions someone publishes. Maki installs from it, and can keep what it installed up to date. Only add repositories you trust: a definition decides which site Maki reads."
+
 #: src/components/discover/discoverSectionDefs.ts
 msgid "A row for each smaller theme on your shelf."
 msgstr "A row for each smaller theme on your shelf."
@@ -2561,6 +2602,7 @@ msgstr "Adaptation"
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/LibraryCards.tsx
 msgid "Add"
 msgstr "Add"
@@ -2633,6 +2675,10 @@ msgstr "Add series"
 #: src/pages/DiscoverPage.tsx
 msgid "Add some series to your library first and Maki will suggest more like them."
 msgstr "Add some series to your library first and Maki will suggest more like them."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Add source"
+msgstr "Add source"
 
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Add the series to your library, or request it, to keep reading."
@@ -2727,9 +2773,17 @@ msgstr "Administrator"
 msgid "Administrators keep password sign-in."
 msgstr "Administrators keep password sign-in."
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Adult"
+msgstr "Adult"
+
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Advance to the next chapter at the end"
 msgstr "Advance to the next chapter at the end"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Advanced"
+msgstr "Advanced"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Adventure"
@@ -2740,6 +2794,7 @@ msgid "Affected chapters:"
 msgstr "Affected chapters:"
 
 #: src/api/upgrades.ts
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Aggregator"
 msgstr "Aggregator"
@@ -2892,10 +2947,6 @@ msgstr "Already queued"
 msgid "Already read or seen"
 msgstr "Already read or seen"
 
-#: src/components/discover/RecommendationFeedbackMenu.tsx
-#~ msgid "Already read or seen, taste unchanged"
-#~ msgstr "Already read or seen, taste unchanged"
-
 #: src/pages/settings/SystemCards.tsx
 msgid "Already running"
 msgstr "Already running"
@@ -2996,6 +3047,10 @@ msgstr "and"
 msgid "and {remaining} more selected on other pages"
 msgstr "and {remaining} more selected on other pages"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "and {rest} more"
+msgstr "and {rest} more"
+
 #: src/components/import/mihonRows.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "AniList"
@@ -3040,6 +3095,10 @@ msgstr "Anime you've watched"
 #: src/components/releases/UpcomingView.tsx
 msgid "Announced by the source"
 msgstr "Announced by the source"
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Another custom source already has this id"
+msgstr "Another custom source already has this id"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
@@ -3149,6 +3208,7 @@ msgstr "Applies to the library pass and to new downloads. Higher finishes sooner
 #: src/components/RatingImportModal.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 msgid "Apply"
 msgstr "Apply"
 
@@ -3163,6 +3223,14 @@ msgstr "Apply categories as tags"
 #: src/pages/HealthPage.tsx
 msgid "Apply replacement"
 msgstr "Apply replacement"
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Apply update"
+msgstr "Apply update"
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Apply updates that pass their test and don't change chapter identity. Anything else waits for you."
+msgstr "Apply updates that pass their test and don't change chapter identity. Anything else waits for you."
 
 #: src/pages/HealthPage.tsx
 msgid "Applying"
@@ -3406,6 +3474,7 @@ msgstr "Avoided"
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 msgid "Back"
 msgstr "Back"
 
@@ -3796,6 +3865,8 @@ msgstr "Can't sign in with the saved details."
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
@@ -4160,9 +4231,21 @@ msgstr "Chapter language for {label}"
 msgid "Chapter languages"
 msgstr "Chapter languages"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Chapter list"
+msgstr "Chapter list"
+
 #: src/components/NamingTokenModal.tsx
 msgid "Chapter number and volume also take zero-padding: <0>{paddingExampleToken}</0> renders 24 as 024."
 msgstr "Chapter number and volume also take zero-padding: <0>{paddingExampleToken}</0> renders 24 as 024."
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Chapter page"
+msgstr "Chapter page"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Chapter pages"
+msgstr "Chapter pages"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Chapter snapshots refreshed"
@@ -4183,6 +4266,7 @@ msgstr "chapters"
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
@@ -4250,6 +4334,10 @@ msgstr "Chapters read in this series"
 msgid "Chapters saved on this device, to read without a connection."
 msgstr "Chapters saved on this device, to read without a connection."
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Chapters section"
+msgstr "Chapters section"
+
 #: src/components/SeriesFilesSection.tsx
 msgid "Chapters that share a volume archive will also lose their file."
 msgstr "Chapters that share a volume archive will also lose their file."
@@ -4282,6 +4370,10 @@ msgstr "Charcoal"
 msgid "Chat ID"
 msgstr "Chat ID"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Check against the site"
+msgstr "Check against the site"
+
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Check for prebuilt now"
 msgstr "Check for prebuilt now"
@@ -4295,6 +4387,7 @@ msgid "Check in Settings"
 msgstr "Check in Settings"
 
 #: src/pages/HealthPage.tsx
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/SystemCards.tsx
 msgid "Check now"
 msgstr "Check now"
@@ -4496,6 +4589,8 @@ msgstr "Client secret"
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/theme-context.tsx
 msgid "Close"
@@ -4770,6 +4865,7 @@ msgstr "consistent"
 msgid "Contained in a volume/compilation file"
 msgstr "Contained in a volume/compilation file"
 
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Content"
 msgstr "Content"
@@ -5322,9 +5418,17 @@ msgstr "Current: {tierLabel}, score {score}"
 msgid "Currently popular"
 msgstr "Currently popular"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Custom"
+msgstr "Custom"
+
 #: src/components/layout/PageLayoutEditor.tsx
 msgid "Custom rail"
 msgstr "Custom rail"
+
+#: src/api/inbox.ts
+msgid "Custom source updated by its repository"
+msgstr "Custom source updated by its repository"
 
 #: src/pages/DiscoverPage.tsx
 msgid "Customize"
@@ -5375,6 +5479,10 @@ msgstr "Dash (-)"
 #: src/components/SetupWizard.tsx
 msgid "Database ready"
 msgstr "Database ready"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Date"
+msgstr "Date"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Day by day"
@@ -5448,6 +5556,10 @@ msgstr "Default source order updated"
 msgid "Defining"
 msgstr "Defining"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Definition"
+msgstr "Definition"
+
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/rails/DeleteRailDialog.tsx
 #: src/components/series/ArchivedSeriesCard.tsx
@@ -5455,6 +5567,7 @@ msgstr "Defining"
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Delete"
 msgstr "Delete"
@@ -5488,6 +5601,10 @@ msgstr "Delete backup"
 #: src/components/NotificationsSection.tsx
 msgid "Delete connection"
 msgstr "Delete connection"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Delete custom source?"
+msgstr "Delete custom source?"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Delete file"
@@ -5644,6 +5761,10 @@ msgstr "Detached CBZs stay in the Files section unless you choose to delete them
 #: src/pages/SeriesDetailPage.tsx
 msgid "Details"
 msgstr "Details"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Details and test"
+msgstr "Details and test"
 
 #: src/components/NotificationsSection.tsx
 msgid "Device"
@@ -5811,6 +5932,7 @@ msgstr "Don't want"
 #: src/components/TagBrowserModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Done"
 msgstr "Done"
@@ -5823,6 +5945,7 @@ msgstr "Double"
 msgid "Double page"
 msgstr "Double page"
 
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Doujinshi"
 msgstr "Doujinshi"
@@ -6068,16 +6191,36 @@ msgstr "Ecchi"
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
 #: src/components/settings/UsersSection.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 msgid "Edit"
 msgstr "Edit"
+
+#. placeholder {0}: ownerOfHost.displayName
+#. placeholder {0}: site.hostTaken.displayName
+#: src/components/SourceMappingsSection.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Edit {0}"
+msgstr "Edit {0}"
 
 #: src/components/settings/UsersSection.tsx
 msgid "Edit {editName}"
 msgstr "Edit {editName}"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Edit as a form"
+msgstr "Edit as a form"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Edit as JSON"
+msgstr "Edit as JSON"
+
 #: src/components/NotificationsSection.tsx
 msgid "Edit connection"
 msgstr "Edit connection"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Edit custom source"
+msgstr "Edit custom source"
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Edit Discover layout"
@@ -6118,6 +6261,19 @@ msgstr "Edit request"
 #: src/pages/RequestsPage.tsx
 msgid "Edit request for {title}"
 msgstr "Edit request for {title}"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Edited here after it was installed, so updates from its repository no longer apply."
+msgstr "Edited here after it was installed, so updates from its repository no longer apply."
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Edited locally"
+msgstr "Edited locally"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Edited locally, so updates from {repositoryName} no longer apply. Replace it from the repository panel to follow it again."
+msgstr "Edited locally, so updates from {repositoryName} no longer apply. Replace it from the repository panel to follow it again."
 
 #: src/components/layout/PageLayoutEditor.tsx
 msgid "Editing layout"
@@ -6302,6 +6458,10 @@ msgstr "Every chapter is already on the best file available."
 #: src/components/RelinkFilesModal.tsx
 msgid "Every chapter is already on the best file available. Nothing to change."
 msgstr "Every chapter is already on the best file available. Nothing to change."
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Every check passed"
+msgstr "Every check passed"
 
 #: src/components/settings/ProgressSection.tsx
 msgid "Every day"
@@ -6498,6 +6658,10 @@ msgstr "Expected"
 #: src/components/import/ImportPlanModal.tsx
 msgid "expected to link as <0/>"
 msgstr "expected to link as <0/>"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Export"
+msgstr "Export"
 
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
@@ -6812,6 +6976,10 @@ msgstr "Find match"
 msgid "Find more"
 msgstr "Find more"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Find search"
+msgstr "Find search"
+
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "Finding a source…"
 msgstr "Finding a source…"
@@ -6885,6 +7053,10 @@ msgstr "First folder you can see"
 msgid "First page"
 msgstr "First page"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "First page image"
+msgstr "First page image"
+
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Fit"
 msgstr "Fit"
@@ -6916,6 +7088,10 @@ msgstr "Fit width"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Fix or remove the source mapping first, or a refresh will bring them right back."
 msgstr "Fix or remove the source mapping first, or a refresh will bring them right back."
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Fixed once saved."
+msgstr "Fixed once saved."
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/registry.ts
@@ -7145,6 +7321,10 @@ msgstr "Gave up after the download time limit"
 msgid "gems"
 msgstr "gems"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "General"
+msgstr "General"
+
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -7203,6 +7383,10 @@ msgstr "Give up on a chapter after (minutes)"
 #: src/pages/ActivityPage.tsx
 msgid "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
 msgstr "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Go ahead anyway"
+msgstr "Go ahead anyway"
 
 #: src/pages/DiscoverPage.tsx
 msgid "Go to library"
@@ -7636,6 +7820,10 @@ msgstr "I have copied it"
 msgid "I have saved them"
 msgstr "I have saved them"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Id"
+msgstr "Id"
+
 #: src/components/pageconversion/labels.ts
 msgid "Identical pixels."
 msgstr "Identical pixels."
@@ -7720,6 +7908,10 @@ msgstr "Import {folderName}"
 msgid "Import {title}"
 msgstr "Import {title}"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Import a custom source"
+msgstr "Import a custom source"
+
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Import a folder"
@@ -7736,6 +7928,10 @@ msgstr "Import archive"
 #: src/components/NotificationsSection.tsx
 msgid "Import completed"
 msgstr "Import completed"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Import definition"
+msgstr "Import definition"
 
 #: src/components/ImportListsSection.tsx
 msgid "Import entries with status"
@@ -7989,6 +8185,20 @@ msgstr "Indigo"
 msgid "Indonesian"
 msgstr "Indonesian"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Install"
+msgstr "Install"
+
+#. placeholder {0}: origin.version
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Installed from {repositoryName}, version {0}. Saving changes here detaches it, and its updates stop applying."
+msgstr "Installed from {repositoryName}, version {0}. Saving changes here detaches it, and its updates stop applying."
+
+#. placeholder {0}: entry.installedVersion
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Installed, version {0}"
+msgstr "Installed, version {0}"
+
 #: src/components/MetadataDumpProgress.tsx
 msgid "Installing metadata database"
 msgstr "Installing metadata database"
@@ -8184,6 +8394,10 @@ msgstr "Keep the screen awake while reading"
 msgid "Keep this page open until it finishes. Leaving it stops the import; run it again to carry on."
 msgstr "Keep this page open until it finishes. Leaving it stops the import; run it again to carry on."
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Keep up to date"
+msgstr "Keep up to date"
+
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Keep upcoming chapters"
 msgstr "Keep upcoming chapters"
@@ -8221,6 +8435,7 @@ msgstr "Keyboard shortcuts"
 msgid "Keyboard shortcuts (?)"
 msgstr "Keyboard shortcuts (?)"
 
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/SystemCards.tsx
 msgid "Kind"
 msgstr "Kind"
@@ -8262,6 +8477,7 @@ msgstr "Label"
 
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SetupWizard.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -8341,6 +8557,11 @@ msgstr "Last chapter on disk"
 #: src/components/series/AnimeResumeCallout.tsx
 msgid "Last chapter to mark watched"
 msgstr "Last chapter to mark watched"
+
+#. placeholder {0}: formatDateTime(repository.lastCheckedUtc)
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Last checked {0}"
+msgstr "Last checked {0}"
 
 #: src/components/NotificationsSection.tsx
 msgid "Last delivered {lastSuccess}."
@@ -8652,6 +8873,10 @@ msgstr "Link a source and refresh."
 msgid "Link by hand"
 msgstr "Link by hand"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Link by URL"
+msgstr "Link by URL"
+
 #: src/components/SeriesFilesSection.tsx
 msgid "Link chapters"
 msgstr "Link chapters"
@@ -8858,6 +9083,10 @@ msgstr "Lower for readers like you"
 msgid "Lower number = tried first when downloading"
 msgstr "Lower number = tried first when downloading"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Lowercase letters, digits and dashes."
+msgstr "Lowercase letters, digits and dashes."
+
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Lowest-numbered admin"
 msgstr "Lowest-numbered admin"
@@ -8930,6 +9159,19 @@ msgstr "Maki checked the folder against the chapter list. Tick what to trust and
 msgid "Maki could not encode this page. Try another page or another format."
 msgstr "Maki could not encode this page. Try another page or another format."
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Maki could not find a chapter list on the series page. Describe it under Advanced."
+msgstr "Maki could not find a chapter list on the series page. Describe it under Advanced."
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Maki could not find the page images on the chapter page. Describe them under Advanced."
+msgstr "Maki could not find the page images on the chapter page. Describe them under Advanced."
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Maki could not list the sample series under both versions to compare them."
+msgstr "Maki could not list the sample series under both versions to compare them."
+
 #: src/components/pageconversion/CompareStep.tsx
 msgid "Maki found no suitable pages to suggest. Pick one from your library."
 msgstr "Maki found no suitable pages to suggest. Pick one from your library."
@@ -8942,6 +9184,11 @@ msgstr "Maki is restarting to apply it. Reload in a moment."
 msgid "Maki is using {used} of {quota} here. Remove some saved chapters and try again."
 msgstr "Maki is using {used} of {quota} here. Remove some saved chapters and try again."
 
+#. placeholder {0}: site.pages.image.format
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Maki loaded the first page ({0})."
+msgstr "Maki loaded the first page ({0})."
+
 #: src/components/LanguageAnnouncementModal.tsx
 msgid "Maki speaks your language"
 msgstr "Maki speaks your language"
@@ -8951,9 +9198,17 @@ msgctxt "series"
 msgid "Maki stops checking sources for new chapters and moves it to Archived. Your reading history, rating and chapters stay. You can restore it any time."
 msgstr "Maki stops checking sources for new chapters and moves it to Archived. Your reading history, rating and chapters stay. You can restore it any time."
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Maki stops reading {name}. Export it first if you may want it back."
+msgstr "Maki stops reading {name}. Export it first if you may want it back."
+
 #: src/components/QueuePause.tsx
 msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to the download client keep downloading."
 msgstr "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to the download client keep downloading."
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Maki won't find series on this site by itself. You'll link each series by pasting its address on the series page."
+msgstr "Maki won't find series on this site by itself. You'll link each series by pasting its address on the series page."
 
 #: src/components/LanguageAnnouncementModal.tsx
 msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
@@ -8992,6 +9247,7 @@ msgstr "manga"
 
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Manga"
 msgstr "Manga"
@@ -9019,12 +9275,14 @@ msgstr "mangabaka, local database, dump, snapshot, refresh metadata"
 
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Manhua"
 msgstr "Manhua"
 
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Manhwa"
 msgstr "Manhwa"
@@ -9155,6 +9413,7 @@ msgstr "Matching the remaining sources…"
 msgid "Matching your library to MangaBaka"
 msgstr "Matching your library to MangaBaka"
 
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Mature"
 msgstr "Mature"
@@ -9470,6 +9729,10 @@ msgstr "More download options"
 msgid "More feedback options"
 msgstr "More feedback options"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "More for {label}"
+msgstr "More for {label}"
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/SimilarSeriesSection.tsx
@@ -9680,6 +9943,7 @@ msgstr "n/a"
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 msgid "Name"
 msgstr "Name"
 
@@ -9707,6 +9971,10 @@ msgstr "Naming format"
 msgid "Naming tokens"
 msgstr "Naming tokens"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Needs a newer Maki"
+msgstr "Needs a newer Maki"
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Needs an indexer and a download client."
 msgstr "Needs an indexer and a download client."
@@ -9714,6 +9982,10 @@ msgstr "Needs an indexer and a download client."
 #: src/components/SourceMappingsSection.tsx
 msgid "Needs at least two enabled sources to compare."
 msgstr "Needs at least two enabled sources to compare."
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Needs FlareSolverr"
+msgstr "Needs FlareSolverr"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Needs HTTPS or localhost."
@@ -9908,6 +10180,7 @@ msgid "Newly enabled sources join at the bottom."
 msgstr "Newly enabled sources join at the bottom."
 
 #: src/pages/PageConversionWizardPage.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 msgid "Next"
 msgstr "Next"
 
@@ -10259,6 +10532,10 @@ msgstr "No repairs or deletions requested."
 msgid "No repeat creators yet"
 msgstr "No repeat creators yet"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "No repositories yet."
+msgstr "No repositories yet."
+
 #: src/components/SourceMappingsSection.tsx
 msgid "No results."
 msgstr "No results."
@@ -10286,6 +10563,14 @@ msgstr "No rules yet. Every file is converted at {stopLabel}."
 #: src/components/ui/incognito.ts
 msgid "No scrobble"
 msgstr "No scrobble"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "No search"
+msgstr "No search"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "No search found"
+msgstr "No search found"
 
 #: src/components/pageconversion/ComparePicker.tsx
 msgid "No series match that search."
@@ -10391,6 +10676,7 @@ msgstr "Nobody by that name is credited in the local MangaBaka database."
 
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 msgid "none"
 msgstr "none"
 
@@ -10457,6 +10743,10 @@ msgstr "not {names}"
 msgid "Not a valid creator name"
 msgstr "Not a valid creator name"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "not an image"
+msgstr "not an image"
+
 #: src/api/upgrades.ts
 msgid "Not an upgrade"
 msgstr "Not an upgrade"
@@ -10485,6 +10775,7 @@ msgstr "Not available offline"
 msgid "Not checked for new chapters: it is finished and complete, or has no source switched on."
 msgstr "Not checked for new chapters: it is finished and complete, or has no source switched on."
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/SystemCards.tsx
 msgid "Not checked yet"
 msgstr "Not checked yet"
@@ -10664,6 +10955,10 @@ msgstr "Not used yet"
 #: src/pages/HealthPage.tsx
 msgid "Not verified yet. Replacing or deleting this file needs a verify first."
 msgstr "Not verified yet. Replacing or deleting this file needs a verify first."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Not working"
+msgstr "Not working"
 
 #: src/components/SeriesScrobbleSection.tsx
 msgid "not yet synced"
@@ -10931,6 +11226,10 @@ msgstr "Nothing unfinished to chart."
 msgid "Nothing unmatched."
 msgstr "Nothing unmatched."
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Nothing was installed from it."
+msgstr "Nothing was installed from it."
+
 #: src/components/series/UndoConversionModal.tsx
 msgid "Nothing was restored"
 msgstr "Nothing was restored"
@@ -11002,6 +11301,10 @@ msgstr "Now {range}"
 msgid "Now in your library. Matching sources in the background."
 msgstr "Now in your library. Matching sources in the background."
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Number"
+msgstr "Number"
+
 #: src/components/discover/RecommenderDials.tsx
 msgid "obscure"
 msgstr "obscure"
@@ -11058,6 +11361,10 @@ msgstr "Off skips series set to No scrobble or Full incognito."
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Official"
 msgstr "Official"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Official publisher"
+msgstr "Official publisher"
 
 #: src/components/home/OfflineHome.tsx
 #: src/components/OfflineBanner.tsx
@@ -11179,6 +11486,10 @@ msgstr "Ongoing"
 msgid "Only {scanRootPath}, the root chosen on the Files tab"
 msgstr "Only {scanRootPath}, the root chosen on the Files tab"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Only a repository served over https can keep its sources up to date on its own."
+msgstr "Only a repository served over https can keep its sources up to date on its own."
+
 #: src/components/ImportReviewModal.tsx
 msgid "Only add what is missing"
 msgstr "Only add what is missing"
@@ -11289,6 +11600,10 @@ msgstr "Open Discover"
 msgid "Open entry"
 msgstr "Open entry"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Open file"
+msgstr "Open file"
+
 #: src/pages/HealthPage.tsx
 msgid "Open file findings"
 msgstr "Open file findings"
@@ -11366,6 +11681,10 @@ msgstr "Operation details"
 #: src/components/SetupWizard.tsx
 msgid "Optional"
 msgstr "Optional"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Optional, but the guess is far better with one."
+msgstr "Optional, but the guess is far better with one."
 
 #: src/pages/LoginPage.tsx
 msgid "or"
@@ -11494,6 +11813,11 @@ msgstr "Page format"
 msgid "Page gap"
 msgstr "Page gap"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Page images come from different hosts."
+msgstr "Page images come from different hosts."
+
 #: src/App.tsx
 msgid "Page not found"
 msgstr "Page not found"
@@ -11524,6 +11848,7 @@ msgid "Paged pace · {chaptersLeft} · {basis}"
 msgstr "Paged pace · {chaptersLeft} · {basis}"
 
 #: src/pages/HealthPage.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Pages"
 msgstr "Pages"
@@ -11555,6 +11880,10 @@ msgstr "Pages fetched ahead."
 #: src/components/SourceCompareModal.tsx
 msgid "Pages matched"
 msgstr "Pages matched"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Pages section"
+msgstr "Pages section"
 
 #: src/components/pageconversion/FormatStep.tsx
 msgid "Pages stay as they are downloaded. Files already converted stay converted."
@@ -11622,6 +11951,14 @@ msgstr "password, change password, sessions, sign out, log out, two-factor authe
 #: src/pages/SetupAccountPage.tsx
 msgid "Passwords do not match"
 msgstr "Passwords do not match"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Paste a definition or open a .json file. A definition only describes where Maki reads the site; nothing in it runs."
+msgstr "Paste a definition or open a .json file. A definition only describes where Maki reads the site; nothing in it runs."
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Paste a series page from the site, and a chapter page of that series. Maki reads both and guesses where the chapters and pages are."
+msgstr "Paste a series page from the site, and a chapter page of that series. Maki reads both and guesses where the chapters and pages are."
 
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Paste id or URL"
@@ -12264,6 +12601,7 @@ msgid "Rated {ratingLabel} or more"
 msgstr "Rated {ratingLabel} or more"
 
 #: src/components/settings/UsersSection.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Rating"
 msgstr "Rating"
@@ -12321,6 +12659,16 @@ msgstr "read"
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Read"
 msgstr "Read"
+
+#. placeholder {0}: site.title ?? site.seriesId
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Read {0} directly."
+msgstr "Read {0} directly."
+
+#. placeholder {0}: site.title ?? site.seriesId
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Read {0} through FlareSolverr. The source will use it too."
+msgstr "Read {0} through FlareSolverr. The source will use it too."
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Read {chapterLbl}"
@@ -12417,6 +12765,10 @@ msgstr "Read on {daysRead} of the last {daysSoFar} days."
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Read slowly over a long span"
 msgstr "Read slowly over a long span"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Read the site"
+msgstr "Read the site"
 
 #: src/components/import/MihonReview.tsx
 msgid "Read ticks show in the chapter list. Series read counts only include downloaded chapters."
@@ -12843,8 +13195,14 @@ msgstr "Removal pending"
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/CustomRepositoriesPanel.tsx
 msgid "Remove"
 msgstr "Remove"
+
+#. placeholder {0}: repository.name
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Remove {0}?"
+msgstr "Remove {0}?"
 
 #: src/components/TagBrowserModal.tsx
 msgid "Remove {label}"
@@ -13154,6 +13512,10 @@ msgstr "Replace"
 msgid "Replace what it covers"
 msgstr "Replace what it covers"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Replace with repository version"
+msgstr "Replace with repository version"
+
 #: src/components/ImportReviewModal.tsx
 msgid "replaced"
 msgstr "replaced"
@@ -13169,6 +13531,15 @@ msgstr "Replaces downloaded files with better releases for each series' quality 
 #: src/components/layout/SidebarFooter.tsx
 msgid "Report a bug"
 msgstr "Report a bug"
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Repositories"
+msgstr "Repositories"
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Repository address"
+msgstr "Repository address"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Request chapters"
@@ -13553,9 +13924,17 @@ msgstr "Reverse proxy setup"
 msgid "Reverse sort order"
 msgstr "Reverse sort order"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Revert anyway"
+msgstr "Revert anyway"
+
 #: src/pages/ActivityPage.tsx
 msgid "Revert this upgrade"
 msgstr "Revert this upgrade"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Revert to the previous version"
+msgstr "Revert to the previous version"
 
 #: src/pages/ActivityPage.tsx
 msgid "Reverted"
@@ -13603,6 +13982,10 @@ msgstr "Review permanent deletion"
 #: src/pages/HealthPage.tsx
 msgid "Review record removal"
 msgstr "Review record removal"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Review update"
+msgstr "Review update"
 
 #: src/components/discover/DiscoverReviews.tsx
 #: src/components/series/SeriesReviews.tsx
@@ -13777,6 +14160,14 @@ msgstr "Sample a few pages from three chapters on every enabled source and updat
 msgid "Sample chapter"
 msgstr "Sample chapter"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Sample chapter page"
+msgstr "Sample chapter page"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Sample series page"
+msgstr "Sample series page"
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Samples a few pages from every linked source."
 msgstr "Samples a few pages from every linked source."
@@ -13791,6 +14182,7 @@ msgstr "Samples a few pages from every linked source."
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/SettingsSection.tsx
 msgid "Save"
@@ -13821,6 +14213,7 @@ msgid "Save and start"
 msgstr "Save and start"
 
 #: src/components/settings/SecuritySection.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 msgid "Save anyway"
 msgstr "Save anyway"
 
@@ -13964,6 +14357,10 @@ msgstr "Saving"
 msgid "Saving {done}/{total}"
 msgstr "Saving {done}/{total}"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Saving a new source needs a test that passes."
+msgstr "Saving a new source needs a test that passes."
+
 #: src/components/series/ChapterTableRows.tsx
 msgid "Saving for offline failed. Try again from the chapter's menu."
 msgstr "Saving for offline failed. Try again from the chapter's menu."
@@ -14029,6 +14426,10 @@ msgstr "Scan this with your authenticator app, or enter the key manually, then e
 #: src/pages/settings/registry.ts
 msgid "scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner, kavita libraries"
 msgstr "scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner, kavita libraries"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Scanlation group"
+msgstr "Scanlation group"
 
 #: src/api/upgrades.ts
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -14116,8 +14517,8 @@ msgstr "Scraper"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "scrapers, manage sources, priority, source priority, source order, best quality, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
-msgstr "scrapers, manage sources, priority, source priority, source order, best quality, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
+msgid "scrapers, manage sources, priority, source priority, source order, best quality, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe, custom source, add site, set up a site, scanlator, website, definition, import definition"
+msgstr "scrapers, manage sources, priority, source priority, source order, best quality, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe, custom source, add site, set up a site, scanlator, website, definition, import definition"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Screen"
@@ -14179,6 +14580,7 @@ msgstr "Scrolling pace · {chaptersLeft} · {basis}"
 #: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 msgid "Search"
 msgstr "Search"
 
@@ -14221,6 +14623,10 @@ msgstr "Search failed"
 #: src/pages/HealthPage.tsx
 msgid "Search file paths"
 msgstr "Search file paths"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Search for"
+msgstr "Search for"
 
 #: src/components/CommandPalette.tsx
 msgid "Search for “{typed}”"
@@ -14270,6 +14676,10 @@ msgstr "Search query"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Search releases"
 msgstr "Search releases"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Search section"
+msgstr "Search section"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Search shows"
@@ -14556,6 +14966,7 @@ msgstr "Series moved"
 msgid "Series not found"
 msgstr "Series not found"
 
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
 msgid "Series page"
@@ -14682,6 +15093,11 @@ msgstr "Set to <0>0</0> to disable lockout."
 msgid "Set up"
 msgstr "Set up"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Set up a site"
+msgstr "Set up a site"
+
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Set up conversion"
 msgstr "Set up conversion"
@@ -14701,6 +15117,10 @@ msgstr "Set up quality profiles"
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Set up the Kavita connection above to pick libraries."
 msgstr "Set up the Kavita connection above to pick libraries."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Set up this site as a source"
+msgstr "Set up this site as a source"
 
 #: src/pages/ScrobblePage.tsx
 msgid "Set up trackers"
@@ -15019,6 +15439,10 @@ msgstr "Single sign-on saved. Restart Maki to apply it."
 msgid "Single-user mode"
 msgstr "Single-user mode"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Site"
+msgstr "Site"
+
 #: src/pages/HealthPage.tsx
 msgid "Sits in <0>{seriesTitle}</0> and parses to {chapterCount, plural, one {1 chapter} other {# chapters}} in it."
 msgstr "Sits in <0>{seriesTitle}</0> and parses to {chapterCount, plural, one {1 chapter} other {# chapters}} in it."
@@ -15088,6 +15512,10 @@ msgstr "Skip to content"
 msgid "skipped"
 msgstr "skipped"
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Skipped"
+msgstr "Skipped"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Skipped ({skippedFilterCount})"
 msgstr "Skipped ({skippedFilterCount})"
@@ -15151,6 +15579,10 @@ msgstr "Snapshot on disk: {snapshotSize}, refreshed {refreshedAtLabel}"
 #: src/pages/settings/LibraryCards.tsx
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Some checks failed"
+msgstr "Some checks failed"
 
 #: src/components/series/restoreToast.tsx
 msgid "Some removed chapters were not queued: {queueError}"
@@ -15703,6 +16135,7 @@ msgstr "Tells you about every new chapter, whatever your default is."
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "Test"
 msgstr "Test"
@@ -15722,6 +16155,10 @@ msgstr "Test notification sent."
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Test speed"
 msgstr "Test speed"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Text"
+msgstr "Text"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Thai"
@@ -15766,6 +16203,10 @@ msgstr "That was your {label}"
 #: src/pages/reader/ChapterEnd.tsx
 msgid "That's every chapter on disk."
 msgstr "That's every chapter on disk."
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "The {engineLabel} preset reads this part of the site. Nothing to set up here."
+msgstr "The {engineLabel} preset reads this part of the site. Nothing to set up here."
 
 #: src/components/AnimeCoverageBar.tsx
 msgid "The anime covers through ch. {covered}."
@@ -15824,6 +16265,11 @@ msgstr "The catalogue rails need the local MangaBaka database (Settings → Libr
 msgid "The chapter numbers are in the archive's page file names. Certain."
 msgstr "The chapter numbers are in the archive's page file names. Certain."
 
+#. placeholder {0}: site.chapterError
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "The chapter page did not load: {0}"
+msgstr "The chapter page did not load: {0}"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
 msgstr "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
@@ -15847,6 +16293,10 @@ msgstr "The database and <0>config.json</0>, without manga files or covers."
 #: src/components/home/homeSectionDefs.ts
 msgid "The days you read, your streak, chapters and time read, as a card in the hero."
 msgstr "The days you read, your streak, chapters and time read, as a card in the hero."
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "The definition has problems"
+msgstr "The definition has problems"
 
 #: src/api/queue.ts
 msgid "The download client reports an error on this torrent"
@@ -15925,6 +16375,11 @@ msgstr "The file was deleted on purpose. Maki won't download it again unless you
 msgid "The first chapter of {title} is ready to read."
 msgstr "The first chapter of {title} is ready to read."
 
+#. placeholder {0}: site.pages.image.error ?? t`not an image`
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "The first page image did not load: {0}"
+msgstr "The first page image did not load: {0}"
+
 #: src/components/RenameSeriesModal.tsx
 msgid "The folder and every file already match the current naming formats."
 msgstr "The folder and every file already match the current naming formats."
@@ -15933,6 +16388,10 @@ msgstr "The folder and every file already match the current naming formats."
 msgid "The full breakdown is waiting behind this slide."
 msgstr "The full breakdown is waiting behind this slide."
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "The id of a saved source can't change. Import it as a new source instead."
+msgstr "The id of a saved source can't change. Import it as a new source instead."
+
 #: src/api/ssoErrors.ts
 msgid "The identity provider rejected the sign-in request. Check the OIDC client configuration."
 msgstr "The identity provider rejected the sign-in request. Check the OIDC client configuration."
@@ -15940,6 +16399,11 @@ msgstr "The identity provider rejected the sign-in request. Check the OIDC clien
 #: src/api/ssoErrors.ts
 msgid "The identity provider returned no subject"
 msgstr "The identity provider returned no subject"
+
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "The language changes."
+msgstr "The language changes."
 
 #: src/pages/stats/StatsRange.ts
 msgid "the last 12 months"
@@ -15952,6 +16416,10 @@ msgstr "the last 30 days"
 #: src/pages/stats/StatsRange.ts
 msgid "the last 90 days"
 msgstr "the last 90 days"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "The last check could not list the sample series. The site's layout may have changed. Edit the definition to check."
+msgstr "The last check could not list the sample series. The site's layout may have changed. Edit the definition to check."
 
 #: src/components/layout/PageLayoutEditor.tsx
 msgid "The layout could not be loaded."
@@ -16063,6 +16531,15 @@ msgstr "The same counts the Stats page shows, kept here so the groups above have
 msgid "The sample download failed"
 msgstr "The sample download failed"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "The sample series lists different chapter numbers or ids."
+msgstr "The sample series lists different chapter numbers or ids."
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "The sample series' title. Maki looks for a search that finds it."
+msgstr "The sample series' title. Maki looks for a search that finds it."
+
 #: src/components/home/OfflineHome.tsx
 msgid "The saved chapters wouldn't open"
 msgstr "The saved chapters wouldn't open"
@@ -16133,6 +16610,11 @@ msgstr "The sign-in did not complete. Please try again."
 msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr "The single biggest improvement if Maki is reachable from the internet."
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "The site's address changes."
+msgstr "The site's address changes."
+
 #: src/api/queue.ts
 msgid "The source answered with an error"
 msgstr "The source answered with an error"
@@ -16160,6 +16642,10 @@ msgstr "The specific things that keep coming back in your library, each with mor
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "The Suwayomi sources below are the ones it listed last time."
 msgstr "The Suwayomi sources below are the ones it listed last time."
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "The test runs against this series and chapter. Replace them if the site took them down."
+msgstr "The test runs against this series and chapter. Replace them if the site took them down."
 
 #: src/api/upgrades.ts
 msgid "The title might be a different series"
@@ -16247,6 +16733,10 @@ msgstr "These are shown once. They are stored hashed, so nobody (including you) 
 msgid "These files cannot go to the recycle bin. You can delete them permanently instead, and they cannot be restored afterwards."
 msgstr "These files cannot go to the recycle bin. You can delete them permanently instead, and they cannot be restored afterwards."
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "These keep working as hand-made custom sources, and no longer get updates:"
+msgstr "These keep working as hand-made custom sources, and no longer get updates:"
+
 #: src/components/CatalogueRules.tsx
 msgid "These rules need the rules view. Remove some to switch back."
 msgstr "These rules need the rules view. Remove some to switch back."
@@ -16332,6 +16822,10 @@ msgstr "This file is already gone from disk, so nothing is deleted. It drops the
 msgid "This files a request for every matching entry from your {label} list, up to the per-run limit."
 msgstr "This files a request for every matching entry from your {label} list, up to the per-run limit."
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "This is not valid JSON."
+msgstr "This is not valid JSON."
+
 #: src/pages/CreatorPage.tsx
 msgid "This link is missing the creator's name."
 msgstr "This link is missing the creator's name."
@@ -16399,6 +16893,10 @@ msgstr "This repair needs a source chosen by hand"
 msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
 msgstr "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "This repository lists no definitions."
+msgstr "This repository lists no definitions."
+
 #: src/components/pageconversion/ComparePicker.tsx
 msgid "This series has no chapter files to compare."
 msgstr "This series has no chapter files to compare."
@@ -16434,6 +16932,14 @@ msgstr "This series was searched in the last week"
 #: src/api/upgrades.ts
 msgid "This series' profile doesn't aim for volume releases"
 msgstr "This series' profile doesn't aim for volume releases"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "This site has no search, so Maki never finds series on it by itself. Link each series by pasting its URL."
+msgstr "This site has no search, so Maki never finds series on it by itself. Link each series by pasting its URL."
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "This site runs {siteEngine}, which Maki already knows how to read. The next steps are filled in."
+msgstr "This site runs {siteEngine}, which Maki already knows how to read. The next steps are filled in."
 
 #: src/components/SourceMeasurePanel.tsx
 msgid "This source did not serve the sampled pages. It may be down or have changed."
@@ -16545,6 +17051,10 @@ msgstr "Tier order"
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Time"
 msgstr "Time"
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Time between requests (ms)"
+msgstr "Time between requests (ms)"
 
 #: src/pages/stats/RangeControl.tsx
 msgid "Time range"
@@ -17168,18 +17678,28 @@ msgstr "Up to date, last checked {checkedAtLabel}"
 msgid "Upcoming"
 msgstr "Upcoming"
 
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Update {id}"
+msgstr "Update {id}"
+
 #: src/components/layout/SidebarFooter.tsx
 msgid "Update {latestVersion} available"
 msgstr "Update {latestVersion} available"
 
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 msgid "Update available"
 msgstr "Update available"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Update available: {latestVersion}"
 msgstr "Update available: {latestVersion}"
+
+#. placeholder {0}: entry.version
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Update to version {0}"
+msgstr "Update to version {0}"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Updated. This title can appear in recommendations again."
@@ -17344,6 +17864,16 @@ msgstr "Use for taste"
 msgid "Use OPDS"
 msgstr "Use OPDS"
 
+#. placeholder {0}: found.results
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Use the series list page ({0} series), matched by title"
+msgstr "Use the series list page ({0} series), matched by title"
+
+#. placeholder {0}: found.results
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Use the site's search ({0} results for this title)"
+msgstr "Use the site's search ({0} results for this title)"
+
 #: src/components/SourceCompareModal.tsx
 msgid "Use this copy"
 msgstr "Use this copy"
@@ -17494,6 +18024,22 @@ msgstr "Vermilion"
 #: src/pages/settings/SystemCards.tsx
 msgid "Version"
 msgstr "Version"
+
+#. placeholder {0}: entry.version
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "version {0}"
+msgstr "version {0}"
+
+#. placeholder {0}: origin.latestVersion
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Version {0} is available from {repositoryName}."
+msgstr "Version {0} is available from {repositoryName}."
+
+#. placeholder {0}: preview.data.fromVersion
+#. placeholder {1}: preview.data.toVersion
+#: src/pages/settings/CustomRepositoriesPanel.tsx
+msgid "Version {0} to {1}. These parts of the definition change:"
+msgstr "Version {0} to {1}. These parts of the definition change:"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "very tight"
@@ -17726,6 +18272,7 @@ msgstr "Webhook URL"
 msgid "WebP"
 msgstr "WebP"
 
+#: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Webtoon"
 msgstr "Webtoon"
@@ -17851,6 +18398,10 @@ msgstr "Where your taste has moved"
 msgid "Which languages Maki looks for, and which chapters it leaves alone."
 msgstr "Which languages Maki looks for, and which chapters it leaves alone."
 
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Which list holds this series' chapters?"
+msgstr "Which list holds this series' chapters?"
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Which new chapters get fetched as they land"
 msgstr "Which new chapters get fetched as they land"
@@ -17936,6 +18487,10 @@ msgstr "Within the same tier."
 #: src/components/settings/SecuritySection.tsx
 msgid "Without /.well-known/openid-configuration."
 msgstr "Without /.well-known/openid-configuration."
+
+#: src/pages/settings/CustomSourceWizard.tsx
+msgid "Without a chapter page Maki can't guess where the images are. Go back and paste one, or describe them under Advanced."
+msgstr "Without a chapter page Maki can't guess where the images are. Go back and paste one, or describe them under Advanced."
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "won't be recommended again"

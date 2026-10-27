@@ -55,6 +55,7 @@ using Maki.Sources.MangaLib;
 using Maki.Sources.Dynasty;
 using Maki.Sources.AnimeSama;
 using Maki.Sources.CuuTruyen;
+using Maki.Sources.Custom;
 using Maki.Sources.MangaWorld;
 using Maki.Sources.MangaTube;
 using Maki.Sources.MangaDenizi;
@@ -643,6 +644,37 @@ try
         // see that itself to hand off to FlareSolverr.
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler(treat503AsRateLimit: false));
 
+    // Custom sources fetch hosts an admin typed, so unlike the shared challenge client above these
+    // two only connect to public addresses (checked at connect time, redirects included). Spacing is
+    // per source (CustomSourceThrottle), not per host here, and covers page images too.
+    builder.Services.AddHttpClient(CustomSourceFetcher.HttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.MaxResponseContentBufferSize = CustomSourceFetcher.MaxDocumentBytes;
+        })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
+        .AddHttpMessageHandler(() => new SameSiteRedirectHandler())
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler(treat503AsRateLimit: false));
+    builder.Services.AddHttpClient(CustomSourceFetcher.RepositoryHttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.MaxResponseContentBufferSize = CustomSourceFetcher.MaxDocumentBytes;
+        })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true));
+    builder.Services.AddHttpClient(CustomSource.PagesHttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromMinutes(2);
+            client.MaxResponseContentBufferSize = 64 * 1024 * 1024;
+        })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
+        .AddHttpMessageHandler(() => new TransientRetryHandler());
+
     builder.Services.AddHttpClient(FlareSolverrClient.HttpClientName, client =>
         client.Timeout = TimeSpan.FromSeconds(90)); // FS solves can take a while
 
@@ -769,6 +801,17 @@ try
     builder.Services.AddSingleton<SuwayomiMangaIdCache>();
     builder.Services.AddSingleton(_ => new SuwayomiConnectionTester());
     builder.Services.AddSingleton<ISourceProvider, SuwayomiSourceProvider>();
+
+    builder.Services.AddSingleton<CustomSourceFetcher>();
+    builder.Services.AddSingleton<CustomSourceThrottle>();
+    builder.Services.AddSingleton<CustomSourceStore>();
+    builder.Services.AddSingleton<CustomSourceFactory>();
+    builder.Services.AddSingleton<ISourceProvider, CustomSourceProvider>();
+    builder.Services.AddScoped<CustomSourceService>();
+    builder.Services.AddSingleton<CustomSourceProbe>();
+    builder.Services.AddSingleton<CustomRepositoryStore>();
+    builder.Services.AddSingleton<CustomRepositoryClient>();
+    builder.Services.AddScoped<CustomRepositoryService>();
     AddSuwayomiClient(SuwayomiClient.HttpClientName, TimeSpan.FromSeconds(60), perRequest: true);
     AddSuwayomiClient(SuwayomiClient.PagesHttpClientName, TimeSpan.FromMinutes(2), perRequest: false);
 
@@ -1121,6 +1164,17 @@ try
             .WithIdentity("read-file-cleanup")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(30))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
+        // Hourly tick; each custom source is probed at most every six hours (CustomSourceHealthJob.Every).
+        q.ScheduleJob<Maki.Api.Jobs.CustomSourceHealthJob>(t => t
+            .WithIdentity("custom-source-health")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(10))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever()));
+
+        q.ScheduleJob<Maki.Api.Jobs.CustomSourceRepositoryJob>(t => t
+            .WithIdentity("custom-source-repositories")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
 
         // Stable job key so a failed Suwayomi search can run it early (HealthCheckJob.RequestSoonAsync).
         q.AddJob<Maki.Api.Jobs.HealthCheckJob>(j => j.WithIdentity(Maki.Api.Jobs.HealthCheckJob.Key));
