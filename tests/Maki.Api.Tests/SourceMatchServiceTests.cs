@@ -17,6 +17,7 @@ namespace Maki.Api.Tests;
 public class SourceMatchServiceTests : IDisposable
 {
     private readonly TestDb _db = new();
+    private readonly FakeRelatedTitles _store = new();
 
     public void Dispose() => _db.Dispose();
 
@@ -69,7 +70,7 @@ public class SourceMatchServiceTests : IDisposable
         var service = new SourceMatchService(
             context, new SourceRegistry(sources), appSettings, availability,
             new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
-            NullLogger<SourceMatchService>.Instance);
+            _store, NullLogger<SourceMatchService>.Instance);
         return await service.AutoMatchAsync(series, default, progress);
     }
 
@@ -150,7 +151,7 @@ public class SourceMatchServiceTests : IDisposable
         var service = new SourceMatchService(
             context, new SourceRegistry([first, miss, second]), appSettings, Sources.AllEnabled,
             new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
-            NullLogger<SourceMatchService>.Instance);
+            _store, NullLogger<SourceMatchService>.Instance);
 
         var candidates = (await Candidates(service, new Series { Id = seriesId, Title = "Hajime no Ippo" }))
             .OrderBy(c => c.Priority)
@@ -180,7 +181,7 @@ public class SourceMatchServiceTests : IDisposable
             _db.NewContext(), new SourceRegistry([slow, fast]),
             new FakeAppSettings().Set(SettingKeys.SourcePriorityOrder, "slow,fast"), Sources.AllEnabled,
             new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
-            NullLogger<SourceMatchService>.Instance);
+            _store, NullLogger<SourceMatchService>.Instance);
 
         var found = Channel.CreateUnbounded<SourceCandidate>();
         var run = service.FindCandidatesAsync(new Series { Title = "Hajime no Ippo" }, found.Writer);
@@ -222,7 +223,7 @@ public class SourceMatchServiceTests : IDisposable
         var searchCache = new SourceMatchSearchCache(TimeProvider.System);
         SourceMatchService NewService() => new(
             _db.NewContext(), sources, appSettings, Sources.AllEnabled,
-            new SourceExternalIdCache(TimeProvider.System), searchCache, NullLogger<SourceMatchService>.Instance);
+            new SourceExternalIdCache(TimeProvider.System), searchCache, _store, NullLogger<SourceMatchService>.Instance);
 
         await Candidates(NewService(), new Series { Title = "Hajime no Ippo", MangaBakaId = 42 });
 
@@ -435,6 +436,52 @@ public class SourceMatchServiceTests : IDisposable
 
         Assert.Empty(mapped);
         Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Fact]
+    public async Task Parent_series_result_is_refused_when_MangaBaka_relates_it()
+    {
+        // Regression: a spin-off whose title is the parent's plus a tail, on a site that carries
+        // the parent and not the spin-off. The parent scores 0.72 here, past the 0.6 floor, and the
+        // shape rule accepts it as the shorter form of our title, so the title pass alone maps the
+        // spin-off to the parent's whole chapter list. MangaBaka relates the two, and a result that
+        // names a related work better than it names the series is that work.
+        var seriesId = _db.SeedSeries("Call of the Night: Paradise Arc", configure: s => s.MangaBakaId = 7);
+        _store.Related[7] = ["Call of the Night", "Yofukashi no Uta"];
+        var source = new FakeSource { Name = "fake", OnSearch = _ => [Hit("parent", "Call of the Night")] };
+
+        var mapped = await RunAutoMatch(seriesId, source);
+
+        Assert.Empty(mapped);
+        Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Fact]
+    public async Task Parent_series_result_is_refused_when_the_parent_is_in_the_library()
+    {
+        // Without a MangaBaka relation, another library series with that exact title is the same
+        // evidence: the result names the neighbour, not us.
+        _db.SeedSeries("Call of the Night");
+        var seriesId = _db.SeedSeries("Call of the Night: Paradise Arc");
+        var source = new FakeSource { Name = "fake", OnSearch = _ => [Hit("parent", "Call of the Night")] };
+
+        var mapped = await RunAutoMatch(seriesId, source);
+
+        Assert.Empty(mapped);
+        Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Theory]
+    [InlineData("Call of the Night", "Call of the Night")]
+    [InlineData("Call of the Night: Paradise Arc", null)]
+    [InlineData("Yofukashi no Uta", "Yofukashi no Uta")]
+    [InlineData("Something Else Entirely", null)]
+    public void NamesRival_blames_a_rival_only_when_it_outscores_the_series(string resultTitle, string? expected)
+    {
+        string[] queries = ["Call of the Night: Paradise Arc", "Yofukashi no Uta: The Paradise Arc"];
+        string[] rivals = ["Call of the Night", "Yofukashi no Uta"];
+
+        Assert.Equal(expected, SourceMatchService.NamesRival(queries, rivals, resultTitle));
     }
 
     [Fact]

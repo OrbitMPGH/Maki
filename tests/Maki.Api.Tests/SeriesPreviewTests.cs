@@ -68,7 +68,8 @@ public class SeriesPreviewTests : IDisposable
             sp.GetRequiredService<MakiDbContext>(), new SourceRegistry(sources),
             new FakeAppSettings().Set(SettingKeys.SourcePriorityOrder, string.Join(",", sources.Select(s => s.Name))),
             Sources.AllEnabled, new SourceExternalIdCache(TimeProvider.System),
-            new SourceMatchSearchCache(TimeProvider.System), NullLogger<SourceMatchService>.Instance));
+            new SourceMatchSearchCache(TimeProvider.System), new FakeRelatedTitles(),
+            NullLogger<SourceMatchService>.Instance));
 
         var queue = new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance);
         var prior = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");

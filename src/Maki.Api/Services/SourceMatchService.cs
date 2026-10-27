@@ -1,10 +1,12 @@
 ﻿using System.Text.RegularExpressions;
 using System.Threading.Channels;
 using Maki.Core.Entities;
+using Maki.Core.Parsing;
 using Maki.Core.Scrobbling;
 using Maki.Core.Quality;
 using Maki.Core.Sources;
 using Maki.Data;
+using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -59,6 +61,7 @@ public partial class SourceMatchService(
     SourceAvailability sourceAvailability,
     SourceExternalIdCache externalIdCache,
     SourceMatchSearchCache searchCache,
+    MangaBakaLocalStore store,
     ILogger<SourceMatchService> logger)
 {
     /// <summary>
@@ -154,26 +157,68 @@ public partial class SourceMatchService(
     /// fan-out starts. Sources are searched in parallel and an EF entity is not thread-safe, so no
     /// task is given the <see cref="Series"/> itself.
     /// </summary>
+    /// <param name="Rivals">
+    /// Titles of other works a search result could be naming instead of this series (see
+    /// <see cref="RivalTitlesAsync"/>), already reduced to the ones shaped like one of its own titles.
+    /// </param>
     internal sealed record MatchTarget(
         string Title,
         string? OriginalTitle,
         IReadOnlyDictionary<string, string> ExternalIds,
         IReadOnlyList<string> Authors,
-        IReadOnlyList<LocalizedTitle> AltTitles)
+        IReadOnlyList<LocalizedTitle> AltTitles,
+        IReadOnlyList<string> Rivals)
     {
-        public static MatchTarget For(Series series) =>
+        public static MatchTarget For(Series series, IReadOnlyList<string> rivals) =>
             new(series.Title, DisambiguatingOriginalTitle(series), ExternalIdsOf(series),
                 [.. AuthorNames(series.AuthorStory).Concat(AuthorNames(series.AuthorArt)).Distinct()],
-                [.. series.AltTitles]);
+                [.. series.AltTitles], rivals);
 
         public bool SameAs(MatchTarget other) =>
             Title == other.Title &&
             OriginalTitle == other.OriginalTitle &&
             AltTitles.SequenceEqual(other.AltTitles) &&
             Authors.SequenceEqual(other.Authors) &&
+            Rivals.SequenceEqual(other.Rivals, StringComparer.Ordinal) &&
             ExternalIds.Count == other.ExternalIds.Count &&
             ExternalIds.All(pair => other.ExternalIds.TryGetValue(pair.Key, out var value) && value == pair.Value);
     }
+
+    /// <summary>
+    /// The titles a search result for <paramref name="series"/> could be naming instead of it: the
+    /// works one MangaBaka relation away (a parent series, a sequel, a spin-off) and every other
+    /// library series, kept only when shaped like a whole-word extension of one of its own titles
+    /// (<see cref="ReleaseTitleMatcher.Rivals"/>), the same set the torrent search judges releases
+    /// against.
+    /// </summary>
+    /// <remarks>
+    /// The shape rule that lets "Hajime no Ippo" match "Hajime no Ippo: Fighting Spirit!" also lets
+    /// "Call of the Night: Paradise Arc" match "Call of the Night" at 0.72, and no threshold separates
+    /// a subtitle from a spin-off: text alone cannot tell them apart. Only a known rival can, so the
+    /// title pass refuses a result that names one of these better than it names the series. A series
+    /// with no MangaBaka id and no library neighbours gets an empty list and matches as before.
+    /// Read before the fan-out, on the caller's thread: the searches run in parallel and may not touch
+    /// the DbContext.
+    /// </remarks>
+    private async Task<IReadOnlyList<string>> RivalTitlesAsync(Series series, CancellationToken ct)
+    {
+        var ours = ReleaseTitleMatcher.Titles(series.Title, series.OriginalTitle, series.AltTitles);
+        IEnumerable<string> related = series.MangaBakaId is { } id ? await store.GetRelatedTitlesAsync(id, ct) : [];
+
+        // Unfiltered on purpose: the titles are compared, never shown, and a restricted user's add
+        // should reach the verdict an admin's does. Read once per service instance, so a bulk
+        // re-match pays for it once.
+        _libraryTitles ??= (await db.Series.AsNoTracking().IgnoreQueryFilters()
+                .Select(s => new { s.Id, s.Title, s.OriginalTitle, s.AltTitles })
+                .ToListAsync(ct))
+            .Select(s => (SeriesId: s.Id, Titles: ReleaseTitleMatcher.Titles(s.Title, s.OriginalTitle, s.AltTitles)))
+            .ToList();
+        var others = _libraryTitles.Where(s => s.SeriesId != series.Id).SelectMany(s => s.Titles);
+
+        return ReleaseTitleMatcher.Rivals(ours, related.Concat(others));
+    }
+
+    private List<(int SeriesId, IReadOnlyList<string> Titles)>? _libraryTitles;
 
     /// <summary>
     /// Reads the search results' tracker ids and returns the one that is provably the same work,
@@ -464,16 +509,55 @@ public partial class SourceMatchService(
             .Where(r => !r.UserGenerated || AuthorsAgree(target.Authors, r.Author))
             .ToList();
 
-        var candidates = usable
-            .Select(r => new ScrobbleCandidate(r.SourceSeriesId, r.Title, [], r.Url))
-            .ToList();
-        var best = ScrobbleMatching.BestCandidate(
-            [target.Title, .. NativeTitles(source, target)], candidates, MatchThreshold);
+        // A result that names a related work better than it names this series is that work: a site
+        // that carries the parent series and not the spin-off answers a spin-off's search with the
+        // parent, whose title the shape rule accepts as a shorter form of ours. Dropped before the
+        // pick, so a weaker result that names the series itself can still win.
+        string[] queries = [target.Title, .. NativeTitles(source, target)];
+        var candidates = new List<ScrobbleCandidate>();
+        foreach (var result in usable)
+        {
+            if (NamesRival(queries, target.Rivals, result.Title) is { } rival)
+            {
+                logger.LogInformation(
+                    "Skipping {Source} result {Title} ({Id}): it names related work {Rival} better than the series",
+                    source.Name, result.Title, result.SourceSeriesId, rival);
+                continue;
+            }
+
+            candidates.Add(new ScrobbleCandidate(result.SourceSeriesId, result.Title, [], result.Url));
+        }
+
+        var best = ScrobbleMatching.BestCandidate(queries, candidates, MatchThreshold);
         return best is null
             ? new SourceOutcome(source, priority, null, SourceMappingOrigin.TitleSearch, null)
             : new SourceOutcome(
                 source, priority, usable.First(r => r.SourceSeriesId == best.Id),
                 SourceMappingOrigin.TitleSearch, null);
+    }
+
+    /// <summary>
+    /// The rival a result's title names better than it names the series, if any. Scored with the
+    /// same gated <see cref="ScrobbleMatching.MatchScore"/> on both sides and compared strictly, so
+    /// a tie keeps ours and a result the title pass would not accept anyway is never blamed on a rival.
+    /// </summary>
+    internal static string? NamesRival(IReadOnlyList<string> queries, IReadOnlyList<string> rivals, string resultTitle)
+    {
+        if (rivals.Count == 0)
+        {
+            return null;
+        }
+
+        var ours = ScrobbleMatching.MatchScore(queries, resultTitle, MatchThreshold);
+        if (ours < MatchThreshold)
+        {
+            return null;
+        }
+
+        var (rival, score) = rivals
+            .Select(r => (Title: r, Score: ScrobbleMatching.MatchScore([r], resultTitle, MatchThreshold)))
+            .MaxBy(r => r.Score);
+        return score > ours ? rival : null;
     }
 
     /// <summary>
@@ -640,7 +724,7 @@ public partial class SourceMatchService(
         Exception? error = null;
         try
         {
-            var target = MatchTarget.For(series);
+            var target = MatchTarget.For(series, await RivalTitlesAsync(series, ct));
             var run = await SearchSourcesAsync(
                 target, new HashSet<string>(StringComparer.OrdinalIgnoreCase), null, null, ct,
                 (outcome, languages) =>
@@ -696,7 +780,7 @@ public partial class SourceMatchService(
             StringComparer.OrdinalIgnoreCase);
 
         // A Discover preview of this series may have searched every source minutes ago.
-        var target = MatchTarget.For(series);
+        var target = MatchTarget.For(series, await RivalTitlesAsync(series, ct));
         var known = series.MangaBakaId is { } mangaBakaId ? searchCache.Take(mangaBakaId, target) : null;
         if (known is not null)
         {
