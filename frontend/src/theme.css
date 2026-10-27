@@ -2893,13 +2893,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: rgba(6, 7, 11, 0.62);
 }
 .discover-meta {
+  container: discover-meta / inline-size;
   position: absolute;
   left: 10px;
   right: 10px;
   bottom: 9px;
   z-index: 1;
 }
-/* "2017, Completed" on the left, the chapter count right-aligned. The left side ellipsizes. */
+/* Status disc, word and year on the left, the chapter count right-aligned. */
 .discover-sub {
   display: flex;
   align-items: center;
@@ -2915,11 +2916,60 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: rgba(255, 255, 255, 0.7);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
+/* Wraps inside a one-line box, so a year with no room drops out whole instead of ellipsizing. */
 .discover-sub-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 5px;
+  min-width: 0;
+  height: 16px;
+  overflow: hidden;
+}
+.discover-sub-state {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.discover-sub-disc {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--tone);
+  color: var(--tone-on, #fff);
+  box-shadow: 0 0 0 1px rgba(6, 7, 11, 0.45);
+}
+.discover-sub-word {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-transform: capitalize;
+  line-height: 16px;
+}
+.discover-sub-year {
+  line-height: 16px;
+  color: rgba(255, 255, 255, 0.55);
+}
+.discover-sub-year::before {
+  content: '·';
+  margin-right: 5px;
+}
+/* A rail-width card has no room for "Completed" beside the chapter count, so it reads like a
+   library cover: the disc alone, the word kept for screen readers. */
+@container discover-meta (width < 150px) {
+  .discover-sub-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .discover-sub-year::before {
+    content: none;
+  }
 }
 .discover-sub-chapters {
   flex: none;
