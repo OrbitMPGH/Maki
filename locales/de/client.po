@@ -3556,9 +3556,13 @@ msgid "Already queued"
 msgstr "Bereits in der Warteschlange"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Already read or seen"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
-msgid "Already read or seen, taste unchanged"
-msgstr "Bereits gelesen oder gesehen, Geschmack unverändert"
+#~ msgid "Already read or seen, taste unchanged"
+#~ msgstr "Bereits gelesen oder gesehen, Geschmack unverändert"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -3584,6 +3588,10 @@ msgstr "Auch abgetrennte Dateien von der Festplatte löschen"
 #, fuzzy
 msgid "Also delete files on disk"
 msgstr "Auch Dateien auf der Festplatte löschen"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Also delete the downloaded files"
+msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
@@ -7050,6 +7058,10 @@ msgstr "Festplattengröße"
 #, fuzzy
 msgid "Disk used"
 msgstr "Belegter Speicher"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Disliked it"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/series/ArchiveHint.tsx
@@ -10617,6 +10629,10 @@ msgstr ""
 #, fuzzy
 msgid "Light"
 msgstr "Hell"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Liked it"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
@@ -16086,6 +16102,10 @@ msgstr "Diese Serie vom Gerät entfernen"
 #, fuzzy
 msgid "Remove this torrent?"
 msgstr "Diesen Torrent entfernen?"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Remove torrents from the download client after import"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy

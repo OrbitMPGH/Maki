@@ -160,11 +160,15 @@ public class SettingsController(
     /// </param>
     /// <param name="ScoutOnMatch">See <see cref="SettingKeys.SourcesScoutOnMatch"/>. Null on a write leaves it alone.</param>
     /// <param name="AdaptiveRefresh">See <see cref="SettingKeys.MonitoringAdaptiveRefresh"/>. Null on a write leaves it alone.</param>
+    /// <param name="RemoveCompleted">
+    /// See <see cref="SettingKeys.DownloadClientRemoveCompleted"/>: <c>never</c> or <c>afterimport</c>. Null on a write leaves it alone.
+    /// </param>
+    /// <param name="RemoveData">See <see cref="SettingKeys.DownloadClientRemoveData"/>. Null on a write leaves it alone.</param>
     public record DownloadSettings(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
         bool UseHardlinks = true, int? BulkHoldThreshold = null, string? SourceOrder = null, bool? ScoutOnMatch = null,
-        bool? AdaptiveRefresh = null);
+        bool? AdaptiveRefresh = null, string? RemoveCompleted = null, bool? RemoveData = null);
     /// <param name="Enabled">Turns the daily upgrade scan on.</param>
     /// <param name="DefaultProfileId">The upgrade profile a series without its own pin uses, or null for none.</param>
     /// <param name="MaxPerDay">0 means no cap.</param>
@@ -1002,7 +1006,15 @@ public class SettingsController(
         await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
         await SourceOrderNameAsync(ct),
         await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true",
-        await AdaptiveRefreshAsync(ct)));
+        await AdaptiveRefreshAsync(ct),
+        await RemoveCompletedAsync(ct),
+        await RemoveDataAsync(ct)));
+
+    private async Task<string> RemoveCompletedAsync(CancellationToken ct) =>
+        TorrentRemovalModes.Parse(await settings.GetAsync(SettingKeys.DownloadClientRemoveCompleted, ct)) ?? TorrentRemovalModes.Never;
+
+    private async Task<bool> RemoveDataAsync(CancellationToken ct) =>
+        await settings.GetAsync(SettingKeys.DownloadClientRemoveData, ct) != "false";
 
     private async Task<bool> AdaptiveRefreshAsync(CancellationToken ct) =>
         await settings.GetAsync(SettingKeys.MonitoringAdaptiveRefresh, ct) != "false";
@@ -1054,6 +1066,12 @@ public class SettingsController(
             return this.Fail(localizer, "error.sourceMapping.unknownOrderMode", new { mode = request.SourceOrder });
         }
 
+        var removeCompleted = TorrentRemovalModes.Parse(request.RemoveCompleted);
+        if (request.RemoveCompleted is not null && removeCompleted is null)
+        {
+            return this.Fail(localizer, "error.settings.torrentRemovalModeInvalid", new { mode = request.RemoveCompleted });
+        }
+
         await settings.SetAsync(
             SettingKeys.DownloadConcurrentChapters,
             request.ConcurrentChapters.ToString(CultureInfo.InvariantCulture),
@@ -1087,6 +1105,16 @@ public class SettingsController(
             await settings.SetAsync(SettingKeys.SourcesScoutOnMatch, scoutOnMatch ? "true" : "false", ct);
         }
 
+        if (request.RemoveCompleted is not null)
+        {
+            await settings.SetAsync(SettingKeys.DownloadClientRemoveCompleted, removeCompleted, ct);
+        }
+
+        if (request.RemoveData is { } removeData)
+        {
+            await settings.SetAsync(SettingKeys.DownloadClientRemoveData, removeData ? "true" : "false", ct);
+        }
+
         if (request.AdaptiveRefresh is { } adaptive && adaptive != await AdaptiveRefreshAsync(ct))
         {
             await settings.SetAsync(SettingKeys.MonitoringAdaptiveRefresh, adaptive ? "true" : "false", ct);
@@ -1100,7 +1128,9 @@ public class SettingsController(
             BulkHoldThreshold = await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
             SourceOrder = await SourceOrderNameAsync(ct),
             ScoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true",
-            AdaptiveRefresh = await AdaptiveRefreshAsync(ct)
+            AdaptiveRefresh = await AdaptiveRefreshAsync(ct),
+            RemoveCompleted = await RemoveCompletedAsync(ct),
+            RemoveData = await RemoveDataAsync(ct)
         });
     }
 

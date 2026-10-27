@@ -2948,8 +2948,12 @@ msgid "Already queued"
 msgstr "Already queued"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-msgid "Already read or seen, taste unchanged"
-msgstr "Already read or seen, taste unchanged"
+msgid "Already read or seen"
+msgstr "Already read or seen"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+#~ msgid "Already read or seen, taste unchanged"
+#~ msgstr "Already read or seen, taste unchanged"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Already running"
@@ -2970,6 +2974,10 @@ msgstr "Also delete detached files from disk"
 #: src/components/series/RemoveSeriesDialog.tsx
 msgid "Also delete files on disk"
 msgstr "Also delete files on disk"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Also delete the downloaded files"
+msgstr "Also delete the downloaded files"
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Also for you"
@@ -5861,6 +5869,10 @@ msgstr "Disk size"
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Disk used"
 msgstr "Disk used"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Disliked it"
+msgstr "Disliked it"
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/series/ArchiveHint.tsx
@@ -8825,6 +8837,10 @@ msgstr "Library view"
 #: src/theme-context.tsx
 msgid "Light"
 msgstr "Light"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Liked it"
+msgstr "Liked it"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
@@ -13374,6 +13390,10 @@ msgstr "Remove this series from the device"
 #: src/pages/ActivityPage.tsx
 msgid "Remove this torrent?"
 msgstr "Remove this torrent?"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Remove torrents from the download client after import"
+msgstr "Remove torrents from the download client after import"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove without cleanup"

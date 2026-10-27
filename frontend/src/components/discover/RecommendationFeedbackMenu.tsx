@@ -63,9 +63,25 @@ export function RecommendationFeedbackMenu({ providerId }: { providerId: string 
       }
       const eventId = result.eventId
       const revision = result.state.revision
-      notifications.show({
+      // Seen is neutral on purpose, so the opinion is offered here as a follow-up.
+      const offerOpinion = command.action === 'mark-exposed' && result.state.sentiment === 'none'
+      const opinion = (action: 'like' | 'dislike') => {
+        notifications.hide(toast)
+        void submit(action, undefined, {
+          id, action, expectedRevision: revision, clientMutationId: randomUUID(),
+        })
+      }
+      const toast = notifications.show({
         message: <Group gap="xs" wrap="wrap">
           <Text size="sm">{describe(result.feedbackEffect, result.queueEffect)}</Text>
+          {offerOpinion && <>
+            <Button size="xs" variant="subtle" leftSection={<IconThumbUp size={14} />} onClick={() => opinion('like')}>
+              <Trans>Liked it</Trans>
+            </Button>
+            <Button size="xs" variant="subtle" leftSection={<IconThumbDown size={14} />} onClick={() => opinion('dislike')}>
+              <Trans>Disliked it</Trans>
+            </Button>
+          </>}
           {eventId && <Button size="xs" variant="subtle" onClick={() => {
             undo.mutateAsync({
               eventId, expectedRevision: revision,
@@ -169,7 +185,7 @@ export function RecommendationFeedbackMenu({ providerId }: { providerId: string 
             {t`Hide this and its franchise`}
           </Menu.Item>
           <Menu.Divider />
-          <Menu.Label>{t`Already read or seen, taste unchanged`}</Menu.Label>
+          <Menu.Label>{t`Already read or seen`}</Menu.Label>
           <Menu.Item leftSection={<IconEye size={16} />} onClick={() => void submit('mark-exposed', 'manga')}>
             {t`Read manga elsewhere`}
           </Menu.Item>

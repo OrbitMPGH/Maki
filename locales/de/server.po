@@ -3038,6 +3038,12 @@ msgstr "Das Download-Timeout muss 0 (keine Begrenzung) oder zwischen {min} und {
 msgid "error.settings.bulkHoldRange"
 msgstr "Die Rückhalteschwelle muss zwischen 0 (aus) und {max} Kapiteln liegen"
 
+#. {mode} is the value that was sent and is never translated.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unknown torrent removal mode: {mode}
+msgid "error.settings.torrentRemovalModeInvalid"
+msgstr ""
+
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Smart Download refill point must be between {min} and {max} chapters
 #, fuzzy

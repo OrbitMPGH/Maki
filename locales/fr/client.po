@@ -3556,9 +3556,13 @@ msgid "Already queued"
 msgstr "Déjà en file"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Already read or seen"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
-msgid "Already read or seen, taste unchanged"
-msgstr "Déjà lu ou vu, les goûts restent inchangés"
+#~ msgid "Already read or seen, taste unchanged"
+#~ msgstr "Déjà lu ou vu, les goûts restent inchangés"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -3584,6 +3588,10 @@ msgstr "Supprimer aussi les fichiers détachés du disque"
 #, fuzzy
 msgid "Also delete files on disk"
 msgstr "Supprimer aussi les fichiers du disque"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Also delete the downloaded files"
+msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
@@ -7050,6 +7058,10 @@ msgstr "Taille du disque"
 #, fuzzy
 msgid "Disk used"
 msgstr "Espace disque utilisé"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Disliked it"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/series/ArchiveHint.tsx
@@ -10617,6 +10629,10 @@ msgstr ""
 #, fuzzy
 msgid "Light"
 msgstr "Clair"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Liked it"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
@@ -16086,6 +16102,10 @@ msgstr "Retirer cette série de l'appareil"
 #, fuzzy
 msgid "Remove this torrent?"
 msgstr "Retirer ce torrent ?"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Remove torrents from the download client after import"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy

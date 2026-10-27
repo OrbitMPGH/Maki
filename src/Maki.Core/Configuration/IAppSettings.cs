@@ -54,6 +54,10 @@ public static class SettingKeys
     public const string DownloadClientPathMapFrom = "downloadclient.pathmapfrom";
     /// <summary>...the path Maki can actually read (e.g. @"Z:\downloads"). Empty = no rewrite.</summary>
     public const string DownloadClientPathMapTo = "downloadclient.pathmapto";
+    /// <summary>When Maki removes a torrent from the client: <c>never</c> (unset) or <c>afterimport</c>.</summary>
+    public const string DownloadClientRemoveCompleted = "downloadclient.removecompleted";
+    /// <summary>"false" keeps the downloaded files when a torrent is removed; unset or "true" deletes them.</summary>
+    public const string DownloadClientRemoveData = "downloadclient.removedata";
     public const string KavitaUrl = "kavita.url";
     public const string KavitaApiKey = "kavita.apikey";
     public const string KavitaPathMapFrom = "kavita.pathmapfrom";

@@ -216,8 +216,8 @@ public class DownloadQueueActiveChapterTests : IDisposable
                 other.CommandText =
                     $"""
                      INSERT INTO "DownloadQueue" ("SeriesId", "ChapterId", "Protocol", "Status", "PagesTotal",
-                         "PagesDone", "RetryCount", "QueuedAt", "SortOrder", "Origin")
-                     VALUES ({seriesId}, {chapterId}, 0, {(int)QueueStatus.Queued}, 0, 0, 0, '2026-01-01 00:00:00', 0, 0)
+                         "PagesDone", "RetryCount", "QueuedAt", "SortOrder", "Origin", "ClientRemovalDeleteData")
+                     VALUES ({seriesId}, {chapterId}, 0, {(int)QueueStatus.Queued}, 0, 0, 0, '2026-01-01 00:00:00', 0, 0, 0)
                      """;
                 await other.ExecuteNonQueryAsync(cancellationToken);
             }

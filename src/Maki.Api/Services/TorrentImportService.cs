@@ -156,9 +156,14 @@ public record TorrentImportPlan(
 /// </param>
 /// <param name="ErrorKey">Catalogue key for a failure Maki worded, or null. See <see cref="Error"/>.</param>
 /// <param name="ErrorArgs">Placeholders for <paramref name="ErrorKey"/>, or null when it has none.</param>
+/// <param name="PlacedFresh">
+/// Every imported file was hardlinked or copied into the library by this import, none adopted from a
+/// file already at its name. Only then is deleting the download known to leave the library whole.
+/// </param>
 public record TorrentImportOutcome(
     bool Applied, string? Error, int Imported, int Linked, int Unrecognized, int Deleted, int Skipped,
-    IReadOnlyList<string> ImportedPaths, string? ErrorKey = null, object? ErrorArgs = null, Guid? HistoryGroupId = null);
+    IReadOnlyList<string> ImportedPaths, string? ErrorKey = null, object? ErrorArgs = null, Guid? HistoryGroupId = null,
+    bool PlacedFresh = false);
 
 /// <summary>
 /// Imports the CBZ files of a finished torrent into a series folder, and works out first whether
@@ -212,36 +217,38 @@ public class TorrentImportService(
     public const string SeriesArchivedKey = "error.series.archived";
 
     /// <summary>
-    /// Where the download client put this item's data, as Maki sees it. Null when the torrent is gone,
-    /// or its path isn't reachable from here (the client in a container with a different mount).
+    /// Where the download client put this item's data, as Maki sees it. The client's answer wins while
+    /// it lists the torrent; once it doesn't (removed there, or the client is down), the path recorded
+    /// when the download finished, even if that is gone too, so the plan can name it. Null when the
+    /// torrent was never seen finished and the client no longer has it.
     /// </summary>
     public async Task<string?> ResolveContentPathAsync(DownloadQueueItem item, CancellationToken ct)
     {
-        var hash = ReleaseInfoOf(item)?.TorrentHash;
-        if (hash is null)
-        {
-            return null;
-        }
-
-        TorrentClientSettings client;
-        try
-        {
-            client = await releaseService.GetClientSettingsAsync(ct);
-        }
-        catch (InvalidOperationException)
-        {
-            return null;
-        }
-
-        var torrents = await torrentClients.For(client.Kind).ListAsync(client, ct);
-        var torrent = torrents.FirstOrDefault(t => t.Hash.Equals(hash, StringComparison.OrdinalIgnoreCase));
-        if (torrent is null)
+        var info = ReleaseInfoOf(item);
+        if (info?.TorrentHash is not { } hash)
         {
             return null;
         }
 
         var pathMap = await releaseService.GetClientPathMapAsync(ct);
-        return PathRemapper.Map(torrent.ContentPath, pathMap.From, pathMap.To);
+        var reported = await ListedContentPathAsync(hash, ct) ?? info.ContentPath;
+        return reported is null ? null : PathRemapper.Map(reported, pathMap.From, pathMap.To);
+    }
+
+    private async Task<string?> ListedContentPathAsync(string hash, CancellationToken ct)
+    {
+        try
+        {
+            var client = await releaseService.GetClientSettingsAsync(ct);
+            var torrents = await torrentClients.For(client.Kind).ListAsync(client, ct);
+            return torrents.FirstOrDefault(t => t.Hash.Equals(hash, StringComparison.OrdinalIgnoreCase))?.ContentPath;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException ||
+                                   (ex is TaskCanceledException && !ct.IsCancellationRequested))
+        {
+            // Not configured or not answering. TorrentClientException is an InvalidOperationException.
+            return null;
+        }
     }
 
     /// <summary>
@@ -574,7 +581,36 @@ public class TorrentImportService(
         }
 
         return new TorrentImportOutcome(
-            true, null, imported.Count, linked, unrecognized, deleted, skipped, imported, HistoryGroupId: groupId);
+            true, null, imported.Count, linked, unrecognized, deleted, skipped, imported, HistoryGroupId: groupId,
+            PlacedFresh: hardlinked + freshCopies == imported.Count);
+    }
+
+    /// <summary>
+    /// Queues the torrent behind a just-imported item for removal from the client, when
+    /// <see cref="SettingKeys.DownloadClientRemoveCompleted"/> asks for it. What the removal will do is
+    /// decided here and kept on the row; the caller saves it with the item's Completed status.
+    /// <para>
+    /// An unattended import that brought nothing in leaves the torrent alone, since nobody looked at it, and
+    /// so does one the client already had before the grab (or that the poll never saw, so nobody can say).
+    /// The files are deleted with it only when the setting allows and this import placed every one itself.
+    /// </para>
+    /// </summary>
+    public async Task MarkForClientRemovalAsync(
+        DownloadQueueItem item, TorrentImportOutcome outcome, bool settledByUser, CancellationToken ct)
+    {
+        var mode = TorrentRemovalModes.Parse(await settings.GetAsync(SettingKeys.DownloadClientRemoveCompleted, ct));
+        if (mode != TorrentRemovalModes.AfterImport || ReleaseInfoOf(item) is not { TorrentHash: not null, AddedBeforeGrab: false } ||
+            (!settledByUser && outcome.Imported == 0))
+        {
+            return;
+        }
+
+        var client = await DownloadClientSettingsStore.LoadAsync(settings, ct);
+        item.ClientRemovalPendingAt = DateTime.UtcNow;
+        item.ClientRemovalMode = mode;
+        item.ClientRemovalDeleteData = outcome is { Imported: > 0, PlacedFresh: true } &&
+            await settings.GetAsync(SettingKeys.DownloadClientRemoveData, ct) != "false";
+        item.ClientRemovalClient = DownloadClientSettingsStore.Fingerprint(client);
     }
 
     /// <summary>

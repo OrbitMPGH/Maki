@@ -371,6 +371,27 @@ public class RecommendationServiceTasteTests : IDisposable
     }
 
     [Fact]
+    public async Task A_thumbs_up_is_never_recommended_back_under_chosen_seeds()
+    {
+        // The recent-activity rail passes its own seeds, so the liked title is not a seed there and
+        // the seed exclusion that keeps it out of the Recommended tab never applies.
+        SeedSeries(101);
+        using (var db = _db.NewContext())
+        {
+            db.RecommendationFeedback.Add(new RecommendationFeedback
+            {
+                UserId = 1, ProviderId = 77, Sentiment = RecommendationSentiment.Liked
+            });
+            db.SaveChanges();
+        }
+
+        var (service, _) = Service();
+        var result = await service.GetAsync(new RecommendationRequest(SeedIds: [101]), new TestCurrentUser(1));
+
+        Assert.Empty(result.Similar);
+    }
+
+    [Fact]
     public async Task A_thumbs_up_loses_to_an_explicit_top_rating_on_the_same_work()
     {
         var seriesId = SeedSeries(101);

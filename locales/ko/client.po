@@ -3556,9 +3556,13 @@ msgid "Already queued"
 msgstr "이미 대기열에 있음"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Already read or seen"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
-msgid "Already read or seen, taste unchanged"
-msgstr "이미 읽었거나 봤음, 취향은 변경되지 않음"
+#~ msgid "Already read or seen, taste unchanged"
+#~ msgstr "이미 읽었거나 봤음, 취향은 변경되지 않음"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -3584,6 +3588,10 @@ msgstr "연결되지 않은 파일도 디스크에서 삭제"
 #, fuzzy
 msgid "Also delete files on disk"
 msgstr "디스크의 파일도 삭제"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Also delete the downloaded files"
+msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
@@ -7050,6 +7058,10 @@ msgstr "디스크 크기"
 #, fuzzy
 msgid "Disk used"
 msgstr "디스크 사용량"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Disliked it"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/series/ArchiveHint.tsx
@@ -10617,6 +10629,10 @@ msgstr ""
 #, fuzzy
 msgid "Light"
 msgstr "밝은"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Liked it"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
@@ -16086,6 +16102,10 @@ msgstr "이 기기에서 이 시리즈 제거"
 #, fuzzy
 msgid "Remove this torrent?"
 msgstr "이 토렌트를 제거할까요?"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Remove torrents from the download client after import"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy

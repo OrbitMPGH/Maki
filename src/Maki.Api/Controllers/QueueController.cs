@@ -481,6 +481,7 @@ public class QueueController(
         item.CompletedAt = DateTime.UtcNow;
         item.PagesDone = item.PagesTotal;
         item.ClearError();
+        await importer.MarkForClientRemovalAsync(item, outcome, settledByUser: true, ct);
 
         // Saved before the rename: its active-download check re-queries this row, and an item still
         // reading as in-flight makes it refuse to name the files it just imported.
