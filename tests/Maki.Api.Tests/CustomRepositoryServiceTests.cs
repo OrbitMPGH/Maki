@@ -142,6 +142,100 @@ public sealed class CustomRepositoryServiceTests : IDisposable
         Assert.Equal("Quiet Pen", reverted.Name);
         Assert.Equal(1, reverted.Origin?.Version);
         Assert.Null(reverted.Previous);
+
+        // The version the admin just left isn't put back by the next daily pass.
+        await Service().RunDailyAsync(default);
+        Assert.Equal("Quiet Pen", (await Installed()).Name);
+        Assert.Equal("updateAvailable", await StateOf());
+
+        // By hand it still applies.
+        Assert.IsType<CustomSourceService.Saved>(await Service().ApplyUpdateAsync("quietpen", false, default));
+        Assert.Equal(2, (await Installed()).Origin?.Version);
+    }
+
+    [Theory]
+    [InlineData("http://repo.example/quietpen-2.json", "deadbeef")]
+    [InlineData(null, "")]
+    public async Task An_update_without_an_https_file_and_a_checksum_waits(string? fileUrl, string sha)
+    {
+        Publish(1, Definition());
+        await Service().AddAsync(Index, default);
+        await Service().InstallAsync(Index, "quietpen", false, default);
+        await Service().SetAutoUpdateAsync(Index, true, default);
+        var file = Definition(name: "Quiet Pen Scans");
+        _web.Text("http://repo.example/quietpen-2.json", file);
+        _web.Text("https://repo.example/quietpen-2.json", file);
+        _web.Text(Index, $$"""
+            { "name": "Quiet repo", "definitions": [
+              { "id": "quietpen", "name": "Quiet Pen", "schema": 1, "version": 2, "url": "{{fileUrl ?? "quietpen-2.json"}}", "sha256": "{{sha}}" }
+            ] }
+            """);
+
+        await Service().RunDailyAsync(default);
+
+        Assert.Equal("Quiet Pen", (await Installed()).Name);
+        Assert.Equal("error.customRepository.autoUpdateUnsafe", (await _repositories.ReadAsync()).Single().LastError?.Key);
+    }
+
+    [Fact]
+    public async Task An_update_decided_on_an_entry_that_changed_since_is_not_saved()
+    {
+        Publish(1, Definition());
+        await Service().AddAsync(Index, default);
+        await Service().InstallAsync(Index, "quietpen", false, default);
+        var before = (await _store.ReadAsync()).Single().Raw;
+        await Sources().SaveAsync(CustomSourceDefinition.Parse(Definition(name: "Mine")), true, default);
+
+        var result = await Sources().SaveAsync(CustomSourceDefinition.Parse(Definition(name: "Theirs")), true, default,
+            fromRepository: true, expected: before);
+
+        var refused = Assert.IsType<CustomSourceService.Refused>(result);
+        Assert.Equal("error.customSource.changedMeanwhile", refused.Problems[0].Key);
+        Assert.Equal("Mine", (await Installed()).Name);
+    }
+
+    [Fact]
+    public async Task A_volume_change_on_linked_series_asks_first()
+    {
+        await Sources().SaveAsync(CustomSourceDefinition.Parse(Definition()), true, default);
+        LinkSeries();
+        var withVolume = CustomSourceDefinition.Parse(Definition()) is var d
+            ? d with { Chapters = d.Chapters with { Volume = new FieldExtractor { Value = "2" } } }
+            : null!;
+
+        var result = await Sources().SaveAsync(withVolume, false, default);
+
+        Assert.Contains("chapters", Assert.IsType<CustomSourceService.NeedsConfirmation>(result).Reasons);
+    }
+
+    [Fact]
+    public async Task An_unreadable_stored_entry_is_neither_overwritten_unasked_nor_taken_by_an_install()
+    {
+        await _store.UpdateAsync(entries =>
+        {
+            entries.Add(System.Text.Json.Nodes.JsonNode.Parse("""{ "schema": 9, "id": "quietpen", "name": "Later" }""")!.AsObject());
+            return (true, true);
+        });
+        await _registry.ReloadAsync();
+        LinkSeries();
+        Publish(1, Definition());
+        await Service().AddAsync(Index, default);
+
+        var install = await Service().InstallAsync(Index, "quietpen", false, default);
+        var save = await Sources().SaveAsync(CustomSourceDefinition.Parse(Definition()), false, default);
+
+        Assert.Equal("error.customRepository.idTaken", Assert.IsType<CustomRepositoryService.Refused>(install).Key);
+        Assert.Contains("unverified", Assert.IsType<CustomSourceService.NeedsConfirmation>(save).Reasons);
+    }
+
+    [Fact]
+    public async Task A_stored_value_that_does_not_parse_is_never_written_over()
+    {
+        await _settings.SetAsync(Maki.Core.Configuration.SettingKeys.CustomSources, "{ not json");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Sources().SaveAsync(CustomSourceDefinition.Parse(Definition()), true, default));
+        Assert.Equal("{ not json", await _settings.GetAsync(Maki.Core.Configuration.SettingKeys.CustomSources));
     }
 
     [Fact]

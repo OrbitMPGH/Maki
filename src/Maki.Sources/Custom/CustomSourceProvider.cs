@@ -9,12 +9,14 @@ namespace Maki.Sources.Custom;
 /// <summary>Builds a <see cref="CustomSource"/> from a definition with the shared fetcher, page client and throttle.</summary>
 public sealed class CustomSourceFactory(CustomSourceFetcher fetcher, IHttpClientFactory http, CustomSourceThrottle throttle)
 {
-    public CustomSource Create(CustomSourceDefinition definition) => new(
-        definition,
-        fetcher,
-        http,
-        throttle.For(definition.SourceName, definition.MinIntervalMs),
-        (host, referer) => fetcher.SessionHeadersFor(host, referer));
+    /// <summary>A source for the registry; its saved interval becomes the gate's.</summary>
+    public CustomSource Create(CustomSourceDefinition definition) => Build(definition, throttle.For(definition.SourceName, definition.MinIntervalMs));
+
+    /// <summary>A source for a draft, a test or a comparison, sharing the saved source's gate as it stands.</summary>
+    public CustomSource CreateDraft(CustomSourceDefinition definition) => Build(definition, throttle.Shared(definition.SourceName, definition.MinIntervalMs));
+
+    private CustomSource Build(CustomSourceDefinition definition, SpacingGate gate) =>
+        new(definition, fetcher, http, gate, (host, referer) => fetcher.SessionHeadersFor(host, referer));
 }
 
 /// <summary>

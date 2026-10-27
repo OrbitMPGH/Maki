@@ -116,7 +116,7 @@ public sealed partial class CustomSource
                         .FirstOrDefault(i => i.ValueKind == JsonValueKind.Array && i.GetArrayLength() > 0);
                     if (images.ValueKind == JsonValueKind.Array)
                     {
-                        urls = ImageUrls(page, images.EnumerateArray().Select(i => i.GetString()));
+                        urls = ImageUrls(page, images.EnumerateArray().Select(i => i.ValueKind == JsonValueKind.String ? i.GetString() : null));
                     }
                 }
             }

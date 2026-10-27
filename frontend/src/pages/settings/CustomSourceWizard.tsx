@@ -213,7 +213,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
   const revert = useRevertCustomSource()
   const [updateOpen, setUpdateOpen] = useState(false)
   const origin = mode === 'edit' ? state?.origin ?? null : null
-  const repositoryName = origin ? (origin.repositoryName ?? origin.repository) : ''
+  const repositoryName = origin ? (origin.repositoryName ?? origin.repository ?? '') : ''
 
   useEffect(() => {
     if (!opened) return
@@ -247,7 +247,13 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
     test.mutate(stored)
   }, [opened, mode, initial])
 
-  const definition = useMemo(() => (draft ? compact(draft) : null), [draft])
+  // Where a stored entry came from is the server's to keep; sending it back would only count its
+  // whole previous version against the size limit.
+  const definition = useMemo(() => {
+    if (!draft) return null
+    const { origin: _origin, previous: _previous, detached: _detached, ...rest } = compact(draft)
+    return rest as CustomSourceDefinition
+  }, [draft])
   const key = definition ? JSON.stringify(definition) : null
   const report = test.data && testedKey === key ? test.data : null
   const engine = typeof definition?.engine === 'string' ? definition.engine : null

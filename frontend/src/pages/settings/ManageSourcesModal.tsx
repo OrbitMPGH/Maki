@@ -153,9 +153,15 @@ function SourceTags({ source, contentLabels, nameOfLanguage }: {
         </Tooltip>
       )}
       {source.custom?.origin && (
-        <Tooltip label={source.custom.origin.repository} events={{ hover: true, focus: true, touch: true }} withArrow>
+        <Tooltip
+          label={source.custom.origin.repository}
+          disabled={!source.custom.origin.repository}
+          events={{ hover: true, focus: true, touch: true }}
+          withArrow
+        >
           <span className="source-tag" data-tone="kind" tabIndex={0}>
-            {source.custom.origin.repositoryName ?? sourceHost(source.custom.origin.repository)}
+            {source.custom.origin.repositoryName
+              ?? (source.custom.origin.repository ? sourceHost(source.custom.origin.repository) : null)}
           </span>
         </Tooltip>
       )}

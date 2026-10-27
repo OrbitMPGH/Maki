@@ -41,10 +41,19 @@ public sealed class CustomSourceThrottle
 {
     private readonly ConcurrentDictionary<string, SpacingGate> _gates = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>The gate a registered source runs on, set to its saved interval.</summary>
     public SpacingGate For(string sourceName, int intervalMs)
     {
-        var gate = _gates.GetOrAdd(sourceName, _ => new SpacingGate(TimeSpan.FromMilliseconds(intervalMs)));
+        var gate = Shared(sourceName, intervalMs);
         gate.Interval = TimeSpan.FromMilliseconds(intervalMs);
         return gate;
     }
+
+    /// <summary>
+    /// The same gate for a draft, a test run or a comparison, without touching its interval: an
+    /// unsaved definition must not change how fast the saved one reads the site, but it still waits
+    /// its turn with it.
+    /// </summary>
+    public SpacingGate Shared(string sourceName, int intervalMs) =>
+        _gates.GetOrAdd(sourceName, _ => new SpacingGate(TimeSpan.FromMilliseconds(intervalMs)));
 }

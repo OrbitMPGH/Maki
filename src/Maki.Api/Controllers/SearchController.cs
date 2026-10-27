@@ -305,6 +305,8 @@ public class SearchController(
             .Select(id => id[Jobs.CustomSourceHealthJob.Prefix.Length..])
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var repositories = await repositoryStore.ReadAsync(ct);
+        // Every signed-in user reads this list, and a private repository's URL can carry a token.
+        var isAdmin = currentUser.Has(MakiPermission.Admin);
         object? OriginOf(CustomSource custom)
         {
             if (custom.Definition.Origin is not { } origin)
@@ -316,7 +318,7 @@ public class SearchController(
             var latest = repository?.Index?.Definitions.FirstOrDefault(d => d.Id == custom.Definition.Id)?.Version;
             return new
             {
-                origin.Repository,
+                Repository = isAdmin ? origin.Repository : null,
                 RepositoryName = repository?.Name,
                 origin.Version,
                 UpdateAvailable = !custom.Definition.Detached && latest > origin.Version,

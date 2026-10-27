@@ -144,6 +144,26 @@ public class CustomSourceTests
     }
 
     [Fact]
+    public void A_draft_shares_the_saved_gate_without_changing_its_interval()
+    {
+        var throttle = new CustomSourceThrottle();
+        var saved = throttle.For("custom-x", 5000);
+
+        var draft = throttle.Shared("custom-x", 1000);
+
+        Assert.Same(saved, draft);
+        Assert.Equal(TimeSpan.FromMilliseconds(5000), saved.Interval);
+    }
+
+    [Theory]
+    [InlineData("silentquill.net", "www.silentquill.net", true)]
+    [InlineData("omegascans.org", "api.omegascans.org", true)]
+    [InlineData("silentquill.net", "evil.example", false)]
+    [InlineData("silentquill.net", "silentquill.net.evil.example", false)]
+    public void Redirects_stay_on_the_site_or_its_subdomains(string from, string to, bool allowed) =>
+        Assert.Equal(allowed, SameSiteRedirectHandler.SameSite(from, to));
+
+    [Fact]
     public async Task A_pattern_that_starts_optional_finds_every_page()
     {
         // NonBacktracking found 1 of these 40 on .NET 10.0.1, so extractors must not use it.

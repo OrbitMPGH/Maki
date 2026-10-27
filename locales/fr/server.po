@@ -772,6 +772,18 @@ msgstr ""
 msgid "error.customRepository.nothingToRevert"
 msgstr ""
 
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+#. English: An update of {id} waits for you: its file isn't served over https with a checksum, so it isn't applied on its own.
+msgid "error.customRepository.autoUpdateUnsafe"
+msgstr ""
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomSourceService.cs
+#. English: {id} changed while this was running, so nothing was saved. Look at it again and retry.
+msgid "error.customSource.changedMeanwhile"
+msgstr ""
+
 #: src/Maki.Api/Services/CustomSourceProbe.cs
 #. English: Paste the full address of a series page on the site, starting with https://.
 msgid "error.customSource.probe.urlInvalid"

@@ -655,7 +655,16 @@ try
         })
         .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
+        .AddHttpMessageHandler(() => new SameSiteRedirectHandler())
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler(treat503AsRateLimit: false));
+    builder.Services.AddHttpClient(CustomSourceFetcher.RepositoryHttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.MaxResponseContentBufferSize = CustomSourceFetcher.MaxDocumentBytes;
+        })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true));
     builder.Services.AddHttpClient(CustomSource.PagesHttpClientName, client =>
         {
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);

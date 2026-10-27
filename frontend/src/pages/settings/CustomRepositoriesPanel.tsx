@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Alert, Anchor, Button, Card, Group, List, Modal, Stack, Switch, Table, Text, TextInput, Tooltip } from '@mantine/core'
 import { IconAlertTriangle, IconRefresh, IconTrash } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -56,6 +56,12 @@ export function CustomSourceUpdateDialog({ id, opened, onClose, onApplied }: {
   const preview = useCustomSourceUpdatePreview(opened ? id : null)
   const apply = useApplyCustomSourceUpdate()
   const identity = identityChangeOf(apply.error)
+
+  // Another source's refusal must never carry over: its "go ahead anyway" would confirm this one.
+  useEffect(() => {
+    apply.reset()
+    // Reset only when the dialog opens on a source, not on every mutation identity change.
+  }, [opened, id])
 
   function run(confirm: boolean) {
     if (!id) return

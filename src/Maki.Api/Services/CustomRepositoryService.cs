@@ -109,7 +109,7 @@ public sealed class CustomRepositoryService(
         {
             if (entry.Definition is { Origin: { } origin } definition && CustomRepositoryStore.SameUrl(origin.Repository, url))
             {
-                await sources.SaveAsync(definition with { Origin = null, Detached = false }, confirmed: true, ct, fromRepository: true);
+                await sources.SaveAsync(definition with { Origin = null, Detached = false }, confirmed: true, ct, fromRepository: true, expected: entry.Raw);
                 detached++;
             }
         }
@@ -179,9 +179,10 @@ public sealed class CustomRepositoryService(
 
         var (repository, entry) = found;
 
+        // An entry this build can't read still counts: only one installed from here may be replaced.
         var existing = await sources.FindAsync(entry.Id, ct);
-        if (existing?.Definition is { } current
-            && (current.Origin is null || !CustomRepositoryStore.SameUrl(current.Origin.Repository, repository.Url)))
+        if (existing is not null
+            && (CustomSourceService.OriginOf(existing) is not { } current || !CustomRepositoryStore.SameUrl(current.Repository, repository.Url)))
         {
             return new Refused("error.customRepository.idTaken", new() { ["id"] = entry.Id });
         }
@@ -255,7 +256,11 @@ public sealed class CustomRepositoryService(
             return new Refused("error.customRepository.nothingToRevert", new() { ["id"] = id });
         }
 
-        return await sources.SaveAsync(back with { Previous = null, Detached = false }, confirmed, ct, fromRepository: true);
+        // Without this the next daily pass would put the version the admin just left straight back.
+        var skip = stored.Definition.Origin?.Version;
+        var origin = back.Origin is { } o && skip is not null ? o with { SkipVersion = skip } : back.Origin;
+        return await sources.SaveAsync(back with { Previous = null, Detached = false, Origin = origin }, confirmed, ct,
+            fromRepository: true, expected: stored.Raw);
     }
 
     /// <summary>
@@ -276,8 +281,20 @@ public sealed class CustomRepositoryService(
 
             foreach (var stored in await sources.ListAsync(ct))
             {
-                if (Pending(repository, stored) is not { } entry)
+                if (Pending(repository, stored) is not { } entry || entry.Version <= stored.Definition?.Origin?.SkipVersion)
                 {
+                    continue;
+                }
+
+                // An https index can still point at a plain http file, and the checksum is optional.
+                // Neither is enough to apply unseen.
+                if (!Uri.TryCreate(new Uri(repository.Url), entry.Url, out var file) || file.Scheme != Uri.UriSchemeHttps
+                    || string.IsNullOrWhiteSpace(entry.Sha256))
+                {
+                    await Replace(repository.Url, r => r with
+                    {
+                        LastError = new CustomRepositoryError("error.customRepository.autoUpdateUnsafe", new() { ["id"] = entry.Id })
+                    }, ct);
                     continue;
                 }
 
@@ -330,7 +347,7 @@ public sealed class CustomRepositoryService(
         // One step back is kept, never a chain.
         var previous = stored.Raw.DeepClone().AsObject();
         previous.Remove("previous");
-        return await sources.SaveAsync(next with { Previous = previous }, confirmed, ct, fromRepository: true);
+        return await sources.SaveAsync(next with { Previous = previous }, confirmed, ct, fromRepository: true, expected: stored.Raw);
     }
 
     /// <summary>The definition file, checked against the entry: hash, id, schema, and the validator.</summary>
@@ -424,12 +441,12 @@ public sealed class CustomRepositoryService(
         var entries = (repository.Index?.Definitions ?? []).Select(entry =>
         {
             var stored = installed.FirstOrDefault(s => string.Equals(s.Id, entry.Id, StringComparison.OrdinalIgnoreCase));
-            var origin = stored?.Definition?.Origin;
+            var origin = stored is null ? null : CustomSourceService.OriginOf(stored);
             var fromHere = origin is not null && CustomRepositoryStore.SameUrl(origin.Repository, repository.Url);
             var state = entry.Schema != CustomSourceDefinition.CurrentSchema ? "needsNewerMaki"
                 : stored is null ? "available"
                 : !fromHere ? "idTaken"
-                : stored.Definition!.Detached ? "detached"
+                : stored.Definition is null || stored.Definition.Detached ? "detached"
                 : entry.Version > origin!.Version ? "updateAvailable"
                 : "installed";
             return new EntryView(entry.Id, entry.Name, entry.Language, entry.Version, state, fromHere ? origin!.Version : null);

@@ -180,7 +180,7 @@ public sealed partial class CustomSourceProbe(CustomSourceFetcher fetcher, Custo
     {
         try
         {
-            var cover = (await factory.Create(draft).GetSeriesAsync(seriesId, ct)).CoverUrl;
+            var cover = (await factory.CreateDraft(draft).GetSeriesAsync(seriesId, ct)).CoverUrl;
             return Uri.TryCreate(cover, UriKind.Absolute, out var uri) && !CustomHost.Same(uri.Host, baseUri.Host)
                 ? [CustomHost.Strip(uri.Host).ToLowerInvariant()]
                 : [];
@@ -219,7 +219,7 @@ public sealed partial class CustomSourceProbe(CustomSourceFetcher fetcher, Custo
     {
         try
         {
-            var bytes = await factory.Create(draft).FetchImageAsync(url, ct);
+            var bytes = await factory.CreateDraft(draft).FetchImageAsync(url, ct);
             var format = CustomSourceTester.Sniff(bytes);
             return new ImageResult(format is not null, format, bytes.Length, null);
         }

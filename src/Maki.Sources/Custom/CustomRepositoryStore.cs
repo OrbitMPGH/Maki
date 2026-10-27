@@ -18,7 +18,7 @@ public sealed class CustomRepositoryStore(IAppSettings settings)
         await _lock.WaitAsync(ct);
         try
         {
-            var repositories = Parse(await settings.GetAsync(SettingKeys.CustomRepositories, ct));
+            var repositories = Parse(await settings.GetAsync(SettingKeys.CustomRepositories, ct), forWrite: true);
             var (changed, result) = mutate(repositories);
             if (changed)
             {
@@ -37,7 +37,8 @@ public sealed class CustomRepositoryStore(IAppSettings settings)
     public static bool SameUrl(string a, string b) =>
         string.Equals(a.TrimEnd('/'), b.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
 
-    private static List<CustomRepository> Parse(string? json)
+    /// <summary>Unreadable reads as none, but is never written over, which would drop every repository.</summary>
+    private static List<CustomRepository> Parse(string? json, bool forWrite = false)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -48,9 +49,13 @@ public sealed class CustomRepositoryStore(IAppSettings settings)
         {
             return JsonSerializer.Deserialize<List<CustomRepository>>(json, CustomRepository.Json) ?? [];
         }
-        catch (JsonException)
+        catch (JsonException) when (!forWrite)
         {
             return [];
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException($"The stored {SettingKeys.CustomRepositories} value doesn't parse; refusing to overwrite it", ex);
         }
     }
 }
@@ -81,7 +86,7 @@ public sealed class CustomRepositoryClient(IHttpClientFactory http)
         var args = new Dictionary<string, string> { ["url"] = url.AbsoluteUri };
         try
         {
-            using var response = await http.CreateClient(CustomSourceFetcher.HttpClientName)
+            using var response = await http.CreateClient(CustomSourceFetcher.RepositoryHttpClientName)
                 .GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
             response.EnsureSuccessStatusCode();
             if (response.Content.Headers.ContentLength > maxBytes)

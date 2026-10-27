@@ -189,6 +189,13 @@ public sealed record CustomOrigin
 {
     public string Repository { get; init; } = "";
     public int Version { get; init; }
+
+    /// <summary>
+    /// A version the admin reverted away from. Automatic updates leave it and anything older alone;
+    /// applying an update by hand clears it.
+    /// </summary>
+    public int? SkipVersion { get; init; }
+
     public string? Sha256 { get; init; }
 }
 

@@ -29,7 +29,7 @@ public sealed class CustomSourceStore(IAppSettings settings)
         await _gate.WaitAsync(ct);
         try
         {
-            var entries = Read(await settings.GetAsync(SettingKeys.CustomSources, ct));
+            var entries = Read(await settings.GetAsync(SettingKeys.CustomSources, ct), forWrite: true);
             var (changed, result) = mutate(entries);
             if (changed)
             {
@@ -67,7 +67,11 @@ public sealed class CustomSourceStore(IAppSettings settings)
         }
     }
 
-    private static List<JsonObject> Read(string? json)
+    /// <summary>
+    /// A stored value that doesn't parse reads as no sources, but a write refuses it: writing the
+    /// one entry being saved over it would throw every other definition away.
+    /// </summary>
+    private static List<JsonObject> Read(string? json, bool forWrite = false)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -76,13 +80,17 @@ public sealed class CustomSourceStore(IAppSettings settings)
 
         try
         {
-            return JsonNode.Parse(json) is JsonArray array
-                ? array.OfType<JsonObject>().Select(o => o.DeepClone().AsObject()).ToList()
-                : [];
+            if (JsonNode.Parse(json) is JsonArray array)
+            {
+                return array.OfType<JsonObject>().Select(o => o.DeepClone().AsObject()).ToList();
+            }
         }
         catch (JsonException)
         {
-            return [];
         }
+
+        return forWrite
+            ? throw new InvalidOperationException($"The stored {SettingKeys.CustomSources} value doesn't parse; refusing to overwrite it")
+            : [];
     }
 }

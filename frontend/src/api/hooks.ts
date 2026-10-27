@@ -2958,7 +2958,8 @@ export interface CustomSourceState {
   failing?: boolean
   /** The repository it was installed from, or null for a hand-made one. */
   origin?: {
-    repository: string
+    /** Admins only: a private repository's URL can carry a token. */
+    repository: string | null
     repositoryName: string | null
     version: number
     /** A newer version waits, and the source isn't detached. */

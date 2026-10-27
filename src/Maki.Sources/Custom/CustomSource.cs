@@ -335,9 +335,13 @@ public sealed partial class CustomSource : ISource
             }
         }
 
-        foreach (var (key, value) in Definition.Headers)
+        // A definition's own headers are for its site; an image CDN elsewhere doesn't get them.
+        if (CustomHost.Same(image.Host, _base.Host))
         {
-            headers[key] = value;
+            foreach (var (key, value) in Definition.Headers)
+            {
+                headers[key] = value;
+            }
         }
 
         return headers;

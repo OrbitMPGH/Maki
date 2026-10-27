@@ -38,7 +38,18 @@ public sealed class CustomSourceService(
     /// <summary>Parses a definition sent as JSON, refusing it whole when it is too big or does not parse.</summary>
     public static (CustomSourceDefinition? Definition, CustomSourceProblem? Problem) Parse(JsonElement body)
     {
+        // Where it came from is the server's to set and not part of the definition, so it neither
+        // counts against the size limit (an updated entry carries its whole previous version) nor
+        // gets read.
         var raw = body.GetRawText();
+        if (body.ValueKind == JsonValueKind.Object && JsonNode.Parse(raw) is JsonObject node)
+        {
+            node.Remove("origin");
+            node.Remove("previous");
+            node.Remove("detached");
+            raw = node.ToJsonString();
+        }
+
         if (raw.Length > CustomSourceValidator.MaxDefinitionBytes)
         {
             return (null, new CustomSourceProblem("error.customSource.tooLarge", new { max = CustomSourceValidator.MaxDefinitionBytes / 1024 }));
@@ -46,7 +57,7 @@ public sealed class CustomSourceService(
 
         try
         {
-            return (CustomSourceDefinition.Parse(body), null);
+            return (CustomSourceDefinition.Parse(raw), null);
         }
         catch (JsonException ex)
         {
@@ -91,17 +102,23 @@ public sealed class CustomSourceService(
     /// install, update or revert). Otherwise it is a hand edit: those three come from the stored
     /// entry, and an entry installed from a repository is detached, so its updates stop applying.
     /// </param>
-    public async Task<object> SaveAsync(CustomSourceDefinition definition, bool confirmed, CancellationToken ct, bool fromRepository = false)
+    /// <param name="expected">
+    /// The stored entry the caller decided on. When given, the save goes ahead only if that is still
+    /// what is stored, checked under the store's lock, so an edit made while an update was being
+    /// tested is never overwritten by it.
+    /// </param>
+    public async Task<object> SaveAsync(
+        CustomSourceDefinition definition, bool confirmed, CancellationToken ct, bool fromRepository = false, JsonObject? expected = null)
     {
         var existing = await FindAsync(definition.Id, ct);
         if (!fromRepository)
         {
-            var stored = existing?.Definition;
+            var origin = existing is null ? null : OriginOf(existing);
             definition = definition with
             {
-                Origin = stored?.Origin,
-                Detached = stored?.Origin is not null,
-                Previous = stored?.Previous
+                Origin = origin,
+                Detached = origin is not null,
+                Previous = existing is null ? null : PreviousOf(existing)
             };
         }
 
@@ -109,6 +126,12 @@ public sealed class CustomSourceService(
         if (problems.Count > 0)
         {
             return new Refused(problems);
+        }
+
+        // A stored entry this build can't read can't be compared either: with series linked to it, say so.
+        if (!confirmed && existing is { Definition: null } && await LinkedSeriesAsync(definition.SourceName, ct) is var linkedToInvalid and > 0)
+        {
+            return new NeedsConfirmation(["unverified"], linkedToInvalid, []);
         }
 
         if (!confirmed && existing?.Definition is { } before && IdentityMayChange(before, definition))
@@ -120,10 +143,15 @@ public sealed class CustomSourceService(
             }
         }
 
-        var created = await store.UpdateAsync(entries =>
+        var created = await store.UpdateAsync<bool?>(entries =>
         {
             var json = CustomSourceStore.ToJson(definition);
             var index = entries.FindIndex(e => string.Equals(CustomSourceStore.IdOf(e), definition.Id, StringComparison.OrdinalIgnoreCase));
+            if (expected is not null && (index < 0 || !JsonNode.DeepEquals(entries[index], expected)))
+            {
+                return (false, null);
+            }
+
             if (index >= 0)
             {
                 entries[index] = json;
@@ -134,8 +162,13 @@ public sealed class CustomSourceService(
             return (true, true);
         }, ct);
 
+        if (created is not { } isNew)
+        {
+            return new Refused([new CustomSourceProblem("error.customSource.changedMeanwhile", new { id = definition.Id })]);
+        }
+
         await AfterWriteAsync(definition.SourceName, ct);
-        return new Saved(definition, created);
+        return new Saved(definition, isNew);
     }
 
     /// <summary>Removes the definition. Mappings stay, so importing the same id later brings them back.</summary>
@@ -159,24 +192,34 @@ public sealed class CustomSourceService(
             .Where(m => m.SourceName == name && m.LastError != null)
             .ExecuteUpdateAsync(s => s.SetProperty(m => m.LastError, (string?)null), ct);
 
-        await AfterWriteAsync(name, ct);
+        await AfterWriteAsync(name, ct, deleted: true);
         return true;
     }
 
     public Task<int> LinkedSeriesAsync(string sourceName, CancellationToken ct) =>
         db.SourceMappings.Where(m => m.SourceName == sourceName).Select(m => m.SeriesId).Distinct().CountAsync(ct);
 
-    public CustomSource Build(CustomSourceDefinition definition) => factory.Create(definition);
+    /// <summary>A source to test or compare with; it never changes the saved source's request spacing.</summary>
+    public CustomSource Build(CustomSourceDefinition definition) => factory.CreateDraft(definition);
 
     /// <summary>
-    /// Also drops the source's health row: an edit is checked again on the health job's next tick,
-    /// and a deleted source has nothing left to report.
+    /// An edit makes the health job check the source again on its next tick. The row itself stays,
+    /// so a source that was failing announces its recovery. A deleted source loses its row.
     /// </summary>
-    private async Task AfterWriteAsync(string sourceName, CancellationToken ct)
+    private async Task AfterWriteAsync(string sourceName, CancellationToken ct, bool deleted = false)
     {
         await registry.ReloadAsync(ct);
         listings.EvictSource(sourceName);
-        await db.HealthChecks.Where(r => r.Id == Jobs.CustomSourceHealthJob.Prefix + sourceName).ExecuteDeleteAsync(ct);
+        var row = db.HealthChecks.Where(r => r.Id == Jobs.CustomSourceHealthJob.Prefix + sourceName);
+        if (deleted)
+        {
+            await row.ExecuteDeleteAsync(ct);
+        }
+        else
+        {
+            var due = DateTime.UtcNow - Jobs.CustomSourceHealthJob.Every - TimeSpan.FromMinutes(1);
+            await row.ExecuteUpdateAsync(r => r.SetProperty(x => x.CheckedAt, due), ct);
+        }
     }
 
     private static bool IdentityMayChange(CustomSourceDefinition before, CustomSourceDefinition after) =>
@@ -222,8 +265,8 @@ public sealed class CustomSourceService(
             var newSeriesId = @new.ResolveSeriesIdFromUrl(new Uri(after.Sample.SeriesUrl)) ?? seriesId;
             var newList = await @new.ListChaptersAsync(newSeriesId, ct: ct);
 
-            var oldKeys = oldList.Select(c => $"{c.Number}|{c.SourceChapterId}").ToList();
-            var newKeys = newList.Select(c => $"{c.Number}|{c.SourceChapterId}").ToList();
+            var oldKeys = oldList.Select(IdentityKey).ToList();
+            var newKeys = newList.Select(IdentityKey).ToList();
             if (!oldKeys.SequenceEqual(newKeys))
             {
                 reasons.Add("chapters");
@@ -249,6 +292,39 @@ public sealed class CustomSourceService(
         }
 
         return new NeedsConfirmation(reasons, 0, changes);
+    }
+
+    /// <summary>Where a stored entry came from, read off its raw JSON when this build can't parse the whole definition.</summary>
+    public static CustomOrigin? OriginOf(StoredCustomSource entry)
+    {
+        if (entry.Definition is { } definition)
+        {
+            return definition.Origin;
+        }
+
+        try
+        {
+            return entry.Raw["origin"] is JsonObject origin ? origin.Deserialize<CustomOrigin>(CustomRepository.Json) : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static JsonObject? PreviousOf(StoredCustomSource entry) =>
+        entry.Definition?.Previous ?? entry.Raw["previous"]?.DeepClone() as JsonObject;
+
+    /// <summary>
+    /// What sync tells chapters apart by (<see cref="ChapterIdentity.Matches"/>: number, volume, and
+    /// the label of an unnumbered one), plus the id queued downloads and files hold. A volume
+    /// appearing where there was none counts too, which errs on asking.
+    /// </summary>
+    private static string IdentityKey(SourceChapter chapter)
+    {
+        var labelled = ChapterIdentity.Labelled(chapter);
+        var title = labelled.Number is null ? labelled.Title?.Trim().ToLowerInvariant() : null;
+        return $"{labelled.Number}|{labelled.Volume}|{title}|{labelled.SourceChapterId}";
     }
 
     /// <summary>The listed chapter <see cref="CustomSample.ChapterUrl"/> names, or null.</summary>

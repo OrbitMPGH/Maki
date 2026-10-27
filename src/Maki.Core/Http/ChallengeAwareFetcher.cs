@@ -42,6 +42,9 @@ public class ChallengeAwareFetcher(
     /// </summary>
     protected virtual Task BeforeFlareSolverrAsync(Uri url, CancellationToken ct) => Task.CompletedTask;
 
+    /// <summary>Checks where FlareSolverr's browser ended up, which redirects may have moved; throws to refuse the page.</summary>
+    protected virtual Task AfterFlareSolverrAsync(Uri requested, Uri? landed, CancellationToken ct) => Task.CompletedTask;
+
     public Task<string> GetHtmlAsync(string url, CancellationToken ct = default) =>
         FetchAsync(new HtmlFetchRequest(url), ct);
 
@@ -91,6 +94,7 @@ public class ChallengeAwareFetcher(
             await BeforeFlareSolverrAsync(new Uri(url), ct);
             logger.LogInformation("Solving challenge for {Host} via FlareSolverr", host);
             var solution = await flareSolverr.SolveAsync(flareUrl, url, request.FormBody, request.Cookies, ct);
+            await AfterFlareSolverrAsync(new Uri(url), Uri.TryCreate(solution.Url, UriKind.Absolute, out var landed) ? landed : null, ct);
             StoreSession(host, solution);
 
             // FlareSolverr says "ok" for whatever the origin served, so a ban or 404 page would
