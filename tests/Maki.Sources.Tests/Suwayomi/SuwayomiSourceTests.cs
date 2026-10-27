@@ -80,6 +80,38 @@ public class SuwayomiSourceTests
     }
 
     [Fact]
+    public async Task Locked_and_preview_chapters_are_not_listed()
+    {
+        var h = new SuwayomiHarness();
+        h.MangaByUrl(7);
+        h.Refresh(SuwayomiHarness.Manga(7, SeriesUrl),
+            SuwayomiHarness.Chapter(1, "/c/1", "第1話", -1, sourceOrder: 1),
+            SuwayomiHarness.Chapter(2, "/c/2", "\U0001F512 第2話", -1, sourceOrder: 2),
+            SuwayomiHarness.Chapter(3, "/c/3", "\U0001F4B4 第3話", -1, sourceOrder: 3),
+            SuwayomiHarness.Chapter(4, "/c/4", "\U0001F512 (Preview) 1巻", -1, sourceOrder: 4));
+
+        var chapter = Assert.Single(await h.Source().ListChaptersAsync(SeriesUrl));
+
+        Assert.Equal("/c/1", chapter.SourceChapterId);
+    }
+
+    [Fact]
+    public async Task A_chapter_the_extension_did_not_number_takes_its_number_from_the_name()
+    {
+        var h = new SuwayomiHarness();
+        h.MangaByUrl(7);
+        h.Refresh(SuwayomiHarness.Manga(7, SeriesUrl),
+            SuwayomiHarness.Chapter(1, "/c/1", "第1話: 第1話", -1, sourceOrder: 1),
+            SuwayomiHarness.Chapter(2, "/c/2", "ｅｐｉｓｏｄｅ２\u3000ホットケーキ（１）", -1, sourceOrder: 2),
+            SuwayomiHarness.Chapter(3, "/c/3", "ｅｐｉｓｏｄｅ２\u3000ホットケーキ（２）", -1, sourceOrder: 3),
+            SuwayomiHarness.Chapter(4, "/c/4", "Ch. 5", 7, sourceOrder: 4));
+
+        var chapters = await h.Source().ListChaptersAsync(SeriesUrl);
+
+        Assert.Equal([1m, 2.1m, 2.2m, 7m], chapters.Select(c => c.Number).ToArray());
+    }
+
+    [Fact]
     public async Task A_mixed_language_source_files_chapters_under_the_language_the_admin_chose()
     {
         var h = new SuwayomiHarness();

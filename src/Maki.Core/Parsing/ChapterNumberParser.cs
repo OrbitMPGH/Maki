@@ -4,7 +4,20 @@ using System.Text.RegularExpressions;
 
 namespace Maki.Core.Parsing;
 
-public record ParsedChapter(decimal? Number, int? Volume, bool IsOneShot);
+public record ParsedChapter(decimal? Number, int? Volume, bool IsOneShot, int? Part = null)
+{
+    /// <summary>
+    /// The number with its part folded in as a decimal ("9" part 2 is 9.2), so the parts of one
+    /// chapter stay separate rows instead of collapsing into a single one. A part past 9 has no
+    /// decimal of its own and leaves the chapter unnumbered.
+    /// </summary>
+    public decimal? NumberWithPart => Part switch
+    {
+        null => Number,
+        { } part when Number is { } number && part is >= 1 and <= 9 => number + part / 10m,
+        _ => null
+    };
+}
 
 /// <summary>
 /// The single place chapter identifiers get parsed. Sources feed it whatever string
@@ -15,8 +28,26 @@ public static partial class ChapterNumberParser
 {
     // "Episode 12" is how WeebCentral labels webtoons; read as a one-shot, every episode of a series
     // turned into its own unnumbered chapter.
-    [GeneratedRegex(@"(?:\b(?:ch(?:apter)?|ep(?:isode)?)(?![a-z])\.?\s*)([0-9]+(?:\.[0-9]+|,[0-9]{1,2}(?![0-9]))?)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?:\b(?:ch(?:apter)?|ep(?:isode)?)(?![a-z])[.・]?\s*)([0-9]+(?:\.[0-9]+|,[0-9]{1,2}(?![0-9]))?)", RegexOptions.IgnoreCase)]
     private static partial Regex ChapterPattern();
+
+    // "第12話", "【第14話(1)】", "第 13" and "ep.15 title" as Japanese sources label them.
+    [GeneratedRegex(@"第\s*([0-9]+(?:\.[0-9]+)?)\s*(?:話|$|[:：\s])")]
+    private static partial Regex JapaneseChapterPattern();
+
+    [GeneratedRegex(@"([0-9]+)\s*巻")]
+    private static partial Regex JapaneseVolumePattern();
+
+    // The part of a split chapter: "(2)" or "-2" closing the label, after the chapter marker.
+    [GeneratedRegex(@"(?:[(（]\s*([0-9]{1,2})\s*[)）]|(?<=[話0-9])\s*[-ー]\s*([0-9]{1,2}))\s*[)】\]]?\s*$")]
+    private static partial Regex PartPattern();
+
+    // "【episode22(2)】title": the part sits inside the bracket that closes the chapter marker.
+    [GeneratedRegex(@"(?<=[話0-9])\s*[(（]\s*([0-9]{1,2})\s*[)）]\s*[】\]]")]
+    private static partial Regex BracketedPartPattern();
+
+    [GeneratedRegex("[①-⑩]")]
+    private static partial Regex CircledDigit();
 
     [GeneratedRegex(@"^\s*#?([0-9]+(?:\.[0-9]+|,[0-9]{1,2}(?![0-9]))?)\s*(?:[-:–].*)?$")]
     private static partial Regex BareNumberPattern();
@@ -44,7 +75,8 @@ public static partial class ChapterNumberParser
 
         // Fullwidth digits and letters fold to ASCII, as the ComicWalker and GigaViewer sources already
         // do for their own labels; otherwise a fullwidth number reads as a titled one-shot.
-        var text = chapterRaw.Normalize(NormalizationForm.FormKC).Trim();
+        var text = CircledDigit().Replace(chapterRaw, m => $"({m.Value[0] - '①' + 1})")
+            .Normalize(NormalizationForm.FormKC).Trim();
 
         if (OneShotPattern().IsMatch(text))
         {
@@ -71,7 +103,13 @@ public static partial class ChapterNumberParser
         var chapterMatch = ChapterPattern().Match(text);
         if (chapterMatch.Success && TryParseNumber(chapterMatch.Groups[1].Value) is { } marked)
         {
-            return new ParsedChapter(marked, volume, false);
+            return new ParsedChapter(marked, volume, false, PartOf(text));
+        }
+
+        var japanese = JapaneseChapterPattern().Match(text);
+        if (japanese.Success && TryParseNumber(japanese.Groups[1].Value) is { } japaneseNumber)
+        {
+            return new ParsedChapter(japaneseNumber, volume, false, PartOf(text));
         }
 
         // "100 - The Ending", "#12", "5.5: Extras"
@@ -81,8 +119,31 @@ public static partial class ChapterNumberParser
             return new ParsedChapter(bareNumber, volume, false);
         }
 
+        if (volume is null && JapaneseVolumePattern().Match(text) is { Success: true } tankobon &&
+            int.TryParse(tankobon.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var tankobonVolume))
+        {
+            volume = tankobonVolume;
+        }
+
         // Unparseable: treat as a one-shot/special so it is not lost. A volume-only row keeps its volume.
         return new ParsedChapter(null, volume, IsOneShot: volume is null);
+    }
+
+    private static int? PartOf(string text)
+    {
+        var match = BracketedPartPattern().Match(text);
+        if (!match.Success)
+        {
+            match = PartPattern().Match(text);
+        }
+
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        var digits = match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value;
+        return int.Parse(digits, CultureInfo.InvariantCulture);
     }
 
     /// <summary>

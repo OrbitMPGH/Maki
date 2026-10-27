@@ -131,7 +131,9 @@ public sealed partial class SuwayomiSource(
         await client.EnsureInstalledAsync(SourceId, ct);
         var connection = await client.ConnectionAsync(ct);
         var (mangaId, refresh) = await RefreshAsync(connection, sourceSeriesId, manga: false, chapters: true, ct);
-        var chapters = refresh.Chapters!.Where(c => c.Url.Length > 0).ToList();
+        var chapters = refresh.Chapters!
+            .Where(c => c.Url.Length > 0 && ChapterAccessReader.Of(c.Name) == ChapterAccess.Free)
+            .ToList();
         foreach (var chapter in chapters)
         {
             cache.SetChapter(connection.BaseUri, mangaId, chapter.Url, chapter.Id);
@@ -309,7 +311,7 @@ public sealed partial class SuwayomiSource(
             seriesUrl,
             chapter.Url,
             chapter.Name,
-            chapter.ChapterNumber >= 0 ? (decimal)chapter.ChapterNumber : null,
+            chapter.ChapterNumber >= 0 ? (decimal)chapter.ChapterNumber : parsed.NumberWithPart,
             parsed.Volume,
             TitleOf(chapter.Name),
             language,

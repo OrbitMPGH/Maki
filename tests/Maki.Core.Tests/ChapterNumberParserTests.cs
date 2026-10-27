@@ -34,12 +34,63 @@ public class ChapterNumberParserTests
     [InlineData("Chapter 10,11", 10, null, false)]
     [InlineData("12,13", 12, null, false)]
     [InlineData("Ch.6,10", 6.1, null, false)]
+    [InlineData("第12話", 12, null, false)]
+    [InlineData("第1話: 第1話", 1, null, false)]
+    [InlineData("第 13", 13, null, false)]
+    [InlineData("第2.1話", 2.1, null, false)]
+    [InlineData("【第14話】ピュアでいられない大谷くん", 14, null, false)]
+    [InlineData("ｅｐ．１\u3000こちとらマドンナ", 1, null, false)]
+    [InlineData("ｅｐｉｓｏｄｅ９\u3000溢れる想い", 9, null, false)]
+    [InlineData("EP・15 めくるめくって", 15, null, false)]
     public void Parses_chapter_numbers(string input, double expected, int? volume, bool oneShot)
     {
         var result = ChapterNumberParser.Parse(input);
         Assert.Equal((decimal)expected, result.Number);
         Assert.Equal(volume, result.Volume);
         Assert.Equal(oneShot, result.IsOneShot);
+    }
+
+    [Theory]
+    [InlineData("1巻", 1)]
+    [InlineData("12巻", 12)]
+    public void Reads_japanese_volume_labels_as_volumes(string input, int volume)
+    {
+        var result = ChapterNumberParser.Parse(input);
+        Assert.Null(result.Number);
+        Assert.Equal(volume, result.Volume);
+        Assert.False(result.IsOneShot);
+    }
+
+    [Theory]
+    [InlineData("ｅｐｉｓｏｄｅ４\u3000制御不能な恋心（２）", 4, 2, 4.2)]
+    [InlineData("第13話 一重まぶたの光ちゃん(4)(2)", 13, 2, 13.2)]
+    [InlineData("【episode22(2)】キラキラのち、チカチカ", 22, 2, 22.2)]
+    [InlineData("第2話①", 2, 1, 2.1)]
+    [InlineData("第2話②", 2, 2, 2.2)]
+    [InlineData("第9話 -1", 9, 1, 9.1)]
+    public void Reads_the_part_of_a_split_chapter(string input, double number, int part, double withPart)
+    {
+        var result = ChapterNumberParser.Parse(input);
+        Assert.Equal((decimal)number, result.Number);
+        Assert.Equal(part, result.Part);
+        Assert.Equal((decimal)withPart, result.NumberWithPart);
+    }
+
+    [Theory]
+    [InlineData("第12話")]
+    [InlineData("Ch. 10")]
+    [InlineData("第14話 ピュアでいられない大谷くん")]
+    public void A_whole_chapter_has_no_part(string input)
+    {
+        var result = ChapterNumberParser.Parse(input);
+        Assert.Null(result.Part);
+        Assert.Equal(result.Number, result.NumberWithPart);
+    }
+
+    [Fact]
+    public void A_part_past_nine_has_no_decimal_of_its_own()
+    {
+        Assert.Null(ChapterNumberParser.Parse("第5話（12）").NumberWithPart);
     }
 
     [Theory]
