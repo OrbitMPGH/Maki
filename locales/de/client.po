@@ -2598,11 +2598,6 @@ msgstr "{workCount, plural, one {{shownCount} von # Titel wird angezeigt. Filter
 msgid "{year} – present"
 msgstr "{year} – heute"
 
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{year}, {status}"
-msgstr "{year}, {status}"
-
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "{zone} (this browser)"
@@ -3558,11 +3553,6 @@ msgstr "Bereits in der Warteschlange"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Already read or seen"
 msgstr ""
-
-#: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-#~ msgid "Already read or seen, taste unchanged"
-#~ msgstr "Bereits gelesen oder gesehen, Geschmack unverändert"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy

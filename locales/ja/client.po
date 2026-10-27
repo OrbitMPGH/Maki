@@ -2598,11 +2598,6 @@ msgstr "{workCount, plural, other {#件のタイトルのうち{shownCount}件�
 msgid "{year} – present"
 msgstr "{year}～現在"
 
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{year}, {status}"
-msgstr "{year}、{status}"
-
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "{zone} (this browser)"
@@ -3558,11 +3553,6 @@ msgstr "すでにキューにあります"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Already read or seen"
 msgstr ""
-
-#: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-#~ msgid "Already read or seen, taste unchanged"
-#~ msgstr "既読・視聴済み、好みは変更なし"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy

@@ -2598,11 +2598,6 @@ msgstr "{workCount, plural, other {작품 #개 중 {shownCount}개를 표시합�
 msgid "{year} – present"
 msgstr "{year} – 현재"
 
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{year}, {status}"
-msgstr "{year}, {status}"
-
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "{zone} (this browser)"
@@ -3558,11 +3553,6 @@ msgstr "이미 대기열에 있음"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Already read or seen"
 msgstr ""
-
-#: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-#~ msgid "Already read or seen, taste unchanged"
-#~ msgstr "이미 읽었거나 봤음, 취향은 변경되지 않음"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy

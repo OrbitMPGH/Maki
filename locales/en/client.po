@@ -2154,10 +2154,6 @@ msgstr "{workCount, plural, one {Showing {shownCount} of # title. Filters and th
 msgid "{year} – present"
 msgstr "{year} – present"
 
-#: src/components/ui/DiscoverRail.tsx
-msgid "{year}, {status}"
-msgstr "{year}, {status}"
-
 #: src/components/settings/ProgressSection.tsx
 msgid "{zone} (this browser)"
 msgstr "{zone} (this browser)"
@@ -2950,10 +2946,6 @@ msgstr "Already queued"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Already read or seen"
 msgstr "Already read or seen"
-
-#: src/components/discover/RecommendationFeedbackMenu.tsx
-#~ msgid "Already read or seen, taste unchanged"
-#~ msgstr "Already read or seen, taste unchanged"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Already running"
