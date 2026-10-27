@@ -3,8 +3,7 @@ title: Reading over OPDS and Komga
 description: Connect Panels, Chunky, Mihon and other apps to Maki.
 ---
 
-Maki has two ways for outside apps to read from it. Both are off by default and switched on in the
-OPDS settings.
+Outside apps can read from Maki over OPDS or the Komga-compatible API. Both are off by default.
 
 ## OPDS
 

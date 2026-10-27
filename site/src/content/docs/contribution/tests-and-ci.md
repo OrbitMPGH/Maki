@@ -3,16 +3,11 @@ title: Tests, CI and Storybook
 description: Run the backend tests and frontend checks, use Storybook, and see what CI runs on each pull request.
 ---
 
-Run the same checks CI runs before you open a pull request. This page covers the backend tests, the frontend checks, Storybook, and what [`.github/workflows/ci.yml`](https://github.com/OrbitMPGH/Maki/blob/main/.github/workflows/ci.yml) runs.
+Run the checks CI runs ([`.github/workflows/ci.yml`](https://github.com/OrbitMPGH/Maki/blob/main/.github/workflows/ci.yml)) before you open a pull request.
 
 ## Backend tests
 
-The solution is `Maki.sln` at the repo root. The test projects are under `tests/`:
-
-- `Maki.Api.Tests`
-- `Maki.Core.Tests`
-- `Maki.Metadata.Tests`
-- `Maki.Sources.Tests`
+The solution is `Maki.sln` at the repo root. Test projects under `tests/`: `Maki.Api.Tests`, `Maki.Core.Tests`, `Maki.Metadata.Tests` and `Maki.Sources.Tests`.
 
 ```bash
 dotnet build -c Release
@@ -22,22 +17,20 @@ dotnet test -c Release
 dotnet test tests/Maki.Sources.Tests
 ```
 
-Tests that set a process-wide environment variable, such as the `MAKI_SOURCE_*_BASEURL` overrides, run in their own `base-url-override` collection. They do not run in parallel with tests that check the default hosts.
+Tests that set a process-wide environment variable, such as the `MAKI_SOURCE_*_BASEURL` overrides, run in their own `base-url-override` collection, so they never run in parallel with tests that check the default hosts.
 
 ## Frontend checks
 
 Run these from `frontend/` after `npm ci`.
 
-- `npx tsc -b` type-checks the project. Use this and not `npx tsc --noEmit`. The root `tsconfig.json` has `"files": []` and only project references, so `--noEmit` checks nothing and exits 0 even when the tree is broken.
+- `npx tsc -b` type-checks. Do not use `npx tsc --noEmit`: the root `tsconfig.json` has `"files": []` and only project references, so it checks nothing and exits 0 on a broken tree.
 - `npm run build` runs `tsc -b` and then `vite build`. CI runs this first.
-- `npm run check:secure-context` fails on raw `crypto.randomUUID`, `navigator.clipboard` and similar calls outside their helpers. See [Pull request conventions](/Maki/contribution/pull-requests/#secure-context).
+- `npm run check:secure-context` fails on raw `crypto.randomUUID`, `navigator.clipboard` and similar calls. See [Pull request conventions](/Maki/contribution/pull-requests/#secure-context).
 - `npm run i18n:check` and `npm run i18n:validate` check the translation catalogues. `npm run i18n:bundle` checks the built output, so run `npm run build` first.
-- `npx lingui extract --clean` regenerates `locales/en/client.po` from the `t` and `<Trans>` calls. Run it after you add or change UI text, and commit the result with the code.
+- `npx lingui extract --clean` regenerates `locales/en/client.po` from `t` and `<Trans>` calls. Run it after changing UI text and commit the result.
 - `npm run lint` runs oxlint. CI does not run it.
 
 ## Storybook
-
-Storybook shows the UI one component or page at a time.
 
 ```bash
 cd frontend
@@ -45,16 +38,16 @@ npm run storybook          # UI on http://localhost:6006
 npm run test-storybook     # every story as a browser test
 ```
 
-`test-storybook` runs each story as a Vitest browser test in headless Chromium through Playwright. A story fails when it throws, when its `play` function fails, or when it makes an API request that no mock answers. The first run needs the browser: `npx playwright install chromium`, the same command CI uses.
+`test-storybook` runs each story as a Vitest browser test in headless Chromium (Playwright). A story fails if it throws, its `play` function fails, or it makes an API request no mock answers. The first run needs `npx playwright install chromium`, as in CI.
 
 The rules that catch most people:
 
-- **A new API call needs a mock in the same change.** Mocks live in `frontend/.storybook/mocks/`, one file per area. An unmocked request fails every story that reaches it.
-- **Stories run inside the app's real providers**, set up once in `StoryProviders`. If a component needs a context the app gives it, add it there, not in each story.
-- **Stories use plain English strings, not Lingui macros.** Story text must not end up in the translation catalogues.
-- **Put state and count assertions inside `waitFor`.** A second request can land after the first element appears. A bare assertion can pass locally and fail on every CI run.
+- **A new API call needs a mock in the same change.** Mocks are in `frontend/.storybook/mocks/`, one file per area. An unmocked request fails every story that reaches it.
+- **Stories run inside the app's real providers**, set up once in `StoryProviders`. Add missing contexts there, not per story.
+- **Use plain English strings, not Lingui macros**, so story text stays out of the catalogues.
+- **Put state and count assertions inside `waitFor`.** A second request can land after the first element appears, so a bare assertion can pass locally and fail on every CI run.
 
-The full set of notes is in [`.claude/rules/storybook.md`](https://github.com/OrbitMPGH/Maki/blob/main/.claude/rules/storybook.md).
+Full notes: [`.claude/rules/storybook.md`](https://github.com/OrbitMPGH/Maki/blob/main/.claude/rules/storybook.md).
 
 ## What CI runs
 
@@ -67,7 +60,7 @@ CI runs on every push to `main` and on every pull request.
 1. `npm ci` and `npm run build`
 2. Install Chromium, then `npm run test-storybook`
 3. `npm run check:secure-context`
-4. `npx lingui extract --clean`, `npm run i18n:check`, and a `git diff --exit-code ../locales`. If the diff is not empty, the catalogues were not committed.
+4. `npx lingui extract --clean`, `npm run i18n:check`, and `git diff --exit-code ../locales` (a non-empty diff means uncommitted catalogues).
 5. `npm run i18n:validate`
 6. `npm run i18n:bundle`, which fails if a non-English language ends up in the eager bundle
 

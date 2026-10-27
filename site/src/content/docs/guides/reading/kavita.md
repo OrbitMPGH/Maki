@@ -3,9 +3,9 @@ title: Kavita alongside Maki
 description: Share one library folder with Kavita, and keep scrobbling and read status in step between the two.
 ---
 
-Maki writes plain CBZ files with ComicInfo.xml into your folders, so Kavita can read the same library.
-Connecting Kavita is optional. It lets Maki ask Kavita to scan new files, send cover and metadata,
-and keep read status in step.
+Maki writes plain CBZ files with ComicInfo.xml, so Kavita can read the same library. Connecting
+Kavita is optional. It lets Maki ask Kavita to scan new files, send covers and metadata, and keep
+read status in step.
 
 ## Share the library folder
 
@@ -13,35 +13,30 @@ Point Kavita and Maki at the same folder. In Docker that means mounting the same
 both containers. See [Docker Compose](/Maki/installation/docker-compose/) and
 [Volumes and permissions](/Maki/installation/volumes-and-permissions/).
 
-If Kavita sees the folder under a different path, set the path mapping in **Settings → Integrations →
-Kavita**:
+Under **Settings → Integrations → Kavita**, enter the URL and API key (in Kavita under **User
+Settings → 3rd Party Clients**). If Kavita sees the folder under a different path, which is common
+in Docker, also set the path mapping:
 
-- **Path as Maki sees it** is the folder as Maki sees the library. Only needed when Kavita sees the
-  library under a different path, for example in Docker.
-- **Path as Kavita sees it** is the same folder as Kavita sees it, for example `/manga`.
-
-Add the URL and API key in the same card. The API key is under **User Settings → 3rd Party Clients**
-in Kavita.
+- **Path as Maki sees it**: the library folder as Maki sees it.
+- **Path as Kavita sees it**: the same folder as Kavita sees it, for example `/manga`.
 
 ## What Maki does on its own
 
-Once Kavita is connected, Maki does the following without any switch to turn on:
+Once Kavita is connected, none of this needs a switch:
 
-- After a download, import or move, it asks Kavita to scan that series folder. Kavita runs the scan
-  about a minute later, so the new chapters appear shortly after.
-- Once Kavita has created the series, Maki sends the MangaBaka poster as its cover, the web links, and
+- After a download, import or move, Maki asks Kavita to scan that series folder. Kavita runs the scan
+  about a minute later.
+- Once Kavita has created the series, Maki sends the MangaBaka poster as its cover, the web links and
   the publication status.
-- Reading in Kavita is scrobbled to your trackers. Maki checks every 30 minutes by default. The
-  **Sync now** button on the Scrobble page checks straight away. See also
-  [Trackers](/Maki/features/trackers/).
+- Reading in Kavita is scrobbled to your trackers, checked every 30 minutes by default. **Sync now**
+  on the Scrobble page checks straight away. See [Trackers](/Maki/features/trackers/).
 
 Maki matches a series to its Kavita counterpart by title or folder name, ignoring punctuation. A
 Kavita series with a very different name does not link to a series in Maki.
 
 ## Read status
 
-Read status has three switches and one import. They sit under **Settings → Reading → Kavita read
-sync**.
+Under **Settings → Reading → Kavita read sync**:
 
 - **Mark chapters read in Kavita too** sends reads from Maki to Kavita. It only applies to series
   that match a Kavita series.
@@ -54,14 +49,10 @@ sync**.
 
 ## One Kavita account
 
-Kavita is one server with one API key, so its reading belongs to one Maki account. Choose that
-account under **Settings → Integrations → Kavita → Attribute Kavita's reading to**. If you leave it
-empty, the lowest-numbered admin is used. Only that account imports from Kavita or pushes reads back.
+Kavita has one API key, so its reading belongs to one Maki account. Choose it under **Settings →
+Integrations → Kavita → Attribute Kavita's reading to**. If empty, the lowest-numbered admin is
+used. Only that account imports from Kavita or pushes reads back. If the read sync switches say
+**Kavita's reading belongs to another Maki account**, the chosen account is not yours.
 
-For the scrobbling side, **Scrobble reading from these libraries** on the same card limits which
-Kavita libraries are read. Leave it empty to read all of them.
-
-:::tip
-If the read sync switches say **Kavita's reading belongs to another Maki account**, the account
-chosen above is not yours. Only that account can change read status with Kavita.
-:::
+**Scrobble reading from these libraries** on the same card limits which Kavita libraries are read.
+Leave it empty to read all of them.

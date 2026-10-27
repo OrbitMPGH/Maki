@@ -3,13 +3,11 @@ title: FlareSolverr and Suwayomi
 description: The optional Kavita, FlareSolverr and Suwayomi containers, and where each one is set up in Maki.
 ---
 
-Kavita, FlareSolverr and Suwayomi are optional. Maki works without any of them. This page shows how
-to run them next to Maki in one compose file, and where each one is connected in Maki's settings.
+Kavita, FlareSolverr and Suwayomi are optional. Maki works without any of them.
 
 ## Compose file
 
-This file runs Maki and all three companions on one network. Maki reaches each companion by its
-service name, such as `http://flaresolverr:8191`.
+Maki reaches each companion by its service name, such as `http://flaresolverr:8191`.
 
 ```yaml
 services:
@@ -57,33 +55,25 @@ services:
     restart: unless-stopped
 ```
 
-The `ports` lines only matter if you want to open a companion's own web interface from your browser.
-Maki does not need them.
+The `ports` lines are only for opening a companion's own web interface from your browser. Maki does
+not need them.
 
 ## Kavita
 
-[Kavita](https://www.kavitareader.com) is a reader for your library folder. Maki writes its CBZ files
-with ComicInfo.xml, so Kavita can read the same files without any conversion.
+[Kavita](https://www.kavitareader.com) reads Maki's CBZ files as they are, with no link to Maki. To
+connect the two, fill in the Kavita card under **Settings → Integrations → Kavita**:
 
-Kavita needs no link to Maki to read the files. To connect the two, fill in the Kavita card under
-**Settings → Integrations → Kavita**:
-
-- **URL** is the address Maki uses to reach Kavita. In the compose file above, that is
-  `http://kavita:5000`.
+- **URL** is the address Maki uses to reach Kavita, here `http://kavita:5000`.
 - **API key** comes from Kavita under User Settings, 3rd Party Clients.
-- **Path mapping** is only needed when Maki and Kavita see the library folder at different paths. The
-  compose file mounts `/path/to/manga-library` at `/library` in both containers, so you can leave
-  both mapping fields empty.
+- **Path mapping** is only needed when Maki and Kavita see the library folder at different paths.
+  The compose file mounts it at `/library` in both, so leave both fields empty.
+- **Attribute Kavita's reading to** picks the Kavita user that reading progress is attributed to.
 
-The same card also has **Attribute Kavita's reading to**, which picks the Kavita user that reading
-progress is attributed to.
-See [Reading over OPDS and Komga](/Maki/guides/reading/opds-apps/) if you read in Kavita or another
-app instead.
+If you read in Kavita or another app, see [Reading over OPDS and Komga](/Maki/guides/reading/opds-apps/).
 
 ## FlareSolverr
 
-FlareSolverr solves Cloudflare challenges for sources that sit behind them. Maki sends those requests
-to FlareSolverr, which returns the page.
+FlareSolverr solves Cloudflare challenges for sources that sit behind them.
 
 1. Open **Settings → Downloads → FlareSolverr**.
 2. Set the URL to `http://flaresolverr:8191`.
@@ -94,8 +84,8 @@ The rest work without it.
 
 ## Suwayomi
 
-Suwayomi is a server for Tachiyomi-style extensions. Maki uses it to add more sources next to the
-built-in ones. Extensions are installed in Suwayomi's own interface, not in Maki.
+Suwayomi is a server for Tachiyomi-style extensions, which Maki uses as extra sources. Install the
+extensions in Suwayomi's own interface, not in Maki.
 
 1. Open **Settings → Integrations → Suwayomi**.
 2. Set the URL to `http://suwayomi:4567`.

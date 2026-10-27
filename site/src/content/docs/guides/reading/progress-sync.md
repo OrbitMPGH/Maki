@@ -3,9 +3,8 @@ title: How progress syncs between apps
 description: What happens to read state, Stats and your trackers when you read in Maki, over OPDS, in KOReader, in Kavita or in a Komga app.
 ---
 
-Maki keeps one read state for each series. Every app you read in either writes its progress into that
-state, or takes progress from it. This page explains what each one does, so you know where a chapter
-shows as read.
+Maki keeps one read state per series. Each app you read in writes progress into it, takes progress
+from it, or both.
 
 | Where you read | What reaches Maki | What goes back out |
 | --- | --- | --- |
@@ -17,10 +16,9 @@ shows as read.
 
 ## Reading in Maki
 
-Progress is saved as you read. Time is counted only while the tab is visible and in focus. If you read
-offline, the progress is kept on the device and sent when the connection comes back.
-
-Maki also counts how many chapters you finish. Reads show up in Stats and Rewind as they happen.
+Progress is saved as you read. Time is counted only while the tab is visible and in focus. Offline
+progress is kept on the device and sent when the connection comes back. Reads show up in Stats and
+Rewind as they happen.
 
 ## OPDS apps
 
@@ -32,11 +30,9 @@ See [Reading over OPDS](/Maki/guides/reading/opds-apps/) for setup.
 
 ## KOReader
 
-With **Automatically keep documents in sync** on, KOReader sends your position as you turn pages, and
-again when you close the book or the device sleeps. When you open a book, it asks Maki for the latest
-position. Reads made offline are sent when KOReader reconnects.
-
-Setup and the file matching rules are in [KOReader](/Maki/guides/reading/koreader/).
+KOReader sends your position as you read and asks Maki for the latest position when a book opens.
+Reads made offline are sent when it reconnects. Setup and the file matching rules are in
+[KOReader](/Maki/guides/reading/koreader/).
 
 ## Kavita
 
@@ -50,9 +46,9 @@ Maki's reads reach Kavita only with **Mark chapters read in Kavita too** on. Bot
 
 ## Komga-compatible apps
 
-Apps that use Maki's Komga API send their progress to Maki, and Maki sends read state back. This covers
-Mihon's Komga tracker. One chapter reported as read counts as a read. A jump over several chapters
-marks them read in one go. See [Komga-compatible apps](/Maki/guides/reading/komga-apps/).
+Apps that use Maki's Komga API, including Mihon's Komga tracker, send progress to Maki and get read
+state back. One chapter reported as read counts as a read. A jump over several chapters marks them
+read in one go. See [Komga-compatible apps](/Maki/guides/reading/komga-apps/).
 
 ## Trackers
 

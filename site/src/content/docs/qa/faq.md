@@ -3,8 +3,6 @@ title: Q&A
 description: Short answers to common questions, grouped by topic.
 ---
 
-Find your question under one of these pages.
-
 - [Install and upgrade](/Maki/qa/install/): PUID and PGID, disk space, Kavita libraries and upgrades.
 - [Sources and Cloudflare](/Maki/qa/sources/): FlareSolverr, mirror domains, Suwayomi and custom sources.
 - [Reading apps and sync](/Maki/qa/reading/): Which apps work, offline reading, AVIF pages and KOReader.

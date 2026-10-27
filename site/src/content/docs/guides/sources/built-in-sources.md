@@ -3,11 +3,10 @@ title: Built-in sources
 description: The sources that ship with Maki, Suwayomi extensions and custom sources.
 ---
 
-Sources are built into Maki, so there are no extensions to install.
-
-Maki can also use the sources of extensions installed in [Suwayomi](/Maki/guides/sources/suwayomi/), if you run it.
-
-A site that isn't built in can be added as a [custom source](/Maki/guides/sources/custom-sources/).
+Sources are built into Maki, so there are no extensions to install. If you run
+[Suwayomi](/Maki/guides/sources/suwayomi/), Maki can also use the sources of its installed
+extensions. A site that isn't built in can be added as a
+[custom source](/Maki/guides/sources/custom-sources/).
 
 ## Source list
 

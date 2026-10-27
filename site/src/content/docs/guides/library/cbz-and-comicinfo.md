@@ -3,27 +3,23 @@ title: CBZ and ComicInfo.xml
 description: What goes inside each chapter file Maki writes, and which ComicInfo.xml fields it fills in.
 ---
 
-This page is for anyone reading Maki's files in another app, or checking why a field looks wrong in
-Kavita or another reader. Each chapter Maki downloads becomes one CBZ, which is a zip archive with
-a `ComicInfo.xml` at its root.
+Each chapter Maki downloads becomes one CBZ, a zip archive with a `ComicInfo.xml` at its root. This
+page helps if you read the files in another app, or want to know why a field looks wrong in Kavita
+or another reader.
 
 ## What is inside
 
-- `ComicInfo.xml` at the root of the archive.
-- One image per page, named `001.jpg`, `002.jpg`, and so on. The number has at least three digits,
-  and more only when the chapter has more pages. Readers that sort names as text still get the
-  pages in order.
+- `ComicInfo.xml` at the root.
+- One image per page, named `001.jpg`, `002.jpg` and so on. Names have at least three digits, so
+  readers that sort names as text still get the pages in order.
 
-Page images are stored without compression, since JPEG and PNG are already compressed. The archive
-is written to a `.partial` file first and moved into place once it is complete, so a reader never
-opens a half-written file.
+Page images are stored without compression, since JPEG and PNG are already compressed. Maki writes
+the archive to a `.partial` file and moves it into place when complete, so a reader never opens a
+half-written file.
 
-The series folder may also get a `cover.jpg`. That file sits beside the CBZ files and is not inside
-them.
+The series folder may also get a `cover.jpg` beside the CBZ files, not inside them.
 
 ## ComicInfo.xml fields
-
-Maki fills in the following fields from its own metadata:
 
 | Field | Source |
 | --- | --- |
@@ -47,21 +43,29 @@ Maki fills in the following fields from its own metadata:
 | `ScanInformation` | The scanlation group, when there is one |
 | `PageCount` | Number of pages in the chapter |
 
-`Manga` follows the series type. Manga is `YesAndRightToLeft`. Manhwa and manhua are `Yes`, which
-means left-to-right with manga-style reading. OEL and other types are `No`. A type Maki does not
-recognize gets the manga default.
+`Manga` follows the series type:
+
+| Series type | Value |
+| --- | --- |
+| Manga | `YesAndRightToLeft` |
+| Manhwa, manhua | `Yes` (left-to-right with manga-style reading) |
+| OEL and other types | `No` |
+
+A type Maki does not recognize gets the manga default.
 
 `AgeRating` maps the content rating: safe becomes `Teen`, suggestive becomes `Mature 17+`, erotica
-becomes `Adults Only 18+`, and pornographic becomes `X18+`. The safe rating maps to Teen because
-Maki's ratings say nothing about violence.
+becomes `Adults Only 18+`, and pornographic becomes `X18+`. Safe maps to Teen because Maki's ratings
+say nothing about violence.
 
 ## Files Maki adopts
 
-Files that Maki did not download, such as files from a library import or a finished torrent, can
-get their ComicInfo.xml rewritten. Maki standardizes the series-level fields (title, summary,
-authors, genres) to its own metadata. Chapter-level fields such as the number and title are kept,
-or filled in from the linked chapter. Fields Maki has no opinion on, such as translator or
-characters, stay as they were. Unknown elements are carried over unchanged.
+Files Maki did not download, such as library imports or finished torrents, can get their
+ComicInfo.xml rewritten:
+
+- Series-level fields (title, summary, authors, genres) are standardized to Maki's metadata.
+- Chapter-level fields such as number and title are kept, or filled in from the linked chapter.
+- Fields Maki has no opinion on, such as translator or characters, and unknown elements stay as
+  they were.
 
 Torrent imports rewrite ComicInfo.xml only when every file was copied. A hardlinked file is left
 alone, because a rewrite would replace the shared file with a full copy and undo the hardlink.

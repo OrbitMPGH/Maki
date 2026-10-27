@@ -3,67 +3,64 @@ title: Chapter upgrades and quality
 description: How Maki replaces a chapter with a better copy, how quality profiles and quality formats decide what counts as better, and where the replaced file goes.
 ---
 
-An upgrade swaps a chapter you already have for a better copy of the same chapter. This page covers
-how Maki decides a copy is better, and what happens to the file it replaces. Profiles are edited in
-**Settings, Downloads, Quality profiles**. Formats are edited in **Settings, Downloads, Quality
-formats**. The daily scan is **Settings, Downloads, Upgrade scan**.
+An upgrade swaps a chapter you already have for a better copy of the same chapter. Edit profiles in
+**Settings, Downloads, Quality profiles**, formats in **Settings, Downloads, Quality formats**, and
+the daily scan in **Settings, Downloads, Upgrade scan**.
 
 ## Source tiers
 
-Every copy has a tier, which says where it came from. Tiers are compared before anything else. From
-highest to lowest, the default order is:
+Every copy has a tier showing where it came from. Tiers are compared before anything else. The
+default order, highest first:
 
 1. **Volume.** A digital volume release, usually from a torrent.
-2. **Official.** A copy from an official source such as MANGA Plus or WEBTOON.
+2. **Official.** An official source such as MANGA Plus or WEBTOON.
 3. **Scanlator.** A scanlation source, or a torrent whose tags name a group.
 4. **Aggregator.** A copy scraped from an aggregator source.
-5. **Unknown.** An imported file that Maki has not measured, or whose origin is lost.
+5. **Unknown.** An imported file Maki has not measured, or whose origin is lost.
 
-A profile can reorder the tiers, group two of them so they rank equal, and switch any tier off.
+A profile can reorder the tiers, group two so they rank equal, and switch any tier off.
 
 ## Quality profiles
 
 A profile decides which tiers a series accepts and when a chapter stops being upgraded. Each series
-uses the default profile unless you pin another one from its **Quality profile** menu. A profile
-has these settings:
+uses the default profile unless you pin another from its **Quality profile** menu.
 
-- **Tier order** and **Allowed**: which tiers count, and in what order.
-- **Cutoff**: upgrading stops once a file reaches this tier.
-- **Upgrade until score**: a score a file must reach before upgrading stops. `0` means the score
-  plays no part and only the cutoff matters.
-- **Minimum score gain**: how much better a copy in the same tier must score to replace the file.
-- **Maximum score loss for a higher tier**: how much worse a copy from a higher tier may score and
-  still replace the file. Leave it empty to let a higher tier always win.
-- **Page tolerance %**: how many fewer pages a candidate may have than the file it replaces.
-- **Resolution weight** and **Compression weight**: points for image sharpness and compression.
-  `0` turns each one off.
-- **Allow replacing unknown-tier files**.
-- **Format scores**: points for each quality format.
-- **Let the daily scan upgrade this profile's series**.
+| Setting | What it does |
+| --- | --- |
+| **Tier order**, **Allowed** | Which tiers count, and in what order |
+| **Cutoff** | Upgrading stops once a file reaches this tier |
+| **Upgrade until score** | A score a file must reach before upgrading stops. `0` ignores the score, so only the cutoff matters |
+| **Minimum score gain** | How much better a same-tier copy must score to replace the file |
+| **Maximum score loss for a higher tier** | How much worse a higher-tier copy may score and still replace the file. Empty means a higher tier always wins |
+| **Page tolerance %** | How many fewer pages a candidate may have than the file it replaces |
+| **Resolution weight**, **Compression weight** | Points for image sharpness and compression. `0` turns each off |
+| **Allow replacing unknown-tier files** | Lets unmeasured imports be replaced |
+| **Format scores** | Points for each quality format |
+| **Let the daily scan upgrade this profile's series** | Includes the profile in the daily scan |
 
-Starter profiles are added when Maki first runs. They include **Never upgrades**, which keeps what
-was downloaded first, **Replace aggregator copies**, **Upgrade to official releases**, and **Upgrade
-to digital volumes**. You can edit or delete them.
+Starter profiles are added on first run: **Never upgrades** (keeps what was downloaded first),
+**Replace aggregator copies**, **Upgrade to official releases** and **Upgrade to digital volumes**.
+You can edit or delete them.
 
 ## Quality formats and scores
 
 A quality format is a named set of conditions on a copy. Conditions can check the source, the source
-kind, the image format, the release name against a regex, the language, or the group. A format
-matches when every required condition matches and, if the format has any optional conditions, at
-least one of them does too. A format with no conditions never matches.
+kind, the image format, the release name (regex), the language, or the group. A format matches when
+every required condition matches and, if it has any optional conditions, at least one of those does
+too. A format with no conditions never matches.
 
-A profile gives each format a score. A format scores 0 unless the profile says otherwise, so the
-score only counts when you set it. The example in the seed data gives `-100` to raw or machine
-translated copies and `20` to a trusted digital ripper.
+A profile gives each format a score, and a format scores 0 unless the profile says otherwise. The
+seed data's example gives `-100` to raw or machine-translated copies and `20` to a trusted digital
+ripper.
 
-The score of a copy is the sum of its matched format scores, plus measured points:
+A copy's score is the sum of its matched format scores plus measured points:
 
-- **Resolution** uses the median page width. Each doubling of width adds the resolution weight.
+- **Resolution** uses the median page width. Each doubling adds the resolution weight.
 - **Compression** uses image data per pixel. Each doubling adds the compression weight.
 
-Measurement happens once Maki has the archive. Before a download, Maki scores a listing from what it
-knows and gives unknown attributes their best possible value. Anything that could still reach the
-upgrade gets downloaded to be measured.
+Maki measures once it has the archive. Before a download, it scores a listing from what it knows and
+gives unknown attributes their best possible value, so anything that could still reach the upgrade
+gets downloaded to be measured.
 
 ## When a copy replaces a chapter
 
@@ -72,31 +69,32 @@ A candidate replaces a file only when all of these hold:
 - Its tier is allowed by the profile.
 - It has at least as many pages as the file, within the page tolerance.
 - The file has not already met the cutoff and the upgrade-until score.
-- A copy from a higher tier is not more than the maximum score loss below the file's score. A copy
-  from the same tier must beat the file by the minimum score gain. Maki always requires at least one
-  point, so two copies with the same score never swap places.
-- The file is not protected. A file marked **Protect from upgrades** is never replaced.
+- A higher-tier copy is not more than the maximum score loss below the file's score. A same-tier
+  copy beats the file by the minimum score gain. Maki always requires at least one point, so two
+  copies with the same score never swap.
+- The file is not marked **Protect from upgrades**.
 - The file is not shared. A volume file that backs several chapters is not replaced by one chapter's
   copy.
 
 When a download finishes, Maki measures it and judges it again against the file as it is at that
-moment, under the profile as it is then. A loss deletes the new archive and leaves your library
-alone. A win moves the old file into the trash for the series and puts the new one at the same
-path. Maki also records a history entry for the change, so it can be reverted.
+moment, under the profile as it is then. A loss deletes the new archive. A win moves the old file
+into the series' trash and puts the new one at the same path. Maki records a history entry, so the
+change can be reverted.
 
 ## The daily scan
 
-The scan runs once a day at the hour set by **Daily scan hour**, in server local time. It queues
-upgrades for series whose profile allows the scan. Limits on the scan:
+The scan runs once a day at **Daily scan hour**, in server local time, and queues upgrades for
+series whose profile allows it.
 
-- **Max upgrades per day**. `0` means no cap.
-- **Quiet period (days)**. A chapter is skipped for this long after it was added or last upgraded.
-- **Scan incognito series**. Off skips series set to No scrobble or Full incognito.
+- **Max upgrades per day**: `0` means no cap.
+- **Quiet period (days)**: a chapter is skipped this long after it was added or last upgraded.
+- **Scan incognito series**: off skips series set to No scrobble or Full incognito.
 
-Replaced files wait in `.maki-trash/<SeriesId>/` in the root folder for **Trash retention (days)**,
-which defaults to 14. After that, housekeeping deletes them.
+Replaced files wait in `.maki-trash/<SeriesId>/` in the root folder for **Trash retention (days)**
+(default 14), then housekeeping deletes them. See
+[Retention and deleting files](/Maki/guides/library/retention/).
 
 :::tip
-Converting a file to WebP or AVIF does not make it look like a worse copy. Maki scores it as the
-copy it was downloaded as. See [WebP and AVIF conversion](/Maki/guides/library/page-conversion/).
+Converting a file to WebP or AVIF does not make it look like a worse copy. Maki scores it as the copy
+it was downloaded as. See [WebP and AVIF conversion](/Maki/guides/library/page-conversion/).
 :::

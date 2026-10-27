@@ -3,13 +3,13 @@ title: Legal and responsible use
 description: What Maki does, what the sources do, and what you are responsible for when you run it.
 ---
 
-This page explains what Maki does on your behalf and what is up to you. It is not legal advice.
+This page is not legal advice.
 
 ## What Maki is
 
 Maki organizes your library. It watches the sources you choose, downloads pages and writes them as
 CBZ files into your library folder. Scraper sources connect to third-party websites, and Maki does
-not check whether a site allows its chapters to be downloaded before it does so.
+not check whether a site allows its chapters to be downloaded.
 
 ## Your responsibilities
 
@@ -26,5 +26,5 @@ when they carry the series you follow.
 ## Licensing
 
 Maki is licensed under GPL-3.0. The optional page enhancement models and shaders are separate files
-with their own licences, and one of them is non-commercial. See
-`THIRD_PARTY_NOTICES.md` in the repository for the full list.
+with their own licences, and one of them is non-commercial. See `THIRD_PARTY_NOTICES.md` in the
+repository for the full list.
