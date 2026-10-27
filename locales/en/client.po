@@ -2889,8 +2889,12 @@ msgid "Already queued"
 msgstr "Already queued"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-msgid "Already read or seen, taste unchanged"
-msgstr "Already read or seen, taste unchanged"
+msgid "Already read or seen"
+msgstr "Already read or seen"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+#~ msgid "Already read or seen, taste unchanged"
+#~ msgstr "Already read or seen, taste unchanged"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Already running"
@@ -5736,6 +5740,10 @@ msgstr "Disk size"
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Disk used"
 msgstr "Disk used"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Disliked it"
+msgstr "Disliked it"
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/series/ArchiveHint.tsx
@@ -8600,6 +8608,10 @@ msgstr "Library view"
 #: src/theme-context.tsx
 msgid "Light"
 msgstr "Light"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Liked it"
+msgstr "Liked it"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx

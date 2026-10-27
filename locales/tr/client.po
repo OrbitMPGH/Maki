@@ -3497,9 +3497,13 @@ msgid "Already queued"
 msgstr "Zaten kuyrukta"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Already read or seen"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
-msgid "Already read or seen, taste unchanged"
-msgstr "Zaten okundu veya görüldü, zevk profili değişmedi"
+#~ msgid "Already read or seen, taste unchanged"
+#~ msgstr "Zaten okundu veya görüldü, zevk profili değişmedi"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -6925,6 +6929,10 @@ msgstr "Disk boyutu"
 #, fuzzy
 msgid "Disk used"
 msgstr "Kullanılan disk"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Disliked it"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/series/ArchiveHint.tsx
@@ -10392,6 +10400,10 @@ msgstr ""
 #, fuzzy
 msgid "Light"
 msgstr "Açık"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Liked it"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx

@@ -3497,9 +3497,13 @@ msgid "Already queued"
 msgstr "已在队列中"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Already read or seen"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
-msgid "Already read or seen, taste unchanged"
-msgstr "已读或看过，品味不变"
+#~ msgid "Already read or seen, taste unchanged"
+#~ msgstr "已读或看过，品味不变"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -6925,6 +6929,10 @@ msgstr "磁盘大小"
 #, fuzzy
 msgid "Disk used"
 msgstr "磁盘使用量"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Disliked it"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/series/ArchiveHint.tsx
@@ -10392,6 +10400,10 @@ msgstr ""
 #, fuzzy
 msgid "Light"
 msgstr "浅色"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Liked it"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx

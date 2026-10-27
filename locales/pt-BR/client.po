@@ -3497,9 +3497,13 @@ msgid "Already queued"
 msgstr "Já está na fila"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Already read or seen"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
-msgid "Already read or seen, taste unchanged"
-msgstr "Já lido ou assistido, gosto inalterado"
+#~ msgid "Already read or seen, taste unchanged"
+#~ msgstr "Já lido ou assistido, gosto inalterado"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -6925,6 +6929,10 @@ msgstr "Tamanho em disco"
 #, fuzzy
 msgid "Disk used"
 msgstr "Espaço usado no disco"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Disliked it"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/series/ArchiveHint.tsx
@@ -10392,6 +10400,10 @@ msgstr ""
 #, fuzzy
 msgid "Light"
 msgstr "Claro"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Liked it"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
