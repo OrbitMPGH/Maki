@@ -1,0 +1,48 @@
+---
+title: Features
+description: Everything Maki does, one page per area.
+---
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+## Highlights
+
+- **Automatic monitoring.** Maki checks its sources on a schedule, maps each series to every
+  source that carries it, and downloads new chapters from your preferred one on the next check.
+- **Reader with progress sync.** Paged, double-page, or continuous scroll. Progress is merged
+  with Kavita and sent to AniList, MyAnimeList, Kitsu, MangaBaka, and MangaUpdates. Pages read
+  over OPDS in Panels, Chunky, KOReader, or Mihon count as read too, and KOReader's progress
+  sync brings back chapters read offline on the device.
+- **Recommendations.** Local ONNX embeddings over the MangaBaka catalog find titles similar to
+  what is already in your library, using more than shared genre tags. The Browse tab adds genre
+  rails, blind spots, **Readers like you**, and a **Your Taste** view of how your reading has
+  shifted.
+- **Local metadata.** A local copy of the [MangaBaka](https://mangabaka.org) database gives
+  instant search with no API rate limits, and links each series to its MyAnimeList, AniList,
+  MangaUpdates, and Kitsu IDs. It is required: Maki downloads it on first start and opens once
+  it is installed. Until then the reader still opens chapters already on disk, and admins can
+  reach Settings and Health.
+- **Torrents alongside scrapers.** Search releases through Prowlarr or Jackett and send them to
+  qBittorrent, Transmission or Deluge. Maki imports each one when it finishes, repacking anything
+  that is not already CBZ.
+- **Install it, read offline.** Maki installs to a phone or desktop home screen, keeps saved
+  chapters on the device and sends push notifications for new chapters.
+- **Built for a household.** Per-user history, preferences, tracker accounts, and library access
+  over one shared set of files. It also supports two-factor authentication, API keys, and OpenID
+  Connect single sign-on.
+- **You own the files.** Everything lands on disk as plain CBZ + ComicInfo.xml, so nothing is
+  locked in Maki's database. Any CBZ reader, including Kavita, can use the same folder.
+
+## By area
+
+<CardGrid>
+  <LinkCard title="The reader" description="Paged, double-page and scroll modes, profiles, Home, offline." href="/Maki/features/reader/" />
+  <LinkCard title="Reading in other apps" description="OPDS, KOReader sync, Komga API." href="/Maki/features/reading-apps/" />
+  <LinkCard title="Trackers and scrobbling" description="AniList, MyAnimeList, Kitsu, MangaBaka, MangaUpdates." href="/Maki/features/trackers/" />
+  <LinkCard title="Page enhance" description="Sharper pages in the reader." href="/Maki/features/page-enhance/" />
+  <LinkCard title="Discover" description="Recommendations, rails, metadata." href="/Maki/features/discover/" />
+  <LinkCard title="Stats and Rewind" description="History, levels, streaks." href="/Maki/features/stats/" />
+  <LinkCard title="Monitoring and downloads" description="Schedules, sources, torrents, the queue." href="/Maki/features/monitoring-and-downloads/" />
+  <LinkCard title="Files and library" description="Output, conversion, health, imports." href="/Maki/features/files-and-library/" />
+  <LinkCard title="Administration" description="Users, security, backups, API." href="/Maki/features/administration/" />
+</CardGrid>

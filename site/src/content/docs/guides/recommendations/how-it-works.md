@@ -32,4 +32,4 @@ reviews.
 
 ## Related
 
-The full feature list is in [Features](/Maki/introduction/features/#discover).
+The Discover page is described in [Features](/Maki/features/discover/).

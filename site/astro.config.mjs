@@ -21,7 +21,22 @@ export default defineConfig({
           items: [
             'introduction/what-is-maki',
             'introduction/how-it-works',
-            'introduction/features',
+          ],
+        },
+        {
+          label: 'Features',
+          collapsed: true,
+          items: [
+            'features',
+            'features/reader',
+            'features/reading-apps',
+            'features/trackers',
+            'features/monitoring-and-downloads',
+            'features/files-and-library',
+            'features/discover',
+            'features/page-enhance',
+            'features/stats',
+            'features/administration',
           ],
         },
         {
