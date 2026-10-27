@@ -130,7 +130,7 @@ public static class CustomSourceTester
         }
     }
 
-    private static string? Sniff(byte[] b) => b switch
+    public static string? Sniff(byte[] b) => b switch
     {
         [0xFF, 0xD8, 0xFF, ..] => "jpeg",
         [0x89, 0x50, 0x4E, 0x47, ..] => "png",

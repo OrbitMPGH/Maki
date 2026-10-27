@@ -113,7 +113,20 @@ public static partial class CustomSourceValidator
             Add("error.customSource.searchAndCatalogue");
         }
 
-        if (baseUri is not null)
+        if (d.Engine is not null)
+        {
+            Engine(d, Add);
+        }
+        else if (d.EngineOptions is not null)
+        {
+            Add("error.customSource.fieldInvalid", new { field = "engineOptions" });
+        }
+
+        if (baseUri is not null && d.Engine is not null)
+        {
+            Sample(baseUri, d, Add);
+        }
+        else if (baseUri is not null)
         {
             if (d.Search is { } search)
             {
@@ -157,15 +170,50 @@ public static partial class CustomSourceValidator
             List(d.Pages.List, "pages.list", Add);
             Fields(d.Pages.List, Add, ("pages.image", d.Pages.Image));
 
-            SampleUrl(baseUri, d.Sample.SeriesUrl, "sample.seriesUrl", Add);
-            SampleUrl(baseUri, d.Sample.ChapterUrl, "sample.chapterUrl", Add);
-            if (d.Search is not null && string.IsNullOrWhiteSpace(d.Sample.Query))
-            {
-                Add("error.customSource.sampleQueryRequired");
-            }
+            Sample(baseUri, d, Add);
         }
 
         return problems;
+    }
+
+    [GeneratedRegex("^[A-Za-z0-9_-]{1,40}$")]
+    private static partial Regex PathSegmentPattern();
+
+    /// <summary>An engine replaces the four sections, so a definition carrying both is ambiguous.</summary>
+    private static void Engine(CustomSourceDefinition d, Action<string, object?> add)
+    {
+        if (!CustomEngines.All.Contains(d.Engine))
+        {
+            add("error.customSource.fieldInvalid", new { field = "engine" });
+            return;
+        }
+
+        if (d.Search is not null || d.Catalogue is not null || d.Series != new CustomSeries()
+            || d.Chapters != new CustomChapters() || d.Pages != new CustomPages())
+        {
+            add("error.customSource.engineSections", new { engine = d.Engine });
+        }
+
+        var options = d.EngineOptions ?? new CustomEngineOptions();
+        if (!PathSegmentPattern().IsMatch(options.SeriesPath))
+        {
+            add("error.customSource.fieldInvalid", new { field = "engineOptions.seriesPath" });
+        }
+
+        if (options.ChapterList is not (CustomEngineOptions.Inline or CustomEngineOptions.Ajax))
+        {
+            add("error.customSource.fieldInvalid", new { field = "engineOptions.chapterList" });
+        }
+    }
+
+    private static void Sample(Uri baseUri, CustomSourceDefinition d, Action<string, object?> add)
+    {
+        SampleUrl(baseUri, d.Sample.SeriesUrl, "sample.seriesUrl", add);
+        SampleUrl(baseUri, d.Sample.ChapterUrl, "sample.chapterUrl", add);
+        if ((d.Search is not null || d.Engine is not null) && string.IsNullOrWhiteSpace(d.Sample.Query))
+        {
+            add("error.customSource.sampleQueryRequired", null);
+        }
     }
 
     /// <summary>

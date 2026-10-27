@@ -8,7 +8,7 @@ import { notifications } from '@mantine/notifications'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   IconArrowUp, IconChevronDown, IconChevronUp, IconDots, IconDownload, IconFileImport, IconFilter, IconGripVertical,
-  IconLanguage, IconPencil, IconPlus, IconPuzzle, IconSearch, IconShield, IconTool, IconTrash,
+  IconLanguage, IconPencil, IconPlus, IconPuzzle, IconSearch, IconShield, IconTool, IconTrash, IconWorldWww,
 } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -22,8 +22,9 @@ import { SourceIcon, baseLanguage, sourceHost } from '../../sourceIcons'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { useAuth } from '../../auth/AuthProvider'
 import { errorText } from '../../api/errorText'
-import { fetchCustomSourceExport, useCustomSources, useDeleteCustomSource } from '../../api/customSources'
-import { CustomSourceEditor } from './CustomSourceEditor'
+import { fetchCustomSourceExport, useCustomSources, useDeleteCustomSource, type CustomSourceDefinition } from '../../api/customSources'
+import { CustomSourceWizard, type WizardMode } from './CustomSourceWizard'
+import { COMMON_LANGUAGES, LANGUAGE_CODE, MIXED_LANGUAGE } from './sourceLanguages'
 
 type StateFilter = 'all' | 'on' | 'off'
 export type ProviderFilter = 'builtin' | 'suwayomi' | 'custom'
@@ -45,21 +46,10 @@ const siteKeyOf = (source: SourceInfo) =>
 
 /** What the search box matches a source's site on. A Suwayomi source's base URL is the Suwayomi server. */
 const hostOf = (source: SourceInfo) => (source.provider === 'suwayomi' ? 'suwayomi' : sourceHost(source.baseUrl))
+
 type Pane = 'catalogue' | 'priority'
 
 const CONTENT_ORDER: SourceContent[] = ['manga', 'manhwa', 'manhua', 'webtoon', 'doujinshi']
-
-/**
- * Offered as a mixed-language Suwayomi source's chapter language alongside every language a source
- * here already publishes, so the usual ones are there even before any source carries them.
- */
-const COMMON_LANGUAGES = [
-  'en', 'ja', 'ko', 'zh', 'zh-Hans', 'zh-Hant', 'es', 'es-419', 'pt', 'pt-BR', 'fr', 'de', 'it', 'ru', 'pl',
-  'tr', 'uk', 'id', 'vi', 'th', 'ar',
-]
-/** What the server accepts as a chapter language; Mihon's `all`/`multi`/`other` fail it. */
-const LANGUAGE_CODE = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/
-const MIXED_LANGUAGE = new Set(['all', 'multi', 'other'])
 
 /** Language names in the reader's UI language, falling back to the English table in `titles.ts`. */
 function useLanguageNamer() {
@@ -136,6 +126,17 @@ function SourceTags({ source, contentLabels, nameOfLanguage }: {
       )}
       {source.custom?.invalid && (
         <Tooltip label={source.custom.problem} disabled={!source.custom.problem} events={{ hover: true, focus: true, touch: true }} withArrow multiline w={320}>
+          <span className="source-tag" data-tone="adult" tabIndex={0}><Trans>Not working</Trans></span>
+        </Tooltip>
+      )}
+      {source.custom && !source.custom.invalid && source.custom.failing && (
+        <Tooltip
+          label={<Trans>The last check could not list the sample series. The site's layout may have changed. Edit the definition to check.</Trans>}
+          events={{ hover: true, focus: true, touch: true }}
+          withArrow
+          multiline
+          w={320}
+        >
           <span className="source-tag" data-tone="adult" tabIndex={0}><Trans>Not working</Trans></span>
         </Tooltip>
       )}
@@ -498,11 +499,22 @@ const REFRESH_WAIT_MS = 4000
  * joins at the bottom, the same as it does here. With Suwayomi connected, opening this first reads
  * its installed sources, so an extension installed since shows up here, switched off.
  */
-export function ManageSourcesModal({ opened, onClose, initialProvider = null }: {
+/** What the custom source wizard opens on when Manage sources is opened for it. */
+export type WizardRequest = { setupUrl: string } | { editId: string }
+
+export function ManageSourcesModal({
+  opened, onClose, initialProvider = null, wizard: wizardRequest = null, closeWithWizard = false, onCustomSaved,
+}: {
   opened: boolean
   onClose: () => void
   /** Opens with the provider filter already set, as the Suwayomi card does. */
   initialProvider?: ProviderFilter | null
+  /** Opens the custom source wizard on top straight away: from a deep link, or the series page's paste-a-URL field. */
+  wizard?: WizardRequest | null
+  /** Closing that wizard closes Manage sources too, back to wherever it was opened from. */
+  closeWithWizard?: boolean
+  /** After the wizard saved a source, for a caller that needs to look again (the series page's URL resolve). */
+  onCustomSaved?: (sourceName: string) => void
 }) {
   const { t } = useLingui()
   const narrow = useMediaQuery('(max-width: 760px)') ?? false
@@ -536,7 +548,13 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
   const isAdmin = can('Admin')
   const { data: customSources } = useCustomSources(opened && isAdmin)
   const deleteCustom = useDeleteCustomSource()
-  const [editor, setEditor] = useState<{ id: string | null; text: string } | null>(null)
+  const [wizard, setWizard] = useState<{
+    mode: WizardMode
+    id: string | null
+    initial: CustomSourceDefinition | null
+    startUrl: string | null
+  } | null>(null)
+  const wizardOpened = useRef(false)
   const [deleting, setDeleting] = useState<SourceInfo | null>(null)
 
   const suwayomiUrl = suwayomi?.url ?? null
@@ -719,12 +737,30 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
     setProviderFilter(null)
   }
 
-  function openEdit(source: SourceInfo) {
-    const id = source.custom?.id
-    if (!id) return
+  function openEditById(id: string) {
     const entry = customSources?.find((e) => e.id === id)
-    setEditor({ id, text: JSON.stringify(entry?.definition ?? {}, null, 2) })
+    setWizard({ mode: 'edit', id, initial: entry?.definition ?? { id }, startUrl: null })
   }
+
+  function openEdit(source: SourceInfo) {
+    if (source.custom?.id) openEditById(source.custom.id)
+  }
+
+  // A request to open the wizard is honoured once per opening, and an edit waits for the list it reads from.
+  useEffect(() => {
+    if (!opened) {
+      wizardOpened.current = false
+      return
+    }
+    if (!wizardRequest || wizardOpened.current || !isAdmin) return
+    if ('setupUrl' in wizardRequest) {
+      wizardOpened.current = true
+      setWizard({ mode: 'setup', id: null, initial: null, startUrl: wizardRequest.setupUrl })
+    } else if (customSources) {
+      wizardOpened.current = true
+      openEditById(wizardRequest.editId)
+    }
+  }, [opened, wizardRequest, customSources, isAdmin])
 
   async function exportDefinition(source: SourceInfo) {
     const id = source.custom?.id
@@ -755,6 +791,7 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
       setInitialRail(add)
     }
     notifications.show({ message: now`Saved`, color: 'var(--ok)' })
+    onCustomSaved?.(sourceName)
   }
 
   function confirmDelete() {
@@ -1046,7 +1083,10 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
               </Button>
             </Menu.Target>
             <Menu.Dropdown>
-              <Menu.Item leftSection={<IconFileImport size={14} />} onClick={() => setEditor({ id: null, text: '' })}>
+              <Menu.Item leftSection={<IconWorldWww size={14} />} onClick={() => setWizard({ mode: 'setup', id: null, initial: null, startUrl: null })}>
+                <Trans>Set up a site</Trans>
+              </Menu.Item>
+              <Menu.Item leftSection={<IconFileImport size={14} />} onClick={() => setWizard({ mode: 'import', id: null, initial: {}, startUrl: null })}>
                 <Trans>Import definition</Trans>
               </Menu.Item>
             </Menu.Dropdown>
@@ -1169,12 +1209,18 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
       <Trans>Your source changes have not been saved. Closing now discards them.</Trans>
     </ConfirmDialog>
     {isAdmin && (
-      <CustomSourceEditor
-        opened={editor !== null}
-        onClose={() => setEditor(null)}
-        editingId={editor?.id ?? null}
-        initialText={editor?.text ?? ''}
+      <CustomSourceWizard
+        opened={wizard !== null}
+        onClose={() => {
+          setWizard(null)
+          if (closeWithWizard) onClose()
+        }}
+        mode={wizard?.mode ?? 'setup'}
+        editingId={wizard?.id ?? null}
+        initial={wizard?.initial ?? null}
+        startUrl={wizard?.startUrl ?? null}
         onSaved={customSaved}
+        onEditExisting={openEditById}
       />
     )}
     <ConfirmDialog

@@ -54,6 +54,13 @@ public sealed class CustomSourceService(
         }
     }
 
+    /// <summary>The registered source (not Suwayomi's) that reads this site, if any.</summary>
+    public ISource? SourceForHost(string baseUrl) =>
+        CustomSourceValidator.BaseUri(baseUrl) is { } baseUri
+            ? registry.All.FirstOrDefault(s => s is not SuwayomiSource
+                && Uri.TryCreate(s.BaseUrl, UriKind.Absolute, out var other) && CustomHost.Same(other.Host, baseUri.Host))
+            : null;
+
     /// <summary>The validator's checks plus the ones that need the registry: one source per host.</summary>
     public List<CustomSourceProblem> Validate(CustomSourceDefinition definition)
     {
@@ -145,10 +152,15 @@ public sealed class CustomSourceService(
 
     public CustomSource Build(CustomSourceDefinition definition) => factory.Create(definition);
 
+    /// <summary>
+    /// Also drops the source's health row: an edit is checked again on the health job's next tick,
+    /// and a deleted source has nothing left to report.
+    /// </summary>
     private async Task AfterWriteAsync(string sourceName, CancellationToken ct)
     {
         await registry.ReloadAsync(ct);
         listings.EvictSource(sourceName);
+        await db.HealthChecks.Where(r => r.Id == Jobs.CustomSourceHealthJob.Prefix + sourceName).ExecuteDeleteAsync(ct);
     }
 
     private static bool IdentityMayChange(CustomSourceDefinition before, CustomSourceDefinition after) =>
@@ -231,7 +243,7 @@ public sealed class CustomSourceService(
 
         var list = chapters.ToList();
         return list.FirstOrDefault(c => c.Url is not null && SameUrl(c.Url, sample.AbsoluteUri))
-            ?? (CustomTemplate.Match(new Uri(source.BaseUrl), definition.Chapters.Url, sample, CustomTemplate.ChapterId) is { } id
+            ?? (CustomTemplate.Match(new Uri(source.BaseUrl), source.ChapterTemplate, sample, CustomTemplate.ChapterId) is { } id
                 ? list.FirstOrDefault(c => c.SourceChapterId == id)
                 : null);
     }

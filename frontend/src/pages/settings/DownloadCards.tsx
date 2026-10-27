@@ -9,7 +9,8 @@ import { notifications } from '@mantine/notifications'
 import { SettingsSection } from './SettingsSection'
 import { PriorityList } from '../../components/PriorityList'
 import { SourceIcon, baseLanguage } from '../../sourceIcons'
-import { ManageSourcesModal } from './ManageSourcesModal'
+import { ManageSourcesModal, type WizardRequest } from './ManageSourcesModal'
+import { useSearchParams } from 'react-router-dom'
 import {
   useUpgradeProfiles,
   useRunUpgradeScan,
@@ -118,6 +119,24 @@ export function SourcePrioritySection() {
   const { data: sources } = useSources()
   const { data: priority } = useSourcePriority()
   const [managing, setManaging] = useState(false)
+  const [wizard, setWizard] = useState<WizardRequest | null>(null)
+  // `sources=manage` opens Manage sources and `sources=edit:custom-{id}` that source's wizard on
+  // top, for the health page and other links. The parameter is dropped once read, so closing the
+  // modal doesn't reopen it.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const sourcesParam = searchParams.get('sources')
+  useEffect(() => {
+    if (!sourcesParam) return
+    const edit = /^edit:custom-(.+)$/.exec(sourcesParam)
+    if (sourcesParam === 'manage' || edit) {
+      setWizard(edit ? { editId: edit[1] } : null)
+      setManaging(true)
+    }
+    setSearchParams((params) => {
+      params.delete('sources')
+      return params
+    }, { replace: true })
+  }, [sourcesParam, setSearchParams])
   const { data: settings } = useDownloadSettings()
   const save = useSaveDownloadSettings()
   const [sourceOrder, setSourceOrder] = useState<SourceOrderMode>('manual')
@@ -200,7 +219,14 @@ export function SourcePrioritySection() {
           </Text>
         </Group>
       )}
-      <ManageSourcesModal opened={managing} onClose={() => setManaging(false)} />
+      <ManageSourcesModal
+        opened={managing}
+        onClose={() => {
+          setManaging(false)
+          setWizard(null)
+        }}
+        wizard={wizard}
+      />
     </SettingsSection>
   )
 }

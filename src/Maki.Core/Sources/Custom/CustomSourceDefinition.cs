@@ -29,6 +29,13 @@ public sealed record CustomSourceDefinition
     public Dictionary<string, string> Headers { get; init; } = [];
     public List<string> CoverHosts { get; init; } = [];
 
+    /// <summary>
+    /// A built-in parser for a known site theme (<see cref="CustomEngines"/>) in place of the
+    /// search, series, chapters and pages sections, which are then left out.
+    /// </summary>
+    public string? Engine { get; init; }
+    public CustomEngineOptions? EngineOptions { get; init; }
+
     public CustomSearch? Search { get; init; }
     public CustomCatalogue? Catalogue { get; init; }
     public CustomSeries Series { get; init; } = new();
@@ -43,7 +50,7 @@ public sealed record CustomSourceDefinition
     public string SourceName => NamePrefix + Id;
 
     [JsonIgnore]
-    public bool HasSearch => Search is not null || Catalogue is not null;
+    public bool HasSearch => Engine is not null || Search is not null || Catalogue is not null;
 
     /// <summary>camelCase, unknown members refused, so a typo in a field name fails instead of silently doing nothing.</summary>
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
@@ -62,6 +69,26 @@ public sealed record CustomSourceDefinition
         ?? throw new JsonException("A custom source definition cannot be null");
 
     public string ToJson() => JsonSerializer.Serialize(this, Json);
+}
+
+public static class CustomEngines
+{
+    /// <summary>The Madara WordPress theme most small scanlators run.</summary>
+    public const string Madara = "madara";
+
+    public static readonly IReadOnlyList<string> All = [Madara];
+}
+
+public sealed record CustomEngineOptions
+{
+    /// <summary>The path segment series live under: <c>manga</c> on most Madara sites, <c>serie</c> on Toonily.</summary>
+    public string SeriesPath { get; init; } = "manga";
+
+    /// <summary><c>inline</c> when the series page renders the list, <c>ajax</c> when the theme loads it with a POST.</summary>
+    public string ChapterList { get; init; } = Inline;
+
+    public const string Inline = "inline";
+    public const string Ajax = "ajax";
 }
 
 public sealed record CustomSearch

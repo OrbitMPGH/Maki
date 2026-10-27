@@ -144,6 +144,18 @@ public class CustomSourceTests
     }
 
     [Fact]
+    public async Task A_pattern_that_starts_optional_finds_every_page()
+    {
+        // NonBacktracking found 1 of these 40 on .NET 10.0.1, so extractors must not use it.
+        var definition = SilentQuill() with { Pages = new CustomPages { List = new ListExtractor { Regex = @"\\?/img\\?/p\\?/[A-Za-z0-9_-]+" } } };
+
+        var pages = await Source(definition).GetPagesAsync(new SourceChapter(
+            "custom-silentquill", SeriesId, "thus-the-seasons-learn-of-blue-chapter-2", null, 2m, null, null, "en", null, null));
+
+        Assert.Equal(40, pages.Pages.Count);
+    }
+
+    [Fact]
     public async Task Json_extractors_read_an_embedded_blob()
     {
         const string html = """

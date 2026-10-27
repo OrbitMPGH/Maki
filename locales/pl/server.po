@@ -663,6 +663,34 @@ msgstr ""
 msgid "error.customSource.searchAndCatalogue"
 msgstr ""
 
+#. {engine} is an engine name such as madara and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+#. English: A definition that uses the {engine} engine leaves out the search, catalogue, series, chapters and pages sections.
+msgid "error.customSource.engineSections"
+msgstr ""
+
+#: src/Maki.Api/Services/CustomSourceProbe.cs
+#. English: Paste the full address of a series page on the site, starting with https://.
+msgid "error.customSource.probe.urlInvalid"
+msgstr ""
+
+#. {host} is a domain name and is never translated.
+#: src/Maki.Api/Services/CustomSourceProbe.cs
+#. English: The chapter page has to be on {host}, like the series page.
+msgid "error.customSource.probe.otherHost"
+msgstr ""
+
+#: src/Maki.Api/Services/CustomSourceProbe.cs
+#. English: Maki reads the series id from the last part of the address, and this address has none. Paste the series page's own address.
+msgid "error.customSource.probe.seriesUrlShape"
+msgstr ""
+
+#. {url} is the address Maki tried and {reason} is what the site or the connection said, untranslated.
+#: src/Maki.Api/Services/CustomSourceProbe.cs
+#. English: Maki could not read {url}: {reason}
+msgid "error.customSource.probe.fetchFailed"
+msgstr ""
+
 #. {field} is the definition field name and is never translated.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
 #. English: {field} is required.
@@ -5257,6 +5285,30 @@ msgstr "Kontrole stanu biblioteki nie mogły zostać ukończone"
 #, fuzzy
 msgid "health.check.suwayomiSourceInstalled"
 msgstr "Ponownie zainstalowano {source} w Suwayomi."
+
+#. {source} is a custom source's name.
+#: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
+#. English: {source} lists its sample series.
+msgid "health.check.customSourceWorking"
+msgstr ""
+
+#. {source} is a custom source's name.
+#: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
+#. English: {source} still works, but its sample series is gone from the site. Edit the definition and pick another one.
+msgid "health.check.customSourceSample"
+msgstr ""
+
+#. {source} is a custom source's name and {reason} is what the site or the definition said, untranslated.
+#: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
+#. English: {source} could not list its sample series, so the site's layout may have changed. Edit the definition to check. ({reason})
+msgid "health.check.customSourceFailing"
+msgstr ""
+
+#. {source} is a custom source's name.
+#: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
+#. English: This build of Maki can't read the definition of {source}. Edit it to see why.
+msgid "health.check.customSourceInvalid"
+msgstr ""
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: {source} is no longer installed in Suwayomi. Reinstall its extension there, or remove the source in Maki's Suwayomi settings.

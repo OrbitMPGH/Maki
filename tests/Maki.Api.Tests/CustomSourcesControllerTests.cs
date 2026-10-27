@@ -34,14 +34,15 @@ public sealed class CustomSourcesControllerTests : IDisposable
     private readonly SourceRegistry _registry;
     private readonly CustomSourceStore _store;
     private readonly CustomSourceFactory _factory;
+    private readonly CustomSourceFetcher _fetcher;
+    private readonly CustomSourceThrottle _throttle = new();
 
     public CustomSourcesControllerTests()
     {
         var http = new NoNetwork();
         _store = new CustomSourceStore(_settings);
-        _factory = new CustomSourceFactory(
-            new CustomSourceFetcher(http, new FlareSolverrClient(http), _settings, NullLogger<ChallengeAwareFetcher>.Instance),
-            http, new CustomSourceThrottle());
+        _fetcher = new CustomSourceFetcher(http, new FlareSolverrClient(http), _settings, NullLogger<ChallengeAwareFetcher>.Instance);
+        _factory = new CustomSourceFactory(_fetcher, http, _throttle);
         var provider = new CustomSourceProvider(_store, _factory, NullLogger<CustomSourceProvider>.Instance);
         _registry = new SourceRegistry([new BuiltIn()], [provider]);
     }
@@ -51,7 +52,8 @@ public sealed class CustomSourcesControllerTests : IDisposable
     private CustomSourcesController Controller() => new(
         new TestLocalizer(),
         new CustomSourceService(_store, _factory, _registry,
-            new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance), _db.NewContext()))
+            new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance), _db.NewContext()),
+        new CustomSourceProbe(_fetcher, _factory, _throttle))
     {
         ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
     };
@@ -61,6 +63,17 @@ public sealed class CustomSourcesControllerTests : IDisposable
     private static string Code(IActionResult result) =>
         JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<ObjectResult>(result).Value).GetProperty("code").GetString()!;
 
+    [Theory]
+    [InlineData("http://192.168.1.10/series/x/", null, "error.customSource.probe.urlInvalid")]
+    [InlineData("https://silentquill.net/series/x/", "https://example.com/chapter-1/", "error.customSource.probe.otherHost")]
+    [InlineData("https://silentquill.net/", null, "error.customSource.probe.seriesUrlShape")]
+    public async Task Probe_refuses_before_fetching_anything(string seriesUrl, string? chapterUrl, string code)
+    {
+        var result = await Controller().Probe(new CustomSourcesController.ProbeSiteRequest(seriesUrl, chapterUrl), CancellationToken.None);
+
+        Assert.Equal(code, Code(result));
+    }
+
     [Fact]
     public void Every_action_is_admin_only()
     {
@@ -68,7 +81,7 @@ public sealed class CustomSourcesControllerTests : IDisposable
             .Where(m => m.GetCustomAttributes(typeof(Microsoft.AspNetCore.Mvc.Routing.HttpMethodAttribute), true).Length > 0)
             .ToList();
 
-        Assert.Equal(5, actions.Count);
+        Assert.Equal(7, actions.Count);
         foreach (var action in actions)
         {
             var policies = action.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)

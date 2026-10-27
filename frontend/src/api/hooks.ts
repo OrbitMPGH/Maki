@@ -2954,6 +2954,8 @@ export interface CustomSourceState {
   /** The stored definition can't be used by this build; `problem` says why. */
   invalid: boolean
   problem: string | null
+  /** The health job's last check failed, or the definition is invalid. Older servers leave it out. */
+  failing?: boolean
 }
 
 export interface SuwayomiSourceState {

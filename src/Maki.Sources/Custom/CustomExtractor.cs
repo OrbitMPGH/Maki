@@ -7,7 +7,6 @@ using AngleSharp.Html.Parser;
 using Maki.Core.Sources;
 using Maki.Core.Sources.Custom;
 using Maki.Sources.Common;
-using Maki.Sources.Toonily;
 
 namespace Maki.Sources.Custom;
 
@@ -36,18 +35,13 @@ public static class CustomExtractor
 
     private static readonly ConcurrentDictionary<string, Regex> Compiled = new();
 
-    public static Regex Compile(string pattern) => Compiled.GetOrAdd(pattern, p =>
-    {
-        try
-        {
-            return new Regex(p, RegexOptions.NonBacktracking | RegexOptions.CultureInvariant, RegexTimeout);
-        }
-        catch (NotSupportedException)
-        {
-            // Lookarounds and backreferences need the backtracking engine; the timeout still bounds it.
-            return new Regex(p, RegexOptions.CultureInvariant, RegexTimeout);
-        }
-    });
+    /// <summary>
+    /// The backtracking engine, bounded by the timeout. <c>NonBacktracking</c> misses matches of any
+    /// pattern that starts with an optional character on .NET 10.0.1 (<c>\\?/img/p/...</c> found 1
+    /// of 40 pages), which is exactly the shape a JSON-escaped path needs.
+    /// </summary>
+    public static Regex Compile(string pattern) =>
+        Compiled.GetOrAdd(pattern, p => new Regex(p, RegexOptions.CultureInvariant, RegexTimeout));
 
     public static IReadOnlyList<CustomItem> List(ListExtractor list, CustomPage page)
     {

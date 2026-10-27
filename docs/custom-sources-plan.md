@@ -1,6 +1,6 @@
 # Custom sources: plan
 
-Status: phase 1 built on `feat/custom-sources` (2026-10-27), phases 2 to 4 not started. See [Phase 1 as built](#phase-1-as-built) for where the code differs from the design below. Revision 3: the owner's answers to the first draft are folded in (see Decisions), and so is one review round against the code (an Opus 5.5 reviewer, 2026-10-27, three high and thirteen medium findings, all addressed below). Researched against `dev` (06e983ac) and silentquill.net on 2026-10-27.
+Status: phases 1 and 2 built on `feat/custom-sources` (2026-10-27), phases 3 and 4 not started. See [Phase 1 as built](#phase-1-as-built) and [Phase 2 as built](#phase-2-as-built) for where the code differs from the design below. Revision 3: the owner's answers to the first draft are folded in (see Decisions), and so is one review round against the code (an Opus 5.5 reviewer, 2026-10-27, three high and thirteen medium findings, all addressed below). Researched against `dev` (06e983ac) and silentquill.net on 2026-10-27.
 
 ## Goal
 
@@ -399,7 +399,7 @@ Export writes exactly the stored definition minus `origin`, `previous` and `deta
 - **Fetching admin-typed URLs.** All custom source HTML, repository indexes and definition files go through the guarded `custom-sources` client described in [Fetching](#fetching). Connections to non-public addresses are refused at connect time, including after redirects and DNS changes, and every HTML fetch is held to the definition's host. The FlareSolverr handoff checks the host first. `probe` returns page bodies to the admin, so without these rules it would read the LAN. The validator's refusal of IP literals and `localhost` in `baseUrl` is only an early, readable error; the connect-time guard is what actually enforces it.
 - **Covers** go through the existing `covers` client, which is already held to public addresses with redirects re-checked per hop (`Program.cs:122-140`). `CoverHostPolicy` plus the definition's `coverHosts` decide which domains the proxy will fetch at all.
 - **Page images** go through the guarded `pages` handler chain.
-- **Regex** is compiled with `RegexOptions.NonBacktracking` where the pattern allows it, and always with a 250 ms match timeout. A timeout is a failed extraction, not a hung sync.
+- **Regex** always runs with a 250 ms match timeout. A timeout is a failed extraction, not a hung sync. It uses the backtracking engine: `RegexOptions.NonBacktracking` was the plan, but on .NET 10.0.1 it misses matches of any pattern that starts with an optional character (`\\?/img/p/...` found 1 of SilentQuill's 40 pages), and an optional leading backslash is what a JSON-escaped path needs.
 - **Limits**: a definition is at most 32 KB, a repository index at most 256 KB, a fetched document is read up to 8 MB, a chapter list is capped at 5,000 items and 50 pages, a catalogue at 50 pages, a page list at 1,000. Unknown JSON fields are rejected on save and import, so a typo can't silently do nothing.
 - **Nothing executes.** No script evaluation, no `eval` on extracted text, no headless browser.
 
@@ -426,7 +426,7 @@ On `feat/custom-sources`, 2026-10-27. What exists:
   - The Custom pill beside the host, the "Link by URL" and "Not working" tags, and a "Custom" provider chip.
   - A "..." menu on custom rows with Edit, Export and Delete.
   - "Add source" with one item, Import definition.
-  - `CustomSourceEditor`: a JSON editor with Open file, Test (per-step results) and Save. A new source needs a passing test before Save is enabled; an edit can save without one. The id can't change on edit.
+  - A JSON editor with Open file, Test (per-step results) and Save (replaced by the wizard in phase 2). A new source needs a passing test before Save is enabled; an edit can save without one. The id can't change on edit.
 - **Tests.**
   - `CustomSourceTests`: 30 tests against recorded SilentQuill pages, with the definition in `tests/Maki.Sources.Tests/Fixtures/silentquill-definition.json`.
   - `CustomSourcesControllerTests`: admin pinning, save, delete, host clash, problems and export.
@@ -434,6 +434,29 @@ On `feat/custom-sources`, 2026-10-27. What exists:
   - A live run of `CustomSourceTester` against silentquill.net through the real guarded clients passed every step: search found the series, 2 chapters, 40 pages for chapter 2, and a 289 KB WebP first page. That run was a throwaway test and is not committed.
 
 Not in phase 1, as planned: the wizard and its guessers, `probe`, the health job, deep links, the series-page entry point, engine presets, repositories (`origin` is accepted and kept, nothing reads it yet), and the language-ranking warning.
+
+## Phase 2 as built
+
+On `feat/custom-sources`, 2026-10-27. What exists:
+
+- **Madara preset.** `engine` and `engineOptions` (`seriesPath`, `chapterList` `inline` or `ajax`) on the definition; with an engine set the search, catalogue, series, chapters and pages sections must be left out (`error.customSource.engineSections`). `CustomSource.Madara.cs` searches with the theme's `?s={query}&post_type=wp-manga` GET, reads the series page with `MadaraParser` (now in `Common/`), and for `ajax` posts to `{series}/ajax/chapters/`, falling back to the series page and then to `admin-ajax.php` with the post id. `CustomSource.SeriesTemplate` and `ChapterTemplate` give the templates the engine implies, and every caller reads those.
+- **Guessers** in `Maki.Sources/Custom/Inference/`: `UrlShape` (series template from the last path segment, chapter template and id regex from which segments vary across the links), `SelectorBuilder`, `ChapterListGuesser`, `PageListGuesser`, `SearchGuesser`, `EngineDetector`.
+- **`POST custom-sources/probe`** (series URL plus optional chapter URL) answers with a draft definition, up to three chapter-list candidates with preview rows, the page guess with a server-side image check, which path answered, the detected engine, and any source that already reads the host. **`POST custom-sources/probe/search`** runs the search guess for a draft. Both are `Policies.Admin`, spaced by a per-host gate (`probe:{host}`, 1 s) and held to the pasted host.
+- **Wizard** (`CustomSourceWizard.tsx`) replaces the phase 1 JSON editor. Set up a site runs the five steps; Import opens on step 5 with the JSON view; Edit opens on step 5 and runs the test at once. Every step has an Advanced JSON editor for its section and a "Check against the site" button that runs the test. Step 5 has a form and an "Edit as JSON" view.
+- **Health.** `CustomSourceHealthJob` (hourly tick, each source every six hours) writes `custom:source:{name}` rows through the new `HealthMonitor.RecordAsync`, so state changes notify like every other check. Saving or deleting a definition drops its row, so an edit is checked on the next tick. `GET search/sources` adds `custom.failing`, and the row shows "Not working".
+- **Deep links.** `sources=manage` and `sources=edit:custom-{id}` on the Settings page open Manage sources (and the wizard). Health rows link to the second.
+- **Series page.** In Link a source, a pasted URL that no source resolves offers admins "Set up this site as a source", or "Edit {name}" when a custom source already reads that host. Saving re-runs the failed resolve, and closing the wizard returns to Link a source.
+- **Tests.** `CustomSourceMadaraTests` (Toonily's fixtures, chapter for chapter the same as the built-in parser), `CustomSourceGuessTests` (chapter lists of SilentQuill, Toonily, Mangapill, MangaWorld, TeamX and Manhuagui; page lists of SilentQuill, Toonily, Rawkuma, TeamX, MangaWorld, Manhwa18 and Mangapill; the search guess; form templates), `CustomSourceHealthJobTests`, the probe's refusals in `CustomSourcesControllerTests`, and the `SetUpASite` story.
+
+Where it differs from the design:
+
+- **Regex runs on the backtracking engine**, not `NonBacktracking`; see [Security](#security).
+- **No JSON chapter-list guess** (step 2's third strategy). A site whose chapters live only in `__NEXT_DATA__` or an RSC payload gets "Maki could not find a chapter list" and a hand-written `json` extractor under Advanced.
+- **No second-Referer retry in the image check.** The engine can only send the base URL as Referer, so retrying with the chapter URL would find a fix the definition can't express. The check sends exactly what a download would and reports the failure.
+- **Page thumbnails** load straight from the site with `referrerPolicy="no-referrer"` and hide on error; the server-side image check is what counts.
+- **`error.search.noSourceRecognizesUrl`**, which `resolvesource` already answered with, is the structured key the series page reads; no new key.
+- **The language warning** reads the instance's enabled source languages (`GET settings/sources/languages`) and appears under the Language field in step 5.
+- **Corpus coverage.** Mangakakalot's series page has no chapter list (it loads one from an API) and Manhuagui's pages come from packed script, so neither has a page-list or chapter-list case; the guessers don't find them, as expected.
 
 ## Phases
 

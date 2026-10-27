@@ -15,7 +15,7 @@ namespace Maki.Sources.Custom;
 /// images go out through <see cref="PagesHttpClientName"/> at download time, behind the same
 /// <see cref="SpacingGate"/>, because a small site's heaviest traffic is its images.
 /// </summary>
-public sealed class CustomSource : ISource
+public sealed partial class CustomSource : ISource
 {
     public const string PagesHttpClientName = "custom-source-pages";
 
@@ -29,6 +29,7 @@ public sealed class CustomSource : ISource
     private readonly Func<string, string, IReadOnlyDictionary<string, string>>? _sessionHeaders;
     private readonly Uri _base;
     private readonly SourceCatalog _catalogue = new(TimeSpan.FromHours(6));
+    private readonly CustomEngineOptions? _madara;
 
     /// <param name="sessionHeaders">
     /// Clearance cookies and UA for a host the fetcher solved a challenge for
@@ -47,7 +48,23 @@ public sealed class CustomSource : ISource
         _gate = gate;
         _sessionHeaders = sessionHeaders;
         _base = new Uri(definition.BaseUrl.TrimEnd('/') + "/");
+
+        if (definition.Engine == CustomEngines.Madara)
+        {
+            _madara = definition.EngineOptions ?? new CustomEngineOptions();
+            SeriesTemplate = $"/{_madara.SeriesPath}/{CustomTemplate.SeriesId}/";
+            ChapterTemplate = $"/{_madara.SeriesPath}/{CustomTemplate.SeriesId}/{CustomTemplate.ChapterId}/";
+        }
+        else
+        {
+            SeriesTemplate = definition.Series.Url;
+            ChapterTemplate = definition.Chapters.Url;
+        }
     }
+
+    /// <summary>The definition's own templates, or the ones its engine implies.</summary>
+    public string SeriesTemplate { get; }
+    public string ChapterTemplate { get; }
 
     public CustomSourceDefinition Definition { get; }
 
@@ -59,19 +76,24 @@ public sealed class CustomSource : ISource
     public SourceContent Content => CustomSourceEnums.Content(Definition.Content) ?? SourceContent.Manga;
     public SourceRating Rating => CustomSourceEnums.Rating(Definition.Rating) ?? SourceRating.General;
     public IReadOnlyList<string> SupportedLanguages => [SourceLanguages.Canonical(Definition.Language)];
-    public bool ReleaseDatesAreReliable => Definition.Chapters.Date is not { Format: "relative" };
+    public bool ReleaseDatesAreReliable => _madara is null && Definition.Chapters.Date is not { Format: "relative" };
     public IReadOnlyList<string> CoverHosts => Definition.CoverHosts;
 
     /// <summary>False for a site with neither search nor a catalogue page: series are linked by URL only.</summary>
     public bool HasSearch => Definition.HasSearch;
 
     public string? ResolveSeriesIdFromUrl(Uri url) =>
-        CustomTemplate.Match(_base, Definition.Series.Url, url, CustomTemplate.SeriesId);
+        CustomTemplate.Match(_base, SeriesTemplate, url, CustomTemplate.SeriesId);
 
     // ── Search ────────────────────────────────────────────────────────
 
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
+        if (_madara is not null)
+        {
+            return await MadaraSearchAsync(title, ct);
+        }
+
         if (Definition.Search is { } search)
         {
             var page = await FetchAsync(CustomTemplate.Expand(_base, search.Url, query: title), ct);
@@ -131,6 +153,11 @@ public sealed class CustomSource : ISource
 
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
+        if (_madara is not null)
+        {
+            return await MadaraSeriesAsync(sourceSeriesId, ct);
+        }
+
         var series = Definition.Series;
         var url = SeriesUrl(sourceSeriesId);
         var page = await FetchAsync(url, ct);
@@ -159,11 +186,16 @@ public sealed class CustomSource : ISource
 
     public async Task<IReadOnlyList<ListedChapter>> ListEntriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
+        if (_madara is not null)
+        {
+            return await MadaraEntriesAsync(sourceSeriesId, _madara, ct);
+        }
+
         var chapters = Definition.Chapters;
         var entries = new List<ListedChapter>();
         var items = 0;
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        Uri? next = CustomTemplate.Expand(_base, chapters.ListUrl ?? Definition.Series.Url, sourceSeriesId);
+        Uri? next = CustomTemplate.Expand(_base, chapters.ListUrl ?? SeriesTemplate, sourceSeriesId);
         for (var i = 0; i < MaxListPages && next is not null && seen.Add(next.AbsoluteUri) && entries.Count < MaxChapters; i++)
         {
             var page = await FetchAsync(next, ct);
@@ -217,27 +249,40 @@ public sealed class CustomSource : ISource
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
-        var pages = Definition.Pages;
         var chapterUrl = ChapterUrl(chapter.SourceSeriesId, chapter.SourceChapterId);
+        if (_madara is not null)
+        {
+            return Pages(await MadaraPagesAsync(chapterUrl, ct));
+        }
+
+        var pages = Definition.Pages;
         var pageUrl = pages.Url is null
             ? chapterUrl
             : CustomTemplate.Expand(_base, pages.Url, chapter.SourceSeriesId, chapter.SourceChapterId);
         var page = await FetchAsync(pageUrl, ct);
 
-        var urls = Extract(() => CustomExtractor.List(pages.List, page)
+        var urls = ImageUrls(page, Extract(() => CustomExtractor.List(pages.List, page)
             .Select(item => pages.Image is null ? CustomExtractor.DefaultImage(item) : CustomExtractor.Field(pages.Image, item))
-            .Select(raw => Resolve(page.Url, raw))
-            .Where(u => u is not null && (u.Scheme == Uri.UriSchemeHttps || u.Scheme == Uri.UriSchemeHttp))
-            .Select(u => u!.AbsoluteUri)
-            .Distinct(StringComparer.Ordinal)
-            .Take(MaxPages)
-            .ToList());
+            .ToList()));
 
         if (urls.Count == 0)
         {
             throw new SourceErrorException($"{DisplayName}: no page images matched {Describe(pages.List)}");
         }
 
+        return Pages(urls);
+    }
+
+    private static List<string> ImageUrls(CustomPage page, IEnumerable<string?> raw) => raw
+        .Select(r => Resolve(page.Url, r))
+        .Where(u => u is not null && (u.Scheme == Uri.UriSchemeHttps || u.Scheme == Uri.UriSchemeHttp))
+        .Select(u => u!.AbsoluteUri)
+        .Distinct(StringComparer.Ordinal)
+        .Take(MaxPages)
+        .ToList();
+
+    private ChapterPages Pages(List<string> urls)
+    {
         return new ChapterPages(urls
             .Select(url =>
             {
@@ -271,6 +316,9 @@ public sealed class CustomSource : ISource
         return headers;
     }
 
+    /// <summary>One image with the headers a download would send, for the wizard's image check.</summary>
+    public Task<byte[]> FetchImageAsync(string url, CancellationToken ct) => FetchImageAsync(url, ImageHeaders(new Uri(url)), ct);
+
     public async Task<byte[]> FetchImageAsync(string url, IReadOnlyDictionary<string, string> headers, CancellationToken ct)
     {
         PublicAddressGuard.EnsureAllowed(url);
@@ -295,12 +343,12 @@ public sealed class CustomSource : ISource
 
     // ── Helpers ───────────────────────────────────────────────────────
 
-    public Uri SeriesUrl(string seriesId) => CustomTemplate.Expand(_base, Definition.Series.Url, seriesId);
+    public Uri SeriesUrl(string seriesId) => CustomTemplate.Expand(_base, SeriesTemplate, seriesId);
 
     public Uri ChapterUrl(string seriesId, string chapterId) =>
-        CustomTemplate.Expand(_base, Definition.Chapters.Url, seriesId, chapterId);
+        CustomTemplate.Expand(_base, ChapterTemplate, seriesId, chapterId);
 
-    private async Task<CustomPage> FetchAsync(Uri url, CancellationToken ct)
+    private async Task<CustomPage> FetchAsync(Uri url, CancellationToken ct, string? formBody = null)
     {
         if (!CustomHost.Same(url.Host, _base.Host))
         {
@@ -310,7 +358,12 @@ public sealed class CustomSource : ISource
         await _gate.WaitAsync(ct);
         var headers = new Dictionary<string, string>(Definition.Headers, StringComparer.OrdinalIgnoreCase);
         headers.TryAdd("Referer", _base.AbsoluteUri);
-        var body = await _fetcher.FetchAsync(new HtmlFetchRequest(url.AbsoluteUri, Headers: headers), ct);
+        if (formBody is not null)
+        {
+            headers.TryAdd("X-Requested-With", "XMLHttpRequest");
+        }
+
+        var body = await _fetcher.FetchAsync(new HtmlFetchRequest(url.AbsoluteUri, FormBody: formBody, Headers: headers), ct);
         return new CustomPage(body, url);
     }
 

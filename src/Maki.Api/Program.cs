@@ -799,6 +799,7 @@ try
     builder.Services.AddSingleton<CustomSourceFactory>();
     builder.Services.AddSingleton<ISourceProvider, CustomSourceProvider>();
     builder.Services.AddScoped<CustomSourceService>();
+    builder.Services.AddSingleton<CustomSourceProbe>();
     AddSuwayomiClient(SuwayomiClient.HttpClientName, TimeSpan.FromSeconds(60), perRequest: true);
     AddSuwayomiClient(SuwayomiClient.PagesHttpClientName, TimeSpan.FromMinutes(2), perRequest: false);
 
@@ -1151,6 +1152,12 @@ try
             .WithIdentity("read-file-cleanup")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(30))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
+        // Hourly tick; each custom source is probed at most every six hours (CustomSourceHealthJob.Every).
+        q.ScheduleJob<Maki.Api.Jobs.CustomSourceHealthJob>(t => t
+            .WithIdentity("custom-source-health")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(10))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever()));
 
         // Stable job key so a failed Suwayomi search can run it early (HealthCheckJob.RequestSoonAsync).
         q.AddJob<Maki.Api.Jobs.HealthCheckJob>(j => j.WithIdentity(Maki.Api.Jobs.HealthCheckJob.Key));

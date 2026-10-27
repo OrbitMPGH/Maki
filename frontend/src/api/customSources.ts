@@ -1,8 +1,39 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, api } from './client'
 
-/** A definition as stored. Its shape is documented in docs/custom-sources-plan.md; the editor treats it as JSON. */
-export type CustomSourceDefinition = Record<string, unknown> & { id?: string; name?: string }
+/** A definition as stored. Its shape is documented in docs/custom-sources-plan.md; sections are edited as JSON. */
+export type CustomSourceDefinition = Record<string, unknown> & {
+  id?: string
+  name?: string
+  baseUrl?: string
+  language?: string
+  kind?: string
+  content?: string[]
+  rating?: string
+  flareSolverr?: boolean
+  minIntervalMs?: number
+  engine?: string | null
+  engineOptions?: { seriesPath?: string; chapterList?: string } | null
+  series?: Section & { url?: string }
+  chapters?: Section
+  pages?: Section
+  search?: Section | null
+  catalogue?: Section | null
+  sample?: { seriesUrl?: string; chapterUrl?: string; query?: string | null }
+}
+
+export type Section = Record<string, unknown>
+
+/** Drops nulls, which the server answers with for every unset field, so stored and exported JSON stays short. */
+export function compact<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(compact) as T
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).filter(([, v]) => v !== null && v !== undefined).map(([k, v]) => [k, compact(v)]),
+    ) as T
+  }
+  return value
+}
 
 export interface CustomSourceEntry {
   id: string | null
@@ -106,4 +137,62 @@ export function useDeleteCustomSource() {
 
 export function fetchCustomSourceExport(id: string) {
   return api<CustomSourceDefinition>(`/custom-sources/${encodeURIComponent(id)}`)
+}
+
+export interface ProbeChapterRow {
+  id: string | null
+  text: string | null
+  number: number | null
+  date: string | null
+  link: string | null
+}
+
+export interface ProbeChapterGuess {
+  chapters: Section
+  count: number
+  numbered: number
+  /** The list holds the chapter address the admin pasted. */
+  fromSample: boolean
+  rows: ProbeChapterRow[]
+}
+
+export interface ProbeSiteResult {
+  draft: CustomSourceDefinition
+  viaFlareSolverr: boolean
+  title: string | null
+  seriesId: string
+  engine: { engine: string; options: { seriesPath: string; chapterList: string } } | null
+  chapters: ProbeChapterGuess[]
+  pages: {
+    pages: Section
+    count: number
+    preview: string[]
+    image: { ok: boolean; format: string | null; bytes: number; error: string | null }
+  } | null
+  /** Why the chapter page couldn't be read, in the site's own words. */
+  chapterError: string | null
+  /** A source that already reads this site; `custom` is its custom id when it is one. */
+  hostTaken: { name: string; displayName: string; custom: string | null } | null
+}
+
+export interface ProbeSearchResult {
+  search: Section | null
+  catalogue: Section | null
+  results: number
+  titles: string[]
+  tried: { url: string; found: boolean; error: string | null }[]
+}
+
+export function useProbeSite() {
+  return useMutation({
+    mutationFn: (body: { seriesUrl: string; chapterUrl: string | null }) =>
+      api<ProbeSiteResult>('/custom-sources/probe', { method: 'POST', body: JSON.stringify(body) }),
+  })
+}
+
+export function useProbeSearch() {
+  return useMutation({
+    mutationFn: (body: { baseUrl: string; seriesTemplate: string; seriesUrl: string; query: string }) =>
+      api<ProbeSearchResult>('/custom-sources/probe/search', { method: 'POST', body: JSON.stringify(body) }),
+  })
 }

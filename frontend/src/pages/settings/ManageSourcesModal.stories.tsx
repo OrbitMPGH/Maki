@@ -222,6 +222,31 @@ export const ImportACustomSource: Story = {
   },
 }
 
+export const SetUpASite: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await openDialog(canvasElement)
+    await userEvent.click(await dialog.findByRole('button', { name: 'Add source' }))
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Set up a site' }))
+    await userEvent.type(await body.findByRole('textbox', { name: 'Series page' }), 'https://quietpen.example/series/blue/')
+    await userEvent.type(body.getByRole('textbox', { name: /Chapter page/ }), 'https://quietpen.example/blue-chapter-2/')
+    await userEvent.click(body.getByRole('button', { name: 'Read the site' }))
+    await expect(await body.findByText('Read Blue Hour directly.')).toBeVisible()
+    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await expect(await body.findByText('Ch. 2')).toBeVisible()
+    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await expect(await body.findByText('40 pages on the sample chapter.')).toBeVisible()
+    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await userEvent.click(await body.findByRole('button', { name: 'Find search' }))
+    await expect(await body.findByRole('radio', { name: /Use the site's search/ })).toBeChecked()
+    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await waitFor(() => expect(body.getByRole('button', { name: 'Save' })).toBeDisabled())
+    await userEvent.click(body.getByRole('button', { name: 'Test' }))
+    await expect(await body.findByText('Every check passed')).toBeVisible()
+    await waitFor(() => expect(body.getByRole('button', { name: 'Save' })).toBeEnabled())
+  },
+}
+
 export const ReaderSeesNoAddButton: Story = {
   parameters: { auth: 'reader' },
   play: async ({ canvasElement }) => {

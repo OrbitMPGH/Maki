@@ -14,6 +14,7 @@ using Maki.Sources.Custom;
 using Maki.Sources.Suwayomi;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Controllers;
 
@@ -294,6 +295,14 @@ public class SearchController(
         var defaultRank = SourceMatchService.OrderSources(sourceRegistry.All, null)
             .Select((s, i) => (s.Name, i))
             .ToDictionary(x => x.Name, x => x.i, StringComparer.OrdinalIgnoreCase);
+        // The custom source health job's last verdict, so the row can say "Not working" before a
+        // linked series stalls. Only the verdict: the reason is on the Health page, for admins.
+        var failing = (await db.HealthChecks.AsNoTracking()
+                .Where(r => r.Id.StartsWith(Jobs.CustomSourceHealthJob.Prefix) && r.Status == "error")
+                .Select(r => r.Id)
+                .ToListAsync(ct))
+            .Select(id => id[Jobs.CustomSourceHealthJob.Prefix.Length..])
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         return Ok(sourceRegistry.All.Select(s => new
         {
@@ -310,8 +319,8 @@ public class SearchController(
             },
             Custom = s switch
             {
-                CustomSource custom => new { custom.Definition.Id, custom.HasSearch, Invalid = false, Problem = (string?)null },
-                InvalidCustomSource invalid => new { invalid.Id, HasSearch = false, Invalid = true, Problem = (string?)invalid.Reason },
+                CustomSource custom => new { custom.Definition.Id, custom.HasSearch, Invalid = false, Problem = (string?)null, Failing = failing.Contains(custom.Name) },
+                InvalidCustomSource invalid => new { invalid.Id, HasSearch = false, Invalid = true, Problem = (string?)invalid.Reason, Failing = true },
                 _ => null
             },
             Suwayomi = s is SuwayomiSource suwayomi

@@ -21,6 +21,9 @@ paths:
   - "src/Maki.Core/Sources/Custom/**"
   - "src/Maki.Api/Controllers/CustomSources*.cs"
   - "src/Maki.Api/Services/CustomSource*.cs"
+  - "src/Maki.Api/Jobs/CustomSource*.cs"
+  - "frontend/src/api/customSources.ts"
+  - "frontend/src/pages/settings/CustomSource*.tsx"
   - "src/Maki.Data/Identity/**"
   - "tests/Maki.Api.Tests/ControllerAuthorizationInventoryTests.cs"
 ---

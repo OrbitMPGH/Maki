@@ -175,6 +175,8 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/search/sources'), () => HttpResponse.json(d.sources)),
   http.get(api('/custom-sources'), () => HttpResponse.json([])),
   http.post(api('/custom-sources/test'), () => HttpResponse.json(d.customSourceTestReport)),
+  http.post(api('/custom-sources/probe'), () => HttpResponse.json(d.customSourceProbe)),
+  http.post(api('/custom-sources/probe/search'), () => HttpResponse.json(d.customSourceSearchProbe)),
   http.get(api('/custom-sources/:id'), () => HttpResponse.json(d.customSourcesList[0].definition)),
   http.put(api('/custom-sources/:id'), () => HttpResponse.json({ created: true, sourceName: 'custom-quietpen' })),
   http.delete(api('/custom-sources/:id'), ok),

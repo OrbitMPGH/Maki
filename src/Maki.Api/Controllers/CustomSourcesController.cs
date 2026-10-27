@@ -16,9 +16,13 @@ namespace Maki.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/custom-sources")]
-public class CustomSourcesController(ILocalizer localizer, CustomSourceService service) : ControllerBase
+public class CustomSourcesController(ILocalizer localizer, CustomSourceService service, CustomSourceProbe probe) : ControllerBase
 {
     public record RenderedProblem(string Code, string Error);
+
+    public record ProbeSiteRequest(string? SeriesUrl, string? ChapterUrl);
+
+    public record ProbeSearchRequest(string? BaseUrl, string? SeriesTemplate, string? SeriesUrl, string? Query);
 
     [Authorize(Policy = Policies.Admin)]
     [HttpGet]
@@ -81,6 +85,56 @@ public class CustomSourcesController(ILocalizer localizer, CustomSourceService s
             })
         });
     }
+
+    /// <summary>
+    /// The wizard's first step: reads a pasted series page (and chapter page) and answers with a
+    /// draft definition and the guesses behind it. Saves nothing.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("probe")]
+    public async Task<IActionResult> Probe([FromBody] ProbeSiteRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var result = await probe.ProbeSiteAsync(request.SeriesUrl, request.ChapterUrl, ct);
+            return Ok(new
+            {
+                result.Draft,
+                result.ViaFlareSolverr,
+                result.Title,
+                result.SeriesId,
+                result.Engine,
+                result.Chapters,
+                result.Pages,
+                result.ChapterError,
+                HostTaken = HostTaken(result.Draft)
+            });
+        }
+        catch (CustomSourceProbe.ProbeFailed ex)
+        {
+            return this.Fail(localizer, ex.Key, ex.Args);
+        }
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("probe/search")]
+    public async Task<IActionResult> ProbeSearch([FromBody] ProbeSearchRequest request, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await probe.ProbeSearchAsync(request.BaseUrl, request.SeriesTemplate, request.SeriesUrl, request.Query, ct));
+        }
+        catch (CustomSourceProbe.ProbeFailed ex)
+        {
+            return this.Fail(localizer, ex.Key, ex.Args);
+        }
+    }
+
+    /// <summary>The source that already reads this host, so the wizard can offer to edit it instead.</summary>
+    private object? HostTaken(Core.Sources.Custom.CustomSourceDefinition draft) =>
+        service.SourceForHost(draft.BaseUrl) is { } source
+            ? new { source.Name, source.DisplayName, Custom = source is CustomSource custom ? custom.Definition.Id : null }
+            : null;
 
     /// <summary>
     /// Creates or replaces the definition with this id. A change that could re-key the chapters of
