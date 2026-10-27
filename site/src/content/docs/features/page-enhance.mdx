@@ -3,8 +3,14 @@ title: Page enhance
 description: Sharpen soft, low-resolution pages in the reader, in the browser or on the server.
 ---
 
+import ImageCompare from '../../../components/ImageCompare.astro';
+import normal from '../../../assets/normal.png';
+import upscaled from '../../../assets/upscaled.png';
+
 Enhance sharpens soft, low-resolution pages in the built-in reader, which helps most on a large
 screen. It is off until a reader turns it on. Library files are never modified.
+
+<ImageCompare before={normal} after={upscaled} alt="Manga page" />
 
 ## Two tiers, one setting
 
@@ -50,6 +56,8 @@ downloaded. A device without WebGL2 shows plain pages, and the browser methods r
 on this device".
 
 ## Server upscaling (admins)
+
+![Alt text](../../../assets/server-upscaling.png)
 
 Settings, Library, **Server upscaling** has:
 

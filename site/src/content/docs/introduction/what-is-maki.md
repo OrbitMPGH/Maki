@@ -3,6 +3,9 @@ title: What is Maki
 description: A self-hosted manga manager in the spirit of Sonarr and Radarr, with a reader built in.
 ---
 
+![Alt text](../../../assets/home.png)
+<hr>
+
 Maki watches manga sites for new chapters, downloads the pages and writes CBZ files with
 ComicInfo.xml metadata. [Kavita](https://www.kavitareader.com) and most comic readers understand
 that format, so the same folder works everywhere. You can also read in Maki's own reader, over

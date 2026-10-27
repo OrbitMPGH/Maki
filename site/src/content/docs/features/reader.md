@@ -5,6 +5,9 @@ description: Maki's built-in reader, reading profiles, the Home screen and offli
 
 ## Built-in reader
 
+![Alt text](../../../assets/reader.png)
+<hr>
+
 Paged, double-page, 1:1 (original size) and continuous-scroll modes. Progress is tracked and merged
 with Kavita so nothing double-counts. A read meter shows how far through the series you are, and
 time-remaining estimates are based on comparable chapters.
@@ -19,9 +22,15 @@ time-remaining estimates are based on comparable chapters.
 
 ## Reading profiles
 
+![Alt text](../../../assets/reader-profiles.png)
+<hr>
+
 Per-user defaults for page fit, direction and mode by series type, with per-series overrides on top.
 
 ## Home
+
+![Alt text](../../../assets/home.png)
+<hr>
 
 Opens on one large card for the series you read last, with the rest of **Continue reading** in a
 **Next up** tray under it, and a **Your last five weeks** card with reading days, streak and goal

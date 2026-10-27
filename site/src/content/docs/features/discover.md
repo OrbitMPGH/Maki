@@ -5,11 +5,23 @@ description: Recommendations, rails and metadata, all computed on your server.
 
 ## Recommendations
 
+![Alt text](../../../assets/reco.png)
+<hr>
+
 Local ONNX embeddings over the MangaBaka dump find titles similar to your library. Seed them from
 your whole library or from specific titles, and filter by year, rating, type, status, genre,
 chapter count, content rating and popularity.
 
 ## Browse
+
+![Alt text](../../../assets/reco2.png)
+<hr>
+
+![Alt text](../../../assets/taste.png)
+<hr>
+
+![Alt text](../../../assets/taste2.png)
+<hr>
 
 The Browse tab has catalog and genre rails, recent-reading picks, side interests, blind spots and
 **Readers like you**. **Your Taste** shows reading behavior, grouped interests and how your taste

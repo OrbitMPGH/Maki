@@ -5,6 +5,9 @@ description: Scheduled checks, release-aware refresh, source matching, torrents 
 
 ## Monitoring
 
+![Alt text](../../../assets/chapters.png)
+<hr>
+
 Chapter lists refresh on a schedule and new chapters are queued automatically. Whole-series monitor
 modes decide what gets queued, and a per-chapter **Wanted** toggle keeps individual chapters or
 specials out.
@@ -17,12 +20,18 @@ less often** in Settings, Downloads to check everything every 30 minutes.
 
 ## Upcoming
 
+![Alt text](../../../assets/upcoming.png)
+<hr>
+
 The Upcoming tab in Activity shows each series' likely next chapter on a five-week grid, as a span
 with a confidence rather than a date. Release times a source announces (MANGA Plus) are shown on
 the day, and Maki checks again just after them. The series page shows the same estimate and when
 the next check is due.
 
 ## Automatic source matching
+
+![Alt text](../../../assets/source-match.png)
+<hr>
 
 Adding a series returns instantly. Matching runs in the background and can be re-run or fixed by
 hand.

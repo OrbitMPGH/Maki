@@ -12,6 +12,9 @@ write a `cover.jpg` into each series folder for readers that look for one.
 
 ## Page conversion
 
+![Alt text](../../../assets/conversion.png)
+<hr>
+
 Off by default (Settings, Library, Page conversion). Pick WebP or AVIF and a quality. New downloads
 are stored with their JPEG pages in that format and their PNG pages as lossless WebP.
 
@@ -38,11 +41,17 @@ look like a worse release.
 
 ## Library view
 
+![Alt text](../../../assets/library.png)
+<hr>
+
 Grid or list view with density options. Shows download state, read badges and monitor status.
 Filter by source, chapter count or user tag, save filters, and set Wanted in bulk. Per-series
 incognito mode keeps a title out of stats and progress without hiding it.
 
 ## Library health
+
+![Alt text](../../../assets/health.png)
+<hr>
 
 Admins can index and verify archives, and find missing, unreadable, duplicate or suspicious files.
 Repeated findings of one kind fold into one row with **Acknowledge all**. Replacement and deletion
