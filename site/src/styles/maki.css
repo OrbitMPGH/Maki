@@ -24,3 +24,6 @@
   --sl-color-hairline-light: #e8dfdf;
 }
 .hero h1 { letter-spacing: -0.025em; }
+
+.header > .sl-flex:nth-child(2) { justify-content: flex-end; }
+.header site-search { width: min(100%, 22rem); }

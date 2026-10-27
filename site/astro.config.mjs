@@ -17,6 +17,7 @@ export default defineConfig({
       sidebar: [
         {
           label: 'Introduction',
+          collapsed: true,
           items: [
             'introduction/what-is-maki',
             'introduction/how-it-works',
@@ -25,6 +26,7 @@ export default defineConfig({
         },
         {
           label: 'Installation',
+          collapsed: true,
           items: [
             'installation/docker-compose',
             'installation/unraid',
@@ -34,13 +36,16 @@ export default defineConfig({
         },
         {
           label: 'Guides',
+          collapsed: true,
           items: [
             {
               label: 'Getting started',
+              collapsed: true,
               items: ['guides/getting-started/add-your-first-series'],
             },
             {
               label: 'Reading in other apps',
+              collapsed: true,
               items: [
                 'guides/reading/offline-and-app',
                 'guides/reading/koreader',
@@ -49,23 +54,27 @@ export default defineConfig({
             },
             {
               label: 'Sources',
+              collapsed: true,
               items: ['guides/sources/built-in-sources'],
             },
             {
               label: 'Recommendations',
+              collapsed: true,
               items: ['guides/recommendations/how-it-works'],
             },
             {
               label: 'Running Maki',
+              collapsed: true,
               items: ['guides/running/users-and-access', 'guides/running/backup-restore'],
             },
           ],
         },
         {
           label: 'Contribution',
+          collapsed: true,
           items: ['contribution/development', 'contribution/translating'],
         },
-        { label: 'Q&A', items: ['qa/faq'] },
+        { label: 'Q&A', collapsed: true, items: ['qa/faq'] },
       ],
     }),
   ],

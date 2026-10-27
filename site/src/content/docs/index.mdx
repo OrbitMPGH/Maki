@@ -1,19 +1,15 @@
 ---
 title: Maki documentation
 description: Add a series once and Maki keeps it complete. Docs for the self-hosted manga manager with a reader built in.
-template: splash
-hero:
-  tagline: Add a series once and Maki keeps it complete. Install it, point your reading apps at it, and learn how the pieces work.
-  actions:
-    - text: Install with Docker
-      link: /Maki/installation/docker-compose/
-      icon: right-arrow
-    - text: What is Maki
-      link: /Maki/introduction/what-is-maki/
-      variant: minimal
 ---
 
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkButton } from '@astrojs/starlight/components';
+
+Add a series once and Maki keeps it complete. Install it, point your reading apps at it, and learn
+how the pieces work.
+
+<LinkButton href="/Maki/installation/docker-compose/" icon="right-arrow">Install with Docker</LinkButton>
+<LinkButton href="/Maki/introduction/what-is-maki/" variant="minimal">What is Maki</LinkButton>
 
 <CardGrid>
   <Card title="Introduction" icon="open-book">
@@ -28,6 +24,7 @@ import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
   <Card title="Contribution" icon="github">
     Run Maki from source, find your way around the code, and help translate it.
   </Card>
+  <Card title="Q&A" icon="information">
+    Short answers to the questions that come up most.
+  </Card>
 </CardGrid>
-
-<LinkCard title="Q&A" description="Short answers to the questions that come up most." href="/Maki/qa/faq/" />
