@@ -3,13 +3,13 @@ title: Settings, tab by tab
 description: What each Settings tab holds, which cards only admins see, and how to link straight to one.
 ---
 
-This page lists the Settings tabs and the cards inside them. Use it to find where a control lives.
+Use this page to find where a control lives. Each row is one card.
 
-Open Settings from the sidebar, or go to `/settings`. The open tab is kept in the URL, for example `/settings?tab=downloads`. A single card can be linked with the `s` parameter and the card's id, for example `/settings?s=sign-in`. The command palette searches card names and their keywords.
-
-Cards marked **Admin** change the server. They are hidden from accounts that are not admins. Cards that need a permission are hidden from accounts that lack it.
-
-Each row below is one card. The last column lists what the card holds.
+- Open Settings from the sidebar or at `/settings`.
+- The open tab is in the URL, for example `/settings?tab=downloads`.
+- Link a single card with `s` and its id, for example `/settings?s=sign-in`.
+- The command palette searches card names and keywords.
+- **Admin** cards change the server. Admin cards and cards that need a permission are hidden from accounts without it.
 
 ## Account
 

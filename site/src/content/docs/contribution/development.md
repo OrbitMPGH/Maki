@@ -5,8 +5,7 @@ description: Build the image, run from source and find your way around the code.
 
 ## Building the Docker image
 
-The multi-stage [`Dockerfile`](https://github.com/OrbitMPGH/Maki/blob/main/Dockerfile) builds the frontend (Node 24) and backend (.NET 10)
-and packages them into an `aspnet:10.0` runtime image serving the SPA from `wwwroot/`.
+The multi-stage [`Dockerfile`](https://github.com/OrbitMPGH/Maki/blob/main/Dockerfile) builds the frontend (Node 24) and backend (.NET 10) into an `aspnet:10.0` runtime image that serves the SPA from `wwwroot/`.
 
 ```bash
 docker build -t maki:local .
@@ -21,13 +20,10 @@ docker run -d --name maki \
 docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/<you>/maki:latest --push .
 ```
 
-- The build context must be the repo root: both stages copy `locales/` in (the API embeds
-  `server.po`, Vite bundles `client.po`), and the build fails if any language is missing from
-  either the frontend or the backend stage.
+- The build context must be the repo root. Both stages copy `locales/` in (the API embeds `server.po`, Vite bundles `client.po`), and the build fails if a language is missing from either stage.
 - `entrypoint.sh` fixes ownership of `/config` and drops to `PUID`/`PGID` via `gosu`.
-- State lives in the `/config` volume; the library is a separate mount you can share with Kavita.
-- `distribution/docker/Dockerfile` is an identical copy used by CI and the `distribution/build-*.ps1`
-  scripts. Keep the two in step.
+- State lives in the `/config` volume. The library is a separate mount you can share with Kavita.
+- `distribution/docker/Dockerfile` is an identical copy used by CI and the `distribution/build-*.ps1` scripts. Keep the two in step.
 
 ## Running from source
 
@@ -45,18 +41,10 @@ dotnet test
 dotnet publish src/Maki.Api -c Release
 ```
 
-State lives in `MAKI_CONFIG_DIR`. If it is unset, Maki uses `/config` when that directory exists
-(the Docker convention) and otherwise a per-user application-data folder, `%APPDATA%\Maki` on
-Windows. It holds the SQLite database, logs, covers, page cache, MangaBaka dump, embedding index,
-and precomputed recommendation data. For local development point it at a throwaway directory:
+State (database, logs, covers, caches, MangaBaka dump, embeddings, recommendation data) lives in `MAKI_CONFIG_DIR`. The fallback order is in [Environment variables](/Maki/reference/environment-variables/) and the contents in [Ports, paths and files on disk](/Maki/reference/ports-and-paths/). For development, point it at a throwaway directory:
 
 ```bash
 MAKI_CONFIG_DIR="$PWD/.devconfig" dotnet run --project src/Maki.Api
 ```
 
-EF Core migrations apply automatically on startup.
-
-## Architecture
-
-Each project owns a different part of the code. [Architecture tour](/Maki/contribution/architecture/)
-explains what goes where before you change anything.
+EF Core migrations apply automatically on startup. Before changing code, see the [Architecture tour](/Maki/contribution/architecture/) for what goes where.

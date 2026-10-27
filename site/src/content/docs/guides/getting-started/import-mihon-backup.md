@@ -3,15 +3,13 @@ title: Import a Mihon backup
 description: Bring your Mihon library, categories and read chapters into Maki from a Mihon backup file.
 ---
 
-Use this page to move a Mihon library into Maki. Only manga in your Mihon library are imported.
-
-The **Mihon backup** tab on the Import page appears only after the local MangaBaka database is
-installed, because every title is matched against it.
+Only manga in your Mihon library are imported. The **Mihon backup** tab on the Import page appears
+only after the local MangaBaka database is installed, because every title is matched against it.
 
 ## Make the backup
 
-In Mihon, open **More > Settings > Data and storage > Create backup**, then keep the `.tachibk` file
-it makes. Maki also accepts `.proto.gz` files. The file can be up to 100 MB.
+In Mihon, open **More > Settings > Data and storage > Create backup**. Maki accepts the `.tachibk`
+file it makes, or a `.proto.gz`, up to 100 MB.
 
 ## Read the backup
 
@@ -22,15 +20,15 @@ Maki matches each manga to MangaBaka in this order: MangaBaka id, AniList, MyAni
 then the title. A title match is accepted only when exactly one result scores highest. Two works
 with the same title are left for you to choose.
 
-The page shows **Matching your library to MangaBaka** while this runs. Keep the page open until it
-finishes. If it stops, **Retry** carries on, or you can review what matched so far. Anything left
-over shows as not found, and you can match it by hand.
+The page shows **Matching your library to MangaBaka** while this runs, so keep it open. If it stops,
+**Retry** carries on, or you can review what matched so far. Anything left over shows as not found
+and can be matched by hand.
 
 ## Review
 
-The review table has filters: **All**, **Matched**, **Needs review**, **Not found** and **In
-library**. Each row shows the Mihon title and the match, with the source it matched by. Use **Find
-match** or **Change** to pick a different result.
+Filter the review table by **All**, **Matched**, **Needs review**, **Not found** or **In library**.
+Each row shows the Mihon title, the match and what it matched by. **Find match** or **Change** picks
+a different result.
 
 Settings above the table apply to the whole import:
 
@@ -47,17 +45,10 @@ marks apply only to series already in the library. One run sends at most 10 requ
 
 ## After the import
 
-The summary says **Import finished** and lists anything that was skipped or failed, with the
-reason.
+The **Import finished** summary lists anything skipped or failed, with the reason.
 
-Read ticks show in the chapter list. Series read counts only include downloaded chapters. Read
-marks from a Mihon import are not reading that Maki saw happen, so they do not add to Rewind and
-they do not earn XP.
-
-If a series has no chapters yet, its read marks wait. Maki applies them after the first sync that
-finds chapters for that series.
-
-:::tip
-The import only marks chapters read. It never marks a chapter unread, so anything you already read
-in Maki stays read.
-:::
+- Read ticks show in the chapter list. Series read counts only include downloaded chapters.
+- Read marks from an import are not reading Maki saw happen, so they do not add to Rewind or earn XP.
+- If a series has no chapters yet, its read marks wait and apply after the first sync that finds
+  chapters.
+- The import only marks chapters read, never unread, so anything you already read in Maki stays read.

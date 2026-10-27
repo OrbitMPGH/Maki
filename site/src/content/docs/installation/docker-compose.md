@@ -46,9 +46,8 @@ Paste the compose file above into a Portainer stack, or into a Synology Containe
   </TabItem>
 </Tabs>
 
-`PUID` and `PGID` set the user the container runs as. Maki changes the ownership of `/config` to that user on
-every start, but not `/library`, so that user needs write access to your library folder already. See
-[Volumes, PUID and PGID](/Maki/installation/volumes-and-permissions/).
+`PUID` and `PGID` set the user the container runs as. Maki fixes the ownership of `/config` on every
+start but never touches `/library`, so that user needs write access to your library folder already. See [Volumes, PUID and PGID](/Maki/installation/volumes-and-permissions/).
 
 ## Open Maki
 
@@ -61,21 +60,19 @@ every start, but not `/library`, so that user needs write access to your library
 ## Memory
 
 `mem_reservation` is a soft limit: when the host runs short of memory, the kernel takes Maki's file
-cache back first. Most dashboards count that cache as the container's memory, so without it Maki can
-look much bigger than it is. Don't set a hard `mem_limit` below 1.5 GB yet, since a scrape and a
-search running together can briefly need close to 1 GB.
+cache back first. Most dashboards count that cache as the container's memory, so without a
+reservation Maki can look much bigger than it is.
+
+Don't set a hard `mem_limit` below 1.5 GB yet, since a scrape and a search running together can
+briefly need close to 1 GB.
 
 ## Optional companions
 
-Kavita, FlareSolverr and Suwayomi are optional. The compose file for all three, and where each one is
-connected in Maki, is on [FlareSolverr and Suwayomi](/Maki/installation/companions/).
-
-## Upgrading
-
-Upgrading from a single-user Maki, and going back after a bad upgrade, are covered on
-[Upgrading](/Maki/installation/upgrading/).
+The compose file for Kavita, FlareSolverr and Suwayomi, and where each is connected in Maki, is on
+[FlareSolverr and Suwayomi](/Maki/installation/companions/).
 
 ## Next
 
-Offline reading and push notifications need HTTPS. See
-[Reverse proxy and HTTPS](/Maki/installation/reverse-proxy-https/).
+- [Upgrading](/Maki/installation/upgrading/), including going back after a bad upgrade.
+- Offline reading and push notifications need HTTPS. See
+  [Reverse proxy and HTTPS](/Maki/installation/reverse-proxy-https/).

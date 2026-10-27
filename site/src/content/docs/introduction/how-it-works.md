@@ -20,16 +20,18 @@ follow the queue under **Activity**.
 ## 3. Save
 
 Each chapter is downloaded page by page and written as a CBZ file with ComicInfo.xml metadata
-into your library folder. The files are plain and portable. Kavita, KOReader, Panels, Chunky,
+into your library folder. The files are plain and portable, so Kavita, KOReader, Panels, Chunky,
 Mihon and other comic readers can open the same folder.
 
 ## 4. Read and track
 
-You can read in Maki's own reader, over [OPDS and the Komga-compatible API](/Maki/guides/reading/opds-apps/),
-or in [KOReader](/Maki/guides/reading/koreader/). Progress from every app is merged, and Maki
-sends it to your trackers.
+Read in Maki's own reader, over [OPDS and the Komga-compatible API](/Maki/guides/reading/opds-apps/),
+or in [KOReader](/Maki/guides/reading/koreader/). Progress from every app is merged and sent to
+your trackers.
 
 ## Where the data lives
 
-State (database, logs, covers, page cache and `config.json`) goes in the `/config` volume.
-Chapters go in the `/library` volume. Back up both. See [Backup and restore](/Maki/guides/running/backup-restore/).
+- `/config` volume: database, logs, covers, page cache and `config.json`.
+- `/library` volume: chapters.
+
+Back up both. See [Backup and restore](/Maki/guides/running/backup-restore/).

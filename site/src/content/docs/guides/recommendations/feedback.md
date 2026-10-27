@@ -3,55 +3,60 @@ title: Tune what you see
 description: Thumbs, hiding, the Manage signals list, and the never-show list that keep unwanted titles out of Discover.
 ---
 
-Every recommendation can be changed from its card. This page covers the controls, what each one does to your recommendations, and how to keep whole genres and tags off Discover. For how the ranking works, see [How recommendations work](/Maki/guides/recommendations/how-it-works/).
+Every recommendation can be changed from its card. For how the ranking works, see
+[How recommendations work](/Maki/guides/recommendations/how-it-works/).
 
 ## Thumbs up and thumbs down
 
-Each recommended title has two buttons.
+- **Thumbs up** (**More like this**) counts toward your taste, so similar titles rank higher.
+- **Thumbs down** (**Not for me**) removes the title from your recommendations and pushes down titles
+  that sit closer to it than to what you kept.
 
-- **Thumbs up** (tooltip **More like this**) counts toward your taste. Similar titles rank higher.
-- **Thumbs down** (tooltip **Not for me**) takes the title out of your recommendations. It also pushes down titles that sit closer to it than to what you kept.
-
-Press a thumb again to remove that vote. A series you rated 4 or under counts as a dislike for ranking too.
+Press a thumb again to remove the vote. A series you rated 4 or under also counts as a dislike.
 
 ## The more feedback menu
 
-The **More recommendation feedback actions** button opens a menu with these options:
+**More recommendation feedback actions** opens these options:
 
 - **Change this title only**
   - **Hide this title** removes it from recommendations.
   - **Dismiss for 30 days** hides it until the 30 days pass.
 - **Whole franchise**
-  - **Hide this and its franchise** hides every entry in the same franchise, up to 50 titles. Restore any of them from Manage signals.
+  - **Hide this and its franchise** hides every entry in the franchise, up to 50 titles. Restore any
+    of them from Manage signals.
 - **Already read or seen**
-  - **Read manga elsewhere**, **Seen anime**, or **Both** marks the title as already read or seen. Recommendations stop offering it, and your taste profile does not change.
+  - **Read manga elsewhere**, **Seen anime** or **Both** stops recommending the title without
+    changing your taste profile.
   - **Clear read or seen** undoes that.
-- **Restore hidden or dismissed title** brings a hidden or dismissed title back.
+- **Restore hidden or dismissed title** brings a title back.
 
 Most changes show an **Undo** button in the message that follows.
 
 ## Manage signals
 
-The taste card on **Discover → Taste** is titled **What shapes your recommendations**. It sums up your shelf, ratings, thumbs and hidden titles. Its **How signals work** panel explains each signal. Its **Manage signals** button opens a list of every title with a signal.
+The taste card on **Discover → Taste**, **What shapes your recommendations**, sums up your shelf,
+ratings, thumbs and hidden titles. **How signals work** explains each signal, and **Manage signals**
+lists every title with one.
 
-The list has two tabs, **Titles** and **Anime**. Use the filters to narrow it:
+The list has **Titles** and **Anime** tabs. Filter by **All**, **Rated**, **Thumbs**, **Hidden**,
+**Seen elsewhere**, **Excluded from taste** or **Added by you**, search by title, and sort by
+**Recently changed** or **Title**. You can change a title's signal or restore a hidden one from here.
 
-- **All**, **Rated**, **Thumbs**, **Hidden**, **Seen elsewhere**, **Excluded from taste** and **Added by you**
+**Excluded from taste** keeps a shelf title out of the ranking without changing your reading history.
 
-You can search titles and sort them by **Recently changed** or **Title**. Change a title's signal from the list, or restore a hidden one.
-
-**Excluded from taste** keeps a title on your shelf out of the ranking. Your reading history is not changed.
-
-The **Anime** tab lists your anime signals. It needs an AniList or MyAnimeList tracker connected, and anime signals switched on in the Taste tab. See [Connect a tracker](/Maki/guides/trackers/connect/).
+The **Anime** tab needs an AniList or MyAnimeList tracker connected and anime signals switched on in
+the Taste tab. See [Connect a tracker](/Maki/guides/trackers/connect/).
 
 ## Hidden everywhere
 
-Some content should never show up at all. The **Hidden everywhere** button on Discover, the catalogue and creator pages opens a list of genres and tags.
+The **Hidden everywhere** button on Discover, the catalogue and creator pages opens a list of genres
+and tags. A series with any of them never shows up on Discover, including rails, search,
+recommendations and creator pages. Only you see the list.
 
-A series with any of those genres or tags never shows up on Discover. That covers rails, search, recommendations and creator pages. Only you can see the list.
-
-Use it for whole genres or tags you never want. Use thumbs for individual titles.
+Use it for whole genres or tags, and thumbs for individual titles.
 
 ## Catalogue filters
 
-Catalogue filters let you require, allow or exclude genres and tags. Each rule reads **Has all of**, **Has any of** or **Has none of**. Save a filter set with **Saved filters**, and turn a filter set into a rail with **Save as a rail…**. See [Custom rails](/Maki/guides/recommendations/custom-rails/).
+Catalogue filters require, allow or exclude genres and tags with **Has all of**, **Has any of** or
+**Has none of**. Keep a set with **Saved filters**, or turn it into a rail with **Save as a rail…**.
+See [Custom rails](/Maki/guides/recommendations/custom-rails/).

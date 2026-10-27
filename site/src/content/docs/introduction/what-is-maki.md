@@ -16,11 +16,10 @@ so the schema and API can still change between releases. Issues and pull request
 ## Why Maki
 
 - **Recommendations from your own library.** Local embeddings over the [MangaBaka](https://mangabaka.org)
-  catalog suggest what to read next. It all runs on your server. See
+  catalog suggest what to read next, all on your server. See
   [How recommendations work](/Maki/guides/recommendations/how-it-works/).
-- **Automatic monitoring.** Maki checks your sources on a schedule, picks the best one for each
-  series and queues new chapters as they appear. Series that release often are checked every 30
-  minutes, and an Upcoming view shows when the next chapter is likely.
+- **Automatic monitoring.** Maki picks the best source for each series and queues new chapters as
+  they appear. An Upcoming view shows when the next chapter is likely.
 - **Scrobbling.** Reading progress goes to AniList, MyAnimeList, Kitsu, MangaBaka and MangaUpdates,
   whether you read in Maki, over OPDS or in Kavita.
 - **Plain files, any reader.** Everything is saved as CBZ with ComicInfo.xml, and nothing is locked
@@ -37,5 +36,5 @@ so the schema and API can still change between releases. Issues and pull request
 
 ## Legal
 
-Maki is a tool for organizing your library. You are responsible for the sources you connect and for
-the laws where you live. Read [Legal and responsible use](/Maki/introduction/legal/) before you add a source.
+You are responsible for the sources you connect and for the laws where you live. Read
+[Legal and responsible use](/Maki/introduction/legal/) before you add a source.

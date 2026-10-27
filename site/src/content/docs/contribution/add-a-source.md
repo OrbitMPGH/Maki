@@ -3,26 +3,28 @@ title: Add a source
 description: Write an ISource implementation for a new site in Maki.Sources, register it and test it.
 ---
 
-This page is for adding a built-in source, which is a C# class in `Maki.Sources`. Before you write one, check whether the site fits a custom source. A custom source is a JSON definition that says where the search, chapter list and page images are, using CSS selectors, regular expressions or a path into JSON. It needs no code, and admins can set one up in the app. See [custom sources](/Maki/guides/sources/custom-sources/).
+A built-in source is a C# class in `Maki.Sources`. First check whether the site fits a [custom source](/Maki/guides/sources/custom-sources/): a JSON definition (CSS selectors, regular expressions or JSON paths) that admins set up in the app with no code.
 
-Write a built-in source when the site needs logic a definition cannot express, such as pages that are scrambled or API calls that have to be signed. Nothing in a definition runs as code, so those sites still need one.
+Write a built-in source when the site needs logic a definition cannot express, such as scrambled pages or signed API calls. Nothing in a definition runs as code.
 
 ## The interface
 
-`ISource` is in [`src/Maki.Core/Sources/ISource.cs`](https://github.com/OrbitMPGH/Maki/blob/main/src/Maki.Core/Sources/ISource.cs). You implement these:
+Implement `ISource` from [`src/Maki.Core/Sources/ISource.cs`](https://github.com/OrbitMPGH/Maki/blob/main/src/Maki.Core/Sources/ISource.cs):
 
 - `Name`: a stable lowercase key such as `mangadex`. It is stored in `SourceMapping.SourceName`, so it cannot change later.
 - `DisplayName` and `BaseUrl`.
 - `Capabilities`: `SourceCapabilities.None` unless the site needs FlareSolverr (`NeedsFlareSolverr`) or honours a language filter (`SupportsLanguageFilter`).
 - `SearchAsync`, `GetSeriesAsync`, `ListChaptersAsync` and `GetPagesAsync`.
 
-Several members have defaults you only override when they differ: `Kind` (aggregator), `Content` (manga), `Rating` (general), `SupportedLanguages` (English), `CoverHosts` for images served from another domain, `ResolveSeriesIdFromUrl` and `GetExternalIdsAsync`.
+Override these defaults only when they differ: `Kind` (aggregator), `Content` (manga), `Rating` (general), `SupportedLanguages` (English), `CoverHosts` for images served from another domain, `ResolveSeriesIdFromUrl` and `GetExternalIdsAsync`.
 
 ## Example: Asura
 
-`src/Maki.Sources/Asura/AsuraSource.cs` is a small source that reads a JSON API. Use it as the template. It takes an `IHttpClientFactory`, reads a named client, and packs what it needs into the chapter id so that `GetPagesAsync` can rebuild the request from the two ids alone. Premium chapters that have not unlocked stay in the list, and `GetPagesAsync` throws `ChapterLockedException` so the download retries later.
+`src/Maki.Sources/Asura/AsuraSource.cs` is a small JSON API source. Use it as the template.
 
-Its named client is set up in `src/Maki.Api/Program.cs`, next to the other `AddHttpClient` calls, with the base address and headers the site expects.
+- It takes an `IHttpClientFactory` and a named client, set up in `src/Maki.Api/Program.cs` next to the other `AddHttpClient` calls with the site's base address and headers.
+- It packs what it needs into the chapter id, so `GetPagesAsync` can rebuild the request from the two ids alone.
+- Premium chapters that have not unlocked stay in the list. `GetPagesAsync` throws `ChapterLockedException` so the download retries later.
 
 ## Steps
 
@@ -35,16 +37,18 @@ Its named client is set up in `src/Maki.Api/Program.cs`, next to the other `AddH
 
 ## Tests
 
-Tests build a source on `FakeHttpClientFactory`, which answers requests from canned responses keyed by a substring of the URL. Use it to replay recorded pages. Put recorded HTML or JSON in `tests/Maki.Sources.Tests/Fixtures/`. The project copies that folder to the output directory, and `FakeHttpClientFactory.Fixture("name.html")` reads a file from it. Some tests, like Asura's, use short inline JSON instead.
+Build the source on `FakeHttpClientFactory`, which answers requests with canned responses keyed by a substring of the URL.
 
-Cover search, the chapter list and the page list. Include a case where the site returns a page without the expected payload, since that should throw rather than return an empty list.
+- Put recorded HTML or JSON in `tests/Maki.Sources.Tests/Fixtures/` and read it with `FakeHttpClientFactory.Fixture("name.html")`. Short inline JSON works too, as in Asura's tests.
+- Cover search, the chapter list and the page list.
+- Include a page response without the expected payload. It should throw, not return an empty list.
 
 ## Things that catch people out
 
-- **Tag each chapter with the language the site says it is.** Do not hardcode `"en"` for a site that publishes other languages. The language is half of a chapter's identity, and it becomes part of the file name when two languages of one chapter are downloaded.
-- **Set `Kind`, `Content` and `Rating` when the defaults are wrong.** A scanlation group should say `SourceKind.Scanlator`. These values drive the tags the UI shows for the source.
+- **Tag each chapter with the language the site reports.** Do not hardcode `"en"`. Language is half of a chapter's identity and goes into the file name when two languages of one chapter are downloaded.
+- **Set `Kind`, `Content` and `Rating` when the defaults are wrong.** A scanlation group is `SourceKind.Scanlator`. They drive the tags the UI shows.
 - **`GetPagesAsync` runs at download time.** Resolve page URLs there, and return the headers each page needs in `PageRequest.Headers`.
-- **An empty list and an exception mean different things.** An empty list says the site lists no pages. A response with no page payload should throw `InvalidOperationException` naming the URL.
+- **Empty list and exception differ.** An empty list means the site lists no pages. A response with no page payload throws `InvalidOperationException` naming the URL.
 - **Images on another domain need `CoverHosts`.** The cover proxy only fetches hosts the source lists, and a blocked host is logged with its name.
 
-Before you start, read the site notes in [`src/Maki.Sources/CLAUDE.md`](https://github.com/OrbitMPGH/Maki/blob/main/src/Maki.Sources/CLAUDE.md). They record what other sites have needed, such as Cloudflare clearance, rate limits and residential IPs.
+Read [`src/Maki.Sources/CLAUDE.md`](https://github.com/OrbitMPGH/Maki/blob/main/src/Maki.Sources/CLAUDE.md) first. It records what other sites have needed, such as Cloudflare clearance, rate limits and residential IPs.

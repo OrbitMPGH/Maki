@@ -3,40 +3,38 @@ title: Ranking and choosing sources
 description: How Maki matches a series to sources, which one it downloads from first, and how to link, unlink, enable and rank them.
 ---
 
-This page covers how a series ends up linked to sources and how Maki picks one when several have
-the same chapter. For the sources themselves, see [Built-in sources](/Maki/guides/sources/built-in-sources/).
+For the sources themselves, see [Built-in sources](/Maki/guides/sources/built-in-sources/).
 
 ## Automatic matching
 
-When you add a series, Maki searches every enabled source for it in the background. The add
-returns straight away. The series is marked as matching until the searches finish.
+When you add a series, Maki searches every enabled source for it in the background, and the series
+shows as matching until the searches finish.
 
-A result is accepted when its title agrees closely enough with the series. Some sources publish
-links to tracker ids such as MyAnimeList or AniList. When one of those ids matches the series, Maki
-accepts the result without comparing titles. If the main title finds nothing on a source, Maki
-retries with the series' alternative titles.
+- A result is accepted when its title agrees closely enough with the series. If the main title finds
+  nothing on a source, Maki retries with the alternative titles.
+- Some sources publish tracker ids such as MyAnimeList or AniList. When one matches the series, Maki
+  accepts the result without comparing titles.
+- WEBTOON CANVAS results are user-made, so they only match when the credited author agrees with the
+  series' author. A series with no author on record never matches CANVAS automatically, but you can
+  link it by hand.
 
-WEBTOON CANVAS results are made by users, so they only match when the credited author agrees with
-the series' author. A series with no author on record never matches CANVAS automatically. You can
-still link it by hand.
+Each linked source shows how it got there: **Title search**, **Cross-id** or **Manual**. A failed
+search is reported as a failed source, not "no match", so a broken site does not look like a missing
+series.
 
-Each linked source shows how it got there: **Title search**, **Cross-id** or **Manual**. A search
-that fails is reported as a failed source, not as "no match", so a broken site does not look like a
-missing series.
-
-To search again, select **Auto-match** in the Sources section of the series page. It searches the
-sources that are not linked yet and leaves the linked ones alone.
+**Auto-match** in the Sources section of the series page searches again. It only tries sources that
+are not linked yet.
 
 ## Priority order
 
-Priority is set in **Settings → Downloads → Sources**, using **Manage sources**. Open the
-**Priority** tab, drag the sources into order, and save. The top source is tried first when several
-carry the same series. Newly enabled sources join at the bottom.
+In **Settings → Downloads → Sources → Manage sources**, drag sources into order on the **Priority**
+tab. The top source is tried first when several carry the same series. Newly enabled sources join at
+the bottom.
 
-Languages affect the order too. In **Settings → Downloads → Languages**, list the languages you
-want, most preferred first. Maki ranks each source by the most preferred enabled language it publishes
-in, and uses the priority order to break ties inside that group. A source that publishes none of your
-enabled languages is skipped by auto-match. You can still link it by hand.
+Languages affect the order too. In **Settings → Downloads → Languages**, list your languages, most
+preferred first. Maki ranks each source by the most preferred enabled language it publishes in, and
+uses the priority order to break ties inside that group. A source that publishes none of your
+enabled languages is skipped by auto-match, but you can still link it by hand.
 
 ## Download order
 
@@ -51,15 +49,14 @@ Each linked source also has a priority number. In manual order, a lower number i
 quality order, the priority number only breaks ties between sources of equal quality.
 
 Quality comes from sampling. **Measure** on the series page takes a few pages from three chapters on
-every linked source and records a quality tier for each. **Compare** shows two sources side by side.
-To measure new series automatically, turn on **Measure sources when a series is added** in the
+every linked source and records a quality tier for each, and **Compare** shows two sources side by
+side. To measure new series automatically, turn on **Measure sources when a series is added** in the
 Sources section of Downloads settings.
 
 ## Linking a source
 
-On the series page, select **Link source** in the Sources section. Pick a source, then search for the
-series or paste its URL. Maki links the source and lists its chapters straight away. A source with no
-search only works with a pasted URL.
+On the series page, select **Link source** in the Sources section, pick a source, then search for
+the series or paste its URL. A source with no search only works with a pasted URL.
 
 ## Unlinking a source
 
@@ -74,14 +71,10 @@ chapters are deleted too.
 
 ## Turning sources off
 
-There are two switches.
-
 - In **Manage sources**, the switch on a source's row turns it off for the whole library. Its links
-  stay in place, and they come back when you turn it on again.
+  stay in place and come back when you turn it on again. Each series that uses it shows a note that
+  the series' own setting is kept.
 - The **Enabled** switch on a series' source row turns that one link off for that series.
-
-A source you switched off globally shows a note on each series that uses it, saying that the series'
-own setting is kept.
 
 :::tip
 Suwayomi sources are all off until you turn them on. A mixed-language Suwayomi source also needs a

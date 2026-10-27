@@ -3,31 +3,31 @@ title: Environment variables
 description: Every MAKI_* variable Maki reads, plus PUID and PGID from the container, with defaults.
 ---
 
-This page lists the environment variables Maki reads. Most installs need none of them. Set a variable in the compose file's `environment` list or with `docker run -e`, then restart Maki.
+Most installs need none of these. Set them in the compose file's `environment` list or with `docker run -e`, then restart Maki.
 
-Values that are not a whole number, or that are negative, fall back to the default in the timer and cache variables below.
+In the timer and cache variables below, a value that is not a whole number or is negative falls back to the default.
 
 ## Container
 
 | Variable | Default | What it does |
 |---|---|---|
-| `PUID` | `1000` | User ID Maki runs as. The container changes the owner of `/config` to this user on each start. |
-| `PGID` | `1000` | Group ID Maki runs as. Used with `PUID` for the same purpose. |
-| `MAKI_RUNTIME` | `docker` in the image | Marks the install as running in Docker. The update check reports this as `IsDocker`. |
-| `MAKI_CONFIG_DIR` | `/config` in the image | Folder for the database, logs, covers, caches and `config.json`. Unset, Maki uses `/config` if that folder exists, otherwise the per-user app data folder (`%APPDATA%\Maki` on Windows). See [Ports, paths and files on disk](/Maki/reference/ports-and-paths/). |
+| `PUID` | `1000` | User ID Maki runs as. The container chowns `/config` to this user on each start. |
+| `PGID` | `1000` | Group ID Maki runs as. |
+| `MAKI_RUNTIME` | `docker` in the image | Marks the install as Docker. The update check reports it as `IsDocker`. |
+| `MAKI_CONFIG_DIR` | `/config` in the image | Folder for the database, logs, covers, caches and `config.json`. Unset: `/config` if it exists, otherwise the per-user app data folder (`%APPDATA%\Maki` on Windows). See [Ports, paths and files on disk](/Maki/reference/ports-and-paths/). |
 
 ## Sign-in
 
 | Variable | Default | What it does |
 |---|---|---|
-| `MAKI_ALLOW_LOCAL_LOGIN` | Off | Set to `1` or `true` to allow password sign-in for everyone when `auth.oidconly` is on. Admins can always sign in with a password. Use it to get back in when the identity provider is down. |
+| `MAKI_ALLOW_LOCAL_LOGIN` | Off | `1` or `true` allows password sign-in for everyone when `auth.oidconly` is on. Admins can always use a password. For when the identity provider is down. |
 
 ## Startup and memory
 
 | Variable | Default | What it does |
 |---|---|---|
-| `MAKI_DUMP_BOOT_DOWNLOAD` | On | When no MangaBaka database is installed, the download starts about five seconds after boot. `0` delays it to two minutes after boot. |
-| `MAKI_DROP_SCAN_CACHE` | On | After a scan reads a file end to end, the operating system drops that file's cached pages. `0` keeps them. Set `0` on a machine with RAM to spare. |
+| `MAKI_DUMP_BOOT_DOWNLOAD` | On | With no MangaBaka database installed, the download starts about 5 seconds after boot. `0` delays it to 2 minutes. |
+| `MAKI_DROP_SCAN_CACHE` | On | After a scan reads a file end to end, the OS drops its cached pages. `0` keeps them, which suits a machine with RAM to spare. |
 | `MAKI_EMBED_IDLE_MINUTES` | `5` | Minutes idle before the embedding model is unloaded from memory. `0` keeps it loaded. |
 | `MAKI_ARTIFACT_IDLE_MINUTES` | `10` | Minutes idle before the in-memory catalogue and recommendation indexes are dropped. `0` keeps them loaded. |
 | `MAKI_VECTOR_IDLE_MINUTES` | `15` | Minutes idle before the search vectors are dropped from memory. `0` keeps them loaded. |
@@ -45,7 +45,7 @@ Values that are not a whole number, or that are negative, fall back to the defau
 
 ## Source domains
 
-These override the built-in domain or API host of one source. Each row is one variable. For how to find a working mirror and set one, see [Mirror overrides](/Maki/guides/sources/mirror-overrides/).
+Each variable overrides the built-in domain or API host of one source. To find a working mirror and set one, see [Mirror overrides](/Maki/guides/sources/mirror-overrides/).
 
 | Variable | Default | What it does |
 |---|---|---|
@@ -64,7 +64,7 @@ These override the built-in domain or API host of one source. Each row is one va
 
 ## Tracker endpoints
 
-These point each tracker at a different API or OAuth address. The code comment says they exist so end-to-end tests can point at mocks. Leave them unset for normal use.
+These point a tracker at a different API or OAuth address. They exist so end-to-end tests can use mocks. Leave them unset.
 
 | Variable | Default | What it does |
 |---|---|---|
