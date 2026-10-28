@@ -53,4 +53,20 @@ public static class CloudflareChallengeDetection
         || content.Contains("cf-challenge", StringComparison.OrdinalIgnoreCase)
         || content.Contains("cf-chl", StringComparison.OrdinalIgnoreCase)
         || content.Contains("__cf_chl", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Throws when a raw body fetched through <c>IHtmlFetcher</c> is the challenge interstitial
+    /// rather than the page. The fetcher hands a recognised challenge to FlareSolverr itself; this
+    /// is the backstop for a shell that reaches the parser anyway, so it fails loudly instead of
+    /// reading as an empty search or an empty chapter list. Real pages are far bigger than the
+    /// shell, so a large body is never mistaken for one.
+    /// </summary>
+    public static void ThrowIfChallenge(string html, string url)
+    {
+        if (html.Length <= 20_000 && IsChallenge(html, html))
+        {
+            throw new InvalidOperationException(
+                $"{url} answered with a Cloudflare challenge page instead of content");
+        }
+    }
 }

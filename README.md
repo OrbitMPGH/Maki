@@ -149,11 +149,11 @@ Notes on languages, FlareSolverr and mirror overrides are also in
 | GigaViewer sites | Official Japanese: Shonen Jump+, Comic Days, Sunday Webry, MAGCOMI, Tonari no Young Jump, Comic Zenon, Kurage Bunch (free episodes only) |
 | KadoComi (Comic Walker) | Official, Japanese |
 | MangaPill | |
-| Weeb Central | |
+| Weeb Central | Requires FlareSolverr |
 | MangaFire | Language filter, requires [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) |
 | TCB Scans | Domain override via `MAKI_SOURCE_TCBSCANS_BASEURL` |
 | Asura Scans | Manhwa/manhua |
-| Flame Comics | Manhwa/manhua |
+| Flame Comics | Manhwa/manhua, requires FlareSolverr |
 | TopManhua | Manhwa/manhua, requires FlareSolverr |
 | MangaKatana | |
 | MangaKakalot | Requires FlareSolverr |

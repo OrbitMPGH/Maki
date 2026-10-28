@@ -5,8 +5,14 @@ namespace Maki.Sources.Tests;
 
 public class WeebCentralSourceTests
 {
+    /// <summary>Cloudflare's managed-challenge shell, as the direct path sees it with no clearance.</summary>
+    private const string ChallengePage = """
+        <!DOCTYPE html><html><head><title>Just a moment...</title></head>
+        <body><form id="challenge-form" action="/series/x?__cf_chl_f_tk=abc" method="POST"></form></body></html>
+        """;
+
     private static WeebCentralSource SourceFor(Dictionary<string, string> responses) =>
-        new(new FakeHttpClientFactory(responses));
+        new(new FakeHtmlFetcher(responses));
 
     [Fact]
     public async Task Search_parses_results()
@@ -17,6 +23,28 @@ public class WeebCentralSourceTests
 
         Assert.NotEmpty(results);
         Assert.Contains(results, r => r.Title == "Berserk" && r.SourceSeriesId.StartsWith("01J76XY7EF75DJNQCV04HTPDZK"));
+    }
+
+    [Fact]
+    public async Task Search_asks_the_site_for_the_absolute_search_url()
+    {
+        var fetcher = new FakeHtmlFetcher(new() { ["search/data"] = FakeHttpClientFactory.Fixture("weebcentral-search.html") });
+
+        await new WeebCentralSource(fetcher).SearchAsync("berserk");
+
+        var url = Assert.Single(fetcher.Requested);
+        Assert.StartsWith("https://weebcentral.com/search/data?", url);
+        Assert.Contains("text=berserk", url);
+    }
+
+    [Fact]
+    public async Task Search_throws_on_a_challenge_page_rather_than_reading_no_results()
+    {
+        // The fetcher hands a recognised challenge to FlareSolverr itself; one that reaches the
+        // parser anyway must not turn into an empty hit list that auto-match takes as "not here".
+        var source = SourceFor(new() { ["search/data"] = ChallengePage });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.SearchAsync("berserk"));
     }
 
     [Fact]
@@ -46,6 +74,17 @@ public class WeebCentralSourceTests
         Assert.NotNull(ch385);
         Assert.Equal("01KVZQCN6YH5S98R99YMEA5X29", ch385.SourceChapterId);
         Assert.NotNull(ch385.ReleaseDate);
+    }
+
+    [Fact]
+    public async Task ListChapters_throws_on_a_challenge_page_rather_than_reading_no_chapters()
+    {
+        // An empty list here would read as "the series has no chapters" and quietly stall a
+        // monitored series instead of failing the sync.
+        var source = SourceFor(new() { ["full-chapter-list"] = ChallengePage });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => source.ListChaptersAsync("01J76XY7EF75DJNQCV04HTPDZK/Berserk"));
     }
 
     [Fact]

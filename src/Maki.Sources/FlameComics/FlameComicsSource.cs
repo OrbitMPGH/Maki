@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using AngleSharp.Html.Parser;
+using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 using Maki.Sources.Common;
@@ -22,11 +23,15 @@ namespace Maki.Sources.FlameComics;
 /// numeric <c>series_id</c>; chapter id is the chapter's <c>token</c>, which is all
 /// <c>/series/{seriesId}/{token}</c> needs.
 /// </para>
+/// <para>
+/// The site sits behind Cloudflare's managed challenge, which 403s a plain client, so every page
+/// goes through <see cref="IHtmlFetcher"/>. A page FlareSolverr hands back is the rendered DOM,
+/// and the Pages Router leaves <c>#__NEXT_DATA__</c> in place after hydration, so the blob reads
+/// the same either way. Covers and page images are plain CDN URLs and stay on the downloader.
+/// </para>
 /// </summary>
-public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
+public class FlameComicsSource(IHtmlFetcher fetcher) : ISource
 {
-    public const string HttpClientName = "source-flamecomics";
-
     /// <summary>Images and covers live on a separate host that needs no Referer.</summary>
     private const string CdnUrl = "https://cdn.flamecomics.xyz";
 
@@ -37,11 +42,9 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
     public string Name => "flamecomics";
     public string DisplayName => "Flame Comics";
     public string BaseUrl => "https://flamecomics.xyz";
-    public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
     public SourceKind Kind => SourceKind.Scanlator;
     public SourceContent Content => SourceContent.Manhwa | SourceContent.Manhua | SourceContent.Manga;
-
-    private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 
     public string? ResolveSeriesIdFromUrl(Uri url)
     {
@@ -179,7 +182,11 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
     /// </summary>
     private async Task<JsonElement> GetPagePropsAsync(string path, CancellationToken ct)
     {
-        var doc = await Parser.ParseDocumentAsync(await Client.GetStringAsync(path, ct), ct);
+        var url = $"{BaseUrl}/{path}";
+        var html = await fetcher.GetHtmlAsync(url, ct);
+        CloudflareChallengeDetection.ThrowIfChallenge(html, url);
+
+        var doc = await Parser.ParseDocumentAsync(html, ct);
         var payload = doc.QuerySelector("script#__NEXT_DATA__")?.TextContent;
         if (string.IsNullOrWhiteSpace(payload))
         {
