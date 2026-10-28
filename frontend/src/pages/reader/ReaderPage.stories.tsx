@@ -560,8 +560,11 @@ export const ServerEnhanceTurnShowsWarmedPage: Story = {
     await new Promise((resolve) => setTimeout(resolve, 500))
 
     document.body.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
-    // Read before the frame paints: whatever is on screen here is what the reader sees first.
-    await new Promise((resolve) => requestAnimationFrame(resolve))
+    // The old page stays up until the next one can paint, so the first page shown after the swap is
+    // what the reader sees first.
+    await waitFor(() =>
+      expect(canvasElement.querySelector('img.reader-enhanced-server')?.getAttribute('src')).toContain('/page/6/'),
+    )
     const server = canvasElement.querySelector<HTMLImageElement>('img.reader-enhanced-server')
     const plain = canvasElement.querySelector<HTMLImageElement>('img.reader-region-image:not(.reader-enhanced-server)')
     await expect(server?.getAttribute('src')).toContain('/reader/chapter/7717/page/6/enhanced')

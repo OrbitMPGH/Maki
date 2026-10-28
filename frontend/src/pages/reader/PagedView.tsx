@@ -41,6 +41,13 @@ export interface PageShaping {
 
 const PLAIN: PageShaping = { crop: false, part: 'whole', rotate: 0 }
 
+// The incoming spread loads here while the current one stays up. Fixed, so it adds nothing to the
+// scroller's overflow.
+const STANDBY: React.CSSProperties = { position: 'fixed', inset: 0, visibility: 'hidden', pointerEvents: 'none' }
+
+// Past this the turn shows the incoming page's loading state rather than holding the old page.
+const HOLD_MS = 500
+
 /**
  * A region of a page drawn at the size the fit would give that region alone. The blank canvas
  * carries the region's pixel size and takes the fit classes, so it sizes exactly like an `<img>`
@@ -63,6 +70,7 @@ function RegionPage({
   enhance,
   page,
   server,
+  standby,
 }: {
   src: string
   url: string
@@ -77,6 +85,7 @@ function RegionPage({
   enhance: PageEnhance | null
   page: number
   server: ServerEnhance | null
+  standby: boolean
 }) {
   const [box, setBox] = useState<HTMLDivElement | null>(null)
   const [covered, setCovered] = useState(false)
@@ -93,7 +102,7 @@ function RegionPage({
       }
     : { inset: 0 }
   return (
-    <div ref={setBox} className="reader-region" data-fit={fit}>
+    <div ref={setBox} className="reader-region" data-fit={fit} style={standby ? STANDBY : undefined}>
       <canvas
         className={className}
         width={turned ? height : width}
@@ -143,6 +152,8 @@ function RegionPage({
  * One page with its own loading and failure state: the page's outline while it loads, and a retry
  * where a failed one would otherwise show the browser's broken-image icon. The image stays mounted
  * (hidden until it is ready) so a retry just re-requests it with a cache-busting suffix.
+ * In standby the page loads and decodes out of sight, and `onReady` says when it can be swapped in
+ * without a blank frame. It is the same element afterwards, so nothing reloads at the swap.
  */
 function PagedPage({
   src,
@@ -156,6 +167,8 @@ function PagedPage({
   page,
   server,
   onLoaded,
+  standby,
+  onReady,
 }: {
   src: string
   alt: string
@@ -168,6 +181,8 @@ function PagedPage({
   page: number
   server: ServerEnhance | null
   onLoaded: (image: HTMLImageElement) => void
+  standby: boolean
+  onReady: (src: string) => void
 }) {
   const [state, setState] = useState<PageState>('loading')
   const [attempt, setAttempt] = useState(0)
@@ -176,11 +191,20 @@ function PagedPage({
 
   const loaded = useRef(onLoaded)
   loaded.current = onLoaded
-  const markReady = useCallback((element: HTMLImageElement) => {
-    setState('ready')
-    setImage(element)
-    loaded.current(element)
-  }, [])
+  const reportReady = useRef(onReady)
+  reportReady.current = onReady
+  const markReady = useCallback(
+    (element: HTMLImageElement) => {
+      setState('ready')
+      setImage(element)
+      loaded.current(element)
+      void element
+        .decode()
+        .catch(() => {})
+        .then(() => reportReady.current(src))
+    },
+    [src],
+  )
   // A page already in the browser cache is complete before React attaches its load listener.
   const setRef = useCallback(
     (element: HTMLImageElement | null) => {
@@ -197,10 +221,11 @@ function PagedPage({
   const rotate = wide ? shaping.rotate : 0
   const shaped = natural !== null && (enhance !== null || rotate !== 0 || !isFull(region))
 
+  const visible = state === 'ready' && !shaped
   return (
     <>
-      {state === 'loading' && <div className="reader-page-skeleton" aria-hidden />}
-      {state === 'failed' && (
+      {state === 'loading' && !standby && <div className="reader-page-skeleton" aria-hidden />}
+      {state === 'failed' && !standby && (
         <Stack align="center" gap="xs" onClick={(event) => event.stopPropagation()}>
           <Text c="var(--ink-3)" size="sm">
             <Trans>This page failed to load.</Trans>
@@ -224,11 +249,14 @@ function PagedPage({
         data-no-cover-fallback
         alt={alt}
         className={className}
-        style={{ ...style, filter: tone, ...(state === 'ready' && !shaped ? undefined : { display: 'none' }) }}
-        decoding="async"
+        style={{ ...style, filter: tone, ...(!visible ? { display: 'none' } : standby ? STANDBY : undefined) }}
+        decoding="sync"
         draggable={false}
         onLoad={(event) => markReady(event.currentTarget)}
-        onError={() => setState('failed')}
+        onError={() => {
+          setState('failed')
+          reportReady.current(src)
+        }}
       />
       {shaped && image && (
         <RegionPage
@@ -245,6 +273,7 @@ function PagedPage({
           enhance={enhance}
           page={page}
           server={server}
+          standby={standby}
         />
       )}
     </>
@@ -303,9 +332,33 @@ export default function PagedView({
   onStretched?: (pages: ReadonlySet<number>) => void
 }) {
   const { t } = useLingui()
-  // In right-to-left reading the lower page number belongs on the right.
-  const ordered = direction === 'rtl' ? [...spread].reverse() : spread
   const root = useRef<HTMLDivElement>(null)
+
+  // A turn keeps the current spread on screen until every page of the next one has loaded and
+  // decoded, then swaps them in one frame. Mounting the next page straight away showed a blank
+  // frame first even when it was preloaded (WebKit fires load late and decodes at draw time).
+  const target = { urls, spread, key: spread.join(','), half }
+  const [shown, setShown] = useState(target)
+  const [readySrcs, setReadySrcs] = useState<ReadonlySet<string>>(() => new Set())
+  const incoming = spread.map((page) => urls[page]).filter(Boolean)
+  // A new chapter has nothing of its own to hold, and a new half is the same image.
+  const holding = shown.urls === urls && shown.key !== target.key
+  const current = shown.urls === urls && shown.key === target.key && shown.half === half
+  const [expired, setExpired] = useState<string | null>(null)
+  if (!current && (!holding || expired === target.key || incoming.every((src) => readySrcs.has(src)))) {
+    setShown(target)
+    setReadySrcs((ready) => new Set(incoming.filter((src) => ready.has(src))))
+    setExpired(null)
+  }
+  useEffect(() => {
+    if (!holding) return
+    const timer = window.setTimeout(() => setExpired(target.key), HOLD_MS)
+    return () => window.clearTimeout(timer)
+  }, [holding, target.key])
+  const onReady = useCallback(
+    (src: string) => setReadySrcs((ready) => (ready.has(src) ? ready : new Set(ready).add(src))),
+    [],
+  )
 
   // The scroller outlives the page, so a page read to its bottom would otherwise hand the next one
   // the same offset. A page wider than the viewport (zoomed, or 1:1) starts at the edge reading
@@ -314,15 +367,19 @@ export default function PagedView({
   const rtl = direction === 'rtl'
   // The half read first is the right one in right-to-left. A quarter turn puts it at the top:
   // anticlockwise lifts the right edge, clockwise the left.
-  const single = spread.length === 1
-  const shaping: PageShaping =
-    !cropBorders && (!single || splitWide === 'off')
+  const shapingFor = (pages: Spread, pageHalf: 0 | 1): PageShaping => {
+    const single = pages.length === 1
+    return !cropBorders && (!single || splitWide === 'off')
       ? PLAIN
       : {
           crop: cropBorders,
-          part: single && splitWide === 'split' ? ((half === 0) === rtl ? 'right' : 'left') : 'whole',
+          part: single && splitWide === 'split' ? ((pageHalf === 0) === rtl ? 'right' : 'left') : 'whole',
           rotate: single && splitWide === 'rotate' ? (rtl ? -90 : 90) : 0,
         }
+  }
+  const shaping = shapingFor(spread, half)
+  // In right-to-left reading the lower page number belongs on the right.
+  const inReadingOrder = (pages: Spread) => (rtl ? [...pages].reverse() : pages)
   const enhanceOn = enhance !== 'off'
   const preset = presetFor(enhanceMethod, enhanceFallback)
   const engineState = useEnhanceEngine(enhanceOn && preset !== null)
@@ -426,13 +483,13 @@ export default function PagedView({
     const scroller = root.current?.parentElement
     if (scroller) scroller.scrollLeft = rtlRef.current ? scroller.scrollWidth : 0
   }, [])
-  const leadSrc = urls[spread[0]]
+  const leadSrc = shown.urls[shown.spread[0]]
   useLayoutEffect(() => {
     const scroller = root.current?.parentElement
     if (scroller) scroller.scrollTop = 0
     pinRight.current = rtlRef.current
     toStart()
-  }, [leadSrc, half, toStart])
+  }, [leadSrc, shown.half, toStart])
 
   useEffect(() => {
     const scroller = root.current?.parentElement
@@ -470,12 +527,13 @@ export default function PagedView({
     <div
       ref={root}
       className="reader-paged"
-      data-double={spread.length > 1}
+      data-double={shown.spread.length > 1}
       style={zoom === 1 ? undefined : { transform: `scale(${zoom})`, transformOrigin: 'left top' }}
     >
-      {ordered.map((page) => {
+      {[...inReadingOrder(shown.spread), ...(holding ? inReadingOrder(spread) : [])].map((page, index) => {
+        const standby = index >= shown.spread.length
         const src = urls[page]
-        if (!src) return null
+        if (!src || (standby && shown.spread.some((other) => urls[other] === src))) return null
         const pageNumber = page + 1
         return (
           <PagedPage
@@ -486,11 +544,13 @@ export default function PagedView({
             style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
             tone={tone}
             fit={fit}
-            shaping={shaping}
+            shaping={standby ? shaping : shapingFor(shown.spread, shown.half)}
             enhance={pageEnhance}
             page={page}
             server={server}
             onLoaded={(image) => onMeasure(page, image)}
+            standby={standby}
+            onReady={onReady}
           />
         )
       })}
