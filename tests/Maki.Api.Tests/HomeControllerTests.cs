@@ -455,12 +455,12 @@ public class HomeControllerTests : IDisposable
                 new TestLocalizer(),
                 db,
                 null!, // reader service not needed for this test
+                null!, // thumbnails
                 new ContinueReadingService(db),
                 null!, // settings
                 null!, // import service
                 null!, // achievement queue
                 null!, // app paths
-                null!, // logger
                 null!, // current user
                 null!, // kavita user resolver
                 null!  // app settings

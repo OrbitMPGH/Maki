@@ -461,7 +461,8 @@ public class OpdsCatalogService(
                     mimeType, Length: slice.ArchiveSize),
                 new(OpdsXml.OpenAccessRel, $"{ctx.Base}/chapter/{row.Id}/file",
                     mimeType, Length: slice.ArchiveSize),
-                new(OpdsXml.ThumbnailRel, ctx.Cover(row.SeriesId), "image/jpeg"),
+                new(OpdsXml.ImageRel, $"{ctx.Base}/chapter/{row.Id}/thumbnail", "image/jpeg"),
+                new(OpdsXml.ThumbnailRel, $"{ctx.Base}/chapter/{row.Id}/thumbnail", "image/jpeg"),
             };
 
             entries.Add(new OpdsEntry(

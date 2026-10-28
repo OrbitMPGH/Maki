@@ -42,6 +42,7 @@ public class OpdsController(
     OpdsCatalogService catalog,
     OpdsAccessService access,
     ReaderService reader,
+    ReaderThumbnailCache thumbnails,
     OpdsProgressWriter progressWriter,
     KoreaderDocumentIndexer koreaderDocuments,
     Maki.Data.MakiDbContext db,
@@ -314,6 +315,44 @@ public class OpdsController(
         Response.Headers.CacheControl = "private, no-cache";
 
         return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
+    }
+
+    /// <summary>
+    /// The chapter's own cover for the feed: its first page, as the same 200px JPEG the native
+    /// reader's strip uses, out of the same disk cache. Chapter entries point their <c>image</c>
+    /// and <c>image/thumbnail</c> links here rather than at <c>page/0</c>, because a page fetch is
+    /// the progress signal and a reader rendering its chapter grid would otherwise mark every
+    /// chapter it shows as started. This records nothing.
+    /// </summary>
+    [HttpGet("chapter/{chapterId:int}/thumbnail")]
+    public async Task<IActionResult> Thumbnail(string token, int chapterId, CancellationToken ct)
+    {
+        if (await AuthorizeAsync(token, ct) is null)
+        {
+            return NotFound();
+        }
+
+        var slice = await reader.PageSliceAsync(chapterId, ct);
+        if (slice is null || slice.PageCount == 0)
+        {
+            return NotFound();
+        }
+
+        var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-{slice.StartPage}\"");
+        if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        var cached = await thumbnails.GetOrRenderAsync(slice, 0, ct);
+        if (cached is null)
+        {
+            return NotFound();
+        }
+
+        // The URL carries no version, so a re-downloaded chapter can only be told apart by the ETag.
+        Response.Headers.CacheControl = "private, no-cache";
+        return PhysicalFile(cached, "image/jpeg", lastModified: null, entityTag: etag, enableRangeProcessing: false);
     }
 
     private OpdsContext Context(string token) => new(Request.PathBase.Value ?? string.Empty, token);

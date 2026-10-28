@@ -289,6 +289,7 @@ public sealed class ControllerAuthorizationInventoryTests
         "OpdsController.SearchDescription",
         "OpdsController.SeriesChapters",
         "OpdsController.SeriesList",
+        "OpdsController.Thumbnail",
         "ScrobbleController.OAuthCallback",
         "SignInArtController.Mosaic",
     ];

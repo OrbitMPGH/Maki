@@ -113,6 +113,22 @@ public sealed class OpdsCatalogTests : IDisposable
     }
 
     [Fact]
+    public async Task ChapterEntryPointsBothImageLinksAtItsOwnThumbnail()
+    {
+        // Reading apps draw a chapter grid from the entry's image links. The series cover there
+        // made every chapter look the same, and page/0 would record a read on every grid draw.
+        var (seriesId, chapters) = SeedSeriesWithChapters("Pictured", "p.cbz", ["001.jpg", "002.jpg"], [1m]);
+
+        var feed = await Catalog().ChaptersFeedAsync(Ctx, seriesId, 0, CancellationToken.None);
+        var entry = Assert.Single(feed!.Entries);
+
+        var expected = $"{Ctx.Base}/chapter/{chapters[0]}/thumbnail";
+        Assert.Equal(expected, entry.Links!.Single(l => l.Rel == OpdsXml.ImageRel).Href);
+        Assert.Equal(expected, entry.Links!.Single(l => l.Rel == OpdsXml.ThumbnailRel).Href);
+        Assert.DoesNotContain(entry.Links!, l => l.Href.Contains("/page/0", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task PseCountIsTheChaptersSliceNotTheWholeVolume()
     {
         // One archive backing three chapters: a reader told the volume's page count would page

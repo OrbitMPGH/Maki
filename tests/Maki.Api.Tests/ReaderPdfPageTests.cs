@@ -85,16 +85,20 @@ public sealed class ReaderPdfPageTests : IDisposable
         public override void Enqueue(int userId) => Enqueued.Add(userId);
     }
 
+    private static ReaderService Reader(Maki.Data.MakiDbContext db) =>
+        new(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!,
+            new ReadingSessionService(db), NullLogger<ReaderService>.Instance);
+
     private ReaderController Controller(Maki.Data.MakiDbContext db) => new(
         new TestLocalizer(),
         db,
-        new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!, new ReadingSessionService(db), NullLogger<ReaderService>.Instance),
+        Reader(db),
+        new ReaderThumbnailCache(_paths, Reader(db), NullLogger<ReaderThumbnailCache>.Instance),
         null!, // continue reading
         null!, // profiles
         null!, // read import
         _queue,
         _paths,
-        NullLogger<ReaderController>.Instance,
         null!, // current user
         null!, // kavita user resolver
         null!) // app settings

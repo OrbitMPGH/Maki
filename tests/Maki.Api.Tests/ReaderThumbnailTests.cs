@@ -1,4 +1,4 @@
-using Maki.Api.Controllers;
+using Maki.Api.Services;
 using Maki.Core.Images;
 
 namespace Maki.Api.Tests;
@@ -12,7 +12,7 @@ public class ReaderThumbnailTests
     {
         var page = new Raster(2000, 3000, new Rgba(120, 60, 200), bands: 3);
 
-        var thumbnail = ImageCodec.Identify(ReaderController.ReaderThumbnail(jpeg ? page.EncodeJpeg(75) : page.EncodePng()));
+        var thumbnail = ImageCodec.Identify(ReaderThumbnailCache.Render(jpeg ? page.EncodeJpeg(75) : page.EncodePng()));
 
         Assert.Equal(new ImageHeader(200, 300, ImageFormat.Jpeg), thumbnail);
     }
@@ -20,7 +20,7 @@ public class ReaderThumbnailTests
     [Fact]
     public void A_narrower_page_is_scaled_up_so_the_strip_stays_even()
     {
-        var thumbnail = ImageCodec.Identify(ReaderController.ReaderThumbnail(new Raster(150, 300).EncodePng()));
+        var thumbnail = ImageCodec.Identify(ReaderThumbnailCache.Render(new Raster(150, 300).EncodePng()));
 
         Assert.Equal(200, thumbnail.Width);
         Assert.Equal(400, thumbnail.Height);
@@ -31,7 +31,7 @@ public class ReaderThumbnailTests
     {
         var page = new Raster(400, 600, new Rgba(0, 0, 0, 0));
 
-        var thumbnail = Raster.Decode(ReaderController.ReaderThumbnail(page.EncodePng()), bands: 3);
+        var thumbnail = Raster.Decode(ReaderThumbnailCache.Render(page.EncodePng()), bands: 3);
 
         var pixel = thumbnail[100, 150];
         Assert.True(pixel.R > 245 && pixel.G > 245 && pixel.B > 245, $"expected white, got {pixel}");
