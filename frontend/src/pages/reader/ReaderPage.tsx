@@ -217,7 +217,12 @@ export default function ReaderPage() {
         : spreads.slice(spreadIndex, spreadIndex + 1 + prefs.preload).flat(),
     [spreads, spreadIndex, mode, prefs.preload],
   )
-  usePreload(urls, preloadPages, measure)
+  // The two spreads behind stay held as well, so turning back is as quick as turning forward.
+  const heldPages = useMemo(
+    () => (preloadPages.length === 0 ? [] : [...spreads.slice(Math.max(0, spreadIndex - 2), spreadIndex).flat(), ...preloadPages]),
+    [preloadPages, spreads, spreadIndex],
+  )
+  usePreload(urls, heldPages, measure)
 
   const current = manifest?.chapterId === chapterId ? manifest : undefined
   const serverModel = current

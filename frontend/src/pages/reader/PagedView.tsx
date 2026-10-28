@@ -3,6 +3,7 @@ import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { cropRegion, FULL_REGION, isFull, partOf, type PagePart, type Region } from './pageShape'
 import EnhancedPage from './EnhancedPage'
+import { heldPageUrl, holdPage } from './pageBlobs'
 import { useCompareKey } from './compareHold'
 import {
   EnhanceScope,
@@ -187,7 +188,9 @@ function PagedPage({
   const [state, setState] = useState<PageState>('loading')
   const [attempt, setAttempt] = useState(0)
   const [image, setImage] = useState<HTMLImageElement | null>(null)
-  const url = attempt === 0 ? src : `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`
+  // Chosen once: switching a mounted image to the held copy later would load it a second time.
+  const [held] = useState(() => heldPageUrl(src))
+  const url = attempt === 0 ? (held ?? src) : `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`
 
   const loaded = useRef(onLoaded)
   loaded.current = onLoaded
@@ -439,12 +442,15 @@ export default function PagedView({
         const src = urls[page]
         if (!src) return
         const image = new Image()
-        image.src = src
         images.push(image)
-        void image
-          .decode()
-          .then(async () => {
+        void holdPage(src)
+          .then((held) => {
             if (signal.aborted) return
+            image.src = held ?? src
+            return image.decode()
+          })
+          .then(async () => {
+            if (signal.aborted || !image.complete) return
             if (image.naturalWidth > image.naturalHeight && (shapePart !== 'whole' || shapeRotate !== 0)) return
             const region = (shapeCrop ? cropRegion(image) : null) ?? FULL_REGION
             const target = owner.sizeFor(image.naturalWidth * region.w, image.naturalHeight * region.h)
