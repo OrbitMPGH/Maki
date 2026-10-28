@@ -6,8 +6,6 @@ import { IconBook, IconDots, IconEyeOff } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useHideHomeReading, type HomeReadingItem } from '../../api/hooks'
 
-export type ReadingRailKind = 'continue' | 'jumpback'
-
 /**
  * The small menu on a reading-rail card or tile. A sibling of the card's link, never inside it:
  * React bubbles clicks out of the portalled dropdown along the component tree, so a menu inside
@@ -15,13 +13,11 @@ export type ReadingRailKind = 'continue' | 'jumpback'
  */
 export function ReadingCardMenu({
   item,
-  rail,
   className,
   variant = 'filled',
   size = 28,
 }: {
   item: HomeReadingItem
-  rail: ReadingRailKind
   className: string
   /** `default` sits it in a row of buttons; the filled round default floats over a cover. */
   variant?: 'filled' | 'default'
@@ -87,7 +83,7 @@ export function ReadingCardMenu({
         </Menu.Item>
         <Menu.Divider />
         <Menu.Item leftSection={<IconEyeOff size={16} />} onClick={() => void remove()}>
-          {rail === 'continue' ? t`Remove from Continue reading` : t`Remove from Jump back in`}
+          <Trans>Remove from Continue reading</Trans>
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>

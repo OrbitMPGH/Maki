@@ -46,7 +46,7 @@ export function RankList({
               <Text c="var(--ink-3)" fw={700} size="sm" className="tnum stats-rank-num">
                 {i + 1}
               </Text>
-              <SeriesThumb url={item.coverUrl} alt={item.title} />
+              <SeriesThumb url={item.coverUrl} alt={item.title} seriesId={item.seriesId} />
               <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
                 <SeriesLink id={item.seriesId} title={item.title} />
               </Text>

@@ -15,7 +15,7 @@ namespace Maki.Api.Tests;
 /// <summary>Moving a series between root folders, and the gates in front of a relink.</summary>
 public sealed class SeriesFilesControllerTests : IDisposable
 {
-    private readonly TestDb _db = new();
+    private readonly TestDb _db = new TestDb().WithDistinctSeriesIds();
     private readonly string _temp = Path.Combine(Path.GetTempPath(), "maki-move-" + Guid.NewGuid().ToString("N")[..8]);
 
     public void Dispose()
@@ -133,14 +133,9 @@ public sealed class SeriesFilesControllerTests : IDisposable
     /// The second folder's file cannot land (its destination path is past the OS limit), so the
     /// series folder that already moved goes back and the series stays on its old root.
     /// </summary>
-    [Fact]
+    [NotWindowsFact]
     public async Task A_failed_second_folder_puts_the_first_back()
     {
-        if (OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
         var deep = Path.Combine(_temp, Path.Combine(Enumerable.Range(0, 20).Select(i => new string((char)('a' + i), 200)).ToArray()));
         var (seriesId, fromId, toId, from, to) = SeedTwoFolderSeries(deep);
         Directory.CreateDirectory(to);
@@ -196,10 +191,7 @@ public sealed class SeriesFilesControllerTests : IDisposable
         Write(Path.Combine(outside, "Berserk Ch.3.cbz"));
         var link = Path.Combine(from, "Berserk", "Extras", "linked");
         Directory.CreateDirectory(Path.GetDirectoryName(link)!);
-        if (!TestLinks.TryLinkDirectory(link, outside))
-        {
-            return;
-        }
+        Assert.True(TestLinks.TryLinkDirectory(link, outside));
 
         try
         {
@@ -227,10 +219,7 @@ public sealed class SeriesFilesControllerTests : IDisposable
         var outside = Path.Combine(_temp, "outside");
         var seriesFolder = Path.Combine(from, "Berserk");
         Directory.Move(seriesFolder, outside);
-        if (!TestLinks.TryLinkDirectory(seriesFolder, outside))
-        {
-            return;
-        }
+        Assert.True(TestLinks.TryLinkDirectory(seriesFolder, outside));
 
         try
         {
@@ -367,7 +356,8 @@ public sealed class SeriesFilesControllerTests : IDisposable
         {
             relink = Controller(db).Relink(
                 seriesId, new SeriesController.RelinkRequest(null, null, DeleteSuperseded: false), CancellationToken.None);
-            await Task.Delay(200);
+            await Wait.UntilAsync(() => relink.IsCompleted || SeriesLocks.SeriesUsers(seriesId) >= 2,
+                "the relink never asked for the series lock");
             Assert.False(relink.IsCompleted);
         }
 
@@ -521,12 +511,7 @@ public sealed class SeriesFilesControllerTests : IDisposable
 
             // The folder moves before the move asks for the lock to save, so the up-front check has passed.
             var moved = Path.Combine(to, "Berserk");
-            for (var i = 0; i < 200 && !Directory.Exists(moved); i++)
-            {
-                await Task.Delay(25);
-            }
-
-            Assert.True(Directory.Exists(moved));
+            await Wait.UntilAsync(() => Directory.Exists(moved), "the move never moved the folder");
             using var seed = _db.NewContext();
             seed.Series.Add(new Series
             {

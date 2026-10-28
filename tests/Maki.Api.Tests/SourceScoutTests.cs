@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
 public class SourceScoutTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();

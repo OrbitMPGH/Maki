@@ -38,6 +38,7 @@ import {
 import { useReadTracking } from '../../api/reader'
 import type { SeriesDto } from '../../api/types'
 import { filtersFromSpec } from '../CatalogueFilters'
+import { activeSeries } from '../../lib/series'
 import { CoverCard } from '../ui/CoverCard'
 import { DiscoverRailRow, EngineRailRow } from '../ui/DiscoverRail'
 import { EmptyState } from '../ui/EmptyState'
@@ -207,7 +208,7 @@ function RailPlaceholder({ engine }: { engine: boolean }) {
 
 function useSeriesById() {
   const { data: series } = useSeries()
-  return useMemo(() => new Map((series ?? []).map((s) => [s.id, s])), [series])
+  return useMemo(() => new Map(activeSeries(series ?? []).map((s) => [s.id, s])), [series])
 }
 
 const noop = () => {}

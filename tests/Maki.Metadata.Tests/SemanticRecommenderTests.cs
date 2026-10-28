@@ -1213,19 +1213,33 @@ public class SemanticRecommenderTests : IDisposable
     [Fact]
     public void RelativeAvoid_CancelsWhatTheReadersOwnSeedsAlreadyExplain()
     {
-        var tuning = RecommenderTuning.Default with { AvoidNeutralize = AvoidNeutralize.Relative };
+        var tuning = RecommenderTuning.Default with
+        {
+            AvoidNeutralize = AvoidNeutralize.Relative,
+            AvoidRelativeMargin = 1.0,
+        };
+        double OnTheFloorScale(double cosine) =>
+            (cosine - tuning.AvoidFloor) / (1.0 - tuning.AvoidFloor);
+
         // The v1 value for a row sitting at cosine 0.9 to something the reader rejected.
-        var raw = (0.9 - 0.45) / 0.55;
+        var raw = OnTheFloorScale(0.9);
 
         // A hub: as close to the reader's shelf as it is to the dislike, so it pays nothing.
         Assert.Equal(0, SemanticRecommender.RelativeAvoid(raw, 0.9, tuning), 6);
         // Close to the dislike and to nothing the reader kept, so it pays the whole v1 penalty.
-        Assert.Equal(raw, SemanticRecommender.RelativeAvoid(raw, 0.3, tuning), 6);
-        // Halfway: the positive side is half the band, so half the margin comes off.
-        Assert.Equal(
-            raw - (0.675 - 0.45) / 0.55,
-            SemanticRecommender.RelativeAvoid(raw, 0.675, tuning),
-            6);
+        Assert.Equal(raw, SemanticRecommender.RelativeAvoid(raw, tuning.AvoidFloor - 0.1, tuning), 6);
+
+        // The closer the row sits to the reader's shelf, the less it pays, and never a negative
+        // amount or more than v1 would have charged.
+        var previous = double.MaxValue;
+        foreach (var seedCosine in new[] { 0.0, 0.45, 0.6, 0.75, 0.9, 1.0 })
+        {
+            var penalty = SemanticRecommender.RelativeAvoid(raw, seedCosine, tuning);
+            Assert.InRange(penalty, 0, raw);
+            Assert.True(penalty <= previous);
+            previous = penalty;
+        }
+
         // Margin 0 is None by arithmetic, which is what makes the mode a superset of v1.
         Assert.Equal(
             raw,

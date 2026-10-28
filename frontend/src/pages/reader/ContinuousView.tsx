@@ -1,7 +1,13 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
-import type { ReaderFit } from './prefs'
+import { enhanceBudget } from '../../lib/enhance/budget'
+import type { EnhanceFallback, EnhanceMethod, ReaderEnhance, ReaderFit } from './prefs'
+import EnhancedPage from './EnhancedPage'
+import { useCompareKey } from './compareHold'
+import { EnhanceScope, presetFor, useEnhanceEngine, type PageEnhance } from './enhanceRuntime'
+import { FULL_REGION } from './pageShape'
+import type { ServerEnhance } from './useServerEnhance'
 
 const FIT_CLASS: Record<ReaderFit, string> = {
   width: 'reader-fit-width',
@@ -35,6 +41,58 @@ function median(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b)
   return sorted[Math.floor(sorted.length / 2)]
 }
+
+const ENHANCE_MAX_PAGES = 32
+/** Share of the engine's budget spent on the pages ahead; the rest keeps the pages just read. */
+const ENHANCE_AHEAD_SHARE = 0.75
+const NO_RANGE: number[] = []
+
+/**
+ * The pages to enhance: the current one, the pages ahead in order, then the pages behind. Sized in
+ * displayed device pixels against the engine's budget rather than in pages, so a chapter of a few
+ * very tall slices runs a page or two ahead and one of many short slices runs far down the strip.
+ * The pages either side of the current one are always in. `beyond` is how many pages past the last
+ * one the ahead share still covers, counted at the size of the pages ahead.
+ */
+function enhanceRange(
+  elements: (HTMLImageElement | null)[],
+  page: number,
+  count: number,
+): { range: number[]; beyond: number } {
+  if (count === 0) return { range: NO_RANGE, beyond: 0 }
+  const dpr = window.devicePixelRatio || 1
+  const pixels = (index: number) => {
+    const rect = elements[index]?.getBoundingClientRect()
+    return rect ? rect.width * rect.height * dpr * dpr : 0
+  }
+  const budget = enhanceBudget()
+  const range = [page]
+  let left = budget * ENHANCE_AHEAD_SHARE - pixels(page)
+  let index = page + 1
+  let spent = 0
+  for (; index < count && range.length < ENHANCE_MAX_PAGES; index++) {
+    const size = pixels(index)
+    if (index > page + 1 && size > left) break
+    range.push(index)
+    left -= size
+    spent += size
+  }
+  let beyond = 0
+  if (index >= count) {
+    const typical = range.length > 1 ? spent / (range.length - 1) : pixels(page)
+    const fits = typical > 0 ? Math.floor(Math.max(0, left) / typical) : ENHANCE_MAX_PAGES
+    beyond = Math.min(ENHANCE_MAX_PAGES, Math.max(page === count - 1 ? 1 : 0, fits))
+  }
+  left = budget * (1 - ENHANCE_AHEAD_SHARE)
+  for (let index = page - 1; index >= 0 && range.length < ENHANCE_MAX_PAGES; index--) {
+    const size = pixels(index)
+    if (index < page - 1 && size > left) break
+    range.push(index)
+    left -= size
+  }
+  return { range, beyond }
+}
+
 // How close to the true bottom counts as "at the bottom": scrollHeight/clientHeight are
 // fractional in some browsers, so an exact `=== ` check misses by sub-pixel amounts.
 const BOTTOM_EPSILON = 2
@@ -50,6 +108,12 @@ interface StripPageProps {
   scale: number
   tone: string | undefined
   eager: boolean
+  /** Set only for pages in the eager window while Enhance is on. */
+  enhance: PageEnhance | null
+  /** Set with `enhance` while a server method is in use. */
+  server: ServerEnhance | null
+  /** Distance from the current page in reading order; pages after it come first. */
+  priority: number
   register: (index: number, element: HTMLImageElement | null) => void
   onSettled: (index: number, element: HTMLImageElement) => void
 }
@@ -66,12 +130,17 @@ const StripPage = memo(function StripPage({
   scale,
   tone,
   eager,
+  enhance,
+  server,
+  priority,
   register,
   onSettled,
 }: StripPageProps) {
   const { t } = useLingui()
   const image = useRef<HTMLImageElement | null>(null)
   const [failed, setFailed] = useState(false)
+  const [loaded, setLoaded] = useState<HTMLImageElement | null>(null)
+  const [covered, setCovered] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const pageNumber = index + 1
   const url = attempt === 0 ? src : `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`
@@ -86,10 +155,12 @@ const StripPage = memo(function StripPage({
 
   const retry = () => {
     image.current?.removeAttribute('data-loaded')
+    setLoaded(null)
     setFailed(false)
     setAttempt((n) => n + 1)
   }
 
+  const alt = t`${label} - page ${pageNumber}`
   return (
     <>
       <img
@@ -97,12 +168,13 @@ const StripPage = memo(function StripPage({
         data-page={index}
         data-no-cover-fallback
         src={url}
-        alt={t`${label} - page ${pageNumber}`}
+        alt={alt}
         className={`reader-page ${FIT_CLASS[fit]}`}
         style={{
           ...(fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined),
           ...(tone ? { filter: tone } : undefined),
           ...(failed ? { display: 'none' } : undefined),
+          ...(enhance && covered ? { visibility: 'hidden' } : undefined),
         }}
         // A window around the current page rather than the whole prefix: resuming at page 300
         // of a webtoon strip would otherwise fetch and decode 300 pages at once. Only the
@@ -111,12 +183,32 @@ const StripPage = memo(function StripPage({
         loading={eager ? 'eager' : 'lazy'}
         decoding="async"
         draggable={false}
-        onLoad={(event) => onSettled(index, event.currentTarget)}
+        onLoad={(event) => {
+          setLoaded(event.currentTarget)
+          onSettled(index, event.currentTarget)
+        }}
         onError={(event) => {
           setFailed(true)
           onSettled(index, event.currentTarget)
         }}
       />
+      {enhance && loaded && !failed && (
+        <EnhancedPage
+          image={loaded}
+          src={src}
+          region={FULL_REGION}
+          rotate={0}
+          alt={alt}
+          tone={tone}
+          enhance={enhance}
+          page={index}
+          server={server}
+          priority={priority}
+          box={loaded}
+          overlay
+          onShowing={setCovered}
+        />
+      )}
       {failed && (
         <Stack align="center" gap="xs" py="xl">
           <Text c="var(--ink-3)" size="sm">
@@ -149,6 +241,12 @@ export default function ContinuousView({
   gap,
   label,
   pastEndLabel,
+  enhance = 'off',
+  enhanceMethod = 'a4k-m',
+  enhanceFallback = 'a4k-m',
+  server = null,
+  onStretched,
+  onEnhanceRange,
 }: {
   urls: string[]
   page: number
@@ -172,6 +270,19 @@ export default function ContinuousView({
   tone?: string
   gap: number
   label: string
+  enhance?: ReaderEnhance
+  enhanceMethod?: EnhanceMethod
+  /** What a server method shows until its page is ready there. */
+  enhanceFallback?: EnhanceFallback
+  /** Set while a server method is in use and the server tier can serve it. */
+  server?: ServerEnhance | null
+  /** The pages shown at 1.2x their size or more, as measured on screen. */
+  onStretched?: (pages: ReadonlySet<number>) => void
+  /**
+   * The pages being enhanced, current first, then ahead, then behind; what the server is asked for.
+   * `beyond` is how many of the next chapter's pages the window would reach past the last one.
+   */
+  onEnhanceRange?: (pages: number[], beyond: number) => void
 }) {
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
@@ -191,6 +302,43 @@ export default function ContinuousView({
   const pageRef = useRef(page)
   pageRef.current = page
 
+  // Only the enhance range around the current page is enhanced; a page leaving it drops its canvas
+  // and its cached result.
+  const enhanceOn = enhance !== 'off'
+  const preset = presetFor(enhanceMethod, enhanceFallback)
+  const engineState = useEnhanceEngine(enhanceOn && preset !== null)
+  const engine = engineState.status === 'ready' ? engineState.engine : null
+  useCompareKey(enhanceOn)
+  const stretchedRef = useRef(onStretched)
+  stretchedRef.current = onStretched
+  const [scope] = useState(() => new EnhanceScope(undefined, (pages) => stretchedRef.current?.(pages)))
+  useEffect(() => {
+    scope.attach(engine)
+    return () => scope.release()
+  }, [scope, engine, urls])
+  useEffect(() => () => scope.forgetPages(), [scope, urls])
+  const layout = `${fit}|${scale}`
+  const serverOn = server !== null
+  const pageEnhance = useMemo<PageEnhance | null>(
+    () =>
+      (engine || serverOn) && enhance !== 'off'
+        ? { mode: enhance, preset, engine, scope, layout }
+        : null,
+    [engine, serverOn, enhance, preset, scope, layout],
+  )
+  const [range, setRange] = useState<number[]>(NO_RANGE)
+  const [beyond, setBeyond] = useState(0)
+  const inRange = useMemo(() => new Set(range), [range])
+  const isEager = (index: number) => index < 3 || Math.abs(index - page) <= 2 || inRange.has(index)
+  useEffect(() => {
+    scope.retain(new Set(range.map((index) => urls[index])))
+  }, [scope, urls, range])
+  const rangeRef = useRef(onEnhanceRange)
+  rangeRef.current = onEnhanceRange
+  useEffect(() => {
+    rangeRef.current?.(range, beyond)
+  }, [range, beyond])
+
   // Set by the sentinel effect below; image load handlers re-run it once a page settles.
   const reportEnd = useRef<() => void>(() => {})
 
@@ -200,6 +348,28 @@ export default function ContinuousView({
   // the first page the estimate is usually exact. Until then the CSS placeholder holds the room.
   const samples = useRef<{ widths: number[]; aspects: number[] }>({ widths: [], aspects: [] })
   const [shape, setShape] = useState<PageShape | null>(null)
+
+  // Measured again whenever a page or the layout moves the strip; pages not loaded yet are counted
+  // at their placeholder size, which borrows the loaded pages' shape.
+  useEffect(() => {
+    if (!enhanceOn) {
+      setRange(NO_RANGE)
+      setBeyond(0)
+      return
+    }
+    const update = () => {
+      const next = enhanceRange(pages.current, Math.min(page, urls.length - 1), urls.length)
+      setRange((previous) =>
+        previous.length === next.range.length && previous.every((index, at) => index === next.range[at])
+          ? previous
+          : next.range,
+      )
+      setBeyond(next.beyond)
+    }
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [enhanceOn, urls, page, shape, fit, scale, gap])
 
   useEffect(() => {
     progress.current = 0
@@ -492,7 +662,10 @@ export default function ContinuousView({
             fit={fit}
             scale={scale}
             tone={tone}
-            eager={index < 3 || Math.abs(index - page) <= 2}
+            eager={isEager(index)}
+            enhance={pageEnhance && inRange.has(index) ? pageEnhance : null}
+            server={pageEnhance && inRange.has(index) ? server : null}
+            priority={pageEnhance && inRange.has(index) ? (index >= page ? (index - page) * 2 : (page - index) * 2 + 1) : 0}
             register={registerPage}
             onSettled={onPageSettled}
           />

@@ -8,30 +8,33 @@ namespace Maki.Api.Configuration;
 /// </summary>
 public class AppPaths
 {
-    public AppPaths()
+    public AppPaths() : this(Resolve())
     {
-        var configured = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
-        if (!string.IsNullOrWhiteSpace(configured))
-        {
-            ConfigDir = configured;
-        }
-        else if (Directory.Exists("/config"))
-        {
-            ConfigDir = "/config";
-        }
-        else
-        {
-            ConfigDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "Maki");
-        }
+    }
 
+    /// <summary>State under <paramref name="configDir"/>, whatever MAKI_CONFIG_DIR says.</summary>
+    public AppPaths(string configDir)
+    {
+        ConfigDir = configDir;
         Directory.CreateDirectory(ConfigDir);
         Directory.CreateDirectory(DataProtectionKeysDir);
         Directory.CreateDirectory(LogDir);
         Directory.CreateDirectory(CacheDir);
         Directory.CreateDirectory(MediaCoverDir);
         Directory.CreateDirectory(BackupDir);
+    }
+
+    private static string Resolve()
+    {
+        var configured = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return configured;
+        }
+
+        return Directory.Exists("/config")
+            ? "/config"
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Maki");
     }
 
     public string ConfigDir { get; }
@@ -89,6 +92,12 @@ public class AppPaths
     /// Throwaway, same as <see cref="SourcePreviewDir"/>.
     /// </summary>
     public string SeriesPreviewDir => Path.Combine(CacheDir, "seriespreview");
+
+    /// <summary>
+    /// Pages encoded for the page conversion wizard, keyed by file, archive size and write time, page
+    /// and settings. Throwaway: HousekeepingJob drops anything written over a day ago.
+    /// </summary>
+    public string ConversionPreviewDir => Path.Combine(CacheDir, "conversion-preview");
     public string MediaCoverDir => Path.Combine(ConfigDir, "MediaCover");
     public string BackupDir => Path.Combine(ConfigDir, "backups");
 

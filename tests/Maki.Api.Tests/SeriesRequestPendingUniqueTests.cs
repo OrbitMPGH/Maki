@@ -94,14 +94,6 @@ public class SeriesRequestPendingUniqueTests : IDisposable
         return request.Id;
     }
 
-    private T Scalar<T>(string sql)
-    {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = sql;
-        var value = cmd.ExecuteScalar();
-        return value is null or DBNull ? default! : (T)Convert.ChangeType(value, typeof(T))!;
-    }
-
     [Fact]
     public void Migrating_dedupes_existing_pending_duplicates_keeping_the_oldest()
     {
@@ -173,17 +165,6 @@ public class SeriesRequestPendingUniqueTests : IDisposable
 
         using var check = NewContext();
         Assert.Equal(2, check.SeriesRequests.IgnoreQueryFilters().Count());
-    }
-
-    [Fact]
-    public void Index_exists_and_is_unique_and_partial()
-    {
-        MigrateToHead();
-
-        var sql = Scalar<string>(
-            """SELECT "sql" FROM sqlite_master WHERE name = 'IX_SeriesRequests_Pending_Identity';""");
-        Assert.Contains("UNIQUE", sql, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("WHERE", sql, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

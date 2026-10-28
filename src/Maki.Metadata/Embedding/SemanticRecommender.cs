@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Entities;
@@ -1095,19 +1094,19 @@ public class SemanticRecommender(
             var text = new float[queries][];
             for (var q = 0; q < queries; q++)
             {
-                text[q] = ArrayPool<float>.Shared.Rent(rows);
+                text[q] = ScanPools.Floats.Rent(rows);
             }
 
             var taste = new float[tasteQueries][];
             for (var q = 0; q < tasteQueries; q++)
             {
-                taste[q] = ArrayPool<float>.Shared.Rent(rows);
+                taste[q] = ScanPools.Floats.Rent(rows);
             }
 
             var avoid = new float[avoidQueries][];
             for (var q = 0; q < avoidQueries; q++)
             {
-                avoid[q] = ArrayPool<float>.Shared.Rent(rows);
+                avoid[q] = ScanPools.Floats.Rent(rows);
             }
 
             return new ScanBuffers(text, taste, avoid, rows);
@@ -1127,17 +1126,17 @@ public class SemanticRecommender(
             _returned = true;
             foreach (var channel in Text)
             {
-                ArrayPool<float>.Shared.Return(channel);
+                ScanPools.Floats.Return(channel);
             }
 
             foreach (var channel in Taste)
             {
-                ArrayPool<float>.Shared.Return(channel);
+                ScanPools.Floats.Return(channel);
             }
 
             foreach (var channel in Avoid)
             {
-                ArrayPool<float>.Shared.Return(channel);
+                ScanPools.Floats.Return(channel);
             }
         }
     }
@@ -1756,7 +1755,7 @@ public class SemanticRecommender(
     internal static List<int> FuseByRank(float[][] cosines, int rowCount, int poolPerQuery)
     {
         var channel0 = cosines[0];
-        var survivors = ArrayPool<int>.Shared.Rent(rowCount);
+        var survivors = ScanPools.Ints.Rent(rowCount);
         try
         {
             var count = 0;
@@ -1789,7 +1788,7 @@ public class SemanticRecommender(
         }
         finally
         {
-            ArrayPool<int>.Shared.Return(survivors);
+            ScanPools.Ints.Return(survivors);
         }
     }
 

@@ -1,3 +1,4 @@
+using Maki.Core.Io;
 using Maki.Metadata.Embedding;
 using Quartz;
 
@@ -15,7 +16,9 @@ namespace Maki.Api.Jobs;
 /// </para>
 ///
 /// <para>
-/// The cost of being wrong is a reload on the next typed query, a second or two once. Set
+/// The cost of being wrong is a reload on the next typed query, a second or two once, which is why
+/// the window is five minutes rather than the fifteen it started at: about 170 MB held for a
+/// reload that cheap was the wrong trade. Set
 /// <c>MAKI_EMBED_IDLE_MINUTES=0</c> to keep the session loaded forever, which is the old behaviour
 /// and what a machine with RAM to spare and a search-heavy household wants.
 /// </para>
@@ -27,14 +30,14 @@ public class EmbedderIdleUnloadJob(TextEmbedder embedder) : IJob
 
     public const string IdleMinutesVariable = "MAKI_EMBED_IDLE_MINUTES";
 
-    private const int DefaultIdleMinutes = 15;
+    private const int DefaultIdleMinutes = 5;
 
     public Task Execute(IJobExecutionContext context)
     {
         var minutes = Resolve(Environment.GetEnvironmentVariable(IdleMinutesVariable));
-        if (minutes > 0)
+        if (minutes > 0 && embedder.ReleaseIfIdle(TimeSpan.FromMinutes(minutes)))
         {
-            embedder.ReleaseIfIdle(TimeSpan.FromMinutes(minutes));
+            NativeHeap.Trim();
         }
 
         return Task.CompletedTask;

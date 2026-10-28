@@ -94,10 +94,8 @@ export function UpcomingContent({ items, now }: { items: UpcomingSeriesDto[]; no
       <Stack gap="xs">
         <Text size="sm" c="var(--ink-3)" maw="80ch">
           <Trans>
-            Each bar spans the days a chapter is likely, worked out from the series' own release
-            history, so it is a span and never a promise. The percentage is how often its recent
-            chapters came out inside the span drawn for them. A diamond marks a day the source
-            itself announced.
+            Each bar spans the days a chapter is likely, never a promise. A diamond marks a day the
+            source announced.
           </Trans>
         </Text>
         <UpcomingLegend />

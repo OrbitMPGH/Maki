@@ -75,7 +75,7 @@ public class TaiyoSourceTests
     }
 
     [Fact]
-    public async Task Failed_key_discovery_is_remembered_for_five_minutes_and_scans_a_bounded_number_of_chunks()
+    public async Task Failed_key_discovery_is_remembered_for_a_while_and_scans_a_bounded_number_of_chunks()
     {
         // Only the home page answers: every script 404s, so no key is ever found.
         var time = new SteppedTime();
@@ -87,13 +87,13 @@ public class TaiyoSourceTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => source.SearchAsync("one piece"));
         var firstWalk = factory.Requests.Count;
-        Assert.Equal(13, firstWalk);
+        Assert.Equal(1 + TaiyoSource.MaxScannedScripts, firstWalk);
 
-        time.Advance(TimeSpan.FromMinutes(4));
+        time.Advance(TaiyoSource.DiscoveryFailureTtl - TimeSpan.FromSeconds(1));
         await Assert.ThrowsAsync<InvalidOperationException>(() => source.SearchAsync("one piece"));
         Assert.Equal(firstWalk, factory.Requests.Count);
 
-        time.Advance(TimeSpan.FromMinutes(2));
+        time.Advance(TimeSpan.FromSeconds(2));
         await Assert.ThrowsAsync<InvalidOperationException>(() => source.SearchAsync("one piece"));
         Assert.Equal(2 * firstWalk, factory.Requests.Count);
     }
@@ -171,7 +171,7 @@ public class TaiyoSourceTests
 
         await source.ListChaptersAsync("3cec0768-c247-468c-97fe-76e9a556d6ee");
 
-        Assert.Equal(200, factory.Requests.Count(u => u.Contains("chapters.getByMediaId?")));
+        Assert.Equal(TaiyoSource.MaxChapterPages, factory.Requests.Count(u => u.Contains("chapters.getByMediaId?")));
     }
 
     [Fact]

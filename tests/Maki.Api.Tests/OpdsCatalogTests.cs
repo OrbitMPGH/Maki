@@ -113,6 +113,19 @@ public sealed class OpdsCatalogTests : IDisposable
     }
 
     [Fact]
+    public async Task AnArchivedSeriesHasNoChaptersFeed()
+    {
+        var (seriesId, _) = SeedSeriesWithChapters("Shelved", "shelved.cbz", ["001.jpg"], [1m]);
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == seriesId).ArchivedAt = DateTime.UtcNow;
+            db.SaveChanges();
+        }
+
+        Assert.Null(await Catalog().ChaptersFeedAsync(Ctx, seriesId, 0, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task PseCountIsTheChaptersSliceNotTheWholeVolume()
     {
         // One archive backing three chapters: a reader told the volume's page count would page

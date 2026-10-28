@@ -41,28 +41,49 @@ function daysInRange({ from, to }: DateRange): number {
   return Math.round((d.getTime() - f.getTime()) / 86_400_000) + 1
 }
 
+/**
+ * Close to the loaded section's height down to "What you read", the part on the first screen: a
+ * short placeholder pushed every section below it 600px down as the data arrived.
+ */
 function ReadingSkeleton() {
+  const { t } = useLingui()
   return (
-    <Stack gap="lg" aria-hidden>
-      <Panel p={0}>
-        <div className="stats-figures">
-          {[58, 72, 50, 64, 80, 68].map((width) => (
-            <div className="stats-figure" key={width}>
-              <Skeleton h={26} w={width} my={4} />
-              <Skeleton h={8} w={width + 16} mt={6} />
-            </div>
+    <>
+      <div className="stats-insight" aria-hidden>
+        <Skeleton h="0.8em" w="75%" my="0.2em" />
+        <Skeleton h="0.8em" w="40%" my="0.2em" />
+      </div>
+      <Stack gap="lg" aria-hidden>
+        <Panel p={0}>
+          <div className="stats-figures">
+            {[58, 72, 50, 64, 80, 68].map((width) => (
+              <div className="stats-figure" key={width}>
+                <Skeleton h={26} w={width} my={4} />
+                <Skeleton h={8} w={width + 16} mt={6} />
+              </div>
+            ))}
+          </div>
+        </Panel>
+        <div className="stats-grid-main">
+          {[0, 1].map((i) => (
+            <Panel p="md" key={i}>
+              <Skeleton h={18} w={120} mb="md" />
+              <ChartSkeleton h={290} />
+            </Panel>
           ))}
         </div>
-      </Panel>
-      <div className="stats-grid-main">
-        <Panel p="md">
-          <ChartSkeleton h={240} />
-        </Panel>
-        <Panel p="md">
-          <ChartSkeleton h={240} />
-        </Panel>
-      </div>
-    </Stack>
+        <div>
+          <SectionHeader icon={IconTrophy} title={t`What you read`} />
+          <SimpleGrid cols={{ base: 1, lg: 3 }} spacing="lg">
+            {[0, 1, 2].map((i) => (
+              <Panel p="md" key={i}>
+                <Skeleton h={300} />
+              </Panel>
+            ))}
+          </SimpleGrid>
+        </div>
+      </Stack>
+    </>
   )
 }
 

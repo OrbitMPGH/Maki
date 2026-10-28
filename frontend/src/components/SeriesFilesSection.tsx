@@ -34,7 +34,11 @@ import { RelinkFilesModal } from './RelinkFilesModal'
 /** "21" → "Ch. 21"; ["21","22","23"] → "Ch. 21, 22, 23". */
 function mappedLabel(file: SeriesFileDto): string {
   const { mappedChapters } = file
-  if (mappedChapters.length === 0) return file.status === 'linked' ? now`One-shot` : '-'
+  if (mappedChapters.length === 0) {
+    // A linked volume with no chapter numbers backs volume entries, which carry its own label.
+    if (file.status !== 'linked') return '-'
+    return file.isVolume && file.parsedLabel !== null ? file.parsedLabel : now`One-shot`
+  }
   const chapters = mappedChapters.join(', ')
   return now`Ch. ${chapters}`
 }
@@ -269,7 +273,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                     const v = fileStatusVisual(f.status)
                     const { fileName } = f
                     return (
-                      <Table.Tr key={f.relativePath} opacity={f.status === 'missing' ? 0.6 : 1}>
+                      <Table.Tr key={f.relativePath} data-muted={f.status === 'missing' || undefined}>
                         {selectMode && (
                           <Table.Td>
                             <Checkbox

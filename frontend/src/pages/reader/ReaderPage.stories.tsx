@@ -3,8 +3,9 @@ import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import { chapters } from '../../../.storybook/mocks/entry/fixtures'
-import type { ReaderManifest } from '../../api/reader'
+import type { ReaderManifest, ServerPageState } from '../../api/reader'
 import ReaderPage from './ReaderPage'
+import type { ReaderPrefs } from './prefs'
 
 const meta = {
   component: ReaderPage,
@@ -421,5 +422,246 @@ export const PageFailsToLoad: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('This page failed to load.')).toBeVisible()
     await expect(await canvas.findByRole('button', { name: 'Try again' })).toBeVisible()
+  },
+}
+
+/** Enhance Always from the resolved prefs: the page is drawn by the engine, and the toolbar's hold button shows the original. */
+export const EnhanceAlways: Story = {
+  parameters: {
+    ...open(1132),
+    msw: [
+      withManifest({
+        ...chapters[1132],
+        prefs: { ...chapters[1132].prefs, enhance: 'always', enhanceMethod: 'a4k-s' },
+      }),
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    const { loadEnhanceEngine } = await import('../../lib/enhance')
+    const engine = await loadEnhanceEngine()
+    if (!engine.supported || engine.broken) return
+    const enhanced = await waitFor(
+      () => {
+        const element = canvasElement.querySelector<HTMLCanvasElement>('canvas.reader-enhanced')
+        expect(element?.dataset.enhanced).toBe('true')
+        return element!
+      },
+      { timeout: 60_000 },
+    )
+    await expect(enhanced).toHaveAccessibleName('Chapter 132 - page 6')
+
+    await summonChrome({ canvasElement, userEvent })
+    const hold = await canvas.findByRole('button', { name: 'Hold to compare' })
+    await userEvent.pointer({ keys: '[MouseLeft>]', target: hold })
+    await waitFor(() => expect(hold).toHaveAttribute('aria-pressed', 'true'))
+    await expect(enhanced).not.toBeVisible()
+    await userEvent.pointer({ keys: '[/MouseLeft]', target: hold })
+    await waitFor(() => expect(hold).toHaveAttribute('aria-pressed', 'false'))
+    await waitFor(() => expect(enhanced).toBeVisible())
+  },
+}
+
+const serverMethod = (
+  chapterId: number,
+  enhanceServer = chapters[1132].enhanceServer,
+  prefs: Partial<ReaderPrefs> = {},
+) =>
+  withManifest({
+    ...chapters[1132],
+    chapterId,
+    prefs: { ...chapters[1132].prefs, enhance: 'always', enhanceMethod: 'server:span-s', ...prefs },
+    enhanceServer,
+  })
+
+/** Answers the window POST with one state for every page, and keeps what was asked for. */
+const enhanceAnswer = (chapterId: number, state: ServerPageState, asked: number[][] = []) =>
+  http.post(api(`/reader/chapter/${chapterId}/enhance`), async ({ request }) => {
+    const { pages } = (await request.json()) as { pages: number[] }
+    asked.push(pages)
+    return HttpResponse.json({ pages: pages.map((page) => ({ page, state })) })
+  })
+
+async function engineWorks(): Promise<boolean> {
+  const { loadEnhanceEngine } = await import('../../lib/enhance')
+  const engine = await loadEnhanceEngine()
+  return engine.supported && !engine.broken
+}
+
+/** Shows the browser fallback where the engine runs, else the plain page, and never a server image. */
+async function expectFallback(canvasElement: HTMLElement, canvas: PlayArgs['canvas']) {
+  const page = await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+  if (await engineWorks()) {
+    await waitFor(
+      () => expect(canvasElement.querySelector<HTMLCanvasElement>('canvas.reader-enhanced')?.dataset.enhanced).toBe('true'),
+      { timeout: 60_000 },
+    )
+  } else {
+    await expect(page).toBeVisible()
+  }
+  await expect(canvasElement.querySelector('img.reader-enhanced-server')).toBeNull()
+}
+
+const readyAsked: number[][] = []
+
+/** Sharp (server) with every page upscaled already: the server's image replaces the page once decoded, and compare still shows the original. */
+export const ServerEnhanceReady: Story = {
+  parameters: {
+    ...open(7711),
+    msw: [
+      serverMethod(7711),
+      enhanceAnswer(7711, 'ready', readyAsked),
+      http.get(api('/reader/chapter/7711/page/:n/enhanced'), ({ params }) => HttpResponse.redirect(`/mock/page/7711/${Number(params.n) + 1}.svg`)),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    const server = await waitFor(() => {
+      const element = canvasElement.querySelector<HTMLImageElement>('img.reader-enhanced-server')
+      expect(element?.dataset.enhanced).toBe('true')
+      return element!
+    })
+    await expect(server.getAttribute('src')).toContain('/reader/chapter/7711/page/5/enhanced?model=span-s&v=v1')
+    await expect(server.naturalWidth).toBeGreaterThan(0)
+    await waitFor(() => expect(readyAsked[0]?.[0]).toBe(5))
+    await waitFor(() => expect(canvas.getByRole('img', { name: 'Chapter 132 - page 6' })).toBe(server))
+    await expect(canvasElement.querySelector<HTMLCanvasElement>('canvas.reader-enhanced')?.dataset.enhanced).toBe('false')
+
+    const original = canvasElement.querySelector<HTMLImageElement>('img.reader-region-image:not(.reader-enhanced-server)')!
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'h' }))
+    await waitFor(() => expect(original).toBeVisible())
+    await expect(server).not.toBeVisible()
+    window.dispatchEvent(new KeyboardEvent('keyup', { key: 'h' }))
+    await waitFor(() => expect(server).toBeVisible())
+  },
+}
+
+const warmedPages = new Set<number>()
+
+/** A page turn onto a page warmed ahead shows its server upscale in the first frame, never the fallback or the plain page. */
+export const ServerEnhanceTurnShowsWarmedPage: Story = {
+  parameters: {
+    ...open(7717),
+    msw: [
+      serverMethod(7717),
+      enhanceAnswer(7717, 'ready'),
+      http.get(api('/reader/chapter/7717/page/:n/enhanced'), ({ params }) => {
+        warmedPages.add(Number(params.n))
+        return HttpResponse.redirect(`/mock/page/7717/${Number(params.n) + 1}.svg`)
+      }),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await waitFor(() =>
+      expect(canvasElement.querySelector<HTMLImageElement>('img.reader-enhanced-server')?.dataset.enhanced).toBe('true'),
+    )
+    await waitFor(() => expect(warmedPages.has(6)).toBe(true))
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    // Read before the frame paints: whatever is on screen here is what the reader sees first.
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    const server = canvasElement.querySelector<HTMLImageElement>('img.reader-enhanced-server')
+    const plain = canvasElement.querySelector<HTMLImageElement>('img.reader-region-image:not(.reader-enhanced-server)')
+    await expect(server?.getAttribute('src')).toContain('/reader/chapter/7717/page/6/enhanced')
+    await expect(server?.dataset.enhanced).toBe('true')
+    await expect(plain?.style.visibility).toBe('hidden')
+    await expect(canvasElement.querySelector('canvas.reader-enhanced[data-enhanced="true"]')).toBeNull()
+  },
+}
+
+const waitingAsked: number[][] = []
+
+/** Still queued on the server and not in its cache: the reader asks for the window and shows the fallback meanwhile. */
+export const ServerEnhanceWaiting: Story = {
+  parameters: {
+    ...open(7712),
+    msw: [
+      serverMethod(7712),
+      enhanceAnswer(7712, 'queued', waitingAsked),
+      http.get(api('/reader/chapter/7712/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await waitFor(() => expect(waitingAsked[0]?.slice(0, 2)).toEqual([5, 6]))
+    await expectFallback(canvasElement, canvas)
+  },
+}
+
+const plainAsked: number[][] = []
+
+/** Still queued, with the fallback set to None: the plain page shows until the server's upscale is ready. */
+export const ServerEnhanceFallbackNone: Story = {
+  parameters: {
+    ...open(7716),
+    msw: [
+      serverMethod(7716, undefined, { enhanceFallback: 'off' }),
+      enhanceAnswer(7716, 'queued', plainAsked),
+      http.get(api('/reader/chapter/7716/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    const page = await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await waitFor(() => expect(plainAsked[0]?.slice(0, 2)).toEqual([5, 6]))
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await expect(page).toBeVisible()
+    await expect(canvasElement.querySelector('canvas.reader-enhanced[data-enhanced="true"]')).toBeNull()
+    await expect(canvasElement.querySelector('img.reader-enhanced-server')).toBeNull()
+  },
+}
+
+const offAsked: number[][] = []
+
+/** The admin switched the server tier off: the fallback stands in and nothing is asked of the server. */
+export const ServerEnhanceTierOff: Story = {
+  parameters: {
+    ...open(7713),
+    msw: [serverMethod(7713, { enabled: false, models: [] }), enhanceAnswer(7713, 'ready', offAsked)],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await expectFallback(canvasElement, canvas)
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    await expect(offAsked).toHaveLength(0)
+  },
+}
+
+const unstretchedAsked: number[][] = []
+
+/** Auto with Sharp (server) and the page shown at 1:1: nothing is stretched, so nothing is asked of the server. */
+export const ServerEnhanceAutoUnstretched: Story = {
+  parameters: {
+    ...open(7714),
+    msw: [
+      serverMethod(7714, undefined, { enhance: 'auto', fit: 'original', scale: 100 }),
+      enhanceAnswer(7714, 'queued', unstretchedAsked),
+      http.get(api('/reader/chapter/7714/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await waitFor(() => expect(canvasElement.querySelector('canvas.reader-enhanced')).not.toBeNull())
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    await expect(unstretchedAsked).toHaveLength(0)
+  },
+}
+
+const stretchedAsked: number[][] = []
+
+/** Auto with Sharp (server) at 200%: the page on screen is asked for first, then the pages ahead of the same size. */
+export const ServerEnhanceAutoStretched: Story = {
+  parameters: {
+    ...open(7715),
+    msw: [
+      serverMethod(7715, undefined, { enhance: 'auto', fit: 'original', scale: 200 }),
+      enhanceAnswer(7715, 'queued', stretchedAsked),
+      http.get(api('/reader/chapter/7715/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
+    ],
+  },
+  play: async ({ canvas }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await waitFor(() => expect(stretchedAsked[0]?.[0]).toBe(5))
+    await waitFor(() => expect(stretchedAsked.flat()).toContain(6))
+    await waitFor(() => expect(stretchedAsked.every((pages) => pages.length <= 12 && pages.every((page) => page >= 5))).toBe(true))
   },
 }

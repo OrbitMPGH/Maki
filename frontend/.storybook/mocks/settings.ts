@@ -1,6 +1,7 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { api } from './api'
 import * as d from './settings/data'
+import { pageConversionHandlers } from './settings/pageConversion'
 import { healthOptions } from './operations/health'
 
 /** A PUT whose reply is the body it was sent, which is how most settings records answer. */
@@ -134,14 +135,27 @@ export const settingsHandlers: HttpHandler[] = [
   http.post(api('/settings/recommendations/build'), () => HttpResponse.json({ started: true })),
   http.get(api('/settings/metadata/dump-progress'), () => HttpResponse.json(d.dumpProgressIdle)),
   http.post(api('/settings/metadata/refresh'), () => HttpResponse.json({ started: true, alreadyRunning: false })),
+  ...pageConversionHandlers,
   http.get(api('/pageconversion'), () => HttpResponse.json(d.pageConversionIdle)),
   http.put(api('/pageconversion/settings'), async ({ request }) =>
     HttpResponse.json({ ...d.pageConversionIdle, settings: await request.json() }),
   ),
+  http.put(api('/pageconversion/parallel'), async ({ request }) => {
+    const { limit } = (await request.json()) as { limit: number | null }
+    return HttpResponse.json({ ...d.pageConversionIdle, parallel: { ...d.pageConversionIdle.parallel, limit } })
+  }),
   http.post(api('/pageconversion/start'), () => HttpResponse.json(d.pageConversionRunning)),
   http.post(api('/pageconversion/pause'), () =>
     HttpResponse.json({ ...d.pageConversionRunning, pass: { ...d.pageConversionRunning.pass, state: 'paused', currentFile: null } }),
   ),
+  http.get(api('/upscaling'), () => HttpResponse.json(d.upscalingOn)),
+  http.put(api('/upscaling/settings'), async ({ request }) =>
+    HttpResponse.json({ ...d.upscalingOn, settings: await request.json() }),
+  ),
+  http.post(api('/upscaling/models/:id/download'), () => HttpResponse.json(d.upscalingOn)),
+  http.delete(api('/upscaling/models/:id'), () => HttpResponse.json(d.upscalingOn)),
+  http.post(api('/upscaling/cache/clear'), () => HttpResponse.json({ ...d.upscalingOn, cache: { bytes: 0, files: 0 } })),
+  http.post(api('/upscaling/benchmark'), () => HttpResponse.json({ seconds: 5.5 })),
   http.get(api('/recyclebin'), () => HttpResponse.json(d.recycleBin)),
   http.get(api('/recyclebin/retention'), () => HttpResponse.json({ days: 14 })),
   http.put(api('/recyclebin/retention'), ok),
@@ -159,6 +173,22 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/settings/sources/languages'), () => HttpResponse.json(d.sourceLanguages)),
   putEcho('/settings/sources/languages'),
   http.get(api('/search/sources'), () => HttpResponse.json(d.sources)),
+  http.get(api('/custom-sources'), () => HttpResponse.json([])),
+  http.get(api('/custom-sources/repositories'), () => HttpResponse.json(d.customRepositories)),
+  http.post(api('/custom-sources/repositories'), () => HttpResponse.json(d.customRepositories[0])),
+  http.delete(api('/custom-sources/repositories'), () => HttpResponse.json({ detached: 2 })),
+  putEcho('/custom-sources/repositories/autoupdate'),
+  http.post(api('/custom-sources/repositories/refresh'), () => HttpResponse.json(d.customRepositories)),
+  http.post(api('/custom-sources/repositories/install'), () => HttpResponse.json({ created: true, sourceName: 'custom-lantern' })),
+  http.get(api('/custom-sources/:id/update'), () => HttpResponse.json(d.customSourceUpdatePreview)),
+  http.post(api('/custom-sources/:id/update'), () => HttpResponse.json({ created: false, sourceName: 'custom-quietpen' })),
+  http.post(api('/custom-sources/:id/revert'), () => HttpResponse.json({ created: false, sourceName: 'custom-quietpen' })),
+  http.post(api('/custom-sources/test'), () => HttpResponse.json(d.customSourceTestReport)),
+  http.post(api('/custom-sources/probe'), () => HttpResponse.json(d.customSourceProbe)),
+  http.post(api('/custom-sources/probe/search'), () => HttpResponse.json(d.customSourceSearchProbe)),
+  http.get(api('/custom-sources/:id'), () => HttpResponse.json(d.customSourcesList[0].definition)),
+  http.put(api('/custom-sources/:id'), () => HttpResponse.json({ created: true, sourceName: 'custom-quietpen' })),
+  http.delete(api('/custom-sources/:id'), ok),
   http.get(api('/settings/flaresolverr'), () => HttpResponse.json(d.flaresolverr)),
   putEcho('/settings/flaresolverr'),
   http.post(api('/settings/flaresolverr/test'), success),

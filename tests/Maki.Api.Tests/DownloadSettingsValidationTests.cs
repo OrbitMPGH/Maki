@@ -27,6 +27,10 @@ public class DownloadSettingsValidationTests : IDisposable
         kavitaUser: null!, kavitaLive: null!, schedulerFactory: null!, scopeFactory: _db.ScopeFactory(),
         logger: NullLogger<SettingsController>.Instance);
 
+    private DownloadQueueService Queue() => new(
+        _db.ScopeFactory(), TimeProvider.System, Sources.SingleChapterResolver(null, "x"),
+        NullLogger<DownloadQueueService>.Instance);
+
     private static SettingsController.DownloadSettings Payload(int chaptersLeft = 5, int chapters = 10) =>
         new(ConcurrentChapters: 2, RetryEnabled: true, RetryMaxAttempts: 5,
             SmartDownloadChaptersLeft: chaptersLeft, SmartDownloadChapters: chapters, ItemTimeoutMinutes: 120);
@@ -38,7 +42,7 @@ public class DownloadSettingsValidationTests : IDisposable
     [InlineData(5, 21)]
     public async Task Smart_download_values_outside_their_range_are_refused(int chaptersLeft, int chapters)
     {
-        var result = await Controller().SetDownload(Payload(chaptersLeft, chapters), CancellationToken.None);
+        var result = await Controller().SetDownload(Payload(chaptersLeft, chapters), Queue(), CancellationToken.None);
 
         Assert.IsNotType<OkObjectResult>(result);
     }
@@ -46,9 +50,13 @@ public class DownloadSettingsValidationTests : IDisposable
     [Fact]
     public async Task Smart_download_values_inside_their_range_are_saved()
     {
-        var result = await Controller().SetDownload(Payload(1, 20), CancellationToken.None);
+        var queue = Queue();
+        var changed = queue.PollWake;
+
+        var result = await Controller().SetDownload(Payload(1, 20), queue, CancellationToken.None);
 
         Assert.IsType<OkObjectResult>(result);
+        Assert.True(changed.IsCompleted);
     }
 
     [Fact]
@@ -64,5 +72,46 @@ public class DownloadSettingsValidationTests : IDisposable
             Assert.IsType<OkObjectResult>(result).Value);
         Assert.Equal(1, body.SmartDownloadChaptersLeft);
         Assert.Equal(1, body.SmartDownloadChapters);
+    }
+
+    [Fact]
+    public async Task Torrent_removal_is_off_with_file_deletion_ready_until_someone_turns_it_on()
+    {
+        var body = Assert.IsType<SettingsController.DownloadSettings>(
+            Assert.IsType<OkObjectResult>(await Controller().GetDownload(CancellationToken.None)).Value);
+
+        Assert.Equal("never", body.RemoveCompleted);
+        Assert.True(body.RemoveData);
+    }
+
+    [Fact]
+    public async Task Torrent_removal_saves_and_reads_back()
+    {
+        await Controller().SetDownload(
+            Payload() with { RemoveCompleted = "afterimport", RemoveData = false }, Queue(), CancellationToken.None);
+
+        var body = Assert.IsType<SettingsController.DownloadSettings>(
+            Assert.IsType<OkObjectResult>(await Controller().GetDownload(CancellationToken.None)).Value);
+        Assert.Equal("afterimport", body.RemoveCompleted);
+        Assert.False(body.RemoveData);
+    }
+
+    [Fact]
+    public async Task A_save_that_leaves_torrent_removal_out_keeps_it()
+    {
+        await Controller().SetDownload(Payload() with { RemoveCompleted = "afterimport" }, Queue(), CancellationToken.None);
+
+        await Controller().SetDownload(Payload(), Queue(), CancellationToken.None);
+
+        Assert.Equal("afterimport", await Store().GetAsync(SettingKeys.DownloadClientRemoveCompleted));
+    }
+
+    [Fact]
+    public async Task An_unknown_torrent_removal_mode_is_refused()
+    {
+        var result = await Controller().SetDownload(Payload() with { RemoveCompleted = "afterseeding" }, Queue(), CancellationToken.None);
+
+        Assert.IsNotType<OkObjectResult>(result);
+        Assert.Null(await Store().GetAsync(SettingKeys.DownloadClientRemoveCompleted));
     }
 }

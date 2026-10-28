@@ -11,11 +11,11 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Maki.Api.Tests;
 
 /// <summary>
-/// The Home dashboard's two rails. Most of these pin behaviour that is easy to "simplify" back
+/// The Home dashboard's reading list. Most of these pin behaviour that is easy to "simplify" back
 /// into a bug: tombstones must not hijack Continue reading, a series with nothing left to read
-/// must drop out of Jump back in, and neither rail may consult <see cref="ReadingState"/>.
+/// must drop out, a part-read chapter read past since must not come back, and nothing may consult
+/// <see cref="ReadingState"/>.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public class HomeControllerTests : IDisposable
 {
     private static readonly DateTime Base = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -30,18 +30,9 @@ public class HomeControllerTests : IDisposable
     /// </summary>
     private static CoverAccentCache Accents()
     {
-        var previous = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
-        Environment.SetEnvironmentVariable(
-            "MAKI_CONFIG_DIR", Path.Combine(Path.GetTempPath(), "maki-tests", "home-controller-accents"));
-        try
-        {
-            var covers = new CoverService(null!, new AppPaths(), new FakeAppSettings(), NullLogger<CoverService>.Instance);
-            return new CoverAccentCache(covers, NullLogger<CoverAccentCache>.Instance);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", previous);
-        }
+        var paths = new AppPaths(Path.Combine(Path.GetTempPath(), "maki-tests", "home-controller-accents"));
+        var covers = new CoverService(null!, paths, new FakeAppSettings(), NullLogger<CoverService>.Instance);
+        return new CoverAccentCache(covers, NullLogger<CoverAccentCache>.Instance);
     }
 
     private HomeController Controller()
@@ -129,7 +120,6 @@ public class HomeControllerTests : IDisposable
         Assert.Equal(20, item.PageCount);
         Assert.Equal("Ch.1", item.ChapterLabel);
         Assert.Equal(2, item.UnreadChapters);
-        Assert.Empty(response.JumpBackIn);
     }
 
     private void RemoveFile(int chapterId)
@@ -142,7 +132,7 @@ public class HomeControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task Continue_drops_a_part_read_chapter_whose_file_was_removed()
+    public async Task A_part_read_chapter_whose_file_was_removed_moves_on_to_the_next()
     {
         var seriesId = _db.SeedSeries("Berserk");
         var removed = SeedChapter(seriesId, 1);
@@ -152,9 +142,9 @@ public class HomeControllerTests : IDisposable
 
         var response = Reading(await Controller().Reading(ct: CancellationToken.None));
 
-        Assert.Empty(response.ContinueReading);
-        var item = Assert.Single(response.JumpBackIn);
+        var item = Assert.Single(response.ContinueReading);
         Assert.Equal(next, item.ChapterId);
+        Assert.Equal(0, item.Page);
     }
 
     [Fact]
@@ -172,7 +162,6 @@ public class HomeControllerTests : IDisposable
         var item = Assert.Single(response.ContinueReading);
         Assert.Equal(kept, item.ChapterId);
         Assert.Equal(3, item.Page);
-        Assert.Empty(response.JumpBackIn);
     }
 
     [Fact]
@@ -189,10 +178,10 @@ public class HomeControllerTests : IDisposable
 
         var response = Reading(await Controller().Reading(ct: CancellationToken.None));
 
-        Assert.Empty(response.ContinueReading);
-        // Still unread, so it is what Jump back in offers.
-        var item = Assert.Single(response.JumpBackIn);
+        // Still unread, so it is offered as the next chapter, from the start.
+        var item = Assert.Single(response.ContinueReading);
         Assert.Equal(second, item.ChapterId);
+        Assert.Equal(0, item.Page);
     }
 
     [Fact]
@@ -209,22 +198,39 @@ public class HomeControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task Continue_ignores_completed_rows()
+    public async Task Orders_by_last_read_whether_part_way_through_a_chapter_or_between_two()
+    {
+        var midChapter = _db.SeedSeries("Mid chapter");
+        var betweenChapters = _db.SeedSeries("Between chapters");
+        SeedProgress(midChapter, SeedChapter(midChapter, 1), 3, false, Base);
+        SeedProgress(betweenChapters, SeedChapter(betweenChapters, 1), 0, true, Base.AddDays(1));
+        SeedChapter(betweenChapters, 2);
+
+        var response = Reading(await Controller().Reading(ct: CancellationToken.None));
+
+        Assert.Equal(["Between chapters", "Mid chapter"], response.ContinueReading.Select(i => i.SeriesTitle));
+        Assert.Equal(Base.AddDays(1), response.ContinueReading[0].LastReadAt);
+    }
+
+    [Fact]
+    public async Task A_completed_chapter_offers_the_next_one_from_the_start()
     {
         var seriesId = _db.SeedSeries();
         var chapterId = SeedChapter(seriesId, 1);
-        SeedChapter(seriesId, 2);
+        var next = SeedChapter(seriesId, 2);
         // Completed but with a page index left behind — sticky completion wins over the position.
         SeedProgress(seriesId, chapterId, pageIndex: 19, completed: true, updatedAt: Base);
 
         var response = Reading(await Controller().Reading(ct: CancellationToken.None));
 
-        Assert.Empty(response.ContinueReading);
-        Assert.Single(response.JumpBackIn);
+        var item = Assert.Single(response.ContinueReading);
+        Assert.Equal(next, item.ChapterId);
+        Assert.Equal(0, item.Page);
+        Assert.Equal(0, item.PageCount);
     }
 
     [Fact]
-    public async Task JumpBackIn_excludes_series_already_in_continue()
+    public async Task A_series_is_listed_once_at_its_newest_part_read_chapter()
     {
         var seriesId = _db.SeedSeries();
         var first = SeedChapter(seriesId, 1);
@@ -234,12 +240,53 @@ public class HomeControllerTests : IDisposable
 
         var response = Reading(await Controller().Reading(ct: CancellationToken.None));
 
-        Assert.Single(response.ContinueReading);
-        Assert.Empty(response.JumpBackIn);
+        var item = Assert.Single(response.ContinueReading);
+        Assert.Equal(second, item.ChapterId);
+        Assert.Equal(4, item.Page);
     }
 
     [Fact]
-    public async Task JumpBackIn_drops_series_with_every_downloaded_chapter_read()
+    public async Task A_part_read_chapter_read_past_since_is_abandoned()
+    {
+        // Left chapter 1 half-way, came back later and read 2 and 3 through: the list offers 4, and
+        // is dated by the last chapter read rather than by the abandoned one.
+        var seriesId = _db.SeedSeries();
+        var abandoned = SeedChapter(seriesId, 1);
+        var second = SeedChapter(seriesId, 2);
+        var third = SeedChapter(seriesId, 3);
+        var fourth = SeedChapter(seriesId, 4);
+        SeedProgress(seriesId, abandoned, pageIndex: 6, completed: false, updatedAt: Base);
+        SeedProgress(seriesId, second, pageIndex: 19, completed: true, updatedAt: Base.AddDays(30));
+        SeedProgress(seriesId, third, pageIndex: 19, completed: true, updatedAt: Base.AddDays(31));
+
+        var response = Reading(await Controller().Reading(ct: CancellationToken.None));
+
+        var item = Assert.Single(response.ContinueReading);
+        Assert.Equal(fourth, item.ChapterId);
+        Assert.Equal(0, item.Page);
+        Assert.Equal(Base.AddDays(31), item.LastReadAt);
+    }
+
+    [Fact]
+    public async Task The_next_chapter_resumes_at_the_page_reached_when_it_was_started_earlier()
+    {
+        // Started chapter 2, went back and re-read chapter 1: chapter 2 is next, at its page.
+        var seriesId = _db.SeedSeries();
+        var first = SeedChapter(seriesId, 1);
+        var second = SeedChapter(seriesId, 2);
+        SeedProgress(seriesId, second, pageIndex: 6, completed: false, updatedAt: Base);
+        SeedProgress(seriesId, first, pageIndex: 19, completed: true, updatedAt: Base.AddHours(1));
+
+        var response = Reading(await Controller().Reading(ct: CancellationToken.None));
+
+        var item = Assert.Single(response.ContinueReading);
+        Assert.Equal(second, item.ChapterId);
+        Assert.Equal(6, item.Page);
+        Assert.Equal(20, item.PageCount);
+    }
+
+    [Fact]
+    public async Task Reading_drops_series_with_every_downloaded_chapter_read()
     {
         var seriesId = _db.SeedSeries();
         var only = SeedChapter(seriesId, 1);
@@ -247,11 +294,11 @@ public class HomeControllerTests : IDisposable
 
         var response = Reading(await Controller().Reading(ct: CancellationToken.None));
 
-        Assert.Empty(response.JumpBackIn);
+        Assert.Empty(response.ContinueReading);
     }
 
     [Fact]
-    public async Task JumpBackIn_fills_past_finished_series_across_candidate_chunks()
+    public async Task Reading_fills_past_finished_series_across_candidate_chunks()
     {
         // limit 1 resolves two candidates at a time; the newest two are fully read, the third is not.
         var open = _db.SeedSeries("Open");
@@ -265,11 +312,11 @@ public class HomeControllerTests : IDisposable
 
         var response = Reading(await Controller().Reading(limit: 1, ct: CancellationToken.None));
 
-        Assert.Equal(open, Assert.Single(response.JumpBackIn).SeriesId);
+        Assert.Equal(open, Assert.Single(response.ContinueReading).SeriesId);
     }
 
     [Fact]
-    public async Task JumpBackIn_ignores_watched_chapters()
+    public async Task Reading_ignores_watched_chapters()
     {
         var seriesId = _db.SeedSeries();
         var watched = SeedChapter(seriesId, 1);
@@ -278,11 +325,11 @@ public class HomeControllerTests : IDisposable
 
         var response = Reading(await Controller().Reading(ct: CancellationToken.None));
 
-        Assert.Empty(response.JumpBackIn);
+        Assert.Empty(response.ContinueReading);
     }
 
     [Fact]
-    public async Task JumpBackIn_ignores_chapters_with_no_file()
+    public async Task Reading_ignores_chapters_with_no_file()
     {
         var seriesId = _db.SeedSeries();
         var downloaded = SeedChapter(seriesId, 1);
@@ -291,11 +338,11 @@ public class HomeControllerTests : IDisposable
 
         var response = Reading(await Controller().Reading(ct: CancellationToken.None));
 
-        Assert.Empty(response.JumpBackIn);
+        Assert.Empty(response.ContinueReading);
     }
 
     [Fact]
-    public async Task JumpBackIn_orders_one_shots_last()
+    public async Task Reading_orders_one_shots_last()
     {
         var seriesId = _db.SeedSeries();
         var read = SeedChapter(seriesId, 1);
@@ -305,7 +352,7 @@ public class HomeControllerTests : IDisposable
 
         var response = Reading(await Controller().Reading(ct: CancellationToken.None));
 
-        var item = Assert.Single(response.JumpBackIn);
+        var item = Assert.Single(response.ContinueReading);
         Assert.Equal(numbered, item.ChapterId);
         Assert.Equal("Ch.2", item.ChapterLabel);
     }
@@ -322,7 +369,7 @@ public class HomeControllerTests : IDisposable
         {
             // Duplicate rows per SeriesId are legal (two Kavita series can resolve to one local
             // series), and MaxChapter is a forward-only mark that can name chapters never opened.
-            // Neither may leak into the rails, and a join would also multiply the rows.
+            // Neither may leak into the list, and a join would also multiply the rows.
             db.ReadingStates.Add(new ReadingState
             {
                 UserId = 1,
@@ -341,7 +388,6 @@ public class HomeControllerTests : IDisposable
         var item = Assert.Single(response.ContinueReading);
         Assert.Equal(chapterId, item.ChapterId);
         Assert.Equal(2, item.UnreadChapters);
-        Assert.Empty(response.JumpBackIn);
     }
 
     [Fact]
@@ -411,15 +457,74 @@ public class HomeControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task RecentlyAdded_read_chapter_is_null_once_everything_is_read()
+    public async Task RecentlyAdded_drops_a_series_with_everything_read()
     {
         var seriesId = _db.SeedSeries();
         var chapterId = SeedChapter(seriesId, 1);
         SeedProgress(seriesId, chapterId, pageIndex: 0, completed: true, updatedAt: Base);
 
+        Assert.Empty(Recent(await Controller().RecentlyAdded(ct: CancellationToken.None)));
+    }
+
+    [Fact]
+    public async Task RecentlyAdded_counts_only_the_latest_batch()
+    {
+        // Weekly releases: each arrived on its own, so only the newest is new.
+        var seriesId = _db.SeedSeries("Weekly");
+        for (var week = 0; week < 11; week++)
+        {
+            SeedChapter(seriesId, week + 1, addedAt: Base.AddDays(7 * week));
+        }
+
         var item = Assert.Single(Recent(await Controller().RecentlyAdded(ct: CancellationToken.None)));
 
-        Assert.Null(item.ReadChapterId);
+        Assert.Equal(1, item.NewChapterCount);
+        Assert.Equal("Ch.11", item.NewestChapterLabel);
+    }
+
+    [Fact]
+    public async Task RecentlyAdded_drops_a_series_once_its_latest_batch_is_read()
+    {
+        // An older chapter is still unread, but nothing new is.
+        var seriesId = _db.SeedSeries("Caught up on new");
+        SeedChapter(seriesId, 1, addedAt: Base);
+        var newest = SeedChapter(seriesId, 2, addedAt: Base.AddDays(7));
+        SeedProgress(seriesId, newest, pageIndex: 0, completed: true, updatedAt: Base.AddDays(8));
+
+        Assert.Empty(Recent(await Controller().RecentlyAdded(ct: CancellationToken.None)));
+    }
+
+    [Fact]
+    public async Task RecentlyAdded_counts_and_labels_the_unread_part_of_the_batch()
+    {
+        var seriesId = _db.SeedSeries("Half read");
+        SeedChapter(seriesId, 1, addedAt: Base);
+        SeedChapter(seriesId, 2, addedAt: Base.AddMinutes(5));
+        var third = SeedChapter(seriesId, 3, addedAt: Base.AddMinutes(10));
+        SeedProgress(seriesId, third, pageIndex: 0, completed: true, updatedAt: Base.AddHours(1));
+
+        var item = Assert.Single(Recent(await Controller().RecentlyAdded(ct: CancellationToken.None)));
+
+        Assert.Equal(2, item.NewChapterCount);
+        Assert.Equal("Ch.2", item.NewestChapterLabel);
+        Assert.Equal(Base.AddMinutes(10), item.AddedAt);
+    }
+
+    [Fact]
+    public async Task RecentlyAdded_fills_past_read_series_across_candidate_chunks()
+    {
+        // limit 1 resolves two candidates at a time; the newest two are read, the third is not.
+        var open = _db.SeedSeries("Open");
+        SeedChapter(open, 1, addedAt: Base);
+        foreach (var (title, hours) in new[] { ("Read B", 1), ("Read A", 2) })
+        {
+            var read = _db.SeedSeries(title);
+            SeedProgress(read, SeedChapter(read, 1, addedAt: Base.AddHours(hours)), 0, true, Base.AddHours(3));
+        }
+
+        var items = Recent(await Controller().RecentlyAdded(limit: 1, ct: CancellationToken.None));
+
+        Assert.Equal(open, Assert.Single(items).SeriesId);
     }
 
     [Fact]
@@ -434,8 +539,8 @@ public class HomeControllerTests : IDisposable
 
         var response = Reading(await Controller().Reading(ct: CancellationToken.None));
 
-        // Jump back in should show chapter 2 (next unread after last completed).
-        var item = Assert.Single(response.JumpBackIn.Where(i => i.SeriesTitle == "ContinueAfterLast"));
+        // Chapter 2: the next unread after the last completed.
+        var item = Assert.Single(response.ContinueReading.Where(i => i.SeriesTitle == "ContinueAfterLast"));
         Assert.Equal(ch2, item.ChapterId);
     }
 
@@ -483,7 +588,7 @@ public class HomeControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task Hidden_series_drop_out_of_both_rails()
+    public async Task Hidden_series_drop_off_the_list()
     {
         var continued = _db.SeedSeries("Continued");
         var finished = _db.SeedSeries("Finished");
@@ -499,7 +604,6 @@ public class HomeControllerTests : IDisposable
         var response = Reading(await UserController().Reading(ct: CancellationToken.None));
 
         Assert.Equal(["Kept"], response.ContinueReading.Select(i => i.SeriesTitle));
-        Assert.Empty(response.JumpBackIn);
     }
 
     [Fact]

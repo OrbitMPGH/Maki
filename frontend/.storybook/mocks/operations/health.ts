@@ -311,6 +311,7 @@ export const operationDetails: Record<number, OperationDetail> = {
       },
     ],
     requiresReset: true,
+    retryable: false,
   },
   2: {
     operation: operations[1],
@@ -318,6 +319,7 @@ export const operationDetails: Record<number, OperationDetail> = {
     chapters: [{ id: 6101, title: 'The Ninth Course', wanted: true }],
     candidates: [],
     requiresReset: false,
+    retryable: false,
   },
   3: {
     operation: operations[2],
@@ -325,6 +327,7 @@ export const operationDetails: Record<number, OperationDetail> = {
     chapters: [{ id: 718, title: 'Steam and Silence', wanted: false }],
     candidates: [],
     requiresReset: false,
+    retryable: false,
   },
 }
 export const healthyDeleteDetail: OperationDetail = {
@@ -333,6 +336,7 @@ export const healthyDeleteDetail: OperationDetail = {
   chapters: [{ id: 5701, title: 'The Lamp Keeper', wanted: false }],
   candidates: [],
   requiresReset: false,
+  retryable: false,
 }
 
 export const historyEntries = [

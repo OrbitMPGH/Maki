@@ -41,8 +41,6 @@ export type SettingsTabKey =
 export interface SettingsTab {
   key: SettingsTabKey
   label: MessageDescriptor
-  /** Shown under the tab strip, so a tab explains itself before any card is read. */
-  description: MessageDescriptor
 }
 
 export interface SettingsEntry {
@@ -66,42 +64,34 @@ export const SETTINGS_TABS: SettingsTab[] = [
   {
     key: 'account',
     label: msg`Account`,
-    description: msg`Your password, two-factor code, single sign-on link and API keys.`,
   },
   {
     key: 'preferences',
     label: msg`Preferences`,
-    description: msg`How Maki looks and behaves for you: colours, language, start page, content rating and what reaches your bell.`,
   },
   {
     key: 'reading',
     label: msg`Reading`,
-    description: msg`The built-in reader, progress and achievements, the OPDS catalogue and read sync with Kavita.`,
   },
   {
     key: 'library',
     label: msg`Library`,
-    description: msg`Where files live, how they are named, what new series start with, and where metadata comes from.`,
   },
   {
     key: 'downloads',
     label: msg`Downloads`,
-    description: msg`The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced.`,
   },
   {
     key: 'integrations',
     label: msg`Integrations`,
-    description: msg`Kavita, tracker accounts and import lists, and alerts to chat and push apps.`,
   },
   {
     key: 'users',
     label: msg`Users & security`,
-    description: msg`Accounts, permissions, lockout and session rules, and single sign-on.`,
   },
   {
     key: 'system',
     label: msg`System`,
-    description: msg`HTTPS and proxies, backups, the image cache and updates.`,
   },
 ]
 
@@ -304,7 +294,17 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Page conversion`,
     admin: true,
     keywords: msg({
-      message: `page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format`,
+      message: `page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format, quality, stops, lossless, compare, preview, before and after, wizard`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'upscaling',
+    tab: 'library',
+    title: msg`Server upscaling`,
+    admin: true,
+    keywords: msg({
+      message: `upscale, upscaling, enhance, sharpen, model, onnx, real-esrgan, span, cpu threads, page cache`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -395,7 +395,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Sources`,
     admin: true,
     keywords: msg({
-      message: `scrapers, manage sources, priority, source priority, source order, best quality, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe`,
+      message: `scrapers, manage sources, priority, source priority, source order, best quality, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe, custom source, add site, set up a site, scanlator, website, definition, import definition`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },

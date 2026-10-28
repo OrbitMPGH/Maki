@@ -542,6 +542,7 @@ public class RecycleBinService(
 
             db.HealthScans.Add(new HealthScan { RootFolderId = entry.RootFolderId, SeriesId = seriesId });
             await db.SaveChangesAsync();
+            HealthWorker.Wake();
         }
         catch (Exception ex) when (ex is DbUpdateException or InvalidOperationException)
         {

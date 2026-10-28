@@ -345,6 +345,27 @@ public sealed class MihonImportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Import_routes_a_work_archived_in_the_library_to_that_series()
+    {
+        var existing = SeedSeries(101, _rootId);
+        using (var seed = _db.NewContext())
+        {
+            seed.Series.Single(s => s.Id == existing).ArchivedAt = DateTime.UtcNow;
+            seed.SaveChanges();
+        }
+
+        var (service, _) = Build(SeedUser());
+
+        var result = Assert.Single(await service.ImportAsync(Request(Item("101", ["Reading"])), default));
+
+        Assert.Equal("existing", result.Outcome);
+        Assert.Equal(existing, result.SeriesId);
+        using var db = _db.NewContext();
+        Assert.Single(db.Series);
+        Assert.Equal(existing, db.SeriesTags.Single().SeriesId);
+    }
+
+    [Fact]
     public async Task Import_skips_a_work_that_only_exists_in_a_folder_the_caller_cannot_see()
     {
         SeedSeries(101, _otherRootId);

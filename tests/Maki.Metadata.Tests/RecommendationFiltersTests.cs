@@ -7,63 +7,29 @@ namespace Maki.Metadata.Tests;
 
 public class RecommendationFiltersTests
 {
-    private static (string Clause, SqliteParameterCollection Params) Build(RecommendationFilters f)
+    [Fact]
+    public void No_filters_keep_every_row()
     {
-        using var conn = new SqliteConnection("Data Source=:memory:");
-        var cmd = conn.CreateCommand();
-        var clause = f.BuildClause(cmd, "d");
-        return (clause, cmd.Parameters);
+        Assert.Equal([1L, 2L, 3L, 4L], Run(RecommendationFilters.None));
     }
 
     [Fact]
-    public void None_ProducesEmptyClause()
+    public void Year_and_rating_bounds_are_inclusive()
     {
-        var (clause, ps) = Build(RecommendationFilters.None);
-        Assert.Equal(string.Empty, clause);
-        Assert.Empty(ps);
+        Assert.Equal([2L, 3L], Run(new RecommendationFilters(YearMin: 2010, YearMax: 2020, MinRating: 70)));
     }
 
     [Fact]
-    public void YearAndRating_ProduceComparisons()
+    public void Types_and_statuses_keep_any_listed_value()
     {
-        var (clause, ps) = Build(new RecommendationFilters(YearMin: 2010, YearMax: 2020, MinRating: 70));
-        Assert.Contains("d.year >= $f_ymin", clause);
-        Assert.Contains("d.year <= $f_ymax", clause);
-        Assert.Contains("d.rating >= $f_mr", clause);
-        Assert.Equal(2010, ps["$f_ymin"].Value);
-        Assert.Equal(2020, ps["$f_ymax"].Value);
-        Assert.Equal(70d, ps["$f_mr"].Value);
+        Assert.Equal([1L, 2L, 3L], Run(new RecommendationFilters(Types: ["manga", "manhwa"])));
+        Assert.Equal([2L, 3L], Run(new RecommendationFilters(Statuses: ["releasing"])));
     }
 
     [Fact]
-    public void Types_ProduceParameterizedInClause()
+    public void Empty_type_and_status_lists_filter_nothing()
     {
-        var (clause, ps) = Build(new RecommendationFilters(Types: ["manga", "manhwa"]));
-        Assert.Contains("d.type IN ($f_t0,$f_t1)", clause);
-        Assert.Equal("manga", ps["$f_t0"].Value);
-        Assert.Equal("manhwa", ps["$f_t1"].Value);
-    }
-
-    [Fact]
-    public void Statuses_ProduceParameterizedInClause()
-    {
-        var (clause, ps) = Build(new RecommendationFilters(Statuses: ["releasing"]));
-        Assert.Contains("d.status IN ($f_s0)", clause);
-        Assert.Equal("releasing", ps["$f_s0"].Value);
-    }
-
-    [Fact]
-    public void EmptyLists_AreIgnored()
-    {
-        var (clause, _) = Build(new RecommendationFilters(Types: [], Statuses: []));
-        Assert.Equal(string.Empty, clause);
-    }
-
-    [Fact]
-    public void Clause_StartsWithAndSoItSplicesOntoWhere()
-    {
-        var (clause, _) = Build(new RecommendationFilters(MinRating: 50));
-        Assert.StartsWith(" AND ", clause);
+        Assert.Equal([1L, 2L, 3L, 4L], Run(new RecommendationFilters(Types: [], Statuses: [])));
     }
 
     [Fact]
@@ -124,7 +90,14 @@ public class RecommendationFiltersTests
         conn.Open();
         using (var setup = conn.CreateCommand())
         {
-            setup.CommandText = "CREATE TABLE d (id INTEGER); INSERT INTO d VALUES (1), (2), (3), (4);";
+            setup.CommandText = """
+                CREATE TABLE d (id INTEGER, year INTEGER, rating REAL, type TEXT, status TEXT);
+                INSERT INTO d VALUES
+                    (1, 2005, 60, 'manga', 'completed'),
+                    (2, 2010, 70, 'manhwa', 'releasing'),
+                    (3, 2020, 80, 'manga', 'releasing'),
+                    (4, 2024, 90, 'manhua', 'hiatus');
+                """;
             setup.ExecuteNonQuery();
         }
 

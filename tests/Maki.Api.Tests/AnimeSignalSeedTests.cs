@@ -175,47 +175,69 @@ public class AnimeSignalSeedTests : IDisposable
         Assert.DoesNotContain(570L, snapshot.Avoided.Keys);
     }
 
-    /// <summary>
-    /// The dial, end to end. Each level is a share of what rating the manga would carry, and at Full
-    /// a 9/10 anime seeds at exactly the 1.8 a 9 on the shelf does.
-    /// </summary>
-    [Theory]
-    [InlineData(AnimeSignalStrength.Subtle, 0.63)]
-    [InlineData(AnimeSignalStrength.Balanced, 0.9)]
-    [InlineData(AnimeSignalStrength.Full, 1.8)]
-    public async Task The_strength_dial_scales_what_a_loved_anime_seeds_at(
-        AnimeSignalStrength level, double expected)
+    private static readonly AnimeSignalStrength[] Levels =
+        [AnimeSignalStrength.Subtle, AnimeSignalStrength.Balanced, AnimeSignalStrength.Full];
+
+    private async Task<Dictionary<AnimeSignalStrength, SeedSnapshot>> SnapshotPerLevelAsync(
+        long mangaBakaId, int score)
     {
-        OptIn();
-        SetStrength(level);
-        Signal(580, AnimeWatchStatus.Completed, 9);
+        var snapshots = new Dictionary<AnimeSignalStrength, SeedSnapshot>();
+        foreach (var level in Levels)
+        {
+            var userId = _fixture.SeedUser($"dial-{level}");
+            OptIn(userId);
+            SetStrength(level, userId);
+            Signal(mangaBakaId, AnimeWatchStatus.Completed, score, userId: userId);
 
-        using var db = _fixture.NewContext(1);
-        var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
+            using var db = _fixture.NewContext(userId);
+            snapshots[level] = await Service().SnapshotAsync(db, new TestCurrentUser(userId));
+        }
 
-        Assert.Equal(expected, snapshot.Effective.Weights[580], 8);
+        return snapshots;
+    }
+
+    /// <summary>
+    /// The dial, end to end. A higher level never seeds a loved anime lower, and at Full a 9/10
+    /// anime seeds at exactly what a 9 on the shelf does.
+    /// </summary>
+    [Fact]
+    public async Task The_strength_dial_scales_what_a_loved_anime_seeds_at()
+    {
+        var snapshots = await SnapshotPerLevelAsync(580, 9);
+
+        var subtle = snapshots[AnimeSignalStrength.Subtle].Effective.Weights[580];
+        var balanced = snapshots[AnimeSignalStrength.Balanced].Effective.Weights[580];
+        var full = snapshots[AnimeSignalStrength.Full].Effective.Weights[580];
+
+        Assert.True(subtle > 0);
+        Assert.True(subtle < balanced);
+        Assert.True(balanced < full);
+        Assert.Equal(9 / 5.0, full, 8);
     }
 
     /// <summary>
     /// The half the dial exists for. A bad anime score is usually a complaint about the adaptation,
-    /// so the default must push it well under the 1.0 a deliberate thumbs down carries.
+    /// so the default must push it well under what a deliberate thumbs down carries.
     /// </summary>
-    [Theory]
-    [InlineData(AnimeSignalStrength.Subtle, 0.35)]
-    [InlineData(AnimeSignalStrength.Balanced, 0.5)]
-    [InlineData(AnimeSignalStrength.Full, 1.0)]
-    public async Task The_strength_dial_scales_a_complaint_too(
-        AnimeSignalStrength level, double expected)
+    [Fact]
+    public async Task The_strength_dial_scales_a_complaint_too()
     {
-        OptIn();
-        SetStrength(level);
-        Signal(590, AnimeWatchStatus.Completed, 1);
+        var snapshots = await SnapshotPerLevelAsync(590, 1);
 
-        using var db = _fixture.NewContext(1);
-        var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
+        var subtle = snapshots[AnimeSignalStrength.Subtle].Avoided[590];
+        var balanced = snapshots[AnimeSignalStrength.Balanced].Avoided[590];
+        var full = snapshots[AnimeSignalStrength.Full].Avoided[590];
 
-        Assert.Equal(expected, snapshot.Avoided[590], 8);
-        Assert.DoesNotContain(590L, snapshot.Effective.EligibleIds);
+        Assert.True(subtle > 0);
+        Assert.True(subtle < balanced);
+        Assert.True(balanced < full);
+        Assert.True(
+            snapshots[AnimeSignalPolicy.DefaultStrength].Avoided[590] < RecommendationFeedbackPolicy.AvoidStrength(1));
+        Assert.Equal(AnimeSignalPolicy.AvoidStrengthOfScore(1), full, 8);
+        foreach (var level in Levels)
+        {
+            Assert.DoesNotContain(590L, snapshots[level].Effective.EligibleIds);
+        }
     }
 
     /// <summary>

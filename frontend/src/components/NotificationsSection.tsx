@@ -62,41 +62,46 @@ import { formatDateTime } from '../format'
 interface EventField {
   key: keyof NotificationRequest['events']
   label: MessageDescriptor
-  description: MessageDescriptor
+  description?: MessageDescriptor
 }
 
 const EVENT_GROUPS: { title: MessageDescriptor; fields: EventField[]; multiUserOnly?: boolean }[] = [
   {
     title: msg`Downloads`,
     fields: [
-      { key: 'chapterDownloaded', label: msg`Chapter downloaded`, description: msg`A chapter finished downloading and imported.` },
-      { key: 'downloadFailed', label: msg`Download failed`, description: msg`A chapter download failed.` },
-      { key: 'newChapterAvailable', label: msg`New chapter available`, description: msg`A refresh found new chapters for a series.` },
-      { key: 'importCompleted', label: msg`Import completed`, description: msg`A library import folder finished.` },
+      { key: 'chapterDownloaded', label: msg`Chapter downloaded` },
+      { key: 'downloadFailed', label: msg`Download failed` },
+      { key: 'newChapterAvailable', label: msg`New chapter available` },
+      { key: 'importCompleted', label: msg`Import completed` },
     ],
   },
   {
     title: msg`Library`,
     fields: [
-      { key: 'seriesAdded', label: msg`Series added`, description: msg`A series was added to the library, by hand or from an approved request.` },
-      { key: 'seriesRemoved', label: msg`Series removed`, description: msg`A series was removed from the library.` },
-      { key: 'manualMatchNeeded', label: msg`Manual match needed`, description: msg`Automatic source matching found nothing for a new series.` },
-      { key: 'seriesStatusChanged', label: msg`Series status changed`, description: msg`A series was completed, cancelled, put on hiatus or resumed.` },
+      { key: 'seriesAdded', label: msg`Series added` },
+      { key: 'seriesRemoved', label: msg`Series removed` },
+      {
+        key: 'seriesArchived',
+        label: msg`Series archived`,
+        description: msg`A series was archived.`,
+      },
+      { key: 'manualMatchNeeded', label: msg`Manual match needed` },
+      { key: 'seriesStatusChanged', label: msg`Series status changed` },
     ],
   },
   {
     title: msg`Requests`,
     fields: [
-      { key: 'requestSubmitted', label: msg`Request submitted`, description: msg`Someone asked for a series.` },
-      { key: 'requestResolved', label: msg`Request resolved`, description: msg`A request was approved or rejected.` },
+      { key: 'requestSubmitted', label: msg`Request submitted` },
+      { key: 'requestResolved', label: msg`Request resolved` },
     ],
     multiUserOnly: true,
   },
   {
     title: msg`System`,
     fields: [
-      { key: 'healthIssue', label: msg`Health issue`, description: msg`A new system health problem was detected.` },
-      { key: 'updateAvailable', label: msg`Update available`, description: msg`A newer Maki release was published.` },
+      { key: 'healthIssue', label: msg`Health issue` },
+      { key: 'updateAvailable', label: msg`Update available` },
     ],
   },
 ]
@@ -148,7 +153,7 @@ const FIELD_COPY: Record<string, FieldCopy> = {
   botToken: { label: msg`Bot token`, description: msg`The token @BotFather gave you.` },
   chatId: { label: msg`Chat ID`, description: msg`User, group or channel ID. Public channels can use @name.` },
   threadId: { label: msg`Topic ID`, description: msg`Posts into one topic of a forum group.` },
-  silent: { label: msg`Send silently`, description: msg`Delivers without a notification sound.` },
+  silent: { label: msg`Send silently` },
   apiKey: { label: msg`API key` },
   channelId: { label: msg`Discord channel ID`, description: msg`Notifiarr posts here through its Discord bot.` },
   serverUrl: { label: msg`Server URL` },
@@ -203,6 +208,7 @@ const EMPTY_EVENTS: NotificationRequest['events'] = {
   updateAvailable: false,
   seriesAdded: false,
   seriesRemoved: false,
+  seriesArchived: false,
   requestSubmitted: false,
   requestResolved: false,
   manualMatchNeeded: false,
@@ -465,9 +471,6 @@ export function NotificationsSection() {
     <SettingsSection
       id="notifications"
       title={<Trans>Notification connections</Trans>}
-      description={
-        <Trans>Send events to chat apps, push services or a webhook. Each connection picks its own events.</Trans>
-      }
       actions={
         <Button
           size="xs"
@@ -593,7 +596,7 @@ export function NotificationsSection() {
 
             <MultiSelect
               label={t`Only for tagged series`}
-              description={t`Leave empty to send for every series. Events without a series, like health, updates and imports, ignore this.`}
+              description={t`Leave empty to send for every series.`}
               data={tagOptions}
               value={form.tagIds.map(String)}
               onChange={(values) => setForm({ tagIds: values.map(Number) })}
@@ -623,7 +626,7 @@ export function NotificationsSection() {
                   <Switch
                     key={f.key}
                     label={renderLabel(f.label)}
-                    description={renderLabel(f.description)}
+                    description={f.description ? renderLabel(f.description) : undefined}
                     checked={form.events[f.key]}
                     onChange={(e) => setEvent(f.key, e.currentTarget.checked)}
                   />

@@ -209,7 +209,7 @@ public class ImageCacheRebuildService(
 
             if (int.TryParse(Path.GetFileName(dir), out var orphanId))
             {
-                CoverVersionCache.Remove(orphanId);
+                CoverVersionCache.Remove(covers.CoverPathFor(orphanId));
             }
 
             try

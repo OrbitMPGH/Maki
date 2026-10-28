@@ -5,7 +5,8 @@ public enum RecycleReason
 {
     DeleteFile,
     RemoveChapter,
-    SeriesDelete
+    SeriesDelete,
+    SeriesArchive
 }
 
 /// <summary>

@@ -5,8 +5,8 @@ namespace Maki.Core.Tests;
 
 /// <summary>
 /// The drop is an optimisation on a hot path that already did its real work, so the only thing that
-/// must hold is that it never becomes a reason for that work to fail. It is a no-op off Linux,
-/// which is where these run, so what is pinned here is the guard rather than the syscall.
+/// must hold is that it never becomes a reason for that work to fail. Off Linux it is a no-op, so
+/// a Windows run only pins the guard; CI runs on Linux and goes through the real syscall.
 /// </summary>
 public class PageCacheTests
 {

@@ -410,7 +410,6 @@ public class ChapterFileQualityServiceTests : IDisposable
 /// Runs a real download through <see cref="ChapterDownloadProcessor"/> with pages served inline, so
 /// the file it writes is the one that gets measured.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public class ChapterDownloadQualityTests : IDisposable
 {
     private readonly TestDb _db = new();
@@ -418,18 +417,14 @@ public class ChapterDownloadQualityTests : IDisposable
     private readonly string _root =
         Path.Combine(Path.GetTempPath(), "maki-dlquality-" + Guid.NewGuid().ToString("N")[..8]);
     private readonly string _configDir;
-    private readonly string? _priorEnv;
 
     public ChapterDownloadQualityTests()
     {
         _configDir = Path.Combine(_root, "config");
-        _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
     }
 
     public void Dispose()
     {
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
         _db.Dispose();
         if (Directory.Exists(_root))
         {
@@ -498,13 +493,13 @@ public class ChapterDownloadQualityTests : IDisposable
                 db, registry, Sources.Resolver(registry, availability),
                 new PageDownloader(new StubHttpClientFactory(""), queue, TimeProvider.System, NullLogger<PageDownloader>.Instance),
                 new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()),
-                new AppPaths(),
+                new AppPaths(_configDir),
                 new KavitaScanService(new KavitaClient(new StubHttpClientFactory("{}")), _settings,
                     _db.ScopeFactory(), NullLogger<KavitaScanService>.Instance),
                 queue, new RecordingInbox(), new StatsEventService(db), new RecordingNotifications(), batches,
                 availability, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
                 new NamingService(_settings), TestQuality.Create(registry), new TestLocalizer(),
-                new TestUserLocaleResolver(), NullLogger<ChapterDownloadProcessor>.Instance);
+                new TestUserLocaleResolver(), _settings, NullLogger<ChapterDownloadProcessor>.Instance);
 
             Assert.Equal(DownloadOutcome.Settled, await processor.ProcessAsync(itemId, CancellationToken.None));
         }

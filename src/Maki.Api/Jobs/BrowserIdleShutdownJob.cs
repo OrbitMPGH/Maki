@@ -1,3 +1,4 @@
+using Maki.Core.Io;
 using Maki.Sources.Common;
 using Quartz;
 
@@ -50,11 +51,12 @@ public class BrowserIdleShutdownJob(
         }
 
         var idleFor = TimeSpan.FromMinutes(minutes);
+        var closed = false;
         foreach (var browser in browsers)
         {
             try
             {
-                await browser.ReleaseIfIdleAsync(idleFor);
+                closed |= await browser.ReleaseIfIdleAsync(idleFor);
             }
             catch (Exception ex)
             {
@@ -62,6 +64,11 @@ public class BrowserIdleShutdownJob(
                 // others. It stays resident until the next pass or a restart.
                 logger.LogWarning(ex, "Could not close the idle {Browser} browser", browser.BrowserName);
             }
+        }
+
+        if (closed)
+        {
+            NativeHeap.Trim();
         }
     }
 

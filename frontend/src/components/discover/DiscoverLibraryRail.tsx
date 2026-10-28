@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import { useNavigate } from 'react-router-dom'
-import { Alert, Button, Paper, Select, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
+import { useQueryClient } from '@tanstack/react-query'
+import { Alert, Badge, Button, Group, Paper, Select, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconArrowRight, IconBell, IconCheck, IconEyeOff, IconFolder, IconPlus } from '@tabler/icons-react'
 import {
@@ -10,7 +11,7 @@ import {
   type MangaBakaDetail,
   type RecommendationItem,
 } from '../../api/hooks'
-import { ApiError } from '../../api/client'
+import { ApiError, archivedExistsSeriesId } from '../../api/client'
 import { useUpgradeProfiles } from '../../api/upgrades'
 import { useCreateSeriesRequest, useSeriesRequests, type SeriesRequest } from '../../api/requests'
 import { useApplyAnimeResumeAfterAdd } from '../../api/animeResume'
@@ -21,6 +22,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useIncognitoOptions, type IncognitoMode } from '../ui/incognito'
 import { useLabel } from '../../i18n-context'
 import { MONITOR_OPTIONS } from '../series/SeriesActionsMenu'
+import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
 
 /**
  * What this modal can actually do with the series it is showing: add it, ask an admin for it, or
@@ -52,6 +54,7 @@ export function DiscoverLibraryRail({
   const navigate = useNavigate()
   const { can } = useAuth()
   const incognitoOptions = useIncognitoOptions()
+  const queryClient = useQueryClient()
   const addSeries = useAddSeries()
   const addMutationId = useRef<string | null>(null)
   const createRequest = useCreateSeriesRequest()
@@ -89,6 +92,8 @@ export function DiscoverLibraryRail({
    * covers the gap until it refetches.
    */
   const [addedSeriesId, setAddedSeriesId] = useState<number | null>(null)
+  /** The archived copy an add ran into; the series list refetches, then the panel offers Restore. */
+  const [archivedSeriesId, setArchivedSeriesId] = useState<number | null>(null)
 
   useEffect(() => {
     if (rootFolders && rootFolders.length > 0 && !rootFolderId) {
@@ -107,7 +112,8 @@ export function DiscoverLibraryRail({
     }
   }, [ratingRule, incognitoPinned])
 
-  const seriesId = inLibrarySeriesId ?? addedSeriesId
+  const seriesId = inLibrarySeriesId ?? addedSeriesId ?? archivedSeriesId
+  const archived = useIsArchivedSeries(seriesId)
   const shownMonitorMode = monitorMode ?? librarySettings?.newSeriesMonitorMode ?? 'All'
   const myRequest = latestRequestFor(
     [...(myRequests ?? []), ...(createRequest.data ? [createRequest.data] : [])],
@@ -165,6 +171,11 @@ export function DiscoverLibraryRail({
           // id is sticky so a retry cannot double-add; keeping it after a 410 would make every
           // later press fail the same way, so adding again becomes a genuinely new operation.
           if (error instanceof ApiError && error.status === 410) addMutationId.current = null
+          const archivedId = archivedExistsSeriesId(error)
+          if (archivedId != null) {
+            setArchivedSeriesId(archivedId)
+            void queryClient.invalidateQueries({ queryKey: ['series'] })
+          }
         },
       },
     )
@@ -198,7 +209,29 @@ export function DiscoverLibraryRail({
       p="md"
       className="series-hero-panel"
     >
-      {seriesId != null ? (
+      {seriesId != null && archived ? (
+        <>
+          <Group gap="sm" justify="space-between" wrap="nowrap">
+            <Title order={2} size="h3" fz="var(--type-subhead)">
+              <Trans>In your library</Trans>
+            </Title>
+            <Badge color="gray" variant="light">
+              <Trans context="series">Archived</Trans>
+            </Badge>
+          </Group>
+          <Stack gap="xs" mt="md">
+            <RestoreArchivedButton seriesId={seriesId} fullWidth />
+            <Button
+              fullWidth
+              variant="default"
+              rightSection={<IconArrowRight size={16} />}
+              onClick={goToLibrary}
+            >
+              <Trans>View series</Trans>
+            </Button>
+          </Stack>
+        </>
+      ) : seriesId != null ? (
         <>
           <Title order={2} size="h3" fz="var(--type-subhead)">
             <Trans>In your library</Trans>

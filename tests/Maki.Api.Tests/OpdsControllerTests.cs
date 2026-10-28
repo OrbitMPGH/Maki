@@ -19,20 +19,16 @@ namespace Maki.Api.Tests;
 /// straight off disk would hand every cover on the instance to a token whose owner holds one root
 /// folder — and turn 404-vs-200 into an oracle for which series ids exist.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public sealed class OpdsControllerTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly string _configDir;
-    private readonly string? _priorEnv;
     private readonly AppPaths _paths;
 
     public OpdsControllerTests()
     {
         _configDir = Path.Combine(Path.GetTempPath(), "maki-opds-tests", Guid.NewGuid().ToString("N"));
-        _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
-        _paths = new AppPaths();
+        _paths = new AppPaths(_configDir);
     }
 
     [Fact]
@@ -56,6 +52,19 @@ public sealed class OpdsControllerTests : IDisposable
         // two cases. 404 rather than 403, matching every other answer this controller gives.
         Assert.IsType<NotFoundResult>(result);
         Assert.True(File.Exists(Path.Combine(_paths.MediaCoverDir, ungranted.ToString(), "cover.jpg")));
+    }
+
+    [Fact]
+    public async Task RefusesACoverForAnArchivedSeries()
+    {
+        var (granted, _, token) = Seed();
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == granted).ArchivedAt = DateTime.UtcNow;
+            db.SaveChanges();
+        }
+
+        Assert.IsType<NotFoundResult>(await Controller().Cover(token, granted, default));
     }
 
     [Fact]
@@ -188,7 +197,6 @@ public sealed class OpdsControllerTests : IDisposable
     public void Dispose()
     {
         _db.Dispose();
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
         try { Directory.Delete(_configDir, recursive: true); } catch (IOException) { }
     }
 }

@@ -129,19 +129,33 @@ public class EmbeddingMathTests
     }
 
     [Fact]
-    public void HybridScore_AvoidShipsAtTheMeasuredCoefficient()
+    public void HybridScore_DefaultAvoidPenaltyOutweighsASemanticLead()
     {
-        // 12, the `rel-p12` configuration. Large because the Product blend leaves the score at zero
-        // on all but a handful of rows; an avoidScore of 1.0 is a near-clone of a dislike that also
-        // carries the tags that made it one.
+        // The Product blend leaves the score at zero on all but a handful of rows, so a row that
+        // does fire has to be able to fall below a clean row with a clearly weaker match.
         var w = new EmbeddingMath.Weights();
-        Assert.Equal(12.0, w.Avoid);
-        var clean = EmbeddingMath.HybridScore(0.6, 0, 0, false, 50, 0, 0.5, w);
-        Assert.Equal(clean - 12.0, EmbeddingMath.HybridScore(
-            0.6, 0, 0, false, 50, 0, 0.5, w, avoidScore: 1.0), 6);
-        // A zero score is still exactly no penalty, which is what the blend's agreement buys.
-        Assert.Equal(clean, EmbeddingMath.HybridScore(
-            0.6, 0, 0, false, 50, 0, 0.5, w, avoidScore: 0), 6);
+        var nearCloneOfADislike = EmbeddingMath.HybridScore(
+            0.9, 0, 0, false, 50, 0, 0.5, w, avoidScore: 1.0);
+        var cleanButWeaker = EmbeddingMath.HybridScore(0.4, 0, 0, false, 50, 0, 0.5, w);
+        var cleanSame = EmbeddingMath.HybridScore(0.9, 0, 0, false, 50, 0, 0.5, w);
+
+        Assert.True(w.Avoid > 0);
+        Assert.True(nearCloneOfADislike < cleanButWeaker);
+        Assert.True(nearCloneOfADislike < cleanSame);
+    }
+
+    [Fact]
+    public void HybridScore_AvoidPenaltyGrowsWithTheAvoidScoreAndIsZeroAtZero()
+    {
+        var w = new EmbeddingMath.Weights();
+        double Score(double avoid) => EmbeddingMath.HybridScore(
+            0.6, 0, 0, false, 50, 0, 0.5, w, avoidScore: avoid);
+
+        // A zero score is exactly no penalty, which is what the blend's agreement buys.
+        Assert.Equal(EmbeddingMath.HybridScore(0.6, 0, 0, false, 50, 0, 0.5, w), Score(0), 6);
+        Assert.True(Score(0.25) < Score(0));
+        Assert.True(Score(0.5) < Score(0.25));
+        Assert.True(Score(1.0) < Score(0.5));
     }
 
     [Fact]

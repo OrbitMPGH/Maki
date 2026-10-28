@@ -134,6 +134,26 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         finally { MutationGate.Release(); }
     }
 
+    /// <summary>A failed operation that could run again: its file is still the version it failed on.</summary>
+    public static bool Retryable(HealthOperation op, HealthFile? file) =>
+        op.Status == "failed" && file is { Removed: false } && file.Status != "pending" && file.Version == op.Version;
+
+    /// <summary>
+    /// Starts the same request again and dismisses the failed one. A deletion comes back in review,
+    /// so it still needs its confirmation; a replacement starts downloading.
+    /// </summary>
+    public async Task<HealthOperation> RetryAsync(int operationId, int userId, CancellationToken ct)
+    {
+        var op = await db.HealthOperations.FindAsync([operationId], ct) ?? throw new HealthRefusedException("error.health.operationNotFound");
+        if (op.Status != "failed") throw new HealthRefusedException("error.health.operationNotRetryable");
+        var next = op.Kind == "delete"
+            ? await PreviewDeleteAsync(op.FileId, op.Version, userId, ct)
+            : await RequestAsync(op.FileId, op.Version, op.SourceMappingId, userId, ct);
+        op.DismissedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return next;
+    }
+
     public async Task ApplyAsync(int operationId, string version, bool confirmed, bool resetPositions, CancellationToken ct)
     {
         if (!confirmed) throw new HealthRefusedException("error.health.confirmationRequired");
@@ -258,6 +278,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                 db.HealthScans.Add(new() { RootFolderId = root.Id });
                 await db.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
+                HealthWorker.Wake();
             }
             catch
             {

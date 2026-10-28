@@ -184,6 +184,7 @@ export function SeriesHero({
                                 className="series-hero-poster"
                                 src={series.coverUrl}
                                 alt={series.displayTitle}
+                                fetchPriority="high"
                             />
                         )}
 

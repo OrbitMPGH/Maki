@@ -1,5 +1,5 @@
 import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/signalr'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import { api } from './client'
@@ -14,6 +14,25 @@ let connectionPromise: Promise<HubConnection> | null = null
 let generation = 0
 
 const reconnectListeners = new Set<() => void>()
+
+let connected = false
+const connectedListeners = new Set<() => void>()
+
+function setConnected(next: boolean) {
+  if (connected === next) return
+  connected = next
+  for (const listener of connectedListeners) listener()
+}
+
+/** Sent to the reader's own group as each page it asked the server to upscale finishes. */
+export interface PageEnhancedEvent {
+  chapterId: number
+  page: number
+  model: string
+  state: 'ready' | 'failed' | 'skipped'
+}
+
+export const PAGE_ENHANCED = 'pageEnhanced'
 
 // 0, 2, 5, 10 and then 30 s for as long as it takes. The built-in policy gives up after four tries
 // (about 45 s), which is shorter than an update or a container restart, and once it has given up
@@ -46,8 +65,15 @@ function build(): HubConnection {
     })
     .configureLogging(LogLevel.Warning)
     .build()
+  conn.onreconnecting(() => {
+    if (conn === connection) setConnected(false)
+  })
   conn.onreconnected(() => {
+    if (conn === connection) setConnected(true)
     for (const listener of reconnectListeners) listener()
+  })
+  conn.onclose(() => {
+    if (conn === connection) setConnected(false)
   })
   return conn
 }
@@ -68,6 +94,7 @@ function ensureConnection(): Promise<HubConnection> {
           throw new ConnectionStopped()
         }
         connection = conn
+        setConnected(true)
         return conn
       } catch (err) {
         if (err instanceof ConnectionStopped) throw err
@@ -94,7 +121,20 @@ export function stopConnection(): void {
   const conn = connection
   connection = null
   connectionPromise = null
+  setConnected(false)
   if (conn) void conn.stop()
+}
+
+/** Whether the shared live connection is up right now. False while it starts or reconnects. */
+export function useHubConnected(): boolean {
+  return useSyncExternalStore(watchConnected, () => connected)
+}
+
+function watchConnected(listener: () => void) {
+  connectedListeners.add(listener)
+  return () => {
+    connectedListeners.delete(listener)
+  }
 }
 
 function subscribe(cb: (conn: HubConnection) => void): () => void {

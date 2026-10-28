@@ -307,10 +307,10 @@ public class HealthWorkspaceTests : IDisposable
         try
         {
             Directory.CreateDirectory(Path.Combine(real,"Series"));
-            if(!TestLinks.TryLinkDirectory(linkedRoot,real)) return;
+            Assert.True(TestLinks.TryLinkDirectory(linkedRoot,real));
             Assert.Equal(Path.Combine(linkedRoot,"one.cbz"),HealthPaths.Resolve(linkedRoot,"one.cbz"));
             var inner=Path.Combine(real,"escape");
-            if(!TestLinks.TryLinkDirectory(inner,outside)) return;
+            Assert.True(TestLinks.TryLinkDirectory(inner,outside));
             Assert.Throws<InvalidOperationException>(()=>HealthPaths.Resolve(linkedRoot,"escape/one.cbz"));
         }
         finally

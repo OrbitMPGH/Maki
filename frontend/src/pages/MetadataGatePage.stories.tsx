@@ -117,7 +117,7 @@ export const NothingToResume: Story = {
     auth: 'reader',
     msw: [
       http.get(api('/settings/metadata'), () => HttpResponse.json(missing)),
-      http.get(api('/home/reading'), () => HttpResponse.json({ continueReading: [], jumpBackIn: [] })),
+      http.get(api('/home/reading'), () => HttpResponse.json({ continueReading: [] })),
     ],
   },
   play: async ({ canvas }) => {

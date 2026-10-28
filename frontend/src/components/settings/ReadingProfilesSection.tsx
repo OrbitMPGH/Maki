@@ -35,6 +35,13 @@ import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SettingsNumberInput } from './SettingsNumberInput'
 import { useReportUnsaved } from './SaveButton'
+import {
+  ENHANCE_FALLBACKS,
+  ENHANCE_LEVELS,
+  ENHANCE_METHODS,
+  enhanceMethodInfo,
+  isServerMethod,
+} from '../../pages/reader/enhanceMethods'
 
 const MODE_LABELS: Record<ReaderPrefs['mode'], MessageDescriptor> = {
   paged: msg`Single page`,
@@ -56,7 +63,19 @@ const FIT_LABELS: Record<ReaderPrefs['fit'], MessageDescriptor> = {
 
 /** `renderLabel` comes from the caller's own `useLabel()` so this stays a plain function, not a hook. */
 function summarize(prefs: ReaderPrefs, renderLabel: (label: MessageDescriptor) => string): string {
-  return `${renderLabel(MODE_LABELS[prefs.mode])}, ${renderLabel(DIRECTION_LABELS[prefs.direction])}, ${renderLabel(FIT_LABELS[prefs.fit])}`
+  const parts = [
+    renderLabel(MODE_LABELS[prefs.mode]),
+    renderLabel(DIRECTION_LABELS[prefs.direction]),
+    renderLabel(FIT_LABELS[prefs.fit]),
+  ]
+  if (prefs.enhance !== 'off') {
+    const method = enhanceMethodInfo(prefs.enhanceMethod)
+    const levelInfo = ENHANCE_LEVELS.find((l) => l.value === prefs.enhance)
+    const level = levelInfo ? renderLabel(levelInfo.label) : prefs.enhance
+    const methodLabel = method ? renderLabel(method.label) : prefs.enhanceMethod
+    parts.push(now`enhance ${level}, ${methodLabel}`)
+  }
+  return parts.join(', ')
 }
 
 /**
@@ -79,11 +98,7 @@ export function ReadingProfilesSection() {
       id="reader"
       title={<Trans>Reader profiles</Trans>}
       description={
-        <Trans>
-          How the built-in reader opens a series. A profile applies automatically to the series
-          types it covers; everything else uses Default. You can also pin a profile to a series, or
-          change settings from inside the reader.
-        </Trans>
+        <Trans>Series types no profile covers use Default.</Trans>
       }
       actions={
         <Button
@@ -300,6 +315,7 @@ function ProfileEditor({
   const [types, setTypes] = useState<string[]>(initial.seriesTypes)
   const [prefs, setPrefs] = useState<ReaderPrefs>(initial.prefs)
   const set = (patch: Partial<ReaderPrefs>) => setPrefs((current) => ({ ...current, ...patch }))
+  const methodInfo = enhanceMethodInfo(prefs.enhanceMethod)
   useReportUnsaved(
     JSON.stringify({ name, types, prefs }) !==
       JSON.stringify({ name: initial.name, types: initial.seriesTypes, prefs: initial.prefs }),
@@ -395,7 +411,6 @@ function ProfileEditor({
         />
         <SettingsNumberInput
           label={t`Dim`}
-          description={t`Darkens the pages, in percent.`}
           suffix="%"
           min={0}
           max={80}
@@ -417,7 +432,7 @@ function ProfileEditor({
         />
         <SettingsNumberInput
           label={t`Page gap`}
-          description={t`Continuous layout only, in pixels.`}
+          description={t`Continuous layout only.`}
           min={0}
           max={64}
           value={prefs.pageGap}
@@ -425,7 +440,7 @@ function ProfileEditor({
         />
         <SettingsNumberInput
           label={t`Preload`}
-          description={t`Pages fetched ahead. Not used in Continuous layout.`}
+          description={t`Pages fetched ahead.`}
           min={0}
           max={10}
           value={prefs.preload}
@@ -448,17 +463,52 @@ function ProfileEditor({
         />
       </Group>
 
+      <Group grow align="flex-start">
+        <Select
+          label={t`Enhance`}
+          description={t`Sharpen soft pages. Auto does it only when a page is shown larger than its source.`}
+          allowDeselect={false}
+          value={prefs.enhance}
+          onChange={(value) => value && set({ enhance: value as ReaderPrefs['enhance'] })}
+          data={ENHANCE_LEVELS.map((level) => ({ value: level.value, label: renderLabel(level.label) }))}
+        />
+        {prefs.enhance !== 'off' && (
+          <Select
+            label={t`Method`}
+            description={
+              isServerMethod(prefs.enhanceMethod)
+                ? t`Server methods apply only when the admin has enabled them; otherwise the fallback is used.`
+                : methodInfo && renderLabel(methodInfo.hint)
+            }
+            allowDeselect={false}
+            value={prefs.enhanceMethod}
+            onChange={(value) => value && set({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })}
+            data={ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label) }))}
+          />
+        )}
+      </Group>
+      {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
+        <Select
+          label={t`Fallback`}
+          description={t`Shown on this device until the server's page is ready, and whenever the server can't be used.`}
+          allowDeselect={false}
+          value={prefs.enhanceFallback}
+          onChange={(value) => value && set({ enhanceFallback: value as ReaderPrefs['enhanceFallback'] })}
+          data={ENHANCE_FALLBACKS.map((f) => ({ value: f.value, label: renderLabel(f.label) }))}
+        />
+      )}
+
       <Switch
         size="sm"
         label={t`Crop borders`}
-        description={t`Trims white or black margins. Not applied in the Continuous layout.`}
+        description={t`Not in Continuous layout.`}
         checked={prefs.cropBorders}
         onChange={(e) => set({ cropBorders: e.currentTarget.checked })}
       />
       <Switch
         size="sm"
         label={t`Open webtoon chapters in Continuous layout`}
-        description={t`When most pages are very tall. A layout picked in the reader still wins.`}
+        description={t`When most pages are very tall.`}
         checked={prefs.autoWebtoon}
         onChange={(e) => set({ autoWebtoon: e.currentTarget.checked })}
       />
@@ -483,14 +533,13 @@ function ProfileEditor({
       <Switch
         size="sm"
         label={t`Keep the screen awake while reading`}
-        description={t`Only where the browser allows it, which needs HTTPS or localhost.`}
+        description={t`Needs HTTPS or localhost.`}
         checked={prefs.keepAwake}
         onChange={(e) => set({ keepAwake: e.currentTarget.checked })}
       />
       <Switch
         size="sm"
         label={t`Flash the chapter name on chapter change`}
-        description={t`Credit pages and the next chapter's first pages often look alike, so this marks the turn.`}
         checked={prefs.chapterBanner}
         onChange={(e) => set({ chapterBanner: e.currentTarget.checked })}
       />

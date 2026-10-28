@@ -12,7 +12,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Maki.Api.Hubs;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Controllers;
@@ -116,7 +115,7 @@ public class AccountController(
     }
 
     [HttpPost("password")]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(request.CurrentPassword) || string.IsNullOrEmpty(request.NewPassword))
@@ -233,7 +232,7 @@ public class AccountController(
     /// authenticator of its own would lock the owner out of password sign-in.
     /// </summary>
     [HttpPost("2fa/enable")]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     public async Task<IActionResult> EnableTwoFactor([FromBody] EnableTwoFactorRequest request, CancellationToken ct)
     {
         var user = await LoadAsync();
@@ -278,7 +277,7 @@ public class AccountController(
     /// session minting codes of its own would hold a way past the second factor.
     /// </summary>
     [HttpPost("2fa/recovery-codes")]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     public async Task<IActionResult> RegenerateRecoveryCodes(
         [FromBody] EnableTwoFactorRequest request, CancellationToken ct)
     {
@@ -318,7 +317,7 @@ public class AccountController(
     /// session would want, so it must not be reachable with the session cookie alone.
     /// </summary>
     [HttpPost("2fa/disable")]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     public async Task<IActionResult> DisableTwoFactor([FromBody] DisableTwoFactorRequest request, CancellationToken ct)
     {
         var user = await LoadAsync();
@@ -360,7 +359,7 @@ public class AccountController(
     /// out everywhere" alike.
     /// </summary>
     [HttpPost("apikeys")]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     public async Task<IActionResult> CreateApiKey([FromBody] CreateApiKeyRequest request, CancellationToken ct)
     {
         var name = request.Name?.Trim();

@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useLanguageChoice } from '../../i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Button, Group, Select, Stack, Switch, Text } from '@mantine/core'
 import { IconLayoutDashboard } from '@tabler/icons-react'
@@ -27,13 +26,7 @@ export function DiscoverSection() {
     <SettingsSection
       id="discover-rating"
       title={<Trans>Content rating</Trans>}
-      description={
-        <Trans>
-          The most explicit rating shown to you in search, Discover, recommendations and the rails on
-          a series page. Everything up to and including it is allowed. Your own library is never
-          filtered.
-        </Trans>
-      }
+      description={<Trans>The most explicit rating shown outside your own library.</Trans>}
     >
       <ContentRatingCards
         value={settings?.maxContentRating ?? 'erotica'}
@@ -78,7 +71,6 @@ function StartPageSelect() {
   return (
     <Select
       label={t`Start page`}
-      description={t`On every device. Discover needs the local MangaBaka database, which an admin turns on under Library.`}
       data={[
         // Disabled rather than hidden, mirroring how the nav drops these tabs: offering a
         // choice that silently degrades to somewhere else is worse than saying why it's out.
@@ -111,22 +103,13 @@ function StartPageSelect() {
 export function LanguageSection() {
   const { t } = useLingui()
   const { data: ui } = useUiSettings()
-  const { locale, locales } = useLanguageChoice()
   const options = useLanguageOptions()
   const apply = useApplyLanguage()
-
-  const currentLocaleLabel = locales.find((l) => l.code === locale)?.label ?? locale
 
   return (
     <SettingsSection
       id="language"
       title={<Trans>Language</Trans>}
-      description={
-        <Trans>
-          The language of Maki's menus and text, on every device. Series titles have their own
-          setting below.
-        </Trans>
-      }
     >
       <Select
         aria-label={t`Interface language`}
@@ -138,10 +121,7 @@ export function LanguageSection() {
         maw={260}
       />
       <Text size="xs" c="var(--ink-3)" mt="sm">
-        <Trans>
-          Showing {currentLocaleLabel}. Non-English translations are machine-made and improving;
-          anything untranslated shows in English.
-        </Trans>
+        <Trans>Translations are machine-made and may be incomplete.</Trans>
       </Text>
     </SettingsSection>
   )
@@ -184,12 +164,7 @@ export function TitleLanguageSection() {
     <SettingsSection
       id="title-language"
       title={<Trans>Title language</Trans>}
-      description={
-        <Trans>
-          Which language series titles are shown in, when MangaBaka has one. Display only: folders,
-          file names and sorting keep the English title.
-        </Trans>
-      }
+      description={<Trans>Folders and file names keep the English title.</Trans>}
     >
       <Select
         aria-label={t`Title language`}
@@ -225,11 +200,6 @@ export function SeriesPageSection() {
     <SettingsSection
       id="series-page"
       title={<Trans>Series page</Trans>}
-      description={
-        <Trans>
-          Which rails appear below the chapter list. Turning one off also stops it being fetched.
-        </Trans>
-      }
     >
       <Stack gap="sm">
         <Switch
@@ -237,14 +207,13 @@ export function SeriesPageSection() {
           disabled={!patch}
           onChange={(e) => write({ related: e.currentTarget.checked })}
           label={t`Related series`}
-          description={t`Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one.`}
         />
         <Switch
           checked={similar}
           disabled={!patch}
           onChange={(e) => write({ similar: e.currentTarget.checked })}
           label={t`More like this`}
-          description={t`Titles that read alike, matched on feel rather than a declared relation. Needs semantic search, which an admin turns on under Library.`}
+          description={t`Needs semantic search.`}
         />
       </Stack>
     </SettingsSection>
@@ -267,9 +236,6 @@ export function HomeSectionsSection() {
     <SettingsSection
       id="home-screen"
       title={<Trans>Start page &amp; Home</Trans>}
-      description={
-        <Trans>Which page Maki opens on, and whether the Home page exists at all.</Trans>
-      }
     >
       <StartPageSelect />
 
@@ -280,14 +246,9 @@ export function HomeSectionsSection() {
           ui && patch?.({ homeLayout: { ...ui.homeLayout, enabled: e.currentTarget.checked } })
         }
         label={t`Show the Home page`}
-        description={t`Turn it off if you don't read in Maki: the tab disappears and Library becomes the start page.`}
       />
 
-      <Text size="sm" c="var(--ink-3)" mt="md">
-        <Trans>Sections, their order and your own rails are arranged on the pages themselves.</Trans>
-      </Text>
-
-      <Group gap="xs" mt="sm">
+      <Group gap="xs" mt="md">
         <Button
           component={Link}
           to="/home?edit=1"
@@ -317,12 +278,7 @@ export function AppearanceSection() {
     <SettingsSection
       id="appearance"
       title={<Trans>Appearance</Trans>}
-      description={
-        <Trans>
-          Background and accent colour. Remembered on this device only; everything else under
-          Preferences follows you to every device.
-        </Trans>
-      }
+      description={<Trans>Saved on this device only.</Trans>}
     >
       <Stack gap={14}>
         <AppearancePicker />
@@ -352,21 +308,18 @@ function MotionSwitches() {
           disabled={reduced}
           onChange={(e) => setTransitions(e.currentTarget.checked)}
           label={t`Page transitions`}
-          description={t`Fade from one page to the next instead of switching instantly.`}
         />
         <Switch
           checked={transitions && covers && !reduced}
           disabled={reduced || !transitions}
           onChange={(e) => setCovers(e.currentTarget.checked)}
           label={t`Moving covers`}
-          description={t`Opening a series grows its cover into the series page, and going back shrinks it into place. Needs page transitions.`}
         />
         <Switch
           checked={transitions && fast && !reduced}
           disabled={reduced || !transitions}
           onChange={(e) => setFast(e.currentTarget.checked)}
           label={t`Faster animations`}
-          description={t`Page transitions and moving covers take about half as long.`}
         />
         {reduced && (
           <Text size="sm" c="dimmed">

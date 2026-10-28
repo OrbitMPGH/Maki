@@ -1,5 +1,6 @@
 using System.Globalization;
 using Maki.Core.Configuration;
+using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Recommendations;
 using Maki.Data;
@@ -50,15 +51,49 @@ public class FollowedCreatorReleaseService(
 
     public async Task RunAsync(CancellationToken ct = default)
     {
-        if (!await store.IsAvailableAsync(ct) || await catalogueIndex.GetAsync(ct) is not { } catalogue ||
-            catalogue.Credits.IsEmpty)
+        if (!await store.IsAvailableAsync(ct))
+        {
+            return;
+        }
+
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        var follows = (await db.UserSettings
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(s => s.Key == SettingKeys.DiscoverFollowing)
+                .Join(db.Users.Where(u => !u.Disabled && !u.PendingSetup), s => s.UserId, u => u.Id,
+                    (s, u) => new { s.UserId, s.Value, u.MaxContentRating })
+                .ToListAsync(ct))
+            .Select(f => (f.UserId, f.MaxContentRating, Spec: FollowedCreatorsSpec.Parse(f.Value)))
+            .Where(f => !f.Spec.IsEmpty)
+            .ToList();
+
+        var stored = await settings.GetAsync(SettingKeys.DiscoverFollowingWatermark, ct);
+        var seeded = long.TryParse(stored, NumberStyles.Integer, CultureInfo.InvariantCulture, out var watermark);
+
+        if (follows.Count == 0)
+        {
+            // The watermark still has to move, or a follow made next month would announce everything
+            // added in between. The dump answers that without the catalogue index, which costs about
+            // nine seconds of CPU to build and is then held for the idle window, every day, on an
+            // instance where nobody follows anyone.
+            if (await store.GetHighestCreditedIdAsync(ct) is { } highest && (!seeded || highest > watermark))
+            {
+                await SetWatermarkAsync(highest, ct);
+            }
+
+            return;
+        }
+
+        if (await catalogueIndex.GetAsync(ct) is not { } catalogue || catalogue.Credits.IsEmpty)
         {
             return;
         }
 
         var credits = catalogue.Credits;
-        var stored = await settings.GetAsync(SettingKeys.DiscoverFollowingWatermark, ct);
-        if (!long.TryParse(stored, NumberStyles.Integer, CultureInfo.InvariantCulture, out var watermark))
+        if (!seeded)
         {
             await SetWatermarkAsync(credits.MaxSeriesId, ct);
             logger.LogInformation("Follow check seeded at MangaBaka id {Watermark}", credits.MaxSeriesId);
@@ -70,20 +105,8 @@ public class FollowedCreatorReleaseService(
             return;
         }
 
-        using var scope = scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
-
-        var follows = await db.UserSettings
-            .IgnoreQueryFilters()
-            .AsNoTracking()
-            .Where(s => s.Key == SettingKeys.DiscoverFollowing)
-            .Join(db.Users.Where(u => !u.Disabled && !u.PendingSetup), s => s.UserId, u => u.Id,
-                (s, u) => new { s.UserId, s.Value, u.MaxContentRating })
-            .ToListAsync(ct);
-
         var perUser = follows
-            .Select(f => (f.UserId, f.MaxContentRating,
-                Releases: Match(FollowedCreatorsSpec.Parse(f.Value), credits, watermark)))
+            .Select(f => (f.UserId, f.MaxContentRating, Releases: Match(f.Spec, credits, watermark)))
             .Where(f => f.Releases.Count > 0)
             .ToList();
 
@@ -108,6 +131,7 @@ public class FollowedCreatorReleaseService(
             var byCeiling = new Dictionary<string, Dictionary<long, MangaBakaRecommendation>>(StringComparer.Ordinal);
             var releasedIds = perUser.SelectMany(u => u.Releases).Select(r => r.MangaBakaId).Distinct().ToList();
             var thisYear = time.GetUtcNow().Year;
+            var known = await KnownAsync(db, perUser.Select(u => u.UserId).ToList(), releasedIds, ct);
 
             foreach (var (userId, ceiling, releases) in perUser)
             {
@@ -122,7 +146,7 @@ public class FollowedCreatorReleaseService(
 
                 var hidden = new RecommendationFilters(Hidden: hiddenByUser.GetValueOrDefault(userId));
                 var wanted = releases
-                    .Where(r => !owned.Contains(r.MangaBakaId))
+                    .Where(r => !owned.Contains(r.MangaBakaId) && !known.Contains((userId, r.MangaBakaId)))
                     .Select(r => (Release: r, Item: hydrated.GetValueOrDefault(r.MangaBakaId)))
                     .Where(x => x.Item is not null)
                     .Where(x => x.Item!.Year is not int year || year >= thisYear - MaxAgeYears)
@@ -166,6 +190,27 @@ public class FollowedCreatorReleaseService(
         }
 
         return found;
+    }
+
+    /// <summary>
+    /// Which of <paramref name="ids"/> each reader has already given an opinion on: thumbed up or
+    /// down, marked seen, hidden, or dismissed for now. The same set the follow rail leaves out.
+    /// </summary>
+    private static async Task<HashSet<(int UserId, long MangaBakaId)>> KnownAsync(
+        MakiDbContext db, IReadOnlyList<int> userIds, IReadOnlyList<long> ids, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var rows = await db.RecommendationFeedback
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(x => userIds.Contains(x.UserId) && ids.Contains(x.ProviderId) &&
+                (x.Sentiment != RecommendationSentiment.None ||
+                 x.Exposure != RecommendationExposure.None ||
+                 x.Suppression == RecommendationSuppression.Hidden ||
+                 x.Suppression == RecommendationSuppression.Dismissed && x.DismissedUntilUtc > now))
+            .Select(x => new { x.UserId, x.ProviderId })
+            .ToListAsync(ct);
+        return rows.Select(x => (x.UserId, x.ProviderId)).ToHashSet();
     }
 
     /// <summary>

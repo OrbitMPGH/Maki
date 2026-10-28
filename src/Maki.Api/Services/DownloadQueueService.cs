@@ -75,7 +75,7 @@ public class DownloadQueueService(
     // than made concurrent-safe per-entry, since rate limits are rare and this is never on a hot path.
     private readonly Lock _cooldownLock = new();
     private readonly Dictionary<string, TrackerCooldown> _cooldowns = new();
-    private static readonly TimeSpan MaxCooldown = TimeSpan.FromMinutes(15);
+    internal static readonly TimeSpan MaxCooldown = TimeSpan.FromMinutes(15);
 
     private class TrackerCooldown
     {
@@ -84,6 +84,47 @@ public class DownloadQueueService(
     }
 
     public ChannelReader<int> Reader => _channel.Reader;
+
+    // False from the start of a claim until one finds nothing to hand out, so a claim that threw
+    // keeps the poll on its short interval until a clean one runs.
+    private volatile bool _lastClaimEmpty;
+
+    private TaskCompletionSource _pollWake = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>
+    /// Whether the queue may have work the cooldown poll should keep checking on: an item in flight
+    /// or resolving, or a last claim that did not come back empty. False on an idle instance, where
+    /// the poll can sleep until the next cooldown or pause ends.
+    /// </summary>
+    public bool Busy => !_lastClaimEmpty || !_inFlight.IsEmpty || !_resolving.IsEmpty;
+
+    /// <summary>Completes the next time <see cref="WakePoll"/> runs.</summary>
+    public Task PollWake => Volatile.Read(ref _pollWake).Task;
+
+    /// <summary>
+    /// Cuts the cooldown poll's sleep short so it works out its delay again: after a settings save, so
+    /// a changed worker count or item timeout applies at once; after a pause change, so a new resume
+    /// time is kept; and when an idle queue hands out work, so a cooldown it hits is checked on the
+    /// busy interval rather than at the end of an idle sleep.
+    /// </summary>
+    public void WakePoll() =>
+        Interlocked.Exchange(
+            ref _pollWake, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously))
+            .TrySetResult();
+
+    /// <summary>Now, by the clock cooldowns and pauses are measured against.</summary>
+    public DateTime UtcNow => time.GetUtcNow().UtcDateTime;
+
+    /// <summary>When the soonest active source cooldown lifts, or null when none is cooling down.</summary>
+    public DateTime? EarliestCooldownEnd()
+    {
+        lock (_cooldownLock)
+        {
+            var now = time.GetUtcNow().UtcDateTime.Ticks;
+            var soonest = _cooldowns.Values.Where(c => c.UntilTicks > now).Select(c => (long?)c.UntilTicks).Min();
+            return soonest is { } ticks ? new DateTime(ticks, DateTimeKind.Utc) : null;
+        }
+    }
 
     /// <summary>Cancellation token shared by every local owner of a queue item.</summary>
     public CancellationToken WorkCancellationToken(int queueItemId) =>
@@ -326,6 +367,10 @@ public class DownloadQueueService(
         }
 
         var seriesIds = seriesOf.Values.Distinct().ToList();
+        var archived = await db.Series
+            .Where(s => seriesIds.Contains(s.Id) && s.ArchivedAt != null)
+            .Select(s => s.Id)
+            .ToListAsync(ct);
         var reviewed = await db.HealthFiles
             .Where(f => f.SeriesId != null && seriesIds.Contains(f.SeriesId.Value) &&
                         db.HealthOperations.Any(o => o.FileId == f.Id && o.Status != "completed" &&
@@ -351,8 +396,8 @@ public class DownloadQueueService(
             .ToHashSet();
 
         var toQueue = ids
-            .Where(id => seriesOf.TryGetValue(id, out var seriesId) && !reviewed.Contains(seriesId) &&
-                         mapped.Contains(seriesId) && !active.Contains(id))
+            .Where(id => seriesOf.TryGetValue(id, out var seriesId) && !archived.Contains(seriesId) &&
+                         !reviewed.Contains(seriesId) && mapped.Contains(seriesId) && !active.Contains(id))
             .ToList();
         if (toQueue.Count == 0)
         {
@@ -463,6 +508,11 @@ public class DownloadQueueService(
 
         var chapter = await db.Chapters.FirstOrDefaultAsync(c => c.Id == chapterId, ct)
             ?? throw new EnqueueRefusedException(EnqueueRefusedException.ChapterGone, $"Chapter {chapterId} not found");
+        if (await db.Series.AnyAsync(s => s.Id == chapter.SeriesId && s.ArchivedAt != null, ct))
+        {
+            return null;
+        }
+
         if (await db.HealthOperations.AnyAsync(o => db.HealthFiles.Any(f => f.Id == o.FileId && f.SeriesId == chapter.SeriesId)
             && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
             throw new EnqueueRefusedException(EnqueueRefusedException.HealthReview, "A health review is active for this series");
@@ -585,6 +635,11 @@ public class DownloadQueueService(
 
         if (await db.DownloadQueue.AnyAsync(q => q.ChapterId == chapterId &&
                 q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled, ct))
+        {
+            return null;
+        }
+
+        if (await db.Series.AnyAsync(s => s.Id == chapter.SeriesId && s.ArchivedAt != null, ct))
         {
             return null;
         }
@@ -945,9 +1000,12 @@ public class DownloadQueueService(
     /// </summary>
     public async Task<int?> ClaimNextAsync(CancellationToken ct = default)
     {
+        var wasIdle = !Busy;
+        _lastClaimEmpty = false;
         var pause = pauses is null ? DownloadPauseState.None : await pauses.ActiveAsync(ct);
         if (pause.All is not null)
         {
+            _lastClaimEmpty = true;
             return null;
         }
 
@@ -979,6 +1037,7 @@ public class DownloadQueueService(
             if (candidate is null)
             {
                 // Either nothing queued, or every remaining item's tracker is cooling down.
+                _lastClaimEmpty = true;
                 return null;
             }
 
@@ -1007,6 +1066,11 @@ public class DownloadQueueService(
 
             if (claimed == 1)
             {
+                if (wasIdle)
+                {
+                    WakePoll();
+                }
+
                 return candidate.Id;
             }
 
@@ -1260,6 +1324,7 @@ public class DownloadQueueService(
             .Include(q => q.SourceMapping)
             .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
                         q.HealthOperationId == null &&
+                        q.Series!.ArchivedAt == null &&
                         q.RetryCount < maxAttempts &&
                         (q.ErrorKey == null || !PermanentErrorKeys.Contains(q.ErrorKey)) &&
                         (manual || q.NextAttempt == null || q.NextAttempt <= now) &&

@@ -1,6 +1,6 @@
 using AngleSharp.Dom;
 
-namespace Maki.Sources.Toonily;
+namespace Maki.Sources.Common;
 
 /// <summary>
 /// Parsing helpers for the Madara WordPress theme (used by many manga/manhwa scan sites, Toonily
@@ -193,6 +193,12 @@ internal static class MadaraParser
 
         return doc.QuerySelectorAll("div.reading-content div.page-break img").ToList();
     }
+
+    /// <summary>The WordPress post id the older <c>admin-ajax.php</c> chapter endpoint takes, or null.</summary>
+    public static string? PostId(IDocument doc) =>
+        doc.QuerySelector("#manga-chapters-holder[data-id]")?.GetAttribute("data-id")
+        ?? doc.QuerySelector("input.rating-post-id[value]")?.GetAttribute("value")
+        ?? doc.QuerySelector("[data-post-id]")?.GetAttribute("data-post-id");
 
     private static string OwnText(IElement element) =>
         string.Concat(element.ChildNodes

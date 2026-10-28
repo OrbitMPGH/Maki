@@ -40,6 +40,9 @@ public class MalTracker(
         [ScrobbleStatus.PlanToRead] = "plan_to_read",
     };
 
+    /// <summary>Every wait the tracker makes goes through here, so tests can skip the sleeping.</summary>
+    internal Func<TimeSpan, CancellationToken, Task> Delay { get; init; } = Task.Delay;
+
     public async Task<bool> ConfiguredAsync(CancellationToken ct = default) =>
         (await ClientIdAsync(ct)).Length > 0 && (await ClientSecretAsync(ct)).Length > 0;
 
@@ -229,7 +232,7 @@ public class MalTracker(
             {
                 if (attempt == 0)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(2), ct);
+                    await Delay(TimeSpan.FromSeconds(2), ct);
                     continue;
                 }
 
@@ -254,7 +257,7 @@ public class MalTracker(
                             $"MAL API {method} {path} rate limited: Retry-After {retryAfter.TotalSeconds:F0}s exceeds the 30s cap");
                     }
 
-                    await Task.Delay(retryAfter < TimeSpan.Zero ? TimeSpan.Zero : retryAfter, ct);
+                    await Delay(retryAfter < TimeSpan.Zero ? TimeSpan.Zero : retryAfter, ct);
                     continue;
                 }
 
@@ -601,7 +604,7 @@ public class MalTracker(
                 {
                     waited429 = true;
                     var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10);
-                    await Task.Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
+                    await Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
                     continue;
                 }
 

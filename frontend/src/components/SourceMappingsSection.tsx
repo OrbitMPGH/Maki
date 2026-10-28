@@ -59,7 +59,8 @@ import {
   type SourceOrderMode,
 } from '../api/hooks'
 import { MeasureProgress, MeasureResult, ScoutCell } from './SourceMeasurePanel'
-import type { SourceMappingDto } from '../api/types'
+import type { LocalizedTitle, SourceMappingDto } from '../api/types'
+import { englishSearchTitles } from '../api/titles'
 import {
   QUALITY_TIER_COLOR,
   QUALITY_TIER_LABELS,
@@ -80,7 +81,9 @@ import { msg, t as now, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../i18n-context'
 import { pressable } from '../lib/pressable'
-import { SOURCE_ICONS } from '../sourceIcons'
+import { SOURCE_ICONS, sourceHost } from '../sourceIcons'
+import { ApiError } from '../api/client'
+import { ManageSourcesModal, type WizardRequest } from '../pages/settings/ManageSourcesModal'
 import { useSourceLabel } from '../sourceLabels'
 import { MonoValue } from './ui/MonoValue'
 
@@ -100,10 +103,13 @@ const ORIGIN_COLORS: Record<string, string> = {
 export function SourceMappingsSection({
   seriesId,
   seriesTitle,
+  altTitles = [],
   matching = false,
 }: {
   seriesId: number
   seriesTitle: string
+  /** Offered as one-click searches in the link modal, since a source may list the work under one. */
+  altTitles?: LocalizedTitle[]
   /**
    * Auto-matching is still running in the background (a series added seconds ago). Without it a
    * fresh series reads "No sources linked. Chapters cannot be synced or downloaded." for the half
@@ -167,6 +173,7 @@ export function SourceMappingsSection({
   const [compareOpen, setCompareOpen] = useState(false)
   const [sourceName, setSourceName] = useState<string | null>(null)
   const [query, setQuery] = useState(seriesTitle)
+  const otherEnglishTitles = useMemo(() => englishSearchTitles(altTitles, seriesTitle), [altTitles, seriesTitle])
   const [removing, setRemoving] = useState<SourceMappingDto | null>(null)
   const removingSourceName = removing ? sourceLabel(removing.sourceName) : undefined
   const [deleteFiles, setDeleteFiles] = useState(false)
@@ -183,6 +190,14 @@ export function SourceMappingsSection({
     isFetching: resolving,
     error: resolveError,
   } = useResolveSourceUrl(pastedUrl)
+  // No source knows the pasted address: an admin can set the site up as a custom source right here,
+  // or fix the one that already reads that host but whose series template didn't match.
+  const [setupSite, setSetupSite] = useState<WizardRequest | null>(null)
+  const unrecognised = resolveError instanceof ApiError && resolveError.code === 'error.search.noSourceRecognizesUrl'
+  const pastedHost = pastedUrl ? sourceHost(pastedUrl) : null
+  const ownerOfHost = pastedHost
+    ? sources?.find((s) => s.custom && sourceHost(s.baseUrl) === pastedHost) ?? null
+    : null
 
   // A source switched off in Settings can't be linked, and its existing mappings here are
   // inert: their own on/off state is kept and shown read-only rather than being rewritten.
@@ -231,7 +246,8 @@ export function SourceMappingsSection({
     ) ?? []
   const missingSnapshotNames = missingSnapshots.map((m) => sourceLabel(m.sourceName)).join(', ')
 
-  const link = (mappingName: string, sourceSeriesId: string, url: string) =>
+  const link = (mappingName: string, sourceSeriesId: string, url: string) => {
+    if (createMapping.isPending) return
     createMapping.mutate(
       { seriesId, sourceName: mappingName, sourceSeriesId, url },
       {
@@ -242,6 +258,7 @@ export function SourceMappingsSection({
         },
       },
     )
+  }
 
   return (
     <>
@@ -255,7 +272,7 @@ export function SourceMappingsSection({
         <Group gap="xs">
           {sourceOrder && (
             <Tooltip
-              label={t`Which source a chapter downloads from first. Best quality ranks sources by this series' quality profile and what their recent chapters measured, with priority breaking ties.`}
+              label={t`Which source a chapter downloads from first.`}
               withArrow
               multiline
               w={280}
@@ -875,9 +892,28 @@ export function SourceMappingsSection({
               label={t`Search or paste a series URL`}
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
-              rightSection={isFetching || resolving ? <Loader size="xs" /> : null}
+              rightSection={isFetching || resolving || createMapping.isPending ? <Loader size="xs" /> : null}
             />
           </Group>
+          {createMapping.isPending && (
+            <Text size="xs" c="dimmed"><Trans>Linking and listing chapters…</Trans></Text>
+          )}
+          {otherEnglishTitles.length > 0 && (
+            <Group gap={6} wrap="wrap">
+              <Text size="xs" c="dimmed"><Trans>Search for</Trans></Text>
+              {[seriesTitle, ...otherEnglishTitles].map((title) => (
+                <Button
+                  key={title}
+                  size="compact-xs"
+                  variant={query.trim() === title ? 'light' : 'default'}
+                  onClick={() => setQuery(title)}
+                  maw="100%"
+                >
+                  <Text span size="xs" truncate>{title}</Text>
+                </Button>
+              ))}
+            </Group>
+          )}
           <Stack gap="xs">
             {pastedUrl && resolved && (
               <Card
@@ -912,6 +948,24 @@ export function SourceMappingsSection({
               <Text c="var(--danger)" size="sm">
                 {errorText(resolveError)}
               </Text>
+            )}
+            {pastedUrl && unrecognised && can('Admin') && (
+              <Group>
+                {ownerOfHost?.custom ? (
+                  <Button
+                    size="xs"
+                    variant="default"
+                    leftSection={<IconPencil size={14} />}
+                    onClick={() => setSetupSite({ editId: ownerOfHost.custom!.id })}
+                  >
+                    <Trans>Edit {ownerOfHost.displayName}</Trans>
+                  </Button>
+                ) : (
+                  <Button size="xs" variant="default" onClick={() => setSetupSite({ setupUrl: pastedUrl })}>
+                    <Trans>Set up this site as a source</Trans>
+                  </Button>
+                )}
+              </Group>
             )}
             {!pastedUrl && results?.map((r) => (
               <Card
@@ -967,6 +1021,16 @@ export function SourceMappingsSection({
         opened={compareOpen}
         onClose={() => setCompareOpen(false)}
       />
+      {can('Admin') && (
+        <ManageSourcesModal
+          opened={setupSite !== null}
+          onClose={() => setSetupSite(null)}
+          wizard={setupSite}
+          closeWithWizard
+          // The failed resolve is asked again, so the Link a source modal offers the new source.
+          onCustomSaved={() => void queryClient.invalidateQueries({ queryKey: ['resolve-source', pastedUrl] })}
+        />
+      )}
     </>
   )
 }

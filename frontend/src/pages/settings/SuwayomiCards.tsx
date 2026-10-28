@@ -64,7 +64,7 @@ export function SuwayomiCard() {
     <SettingsSection
       id="suwayomi"
       title="Suwayomi"
-      description={t`Optional. Point Maki at a Suwayomi server to use the sources of the extensions installed there, alongside Maki's own. Extensions are installed and configured in Suwayomi; Maki only reads from it.`}
+      description={t`Uses the sources of the extensions installed in Suwayomi.`}
       dirty={dirty}
       saving={save.isPending}
       onSave={() => save.mutate(input(), { onSuccess: savedToast })}

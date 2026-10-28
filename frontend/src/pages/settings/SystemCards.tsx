@@ -116,10 +116,7 @@ export function BackupSection() {
       title={<Trans>Backup &amp; restore</Trans>}
       description={
         <Trans>
-          A zip of the database and <Code>config.json</Code>: every series record, reading history
-          and setting, but not the manga files, the MangaBaka copy or covers. One is taken
-          automatically before an upgrade migration. Scheduled backups are off unless you turn
-          them on below, so take one yourself before big changes.
+          The database and <Code>config.json</Code>, without manga files or covers.
         </Trans>
       }
       dirty={retentionDirty}
@@ -226,14 +223,14 @@ export function BackupSection() {
 
         <Switch
           label={t`Back up on a schedule`}
-          description={t`Checks every hour and takes a backup when the newest one is older than the backup freshness set on the Health page (7 days by default).`}
+          description={t`Follows the backup freshness set on the Health page.`}
           checked={scheduled}
           onChange={(e) => setScheduled(e.currentTarget.checked)}
         />
 
         <SettingsNumberInput
           label={t`Backups to keep`}
-          description={t`Per kind: the newest N automatic, manual and scheduled backups stay. Older ones are removed when a new backup is taken.`}
+          description={t`Per kind: automatic, manual and scheduled.`}
           min={1}
           max={50}
           value={retention}
@@ -365,16 +362,12 @@ export function UpdatesSection() {
       id="updates"
       title={<Trans>Updates</Trans>}
       description={
-        <Trans>
-          Checks GitHub daily for a new release and shows a card in the sidebar and a notification
-          when there is one. Updating is manual: {howToUpdate}.
-        </Trans>
+        <Trans>Updating is manual: {howToUpdate}.</Trans>
       }
     >
       <Stack gap="sm">
         <Switch
           label={t`Check for updates`}
-          description={t`Once a day. Check now works either way.`}
           checked={settings?.checkForUpdates ?? true}
           onChange={(e) => save.mutate(e.currentTarget.checked)}
         />
@@ -501,13 +494,6 @@ export function ImageCacheSection() {
     <SettingsSection
       id="image-cache"
       title={<Trans>Image cache</Trans>}
-      description={
-        <Trans>
-          Posters, reader thumbnails and the page samples used to compare sources. Both buttons
-          clear thumbnails and samples and remove posters of deleted series. Rebuild missing then
-          re-downloads posters that are missing or broken; Rebuild all re-downloads every poster.
-        </Trans>
-      }
     >
       {usage && (
         <Stack gap={4} mb="md">
@@ -638,12 +624,6 @@ export function HealthSettingsSection() {
     <SettingsSection
       id="health"
       title={<Trans>Library health</Trans>}
-      description={
-        <Trans>
-          When the health scans run and where the disk and backup checks start warning. The checks and
-          file findings are on the Health page.
-        </Trans>
-      }
       dirty={draft !== null}
       saving={save.isPending}
       onDiscard={() => setDraft(null)}
@@ -690,7 +670,7 @@ export function HealthSettingsSection() {
             />
             <SettingsNumberInput
               label={t`Pages decoded at once`}
-              description={t`0 picks a number for this machine. Raise it to scan faster, lower it to leave the CPU alone.`}
+              description={t`0 picks a number for this machine.`}
               min={0}
               max={32}
               value={value.scanWorkers}

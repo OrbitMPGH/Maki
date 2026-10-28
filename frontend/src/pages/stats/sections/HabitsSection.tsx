@@ -47,7 +47,7 @@ function BehaviourRow({
 }) {
   return (
     <li className="stats-row">
-      <SeriesThumb url={item.coverUrl} alt={item.title} />
+      <SeriesThumb url={item.coverUrl} alt={item.title} seriesId={item.seriesId} />
       <div style={{ minWidth: 0 }}>
         <div className="stats-row-title">
           <SeriesLink id={item.seriesId} title={item.title} />

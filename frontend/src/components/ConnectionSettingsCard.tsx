@@ -50,7 +50,7 @@ export function ConnectionSettingsCard({
 }: {
   name: ConnectionName
   title: string
-  description: string
+  description?: string
   fields: ConnectionFields
   /** A second set of fields in the same card that saves through its own endpoint. */
   extra?: SaveGroup

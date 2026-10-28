@@ -985,6 +985,8 @@ function FeedExpandModal({
           limit: 120,
           sort: rail.sort,
           excludeOwned: rail.excludeOwned,
+          excludeInteracted: rail.excludeInteracted,
+          releasedWithinMonths: rail.releasedWithinMonths,
         }
       : null
   const feedQuery = useDiscoverFeed(feedRequest)

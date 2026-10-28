@@ -33,10 +33,26 @@ public class ChallengeAwareFetcher(
     private readonly ConcurrentDictionary<string, HostSession> _sessions = new();
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _solveGates = new();
 
+    /// <summary>The named client direct requests go out on. A subclass with stricter rules swaps it.</summary>
+    protected virtual string ClientName => HttpClientName;
+
+    /// <summary>
+    /// Runs before a URL is handed to FlareSolverr, which fetches from its own network where this
+    /// process's connect-time guards cannot follow. Throw to refuse.
+    /// </summary>
+    protected virtual Task BeforeFlareSolverrAsync(Uri url, CancellationToken ct) => Task.CompletedTask;
+
+    /// <summary>Checks where FlareSolverr's browser ended up, which redirects may have moved; throws to refuse the page.</summary>
+    protected virtual Task AfterFlareSolverrAsync(Uri requested, Uri? landed, CancellationToken ct) => Task.CompletedTask;
+
     public Task<string> GetHtmlAsync(string url, CancellationToken ct = default) =>
         FetchAsync(new HtmlFetchRequest(url), ct);
 
-    public async Task<string> FetchAsync(HtmlFetchRequest request, CancellationToken ct = default)
+    public async Task<string> FetchAsync(HtmlFetchRequest request, CancellationToken ct = default) =>
+        (await FetchDetailedAsync(request, ct)).Html;
+
+    /// <summary>As <see cref="FetchAsync"/>, also saying whether FlareSolverr had to fetch it.</summary>
+    public async Task<HtmlFetchResult> FetchDetailedAsync(HtmlFetchRequest request, CancellationToken ct = default)
     {
         var url = request.Url;
         var host = new Uri(url).Host;
@@ -44,7 +60,7 @@ public class ChallengeAwareFetcher(
         _sessions.TryGetValue(host, out var session);
         if (await TryDirectAsync(request, session, ct) is { } direct)
         {
-            return direct;
+            return new HtmlFetchResult(direct, false);
         }
 
         if (session != null)
@@ -62,7 +78,7 @@ public class ChallengeAwareFetcher(
             {
                 if (await TryDirectAsync(request, solved, ct) is { } retried)
                 {
-                    return retried;
+                    return new HtmlFetchResult(retried, false);
                 }
 
                 _sessions.TryRemove(KeyValuePair.Create(host, solved));
@@ -75,8 +91,10 @@ public class ChallengeAwareFetcher(
                     host, $"{host} requires solving an anti-bot challenge; configure a FlareSolverr URL in Settings");
             }
 
+            await BeforeFlareSolverrAsync(new Uri(url), ct);
             logger.LogInformation("Solving challenge for {Host} via FlareSolverr", host);
             var solution = await flareSolverr.SolveAsync(flareUrl, url, request.FormBody, request.Cookies, ct);
+            await AfterFlareSolverrAsync(new Uri(url), Uri.TryCreate(solution.Url, UriKind.Absolute, out var landed) ? landed : null, ct);
             StoreSession(host, solution);
 
             // FlareSolverr says "ok" for whatever the origin served, so a ban or 404 page would
@@ -87,7 +105,7 @@ public class ChallengeAwareFetcher(
                     $"{host} answered HTTP {solution.Status} through FlareSolverr", null, (HttpStatusCode)solution.Status);
             }
 
-            return solution.Html;
+            return new HtmlFetchResult(solution.Html, true);
         }
         finally
         {
@@ -127,6 +145,7 @@ public class ChallengeAwareFetcher(
                     host, $"{host} requires a browser session; configure a FlareSolverr URL in Settings");
             }
 
+            await BeforeFlareSolverrAsync(new Uri(url), ct);
             logger.LogInformation("Solving challenge for {Host} via FlareSolverr (browser session)", host);
             var solution = await flareSolverr.GetAsync(flareUrl, url, ct);
             StoreSession(host, solution);
@@ -185,7 +204,7 @@ public class ChallengeAwareFetcher(
     /// </summary>
     private async Task<string?> TryDirectAsync(HtmlFetchRequest fetch, HostSession? session, CancellationToken ct)
     {
-        var client = httpClientFactory.CreateClient(HttpClientName);
+        var client = httpClientFactory.CreateClient(ClientName);
         using var request = new HttpRequestMessage(
             fetch.FormBody is null ? HttpMethod.Get : HttpMethod.Post, fetch.Url);
         if (fetch.FormBody is not null)
@@ -199,8 +218,15 @@ public class ChallengeAwareFetcher(
             request.Headers.TryAddWithoutValidation("Cookie", cookieHeader);
         }
 
+        foreach (var (name, value) in fetch.Headers ?? new Dictionary<string, string>())
+        {
+            request.Headers.Remove(name);
+            request.Headers.TryAddWithoutValidation(name, value);
+        }
+
         if (session != null)
         {
+            request.Headers.Remove("User-Agent");
             request.Headers.TryAddWithoutValidation("User-Agent", session.UserAgent);
         }
 

@@ -173,7 +173,7 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
               >
                 <KindIcon size={15} />
               </ThemeIcon>
-              <SeriesThumb url={e.coverUrl} alt={e.title} />
+              <SeriesThumb url={e.coverUrl} alt={e.title} seriesId={e.seriesId} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <Text size="sm" truncate>
                   <SeriesLink

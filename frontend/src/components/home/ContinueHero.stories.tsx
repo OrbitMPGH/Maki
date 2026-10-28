@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
-import { continueReading, jumpBackIn, progressSummary } from '../../../.storybook/mocks/home'
+import { continueReading, notStarted, progressSummary } from '../../../.storybook/mocks/home'
 import { heatmapDays } from '../../../.storybook/mocks/insights/stats'
 import { ContinueHero } from './ContinueHero'
 import { ReadingWeeks } from './ReadingWeeks'
@@ -8,7 +8,7 @@ import { ReadingWeeks } from './ReadingWeeks'
 const meta = {
   component: ContinueHero,
   tags: ['ai-generated'],
-  args: { items: continueReading, rail: 'continue' },
+  args: { items: continueReading },
   parameters: { layout: 'padded' },
 } satisfies Meta<typeof ContinueHero>
 
@@ -42,7 +42,7 @@ export const SingleSeries: Story = {
 }
 
 export const NotStartedChapter: Story = {
-  args: { items: jumpBackIn, rail: 'jumpback' },
+  args: { items: notStarted },
   play: async ({ canvas }) => {
     await expect((await canvas.findAllByRole('link', { name: 'Start chapter' }))[0]).toBeVisible()
   },
@@ -56,11 +56,11 @@ export const WithoutPageCount: Story = {
 }
 
 export const WithoutCover: Story = {
-  args: { items: [{ ...jumpBackIn[2], page: 4 }, ...continueReading.slice(0, 3)] },
+  args: { items: [{ ...notStarted[2], page: 4 }, ...continueReading.slice(0, 3)] },
 }
 
 export const ManyInNextUp: Story = {
-  args: { items: [...continueReading, ...jumpBackIn] },
+  args: { items: [...continueReading, ...continueReading.map((i) => ({ ...i, chapterId: i.chapterId + 5000 }))] },
 }
 
 export const MenuInHero: Story = {
@@ -73,7 +73,7 @@ export const MenuInHero: Story = {
 
 /** The hybrid: a Next up list in a card beside the hero, no tray, and the glance in the hero's right column or under the lead by width. */
 export const QueueBeside: Story = {
-  args: { items: [...continueReading, ...jumpBackIn], queue: 'beside' },
+  args: { queue: 'beside' },
   render: (args) => <ContinueHero {...args} glance={<ReadingWeeks days={heatmapDays} summary={progressSummary} hosted />} />,
   play: async ({ canvas, canvasElement }) => {
     const list = await canvas.findByRole('region', { name: 'Next up' })

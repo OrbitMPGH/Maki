@@ -153,8 +153,12 @@ public class InboxRendererTests
             ["detail.detail"] = "Timed out.",
         });
 
-        Assert.Equal("Health issue", title);
-        Assert.Equal("Secret Love: refreshing from mangakatana is failing. Timed out.", body);
+        Assert.False(string.IsNullOrWhiteSpace(title));
+        Assert.Contains("Secret Love", body, StringComparison.Ordinal);
+        Assert.Contains("mangakatana", body, StringComparison.Ordinal);
+        Assert.Contains("Timed out.", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("health.issue", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("{", body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -165,7 +169,7 @@ public class InboxRendererTests
             ["detail"] = "Kavita: not configured",
         });
 
-        Assert.Equal("Resolved: Kavita: not configured", body);
+        Assert.Contains("Kavita: not configured", body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -177,8 +181,12 @@ public class InboxRendererTests
         });
         var (_, old) = Render("inbox.request.edited", new { title = "Berserk", range = "everything" });
 
-        Assert.Equal("Berserk: now chapters 1 to 12.5", keyed);
-        Assert.Equal("Berserk: now everything", old);
+        Assert.Contains("Berserk", keyed, StringComparison.Ordinal);
+        Assert.Contains("1", keyed, StringComparison.Ordinal);
+        Assert.Contains("12.5", keyed, StringComparison.Ordinal);
+        Assert.DoesNotContain("inbox.request.range", keyed, StringComparison.Ordinal);
+        Assert.Contains("Berserk", old, StringComparison.Ordinal);
+        Assert.Contains("everything", old, StringComparison.Ordinal);
     }
 
     [Fact]

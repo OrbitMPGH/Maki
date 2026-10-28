@@ -97,6 +97,7 @@ services:
       - /path/to/manga-library:/library
     ports:
       - "8990:8990"
+    mem_reservation: 512m
     restart: unless-stopped
 ```
 
@@ -113,6 +114,11 @@ Kavita, FlareSolverr and Suwayomi are optional. A compose file with all of them 
 URL under **Settings → Downloads → FlareSolverr** to `http://flaresolverr:8191` and hit **Test**. For
 Suwayomi, set `http://suwayomi:4567` under **Settings → Integrations → Suwayomi**, hit **Test**,
 then **Manage sources** to turn on the ones you want.
+
+`mem_reservation` is a soft limit: when the host runs short of memory, the kernel takes Maki's file
+cache back first. Most dashboards count that cache as the container's memory, so without it Maki can
+look much bigger than it is. Don't set a hard `mem_limit` below 1.5 GB yet, since a scrape and a
+search running together can briefly need close to 1 GB.
 
 Offline reading and push notifications need HTTPS. See
 [Exposing Maki to the internet](docs/exposing-to-the-internet.md) for a reverse proxy setup.
@@ -211,3 +217,5 @@ industry: buy official releases.
 ## License
 
 [GPL-3.0](LICENSE)
+
+The optional page-enhance models and shaders are separate files with their own licences, one of them non-commercial; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

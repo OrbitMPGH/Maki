@@ -323,7 +323,14 @@ public class SeriesRequestsController(
                 {
                     // Everything except "somebody already added it" leaves the request unresolved, so
                     // the claim has to go back or it sits in Processing until the stale window expires.
-                    if (result.Error is not SeriesCreationError.AlreadyInLibrary)
+                    if (result.Error is SeriesCreationError.ArchivedInLibrary && result.ExistingSeriesId is int archivedId
+                        && await db.Series.AnyAsync(s => s.Id == archivedId, ct))
+                    {
+                        await ReleaseClaimAsync(request);
+                        return this.ArchivedExists(localizer, archivedId);
+                    }
+
+                    if (result.Error is not (SeriesCreationError.AlreadyInLibrary or SeriesCreationError.ArchivedInLibrary))
                     {
                         await ReleaseClaimAsync(request);
                         return result.Error switch
@@ -377,6 +384,18 @@ public class SeriesRequestsController(
                 // it would only tell the requester their chapters are on the way.
                 await ReleaseClaimAsync(request);
                 return this.Conflict(localizer, "error.requests.seriesGone");
+            }
+
+            // The queue would drop every chapter of an archived series, and the request would read
+            // as approved with nothing on the way.
+            // Unfiltered, or a series outside the caller's root folders reads as active.
+            if (await db.Series.IgnoreQueryFilters().AnyAsync(s => s.Id == seriesId && s.ArchivedAt != null, ct))
+            {
+                await ReleaseClaimAsync(request);
+                // Like Add: the id only goes to a caller who can open the series.
+                return await db.Series.AnyAsync(s => s.Id == seriesId, ct)
+                    ? this.ArchivedExists(localizer, seriesId)
+                    : this.Conflict(localizer, "error.series.alreadyExists");
             }
 
             queued = await QueueRangeAsync(

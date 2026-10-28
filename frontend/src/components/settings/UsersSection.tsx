@@ -51,24 +51,25 @@ import { SettingsSection } from '../../pages/settings/SettingsSection'
  * would be stuck in whichever language was active at that moment. `useGrantablePermissions` renders
  * them at the call site.
  */
-const GRANTABLE_DEFS: { value: Exclude<Permission, 'Admin'>; label: MessageDescriptor; hint: MessageDescriptor }[] = [
-  { value: 'AddSeries', label: msg`Add series`, hint: msg`Search sources and add new series to the library` },
-  { value: 'DeleteSeries', label: msg`Delete series`, hint: msg`Remove series, and optionally their files, from disk` },
-  { value: 'DownloadChapters', label: msg`Download chapters`, hint: msg`Queue downloads and grab torrent releases` },
-  { value: 'ManageDownloadQueue', label: msg`Manage queue`, hint: msg`Retry and cancel queued downloads` },
-  { value: 'ManageSources', label: msg`Manage sources`, hint: msg`Link and unlink per-series sources` },
+const GRANTABLE_DEFS: { value: Exclude<Permission, 'Admin'>; label: MessageDescriptor; hint?: MessageDescriptor }[] = [
+  { value: 'AddSeries', label: msg`Add series` },
+  { value: 'DeleteSeries', label: msg`Delete series` },
+  { value: 'DownloadChapters', label: msg`Download chapters` },
+  { value: 'ManageDownloadQueue', label: msg`Manage queue` },
+  { value: 'ManageSources', label: msg`Manage sources` },
   { value: 'EditMetadata', label: msg`Edit metadata`, hint: msg`Refresh metadata, rewrite ComicInfo, change monitoring` },
-  { value: 'ManageTags', label: msg`Manage tags`, hint: msg`Create, rename and assign library tags` },
-  { value: 'ChangeContentRating', label: msg`Change own content rating`, hint: msg`Raise or lower their own maximum rating` },
-  { value: 'UseTrackers', label: msg`Use trackers`, hint: msg`Connect their own AniList, MAL, Kitsu or MangaUpdates account` },
-  { value: 'UseOpds', label: msg`Use OPDS`, hint: msg`Hold a feed token and read through an OPDS app` },
-  { value: 'ImportLibrary', label: msg`Import library`, hint: msg`Scan root folders and adopt existing series` },
+  { value: 'ManageTags', label: msg`Manage tags` },
+  { value: 'ChangeContentRating', label: msg`Change own content rating` },
+  { value: 'UseTrackers', label: msg`Use trackers` },
+  { value: 'UseOpds', label: msg`Use OPDS` },
+  { value: 'ImportLibrary', label: msg`Import library` },
+  { value: 'ArchiveSeries', label: msg({ message: 'Archive series', context: 'series' }) },
 ]
 
 function useGrantablePermissions() {
   const { _, i18n } = useLingui()
   return useMemo(
-    () => GRANTABLE_DEFS.map((g) => ({ value: g.value, label: _(g.label), hint: _(g.hint) })),
+    () => GRANTABLE_DEFS.map((g) => ({ value: g.value, label: _(g.label), hint: g.hint && _(g.hint) })),
     [_, i18n.locale],
   )
 }
@@ -87,6 +88,7 @@ const BIT: Record<Permission, number> = {
   UseTrackers: 1 << 9,
   UseOpds: 1 << 10,
   ImportLibrary: 1 << 11,
+  ArchiveSeries: 1 << 12,
 }
 
 /**
@@ -113,7 +115,7 @@ function UserModeSwitch() {
           label={t`Single-user mode`}
           description={
             mode.available
-              ? t`Hides Requests, the reader picker and leaderboard on Stats, and other controls for sharing the instance. Adding a second user switches to multi-user mode.`
+              ? t`Hides the controls for sharing the instance.`
               : t`Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back.`
           }
         />
@@ -135,11 +137,6 @@ export function UsersSection() {
     <SettingsSection
       id="users"
       title={<Trans>Users</Trans>}
-      description={
-        <Trans>
-          Each account has its own login, permissions, content rating and reading history.
-        </Trans>
-      }
       actions={
         <Button size="xs" leftSection={<IconPlus size={14} />} onClick={() => setEditing('new')}>
           <Trans>Add user</Trans>
@@ -164,7 +161,7 @@ export function UsersSection() {
             {users?.map((user) => {
               const granted = user.permissionNames.length
               return (
-                <Table.Tr key={user.id} opacity={user.disabled ? 0.5 : 1}>
+                <Table.Tr key={user.id} data-muted={user.disabled || undefined}>
                   <Table.Td>
                     <Group gap={6}>
                       <Text fz="sm">{user.displayName?.trim() || user.userName}</Text>
@@ -355,7 +352,6 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
 
         <Switch
           label={t`Administrator`}
-          description={t`Full access, including settings, root folders, backups and user management.`}
           checked={isAdmin}
           // An admin cannot demote themselves: the server refuses it, since the last admin standing
           // could otherwise lock the instance out of its own settings.
@@ -395,7 +391,6 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
 
         <Select
           label={t`Maximum content rating`}
-          description={t`Caps what search, Discover and recommendations show this account.`}
           data={CONTENT_RATINGS.map((r) => ({ value: r, label: renderLabel(CONTENT_RATING_LABELS[r]) }))}
           value={rating}
           onChange={(v) => setRating(v ?? 'safe')}
@@ -411,7 +406,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
         {!allRootFolders && (
           <MultiSelect
             label={t`Root folders`}
-            description={t`With none selected this account sees an empty library: access is granted, never assumed.`}
+            description={t`None selected means an empty library.`}
             data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
             value={folderIds}
             onChange={setFolderIds}
@@ -421,7 +416,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
         {!isNew && (
           <Switch
             label={t`Disabled`}
-            description={t`Blocks sign-in and kills existing sessions. Keeps the account and its history.`}
+            description={t`Blocks sign-in. Keeps the account and its history.`}
             checked={disabled}
             disabled={editingSelf}
             onChange={(e) => setDisabled(e.currentTarget.checked)}

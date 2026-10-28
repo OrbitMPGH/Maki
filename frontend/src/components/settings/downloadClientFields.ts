@@ -22,7 +22,6 @@ export function useDownloadClientFields(): (values: Record<string, string | null
         key: 'label',
         label: t`Label`,
         placeholder: 'maki',
-        description: t`Category or label given to torrents Maki adds. Defaults to maki. Deluge lowercases it and allows only letters, digits, dot, dash and underscore.`,
       },
       { key: 'pathMapFrom', label: t`Path as the download client reports it`, placeholder: t`/downloads (optional)` },
       { key: 'pathMapTo', label: t`Path as Maki sees it`, placeholder: t`Z:\\downloads (optional)` },
