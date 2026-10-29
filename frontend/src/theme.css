@@ -127,8 +127,9 @@
     0 22px 48px -20px rgba(0, 0, 0, 0.9);
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-cover: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 22px -12px rgba(0, 0, 0, 0.85);
-  --shadow-cover-hover: 0 2px 4px rgba(0, 0, 0, 0.4), 0 20px 34px -14px rgba(0, 0, 0, 0.9);
+  /* One tight layer: a few hundred posters each casting a wide blur made scrolling and hover slow. */
+  --shadow-cover: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-cover-hover: 0 4px 8px -4px rgba(0, 0, 0, 0.6);
   --cover-rim: rgba(255, 255, 255, 0.09);
   --cover-rim-hover: rgba(255, 255, 255, 0.18);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -401,8 +402,8 @@
   --tier-5: #5b4bab;
   --tier-6: #a83660;
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
-  --shadow-cover: 0 1px 2px rgba(20, 24, 40, 0.14), 0 10px 22px -12px rgba(20, 24, 40, 0.4);
-  --shadow-cover-hover: 0 2px 4px rgba(20, 24, 40, 0.12), 0 20px 34px -14px rgba(20, 24, 40, 0.45);
+  --shadow-cover: 0 1px 2px rgba(20, 24, 40, 0.14);
+  --shadow-cover-hover: 0 4px 8px -4px rgba(20, 24, 40, 0.25);
   --cover-rim: rgba(20, 24, 40, 0.1);
   --cover-rim-hover: rgba(20, 24, 40, 0.18);
   --surface-raised: #ffffff;
@@ -437,8 +438,8 @@
   --shadow-card: 0 1px 0 rgba(70, 52, 30, 0.08);
   --shadow-raised: 0 0 0 1px rgba(70, 52, 30, 0.06), 0 1px 0 rgba(70, 52, 30, 0.1);
   --shadow-object: 0 0 0 1px rgba(70, 52, 30, 0.1), 0 2px 0 rgba(70, 52, 30, 0.07);
-  --shadow-cover: 0 1px 0 rgba(70, 52, 30, 0.18), 0 8px 16px -12px rgba(70, 52, 30, 0.45);
-  --shadow-cover-hover: 0 2px 0 rgba(70, 52, 30, 0.16), 0 14px 24px -14px rgba(70, 52, 30, 0.5);
+  --shadow-cover: 0 1px 0 rgba(70, 52, 30, 0.18);
+  --shadow-cover-hover: 0 2px 0 rgba(70, 52, 30, 0.22);
   --cover-rim: rgba(70, 52, 30, 0.16);
   --cover-rim-hover: rgba(70, 52, 30, 0.26);
   /* The stock is darker than Light's ground, which pulls these just under 4.5:1. */
@@ -1591,7 +1592,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   container-type: inline-size;
   transition:
     transform var(--dur-medium) var(--ease),
-    box-shadow var(--dur-medium) var(--ease),
     border-color var(--dur-medium) var(--ease);
 }
 .cover-card:hover {
@@ -1991,6 +1991,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   flex-shrink: 0;
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);
+  /* The row's shadow is for white text over art; on a light accent's dark text it reads as a smear. */
+  text-shadow: none;
 }
 /* Home rails already carry a brand chapter pill, so the count stays neutral to keep one accent per card. */
 .cover-new-quiet {
