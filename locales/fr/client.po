@@ -1842,11 +1842,6 @@ msgid "{readCount} read"
 msgstr "{readCount} lus"
 
 #: src/components/discover/DiscoverDetailModal.tsx
-#, fuzzy
-#~ msgid "{readerHintReaders, plural, one {{readerHintScoreDisplay} from # reader with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.} other {{readerHintScoreDisplay} from # readers with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.}}"
-#~ msgstr "{readerHintReaders, plural, one {{readerHintScoreDisplay} d'après # lecteur aux habitudes de lecture proches des vôtres, contre {readerHintBaselineDisplay} pour l'ensemble des lecteurs.} many {{readerHintScoreDisplay} d'après # lecteurs aux habitudes de lecture proches des vôtres, contre {readerHintBaselineDisplay} pour l'ensemble des lecteurs.} other {{readerHintScoreDisplay} d'après # lecteurs aux habitudes de lecture proches des vôtres, contre {readerHintBaselineDisplay} pour l'ensemble des lecteurs.}}"
-
-#: src/components/discover/DiscoverDetailModal.tsx
 msgid "{readerHintReaders, plural, one {# AniList reader with reading habits like yours scored this {readerHintGap} higher than AniList readers overall.} other {# AniList readers with reading habits like yours scored this {readerHintGap} higher than AniList readers overall.}}"
 msgstr ""
 
@@ -18290,10 +18285,6 @@ msgstr ""
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source or looks blurry."
 msgstr ""
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#~ msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source."
-#~ msgstr ""
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Sharpens soft pages in the reader with models that run on this server."
