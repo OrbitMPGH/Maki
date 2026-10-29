@@ -1,5 +1,5 @@
 import { errorText } from '../api/errorText'
-import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent, ReactNode, RefObject } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { msg, plural, t as staticT } from '@lingui/core/macro'
@@ -1748,6 +1748,110 @@ function SeriesDetailBody() {
   const archivedBy =
     archived && !singleUser && me != null && series.archivedByUserId === me.id ? (me.displayName ?? me.userName) : null
 
+  type ChapterBulkAction = {
+    key: string
+    label: ReactNode
+    icon: ReactNode
+    run: () => void
+    loading?: boolean
+    disabled?: boolean
+  }
+  // Accent buttons for the everyday three, everything else in More, and the destructive pair behind
+  // one red menu. A colour per action read as a row of unrelated badges.
+  const chapterPrimaryActions: ChapterBulkAction[] = [
+    ...(canDownload
+      ? [{
+          key: 'download',
+          label: <Trans>Download</Trans>,
+          icon: <IconDownload size={15} />,
+          disabled: archived,
+          loading: downloadChapters.isPending,
+          run: () => {
+            if (archived) return
+            downloadChapters.mutate([...selected], {
+              onSuccess: (r) =>
+                r.queued > 0
+                  ? notify.ok(plural(r.queued, { one: 'Queued # chapter', other: 'Queued # chapters' }))
+                  : notify.info(r.error ?? staticT`Nothing to queue, those chapters are already on disk`),
+            })
+          },
+        }]
+      : []),
+    ...(readTracking
+      ? [{
+          key: 'read',
+          label: <Trans>Mark read</Trans>,
+          icon: <IconEyeCheck size={15} />,
+          loading: setChaptersState.isPending && setChaptersState.variables?.state === 'read',
+          run: () => applyReadState([...selected], 'read'),
+        }]
+      : []),
+    ...(canEditMetadata
+      ? [{
+          key: 'want',
+          label: <Trans>Want</Trans>,
+          icon: <IconEye size={15} />,
+          loading: setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === true,
+          run: () => applyWanted([...selected], true),
+        }]
+      : []),
+  ]
+  const chapterMoreGroups: ChapterBulkAction[][] = [
+    readTracking
+      ? [
+          {
+            key: 'unread',
+            label: <Trans>Mark unread</Trans>,
+            icon: <IconEyeOff size={15} />,
+            loading: setChaptersState.isPending && setChaptersState.variables?.state === 'unread',
+            run: () => applyReadState([...selected], 'unread'),
+          },
+          {
+            key: 'watched',
+            label: <Trans>Mark watched</Trans>,
+            icon: <IconDeviceTv size={15} />,
+            loading: setChaptersState.isPending && setChaptersState.variables?.state === 'watched',
+            run: () => applyReadState([...selected], 'watched'),
+          },
+        ]
+      : [],
+    canEditMetadata
+      ? [
+          {
+            key: 'unwant',
+            label: <Trans>Don't want</Trans>,
+            icon: <IconEyeOff size={15} />,
+            loading: setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === false,
+            run: () => applyWanted([...selected], false),
+          },
+        ]
+      : [],
+    canEditMetadata
+      ? [
+          {
+            key: 'link',
+            label: <Trans>Link to file</Trans>,
+            icon: <IconLink size={15} />,
+            run: () => setLinkChapterIds([...selected]),
+          },
+          {
+            key: 'unlink',
+            label: <Trans>Unlink</Trans>,
+            icon: <IconLinkOff size={15} />,
+            loading: unlinkChapters.isPending,
+            run: () =>
+              unlinkChapters.mutate([...selected], {
+                onSuccess: (r) => {
+                  notify.ok(plural(r.unlinked, { one: 'Unlinked # chapter', other: 'Unlinked # chapters' }))
+                  exitSelectMode()
+                },
+              }),
+          },
+        ]
+      : [],
+  ].filter((g) => g.length > 0)
+  const chapterMoreBusy = chapterMoreGroups.some((g) => g.some((a) => a.loading))
+
   const showArchivedToast = (filesKept: boolean) => {
     const id = notifications.show({
       color: 'var(--ok)',
@@ -2659,6 +2763,9 @@ function SeriesDetailBody() {
                 <Paper className="series-detail-chapter-selection" withBorder p="xs" radius="lg">
                   <Group justify="space-between" wrap="wrap" gap="xs">
                     <Group gap="xs">
+                      <ActionIcon hiddenFrom="sm" variant="default" onClick={exitSelectMode} aria-label={t`Done`}>
+                        <IconX size={15} />
+                      </ActionIcon>
                       <Text size="sm" c="var(--ink-3)" className="tnum">
                         <Trans>{selectedCount} selected</Trans>
                       </Text>
@@ -2708,154 +2815,100 @@ function SeriesDetailBody() {
                       </Text>
                     </Group>
                     <Group gap="xs">
-                      {canDownload && (
-                          <Tooltip label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
+                      {chapterPrimaryActions.map((a) => {
+                        const button = (
                           <Button
+                              key={a.key}
+                              visibleFrom="sm"
                               size="xs"
                               variant="light"
-                              leftSection={<IconDownload size={15} />}
+                              leftSection={a.icon}
                               disabled={selected.size === 0}
-                              data-disabled={archived || undefined}
-                              aria-disabled={archived || undefined}
-                              loading={downloadChapters.isPending}
-                              onClick={() => {
-                                if (archived) return
-                                downloadChapters.mutate([...selected], {
-                                  onSuccess: (r) =>
-                                      r.queued > 0
-                                          ? notify.ok(
-                                              plural(r.queued, { one: 'Queued # chapter', other: 'Queued # chapters' }),
-                                          )
-                                          : notify.info(
-                                              r.error ?? staticT`Nothing to queue, those chapters are already on disk`,
-                                          ),
-                                })
-                              }}
+                              data-disabled={a.disabled || undefined}
+                              aria-disabled={a.disabled || undefined}
+                              loading={a.loading}
+                              onClick={a.run}
                           >
-                            <Trans>Download</Trans>
+                            {a.label}
                           </Button>
-                          </Tooltip>
-                      )}
-                      {canEditMetadata && (
-                          <>
-                          <Button
-                              size="xs"
-                              variant="light"
-                              leftSection={<IconEye size={15} />}
-                              disabled={selected.size === 0}
-                              loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === true}
-                              onClick={() => applyWanted([...selected], true)}
-                          >
-                            <Trans>Want</Trans>
-                          </Button>
-                          <Button
-                              size="xs"
-                              variant="light"
-                              color="var(--neutral)"
-                              leftSection={<IconEyeOff size={15} />}
-                              disabled={selected.size === 0}
-                              loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === false}
-                              onClick={() => applyWanted([...selected], false)}
-                          >
-                            <Trans>Don't want</Trans>
-                          </Button>
-                          </>
-                      )}
-                      {readTracking && (
-                          <>
-                            <Button
-                                size="xs"
-                                variant="light"
-                                color="var(--watched)"
-                                leftSection={<IconDeviceTv size={15} />}
-                                disabled={selected.size === 0}
-                                loading={setChaptersState.isPending && setChaptersState.variables?.state === 'watched'}
-                                onClick={() => applyReadState([...selected], 'watched')}
-                            >
-                              <Trans>Mark watched</Trans>
-                            </Button>
-                            <Button
-                                size="xs"
-                                variant="light"
-                                color="var(--ok)"
-                                leftSection={<IconEyeCheck size={15} />}
-                                disabled={selected.size === 0}
-                                loading={setChaptersState.isPending && setChaptersState.variables?.state === 'read'}
-                                onClick={() => applyReadState([...selected], 'read')}
-                            >
-                              <Trans>Mark read</Trans>
-                            </Button>
-                            <Button
-                                size="xs"
-                                variant="light"
-                                color="var(--neutral)"
-                                leftSection={<IconEyeOff size={15} />}
-                                disabled={selected.size === 0}
-                                loading={setChaptersState.isPending && setChaptersState.variables?.state === 'unread'}
-                                onClick={() => applyReadState([...selected], 'unread')}
-                            >
-                              <Trans>Mark unread</Trans>
-                            </Button>
-                          </>
-                      )}
-                      {canEditMetadata && (
-                          <>
-                          <Button
-                              size="xs"
-                              variant="light"
-                              leftSection={<IconLink size={15} />}
-                              disabled={selected.size === 0}
-                              onClick={() => setLinkChapterIds([...selected])}
-                          >
-                            <Trans>Link to file</Trans>
-                          </Button>
-                          <Button
-                              size="xs"
-                              variant="light"
-                              color="var(--warn)"
-                              leftSection={<IconLinkOff size={15} />}
-                              disabled={selected.size === 0}
-                              loading={unlinkChapters.isPending}
-                              onClick={() =>
-                                  unlinkChapters.mutate([...selected], {
-                                    onSuccess: (r) => {
-                                      notify.ok(
-                                          plural(r.unlinked, { one: 'Unlinked # chapter', other: 'Unlinked # chapters' }),
-                                      )
-                                      exitSelectMode()
-                                    },
-                                  })
-                              }
-                          >
-                            <Trans>Unlink</Trans>
-                          </Button>
-                          </>
+                        )
+                        return a.key === 'download' ? (
+                            <Tooltip key={a.key} label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
+                              {button}
+                            </Tooltip>
+                        ) : (
+                            button
+                        )
+                      })}
+                      {(chapterPrimaryActions.length > 0 || chapterMoreGroups.length > 0) && (
+                          <Menu position="bottom-end" withinPortal>
+                            <Menu.Target>
+                              <Button
+                                  size="xs"
+                                  variant="default"
+                                  rightSection={<IconChevronDown size={14} />}
+                                  disabled={selected.size === 0}
+                                  loading={chapterMoreBusy}
+                                  className={chapterMoreGroups.length === 0 ? 'library-bulk-more-phone' : undefined}
+                              >
+                                <Text span inherit visibleFrom="sm">
+                                  <Trans>More</Trans>
+                                </Text>
+                                <Text span inherit hiddenFrom="sm">
+                                  <Trans>Actions</Trans>
+                                </Text>
+                              </Button>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              {chapterPrimaryActions.map((a) => (
+                                  <Menu.Item key={a.key} hiddenFrom="sm" leftSection={a.icon} disabled={a.disabled} onClick={a.run}>
+                                    {a.label}
+                                  </Menu.Item>
+                              ))}
+                              {chapterMoreGroups.map((group, i) => (
+                                  <Fragment key={group[0].key}>
+                                    {(i > 0 || chapterPrimaryActions.length > 0) && (
+                                        <Menu.Divider hiddenFrom={i === 0 ? 'sm' : undefined} />
+                                    )}
+                                    {group.map((a) => (
+                                        <Menu.Item key={a.key} leftSection={a.icon} onClick={a.run}>
+                                          {a.label}
+                                        </Menu.Item>
+                                    ))}
+                                  </Fragment>
+                              ))}
+                            </Menu.Dropdown>
+                          </Menu>
                       )}
                       {canDelete && (
                           <>
-                            <Button
-                                size="xs"
-                                variant="light"
-                                color="var(--danger)"
-                                leftSection={<IconTrash size={15} />}
-                                disabled={selected.size === 0}
-                                onClick={() => setDeleteFileIds([...selected])}
-                            >
-                              <Trans>Delete files</Trans>
-                            </Button>
-                            <Button
-                                size="xs"
-                                variant="subtle"
-                                color="var(--danger)"
-                                leftSection={<IconRowRemove size={15} />}
-                                disabled={selected.size === 0}
-                                onClick={() => setDeleteChaptersModalOpen(true)}
-                            >
-                              <Trans>Remove chapters</Trans>
-                            </Button>
+                            <Divider orientation="vertical" className="library-bulk-divider" />
+                            <Menu position="bottom-end" withinPortal>
+                              <Menu.Target>
+                                <Button
+                                    size="xs"
+                                    variant="light"
+                                    color="var(--danger)"
+                                    leftSection={<IconTrash size={15} />}
+                                    rightSection={<IconChevronDown size={14} />}
+                                    disabled={selected.size === 0}
+                                >
+                                  <Trans>Delete</Trans>
+                                </Button>
+                              </Menu.Target>
+                              <Menu.Dropdown>
+                                <Menu.Item leftSection={<IconTrash size={15} />} onClick={() => setDeleteFileIds([...selected])}>
+                                  <Trans>Delete files</Trans>
+                                </Menu.Item>
+                                <Menu.Item leftSection={<IconRowRemove size={15} />} onClick={() => setDeleteChaptersModalOpen(true)}>
+                                  <Trans>Remove chapters</Trans>
+                                </Menu.Item>
+                              </Menu.Dropdown>
+                            </Menu>
                           </>
                       )}
                       <Button
+                          visibleFrom="sm"
                           size="xs"
                           variant="default"
                           leftSection={<IconX size={15} />}
