@@ -1890,11 +1890,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: rgba(255, 255, 255, 0.7);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
-/* The count pill keeps its width; the text beside it gives way first. */
+/* The count pill keeps its width; the text beside it gives way first. Onest's descenders hang below
+   a line-height of 1, so the padding widens the overflow clip and the margin gives the space back. */
 .cover-row > :first-child {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding-block: 0.2em;
+  margin-block: -0.2em;
 }
 /* A lone line ("Anime ends at ch. 120") has no pill to make room for, so it wraps instead of clipping. */
 .cover-row > :only-child {
