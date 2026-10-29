@@ -1843,8 +1843,16 @@ msgstr "{readCount} okundu"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
-msgid "{readerHintReaders, plural, one {{readerHintScoreDisplay} from # reader with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.} other {{readerHintScoreDisplay} from # readers with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.}}"
-msgstr "{readerHintReaders, plural, one {Sizinkine benzer okuma alışkanlığı olan # okurdan {readerHintScoreDisplay}, tüm okurlardan {readerHintBaselineDisplay}.} other {Sizinkine benzer okuma alışkanlığı olan # okurdan {readerHintScoreDisplay}, tüm okurlardan {readerHintBaselineDisplay}.}}"
+#~ msgid "{readerHintReaders, plural, one {{readerHintScoreDisplay} from # reader with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.} other {{readerHintScoreDisplay} from # readers with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.}}"
+#~ msgstr "{readerHintReaders, plural, one {Sizinkine benzer okuma alışkanlığı olan # okurdan {readerHintScoreDisplay}, tüm okurlardan {readerHintBaselineDisplay}.} other {Sizinkine benzer okuma alışkanlığı olan # okurdan {readerHintScoreDisplay}, tüm okurlardan {readerHintBaselineDisplay}.}}"
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{readerHintReaders, plural, one {# AniList reader with reading habits like yours scored this {readerHintGap} higher than AniList readers overall.} other {# AniList readers with reading habits like yours scored this {readerHintGap} higher than AniList readers overall.}}"
+msgstr ""
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{readerHintReaders, plural, one {# AniList reader with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.} other {# AniList readers with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

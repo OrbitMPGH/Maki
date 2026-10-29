@@ -1843,8 +1843,16 @@ msgstr "{readCount} leídos"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
-msgid "{readerHintReaders, plural, one {{readerHintScoreDisplay} from # reader with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.} other {{readerHintScoreDisplay} from # readers with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.}}"
-msgstr "{readerHintReaders, plural, one {{readerHintScoreDisplay} de # lector con hábitos de lectura parecidos a los tuyos, frente a {readerHintBaselineDisplay} de los lectores en general.} many {{readerHintScoreDisplay} de # lectores con hábitos de lectura parecidos a los tuyos, frente a {readerHintBaselineDisplay} de los lectores en general.} other {{readerHintScoreDisplay} de # lectores con hábitos de lectura parecidos a los tuyos, frente a {readerHintBaselineDisplay} de los lectores en general.}}"
+#~ msgid "{readerHintReaders, plural, one {{readerHintScoreDisplay} from # reader with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.} other {{readerHintScoreDisplay} from # readers with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.}}"
+#~ msgstr "{readerHintReaders, plural, one {{readerHintScoreDisplay} de # lector con hábitos de lectura parecidos a los tuyos, frente a {readerHintBaselineDisplay} de los lectores en general.} many {{readerHintScoreDisplay} de # lectores con hábitos de lectura parecidos a los tuyos, frente a {readerHintBaselineDisplay} de los lectores en general.} other {{readerHintScoreDisplay} de # lectores con hábitos de lectura parecidos a los tuyos, frente a {readerHintBaselineDisplay} de los lectores en general.}}"
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{readerHintReaders, plural, one {# AniList reader with reading habits like yours scored this {readerHintGap} higher than AniList readers overall.} other {# AniList readers with reading habits like yours scored this {readerHintGap} higher than AniList readers overall.}}"
+msgstr ""
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{readerHintReaders, plural, one {# AniList reader with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.} other {# AniList readers with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
