@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Maki.Core.Parsing;
 
 public enum ChapterAccess
@@ -11,8 +13,8 @@ public static class ChapterAccessReader
 {
     /// <summary>
     /// What a Mihon extension's chapter label says about reading it: a lock or yen mark in front means
-    /// it needs a purchase or login, and "(Preview)" means a few sample pages. Neither can be
-    /// downloaded as the chapter, so listing them only adds chapters that can never be fetched.
+    /// it needs a purchase or login, and "(Preview)" or "試し読み" means a few sample pages. Neither
+    /// can be downloaded as the chapter, so listing them only adds chapters that can never be fetched.
     /// </summary>
     public static ChapterAccess Of(string? label)
     {
@@ -21,7 +23,10 @@ public static class ChapterAccessReader
             return ChapterAccess.Free;
         }
 
-        if (label.Contains("(Preview)", StringComparison.OrdinalIgnoreCase))
+        // Folds "（Preview）" to "(Preview)".
+        label = label.Normalize(NormalizationForm.FormKC);
+        if (label.Contains("(Preview)", StringComparison.OrdinalIgnoreCase) ||
+            label.Contains("試し読み", StringComparison.Ordinal))
         {
             return ChapterAccess.Preview;
         }

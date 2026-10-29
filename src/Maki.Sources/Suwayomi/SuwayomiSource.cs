@@ -311,13 +311,28 @@ public sealed partial class SuwayomiSource(
             seriesUrl,
             chapter.Url,
             chapter.Name,
-            chapter.ChapterNumber >= 0 ? (decimal)chapter.ChapterNumber : parsed.NumberWithPart,
+            NumberOf(chapter, parsed),
             parsed.Volume,
             TitleOf(chapter.Name),
             language,
             chapter.UploadDate > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(chapter.UploadDate).UtcDateTime : null,
             chapter.RealUrl,
             string.IsNullOrWhiteSpace(chapter.Scanlator) ? null : chapter.Scanlator.Trim());
+    }
+
+    /// <summary>
+    /// The extension's own number, or the one in the name when it sent none (-1). An extension that
+    /// numbers every part of chapter 9 as 9 gets the part's decimal too, or Normalize keeps one part.
+    /// </summary>
+    private static decimal? NumberOf(SuwayomiChapter chapter, ParsedChapter parsed)
+    {
+        if (chapter.ChapterNumber < 0)
+        {
+            return parsed.NumberWithPart;
+        }
+
+        var number = (decimal)chapter.ChapterNumber;
+        return parsed.Part is not null && parsed.Number == number ? parsed.NumberWithPart : number;
     }
 
     /// <summary>The part of a Mihon chapter name after its number, "Vol.3 Ch.15 - The Fight" giving "The Fight".</summary>

@@ -12,6 +12,8 @@ public class ChapterAccessReaderTests
     [InlineData("\U0001F4B4 第9話", ChapterAccess.Locked)]
     [InlineData("\U0001F512 (Preview) 1巻", ChapterAccess.Preview)]
     [InlineData("(Preview) 隣のステラ（１）", ChapterAccess.Preview)]
+    [InlineData("（Preview）2巻", ChapterAccess.Preview)]
+    [InlineData("第1巻 試し読み", ChapterAccess.Preview)]
     [InlineData(null, ChapterAccess.Free)]
     [InlineData("", ChapterAccess.Free)]
     public void Reads_the_access_a_label_announces(string? label, ChapterAccess expected) =>

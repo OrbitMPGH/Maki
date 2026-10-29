@@ -2,6 +2,7 @@ using System.Globalization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
+using Maki.Core.Parsing;
 using Maki.Core.Releases;
 using Maki.Core.Sources;
 using Maki.Data;
@@ -220,6 +221,8 @@ public class ChapterSyncService(
         {
             await MergeDuplicatesAsync(existing, reads, ct);
         }
+
+        await DropUnlistedLockedAsync(seriesId, existing, reads, ct);
 
         // Flag (or clear) cross-source numbering clashes. A clash is always
         // recorded; clearing requires every enabled mapping to have fetched this
@@ -516,6 +519,49 @@ public class ChapterSyncService(
     }
 
     /// <summary>
+    /// Locked and preview rows synced before sources stopped listing them (Suwayomi's 🔒, 💴 and
+    /// "(Preview)" labels). Once no source links one, it can never be fetched and only inflates the
+    /// series' chapter count. A row with a file, a removed file, a reader or a live download stays.
+    /// </summary>
+    private async Task DropUnlistedLockedAsync(int seriesId, List<Chapter> existing, ReadRows reads, CancellationToken ct)
+    {
+        var candidates = existing
+            .Where(c => c.Id != 0 && c.ChapterFileId is null && c.FileRemovedAt is null &&
+                        ChapterAccessReader.Of(c.NumberRaw) != ChapterAccess.Free &&
+                        c.SourceLinks.All(l => db.Entry(l).State == EntityState.Deleted))
+            .ToList();
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        var ids = candidates.Select(c => (int?)c.Id).ToList();
+        var downloading = await db.DownloadQueue
+            .Where(q => ids.Contains(q.ActiveChapterId))
+            .Select(q => q.ActiveChapterId!.Value)
+            .ToListAsync(ct);
+
+        var dropped = 0;
+        foreach (var chapter in candidates.Where(c => !downloading.Contains(c.Id)))
+        {
+            if (await reads.HasReadsAsync(chapter, ct))
+            {
+                continue;
+            }
+
+            existing.Remove(chapter);
+            db.Chapters.Remove(chapter);
+            dropped++;
+        }
+
+        if (dropped > 0)
+        {
+            logger.LogInformation("Removed {Count} locked or preview chapter(s) no source lists from series {SeriesId}",
+                dropped, seriesId);
+        }
+    }
+
+    /// <summary>
     /// Every reader's progress and bookmarks on the series, loaded only once a merge needs them.
     /// Unfiltered, since a sync started from one user's request must not drop another user's reads.
     /// </summary>
@@ -542,6 +588,10 @@ public class ChapterSyncService(
             return !progress.Any(p => p.ChapterId == b.Id && readersOfA.Contains(p.UserId));
         }
 
+        public async Task<bool> HasReadsAsync(Chapter chapter, CancellationToken ct) =>
+            (await ProgressAsync(ct)).Any(p => p.ChapterId == chapter.Id) ||
+            (await BookmarksAsync(ct)).Any(b => b.ChapterId == chapter.Id);
+
         public async Task MoveAsync(Chapter from, Chapter to, CancellationToken ct)
         {
             if (from.Id == 0 || to.Id == 0)
@@ -554,9 +604,7 @@ public class ChapterSyncService(
                 row.ChapterId = to.Id;
             }
 
-            var bookmarks = _bookmarks ??= await db.ReaderBookmarks.IgnoreQueryFilters()
-                .Where(b => b.SeriesId == seriesId)
-                .ToListAsync(ct);
+            var bookmarks = await BookmarksAsync(ct);
             foreach (var mark in bookmarks.Where(b => b.ChapterId == from.Id).ToList())
             {
                 // The same page bookmarked on both rows: the keeper's copy already covers it.
@@ -566,6 +614,11 @@ public class ChapterSyncService(
                 }
             }
         }
+
+        private async Task<List<ReaderBookmark>> BookmarksAsync(CancellationToken ct) =>
+            _bookmarks ??= await db.ReaderBookmarks.IgnoreQueryFilters()
+                .Where(b => b.SeriesId == seriesId)
+                .ToListAsync(ct);
 
         private async Task<List<ChapterProgress>> ProgressAsync(CancellationToken ct) =>
             _progress ??= await db.ChapterProgress.IgnoreQueryFilters()
