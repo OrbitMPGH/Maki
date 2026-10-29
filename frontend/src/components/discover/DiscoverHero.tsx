@@ -20,6 +20,7 @@ import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
 import { useLabel } from '../../i18n-context'
 import { formatFixedDecimal } from '../../format'
 import { onRovingKeyDown } from '../../lib/rovingFocus'
+import { MetaList } from '../ui/MetaList'
 
 /** How long one pick holds the band before the next takes it. */
 const ROTATE_MS = 5000
@@ -442,7 +443,7 @@ export function DiscoverHero({
                         )}
                       </span>
                       {matches.length > 0 && (
-                        <span className="discover-hero-strip-match">{matches.join(' · ')}</span>
+                        <span className="discover-hero-strip-match"><MetaList inline items={matches} /></span>
                       )}
                     </span>
                     {n === active && canAutoRotate && !halted && (

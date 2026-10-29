@@ -17,11 +17,12 @@ import {
   VisuallyHidden,
 } from '@mantine/core'
 import { IconHistory, IconListDetails, IconRefresh, IconUserQuestion } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
+import { MetaList } from '../components/ui/MetaList'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { SeriesCell } from '../components/SeriesCell'
@@ -173,7 +174,7 @@ function Progress({ outcome }: { outcome: SyncOutcome }) {
     <Text span size="sm" fw={600} className="tnum">
       {outcome.volume ? (
         <Trans>
-          ch. {outcome.chapter} · vol. {outcome.volume}
+          ch. {outcome.chapter}, vol. {outcome.volume}
         </Trans>
       ) : (
         <Trans>ch. {outcome.chapter}</Trans>
@@ -236,7 +237,7 @@ function RecentSyncResult({
                   <Text span size="sm" c="var(--ink-2)" className="tnum">
                     {o.volume ? (
                       <Trans>
-                        ch. {o.chapter} · vol. {o.volume}
+                        ch. {o.chapter}, vol. {o.volume}
                       </Trans>
                     ) : (
                       <Trans>ch. {o.chapter}</Trans>
@@ -596,16 +597,8 @@ export default function ScrobblePage() {
   )
 
   const syncTimes = (
-    <Text size="xs" c="var(--ink-3)" className="tnum section-header-status">
-      {data?.running ? (
-        <Trans>
-          sync running… · last {lastSync} · next {nextSync}
-        </Trans>
-      ) : (
-        <Trans>
-          last {lastSync} · next {nextSync}
-        </Trans>
-      )}
+    <Text component="div" size="xs" c="var(--ink-3)" className="tnum section-header-status">
+      <MetaList items={[data?.running && t`Syncing now`, t`Last ${lastSync}`, t`Next ${nextSync}`]} />
     </Text>
   )
 

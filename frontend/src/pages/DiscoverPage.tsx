@@ -43,7 +43,7 @@ import { useIsFetching } from '@tanstack/react-query'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import {
   allowedContentRatings,
   CONTENT_RATING_LABELS,

@@ -45,6 +45,9 @@ export const NotStartedChapter: Story = {
   args: { items: notStarted },
   play: async ({ canvas }) => {
     await expect((await canvas.findAllByRole('link', { name: 'Start chapter' }))[0]).toBeVisible()
+    // The label follows the card: nothing of this chapter is read yet, so it is not "continue".
+    await expect(canvas.getByText('New chapter')).toBeVisible()
+    await expect(canvas.queryByText('Continue reading')).toBeNull()
   },
 }
 

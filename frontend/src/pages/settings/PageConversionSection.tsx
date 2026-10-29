@@ -1,7 +1,7 @@
 import { Button, Divider, Group, Select, Stack, Text } from '@mantine/core'
 import { IconPlayerPause, IconPlayerPlay, IconSettings } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { SettingsSection } from './SettingsSection'

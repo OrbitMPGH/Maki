@@ -21,7 +21,7 @@ import {
   VisuallyHidden,
 } from '@mantine/core'
 import { IconRestore, IconTrash } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { activeSeries } from '../../lib/series'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
@@ -69,6 +69,7 @@ import {
   type RecycleBinEntry,
   type RecycleReason,
 } from '../../api/recycleBin'
+import { MetaList } from '../../components/ui/MetaList'
 
 export function RootFoldersSection() {
   const { t } = useLingui()
@@ -758,9 +759,8 @@ export function RecycleBinSection() {
                           <Table.Tr key={entry.id}>
                             <Table.Td>
                               <Text size="sm" style={{ wordBreak: 'break-all' }}>{entry.fileName}</Text>
-                              <Text size="xs" c="var(--ink-3)">
-                                {renderLabel(RECYCLE_REASON_LABELS[entry.reason])}
-                                {chapters && ` · ${chapters}`}
+                              <Text component="div" size="xs" c="var(--ink-3)">
+                                <MetaList items={[renderLabel(RECYCLE_REASON_LABELS[entry.reason]), chapters]} />
                               </Text>
                               {entry.missing && (
                                 <Text size="xs" c="var(--danger)">

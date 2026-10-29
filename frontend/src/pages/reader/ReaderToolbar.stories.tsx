@@ -87,7 +87,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await expect(await canvas.findByText('Lanterns Over Kasumi')).toBeVisible()
-    await expect(await canvas.findByText('131/142 chapters read · 150 in series')).toBeVisible()
+    await expect(await canvas.findByText('131/142 chapters read, 150 in series')).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Toggle bookmark' }))
     await expect(args.onToggleBookmark).toHaveBeenCalledOnce()
     await userEvent.click(await canvas.findByRole('button', { name: 'Keyboard shortcuts' }))

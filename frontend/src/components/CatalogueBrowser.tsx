@@ -23,7 +23,7 @@ import {
   useMatches,
 } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
 import { IconAdjustmentsHorizontal, IconSearch, IconUser, IconX } from '@tabler/icons-react'

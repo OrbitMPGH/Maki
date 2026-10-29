@@ -11,7 +11,7 @@ import {
   TextInput,
 } from '@mantine/core'
 import { IconCheck, IconCopy } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import {
   useOidcSettings,
   useSaveOidcSettings,

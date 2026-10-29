@@ -17,7 +17,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { IconCopy, IconRefresh } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { useAuth } from '../../auth/AuthProvider'
 import { useOpdsSettings, useRotateOpdsToken, useSaveOpdsSettings } from '../../api/hooks'

@@ -18,8 +18,9 @@ import {
   Text,
   Textarea,
   Tooltip,
+  Divider,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import {
   IconCheck,
   IconExternalLink,
@@ -280,9 +281,7 @@ export default function RequestsPage() {
                       <Text size="sm" c={r.editedAt ? undefined : 'var(--ink-3)'} fw={r.editedAt ? 600 : undefined}>
                         {chapterRangeLabel(r.chapterStart, r.chapterEnd)}
                       </Text>
-                      <Text size="sm" c="var(--ink-3)">
-                        ·
-                      </Text>
+                      <Divider orientation="vertical" />
                       <Text size="sm" c="var(--ink-3)">
                         {r.requestedBy}, {formatDate(r.created)}
                       </Text>
@@ -326,7 +325,7 @@ export default function RequestsPage() {
                             <Plural value={r.queuedCount} one="queued # chapter" other="queued # chapters" />
                           </>
                         )}
-                        {r.resolutionNote ? ` · ${r.resolutionNote}` : ''}
+                        {r.resolutionNote ? `. ${r.resolutionNote}` : ''}
                       </Text>
                     )}
                   </div>

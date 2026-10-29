@@ -16,16 +16,16 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const SLIDES = [
+const SLIDES: (string | RegExp)[] = [
   'Maki Rewind',
-  'You turned a lot of pages',
-  'Time spent in the reader',
-  'Your busiest month',
-  'Your most read series',
-  'You kept coming back to',
-  'Your library grew',
-  'Seen through to the end',
-  'Maybe next year',
+  'chapters read',
+  'spent in the reader',
+  'was your busiest month',
+  'was your most read series',
+  'was what you kept coming back to',
+  'series added',
+  /series finished/,
+  'Maybe next year.',
   'That was your 2026',
 ]
 

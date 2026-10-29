@@ -25,6 +25,7 @@ import {
   Title,
   Tooltip,
   VisuallyHidden,
+  Divider,
 } from '@mantine/core'
 import {
   IconAlertTriangle,
@@ -41,7 +42,7 @@ import {
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import {
   useAutoMatchSources,
   useCreateMapping,
@@ -528,7 +529,7 @@ export function SourceMappingsSection({
                           copy
                           fz="var(--mantine-font-size-xs)"
                         />
-                        <Text size="xs" c="var(--ink-3)" aria-hidden>·</Text>
+                        <Divider orientation="vertical" />
                         {m.lastError ? (
                           <Tooltip label={m.lastError} withArrow>
                             <Text size="xs" c="var(--danger)" fw={600} style={{ flexShrink: 0 }}>
@@ -1097,7 +1098,7 @@ function MappingMeasurement({ quality }: { quality: SourceQualityDto | undefined
     <Tooltip label={lines.join(' ')} withArrow multiline w={280}>
       <Text size="xs" c={quality.reliable ? undefined : 'var(--ink-3)'} style={{ whiteSpace: 'nowrap' }}>
         <Trans>
-          {width}px · {bpp} bpp
+          {width}px, {bpp} bpp
         </Trans>
       </Text>
     </Tooltip>

@@ -55,6 +55,7 @@ import { prefersReducedMotion, useDiceTumble } from '../../lib/lucky'
 import { cleanSynopsis } from '../../lib/synopsis'
 import { useLabel } from '../../i18n-context'
 import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
+import { MetaList } from '../ui/MetaList'
 
 export function DiscoverDetailModal({
   item,
@@ -236,8 +237,8 @@ export function DiscoverDetailModal({
                     </Title>
 
                     {(detail?.nativeTitle || detail?.romanizedTitle) && (
-                      <Text size="sm" pt="xs" c="var(--ink-3)">
-                        {[detail?.romanizedTitle, detail?.nativeTitle].filter(Boolean).join(' · ')}
+                      <Text component="div" size="sm" pt="xs" c="var(--ink-3)">
+                        <MetaList items={[detail?.romanizedTitle, detail?.nativeTitle]} />
                       </Text>
                     )}
                     {altTitles.length > 0 && (
@@ -379,8 +380,8 @@ export function DiscoverDetailModal({
                     )}
 
                     {facts.length > 0 && (
-                        <Text size="sm" c="var(--ink-4)" mt={9}>
-                          {facts.join(' · ')}
+                        <Text component="div" size="sm" c="var(--ink-4)" mt={9}>
+                          <MetaList items={facts} />
                         </Text>
                     )}
 

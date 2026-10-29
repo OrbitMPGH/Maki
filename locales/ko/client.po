@@ -15,8 +15,8 @@ msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid " · Acknowledged, hidden from the header badge"
-msgstr " · 확인됨, 헤더 배지에서 숨김"
+#~ msgid " · Acknowledged, hidden from the header badge"
+#~ msgstr " · 확인됨, 헤더 배지에서 숨김"
 
 #: src/components/pageconversion/RuleCard.tsx
 msgid " MB"
@@ -829,6 +829,14 @@ msgstr "{chaptersCount, plural, other {영향받는 챕터 #개}}"
 msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
 msgstr "{chaptersDownloaded, plural, other {다운로드한 챕터}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersLeft} at your paged pace, {basis}."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersLeft} at your scrolling pace, {basis}."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}"
@@ -1114,6 +1122,10 @@ msgstr "중단되기 전에 {done}/{total}개가 일치했습니다. 다시 시�
 msgid "{downloaded} of {total}"
 msgstr "{downloaded} / {total}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{downloadedCount} downloaded"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{droppedCount, plural, one {# series is waiting} other {# series are waiting}}"
@@ -1173,6 +1185,10 @@ msgstr "{failedCount, plural, other {삭제할 수 없음 #개}}"
 #, fuzzy
 msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
 msgstr "{failedNames}이(가) 응답하지 않아 이 시리즈가 아직 해당 소스에 남아 있을 수 있습니다. 다시 응답하면 자동 매칭을 한 번 더 실행하세요."
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "{feel}, {feelReasons}"
+msgstr ""
 
 #: src/components/RenameSeriesModal.tsx
 #: src/pages/ActivityPage.tsx
@@ -1329,8 +1345,8 @@ msgstr "{importedCount, plural, other {파일 #개 가져오기}}"
 
 #: src/sourceLabels.ts
 #, fuzzy
-msgid "{indexer} · Torrent"
-msgstr "{indexer} · 토렌트"
+#~ msgid "{indexer} · Torrent"
+#~ msgstr "{indexer} · 토렌트"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -1362,8 +1378,12 @@ msgstr "{kept, plural, other {연결되지 않은 파일 #개 남음}}"
 
 #: src/pages/stats/CreatorList.tsx
 #, fuzzy
-msgid "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
-msgstr "{kind, select, both {스토리 · 그림} story {스토리} art {그림} other {}}"
+#~ msgid "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
+#~ msgstr "{kind, select, both {스토리 · 그림} story {스토리} art {그림} other {}}"
+
+#: src/pages/stats/CreatorList.tsx
+msgid "{kind, select, both {Story and art} story {Story} art {Art} other {}}"
+msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -1385,6 +1405,10 @@ msgstr "{label}에 이미 파일이 있습니다. 결정하기 전에 두 파일
 #, fuzzy
 msgid "{label} as a push notification"
 msgstr "{label}을(를) 푸시 알림으로"
+
+#: src/components/AnimeCoverageBar.tsx
+msgid "{label} ends at ch. {num}"
+msgstr ""
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
@@ -1452,13 +1476,21 @@ msgstr "{left, plural, other {#개 남음}}"
 
 #: src/pages/stats/MidwayList.tsx
 #, fuzzy
-msgid "{left, plural, one {# left} other {# left}} · ~{eta}"
-msgstr "{left, plural, other {#개 남음}} · 약 {eta}"
+#~ msgid "{left, plural, one {# left} other {# left}} · ~{eta}"
+#~ msgstr "{left, plural, other {#개 남음}} · 약 {eta}"
+
+#: src/pages/stats/MidwayList.tsx
+msgid "{left, plural, one {# left} other {# left}}, about {eta}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "{lineLabel} · click to collapse"
-msgstr "{lineLabel} · 클릭하여 접기"
+#~ msgid "{lineLabel} · click to collapse"
+#~ msgstr "{lineLabel} · 클릭하여 접기"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{lineLabel}. Click to collapse."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "{linked, plural, one {# series stays linked to it and stops updating from it. Importing the same definition again picks the link back up.} other {# series stay linked to it and stop updating from it. Importing the same definition again picks the links back up.}}"
@@ -1481,13 +1513,21 @@ msgstr "{markerLabel} 애니메이션 적용 종료 지점"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "{markerLabel} Anime adaptation ends here · click to collapse"
-msgstr "{markerLabel} 애니메이션 적용 종료 지점 · 클릭하여 접기"
+#~ msgid "{markerLabel} Anime adaptation ends here · click to collapse"
+#~ msgstr "{markerLabel} 애니메이션 적용 종료 지점 · 클릭하여 접기"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "{markerLabel} Anime adaptation ends here · click to expand"
-msgstr "{markerLabel} 애니메이션 적용 종료 지점 · 클릭하여 펼치기"
+#~ msgid "{markerLabel} Anime adaptation ends here · click to expand"
+#~ msgstr "{markerLabel} 애니메이션 적용 종료 지점 · 클릭하여 펼치기"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{markerLabel} Anime adaptation ends here. Click to collapse."
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{markerLabel} Anime adaptation ends here. Click to expand."
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -1496,13 +1536,21 @@ msgstr "{markerLabel} 애니메이션 적용 시작 지점"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "{markerLabel} Anime adaptation starts here · click to collapse"
-msgstr "{markerLabel} 애니메이션 적용 시작 지점 · 클릭하여 접기"
+#~ msgid "{markerLabel} Anime adaptation starts here · click to collapse"
+#~ msgstr "{markerLabel} 애니메이션 적용 시작 지점 · 클릭하여 접기"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "{markerLabel} Anime adaptation starts here · click to expand"
-msgstr "{markerLabel} 애니메이션 적용 시작 지점 · 클릭하여 펼치기"
+#~ msgid "{markerLabel} Anime adaptation starts here · click to expand"
+#~ msgstr "{markerLabel} 애니메이션 적용 시작 지점 · 클릭하여 펼치기"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{markerLabel} Anime adaptation starts here. Click to collapse."
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{markerLabel} Anime adaptation starts here. Click to expand."
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -2153,8 +2201,12 @@ msgstr "{sourceCount, plural, other {Suwayomi {version}이(가) 설치된 소스
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "{sourceName} · priority {priority}"
-msgstr "{sourceName} · 우선순위 {priority}"
+#~ msgid "{sourceName} · priority {priority}"
+#~ msgstr "{sourceName} · 우선순위 {priority}"
+
+#: src/pages/HealthPage.tsx
+msgid "{sourceName} (priority {priority})"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -2247,13 +2299,13 @@ msgstr "{thumbnailFileCount, plural, other {리더 썸네일: 파일 #개, {thum
 
 #: src/components/series/FileQualityBadge.tsx
 #, fuzzy
-msgid "{tierLabel} · {medianWidth}px"
-msgstr "{tierLabel} · {medianWidth}px"
+#~ msgid "{tierLabel} · {medianWidth}px"
+#~ msgstr "{tierLabel} · {medianWidth}px"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
-msgid "{tierLabel} · {width}px"
-msgstr "{tierLabel} · {width}px"
+#~ msgid "{tierLabel} · {width}px"
+#~ msgstr "{tierLabel} · {width}px"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -2264,6 +2316,14 @@ msgstr "{tierLabel} ({score})"
 #, fuzzy
 msgid "{tierLabel} {medianWidth}px ({score})"
 msgstr "{tierLabel} {medianWidth}px ({score})"
+
+#: src/components/series/FileQualityBadge.tsx
+msgid "{tierLabel}, {medianWidth}px"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "{tierLabel}, {width}px"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -2302,19 +2362,27 @@ msgstr "{total, plural, other {{completed} / 파일 #개 검사함}}"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "{total, plural, one {{wantedCount} of # chapter wanted · click to want all} other {{wantedCount} of # chapters wanted · click to want all}}"
-msgstr "{total, plural, other {챕터 #개 중 {wantedCount}개 원함 · 클릭하면 모두 원함}}"
+#~ msgid "{total, plural, one {{wantedCount} of # chapter wanted · click to want all} other {{wantedCount} of # chapters wanted · click to want all}}"
+#~ msgstr "{total, plural, other {챕터 #개 중 {wantedCount}개 원함 · 클릭하면 모두 원함}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{total, plural, one {{wantedCount} of # chapter wanted. Click to want all.} other {{wantedCount} of # chapters wanted. Click to want all.}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
-msgid "{total, plural, one {# chapter · {downloadedCount} downloaded} other {# chapters · {downloadedCount} downloaded}}"
-msgstr "{total, plural, other {챕터 #개 · {downloadedCount}개 다운로드됨}}"
+#~ msgid "{total, plural, one {# chapter · {downloadedCount} downloaded} other {# chapters · {downloadedCount} downloaded}}"
+#~ msgstr "{total, plural, other {챕터 #개 · {downloadedCount}개 다운로드됨}}"
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
 msgid "{total, plural, one {# chapter listed, none wanted, nothing will download} other {# chapters listed, none wanted, nothing will download}}"
 msgstr "{total, plural, other {챕터 #개가 목록에 있으며 원하는 항목이 없으므로 다운로드되지 않음}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{total, plural, one {# chapter} other {# chapters}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -2588,8 +2656,12 @@ msgstr "{weight} 합계"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
-msgid "{width}px · {bpp} bpp"
-msgstr "{width}px · {bpp} bpp"
+#~ msgid "{width}px · {bpp} bpp"
+#~ msgstr "{width}px · {bpp} bpp"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "{width}px, {bpp} bpp"
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -3087,6 +3159,10 @@ msgstr "모두 확인"
 #, fuzzy
 msgid "Acknowledged"
 msgstr "확인됨"
+
+#: src/pages/HealthPage.tsx
+msgid "Acknowledged, hidden from the header badge"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -4775,8 +4851,16 @@ msgstr "챕터 {0}"
 #. placeholder {1}: outcome.volume
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "ch. {0} · vol. {1}"
-msgstr "챕터 {0} · 권 {1}"
+#~ msgid "ch. {0} · vol. {1}"
+#~ msgstr "챕터 {0} · 권 {1}"
+
+#. placeholder {0}: o.chapter
+#. placeholder {0}: outcome.chapter
+#. placeholder {1}: o.volume
+#. placeholder {1}: outcome.volume
+#: src/pages/ScrobblePage.tsx
+msgid "ch. {0}, vol. {1}"
+msgstr ""
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -5156,8 +5240,12 @@ msgstr "챕터, 전체를 대상으로 하려면 비워 둠"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Chapters {currentPageLabel} · {visibleAllCount} matching"
-msgstr "챕터 {currentPageLabel} · {visibleAllCount}개 일치"
+#~ msgid "Chapters {currentPageLabel} · {visibleAllCount} matching"
+#~ msgstr "챕터 {currentPageLabel} · {visibleAllCount}개 일치"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters {currentPageLabel} of {visibleAllCount} matching"
+msgstr ""
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -7669,8 +7757,8 @@ msgstr "미리보기 끝"
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
-msgid "ends at ch. {num}"
-msgstr "챕터 {num}에서 끝남"
+#~ msgid "ends at ch. {num}"
+#~ msgstr "챕터 {num}에서 끝남"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -8118,8 +8206,8 @@ msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
-msgid "Falling means you moved."
-msgstr "떨어진다는 것은 움직였다는 뜻입니다."
+#~ msgid "Falling means you moved."
+#~ msgstr "떨어진다는 것은 움직였다는 뜻입니다."
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -10299,9 +10387,13 @@ msgid "Larger than the auto-grab size limit"
 msgstr "자동 가져오기 크기 제한보다 큽니다"
 
 #: src/pages/ScrobblePage.tsx
+msgid "Last {lastSync}"
+msgstr ""
+
+#: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "last {lastSync} · next {nextSync}"
-msgstr "마지막 {lastSync} · 다음 {nextSync}"
+#~ msgid "last {lastSync} · next {nextSync}"
+#~ msgstr "마지막 {lastSync} · 다음 {nextSync}"
 
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
@@ -10438,6 +10530,11 @@ msgstr "마지막 사용"
 #, fuzzy
 msgid "Last volume search: {lastVolumeSearchText}"
 msgstr "마지막 권 검색: {lastVolumeSearchText}"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+#: src/components/releases/UpcomingView.tsx
+msgid "Later than expected. We guessed {range}."
+msgstr ""
 
 #: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
@@ -10948,6 +11045,10 @@ msgstr "디스크 공간 부족 경고(GiB)"
 msgid "Low quality"
 msgstr "낮은 품질"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "Lower bars mean your taste moved."
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Lower Case"
@@ -11075,6 +11176,10 @@ msgstr ""
 #, fuzzy
 msgid "Maki is restarting to apply it. Reload in a moment."
 msgstr "Maki를 적용하기 위해 다시 시작하는 중입니다. 잠시 후 다시 로드하세요."
+
+#: src/components/import/RecentImports.tsx
+msgid "Maki is still looking for sources. Undoing stops the search."
+msgstr ""
 
 #: src/pwa/offlineChapters.ts
 #, fuzzy
@@ -11393,8 +11498,12 @@ msgstr "높은 티어의 최대 점수 손실"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
-msgid "Maybe next year"
-msgstr "아마 내년"
+#~ msgid "Maybe next year"
+#~ msgstr "아마 내년"
+
+#: src/pages/rewind/slides.tsx
+msgid "Maybe next year."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -12159,6 +12268,10 @@ msgstr "신규"
 msgid "New"
 msgstr "새로 만들기"
 
+#: src/components/home/ContinueHero.tsx
+msgid "New chapter"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "New chapter available"
@@ -12283,6 +12396,10 @@ msgstr "새로 활성화된 소스는 맨 아래에 추가됩니다."
 #: src/pages/PageConversionWizardPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Next"
+msgstr ""
+
+#: src/pages/ScrobblePage.tsx
+msgid "Next {nextSync}"
 msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
@@ -13282,8 +13399,8 @@ msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
-msgid "Nothing dropped. Keep it that way."
-msgstr "중단한 작품이 없습니다. 계속 유지하세요."
+#~ msgid "Nothing dropped. Keep it that way."
+#~ msgstr "중단한 작품이 없습니다. 계속 유지하세요."
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -14293,8 +14410,8 @@ msgstr "페이지"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Paged pace · {chaptersLeft} · {basis}"
-msgstr "페이지 단위 속도 · {chaptersLeft} · {basis}"
+#~ msgid "Paged pace · {chaptersLeft} · {basis}"
+#~ msgstr "페이지 단위 속도 · {chaptersLeft} · {basis}"
 
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
@@ -14809,13 +14926,17 @@ msgstr "미리보기"
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy
-msgid "Preview · {chapterName} · via {source}"
-msgstr "미리보기 · {chapterName} · {source} 경유"
+#~ msgid "Preview · {chapterName} · via {source}"
+#~ msgstr "미리보기 · {chapterName} · {source} 경유"
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
 msgid "Preview first chapter"
 msgstr "첫 챕터 미리보기"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Preview of {chapterName} from {source}"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -17013,8 +17134,8 @@ msgstr "지연 중"
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
 #, fuzzy
-msgid "Running late. It was likely {range}."
-msgstr "지연 중입니다. 원래 예상 기간은 {range}였습니다."
+#~ msgid "Running late. It was likely {range}."
+#~ msgstr "지연 중입니다. 원래 예상 기간은 {range}였습니다."
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -17492,6 +17613,10 @@ msgid "Screen"
 msgstr "화면"
 
 #: src/components/pageconversion/labels.ts
+msgid "Screentone gets lighter but stays visible."
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
 msgid "Screentone is smoothed away, lines stay intact."
 msgstr ""
 
@@ -17553,8 +17678,8 @@ msgstr "웹툰 챕터 스크롤"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Scrolling pace · {chaptersLeft} · {basis}"
-msgstr "스크롤 속도 · {chaptersLeft} · {basis}"
+#~ msgid "Scrolling pace · {chaptersLeft} · {basis}"
+#~ msgstr "스크롤 속도 · {chaptersLeft} · {basis}"
 
 #: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
@@ -17809,10 +17934,15 @@ msgstr "봄 표시 해제됨"
 msgid "Seen elsewhere"
 msgstr "다른 곳에서 봄"
 
+#. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
+#: src/pages/rewind/slides.tsx
+msgid "seen through to the end"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
-msgid "Seen through to the end"
-msgstr "끝까지 확인함"
+#~ msgid "Seen through to the end"
+#~ msgstr "끝까지 확인함"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -18924,6 +19054,11 @@ msgstr "스페셜 ({visibleSpecialsCount})"
 msgid "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
 msgstr "특별편, 오마케, 소수점 챕터, 새 항목 모니터링, 모니터링, 시크릿 모드, 읽기 기록 동기화 안 함, 콘텐츠 등급, 시리즈 추가"
 
+#. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
+#: src/pages/rewind/slides.tsx
+msgid "spent in the reader"
+msgstr ""
+
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Spin-off of"
@@ -18951,13 +19086,21 @@ msgstr "두 페이지로 분할"
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
-msgid "Spoiler - hover to reveal"
-msgstr "스포일러 - 마우스를 올려 표시"
+#~ msgid "Spoiler - hover to reveal"
+#~ msgstr "스포일러 - 마우스를 올려 표시"
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
-msgid "Spoiler · {description}"
-msgstr "스포일러 · {description}"
+#~ msgid "Spoiler · {description}"
+#~ msgstr "스포일러 · {description}"
+
+#: src/components/TagBuckets.tsx
+msgid "Spoiler: {description}"
+msgstr ""
+
+#: src/components/TagBuckets.tsx
+msgid "Spoiler. Hover to reveal."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -19143,8 +19286,8 @@ msgstr "{source}에서 아직 얼리 액세스 상태입니다. Maki가 나중�
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
-msgid "Still finding sources. Undoing cancels that."
-msgstr "아직 소스를 찾는 중입니다. 되돌리면 그 작업은 취소됩니다."
+#~ msgid "Still finding sources. Undoing cancels that."
+#~ msgstr "아직 소스를 찾는 중입니다. 되돌리면 그 작업은 취소됩니다."
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -19302,8 +19445,8 @@ msgstr "평점 동기화"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "sync running… · last {lastSync} · next {nextSync}"
-msgstr "동기화 실행 중… · 마지막 {lastSync} · 다음 {nextSync}"
+#~ msgid "sync running… · last {lastSync} · next {nextSync}"
+#~ msgstr "동기화 실행 중… · 마지막 {lastSync} · 다음 {nextSync}"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -19324,6 +19467,10 @@ msgstr "동기화를 시작했습니다. 완료되면 알림을 받습니다"
 #, fuzzy
 msgid "Synced"
 msgstr "동기화됨"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Syncing now"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -20553,8 +20700,8 @@ msgstr "읽은 시간"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
-msgid "Time spent in the reader"
-msgstr "리더에서 보낸 시간"
+#~ msgid "Time spent in the reader"
+#~ msgstr "리더에서 보낸 시간"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20689,8 +20836,8 @@ msgid "Tone is a little lighter. Fine at fit-to-screen."
 msgstr ""
 
 #: src/components/pageconversion/labels.ts
-msgid "Tone thins out."
-msgstr ""
+#~ msgid "Tone thins out."
+#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -20739,6 +20886,10 @@ msgstr "주제 ID"
 #, fuzzy
 msgid "Torrent"
 msgstr "토렌트"
+
+#: src/sourceLabels.ts
+msgid "Torrent ({indexer})"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -21982,6 +22133,21 @@ msgstr "원하는 챕터는 기존 자동화로 다시 다운로드할 수 있�
 msgid "Warning"
 msgstr "경고"
 
+#. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
+#: src/pages/rewind/slides.tsx
+msgid "was what you kept coming back to"
+msgstr ""
+
+#. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
+#: src/pages/rewind/slides.tsx
+msgid "was your busiest month"
+msgstr ""
+
+#. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
+#: src/pages/rewind/slides.tsx
+msgid "was your most read series"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Watched"
@@ -22337,8 +22503,8 @@ msgstr "나"
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
-msgid "you · {readChapter}"
-msgstr "나 · {readChapter}"
+#~ msgid "you · {readChapter}"
+#~ msgstr "나 · {readChapter}"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -22435,10 +22601,14 @@ msgstr "아직 팔로우한 사람이 없습니다. 창작자나 스튜디오 �
 msgid "You have read to ch. {readChapter}"
 msgstr "챕터 {readChapter}까지 읽음"
 
+#: src/pages/stats/sections/HabitsSection.tsx
+msgid "You haven't dropped any series."
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
-msgid "You kept coming back to"
-msgstr "계속 다시 찾은 항목"
+#~ msgid "You kept coming back to"
+#~ msgstr "계속 다시 찾은 항목"
 
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
@@ -22483,13 +22653,17 @@ msgstr "빠르게 읽은 항목"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
-msgid "You turned a lot of pages"
-msgstr "많은 페이지를 넘겼습니다"
+#~ msgid "You turned a lot of pages"
+#~ msgstr "많은 페이지를 넘겼습니다"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "You vs the crowd"
 msgstr "나와 다른 사용자"
+
+#: src/components/AnimeCoverageBar.tsx
+msgid "You: ch. {readChapter}"
+msgstr ""
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -22523,8 +22697,8 @@ msgstr "내 {label}"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
-msgid "Your busiest month"
-msgstr "가장 바쁜 달"
+#~ msgid "Your busiest month"
+#~ msgstr "가장 바쁜 달"
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -22558,8 +22732,8 @@ msgstr "내 라이브러리"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
-msgid "Your library grew"
-msgstr "라이브러리가 성장함"
+#~ msgid "Your library grew"
+#~ msgstr "라이브러리가 성장함"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -22568,8 +22742,8 @@ msgstr "라이브러리가 비어 있습니다"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
-msgid "Your most read series"
-msgstr "가장 많이 읽은 시리즈"
+#~ msgid "Your most read series"
+#~ msgstr "가장 많이 읽은 시리즈"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy

@@ -13,7 +13,7 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { IconChevronDown, IconChevronUp, IconPlus, IconTrash } from '@tabler/icons-react'
 import {
   SERIES_TYPES,

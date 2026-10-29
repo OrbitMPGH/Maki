@@ -1,4 +1,4 @@
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { Plural, Trans } from '@lingui/react/macro'
 import type { RestoreSeriesResponse } from '../../api/types'
 

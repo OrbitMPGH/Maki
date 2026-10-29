@@ -81,8 +81,8 @@ export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
                 // Spoiler tags always get a tooltip hint; others only when described.
                 const tip = isSpoiler
                   ? description
-                    ? t`Spoiler · ${description}`
-                    : t`Spoiler - hover to reveal`
+                    ? t`Spoiler: ${description}`
+                    : t`Spoiler. Hover to reveal.`
                   : description
                 return tip ? (
                   <Tooltip

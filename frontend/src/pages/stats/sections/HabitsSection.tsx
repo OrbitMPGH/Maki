@@ -244,7 +244,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
               <p className="stats-panel-sub">{t`Stopped before finishing`}</p>
               {behaviour.abandoned.length === 0 ? (
                 <Text c="var(--ink-3)" size="sm">
-                  {t`Nothing dropped. Keep it that way.`}
+                  {t`You haven't dropped any series.`}
                 </Text>
               ) : (
                 <ul className="stats-rows">

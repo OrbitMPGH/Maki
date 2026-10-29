@@ -23,6 +23,7 @@ import {
   TextInput,
   UnstyledButton,
   VisuallyHidden,
+  Box,
 } from '@mantine/core'
 import {
   IconAlertTriangle,
@@ -32,7 +33,7 @@ import {
   IconTrash,
   IconUpload,
 } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { SettingsSection } from './SettingsSection'
 import {
@@ -319,14 +320,11 @@ function ReleaseNotes({ notes }: { notes: string }) {
               const bullet = /^\s*[-*]\s+(.*)$/.exec(line)
               if (bullet) {
                 return (
-                  <Group key={i} gap={6} align="flex-start" wrap="nowrap" pl="xs">
-                    <Text size="sm" c="var(--ink-3)">
-                      {'•'}
-                    </Text>
-                    <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-wrap', minWidth: 0 }}>
+                  <Box key={i} component="ul" m={0} pl="lg">
+                    <Text component="li" size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-wrap', minWidth: 0 }}>
                       {bullet[1]}
                     </Text>
-                  </Group>
+                  </Box>
                 )
               }
               if (!line.trim()) return null

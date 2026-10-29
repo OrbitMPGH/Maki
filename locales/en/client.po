@@ -14,8 +14,8 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/pages/HealthPage.tsx
-msgid " · Acknowledged, hidden from the header badge"
-msgstr " · Acknowledged, hidden from the header badge"
+#~ msgid " · Acknowledged, hidden from the header badge"
+#~ msgstr " · Acknowledged, hidden from the header badge"
 
 #: src/components/pageconversion/RuleCard.tsx
 msgid " MB"
@@ -713,6 +713,14 @@ msgstr "{chaptersCount, plural, one {# affected chapter} other {# affected chapt
 msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
 msgstr "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersLeft} at your paged pace, {basis}."
+msgstr "{chaptersLeft} at your paged pace, {basis}."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersLeft} at your scrolling pace, {basis}."
+msgstr "{chaptersLeft} at your scrolling pace, {basis}."
+
 #: src/pages/settings/ReadingCards.tsx
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}"
 msgstr "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}"
@@ -945,6 +953,10 @@ msgstr "{done} of {total} matched before this stopped. Retry to carry on, or rev
 msgid "{downloaded} of {total}"
 msgstr "{downloaded} of {total}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{downloadedCount} downloaded"
+msgstr "{downloadedCount} downloaded"
+
 #: src/pages/rewind/slides.tsx
 msgid "{droppedCount, plural, one {# series is waiting} other {# series are waiting}}"
 msgstr "{droppedCount, plural, one {# series is waiting} other {# series are waiting}}"
@@ -992,6 +1004,10 @@ msgstr "{failedCount, plural, one {# could not be deleted} other {# could not be
 #: src/components/SourceMappingsSection.tsx
 msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
 msgstr "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "{feel}, {feelReasons}"
+msgstr "{feel}, {feelReasons}"
 
 #: src/components/RenameSeriesModal.tsx
 #: src/pages/ActivityPage.tsx
@@ -1120,8 +1136,8 @@ msgid "{importedCount, plural, one {Import # file} other {Import # files}}"
 msgstr "{importedCount, plural, one {Import # file} other {Import # files}}"
 
 #: src/sourceLabels.ts
-msgid "{indexer} · Torrent"
-msgstr "{indexer} · Torrent"
+#~ msgid "{indexer} · Torrent"
+#~ msgstr "{indexer} · Torrent"
 
 #: src/pages/ImportPage.tsx
 msgid "{inLibraryCount, plural, one {Show # series already in the library} other {Show # series already in the library}}"
@@ -1148,8 +1164,12 @@ msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
 msgstr "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
 
 #: src/pages/stats/CreatorList.tsx
-msgid "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
-msgstr "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
+#~ msgid "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
+#~ msgstr "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
+
+#: src/pages/stats/CreatorList.tsx
+msgid "{kind, select, both {Story and art} story {Story} art {Art} other {}}"
+msgstr "{kind, select, both {Story and art} story {Story} art {Art} other {}}"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "{kind, select, up {Up {pct} on the period before.} down {Down {pct} on the period before.} flat {About the same as the period before.} none {} other {}}"
@@ -1167,6 +1187,10 @@ msgstr "{label} already has a file. Compare the two before deciding: importing t
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "{label} as a push notification"
 msgstr "{label} as a push notification"
+
+#: src/components/AnimeCoverageBar.tsx
+msgid "{label} ends at ch. {num}"
+msgstr "{label} ends at ch. {num}"
 
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "{label} in the bell"
@@ -1221,12 +1245,20 @@ msgid "{left, plural, one {# left} other {# left}}"
 msgstr "{left, plural, one {# left} other {# left}}"
 
 #: src/pages/stats/MidwayList.tsx
-msgid "{left, plural, one {# left} other {# left}} · ~{eta}"
-msgstr "{left, plural, one {# left} other {# left}} · ~{eta}"
+#~ msgid "{left, plural, one {# left} other {# left}} · ~{eta}"
+#~ msgstr "{left, plural, one {# left} other {# left}} · ~{eta}"
+
+#: src/pages/stats/MidwayList.tsx
+msgid "{left, plural, one {# left} other {# left}}, about {eta}"
+msgstr "{left, plural, one {# left} other {# left}}, about {eta}"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "{lineLabel} · click to collapse"
-msgstr "{lineLabel} · click to collapse"
+#~ msgid "{lineLabel} · click to collapse"
+#~ msgstr "{lineLabel} · click to collapse"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{lineLabel}. Click to collapse."
+msgstr "{lineLabel}. Click to collapse."
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "{linked, plural, one {# series stays linked to it and stops updating from it. Importing the same definition again picks the link back up.} other {# series stay linked to it and stop updating from it. Importing the same definition again picks the links back up.}}"
@@ -1245,24 +1277,40 @@ msgid "{markerLabel} Anime adaptation ends here"
 msgstr "{markerLabel} Anime adaptation ends here"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "{markerLabel} Anime adaptation ends here · click to collapse"
-msgstr "{markerLabel} Anime adaptation ends here · click to collapse"
+#~ msgid "{markerLabel} Anime adaptation ends here · click to collapse"
+#~ msgstr "{markerLabel} Anime adaptation ends here · click to collapse"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "{markerLabel} Anime adaptation ends here · click to expand"
-msgstr "{markerLabel} Anime adaptation ends here · click to expand"
+#~ msgid "{markerLabel} Anime adaptation ends here · click to expand"
+#~ msgstr "{markerLabel} Anime adaptation ends here · click to expand"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{markerLabel} Anime adaptation ends here. Click to collapse."
+msgstr "{markerLabel} Anime adaptation ends here. Click to collapse."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{markerLabel} Anime adaptation ends here. Click to expand."
+msgstr "{markerLabel} Anime adaptation ends here. Click to expand."
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "{markerLabel} Anime adaptation starts here"
 msgstr "{markerLabel} Anime adaptation starts here"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "{markerLabel} Anime adaptation starts here · click to collapse"
-msgstr "{markerLabel} Anime adaptation starts here · click to collapse"
+#~ msgid "{markerLabel} Anime adaptation starts here · click to collapse"
+#~ msgstr "{markerLabel} Anime adaptation starts here · click to collapse"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "{markerLabel} Anime adaptation starts here · click to expand"
-msgstr "{markerLabel} Anime adaptation starts here · click to expand"
+#~ msgid "{markerLabel} Anime adaptation starts here · click to expand"
+#~ msgstr "{markerLabel} Anime adaptation starts here · click to expand"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{markerLabel} Anime adaptation starts here. Click to collapse."
+msgstr "{markerLabel} Anime adaptation starts here. Click to collapse."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{markerLabel} Anime adaptation starts here. Click to expand."
+msgstr "{markerLabel} Anime adaptation starts here. Click to expand."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
@@ -1797,8 +1845,12 @@ msgid "{sourceCount, plural, one {Suwayomi {version} answered with # source inst
 msgstr "{sourceCount, plural, one {Suwayomi {version} answered with # source installed.} other {Suwayomi {version} answered with # sources installed.}}"
 
 #: src/pages/HealthPage.tsx
-msgid "{sourceName} · priority {priority}"
-msgstr "{sourceName} · priority {priority}"
+#~ msgid "{sourceName} · priority {priority}"
+#~ msgstr "{sourceName} · priority {priority}"
+
+#: src/pages/HealthPage.tsx
+msgid "{sourceName} (priority {priority})"
+msgstr "{sourceName} (priority {priority})"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "{sourceName} enabled"
@@ -1873,12 +1925,12 @@ msgid "{thumbnailFileCount, plural, one {Reader thumbnails: # file, {thumbnailBy
 msgstr "{thumbnailFileCount, plural, one {Reader thumbnails: # file, {thumbnailBytesLabel}} other {Reader thumbnails: # files, {thumbnailBytesLabel}}}"
 
 #: src/components/series/FileQualityBadge.tsx
-msgid "{tierLabel} · {medianWidth}px"
-msgstr "{tierLabel} · {medianWidth}px"
+#~ msgid "{tierLabel} · {medianWidth}px"
+#~ msgstr "{tierLabel} · {medianWidth}px"
 
 #: src/components/SourceCompareModal.tsx
-msgid "{tierLabel} · {width}px"
-msgstr "{tierLabel} · {width}px"
+#~ msgid "{tierLabel} · {width}px"
+#~ msgstr "{tierLabel} · {width}px"
 
 #: src/pages/ActivityPage.tsx
 msgid "{tierLabel} ({score})"
@@ -1887,6 +1939,14 @@ msgstr "{tierLabel} ({score})"
 #: src/pages/ActivityPage.tsx
 msgid "{tierLabel} {medianWidth}px ({score})"
 msgstr "{tierLabel} {medianWidth}px ({score})"
+
+#: src/components/series/FileQualityBadge.tsx
+msgid "{tierLabel}, {medianWidth}px"
+msgstr "{tierLabel}, {medianWidth}px"
+
+#: src/components/SourceCompareModal.tsx
+msgid "{tierLabel}, {width}px"
+msgstr "{tierLabel}, {width}px"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "{timedChapters, plural, one {Pace is from {formattedTimed} timed chapter; only the built-in reader records time.} other {Pace is from {formattedTimed} timed chapters; only the built-in reader records time.}}"
@@ -1917,17 +1977,25 @@ msgid "{total, plural, one {{completed} / # file inspected} other {{completed} /
 msgstr "{total, plural, one {{completed} / # file inspected} other {{completed} / # files inspected}}"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "{total, plural, one {{wantedCount} of # chapter wanted · click to want all} other {{wantedCount} of # chapters wanted · click to want all}}"
-msgstr "{total, plural, one {{wantedCount} of # chapter wanted · click to want all} other {{wantedCount} of # chapters wanted · click to want all}}"
+#~ msgid "{total, plural, one {{wantedCount} of # chapter wanted · click to want all} other {{wantedCount} of # chapters wanted · click to want all}}"
+#~ msgstr "{total, plural, one {{wantedCount} of # chapter wanted · click to want all} other {{wantedCount} of # chapters wanted · click to want all}}"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "{total, plural, one {# chapter · {downloadedCount} downloaded} other {# chapters · {downloadedCount} downloaded}}"
-msgstr "{total, plural, one {# chapter · {downloadedCount} downloaded} other {# chapters · {downloadedCount} downloaded}}"
+msgid "{total, plural, one {{wantedCount} of # chapter wanted. Click to want all.} other {{wantedCount} of # chapters wanted. Click to want all.}}"
+msgstr "{total, plural, one {{wantedCount} of # chapter wanted. Click to want all.} other {{wantedCount} of # chapters wanted. Click to want all.}}"
+
+#: src/components/series/ChapterTableRows.tsx
+#~ msgid "{total, plural, one {# chapter · {downloadedCount} downloaded} other {# chapters · {downloadedCount} downloaded}}"
+#~ msgstr "{total, plural, one {# chapter · {downloadedCount} downloaded} other {# chapters · {downloadedCount} downloaded}}"
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 msgid "{total, plural, one {# chapter listed, none wanted, nothing will download} other {# chapters listed, none wanted, nothing will download}}"
 msgstr "{total, plural, one {# chapter listed, none wanted, nothing will download} other {# chapters listed, none wanted, nothing will download}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{total, plural, one {# chapter} other {# chapters}}"
+msgstr "{total, plural, one {# chapter} other {# chapters}}"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "{total, plural, one {All # chapter wanted} other {All # chapters wanted}}"
@@ -2147,8 +2215,12 @@ msgid "{weight} total"
 msgstr "{weight} total"
 
 #: src/components/SourceMappingsSection.tsx
-msgid "{width}px · {bpp} bpp"
-msgstr "{width}px · {bpp} bpp"
+#~ msgid "{width}px · {bpp} bpp"
+#~ msgstr "{width}px · {bpp} bpp"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "{width}px, {bpp} bpp"
+msgstr "{width}px, {bpp} bpp"
 
 #: src/pages/CreatorPage.tsx
 msgid "{workCount, plural, one {# title in the catalogue} other {# titles in the catalogue}}"
@@ -2557,6 +2629,10 @@ msgstr "Acknowledge all"
 #: src/pages/HealthPage.tsx
 msgid "Acknowledged"
 msgstr "Acknowledged"
+
+#: src/pages/HealthPage.tsx
+msgid "Acknowledged, hidden from the header badge"
+msgstr "Acknowledged, hidden from the header badge"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Action"
@@ -3979,8 +4055,16 @@ msgstr "ch. {0}"
 #. placeholder {1}: o.volume
 #. placeholder {1}: outcome.volume
 #: src/pages/ScrobblePage.tsx
-msgid "ch. {0} · vol. {1}"
-msgstr "ch. {0} · vol. {1}"
+#~ msgid "ch. {0} · vol. {1}"
+#~ msgstr "ch. {0} · vol. {1}"
+
+#. placeholder {0}: o.chapter
+#. placeholder {0}: outcome.chapter
+#. placeholder {1}: o.volume
+#. placeholder {1}: outcome.volume
+#: src/pages/ScrobblePage.tsx
+msgid "ch. {0}, vol. {1}"
+msgstr "ch. {0}, vol. {1}"
 
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Ch. {chapter}"
@@ -4292,8 +4376,12 @@ msgid "Chapters - leave blank for all"
 msgstr "Chapters - leave blank for all"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Chapters {currentPageLabel} · {visibleAllCount} matching"
-msgstr "Chapters {currentPageLabel} · {visibleAllCount} matching"
+#~ msgid "Chapters {currentPageLabel} · {visibleAllCount} matching"
+#~ msgstr "Chapters {currentPageLabel} · {visibleAllCount} matching"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters {currentPageLabel} of {visibleAllCount} matching"
+msgstr "Chapters {currentPageLabel} of {visibleAllCount} matching"
 
 #: src/pages/reader/ChapterEnd.tsx
 msgid "Chapters {gapFrom} to {gapTo} aren't downloaded, so this skips them."
@@ -6387,8 +6475,8 @@ msgid "End of the preview"
 msgstr "End of the preview"
 
 #: src/components/AnimeCoverageBar.tsx
-msgid "ends at ch. {num}"
-msgstr "ends at ch. {num}"
+#~ msgid "ends at ch. {num}"
+#~ msgstr "ends at ch. {num}"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "English"
@@ -6759,8 +6847,8 @@ msgid "Fallback"
 msgstr "Fallback"
 
 #: src/pages/discover/TasteTab.tsx
-msgid "Falling means you moved."
-msgstr "Falling means you moved."
+#~ msgid "Falling means you moved."
+#~ msgstr "Falling means you moved."
 
 #: src/components/ui/DiscoverRail.tsx
 msgid "Fans of"
@@ -8572,8 +8660,12 @@ msgid "Larger than the auto-grab size limit"
 msgstr "Larger than the auto-grab size limit"
 
 #: src/pages/ScrobblePage.tsx
-msgid "last {lastSync} · next {nextSync}"
-msgstr "last {lastSync} · next {nextSync}"
+msgid "Last {lastSync}"
+msgstr "Last {lastSync}"
+
+#: src/pages/ScrobblePage.tsx
+#~ msgid "last {lastSync} · next {nextSync}"
+#~ msgstr "last {lastSync} · next {nextSync}"
 
 #: src/components/home/ReadingWeeks.tsx
 msgid "Last 5 weeks"
@@ -8684,6 +8776,11 @@ msgstr "Last used"
 #: src/pages/ActivityPage.tsx
 msgid "Last volume search: {lastVolumeSearchText}"
 msgstr "Last volume search: {lastVolumeSearchText}"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+#: src/components/releases/UpcomingView.tsx
+msgid "Later than expected. We guessed {range}."
+msgstr "Later than expected. We guessed {range}."
 
 #: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
@@ -9108,6 +9205,10 @@ msgstr "Low disk warning (GiB)"
 msgid "Low quality"
 msgstr "Low quality"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "Lower bars mean your taste moved."
+msgstr "Lower bars mean your taste moved."
+
 #: src/components/NamingTokenModal.tsx
 msgid "Lower Case"
 msgstr "Lower Case"
@@ -9216,6 +9317,10 @@ msgstr "Maki found no suitable pages to suggest. Pick one from your library."
 #: src/pages/settings/SystemCards.tsx
 msgid "Maki is restarting to apply it. Reload in a moment."
 msgstr "Maki is restarting to apply it. Reload in a moment."
+
+#: src/components/import/RecentImports.tsx
+msgid "Maki is still looking for sources. Undoing stops the search."
+msgstr "Maki is still looking for sources. Undoing stops the search."
 
 #: src/pwa/offlineChapters.ts
 msgid "Maki is using {used} of {quota} here. Remove some saved chapters and try again."
@@ -9480,8 +9585,12 @@ msgid "Maximum score loss for a higher tier"
 msgstr "Maximum score loss for a higher tier"
 
 #: src/pages/rewind/slides.tsx
-msgid "Maybe next year"
-msgstr "Maybe next year"
+#~ msgid "Maybe next year"
+#~ msgstr "Maybe next year"
+
+#: src/pages/rewind/slides.tsx
+msgid "Maybe next year."
+msgstr "Maybe next year."
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Measure"
@@ -10118,6 +10227,10 @@ msgstr "new"
 msgid "New"
 msgstr "New"
 
+#: src/components/home/ContinueHero.tsx
+msgid "New chapter"
+msgstr "New chapter"
+
 #: src/components/NotificationsSection.tsx
 msgid "New chapter available"
 msgstr "New chapter available"
@@ -10220,6 +10333,10 @@ msgstr "Newly enabled sources join at the bottom."
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Next"
 msgstr "Next"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Next {nextSync}"
+msgstr "Next {nextSync}"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/pages/reader/ChapterEnd.tsx
@@ -11045,8 +11162,8 @@ msgid "Nothing downloading right now"
 msgstr "Nothing downloading right now"
 
 #: src/pages/stats/sections/HabitsSection.tsx
-msgid "Nothing dropped. Keep it that way."
-msgstr "Nothing dropped. Keep it that way."
+#~ msgid "Nothing dropped. Keep it that way."
+#~ msgstr "Nothing dropped. Keep it that way."
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Nothing enabled. Turn a source on to rank it."
@@ -11893,8 +12010,8 @@ msgid "Paged"
 msgstr "Paged"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Paged pace · {chaptersLeft} · {basis}"
-msgstr "Paged pace · {chaptersLeft} · {basis}"
+#~ msgid "Paged pace · {chaptersLeft} · {basis}"
+#~ msgstr "Paged pace · {chaptersLeft} · {basis}"
 
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
@@ -12330,12 +12447,16 @@ msgid "Preview"
 msgstr "Preview"
 
 #: src/components/discover/SeriesPreviewReader.tsx
-msgid "Preview · {chapterName} · via {source}"
-msgstr "Preview · {chapterName} · via {source}"
+#~ msgid "Preview · {chapterName} · via {source}"
+#~ msgstr "Preview · {chapterName} · via {source}"
 
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "Preview first chapter"
 msgstr "Preview first chapter"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Preview of {chapterName} from {source}"
+msgstr "Preview of {chapterName} from {source}"
 
 #: src/pages/ImportPage.tsx
 msgid "Preview the import"
@@ -14168,8 +14289,8 @@ msgstr "Running late"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
-msgid "Running late. It was likely {range}."
-msgstr "Running late. It was likely {range}."
+#~ msgid "Running late. It was likely {range}."
+#~ msgstr "Running late. It was likely {range}."
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -14574,6 +14695,10 @@ msgid "Screen"
 msgstr "Screen"
 
 #: src/components/pageconversion/labels.ts
+msgid "Screentone gets lighter but stays visible."
+msgstr "Screentone gets lighter but stays visible."
+
+#: src/components/pageconversion/labels.ts
 msgid "Screentone is smoothed away, lines stay intact."
 msgstr "Screentone is smoothed away, lines stay intact."
 
@@ -14623,8 +14748,8 @@ msgid "Scroll webtoon chapters"
 msgstr "Scroll webtoon chapters"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Scrolling pace · {chaptersLeft} · {basis}"
-msgstr "Scrolling pace · {chaptersLeft} · {basis}"
+#~ msgid "Scrolling pace · {chaptersLeft} · {basis}"
+#~ msgstr "Scrolling pace · {chaptersLeft} · {basis}"
 
 #: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
@@ -14833,9 +14958,14 @@ msgstr "Seen cleared"
 msgid "Seen elsewhere"
 msgstr "Seen elsewhere"
 
+#. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
 #: src/pages/rewind/slides.tsx
-msgid "Seen through to the end"
-msgstr "Seen through to the end"
+msgid "seen through to the end"
+msgstr "seen through to the end"
+
+#: src/pages/rewind/slides.tsx
+#~ msgid "Seen through to the end"
+#~ msgstr "Seen through to the end"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Seen: {media}"
@@ -15766,6 +15896,11 @@ msgstr "Specials ({visibleSpecialsCount})"
 msgid "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
 msgstr "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
 
+#. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
+#: src/pages/rewind/slides.tsx
+msgid "spent in the reader"
+msgstr "spent in the reader"
+
 #: src/components/ui/DiscoverRail.tsx
 msgid "Spin-off of"
 msgstr "Spin-off of"
@@ -15787,12 +15922,20 @@ msgid "Split into two pages"
 msgstr "Split into two pages"
 
 #: src/components/TagBuckets.tsx
-msgid "Spoiler - hover to reveal"
-msgstr "Spoiler - hover to reveal"
+#~ msgid "Spoiler - hover to reveal"
+#~ msgstr "Spoiler - hover to reveal"
 
 #: src/components/TagBuckets.tsx
-msgid "Spoiler · {description}"
-msgstr "Spoiler · {description}"
+#~ msgid "Spoiler · {description}"
+#~ msgstr "Spoiler · {description}"
+
+#: src/components/TagBuckets.tsx
+msgid "Spoiler: {description}"
+msgstr "Spoiler: {description}"
+
+#: src/components/TagBuckets.tsx
+msgid "Spoiler. Hover to reveal."
+msgstr "Spoiler. Hover to reveal."
 
 #: src/components/CatalogueFilters.tsx
 msgid "Sports"
@@ -15945,8 +16088,8 @@ msgid "Still early access on {source}, Maki will check again later"
 msgstr "Still early access on {source}, Maki will check again later"
 
 #: src/components/import/RecentImports.tsx
-msgid "Still finding sources. Undoing cancels that."
-msgstr "Still finding sources. Undoing cancels that."
+#~ msgid "Still finding sources. Undoing cancels that."
+#~ msgstr "Still finding sources. Undoing cancels that."
 
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Still going"
@@ -16075,8 +16218,8 @@ msgid "Sync ratings"
 msgstr "Sync ratings"
 
 #: src/pages/ScrobblePage.tsx
-msgid "sync running… · last {lastSync} · next {nextSync}"
-msgstr "sync running… · last {lastSync} · next {nextSync}"
+#~ msgid "sync running… · last {lastSync} · next {nextSync}"
+#~ msgstr "sync running… · last {lastSync} · next {nextSync}"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Sync server"
@@ -16093,6 +16236,10 @@ msgstr "Sync started, you will get a notification when it finishes"
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Synced"
 msgstr "Synced"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Syncing now"
+msgstr "Syncing now"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Syncing…"
@@ -17120,8 +17267,8 @@ msgid "Time read"
 msgstr "Time read"
 
 #: src/pages/rewind/slides.tsx
-msgid "Time spent in the reader"
-msgstr "Time spent in the reader"
+#~ msgid "Time spent in the reader"
+#~ msgstr "Time spent in the reader"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Time to finish"
@@ -17233,8 +17380,8 @@ msgid "Tone is a little lighter. Fine at fit-to-screen."
 msgstr "Tone is a little lighter. Fine at fit-to-screen."
 
 #: src/components/pageconversion/labels.ts
-msgid "Tone thins out."
-msgstr "Tone thins out."
+#~ msgid "Tone thins out."
+#~ msgstr "Tone thins out."
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Too few or too old to trust yet, so upgrade scans still sample this source first."
@@ -17274,6 +17421,10 @@ msgstr "Topic ID"
 #: src/sourceLabels.ts
 msgid "Torrent"
 msgstr "Torrent"
+
+#: src/sourceLabels.ts
+msgid "Torrent ({indexer})"
+msgstr "Torrent ({indexer})"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -18309,6 +18460,21 @@ msgstr "Wanted chapters may be downloaded again by existing automation."
 msgid "Warning"
 msgstr "Warning"
 
+#. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
+#: src/pages/rewind/slides.tsx
+msgid "was what you kept coming back to"
+msgstr "was what you kept coming back to"
+
+#. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
+#: src/pages/rewind/slides.tsx
+msgid "was your busiest month"
+msgstr "was your busiest month"
+
+#. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
+#: src/pages/rewind/slides.tsx
+msgid "was your most read series"
+msgstr "was your most read series"
+
 #: src/components/series/ChapterTableRows.tsx
 msgid "Watched"
 msgstr "Watched"
@@ -18604,8 +18770,8 @@ msgid "You"
 msgstr "You"
 
 #: src/components/AnimeCoverageBar.tsx
-msgid "you · {readChapter}"
-msgstr "you · {readChapter}"
+#~ msgid "you · {readChapter}"
+#~ msgstr "you · {readChapter}"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "You are on this page over plain HTTP. After a restart, signing in at this address will be refused. Open Maki through its HTTPS address first, or make sure you can reach it that way."
@@ -18683,9 +18849,13 @@ msgstr "You follow nobody yet. Open a creator or studio and press Follow."
 msgid "You have read to ch. {readChapter}"
 msgstr "You have read to ch. {readChapter}"
 
+#: src/pages/stats/sections/HabitsSection.tsx
+msgid "You haven't dropped any series."
+msgstr "You haven't dropped any series."
+
 #: src/pages/rewind/slides.tsx
-msgid "You kept coming back to"
-msgstr "You kept coming back to"
+#~ msgid "You kept coming back to"
+#~ msgstr "You kept coming back to"
 
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
@@ -18721,12 +18891,16 @@ msgid "You tear through"
 msgstr "You tear through"
 
 #: src/pages/rewind/slides.tsx
-msgid "You turned a lot of pages"
-msgstr "You turned a lot of pages"
+#~ msgid "You turned a lot of pages"
+#~ msgstr "You turned a lot of pages"
 
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "You vs the crowd"
 msgstr "You vs the crowd"
+
+#: src/components/AnimeCoverageBar.tsx
+msgid "You: ch. {readChapter}"
+msgstr "You: ch. {readChapter}"
 
 #: src/pages/reader/ChapterEnd.tsx
 msgid "You're caught up"
@@ -18754,8 +18928,8 @@ msgid "Your {label}"
 msgstr "Your {label}"
 
 #: src/pages/rewind/slides.tsx
-msgid "Your busiest month"
-msgstr "Your busiest month"
+#~ msgid "Your busiest month"
+#~ msgstr "Your busiest month"
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Your device asks for reduced motion, so these stay off."
@@ -18782,16 +18956,16 @@ msgid "Your library"
 msgstr "Your library"
 
 #: src/pages/rewind/slides.tsx
-msgid "Your library grew"
-msgstr "Your library grew"
+#~ msgid "Your library grew"
+#~ msgstr "Your library grew"
 
 #: src/pages/LibraryPage.tsx
 msgid "Your library is empty"
 msgstr "Your library is empty"
 
 #: src/pages/rewind/slides.tsx
-msgid "Your most read series"
-msgstr "Your most read series"
+#~ msgid "Your most read series"
+#~ msgstr "Your most read series"
 
 #: src/components/settings/AccountSection.tsx
 msgid "Your new API key"

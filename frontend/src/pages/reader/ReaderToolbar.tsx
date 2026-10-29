@@ -307,7 +307,7 @@ export default function ReaderToolbar({
                       )}
                       {moreInSeries && (
                         <>
-                          {' · '}
+                          {', '}
                           <Plural value={seriesWantedCount} one="# in series" other="# in series" />
                         </>
                       )}

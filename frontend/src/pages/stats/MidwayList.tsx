@@ -12,7 +12,7 @@ function MidwayHint({ held, etaSeconds }: { held: number; etaSeconds: number | n
   const eta = formatReadingTime(etaSeconds)
   return (
     <Trans>
-      <Plural value={left} one="# left" other="# left" /> · ~{eta}
+      <Plural value={left} one="# left" other="# left" />, about {eta}
     </Trans>
   )
 }

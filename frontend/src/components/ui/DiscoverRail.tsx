@@ -73,10 +73,11 @@ function reasonFor(item: RecommendationItem): string {
   if (item.becauseOfTitle) {
     const { becauseOfTitle } = item
     const feel = now`Feels like ${becauseOfTitle}`
-    return parts.length > 0 ? `${feel} · ${parts.join(' · ')}` : feel
+    const feelReasons = parts.join(', ')
+    return parts.length > 0 ? now`${feel}, ${feelReasons}` : feel
   }
   if (parts.length > 0) {
-    const reasonList = parts.join(' · ')
+    const reasonList = parts.join(', ')
     return now`Because: ${reasonList}`
   }
   return now`Similar feel`

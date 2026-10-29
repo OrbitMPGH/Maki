@@ -154,8 +154,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
       key: 'read',
       node: (
         <Stack align="center" gap="xs">
-          <Reveal>{eyebrow(<Trans>You turned a lot of pages</Trans>)}</Reveal>
-          <Reveal delay={0.3}>
+          <Reveal>
             <BigNumber
               value={readValue}
               suffix={
@@ -189,9 +188,11 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
       node: (
         <Stack align="center" gap="xs">
           <Poster url={topByTime?.coverUrl ?? null} />
-          <Reveal>{eyebrow(<Trans>Time spent in the reader</Trans>)}</Reveal>
-          <Reveal delay={0.3}>
+          <Reveal>
             <Text className="rewind-title">{formatReadingTime(t.readingSeconds)}</Text>
+            <Text className="rewind-caption">
+              <Trans comment="Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts">spent in the reader</Trans>
+            </Text>
           </Reveal>
           {stats.topByTime.length > 0 && (
             <Reveal delay={0.7}>
@@ -215,9 +216,11 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
       key: 'busiest',
       node: (
         <Stack align="center" gap="xs">
-          <Reveal>{eyebrow(<Trans>Your busiest month</Trans>)}</Reveal>
-          <Reveal delay={0.3}>
+          <Reveal>
             <Text className="rewind-title">{busiestMonth}</Text>
+            <Text className="rewind-caption">
+              <Trans comment="Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts">was your busiest month</Trans>
+            </Text>
           </Reveal>
           <Reveal delay={0.6}>
             <Text className="rewind-sub">
@@ -242,9 +245,11 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
       node: (
         <Stack align="center" gap="sm">
           <Poster url={stats.topRead[0].coverUrl} />
-          <Reveal>{eyebrow(<Trans>Your most read series</Trans>)}</Reveal>
-          <Reveal delay={0.3}>
+          <Reveal delay={0.2}>
             <Text className="rewind-title">{topReadTitle}</Text>
+            <Text className="rewind-caption">
+              <Trans comment="Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts">was your most read series</Trans>
+            </Text>
           </Reveal>
           <Reveal delay={0.6}>
             <Text className="rewind-sub">
@@ -275,10 +280,12 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
       key: 'genres',
       node: (
         <Stack align="center" gap="sm">
-          <Reveal>{eyebrow(<Trans>You kept coming back to</Trans>)}</Reveal>
-          <Reveal delay={0.3}>
+          <Reveal>
             <Text className="rewind-title">
               <GenreLabel name={topGenreName} />
+            </Text>
+            <Text className="rewind-caption">
+              <Trans comment="Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts">was what you kept coming back to</Trans>
             </Text>
           </Reveal>
           {(stats.topGenres.length > 1 || stats.topTags.length > 0) && (
@@ -309,10 +316,9 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
       key: 'growth',
       node: (
         <Stack align="center" gap="lg">
-          <Reveal>{eyebrow(<Trans>Your library grew</Trans>)}</Reveal>
           <Group justify="center" className="rewind-figure-pair">
             {seriesAdded > 0 && (
-              <Reveal delay={0.3}>
+              <Reveal>
                 <BigNumber
                   value={seriesAdded}
                   suffix={<Plural value={seriesAdded} one="series added" other="series added" />}
@@ -354,8 +360,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
               <CoverFan urls={stats.finished.map((s) => s.coverUrl)} />
             </Reveal>
           )}
-          <Reveal>{eyebrow(<Trans>Seen through to the end</Trans>)}</Reveal>
-          <Reveal delay={0.3}>
+          <Reveal delay={0.2}>
             <Text className="rewind-title">
               {finishedCount === 1 ? (
                 stats.finished[0].title
@@ -363,6 +368,11 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
                 <Plural value={finishedCount} one="# series finished" other="# series finished" />
               )}
             </Text>
+            {finishedCount === 1 && (
+              <Text className="rewind-caption">
+                <Trans comment="Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts">seen through to the end</Trans>
+              </Text>
+            )}
           </Reveal>
           {stats.finished.length > 1 && (
             <Reveal delay={0.65}>
@@ -389,10 +399,12 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
           <Reveal>
             <CoverFan urls={stats.dropped.map((s) => s.coverUrl)} muted />
           </Reveal>
-          <Reveal>{eyebrow(<Trans>Maybe next year</Trans>)}</Reveal>
-          <Reveal delay={0.3}>
+          <Reveal delay={0.2}>
             <Text className="rewind-title">
               <Plural value={droppedCount} one="# series is waiting" other="# series are waiting" />
+            </Text>
+            <Text className="rewind-caption">
+              <Trans>Maybe next year.</Trans>
             </Text>
           </Reveal>
           <Reveal delay={0.65}>

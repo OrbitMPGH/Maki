@@ -11,6 +11,7 @@ import {
   useCustomSourceUpdatePreview, useInstallFromRepository, useRefreshRepositories, useRemoveRepository,
   useSetRepositoryAutoUpdate, type CustomRepository, type CustomRepositoryEntry, type IdentityReason,
 } from '../../api/customSources'
+import { MetaList } from '../../components/ui/MetaList'
 
 function useReasonLabels(): Record<IdentityReason, string> {
   const { t } = useLingui()
@@ -234,8 +235,8 @@ function RepositoryCard({ repository, onUpdate }: { repository: CustomRepository
                 <Table.Tr key={entry.id}>
                   <Table.Td>
                     <Text size="sm" fw={600}>{entry.name}</Text>
-                    <Text size="xs" c="var(--ink-3)">
-                      {languageName(entry.language) ?? entry.language} · <Trans>version {entry.version}</Trans>
+                    <Text component="div" size="xs" c="var(--ink-3)">
+                      <MetaList items={[languageName(entry.language) ?? entry.language, <Trans key="version">version {entry.version}</Trans>]} />
                     </Text>
                   </Table.Td>
                   <Table.Td ta="right">

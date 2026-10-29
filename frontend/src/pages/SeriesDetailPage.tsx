@@ -57,7 +57,7 @@ import {
   IconSortDescendingNumbers,
 } from '@tabler/icons-react'
 import { useMediaQuery } from '@mantine/hooks'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   useChapters,
@@ -2629,7 +2629,7 @@ function SeriesDetailBody() {
                 <Paper className="series-detail-chapter-hint" withBorder p="xs" radius="lg">
                   <Group justify="space-between" wrap="wrap" gap="xs">
                     <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: 1, minWidth: 240 }}>
-                      <IconLink size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+                      <IconLink size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} />
                       <Text size="sm" c="var(--ink-2)">
                         <Plural
                             value={unlinkedFilesOnDisk}
@@ -3115,7 +3115,7 @@ function SeriesDetailBody() {
                                 style={{ top: line.top, height: line.height, left: line.left }}
                                 data-open-start={line.openStart ? '' : undefined}
                                 data-open-ended={line.openEnded ? '' : undefined}
-                                title={t`${lineLabel} · click to collapse`}
+                                title={t`${lineLabel}. Click to collapse.`}
                                 aria-label={t`Collapse ${lineLabel}`}
                                 onClick={() => toggleSpanFold(line.key)}
                             />
@@ -3127,7 +3127,7 @@ function SeriesDetailBody() {
                   {chapterPageCount > 1 && (
                       <Group justify="space-between" gap="xs" wrap="wrap">
                         <Text size="xs" c="var(--ink-3)" className="tnum">
-                          <Trans>Chapters {currentPageLabel} · {visibleAllCount} matching</Trans>
+                          <Trans>Chapters {currentPageLabel} of {visibleAllCount} matching</Trans>
                         </Text>
                         <Pagination
                             size="sm"
@@ -3301,9 +3301,9 @@ function ReadTimeEstimateText({ estimate }: { estimate: ReadTimeEstimate }) {
         </Text>
         <Text size="xs" c="var(--ink-3)">
           {style === 'scrolling' ? (
-              <Trans>Scrolling pace · {chaptersLeft} · {basis}</Trans>
+              <Trans>{chaptersLeft} at your scrolling pace, {basis}.</Trans>
           ) : (
-              <Trans>Paged pace · {chaptersLeft} · {basis}</Trans>
+              <Trans>{chaptersLeft} at your paged pace, {basis}.</Trans>
           )}
         </Text>
       </Stack>
