@@ -355,8 +355,8 @@ public class SeriesArchiveService(
 
     /// <summary>
     /// Whether the series page offers "finished, archive it?" to the caller: the series is completed
-    /// and active, the caller has finished it and not dismissed the hint, and everyone else who has a
-    /// reading state for it has finished it too. <paramref name="db"/> is the caller's scoped context,
+    /// and active, the caller has finished it and not dismissed the hint, and everyone who has a
+    /// reading state for it has finished it and completed every downloaded chapter. <paramref name="db"/> is the caller's scoped context,
     /// so the dismissal and the caller's own reading state are theirs. The permission check stays
     /// with the caller.
     /// </summary>
@@ -381,8 +381,18 @@ public class SeriesArchiveService(
             return false;
         }
 
-        return !await db.ReadingStates.IgnoreQueryFilters().AsNoTracking()
-            .AnyAsync(r => r.SeriesId == series.Id && !r.Finished, ct);
+        var readers = db.ReadingStates.IgnoreQueryFilters().AsNoTracking().Where(r => r.SeriesId == series.Id);
+        if (await readers.AnyAsync(r => !r.Finished, ct))
+        {
+            return false;
+        }
+
+        // Finished only means the high-water mark reached the last chapter, so check every kept chapter too.
+        var kept = db.Chapters.IgnoreQueryFilters()
+            .Where(c => c.SeriesId == series.Id && (c.ChapterFileId != null || c.FileRemovedAt != null));
+        return !await readers.Select(r => r.UserId).Distinct().AnyAsync(userId =>
+            kept.Any(c => !db.ChapterProgress.IgnoreQueryFilters()
+                .Any(p => p.UserId == userId && p.ChapterId == c.Id && p.Completed)), ct);
     }
 
     /// <summary>
