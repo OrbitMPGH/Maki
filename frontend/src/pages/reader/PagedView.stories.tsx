@@ -221,6 +221,29 @@ export const EnhancedSplitHalf: Story = {
   },
 }
 
+const softPage = `data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1200">
+    <defs><filter id="soft"><feGaussianBlur stdDeviation="3"/></filter></defs>
+    <rect width="800" height="1200" fill="#fff"/>
+    <g filter="url(#soft)" stroke="#111" stroke-width="4" fill="none">
+      ${Array.from({ length: 24 }, (_, i) => `<path d="M0 ${i * 50} L800 ${i * 50 + 300}"/>`).join('')}
+      ${Array.from({ length: 16 }, (_, i) => `<circle cx="${(i % 4) * 200 + 100}" cy="${Math.floor(i / 4) * 300 + 150}" r="70"/>`).join('')}
+    </g>
+  </svg>`,
+)}`
+
+/** Auto enhances a blurry page even when it is shown smaller than its source. */
+export const EnhanceAutoSoftPage: Story = {
+  args: { urls: Array.from({ length: 18 }, () => softPage), enhance: 'auto', enhanceMethod: 'a4k-s' },
+  play: async ({ canvasElement }) => {
+    if (!(await engineWorks())) return
+    await waitFor(
+      () => expect(canvasElement.querySelector<HTMLCanvasElement>('canvas.reader-enhanced')?.dataset.enhanced).toBe('true'),
+      { timeout: ENGINE_TIMEOUT },
+    )
+  },
+}
+
 /** Auto leaves a page alone when it is shown smaller than its source (1200px tall in an 800px view). */
 export const EnhanceAutoAtSourceSize: Story = {
   args: { enhance: 'auto', enhanceMethod: 'a4k-s' },

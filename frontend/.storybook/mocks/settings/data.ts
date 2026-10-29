@@ -81,6 +81,7 @@ export const readerPrefs: ReaderPrefs = {
   enhance: 'off',
   enhanceMethod: 'a4k-m',
   enhanceFallback: 'a4k-m',
+  enhanceSkipTiers: ['volume'],
 }
 
 export const readerSettings: ReaderSettings = {

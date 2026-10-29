@@ -5230,6 +5230,10 @@ msgstr "Файлы других глав из того же архива том�
 msgid "Chapters to fetch each time"
 msgstr "Глав за одну загрузку"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Chapters, year, minimum rating"
@@ -7119,6 +7123,11 @@ msgstr "Документация"
 msgid "Don't auto-queue more than (chapters)"
 msgstr "Не ставить в очередь автоматически больше (глав)"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Don't enhance"
+msgstr ""
+
 #: src/components/QueueActions.tsx
 #, fuzzy
 msgid "Don't grab removed torrent releases again"
@@ -7818,6 +7827,11 @@ msgstr "Каждый месяц"
 #, fuzzy
 msgid "Every notification goes, read and unread. This can't be undone."
 msgstr "Все уведомления, прочитанные и непрочитанные, будут удалены. Это действие нельзя отменить."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Every quality is enhanced"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -13675,6 +13689,10 @@ msgstr "времени чтения"
 msgid "Off"
 msgstr "Выкл."
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Off for this chapter because of its quality."
+msgstr ""
+
 #: src/components/settings/PushNotificationsSection.tsx
 #, fuzzy
 msgid "Off for this device. Turning it on asks your browser for permission."
@@ -18262,8 +18280,12 @@ msgid "Sharp (server)"
 msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
-msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source."
+msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source or looks blurry."
 msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#~ msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source."
+#~ msgstr ""
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Sharpens soft pages in the reader with models that run on this server."

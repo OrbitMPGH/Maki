@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   Group,
+  MultiSelect,
   Popover,
   Progress,
   SegmentedControl,
@@ -40,12 +41,13 @@ import {
   BROWSER_ENHANCE_METHODS,
   ENHANCE_FALLBACKS,
   ENHANCE_LEVELS,
+  ENHANCE_SKIP_TIERS,
   SERVER_ENHANCE_METHODS,
   enhanceMethodInfo,
   isServerMethod,
   serverModelId,
 } from './enhanceMethods'
-import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
+import { BACKGROUNDS, enhanceFor, type PrefsSelection, type ReaderPrefs } from './prefs'
 import { setCompareHeld, useCompareHeld } from './compareHold'
 import { useEnhanceEngine } from './enhanceRuntime'
 import PageScrubber from './PageScrubber'
@@ -618,6 +620,11 @@ export default function ReaderToolbar({
                     onChange={(value) => onPrefs({ enhance: value as ReaderPrefs['enhance'] })}
                     data={ENHANCE_LEVELS.map((level) => ({ label: renderLabel(level.label), value: level.value }))}
                   />
+                  {prefs.enhance !== 'off' && enhanceFor(prefs, manifest.tier) === 'off' && (
+                    <Text fz="xs" c="var(--ink-3)" mt={4}>
+                      <Trans>Off for this chapter because of its quality.</Trans>
+                    </Text>
+                  )}
                 </div>
                 {prefs.enhance !== 'off' && (
                   <div>
@@ -640,6 +647,22 @@ export default function ReaderToolbar({
                           </Text>
                         </div>
                       )}
+                    />
+                  </div>
+                )}
+                {prefs.enhance !== 'off' && (
+                  <div>
+                    <Text fz="xs" c="var(--ink-3)" mb={4}>
+                      <Trans>Don't enhance</Trans>
+                    </Text>
+                    <MultiSelect
+                      aria-label={t`Don't enhance`}
+                      size="xs"
+                      comboboxProps={NESTED_COMBOBOX}
+                      placeholder={t`Every quality is enhanced`}
+                      value={prefs.enhanceSkipTiers}
+                      onChange={(value) => onPrefs({ enhanceSkipTiers: value as ReaderPrefs['enhanceSkipTiers'] })}
+                      data={ENHANCE_SKIP_TIERS.map((tier) => ({ value: tier.value, label: renderLabel(tier.label) }))}
                     />
                   </div>
                 )}

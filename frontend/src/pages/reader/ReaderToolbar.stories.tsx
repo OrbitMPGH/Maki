@@ -173,6 +173,24 @@ export const EnhanceOffHidesMethod: Story = {
   },
 }
 
+export const EnhanceSkippedForVolume: Story = {
+  args: {
+    manifest: { ...chapters[1132], tier: 'volume' },
+    prefs: { ...mangaPrefs, enhance: 'always' },
+  },
+  render: (args) => <StatefulToolbar {...args} />,
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByText('Off for this chapter because of its quality.')).toBeVisible()
+    const skip = await body.findByLabelText("Don't enhance", { selector: 'input' })
+    await userEvent.click(skip)
+    await userEvent.click(await body.findByRole('option', { name: 'Volume' }))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceSkipTiers: [] }))
+    await waitFor(() => expect(body.queryByText('Off for this chapter because of its quality.')).toBeNull())
+  },
+}
+
 export const EnhanceSavedServerModelGone: Story = {
   args: {
     prefs: { ...mangaPrefs, enhance: 'always', enhanceMethod: 'server:realesrgan-av3' },

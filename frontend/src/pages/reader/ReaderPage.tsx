@@ -26,7 +26,7 @@ import PagedView from './PagedView'
 import PageStrip from './PageStrip'
 import ReaderToolbar from './ReaderToolbar'
 import { probeWebtoon } from './pageShape'
-import { toneFilter, useReaderPrefs, type ReaderPrefs } from './prefs'
+import { enhanceFor, toneFilter, useReaderPrefs, type ReaderPrefs } from './prefs'
 import { usePageUrls, usePreload, useWarmChapter } from './usePageUrls'
 import { useReaderProgress } from './useReaderProgress'
 import { useReadingClock } from './useReadingClock'
@@ -225,8 +225,9 @@ export default function ReaderPage() {
   usePreload(urls, heldPages, measure)
 
   const current = manifest?.chapterId === chapterId ? manifest : undefined
+  const enhance = enhanceFor(prefs, manifest?.tier)
   const serverModel = current
-    ? serverModelFor(prefs.enhance, prefs.enhanceMethod, current.enhanceServer, offline || manifestServedOffline(chapterId))
+    ? serverModelFor(enhance, prefs.enhanceMethod, current.enhanceServer, offline || manifestServedOffline(chapterId))
     : null
   // The strip sizes its own range from the pages' pixels, so the server follows it there.
   const [stripRange, setStripRange] = useState<{ pages: number[]; beyond: number }>({ pages: [], beyond: 0 })
@@ -260,7 +261,7 @@ export default function ReaderPage() {
     serverModel,
     enhanceWindow,
     current?.pageVersion,
-    prefs.enhance === 'auto' ? stretchedPages : null,
+    enhance === 'auto' ? stretchedPages : null,
     enhanceNext,
   )
 
@@ -879,7 +880,7 @@ export default function ReaderPage() {
               tone={tone}
               gap={prefs.pageGap}
               label={manifest.label}
-              enhance={prefs.enhance}
+              enhance={enhance}
               enhanceMethod={prefs.enhanceMethod}
               enhanceFallback={prefs.enhanceFallback}
               server={server}
@@ -900,7 +901,7 @@ export default function ReaderPage() {
               cropBorders={prefs.cropBorders}
               splitWide={mode === 'paged' ? prefs.splitWide : 'off'}
               half={half}
-              enhance={prefs.enhance}
+              enhance={enhance}
               enhanceMethod={prefs.enhanceMethod}
               enhanceFallback={prefs.enhanceFallback}
               server={server}

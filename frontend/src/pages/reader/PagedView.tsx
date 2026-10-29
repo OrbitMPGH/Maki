@@ -4,6 +4,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { cropRegion, FULL_REGION, isFull, partOf, type PagePart, type Region } from './pageShape'
 import EnhancedPage from './EnhancedPage'
 import { heldPageUrl, holdPage } from './pageBlobs'
+import { isSoftPage } from '../../lib/enhance/softness'
 import { useCompareKey } from './compareHold'
 import {
   EnhanceScope,
@@ -331,7 +332,7 @@ export default function PagedView({
   server?: ServerEnhance | null
   /** The reader's preload window: the spread on screen and the pages after it, in reading order. */
   preload?: number[]
-  /** The pages shown at 1.2x their size or more, measured on screen or matched to a measured size. */
+  /** The pages `auto` enhances: shown at 1.2x their size or more (measured on screen or matched to a measured size), or soft. */
   onStretched?: (pages: ReadonlySet<number>) => void
 }) {
   const { t } = useLingui()
@@ -455,8 +456,9 @@ export default function PagedView({
             const region = (shapeCrop ? cropRegion(image) : null) ?? FULL_REGION
             const target = owner.sizeFor(image.naturalWidth * region.w, image.naturalHeight * region.h)
             if (!target) return
-            owner.notePage(page, target.stretched)
-            if (!live || !preset || (mode === 'auto' && !target.stretched)) return
+            const wanted = target.stretched || (mode === 'auto' && isSoftPage(image, src))
+            owner.notePage(page, wanted)
+            if (!live || !preset || !wanted) return
             const key = enhanceKey(src, region)
             if (live.peek(key, preset, target.width, target.height)) return
             owner.note(src, key)

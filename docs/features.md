@@ -85,8 +85,13 @@ screen. It is off until a reader turns it on. Library files are never modified.
 - **Turning it on.** In the reader toolbar's settings popover, set **Enhance** to Off, Auto or
   Always and pick a **Method**. The same two fields are in reading profiles and in per-series
   overrides, so they follow the usual order: series override, pinned profile, type profile, your
-  default. **Auto** enhances a page only when it is shown at least 1.2 times larger than its
-  source, so a small window stays plain and a large monitor does not.
+  default. **Auto** enhances a page when it is shown at least 1.2 times larger than its
+  source, so a small window stays plain and a large monitor does not. It also enhances a page that
+  looks blurry at any size: the reader scores each page's sharpness once, on a grid of small tiles
+  at the page's own resolution, and a soft scan or an upscaled aggregator copy gets enhanced while
+  clean screentone does not.
+- **Skipping by quality.** **Don't enhance** lists quality tiers whose chapters are always shown as
+  they are, whatever Enhance says. It starts with Volume, since a digital volume is already clean.
 - **Hold to compare.** Hold **H** or the toolbar's compare button to see the original page, and
   let go to return to the enhanced one.
 - **Server progress.** While a server method is still working on the page on screen, a pill at

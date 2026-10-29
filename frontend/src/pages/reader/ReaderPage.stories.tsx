@@ -629,6 +629,31 @@ export const ServerEnhanceTierOff: Story = {
   },
 }
 
+const volumeAsked: number[][] = []
+
+/** Sharp (server) on a digital volume, which the default prefs skip: the plain page shows and nothing is asked of the server. */
+export const EnhanceSkippedForVolume: Story = {
+  parameters: {
+    ...open(7718),
+    msw: [
+      withManifest({
+        ...chapters[1132],
+        chapterId: 7718,
+        tier: 'volume',
+        prefs: { ...chapters[1132].prefs, enhance: 'always', enhanceMethod: 'server:span-s' },
+      }),
+      enhanceAnswer(7718, 'ready', volumeAsked),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    const page = await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    await expect(page).toBeVisible()
+    await expect(volumeAsked).toHaveLength(0)
+    await expect(canvasElement.querySelector('canvas.reader-enhanced')).toBeNull()
+  },
+}
+
 const unstretchedAsked: number[][] = []
 
 /** Auto with Sharp (server) and the page shown at 1:1: nothing is stretched, so nothing is asked of the server. */

@@ -4352,6 +4352,10 @@ msgstr "Chapters that share a volume archive will also lose their file."
 msgid "Chapters to fetch each time"
 msgstr "Chapters to fetch each time"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
+msgstr "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
+
 #: src/components/CatalogueFilters.tsx
 msgid "Chapters, year, minimum rating"
 msgstr "Chapters, year, minimum rating"
@@ -5923,6 +5927,11 @@ msgstr "Documentation"
 msgid "Don't auto-queue more than (chapters)"
 msgstr "Don't auto-queue more than (chapters)"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Don't enhance"
+msgstr "Don't enhance"
+
 #: src/components/QueueActions.tsx
 msgid "Don't grab removed torrent releases again"
 msgstr "Don't grab removed torrent releases again"
@@ -6509,6 +6518,11 @@ msgstr "Every month"
 #: src/pages/NotificationsPage.tsx
 msgid "Every notification goes, read and unread. This can't be undone."
 msgstr "Every notification goes, read and unread. This can't be undone."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Every quality is enhanced"
+msgstr "Every quality is enhanced"
 
 #: src/pages/HomePage.tsx
 msgid "Every section is switched off"
@@ -11368,6 +11382,10 @@ msgstr "of reading time"
 msgid "Off"
 msgstr "Off"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Off for this chapter because of its quality."
+msgstr "Off for this chapter because of its quality."
+
 #: src/components/settings/PushNotificationsSection.tsx
 msgid "Off for this device. Turning it on asks your browser for permission."
 msgstr "Off for this device. Turning it on asks your browser for permission."
@@ -15208,8 +15226,12 @@ msgid "Sharp (server)"
 msgstr "Sharp (server)"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source."
-msgstr "Sharpen soft pages. Auto does it only when a page is shown larger than its source."
+msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source or looks blurry."
+msgstr "Sharpen soft pages. Auto does it only when a page is shown larger than its source or looks blurry."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#~ msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source."
+#~ msgstr "Sharpen soft pages. Auto does it only when a page is shown larger than its source."
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Sharpens soft pages in the reader with models that run on this server."
