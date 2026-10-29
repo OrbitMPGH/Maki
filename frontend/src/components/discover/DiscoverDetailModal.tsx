@@ -141,8 +141,9 @@ export function DiscoverDetailModal({
   // otherwise extract as an unlabelled {0}.
   const readerHint = detail?.readerHint ?? null
   const readerHintReaders = readerHint?.readers ?? 0
-  const readerHintScoreDisplay = readerHint ? formatFixedDecimal(readerHint.score / 10, 1) : null
-  const readerHintBaselineDisplay = readerHint ? formatFixedDecimal(readerHint.baseline / 10, 1) : null
+  // A gap, never two absolute scores: the baseline is the AniList sample's mean, not the MangaBaka
+  // aggregate in the star, so printing it read as the card contradicting itself.
+  const readerHintGap = readerHint ? formatFixedDecimal(Math.abs(readerHint.score - readerHint.baseline) / 10, 1) : null
   const readerHintHigher = readerHint ? readerHint.score > readerHint.baseline : false
 
   return (
@@ -324,10 +325,17 @@ export function DiscoverDetailModal({
                             multiline
                             w={260}
                             zIndex={1001}
-                            label={plural(readerHintReaders, {
-                              one: `${readerHintScoreDisplay} from # reader with reading habits like yours, against ${readerHintBaselineDisplay} from readers overall.`,
-                              other: `${readerHintScoreDisplay} from # readers with reading habits like yours, against ${readerHintBaselineDisplay} from readers overall.`,
-                            })}
+                            label={
+                              readerHintHigher
+                                ? plural(readerHintReaders, {
+                                    one: `# AniList reader with reading habits like yours scored this ${readerHintGap} higher than AniList readers overall.`,
+                                    other: `# AniList readers with reading habits like yours scored this ${readerHintGap} higher than AniList readers overall.`,
+                                  })
+                                : plural(readerHintReaders, {
+                                    one: `# AniList reader with reading habits like yours scored this ${readerHintGap} lower than AniList readers overall.`,
+                                    other: `# AniList readers with reading habits like yours scored this ${readerHintGap} lower than AniList readers overall.`,
+                                  })
+                            }
                           >
                             <Badge
                               size="sm"
