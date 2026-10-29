@@ -3981,6 +3981,26 @@ export function useAddRootFolder() {
   })
 }
 
+/** One level of the server's filesystem for the folder picker. An empty `path` is the drive list (Windows). */
+export interface FolderListing {
+  path: string
+  parent: string | null
+  folders: { name: string; path: string }[]
+}
+
+/** The picker shows its own failure inline, so the toast stays out of it. */
+export function useBrowseFolders(path: string | null) {
+  return useQuery({
+    queryKey: ['rootfolders', 'browse', path],
+    queryFn: () =>
+      api<FolderListing>(`/rootfolder/browse${path ? `?path=${encodeURIComponent(path)}` : ''}`),
+    enabled: path !== null,
+    placeholderData: keepPreviousData,
+    staleTime: 0,
+    meta: { silent: true },
+  })
+}
+
 export function useDeleteRootFolder() {
   const queryClient = useQueryClient()
   return useMutation({

@@ -3733,6 +3733,11 @@ msgstr "Brings series folders Maki doesn't know yet into the library."
 msgid "Brought in from disk, not downloaded by Maki"
 msgstr "Brought in from disk, not downloaded by Maki"
 
+#: src/components/SetupWizard.tsx
+#: src/pages/settings/LibraryCards.tsx
+msgid "Browse"
+msgstr "Browse"
+
 #: src/pages/HomePage.tsx
 msgid "Browse library"
 msgstr "Browse library"
@@ -3853,6 +3858,7 @@ msgstr "Can't sign in with the saved details."
 #: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/series/UndoConversionModal.tsx
 #: src/components/SeriesFilesSection.tsx
+#: src/components/settings/FolderBrowserModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -4444,6 +4450,10 @@ msgstr "Chinese"
 #: src/components/import/MihonImport.tsx
 msgid "Choose a .tachibk file"
 msgstr "Choose a .tachibk file"
+
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Choose a folder"
+msgstr "Choose a folder"
 
 #: src/components/import/MihonReview.tsx
 msgid "Choose a match"
@@ -6563,10 +6573,6 @@ msgstr "Everything else: {stopLabel}"
 msgid "Everything is passing"
 msgstr "Everything is passing"
 
-#: src/components/discover/FollowingRail.tsx
-#~ msgid "Everything they have in the catalogue is already in your library."
-#~ msgstr "Everything they have in the catalogue is already in your library."
-
 #: src/pages/discover/TasteTab.tsx
 msgid "Everything you own"
 msgstr "Everything you own"
@@ -7126,6 +7132,7 @@ msgstr "Folder naming on import"
 msgid "folder naming, rename folder, rename files, imported files, chapter format, series folder format, naming tokens, file name, rename all"
 msgstr "folder naming, rename folder, rename files, imported files, chapter format, series folder format, naming tokens, file name, rename all"
 
+#: src/components/settings/FolderBrowserModal.tsx
 #: src/components/SetupWizard.tsx
 msgid "Folder path"
 msgstr "Folder path"
@@ -7387,6 +7394,10 @@ msgstr "Give your series a quality profile and Maki replaces files that fall sho
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 msgid "Go ahead anyway"
 msgstr "Go ahead anyway"
+
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Go back"
+msgstr "Go back"
 
 #: src/pages/DiscoverPage.tsx
 msgid "Go to library"
@@ -10366,6 +10377,10 @@ msgstr "No folder yet"
 #: src/components/import/IgnoredFoldersModal.tsx
 msgid "No folders are ignored in this root folder."
 msgstr "No folders are ignored in this root folder."
+
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "No folders in here."
+msgstr "No folders in here."
 
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "No goals set yet."
@@ -17663,6 +17678,10 @@ msgstr "Up"
 msgid "Up next"
 msgstr "Up next"
 
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Up one folder"
+msgstr "Up one folder"
+
 #: src/components/NotificationsSection.tsx
 msgid "Up to {max}"
 msgstr "Up to {max}"
@@ -17886,6 +17905,10 @@ msgstr "Use the site's search ({0} results for this title)"
 #: src/components/SourceCompareModal.tsx
 msgid "Use this copy"
 msgstr "Use this copy"
+
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Use this folder"
+msgstr "Use this folder"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Use this title for taste"

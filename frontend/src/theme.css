@@ -4335,6 +4335,38 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--warn);
 }
 
+.folder-browser-list {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+}
+.folder-browser-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  color: var(--ink-2);
+}
+.folder-browser-row + .folder-browser-row {
+  border-top: 1px solid var(--border);
+}
+.folder-browser-row svg {
+  flex-shrink: 0;
+  color: var(--brand-fg, var(--brand));
+}
+.folder-browser-row:hover:not(:disabled),
+.folder-browser-row:focus-visible {
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  color: var(--ink-hi);
+}
+.folder-browser-row:disabled {
+  opacity: 0.6;
+}
+.folder-browser-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .setup-choice {
   padding: 12px 14px;
   border: 1px solid var(--border);

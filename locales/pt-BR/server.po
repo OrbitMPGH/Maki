@@ -1928,6 +1928,12 @@ msgstr "A pasta raiz está em uso por uma ou mais séries"
 msgid "error.rootFolder.inUseArchived"
 msgstr ""
 
+#. {path} is the folder the folder picker tried to open.
+#: src/Maki.Api/Controllers/RootFolderController.cs
+#. English: Maki can't read this folder: {path}
+msgid "error.rootFolder.notReadable"
+msgstr ""
+
 #: src/Maki.Api/Controllers/RootFolderController.cs
 #. English: Path is required
 #, fuzzy

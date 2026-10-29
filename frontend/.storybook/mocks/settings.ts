@@ -2,6 +2,7 @@ import { http, HttpResponse, type HttpHandler } from 'msw'
 import { api } from './api'
 import * as d from './settings/data'
 import { pageConversionHandlers } from './settings/pageConversion'
+import { browseFoldersHandler } from './settings/folders'
 import { healthOptions } from './operations/health'
 
 /** A PUT whose reply is the body it was sent, which is how most settings records answer. */
@@ -103,6 +104,7 @@ export const settingsHandlers: HttpHandler[] = [
   http.post(api('/reader/import/kavita'), () => HttpResponse.json({})),
 
   // Library
+  browseFoldersHandler,
   http.get(api('/rootfolder'), () => HttpResponse.json(d.rootFolders)),
   http.post(api('/rootfolder'), async ({ request }) => {
     const { path } = (await request.json()) as { path: string }

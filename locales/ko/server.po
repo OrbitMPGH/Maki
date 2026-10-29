@@ -1928,6 +1928,12 @@ msgstr "하나 이상의 시리즈가 이 루트 폴더를 사용 중입니다"
 msgid "error.rootFolder.inUseArchived"
 msgstr ""
 
+#. {path} is the folder the folder picker tried to open.
+#: src/Maki.Api/Controllers/RootFolderController.cs
+#. English: Maki can't read this folder: {path}
+msgid "error.rootFolder.notReadable"
+msgstr ""
+
 #: src/Maki.Api/Controllers/RootFolderController.cs
 #. English: Path is required
 #, fuzzy

@@ -4484,6 +4484,11 @@ msgstr "Добавляет в библиотеку папки серий, кот
 msgid "Brought in from disk, not downloaded by Maki"
 msgstr "Импортировано с диска, загружено не Maki"
 
+#: src/components/SetupWizard.tsx
+#: src/pages/settings/LibraryCards.tsx
+msgid "Browse"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Browse library"
@@ -4628,6 +4633,7 @@ msgstr "Не удаётся войти с сохранёнными данным�
 #: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/series/UndoConversionModal.tsx
 #: src/components/SeriesFilesSection.tsx
+#: src/components/settings/FolderBrowserModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -5343,6 +5349,10 @@ msgstr "Китайский"
 #, fuzzy
 msgid "Choose a .tachibk file"
 msgstr "Выберите файл .tachibk"
+
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Choose a folder"
+msgstr ""
 
 #: src/components/import/MihonReview.tsx
 #, fuzzy
@@ -7885,11 +7895,6 @@ msgstr ""
 msgid "Everything is passing"
 msgstr "Всё в порядке"
 
-#: src/components/discover/FollowingRail.tsx
-#, fuzzy
-#~ msgid "Everything they have in the catalogue is already in your library."
-#~ msgstr "Всё, что у них есть в каталоге, уже в вашей библиотеке."
-
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Everything you own"
@@ -8565,6 +8570,7 @@ msgstr "Именование папок при импорте"
 msgid "folder naming, rename folder, rename files, imported files, chapter format, series folder format, naming tokens, file name, rename all"
 msgstr "именование папок, переименовать папку, переименовать файлы, импортированные файлы, формат главы, формат папки серии, шаблоны имён, имя файла, переименовать всё"
 
+#: src/components/settings/FolderBrowserModal.tsx
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Folder path"
@@ -8873,6 +8879,10 @@ msgstr "Задайте серии профиль качества, и Maki за�
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 msgid "Go ahead anyway"
+msgstr ""
+
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Go back"
 msgstr ""
 
 #: src/pages/DiscoverPage.tsx
@@ -12470,6 +12480,10 @@ msgstr "Папки пока нет"
 #, fuzzy
 msgid "No folders are ignored in this root folder."
 msgstr "В этой корневой папке нет игнорируемых папок."
+
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "No folders in here."
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -21221,6 +21235,10 @@ msgstr "Вверх"
 msgid "Up next"
 msgstr "Дальше"
 
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Up one folder"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Up to {max}"
@@ -21485,6 +21503,10 @@ msgstr ""
 #, fuzzy
 msgid "Use this copy"
 msgstr "Использовать эту копию"
+
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Use this folder"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy

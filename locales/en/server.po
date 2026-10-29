@@ -1384,6 +1384,11 @@ msgstr "Root folder is in use by one or more series"
 msgid "error.rootFolder.inUseArchived"
 msgstr "{count, plural, one {# archived series still uses} other {# archived series still use}} this folder. Delete or move them first."
 
+#. {path} is the folder the folder picker tried to open.
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.notReadable"
+msgstr "Maki can't read this folder: {path}"
+
 #: src/Maki.Api/Controllers/RootFolderController.cs
 msgid "error.rootFolder.pathRequired"
 msgstr "Path is required"

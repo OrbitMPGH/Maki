@@ -4484,6 +4484,11 @@ msgstr "将 Maki 尚未识别的系列文件夹导入资料库。"
 msgid "Brought in from disk, not downloaded by Maki"
 msgstr "从磁盘导入，不是由 Maki 下载"
 
+#: src/components/SetupWizard.tsx
+#: src/pages/settings/LibraryCards.tsx
+msgid "Browse"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Browse library"
@@ -4628,6 +4633,7 @@ msgstr "无法使用已保存的信息登录。"
 #: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/series/UndoConversionModal.tsx
 #: src/components/SeriesFilesSection.tsx
+#: src/components/settings/FolderBrowserModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -5343,6 +5349,10 @@ msgstr "中文"
 #, fuzzy
 msgid "Choose a .tachibk file"
 msgstr "选择 .tachibk 文件"
+
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Choose a folder"
+msgstr ""
 
 #: src/components/import/MihonReview.tsx
 #, fuzzy
@@ -7885,11 +7895,6 @@ msgstr ""
 msgid "Everything is passing"
 msgstr "全部通过"
 
-#: src/components/discover/FollowingRail.tsx
-#, fuzzy
-#~ msgid "Everything they have in the catalogue is already in your library."
-#~ msgstr "他们在目录中的所有作品都已在你的资料库中。"
-
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Everything you own"
@@ -8565,6 +8570,7 @@ msgstr "导入时的文件夹命名"
 msgid "folder naming, rename folder, rename files, imported files, chapter format, series folder format, naming tokens, file name, rename all"
 msgstr "文件夹命名, 重命名文件夹, 重命名文件, 导入文件, 章节格式, 作品文件夹格式, 命名标记, 文件名, 全部重命名"
 
+#: src/components/settings/FolderBrowserModal.tsx
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Folder path"
@@ -8873,6 +8879,10 @@ msgstr "为系列设置质量配置后，Maki 会替换未达到标准的文件�
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 msgid "Go ahead anyway"
+msgstr ""
+
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Go back"
 msgstr ""
 
 #: src/pages/DiscoverPage.tsx
@@ -12470,6 +12480,10 @@ msgstr "尚无文件夹"
 #, fuzzy
 msgid "No folders are ignored in this root folder."
 msgstr "此根文件夹中没有被忽略的文件夹。"
+
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "No folders in here."
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -21221,6 +21235,10 @@ msgstr "上移"
 msgid "Up next"
 msgstr "接下来"
 
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Up one folder"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Up to {max}"
@@ -21485,6 +21503,10 @@ msgstr ""
 #, fuzzy
 msgid "Use this copy"
 msgstr "使用此版本"
+
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Use this folder"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
