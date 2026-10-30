@@ -380,9 +380,6 @@ try
     foreach (var (name, baseUrl) in new[]
              {
                  (MangaPillSource.HttpClientName, "https://mangapill.com/"),
-                 (WeebCentralSource.HttpClientName, "https://weebcentral.com/"),
-                 // Flame Comics — Next.js pages read for their embedded __NEXT_DATA__ props.
-                 (FlameComicsSource.HttpClientName, "https://flamecomics.xyz/"),
                  // MangaKatana — SSR-rendered, no Cloudflare.
                  (MangaKatanaSource.HttpClientName, "https://mangakatana.com/"),
                  // GigaViewer sites (Hatena's white-label viewer, plain nginx/CloudFront, no
