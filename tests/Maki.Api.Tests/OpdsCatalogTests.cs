@@ -122,9 +122,9 @@ public sealed class OpdsCatalogTests : IDisposable
         var feed = await Catalog().ChaptersFeedAsync(Ctx, seriesId, 0, CancellationToken.None);
         var entry = Assert.Single(feed!.Entries);
 
-        var expected = $"{Ctx.Base}/chapter/{chapters[0]}/thumbnail";
-        Assert.Equal(expected, entry.Links!.Single(l => l.Rel == OpdsXml.ImageRel).Href);
-        Assert.Equal(expected, entry.Links!.Single(l => l.Rel == OpdsXml.ThumbnailRel).Href);
+        var image = entry.Links!.Single(l => l.Rel == OpdsXml.ImageRel).Href;
+        Assert.StartsWith($"{Ctx.Base}/chapter/{chapters[0]}/thumbnail?v=", image);
+        Assert.Equal(image, entry.Links!.Single(l => l.Rel == OpdsXml.ThumbnailRel).Href);
         Assert.DoesNotContain(entry.Links!, l => l.Href.Contains("/page/0", StringComparison.Ordinal));
     }
 

@@ -27,6 +27,11 @@ public sealed class ReaderThumbnailCache(AppPaths paths, ReaderService reader, I
     /// </summary>
     public async Task<string?> GetOrRenderAsync(ReaderService.PageSlice slice, int page, CancellationToken ct)
     {
+        if (page < 0 || page >= slice.PageCount)
+        {
+            return null;
+        }
+
         var absoluteIndex = slice.StartPage + page;
         var dir = Path.Combine(paths.ReaderCacheDir, slice.ChapterFileId.ToString());
         var cached = Path.Combine(dir, $"{slice.ArchiveVersion}-{absoluteIndex}.jpg");

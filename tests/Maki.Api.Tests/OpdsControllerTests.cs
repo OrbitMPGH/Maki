@@ -161,7 +161,60 @@ public sealed class OpdsControllerTests : IDisposable
         }
     }
 
-    private int SeedCbzChapter(string root, int pages)
+    [Fact]
+    public async Task AThumbnailIsImmutableOnlyAtItsCurrentVersion()
+    {
+        var user = _db.SeedUser("grid", MakiPermission.UseOpds, allRootFolders: true);
+        EnableCatalogue(user);
+        var token = _db.SeedApiKey(user, UserApiKeyScope.Opds);
+        var root = Path.Combine(Path.GetTempPath(), "maki-opds-thumb-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(root);
+        try
+        {
+            var chapterId = SeedCbzChapter(root, pages: 1);
+
+            var unversioned = Controller(withReader: true);
+            var first = Assert.IsType<PhysicalFileResult>(await unversioned.Thumbnail(token, chapterId, default));
+            Assert.Equal("private, no-cache", unversioned.Response.Headers.CacheControl.ToString());
+
+            var versioned = Controller(withReader: true);
+            versioned.Request.QueryString = new QueryString($"?v={first.EntityTag!.Tag.ToString().Trim('"')}");
+            Assert.IsType<PhysicalFileResult>(await versioned.Thumbnail(token, chapterId, default));
+            Assert.Equal("private, max-age=31536000, immutable", versioned.Response.Headers.CacheControl.ToString());
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task AnUnreadableFirstPageFallsBackToTheSeriesCover()
+    {
+        var user = _db.SeedUser("grid", MakiPermission.UseOpds, allRootFolders: true);
+        EnableCatalogue(user);
+        var token = _db.SeedApiKey(user, UserApiKeyScope.Opds);
+        var root = Path.Combine(Path.GetTempPath(), "maki-opds-thumb-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(root);
+        try
+        {
+            var chapterId = SeedCbzChapter(root, pages: 1, page: [0x00, 0x01, 0x02]);
+            int seriesId;
+            using (var db = _db.NewContext())
+            {
+                seriesId = db.Chapters.IgnoreQueryFilters().Single(c => c.Id == chapterId).SeriesId;
+            }
+
+            var redirect = Assert.IsType<RedirectResult>(await Controller(withReader: true).Thumbnail(token, chapterId, default));
+            Assert.EndsWith($"/{token}/cover/{seriesId}", redirect.Url);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private int SeedCbzChapter(string root, int pages, byte[]? page = null)
     {
         var cbz = Path.Combine(root, "Chapter.cbz");
         using (var archive = ZipFile.Open(cbz, ZipArchiveMode.Create))
@@ -169,7 +222,7 @@ public sealed class OpdsControllerTests : IDisposable
             for (var i = 1; i <= pages; i++)
             {
                 using var stream = archive.CreateEntry($"{i:000}.png").Open();
-                stream.Write(new Raster(150, 300).EncodePng());
+                stream.Write(page ?? new Raster(150, 300).EncodePng());
             }
         }
 
