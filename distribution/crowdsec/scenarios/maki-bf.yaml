@@ -1,0 +1,39 @@
+# Failed attempts on Maki's sign-in and password endpoints. Sign-in and two-factor answer 401 when
+# they refuse, setup and the signed-in password confirmations answer 400 (403 or 409 for a few
+# refusals), and every one of these endpoints answers 429 past ten attempts a minute per address.
+type: leaky
+name: maki/maki-bf
+description: "Detect brute force on Maki sign-in"
+filter: "evt.Parsed.program == 'maki' && evt.Meta.http_path matches '^/api/v1/(auth/(login|2fa|setup|oidc/)|account/(password|2fa/|apikeys)|settings/opds)' && ((evt.Meta.http_verb in ['POST', 'PUT'] && evt.Meta.http_status in ['400', '401', '403', '409']) || evt.Meta.http_status == '429')"
+groupby: evt.Meta.source_ip
+capacity: 5
+leakspeed: 30s
+blackhole: 1m
+labels:
+  service: maki
+  confidence: 3
+  spoofable: 0
+  classification:
+    - attack.T1110
+  behavior: "http:bruteforce"
+  label: "Maki Bruteforce"
+  remediation: true
+---
+# The same attempts spread out to stay under the fast bucket and the built-in limit.
+type: leaky
+name: maki/maki-slow-bf
+description: "Detect slow brute force on Maki sign-in"
+filter: "evt.Parsed.program == 'maki' && evt.Meta.http_path matches '^/api/v1/(auth/(login|2fa|setup|oidc/)|account/(password|2fa/|apikeys)|settings/opds)' && ((evt.Meta.http_verb in ['POST', 'PUT'] && evt.Meta.http_status in ['400', '401', '403', '409']) || evt.Meta.http_status == '429')"
+groupby: evt.Meta.source_ip
+capacity: 15
+leakspeed: 5m
+blackhole: 5m
+labels:
+  service: maki
+  confidence: 3
+  spoofable: 0
+  classification:
+    - attack.T1110
+  behavior: "http:bruteforce"
+  label: "Maki Slow Bruteforce"
+  remediation: true

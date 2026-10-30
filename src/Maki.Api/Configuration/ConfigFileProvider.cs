@@ -28,6 +28,12 @@ public class ConfigFile
 
     /// <summary>How many rolled files to keep. Counts size-rolled segments, not days.</summary>
     public int RetainedLogFiles { get; set; } = 7;
+
+    /// <summary>
+    /// Also write every request to <c>logs/access-*.log</c> in the combined log format, for
+    /// CrowdSec or fail2ban. See <c>Maki.Api.Logging.AccessLogMiddleware</c>.
+    /// </summary>
+    public bool AccessLog { get; set; }
 }
 
 /// <summary>

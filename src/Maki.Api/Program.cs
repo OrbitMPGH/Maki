@@ -127,6 +127,10 @@ try
 
     builder.Services.AddSingleton(paths);
     builder.Services.AddSingleton(configFile);
+    if (loggingOptions.AccessLog)
+    {
+        builder.Services.AddSingleton(_ => new AccessLogWriter(MakiLogging.BuildAccessLog(paths, loggingOptions)));
+    }
 
     // No Cache=Shared. Shared-cache mode puts every pooled connection in this process behind one
     // cache with table-level locks and returns SQLITE_LOCKED, which Microsoft.Data.Sqlite retry-spins
@@ -1692,6 +1696,13 @@ try
     }
 
     app.UseMiddleware<UntrustedForwardedForWarning>();
+
+    // After the forwarded headers so each line carries the client's address. A ban tool reading it
+    // behind a proxy that is not in auth.trustedproxies would ban the proxy.
+    if (loggingOptions.AccessLog)
+    {
+        app.UseMiddleware<AccessLogMiddleware>();
+    }
 
     // What each request is worth a line for lives in HttpRequestLogPolicy, including the rule that
     // keeps OPDS out of the log entirely: its authentication token is in the path, and request

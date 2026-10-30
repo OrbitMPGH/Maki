@@ -67,6 +67,7 @@ public class OpdsController(
             // widening it to the token's owner here is what makes the catalogue show *their* library
             // and their progress, and it must happen before any query runs.
             db.Scope.SetUser(resolved.UserId, resolved.AllRootFolders);
+            HttpContext.Items[typeof(OpdsAccess)] = resolved;
             return resolved;
         }
 

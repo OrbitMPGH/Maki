@@ -202,6 +202,7 @@ Notes on languages, FlareSolverr and mirror overrides are also in
 | [KOReader](docs/koreader.md) | OPDS downloads and progress sync |
 | [Exposing Maki to the internet](docs/exposing-to-the-internet.md) | HTTPS, trusted proxies, two-factor |
 | [Single sign-on](docs/single-sign-on.md) | OpenID Connect setup and claim mapping |
+| [Access log and CrowdSec](docs/crowdsec.md) | Request log for ban tools, CrowdSec parser and scenarios |
 | [Backup and restore](docs/backup-restore.md) | Snapshots, migrations, restoring |
 | [Development](docs/development.md) | Building the image, running from source, architecture |
 
