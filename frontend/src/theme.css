@@ -8952,6 +8952,89 @@ tr:hover .mono-value-copy {
   }
 }
 
+/* Import preview: one line per folder, files only once a folder is opened. */
+.import-plan-figures {
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  margin-bottom: 0;
+}
+.import-plan-figures .figure-strip-item {
+  padding: 0.55rem 0.85rem;
+}
+.import-plan-folders {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+.import-plan-folder + .import-plan-folder {
+  border-top: 1px solid var(--border);
+}
+.import-plan-folder-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-surface);
+  color: var(--ink-hi);
+}
+button.import-plan-folder-head:hover {
+  background: var(--surface-2);
+}
+.import-plan-folder-head:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.import-plan-folder-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.import-plan-folder-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.import-plan-arrow {
+  flex-shrink: 0;
+  color: var(--ink-3);
+}
+.import-plan-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ink-3);
+  transition: transform var(--dur-medium) var(--ease);
+}
+.import-plan-folder[data-open] .import-plan-chevron {
+  transform: rotate(180deg);
+}
+.import-plan-folder-body {
+  padding: 2px 12px 14px;
+}
+.import-plan-files {
+  display: grid;
+  border-top: 1px solid var(--border);
+}
+.import-plan-file {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 4.5rem;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+.import-plan-file-name {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.import-plan-file-link {
+  white-space: nowrap;
+}
+.import-plan-file-size {
+  text-align: right;
+}
+
 /* --- Operational page chrome (ported from redesignv2) --- */
 
 .health-filter-rail {

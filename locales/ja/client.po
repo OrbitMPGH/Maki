@@ -13,11 +13,6 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/pages/HealthPage.tsx
-#, fuzzy
-#~ msgid " · Acknowledged, hidden from the header badge"
-#~ msgstr " · 確認済み、ヘッダーバッジから非表示"
-
 #: src/components/pageconversion/RuleCard.tsx
 msgid " MB"
 msgstr ""
@@ -229,8 +224,10 @@ msgstr ""
 msgid "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
 msgstr "{0, plural, other {#件のファイル、{totalSize}}}"
 
+#. placeholder {0}: files.length
 #. placeholder {0}: folder.fileCount
 #. placeholder {0}: upgradesSummary.trashFiles
+#: src/components/import/ImportPlanModal.tsx
 #: src/components/import/RecentImports.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -512,12 +509,6 @@ msgstr "{0, plural, other {不足している#章をキューに追加しまし�
 msgid "{0, plural, one {Refreshed, # new chapter} other {Refreshed, # new chapters}}"
 msgstr "{0, plural, other {更新しました。新しい章は#件です}}"
 
-#. placeholder {0}: files.length
-#: src/components/import/ImportPlanModal.tsx
-#, fuzzy
-msgid "{0, plural, one {Registers # file} other {Registers # files}}"
-msgstr "{0, plural, other {#件のファイルを登録}}"
-
 #. placeholder {0}: r.deleted
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -754,9 +745,8 @@ msgid "{bpp} bits per pixel, JPG equivalent."
 msgstr "ピクセルあたり{bpp}ビット（JPG換算）。"
 
 #: src/components/import/ImportPlanModal.tsx
-#, fuzzy
-msgid "{built, plural, one {# of them a CBZ Maki builds} other {# of them CBZs Maki builds}}"
-msgstr "{built, plural, other {うち#件はMakiが作成するCBZです}}"
+msgid "{built, plural, one {# CBZ built} other {# CBZs built}}"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -1343,11 +1333,6 @@ msgstr "{importedCount, plural, other {#件インポート済み}}"
 msgid "{importedCount, plural, one {Import # file} other {Import # files}}"
 msgstr "{importedCount, plural, other {#件のファイルをインポート}}"
 
-#: src/sourceLabels.ts
-#, fuzzy
-#~ msgid "{indexer} · Torrent"
-#~ msgstr "{indexer} · Torrent"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{inLibraryCount, plural, one {Show # series already in the library} other {Show # series already in the library}}"
@@ -1375,11 +1360,6 @@ msgstr ""
 #, fuzzy
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
 msgstr "{kept, plural, other {#ファイルをリンク解除のまま残しました}}"
-
-#: src/pages/stats/CreatorList.tsx
-#, fuzzy
-#~ msgid "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
-#~ msgstr "{kind, select, both {ストーリー · 作画} story {ストーリー} art {作画} other {}}"
 
 #: src/pages/stats/CreatorList.tsx
 msgid "{kind, select, both {Story and art} story {Story} art {Art} other {}}"
@@ -1475,18 +1455,8 @@ msgid "{left, plural, one {# left} other {# left}}"
 msgstr "{left, plural, other {残り # 件}}"
 
 #: src/pages/stats/MidwayList.tsx
-#, fuzzy
-#~ msgid "{left, plural, one {# left} other {# left}} · ~{eta}"
-#~ msgstr "{left, plural, other {残り # 件}} · 約{eta}"
-
-#: src/pages/stats/MidwayList.tsx
 msgid "{left, plural, one {# left} other {# left}}, about {eta}"
 msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "{lineLabel} · click to collapse"
-#~ msgstr "{lineLabel} · クリックして折りたたむ"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{lineLabel}. Click to collapse."
@@ -1501,6 +1471,10 @@ msgstr ""
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 msgstr "{linkingTotal, plural, other {#件のシリーズでソースを見つけ、ファイルをリンクしました}}"
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "{lone, plural, one {# file with no number} other {# files with no number}}"
+msgstr ""
+
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
 msgid "{longestStreak, plural, one {Today counts. Best: # day} other {Today counts. Best: # days}}"
@@ -1510,16 +1484,6 @@ msgstr "{longestStreak, plural, other {今日も数えます。最高記録：#�
 #, fuzzy
 msgid "{markerLabel} Anime adaptation ends here"
 msgstr "{markerLabel} アニメ化はここで終了"
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "{markerLabel} Anime adaptation ends here · click to collapse"
-#~ msgstr "{markerLabel} アニメ化はここで終了 · クリックして折りたたむ"
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "{markerLabel} Anime adaptation ends here · click to expand"
-#~ msgstr "{markerLabel} アニメ化はここで終了 · クリックして展開"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "{markerLabel} Anime adaptation ends here. Click to collapse."
@@ -1533,16 +1497,6 @@ msgstr ""
 #, fuzzy
 msgid "{markerLabel} Anime adaptation starts here"
 msgstr "{markerLabel} アニメ化はここから開始"
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "{markerLabel} Anime adaptation starts here · click to collapse"
-#~ msgstr "{markerLabel} アニメ化はここから開始 · クリックして折りたたむ"
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "{markerLabel} Anime adaptation starts here · click to expand"
-#~ msgstr "{markerLabel} アニメ化はここから開始 · クリックして展開"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "{markerLabel} Anime adaptation starts here. Click to collapse."
@@ -2151,6 +2105,10 @@ msgstr "{seriesWantedCount, plural, other {シリーズ内#件}}"
 msgid "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
 msgstr "{shown, plural, other {最初の # 件を表示しています。検索して絞り込んでください。}}"
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "{shown} +{more} more"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{shownCount, plural, one {Show # series} other {Show # series}}"
@@ -2168,6 +2126,10 @@ msgstr "{size, plural, other {#シリーズ、この表示の{shareLabel}、{coh
 
 #: src/components/pageconversion/CompareStep.tsx
 msgid "{size}, {percent} of the original"
+msgstr ""
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "{skipped, plural, one {# left out} other {# left out}}"
 msgstr ""
 
 #: src/components/series/ArchivedSeriesCard.tsx
@@ -2193,11 +2155,6 @@ msgstr "{source} {tierLabel} {medianWidth}px ({score})"
 #, fuzzy
 msgid "{sourceCount, plural, one {Suwayomi {version} answered with # source installed.} other {Suwayomi {version} answered with # sources installed.}}"
 msgstr "{sourceCount, plural, other {Suwayomi {version}は、インストール済みのソースを#件返しました。}}"
-
-#: src/pages/HealthPage.tsx
-#, fuzzy
-#~ msgid "{sourceName} · priority {priority}"
-#~ msgstr "{sourceName} · 優先度{priority}"
 
 #: src/pages/HealthPage.tsx
 msgid "{sourceName} (priority {priority})"
@@ -2292,16 +2249,6 @@ msgstr "{target, plural, other {#シリーズ完了}}"
 msgid "{thumbnailFileCount, plural, one {Reader thumbnails: # file, {thumbnailBytesLabel}} other {Reader thumbnails: # files, {thumbnailBytesLabel}}}"
 msgstr "{thumbnailFileCount, plural, other {リーダーのサムネイル：#件のファイル、{thumbnailBytesLabel}}}"
 
-#: src/components/series/FileQualityBadge.tsx
-#, fuzzy
-#~ msgid "{tierLabel} · {medianWidth}px"
-#~ msgstr "{tierLabel} · {medianWidth}px"
-
-#: src/components/SourceCompareModal.tsx
-#, fuzzy
-#~ msgid "{tierLabel} · {width}px"
-#~ msgstr "{tierLabel} · {width}px"
-
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{tierLabel} ({score})"
@@ -2356,18 +2303,8 @@ msgid "{total, plural, one {{completed} / # file inspected} other {{completed} /
 msgstr "{total, plural, other {{completed} / #件のファイルを確認済み}}"
 
 #: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "{total, plural, one {{wantedCount} of # chapter wanted · click to want all} other {{wantedCount} of # chapters wanted · click to want all}}"
-#~ msgstr "{total, plural, other {{wantedCount} / #章を希望 · クリックですべて希望}}"
-
-#: src/components/series/ChapterTableRows.tsx
 msgid "{total, plural, one {{wantedCount} of # chapter wanted. Click to want all.} other {{wantedCount} of # chapters wanted. Click to want all.}}"
 msgstr ""
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "{total, plural, one {# chapter · {downloadedCount} downloaded} other {# chapters · {downloadedCount} downloaded}}"
-#~ msgstr "{total, plural, other {#章 · {downloadedCount}件ダウンロード済み}}"
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -2477,6 +2414,10 @@ msgstr "{typeLabel}（別のプロファイル）"
 #, fuzzy
 msgid "{undone, plural, one {Undid the import of # folder} other {Undid the import of # folders}}"
 msgstr "{undone, plural, other {#件のフォルダーのインポートを取り消しました}}"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "{unlinked, plural, one {# stays unlinked} other {# stay unlinked}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2648,11 +2589,6 @@ msgstr "{weekday} {hourLabel}: {minutes}分"
 #, fuzzy
 msgid "{weight} total"
 msgstr "{weight}合計"
-
-#: src/components/SourceMappingsSection.tsx
-#, fuzzy
-#~ msgid "{width}px · {bpp} bpp"
-#~ msgstr "{width}px · {bpp} bpp"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "{width}px, {bpp} bpp"
@@ -3466,6 +3402,10 @@ msgstr "アグリゲーター"
 #, fuzzy
 msgid "All"
 msgstr "すべて"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "All ({total})"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4670,6 +4610,10 @@ msgstr "進捗をキャッシュ"
 msgid "Cache size (MB)"
 msgstr ""
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "Can't import"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "Can't load this import"
@@ -4823,6 +4767,10 @@ msgstr "{kind}（{source}）から作成したCBZ。元のファイルは残り�
 msgid "CBZ built from {kind}, the original stays"
 msgstr "{kind}から作成したCBZ。元のファイルは残ります"
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "CBZs built"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Central only"
@@ -4839,15 +4787,6 @@ msgstr "第{maxChapter}章"
 #, fuzzy
 msgid "ch. {0}"
 msgstr "{0}章"
-
-#. placeholder {0}: o.chapter
-#. placeholder {0}: outcome.chapter
-#. placeholder {1}: o.volume
-#. placeholder {1}: outcome.volume
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "ch. {0} · vol. {1}"
-#~ msgstr "{0}章 · {1}巻"
 
 #. placeholder {0}: o.chapter
 #. placeholder {0}: outcome.chapter
@@ -5010,6 +4949,10 @@ msgstr "第{from}章以降"
 #, fuzzy
 msgid "Ch.{number}"
 msgstr "{number}章"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Ch.<0/>"
+msgstr ""
 
 #: src/components/import/MihonReview.tsx
 #: src/components/settings/AccountSection.tsx
@@ -5232,11 +5175,6 @@ msgstr "章"
 #, fuzzy
 msgid "Chapters - leave blank for all"
 msgstr "章 - すべての場合は空欄"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "Chapters {currentPageLabel} · {visibleAllCount} matching"
-#~ msgstr "章 {currentPageLabel} · {visibleAllCount}件一致"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Chapters {currentPageLabel} of {visibleAllCount} matching"
@@ -7752,11 +7690,6 @@ msgstr "最後"
 msgid "End of the preview"
 msgstr "プレビューはここまでです"
 
-#: src/components/AnimeCoverageBar.tsx
-#, fuzzy
-#~ msgid "ends at ch. {num}"
-#~ msgstr "第{num}章で終了"
-
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "English"
@@ -8201,11 +8134,6 @@ msgstr "まずまずの品質"
 msgid "Fallback"
 msgstr ""
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-#~ msgid "Falling means you moved."
-#~ msgstr "減少は移動したことを意味します。"
-
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Fans of"
@@ -8352,6 +8280,7 @@ msgstr ""
 msgid "File size in MB, under"
 msgstr ""
 
+#: src/components/import/ImportPlanModal.tsx
 #: src/components/pageconversion/EstimateTable.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -8469,6 +8398,10 @@ msgstr "フィルター（{appliedCount}）"
 #, fuzzy
 msgid "Find a better copy of {pickLabel}"
 msgstr "{pickLabel}のより良いコピーを探す"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Find a folder"
+msgstr ""
 
 #: src/components/import/ImportMatchFinder.tsx
 #, fuzzy
@@ -8683,6 +8616,7 @@ msgstr "フォルダー名, フォルダー名を変更, ファイル名を変�
 msgid "Folder path"
 msgstr "フォルダーのパス"
 
+#: src/components/import/ImportPlanModal.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Folders"
@@ -8694,6 +8628,10 @@ msgstr ""
 
 #: src/pages/ImportPage.tsx
 msgid "Folders are renamed to the English title."
+msgstr ""
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Folders with files that may not link, files left out, or files Maki changes. Everything else is registered as it is."
 msgstr ""
 
 #: src/pages/CreatorPage.tsx
@@ -10387,11 +10325,6 @@ msgstr "自動取得のサイズ上限を超えています"
 msgid "Last {lastSync}"
 msgstr ""
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "last {lastSync} · next {nextSync}"
-#~ msgstr "前回{lastSync} · 次回{nextSync}"
-
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
 msgid "Last 5 weeks"
@@ -10627,6 +10560,10 @@ msgstr "ライブラリ内のシリーズを除外"
 
 #: src/components/pageconversion/ruleTemplates.ts
 msgid "Leave scraped chapters alone"
+msgstr ""
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Left out"
 msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -11492,11 +11429,6 @@ msgstr "最大コンテンツレーティング"
 #, fuzzy
 msgid "Maximum score loss for a higher tier"
 msgstr "上位ティアで許容する最大スコア低下"
-
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "Maybe next year"
-#~ msgstr "来年かもしれません"
 
 #: src/pages/rewind/slides.tsx
 msgid "Maybe next year."
@@ -12608,6 +12540,10 @@ msgstr ""
 msgid "No files match these filters. Run a scan to inventory the library."
 msgstr "これらのフィルターに一致するファイルはありません。ライブラリを棚卸しするにはスキャンを実行してください。"
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "No folder matches."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "No folder yet"
@@ -12736,6 +12672,10 @@ msgstr "通知接続はまだありません。"
 #, fuzzy
 msgid "No notifications yet"
 msgstr "通知はまだありません"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "No number"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -13394,11 +13334,6 @@ msgstr "まだ何もダウンロードされていません。"
 #: src/components/ActivityButton.tsx
 msgid "Nothing downloading right now"
 msgstr ""
-
-#: src/pages/stats/sections/HabitsSection.tsx
-#, fuzzy
-#~ msgid "Nothing dropped. Keep it that way."
-#~ msgstr "中断したシリーズはありません。この調子で続けましょう。"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -14406,11 +14341,6 @@ msgstr "ページの切り替え"
 msgid "Paged"
 msgstr "ページ送り"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "Paged pace · {chaptersLeft} · {basis}"
-#~ msgstr "ページ単位のペース · {chaptersLeft} · {basis}"
-
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
@@ -14921,11 +14851,6 @@ msgstr "Enterを押して新しいタグを作成"
 #, fuzzy
 msgid "Preview"
 msgstr "プレビュー"
-
-#: src/components/discover/SeriesPreviewReader.tsx
-#, fuzzy
-#~ msgid "Preview · {chapterName} · via {source}"
-#~ msgstr "プレビュー · {chapterName} · {source}経由"
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -16373,10 +16298,15 @@ msgstr "フォルダーの名前をシリーズフォルダー形式に変更"
 msgid "Rename to the Maki standard"
 msgstr "Maki標準の名前に変更"
 
+#: src/components/import/ImportPlanModal.tsx
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
 msgid "Renamed"
 msgstr "名前変更済み"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Renamed ({renamedCount})"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Renames the folders and files of all {seriesCount, plural, one {# series} other {# series}} on disk to match the formats above. This can take a while."
@@ -17133,12 +17063,6 @@ msgstr "実行中"
 msgid "Running late"
 msgstr "遅延中"
 
-#: src/components/releases/ReleaseOutlookSummary.tsx
-#: src/components/releases/UpcomingView.tsx
-#, fuzzy
-#~ msgid "Running late. It was likely {range}."
-#~ msgstr "遅延中。見込みは{range}でした。"
-
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -17678,11 +17602,6 @@ msgstr "スクロールしてプレビューを終える"
 msgid "Scroll webtoon chapters"
 msgstr "ウェブトゥーンの章をスクロールで表示"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "Scrolling pace · {chaptersLeft} · {basis}"
-#~ msgstr "スクロールのペース · {chaptersLeft} · {basis}"
-
 #: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
@@ -17940,11 +17859,6 @@ msgstr "他で視聴済み"
 #: src/pages/rewind/slides.tsx
 msgid "seen through to the end"
 msgstr ""
-
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "Seen through to the end"
-#~ msgstr "末尾まで読了"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -18467,6 +18381,10 @@ msgstr "ライブラリの表紙を表示"
 #, fuzzy
 msgid "Show fewer"
 msgstr "少なく表示"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Show folders"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
@@ -19083,16 +19001,6 @@ msgid "Split into two pages"
 msgstr "2ページに分割"
 
 #: src/components/TagBuckets.tsx
-#, fuzzy
-#~ msgid "Spoiler - hover to reveal"
-#~ msgstr "ネタバレ - ホバーして表示"
-
-#: src/components/TagBuckets.tsx
-#, fuzzy
-#~ msgid "Spoiler · {description}"
-#~ msgstr "ネタバレ · {description}"
-
-#: src/components/TagBuckets.tsx
 msgid "Spoiler: {description}"
 msgstr ""
 
@@ -19246,6 +19154,10 @@ msgstr "ここに留まる"
 msgid "stay missing"
 msgstr "欠落のままにする"
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "Stay unlinked"
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "stay where they are"
@@ -19281,11 +19193,6 @@ msgstr "まだ早期アクセス中"
 #, fuzzy
 msgid "Still early access on {source}, Maki will check again later"
 msgstr "{source}ではまだ先行アクセスです。Makiが後で再確認します"
-
-#: src/components/import/RecentImports.tsx
-#, fuzzy
-#~ msgid "Still finding sources. Undoing cancels that."
-#~ msgstr "まだソースを探しています。取り消すとこの処理は中止されます。"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -19440,11 +19347,6 @@ msgstr "今すぐ同期"
 #, fuzzy
 msgid "Sync ratings"
 msgstr "評価を同期"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "sync running… · last {lastSync} · next {nextSync}"
-#~ msgstr "同期実行中… · 前回{lastSync} · 次回{nextSync}"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -20696,11 +20598,6 @@ msgstr "期間"
 msgid "Time read"
 msgstr "読書時間"
 
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "Time spent in the reader"
-#~ msgstr "リーダーでの滞在時間"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Time to finish"
@@ -20832,10 +20729,6 @@ msgstr "トークンの区切り"
 #: src/components/pageconversion/labels.ts
 msgid "Tone is a little lighter. Fine at fit-to-screen."
 msgstr ""
-
-#: src/components/pageconversion/labels.ts
-#~ msgid "Tone thins out."
-#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -21261,6 +21154,10 @@ msgstr "不明なソース"
 #, fuzzy
 msgid "Unlink"
 msgstr "リンク解除"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Unlinked"
+msgstr ""
 
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
@@ -21980,6 +21877,10 @@ msgstr "第{volume}巻 第{chapter}章"
 msgid "Vol.{volume}-{volumeEnd}"
 msgstr "{volume}～{volumeEnd}巻"
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "Vol.<0/>"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Volume"
@@ -22449,6 +22350,10 @@ msgstr "今後おすすめされません"
 msgid "Won't suggest resuming from this anime again."
 msgstr "このアニメからの再開は今後おすすめしません。"
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "Worth a look ({lookCount})"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -22498,11 +22403,6 @@ msgstr "あなた"
 #, fuzzy
 msgid "You"
 msgstr "あなた"
-
-#: src/components/AnimeCoverageBar.tsx
-#, fuzzy
-#~ msgid "you · {readChapter}"
-#~ msgstr "あなた · {readChapter}"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -22603,11 +22503,6 @@ msgstr "第{readChapter}章まで読みました"
 msgid "You haven't dropped any series."
 msgstr ""
 
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "You kept coming back to"
-#~ msgstr "何度も戻ってきた作品"
-
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -22648,11 +22543,6 @@ msgstr "読む速度を落とした作品"
 #, fuzzy
 msgid "You tear through"
 msgstr "一気に読んだ作品"
-
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "You turned a lot of pages"
-#~ msgstr "たくさんページをめくりました"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -22697,11 +22587,6 @@ msgstr ""
 msgid "Your {label}"
 msgstr "あなたの{label}"
 
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "Your busiest month"
-#~ msgstr "最も忙しかった月"
-
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Your device asks for reduced motion, so these stay off."
@@ -22732,20 +22617,10 @@ msgstr "前回のリクエストは却下されました。"
 msgid "Your library"
 msgstr "あなたのライブラリ"
 
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "Your library grew"
-#~ msgstr "ライブラリの成長"
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Your library is empty"
 msgstr "ライブラリは空です"
-
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "Your most read series"
-#~ msgstr "最も読んだシリーズ"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
