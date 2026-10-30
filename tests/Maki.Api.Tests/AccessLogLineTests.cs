@@ -112,6 +112,27 @@ public class AccessLogLineTests
     }
 
     [Fact]
+    public void A_throw_after_the_client_went_away_is_a_499_not_a_500()
+    {
+        var context = Context();
+        using var aborted = new CancellationTokenSource();
+        aborted.Cancel();
+        context.RequestAborted = aborted.Token;
+
+        Assert.Equal("499", Parse(context, failed: true).Groups["status"].Value);
+    }
+
+    [Fact]
+    public void The_target_read_before_the_pipeline_wins_over_a_rewritten_path()
+    {
+        var context = Context(path: "/wp-login.php");
+        var target = AccessLogLine.Target(context.Request);
+        context.Request.Path = "/index.html";
+
+        Assert.Equal("/wp-login.php", Combined.Match(AccessLogLine.Format(context, At, target: target)).Groups["request"].Value);
+    }
+
+    [Fact]
     public void A_known_length_is_the_byte_count()
     {
         var context = Context();

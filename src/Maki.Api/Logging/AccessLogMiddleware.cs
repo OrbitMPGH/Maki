@@ -22,6 +22,9 @@ public sealed class AccessLogMiddleware(RequestDelegate next, AccessLogWriter wr
     public async Task InvokeAsync(HttpContext context)
     {
         var started = DateTimeOffset.Now;
+        // Read before the pipeline runs: the SPA fallback rewrites Request.Path to /index.html, which
+        // would log every probe for /wp-login.php or /.env as a request for the shell.
+        var target = AccessLogLine.Target(context.Request);
         var failed = true;
         try
         {
@@ -30,7 +33,7 @@ public sealed class AccessLogMiddleware(RequestDelegate next, AccessLogWriter wr
         }
         finally
         {
-            writer.Write(AccessLogLine.Format(context, started, failed));
+            writer.Write(AccessLogLine.Format(context, started, failed, target));
         }
     }
 }
@@ -67,14 +70,22 @@ public static class AccessLogLine
         "code", "state", "session_state", "token", "access_token", "id_token", "apikey", "api_key", "password",
     };
 
-    public static string Format(HttpContext context, DateTimeOffset at, bool failed = false)
+    /// <summary>Status for a request the client gave up on before anything was sent, as nginx logs it.</summary>
+    internal const int ClientClosedRequest = 499;
+
+    public static string Format(HttpContext context, DateTimeOffset at, bool failed = false, string? target = null)
     {
         var request = context.Request;
         var response = context.Response;
 
         // A throw that escaped the pipeline before anything was sent is answered 500 by Kestrel,
-        // while the status still reads whatever the default was.
-        var status = failed && !response.HasStarted ? StatusCodes.Status500InternalServerError : response.StatusCode;
+        // while the status still reads whatever the default was. A throw caused by the client going
+        // away is not a server error, and logging it as one would get a reader skipping pages banned.
+        var status = !failed || response.HasStarted
+            ? response.StatusCode
+            : context.RequestAborted.IsCancellationRequested
+                ? ClientClosedRequest
+                : StatusCodes.Status500InternalServerError;
         var protocol = string.IsNullOrEmpty(request.Protocol) ? "HTTP/1.1" : request.Protocol;
 
         var line = new StringBuilder(256);
@@ -86,7 +97,7 @@ public static class AccessLogLine
             .Append("] \"")
             .Append(Escape(request.Method))
             .Append(' ')
-            .Append(Escape(Target(request)))
+            .Append(Escape(target ?? Target(request)))
             .Append(' ')
             .Append(Escape(protocol))
             .Append("\" ")
@@ -154,7 +165,7 @@ public static class AccessLogLine
             + $" {sign}{abs.Hours:00}{abs.Minutes:00}";
     }
 
-    private static string Target(HttpRequest request)
+    public static string Target(HttpRequest request)
     {
         var path = request.Path;
         if (path.StartsWithSegments(HttpRequestLogPolicy.OpdsPrefix, out var rest))
