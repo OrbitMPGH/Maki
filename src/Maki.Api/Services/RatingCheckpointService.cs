@@ -88,8 +88,7 @@ public static class RatingCheckpointService
 
         if (!seen.HasFlag(RatingCheckpoints.Hooked) && state?.ProvisionalRating is null)
         {
-            var genuine = await ReadCounts.ReadFor(db, userId).CountAsync(p => p.SeriesId == series.Id, ct);
-            if (genuine >= HookedThreshold(series.TotalChapters))
+            if (await DistinctReadAsync(db, userId, series.Id, ct) >= HookedThreshold(series.TotalChapters))
             {
                 return RatingCheckpoints.Hooked;
             }
@@ -178,6 +177,20 @@ public static class RatingCheckpointService
 
         var highest = await HighestReadChapterAsync(db, seriesId, ct) ?? at;
         return highest - at >= wanted * StaleShare;
+    }
+
+    /// <summary>
+    /// Chapters the user genuinely read, counted once per number: two languages or a second source
+    /// give one chapter two rows, and both get completed. Unnumbered chapters count one each.
+    /// </summary>
+    private static async Task<int> DistinctReadAsync(MakiDbContext db, int userId, int seriesId, CancellationToken ct)
+    {
+        // In memory: SQLite cannot compare a decimal column in SQL.
+        var numbers = await ReadCounts.ReadFor(db, userId)
+            .Where(p => p.SeriesId == seriesId)
+            .Join(db.Chapters, p => p.ChapterId, c => c.Id, (_, c) => c.Number)
+            .ToListAsync(ct);
+        return numbers.Count(n => n is null) + numbers.Where(n => n is not null).Distinct().Count();
     }
 
     /// <summary>The highest chapter number the caller has read, watched ones included; null for none.</summary>

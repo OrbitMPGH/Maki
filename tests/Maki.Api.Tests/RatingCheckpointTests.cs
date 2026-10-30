@@ -85,6 +85,32 @@ public sealed class RatingCheckpointTests : IDisposable
     }
 
     [Fact]
+    public async Task A_chapter_read_in_two_languages_counts_once_toward_hooked()
+    {
+        var alice = _db.SeedUser("alice");
+        var seriesId = SeedSeries();
+        SeedReading(alice, seriesId, chapters: 40, read: 5);
+        using (var db = _db.NewContext())
+        {
+            for (var n = 1; n <= 5; n++)
+            {
+                var chapter = new Chapter { SeriesId = seriesId, Number = n, Language = "es", Wanted = true, FileRemovedAt = Now };
+                db.Chapters.Add(chapter);
+                db.SaveChanges();
+                db.ChapterProgress.Add(new ChapterProgress
+                {
+                    UserId = alice, SeriesId = seriesId, ChapterId = chapter.Id, PageCount = 20,
+                    Completed = true, StartedAt = Now, UpdatedAt = Now,
+                });
+            }
+
+            db.SaveChanges();
+        }
+
+        Assert.Equal(RatingCheckpoints.None, await Arm(alice, seriesId));
+    }
+
+    [Fact]
     public async Task Watched_chapters_do_not_count_toward_hooked()
     {
         var alice = _db.SeedUser("alice");
