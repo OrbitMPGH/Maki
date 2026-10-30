@@ -213,6 +213,12 @@ public record SeriesDto(
     /// </summary>
     public bool ArchiveHintEligible { get; init; }
 
+    /// <summary>
+    /// The series page should ask this caller to rate it: they finished it, have not rated it and
+    /// have not dismissed the ask. Detail endpoint only.
+    /// </summary>
+    public bool RateHintEligible { get; init; }
+
     /// <summary>"Default" | "On" | "Off": this series' choice about deleting read chapter files.</summary>
     public string ReadFileCleanup { get; init; } = nameof(Core.Entities.ReadFileCleanup.Default);
 

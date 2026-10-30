@@ -5673,6 +5673,7 @@ msgstr "Definition"
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Delete"
@@ -5974,6 +5975,7 @@ msgstr "Disliked it"
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/series/ArchiveHint.tsx
+#: src/components/series/RateHint.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -9850,6 +9852,7 @@ msgid "Month"
 msgstr "Month"
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 msgid "More"
@@ -12747,6 +12750,10 @@ msgstr "Rate limited. Retrying {time}."
 #: src/pages/ScrobblePage.tsx
 msgid "Rate limited. Retrying soon."
 msgstr "Rate limited. Retrying soon."
+
+#: src/components/series/RateHint.tsx
+msgid "Rate this series"
+msgstr "Rate this series"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -18914,6 +18921,10 @@ msgstr "You're set"
 #: src/components/series/ArchiveHint.tsx
 msgid "You've finished this. Archive it?"
 msgstr "You've finished this. Archive it?"
+
+#: src/components/series/RateHint.tsx
+msgid "You've finished this. How was it?"
+msgstr "You've finished this. How was it?"
 
 #: src/pages/rewind/slides.tsx
 msgid "Your {label}"

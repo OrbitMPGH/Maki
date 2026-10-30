@@ -6795,6 +6795,7 @@ msgstr ""
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -7160,6 +7161,7 @@ msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/series/ArchiveHint.tsx
+#: src/components/series/RateHint.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -11820,6 +11822,7 @@ msgid "Month"
 msgstr "Mes"
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
@@ -15291,6 +15294,10 @@ msgstr "Límite de peticiones alcanzado. Reintentando {time}."
 #, fuzzy
 msgid "Rate limited. Retrying soon."
 msgstr "Límite de peticiones alcanzado. Reintentando pronto."
+
+#: src/components/series/RateHint.tsx
+msgid "Rate this series"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -22679,6 +22686,10 @@ msgstr "Todo listo"
 
 #: src/components/series/ArchiveHint.tsx
 msgid "You've finished this. Archive it?"
+msgstr ""
+
+#: src/components/series/RateHint.tsx
+msgid "You've finished this. How was it?"
 msgstr ""
 
 #: src/pages/rewind/slides.tsx

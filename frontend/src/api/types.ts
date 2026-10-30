@@ -122,6 +122,8 @@ export interface SeriesDto {
   archivedByUserId: number | null
   /** The "finished, archive it?" hint applies to you. Detail endpoint only; false without ArchiveSeries or once dismissed. */
   archiveHintEligible?: boolean
+  /** You finished this series and have not rated it or dismissed the ask. Detail endpoint only. */
+  rateHintEligible?: boolean
   /** Personal time left from comparable timed chapters in the built-in reader. Detail endpoint only. */
   readTimeEstimate?: {
     seconds: number

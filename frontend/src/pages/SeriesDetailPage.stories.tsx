@@ -55,6 +55,36 @@ export const FinishedArchiveHint: Story = {
   },
 }
 
+let rated: number | null = null
+
+/** Finished but unrated: the rate hint comes first, and rating from it hands the line over to the archive offer. */
+export const FinishedRateHint: Story = {
+  beforeEach: () => {
+    rated = null
+  },
+  parameters: {
+    ...at(2),
+    msw: seriesMsw(
+      http.get(api('/series/:id'), () =>
+        HttpResponse.json({ ...hintedSeriesDto(2), rating: rated, rateHintEligible: rated == null }),
+      ),
+      http.put(api('/series/:id/rating'), async ({ request }) => {
+        rated = ((await request.json()) as { rating: number | null }).rating
+        return HttpResponse.json({ rating: rated })
+      }),
+    ),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText("You've finished this. How was it?")).toBeVisible()
+    await expect(canvas.queryByText("You've finished this. Archive it?")).toBeNull()
+    const stars = canvas.getByRole('group', { name: 'Rate this series' })
+    // Mantine commits a rating from the star's label; the radio itself only previews it.
+    await userEvent.click((within(stars).getByRole('radio', { name: '4' }) as HTMLInputElement).labels![0])
+    await waitFor(() => expect(rated).toBe(8))
+    await expect(await canvas.findByText("You've finished this. Archive it?")).toBeVisible()
+  },
+}
+
 let hintDismissed = false
 
 /** Dismissing posts once and the line goes away on the refetch. */

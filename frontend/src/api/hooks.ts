@@ -1799,6 +1799,14 @@ export function useDismissArchiveHint() {
   })
 }
 
+export function useDismissRateHint() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/series/${id}/rate-hint/dismiss`, { method: 'POST' }),
+    onSuccess: (_, id) => void queryClient.invalidateQueries({ queryKey: ['series', id] }),
+  })
+}
+
 export function useRemoveArchivedFiles() {
   const queryClient = useQueryClient()
   return useMutation({
