@@ -61,3 +61,4 @@ scripts/readme-images/raw/
 
 # Native build output (distribution/native/)
 /out/
+.shots-tmp/
