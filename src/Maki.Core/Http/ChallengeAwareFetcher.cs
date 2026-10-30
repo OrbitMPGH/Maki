@@ -240,7 +240,7 @@ public class ChallengeAwareFetcher(
 
     // No "challenge-platform": Cloudflare's JS detections inject /cdn-cgi/challenge-platform/ into
     // healthy pages too.
-    private static bool LooksLikeChallenge(string html)
+    public static bool LooksLikeChallenge(string html)
     {
         if (html.Length > 20_000)
         {

@@ -12,11 +12,6 @@ namespace Maki.Sources.WeebCentral;
 /// Weeb Central scraper. The site is HTMX-driven, so we hit the partial-HTML
 /// endpoints directly (search/data, full-chapter-list, chapter images).
 /// Series id is stored as "{ULID}/{slug}".
-/// <para>
-/// The site sits behind Cloudflare's managed challenge, which 403s a plain client, so every
-/// HTML request goes through <see cref="IHtmlFetcher"/> (direct with cached clearance first,
-/// FlareSolverr on a challenge). Page images are plain CDN URLs and stay on the downloader.
-/// </para>
 /// </summary>
 public partial class WeebCentralSource(IHtmlFetcher fetcher) : ISource
 {
@@ -29,18 +24,8 @@ public partial class WeebCentralSource(IHtmlFetcher fetcher) : ISource
     public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa;
     public IReadOnlyList<string> CoverHosts => ["temp.compsci88.com"];
 
-    /// <summary>
-    /// A fetched page as a document. The fetcher already hands a challenge to FlareSolverr, but a
-    /// shell that slips through (a fake fetcher, a marker it does not know) must not parse as an
-    /// empty search or an empty chapter list and silently stall a monitored series.
-    /// </summary>
-    private async Task<AngleSharp.Dom.IDocument> GetDocumentAsync(string path, CancellationToken ct)
-    {
-        var url = $"{BaseUrl}/{path}";
-        var html = await fetcher.GetHtmlAsync(url, ct);
-        CloudflareChallengeDetection.ThrowIfChallenge(html, url);
-        return await Parser.ParseDocumentAsync(html, ct);
-    }
+    private async Task<AngleSharp.Dom.IDocument> GetDocumentAsync(string path, CancellationToken ct) =>
+        await Parser.ParseDocumentAsync(await fetcher.GetContentHtmlAsync($"{BaseUrl}/{path}", ct), ct);
 
     // The site renders every numbered entry as "<word> <number>", and the word is picked per series:
     // "Chapter 12", "Episode 12", "Plot 49", "Mischief 225". Nothing else in the listing carries the

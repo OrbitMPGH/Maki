@@ -5,11 +5,7 @@ namespace Maki.Sources.Tests;
 
 public class WeebCentralSourceTests
 {
-    /// <summary>Cloudflare's managed-challenge shell, as the direct path sees it with no clearance.</summary>
-    private const string ChallengePage = """
-        <!DOCTYPE html><html><head><title>Just a moment...</title></head>
-        <body><form id="challenge-form" action="/series/x?__cf_chl_f_tk=abc" method="POST"></form></body></html>
-        """;
+    private static string ChallengePage() => FakeHttpClientFactory.Fixture("cloudflare-challenge.html");
 
     private static WeebCentralSource SourceFor(Dictionary<string, string> responses) =>
         new(new FakeHtmlFetcher(responses));
@@ -40,11 +36,9 @@ public class WeebCentralSourceTests
     [Fact]
     public async Task Search_throws_on_a_challenge_page_rather_than_reading_no_results()
     {
-        // The fetcher hands a recognised challenge to FlareSolverr itself; one that reaches the
-        // parser anyway must not turn into an empty hit list that auto-match takes as "not here".
-        var source = SourceFor(new() { ["search/data"] = ChallengePage });
+        var source = SourceFor(new() { ["search/data"] = ChallengePage() });
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => source.SearchAsync("berserk"));
+        await Assert.ThrowsAsync<SourceErrorException>(() => source.SearchAsync("berserk"));
     }
 
     [Fact]
@@ -79,11 +73,9 @@ public class WeebCentralSourceTests
     [Fact]
     public async Task ListChapters_throws_on_a_challenge_page_rather_than_reading_no_chapters()
     {
-        // An empty list here would read as "the series has no chapters" and quietly stall a
-        // monitored series instead of failing the sync.
-        var source = SourceFor(new() { ["full-chapter-list"] = ChallengePage });
+        var source = SourceFor(new() { ["full-chapter-list"] = ChallengePage() });
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<SourceErrorException>(
             () => source.ListChaptersAsync("01J76XY7EF75DJNQCV04HTPDZK/Berserk"));
     }
 

@@ -1,3 +1,5 @@
+using Maki.Core.Http;
+using Maki.Core.Sources;
 using Microsoft.Playwright;
 
 namespace Maki.Sources.Common;
@@ -55,18 +57,17 @@ public static class CloudflareChallengeDetection
         || content.Contains("__cf_chl", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Throws when a raw body fetched through <c>IHtmlFetcher</c> is the challenge interstitial
-    /// rather than the page. The fetcher hands a recognised challenge to FlareSolverr itself; this
-    /// is the backstop for a shell that reaches the parser anyway, so it fails loudly instead of
-    /// reading as an empty search or an empty chapter list. Real pages are far bigger than the
-    /// shell, so a large body is never mistaken for one.
+    /// Fetches a page and throws if it is still a challenge shell (FlareSolverr failed to clear it),
+    /// so the parser never reads one as an empty search or chapter list.
     /// </summary>
-    public static void ThrowIfChallenge(string html, string url)
+    public static async Task<string> GetContentHtmlAsync(this IHtmlFetcher fetcher, string url, CancellationToken ct)
     {
-        if (html.Length <= 20_000 && IsChallenge(html, html))
+        var html = await fetcher.GetHtmlAsync(url, ct);
+        if (ChallengeAwareFetcher.LooksLikeChallenge(html))
         {
-            throw new InvalidOperationException(
-                $"{url} answered with a Cloudflare challenge page instead of content");
+            throw new SourceErrorException($"{url} answered with a Cloudflare challenge page instead of content");
         }
+
+        return html;
     }
 }

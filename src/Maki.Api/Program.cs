@@ -356,8 +356,6 @@ try
     foreach (var (name, baseUrl) in new[]
              {
                  (MangaPillSource.HttpClientName, "https://mangapill.com/"),
-                 // Weeb Central and Flame Comics are not here: both are behind Cloudflare's managed
-                 // challenge and fetch through IHtmlFetcher (the challenge-fetcher client below).
                  // MangaKatana — SSR-rendered, no Cloudflare.
                  (MangaKatanaSource.HttpClientName, "https://mangakatana.com/"),
                  // GigaViewer sites (Hatena's white-label viewer, plain nginx/CloudFront, no

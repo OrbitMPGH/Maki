@@ -5,11 +5,7 @@ namespace Maki.Sources.Tests;
 
 public class FlameComicsSourceTests
 {
-    /// <summary>Cloudflare's managed-challenge shell, as the direct path sees it with no clearance.</summary>
-    private const string ChallengePage = """
-        <!DOCTYPE html><html><head><title>Just a moment...</title></head>
-        <body><form id="challenge-form" action="/browse?__cf_chl_f_tk=abc" method="POST"></form></body></html>
-        """;
+    private static string ChallengePage() => FakeHttpClientFactory.Fixture("cloudflare-challenge.html");
 
     private static FlameComicsSource SourceFor(Dictionary<string, string> responses) =>
         new(new FakeHtmlFetcher(responses));
@@ -45,11 +41,9 @@ public class FlameComicsSourceTests
     [Fact]
     public async Task Search_throws_on_a_challenge_page_rather_than_an_empty_catalog()
     {
-        // A challenge shell carries no __NEXT_DATA__; it must fail the search, not cache an
-        // empty catalog that answers "no results" for the next minute.
-        var source = SourceFor(new() { ["browse"] = ChallengePage });
+        var source = SourceFor(new() { ["browse"] = ChallengePage() });
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => source.SearchAsync("omniscient reader"));
+        var ex = await Assert.ThrowsAsync<SourceErrorException>(() => source.SearchAsync("omniscient reader"));
 
         Assert.Contains("challenge", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
@@ -57,9 +51,9 @@ public class FlameComicsSourceTests
     [Fact]
     public async Task ListChapters_throws_on_a_challenge_page_rather_than_reading_no_chapters()
     {
-        var source = SourceFor(new() { ["series/2"] = ChallengePage });
+        var source = SourceFor(new() { ["series/2"] = ChallengePage() });
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("2"));
+        var ex = await Assert.ThrowsAsync<SourceErrorException>(() => source.ListChaptersAsync("2"));
 
         Assert.Contains("challenge", ex.Message, StringComparison.OrdinalIgnoreCase);
     }

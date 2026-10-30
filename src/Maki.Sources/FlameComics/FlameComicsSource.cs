@@ -23,12 +23,6 @@ namespace Maki.Sources.FlameComics;
 /// numeric <c>series_id</c>; chapter id is the chapter's <c>token</c>, which is all
 /// <c>/series/{seriesId}/{token}</c> needs.
 /// </para>
-/// <para>
-/// The site sits behind Cloudflare's managed challenge, which 403s a plain client, so every page
-/// goes through <see cref="IHtmlFetcher"/>. A page FlareSolverr hands back is the rendered DOM,
-/// and the Pages Router leaves <c>#__NEXT_DATA__</c> in place after hydration, so the blob reads
-/// the same either way. Covers and page images are plain CDN URLs and stay on the downloader.
-/// </para>
 /// </summary>
 public class FlameComicsSource(IHtmlFetcher fetcher) : ISource
 {
@@ -182,11 +176,7 @@ public class FlameComicsSource(IHtmlFetcher fetcher) : ISource
     /// </summary>
     private async Task<JsonElement> GetPagePropsAsync(string path, CancellationToken ct)
     {
-        var url = $"{BaseUrl}/{path}";
-        var html = await fetcher.GetHtmlAsync(url, ct);
-        CloudflareChallengeDetection.ThrowIfChallenge(html, url);
-
-        var doc = await Parser.ParseDocumentAsync(html, ct);
+        var doc = await Parser.ParseDocumentAsync(await fetcher.GetContentHtmlAsync($"{BaseUrl}/{path}", ct), ct);
         var payload = doc.QuerySelector("script#__NEXT_DATA__")?.TextContent;
         if (string.IsNullOrWhiteSpace(payload))
         {
