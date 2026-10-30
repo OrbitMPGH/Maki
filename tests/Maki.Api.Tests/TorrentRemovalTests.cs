@@ -205,6 +205,26 @@ public class TorrentRemovalTests : IDisposable
     }
 
     [Fact]
+    public async Task A_row_whose_release_info_cannot_be_read_settles_without_stopping_the_rest()
+    {
+        var broken = SeedPending(pendingSince: DateTime.UtcNow.AddHours(-1));
+        using (var db = _db.NewContext())
+        {
+            db.DownloadQueue.Single(q => q.Id == broken).ReleaseInfoJson = "{not json";
+            db.SaveChanges();
+        }
+
+        var id = SeedPending();
+        _client.Torrents.Add(Torrent());
+
+        await RunAsync();
+
+        Assert.Null(Reload(broken).ClientRemovalPendingAt);
+        Assert.Equal([(Hash, true)], _client.Removed);
+        Assert.NotNull(Reload(id).ClientRemovedAt);
+    }
+
+    [Fact]
     public async Task Files_maki_cannot_see_are_kept_but_the_torrent_still_goes()
     {
         SeedPending(contentPath: Path.Combine(_download, "not there"));

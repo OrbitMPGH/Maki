@@ -149,7 +149,7 @@ public class TorrentRemovalJob(
             q.Status != QueueStatus.Completed &&
             q.Status != QueueStatus.Cancelled &&
             q.ReleaseInfoJson != null &&
-            (q.ReleaseInfoJson.Contains(hash) ||
+            (EF.Functions.Like(q.ReleaseInfoJson, "%" + hash + "%") ||
              (q.Status != QueueStatus.Failed && q.SeriesId == item.SeriesId &&
               q.ReleaseInfoJson.Contains("\"TorrentHash\":null"))), ct);
 
@@ -179,14 +179,39 @@ public class TorrentRemovalJob(
                 .SetProperty(f => f.ConversionCheckedAtUtc, (DateTime?)null)
                 .SetProperty(f => f.CheckedWith, (string?)null), ct);
 
-    /// <summary>One path is the other or lies inside it, compared without regard to case or separator.</summary>
-    private static bool Overlaps(string a, string b)
+    /// <summary>
+    /// One path is the other or lies inside it, compared without regard to case or separator. A path
+    /// that cannot be resolved counts as overlapping, so its files are kept.
+    /// </summary>
+    internal static bool Overlaps(string a, string b)
     {
         static string Norm(string p) => Path.GetFullPath(p).Replace('\\', '/').TrimEnd('/') + "/";
-        var (x, y) = (Norm(a), Norm(b));
-        return x.StartsWith(y, StringComparison.OrdinalIgnoreCase) || y.StartsWith(x, StringComparison.OrdinalIgnoreCase);
+        try
+        {
+            var (x, y) = (Norm(a), Norm(b));
+            return x.StartsWith(y, StringComparison.OrdinalIgnoreCase) || y.StartsWith(x, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return true;
+        }
     }
 
-    private static ReleaseInfo? ReleaseInfoOf(DownloadQueueItem item) =>
-        item.ReleaseInfoJson is null ? null : JsonSerializer.Deserialize<ReleaseInfo>(item.ReleaseInfoJson);
+    /// <summary>A row whose release info cannot be read settles like one with no hash, rather than stopping the run.</summary>
+    internal static ReleaseInfo? ReleaseInfoOf(DownloadQueueItem item)
+    {
+        if (item.ReleaseInfoJson is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<ReleaseInfo>(item.ReleaseInfoJson);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 }
