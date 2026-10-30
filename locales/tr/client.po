@@ -13,11 +13,6 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/pages/HealthPage.tsx
-#, fuzzy
-#~ msgid " · Acknowledged, hidden from the header badge"
-#~ msgstr " · Onaylandı, başlık rozetinde gizli"
-
 #: src/components/pageconversion/RuleCard.tsx
 msgid " MB"
 msgstr ""
@@ -1343,11 +1338,6 @@ msgstr "{importedCount, plural, one {# içe aktarıldı} other {# içe aktarıld
 msgid "{importedCount, plural, one {Import # file} other {Import # files}}"
 msgstr "{importedCount, plural, one {# dosyayı içe aktar} other {# dosyayı içe aktar}}"
 
-#: src/sourceLabels.ts
-#, fuzzy
-#~ msgid "{indexer} · Torrent"
-#~ msgstr "{indexer} · Torrent"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{inLibraryCount, plural, one {Show # series already in the library} other {Show # series already in the library}}"
@@ -1375,11 +1365,6 @@ msgstr ""
 #, fuzzy
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
 msgstr "{kept, plural, one {# dosya bağlantısız bırakıldı} other {# dosya bağlantısız bırakıldı}}"
-
-#: src/pages/stats/CreatorList.tsx
-#, fuzzy
-#~ msgid "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
-#~ msgstr "{kind, select, both {Hikâye · Çizim} story {Hikâye} art {Çizim} other {}}"
 
 #: src/pages/stats/CreatorList.tsx
 msgid "{kind, select, both {Story and art} story {Story} art {Art} other {}}"
@@ -1475,18 +1460,8 @@ msgid "{left, plural, one {# left} other {# left}}"
 msgstr "{left, plural, one {# kaldı} other {# kaldı}}"
 
 #: src/pages/stats/MidwayList.tsx
-#, fuzzy
-#~ msgid "{left, plural, one {# left} other {# left}} · ~{eta}"
-#~ msgstr "{left, plural, one {# kaldı} other {# kaldı}} · ~{eta}"
-
-#: src/pages/stats/MidwayList.tsx
 msgid "{left, plural, one {# left} other {# left}}, about {eta}"
 msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "{lineLabel} · click to collapse"
-#~ msgstr "{lineLabel} · daraltmak için tıklayın"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{lineLabel}. Click to collapse."
@@ -1512,16 +1487,6 @@ msgid "{markerLabel} Anime adaptation ends here"
 msgstr "{markerLabel} Anime uyarlaması burada sona eriyor"
 
 #: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "{markerLabel} Anime adaptation ends here · click to collapse"
-#~ msgstr "{markerLabel} Anime uyarlaması burada sona eriyor · daraltmak için tıklayın"
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "{markerLabel} Anime adaptation ends here · click to expand"
-#~ msgstr "{markerLabel} Anime uyarlaması burada sona eriyor · genişletmek için tıklayın"
-
-#: src/components/series/ChapterTableRows.tsx
 msgid "{markerLabel} Anime adaptation ends here. Click to collapse."
 msgstr ""
 
@@ -1533,16 +1498,6 @@ msgstr ""
 #, fuzzy
 msgid "{markerLabel} Anime adaptation starts here"
 msgstr "{markerLabel} Anime uyarlaması burada başlıyor"
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "{markerLabel} Anime adaptation starts here · click to collapse"
-#~ msgstr "{markerLabel} Anime uyarlaması burada başlıyor · daraltmak için tıklayın"
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "{markerLabel} Anime adaptation starts here · click to expand"
-#~ msgstr "{markerLabel} Anime uyarlaması burada başlıyor · genişletmek için tıklayın"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "{markerLabel} Anime adaptation starts here. Click to collapse."
@@ -2195,11 +2150,6 @@ msgid "{sourceCount, plural, one {Suwayomi {version} answered with # source inst
 msgstr "{sourceCount, plural, one {Suwayomi {version}, yüklü # kaynakla yanıt verdi.} other {Suwayomi {version}, yüklü # kaynakla yanıt verdi.}}"
 
 #: src/pages/HealthPage.tsx
-#, fuzzy
-#~ msgid "{sourceName} · priority {priority}"
-#~ msgstr "{sourceName} · öncelik {priority}"
-
-#: src/pages/HealthPage.tsx
 msgid "{sourceName} (priority {priority})"
 msgstr ""
 
@@ -2292,16 +2242,6 @@ msgstr "{target, plural, one {# seri bitirildi} other {# seri bitirildi}}"
 msgid "{thumbnailFileCount, plural, one {Reader thumbnails: # file, {thumbnailBytesLabel}} other {Reader thumbnails: # files, {thumbnailBytesLabel}}}"
 msgstr "{thumbnailFileCount, plural, one {Okuyucu küçük resimleri: # dosya, {thumbnailBytesLabel}} other {Okuyucu küçük resimleri: # dosya, {thumbnailBytesLabel}}}"
 
-#: src/components/series/FileQualityBadge.tsx
-#, fuzzy
-#~ msgid "{tierLabel} · {medianWidth}px"
-#~ msgstr "{tierLabel} · {medianWidth}px"
-
-#: src/components/SourceCompareModal.tsx
-#, fuzzy
-#~ msgid "{tierLabel} · {width}px"
-#~ msgstr "{tierLabel} · {width}px"
-
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{tierLabel} ({score})"
@@ -2356,18 +2296,8 @@ msgid "{total, plural, one {{completed} / # file inspected} other {{completed} /
 msgstr "{total, plural, one {{completed} / # dosya incelendi} other {{completed} / # dosya incelendi}}"
 
 #: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "{total, plural, one {{wantedCount} of # chapter wanted · click to want all} other {{wantedCount} of # chapters wanted · click to want all}}"
-#~ msgstr "{total, plural, one {{wantedCount} / # bölüm istendi · tümünü istemek için tıklayın} other {{wantedCount} / # bölüm istendi · tümünü istemek için tıklayın}}"
-
-#: src/components/series/ChapterTableRows.tsx
 msgid "{total, plural, one {{wantedCount} of # chapter wanted. Click to want all.} other {{wantedCount} of # chapters wanted. Click to want all.}}"
 msgstr ""
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-#~ msgid "{total, plural, one {# chapter · {downloadedCount} downloaded} other {# chapters · {downloadedCount} downloaded}}"
-#~ msgstr "{total, plural, one {# bölüm · {downloadedCount} indirildi} other {# bölüm · {downloadedCount} indirildi}}"
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -2648,11 +2578,6 @@ msgstr "{weekday} {hourLabel}: {minutes} dk"
 #, fuzzy
 msgid "{weight} total"
 msgstr "toplam {weight}"
-
-#: src/components/SourceMappingsSection.tsx
-#, fuzzy
-#~ msgid "{width}px · {bpp} bpp"
-#~ msgstr "{width}px · {bpp} bpp"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "{width}px, {bpp} bpp"
@@ -4849,15 +4774,6 @@ msgstr "b. {0}"
 #. placeholder {1}: o.volume
 #. placeholder {1}: outcome.volume
 #: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "ch. {0} · vol. {1}"
-#~ msgstr "b. {0} · c. {1}"
-
-#. placeholder {0}: o.chapter
-#. placeholder {0}: outcome.chapter
-#. placeholder {1}: o.volume
-#. placeholder {1}: outcome.volume
-#: src/pages/ScrobblePage.tsx
 msgid "ch. {0}, vol. {1}"
 msgstr ""
 
@@ -5236,11 +5152,6 @@ msgstr "Bölümler"
 #, fuzzy
 msgid "Chapters - leave blank for all"
 msgstr "Bölümler - hepsi için boş bırakın"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "Chapters {currentPageLabel} · {visibleAllCount} matching"
-#~ msgstr "Bölümler {currentPageLabel} · {visibleAllCount} eşleşiyor"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Chapters {currentPageLabel} of {visibleAllCount} matching"
@@ -7759,11 +7670,6 @@ msgstr "Son"
 msgid "End of the preview"
 msgstr "Önizlemenin sonu"
 
-#: src/components/AnimeCoverageBar.tsx
-#, fuzzy
-#~ msgid "ends at ch. {num}"
-#~ msgstr "b. {num}'de sona eriyor"
-
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "English"
@@ -8207,11 +8113,6 @@ msgstr "Orta kalite"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Fallback"
 msgstr ""
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-#~ msgid "Falling means you moved."
-#~ msgstr "Düşüş, hareket ettiğiniz anlamına gelir."
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -10397,11 +10298,6 @@ msgstr "Otomatik alma boyut sınırından büyük"
 msgid "Last {lastSync}"
 msgstr ""
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "last {lastSync} · next {nextSync}"
-#~ msgstr "son {lastSync} · sonraki {nextSync}"
-
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
 msgid "Last 5 weeks"
@@ -11510,11 +11406,6 @@ msgstr "Azami içerik derecelendirmesi"
 #, fuzzy
 msgid "Maximum score loss for a higher tier"
 msgstr "Daha yüksek bir kademe için en fazla puan kaybı"
-
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "Maybe next year"
-#~ msgstr "Belki gelecek yıl"
 
 #: src/pages/rewind/slides.tsx
 msgid "Maybe next year."
@@ -13417,11 +13308,6 @@ msgstr "Henüz bir şey indirilmedi."
 msgid "Nothing downloading right now"
 msgstr ""
 
-#: src/pages/stats/sections/HabitsSection.tsx
-#, fuzzy
-#~ msgid "Nothing dropped. Keep it that way."
-#~ msgstr "Hiçbir seriyi bırakmadın. Böyle devam et."
-
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Nothing enabled. Turn a source on to rank it."
@@ -14428,11 +14314,6 @@ msgstr "Sayfa geçişleri"
 msgid "Paged"
 msgstr "Sayfalı"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "Paged pace · {chaptersLeft} · {basis}"
-#~ msgstr "Sayfalı tempo · {chaptersLeft} · {basis}"
-
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
@@ -14951,11 +14832,6 @@ msgstr "Yeni bir etiket oluşturmak için Enter'a basın"
 #, fuzzy
 msgid "Preview"
 msgstr "Önizleme"
-
-#: src/components/discover/SeriesPreviewReader.tsx
-#, fuzzy
-#~ msgid "Preview · {chapterName} · via {source}"
-#~ msgstr "Önizleme · {chapterName} · {source} üzerinden"
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -17167,12 +17043,6 @@ msgstr "Çalışıyor"
 msgid "Running late"
 msgstr "Gecikmiş"
 
-#: src/components/releases/ReleaseOutlookSummary.tsx
-#: src/components/releases/UpcomingView.tsx
-#, fuzzy
-#~ msgid "Running late. It was likely {range}."
-#~ msgstr "Gecikmiş. Muhtemelen {range} idi."
-
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -17716,11 +17586,6 @@ msgstr "Önizlemeyi bitirmek için kaydırın"
 msgid "Scroll webtoon chapters"
 msgstr "Webtoon bölümlerini kaydır"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "Scrolling pace · {chaptersLeft} · {basis}"
-#~ msgstr "Kaydırmalı tempo · {chaptersLeft} · {basis}"
-
 #: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
@@ -17978,11 +17843,6 @@ msgstr "Başka yerde görüldü"
 #: src/pages/rewind/slides.tsx
 msgid "seen through to the end"
 msgstr ""
-
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "Seen through to the end"
-#~ msgstr "Sonuna kadar izlendi"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -19121,16 +18981,6 @@ msgid "Split into two pages"
 msgstr "İki sayfaya böl"
 
 #: src/components/TagBuckets.tsx
-#, fuzzy
-#~ msgid "Spoiler - hover to reveal"
-#~ msgstr "Spoiler - göstermek için üzerine gelin"
-
-#: src/components/TagBuckets.tsx
-#, fuzzy
-#~ msgid "Spoiler · {description}"
-#~ msgstr "Spoiler · {description}"
-
-#: src/components/TagBuckets.tsx
 msgid "Spoiler: {description}"
 msgstr ""
 
@@ -19320,11 +19170,6 @@ msgstr "Hâlâ erken erişim"
 msgid "Still early access on {source}, Maki will check again later"
 msgstr "{source} üzerinde hâlâ erken erişimde, Maki daha sonra tekrar kontrol edecek"
 
-#: src/components/import/RecentImports.tsx
-#, fuzzy
-#~ msgid "Still finding sources. Undoing cancels that."
-#~ msgstr "Kaynaklar hâlâ aranıyor. Geri almak bunu iptal eder."
-
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Still going"
@@ -19478,11 +19323,6 @@ msgstr "Şimdi senkronize et"
 #, fuzzy
 msgid "Sync ratings"
 msgstr "Puanları senkronize et"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "sync running… · last {lastSync} · next {nextSync}"
-#~ msgstr "senkronizasyon çalışıyor… · son {lastSync} · sonraki {nextSync}"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -20738,11 +20578,6 @@ msgstr "Zaman aralığı"
 msgid "Time read"
 msgstr "Okuma süresi"
 
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "Time spent in the reader"
-#~ msgstr "Okuyucuda geçirilen süre"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Time to finish"
@@ -20874,10 +20709,6 @@ msgstr "Belirteç ayırıcı"
 #: src/components/pageconversion/labels.ts
 msgid "Tone is a little lighter. Fine at fit-to-screen."
 msgstr ""
-
-#: src/components/pageconversion/labels.ts
-#~ msgid "Tone thins out."
-#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -22541,11 +22372,6 @@ msgstr "siz"
 msgid "You"
 msgstr "Sen"
 
-#: src/components/AnimeCoverageBar.tsx
-#, fuzzy
-#~ msgid "you · {readChapter}"
-#~ msgstr "siz · {readChapter}"
-
 #: src/components/settings/SecuritySection.tsx
 msgid "You are on this page from another device. After the restart, Maki only answers on the computer it runs on."
 msgstr ""
@@ -22649,11 +22475,6 @@ msgstr "B. {readChapter}'e kadar okudunuz"
 msgid "You haven't dropped any series."
 msgstr ""
 
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "You kept coming back to"
-#~ msgstr "Tekrar tekrar döndüğünüz"
-
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -22695,11 +22516,6 @@ msgstr "Yavaşladığınız"
 msgid "You tear through"
 msgstr "Hızla tükettiğiniz"
 
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "You turned a lot of pages"
-#~ msgstr "Çok fazla sayfa çevirdiniz"
-
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "You vs the crowd"
@@ -22739,11 +22555,6 @@ msgstr ""
 msgid "Your {label}"
 msgstr "{label}'niz"
 
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "Your busiest month"
-#~ msgstr "En yoğun ayınız"
-
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Your device asks for reduced motion, so these stay off."
@@ -22774,20 +22585,10 @@ msgstr "Son isteğiniz reddedildi."
 msgid "Your library"
 msgstr "Kitaplığınız"
 
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "Your library grew"
-#~ msgstr "Kitaplığınız büyüdü"
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Your library is empty"
 msgstr "Kitaplığınız boş"
-
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-#~ msgid "Your most read series"
-#~ msgstr "En çok okuduğunuz seri"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
