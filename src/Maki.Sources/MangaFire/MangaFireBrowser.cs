@@ -411,7 +411,7 @@ public sealed class MangaFireBrowser(
 
         var session = await fetcher.GetBrowserSessionAsync($"{BaseUrl}/home", ct);
 
-        _playwright ??= await shared.AcquireAsync();
+        _playwright ??= await shared.AcquireAsync(ct);
         if (_browser == null)
         {
             // Use the ~100 MB headless shell, not full Chromium — we never render headed, and it
