@@ -16,6 +16,7 @@ import { NetworkSection, OidcSection, SecuritySection, SignInPageSection } from 
 import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
 import { ProgressSection } from '../components/settings/ProgressSection'
+import { RatingPromptsSection } from '../components/settings/RatingPromptsSection'
 import { QualityFormatsSection, UpgradeProfilesSection } from '../components/settings/UpgradeProfilesSection'
 import { useCompleteSetup } from '../api/hooks'
 import { useReaderUsed } from '../api/reader'
@@ -87,6 +88,7 @@ function useSectionNodes(): Record<string, ReactNode> {
 
       reader: <ReadingProfilesSection />,
       progress: <ProgressSection />,
+      'rating-prompts': <RatingPromptsSection />,
       opds: <OpdsSection />,
       'koreader-sync': <KoreaderSyncSection />,
       'offline-reading': <OfflineReadingSection />,

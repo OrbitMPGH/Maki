@@ -88,7 +88,10 @@ import {
   useSetReadFileCleanup,
   useSetSeriesPageConversion,
   useRateSeries,
+  useSetRating,
   useFinalizeRating,
+  useSetProvisionalRating,
+  useDismissRatingCheckpoint,
   useToggleChapterWanted,
   useUnlinkChapters,
   useDeleteChapterFiles,
@@ -157,6 +160,8 @@ import {
 import { ArchivedBanner } from '../components/series/ArchivedBanner'
 import { ArchiveHint } from '../components/series/ArchiveHint'
 import { RateHint } from '../components/series/RateHint'
+import { RatingCheckpointPrompt } from '../components/series/RatingCheckpointPrompt'
+import { ratesProvisionally } from '../lib/rating'
 import { RemoveArchivedFilesDialog } from '../components/series/RemoveArchivedFilesDialog'
 import { ArchiveSeriesDialog } from '../components/series/ArchiveSeriesDialog'
 import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
@@ -614,6 +619,9 @@ function SeriesDetailBody() {
   const setNotificationMode = useSetSeriesNotificationMode()
   const rateSeries = useRateSeries()
   const finalizeRating = useFinalizeRating()
+  const setRating = useSetRating()
+  const setSoFar = useSetProvisionalRating()
+  const dismissCheckpoint = useDismissRatingCheckpoint()
   const unlinkChapters = useUnlinkChapters()
   const setChaptersWanted = useSetChaptersWanted()
   const deleteChapters = useDeleteChapters()
@@ -684,6 +692,7 @@ function SeriesDetailBody() {
   const [deleteSeriesFiles, setDeleteSeriesFiles] = useState(false)
   const [archiveModalOpen, setArchiveModalOpen] = useState(false)
   const [archiveRemoveFiles, setArchiveRemoveFiles] = useState(false)
+  const [leavingRating, setLeavingRating] = useState<number | null>(null)
   const [restoreModalOpen, setRestoreModalOpen] = useState(false)
   const [removeFilesModalOpen, setRemoveFilesModalOpen] = useState(false)
   const binDays = useRecycleBinDays(deleteChaptersModalOpen || deleteFileIds !== null)
@@ -1728,6 +1737,7 @@ function SeriesDetailBody() {
 
   const openArchiveDialog = () => {
     setArchiveRemoveFiles(false)
+    setLeavingRating(null)
     setBinRefused(null)
     setArchiveModalOpen(true)
   }
@@ -1904,6 +1914,7 @@ function SeriesDetailBody() {
           setArchiveModalOpen(false)
           setBinRefused(null)
           showArchivedToast(!archiveRemoveFiles)
+          if (leavingRating != null) setRating.mutate({ seriesId: series.id, rating: leavingRating })
         },
         onError: onBinRefused('archive'),
       },
@@ -2223,6 +2234,18 @@ function SeriesDetailBody() {
             onRate={submitRating}
             onKeep={keepRating}
             onDismiss={() => dismissRateHint.mutate(series.id)}
+          />
+        ) : series.ratingCheckpoint ? (
+          <RatingCheckpointPrompt
+            checkpoint={series.ratingCheckpoint}
+            soFar={series.provisionalRating ?? null}
+            onRate={(rating) =>
+              setSoFar.mutate(
+                { seriesId: series.id, rating },
+                { onSuccess: () => notify.ok(staticT`Rated ${rating}/10 so far`) },
+              )
+            }
+            onDismiss={() => dismissCheckpoint.mutate(series.id)}
           />
         ) : series.archiveHintEligible && series.archivedAt == null && canArchive && (
           <ArchiveHint
@@ -3252,6 +3275,11 @@ function SeriesDetailBody() {
           loading={archiveSeries.isPending}
           onConfirm={() => archiveCurrent()}
           onConfirmPermanent={binRefused === 'archive' ? () => archiveCurrent(true) : undefined}
+          leavingRating={
+            ratesProvisionally(series)
+              ? { value: leavingRating, soFar: series.provisionalRating ?? null, onChange: setLeavingRating }
+              : undefined
+          }
         />
 
         <RemoveArchivedFilesDialog

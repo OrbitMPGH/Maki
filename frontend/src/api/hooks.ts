@@ -2698,8 +2698,64 @@ function useRatingMutation<V extends { seriesId: number }>(mutationFn: (vars: V)
     onSuccess: (_data, { seriesId }) => {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['rating-checkpoint', seriesId] })
       for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
+  })
+}
+
+export type RatingCheckpoint = 'hooked' | 'caughtUp'
+
+export interface RatingCheckpointState {
+  checkpoint: RatingCheckpoint | null
+  provisionalRating: number | null
+}
+
+/**
+ * The "how is it so far?" prompt waiting on a series. The completing progress write arms it and may
+ * still be in flight when the reader's end screen opens, so an empty answer is asked again a few times.
+ */
+export function useRatingCheckpoint(seriesId: number | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ['rating-checkpoint', seriesId],
+    queryFn: () => api<RatingCheckpointState>(`/series/${seriesId}/rating-checkpoint`),
+    enabled: enabled && seriesId != null,
+    staleTime: 0,
+    refetchInterval: (query) =>
+      query.state.data?.checkpoint == null && query.state.dataUpdateCount < 4 ? 1500 : false,
+  })
+}
+
+export function useDismissRatingCheckpoint() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (seriesId: number) => api<void>(`/series/${seriesId}/rating-checkpoint/dismiss`, { method: 'POST' }),
+    onSuccess: (_, seriesId) => {
+      queryClient.setQueryData<RatingCheckpointState>(['rating-checkpoint', seriesId], (old) =>
+        old ? { ...old, checkpoint: null } : old,
+      )
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+    },
+  })
+}
+
+export interface RatingPromptsSettings {
+  enabled: boolean
+}
+
+export function useRatingPromptsSettings() {
+  return useQuery({
+    queryKey: ['settings', 'rating-prompts'],
+    queryFn: () => api<RatingPromptsSettings>('/settings/rating-prompts'),
+  })
+}
+
+export function useSaveRatingPromptsSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (settings: RatingPromptsSettings) =>
+      api<RatingPromptsSettings>('/settings/rating-prompts', { method: 'PUT', body: JSON.stringify(settings) }),
+    onSuccess: (saved) => queryClient.setQueryData(['settings', 'rating-prompts'], saved),
   })
 }
 

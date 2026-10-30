@@ -2576,6 +2576,10 @@ msgstr "About a 350 MB download. Setup finishes once it is in."
 msgid "about a minute left"
 msgstr "about a minute left"
 
+#: src/components/settings/RatingPromptsSection.tsx
+msgid "About ten chapters in, and when you catch up on a series that's still running. At most once a day, and never once you've rated it. A \"so far\" score isn't sent to your trackers."
+msgstr "About ten chapters in, and when you catch up on a series that's still running. At most once a day, and never once you've rated it. A \"so far\" score isn't sent to your trackers."
+
 #: src/components/AppearancePicker.tsx
 msgid "Accent"
 msgstr "Accent"
@@ -3426,6 +3430,10 @@ msgstr "Ask an admin for a series or a chapter range."
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Ask for this"
 msgstr "Ask for this"
+
+#: src/components/settings/RatingPromptsSection.tsx
+msgid "Ask how a series is going while I read it"
+msgstr "Ask how a series is going while I read it"
 
 #: src/components/layout/SidebarFooter.tsx
 msgid "Ask or suggest"
@@ -5976,6 +5984,7 @@ msgstr "Disliked it"
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/series/ArchiveHint.tsx
 #: src/components/series/RateHint.tsx
+#: src/components/series/RatingCheckpointPrompt.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -7885,6 +7894,10 @@ msgstr "How far through a series you were when it stalled. Median {stopPointPct}
 #: src/components/pageconversion/RuleCard.tsx
 msgid "How hard the pages are compressed. A low number means a small, heavily compressed file."
 msgstr "How hard the pages are compressed. A low number means a small, heavily compressed file."
+
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "How is it going so far?"
+msgstr "How is it going so far?"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "How many"
@@ -12763,6 +12776,10 @@ msgstr "Rate limited. Retrying soon."
 msgid "Rate this series"
 msgstr "Rate this series"
 
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "Rate this series so far"
+msgstr "Rate this series so far"
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Rated"
@@ -12778,6 +12795,7 @@ msgid "Rated {rating}/10"
 msgstr "Rated {rating}/10"
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Rated {rating}/10 so far"
 msgstr "Rated {rating}/10 so far"
@@ -12807,9 +12825,19 @@ msgstr "Rating cleared"
 msgid "Rating from"
 msgstr "Rating from"
 
+#: src/components/settings/RatingPromptsSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Rating prompts"
+msgstr "Rating prompts"
+
 #: src/pages/LibraryPage.tsx
 msgid "Rating to"
 msgstr "Rating to"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "rating, rate, so far, provisional, score, prompt, ask, stars"
+msgstr "rating, rate, so far, provisional, score, prompt, ask, stars"
 
 #: src/pages/LibraryPage.tsx
 msgid "Ratings and reading"
@@ -14467,6 +14495,7 @@ msgstr "Save your recovery codes"
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/pageconversion/StartStep.tsx
+#: src/components/settings/RatingPromptsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/useIndexerForm.ts
@@ -16097,6 +16126,10 @@ msgstr "Steering these picks"
 #: src/components/SetupWizard.tsx
 msgid "Step {stepNumber} of {stepTotal}"
 msgstr "Step {stepNumber} of {stepTotal}"
+
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "Still a {soFar}"
+msgstr "Still a {soFar}"
 
 #: src/api/queue.ts
 msgid "Still early access"
@@ -18464,6 +18497,14 @@ msgstr "Want"
 msgid "Want {chapterLbl}"
 msgstr "Want {chapterLbl}"
 
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Want to rate it before it goes?"
+msgstr "Want to rate it before it goes?"
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Want to rate it before it goes? You had it at {soFar} so far."
+msgstr "Want to rate it before it goes? You had it at {soFar} so far."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Wanted"
 msgstr "Wanted"
@@ -18930,6 +18971,10 @@ msgstr "You: ch. {readChapter}"
 msgid "You're caught up"
 msgstr "You're caught up"
 
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "You're caught up. How is it so far?"
+msgstr "You're caught up. How is it so far?"
+
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
 msgid "You're offline"
@@ -19019,6 +19064,10 @@ msgstr "Your priority order"
 #: src/components/series/ArchivedSeriesCard.tsx
 msgid "Your rating for {displayTitle}"
 msgstr "Your rating for {displayTitle}"
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Your rating for {title}"
+msgstr "Your rating for {title}"
 
 #: src/pages/LibraryPage.tsx
 msgid "Your rating, score, how much you've read"

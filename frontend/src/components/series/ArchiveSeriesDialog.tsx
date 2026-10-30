@@ -1,4 +1,4 @@
-import { Checkbox, Stack, Text } from '@mantine/core'
+import { Checkbox, Group, Rating, Stack, Text } from '@mantine/core'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { useRecycleBinDays } from '../../api/recycleBin'
@@ -18,6 +18,7 @@ export function ArchiveSeriesDialog({
   onConfirm,
   onConfirmPermanent,
   loading,
+  leavingRating,
 }: {
   opened: boolean
   onClose: () => void
@@ -35,6 +36,11 @@ export function ArchiveSeriesDialog({
   /** Set once the server said the files cannot go to the recycle bin: offers to delete them for good. */
   onConfirmPermanent?: () => void
   loading?: boolean
+  /**
+   * Offered when the caller is leaving a part-read series without a rating. "Dropped at ch. 80, it's
+   * a 4" is a real verdict, so the score picked here becomes the rating when the archive goes through.
+   */
+  leavingRating?: { value: number | null; soFar: number | null; onChange: (rating: number | null) => void }
 }) {
   const { t } = useLingui()
   const binDays = useRecycleBinDays(opened && removeFiles)
@@ -42,6 +48,7 @@ export function ArchiveSeriesDialog({
   const sizeBytes = preview?.freeableBytes ?? 0
   const otherReaders = preview?.otherActiveReaders ?? 0
   const size = formatBytes(sizeBytes)
+  const soFar = leavingRating?.soFar ?? null
 
   return (
     <ConfirmDialog
@@ -82,6 +89,32 @@ export function ArchiveSeriesDialog({
               other="# other readers are partway through this series. Archiving stops new chapters for everyone."
             />
           </Text>
+        )}
+        {leavingRating && (
+          <Stack gap={4}>
+            <Text size="sm" c="var(--ink-3)">
+              {soFar != null ? (
+                <Trans>Want to rate it before it goes? You had it at {soFar} so far.</Trans>
+              ) : (
+                <Trans>Want to rate it before it goes?</Trans>
+              )}
+            </Text>
+            <Group gap="xs">
+              <Rating
+                count={5}
+                fractions={2}
+                value={leavingRating.value ? leavingRating.value / 2 : 0}
+                role="group"
+                aria-label={t`Your rating for ${title}`}
+                onChange={(v) => leavingRating.onChange(Math.round(v * 2) || null)}
+              />
+              {leavingRating.value != null && (
+                <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
+                  {leavingRating.value}/10
+                </Text>
+              )}
+            </Group>
+          </Stack>
         )}
         {onConfirmPermanent && removeFiles && canRemoveFiles && (
           <PermanentDeleteFallback loading={loading} onConfirm={onConfirmPermanent} />

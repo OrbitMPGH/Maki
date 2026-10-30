@@ -101,6 +101,7 @@ const seriesMutations: HttpHandler[] = [
   http.put(api('/series/:id/rating/provisional'), async ({ request }) =>
     HttpResponse.json({ rating: null, provisionalRating: (await bodyOf(request)).rating ?? null })),
   http.post(api('/series/:id/rating/finalize'), () => HttpResponse.json({ rating: 7, provisionalRating: null })),
+  http.post(api('/series/:id/rating-checkpoint/dismiss'), () => new HttpResponse(null, { status: 204 })),
   http.put(api('/series/:id/tags'), async ({ request }) => HttpResponse.json({ tagIds: (await bodyOf(request)).tagIds ?? [] })),
   http.post(api('/series/:id/searchmissing'), () => HttpResponse.json({ queued: 6 })),
   http.post(api('/series/:id/download/next'), async ({ request }) =>

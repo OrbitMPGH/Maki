@@ -702,6 +702,21 @@ public class SettingsController(
         return NoContent();
     }
 
+    public record RatingPromptsSettings(bool Enabled);
+
+    /// <summary>Whether the caller is asked "how is it so far?" while reading. Theirs alone; unset = on.</summary>
+    [HttpGet("rating-prompts")]
+    public async Task<IActionResult> GetRatingPrompts(CancellationToken ct) =>
+        Ok(new RatingPromptsSettings(await userSettings.GetAsync(SettingKeys.RatingPrompts, ct) != "off"));
+
+    [HttpPut("rating-prompts")]
+    public async Task<IActionResult> SetRatingPrompts([FromBody] RatingPromptsSettings request, CancellationToken ct)
+    {
+        // On is the absence of a row, so switching back on deletes it rather than storing "on".
+        await userSettings.SetAsync(SettingKeys.RatingPrompts, request.Enabled ? "" : "off", ct);
+        return Ok(request);
+    }
+
     /// <summary>Marks the appearance notice as shown. Idempotent, and only ever for the caller.</summary>
     [HttpPost("announcements/appearance/seen")]
     public async Task<IActionResult> SeenAppearanceAnnouncement(CancellationToken ct)

@@ -45,6 +45,18 @@ public class UserSeriesState : IUserOwned
     /// </summary>
     public double? ProvisionalAtChapter { get; set; }
 
+    /// <summary>The checkpoint waiting to be answered, or <see cref="RatingCheckpoints.None"/>.</summary>
+    public RatingCheckpoints PendingRatingCheckpoint { get; set; }
+
+    /// <summary>Checkpoints already asked on this series, answered or dismissed.</summary>
+    public RatingCheckpoints RatingCheckpointsSeen { get; set; }
+
+    /// <summary>When a checkpoint was last armed on this series. Also what the one-per-day cap reads.</summary>
+    public DateTime? LastRatingCheckpointAt { get; set; }
+
+    /// <summary>Checkpoints dismissed in a row on this series; three stops asking. Any answer resets it.</summary>
+    public int RatingPromptDismissals { get; set; }
+
     /// <summary>
     /// Per-series built-in-reader display override, as a <c>ReaderPrefsSpec</c> JSON blob; null means
     /// "use this user's global defaults". Opaque to the server apart from the one serializer in

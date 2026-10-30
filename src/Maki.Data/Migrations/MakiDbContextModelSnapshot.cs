@@ -3023,7 +3023,13 @@ namespace Maki.Data.Migrations
                     b.Property<DateTime?>("HiddenFromHomeAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("LastRatingCheckpointAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("NotificationMode")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PendingRatingCheckpoint")
                         .HasColumnType("INTEGER");
 
                     b.Property<double?>("ProvisionalAtChapter")
@@ -3039,6 +3045,12 @@ namespace Maki.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("Rating")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RatingCheckpointsSeen")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RatingPromptDismissals")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("ReaderPrefsJson")

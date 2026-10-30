@@ -1059,7 +1059,7 @@ public class SeriesController(
             .Select(x => new
             {
                 x.Rating, x.ProvisionalRating, x.ProvisionalAtChapter, x.NotificationMode, x.ReaderPrefsJson,
-                x.ReadingProfileId,
+                x.ReadingProfileId, x.PendingRatingCheckpoint,
             })
             .FirstOrDefaultAsync(ct);
         var readerPrefs = await readingProfiles.ResolveForAsync(
@@ -1090,6 +1090,9 @@ public class SeriesController(
             ProvisionalRating = userState?.ProvisionalRating,
             ProvisionalAtChapter = userState?.ProvisionalAtChapter,
             Finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == id && r.Finished, ct),
+            RatingCheckpoint = userState?.Rating is null
+                ? RatingCheckpointService.WireName(userState?.PendingRatingCheckpoint ?? default)
+                : null,
             ReadFileCleanupActive = ReadFileCleanupService.AppliesTo(series.ReadFileCleanup, await readFileCleanup.OptionsAsync(ct)),
             PendingProposalId = pendingProposalId,
             ArchiveHintEligible = currentUser.Has(MakiPermission.ArchiveSeries) &&
@@ -2228,6 +2231,7 @@ public class SeriesController(
             if (request.Rating is not null)
             {
                 ClearProvisional(s);
+                RatingCheckpointService.Answered(s);
             }
         }, ct);
 
@@ -2266,6 +2270,10 @@ public class SeriesController(
             s.ProvisionalRating = request.Rating;
             s.ProvisionalRatedAt = request.Rating is null ? null : DateTime.UtcNow;
             s.ProvisionalAtChapter = atChapter;
+            if (request.Rating is not null)
+            {
+                RatingCheckpointService.Answered(s);
+            }
         }, ct);
 
         return Ok(new
@@ -2287,6 +2295,38 @@ public class SeriesController(
         return provisional is { } rating
             ? await SetRating(id, new SetRatingRequest(rating), ct)
             : this.Fail(localizer, "error.series.noProvisionalRating");
+    }
+
+    /// <summary>
+    /// The "how is it so far?" prompt waiting on this series for the caller, if any, for the reader's
+    /// end screen. A checkpoint is armed by the completing progress write, so the screen asks again
+    /// shortly after it opens rather than trusting its first answer.
+    /// </summary>
+    [HttpGet("{id:int}/rating-checkpoint")]
+    public async Task<IActionResult> RatingCheckpoint(int id, CancellationToken ct)
+    {
+        var state = await db.UserSeriesStates
+            .Where(s => s.SeriesId == id)
+            .Select(s => new { s.PendingRatingCheckpoint, s.ProvisionalRating, s.Rating })
+            .FirstOrDefaultAsync(ct);
+        return Ok(new
+        {
+            checkpoint = state?.Rating is null ? RatingCheckpointService.WireName(state?.PendingRatingCheckpoint ?? default) : null,
+            provisionalRating = state?.ProvisionalRating,
+        });
+    }
+
+    /// <summary>Waves off the waiting prompt. Three in a row on one series and it stops asking there.</summary>
+    [HttpPost("{id:int}/rating-checkpoint/dismiss")]
+    public async Task<IActionResult> DismissRatingCheckpoint(int id, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        await UpsertUserStateAsync(id, RatingCheckpointService.Dismissed, ct);
+        return NoContent();
     }
 
     private static void ClearProvisional(UserSeriesState state)

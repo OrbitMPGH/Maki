@@ -202,4 +202,13 @@ Phase 1 on `feat/provisional-ratings`, committed 2026-10-30:
 - The rating import clears the provisional score when it writes a rating, and its preview compares against the shown score. It still writes every remote score as final: owner call 2 (route by status) is not built.
 - Frontend: `useRateSeries`, so-far styling and finalise on the series page, the pre-filled `RateHint` with a Keep button, the archived card's stars, library sort and filters on the shown score.
 
-Not started: the Feedback Lab count, checkpoints (phase 2), the tracker switch and one-time ask (phase 3), snapshots (phase 4).
+Phase 2, committed 2026-10-30:
+
+- `UserSeriesState.PendingRatingCheckpoint`, `RatingCheckpointsSeen` (`RatingCheckpoints` flags: `Hooked`, `CaughtUp`), `LastRatingCheckpointAt`, `RatingPromptDismissals`, and the `RatingCheckpoints` migration.
+- `RatingCheckpointService` arms Hooked and Caught up from `ReaderService.SaveProgressAsync`. The daily cap reads the latest `LastRatingCheckpointAt` across the reader's rows rather than a separate setting. Caught up re-arms at most every 30 days per series, and only while the score is stale. Staleness by chapters compares the highest chapter number read against `ProvisionalAtChapter`, since that number is what the score records.
+- Checkpoints only arm without a final rating, and a Full incognito series never arms one.
+- `GET series/{id}/rating-checkpoint`, `POST series/{id}/rating-checkpoint/dismiss`; `SeriesDto.RatingCheckpoint` on the detail endpoint; answering is any rating write.
+- Per-user switch `ratings.prompts` ("off", unset = on): `GET/PUT settings/rating-prompts` and a "Rating prompts" card in Settings > Reading.
+- Frontend: `RatingCheckpointPrompt` on the reader's end screen and the series page, and optional stars in `ArchiveSeriesDialog` that set a final rating when the archive goes through (series page only).
+
+Not started: the Feedback Lab count, stars on hide-from-Home (a one-click menu action today, so it needs its own design), the tracker switch and one-time ask (phase 3), Volume end and snapshots (phase 4).

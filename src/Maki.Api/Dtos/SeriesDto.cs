@@ -232,6 +232,12 @@ public record SeriesDto(
     /// </summary>
     public bool Finished { get; init; }
 
+    /// <summary>
+    /// The "how is it so far?" prompt waiting for this caller: "hooked", "caughtUp", or null. Detail
+    /// endpoint only.
+    /// </summary>
+    public string? RatingCheckpoint { get; init; }
+
     /// <summary>"Default" | "On" | "Off": this series' choice about deleting read chapter files.</summary>
     public string ReadFileCleanup { get; init; } = nameof(Core.Entities.ReadFileCleanup.Default);
 

@@ -91,6 +91,7 @@ public static class UserSettingKeys
         SettingKeys.ScrobbleMangaUpdatesPassword,
         SettingKeys.UserTimeZone,
         SettingKeys.UserGamification,
+        SettingKeys.RatingPrompts,
         SettingKeys.NotificationsInbox,
         SettingKeys.NotificationsPush,
         SettingKeys.ProgressLastNotifiedLevel,

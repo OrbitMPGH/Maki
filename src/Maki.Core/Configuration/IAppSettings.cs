@@ -363,6 +363,9 @@ public static class SettingKeys
     /// </summary>
     public const string UserGamification = "user.gamification";
 
+    /// <summary>Per user: "off" stops the "how is it so far?" prompts. Unset = on.</summary>
+    public const string RatingPrompts = "ratings.prompts";
+
     /// <summary>
     /// Per user: which in-app notifications they want, as an <see cref="Inbox.InboxPrefsSpec"/> JSON
     /// blob. Unset = every event type on except the ones that default off, toasts on.

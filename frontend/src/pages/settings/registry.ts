@@ -210,6 +210,15 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'rating-prompts',
+    tab: 'reading',
+    title: msg`Rating prompts`,
+    keywords: msg({
+      message: `rating, rate, so far, provisional, score, prompt, ask, stars`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'opds',
     tab: 'reading',
     title: msg`OPDS catalogue`,

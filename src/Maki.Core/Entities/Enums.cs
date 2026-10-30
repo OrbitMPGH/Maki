@@ -200,3 +200,19 @@ public enum QueueStatus
     /// </summary>
     AwaitingImport = 11
 }
+
+/// <summary>
+/// The moments the reader is asked how a series is going so far. Flags, persisted in
+/// <c>UserSeriesState</c>: append only, never renumber.
+/// </summary>
+[Flags]
+public enum RatingCheckpoints
+{
+    None = 0,
+
+    /// <summary>About ten chapters in, with no rating of either kind yet.</summary>
+    Hooked = 1,
+
+    /// <summary>Read up to the last wanted chapter of a series that is still running.</summary>
+    CaughtUp = 2,
+}

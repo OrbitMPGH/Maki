@@ -3093,6 +3093,10 @@ msgstr ""
 msgid "about a minute left"
 msgstr "残り約1分"
 
+#: src/components/settings/RatingPromptsSection.tsx
+msgid "About ten chapters in, and when you catch up on a series that's still running. At most once a day, and never once you've rated it. A \"so far\" score isn't sent to your trackers."
+msgstr ""
+
 #: src/components/AppearancePicker.tsx
 #, fuzzy
 msgid "Accent"
@@ -4094,6 +4098,10 @@ msgstr ""
 #, fuzzy
 msgid "Ask for this"
 msgstr "これをリクエスト"
+
+#: src/components/settings/RatingPromptsSection.tsx
+msgid "Ask how a series is going while I read it"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -7162,6 +7170,7 @@ msgstr ""
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/series/ArchiveHint.tsx
 #: src/components/series/RateHint.tsx
+#: src/components/series/RatingCheckpointPrompt.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -9449,6 +9458,10 @@ msgstr "中断時点でのシリーズの進捗です。中央値: {stopPointPct
 
 #: src/components/pageconversion/RuleCard.tsx
 msgid "How hard the pages are compressed. A low number means a small, heavily compressed file."
+msgstr ""
+
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "How is it going so far?"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -15307,6 +15320,10 @@ msgstr "レート制限中です。まもなく再試行します。"
 msgid "Rate this series"
 msgstr ""
 
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "Rate this series so far"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -15325,6 +15342,7 @@ msgid "Rated {rating}/10"
 msgstr "{rating}/10と評価"
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Rated {rating}/10 so far"
 msgstr ""
@@ -15359,10 +15377,20 @@ msgstr "評価をクリアしました"
 msgid "Rating from"
 msgstr "評価（下限）"
 
+#: src/components/settings/RatingPromptsSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Rating prompts"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rating to"
 msgstr "評価（上限）"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "rating, rate, so far, provisional, score, prompt, ask, stars"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -17337,6 +17365,7 @@ msgstr "復旧コードを保存"
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/pageconversion/StartStep.tsx
+#: src/components/settings/RatingPromptsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/useIndexerForm.ts
@@ -19291,6 +19320,10 @@ msgstr "この選択を導くもの"
 #, fuzzy
 msgid "Step {stepNumber} of {stepTotal}"
 msgstr "{stepTotal}段階中{stepNumber}段階目"
+
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "Still a {soFar}"
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -22132,6 +22165,14 @@ msgstr "希望"
 msgid "Want {chapterLbl}"
 msgstr "{chapterLbl}を希望"
 
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Want to rate it before it goes?"
+msgstr ""
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Want to rate it before it goes? You had it at {soFar} so far."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Wanted"
@@ -22693,6 +22734,10 @@ msgstr ""
 msgid "You're caught up"
 msgstr "最新話まで読みました"
 
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "You're caught up. How is it so far?"
+msgstr ""
+
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
@@ -22799,6 +22844,10 @@ msgstr "あなたの優先順位"
 
 #: src/components/series/ArchivedSeriesCard.tsx
 msgid "Your rating for {displayTitle}"
+msgstr ""
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Your rating for {title}"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx

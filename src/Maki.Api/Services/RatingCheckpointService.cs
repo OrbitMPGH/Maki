@@ -1,0 +1,163 @@
+using Maki.Core.Configuration;
+using Maki.Core.Entities;
+using Maki.Data;
+using Maki.Data.Identity;
+using Microsoft.EntityFrameworkCore;
+
+namespace Maki.Api.Services;
+
+/// <summary>
+/// When to ask "how is it so far?" (design in <c>docs/design-provisional-ratings.md</c>). A
+/// checkpoint is armed only by a genuine chapter completion, never by reading state on a page load:
+/// a Kavita or Mihon import, or chapters marked watched from an anime, would otherwise arm every
+/// series at once. Each is a condition re-checked on every completion, so one the daily cap held
+/// back arms on that series' next completion instead of being lost.
+/// <para>
+/// Every query runs on the caller's scoped context, so it only ever sees that reader's rows.
+/// </para>
+/// </summary>
+public static class RatingCheckpointService
+{
+    public const int HookedChapters = 10;
+    public const double HookedShare = 0.15;
+    public const int HookedMinChapters = 3;
+    public const int MaxDismissals = 3;
+    public static readonly TimeSpan StaleAfter = TimeSpan.FromDays(30);
+    public const double StaleShare = 0.25;
+
+    /// <summary>Called after a chapter completion. Arms at most one checkpoint, and never two on one UTC day.</summary>
+    public static async Task ArmAsync(MakiDbContext db, int userId, Series series, DateTime nowUtc,
+        CancellationToken ct)
+    {
+        if (series.Incognito == IncognitoMode.Full ||
+            await db.UserSettings.AnyAsync(s => s.Key == SettingKeys.RatingPrompts && s.Value == "off", ct))
+        {
+            return;
+        }
+
+        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == series.Id, ct);
+        if (state is { Rating: not null } ||
+            state is { PendingRatingCheckpoint: not RatingCheckpoints.None } ||
+            state?.RatingPromptDismissals >= MaxDismissals)
+        {
+            return;
+        }
+
+        var today = nowUtc.Date;
+        if (await db.UserSeriesStates.AnyAsync(s => s.LastRatingCheckpointAt >= today, ct))
+        {
+            return;
+        }
+
+        var checkpoint = await DueAsync(db, userId, series, state, nowUtc, ct);
+        if (checkpoint == RatingCheckpoints.None)
+        {
+            return;
+        }
+
+        if (state is null)
+        {
+            state = new UserSeriesState { UserId = userId, SeriesId = series.Id };
+            db.UserSeriesStates.Add(state);
+        }
+
+        state.PendingRatingCheckpoint = checkpoint;
+        state.LastRatingCheckpointAt = nowUtc;
+        state.UpdatedAt = nowUtc;
+        await db.SaveChangesAsync(ct);
+    }
+
+    private static async Task<RatingCheckpoints> DueAsync(MakiDbContext db, int userId, Series series,
+        UserSeriesState? state, DateTime nowUtc, CancellationToken ct)
+    {
+        var seen = state?.RatingCheckpointsSeen ?? RatingCheckpoints.None;
+
+        if (!seen.HasFlag(RatingCheckpoints.Hooked) && state?.ProvisionalRating is null)
+        {
+            var genuine = await ReadCounts.ReadFor(db, userId).CountAsync(p => p.SeriesId == series.Id, ct);
+            if (genuine >= HookedThreshold(series.TotalChapters))
+            {
+                return RatingCheckpoints.Hooked;
+            }
+        }
+
+        if (series.Status == SeriesStatus.Completed ||
+            state?.LastRatingCheckpointAt is { } last && nowUtc - last < StaleAfter)
+        {
+            return RatingCheckpoints.None;
+        }
+
+        // Position, not evidence: ReadCounts.Read includes watched chapters, the same count the
+        // reader's end screen shows, so a reader who watched the anime first can still catch up.
+        var wanted = await db.Chapters.CountAsync(c => c.SeriesId == series.Id &&
+            (c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null), ct);
+        var read = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == series.Id, ct);
+        if (wanted == 0 || read < wanted)
+        {
+            return RatingCheckpoints.None;
+        }
+
+        return await StaleAsync(db, series.Id, state, wanted, nowUtc, ct)
+            ? RatingCheckpoints.CaughtUp
+            : RatingCheckpoints.None;
+    }
+
+    /// <summary>
+    /// About ten chapters, or 15% of a known total when that comes sooner, never under three.
+    /// </summary>
+    public static int HookedThreshold(int? totalChapters) =>
+        totalChapters is > 0
+            ? Math.Max(HookedMinChapters, Math.Min(HookedChapters, (int)Math.Ceiling(totalChapters.Value * HookedShare)))
+            : HookedChapters;
+
+    /// <summary>
+    /// No "so far" score, one older than 30 days, or one set more than a quarter of the wanted
+    /// chapters ago. Measured in chapter numbers, the only position the score records.
+    /// </summary>
+    private static async Task<bool> StaleAsync(MakiDbContext db, int seriesId, UserSeriesState? state, int wanted,
+        DateTime nowUtc, CancellationToken ct)
+    {
+        if (state?.ProvisionalRating is null || state.ProvisionalRatedAt is not { } ratedAt ||
+            nowUtc - ratedAt > StaleAfter || state.ProvisionalAtChapter is not { } at)
+        {
+            return true;
+        }
+
+        // In memory: SQLite cannot aggregate a decimal column in SQL.
+        var numbers = await ReadCounts.Read(db)
+            .Where(p => p.SeriesId == seriesId)
+            .Join(db.Chapters, p => p.ChapterId, c => c.Id, (_, c) => c.Number)
+            .Where(n => n != null)
+            .ToListAsync(ct);
+        var highest = numbers.Count == 0 ? at : (double)numbers.Max()!.Value;
+        return highest - at >= wanted * StaleShare;
+    }
+
+    /// <summary>The reader rated the series, either kind: the waiting checkpoint is answered.</summary>
+    public static void Answered(UserSeriesState state)
+    {
+        state.RatingCheckpointsSeen |= state.PendingRatingCheckpoint;
+        state.PendingRatingCheckpoint = RatingCheckpoints.None;
+        state.RatingPromptDismissals = 0;
+    }
+
+    public static void Dismissed(UserSeriesState state)
+    {
+        if (state.PendingRatingCheckpoint == RatingCheckpoints.None)
+        {
+            return;
+        }
+
+        state.RatingCheckpointsSeen |= state.PendingRatingCheckpoint;
+        state.PendingRatingCheckpoint = RatingCheckpoints.None;
+        state.RatingPromptDismissals++;
+    }
+
+    /// <summary>The wire name of a checkpoint: "hooked", "caughtUp", or null for none.</summary>
+    public static string? WireName(RatingCheckpoints checkpoint) => checkpoint switch
+    {
+        RatingCheckpoints.Hooked => "hooked",
+        RatingCheckpoints.CaughtUp => "caughtUp",
+        _ => null,
+    };
+}
