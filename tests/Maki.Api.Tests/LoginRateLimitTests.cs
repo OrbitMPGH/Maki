@@ -77,6 +77,17 @@ public class LoginRateLimiterTests
 
         Assert.Equal(1, _limiter.TrackedAddresses);
     }
+
+    [Theory]
+    [InlineData("::ffff:203.0.113.7", "203.0.113.7")]
+    [InlineData("203.0.113.7", "203.0.113.7")]
+    [InlineData("2001:db8:1:2:aaaa:bbbb:cccc:dddd", "2001:db8:1:2::/64")]
+    [InlineData("2001:db8:1:2::9", "2001:db8:1:2::/64")]
+    [InlineData("::1", "::1")]
+    public void An_address_spends_from_its_normalised_bucket(string address, string key)
+    {
+        Assert.Equal(key, LoginRateLimiter.KeyFor(IPAddress.Parse(address)));
+    }
 }
 
 [Collection(ConfigDirCollection.Name)]
@@ -122,5 +133,22 @@ public sealed class LoginRateLimitPipelineTests : IDisposable
 
         Assert.Equal(HttpStatusCode.TooManyRequests, refused.StatusCode);
         Assert.NotNull(refused.Headers.RetryAfter);
+    }
+
+    [Fact]
+    public async Task A_limited_route_the_auth_pipeline_refuses_still_counts_attempts()
+    {
+        using var factory = new WebApplicationFactory<Program>();
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        for (var i = 0; i < LoginRateLimiter.PermitLimit; i++)
+        {
+            using var attempt = await client.PostAsJsonAsync("/api/v1/account/password", new { currentPassword = "x", newPassword = "y" });
+            Assert.Equal(HttpStatusCode.Unauthorized, attempt.StatusCode);
+        }
+
+        using var refused = await client.PostAsJsonAsync("/api/v1/account/password", new { currentPassword = "x", newPassword = "y" });
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, refused.StatusCode);
     }
 }

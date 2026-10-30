@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Globalization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
+using System.Net;
+using System.Net.Sockets;
 
 namespace Maki.Api.Auth;
 
@@ -10,15 +10,30 @@ namespace Maki.Api.Auth;
 /// confirm a password: at most <see cref="LoginRateLimiter.PermitLimit"/> attempts a minute per
 /// client address, so a flood against one account cannot deny sign-in to everyone else. Only
 /// meaningful behind a proxy once <c>auth.trustedproxies</c> is set; until then every request looks
-/// like it comes from the proxy itself.
+/// like it comes from the proxy itself. Enforced by <see cref="LoginRateLimitMiddleware"/>.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
-public sealed class LoginRateLimitAttribute : Attribute, IFilterFactory
-{
-    public bool IsReusable => true;
+public sealed class LoginRateLimitAttribute : Attribute;
 
-    public IFilterMetadata CreateInstance(IServiceProvider serviceProvider) =>
-        serviceProvider.GetRequiredService<LoginRateLimiter>();
+/// <summary>
+/// Runs before authentication, as the rate-limiting middleware did, so a refused attempt costs no
+/// session or API key lookup and a request the auth pipeline would answer 401 is still counted.
+/// </summary>
+public sealed class LoginRateLimitMiddleware(RequestDelegate next, LoginRateLimiter limiter)
+{
+    public async Task InvokeAsync(HttpContext context)
+    {
+        if (context.GetEndpoint()?.Metadata.GetMetadata<LoginRateLimitAttribute>() is null
+            || limiter.TryAcquire(LoginRateLimiter.KeyFor(context.Connection.RemoteIpAddress), out var retryAfter))
+        {
+            await next(context);
+            return;
+        }
+
+        context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.Response.Headers.RetryAfter =
+            Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds)).ToString(CultureInfo.InvariantCulture);
+    }
 }
 
 /// <summary>
@@ -28,7 +43,7 @@ public sealed class LoginRateLimitAttribute : Attribute, IFilterFactory
 /// and expired ones are swept at most once a window, by a request. A rejected attempt is answered
 /// 429 at once rather than queued, so waiting never buys a caller a free retry.
 /// </summary>
-public sealed class LoginRateLimiter(TimeProvider time) : IAsyncResourceFilter
+public sealed class LoginRateLimiter(TimeProvider time)
 {
     public const int PermitLimit = 10;
 
@@ -39,18 +54,31 @@ public sealed class LoginRateLimiter(TimeProvider time) : IAsyncResourceFilter
 
     internal int TrackedAddresses => _byAddress.Count;
 
-    public async Task OnResourceExecutionAsync(ResourceExecutingContext context, ResourceExecutionDelegate next)
+    /// <summary>
+    /// The bucket an address spends from. A dual-stack listener reports an IPv4 client as
+    /// <c>::ffff:a.b.c.d</c>, which must share the plain form's bucket, and an IPv6 client usually
+    /// holds a whole /64 it can rotate through, so IPv6 is limited per /64.
+    /// </summary>
+    internal static string KeyFor(IPAddress? address)
     {
-        var address = context.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        if (TryAcquire(address, out var retryAfter))
+        if (address is null)
         {
-            await next();
-            return;
+            return "unknown";
         }
 
-        context.HttpContext.Response.Headers.RetryAfter =
-            Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds)).ToString(CultureInfo.InvariantCulture);
-        context.Result = new StatusCodeResult(StatusCodes.Status429TooManyRequests);
+        if (address.IsIPv4MappedToIPv6)
+        {
+            address = address.MapToIPv4();
+        }
+
+        if (address.AddressFamily != AddressFamily.InterNetworkV6 || IPAddress.IsLoopback(address))
+        {
+            return address.ToString();
+        }
+
+        var bytes = address.GetAddressBytes();
+        Array.Clear(bytes, 8, 8);
+        return new IPAddress(bytes) + "/64";
     }
 
     internal bool TryAcquire(string address, out TimeSpan retryAfter)
