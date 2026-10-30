@@ -4,8 +4,9 @@ using Velopack.Sources;
 namespace Maki.Desktop;
 
 /// <summary>
-/// Downloads new releases from the GitHub release feed in the background and applies one only when
-/// someone asks, from the tray or from Maki's own Settings. Stable releases only: a release
+/// Downloads new releases from the GitHub release feed in the background and applies one when someone
+/// asks, from the tray or from Maki's own Settings, or by itself at the next start (VelopackApp's
+/// auto-apply, which is on by default). Stable releases only: a release
 /// candidate is for people who chose to test it, and migrations make a step back expensive.
 /// </summary>
 internal sealed class Updater

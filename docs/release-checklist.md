@@ -281,6 +281,9 @@ same files, but installed copies never update to it: the tray only follows stabl
       Settings > System > Updates shows the new version afterwards.
 - [ ] **10.3** **[manual]** A fresh install from the setup exe opens the browser, starts with
       Windows, and only answers on localhost until network access is switched on.
+- [ ] **10.4** **[manual]** The setup exe installs into a folder picked on its folder page (say
+      `D:\Apps\Maki`), refuses a folder that already has other files in it, and the copy there
+      updates and uninstalls like a default one. Uninstalling leaves `%LOCALAPPDATA%\Maki` alone.
 
 ## Recording a run
 

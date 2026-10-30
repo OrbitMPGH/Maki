@@ -125,8 +125,9 @@ jobs:
           $version = '${{ needs.frontend.outputs.version }}'
           $out = 'out/native/win-x64'
           $upload = New-Item -ItemType Directory -Force "$out/upload"
-          if (Test-Path "$out/releases/Maki.Desktop-win-Setup.exe") {
-            Copy-Item "$out/releases/Maki.Desktop-win-Setup.exe" "$upload/Maki-$version-windows-x64-setup.exe"
+          # The Inno Setup wizard is the download. Velopack's own Setup.exe is inside it.
+          if (Test-Path "$out/Maki-Setup.exe") {
+            Copy-Item "$out/Maki-Setup.exe" "$upload/Maki-$version-windows-x64-setup.exe"
             Copy-Item "$out/releases/Maki.Desktop-win-Portable.zip" "$upload/Maki-$version-windows-x64-portable.zip"
             # The feed and packages keep Velopack's own names: GithubSource looks for exactly these.
             Get-ChildItem "$out/releases" -File |

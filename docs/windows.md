@@ -7,7 +7,8 @@ as the Docker image. A small icon in the notification area keeps it running and 
 
 1. Download `Maki-<version>-windows-x64-setup.exe` from
    [Releases](https://github.com/OrbitMPGH/Maki/releases) and run it. It installs for your account
-   only and does not ask for admin rights.
+   only and does not ask for admin rights. You can change the install folder on the second page;
+   the default is `%LOCALAPPDATA%\Programs\Maki`.
 2. Windows may show **Windows protected your PC**, because the installer is not code-signed yet.
    Click **More info**, then **Run anyway**. This only happens on the first install: updates are
    downloaded by Maki itself and do not show it.
@@ -16,6 +17,10 @@ as the Docker image. A small icon in the notification area keeps it running and 
 
 Maki starts with Windows from then on. Untick **Start with Windows** in the icon's menu if you
 would rather start it yourself from the Start menu.
+
+The install folder has to be empty or new, because uninstalling Maki deletes it along with
+everything in it. Pick a folder you can write to without admin rights, so not Program Files. To
+move an existing install, uninstall it first; your library stays where it is.
 
 The portable zip (`Maki-<version>-windows-x64-portable.zip`) is the same app without the Start menu
 entry or uninstaller. Unzip it somewhere permanent, not inside Downloads, and run `Maki.exe`.
@@ -46,8 +51,9 @@ until you quit it from the icon.
 ## Updates
 
 Maki checks for new versions a few times a day and downloads them in the background. When one is
-ready, choose **Restart to update** from the icon, or from **Settings > System > Updates**. Maki is
-offline for about a minute while it installs. Release candidates are never installed automatically.
+ready, choose **Restart to update** from the icon, or from **Settings > System > Updates**. If Maki
+or the computer restarts first, the update installs then. Maki is offline for about a minute while
+it installs. Release candidates are never installed automatically.
 
 Before an update changes the database, Maki takes a backup of it. If an update goes wrong, install
 the previous version from Releases and restore that backup from **Settings > System > Backup &

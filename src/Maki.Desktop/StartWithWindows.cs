@@ -24,6 +24,33 @@ internal static class StartWithWindows
     }
 
     /// <summary>
+    /// The uninstall hook's half. Only an entry pointing into this install is removed, because a
+    /// copy in another folder uses the same name. An uninstall that runs elevated also clears the
+    /// entry for any other signed-in user who switched it on.
+    /// </summary>
+    public static void RemoveForThisInstall()
+    {
+        // The folder above current\, matched as a prefix so the stub and current\ both count.
+        var root = Path.GetDirectoryName(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar))! + Path.DirectorySeparatorChar;
+        RemoveIfOurs(() => Registry.CurrentUser.OpenSubKey(RunKey, writable: true), root);
+        foreach (var sid in Registry.Users.GetSubKeyNames())
+            RemoveIfOurs(() => Registry.Users.OpenSubKey($@"{sid}\{RunKey}", writable: true), root);
+    }
+
+    private static void RemoveIfOurs(Func<RegistryKey?> open, string root)
+    {
+        try
+        {
+            using var key = open();
+            if (key?.GetValue(ValueName) is string value && value.Trim('"').StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                key.DeleteValue(ValueName, throwOnMissingValue: false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+        }
+    }
+
+    /// <summary>
     /// Velopack installs each version under <c>current\</c> and keeps a stub of the same name in the
     /// folder above that always starts the installed version. Pointing the Run key at the stub keeps
     /// it valid across updates.

@@ -2,10 +2,10 @@
 .SYNOPSIS
   Builds the Windows desktop package: Maki.Api and the Maki.Desktop tray app, self-contained for
   win-x64, checked with --selftest and a real start, then packed by Velopack into Setup.exe, a
-  portable zip and the update feed.
+  portable zip and the update feed, and wrapped by Inno Setup into the installer people download.
 
 .DESCRIPTION
-  Layout of the package (what Velopack installs under %LOCALAPPDATA%\Maki.Desktop\current):
+  Layout of the package (what Velopack installs under <install folder>\current):
     Maki.exe            the tray app, Velopack's main executable
     server\Maki.Api.exe Maki itself, with wwwroot\ beside it
     LICENSE, THIRD_PARTY_NOTICES.md
@@ -15,6 +15,9 @@
   Velopack builds a delta update only when the previous release's full package is in the output
   folder, so -PreviousReleases downloads it from GitHub first. Without it every update is a full
   download, which still works.
+
+  Velopack's Setup.exe has no wizard and always installs into %LOCALAPPDATA%\Maki.Desktop. The Inno
+  Setup installer (windows-setup.iss) asks for a folder and runs it with --installto; see the .iss.
 
   Signing is not set up: the Windows build ships unsigned for now (see the native builds proposal).
   When a certificate exists, pass it through vpk pack's --signParams or --signTemplate below.
@@ -26,14 +29,15 @@
   An already built frontend/dist. Omit it to run npm ci and npm run build here.
 
 .PARAMETER Pack
-  Run vpk pack after the checks. Needs the vpk tool (dotnet tool install -g vpk --version 1.2.161).
+  Run vpk pack and Inno Setup after the checks. Needs the vpk tool
+  (dotnet tool install -g vpk --version 1.2.161) and Inno Setup 6 (winget install JRSoftware.InnoSetup).
 
 .PARAMETER PreviousReleases
   Download the previous release from GitHub before packing, so Velopack can build a delta.
 
 .EXAMPLE
   ./distribution/native/build-windows.ps1 -Pack
-  # -> out/native/win-x64/releases/Maki.Desktop-win-Setup.exe and the update feed
+  # -> out/native/win-x64/Maki-Setup.exe, plus releases/ with the portable zip and the update feed
 
 .EXAMPLE
   ./distribution/native/build-windows.ps1 -Version 0.35.0 -FrontendDist frontend/dist -Pack -PreviousReleases
@@ -80,7 +84,11 @@ Write-Host "== Publishing Maki.Api (win-x64, self-contained) ==" -ForegroundColo
 dotnet publish src/Maki.Api/Maki.Api.csproj -c Release -r win-x64 --self-contained true `
   -p:SkipFrontendBuild=true -o $server @versionArgs
 if ($LASTEXITCODE -ne 0) { throw "Publishing Maki.Api failed" }
-Copy-Item -Recurse (Resolve-Path $FrontendDist) (Join-Path $server "wwwroot")
+# A Debug build leaves an older SPA in src/Maki.Api/wwwroot, which publish copies here. Copying onto
+# an existing folder would nest the fresh build in wwwroot\dist and ship the old one.
+$wwwroot = Join-Path $server "wwwroot"
+if (Test-Path $wwwroot) { Remove-Item $wwwroot -Recurse -Force }
+Copy-Item -Recurse (Resolve-Path $FrontendDist) $wwwroot
 
 Write-Host "== Publishing Maki.Desktop (win-x64, self-contained) ==" -ForegroundColor Cyan
 dotnet publish src/Maki.Desktop/Maki.Desktop.csproj -c Release -r win-x64 --self-contained true `
@@ -137,5 +145,17 @@ vpk pack --packId Maki.Desktop --packVersion $version --packDir $app --mainExe M
   --packTitle Maki --packAuthors Maki --icon src/Maki.Desktop/maki.ico --runtime win-x64 --channel win -o $releases
 if ($LASTEXITCODE -ne 0) { throw "vpk pack failed" }
 
-Write-Host "Packed into $releases" -ForegroundColor Green
-Get-ChildItem $releases | Format-Table Name, Length
+Write-Host "== Building the installer with Inno Setup ==" -ForegroundColor Cyan
+$iscc = (Get-Command ISCC.exe -ErrorAction SilentlyContinue).Source
+if (-not $iscc) {
+  $iscc = @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+    "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
+}
+if (-not $iscc) { throw "Inno Setup 6 is not installed (winget install JRSoftware.InnoSetup)" }
+$fileVersion = ($version -replace '[-+].*$', '') + '.0'
+& $iscc /Q "/DAppVersion=$version" "/DFileVersion=$fileVersion" `
+  "/DVelopackSetup=$(Join-Path $releases 'Maki.Desktop-win-Setup.exe')" "/O$out" distribution/native/windows-setup.iss
+if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
+
+Write-Host "Packed into $releases and $(Join-Path $out 'Maki-Setup.exe')" -ForegroundColor Green
+Get-ChildItem $releases, (Join-Path $out 'Maki-Setup.exe') | Format-Table Name, Length

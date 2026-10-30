@@ -19,7 +19,7 @@ internal static class Program
             .OnFirstRun(_ => firstRun = true)
             .OnBeforeUninstallFastCallback(_ =>
             {
-                StartWithWindows.Set(false);
+                StartWithWindows.RemoveForThisInstall();
                 StopRunningCopies();
             })
             .Run();
