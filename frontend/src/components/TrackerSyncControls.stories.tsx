@@ -56,6 +56,17 @@ export const RatingsSyncOff: Story = {
   args: { service: 'mal', label: 'MyAnimeList', connection: connectedConnections[1] },
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.getByRole('switch', { name: 'Sync ratings' })).not.toBeChecked())
+    await waitFor(() => expect(canvas.getByRole('switch', { name: 'Also sync "so far" ratings' })).toBeDisabled())
+  },
+}
+
+/** Off until the reader says otherwise, and only this switch's change carries a value for it. */
+export const SoFarSync: Story = {
+  play: async ({ canvas, userEvent }) => {
+    const soFar = await canvas.findByRole('switch', { name: 'Also sync "so far" ratings' })
+    await waitFor(() => expect(soFar).not.toBeChecked())
+    await userEvent.click(soFar)
+    await waitFor(() => expect(saved).toHaveBeenCalledWith({ reading: true, ratings: true, anime: true, soFar: true }))
   },
 }
 

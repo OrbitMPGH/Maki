@@ -36,6 +36,18 @@ export const FilesKept: Story = {
   },
 }
 
+export const RateBeforeLeaving: Story = {
+  args: { leavingRating: { value: null, soFar: 6, onChange: fn() } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
+    await expect(await within(dialog).findByText('Want to rate it before it goes? You had it at 6 so far.')).toBeVisible()
+    const stars = await within(dialog).findByRole('group', { name: 'Your rating for Lanterns Over Kasumi' })
+    // Mantine commits a rating from the star's label; the radio itself only previews it.
+    await userEvent.click((within(stars).getByRole('radio', { name: '2' }) as HTMLInputElement).labels![0])
+    await waitFor(() => expect(args.leavingRating!.onChange).toHaveBeenCalledWith(4))
+  },
+}
+
 export const FilesRemoved: Story = {
   args: { removeFiles: true },
   play: async ({ canvasElement }) => {

@@ -18,6 +18,10 @@ import {
 } from '../../api/reader'
 import ChapterBanner from './ChapterBanner'
 import ChapterEnd from './ChapterEnd'
+import { RatingCheckpointPrompt } from '../../components/series/RatingCheckpointPrompt'
+import { useDismissRatingCheckpoint, useRatingCheckpoint, useSetProvisionalRating } from '../../api/hooks'
+import { notifications } from '../../lib/toast'
+import { t as now } from '@lingui/core/macro'
 import ShortcutSheet from './ShortcutSheet'
 import ContinuousView from './ContinuousView'
 import ServerEnhanceStatus from './ServerEnhanceStatus'
@@ -700,6 +704,12 @@ export default function ReaderPage() {
     [],
   )
 
+  // Only on the end screen: the server arms a checkpoint from the completing write, so there is
+  // nothing to ask while the chapter is still open. Incognito reading writes nothing to arm one.
+  const { data: checkpoint } = useRatingCheckpoint(manifest?.seriesId, chapterId, atEnd && !incognito)
+  const setSoFar = useSetProvisionalRating()
+  const dismissCheckpoint = useDismissRatingCheckpoint()
+
   /**
    * A mouse click acts at once, and so does a touch tap in a page-turning side zone. Only a touch
    * tap that toggles the toolbar (the centre zone, or anywhere while zoomed or without tap zones)
@@ -851,6 +861,21 @@ export default function ReaderPage() {
           rtl={prefs.direction === 'rtl'}
           onNext={() => void goToChapter(manifest.nextChapterId, true)}
           onStay={() => setAtEnd(false)}
+          ratingPrompt={
+            checkpoint?.checkpoint && (
+              <RatingCheckpointPrompt
+                checkpoint={checkpoint.checkpoint}
+                soFar={checkpoint.provisionalRating}
+                onRate={(rating) =>
+                  setSoFar.mutate(
+                    { seriesId: manifest.seriesId, rating },
+                    { onSuccess: () => notifications.show({ color: 'var(--ok)', message: now`Rated ${rating}/10 so far` }) },
+                  )
+                }
+                onDismiss={() => dismissCheckpoint.mutate(manifest.seriesId)}
+              />
+            )
+          }
         />
       ) : (
         <div

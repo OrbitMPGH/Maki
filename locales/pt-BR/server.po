@@ -2135,6 +2135,16 @@ msgid "error.series.invalidRating"
 msgstr "A classificação deve estar entre 1 e 10, ou ser nula para limpar"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
+#. English: There is no "so far" rating to keep
+msgid "error.series.noProvisionalRating"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: You finished this series, so it takes a final rating rather than a "so far" one
+msgid "error.series.provisionalOnFinished"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series not found on metadata provider
 #, fuzzy
 msgid "error.series.metadataNotFound"

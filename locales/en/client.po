@@ -1524,6 +1524,22 @@ msgstr "{queued, plural, one {Upgrade scan finished: # better copy queued} other
 msgid "{rated} rated"
 msgstr "{rated} rated"
 
+#: src/components/series/RatingHistoryButton.tsx
+msgid "{rating}/10 so far"
+msgstr "{rating}/10 so far"
+
+#: src/components/series/RatingHistoryButton.tsx
+msgid "{rating}/10 so far, at ch. {chapter}"
+msgstr "{rating}/10 so far, at ch. {chapter}"
+
+#: src/components/series/RatingHistoryButton.tsx
+msgid "{rating}/10, your rating"
+msgstr "{rating}/10, your rating"
+
+#: src/components/series/RatingHistoryButton.tsx
+msgid "{rating}/10, your rating at ch. {chapter}"
+msgstr "{rating}/10, your rating at ch. {chapter}"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "{ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read"
 msgstr "{ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read"
@@ -2529,6 +2545,10 @@ msgstr "About a 350 MB download. Setup finishes once it is in."
 msgid "about a minute left"
 msgstr "about a minute left"
 
+#: src/components/settings/RatingPromptsSection.tsx
+msgid "About ten chapters in, and when you catch up on a series that's still running. At most once a day, and never once you've rated it."
+msgstr "About ten chapters in, and when you catch up on a series that's still running. At most once a day, and never once you've rated it."
+
 #: src/components/AppearancePicker.tsx
 msgid "Accent"
 msgstr "Accent"
@@ -3000,6 +3020,10 @@ msgstr "Already up to date"
 msgid "Already yours"
 msgstr "Already yours"
 
+#: src/components/settings/RatingPromptsSection.tsx
+msgid "Also ask at the end of each volume"
+msgstr "Also ask at the end of each volume"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Also delete detached files from disk"
 msgstr "Also delete detached files from disk"
@@ -3039,6 +3063,10 @@ msgstr "Also remove the files to free {size}"
 #: src/components/series/UndoConversionModal.tsx
 msgid "Also set this series to Never"
 msgstr "Also set this series to Never"
+
+#: src/components/TrackerSyncControls.tsx
+msgid "Also sync \"so far\" ratings"
+msgstr "Also sync \"so far\" ratings"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Alt titles"
@@ -3357,6 +3385,10 @@ msgstr "Archived on {date}. Maki is not checking sources for this series."
 msgid "Archived series are not checked against sources. Restore it first."
 msgstr "Archived series are not checked against sources. Restore it first."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Archived, but your rating didn't save"
+msgstr "Archived, but your rating didn't save"
+
 #: src/pages/HealthPage.tsx
 msgid "Archives inventoried"
 msgstr "Archives inventoried"
@@ -3387,6 +3419,10 @@ msgstr "Ask an admin for a series or a chapter range."
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Ask for this"
 msgstr "Ask for this"
+
+#: src/components/settings/RatingPromptsSection.tsx
+msgid "Ask how a series is going while I read it"
+msgstr "Ask how a series is going while I read it"
 
 #: src/components/layout/SidebarFooter.tsx
 msgid "Ask or suggest"
@@ -5937,6 +5973,7 @@ msgstr "Disliked it"
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/series/ArchiveHint.tsx
 #: src/components/series/RateHint.tsx
+#: src/components/series/RatingCheckpointPrompt.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -7853,6 +7890,10 @@ msgstr "How far through a series you were when it stalled. Median {stopPointPct}
 msgid "How hard the pages are compressed. A low number means a small, heavily compressed file."
 msgstr "How hard the pages are compressed. A low number means a small, heavily compressed file."
 
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "How is it going so far?"
+msgstr "How is it going so far?"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "How many"
 msgstr "How many"
@@ -8424,6 +8465,10 @@ msgstr "Kavita read sync"
 msgid "Kavita's reading belongs to another Maki account."
 msgstr "Kavita's reading belongs to another Maki account."
 
+#: src/components/series/RateHint.tsx
+msgid "Keep {soFar}"
+msgstr "Keep {soFar}"
+
 #: src/components/SourceMeasurePanel.tsx
 msgid "Keep as is"
 msgstr "Keep as is"
@@ -8479,6 +8524,10 @@ msgstr "Keep the screen awake"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Keep the screen awake while reading"
 msgstr "Keep the screen awake while reading"
+
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Keep them in Maki"
+msgstr "Keep them in Maki"
 
 #: src/components/import/MihonImport.tsx
 msgid "Keep this page open until it finishes. Leaving it stops the import; run it again to carry on."
@@ -9229,6 +9278,10 @@ msgstr "Main story of {relatedTo}"
 #: src/pages/DiscoverPage.tsx
 msgid "mainstream"
 msgstr "mainstream"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Make this my rating"
+msgstr "Make this my rating"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Maki {checkedVersion} is available"
@@ -12738,6 +12791,10 @@ msgstr "Rate limited. Retrying soon."
 msgid "Rate this series"
 msgstr "Rate this series"
 
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "Rate this series so far"
+msgstr "Rate this series so far"
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Rated"
@@ -12751,6 +12808,12 @@ msgstr "Rated {rated}"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Rated {rating}/10"
 msgstr "Rated {rating}/10"
+
+#: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Rated {rating}/10 so far"
+msgstr "Rated {rating}/10 so far"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Rated {ratingLabel} or more"
@@ -12777,9 +12840,19 @@ msgstr "Rating cleared"
 msgid "Rating from"
 msgstr "Rating from"
 
+#: src/components/settings/RatingPromptsSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Rating prompts"
+msgstr "Rating prompts"
+
 #: src/pages/LibraryPage.tsx
 msgid "Rating to"
 msgstr "Rating to"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "rating, rate, so far, provisional, score, prompt, ask, stars"
+msgstr "rating, rate, so far, provisional, score, prompt, ask, stars"
 
 #: src/pages/LibraryPage.tsx
 msgid "Ratings and reading"
@@ -14177,6 +14250,10 @@ msgstr "revoked"
 msgid "Rhythm"
 msgstr "Rhythm"
 
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Right now a \"so far\" score stays in Maki, and only your final rating goes to your trackers. You can change this for each tracker in Settings."
+msgstr "Right now a \"so far\" score stays in Maki, and only your final rating goes to your trackers. You can change this for each tracker in Settings."
+
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "right to left"
 msgstr "right to left"
@@ -14445,6 +14522,7 @@ msgstr "Save your recovery codes"
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/pageconversion/StartStep.tsx
+#: src/components/settings/RatingPromptsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/useIndexerForm.ts
@@ -15026,6 +15104,10 @@ msgstr "Semantic search and recommendations"
 msgid "Semantic search and recommendations are off."
 msgstr "Semantic search and recommendations are off."
 
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Send \"so far\" scores to {trackers} too?"
+msgstr "Send \"so far\" scores to {trackers} too?"
+
 #: src/components/SetupWizard.tsx
 msgid "Send reading progress to AniList, MyAnimeList, Kitsu, MangaBaka or MangaUpdates."
 msgstr "Send reading progress to AniList, MyAnimeList, Kitsu, MangaBaka or MangaUpdates."
@@ -15041,6 +15123,10 @@ msgstr "Send silently"
 #: src/components/settings/PushNotificationsSection.tsx
 msgid "Send test"
 msgstr "Send test"
+
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Send them"
+msgstr "Send them"
 
 #: src/pages/ScrobblePage.tsx
 msgid "Sends what you read to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Progress on a tracker is never lowered."
@@ -15754,6 +15840,14 @@ msgstr "Snapshot on disk: {snapshotSize}, refreshed {refreshedAtLabel}"
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 
+#: src/components/series/SeriesHero.tsx
+msgid "so far"
+msgstr "so far"
+
+#: src/components/series/SeriesHero.tsx
+msgid "so far, at ch. {soFarChapter}"
+msgstr "so far, at ch. {soFarChapter}"
+
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Some checks failed"
 msgstr "Some checks failed"
@@ -16063,6 +16157,10 @@ msgstr "Steering these picks"
 #: src/components/SetupWizard.tsx
 msgid "Step {stepNumber} of {stepTotal}"
 msgstr "Step {stepNumber} of {stepTotal}"
+
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "Still a {soFar}"
+msgstr "Still a {soFar}"
 
 #: src/api/queue.ts
 msgid "Still early access"
@@ -16382,6 +16480,10 @@ msgstr "That was your {label}"
 #: src/pages/reader/ChapterEnd.tsx
 msgid "That's every chapter on disk."
 msgstr "That's every chapter on disk."
+
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "That's the end of a volume. How is it so far?"
+msgstr "That's the end of a volume. How is it so far?"
 
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "The {engineLabel} preset reads this part of the site. Nothing to set up here."
@@ -18426,6 +18528,14 @@ msgstr "Want"
 msgid "Want {chapterLbl}"
 msgstr "Want {chapterLbl}"
 
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Want to rate it before it goes?"
+msgstr "Want to rate it before it goes?"
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Want to rate it before it goes? You had it at {soFar} so far."
+msgstr "Want to rate it before it goes? You had it at {soFar} so far."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Wanted"
 msgstr "Wanted"
@@ -18831,6 +18941,10 @@ msgstr "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start
 msgid "You follow nobody yet. Open a creator or studio and press Follow."
 msgstr "You follow nobody yet. Open a creator or studio and press Follow."
 
+#: src/components/series/RateHint.tsx
+msgid "You had this at {soFar} so far. Keep it?"
+msgstr "You had this at {soFar} so far. Keep it?"
+
 #: src/components/AnimeCoverageBar.tsx
 msgid "You have read to ch. {readChapter}"
 msgstr "You have read to ch. {readChapter}"
@@ -18883,6 +18997,10 @@ msgstr "You: ch. {readChapter}"
 #: src/pages/reader/ChapterEnd.tsx
 msgid "You're caught up"
 msgstr "You're caught up"
+
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "You're caught up. How is it so far?"
+msgstr "You're caught up. How is it so far?"
 
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
@@ -18961,6 +19079,14 @@ msgstr "Your priority order"
 #: src/components/series/ArchivedSeriesCard.tsx
 msgid "Your rating for {displayTitle}"
 msgstr "Your rating for {displayTitle}"
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Your rating for {title}"
+msgstr "Your rating for {title}"
+
+#: src/components/series/RatingHistoryButton.tsx
+msgid "Your rating over time"
+msgstr "Your rating over time"
 
 #: src/pages/LibraryPage.tsx
 msgid "Your rating, score, how much you've read"

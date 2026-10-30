@@ -64,6 +64,14 @@ export interface SeriesDto {
   publisher: string | null
   /** The user's own rating on a 1–10 scale, or null if unrated. */
   rating: number | null
+  /** The user's "so far" score while partway through, or null. Never set alongside `rating`. Absent on older responses. */
+  provisionalRating?: number | null
+  /** The highest chapter number read when `provisionalRating` was set. */
+  provisionalAtChapter?: number | null
+  /** You finished this series. The stars set a "so far" score only while it is part-read. */
+  finished?: boolean
+  /** The "how is it so far?" prompt waiting for you. Detail endpoint only. */
+  ratingCheckpoint?: 'hooked' | 'caughtUp' | 'volumeEnd' | null
   mangaBakaId: number | null
   aniListId: number | null
   malId: number | null

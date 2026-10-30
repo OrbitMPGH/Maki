@@ -18,6 +18,8 @@ import type { IncognitoMode } from '../components/ui/incognito'
 import type { ReleaseParsedDto } from './upgrades'
 import { obtainedCount } from '../lib/chapterCounts'
 import { activeSeries } from '../lib/series'
+import { isProvisional, ratesProvisionally } from '../lib/rating'
+import { askSoFarSync } from '../lib/soFarSyncAsk'
 import type {
   AddSeriesRequest,
   ArchivePreview,
@@ -2665,15 +2667,21 @@ export function useBulkSetSeriesNotificationMode() {
 
 export interface SetRatingResult {
   rating: number | null
+  provisionalRating?: number | null
+  provisionalAtChapter?: number | null
+  /** Trackers to ask once whether "so far" scores should go to them too. "So far" writes only. */
+  soFarSyncAsk?: { service: string; label: string }[]
 }
 
 /**
  * Sets the user's 1–10 rating (null clears it). Returns immediately; the score push to connected
  * trackers runs in the background on the server (outcome lands in the scrobble log).
+ * `silent` is for a caller that words the failure itself.
  */
-export function useSetRating() {
+export function useSetRating({ silent = false }: { silent?: boolean } = {}) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { silent },
     mutationFn: ({ seriesId, rating }: { seriesId: number; rating: number | null }) =>
       api<SetRatingResult>(`/series/${seriesId}/rating`, {
         method: 'PUT',
@@ -2687,6 +2695,152 @@ export function useSetRating() {
       for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
+}
+
+function useRatingMutation<V extends { seriesId: number }>(
+  mutationFn: (vars: V) => Promise<SetRatingResult>,
+  after?: (data: SetRatingResult, vars: V) => void,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: (data, vars) => {
+      const { seriesId } = vars
+      after?.(data, vars)
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['rating-checkpoint', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['rating-history', seriesId] })
+      for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
+    },
+  })
+}
+
+export type RatingCheckpoint = 'hooked' | 'caughtUp' | 'volumeEnd'
+
+export interface RatingHistoryEntry {
+  rating: number
+  final: boolean
+  atChapter: number | null
+  origin: 'Manual' | 'Checkpoint' | 'Finish' | 'Import'
+  createdAt: string
+}
+
+/** The reader's score on a series over time, oldest first. */
+export function useRatingHistory(seriesId: number) {
+  return useQuery({
+    queryKey: ['rating-history', seriesId],
+    queryFn: () => api<RatingHistoryEntry[]>(`/series/${seriesId}/rating-history`),
+  })
+}
+
+export interface RatingCheckpointState {
+  checkpoint: RatingCheckpoint | null
+  provisionalRating: number | null
+}
+
+/**
+ * The "how is it so far?" prompt waiting on a series. The completing progress write arms it and may
+ * still be in flight when the reader's end screen opens, so an empty answer is asked again a few times.
+ * Keyed by chapter as well, so every chapter's end screen gets its own retries rather than sharing the
+ * first one's.
+ */
+export function useRatingCheckpoint(seriesId: number | undefined, chapterId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['rating-checkpoint', seriesId, chapterId],
+    queryFn: () => api<RatingCheckpointState>(`/series/${seriesId}/rating-checkpoint`),
+    enabled: enabled && seriesId != null,
+    staleTime: 0,
+    refetchInterval: (query) =>
+      query.state.data?.checkpoint == null && query.state.dataUpdateCount < 4 ? 1500 : false,
+  })
+}
+
+export function useDismissRatingCheckpoint() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (seriesId: number) => api<void>(`/series/${seriesId}/rating-checkpoint/dismiss`, { method: 'POST' }),
+    onSuccess: (_, seriesId) => {
+      queryClient.setQueriesData<RatingCheckpointState>({ queryKey: ['rating-checkpoint', seriesId] }, (old) =>
+        old ? { ...old, checkpoint: null } : old,
+      )
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+    },
+  })
+}
+
+export interface RatingPromptsSettings {
+  enabled: boolean
+  /** Also ask at the end of each volume. Off unless chosen. */
+  volumes: boolean
+}
+
+export function useRatingPromptsSettings() {
+  return useQuery({
+    queryKey: ['settings', 'rating-prompts'],
+    queryFn: () => api<RatingPromptsSettings>('/settings/rating-prompts'),
+  })
+}
+
+export function useSaveRatingPromptsSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (settings: RatingPromptsSettings) =>
+      api<RatingPromptsSettings>('/settings/rating-prompts', { method: 'PUT', body: JSON.stringify(settings) }),
+    onSuccess: (saved) => queryClient.setQueryData(['settings', 'rating-prompts'], saved),
+  })
+}
+
+/** A "so far" score: never pushed to a tracker, and ignored by the server while a final rating exists. */
+export function useSetProvisionalRating() {
+  return useRatingMutation(
+    ({ seriesId, rating }: { seriesId: number; rating: number | null }) =>
+      api<SetRatingResult>(`/series/${seriesId}/rating/provisional`, {
+        method: 'PUT',
+        body: JSON.stringify({ rating }),
+      }),
+    (data, { seriesId }) => {
+      if (data.soFarSyncAsk?.length) askSoFarSync({ trackers: data.soFarSyncAsk, seriesId })
+    },
+  )
+}
+
+/** The answer to the one-time question, stored for each tracker it named. */
+export function useSetSoFarSync() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { services: string[]; enabled: boolean; seriesId?: number }) =>
+      api<{ services: string[]; enabled: boolean }>('/scrobble/sofar', { method: 'PUT', body: JSON.stringify(body) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scrobble', 'status'] }),
+  })
+}
+
+/** Makes the "so far" score the rating, which pushes it to trackers like any other rating. */
+export function useFinalizeRating() {
+  return useRatingMutation(({ seriesId }: { seriesId: number }) =>
+    api<SetRatingResult>(`/series/${seriesId}/rating/finalize`, { method: 'POST' }),
+  )
+}
+
+/**
+ * The one way a star control rates a series. Part-read with no final rating sets a "so far" score;
+ * anything else sets the rating. Clearing clears whichever score is showing.
+ */
+export function useRateSeries() {
+  const final = useSetRating()
+  const provisional = useSetProvisionalRating()
+  return {
+    isPending: final.isPending || provisional.isPending,
+    rate: (
+      series: Pick<SeriesDto, 'id' | 'rating' | 'provisionalRating' | 'finished' | 'readChapterCount'>,
+      rating: number | null,
+      onSuccess?: (soFar: boolean) => void,
+    ) => {
+      const soFar = rating === null ? isProvisional(series) : ratesProvisionally(series)
+      const mutation = soFar ? provisional : final
+      mutation.mutate({ seriesId: series.id, rating }, { onSuccess: () => onSuccess?.(soFar) })
+    },
+  }
 }
 
 export function useTags() {
@@ -4064,6 +4218,8 @@ export interface ScrobbleConnection {
   syncReading: boolean
   /** Per-tracker: push ratings to this service. */
   syncRatings: boolean
+  /** Per-tracker: push "so far" scores too, on top of `syncRatings`. Absent on older responses. */
+  syncSoFar?: boolean
   /** Whether this tracker can hand over an anime list at all, which is what draws the switch. */
   animeList: boolean
   /** Per-tracker: let this service's watched anime steer recommendations. */
@@ -4212,16 +4368,19 @@ export function useScrobblePreferences() {
       reading,
       ratings,
       anime,
+      soFar,
     }: {
       service: string
       reading: boolean
       ratings: boolean
       /** Omitted for trackers with no anime list, so the server leaves that setting alone. */
       anime?: boolean
+      /** Omitted unless this switch changed: an unset value is also what "not asked yet" means. */
+      soFar?: boolean
     }) =>
-      api<{ service: string; reading: boolean; ratings: boolean; anime: boolean | null }>(
+      api<{ service: string; reading: boolean; ratings: boolean; anime: boolean | null; soFar: boolean | null }>(
         `/scrobble/preferences/${service}`,
-        { method: 'PUT', body: JSON.stringify({ reading, ratings, anime }) },
+        { method: 'PUT', body: JSON.stringify({ reading, ratings, anime, soFar }) },
       ),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scrobble', 'status'] }),
   })

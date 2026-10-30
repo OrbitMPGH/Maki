@@ -76,6 +76,8 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/reader/used'), () => HttpResponse.json({ used: true, kavita: true })),
   http.get(api('/settings/reader'), () => HttpResponse.json(d.readerSettings)),
   putEcho('/settings/reader'),
+  http.get(api('/settings/rating-prompts'), () => HttpResponse.json({ enabled: true, volumes: false })),
+  putEcho('/settings/rating-prompts'),
   http.get(api('/readingprofiles'), () => HttpResponse.json(d.readingProfiles)),
   http.post(api('/readingprofiles'), async ({ request }) => HttpResponse.json({ id: 10, ...((await request.json()) as object) })),
   http.put(api('/readingprofiles/:id'), async ({ request, params }) =>
@@ -244,6 +246,7 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/settings/scrobble'), () => HttpResponse.json(d.scrobbleSettings)),
   putEcho('/settings/scrobble'),
   http.get(api('/scrobble/status'), () => HttpResponse.json(d.scrobbleStatus)),
+  http.put(api('/scrobble/sofar'), async ({ request }) => HttpResponse.json(await request.json())),
   http.put(api('/scrobble/preferences/:service'), async ({ request, params }) =>
     HttpResponse.json({ service: params.service, ...((await request.json()) as object) }),
   ),

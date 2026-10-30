@@ -58,7 +58,7 @@ public class ScrobbleController(
     public record ConnectionDto(
         string Service, string Label, bool Configured, bool Connected, string? Username, bool OAuth,
         bool SyncReading, bool SyncRatings, bool AnimeList, bool AnimeSignals, bool? SavedDetails = null,
-        DateTimeOffset? BackOffUntil = null);
+        DateTimeOffset? BackOffUntil = null, bool SyncSoFar = false);
 
     public record MatchRequest(int KavitaSeriesId, string Service, string RemoteId);
     public record IgnoreRequest(int KavitaSeriesId, string Service);
@@ -66,7 +66,14 @@ public class ScrobbleController(
     /// Nullable and written only when present: the switch shows on two of the five tracker blocks,
     /// so a client saving the other three sends no opinion about it rather than an accidental off.
     /// </param>
-    public record PreferencesRequest(bool Reading, bool Ratings, bool? Anime = null);
+    /// <param name="SoFar">Nullable and written only when present, like <paramref name="Anime"/>.</param>
+    public record PreferencesRequest(bool Reading, bool Ratings, bool? Anime = null, bool? SoFar = null);
+
+    /// <summary>
+    /// The answer to "send so-far scores to these trackers too?". <paramref name="SeriesId"/> is the
+    /// series whose rating raised the question: on yes its "so far" score goes out straight away.
+    /// </summary>
+    public record SoFarSyncRequest(string[] Services, bool Enabled, int? SeriesId = null);
     public record ApplyRatingImportRequest(int[] SeriesIds);
 
     [HttpGet("status")]
@@ -96,7 +103,8 @@ public class ScrobbleController(
                 AnimeList: tracker is IAnimeListSource,
                 AnimeSignals: await animeSources.EnabledForAsync(UserId, tracker.Name, ct),
                 SavedDetails: await SavedDetailsAsync(tracker.Name, ct),
-                BackOffUntil: tracker.BackOffUntil));
+                BackOffUntil: tracker.BackOffUntil,
+                SyncSoFar: await scrobbler.SyncSoFarEnabledAsync(UserId, tracker.Name, ct)));
         }
 
         var lastSync = await scrobbler.LastSyncAtAsync(ct);
@@ -387,6 +395,11 @@ public class ScrobbleController(
         await userSettings.SetAsync(
             SettingKeys.ScrobbleRatingsKey(service), request.Ratings ? "true" : "false", ct);
 
+        if (request.SoFar is { } soFar)
+        {
+            await userSettings.SetAsync(SettingKeys.ScrobbleSoFarKey(service), soFar ? "true" : "false", ct);
+        }
+
         if (request.Anime is { } anime)
         {
             await userSettings.SetAsync(
@@ -413,7 +426,41 @@ public class ScrobbleController(
             reading = request.Reading,
             ratings = request.Ratings,
             anime = request.Anime,
+            soFar = request.SoFar,
         });
+    }
+
+    [HttpPut("sofar")]
+    public async Task<IActionResult> SetSoFarSync([FromBody] SoFarSyncRequest request, CancellationToken ct)
+    {
+        var saved = new List<string>();
+        foreach (var service in request.Services.Where(s => scrobbler.FindTracker(s) is not null).Distinct())
+        {
+            // "So far" sits under "Sync ratings": turning it on where that is off would also mark the
+            // tracker as asked, so it would never get the question once ratings are switched back on.
+            if (request.Enabled && !await scrobbler.SyncRatingsEnabledAsync(UserId, service, ct))
+            {
+                continue;
+            }
+
+            saved.Add(service);
+            await userSettings.SetAsync(SettingKeys.ScrobbleSoFarKey(service), request.Enabled ? "true" : "false", ct);
+        }
+
+        if (request.Enabled && saved.Count > 0 && request.SeriesId is { } seriesId)
+        {
+            var series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
+            var soFar = await db.UserSeriesStates
+                .Where(s => s.SeriesId == seriesId && s.Rating == null)
+                .Select(s => s.ProvisionalRating)
+                .FirstOrDefaultAsync(ct);
+            if (series is not null && soFar is { } score)
+            {
+                scrobbler.QueueRatingPush(UserId, series, score, soFar: true);
+            }
+        }
+
+        return Ok(new { services = saved, enabled = request.Enabled });
     }
 
     // ---- rating import (preview → apply) ----

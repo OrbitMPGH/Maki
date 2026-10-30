@@ -14,7 +14,7 @@ import {
     Title,
     Tooltip
 } from '@mantine/core'
-import {IconAlertTriangle, IconArrowLeft, IconBook, IconDownload, IconX} from '@tabler/icons-react'
+import {IconAlertTriangle, IconArrowLeft, IconBook, IconCheck, IconDownload, IconX} from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import { otherTitles, readableTitles } from '../../api/titles'
 import type { SeriesDto } from '../../api/types'
@@ -27,6 +27,9 @@ import {
 } from '../ui/status'
 import { useReadTracking } from '../../api/reader'
 import { useChapters } from '../../api/hooks'
+import { formatDecimal } from '../../format'
+import { isProvisional, shownRating } from '../../lib/rating'
+import { RatingHistoryButton } from './RatingHistoryButton'
 import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
@@ -58,11 +61,14 @@ const MAX_HERO_ALT_TITLES = 4
 export function SeriesHero({
                                series,
                                onRate,
+                               onFinalize,
                                actions,
                                tabs,
                            }: {
     series: SeriesDto
     onRate: (value: number | null) => void
+    /** Makes a "so far" score the rating. */
+    onFinalize: () => void
     actions: ReactNode
     tabs: ReactNode
 }) {
@@ -72,6 +78,9 @@ export function SeriesHero({
     const contentRating = contentRatingVisual(series.contentRating)
     const ratingToken = contentRatingToken(series.contentRating)
     const author = series.authorStory ?? series.authorArt
+    const rating = shownRating(series)
+    const soFar = isProvisional(series)
+    const soFarChapter = series.provisionalAtChapter != null ? formatDecimal(series.provisionalAtChapter) : null
     const { data: chapters } = useChapters(series.id)
     // Wherever you came from, not a fixed destination: reached from Discover with a panel full of
     // filters, this walks back to that panel with the filters still on it. The library is only the
@@ -257,14 +266,35 @@ export function SeriesHero({
                                     <Rating
                                         count={5}
                                         fractions={2}
-                                        value={series.rating ? series.rating / 2 : 0}
+                                        value={rating ? rating / 2 : 0}
+                                        color={soFar ? 'var(--ink-3)' : undefined}
                                         onChange={(v) => onRate(Math.round(v * 2) || null)}
                                     />
-                                    {series.rating ? (
+                                    {rating ? (
                                         <>
                                             <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
-                                                {series.rating}/10
+                                                {rating}/10
                                             </Text>
+                                            {soFar && (
+                                                <>
+                                                    <Text size="sm" c="var(--ink-4)">
+                                                        {soFarChapter != null
+                                                            ? <Trans>so far, at ch. {soFarChapter}</Trans>
+                                                            : <Trans>so far</Trans>}
+                                                    </Text>
+                                                    <Tooltip label={t`Make this my rating`} withArrow>
+                                                        <ActionIcon
+                                                            size="sm"
+                                                            variant="subtle"
+                                                            color="var(--neutral)"
+                                                            onClick={onFinalize}
+                                                            aria-label={t`Make this my rating`}
+                                                        >
+                                                            <IconCheck size={14} />
+                                                        </ActionIcon>
+                                                    </Tooltip>
+                                                </>
+                                            )}
                                             <Tooltip label={t`Clear rating`} withArrow>
                                                 <ActionIcon
                                                     size="sm"
@@ -276,6 +306,7 @@ export function SeriesHero({
                                                     <IconX size={14} />
                                                 </ActionIcon>
                                             </Tooltip>
+                                            <RatingHistoryButton seriesId={series.id} />
                                         </>
                                     ) : (
                                         <Text size="sm" c="var(--ink-4)">

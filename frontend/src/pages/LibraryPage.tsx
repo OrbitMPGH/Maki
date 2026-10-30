@@ -1,6 +1,8 @@
 import { errorText } from '../api/errorText'
 import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePageState } from '../lib/pageState'
+import { shownRating } from '../lib/rating'
+import { useStableActions } from '../lib/useStableActions'
 import {
   ActionIcon,
   Badge,
@@ -82,7 +84,7 @@ import {
   useSavedFilters,
   useSaveFilter,
   useSeries,
-  useSetRating,
+  useRateSeries,
   useTags,
 } from '../api/hooks'
 import { offersPermanentDelete } from '../api/recycleBin'
@@ -195,7 +197,7 @@ function compareSeries(sort: string, dir: SortDir): (a: SeriesDto, b: SeriesDto)
     case 'read':
       return nullable((s) => toTime(s.lastReadAt))
     case 'rating':
-      return nullable((s) => s.rating)
+      return nullable(shownRating)
     case 'downloaded':
       return nullable((s) => toTime(s.lastDownloadedAt))
     case 'archived':
@@ -435,7 +437,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const restoreSeries = useRestoreSeries()
   const removeArchivedFiles = useRemoveArchivedFiles()
   const deleteSeries = useDeleteSeries()
-  const { mutate: rate } = useSetRating()
+  const rateSeries = useRateSeries()
   const canArchive = can('ArchiveSeries')
   const canDelete = can('DeleteSeries')
   const queryClient = useQueryClient()
@@ -580,9 +582,12 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       list = list.filter((s) => s.contentRating != null && contentRatingFilter.includes(s.contentRating))
     }
     if (ratingState === 'unrated') {
-      list = list.filter((s) => s.rating == null)
+      list = list.filter((s) => shownRating(s) == null)
     } else if (ratingState === 'rated') {
-      list = list.filter((s) => s.rating != null && s.rating >= ratingRange[0] && s.rating <= ratingRange[1])
+      list = list.filter((s) => {
+        const rating = shownRating(s)
+        return rating != null && rating >= ratingRange[0] && rating <= ratingRange[1]
+      })
     }
     if (communityRange[0] > 0 || communityRange[1] < 10) {
       list = list.filter(
@@ -1072,20 +1077,21 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     else runRestoreBulk(false)
   }
 
-  const onRate = useCallback(
-    (seriesId: number, rating: number | null) =>
-      rate(
-        { seriesId, rating },
-        {
-          onSuccess: () =>
-            notifications.show({
-              color: 'var(--ok)',
-              message: rating === null ? now`Rating cleared` : now`Rated ${rating}/10`,
-            }),
-        },
-      ),
-    [rate],
-  )
+  // Stable so the memoized archived cards don't re-render on every library change; the series is
+  // looked up at call time, since whether the stars set a "so far" score depends on its progress.
+  const { onRate } = useStableActions({
+    onRate: (seriesId: number, rating: number | null) => {
+      const series = seriesById(seriesId)
+      if (!series) return
+      rateSeries.rate(series, rating, (soFar) =>
+        notifications.show({
+          color: 'var(--ok)',
+          message:
+            rating === null ? now`Rating cleared` : soFar ? now`Rated ${rating}/10 so far` : now`Rated ${rating}/10`,
+        }),
+      )
+    },
+  })
 
   const onCardAction = useCallback(
     (action: ArchivedCardAction, s: SeriesDto) => {

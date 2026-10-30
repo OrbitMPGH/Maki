@@ -1807,6 +1807,22 @@ msgstr "{queued, plural, one {Verificação de upgrades concluída: # cópia mel
 msgid "{rated} rated"
 msgstr "{rated} avaliados"
 
+#: src/components/series/RatingHistoryButton.tsx
+msgid "{rating}/10 so far"
+msgstr ""
+
+#: src/components/series/RatingHistoryButton.tsx
+msgid "{rating}/10 so far, at ch. {chapter}"
+msgstr ""
+
+#: src/components/series/RatingHistoryButton.tsx
+msgid "{rating}/10, your rating"
+msgstr ""
+
+#: src/components/series/RatingHistoryButton.tsx
+msgid "{rating}/10, your rating at ch. {chapter}"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "{ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read"
@@ -3029,6 +3045,10 @@ msgstr ""
 msgid "about a minute left"
 msgstr "resta cerca de um minuto"
 
+#: src/components/settings/RatingPromptsSection.tsx
+msgid "About ten chapters in, and when you catch up on a series that's still running. At most once a day, and never once you've rated it."
+msgstr ""
+
 #: src/components/AppearancePicker.tsx
 #, fuzzy
 msgid "Accent"
@@ -3592,6 +3612,10 @@ msgstr "Já está atualizado"
 msgid "Already yours"
 msgstr "Já é seu"
 
+#: src/components/settings/RatingPromptsSection.tsx
+msgid "Also ask at the end of each volume"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Also delete detached files from disk"
@@ -3636,6 +3660,10 @@ msgstr ""
 
 #: src/components/series/UndoConversionModal.tsx
 msgid "Also set this series to Never"
+msgstr ""
+
+#: src/components/TrackerSyncControls.tsx
+msgid "Also sync \"so far\" ratings"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -4003,6 +4031,10 @@ msgstr ""
 msgid "Archived series are not checked against sources. Restore it first."
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Archived, but your rating didn't save"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Archives inventoried"
@@ -4038,6 +4070,10 @@ msgstr ""
 #, fuzzy
 msgid "Ask for this"
 msgstr "Solicitar"
+
+#: src/components/settings/RatingPromptsSection.tsx
+msgid "Ask how a series is going while I read it"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -7104,6 +7140,7 @@ msgstr ""
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/series/ArchiveHint.tsx
 #: src/components/series/RateHint.tsx
+#: src/components/series/RatingCheckpointPrompt.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -9397,6 +9434,10 @@ msgstr "Até que ponto você chegou em uma série antes de parar de ler. Mediana
 msgid "How hard the pages are compressed. A low number means a small, heavily compressed file."
 msgstr ""
 
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "How is it going so far?"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "How many"
@@ -10086,6 +10127,10 @@ msgstr "Sincronização de leitura do Kavita"
 msgid "Kavita's reading belongs to another Maki account."
 msgstr ""
 
+#: src/components/series/RateHint.tsx
+msgid "Keep {soFar}"
+msgstr ""
+
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Keep as is"
@@ -10153,6 +10198,10 @@ msgstr "Manter a tela ligada"
 #, fuzzy
 msgid "Keep the screen awake while reading"
 msgstr "Manter a tela ligada durante a leitura"
+
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Keep them in Maki"
+msgstr ""
 
 #: src/components/import/MihonImport.tsx
 #, fuzzy
@@ -11056,6 +11105,10 @@ msgstr "História principal de {relatedTo}"
 #, fuzzy
 msgid "mainstream"
 msgstr "convencional"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Make this my rating"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -15255,6 +15308,10 @@ msgstr "Limite de requisições atingido. Tentando de novo em breve."
 msgid "Rate this series"
 msgstr ""
 
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "Rate this series so far"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -15271,6 +15328,12 @@ msgstr "Avaliação {rated}"
 #, fuzzy
 msgid "Rated {rating}/10"
 msgstr "Avaliado em {rating}/10"
+
+#: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Rated {rating}/10 so far"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -15302,10 +15365,20 @@ msgstr "Avaliação limpa"
 msgid "Rating from"
 msgstr "Avaliação mínima"
 
+#: src/components/settings/RatingPromptsSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Rating prompts"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rating to"
 msgstr "Avaliação máxima"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "rating, rate, so far, provisional, score, prompt, ask, stars"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -16973,6 +17046,10 @@ msgstr "revogado"
 msgid "Rhythm"
 msgstr "Ritmo"
 
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Right now a \"so far\" score stays in Maki, and only your final rating goes to your trackers. You can change this for each tracker in Settings."
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "right to left"
@@ -17287,6 +17364,7 @@ msgstr "Salvar seus códigos de recuperação"
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/pageconversion/StartStep.tsx
+#: src/components/settings/RatingPromptsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/useIndexerForm.ts
@@ -17988,6 +18066,10 @@ msgstr "Pesquisa semântica e recomendações"
 msgid "Semantic search and recommendations are off."
 msgstr "A pesquisa semântica e as recomendações estão desativadas."
 
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Send \"so far\" scores to {trackers} too?"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Send reading progress to AniList, MyAnimeList, Kitsu, MangaBaka or MangaUpdates."
@@ -18007,6 +18089,10 @@ msgstr "Enviar sem som"
 #, fuzzy
 msgid "Send test"
 msgstr "Enviar teste"
+
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Send them"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -18855,6 +18941,14 @@ msgstr "Snapshot no disco: {snapshotSize}, atualizado em {refreshedAtLabel}"
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "Snapshot no disco: {snapshotSize}, atualizado em um horário desconhecido"
 
+#: src/components/series/SeriesHero.tsx
+msgid "so far"
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "so far, at ch. {soFarChapter}"
+msgstr ""
+
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Some checks failed"
 msgstr ""
@@ -19225,6 +19319,10 @@ msgstr "Orientando estas escolhas"
 #, fuzzy
 msgid "Step {stepNumber} of {stepTotal}"
 msgstr "Etapa {stepNumber} de {stepTotal}"
+
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "Still a {soFar}"
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -19613,6 +19711,10 @@ msgstr "Esse foi seu {label}"
 #, fuzzy
 msgid "That's every chapter on disk."
 msgstr "Esses são todos os capítulos no disco."
+
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "That's the end of a volume. How is it so far?"
+msgstr ""
 
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "The {engineLabel} preset reads this part of the site. Nothing to set up here."
@@ -22059,6 +22161,14 @@ msgstr "Querer"
 msgid "Want {chapterLbl}"
 msgstr "Querer {chapterLbl}"
 
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Want to rate it before it goes?"
+msgstr ""
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Want to rate it before it goes? You had it at {soFar} so far."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Wanted"
@@ -22545,6 +22655,10 @@ msgstr "Você terminou de assistir a {animeTitle}. O anime cobre até o cap. {co
 msgid "You follow nobody yet. Open a creator or studio and press Follow."
 msgstr "Você ainda não segue ninguém. Abra um criador ou estúdio e toque em Seguir."
 
+#: src/components/series/RateHint.tsx
+msgid "You had this at {soFar} so far. Keep it?"
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "You have read to ch. {readChapter}"
@@ -22608,6 +22722,10 @@ msgstr ""
 #, fuzzy
 msgid "You're caught up"
 msgstr "Tudo em dia"
+
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "You're caught up. How is it so far?"
+msgstr ""
 
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
@@ -22700,6 +22818,14 @@ msgstr "Sua ordem de prioridade"
 
 #: src/components/series/ArchivedSeriesCard.tsx
 msgid "Your rating for {displayTitle}"
+msgstr ""
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+msgid "Your rating for {title}"
+msgstr ""
+
+#: src/components/series/RatingHistoryButton.tsx
+msgid "Your rating over time"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx

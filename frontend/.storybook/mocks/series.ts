@@ -60,7 +60,7 @@ export const archivedSeriesDto = (id = 1) =>
   seriesDto(id, { ...scenarios[id]?.overrides, monitored: false, archivedAt: hoursAgo(24 * 12), archivedByUserId: 1 })
 
 /** A completed series every reader has finished, so the page offers to archive it. */
-export const hintedSeriesDto = (id = 2) => ({ ...seriesFor(id), archiveHintEligible: true })
+export const hintedSeriesDto = (id = 2) => ({ ...seriesFor(id), archiveHintEligible: true, finished: true })
 
 const notFound = () => failWith(404, 'Series not found', 'error.series.notFound')
 
@@ -98,6 +98,11 @@ const seriesMutations: HttpHandler[] = [
     HttpResponse.json({ notificationMode: (await bodyOf(request)).mode }),
   ),
   http.put(api('/series/:id/rating'), async ({ request }) => HttpResponse.json({ rating: (await bodyOf(request)).rating ?? null })),
+  http.put(api('/series/:id/rating/provisional'), async ({ request }) =>
+    HttpResponse.json({ rating: null, provisionalRating: (await bodyOf(request)).rating ?? null })),
+  http.post(api('/series/:id/rating/finalize'), () => HttpResponse.json({ rating: 7, provisionalRating: null })),
+  http.post(api('/series/:id/rating-checkpoint/dismiss'), () => new HttpResponse(null, { status: 204 })),
+  http.get(api('/series/:id/rating-history'), () => HttpResponse.json([])),
   http.put(api('/series/:id/tags'), async ({ request }) => HttpResponse.json({ tagIds: (await bodyOf(request)).tagIds ?? [] })),
   http.post(api('/series/:id/searchmissing'), () => HttpResponse.json({ queued: 6 })),
   http.post(api('/series/:id/download/next'), async ({ request }) =>

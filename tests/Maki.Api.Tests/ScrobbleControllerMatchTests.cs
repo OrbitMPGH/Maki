@@ -1,5 +1,6 @@
 using Maki.Api.Controllers;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Scrobbling;
 using Maki.Core.Security;
 using Microsoft.AspNetCore.Mvc;
@@ -34,10 +35,11 @@ public sealed class ScrobbleControllerMatchTests : IDisposable
                 http, userSettings, tokens, options, NullLogger<MangaUpdatesTracker>.Instance),
             logger: NullLogger<ScrobbleService>.Instance);
 
+        var db = _db.NewContext(userId);
+        var currentUser = new TestCurrentUser(userId, permissions: MakiPermission.UseTrackers);
         return new ScrobbleController(
-            new TestLocalizer(), service, animeSources: null!, tokens, settings: null!, userSettings: null!,
-            _db.NewContext(userId), new TestCurrentUser(userId, permissions: MakiPermission.UseTrackers),
-            schedulerFactory: null!);
+            new TestLocalizer(), service, animeSources: null!, tokens, settings: null!,
+            new UserSettingsService(db, currentUser), db, currentUser, schedulerFactory: null!);
     }
 
     private sealed class NoHttpClientFactory : IHttpClientFactory
@@ -52,6 +54,39 @@ public sealed class ScrobbleControllerMatchTests : IDisposable
             .Where(m => m.UserId == userId && m.Service == service)
             .Select(m => m.RemoteId)
             .SingleOrDefault();
+    }
+
+    private string? UserSetting(int userId, string key)
+    {
+        using var db = _db.NewContext(userId);
+        return db.UserSettings.AsNoTracking().Where(s => s.UserId == userId && s.Key == key)
+            .Select(s => s.Value).SingleOrDefault();
+    }
+
+    [Fact]
+    public async Task Turning_so_far_sync_on_skips_a_tracker_with_rating_sync_off()
+    {
+        var userId = _db.SeedUser("reader", MakiPermission.UseTrackers);
+        await new UserSettingsStoreService(_db.ScopeFactory())
+            .SetAsync(userId, SettingKeys.ScrobbleRatingsKey("anilist"), "false");
+
+        await Controller(userId).SetSoFarSync(new(["anilist", "mangabaka"], Enabled: true), default);
+
+        // Left unset, so AniList still gets the question once its rating sync is back on.
+        Assert.Null(UserSetting(userId, SettingKeys.ScrobbleSoFarKey("anilist")));
+        Assert.Equal("true", UserSetting(userId, SettingKeys.ScrobbleSoFarKey("mangabaka")));
+    }
+
+    [Fact]
+    public async Task Turning_so_far_sync_off_is_stored_whatever_rating_sync_says()
+    {
+        var userId = _db.SeedUser("reader", MakiPermission.UseTrackers);
+        await new UserSettingsStoreService(_db.ScopeFactory())
+            .SetAsync(userId, SettingKeys.ScrobbleRatingsKey("anilist"), "false");
+
+        await Controller(userId).SetSoFarSync(new(["anilist"], Enabled: false), default);
+
+        Assert.Equal("false", UserSetting(userId, SettingKeys.ScrobbleSoFarKey("anilist")));
     }
 
     [Theory]

@@ -115,7 +115,12 @@ public class SeriesController(
         var refreshed = await UserStateForAsync(id, ct);
         return Ok(SeriesDto.FromEntity(
             series, rating: refreshed.Rating, notificationMode: refreshed.NotificationMode,
-            titleLanguage: await TitleLanguageAsync(ct)));
+            titleLanguage: await TitleLanguageAsync(ct)) with
+        {
+            ProvisionalRating = refreshed.ProvisionalRating,
+            ProvisionalAtChapter = refreshed.ProvisionalAtChapter,
+            Finished = refreshed.Finished,
+        });
     }
 
     /// <summary>Re-standardizes the ComicInfo.xml inside every CBZ the series owns.</summary>
@@ -372,8 +377,12 @@ public class SeriesController(
         // mode with no per-series lookup. Unfiltered on Rating now that a row can exist for the
         // mode alone: filtering on it would report every muted-but-unrated series as Default.
         var userStates = await db.UserSeriesStates
-            .Select(x => new { x.SeriesId, x.Rating, x.NotificationMode })
+            .Select(x => new { x.SeriesId, x.Rating, x.ProvisionalRating, x.ProvisionalAtChapter, x.NotificationMode })
             .ToDictionaryAsync(x => x.SeriesId, x => x, ct);
+        var finishedIds = (await db.ReadingStates
+            .Where(r => r.Finished)
+            .Select(r => r.SeriesId)
+            .ToListAsync(ct)).ToHashSet();
 
         // Which sources each series is linked to, and which of those actually run. Two flat reads
         // grouped in memory rather than Include(s => s.SourceMappings) on the materialized list
@@ -434,6 +443,9 @@ public class SeriesController(
                 titleLanguage: titleLanguage) with
             {
                 RemovedChapterCount = counts?.Removed ?? 0,
+                ProvisionalRating = userState?.ProvisionalRating,
+                ProvisionalAtChapter = userState?.ProvisionalAtChapter,
+                Finished = finishedIds.Contains(s.Id),
                 Sources = [.. mappings.Select(m => m.SourceName).Distinct().Order()],
                 EnabledSources =
                 [
@@ -528,15 +540,17 @@ public class SeriesController(
     /// the entity any more, so leaving them out returns the defaults and blanks the star rating and
     /// the notification picker in the client's cache.
     /// </summary>
-    private async Task<(int? Rating, SeriesNotificationMode NotificationMode)> UserStateForAsync(
-        int seriesId, CancellationToken ct)
+    private async Task<(int? Rating, SeriesNotificationMode NotificationMode, int? ProvisionalRating,
+        double? ProvisionalAtChapter, bool Finished)> UserStateForAsync(int seriesId, CancellationToken ct)
     {
         var state = await db.UserSeriesStates
             .Where(x => x.SeriesId == seriesId)
-            .Select(x => new { x.Rating, x.NotificationMode })
+            .Select(x => new { x.Rating, x.NotificationMode, x.ProvisionalRating, x.ProvisionalAtChapter })
             .FirstOrDefaultAsync(ct);
+        var finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == seriesId && r.Finished, ct);
 
-        return (state?.Rating, state?.NotificationMode ?? SeriesNotificationMode.Default);
+        return (state?.Rating, state?.NotificationMode ?? SeriesNotificationMode.Default,
+            state?.ProvisionalRating, state?.ProvisionalAtChapter, finished);
     }
 
     /// <summary>
@@ -1042,8 +1056,13 @@ public class SeriesController(
 
         var userState = await db.UserSeriesStates
             .Where(x => x.SeriesId == id)
-            .Select(x => new { x.Rating, x.NotificationMode, x.ReaderPrefsJson, x.ReadingProfileId })
+            .Select(x => new
+            {
+                x.Rating, x.ProvisionalRating, x.ProvisionalAtChapter, x.NotificationMode, x.ReaderPrefsJson,
+                x.ReadingProfileId, x.PendingRatingCheckpoint,
+            })
             .FirstOrDefaultAsync(ct);
+        var finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == id && r.Finished, ct);
         var readerPrefs = await readingProfiles.ResolveForAsync(
             series.Type, userState?.ReaderPrefsJson, userState?.ReadingProfileId, ct);
         // A profile or series override is an explicit reading-style choice. With only the global
@@ -1069,6 +1088,12 @@ public class SeriesController(
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
             RemovedChapterCount = counts?.Removed ?? 0,
+            ProvisionalRating = userState?.ProvisionalRating,
+            ProvisionalAtChapter = userState?.ProvisionalAtChapter,
+            Finished = finished,
+            RatingCheckpoint = userState?.Rating is null && !finished
+                ? RatingCheckpointService.WireName(userState?.PendingRatingCheckpoint ?? default)
+                : null,
             ReadFileCleanupActive = ReadFileCleanupService.AppliesTo(series.ReadFileCleanup, await readFileCleanup.OptionsAsync(ct)),
             PendingProposalId = pendingProposalId,
             ArchiveHintEligible = currentUser.Has(MakiPermission.ArchiveSeries) &&
@@ -1841,6 +1866,9 @@ public class SeriesController(
             series, rating: moved.Rating, notificationMode: moved.NotificationMode,
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
+            ProvisionalRating = moved.ProvisionalRating,
+            ProvisionalAtChapter = moved.ProvisionalAtChapter,
+            Finished = moved.Finished,
             Warnings = [localizer.Get("error.series.folderMoved",
                 new { from = oldRootFolderPath, to = destination.Path })]
         });
@@ -2185,7 +2213,12 @@ public class SeriesController(
     // EditMetadata for exactly as long as it was a shared column on Series, where a reader-only
     // account could overwrite the admin's score on the admin's AniList profile.
     [HttpPut("{id:int}/rating")]
-    public async Task<IActionResult> SetRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct)
+    public Task<IActionResult> SetRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct) =>
+        SetRatingCoreAsync(id, request, null, ct);
+
+    /// <param name="origin">For the history; null works it out from whether a prompt was waiting.</param>
+    private async Task<IActionResult> SetRatingCoreAsync(int id, SetRatingRequest request,
+        RatingSnapshotOrigin? origin, CancellationToken ct)
     {
         if (request.Rating is { } r && r is < 1 or > 10)
         {
@@ -2198,13 +2231,170 @@ public class SeriesController(
             return NotFound();
         }
 
-        var state = await UpsertUserStateAsync(id, s => s.Rating = request.Rating, ct);
+        var prompted = false;
+        var state = await UpsertUserStateAsync(id, s =>
+        {
+            s.Rating = request.Rating;
+            if (request.Rating is not null)
+            {
+                prompted = s.PendingRatingCheckpoint != RatingCheckpoints.None;
+                ClearProvisional(s);
+                RatingCheckpointService.Answered(s);
+            }
+        }, ct);
+
+        if (request.Rating is { } rated)
+        {
+            await RatingSnapshotService.RecordAsync(db, currentUser.UserId, id, rated, final: true,
+                await RatingCheckpointService.HighestReadChapterAsync(db, id, ct),
+                origin ?? (prompted ? RatingSnapshotOrigin.Checkpoint : RatingSnapshotOrigin.Manual), ct);
+        }
 
         // Push the score (0 clears it on trackers that support that) in the background — tracker
         // auth-checks + network + pacing take several seconds, and the UI shouldn't wait on them.
         // The scrobble log records what synced.
         scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0);
-        return Ok(new { rating = state.Rating });
+        return Ok(new { rating = state.Rating, provisionalRating = state.ProvisionalRating });
+    }
+
+    /// <summary>
+    /// Sets the caller's "so far" score on a series they are partway through. Ignored while a final
+    /// rating exists, since the final one wins, and refused on a finished series, which takes a final one.
+    /// </summary>
+    [HttpPut("{id:int}/rating/provisional")]
+    public async Task<IActionResult> SetProvisionalRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct)
+    {
+        if (request.Rating is { } r && r is < 1 or > 10)
+        {
+            return this.Fail(localizer, "error.series.invalidRating");
+        }
+
+        var series = await db.Series.FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (request.Rating is not null &&
+            await RatingCheckpointService.FinishedAsync(db, currentUser.UserId, id, ct))
+        {
+            return this.Fail(localizer, "error.series.provisionalOnFinished");
+        }
+
+        var atChapter = request.Rating is null ? null : await RatingCheckpointService.HighestReadChapterAsync(db, id, ct);
+        var prompted = false;
+        var state = await UpsertUserStateAsync(id, s =>
+        {
+            if (s.Rating is not null)
+            {
+                return;
+            }
+
+            prompted = s.PendingRatingCheckpoint != RatingCheckpoints.None;
+            s.ProvisionalRating = request.Rating;
+            s.ProvisionalRatedAt = request.Rating is null ? null : DateTime.UtcNow;
+            s.ProvisionalAtChapter = atChapter;
+            if (request.Rating is not null)
+            {
+                RatingCheckpointService.Answered(s);
+            }
+        }, ct);
+
+        var ask = Array.Empty<object>();
+        if (state.Rating is null && request.Rating is { } soFar)
+        {
+            await RatingSnapshotService.RecordAsync(db, currentUser.UserId, id, soFar, final: false, atChapter,
+                prompted ? RatingSnapshotOrigin.Checkpoint : RatingSnapshotOrigin.Manual, ct);
+        }
+
+        if (state.Rating is null)
+        {
+            // Only trackers with the "so far" switch on take it; a cleared score clears it there too.
+            scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0, soFar: true);
+            if (request.Rating is not null && currentUser.Has(MakiPermission.UseTrackers))
+            {
+                ask = [.. (await scrobbler.SoFarAskAsync(db, currentUser.UserId, ct))
+                    .Select(t => new { service = t.Service, label = t.Label })];
+            }
+        }
+
+        return Ok(new
+        {
+            rating = state.Rating,
+            provisionalRating = state.ProvisionalRating,
+            provisionalAtChapter = state.ProvisionalAtChapter,
+            soFarSyncAsk = ask,
+        });
+    }
+
+    /// <summary>Makes the caller's "so far" score their rating, through <see cref="SetRating"/> so it is pushed like any other.</summary>
+    [HttpPost("{id:int}/rating/finalize")]
+    public async Task<IActionResult> FinalizeRating(int id, CancellationToken ct)
+    {
+        var provisional = await db.UserSeriesStates
+            .Where(s => s.SeriesId == id)
+            .Select(s => s.ProvisionalRating)
+            .FirstOrDefaultAsync(ct);
+        return provisional is { } rating
+            ? await SetRatingCoreAsync(id, new SetRatingRequest(rating), RatingSnapshotOrigin.Finish, ct)
+            : this.Fail(localizer, "error.series.noProvisionalRating");
+    }
+
+    /// <summary>The caller's score on this series over time, oldest first.</summary>
+    [HttpGet("{id:int}/rating-history")]
+    public async Task<IActionResult> RatingHistory(int id, CancellationToken ct) =>
+        Ok(await db.RatingSnapshots
+            .Where(s => s.SeriesId == id)
+            .OrderBy(s => s.CreatedAt).ThenBy(s => s.Id)
+            .Select(s => new
+            {
+                rating = s.Rating,
+                final = s.Final,
+                atChapter = s.AtChapter,
+                origin = s.Origin.ToString(),
+                createdAt = s.CreatedAt,
+            })
+            .ToListAsync(ct));
+
+    /// <summary>
+    /// The "how is it so far?" prompt waiting on this series for the caller, if any, for the reader's
+    /// end screen. A checkpoint is armed by the completing progress write, so the screen asks again
+    /// shortly after it opens rather than trusting its first answer.
+    /// </summary>
+    [HttpGet("{id:int}/rating-checkpoint")]
+    public async Task<IActionResult> RatingCheckpoint(int id, CancellationToken ct)
+    {
+        var state = await db.UserSeriesStates
+            .Where(s => s.SeriesId == id)
+            .Select(s => new { s.PendingRatingCheckpoint, s.ProvisionalRating, s.Rating })
+            .FirstOrDefaultAsync(ct);
+        var waiting = state is { Rating: null, PendingRatingCheckpoint: not RatingCheckpoints.None } &&
+            !await RatingCheckpointService.FinishedAsync(db, currentUser.UserId, id, ct);
+        return Ok(new
+        {
+            checkpoint = waiting ? RatingCheckpointService.WireName(state!.PendingRatingCheckpoint) : null,
+            provisionalRating = state?.ProvisionalRating,
+        });
+    }
+
+    /// <summary>Waves off the waiting prompt. Three in a row on one series and it stops asking there.</summary>
+    [HttpPost("{id:int}/rating-checkpoint/dismiss")]
+    public async Task<IActionResult> DismissRatingCheckpoint(int id, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        await UpsertUserStateAsync(id, RatingCheckpointService.Dismissed, ct);
+        return NoContent();
+    }
+
+    private static void ClearProvisional(UserSeriesState state)
+    {
+        state.ProvisionalRating = null;
+        state.ProvisionalRatedAt = null;
+        state.ProvisionalAtChapter = null;
     }
 
     /// <summary>Hides the "finished, archive it?" hint on this series for the caller, on every device.</summary>

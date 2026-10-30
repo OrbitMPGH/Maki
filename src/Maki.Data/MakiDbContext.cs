@@ -33,6 +33,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<UserRootFolder> UserRootFolders => Set<UserRootFolder>();
     public DbSet<UserSetting> UserSettings => Set<UserSetting>();
     public DbSet<UserSeriesState> UserSeriesStates => Set<UserSeriesState>();
+    public DbSet<RatingSnapshot> RatingSnapshots => Set<RatingSnapshot>();
     public DbSet<RecommendationFeedback> RecommendationFeedback => Set<RecommendationFeedback>();
     public DbSet<RecommendationFeedbackEvent> RecommendationFeedbackEvents => Set<RecommendationFeedbackEvent>();
     public DbSet<RecommendationSignalOverride> RecommendationSignalOverrides => Set<RecommendationSignalOverride>();
@@ -273,6 +274,14 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // never delete the rating and per-series override that share the row.
             e.HasOne<ReadingProfile>().WithMany()
                 .HasForeignKey(s => s.ReadingProfileId).OnDelete(DeleteBehavior.SetNull);
+            e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<RatingSnapshot>(e =>
+        {
+            e.HasIndex(s => new { s.UserId, s.SeriesId, s.CreatedAt });
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Series>().WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
         });
 
