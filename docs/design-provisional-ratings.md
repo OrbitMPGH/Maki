@@ -109,6 +109,8 @@ Some people do want them pushed: on AniList and MAL it's normal to score a serie
 
 Whichever it is, two fixes are needed: an import into `Rating` must clear `ProvisionalRating` (final wins), and the preview's "has this changed" test (`entry.Score != localRating`, which compares against the final only) must compare against the score the reader currently sees, so a provisional 7 against a remote 7 isn't listed as a change.
 
+**Decided 2026-10-30: always import as final** (option 2, without the extra preview wording). Both fixes above are in.
+
 ## UI
 
 ### Stars everywhere
@@ -151,7 +153,7 @@ The checkpoints, in order of how much I'd trust them:
 | **Caught up** | The `ReadCounts.Read` count (the number `ChapterEnd` shows, which includes `Watched` rows) reaches the wanted chapter count on a series whose status is not Completed. This one compares position, not evidence, so it uses `Read` rather than `ReadFor`; otherwise a reader who marked 150 chapters watched from the anime and read the next 50 would never be caught up. Not merely "no next downloaded chapter": a download gap is not caught up, and `ChapterEnd` already tells those apart ("N more chapters are wanted"). | They're about to wait days or weeks, and `ChapterEnd` usually renders here because there's nothing to advance to, so this works with auto-advance on. (Finishing a gap chapter out of order is the exception; the series page picks it up.) Re-arms on later catch-ups only when the score is stale (below). Never overlaps Finished, which requires Completed. |
 | **Hooked** | `ReadFor` is past about 10 chapters (or 15% of a known total, whichever comes first) on a series with no rating of either kind. Once per series. | The "is this working for me" point. Early enough to be useful to the recommender, late enough to have an opinion. |
 | **Volume end** | The completed chapter is the last of its volume, its chapters carry `Volume`, and the score is stale. | A natural break for tankōbon readers. The staleness gate stops it firing on every volume of a 100-volume series. |
-| **Leaving** | The reader hides a part-read series from Home (`HiddenFromHomeAt`, per user), or archives it. | Offers a *final* rating, since "dropped at ch. 80, it's a 4" is a real verdict. Archive is a library-wide action on the shared row, so the stars in `ArchiveSeriesDialog` rate for the archiver only and show only when the archiver has read some of it. In multi-user, hide-from-Home is the per-reader version of the same moment. |
+| **Leaving** | The reader archives a part-read series from its page. | Offers a *final* rating, since "dropped at ch. 80, it's a 4" is a real verdict. Archive is a library-wide action on the shared row, so the stars in `ArchiveSeriesDialog` rate for the archiver only and show only when the archiver has read some of it. Hide-from-Home and the Library's bulk archive offer nothing (owner, 2026-10-30). |
 | **Finished** | Existing `RateHint`. | Finalises. Exempt from the arm-on-completion rule and the daily cap: `RateHintAsync` is a query on finished state, and reaching the end of a series is rare enough not to need throttling. |
 
 **Stale** means no provisional score yet, or one set more than 30 days ago, or one set before the reader read another 25% of the series' wanted chapter count.
@@ -179,18 +181,25 @@ The new mutating endpoints need entries in `ControllerAuthorizationInventoryTest
 ## Phases
 
 1. **Columns, endpoints and seed weighting.** Provisional score settable from all three star controls, "so far" styling, finalise from the series page menu and from `RateHint`, library sort and filters, the import fixes. No prompts, no tracker switch yet (so provisional never syncs). This alone solves the core problem.
-2. **Checkpoints.** Caught up and Hooked on `ChapterEnd` and the series page, with dismissal, back-off and the daily cap. Leaving stars on hide-from-Home and in the archive dialog.
+2. **Checkpoints.** Caught up and Hooked on `ChapterEnd` and the series page, with dismissal, back-off and the daily cap. Leaving stars in the archive dialog.
 3. **Tracker switch** and the one-time ask.
 4. **Snapshot history.** `RatingSnapshots`, a small "your rating over time" line on the series page, the Volume end checkpoint.
 5. Optional: chapter hearts on `ChapterEnd`, Rewind uses.
 
-## Open questions for the owner
+## Owner decisions
 
-1. Separate `ProvisionalRating` column (recommended) or a flag on `Rating`?
-2. Rating import: route by tracker status (recommended), always final, or always provisional for unfinished series?
-3. Default for stars on a part-read series: provisional with a one-time tracker ask (recommended), provisional without it, or final?
-4. Checkpoint prompts on by default, and which ones?
-5. Is "so far" the right label? Alternatives: "for now", "provisional", "early rating". "So far" reads most naturally next to a chapter number.
+Decided 2026-10-30:
+
+- **Rating import (call 2): always final.** Every imported score stays a final rating, whatever its tracker status. The two import fixes from phase 1 stay.
+- **Label: "so far".**
+- **Hide from Home: no stars.** It stays a one-click action.
+- **Bulk archive: no stars.**
+
+Still open, built at the recommended default:
+
+1. Separate `ProvisionalRating` column rather than a flag on `Rating`.
+2. Stars on a part-read series set a "so far" score, with a one-time tracker ask (phase 3).
+3. Checkpoint prompts on by default, Hooked and Caught up only, Volume end opt-in.
 
 ## Implementation status
 
@@ -199,7 +208,7 @@ Phase 1 on `feat/provisional-ratings`, committed 2026-10-30:
 - `UserSeriesState.ProvisionalRating`, `ProvisionalRatedAt`, `ProvisionalAtChapter` and the `ProvisionalRating` migration.
 - `PUT series/{id}/rating/provisional`, `POST series/{id}/rating/finalize`; `SetRating` clears the provisional score. `SeriesDto` carries `provisionalRating`, `provisionalAtChapter` and `finished`.
 - `ProvisionalRatingPolicy` and its use in `SeedWeightService`; `SideInterestRailService` excludes provisional scores under 5.
-- The rating import clears the provisional score when it writes a rating, and its preview compares against the shown score. It still writes every remote score as final: owner call 2 (route by status) is not built.
+- The rating import clears the provisional score when it writes a rating, and its preview compares against the shown score. It writes every remote score as final, which is what the owner chose.
 - Frontend: `useRateSeries`, so-far styling and finalise on the series page, the pre-filled `RateHint` with a Keep button, the archived card's stars, library sort and filters on the shown score.
 
 Phase 2, committed 2026-10-30:
@@ -211,4 +220,4 @@ Phase 2, committed 2026-10-30:
 - Per-user switch `ratings.prompts` ("off", unset = on): `GET/PUT settings/rating-prompts` and a "Rating prompts" card in Settings > Reading.
 - Frontend: `RatingCheckpointPrompt` on the reader's end screen and the series page, and optional stars in `ArchiveSeriesDialog` that set a final rating when the archive goes through (series page only).
 
-Not started: the Feedback Lab count, stars on hide-from-Home (a one-click menu action today, so it needs its own design), the tracker switch and one-time ask (phase 3), Volume end and snapshots (phase 4).
+Not started: the Feedback Lab count, the tracker switch and one-time ask (phase 3), Volume end and snapshots (phase 4).
