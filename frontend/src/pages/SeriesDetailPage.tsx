@@ -619,7 +619,7 @@ function SeriesDetailBody() {
   const setNotificationMode = useSetSeriesNotificationMode()
   const rateSeries = useRateSeries()
   const finalizeRating = useFinalizeRating()
-  const setRating = useSetRating()
+  const saveLeavingRating = useSetRating({ silent: true })
   const setSoFar = useSetProvisionalRating()
   const dismissCheckpoint = useDismissRatingCheckpoint()
   const unlinkChapters = useUnlinkChapters()
@@ -1914,7 +1914,12 @@ function SeriesDetailBody() {
           setArchiveModalOpen(false)
           setBinRefused(null)
           showArchivedToast(!archiveRemoveFiles)
-          if (leavingRating != null) setRating.mutate({ seriesId: series.id, rating: leavingRating })
+          if (leavingRating != null) {
+            saveLeavingRating.mutate(
+              { seriesId: series.id, rating: leavingRating },
+              { onError: () => notify.err(staticT`Archived, but your rating didn't save`) },
+            )
+          }
         },
         onError: onBinRefused('archive'),
       },

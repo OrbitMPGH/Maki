@@ -25,13 +25,21 @@ public static class RatingCheckpointService
     public static readonly TimeSpan StaleAfter = TimeSpan.FromDays(30);
     public const double StaleShare = 0.25;
 
-    /// <summary>Called after a chapter completion. Arms at most one checkpoint, and never two on one UTC day.</summary>
+    /// <summary>
+    /// Called after a chapter completion. Arms at most one checkpoint, and never two on one UTC day.
+    /// Runs on every completion, so the daily cap, the cheapest check that usually says no, goes first.
+    /// </summary>
     /// <param name="completed">The chapter just finished, which decides Volume end; null skips that checkpoint.</param>
     public static async Task ArmAsync(MakiDbContext db, int userId, Series series, DateTime nowUtc,
         CancellationToken ct, Chapter? completed = null)
     {
-        if (series.Incognito == IncognitoMode.Full ||
-            await db.UserSettings.AnyAsync(s => s.Key == SettingKeys.RatingPrompts && s.Value == "off", ct))
+        if (series.Incognito == IncognitoMode.Full)
+        {
+            return;
+        }
+
+        var today = nowUtc.Date;
+        if (await db.UserSeriesStates.AnyAsync(s => s.LastRatingCheckpointAt >= today, ct))
         {
             return;
         }
@@ -44,14 +52,17 @@ public static class RatingCheckpointService
             return;
         }
 
-        var today = nowUtc.Date;
-        if (await db.UserSeriesStates.AnyAsync(s => s.LastRatingCheckpointAt >= today, ct))
+        var prompts = await db.UserSettings
+            .Where(s => s.Key == SettingKeys.RatingPrompts || s.Key == SettingKeys.RatingPromptsVolumes)
+            .ToDictionaryAsync(s => s.Key, s => s.Value, ct);
+        if (prompts.GetValueOrDefault(SettingKeys.RatingPrompts) == "off" ||
+            await FinishedAsync(db, userId, series.Id, ct))
         {
             return;
         }
 
         var volumes = completed is { Volume: not null } &&
-            await db.UserSettings.AnyAsync(s => s.Key == SettingKeys.RatingPromptsVolumes && s.Value == "on", ct);
+            prompts.GetValueOrDefault(SettingKeys.RatingPromptsVolumes) == "on";
         var checkpoint = await DueAsync(db, userId, series, state, nowUtc, volumes ? completed : null, ct);
         if (checkpoint == RatingCheckpoints.None)
         {
@@ -165,15 +176,28 @@ public static class RatingCheckpointService
             return true;
         }
 
+        var highest = await HighestReadChapterAsync(db, seriesId, ct) ?? at;
+        return highest - at >= wanted * StaleShare;
+    }
+
+    /// <summary>The highest chapter number the caller has read, watched ones included; null for none.</summary>
+    public static async Task<double?> HighestReadChapterAsync(MakiDbContext db, int seriesId, CancellationToken ct)
+    {
         // In memory: SQLite cannot aggregate a decimal column in SQL.
         var numbers = await ReadCounts.Read(db)
             .Where(p => p.SeriesId == seriesId)
             .Join(db.Chapters, p => p.ChapterId, c => c.Id, (_, c) => c.Number)
             .Where(n => n != null)
             .ToListAsync(ct);
-        var highest = numbers.Count == 0 ? at : (double)numbers.Max()!.Value;
-        return highest - at >= wanted * StaleShare;
+        return numbers.Count == 0 ? null : (double)numbers.Max()!.Value;
     }
+
+    /// <summary>
+    /// The reader finished the series, so a score is a verdict rather than a "so far" one. The flag
+    /// sticks through a re-read, which is what keeps re-reading from asking "how is it going?".
+    /// </summary>
+    public static Task<bool> FinishedAsync(MakiDbContext db, int userId, int seriesId, CancellationToken ct) =>
+        db.ReadingStates.AnyAsync(r => r.UserId == userId && r.SeriesId == seriesId && r.Finished, ct);
 
     /// <summary>The reader rated the series, either kind: the waiting checkpoint is answered.</summary>
     public static void Answered(UserSeriesState state)

@@ -433,13 +433,21 @@ public class ScrobbleController(
     [HttpPut("sofar")]
     public async Task<IActionResult> SetSoFarSync([FromBody] SoFarSyncRequest request, CancellationToken ct)
     {
-        var known = request.Services.Where(s => scrobbler.FindTracker(s) is not null).Distinct().ToList();
-        foreach (var service in known)
+        var saved = new List<string>();
+        foreach (var service in request.Services.Where(s => scrobbler.FindTracker(s) is not null).Distinct())
         {
+            // "So far" sits under "Sync ratings": turning it on where that is off would also mark the
+            // tracker as asked, so it would never get the question once ratings are switched back on.
+            if (request.Enabled && !await scrobbler.SyncRatingsEnabledAsync(UserId, service, ct))
+            {
+                continue;
+            }
+
+            saved.Add(service);
             await userSettings.SetAsync(SettingKeys.ScrobbleSoFarKey(service), request.Enabled ? "true" : "false", ct);
         }
 
-        if (request.Enabled && request.SeriesId is { } seriesId)
+        if (request.Enabled && saved.Count > 0 && request.SeriesId is { } seriesId)
         {
             var series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
             var soFar = await db.UserSeriesStates
@@ -452,7 +460,7 @@ public class ScrobbleController(
             }
         }
 
-        return Ok(new { services = known, enabled = request.Enabled });
+        return Ok(new { services = saved, enabled = request.Enabled });
     }
 
     // ---- rating import (preview → apply) ----

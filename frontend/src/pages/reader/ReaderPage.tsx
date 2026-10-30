@@ -706,7 +706,7 @@ export default function ReaderPage() {
 
   // Only on the end screen: the server arms a checkpoint from the completing write, so there is
   // nothing to ask while the chapter is still open. Incognito reading writes nothing to arm one.
-  const { data: checkpoint } = useRatingCheckpoint(manifest?.seriesId, atEnd && !incognito)
+  const { data: checkpoint } = useRatingCheckpoint(manifest?.seriesId, chapterId, atEnd && !incognito)
   const setSoFar = useSetProvisionalRating()
   const dismissCheckpoint = useDismissRatingCheckpoint()
 

@@ -102,6 +102,31 @@ public sealed class ProvisionalRatingTests : IDisposable
     }
 
     [Fact]
+    public async Task A_provisional_rating_on_a_finished_series_is_refused()
+    {
+        var alice = _db.SeedUser("alice");
+        var seriesId = SeedSeries();
+        using (var seed = _db.NewContext())
+        {
+            seed.ReadingStates.Add(new ReadingState
+            {
+                UserId = alice, SeriesId = seriesId, Title = "Vinland Saga", Finished = true,
+                LastProgressAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+            });
+            seed.SaveChanges();
+        }
+
+        using (var db = _db.NewContext(alice))
+        {
+            Assert.IsType<BadRequestObjectResult>(
+                await Controller(db, alice).SetProvisionalRating(seriesId, new SeriesController.SetRatingRequest(7), default));
+        }
+
+        using var check = _db.NewContext();
+        Assert.False(await check.UserSeriesStates.AnyAsync(s => s.UserId == alice && s.ProvisionalRating != null));
+    }
+
+    [Fact]
     public async Task An_out_of_range_provisional_rating_is_rejected()
     {
         var alice = _db.SeedUser("alice");

@@ -18,7 +18,8 @@ export function SoFarSyncAskDialog() {
     if (!ask) return
     save.mutate(
       { services: ask.trackers.map((x) => x.service), enabled, seriesId: ask.seriesId },
-      { onSettled: () => closeSoFarSyncAsk(true) },
+      // A failed save stays open: the error toasts, and closing would read as an answer nothing stored.
+      { onSuccess: () => closeSoFarSyncAsk(true) },
     )
   }
 

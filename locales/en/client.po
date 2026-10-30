@@ -3424,6 +3424,10 @@ msgstr "Archived on {date}. Maki is not checking sources for this series."
 msgid "Archived series are not checked against sources. Restore it first."
 msgstr "Archived series are not checked against sources. Restore it first."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Archived, but your rating didn't save"
+msgstr "Archived, but your rating didn't save"
+
 #: src/pages/HealthPage.tsx
 msgid "Archives inventoried"
 msgstr "Archives inventoried"

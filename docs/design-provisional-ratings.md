@@ -77,7 +77,7 @@ ratio = min(1, read / TotalChapters)  when Status == Completed and TotalChapters
 
 Depth carries most of it, so the same ten chapters earn about the same confidence on a finished epic as on an ongoing webtoon, and a metadata refresh that flips `Status` nudges `c` rather than switching formulas. An ongoing series tops out at 0.65 after about 60 chapters; only reading most of a finished series reaches 0.8. Using "read / chapters released" for an ongoing series would give a caught-up reader of chapter 12 the same confidence as someone who finished, which is exactly the reader this feature is for.
 
-`read` is the `ReadCounts.ReadFor` count (genuine reads, no `Watched` rows), so marking 50 chapters watched from an anime doesn't inflate confidence. `Weigh` already has it as `SeriesReadSignal.Completed`, so this adds no query.
+`read` is the `ReadCounts.ReadFor` count (completed chapters minus `Watched` rows), so marking 50 chapters watched from an anime doesn't inflate confidence. Chapters a Kavita import marked read do count. `Weigh` already has it as `SeriesReadSignal.Completed`, so this adds no query.
 
 What that gives, for an ongoing series (rounded to the 0.01 `WeightQuantum`):
 
@@ -151,7 +151,7 @@ The checkpoints, in order of how much I'd trust them:
 | Checkpoint | Fires when | Why it's a good moment |
 |---|---|---|
 | **Caught up** | The `ReadCounts.Read` count (the number `ChapterEnd` shows, which includes `Watched` rows) reaches the wanted chapter count on a series whose status is not Completed. This one compares position, not evidence, so it uses `Read` rather than `ReadFor`; otherwise a reader who marked 150 chapters watched from the anime and read the next 50 would never be caught up. Not merely "no next downloaded chapter": a download gap is not caught up, and `ChapterEnd` already tells those apart ("N more chapters are wanted"). | They're about to wait days or weeks, and `ChapterEnd` usually renders here because there's nothing to advance to, so this works with auto-advance on. (Finishing a gap chapter out of order is the exception; the series page picks it up.) Re-arms on later catch-ups only when the score is stale (below). Never overlaps Finished, which requires Completed. |
-| **Hooked** | `ReadFor` is past about 10 chapters (or 15% of a known total, whichever comes first) on a series with no rating of either kind. Once per series. | The "is this working for me" point. Early enough to be useful to the recommender, late enough to have an opinion. |
+| **Hooked** | `ReadFor` is past about 10 chapters (or 15% of a known total, whichever comes first) on a series with no rating of either kind. `ReadFor` drops only `Watched` rows, so chapters a Kavita import marked read count towards it; what keeps an import from arming it is that it is only evaluated on a completion. Once per series. | The "is this working for me" point. Early enough to be useful to the recommender, late enough to have an opinion. |
 | **Volume end** | The completed chapter is the last of its volume, its chapters carry `Volume`, and the score is stale. | A natural break for tankōbon readers. The staleness gate stops it firing on every volume of a 100-volume series. |
 | **Leaving** | The reader archives a part-read series from its page. | Offers a *final* rating, since "dropped at ch. 80, it's a 4" is a real verdict. Archive is a library-wide action on the shared row, so the stars in `ArchiveSeriesDialog` rate for the archiver only and show only when the archiver has read some of it. Hide-from-Home and the Library's bulk archive offer nothing (owner, 2026-10-30). |
 | **Finished** | Existing `RateHint`. | Finalises. Exempt from the arm-on-completion rule and the daily cap: `RateHintAsync` is a query on finished state, and reaching the end of a series is rare enough not to need throttling. |
@@ -233,5 +233,12 @@ Phase 4, committed 2026-10-30:
 - `Origin`: `Manual`, `Checkpoint` (a prompt was waiting when the score was set), `Finish` (keeping a "so far" score) or `Import`.
 - `GET series/{id}/rating-history`, and a "Your rating over time" popover beside the series page's stars that appears once there are two entries.
 - Volume end: `RatingCheckpoints.VolumeEnd`, opt-in through "Also ask at the end of each volume" in Settings (`ratings.prompts.volumes`). It fires on a volume entry or the highest-numbered chapter of its volume, under the same 30-day gate and staleness test as Caught up.
+
+Review fixes, 2026-10-30:
+
+- A series the reader finished is never part-read again: no checkpoint arms on it (the `Finished` flag sticks through a re-read), `GET series/{id}/rating-checkpoint` and `SeriesDto.RatingCheckpoint` show none waiting there, and `PUT series/{id}/rating/provisional` refuses a score on it.
+- `ArmAsync` checks the daily cap first, since it runs on every completion and that check usually ends it.
+- `PUT scrobble/sofar` skips a tracker whose rating sync is off when the answer is yes, so it still gets the question once rating sync is back on.
+- The end screen's checkpoint query is keyed by chapter, so every end screen gets its own retries.
 
 Not started: the Feedback Lab count of "so far" scores.

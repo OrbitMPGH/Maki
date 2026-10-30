@@ -1533,6 +1533,10 @@ msgid "error.series.noProvisionalRating"
 msgstr "There is no \"so far\" rating to keep"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.provisionalOnFinished"
+msgstr "You finished this series, so it takes a final rating rather than a \"so far\" one"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.metadataNotFound"
 msgstr "Series not found on metadata provider"
 

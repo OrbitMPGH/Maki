@@ -4087,6 +4087,10 @@ msgstr ""
 msgid "Archived series are not checked against sources. Restore it first."
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Archived, but your rating didn't save"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Archives inventoried"

@@ -1062,6 +1062,7 @@ public class SeriesController(
                 x.ReadingProfileId, x.PendingRatingCheckpoint,
             })
             .FirstOrDefaultAsync(ct);
+        var finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == id && r.Finished, ct);
         var readerPrefs = await readingProfiles.ResolveForAsync(
             series.Type, userState?.ReaderPrefsJson, userState?.ReadingProfileId, ct);
         // A profile or series override is an explicit reading-style choice. With only the global
@@ -1089,8 +1090,8 @@ public class SeriesController(
             RemovedChapterCount = counts?.Removed ?? 0,
             ProvisionalRating = userState?.ProvisionalRating,
             ProvisionalAtChapter = userState?.ProvisionalAtChapter,
-            Finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == id && r.Finished, ct),
-            RatingCheckpoint = userState?.Rating is null
+            Finished = finished,
+            RatingCheckpoint = userState?.Rating is null && !finished
                 ? RatingCheckpointService.WireName(userState?.PendingRatingCheckpoint ?? default)
                 : null,
             ReadFileCleanupActive = ReadFileCleanupService.AppliesTo(series.ReadFileCleanup, await readFileCleanup.OptionsAsync(ct)),
@@ -2245,7 +2246,7 @@ public class SeriesController(
         if (request.Rating is { } rated)
         {
             await RatingSnapshotService.RecordAsync(db, currentUser.UserId, id, rated, final: true,
-                await HighestReadChapterAsync(id, ct),
+                await RatingCheckpointService.HighestReadChapterAsync(db, id, ct),
                 origin ?? (prompted ? RatingSnapshotOrigin.Checkpoint : RatingSnapshotOrigin.Manual), ct);
         }
 
@@ -2257,8 +2258,8 @@ public class SeriesController(
     }
 
     /// <summary>
-    /// Sets the caller's "so far" score on a series they are partway through. Never pushed to a
-    /// tracker, and refused while a final rating exists, since the final one wins.
+    /// Sets the caller's "so far" score on a series they are partway through. Ignored while a final
+    /// rating exists, since the final one wins, and refused on a finished series, which takes a final one.
     /// </summary>
     [HttpPut("{id:int}/rating/provisional")]
     public async Task<IActionResult> SetProvisionalRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct)
@@ -2274,7 +2275,13 @@ public class SeriesController(
             return NotFound();
         }
 
-        var atChapter = request.Rating is null ? null : await HighestReadChapterAsync(id, ct);
+        if (request.Rating is not null &&
+            await RatingCheckpointService.FinishedAsync(db, currentUser.UserId, id, ct))
+        {
+            return this.Fail(localizer, "error.series.provisionalOnFinished");
+        }
+
+        var atChapter = request.Rating is null ? null : await RatingCheckpointService.HighestReadChapterAsync(db, id, ct);
         var prompted = false;
         var state = await UpsertUserStateAsync(id, s =>
         {
@@ -2361,9 +2368,11 @@ public class SeriesController(
             .Where(s => s.SeriesId == id)
             .Select(s => new { s.PendingRatingCheckpoint, s.ProvisionalRating, s.Rating })
             .FirstOrDefaultAsync(ct);
+        var waiting = state is { Rating: null, PendingRatingCheckpoint: not RatingCheckpoints.None } &&
+            !await RatingCheckpointService.FinishedAsync(db, currentUser.UserId, id, ct);
         return Ok(new
         {
-            checkpoint = state?.Rating is null ? RatingCheckpointService.WireName(state?.PendingRatingCheckpoint ?? default) : null,
+            checkpoint = waiting ? RatingCheckpointService.WireName(state!.PendingRatingCheckpoint) : null,
             provisionalRating = state?.ProvisionalRating,
         });
     }
@@ -2386,17 +2395,6 @@ public class SeriesController(
         state.ProvisionalRating = null;
         state.ProvisionalRatedAt = null;
         state.ProvisionalAtChapter = null;
-    }
-
-    private async Task<double?> HighestReadChapterAsync(int seriesId, CancellationToken ct)
-    {
-        // In memory: SQLite cannot aggregate a decimal column in SQL.
-        var numbers = await ReadCounts.Read(db)
-            .Where(p => p.SeriesId == seriesId)
-            .Join(db.Chapters, p => p.ChapterId, c => c.Id, (_, c) => c.Number)
-            .Where(n => n != null)
-            .ToListAsync(ct);
-        return numbers.Count == 0 ? null : (double)numbers.Max()!.Value;
     }
 
     /// <summary>Hides the "finished, archive it?" hint on this series for the caller, on every device.</summary>

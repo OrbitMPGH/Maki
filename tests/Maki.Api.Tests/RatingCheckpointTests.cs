@@ -3,6 +3,7 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Data.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Tests;
@@ -92,6 +93,46 @@ public sealed class RatingCheckpointTests : IDisposable
 
         Assert.Equal(RatingCheckpoints.None, await Arm(alice, seriesId));
     }
+
+    private void SeedFinished(int userId, int seriesId)
+    {
+        using var db = _db.NewContext();
+        db.ReadingStates.Add(new ReadingState
+        {
+            UserId = userId, SeriesId = seriesId, Title = "Finished", Finished = true,
+            LastProgressAt = Now, UpdatedAt = Now,
+        });
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task Rereading_a_finished_series_arms_nothing()
+    {
+        var alice = _db.SeedUser("alice");
+        var seriesId = SeedSeries();
+        SeedReading(alice, seriesId, chapters: 20, read: 20);
+        SeedFinished(alice, seriesId);
+
+        Assert.Equal(RatingCheckpoints.None, await Arm(alice, seriesId));
+    }
+
+    [Fact]
+    public async Task A_checkpoint_left_waiting_on_a_finished_series_is_not_shown()
+    {
+        var alice = _db.SeedUser("alice");
+        var seriesId = SeedSeries();
+        SeedState(alice, seriesId, s => s.PendingRatingCheckpoint = RatingCheckpoints.Hooked);
+        SeedFinished(alice, seriesId);
+
+        using var db = _db.NewContext(alice);
+        var result = Assert.IsType<OkObjectResult>(await Controller(db, alice).RatingCheckpoint(seriesId, default));
+        Assert.Null(result.Value!.GetType().GetProperty("checkpoint")!.GetValue(result.Value));
+    }
+
+    private static SeriesController Controller(Maki.Data.MakiDbContext db, int userId) =>
+        new(new TestLocalizer(), db, null!, null!, null!, null!, null!, null!,
+            null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
+            new TestCurrentUser(userId), null!, null!, null!, null!);
 
     [Fact]
     public async Task Reading_the_last_wanted_chapter_of_an_ongoing_series_arms_caught_up()
@@ -275,10 +316,7 @@ public sealed class RatingCheckpointTests : IDisposable
 
         using (var db = _db.NewContext(alice))
         {
-            var controller = new SeriesController(new TestLocalizer(), db, null!, null!, null!, null!, null!, null!,
-                null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
-                new TestCurrentUser(alice), null!, null!, null!, null!);
-            await controller.DismissRatingCheckpoint(seriesId, default);
+            await Controller(db, alice).DismissRatingCheckpoint(seriesId, default);
         }
 
         using var check = _db.NewContext();
