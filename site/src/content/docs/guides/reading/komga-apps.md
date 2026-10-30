@@ -28,6 +28,8 @@ any username and the API key as the password.
 - Regenerating the OPDS token signs these apps out, so they need the new key.
 - Turning off either switch stops them from connecting.
 - API keys with full access do not open this API. Use the OPDS token.
+- Archived series are left out of the API. See
+  [Archiving a series](/Maki/guides/library/archiving/).
 
 ## Progress
 

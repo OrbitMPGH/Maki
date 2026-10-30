@@ -15,6 +15,9 @@ Two-factor authentication, per-user API keys, HTTPS enforcement, trusted proxies
 OpenID Connect single sign-on. See
 [Exposing Maki to the internet](/Maki/installation/reverse-proxy-https/).
 
+An opt-in access log can feed CrowdSec or fail2ban. See
+[Access log and CrowdSec](/Maki/installation/access-log-crowdsec/).
+
 ## Backup & restore
 
 One-click zip of database and settings, plus an automatic safety backup before every schema

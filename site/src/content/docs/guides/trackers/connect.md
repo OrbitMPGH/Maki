@@ -52,9 +52,11 @@ Every tracker block has these switches:
 
 - **Scrobble reading** sends your progress. See
   [What counts as read](/Maki/guides/trackers/what-counts-as-read/) for when a chapter is sent.
-- **Sync ratings** sends your final Maki ratings.
+- **Sync ratings** sends your final Maki ratings. See
+  [Ratings and "so far" scores](/Maki/guides/trackers/ratings/) for how they are set.
 - **Also sync "so far" ratings** sends the scores you set partway through a series. It needs
-  **Sync ratings** on.
+  **Sync ratings** on. The [ratings guide](/Maki/guides/trackers/ratings/#sending-ratings-to-trackers)
+  covers the one-time question Maki asks about it.
 - On AniList and MyAnimeList, **Use anime for recommendation taste** controls whether Discover reads
   your anime list.
 

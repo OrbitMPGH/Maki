@@ -44,6 +44,13 @@ hand.
 - A single chapter can be re-fetched from another linked source: pick the copy that looks best
   and Maki downloads it again from there.
 
+Files that no source chapter claims still become chapters. A chapter file gets a row under its
+number, and a volume file gets a row for each chapter its page names mark. A volume file with no
+chapter marks gets one **Vol.N** entry per volume it spans, but only while no source lists any
+chapter of the series. Entries can be read but are never downloaded. Chapter 0 and files with no
+number are left alone. Once sources list chapters, numbered rows take their links, and each
+entry gives way to the numbered chapters on its file, with its reads moving onto them.
+
 ## Multilingual libraries
 
 A series' link to a source can hold several languages, each with its own chapter rows and files,
@@ -56,6 +63,11 @@ Search releases through Prowlarr or Jackett, grab them with qBittorrent, Transmi
 and auto-import on completion. Torrents share the queue with scraper downloads, and files are
 hardlinked into the library where possible. A release whose title names a related work (a spin-off
 or sequel) better than the series itself is rejected.
+
+Maki can also remove a torrent from the client once it is imported. This is off by default. Turn on
+**Remove torrents from the download client after import** under **Settings → Downloads**, and
+**Also delete the downloaded files** under it to delete the data as well. See
+[Torrents](/Maki/guides/sources/torrents/).
 
 Anything that is not already CBZ is converted on the way in:
 

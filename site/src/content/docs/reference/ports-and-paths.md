@@ -13,7 +13,7 @@ If you change it, update the container side of the `ports` mapping in your compo
 
 ## The config folder
 
-The config folder is `/config` in the container. The Windows app uses `%LOCALAPPDATA%\Maki`, and a server started by hand falls back to `%APPDATA%\Maki`. The full order is in [Environment variables](/Maki/reference/environment-variables/). Maki creates most of these on first start.
+The config folder is `/config` in the container. The Windows app uses `%LOCALAPPDATA%\Maki`, and a server started by hand falls back to `%APPDATA%\Maki`. The Linux service in the tarball uses `/var/lib/maki`, and a server started by hand on Linux uses `~/.config/Maki`. The full order is in [Environment variables](/Maki/reference/environment-variables/). Maki creates most of these on first start.
 
 | Path | What it holds |
 |---|---|

@@ -18,6 +18,7 @@ Edit `config.json` in the config folder and restart Maki, since logging settings
 | `SlowRequestMs` | `1000` | |
 | `LogFileSizeMb` | `20` | |
 | `RetainedLogFiles` | `7` | |
+| `AccessLog` | `false` | `true` writes one line per request to `logs/access-*.log`, for CrowdSec. See [Access log and CrowdSec](/Maki/installation/access-log-crowdsec/) |
 
 ### What is the Health page?
 

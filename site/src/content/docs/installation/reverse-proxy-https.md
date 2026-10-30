@@ -11,7 +11,8 @@ Before putting Maki on a public address:
 2. **List your reverse proxy under Trusted proxies** (IP or CIDR, for example `172.18.0.0/16`).
    Until you do, Maki ignores `X-Forwarded-For` and attributes every failed sign-in to the proxy.
    Maki does not trust the header from other addresses because a client could forge the audit log
-   and get around rate limiting and lockout.
+   and get around rate limiting and lockout. To ban repeat offenders at the firewall, see
+   [Access log and CrowdSec](/Maki/installation/access-log-crowdsec/).
 3. **Turn on two-factor authentication** under **Settings → Account → Sign-in**.
 4. **Give each reader their own account.** A new account starts with OPDS and tracker access, no
    root folders, and no admin. If you run an identity provider, use

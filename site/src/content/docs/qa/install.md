@@ -30,4 +30,4 @@ The first page asks you to set a username and password. Your library, history an
 
 ### Can I run Maki without Docker?
 
-Yes. Maki has a Windows installer and Linux tarballs for x64 and arm64, both on the [releases page](https://github.com/OrbitMPGH/Maki/releases). The Windows app runs from the tray and keeps its data in `%LOCALAPPDATA%\Maki`. You can also build from source, which needs .NET 10 and Node 24, see the [development guide](/Maki/contribution/development/). On Unraid, install from the Apps tab, see [Unraid](/Maki/installation/unraid/).
+Yes. The [Windows app](/Maki/installation/windows/) runs from the tray and keeps its data in `%LOCALAPPDATA%\Maki`. The [Linux tarballs](/Maki/installation/linux/) for x64 and arm64 run as a plain program or as a systemd service. You can also build from source, which needs .NET 10 and Node 24, see the [development guide](/Maki/contribution/development/). On Unraid, install from the Apps tab, see [Unraid](/Maki/installation/unraid/).

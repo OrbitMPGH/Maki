@@ -31,6 +31,9 @@ page takes several seconds of CPU, and a few times longer on a NAS.
 - **Test speed** times a built-in sample page and reports seconds per page, which is how long a
   reader waits for the server method.
 
+Readers can skip chapters by file quality under **Don't enhance** in their reader settings. Skipped
+chapters never reach the queue, so that work stays off the server.
+
 :::tip
 Upscaled pages are a disposable cache in the config folder. Clearing it only costs time the next
 time a page is enhanced.

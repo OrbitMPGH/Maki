@@ -11,6 +11,10 @@ fetches saves your position, and a chapter is marked read when you reach its las
 opening it. Turn this off with **Track reading progress from OPDS** under Settings, Reading, OPDS
 catalogue.
 
+Chapter entries carry their own thumbnail, the chapter's first page, and fall back to the series
+cover when that page will not render. Archived series are left out of the feed. See
+[Archiving a series](/Maki/guides/library/archiving/).
+
 ## KOReader progress sync
 
 Maki is a KOReader sync server. Chapters downloaded to KOReader report the page you reached, even
@@ -27,3 +31,4 @@ Maki instead. Off by default, switched on in the OPDS settings.
 - Reading progress syncs both ways, including through Mihon's Komga tracker.
 - A client that cannot decode a page's format (an AVIF or WebP page) can ask for it as JPEG or PNG,
   as it would from Komga.
+- Archived series are left out of the API, so the app does not list them.

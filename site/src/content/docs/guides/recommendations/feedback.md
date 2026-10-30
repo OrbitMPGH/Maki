@@ -14,7 +14,8 @@ For how the ranking works, see [How recommendations work](/Maki/guides/recommend
   that sit closer to it than to what you kept.
 
 Press a thumb again to remove the vote. A series you rated 1 to 4 pushes down similar titles, more
-the lower the rating, but unlike a thumbs down it is not hidden.
+the lower the rating, but unlike a thumbs down it is not hidden. How ratings and "so far" scores are set
+is covered in [Ratings and "so far" scores](/Maki/guides/trackers/ratings/).
 
 ## The more feedback menu
 
@@ -31,6 +32,9 @@ the lower the rating, but unlike a thumbs down it is not hidden.
     changing your taste profile.
   - **Clear read or seen** undoes that.
 - **Restore hidden or dismissed title** brings a title back.
+
+After you mark a title seen, the message that follows offers **Liked it** and **Disliked it**, as
+long as the title has no thumbs yet.
 
 Most changes show an **Undo** button in the message that follows.
 

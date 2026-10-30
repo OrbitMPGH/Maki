@@ -3,8 +3,9 @@ title: Build and run from source
 description: Prerequisites and the commands to run Maki from a source checkout. The full development setup is on the contribution page.
 ---
 
-For a normal install, use [Docker Compose](/Maki/installation/docker-compose/) or
-[Unraid](/Maki/installation/unraid/). Run from source to change Maki or test a branch.
+For a normal install, use [Docker Compose](/Maki/installation/docker-compose/),
+[Unraid](/Maki/installation/unraid/), the [Windows app](/Maki/installation/windows/) or the
+[Linux tarball](/Maki/installation/linux/). Run from source to change Maki or test a branch.
 
 ## Prerequisites
 

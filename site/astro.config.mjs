@@ -69,6 +69,20 @@ export default defineConfig({
               ],
             },
             {
+              label: 'Windows',
+              collapsed: true,
+              items: [
+                'installation/windows',
+              ],
+            },
+            {
+              label: 'Linux',
+              collapsed: true,
+              items: [
+                'installation/linux',
+              ],
+            },
+            {
               label: 'From source',
               collapsed: true,
               items: [
@@ -82,6 +96,7 @@ export default defineConfig({
                 'installation/first-run',
                 'installation/upgrading',
                 'installation/reverse-proxy-https',
+                'installation/access-log-crowdsec',
                 'installation/single-sign-on',
               ],
             },
@@ -146,6 +161,7 @@ export default defineConfig({
               items: [
                 'guides/trackers/connect',
                 'guides/trackers/what-counts-as-read',
+                'guides/trackers/ratings',
               ],
             },
             {

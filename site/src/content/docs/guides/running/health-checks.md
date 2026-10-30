@@ -63,8 +63,24 @@ For files:
 - A file that is missing while its chapter still points at it stays a finding, and the chapter shows
   as downloaded until you deal with it.
 
-The **Repairs** tab lists repair and delete requests and their status. Retry or dismiss a failed one.
-A PDF cannot be repaired, because Maki has no other copy to replace it from.
+The **Repairs** tab lists repair and delete requests and their status. Open a failed one to **Retry**
+it. A retried deletion comes back for review first. **Dismiss** clears a finished request, and
+**Dismiss all** clears a whole group of them. A failed request drops off the list by itself once its
+file is gone or has changed since, because a retry could never run. A PDF cannot be repaired, because
+Maki has no other copy to replace it from.
+
+## The History tab
+
+The **History** tab is a timeline of status changes, newest first and grouped by day. A check's
+entry names the problem and shows the status it moved from. Background jobs appear there too when
+their status changes.
+
+## Image cache
+
+The **Overview** tab ends with the **Image cache and backups** panel. It shows the space used by
+posters and thumbnails, and how many posters are missing. **Rebuild missing images** re-downloads
+posters that are missing or do not decode. Thumbnails regenerate on their own as the reader asks for
+them. **Backup and cache tools** opens the System tab in settings.
 
 ## Tune the checks
 

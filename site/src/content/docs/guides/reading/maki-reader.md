@@ -21,6 +21,24 @@ Other settings:
 - **Wide pages** (single page layout only): shown whole, split into two pages, or rotated to fit.
 - **Tap zones** (paged layouts only): click the screen edges to turn the page.
 
+## Page bar
+
+<!-- screenshot: the page bar with a thumbnail above a segment -->
+
+The bar along the bottom has one segment per page. Segments up to the page on screen are lit.
+Pages ahead that the server has already upscaled show in a lighter grey. Hover a segment to see its
+thumbnail. Click or drag to jump; the page changes when you let go. In right to left reading, page 1
+is the rightmost segment. Press `T` to open the page thumbnails strip.
+
+## Enhance
+
+<!-- screenshot: the reader settings popover with the Enhance section open -->
+
+Enhance sharpens soft pages. Its controls are in the settings popover: **Enhance** (Off, Auto or
+Always), **Method** and **Don't enhance**, which appear once Enhance is on. **While the server
+works** appears only with a server method. Hold `H`, or the compare button in the top bar, to see
+the original page. See [Page enhance](/Maki/features/page-enhance/).
+
 ## Reading profiles
 
 A reading profile is a saved set of these settings, managed under **Settings → Reading → Reader

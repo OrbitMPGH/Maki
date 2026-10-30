@@ -3,7 +3,7 @@ title: Environment variables
 description: Every MAKI_* variable Maki reads, plus PUID and PGID from the container, with defaults.
 ---
 
-Most installs need none of these. Set them in the compose file's `environment` list or with `docker run -e`, then restart Maki.
+Most installs need none of these. Set them in the compose file's `environment` list or with `docker run -e`, then restart Maki. For the Linux service, add an `Environment=NAME=value` line to the `[Service]` section of `maki.service`, then run `systemctl daemon-reload` and restart the service.
 
 In the timer and cache variables below, a value that is not a whole number or is negative falls back to the default.
 
@@ -15,6 +15,9 @@ In the timer and cache variables below, a value that is not a whole number or is
 | `PGID` | `1000` | Group ID Maki runs as. |
 | `MAKI_RUNTIME` | `docker` in the image | `docker` or `desktop`. Any other value is treated as unset. Unset: Docker if `/.dockerenv` exists, otherwise a bare start. The update check reports Docker as `IsDocker`. |
 | `MAKI_CONFIG_DIR` | `/config` in the image | Folder for the database, logs, covers, caches and `config.json`. Unset: `/config` if it exists, otherwise `%APPDATA%\Maki` on Windows. The Windows app sets it to `%LOCALAPPDATA%\Maki`. See [Ports, paths and files on disk](/Maki/reference/ports-and-paths/). |
+| `MAKI_DESKTOP_UPDATE_FEED` | GitHub releases | Folder or URL holding `vpk pack` output, read by the Windows app instead of GitHub releases. Use it to test an update before it is published. |
+
+`MAKI_DESKTOP_SERVER` and `MAKI_DESKTOP_PARENT` are for development and internal use, so they are not listed here.
 
 ## Sign-in
 

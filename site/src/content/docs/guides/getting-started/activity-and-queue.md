@@ -10,9 +10,17 @@ The **Activity** page (`/activity`) has three tabs.
 - **Queue** lists downloads that are waiting, running or need a decision. The counters on top show
   **In progress**, **Queued**, **Needs review** and **Failed**.
 - **Upgrades** lists files that fall short of the quality cutoff in their profile. When none do, it
-  says **Every file meets its cutoff**.
+  says **Every file meets its cutoff**. Volume releases waiting for you are listed first. Each
+  recent upgrade has a **Revert this upgrade** button while its replaced file is still in the trash.
 - **Upcoming** shows each series' likely next chapter on a five-week grid, as a span with a
   confidence, not a date. A release time that a source announces appears on its day.
+
+The **Activity** button in the top bar shows how many downloads are in progress, or how many are
+waiting for an import decision, which takes priority. Select it to open a dropdown of up to eight
+downloads with an **Open Activity** button below them. Rows waiting for an import decision come
+first. With nothing in flight, the button opens this page directly.
+
+<!-- screenshot: the Activity dropdown -->
 
 The queue updates live. Each row can be moved to the top, moved up or down, retried or
 removed. Rows in **Needs review** also get a **Review** button. **Clear queue** removes everything

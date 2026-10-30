@@ -17,6 +17,9 @@ import { LinkCard, CardGrid } from '@astrojs/starlight/components';
   what is already in your library, using more than shared genre tags. The Discover tab adds
   catalogue and genre rails, side interests, **Readers like you**, and a **Your Taste** tab showing
   how your reading has shifted.
+- **"So far" ratings.** Score a series partway through. The score stays apart from your final
+  rating and steers recommendations less. Trackers get it only when you turn that on. See
+  [Ratings and "so far" scores](/Maki/guides/trackers/ratings/).
 - **Local metadata.** A local copy of the [MangaBaka](https://mangabaka.org) database gives
   instant search with no API rate limits, and links each series to its MyAnimeList, AniList,
   MangaUpdates, and Kitsu IDs. It is required: Maki downloads it on first start and opens once
@@ -24,7 +27,19 @@ import { LinkCard, CardGrid } from '@astrojs/starlight/components';
   reach Settings and Health.
 - **Torrents alongside scrapers.** Search releases through Prowlarr or Jackett and send them to
   qBittorrent, Transmission or Deluge. Maki imports each one when it finishes, repacking anything
-  that is not already CBZ.
+  that is not already CBZ, and can remove the torrent from the client afterwards (off by default).
+- **Windows installer and Linux tarball.** The Windows installer adds a tray icon that keeps Maki
+  running and installs updates. The Linux tarball runs where Docker is not an option. See
+  [Windows](/Maki/installation/windows/) and [Linux](/Maki/installation/linux/).
+- **Custom sources.** Add a site Maki does not ship with as a JSON definition, built in the
+  wizard, imported, or installed from a repository. See
+  [Custom sources](/Maki/guides/sources/custom-sources/).
+- **Archive finished series.** Archiving takes a series out of the active library and stops its
+  downloads. Its chapters, history and ratings stay. See
+  [Archiving a series](/Maki/guides/library/archiving/).
+- **WebP and AVIF pages.** Re-encode chapter pages as WebP or AVIF to save space, for new
+  downloads and files already on disk. It is off until you choose a format. See
+  [WebP and AVIF conversion](/Maki/guides/library/page-conversion/).
 - **Install it, read offline.** Install to a phone or desktop home screen, keep saved chapters
   on the device, and get push notifications for new chapters.
 - **Built for a household.** Per-user history, preferences, tracker accounts, and library access

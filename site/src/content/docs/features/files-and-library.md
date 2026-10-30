@@ -22,6 +22,11 @@ are stored with their JPEG pages in that format, unless the quality is Lossless.
 lossless WebP at the Lossless stop or with **Keep PNG pages lossless** on, and follow the quality
 otherwise.
 
+There are five quality stops, Smallest, Compact, Balanced, High and Lossless, and High is the
+default. The setup wizard compares one of your own pages at each stop before anything is rewritten,
+and per-file rules or a series' own setting can change which stop applies. Each series can be
+undone on its own. See [WebP and AVIF conversion](/Maki/guides/library/page-conversion/).
+
 A pausable library pass converts the files already on disk, one at a time, and shows what it saved.
 Several pages of a file are encoded at once; the card sets how many (by default half the cores,
 between 2 and 4).
@@ -52,6 +57,9 @@ Grid or list view with density options. Shows download state, read badges and mo
 Filter by source, chapter count or user tag, save filters, and set monitoring for the selected
 series in bulk. Per-series incognito mode keeps a title out of stats and progress without hiding it.
 
+Archived series sit under **Archived (N)**, where you can restore them or remove their files in
+bulk. See [Archiving a series](/Maki/guides/library/archiving/).
+
 ## Library health
 
 ![Health overview showing zero system issues and zero open file findings, with the image cache panel below](../../../assets/health.png)
@@ -59,7 +67,9 @@ series in bulk. Per-series incognito mode keeps a title out of stats and progres
 
 Admins can index and verify archives, and find missing, unreadable, duplicate or suspicious files.
 Repeated findings of one kind fold into one row with **Acknowledge all**. Replacement and deletion
-operations are reviewed before they run, and unlinked CBZs can be imported.
+operations are reviewed before they run, and unlinked CBZs can be imported. The History tab
+keeps a timeline of status changes, and failed repairs can be retried or dismissed. See
+[Health checks](/Maki/guides/running/health-checks/).
 
 ## Mihon backup import
 

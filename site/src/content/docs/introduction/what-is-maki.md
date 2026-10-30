@@ -35,6 +35,8 @@ so the schema and API can still change between releases. Issues and pull request
 - New here? Follow [Install with Docker Compose](/Maki/installation/docker-compose/), then
   [Add your first series](/Maki/guides/getting-started/add-your-first-series/).
 - Running Unraid? See [Unraid](/Maki/installation/unraid/).
+- On Windows or Linux without Docker? See the [Windows app](/Maki/installation/windows/) or the
+  [Linux tarball](/Maki/installation/linux/).
 - Want to use your favourite reading app? See [Reading over OPDS and Komga](/Maki/guides/reading/opds-apps/).
 
 ## Legal

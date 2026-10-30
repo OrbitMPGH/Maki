@@ -1,6 +1,6 @@
 ---
 title: Upgrading
-description: How to update Maki under Docker or Unraid, what happens on startup, and how to go back.
+description: How to update Maki under Docker, Unraid, the Windows app or the Linux tarball, what happens on startup, and how to go back.
 ---
 
 Maki's database migrations apply on startup, and they cannot be reversed.
@@ -33,6 +33,35 @@ tag only moves on stable releases.
 Update the container from the Docker tab. Unraid keeps the settings from your template. See
 [Install on Unraid](/Maki/installation/unraid/) and
 [Unraid paths and appdata](/Maki/installation/unraid-paths/).
+
+## Windows app
+
+The Windows app checks for a new version two minutes after it starts, then every six hours, and
+downloads it in the background. When one is ready, choose **Restart to update to <version>** from
+the tray icon, or use **Settings → System → Updates**. If you do not, Maki installs it the next time it starts. Release candidates are never
+installed on their own.
+
+Your database, settings and logs are in `%LOCALAPPDATA%\Maki`, outside the install folder, so an
+update leaves them alone. The backup under [What happens on startup](#what-happens-on-startup)
+applies to the app too. See [Windows app](/Maki/installation/windows/).
+
+## Linux tarball
+
+The tarball does not update itself. Stop the service, unpack the new tarball and replace
+`/opt/maki` with it. Your data stays in `/var/lib/maki`. Then start the service again:
+
+```bash
+sudo systemctl stop maki
+tar -xzf Maki-<version>-linux-x64.tar.gz
+sudo rm -rf /opt/maki
+sudo cp -r maki /opt/maki
+sudo chown -R maki:maki /opt/maki
+sudo systemctl start maki
+```
+
+Use `linux-arm64` in the file name on an ARM machine. Maki backs up the database before a new version
+applies its migrations, as described under [What happens on startup](#what-happens-on-startup). See
+[Linux](/Maki/installation/linux/).
 
 ## What happens on startup
 

@@ -12,6 +12,10 @@ feed URL carries its own rotatable token. Each page an app streams saves your po
 completes on its last page after you open it, so an app that fetches that page early does not mark
 it read.
 
+Each chapter entry shows the chapter's first page as its thumbnail. If that page will not render,
+the series cover is used instead. Archived series are left out of the feed. Restoring one brings it
+back. See [Archiving a series](/Maki/guides/library/archiving/).
+
 1. Turn on the OPDS catalogue under **Settings → Reading → OPDS catalogue**.
 2. Copy the feed URL it shows. It is shown once, right after you turn the catalogue on or regenerate
    the token.

@@ -8,7 +8,8 @@ library, under Maki. Import reads the folders on disk, not the Kavita or Komga d
 
 Before you start:
 
-- Add the library folder as a root folder under **Settings → Library → Root folders**.
+- Add the library folder as a root folder under **Settings → Library → Root folders**. Pick it with
+  **Browse**, then click **Add**.
 - Install the local MangaBaka database, which the matching uses.
 
 ## Scan a root folder
@@ -38,8 +39,16 @@ If nothing matches, the folder says **No metadata match found.** Use **Find matc
 
 Select the folders and click **Import N selected**. The confirmation dialog has a checkbox,
 **Standardize ComicInfo.xml inside the imported files (recommended)**, which helps Kavita group these
-files with later downloads. The preview button on a single folder shows what the import would do
-before anything is written.
+files with later downloads. **Preview N selected** shows what the import would do for the
+selected folders before anything is written. The preview button on a single folder does the same
+for that folder.
+
+The preview lists each folder on one line, and a folder opens onto its files when you select it.
+With 8 or more folders it opens on a summary, and a list you can filter with **Worth a look**,
+**Renamed** or **All**, or search with **Find a folder**.
+
+<!-- screenshot: the import preview's summary and folder filter -->
+
 
 The dialog says folders are renamed to the English title, but the real behaviour comes from
 **Settings → Library → Folder & file naming → Folder naming on import**:

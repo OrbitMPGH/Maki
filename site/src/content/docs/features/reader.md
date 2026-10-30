@@ -15,6 +15,8 @@ series page estimates time to finish from comparable chapters.
 - Wide pages in single-page mode can be shown whole, split into two halves in reading order, or
   rotated.
 - **Crop borders** (shortcut C) trims plain white or black margins.
+- **Enhance** sharpens soft pages, with browser shaders or server upscaling. See
+  [Page enhance](/Maki/features/page-enhance/).
 - Chapters with very tall pages open in continuous mode on their own.
 - In continuous mode, scrolling past the end of a chapter opens the next one. On touch, pull past
   the end instead.

@@ -20,6 +20,41 @@ Maki bundles cannot write it and Kavita and KOReader cannot read it.
 Clients that cannot decode a page's format can ask Maki for JPEG or PNG instead. See
 [Reading over OPDS and Komga](/Maki/guides/reading/opds-apps/).
 
+## Quality stops
+
+There are five stops. **High** is the default. The wizard describes each one like this:
+
+- **Smallest**: Screentone is smoothed away, lines stay intact.
+- **Compact**: Screentone gets lighter but stays visible.
+- **Balanced**: Tone is a little lighter. Fine at fit-to-screen.
+- **High**: No difference we could see.
+- **Lossless**: Identical pixels.
+
+## Set it up with the wizard
+
+**Set up conversion** on the Page conversion card opens a wizard with five steps: **Format**,
+**Compare**, **What to convert**, **Review** and **Start**. Nothing is saved until you press a button
+on the last step.
+
+- **Format** picks WebP or AVIF, or Off.
+- **Compare** shows one of your pages before and after at the stop you pick. Maki suggests a page
+  from the middle of a file. **Pick another page** searches your series, and **Loupe, 2x** zooms in.
+- **What to convert** holds the per-file rules, described below.
+- **Review** estimates sizes and time by encoding a sample of the files each rule covers. Nothing
+  changes, and **Re-estimate** runs it again.
+- **Start** offers **Save and start**, which also starts the library pass, and **Save only**.
+
+## Per-file rules and series settings
+
+Rules are checked from the top, and the first one a file matches decides what happens to it. A rule
+can match on **Kind of release**, **Source**, **Page format**, **Series type**, **Series tags**,
+**Bits per pixel** or **File size**. Its action is **Convert at** one of the stops, or **Skip**. A
+file no rule matches is converted at the stop set under **Everything else**.
+
+An admin can also set one series' pages from its actions menu, under **Page conversion**: **Follow
+the rules**, **Never**, or a stop. A series set to **Never** or to a fixed stop ignores the rules.
+Files already converted stay as they are.
+
 ## What gets converted
 
 JPEG pages become the chosen format, except at the Lossless stop, where they are kept as they are.
@@ -45,6 +80,20 @@ file are encoded at once. The number is set on the same card and defaults to hal
 
 Each original goes to `.maki-trash/<SeriesId>/conv-*` and stays for the trash retention period
 (default 14 days), so you can undo a conversion until housekeeping deletes it.
+
+## Undo a conversion
+
+Once a series has converted files with originals in the trash, an admin can open
+**Undo conversion...** from its actions menu. The dialog says how many files still have their
+original and which settings they were converted with. Then choose one of two options:
+
+- **Restore the originals** puts the original pages back.
+- **Restore and convert again with the current settings** converts the files again.
+
+**Also set this series to Never** stops the series being converted again. It is unavailable with
+**Restore and convert again with the current settings**. An original that housekeeping has deleted
+cannot be restored. The Review step lists files converted earlier under **Converted earlier**, and
+those are never converted again.
 
 ## Upgrades and quality
 

@@ -3,6 +3,10 @@ title: First-run setup
 description: Create the administrator account, work through the setup guide, add a library folder, and wait for the MangaBaka database.
 ---
 
+The [Windows app](/Maki/installation/windows/) opens Maki in your browser the first time it starts. It
+only listens on this computer until you turn on **Allow other devices on your network** under
+**Settings → System → Network**.
+
 ## 1. Create the administrator account
 
 Open Maki in your browser, for example `http://localhost:8990`. A new install has no users, so the
@@ -39,7 +43,9 @@ guide from the top of Settings.
 ## 3. Add a library folder
 
 In the **Library** step, enter the path as Maki sees it in **Folder path**. In Docker that is
-`/library`, the container path from the compose file.
+`/library`, the container path from the compose file. On the Windows app it is a Windows path, such
+as `C:\Manga`. To pick a folder instead of typing one, choose **Browse** to open a folder browser for
+the server.
 
 Maki shows the free space on each folder. If a row says **Maki can't reach this folder**, check the
 mount and the permissions. See [Volumes, PUID and PGID](/Maki/installation/volumes-and-permissions/).

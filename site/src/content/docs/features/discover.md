@@ -28,7 +28,10 @@ The Discover tab has catalog and genre rails, recent-reading picks, side interes
 and how your taste has moved.
 
 Every rail has a fullscreen **Show more** view. Detail cards show categorized tags, alternate
-titles, creators, per-source ratings and MyAnimeList reviews.
+titles, creators, per-source ratings and MyAnimeList reviews. Cards show the publication status as
+a disc beside the year and chapter count. Detail cards also have thumbs up and thumbs down, and
+after you mark a title seen, a toast offers **Liked it** and **Disliked it**. See
+[Tune what you see](/Maki/guides/recommendations/feedback/).
 
 ## Metadata
 
