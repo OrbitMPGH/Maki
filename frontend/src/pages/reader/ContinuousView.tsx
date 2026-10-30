@@ -51,10 +51,15 @@ const NO_RANGE: number[] = []
  * The pages to enhance: the current one, the pages ahead in order, then the pages behind. Sized in
  * displayed device pixels against the engine's budget rather than in pages, so a chapter of a few
  * very tall slices runs a page or two ahead and one of many short slices runs far down the strip.
- * The pages either side of the current one are always in.
+ * The pages either side of the current one are always in. `beyond` is how many pages past the last
+ * one the ahead share still covers, counted at the size of the pages ahead.
  */
-function enhanceRange(elements: (HTMLImageElement | null)[], page: number, count: number): number[] {
-  if (count === 0) return NO_RANGE
+function enhanceRange(
+  elements: (HTMLImageElement | null)[],
+  page: number,
+  count: number,
+): { range: number[]; beyond: number } {
+  if (count === 0) return { range: NO_RANGE, beyond: 0 }
   const dpr = window.devicePixelRatio || 1
   const pixels = (index: number) => {
     const rect = elements[index]?.getBoundingClientRect()
@@ -63,11 +68,20 @@ function enhanceRange(elements: (HTMLImageElement | null)[], page: number, count
   const budget = enhanceBudget()
   const range = [page]
   let left = budget * ENHANCE_AHEAD_SHARE - pixels(page)
-  for (let index = page + 1; index < count && range.length < ENHANCE_MAX_PAGES; index++) {
+  let index = page + 1
+  let spent = 0
+  for (; index < count && range.length < ENHANCE_MAX_PAGES; index++) {
     const size = pixels(index)
     if (index > page + 1 && size > left) break
     range.push(index)
     left -= size
+    spent += size
+  }
+  let beyond = 0
+  if (index >= count) {
+    const typical = range.length > 1 ? spent / (range.length - 1) : pixels(page)
+    const fits = typical > 0 ? Math.floor(Math.max(0, left) / typical) : ENHANCE_MAX_PAGES
+    beyond = Math.min(ENHANCE_MAX_PAGES, Math.max(page === count - 1 ? 1 : 0, fits))
   }
   left = budget * (1 - ENHANCE_AHEAD_SHARE)
   for (let index = page - 1; index >= 0 && range.length < ENHANCE_MAX_PAGES; index--) {
@@ -76,7 +90,7 @@ function enhanceRange(elements: (HTMLImageElement | null)[], page: number, count
     range.push(index)
     left -= size
   }
-  return range
+  return { range, beyond }
 }
 
 // How close to the true bottom counts as "at the bottom": scrollHeight/clientHeight are
@@ -262,10 +276,13 @@ export default function ContinuousView({
   enhanceFallback?: EnhanceFallback
   /** Set while a server method is in use and the server tier can serve it. */
   server?: ServerEnhance | null
-  /** The pages shown at 1.2x their size or more, as measured on screen. */
+  /** The pages `auto` enhances: shown at 1.2x their size or more as measured on screen, or soft. */
   onStretched?: (pages: ReadonlySet<number>) => void
-  /** The pages being enhanced, current first, then ahead, then behind; what the server is asked for. */
-  onEnhanceRange?: (pages: number[]) => void
+  /**
+   * The pages being enhanced, current first, then ahead, then behind; what the server is asked for.
+   * `beyond` is how many of the next chapter's pages the window would reach past the last one.
+   */
+  onEnhanceRange?: (pages: number[], beyond: number) => void
 }) {
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
@@ -310,6 +327,7 @@ export default function ContinuousView({
     [engine, serverOn, enhance, preset, scope, layout],
   )
   const [range, setRange] = useState<number[]>(NO_RANGE)
+  const [beyond, setBeyond] = useState(0)
   const inRange = useMemo(() => new Set(range), [range])
   const isEager = (index: number) => index < 3 || Math.abs(index - page) <= 2 || inRange.has(index)
   useEffect(() => {
@@ -318,8 +336,8 @@ export default function ContinuousView({
   const rangeRef = useRef(onEnhanceRange)
   rangeRef.current = onEnhanceRange
   useEffect(() => {
-    rangeRef.current?.(range)
-  }, [range])
+    rangeRef.current?.(range, beyond)
+  }, [range, beyond])
 
   // Set by the sentinel effect below; image load handlers re-run it once a page settles.
   const reportEnd = useRef<() => void>(() => {})
@@ -336,13 +354,17 @@ export default function ContinuousView({
   useEffect(() => {
     if (!enhanceOn) {
       setRange(NO_RANGE)
+      setBeyond(0)
       return
     }
     const update = () => {
       const next = enhanceRange(pages.current, Math.min(page, urls.length - 1), urls.length)
       setRange((previous) =>
-        previous.length === next.length && previous.every((index, at) => index === next[at]) ? previous : next,
+        previous.length === next.range.length && previous.every((index, at) => index === next.range[at])
+          ? previous
+          : next.range,
       )
+      setBeyond(next.beyond)
     }
     update()
     window.addEventListener('resize', update)

@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   IconAffiliate,
@@ -15,6 +15,8 @@ import type { Icon } from '@tabler/icons-react'
 import { useLibraryCoverLookup, type RecommendationItem } from '../../api/hooks'
 import { formatFixedDecimal } from '../../format'
 import { Rail } from './Rail'
+import { seriesStatusGlyph, seriesStatusVisual, statusColor, statusOnColor } from './status'
+import { useLabel } from '../../i18n-context'
 import { t as now } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 
@@ -71,10 +73,11 @@ function reasonFor(item: RecommendationItem): string {
   if (item.becauseOfTitle) {
     const { becauseOfTitle } = item
     const feel = now`Feels like ${becauseOfTitle}`
-    return parts.length > 0 ? `${feel} · ${parts.join(' · ')}` : feel
+    const feelReasons = parts.join(', ')
+    return parts.length > 0 ? now`${feel}, ${feelReasons}` : feel
   }
   if (parts.length > 0) {
-    const reasonList = parts.join(' · ')
+    const reasonList = parts.join(', ')
     return now`Because: ${reasonList}`
   }
   return now`Similar feel`
@@ -93,13 +96,28 @@ function RatingChip({ rating }: { rating: number }) {
   )
 }
 
-/** "2017, Completed" on the left, "103 ch" on the right. */
+/** Status disc and word, then the year, on the left; "103 ch." on the right. The year drops out
+ *  first on a narrow card, so the status always survives. */
 function DiscoverSub({ item }: { item: RecommendationItem }) {
-  const { t } = useLingui()
+  const label = useLabel()
   const { year, status, totalChapters } = item
+  const visual = seriesStatusVisual(status)
+  const Glyph = seriesStatusGlyph(status)
   return (
     <div className="discover-sub">
-      <span className="discover-sub-status">{year ? t`${year}, ${status}` : status}</span>
+      <span className="discover-sub-status">
+        <span className="discover-sub-state">
+          <span
+            className="discover-sub-disc"
+            style={{ '--tone': statusColor(visual.color), '--tone-on': statusOnColor(visual.color) } as CSSProperties}
+            aria-hidden
+          >
+            <Glyph size={10} stroke={2.6} />
+          </span>
+          <span className="discover-sub-word">{label(visual.label)}</span>
+        </span>
+        {year ? <span className="discover-sub-year">{year}</span> : null}
+      </span>
       {totalChapters ? (
         <span className="discover-sub-chapters">
           <Trans>{totalChapters} ch.</Trans>
@@ -217,6 +235,7 @@ export const RecommendationRow = memo(function RecommendationRow({
 }) {
   const navigate = useNavigate()
   const { t } = useLingui()
+  const label = useLabel()
   const owned = inLibrarySeriesId != null
   const reason = reasonOverride !== undefined ? reasonOverride : reasonFor(item)
   const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
@@ -255,7 +274,7 @@ export const RecommendationRow = memo(function RecommendationRow({
           </span>
           {item.year && <span className="row-year">{item.year}</span>}
           <span className="cover-badge" style={{ flexShrink: 0 }}>
-            {item.status}
+            {label(seriesStatusVisual(item.status).label)}
           </span>
           {owned && (
             <span className="cover-badge cover-badge-circle" data-tip={t`In library`} style={{ flexShrink: 0 }}>

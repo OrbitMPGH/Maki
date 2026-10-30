@@ -33,6 +33,13 @@ public static class PageConversionOptions
             string.Equals(values.GetValueOrDefault(SettingKeys.PageConversionPngLossless), "true", StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>The stored conversion limit, or null for the default; a value out of range reads as unset.</summary>
+    public static int? ParseParallel(string? value) =>
+        int.TryParse(value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var limit) &&
+        limit >= 1 && limit <= ImageWorkGate.MaxConversionLimit
+            ? limit
+            : null;
+
     /// <summary>Null while conversion is off.</summary>
     public static async Task<PageConversionSettings?> LoadAsync(MakiDbContext db, CancellationToken ct) =>
         (await ReadAsync(db, ct)).Active;

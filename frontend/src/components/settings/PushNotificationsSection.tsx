@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Alert, Button, Group, Stack, Switch, Text } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { SettingsSection } from '../../pages/settings/SettingsSection'

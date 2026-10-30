@@ -33,7 +33,7 @@ export const ResolvedTab: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('tab', { name: 'Resolved' }))
     await expect(await canvas.findByText('Approved by Maki, queued 11 chapters')).toBeVisible()
-    await expect(await canvas.findByText('Rejected by Maki · Not available from any enabled source')).toBeVisible()
+    await expect(await canvas.findByText('Rejected by Maki. Not available from any enabled source')).toBeVisible()
     await expect(canvas.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument()
   },
 }

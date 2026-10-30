@@ -70,6 +70,14 @@ export interface PageConversionStatus {
     /** Series whose own menu choice (Never or a fixed quality) wins over the rules. */
     overrideSeries: number
   }
+  /** Pages converted at once, across the library pass and downloads. */
+  parallel: {
+    /** Null uses `default`. */
+    limit: number | null
+    default: number
+    /** The server's core count. */
+    max: number
+  }
 }
 
 const key = ['page-conversion']
@@ -92,6 +100,12 @@ function useStatusMutation<T>(fn: (input: T) => Promise<PageConversionStatus>) {
 
 export function useStartPageConversion() {
   return useStatusMutation(() => api<PageConversionStatus>('/pageconversion/start', { method: 'POST' }))
+}
+
+export function useSavePageConversionParallel() {
+  return useStatusMutation((limit: number | null) =>
+    api<PageConversionStatus>('/pageconversion/parallel', { method: 'PUT', body: JSON.stringify({ limit }) }),
+  )
 }
 
 export function usePausePageConversion() {

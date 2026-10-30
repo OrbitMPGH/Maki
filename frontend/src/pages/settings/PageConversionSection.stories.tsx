@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, waitFor } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api } from '../../../.storybook/mocks/api'
-import { pageConversionOff, pageConversionRunning } from '../../../.storybook/mocks/settings/data'
+import { pageConversionIdle, pageConversionOff, pageConversionRunning } from '../../../.storybook/mocks/settings/data'
 import { PageConversionSection } from './PageConversionSection'
 
 const meta = {
@@ -35,6 +35,32 @@ export const AfterAPass: Story = {
     await expect(await canvas.findByText(/412 files converted so far/)).toBeVisible()
     await expect(await canvas.findByText(/wait in the upgrade trash for 14 days/)).toBeVisible()
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Convert library' })).toBeEnabled())
+  },
+}
+
+const onParallelSave = fn()
+
+export const PagesConvertedAtOnce: Story = {
+  parameters: {
+    msw: settingsMsw(
+      http.put(api('/pageconversion/parallel'), async ({ request }) => {
+        const body = (await request.json()) as { limit: number | null }
+        onParallelSave(body)
+        return HttpResponse.json({ ...pageConversionIdle, parallel: { ...pageConversionIdle.parallel, limit: body.limit } })
+      }),
+    ),
+  },
+  beforeEach: () => onParallelSave.mockClear(),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const select = await canvas.findByLabelText('Pages converted at once', { selector: 'input' })
+    await waitFor(() => expect(select).toHaveValue('Automatic (4)'))
+
+    await userEvent.click(select)
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('option', { name: '16' })).toBeInTheDocument()
+    await userEvent.click(body.getByRole('option', { name: '8' }))
+    await waitFor(() => expect(onParallelSave).toHaveBeenCalledWith({ limit: 8 }))
+    await waitFor(() => expect(select).toHaveValue('8'))
   },
 }
 

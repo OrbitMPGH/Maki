@@ -56,6 +56,8 @@ public static class ArchivePageConverter
         var converted = 0;
         var kept = 0;
         var expanded = 0L;
+        var pending = new Queue<Pending>();
+        using var encodes = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
         ArchiveConversionResult Result(ArchiveConversionOutcome outcome, long resultBytes = 0) => new(
             outcome, sourceBytes, resultBytes, converted, kept, PageConversion.ResolveFormat(sourceFormats),
@@ -76,30 +78,26 @@ public static class ArchivePageConverter
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(targetPath))!);
                 await using var output = new FileStream(partial, FileMode.Create, FileAccess.Write, FileShare.None);
                 using var target = new ZipArchive(output, ZipArchiveMode.Create);
-                foreach (var entry in source.Entries)
+
+                async Task WriteAsync(Pending item)
                 {
-                    ct.ThrowIfCancellationRequested();
-                    if (entry.FullName.EndsWith('/'))
+                    var entry = item.Entry;
+                    if (item.Bytes is not { } bytes)
                     {
                         target.CreateEntry(entry.FullName).LastWriteTime = entry.LastWriteTime;
-                        continue;
+                        return;
                     }
 
-                    expanded += entry.Length;
-                    var bytes = ReadAll(entry, expanded);
                     var name = entry.FullName;
                     var level = CompressionLevel.Optimal;
-                    if (pages.Contains(name))
+                    if (item.Page is { } encoding)
                     {
-                        var extension = Path.GetExtension(name);
-                        var page = await ImageWorkGate.RunAsync(
-                            () => Task.FromResult(PageConversion.Convert(bytes, extension, settings)),
-                            ImageWorkGate.Weigh(bytes), ct);
+                        var page = await encoding;
                         sourceFormats.Add(page.SourceFormat);
                         if (page.Converted)
                         {
                             converted++;
-                            name = name[..^extension.Length] + page.Extension;
+                            name = name[..^Path.GetExtension(name).Length] + page.Extension;
                             renamed[entry.FullName] = name;
                             bytes = page.Bytes;
                             resultFormats.Add(page.Extension.TrimStart('.'));
@@ -118,6 +116,43 @@ public static class ArchivePageConverter
                     written.LastWriteTime = entry.LastWriteTime;
                     await using var stream = written.Open();
                     await stream.WriteAsync(bytes, ct);
+                }
+
+                // Pages encode ahead of the writer, as many at once as the conversion limit allows, and are
+                // written in the source order. AV1 is the slow part, and one page at a time left
+                // all but one core idle.
+                foreach (var entry in source.Entries)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    if (entry.FullName.EndsWith('/'))
+                    {
+                        pending.Enqueue(new Pending(entry, null, null));
+                        continue;
+                    }
+
+                    expanded += entry.Length;
+                    var bytes = ReadAll(entry, expanded);
+                    Task<PageConversion.Page>? page = null;
+                    if (pages.Contains(entry.FullName))
+                    {
+                        var extension = Path.GetExtension(entry.FullName);
+                        page = Task.Run(() => ImageWorkGate.RunConversionAsync(
+                            () => PageConversion.Convert(bytes, extension, settings),
+                            ImageWorkGate.Weigh(bytes), encodes.Token), encodes.Token);
+                    }
+
+                    pending.Enqueue(new Pending(entry, bytes, page));
+                    while (pending.Count(p => p.Page is not null) > ImageWorkGate.ConversionLimit)
+                    {
+                        await WriteAsync(pending.Peek());
+                        pending.Dequeue();
+                    }
+                }
+
+                while (pending.TryPeek(out var next))
+                {
+                    await WriteAsync(next);
+                    pending.Dequeue();
                 }
             }
 
@@ -153,7 +188,16 @@ public static class ArchivePageConverter
             TryDelete(partial);
             throw;
         }
+        finally
+        {
+            // Encodes still queued behind a failed page must not outlive the call.
+            await encodes.CancelAsync();
+            await Task.WhenAll(pending.Select(p => p.Page).OfType<Task>()).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        }
     }
+
+    /// <summary>An entry read and waiting to be written; <see cref="Bytes"/> is null for a directory.</summary>
+    private sealed record Pending(ZipArchiveEntry Entry, byte[]? Bytes, Task<PageConversion.Page>? Page);
 
     private const int MaxProbeReads = 12;
 
@@ -180,8 +224,8 @@ public static class ArchivePageConverter
 
             foreach (var (bytes, extension) in picked)
             {
-                var page = await ImageWorkGate.RunAsync(
-                    () => Task.FromResult(PageConversion.Convert(bytes, extension, settings)), ct);
+                var page = await ImageWorkGate.RunConversionAsync(
+                    () => PageConversion.Convert(bytes, extension, settings), ImageWorkGate.Weigh(bytes), ct);
                 if (page.Converted)
                 {
                     return true;

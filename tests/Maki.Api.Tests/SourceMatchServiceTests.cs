@@ -1135,6 +1135,70 @@ public class SourceMatchServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task An_English_source_is_searched_for_the_other_English_titles_when_the_main_one_finds_nothing()
+    {
+        var seriesId = _db.SeedSeries(
+            "And So, Spring Arrives", originalTitle: "かくして季節はアオを知る",
+            configure: s => s.AltTitles =
+            [
+                new LocalizedTitle("Kakushite Kisetsu wa Ao o Shiru", "ja-Latn"),
+                new LocalizedTitle("Thus, the Seasons Learn of Blue", "en"),
+            ]);
+        var queries = new List<string>();
+        var english = new FakeSource
+        {
+            Name = "english",
+            OnSearch = q =>
+            {
+                lock (queries)
+                {
+                    queries.Add(q);
+                }
+
+                return q == "Thus, the Seasons Learn of Blue" ? [Hit("e1", "Thus, the Seasons Learn of Blue")] : [];
+            }
+        };
+
+        var mapped = await RunAutoMatch(seriesId, english);
+
+        Assert.Equal(["english"], mapped);
+        Assert.Equal(["And So, Spring Arrives", "Thus, the Seasons Learn of Blue"], queries);
+    }
+
+    [Fact]
+    public async Task A_result_under_an_English_alt_title_is_accepted_from_the_main_search()
+    {
+        var seriesId = _db.SeedSeries(
+            "And So, Spring Arrives",
+            configure: s => s.AltTitles = [new LocalizedTitle("Thus, the Seasons Learn of Blue", "en")]);
+        var english = new FakeSource { Name = "english", OnSearch = _ => [Hit("e1", "Thus, the Seasons Learn of Blue")] };
+
+        var mapped = await RunAutoMatch(seriesId, english);
+
+        Assert.Equal(["english"], mapped);
+        Assert.Equal(1, english.SearchCalls);
+    }
+
+    [Fact]
+    public async Task At_most_two_English_alt_titles_are_searched()
+    {
+        var seriesId = _db.SeedSeries(
+            "Main Title",
+            configure: s => s.AltTitles =
+            [
+                new LocalizedTitle("main title", "en"),
+                new LocalizedTitle("First Other", "en"),
+                new LocalizedTitle("Second Other", "en-us"),
+                new LocalizedTitle("Third Other", "en"),
+            ]);
+        var english = new FakeSource { Name = "english", OnSearch = _ => [] };
+
+        await RunAutoMatch(seriesId, english);
+
+        Assert.Equal(3, english.SearchCalls);
+    }
+
+    [Fact]
     public async Task A_Japanese_source_the_English_title_already_finds_is_searched_once()
     {
         var seriesId = _db.SeedSeries("Attack on Titan", originalTitle: "進撃の巨人");

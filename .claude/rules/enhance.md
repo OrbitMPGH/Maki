@@ -3,6 +3,7 @@ paths:
   - "frontend/src/lib/enhance/**"
   - "frontend/src/pages/reader/EnhancedPage*"
   - "frontend/src/pages/reader/ContinuousView.tsx"
+  - "frontend/src/pages/reader/PagedView.tsx"
   - "frontend/src/pages/reader/enhanceRuntime*"
   - "frontend/src/pages/reader/compareHold*"
   - "frontend/src/pages/reader/useServerEnhance*"
@@ -39,7 +40,7 @@ User-facing summary in `docs/features.md`. Two tiers share one reader setting: `
 - The browser's final resample takes luma from the shader chain and chroma from the source tile. Restore CNN tints screentone the same way; a grey page must come out grey.
 - `manifesturl` has no API. In dev it is a row in the `AppConfig` table of the config dir's SQLite database (key `library.upscaling.manifesturl`).
 - Server tiling is 384 px with a 16 px context pad. Browser tiling is `min(MAX_TEXTURE_SIZE, 4096)/2` with a 16 px overlap.
-- The browser hook sizing stays at 2x (`OUTPUT` is 2w x 2h) and `//!WHEN` is not parsed. The reader's Auto gate (display at 1.2x source) replaces it.
+- The browser hook sizing stays at 2x (`OUTPUT` is 2w x 2h) and `//!WHEN` is not parsed. The reader's Auto gate (display at 1.2x source, or a soft page) replaces it.
 - `UpscaleModelStore.DeleteAsync` throws if the ORT session still holds the file. Call `OnnxPageUpscaler.ReleaseModel` first.
 - `UpscaleOptions.Threads` is read per run. The session is rebuilt on the next idle run when it changes.
 - `ImageWorkGate` is not reentrant. Wrap the decode and encode leaf calls only, never the whole run. Inference runs outside it.
@@ -48,6 +49,7 @@ User-facing summary in `docs/features.md`. Two tiers share one reader setting: `
 
 - `ReaderController` is a primary-constructor class built by hand in several tests. New services go in through `[FromServices]` on the action, not the constructor.
 - The reader POST replaces the user's pending window. Failed and skipped outcomes are remembered for 10 minutes so a bad page is not re-queued forever.
+- Near a chapter's end the reader POST also carries `nextChapterId`/`nextPages`: the window's overflow past the last page (paged: missing preload spreads; strip: `beyond` from `enhanceRange`). They fill the room left under the cap with the next chapter as their target, so that chapter's own first POST finds them still pending (same-chapter keys are kept) or ready. They are not in the response.
 - `pageEnhanced` is pushed twice per page: `working` when the worker starts it, then the outcome. The push often beats the POST's own `queued` answer, so `useServerEnhance` never walks `working` back to `queued`. `ServerEnhanceStatus` reads those states plus `shown` (the upscale is decoded and drawn) for the reader pill.
 - `HostStartupTests` fails on any WRN/ERR at boot. The store and the cache must start silently with no models and no cache folder.
 
@@ -57,6 +59,8 @@ User-facing summary in `docs/features.md`. Two tiers share one reader setting: `
 - `pageUrl()` must not change shape. Offline saving, `useWarmChapter` and the service worker regexes depend on it. The enhanced URL (`.../page/{n}/enhanced`) is deliberately outside every service-worker list, so offline it gets the synthetic 503 and the reader shows Balanced.
 - `EnhancedPage` reports `onShowing` from a layout effect. The canvas hides in the same commit that holding H starts, so a passive effect paints one frame with neither the canvas nor the host's image.
 - The strip's enhance range (`enhanceRange` in `ContinuousView`) is sized in displayed device pixels against `enhanceBudget()` (three quarters ahead, the rest behind, 32 pages at most), never a page count: webtoon chapters run from a handful of 15000 px slices to 100 short ones. The same range is the server's window in vertical mode, so `MAX_PAGES` in `useServerEnhance` and `UpscaleQueue.MaxPendingPerUser` move together.
+- Auto also takes pages that measure soft (`lib/enhance/softness.ts`, Crété-Roffet blur on up to 24 native-resolution 160 px tiles, `SOFT_BLUR` 0.28). The threshold was calibrated on about 100 `.simulated` pages: screentone and clean line art 0.08 to 0.2, sub-800 px scans and soft colour webtoons 0.25 to 0.45, volumes up to 0.3. A measurement costs 10 to 35 ms, so `EnhancedPage` uses `knownSoft` during render and measures after paint; the paged preload measures pages ahead so a turn finds the answer cached. "Stretched" in `EnhanceScope` and `onStretched` now means "wanted by Auto", stretched or soft.
+- `enhanceSkipTiers` (default `['volume']`, filled by `ReaderPrefsSpec.Sanitized` when unset) turns enhance off for a chapter whose file tier is listed. The manifest's `tier` drives it through `enhanceFor()` in `ReaderPage`; pass that result, never `prefs.enhance`, to the views and `serverModelFor`, or the server queue still fills for a skipped chapter.
 - The engine's `enhance()` closes the source bitmap. A result produced with a `key` belongs to the engine's LRU: draw it with `drawImage`, never close or transfer it.
 
 ## Model delivery

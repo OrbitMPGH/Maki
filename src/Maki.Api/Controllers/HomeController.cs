@@ -33,11 +33,11 @@ public record HomeReadingItem(
 
 public record HomeReadingResponse(IReadOnlyList<HomeReadingItem> ContinueReading);
 
-/// <summary>A series that recently gained chapter files.</summary>
+/// <summary>A series that recently gained chapter files it still has unread.</summary>
 /// <param name="AddedAt">Newest <c>ChapterFile.DateAdded</c> for this series.</param>
-/// <param name="NewChapterCount">Files this series holds within the scanned window — the "+4" badge.</param>
-/// <param name="ReadChapterId">Next unread downloaded chapter, for the card's Read affordance;
-/// null when everything downloaded has been read.</param>
+/// <param name="NewChapterCount">Unread files in the series' latest batch, the "4 new" badge.</param>
+/// <param name="NewestChapterLabel">The newest unread file in that batch.</param>
+/// <param name="ReadChapterId">Next unread downloaded chapter, for the card's Read affordance.</param>
 public record HomeRecentSeriesItem(
     int SeriesId,
     string SeriesTitle,
@@ -70,6 +70,12 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     /// series out.
     /// </summary>
     private const int RecentFileScan = 1500;
+
+    /// <summary>
+    /// Files of one series count as one batch while each arrived within this long of the next.
+    /// A backlog download lands minutes apart; weekly or daily releases fall outside it.
+    /// </summary>
+    private static readonly TimeSpan BatchGap = TimeSpan.FromHours(12);
 
     /// <summary>
     /// How many of the most recently touched <c>ChapterProgress</c> rows to consider for the
@@ -306,6 +312,10 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     /// get a row. Relinked files and in-place replacements are left out
     /// (<see cref="ChapterFile.IsNewContent"/>).
     /// </para>
+    /// <para>
+    /// Only a series' latest batch counts (see <see cref="BatchGap"/>), and only the files in it the
+    /// user has not read. A series whose latest batch is all read drops off the rail.
+    /// </para>
     /// </summary>
     [HttpGet("recently-added")]
     public async Task<IActionResult> RecentlyAdded([FromQuery] int limit = MaxRailItems, CancellationToken ct = default)
@@ -322,65 +332,89 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
             .Select(f => new { f.Id, f.SeriesId, f.DateAdded })
             .ToListAsync(ct);
 
-        var bySeries = recentFiles
+        // Newest first within a series, cut at the first gap longer than BatchGap.
+        var candidates = recentFiles
             .GroupBy(f => f.SeriesId)
-            .Select(g => new
+            .Select(g =>
             {
-                SeriesId = g.Key,
-                AddedAt = g.Max(f => f.DateAdded),
-                Count = g.Count(),
-                NewestFileId = g.OrderByDescending(f => f.DateAdded).ThenByDescending(f => f.Id).First().Id
+                var files = g.OrderByDescending(f => f.DateAdded).ThenByDescending(f => f.Id).ToList();
+                var batch = files.Take(1)
+                    .Concat(files.Zip(files.Skip(1))
+                        .TakeWhile(p => p.First.DateAdded - p.Second.DateAdded <= BatchGap)
+                        .Select(p => p.Second))
+                    .Select(f => f.Id)
+                    .ToList();
+                return new { SeriesId = g.Key, AddedAt = files[0].DateAdded, Batch = batch };
             })
             .OrderByDescending(g => g.AddedAt)
-            .Take(limit)
             .ToList();
 
-        if (bySeries.Count == 0)
+        if (candidates.Count == 0)
         {
-            return Ok(Array.Empty<HomeRecentSeriesItem>());
+            return Ok(new List<HomeRecentSeriesItem>());
         }
 
-        var seriesIds = bySeries.Select(g => g.SeriesId).ToList();
-
+        var seriesIds = candidates.Select(g => g.SeriesId).ToList();
         var titles = await db.Series
             .AsNoTracking()
             .Where(s => seriesIds.Contains(s.Id))
             .Select(s => new { s.Id, s.Title, s.CoverPath, s.LastMetadataRefresh })
             .ToDictionaryAsync(s => s.Id, ct);
 
-        var newestFileIds = bySeries.Select(g => g.NewestFileId).ToList();
-        var labelByFile = (await db.Chapters
-                .AsNoTracking()
-                .Where(c => c.ChapterFileId != null && newestFileIds.Contains(c.ChapterFileId!.Value))
-                .Select(c => new { FileId = c.ChapterFileId!.Value, c.Number, c.Volume, c.Title, c.IsOneShot })
-                .ToListAsync(ct))
-            // A volume file backs several chapters; label it with the lowest-numbered one it holds.
-            .GroupBy(c => c.FileId)
-            .ToDictionary(
-                g => g.Key,
-                g =>
-                {
-                    var first = g.OrderBy(c => c.Number is null ? 1 : 0).ThenBy(c => c.Number).First();
-                    return ChapterLabel.For(first.Number, first.Volume, first.Title, first.IsOneShot);
-                });
+        // Resolved a chunk at a time, like Reading: series with nothing new left to read drop out,
+        // so later candidates are only looked at while the rail is still short.
+        var items = new List<HomeRecentSeriesItem>();
+        foreach (var chunk in candidates.Chunk(limit * 2))
+        {
+            var next = await continueReading.NextForAsync(chunk.Select(c => c.SeriesId).ToList(), ct);
+            var batchFileIds = chunk.SelectMany(c => c.Batch).ToList();
+            var chaptersByFile = (await db.Chapters
+                    .AsNoTracking()
+                    .Where(c => c.ChapterFileId != null && batchFileIds.Contains(c.ChapterFileId!.Value))
+                    .Select(c => new { c.Id, FileId = c.ChapterFileId!.Value, c.Number, c.Volume, c.Title, c.IsOneShot })
+                    .ToListAsync(ct))
+                .ToLookup(c => c.FileId);
 
-        var next = await continueReading.NextForAsync(seriesIds, ct);
-
-        var items = bySeries
-            .Where(g => titles.ContainsKey(g.SeriesId))
-            .Select(g =>
+            foreach (var candidate in chunk)
             {
-                var series = titles[g.SeriesId];
-                return new HomeRecentSeriesItem(
+                if (!titles.TryGetValue(candidate.SeriesId, out var series)
+                    || !next.TryGetValue(candidate.SeriesId, out var upNext))
+                {
+                    continue;
+                }
+
+                var unreadFiles = candidate.Batch
+                    .Where(id => chaptersByFile[id].Any(c => upNext.UnreadChapterIds.Contains(c.Id)))
+                    .ToList();
+                if (unreadFiles.Count == 0)
+                {
+                    continue;
+                }
+
+                // A volume file backs several chapters; label it with the lowest-numbered one it holds.
+                var first = chaptersByFile[unreadFiles[0]]
+                    .OrderBy(c => c.Number is null ? 1 : 0).ThenBy(c => c.Number).First();
+
+                items.Add(new HomeRecentSeriesItem(
                     series.Id,
                     series.Title,
                     SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.LastMetadataRefresh),
-                    g.AddedAt,
-                    g.Count,
-                    labelByFile.GetValueOrDefault(g.NewestFileId),
-                    next.GetValueOrDefault(g.SeriesId)?.ChapterId);
-            })
-            .ToList();
+                    candidate.AddedAt,
+                    unreadFiles.Count,
+                    ChapterLabel.For(first.Number, first.Volume, first.Title, first.IsOneShot),
+                    upNext.ChapterId));
+
+                if (items.Count == limit)
+                {
+                    break;
+                }
+            }
+
+            if (items.Count == limit)
+            {
+                break;
+            }
+        }
 
         return Ok(items);
     }

@@ -221,6 +221,10 @@ public class TorrentImportServiceTests : IDisposable
         Assert.True(second.Applied);
         Assert.Equal(1, second.Imported);
 
+        // The second run found the file already at its name, so deleting the download is no longer known safe.
+        Assert.True(first.PlacedFresh);
+        Assert.False(second.PlacedFresh);
+
         using var db = _db.NewContext();
         var file = Assert.Single(db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
         Assert.All(db.Chapters.Where(c => c.SeriesId == series.Id).ToList(),

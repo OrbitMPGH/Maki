@@ -85,8 +85,13 @@ screen. It is off until a reader turns it on. Library files are never modified.
 - **Turning it on.** In the reader toolbar's settings popover, set **Enhance** to Off, Auto or
   Always and pick a **Method**. The same two fields are in reading profiles and in per-series
   overrides, so they follow the usual order: series override, pinned profile, type profile, your
-  default. **Auto** enhances a page only when it is shown at least 1.2 times larger than its
-  source, so a small window stays plain and a large monitor does not.
+  default. **Auto** enhances a page when it is shown at least 1.2 times larger than its
+  source, so a small window stays plain and a large monitor does not. It also enhances a page that
+  looks blurry at any size: the reader scores each page's sharpness once, on a grid of small tiles
+  at the page's own resolution, and a soft scan or an upscaled aggregator copy gets enhanced while
+  clean screentone does not.
+- **Skipping by quality.** **Don't enhance** lists quality tiers whose chapters are always shown as
+  they are, whatever Enhance says. It starts with Volume, since a digital volume is already clean.
 - **Hold to compare.** Hold **H** or the toolbar's compare button to see the original page, and
   let go to return to the enhanced one.
 - **Server progress.** While a server method is still working on the page on screen, a pill at
@@ -167,7 +172,8 @@ screen. It is off until a reader turns it on. Library files are never modified.
 - **Page conversion.** Off by default (Settings, Library, Page conversion). Pick WebP or AVIF and
   a quality, and new downloads are stored with their JPEG pages in that format and their PNG pages
   as lossless WebP. A pausable library pass converts the files already on disk, one at a time, and
-  shows what it saved. A page or file that would not come out at least 5% smaller is kept as it
+  shows what it saved. Several pages of a file are encoded at once; the card sets how many (by
+  default half the cores, at most 4). A page or file that would not come out at least 5% smaller is kept as it
   was, and so are WebP and AVIF pages, animations, pages under 16 KB and pages over 16,383 pixels
   on a side. Files hardlinked to a torrent client's copy are skipped. Originals wait in the upgrade
   trash (`.maki-trash/<series id>/conv-*`) for the trash retention period, and the pass pauses

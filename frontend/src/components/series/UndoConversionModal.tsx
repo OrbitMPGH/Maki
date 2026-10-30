@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { i18n } from '@lingui/core'
 import { Button, Checkbox, Group, Modal, Radio, Stack, Text } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import { useUndoSeriesConversion, type SeriesConversion } from '../../api/pageConversion'

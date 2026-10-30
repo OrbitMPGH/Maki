@@ -1,6 +1,7 @@
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import type { EnhanceFallback, EnhanceMethod, ReaderEnhance } from './prefs'
+import { QUALITY_TIERS, QUALITY_TIER_LABELS, type QualityTierName } from '../../api/upgrades'
 
 export interface EnhanceMethodInfo {
   id: EnhanceMethod
@@ -37,6 +38,11 @@ export const ENHANCE_FALLBACKS: { value: EnhanceFallback; label: MessageDescript
   ...BROWSER_ENHANCE_METHODS.map((m) => ({ value: m.id as EnhanceFallback, label: m.label })),
   { value: 'off', label: msg`None` },
 ]
+
+/** Best first, for the "Don't enhance" picker. */
+export const ENHANCE_SKIP_TIERS: { value: QualityTierName; label: MessageDescriptor }[] = [...QUALITY_TIERS]
+  .reverse()
+  .map((tier) => ({ value: tier, label: QUALITY_TIER_LABELS[tier] }))
 
 export const ENHANCE_METHODS: EnhanceMethodInfo[] = [...BROWSER_ENHANCE_METHODS, ...SERVER_ENHANCE_METHODS]
 

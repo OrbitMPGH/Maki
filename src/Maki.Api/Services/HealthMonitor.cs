@@ -411,6 +411,36 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
         return true;
     }
 
+    /// <summary>A check another job runs on its own schedule, recorded through <see cref="RecordAsync"/>.</summary>
+    public record ExternalCheck(string Id, string Category, string Status, string MessageKey, object? Args, string? Url);
+
+    /// <summary>
+    /// Writes checks a job ran on its own schedule (custom sources, whose probes don't fit this
+    /// refresh's 15-minute tick), announcing a change of state like every other row. Rows under
+    /// <paramref name="prefix"/> that are neither reported nor in <paramref name="keep"/> are removed.
+    /// </summary>
+    public async Task RecordAsync(string prefix, IReadOnlyList<ExternalCheck> checks, IReadOnlySet<string> keep, CancellationToken ct)
+    {
+        var rows = await db.HealthChecks.Where(r => r.Id.StartsWith(prefix)).ToListAsync(ct);
+        foreach (var check in checks)
+        {
+            var row = rows.FirstOrDefault(r => r.Id == check.Id);
+            if (row == null) { row = new() { Id = check.Id }; db.HealthChecks.Add(row); rows.Add(row); }
+            row.Category = check.Category;
+            row.MessageKey = check.MessageKey;
+            row.ParamsJson = check.Args is null ? null : JsonSerializer.Serialize(check.Args);
+            row.Message = string.Empty;
+            row.Url = check.Url;
+            var announced = row.NotifiedStatus;
+            if (HealthTransitions.Observe(row, check.Status, false, DateTime.UtcNow))
+                await NotifyAsync(row, !HealthTransitions.IsIssue(check.Status), announced, ct);
+        }
+
+        foreach (var gone in rows.Where(r => !keep.Contains(r.Id) && checks.All(c => c.Id != r.Id)).ToList())
+            db.HealthChecks.Remove(gone);
+        await db.SaveChangesAsync(ct);
+    }
+
     /// <summary>
     /// One check changed state. The inbox row stores the check's own key and values and is worded
     /// per reader; the Discord copy renders once, in the instance's language.

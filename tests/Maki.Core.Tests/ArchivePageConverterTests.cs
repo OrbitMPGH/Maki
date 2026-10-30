@@ -257,6 +257,42 @@ public class ArchivePageConverterTests : IDisposable
     }
 
     [Fact]
+    public async Task Pages_encoded_in_parallel_are_written_in_source_order()
+    {
+        var entries = Enumerable.Range(0, ImageWorkGate.Parallelism * 3)
+            .Select(i => ($"{i:000}.jpg", Scan(600, 900, 100 + i).EncodeJpeg(95)))
+            .ToList();
+        entries.Insert(4, ("ComicInfo.xml", "<ComicInfo />"u8.ToArray()));
+        var source = Cbz("ch1.cbz", [.. entries]);
+        var target = Path.Combine(_dir, "out.cbz");
+
+        var result = await ArchivePageConverter.ConvertAsync(source, target, Webp, CancellationToken.None);
+
+        Assert.Equal(ArchiveConversionOutcome.Converted, result.Outcome);
+        using var zip = ZipFile.OpenRead(target);
+        Assert.Equal(
+            entries.Select(e => e.Item1.Replace(".jpg", ".webp")),
+            zip.Entries.Select(e => e.FullName));
+    }
+
+    [Fact]
+    public async Task A_broken_page_ahead_of_pages_still_encoding_leaves_no_partial()
+    {
+        var entries = Enumerable.Range(0, ImageWorkGate.Parallelism * 3)
+            .Select(i => ($"{i:000}.jpg", Scan(600, 900, 200 + i).EncodeJpeg(95)))
+            .ToList();
+        entries[1] = ("001.jpg", entries[1].Item2[..20_000]);
+        var source = Cbz("ch1.cbz", [.. entries]);
+        var target = Path.Combine(_dir, "out.cbz");
+
+        var result = await ArchivePageConverter.ConvertAsync(source, target, Webp, CancellationToken.None);
+
+        Assert.Equal(ArchiveConversionOutcome.Unreadable, result.Outcome);
+        Assert.False(File.Exists(target));
+        Assert.False(File.Exists(target + ".partial"));
+    }
+
+    [Fact]
     public async Task An_entry_declaring_more_than_the_health_limit_is_refused_before_it_is_read()
     {
         var source = Cbz("ch1.cbz", ("001.jpg", Scan(600, 900, 16).EncodeJpeg(95)));

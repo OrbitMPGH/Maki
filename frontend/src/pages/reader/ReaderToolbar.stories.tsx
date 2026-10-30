@@ -87,7 +87,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await expect(await canvas.findByText('Lanterns Over Kasumi')).toBeVisible()
-    await expect(await canvas.findByText('131/142 chapters read · 150 in series')).toBeVisible()
+    await expect(await canvas.findByText('131/142 chapters read, 150 in series')).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Toggle bookmark' }))
     await expect(args.onToggleBookmark).toHaveBeenCalledOnce()
     await userEvent.click(await canvas.findByRole('button', { name: 'Keyboard shortcuts' }))
@@ -170,6 +170,24 @@ export const EnhanceOffHidesMethod: Story = {
     await userEvent.click(within(level).getByText('Auto'))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhance: 'auto' }))
     await expect(await body.findByLabelText('Method', { selector: 'input' })).toBeVisible()
+  },
+}
+
+export const EnhanceSkippedForVolume: Story = {
+  args: {
+    manifest: { ...chapters[1132], tier: 'volume' },
+    prefs: { ...mangaPrefs, enhance: 'always' },
+  },
+  render: (args) => <StatefulToolbar {...args} />,
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByText('Off for this chapter because of its quality.')).toBeVisible()
+    const skip = await body.findByLabelText("Don't enhance", { selector: 'input' })
+    await userEvent.click(skip)
+    await userEvent.click(await body.findByRole('option', { name: 'Volume' }))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceSkipTiers: [] }))
+    await waitFor(() => expect(body.queryByText('Off for this chapter because of its quality.')).toBeNull())
   },
 }
 

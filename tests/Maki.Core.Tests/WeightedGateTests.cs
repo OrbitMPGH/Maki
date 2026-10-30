@@ -46,6 +46,38 @@ public class WeightedGateTests
     }
 
     [Fact]
+    public async Task Growing_the_budget_lets_waiters_through()
+    {
+        var gate = new WeightedGate(1);
+        await gate.WaitAsync(1, CancellationToken.None);
+
+        var second = gate.WaitAsync(1, CancellationToken.None);
+        Assert.False(second.IsCompleted);
+
+        gate.Resize(1);
+        await second.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task Shrinking_below_what_is_taken_holds_waiters_until_enough_is_released()
+    {
+        var gate = new WeightedGate(3);
+        for (var i = 0; i < 3; i++)
+        {
+            await gate.WaitAsync(1, CancellationToken.None);
+        }
+
+        gate.Resize(-2);
+        var next = gate.WaitAsync(1, CancellationToken.None);
+        gate.Release(1);
+        gate.Release(1);
+        Assert.False(next.IsCompleted);
+
+        gate.Release(1);
+        await next.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
     public async Task A_cancelled_waiter_lets_the_ones_behind_it_through()
     {
         var gate = new WeightedGate(10);

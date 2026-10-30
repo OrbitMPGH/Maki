@@ -29,7 +29,8 @@ public class SourceMappingController(
     SourceMappingRemovalService removalService,
     SourceOrderService sourceOrder,
     SourceScoutService scout,
-    ICurrentUser currentUser) : ControllerBase
+    ICurrentUser currentUser,
+    ILogger<SourceMappingController> logger) : ControllerBase
 {
     public record CreateMappingRequest(
         int SeriesId, string SourceName, string SourceSeriesId, string? Url,
@@ -101,7 +102,25 @@ public class SourceMappingController(
         };
         db.SourceMappings.Add(mapping);
         await db.SaveChangesAsync(ct);
-        return Ok(mapping);
+
+        // Only the new mapping: the others keep their own schedule. An archived series does not
+        // talk to its sources, and its restore refresh lists this one with the rest.
+        if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId && s.ArchivedAt != null, ct))
+        {
+            try
+            {
+                await chapterSync.SyncMappingsAsync(request.SeriesId, [mapping.Id], ct);
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
+            {
+                // The link itself is saved; the next scheduled refresh lists the chapters.
+                logger.LogWarning(ex, "Chapter sync after linking {Source} to series {SeriesId} failed",
+                    sourceName, request.SeriesId);
+            }
+        }
+
+        // Re-read untracked: the sync filled the tracked row's Series, which would serialize a cycle.
+        return Ok(await db.SourceMappings.AsNoTracking().FirstAsync(m => m.Id == mapping.Id, ct));
     }
 
     /// <summary>

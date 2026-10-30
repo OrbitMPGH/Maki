@@ -46,6 +46,9 @@ internal sealed class WeightedGate(int capacity)
         await granted.Task;
     }
 
+    /// <summary>Grows or shrinks the budget. A shrink below what is taken holds new waiters until enough is released.</summary>
+    public void Resize(int delta) => Release(delta);
+
     public void Release(int weight)
     {
         lock (_lock)

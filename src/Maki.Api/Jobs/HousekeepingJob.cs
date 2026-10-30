@@ -37,6 +37,15 @@ public class HousekeepingJob(
     internal static IQueryable<DownloadQueueItem> StaleFailures(IQueryable<DownloadQueueItem> queue, DateTime now, DateTime cutoff) =>
         SettledFailures(queue, now).Where(q => (q.NextAttempt ?? q.CompletedAt ?? q.QueuedAt) < cutoff);
 
+    /// <summary>
+    /// Completed and cancelled rows last active before <paramref name="cutoff"/>. One still waiting for its
+    /// torrent to leave the client stays until <see cref="TorrentRemovalJob"/> settles it or gives up.
+    /// </summary>
+    internal static IQueryable<DownloadQueueItem> StaleSettled(IQueryable<DownloadQueueItem> queue, DateTime cutoff) =>
+        queue.Where(q => (q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled) &&
+                         (q.CompletedAt ?? q.QueuedAt) < cutoff &&
+                         q.ClientRemovalPendingAt == null);
+
     /// <summary>Settled failures from the last 30 days, which is what the downloads health check reports.</summary>
     internal static IQueryable<DownloadQueueItem> RecentFailures(IQueryable<DownloadQueueItem> queue, DateTime now, DateTime cutoff) =>
         SettledFailures(queue, now).Where(q => (q.NextAttempt ?? q.CompletedAt ?? q.QueuedAt) >= cutoff);
@@ -271,10 +280,7 @@ public class HousekeepingJob(
         // Settled queue rows whose last activity is older than 30 days.
         var now = DateTime.UtcNow;
         var cutoff = now.AddDays(-30);
-        await db.DownloadQueue
-            .Where(q => (q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled) &&
-                        (q.CompletedAt ?? q.QueuedAt) < cutoff)
-            .ExecuteDeleteAsync(ct);
+        await StaleSettled(db.DownloadQueue, cutoff).ExecuteDeleteAsync(ct);
 
         // Failed rows go too, or the downloads health check would stay yellow over a failure from months ago.
         await StaleFailures(db.DownloadQueue, now, cutoff).ExecuteDeleteAsync(ct);

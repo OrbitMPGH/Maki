@@ -3,7 +3,7 @@ import { randomUUID } from '../../lib/uuid'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Alert, Badge, Button, Group, Paper, Select, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { IconArrowRight, IconBell, IconCheck, IconEyeOff, IconFolder, IconPlus } from '@tabler/icons-react'
 import {
   useAddSeries,

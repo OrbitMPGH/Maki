@@ -16,7 +16,7 @@ import {
   TextInput,
   VisuallyHidden,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { IconPlus } from '@tabler/icons-react'
 import {
   useCreateUser,

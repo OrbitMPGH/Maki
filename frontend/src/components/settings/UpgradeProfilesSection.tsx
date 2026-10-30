@@ -16,7 +16,7 @@ import {
   Textarea,
   Tooltip,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { SettingsNumberInput } from './SettingsNumberInput'
 import {
   IconArrowDown,

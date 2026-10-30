@@ -642,6 +642,10 @@ export interface DiscoverRail {
   /** Set on a custom catalogue rail, so "Show more" keeps its order and owned-series setting. */
   sort?: BrowseSort
   excludeOwned?: boolean
+  /** Set on the follow rail, so "Show more" also leaves out what the reader liked, disliked or marked seen. */
+  excludeInteracted?: boolean
+  /** Set on the follow rail, so "Show more" keeps its release window. */
+  releasedWithinMonths?: number
 }
 
 /** A seed series as the Discover page draws it: the title, the position, and which state that is. */
@@ -665,6 +669,10 @@ export interface DiscoverFeedRequest {
   sort?: BrowseSort
   /** Leave out series already in the library. */
   excludeOwned?: boolean
+  /** Leave out owned series and anything thumbed up or down, on top of the hidden, dismissed and seen ones every feed drops. */
+  excludeInteracted?: boolean
+  /** Only titles first published this many months back or later. */
+  releasedWithinMonths?: number
 }
 
 export type BrowseSort = 'popular' | 'rating' | 'newest' | 'oldest'
@@ -981,15 +989,16 @@ export interface HomeReadingResponse {
   continueReading: HomeReadingItem[]
 }
 
-/** A series that recently gained chapter files. */
+/** A series that recently gained chapter files it still has unread. */
 export interface HomeRecentSeriesItem {
   seriesId: number
   seriesTitle: string
   coverUrl: string | null
   addedAt: string
+  /** Unread files in the series' latest batch of downloads. */
   newChapterCount: number
   newestChapterLabel: string | null
-  /** Next unread downloaded chapter; null once everything downloaded has been read. */
+  /** Next unread downloaded chapter. The server drops fully read series, so null is only defensive. */
   readChapterId: number | null
 }
 
@@ -2949,9 +2958,11 @@ export interface SourceInfo {
   displayName: string
   baseUrl: string
   /** Set for a source that is not built in. A Suwayomi source's `baseUrl` is the Suwayomi server, not the site. */
-  provider?: 'suwayomi' | null
+  provider?: 'suwayomi' | 'custom' | null
   /** Set for a Suwayomi source. */
   suwayomi?: SuwayomiSourceState | null
+  /** Set for a custom source an admin defined. */
+  custom?: CustomSourceState | null
   needsFlareSolverr: boolean
   /**
    * Whether this source honours a mapping's `languageFilter`, so the mappings card offers a
@@ -2973,6 +2984,32 @@ export interface SourceInfo {
   defaultRank?: number
   /** How this source's copies measure in general; null when nothing has measured it. */
   quality?: SourceQualitySummary | null
+}
+
+export interface CustomSourceState {
+  /** The definition's id, the part of `name` after `custom-`. */
+  id: string
+  /** False for a site with neither search nor a catalogue page: series are linked by URL only. */
+  hasSearch: boolean
+  /** The stored definition can't be used by this build; `problem` says why. */
+  invalid: boolean
+  problem: string | null
+  /** The health job's last check failed, or the definition is invalid. Older servers leave it out. */
+  failing?: boolean
+  /** The repository it was installed from, or null for a hand-made one. */
+  origin?: {
+    /** Admins only: a private repository's URL can carry a token. */
+    repository: string | null
+    repositoryName: string | null
+    version: number
+    /** A newer version waits, and the source isn't detached. */
+    updateAvailable: boolean
+    latestVersion: number | null
+  } | null
+  /** Edited here after it was installed, so the repository's updates no longer apply. */
+  detached?: boolean
+  /** An update replaced an earlier version that can be put back. */
+  canRevert?: boolean
 }
 
 export interface SuwayomiSourceState {
@@ -3094,9 +3131,12 @@ export function useCreateMapping() {
       url: string
       priority?: number
     }) => api<SourceMappingDto>('/sourcemapping', { method: 'POST', body: JSON.stringify(mapping) }),
+    // The server lists the new source's chapters before it answers.
     onSuccess: (_d, v) => {
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['source-order', v.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters', v.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series', v.seriesId] })
     },
   })
 }
@@ -3841,7 +3881,13 @@ export interface DownloadSettings {
   scoutOnMatch: boolean
   /** Check each series on a tier picked from how recently it had a new chapter, instead of every 30 minutes. */
   adaptiveRefresh: boolean
+  /** When Maki removes an imported torrent from the download client. */
+  removeCompleted: TorrentRemovalMode
+  /** Delete the downloaded files with the torrent, where the library is known to hold its own copy. */
+  removeData: boolean
 }
+
+export type TorrentRemovalMode = 'never' | 'afterimport'
 
 /** `manual` follows each mapping's priority; `quality` ranks sources by the series' upgrade profile. */
 export type SourceOrderMode = 'manual' | 'quality'
@@ -3964,6 +4010,26 @@ export function useAddRootFolder() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['rootfolders'] })
     },
+  })
+}
+
+/** One level of the server's filesystem for the folder picker. An empty `path` is the drive list (Windows). */
+export interface FolderListing {
+  path: string
+  parent: string | null
+  folders: { name: string; path: string }[]
+}
+
+/** The picker shows its own failure inline, so the toast stays out of it. */
+export function useBrowseFolders(path: string | null) {
+  return useQuery({
+    queryKey: ['rootfolders', 'browse', path],
+    queryFn: () =>
+      api<FolderListing>(`/rootfolder/browse${path ? `?path=${encodeURIComponent(path)}` : ''}`),
+    enabled: path !== null,
+    placeholderData: keepPreviousData,
+    staleTime: 0,
+    meta: { silent: true },
   })
 }
 

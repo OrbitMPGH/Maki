@@ -61,10 +61,10 @@ export const SwitchingOnMarksUnsaved: Story = {
     await expect(await canvas.findByRole('checkbox', { name: 'Sharp (server)' })).not.toBeChecked()
     await expect(canvas.getByRole('button', { name: 'Save' })).toBeEnabled()
     // A model with no size until its manifest is read goes straight to the licence.
-    const unsized = (await canvas.findByRole('link', { name: 'xinntao (Real-ESRGAN)' })).parentElement!
+    const unsized = (await canvas.findByRole('link', { name: 'xinntao (Real-ESRGAN)' })).closest('.meta-list')!
     await waitFor(() => {
-      expect(unsized).toHaveTextContent(/BSD-3-Clause ·/)
-      expect(unsized.textContent).not.toMatch(/·\s*-?\s*·/)
+      expect(unsized).toHaveTextContent('BSD-3-Clause')
+      expect([...unsized.children].every((item) => item.textContent?.trim())).toBe(true)
     })
   },
 }

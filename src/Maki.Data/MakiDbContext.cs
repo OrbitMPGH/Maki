@@ -577,6 +577,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // MAX(SortOrder) on every enqueue spans settled rows too, which the partial index omits.
             e.HasIndex(q => q.SortOrder);
             e.HasIndex(q => q.HealthOperationId);
+            e.HasIndex(q => q.ClientRemovalPendingAt).HasFilter("\"ClientRemovalPendingAt\" IS NOT NULL");
 
             // One active row per chapter. SQLite allows any number of NULLs in a unique index, so
             // settled rows never collide.

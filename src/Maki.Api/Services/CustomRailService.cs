@@ -1,4 +1,5 @@
 using Maki.Core.Configuration;
+using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Metadata.Embedding;
@@ -34,7 +35,6 @@ public class CustomRailService(
     RecommendationService recommendations,
     DiscoverService discover,
     HiddenContentService hidden,
-    RecommendationFeedbackService feedback,
     MangaBakaLocalStore store,
     VectorIndexCache vectorIndex,
     IMemoryCache? cache = null)
@@ -75,7 +75,7 @@ public class CustomRailService(
                 try
                 {
                     var scoped = await hidden.ScopeAsync(RecommendationFilters.FromSpec(spec.Filters), user.MaxContentRating, ct);
-                    var exclude = await ExclusionsAsync(spec.ExcludeOwned, ct);
+                    var exclude = await ExclusionsAsync(spec.ExcludeOwned, excludeInteracted: false, ct);
                     var items = await discover.GetFeedAsync(
                         new DiscoverFeedRequest(nameof(BrowseFeed.Popular), Filters: scoped, Limit: limit,
                             Sort: spec.Sort ?? BrowseSort.Popular),
@@ -109,19 +109,30 @@ public class CustomRailService(
         }
 
         var scoped = await hidden.ScopeAsync(RecommendationFilters.FromSpec(spec.Filters), user.MaxContentRating, ct);
-        var exclude = await ExclusionsAsync(spec.ExcludeOwned, ct);
+        var exclude = await ExclusionsAsync(spec.ExcludeOwned, excludeInteracted: false, ct);
         return await discover.CountAsync(new DiscoverFeedRequest(nameof(BrowseFeed.Popular), Filters: scoped), ct, exclude);
     }
 
     /// <summary>
     /// MangaBaka ids the caller should not be shown in a catalogue listing: whatever they hid or
-    /// dismissed, plus their own series when <paramref name="excludeOwned"/> is set. Folded into the
-    /// scan rather than filtered off the page, so a rail is never cut short by it.
+    /// dismissed or marked as seen, plus their own series when <paramref name="excludeOwned"/> is set.
+    /// <paramref name="excludeInteracted"/> adds both of those and every title they thumbed up or
+    /// down. Folded into the scan rather than filtered off the page, so a rail is never cut short by it.
     /// </summary>
-    public async Task<HashSet<long>> ExclusionsAsync(bool excludeOwned, CancellationToken ct = default)
+    public async Task<HashSet<long>> ExclusionsAsync(
+        bool excludeOwned, bool excludeInteracted, CancellationToken ct = default)
     {
-        var excluded = await feedback.SuppressedAsync(user.UserId, ct);
-        if (excludeOwned)
+        var excluded = await RecommendationFeedbackService.SuppressedAsync(db, user.UserId, ct);
+        if (excludeInteracted)
+        {
+            excluded.UnionWith(await db.RecommendationFeedback
+                .AsNoTracking()
+                .Where(x => x.UserId == user.UserId && x.Sentiment != RecommendationSentiment.None)
+                .Select(x => x.ProviderId)
+                .ToListAsync(ct));
+        }
+
+        if (excludeOwned || excludeInteracted)
         {
             excluded.UnionWith(await db.Series
                 .AsNoTracking()

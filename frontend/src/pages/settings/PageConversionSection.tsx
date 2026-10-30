@@ -1,13 +1,16 @@
-import { Button, Divider, Group, Stack, Text } from '@mantine/core'
+import { Button, Divider, Group, Select, Stack, Text } from '@mantine/core'
 import { IconPlayerPause, IconPlayerPlay, IconSettings } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
-import { Plural, Trans } from '@lingui/react/macro'
+import { notifications } from '../../lib/toast'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { t as now } from '@lingui/core/macro'
 import { SettingsSection } from './SettingsSection'
 import { useSettingsSummary } from '../../components/pageconversion/labels'
 import { formatBytes, formatDateTime } from '../../format'
 import {
   usePageConversion,
   usePausePageConversion,
+  useSavePageConversionParallel,
   useStartPageConversion,
   type PageConversionStatus,
 } from '../../api/pageConversion'
@@ -65,6 +68,9 @@ export function PageConversionSection() {
 
           <Divider />
           <LibraryPass status={status} />
+
+          <Divider />
+          <ParallelLimit parallel={status.parallel} />
         </Stack>
       )}
     </SettingsSection>
@@ -163,6 +169,34 @@ function LibraryPass({ status }: { status: PageConversionStatus }) {
         </Text>
       )}
     </Stack>
+  )
+}
+
+function ParallelLimit({ parallel }: { parallel: PageConversionStatus['parallel'] }) {
+  const { t } = useLingui()
+  const save = useSavePageConversionParallel()
+  const auto = parallel.default
+  const data = [
+    { value: 'auto', label: t`Automatic (${auto})` },
+    ...Array.from({ length: parallel.max }, (_, i) => ({ value: String(i + 1), label: String(i + 1) })),
+  ]
+
+  return (
+    <Select
+      styles={{ wrapper: { maxWidth: 200 } }}
+      label={t`Pages converted at once`}
+      description={t`Applies to the library pass and to new downloads. Higher finishes sooner but uses more of the server's CPU while it runs.`}
+      data={data}
+      value={parallel.limit === null ? 'auto' : String(parallel.limit)}
+      onChange={(value) =>
+        value &&
+        save.mutate(value === 'auto' ? null : Number(value), {
+          onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
+        })
+      }
+      disabled={save.isPending}
+      allowDeselect={false}
+    />
   )
 }
 

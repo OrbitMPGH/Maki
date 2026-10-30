@@ -1304,9 +1304,10 @@ public class MangaBakaLocalStore(
     /// ordering. Reuses <see cref="MangaBakaRecommendation"/> so the same card/detail/add flow
     /// works — the relation and matched-genre/tag fields are left empty.
     /// </summary>
+    /// <param name="releasedSince">Leave out anything first published before this day, or undated.</param>
     public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetBrowseAsync(
         BrowseFeed feed, int limit, string? genre = null,
-        RecommendationFilters? filters = null, CancellationToken ct = default)
+        RecommendationFilters? filters = null, CancellationToken ct = default, DateOnly? releasedSince = null)
     {
         if (feed == BrowseFeed.GenreSpotlight && string.IsNullOrWhiteSpace(genre))
         {
@@ -1406,6 +1407,11 @@ public class MangaBakaLocalStore(
         using var cmd = conn.CreateCommand();
         // Optional user filters (year/status/type/rating/chapters/genre) from the expanded view.
         var filterClause = filters.BuildClause(cmd, "series");
+        if (releasedSince is { } since)
+        {
+            filterClause += " AND published_start_date >= $since";
+            cmd.Parameters.AddWithValue("$since", since.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        }
         // Over-fetch so title-dedupe still leaves `limit` rows even when filters thin the set.
         cmd.CommandText = $"""
             SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating, total_chapters, description,

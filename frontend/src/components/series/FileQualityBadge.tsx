@@ -54,7 +54,7 @@ export function FileQualityBadge({
       ? t`${medianWidth}px`
       : tierLabel
     : medianWidth != null
-      ? t`${tierLabel} · ${medianWidth}px`
+      ? t`${tierLabel}, ${medianWidth}px`
       : tierLabel
   const formatLabel = imageFormat ? renderLabel(FORMAT_LABEL[imageFormat] ?? imageFormat.toUpperCase()) : null
 

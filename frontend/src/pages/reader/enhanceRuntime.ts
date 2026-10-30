@@ -125,7 +125,7 @@ export function isEnhanceError(error: unknown, code: string): boolean {
  * The cache keys one view has asked the engine for, grouped by page URL, so pages that leave the
  * view's window are evicted. It also remembers what each region size was last measured at, which
  * is how a page not yet on screen can be enhanced ahead at the size it will be shown, and which
- * pages are shown stretched, which is all `auto` asks the server for.
+ * pages `auto` wants (stretched or soft), which is all it asks the server for.
  */
 export class EnhanceScope {
   private readonly keys = new Map<string, Set<string>>()

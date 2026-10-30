@@ -16,6 +16,7 @@ import { Panel } from '../../components/ui/Panel'
 import { formatDate } from '../../format'
 import { useLabel } from '../../i18n-context'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
+import { MetaList } from '../../components/ui/MetaList'
 
 const PAGE = 20
 
@@ -186,9 +187,8 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
                     }
                   />
                 </Text>
-                <Text size="xs" c="var(--ink-3)">
-                  {renderLabel(kind.label)}
-                  {e.note ? ` · ${e.note}` : ''}
+                <Text component="div" size="xs" c="var(--ink-3)">
+                  <MetaList items={[renderLabel(kind.label), e.note]} />
                 </Text>
               </div>
               <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>

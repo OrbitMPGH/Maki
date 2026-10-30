@@ -1,5 +1,6 @@
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Recommendations;
 using Maki.Metadata.Catalogue;
@@ -152,6 +153,31 @@ public sealed class FollowedCreatorReleaseServiceTests : IDisposable
 
         var raised = Assert.Single(_inbox.Raised);
         Assert.Equal("Announced", raised.Message.Params!["title"]);
+    }
+
+    [Fact]
+    public async Task Titles_the_reader_already_has_an_opinion_on_are_left_out()
+    {
+        var reader = Follower("reader", follows: [new CatalogueCredit("Junji Ito")]);
+        var other = Follower("other", follows: [new CatalogueCredit("Junji Ito")]);
+        await RunAsync();
+
+        _dump.AddSeries(10, "Liked", year: ThisYear, authorsJson: """["Junji Ito"]""");
+        _dump.AddSeries(11, "Seen", year: ThisYear, authorsJson: """["Junji Ito"]""");
+        _dump.AddSeries(12, "Fresh", year: ThisYear, authorsJson: """["Junji Ito"]""");
+        using (var db = _db.NewContext())
+        {
+            db.RecommendationFeedback.AddRange(
+                new RecommendationFeedback { UserId = reader, ProviderId = 10, Sentiment = RecommendationSentiment.Liked },
+                new RecommendationFeedback { UserId = reader, ProviderId = 11, Exposure = RecommendationExposure.Manga });
+            db.SaveChanges();
+        }
+
+        await RunAsync();
+
+        var mine = Assert.Single(_inbox.Raised, r => r.Audience == InboxAudience.User(reader));
+        Assert.Equal("Fresh", mine.Message.Params!["title"]);
+        Assert.Equal(3, _inbox.Raised.Count(r => r.Audience == InboxAudience.User(other)));
     }
 
     [Fact]

@@ -457,15 +457,74 @@ public class HomeControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task RecentlyAdded_read_chapter_is_null_once_everything_is_read()
+    public async Task RecentlyAdded_drops_a_series_with_everything_read()
     {
         var seriesId = _db.SeedSeries();
         var chapterId = SeedChapter(seriesId, 1);
         SeedProgress(seriesId, chapterId, pageIndex: 0, completed: true, updatedAt: Base);
 
+        Assert.Empty(Recent(await Controller().RecentlyAdded(ct: CancellationToken.None)));
+    }
+
+    [Fact]
+    public async Task RecentlyAdded_counts_only_the_latest_batch()
+    {
+        // Weekly releases: each arrived on its own, so only the newest is new.
+        var seriesId = _db.SeedSeries("Weekly");
+        for (var week = 0; week < 11; week++)
+        {
+            SeedChapter(seriesId, week + 1, addedAt: Base.AddDays(7 * week));
+        }
+
         var item = Assert.Single(Recent(await Controller().RecentlyAdded(ct: CancellationToken.None)));
 
-        Assert.Null(item.ReadChapterId);
+        Assert.Equal(1, item.NewChapterCount);
+        Assert.Equal("Ch.11", item.NewestChapterLabel);
+    }
+
+    [Fact]
+    public async Task RecentlyAdded_drops_a_series_once_its_latest_batch_is_read()
+    {
+        // An older chapter is still unread, but nothing new is.
+        var seriesId = _db.SeedSeries("Caught up on new");
+        SeedChapter(seriesId, 1, addedAt: Base);
+        var newest = SeedChapter(seriesId, 2, addedAt: Base.AddDays(7));
+        SeedProgress(seriesId, newest, pageIndex: 0, completed: true, updatedAt: Base.AddDays(8));
+
+        Assert.Empty(Recent(await Controller().RecentlyAdded(ct: CancellationToken.None)));
+    }
+
+    [Fact]
+    public async Task RecentlyAdded_counts_and_labels_the_unread_part_of_the_batch()
+    {
+        var seriesId = _db.SeedSeries("Half read");
+        SeedChapter(seriesId, 1, addedAt: Base);
+        SeedChapter(seriesId, 2, addedAt: Base.AddMinutes(5));
+        var third = SeedChapter(seriesId, 3, addedAt: Base.AddMinutes(10));
+        SeedProgress(seriesId, third, pageIndex: 0, completed: true, updatedAt: Base.AddHours(1));
+
+        var item = Assert.Single(Recent(await Controller().RecentlyAdded(ct: CancellationToken.None)));
+
+        Assert.Equal(2, item.NewChapterCount);
+        Assert.Equal("Ch.2", item.NewestChapterLabel);
+        Assert.Equal(Base.AddMinutes(10), item.AddedAt);
+    }
+
+    [Fact]
+    public async Task RecentlyAdded_fills_past_read_series_across_candidate_chunks()
+    {
+        // limit 1 resolves two candidates at a time; the newest two are read, the third is not.
+        var open = _db.SeedSeries("Open");
+        SeedChapter(open, 1, addedAt: Base);
+        foreach (var (title, hours) in new[] { ("Read B", 1), ("Read A", 2) })
+        {
+            var read = _db.SeedSeries(title);
+            SeedProgress(read, SeedChapter(read, 1, addedAt: Base.AddHours(hours)), 0, true, Base.AddHours(3));
+        }
+
+        var items = Recent(await Controller().RecentlyAdded(limit: 1, ct: CancellationToken.None));
+
+        Assert.Equal(open, Assert.Single(items).SeriesId);
     }
 
     [Fact]

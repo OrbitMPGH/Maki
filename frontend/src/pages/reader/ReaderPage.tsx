@@ -26,7 +26,7 @@ import PagedView from './PagedView'
 import PageStrip from './PageStrip'
 import ReaderToolbar from './ReaderToolbar'
 import { probeWebtoon } from './pageShape'
-import { toneFilter, useReaderPrefs, type ReaderPrefs } from './prefs'
+import { enhanceFor, toneFilter, useReaderPrefs, type ReaderPrefs } from './prefs'
 import { usePageUrls, usePreload, useWarmChapter } from './usePageUrls'
 import { useReaderProgress } from './useReaderProgress'
 import { useReadingClock } from './useReadingClock'
@@ -217,19 +217,43 @@ export default function ReaderPage() {
         : spreads.slice(spreadIndex, spreadIndex + 1 + prefs.preload).flat(),
     [spreads, spreadIndex, mode, prefs.preload],
   )
-  usePreload(urls, preloadPages, measure)
+  // The two spreads behind stay held as well, so turning back is as quick as turning forward.
+  const heldPages = useMemo(
+    () => (preloadPages.length === 0 ? [] : [...spreads.slice(Math.max(0, spreadIndex - 2), spreadIndex).flat(), ...preloadPages]),
+    [preloadPages, spreads, spreadIndex],
+  )
+  usePreload(urls, heldPages, measure)
 
   const current = manifest?.chapterId === chapterId ? manifest : undefined
+  const enhance = enhanceFor(prefs, manifest?.tier)
   const serverModel = current
-    ? serverModelFor(prefs.enhance, prefs.enhanceMethod, current.enhanceServer, offline || manifestServedOffline(chapterId))
+    ? serverModelFor(enhance, prefs.enhanceMethod, current.enhanceServer, offline || manifestServedOffline(chapterId))
     : null
   // The strip sizes its own range from the pages' pixels, so the server follows it there.
-  const [stripRange, setStripRange] = useState<number[]>([])
+  const [stripRange, setStripRange] = useState<{ pages: number[]; beyond: number }>({ pages: [], beyond: 0 })
+  const onEnhanceRange = useCallback((pages: number[], beyond: number) => setStripRange({ pages, beyond }), [])
   const enhanceWindow = useMemo(() => {
     if (!serverModel) return []
     if (mode !== 'vertical') return preloadPages.length > 0 ? preloadPages : (spreads[spreadIndex] ?? [])
-    return stripRange
+    return stripRange.pages
   }, [serverModel, mode, preloadPages, spreads, spreadIndex, stripRange])
+  // A window that runs past the last page carries on into the next chapter's first pages.
+  const nextChapterId = current?.nextChapterId ?? null
+  const beyondEnd =
+    !serverModel || nextChapterId == null || resumedFor !== chapterId
+      ? 0
+      : mode === 'vertical'
+        ? stripRange.beyond
+        : prefs.preload > 0
+          ? Math.max(0, spreadIndex + 1 + prefs.preload - spreads.length) * (mode === 'double' ? 2 : 1)
+          : 0
+  const enhanceNext = useMemo(
+    () =>
+      nextChapterId != null && beyondEnd > 0
+        ? { chapterId: nextChapterId, pages: Array.from({ length: beyondEnd }, (_, index) => index) }
+        : null,
+    [nextChapterId, beyondEnd],
+  )
   // On `auto` the server is asked only for pages a view has measured as stretched.
   const [stretchedPages, setStretchedPages] = useState<ReadonlySet<number>>(NO_PAGES)
   const server = useServerEnhance(
@@ -237,7 +261,8 @@ export default function ReaderPage() {
     serverModel,
     enhanceWindow,
     current?.pageVersion,
-    prefs.enhance === 'auto' ? stretchedPages : null,
+    enhance === 'auto' ? stretchedPages : null,
+    enhanceNext,
   )
 
   const serverStates = server?.states
@@ -855,12 +880,12 @@ export default function ReaderPage() {
               tone={tone}
               gap={prefs.pageGap}
               label={manifest.label}
-              enhance={prefs.enhance}
+              enhance={enhance}
               enhanceMethod={prefs.enhanceMethod}
               enhanceFallback={prefs.enhanceFallback}
               server={server}
               onStretched={setStretchedPages}
-              onEnhanceRange={setStripRange}
+              onEnhanceRange={onEnhanceRange}
             />
           ) : (
             <PagedView
@@ -876,7 +901,7 @@ export default function ReaderPage() {
               cropBorders={prefs.cropBorders}
               splitWide={mode === 'paged' ? prefs.splitWide : 'off'}
               half={half}
-              enhance={prefs.enhance}
+              enhance={enhance}
               enhanceMethod={prefs.enhanceMethod}
               enhanceFallback={prefs.enhanceFallback}
               server={server}

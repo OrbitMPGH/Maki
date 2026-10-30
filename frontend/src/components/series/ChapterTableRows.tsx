@@ -38,6 +38,7 @@ import type { SaveProgress } from '../../pwa/offlineChapters'
 import type { AnimeMarker, AnimeSpan } from '../../lib/animeCoverage'
 import { onPressKey, pressable } from '../../lib/pressable'
 import type { PickChapter } from '../SourceCompareModal'
+import { MetaList } from '../ui/MetaList'
 import { queueStatusVisual, statusColor } from '../ui/status'
 import { FileQualityBadge } from './FileQualityBadge'
 import { HoverTooltip } from './HoverTooltip'
@@ -206,11 +207,11 @@ export const ChapterRow = memo(function ChapterRow({
                             span
                                 ? marker.kind === 'start'
                                     ? folded
-                                        ? t`${markerLabel} Anime adaptation starts here · click to expand`
-                                        : t`${markerLabel} Anime adaptation starts here · click to collapse`
+                                        ? t`${markerLabel} Anime adaptation starts here. Click to expand.`
+                                        : t`${markerLabel} Anime adaptation starts here. Click to collapse.`
                                     : folded
-                                        ? t`${markerLabel} Anime adaptation ends here · click to expand`
-                                        : t`${markerLabel} Anime adaptation ends here · click to collapse`
+                                        ? t`${markerLabel} Anime adaptation ends here. Click to expand.`
+                                        : t`${markerLabel} Anime adaptation ends here. Click to collapse.`
                                 : marker.kind === 'start'
                                     ? t`${markerLabel} Anime adaptation starts here`
                                     : t`${markerLabel} Anime adaptation ends here`
@@ -652,8 +653,8 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
               label={
                 mixed
                     ? plural(total, {
-                        one: `${wantedCount} of # chapter wanted · click to want all`,
-                        other: `${wantedCount} of # chapters wanted · click to want all`,
+                        one: `${wantedCount} of # chapter wanted. Click to want all.`,
+                        other: `${wantedCount} of # chapters wanted. Click to want all.`,
                       })
                     : allWanted
                         ? plural(total, { one: 'All # chapter wanted', other: 'All # chapters wanted' })
@@ -694,32 +695,19 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
           </Group>
         </Table.Td>
         <Table.Td>
-          <Text size="sm" c="var(--ink-3)" className="tnum">
-            {plural(total, {
-              one: `# chapter · ${downloadedCount} downloaded`,
-              other: `# chapters · ${downloadedCount} downloaded`,
-            })}
-            {watchedCount > 0 && (
-                <>
-                  {' · '}
-                  <Trans>{watchedCount} watched</Trans>
-                </>
-            )}
-            {readCount > 0 && (
-                <>
-                  {' · '}
-                  <Trans>{readCount} read</Trans>
-                </>
-            )}
-            {/* Spelled out only when the range disagrees with itself: the switch alone can show
-              that state but not its size, and hovering for a tooltip is a poor way to find out. */}
-            {mixed && (
-                <>
-                  {' · '}
-                  <Trans>{wantedCount} wanted</Trans>
-                </>
-            )}
-          </Text>
+          {/* Wanted is spelled out only when the range disagrees with itself: the switch alone can
+            show that state but not its size, and hovering for a tooltip is a poor way to find out. */}
+          <MetaList
+              className="tnum"
+              style={{ color: 'var(--ink-3)', fontSize: 'var(--mantine-font-size-sm)' }}
+              items={[
+                plural(total, { one: '# chapter', other: '# chapters' }),
+                t`${downloadedCount} downloaded`,
+                watchedCount > 0 && <Trans>{watchedCount} watched</Trans>,
+                readCount > 0 && <Trans>{readCount} read</Trans>,
+                mixed && <Trans>{wantedCount} wanted</Trans>,
+              ]}
+          />
         </Table.Td>
         <Table.Td />
         <Table.Td />

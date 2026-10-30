@@ -25,7 +25,8 @@ public sealed record FilterPlan(
     bool[]? CreditMask = null,
     PlannedRule[]? Rules = null,
     PlannedRule? Hidden = null,
-    bool[]? Exclude = null)
+    bool[]? Exclude = null,
+    int? MinStartDay = null)
 {
     public static readonly FilterPlan None = new(null, null, null, null, null, null, null, null, null, null, false);
 
@@ -33,7 +34,7 @@ public sealed record FilterPlan(
         !Impossible && YearMin is null && YearMax is null && MinRating is null &&
         MinChapters is null && MaxChapters is null && Types is null && Statuses is null &&
         Genres is null && Tags is null && ContentRatings is null && CreditMask is null &&
-        Rules is null && Hidden is null && Exclude is null;
+        Rules is null && Hidden is null && Exclude is null && MinStartDay is null;
 
     /// <summary>Narrows <see cref="CreditMask"/> to rows <paramref name="mask"/> also allows.</summary>
     public FilterPlan RestrictTo(bool[] mask)
@@ -726,6 +727,11 @@ public sealed class VectorIndex(
         }
 
         if (plan.Exclude is { } excluded && excluded[row])
+        {
+            return false;
+        }
+
+        if (plan.MinStartDay is int since && StartDayAt(row) is var day && (day == Unknown || day < since))
         {
             return false;
         }

@@ -2,6 +2,7 @@ import { http, HttpResponse, type HttpHandler } from 'msw'
 import { api } from './api'
 import * as d from './settings/data'
 import { pageConversionHandlers } from './settings/pageConversion'
+import { browseFoldersHandler } from './settings/folders'
 import { healthOptions } from './operations/health'
 
 /** A PUT whose reply is the body it was sent, which is how most settings records answer. */
@@ -103,6 +104,7 @@ export const settingsHandlers: HttpHandler[] = [
   http.post(api('/reader/import/kavita'), () => HttpResponse.json({})),
 
   // Library
+  browseFoldersHandler,
   http.get(api('/rootfolder'), () => HttpResponse.json(d.rootFolders)),
   http.post(api('/rootfolder'), async ({ request }) => {
     const { path } = (await request.json()) as { path: string }
@@ -140,6 +142,10 @@ export const settingsHandlers: HttpHandler[] = [
   http.put(api('/pageconversion/settings'), async ({ request }) =>
     HttpResponse.json({ ...d.pageConversionIdle, settings: await request.json() }),
   ),
+  http.put(api('/pageconversion/parallel'), async ({ request }) => {
+    const { limit } = (await request.json()) as { limit: number | null }
+    return HttpResponse.json({ ...d.pageConversionIdle, parallel: { ...d.pageConversionIdle.parallel, limit } })
+  }),
   http.post(api('/pageconversion/start'), () => HttpResponse.json(d.pageConversionRunning)),
   http.post(api('/pageconversion/pause'), () =>
     HttpResponse.json({ ...d.pageConversionRunning, pass: { ...d.pageConversionRunning.pass, state: 'paused', currentFile: null } }),
@@ -169,6 +175,22 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/settings/sources/languages'), () => HttpResponse.json(d.sourceLanguages)),
   putEcho('/settings/sources/languages'),
   http.get(api('/search/sources'), () => HttpResponse.json(d.sources)),
+  http.get(api('/custom-sources'), () => HttpResponse.json([])),
+  http.get(api('/custom-sources/repositories'), () => HttpResponse.json(d.customRepositories)),
+  http.post(api('/custom-sources/repositories'), () => HttpResponse.json(d.customRepositories[0])),
+  http.delete(api('/custom-sources/repositories'), () => HttpResponse.json({ detached: 2 })),
+  putEcho('/custom-sources/repositories/autoupdate'),
+  http.post(api('/custom-sources/repositories/refresh'), () => HttpResponse.json(d.customRepositories)),
+  http.post(api('/custom-sources/repositories/install'), () => HttpResponse.json({ created: true, sourceName: 'custom-lantern' })),
+  http.get(api('/custom-sources/:id/update'), () => HttpResponse.json(d.customSourceUpdatePreview)),
+  http.post(api('/custom-sources/:id/update'), () => HttpResponse.json({ created: false, sourceName: 'custom-quietpen' })),
+  http.post(api('/custom-sources/:id/revert'), () => HttpResponse.json({ created: false, sourceName: 'custom-quietpen' })),
+  http.post(api('/custom-sources/test'), () => HttpResponse.json(d.customSourceTestReport)),
+  http.post(api('/custom-sources/probe'), () => HttpResponse.json(d.customSourceProbe)),
+  http.post(api('/custom-sources/probe/search'), () => HttpResponse.json(d.customSourceSearchProbe)),
+  http.get(api('/custom-sources/:id'), () => HttpResponse.json(d.customSourcesList[0].definition)),
+  http.put(api('/custom-sources/:id'), () => HttpResponse.json({ created: true, sourceName: 'custom-quietpen' })),
+  http.delete(api('/custom-sources/:id'), ok),
   http.get(api('/settings/flaresolverr'), () => HttpResponse.json(d.flaresolverr)),
   putEcho('/settings/flaresolverr'),
   http.post(api('/settings/flaresolverr/test'), success),

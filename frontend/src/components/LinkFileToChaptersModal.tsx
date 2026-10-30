@@ -14,7 +14,7 @@ import {
   UnstyledButton,
 } from '@mantine/core'
 import { IconFileZip, IconSearch, IconX } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import { useChapters, useLinkChapters, useUnlinkChapters } from '../api/hooks'

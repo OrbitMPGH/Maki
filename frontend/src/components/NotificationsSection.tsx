@@ -31,7 +31,7 @@ import {
   IconTrash,
   IconWebhook,
 } from '@tabler/icons-react'
-import { notifications as toast } from '@mantine/notifications'
+import { notifications as toast } from '../lib/toast'
 import {
   useCreateNotification,
   useDeleteNotification,

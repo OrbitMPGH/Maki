@@ -57,7 +57,13 @@ public class PageConversionController(
     /// <param name="Hold">Why a pass paused itself: "lowDisk", "conversionOff" or "settingsChanged"; null otherwise.</param>
     public record PassDto(string State, string? Hold, string? CurrentFile, PageConversionPassTotals? Totals);
 
-    public record StatusDto(SettingsDto Settings, PassDto Pass, LibraryDto Library);
+    /// <param name="Limit">Pages converted at once, or null for <paramref name="Default"/>.</param>
+    /// <param name="Max">The core count, the highest limit accepted.</param>
+    public record ParallelDto(int? Limit, int Default, int Max);
+
+    public record ParallelRequest(int? Limit);
+
+    public record StatusDto(SettingsDto Settings, PassDto Pass, LibraryDto Library, ParallelDto Parallel);
 
     [HttpGet]
     public async Task<IActionResult> Status(CancellationToken ct)
@@ -86,7 +92,25 @@ public class PageConversionController(
                 _ => null
             }, snapshot.CurrentFile, snapshot.Pass),
             new LibraryDto(convertedFiles, savedBytes, pending, trashBytes, trashFiles,
-                options.TrashRetentionDays, ruleCount, overrideSeries)));
+                options.TrashRetentionDays, ruleCount, overrideSeries),
+            new ParallelDto(PageConversionOptions.ParseParallel(await settings.GetAsync(SettingKeys.PageConversionParallel, ct)),
+                ImageWorkGate.Parallelism, ImageWorkGate.MaxConversionLimit)));
+    }
+
+    /// <summary>Pages converted at once. Takes effect on the next page, so a running pass needs no restart.</summary>
+    [HttpPut("parallel")]
+    public async Task<IActionResult> SaveParallel([FromBody] ParallelRequest request, CancellationToken ct)
+    {
+        if (request.Limit is < 1 || request.Limit > ImageWorkGate.MaxConversionLimit)
+        {
+            return this.Fail(localizer, "error.pageConversion.parallelInvalid",
+                new { max = ImageWorkGate.MaxConversionLimit });
+        }
+
+        await settings.SetAsync(SettingKeys.PageConversionParallel,
+            request.Limit?.ToString(CultureInfo.InvariantCulture), ct);
+        ImageWorkGate.SetConversionLimit(request.Limit);
+        return await Status(ct);
     }
 
     /// <summary>

@@ -65,6 +65,7 @@ import {
   type SourceFailures,
   type UnlinkedMatch,
 } from '../api/health'
+import { MetaList } from '../components/ui/MetaList'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -1111,14 +1112,13 @@ function CheckGroup({ checks, run }: { checks: HealthCheck[]; run: (path: string
           <Text size="sm" c={unsettled.length === 0 ? 'var(--ink-3)' : 'var(--ink-2)'}>
             {headline}
           </Text>
-          <Text size="xs" c="var(--ink-4)" mt={2}>
-            {formatDateTime(latest)}
-            {acknowledged > 0 && (
-              <>
-                {' · '}
-                <Plural value={acknowledged} one="# acknowledged" other="# acknowledged" />
-              </>
-            )}
+          <Text component="div" size="xs" c="var(--ink-4)" mt={2}>
+            <MetaList
+              items={[
+                formatDateTime(latest),
+                acknowledged > 0 && <Plural value={acknowledged} one="# acknowledged" other="# acknowledged" />,
+              ]}
+            />
           </Text>
           <Button
             size="compact-xs"
@@ -1180,9 +1180,13 @@ function CheckRow({ check, run }: { check: HealthCheck; run: (path: string, body
         <Text size="sm" c={check.acknowledged ? 'var(--ink-3)' : 'var(--ink-2)'}>
           {check.message}
         </Text>
-        <Text size="xs" c="var(--ink-4)" mt={2}>
-          {formatDateTime(check.checkedAt)}
-          {check.acknowledged && <Trans> · Acknowledged, hidden from the header badge</Trans>}
+        <Text component="div" size="xs" c="var(--ink-4)" mt={2}>
+          <MetaList
+            items={[
+              formatDateTime(check.checkedAt),
+              check.acknowledged && <Trans>Acknowledged, hidden from the header badge</Trans>,
+            ]}
+          />
         </Text>
         {source !== null && count > 0 && (
           <Button
@@ -1308,10 +1312,15 @@ function FileReview({
                 <Text fw={600} component="div">
                   <MonoValue value={data.file.relativePath} copy />
                 </Text>
-                <Text size="sm" c="var(--ink-3)" mt={4}>
-                  {bytes(data.file.size, t`Missing`)} · <Plural value={pageCount} one="# page" other="# pages" /> ·{' '}
-                  {data.analysis.status} ·{' '}
-                  {data.analysis.verified ? <Trans>contents read</Trans> : <Trans>indexed only</Trans>}
+                <Text component="div" size="sm" c="var(--ink-3)" mt={4}>
+                  <MetaList
+                    items={[
+                      bytes(data.file.size, t`Missing`),
+                      <Plural key="pages" value={pageCount} one="# page" other="# pages" />,
+                      data.analysis.status,
+                      data.analysis.verified ? <Trans key="read">contents read</Trans> : <Trans key="read">indexed only</Trans>,
+                    ]}
+                  />
                 </Text>
                 <Text size="xs" c="var(--ink-4)" mt={4} style={{ overflowWrap: 'anywhere' }}>
                   SHA-256: {data.file.contentHash ?? <Trans>Unavailable</Trans>}
@@ -1416,7 +1425,7 @@ function FileReview({
                     { value: AUTOMATIC, label: t`Automatic (source priority)` },
                     ...data.mappings.map((m) => {
                       const { sourceName, priority } = m
-                      return { value: String(m.id), label: t`${sourceName} · priority ${priority}` }
+                      return { value: String(m.id), label: t`${sourceName} (priority ${priority})` }
                     }),
                   ]}
                 />
@@ -2035,9 +2044,13 @@ function OperationReview({ id, close, open }: { id: number; close: () => void; o
                 <Text fw={600} mt="sm" component="div">
                   <MonoValue value={data.file.relativePath} copy />
                 </Text>
-                <Text size="sm" c="var(--ink-3)" mt={4}>
-                  {bytes(data.file.size, t`Missing`)} ·{' '}
-                  <Plural value={chaptersCount} one="# affected chapter" other="# affected chapters" />
+                <Text component="div" size="sm" c="var(--ink-3)" mt={4}>
+                  <MetaList
+                    items={[
+                      bytes(data.file.size, t`Missing`),
+                      <Plural key="chapters" value={chaptersCount} one="# affected chapter" other="# affected chapters" />,
+                    ]}
+                  />
                 </Text>
               </Panel>
 

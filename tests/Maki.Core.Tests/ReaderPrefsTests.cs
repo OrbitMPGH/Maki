@@ -139,4 +139,28 @@ public class ReaderPrefsTests
         Assert.Equal("a4k-a", spec.EnhanceFallback);
         Assert.Contains("\"enhanceMethod\":\"server:span-s\"", json);
     }
+
+    [Fact]
+    public void Parse_of_a_blob_without_skip_tiers_skips_volumes()
+    {
+        Assert.Equal(["volume"], ReaderPrefsSpec.Parse("""{"enhance":"always"}""").EnhanceSkipTiers);
+        Assert.Equal(["volume"], ReaderPrefsSpec.Parse(null).EnhanceSkipTiers);
+    }
+
+    [Fact]
+    public void Sanitized_keeps_an_empty_skip_list_and_drops_unknown_tiers()
+    {
+        Assert.Empty(new ReaderPrefsSpec(EnhanceSkipTiers: []).Sanitized().EnhanceSkipTiers!);
+        Assert.Equal(
+            ["official", "volume"],
+            new ReaderPrefsSpec(EnhanceSkipTiers: ["volume", "bogus", "official", "volume"]).Sanitized().EnhanceSkipTiers);
+    }
+
+    [Fact]
+    public void Serialize_round_trips_the_skip_tiers()
+    {
+        var spec = ReaderPrefsSpec.Parse(ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(EnhanceSkipTiers: ["official"])));
+
+        Assert.Equal(["official"], spec.EnhanceSkipTiers);
+    }
 }

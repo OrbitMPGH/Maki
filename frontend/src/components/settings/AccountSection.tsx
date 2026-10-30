@@ -17,7 +17,7 @@ import {
   TextInput,
   VisuallyHidden,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { IconCheck, IconCopy } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'

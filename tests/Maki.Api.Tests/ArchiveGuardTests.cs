@@ -1,4 +1,4 @@
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.Reflection;
 using System.Text.Json;
 using Maki.Api.Configuration;
@@ -397,7 +397,7 @@ public sealed class ArchiveGuardTests : IDisposable
     public async Task CustomRail_library_rows_skip_archived_series()
     {
         Pair();
-        var service = new CustomRailService(_db.NewContext(1), new TestCurrentUser(1), null!, null!, null!, null!, null!, null!);
+        var service = new CustomRailService(_db.NewContext(1), new TestCurrentUser(1), null!, null!, null!, null!, null!);
 
         var count = await service.CountAsync(new CustomRailSpec(Source: CustomRailSources.Library), CancellationToken.None);
 
@@ -695,7 +695,8 @@ public sealed class ArchiveGuardTests : IDisposable
 
     private SourceMappingController Mappings(MakiDbContext db, SourceMatchQueue? queue = null) => new(
         new TestLocalizer(), db, new SourceRegistry([new FakeSource { Name = "fake" }]), new FakeAppSettings(),
-        Sources.AllEnabled, queue ?? new SourceMatchQueue(), null!, null!, null!, null!, null!, new TestCurrentUser(1));
+        Sources.AllEnabled, queue ?? new SourceMatchQueue(), null!, null!, null!, null!, null!, new TestCurrentUser(1),
+        NullLogger<SourceMappingController>.Instance);
 
     [Fact]
     public async Task SourceMappingAutoMatch_queues_only_active_series()

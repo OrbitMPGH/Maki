@@ -12,6 +12,7 @@ import { useLabel } from '../i18n-context'
 import { useSourceLabel } from '../sourceLabels'
 import { CountIndicator } from './ui/CountIndicator'
 import { isQueueActive, needsImportReview, queueStatusVisual } from './ui/status'
+import { MetaList } from './ui/MetaList'
 
 const WORKING = new Set(['FetchingPages', 'Downloading', 'Validating', 'Packaging', 'Importing'])
 const MAX_ROWS = 8
@@ -194,7 +195,7 @@ function ActivityRow({
             {item.seriesTitle}
           </Text>
           <Text size="xs" c="var(--ink-3)" lineClamp={1}>
-            {source ? `${queueItemLabel(item)} · ${source}` : queueItemLabel(item)}
+            <MetaList inline items={[queueItemLabel(item), source]} />
           </Text>
           {working && item.pagesTotal > 0 ? (
             <Group gap="xs" wrap="nowrap">

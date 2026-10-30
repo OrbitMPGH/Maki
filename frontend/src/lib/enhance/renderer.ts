@@ -96,19 +96,22 @@ export class EnhanceRenderer {
     const xs = spans(sw, limit)
     const ys = spans(sh, limit)
     const single = xs.length === 1 && ys.length === 1
-    // Every crop is made before the first draw, so the drawing buffer is filled in one task.
-    const crops = single
-      ? [[source]]
-      : await Promise.all(
-          ys.map((y) => Promise.all(xs.map((x) => createImageBitmap(source, x.start, y.start, x.end - x.start, y.end - y.start)))),
-        )
+    // Tiles are cut with a 2D drawImage, not createImageBitmap's crop: some browsers upload a
+    // cropped bitmap's whole source, which draws the full page once per tile row.
+    const cut = single ? null : this.tileCanvas()
 
     try {
-      ys.forEach((y, j) => {
-        xs.forEach((x, i) => {
-          const tile = crops[j][i]
+      ys.forEach((y) => {
+        xs.forEach((x) => {
           const tw = x.end - x.start
           const th = y.end - y.start
+          let tile: TexImageSource = source
+          if (cut) {
+            cut.canvas.width = tw
+            cut.canvas.height = th
+            cut.ctx.drawImage(source, x.start, y.start, tw, th, 0, 0, tw, th)
+            tile = cut.canvas
+          }
           gl.bindTexture(gl.TEXTURE_2D, this.src.tex)
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, tile)
           this.src.w = tw
@@ -129,9 +132,19 @@ export class EnhanceRenderer {
       const err = gl.getError()
       if (err !== gl.NO_ERROR) throw new Error(err === gl.OUT_OF_MEMORY ? 'out of memory' : `gl error ${err}`)
     } finally {
-      if (!single) for (const row of crops) for (const c of row) c.close()
+      if (cut) {
+        cut.canvas.width = 0
+        cut.canvas.height = 0
+      }
     }
     return { w: dw, h: dh }
+  }
+
+  private tileCanvas(): { canvas: AnyCanvas; ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D } {
+    const canvas = typeof OffscreenCanvas === 'undefined' ? document.createElement('canvas') : new OffscreenCanvas(1, 1)
+    const ctx = canvas.getContext('2d') as OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D | null
+    if (!ctx) throw new Error('no 2d context for tiles')
+    return { canvas, ctx }
   }
 
   dispose() {

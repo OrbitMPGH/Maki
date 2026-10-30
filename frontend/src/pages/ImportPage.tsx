@@ -25,7 +25,7 @@ import {
   IconPackageImport,
   IconSearch,
 } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'

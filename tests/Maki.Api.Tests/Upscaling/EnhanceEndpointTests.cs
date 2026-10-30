@@ -31,6 +31,8 @@ public sealed class EnhanceEndpointTests : IDisposable
     private readonly RecordingBroadcaster _broadcaster = new();
     private readonly int _chapterId;
     private readonly int _rootId;
+    private readonly int _seriesId;
+    private readonly string _root;
 
     public EnhanceEndpointTests()
     {
@@ -38,27 +40,35 @@ public sealed class EnhanceEndpointTests : IDisposable
         _store = UpscaleTestKit.StoreWithSpanS(_paths, _settings, _catalog);
         _cache = new UpscaleCache(_paths, _settings, NullLogger<UpscaleCache>.Instance);
 
-        var root = Path.Combine(_configDir, "library");
-        UpscaleTestKit.WriteCbz(Path.Combine(root, "S", "c1.cbz"), pages: 3);
+        _root = Path.Combine(_configDir, "library");
         using var db = _db.NewContext();
-        var folder = new RootFolder { Path = root };
+        var folder = new RootFolder { Path = _root };
         db.RootFolders.Add(folder);
         db.SaveChanges();
         _rootId = folder.Id;
         var series = new Series { Title = "S", SortTitle = "s", FolderName = "S", RootFolderId = folder.Id };
         db.Series.Add(series);
         db.SaveChanges();
+        _seriesId = series.Id;
+        _chapterId = AddChapter(1);
+    }
+
+    private int AddChapter(int number)
+    {
+        var name = $"c{number}.cbz";
+        UpscaleTestKit.WriteCbz(Path.Combine(_root, "S", name), pages: 3);
+        using var db = _db.NewContext();
         var file = new ChapterFile
         {
-            SeriesId = series.Id, RelativePath = "S/c1.cbz", Size = new FileInfo(Path.Combine(root, "S", "c1.cbz")).Length,
+            SeriesId = _seriesId, RelativePath = $"S/{name}", Size = new FileInfo(Path.Combine(_root, "S", name)).Length,
             SourceName = "test", DateAdded = DateTime.UtcNow
         };
         db.ChapterFiles.Add(file);
         db.SaveChanges();
-        var chapter = new Chapter { SeriesId = series.Id, Number = 1, ChapterFileId = file.Id };
+        var chapter = new Chapter { SeriesId = _seriesId, Number = number, ChapterFileId = file.Id };
         db.Chapters.Add(chapter);
         db.SaveChanges();
-        _chapterId = chapter.Id;
+        return chapter.Id;
     }
 
     public void Dispose()
@@ -158,6 +168,31 @@ public sealed class EnhanceEndpointTests : IDisposable
 
         var again = Json(await Post(db, 1, "span-s", 1, 2));
         Assert.Equal("""[{"page":1,"state":"ready"},{"page":2,"state":"queued"}]""", again.GetProperty("pages").GetRawText());
+    }
+
+    [Fact]
+    public async Task The_next_chapters_first_pages_queue_behind_the_window_and_carry_into_its_own_request()
+    {
+        var nextId = AddChapter(2);
+        using var db = _db.NewContext(1);
+
+        var posted = Json(await Reader(db, 1).Enhance(
+            _chapterId, new EnhancePagesRequest("span-s", [2], nextId, [0, 1, 7]), _store, _queue, _cache, default));
+        Assert.Equal("""[{"page":2,"state":"queued"}]""", posted.GetProperty("pages").GetRawText());
+        Assert.Equal(3, _queue.Snapshot().Pending);
+
+        var opened = Json(await Reader(db, 1).Enhance(nextId, new EnhancePagesRequest("span-s", [1]), _store, _queue, _cache, default));
+        Assert.Equal("""[{"page":1,"state":"queued"}]""", opened.GetProperty("pages").GetRawText());
+        Assert.Equal(2, _queue.Snapshot().Pending);
+
+        using var upscaler = new OnnxPageUpscaler(_catalog, _store, _settings, NullLogger<OnnxPageUpscaler>.Instance);
+        var worker = new UpscaleWorker(_queue, _cache, upscaler, _store, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
+            _paths, _settings, _broadcaster, NullLogger<UpscaleWorker>.Instance);
+        Assert.True(await worker.RunOnceAsync(default));
+        Assert.True(await worker.RunOnceAsync(default));
+        Assert.Equal(
+            [(1, nextId, 1, "span-s", "working"), (1, nextId, 1, "span-s", "ready"), (1, nextId, 0, "span-s", "working"), (1, nextId, 0, "span-s", "ready")],
+            _broadcaster.Sent);
     }
 
     [Fact]

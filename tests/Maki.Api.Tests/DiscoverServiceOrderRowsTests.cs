@@ -83,6 +83,28 @@ public class DiscoverServiceOrderRowsTests
     }
 
     [Fact]
+    public void A_start_day_floor_drops_older_and_undated_rows_and_reads_a_bare_year_as_january_first()
+    {
+        var index = Build(
+            ids: [100, 101, 102, 103, 104],
+            startDays:
+            [
+                new DateOnly(2025, 10, 26).DayNumber,
+                new DateOnly(2025, 10, 27).DayNumber,
+                new DateOnly(2026, 3, 1).DayNumber,
+                VectorIndex.Unknown,
+                VectorIndex.Unknown,
+            ],
+            years: [2025, 2025, 2026, 2026, VectorIndex.Unknown],
+            popularity: [1, 2, 3, 4, 5]);
+
+        var plan = FilterPlan.None with { MinStartDay = new DateOnly(2025, 10, 27).DayNumber };
+        var ordered = DiscoverService.OrderRows(index, plan, BrowseSort.Newest, 0, 10, new DateOnly(2026, 10, 27).DayNumber);
+
+        Assert.Equal([102L, 103L, 101L], ordered);
+    }
+
+    [Fact]
     public void Rating_puts_a_row_below_the_popularity_gate_after_every_gated_row_regardless_of_rating()
     {
         var index = Build(

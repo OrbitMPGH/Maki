@@ -32,6 +32,7 @@ export type InboxEventType =
   | 'volumeUpgraded'
   | 'accountSecurity'
   | 'seriesStatusChanged'
+  | 'customSourceUpdated'
 
 export type InboxLevel = 'info' | 'warning' | 'error'
 
@@ -133,7 +134,7 @@ export const INBOX_CATEGORIES: {
   {
     id: 'system',
     label: msg`System`,
-    types: ['healthIssue', 'updateAvailable', 'importFinished', 'backupFinished'],
+    types: ['healthIssue', 'updateAvailable', 'importFinished', 'backupFinished', 'customSourceUpdated'],
     adminOnly: true,
   },
 ]
@@ -170,6 +171,7 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   volumeUpgraded: msg`Volume upgraded`,
   accountSecurity: msg`Account security`,
   seriesStatusChanged: msg`Series status changed`,
+  customSourceUpdated: msg`Custom source updated by its repository`,
 }
 
 /**

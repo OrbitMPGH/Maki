@@ -13,7 +13,7 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { IconChevronDown, IconChevronUp, IconPlus, IconTrash } from '@tabler/icons-react'
 import {
   SERIES_TYPES,
@@ -39,6 +39,7 @@ import {
   ENHANCE_FALLBACKS,
   ENHANCE_LEVELS,
   ENHANCE_METHODS,
+  ENHANCE_SKIP_TIERS,
   enhanceMethodInfo,
   isServerMethod,
 } from '../../pages/reader/enhanceMethods'
@@ -466,7 +467,7 @@ function ProfileEditor({
       <Group grow align="flex-start">
         <Select
           label={t`Enhance`}
-          description={t`Sharpen soft pages. Auto does it only when a page is shown larger than its source.`}
+          description={t`Sharpen soft pages. Auto does it only when a page is shown larger than its source or looks blurry.`}
           allowDeselect={false}
           value={prefs.enhance}
           onChange={(value) => value && set({ enhance: value as ReaderPrefs['enhance'] })}
@@ -487,6 +488,16 @@ function ProfileEditor({
           />
         )}
       </Group>
+      {prefs.enhance !== 'off' && (
+        <MultiSelect
+          label={t`Don't enhance`}
+          description={t`Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already.`}
+          placeholder={t`Every quality is enhanced`}
+          value={prefs.enhanceSkipTiers}
+          onChange={(value) => set({ enhanceSkipTiers: value as ReaderPrefs['enhanceSkipTiers'] })}
+          data={ENHANCE_SKIP_TIERS.map((tier) => ({ value: tier.value, label: renderLabel(tier.label) }))}
+        />
+      )}
       {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
         <Select
           label={t`Fallback`}

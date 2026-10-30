@@ -432,6 +432,260 @@ msgstr "Library rails can only go on Home"
 msgid "error.customRails.tooMany"
 msgstr "You can keep at most {max} rails"
 
+#. {schema} is the definition format number the file says it uses.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.schemaUnsupported"
+msgstr "This definition uses format {schema}, which this version of Maki can't read. Update Maki or use a definition made for this version."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.idInvalid"
+msgstr "The id must be 2 to 40 lowercase letters, digits or hyphens, starting with a letter or digit."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.nameInvalid"
+msgstr "The name is required and can be at most 60 characters."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.baseUrlInvalid"
+msgstr "The base URL must be an http or https address on a domain name, with no path, such as https://example.com."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.languageInvalid"
+msgstr "The language must be one language code, such as en or pt-BR."
+
+#. {field} is the definition field name, such as kind or chapters.date.format, and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.fieldInvalid"
+msgstr "The value of {field} is not one Maki knows."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.intervalInvalid"
+msgstr "The request spacing must be between {min} and {max} milliseconds."
+
+#. {header} is an HTTP header name and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.headerRefused"
+msgstr "The header {header} can't be set by a definition."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.coverHostInvalid"
+msgstr "\"{host}\" is not a domain name."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.searchAndCatalogue"
+msgstr "Give either a search or a catalogue page, not both."
+
+#. {engine} is an engine name such as madara and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.engineSections"
+msgstr "A definition that uses the {engine} engine leaves out the search, catalogue, series, chapters and pages sections."
+
+#: src/Maki.Sources/Custom/CustomRepositoryStore.cs
+msgid "error.customRepository.urlInvalid"
+msgstr "A repository address is a full http:// or https:// URL on a public host."
+
+#. {url} is the address Maki tried and {reason} is what the site or the connection said, untranslated.
+#: src/Maki.Sources/Custom/CustomRepositoryStore.cs
+msgid "error.customRepository.fetchFailed"
+msgstr "Maki could not read {url}: {reason}"
+
+#. {url} is an address and {reason} is the JSON parser's message, untranslated.
+#: src/Maki.Sources/Custom/CustomRepositoryStore.cs
+msgid "error.customRepository.indexInvalid"
+msgstr "{url} is not a repository index: {reason}"
+
+#. {url} is an address; {max} is a number of kilobytes.
+#: src/Maki.Sources/Custom/CustomRepositoryStore.cs
+msgid "error.customRepository.tooLarge"
+msgstr "{url} is larger than {max} KB."
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.exists"
+msgstr "That repository is already added."
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.notFound"
+msgstr "There is no repository with that address."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.entryNotFound"
+msgstr "The repository has no definition called {id}."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.hashMismatch"
+msgstr "The file the repository serves for {id} does not match its checksum, so it was not used."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.idMismatch"
+msgstr "The repository's file for {id} defines a source with another id."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.idTaken"
+msgstr "A custom source called {id} already exists and was not installed from this repository."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.needsNewerMaki"
+msgstr "{id} needs a newer version of Maki."
+
+#. {id} is a custom source id and {reason} is what the validator or parser said, untranslated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.definitionInvalid"
+msgstr "The repository's definition of {id} is not valid: {reason}"
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.installTestFailed"
+msgstr "The definition did not pass its test against the site, so it was not installed."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.testFailed"
+msgstr "An update of {id} did not pass its test against the site, so it waits for you."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.updateNeedsReview"
+msgstr "An update of {id} could change which chapters its linked series have, so it waits for you."
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.autoUpdateNeedsHttps"
+msgstr "Only a repository served over https can keep its sources up to date on its own."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.noUpdate"
+msgstr "{id} has no update waiting."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.nothingToRevert"
+msgstr "There is no earlier version of {id} to go back to."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.autoUpdateUnsafe"
+msgstr "An update of {id} waits for you: its file isn't served over https with a checksum, so it isn't applied on its own."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomSourceService.cs
+msgid "error.customSource.changedMeanwhile"
+msgstr "{id} changed while this was running, so nothing was saved. Look at it again and retry."
+
+#: src/Maki.Api/Services/CustomSourceProbe.cs
+msgid "error.customSource.probe.urlInvalid"
+msgstr "Paste the full address of a series page on the site, starting with https://."
+
+#. {host} is a domain name and is never translated.
+#: src/Maki.Api/Services/CustomSourceProbe.cs
+msgid "error.customSource.probe.otherHost"
+msgstr "The chapter page has to be on {host}, like the series page."
+
+#: src/Maki.Api/Services/CustomSourceProbe.cs
+msgid "error.customSource.probe.seriesUrlShape"
+msgstr "Maki reads the series id from the last part of the address, and this address has none. Paste the series page's own address."
+
+#. {url} is the address Maki tried and {reason} is what the site or the connection said, untranslated.
+#: src/Maki.Api/Services/CustomSourceProbe.cs
+msgid "error.customSource.probe.fetchFailed"
+msgstr "Maki could not read {url}: {reason}"
+
+#. {field} is the definition field name and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.fieldRequired"
+msgstr "{field} is required."
+
+#. {field} is the definition field name and {placeholder} a template placeholder such as seriesId in braces; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.templatePlaceholder"
+msgstr "{field} must contain {placeholder}."
+
+#. {field} is the definition field name and {host} the site's domain; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.templateHost"
+msgstr "{field} must point at {host}."
+
+#. {field} is the definition field name and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.listExtractorShape"
+msgstr "{field} needs exactly one of css, regex or json."
+
+#. {field} is the definition field name and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.fieldExtractorShape"
+msgstr "{field} reads something its list items don't have, or mixes a fixed value with other settings."
+
+#. {field} is the definition field name and {selector} the CSS selector; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.cssInvalid"
+msgstr "{field}: \"{selector}\" is not a valid CSS selector."
+
+#. {field} is the definition field name and {pattern} the regular expression; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.regexInvalid"
+msgstr "{field}: \"{pattern}\" is not a valid regular expression."
+
+#. {field} is the definition field name and {path} the JSON path; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.jsonPathInvalid"
+msgstr "{field}: \"{path}\" is not a valid JSON path. Use dot segments with [*] or [n]."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.sampleQueryRequired"
+msgstr "A source with search needs a sample search query."
+
+#. {max} is a size in kilobytes.
+#: src/Maki.Api/Services/CustomSourceService.cs
+msgid "error.customSource.tooLarge"
+msgstr "The definition is larger than {max} KB."
+
+#. {detail} is the JSON parser's own message and is never translated.
+#: src/Maki.Api/Services/CustomSourceService.cs
+msgid "error.customSource.jsonInvalid"
+msgstr "The definition is not valid JSON for a custom source: {detail}"
+
+#. {source} is the name of the source that already covers this site, never translated.
+#: src/Maki.Api/Services/CustomSourceService.cs
+msgid "error.customSource.hostTaken"
+msgstr "{source} already covers this site."
+
+#. {id} is a custom source id, never translated.
+#: src/Maki.Api/Controllers/CustomSourcesController.cs
+msgid "error.customSource.notFound"
+msgstr "There is no custom source \"{id}\"."
+
+#: src/Maki.Api/Controllers/CustomSourcesController.cs
+msgid "error.customSource.idMismatch"
+msgstr "The id in the definition does not match the one being saved."
+
+#. {count} is how many series are linked to the source.
+#: src/Maki.Api/Controllers/CustomSourcesController.cs
+msgid "error.customSource.identityChange"
+msgstr "This change could give {count, plural, one {# linked series} other {# linked series}} new chapter rows that download again. Check the differences, then save again to confirm."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleNotInSearch"
+msgstr "The search results do not include the sample series."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleSeriesUnresolved"
+msgstr "The sample series URL does not match the series URL template."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.urlTemplateMismatch"
+msgstr "The chapter URL template does not rebuild the links the chapter list shows."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleChapterNotListed"
+msgstr "The sample chapter URL is not in the chapter list."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.notAnImage"
+msgstr "The first page did not come back as an image."
+
 #. {title} is the metadata provider's title for the series, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.alreadyInLibrary"
@@ -741,6 +995,11 @@ msgstr "One of the rules is not valid. Check its conditions and what it does."
 #: src/Maki.Api/Controllers/PageConversionController.cs
 msgid "error.pageConversion.stopInvalid"
 msgstr "Choose Smallest, Compact, Balanced, High or Lossless"
+
+#. {max} is the server's core count.
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.parallelInvalid"
+msgstr "Pages converted at once must be between 1 and {max}"
 
 #. Undoing a series' page conversion with both "convert again" and "set this series to Never" chosen.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1124,6 +1383,11 @@ msgstr "Root folder is in use by one or more series"
 #: src/Maki.Api/Controllers/RootFolderController.cs
 msgid "error.rootFolder.inUseArchived"
 msgstr "{count, plural, one {# archived series still uses} other {# archived series still use}} this folder. Delete or move them first."
+
+#. {path} is the folder the folder picker tried to open.
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.notReadable"
+msgstr "Maki can't read this folder: {path}"
 
 #: src/Maki.Api/Controllers/RootFolderController.cs
 msgid "error.rootFolder.pathRequired"
@@ -1905,6 +2169,11 @@ msgstr "Download timeout must be 0 (no limit) or between {min} and {max} minutes
 msgid "error.settings.bulkHoldRange"
 msgstr "Bulk hold must be between 0 (off) and {max} chapters"
 
+#. {mode} is the value that was sent and is never translated.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.torrentRemovalModeInvalid"
+msgstr "Unknown torrent removal mode: {mode}"
+
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.smartChaptersLeftRange"
 msgstr "Smart Download refill point must be between {min} and {max} chapters"
@@ -2565,6 +2834,15 @@ msgid "inbox.chapters.held.body"
 msgstr ""
 "{series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not "
 "downloaded automatically. Download them from the series page if they are real."
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "inbox.customSource.updated.title"
+msgstr "Custom source updated"
+
+#. {source} is a custom source's name; {from} and {to} are version numbers.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "inbox.customSource.updated.body"
+msgstr "{source} was updated from version {from} to {to} by its repository."
 
 #: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
 msgid "inbox.series.statusChanged.title"
@@ -3632,6 +3910,26 @@ msgstr "Library health checks could not complete"
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.suwayomiSourceInstalled"
 msgstr "{source} is installed in Suwayomi again."
+
+#. {source} is a custom source's name.
+#: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
+msgid "health.check.customSourceWorking"
+msgstr "{source} lists its sample series."
+
+#. {source} is a custom source's name.
+#: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
+msgid "health.check.customSourceSample"
+msgstr "{source} still works, but its sample series is gone from the site. Edit the definition and pick another one."
+
+#. {source} is a custom source's name and {reason} is what the site or the definition said, untranslated.
+#: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
+msgid "health.check.customSourceFailing"
+msgstr "{source} could not list its sample series, so the site's layout may have changed. Edit the definition to check. ({reason})"
+
+#. {source} is a custom source's name.
+#: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
+msgid "health.check.customSourceInvalid"
+msgstr "This build of Maki can't read the definition of {source}. Edit it to see why."
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.suwayomiSourceMissing"
