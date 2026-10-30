@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Button, Group, Modal, Stack, Text } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {

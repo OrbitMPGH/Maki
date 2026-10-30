@@ -58,6 +58,7 @@ import type {
   TagDto,
   UpdateSettingsDto,
   UpdateStatusDto,
+  HostInfoDto,
 } from './types'
 
 export function useSeries(enabled = true) {
@@ -1799,6 +1800,14 @@ export function useDismissArchiveHint() {
   })
 }
 
+export function useDismissRateHint() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/series/${id}/rate-hint/dismiss`, { method: 'POST' }),
+    onSuccess: (_, id) => void queryClient.invalidateQueries({ queryKey: ['series', id] }),
+  })
+}
+
 export function useRemoveArchivedFiles() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -2902,6 +2911,37 @@ export function useSaveUpdateSettings() {
   })
 }
 
+export function useHostInfo(enabled = true) {
+  return useQuery({
+    queryKey: ['system', 'host'],
+    queryFn: () => api<HostInfoDto>('/system/host'),
+    enabled,
+  })
+}
+
+export function useSetNetworkAccess() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (allowNetwork: boolean) =>
+      api<HostInfoDto>('/system/host/network', { method: 'PUT', body: JSON.stringify({ allowNetwork }) }),
+    onSuccess: (data) => queryClient.setQueryData(['system', 'host'], data),
+  })
+}
+
+/** Stops Maki so whatever supervises it starts it again. The page loses its connection meanwhile. */
+export function useRestartMaki() {
+  return useMutation({
+    mutationFn: () => api<void>('/system/restart', { method: 'POST' }),
+  })
+}
+
+/** Desktop build: restarts into the update the tray app has downloaded. */
+export function useApplyUpdate() {
+  return useMutation({
+    mutationFn: () => api<void>('/system/update/apply', { method: 'POST' }),
+  })
+}
+
 export function useCheckForUpdatesNow() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -3978,6 +4018,26 @@ export function useAddRootFolder() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['rootfolders'] })
     },
+  })
+}
+
+/** One level of the server's filesystem for the folder picker. An empty `path` is the drive list (Windows). */
+export interface FolderListing {
+  path: string
+  parent: string | null
+  folders: { name: string; path: string }[]
+}
+
+/** The picker shows its own failure inline, so the toast stays out of it. */
+export function useBrowseFolders(path: string | null) {
+  return useQuery({
+    queryKey: ['rootfolders', 'browse', path],
+    queryFn: () =>
+      api<FolderListing>(`/rootfolder/browse${path ? `?path=${encodeURIComponent(path)}` : ''}`),
+    enabled: path !== null,
+    placeholderData: keepPreviousData,
+    staleTime: 0,
+    meta: { silent: true },
   })
 }
 

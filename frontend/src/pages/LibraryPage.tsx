@@ -54,7 +54,7 @@ import {
   IconWand,
   IconX,
 } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import {
   useSeriesNotificationHelp,
   useSeriesNotificationOptions,
@@ -130,6 +130,7 @@ import { seriesStatusVisual } from '../components/ui/status'
 import { formatNumber } from '../format'
 import { useOfflineAvailableSeriesIds, useOfflineSeriesIds } from '../pwa/offlineChapters'
 import { useConnectivity } from '../lib/connectivity'
+import { MetaList } from '../components/ui/MetaList'
 
 const SORT_VALUES = ['added', 'title', 'incomplete', 'status', 'read', 'rating', 'downloaded', 'archived'] as const
 
@@ -866,7 +867,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       const origins = label(fileSourceOptions, fileSourceFilter)
       if (fileSourceFilter.length > 0) parts.push(t`From ${origins}`)
     }
-    if (parts.length > 0) return <span className="disclosure-summary-active">{parts.join(' · ')}</span>
+    if (parts.length > 0) return <MetaList inline className="disclosure-summary-active" items={parts} />
     return {
       series: t`Status, type, content rating, chapters`,
       tags: t`Your tags, genres, provider tags`,

@@ -55,6 +55,36 @@ export const FinishedArchiveHint: Story = {
   },
 }
 
+let rated: number | null = null
+
+/** Finished but unrated: the rate hint comes first, and rating from it hands the line over to the archive offer. */
+export const FinishedRateHint: Story = {
+  beforeEach: () => {
+    rated = null
+  },
+  parameters: {
+    ...at(2),
+    msw: seriesMsw(
+      http.get(api('/series/:id'), () =>
+        HttpResponse.json({ ...hintedSeriesDto(2), rating: rated, rateHintEligible: rated == null }),
+      ),
+      http.put(api('/series/:id/rating'), async ({ request }) => {
+        rated = ((await request.json()) as { rating: number | null }).rating
+        return HttpResponse.json({ rating: rated })
+      }),
+    ),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText("You've finished this. How was it?")).toBeVisible()
+    await expect(canvas.queryByText("You've finished this. Archive it?")).toBeNull()
+    const stars = canvas.getByRole('group', { name: 'Rate this series' })
+    // Mantine commits a rating from the star's label; the radio itself only previews it.
+    await userEvent.click((within(stars).getByRole('radio', { name: '4' }) as HTMLInputElement).labels![0])
+    await waitFor(() => expect(rated).toBe(8))
+    await expect(await canvas.findByText("You've finished this. Archive it?")).toBeVisible()
+  },
+}
+
 let hintDismissed = false
 
 /** Dismissing posts once and the line goes away on the refetch. */
@@ -167,11 +197,56 @@ export const ChapterFilterMissing: Story = {
   },
 }
 
+type PlayContext = Parameters<NonNullable<Story['play']>>[0]
+
+const selectThreeChapters = async ({ canvas, userEvent }: PlayContext) => {
+  await userEvent.click(await canvas.findByRole('button', { name: 'Select' }))
+  const rows = await canvas.findAllByRole('row', { selected: false })
+  for (const row of rows.slice(0, 3)) await userEvent.click(row)
+  await expect(await canvas.findByText('3 selected')).toBeVisible()
+}
+
 export const SelectModeBulkBar: Story = {
   parameters: at(1, '?tab=chapters'),
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Select' }))
-    await expect(await canvas.findByText(/selected/i)).toBeVisible()
+  play: async (ctx) => {
+    await selectThreeChapters(ctx)
+    await waitFor(() => expect(ctx.canvas.getByRole('button', { name: 'Download' })).toBeEnabled())
+    await waitFor(() => expect(ctx.canvas.getByRole('button', { name: 'More' })).toBeEnabled())
+    await expect(ctx.canvas.queryByRole('button', { name: 'Unlink' })).toBeNull()
+  },
+}
+
+export const SelectModeMoreMenu: Story = {
+  parameters: at(1, '?tab=chapters'),
+  play: async (ctx) => {
+    await selectThreeChapters(ctx)
+    await ctx.userEvent.click(ctx.canvas.getByRole('button', { name: 'More' }))
+    const page = body(ctx.canvasElement)
+    await expect(await page.findByRole('menuitem', { name: "Don't want" })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Link to file' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Unlink' })).toBeVisible()
+  },
+}
+
+export const SelectModeDeleteMenu: Story = {
+  parameters: at(1, '?tab=chapters'),
+  play: async (ctx) => {
+    await selectThreeChapters(ctx)
+    await ctx.userEvent.click(ctx.canvas.getByRole('button', { name: 'Delete' }))
+    const page = body(ctx.canvasElement)
+    await expect(await page.findByRole('menuitem', { name: 'Delete files' })).toBeVisible()
+    await ctx.userEvent.click(page.getByRole('menuitem', { name: 'Remove chapters' }))
+    await expect(await page.findByRole('dialog', { name: 'Remove chapters?' })).toBeVisible()
+  },
+}
+
+export const SelectModePhone: Story = {
+  globals: { viewport: { value: 'mobile1', isRotated: false } },
+  parameters: { viewport: { defaultViewport: 'mobile1' }, ...at(1, '?tab=chapters') },
+  play: async (ctx) => {
+    await selectThreeChapters(ctx)
+    await ctx.userEvent.click(ctx.canvas.getByRole('button', { name: 'Actions' }))
+    await expect(await body(ctx.canvasElement).findByRole('menuitem', { name: 'Download' })).toBeVisible()
   },
 }
 

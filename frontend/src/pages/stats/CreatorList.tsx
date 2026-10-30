@@ -49,7 +49,7 @@ export function CreatorList({ creators, max = 8 }: { creators: CreatorReturnDto[
               </Text>
               <span className="stats-row-sub">
                 <Trans>
-                  <Select value={kind} _both="Story · Art" _story="Story" _art="Art" other="" />
+                  <Select value={kind} _both="Story and art" _story="Story" _art="Art" other="" />
                 </Trans>
               </span>
             </div>

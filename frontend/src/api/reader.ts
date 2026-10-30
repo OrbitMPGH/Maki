@@ -1,6 +1,7 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import type { ReaderPrefs } from '../pages/reader/prefs'
+import type { QualityTierName } from './upgrades'
 import { t } from '@lingui/core/macro'
 import { getConnectivity } from '../lib/connectivity'
 import { randomUUID } from '../lib/uuid'
@@ -42,6 +43,8 @@ export interface ReaderManifest {
   autoProfileId: number | null
   /** Identifies the file behind the pages; page URLs carry it so they can be cached until a re-download. */
   pageVersion: string
+  /** The quality tier of the file behind the pages. Absent on a manifest saved offline before it existed. */
+  tier?: QualityTierName
   /** Whether the admin turned on server upscaling, and which of its models this reader can pick. Absent on a manifest saved offline before it existed. */
   enhanceServer?: EnhanceServer
 }

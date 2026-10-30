@@ -11,7 +11,7 @@ import {
   IconTrash,
   IconX,
 } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { useSeriesFiles, useDeleteSeriesFiles } from '../api/hooks'
 import { offersPermanentDelete, useRecycleBinDays } from '../api/recycleBin'
 import { PermanentDeleteFallback } from './PermanentDeleteFallback'
@@ -30,6 +30,7 @@ import { Panel } from './ui/Panel'
 import { useAuth } from '../auth/AuthProvider'
 import { LinkFileToChaptersModal } from './LinkFileToChaptersModal'
 import { RelinkFilesModal } from './RelinkFilesModal'
+import { MetaList } from './ui/MetaList'
 
 /** "21" → "Ch. 21"; ["21","22","23"] → "Ch. 21, 22, 23". */
 function mappedLabel(file: SeriesFileDto): string {
@@ -137,14 +138,13 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             <Trans>Files</Trans>
           </Title>
           {files && (
-            <Text size="sm" c="var(--ink-3)" className="tnum">
-              {files.length}
-              {problems > 0 && (
-                <>
-                  {' · '}
-                  <Plural value={problems} one="# needs attention" other="# need attention" />
-                </>
-              )}
+            <Text component="div" size="sm" c="var(--ink-3)" className="tnum">
+              <MetaList
+                items={[
+                  files.length,
+                  problems > 0 && <Plural key="problems" value={problems} one="# needs attention" other="# need attention" />,
+                ]}
+              />
             </Text>
           )}
         </Group>
@@ -205,7 +205,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
           {unlinkedOnDisk > 0 && canLink && !selectMode && (
             <Paper className="series-files-hint" withBorder p="xs" radius="lg" mt="sm">
               <Group gap="xs" wrap="nowrap" align="flex-start">
-                <IconLink size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+                <IconLink size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} />
                 <Text size="sm" c="var(--ink-2)">
                   <Plural
                     value={unlinkedOnDisk}

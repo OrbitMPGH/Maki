@@ -3,6 +3,24 @@
   "plugins": ["react", "typescript", "oxc"],
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "@mantine/notifications",
+            "importNames": ["notifications"],
+            "message": "Import notifications from lib/toast, which gives every toast its status icon."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/lib/toast.tsx", "**/*.stories.tsx", ".storybook/**"],
+      "rules": { "no-restricted-imports": "off" }
+    }
+  ]
 }

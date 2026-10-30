@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Anchor, Badge, Button, Checkbox, Divider, Group, Stack, Switch, Text } from '@mantine/core'
 import { IconDownload, IconGauge, IconTrash } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { SettingsSection } from './SettingsSection'
@@ -19,6 +19,7 @@ import {
   type UpscaleCatalogEntry,
   type UpscalingSettings,
 } from '../../api/upscaling'
+import { MetaList } from '../../components/ui/MetaList'
 
 const NOTICES_URL = 'https://github.com/OrbitMPGH/Maki/blob/main/THIRD_PARTY_NOTICES.md'
 const MB = 1024 ** 2
@@ -196,13 +197,17 @@ function ModelRow({
         <Checkbox label={name} checked={checked} onChange={(e) => onToggle(e.currentTarget.checked)} />
         <StatusBadge status={model.status} />
       </Group>
-      <Text size="xs" c="var(--ink-3)">
-        {hint && `${hint} \u00b7 `}
-        {size && `${size} \u00b7 `}
-        {`${model.license} \u00b7 `}
-        <Anchor href={model.source} target="_blank" rel="noreferrer" size="xs">
-          {model.author}
-        </Anchor>
+      <Text component="div" size="xs" c="var(--ink-3)">
+        <MetaList
+          items={[
+            hint,
+            size,
+            model.license,
+            <Anchor key="author" href={model.source} target="_blank" rel="noreferrer" size="xs">
+              {model.author}
+            </Anchor>,
+          ]}
+        />
       </Text>
       {model.status === 'failed' && model.error && (
         <Text size="xs" c="var(--danger-fg)">

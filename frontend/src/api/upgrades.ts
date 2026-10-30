@@ -371,7 +371,7 @@ export function upgradeReasonLabel(renderLabel: (m: MessageDescriptor) => string
   return renderLabel(UPGRADE_REASON_LABELS[code as UpgradeReasonCode | UpgradeSkipReasonCode] ?? code)
 }
 
-/** Why a scan passed chapters or candidates over, most common first: "Label (3) · Label (1)". */
+/** Why a scan passed chapters or candidates over, most common first: "Label (3), Label (1)". */
 export function scanReasonSummary(
   renderLabel: (m: MessageDescriptor) => string,
   skipped: Record<string, number> | null | undefined,
@@ -380,7 +380,7 @@ export function scanReasonSummary(
     .filter(([, count]) => count > 0)
     .sort(([, a], [, b]) => b - a)
     .map(([code, count]) => `${upgradeReasonLabel(renderLabel, code)} (${i18n.number(count)})`)
-    .join(' · ')
+    .join(', ')
 }
 
 export interface NumberRangeDto {

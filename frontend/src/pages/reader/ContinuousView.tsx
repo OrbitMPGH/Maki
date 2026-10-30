@@ -276,7 +276,7 @@ export default function ContinuousView({
   enhanceFallback?: EnhanceFallback
   /** Set while a server method is in use and the server tier can serve it. */
   server?: ServerEnhance | null
-  /** The pages shown at 1.2x their size or more, as measured on screen. */
+  /** The pages `auto` enhances: shown at 1.2x their size or more as measured on screen, or soft. */
   onStretched?: (pages: ReadonlySet<number>) => void
   /**
    * The pages being enhanced, current first, then ahead, then behind; what the server is asked for.

@@ -14,6 +14,7 @@ import { SeriesThumb } from '../stats/SeriesLink'
 import { formatDate, formatDecimal, formatTime } from '../../format'
 import { ManageSignalsModal } from './ManageSignalsModal'
 import { AnimeSignalsSection } from './AnimeSignalsSection'
+import { MetaList } from '../../components/ui/MetaList'
 
 /** Actions the undo endpoint can reverse: it replays the event's stored previous state. */
 const UNDOABLE = ['hide', 'dismiss', 'mark-exposed', 'clear-suppression', 'clear-exposure']
@@ -274,8 +275,7 @@ export function SignalsCard() {
                         <Group gap={6} wrap="nowrap" mt={2}>
                           <ActionPill item={item} />
                           <Text size="xs" c="var(--ink-3)" truncate>
-                            {[phrase(item.action), formatTime(item.occurredAtUtc)]
-                              .filter(Boolean).join(' · ')}
+                            <MetaList inline items={[phrase(item.action), formatTime(item.occurredAtUtc)]} />
                           </Text>
                         </Group>
                       </div>
@@ -366,7 +366,7 @@ function AvoidRow({ avoids }: { avoids: AvoidanceLabel[] }) {
             w={260}
           >
             <Badge size="sm" variant="light" color="var(--danger)">
-              {avoid.label} · <Plural value={count} one="# title" other="# titles" />
+              {avoid.label} (<Plural value={count} one="# title" other="# titles" />)
             </Badge>
           </Tooltip>
         )

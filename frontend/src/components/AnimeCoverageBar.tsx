@@ -220,7 +220,7 @@ export function AnimeCoverageBar({
             return (
                 <Tooltip
                     key={span.key}
-                    label={`${span.label} · ${rangeText(span)}`}
+                    label={`${span.label}: ${rangeText(span)}`}
                     withArrow
                     zIndex={tooltipZIndex}
                 >
@@ -251,7 +251,7 @@ export function AnimeCoverageBar({
             return (
                 <Tooltip
                     key={`end-${num}`}
-                    label={`${label} · ${now`ends at ch. ${num}`}`}
+                    label={now`${label} ends at ch. ${num}`}
                     withArrow
                     zIndex={tooltipZIndex}
                 >
@@ -271,7 +271,7 @@ export function AnimeCoverageBar({
           <span>{domainMin}</span>
           {readPct !== null && readPct > 8 && readPct < 92 && (
               <span className="anime-coverage-axis-you" style={{ left: `${readPct}%` }}>
-                <Trans>you · {readChapter}</Trans>
+                <Trans>You: ch. {readChapter}</Trans>
               </span>
           )}
           <span>{domainMax}</span>

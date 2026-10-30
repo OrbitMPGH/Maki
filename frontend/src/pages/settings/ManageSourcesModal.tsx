@@ -4,7 +4,7 @@ import {
   Switch, Tabs, Text, TextInput, Tooltip,
 } from '@mantine/core'
 import { useHotkeys, useMediaQuery } from '@mantine/hooks'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   IconArrowUp, IconChevronDown, IconChevronUp, IconDots, IconDownload, IconFileImport, IconFilter, IconGripVertical,
@@ -26,6 +26,7 @@ import { fetchCustomSourceExport, useCustomSources, useDeleteCustomSource, type 
 import { CustomSourceWizard, type WizardMode } from './CustomSourceWizard'
 import { CustomRepositoriesPanel } from './CustomRepositoriesPanel'
 import { COMMON_LANGUAGES, LANGUAGE_CODE, MIXED_LANGUAGE } from './sourceLanguages'
+import { MetaList } from '../../components/ui/MetaList'
 
 type StateFilter = 'all' | 'on' | 'off'
 export type ProviderFilter = 'builtin' | 'suwayomi' | 'custom'
@@ -1303,15 +1304,8 @@ function DirtySummary({ turnedOn, turnedOff, orderChanged }: {
   if (turnedOff > 0) parts.push(<Plural key="off" value={turnedOff} one="# turned off" other="# turned off" />)
   if (orderChanged) parts.push(<Trans key="order">Order changed</Trans>)
   return (
-    <Text size="xs" c="var(--ink-3)">
-      {parts.length === 0
-        ? <Trans>No changes yet</Trans>
-        : parts.map((part, i) => (
-          <span key={i}>
-            {i > 0 && ' · '}
-            {part}
-          </span>
-        ))}
+    <Text component="div" size="xs" c="var(--ink-3)">
+      {parts.length === 0 ? <Trans>No changes yet</Trans> : <MetaList items={parts} />}
     </Text>
   )
 }

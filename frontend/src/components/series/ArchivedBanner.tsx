@@ -29,7 +29,7 @@ export function ArchivedBanner({
       radius="lg"
       mt="lg"
       style={{
-        borderLeft: '2px solid var(--brand)',
+        borderColor: 'color-mix(in srgb, var(--brand) 35%, var(--border))',
         background: 'color-mix(in srgb, var(--brand) 7%, var(--surface-2))',
       }}
     >

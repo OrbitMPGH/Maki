@@ -20,7 +20,7 @@ export const STOP_LABELS: Record<PageConversionStop, MessageDescriptor> = {
 /** What each stop does to a page viewed at 1:1, measured on screentone and thin lines. */
 export const STOP_HINTS: Record<PageConversionStop, MessageDescriptor> = {
   smallest: msg`Screentone is smoothed away, lines stay intact.`,
-  compact: msg`Tone thins out.`,
+  compact: msg`Screentone gets lighter but stays visible.`,
   balanced: msg`Tone is a little lighter. Fine at fit-to-screen.`,
   high: msg`No difference we could see.`,
   lossless: msg`Identical pixels.`,

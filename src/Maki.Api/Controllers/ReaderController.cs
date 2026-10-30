@@ -8,6 +8,7 @@ using Maki.Core.Entities;
 using Maki.Core.Images;
 using Maki.Core.Images.Upscaling;
 using Maki.Core.Progress;
+using Maki.Core.Quality;
 using Maki.Core.Reading;
 using Maki.Core.Security;
 using Maki.Core.Io;
@@ -222,6 +223,10 @@ public class ReaderController(
             : null;
 
         var enhanceServer = await enhanceAvailability.GetAsync(ct);
+        var tier = await db.ChapterFiles.AsNoTracking()
+            .Where(f => f.Id == slice.ChapterFileId)
+            .Select(f => f.Tier)
+            .FirstOrDefaultAsync(ct);
 
         return Ok(new
         {
@@ -249,6 +254,7 @@ public class ReaderController(
             pinnedProfileId = resolved.PinnedProfileId,
             autoProfileId = resolved.AutoProfileId,
             pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion),
+            tier = QualitySnapshot.TierName(tier),
             enhanceServer
         });
     }

@@ -2,6 +2,7 @@ import { http, HttpResponse, type HttpHandler } from 'msw'
 import { api } from './api'
 import * as d from './settings/data'
 import { pageConversionHandlers } from './settings/pageConversion'
+import { browseFoldersHandler } from './settings/folders'
 import { healthOptions } from './operations/health'
 
 /** A PUT whose reply is the body it was sent, which is how most settings records answer. */
@@ -103,6 +104,7 @@ export const settingsHandlers: HttpHandler[] = [
   http.post(api('/reader/import/kavita'), () => HttpResponse.json({})),
 
   // Library
+  browseFoldersHandler,
   http.get(api('/rootfolder'), () => HttpResponse.json(d.rootFolders)),
   http.post(api('/rootfolder'), async ({ request }) => {
     const { path } = (await request.json()) as { path: string }
@@ -269,6 +271,17 @@ export const settingsHandlers: HttpHandler[] = [
   // System
   http.get(api('/system/status'), () => HttpResponse.json({ version: '0.32.0' })),
   http.get(api('/system/update'), () => HttpResponse.json(d.updateStatusCurrent)),
+  http.get(api('/system/host'), () => HttpResponse.json(d.hostDocker)),
+  http.put(api('/system/host/network'), async ({ request }) => {
+    const { allowNetwork } = (await request.json()) as { allowNetwork: boolean }
+    return HttpResponse.json({
+      ...d.hostDesktop,
+      configuredBindAddress: allowNetwork ? '*' : 'localhost',
+      configuredNetworkAccess: allowNetwork,
+    })
+  }),
+  http.post(api('/system/restart'), () => new HttpResponse(null, { status: 202 })),
+  http.post(api('/system/update/apply'), () => new HttpResponse(null, { status: 202 })),
   http.get(api('/settings/updates'), () => HttpResponse.json(d.updateSettings)),
   putEcho('/settings/updates'),
   http.post(api('/settings/updates/check'), () => HttpResponse.json(d.updateStatusCurrent)),

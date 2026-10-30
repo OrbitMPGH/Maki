@@ -3,7 +3,7 @@ import { ActionIcon, Button, Group, Menu, Text, Tooltip } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { randomUUID } from '../../lib/uuid'
 import { ApiError } from '../../api/client'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import {
   IconDots, IconEye, IconEyeOff, IconClock, IconThumbUp, IconThumbDown,
 } from '@tabler/icons-react'

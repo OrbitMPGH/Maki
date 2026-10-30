@@ -21,7 +21,7 @@ import {
   VisuallyHidden,
 } from '@mantine/core'
 import { IconRestore, IconTrash } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { activeSeries } from '../../lib/series'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
@@ -53,6 +53,7 @@ import {
   type LibrarySettings,
 } from '../../api/hooks'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
+import { FolderBrowserModal } from '../../components/settings/FolderBrowserModal'
 import { SUPPORTED_LOCALES } from '../../i18n'
 import { MONITOR_OPTIONS } from '../../components/series/SeriesActionsMenu'
 import { DumpProgressBar } from '../../components/MetadataDumpProgress'
@@ -68,10 +69,12 @@ import {
   type RecycleBinEntry,
   type RecycleReason,
 } from '../../api/recycleBin'
+import { MetaList } from '../../components/ui/MetaList'
 
 export function RootFoldersSection() {
   const { t } = useLingui()
   const [newPath, setNewPath] = useState('')
+  const [browsing, setBrowsing] = useState(false)
   const { data: rootFolders } = useRootFolders()
   const addFolder = useAddRootFolder()
   const deleteFolder = useDeleteRootFolder()
@@ -141,13 +144,23 @@ export function RootFoldersSection() {
             placeholder={t`C:\\Manga or /library`}
             value={newPath}
             onChange={(e) => setNewPath(e.currentTarget.value)}
-            style={{ flex: 1 }}
+            style={{ flex: '1 1 16rem' }}
           />
+          <Button variant="default" onClick={() => setBrowsing(true)}>
+            <Trans>Browse</Trans>
+          </Button>
           <Button type="submit" loading={addFolder.isPending}>
             <Trans>Add</Trans>
           </Button>
         </Group>
       </Stack>
+
+      <FolderBrowserModal
+        opened={browsing}
+        onClose={() => setBrowsing(false)}
+        onSelect={setNewPath}
+        initialPath={newPath}
+      />
 
       <ConfirmDialog
         opened={deleting !== null}
@@ -746,9 +759,8 @@ export function RecycleBinSection() {
                           <Table.Tr key={entry.id}>
                             <Table.Td>
                               <Text size="sm" style={{ wordBreak: 'break-all' }}>{entry.fileName}</Text>
-                              <Text size="xs" c="var(--ink-3)">
-                                {renderLabel(RECYCLE_REASON_LABELS[entry.reason])}
-                                {chapters && ` · ${chapters}`}
+                              <Text component="div" size="xs" c="var(--ink-3)">
+                                <MetaList items={[renderLabel(RECYCLE_REASON_LABELS[entry.reason]), chapters]} />
                               </Text>
                               {entry.missing && (
                                 <Text size="xs" c="var(--danger)">

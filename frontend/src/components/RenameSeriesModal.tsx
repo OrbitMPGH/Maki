@@ -10,7 +10,7 @@ import {
   Text,
 } from '@mantine/core'
 import { IconAlertTriangle, IconArrowRight } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { useRenameSeries, useSeriesRenamePreview } from '../api/hooks'

@@ -10,7 +10,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { IconExternalLink, IconRefresh } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { useState, type FormEvent } from 'react'
 import {
   useScrobbleIgnore,
@@ -33,7 +33,7 @@ function progressLabel(s: SeriesScrobbleServiceDto): string {
   const parts: string[] = []
   if (chapter > 0) parts.push(now`Ch. ${chapter}`)
   if (volume > 0) parts.push(now`Vol. ${volume}`)
-  return parts.length ? parts.join(' · ') : '-'
+  return parts.length ? parts.join(', ') : '-'
 }
 
 function ReviewControls({

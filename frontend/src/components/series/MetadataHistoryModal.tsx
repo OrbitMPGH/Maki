@@ -7,6 +7,7 @@ import { type MetadataChange, useSeriesMetadataHistory } from '../../api/seriesM
 import { seriesStatusVisual } from '../ui/status'
 import { useLabel } from '../../i18n-context'
 import { formatDateTime } from '../../format'
+import { MetaList } from '../ui/MetaList'
 
 const FIELD_LABELS: Record<MetadataField, MessageDescriptor> = {
   title: msg`Title`,
@@ -70,8 +71,8 @@ function ChangeRow({ change }: { change: MetadataChange }) {
 
   return (
     <div className="series-record">
-      <Text size="xs" c="var(--ink-4)">
-        {when} · {who}
+      <Text component="div" size="xs" c="var(--ink-4)">
+        <MetaList items={[when, who]} />
       </Text>
       <Stack gap={0}>
         <Text size="sm" fw={500} c="var(--ink-2)">

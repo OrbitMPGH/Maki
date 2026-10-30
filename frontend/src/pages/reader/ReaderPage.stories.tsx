@@ -560,8 +560,11 @@ export const ServerEnhanceTurnShowsWarmedPage: Story = {
     await new Promise((resolve) => setTimeout(resolve, 500))
 
     document.body.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
-    // Read before the frame paints: whatever is on screen here is what the reader sees first.
-    await new Promise((resolve) => requestAnimationFrame(resolve))
+    // The old page stays up until the next one can paint, so the first page shown after the swap is
+    // what the reader sees first.
+    await waitFor(() =>
+      expect(canvasElement.querySelector('img.reader-enhanced-server')?.getAttribute('src')).toContain('/page/6/'),
+    )
     const server = canvasElement.querySelector<HTMLImageElement>('img.reader-enhanced-server')
     const plain = canvasElement.querySelector<HTMLImageElement>('img.reader-region-image:not(.reader-enhanced-server)')
     await expect(server?.getAttribute('src')).toContain('/reader/chapter/7717/page/6/enhanced')
@@ -623,6 +626,31 @@ export const ServerEnhanceTierOff: Story = {
     await expectFallback(canvasElement, canvas)
     await new Promise((resolve) => setTimeout(resolve, 500))
     await expect(offAsked).toHaveLength(0)
+  },
+}
+
+const volumeAsked: number[][] = []
+
+/** Sharp (server) on a digital volume, which the default prefs skip: the plain page shows and nothing is asked of the server. */
+export const EnhanceSkippedForVolume: Story = {
+  parameters: {
+    ...open(7718),
+    msw: [
+      withManifest({
+        ...chapters[1132],
+        chapterId: 7718,
+        tier: 'volume',
+        prefs: { ...chapters[1132].prefs, enhance: 'always', enhanceMethod: 'server:span-s' },
+      }),
+      enhanceAnswer(7718, 'ready', volumeAsked),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    const page = await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    await expect(page).toBeVisible()
+    await expect(volumeAsked).toHaveLength(0)
+    await expect(canvasElement.querySelector('canvas.reader-enhanced')).toBeNull()
   },
 }
 

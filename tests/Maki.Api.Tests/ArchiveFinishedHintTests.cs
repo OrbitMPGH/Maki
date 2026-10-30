@@ -38,6 +38,30 @@ public sealed class ArchiveFinishedHintTests : IDisposable
         db.SaveChanges();
     }
 
+    private int[] SeedDownloadedChapters(int seriesId, int count)
+    {
+        using var db = _db.NewContext();
+        var chapters = Enumerable.Range(1, count).Select(n => new Chapter
+        {
+            SeriesId = seriesId,
+            Number = n,
+            ChapterFile = new ChapterFile { SeriesId = seriesId, RelativePath = $"{n}.cbz", DateAdded = DateTime.UtcNow },
+        }).ToList();
+        db.Chapters.AddRange(chapters);
+        db.SaveChanges();
+        return chapters.Select(c => c.Id).ToArray();
+    }
+
+    private void SeedCompletedChapters(int userId, int seriesId, IEnumerable<int> chapterIds)
+    {
+        using var db = _db.NewContext();
+        db.ChapterProgress.AddRange(chapterIds.Select(id => new ChapterProgress
+        {
+            UserId = userId, SeriesId = seriesId, ChapterId = id, Completed = true,
+        }));
+        db.SaveChanges();
+    }
+
     private async Task<bool> Offered(int userId, int seriesId)
     {
         using var db = _db.NewContext(userId);
@@ -65,6 +89,45 @@ public sealed class ArchiveFinishedHintTests : IDisposable
         var seriesId = SeedCompleted();
         SeedReader(alice, seriesId, finished: true);
         SeedReader(bob, seriesId, finished: false);
+
+        Assert.False(await Offered(alice, seriesId));
+    }
+
+    [Fact]
+    public async Task Not_offered_when_finished_but_downloaded_chapters_are_unread()
+    {
+        var alice = _db.SeedUser("alice");
+        var seriesId = SeedCompleted();
+        var chapters = SeedDownloadedChapters(seriesId, 3);
+        SeedReader(alice, seriesId, finished: true);
+        SeedCompletedChapters(alice, seriesId, [chapters[0], chapters[2]]);
+
+        Assert.False(await Offered(alice, seriesId));
+    }
+
+    [Fact]
+    public async Task Offered_once_every_downloaded_chapter_is_read()
+    {
+        var alice = _db.SeedUser("alice");
+        var seriesId = SeedCompleted();
+        var chapters = SeedDownloadedChapters(seriesId, 3);
+        SeedReader(alice, seriesId, finished: true);
+        SeedCompletedChapters(alice, seriesId, chapters);
+
+        Assert.True(await Offered(alice, seriesId));
+    }
+
+    [Fact]
+    public async Task Not_offered_while_another_finished_reader_has_unread_chapters()
+    {
+        var alice = _db.SeedUser("alice");
+        var bob = _db.SeedUser("bob");
+        var seriesId = SeedCompleted();
+        var chapters = SeedDownloadedChapters(seriesId, 2);
+        SeedReader(alice, seriesId, finished: true);
+        SeedReader(bob, seriesId, finished: true);
+        SeedCompletedChapters(alice, seriesId, chapters);
+        SeedCompletedChapters(bob, seriesId, [chapters[1]]);
 
         Assert.False(await Offered(alice, seriesId));
     }

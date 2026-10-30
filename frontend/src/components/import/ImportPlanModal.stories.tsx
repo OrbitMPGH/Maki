@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, waitFor, within } from 'storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
-import { importPlansLinked, importPlansRestore } from '../../../.storybook/mocks/operations/import'
+import { importPlans, importPlansLinked, importPlansRestore } from '../../../.storybook/mocks/operations/import'
 import { ImportPlanModal } from './ImportPlanModal'
 
 const meta = {
@@ -25,7 +25,7 @@ export const MixedPlan: Story = {
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Import preview' })
-    await waitFor(async () => expect(await within(dialog).findByText('Registers 5 files, 3 of them CBZs Maki builds')).toBeVisible())
+    await waitFor(async () => expect(await within(dialog).findByText('3 CBZs built')).toBeVisible())
     await waitFor(() => expect(within(dialog).getByText('The folder holds no readable comic files.')).toBeVisible())
     await waitFor(() => expect(within(dialog).getByText(/read off the file names until sources are found/)).toBeVisible())
     await waitFor(() => expect(within(dialog).getByText('2 files are left out')).toBeVisible())
@@ -45,7 +45,7 @@ export const ExistingSeriesMerge: Story = {
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body)
     await waitFor(async () => expect(await body.findByText(/Imported into Clockwork Tea House/)).toBeVisible())
-    await waitFor(() => expect(body.getByText('links Ch. 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 +1 more')).toBeVisible())
+    await waitFor(() => expect(body.getByText('Ch.2-14')).toBeVisible())
   },
 }
 
@@ -77,5 +77,50 @@ export const Loading: Story = {
   parameters: { msw: [http.post(api('/libraryimport/plan'), () => neverResolve())] },
   play: async ({ canvasElement }) => {
     await waitFor(async () => expect(await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'Import preview' })).toBeVisible())
+  },
+}
+
+/** A first import of a whole library: the summary and the filtered list, files only once a folder opens. */
+export const LargeImport: Story = {
+  args: {
+    items: Array.from({ length: 30 }, (_, n) => ({
+      folderName: n === 1 ? 'Moth Orchard' : `Starlit Ferry ${String(n + 1).padStart(2, '0')}`,
+      metadataProviderId: `mb-${30100 + n}`,
+    })),
+  },
+  parameters: {
+    msw: [
+      http.post(api('/libraryimport/plan'), async ({ request }) => {
+        const body = (await request.json()) as { items: { folderName: string; metadataProviderId: string }[] }
+        // The first folder has odd files and the second fails; the rest only register one file each.
+        const plans = importPlans(body.items).map((p, i) =>
+          i < 2
+            ? p
+            : {
+                ...p,
+                folderAction: 'keep' as const,
+                files: (p.files ?? []).slice(0, 1).map((f) => ({ ...f, name: `${p.folderName} - Ch.1.cbz` })),
+                skipped: null,
+              },
+        )
+        return HttpResponse.json(plans)
+      }),
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog', { name: 'Import preview' })
+    const scope = within(dialog)
+    await waitFor(async () => expect(await scope.findByText('Worth a look (2)')).toBeVisible())
+    await waitFor(() => expect(scope.getByText('The folder holds no readable comic files.')).toBeVisible())
+    expect(scope.queryByText('Starlit Ferry 05')).toBeNull()
+    await userEvent.click(scope.getByText('All (30)'))
+    await waitFor(() => expect(scope.getByText('Starlit Ferry 05')).toBeVisible())
+    expect(scope.queryByText('Starlit Ferry 05 - Ch.1.cbz')).toBeNull()
+    await userEvent.click(scope.getByRole('button', { name: /Starlit Ferry 05/ }))
+    await waitFor(() => expect(scope.getByText('Starlit Ferry 05 - Ch.1.cbz')).toBeVisible())
+    await userEvent.type(scope.getByRole('textbox', { name: 'Find a folder' }), 'moth')
+    await waitFor(() => expect(scope.queryByText('Starlit Ferry 05')).toBeNull())
+    await waitFor(() => expect(scope.getByText('Moth Orchard')).toBeVisible())
   },
 }

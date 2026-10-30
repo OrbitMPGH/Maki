@@ -127,8 +127,9 @@
     0 22px 48px -20px rgba(0, 0, 0, 0.9);
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-cover: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 22px -12px rgba(0, 0, 0, 0.85);
-  --shadow-cover-hover: 0 2px 4px rgba(0, 0, 0, 0.4), 0 20px 34px -14px rgba(0, 0, 0, 0.9);
+  /* One tight layer: a few hundred posters each casting a wide blur made scrolling and hover slow. */
+  --shadow-cover: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-cover-hover: 0 4px 8px -4px rgba(0, 0, 0, 0.6);
   --cover-rim: rgba(255, 255, 255, 0.09);
   --cover-rim-hover: rgba(255, 255, 255, 0.18);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -401,8 +402,8 @@
   --tier-5: #5b4bab;
   --tier-6: #a83660;
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
-  --shadow-cover: 0 1px 2px rgba(20, 24, 40, 0.14), 0 10px 22px -12px rgba(20, 24, 40, 0.4);
-  --shadow-cover-hover: 0 2px 4px rgba(20, 24, 40, 0.12), 0 20px 34px -14px rgba(20, 24, 40, 0.45);
+  --shadow-cover: 0 1px 2px rgba(20, 24, 40, 0.14);
+  --shadow-cover-hover: 0 4px 8px -4px rgba(20, 24, 40, 0.25);
   --cover-rim: rgba(20, 24, 40, 0.1);
   --cover-rim-hover: rgba(20, 24, 40, 0.18);
   --surface-raised: #ffffff;
@@ -437,8 +438,8 @@
   --shadow-card: 0 1px 0 rgba(70, 52, 30, 0.08);
   --shadow-raised: 0 0 0 1px rgba(70, 52, 30, 0.06), 0 1px 0 rgba(70, 52, 30, 0.1);
   --shadow-object: 0 0 0 1px rgba(70, 52, 30, 0.1), 0 2px 0 rgba(70, 52, 30, 0.07);
-  --shadow-cover: 0 1px 0 rgba(70, 52, 30, 0.18), 0 8px 16px -12px rgba(70, 52, 30, 0.45);
-  --shadow-cover-hover: 0 2px 0 rgba(70, 52, 30, 0.16), 0 14px 24px -14px rgba(70, 52, 30, 0.5);
+  --shadow-cover: 0 1px 0 rgba(70, 52, 30, 0.18);
+  --shadow-cover-hover: 0 2px 0 rgba(70, 52, 30, 0.22);
   --cover-rim: rgba(70, 52, 30, 0.16);
   --cover-rim-hover: rgba(70, 52, 30, 0.26);
   /* The stock is darker than Light's ground, which pulls these just under 4.5:1. */
@@ -633,6 +634,65 @@ body {
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
+}
+
+/* --- Meta lists ------------------------------------------------------------ */
+/* Short facts in a row, split by a hairline rather than a centre dot (MetaList). Inherits size and
+   colour from where it sits. A hairline never appears inside a title the way a comma can. */
+.meta-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 2px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.meta-list > li {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.meta-list > * + *::before {
+  content: '';
+  flex-shrink: 0;
+  width: 1px;
+  height: 0.9em;
+  margin-inline: 0.6em;
+  background: currentColor;
+  opacity: 0.35;
+}
+/* Inline, for a parent that truncates or line-clamps: a flex row would break both. */
+.meta-list-inline,
+.meta-list-inline > * {
+  display: inline;
+}
+.meta-list-inline > * + *::before {
+  display: inline-block;
+  vertical-align: -0.1em;
+}
+
+/* --- Toasts ---------------------------------------------------------------- */
+/* lib/toast gives every toast an icon in its tone, which also turns off Mantine's coloured bar down
+   the left edge. The tone tints the surface and border instead of filling a disc behind the icon. */
+.mantine-Notification-root {
+  padding-inline-start: 14px;
+  border: 1px solid color-mix(in srgb, var(--notification-color) 32%, var(--border));
+  background: color-mix(in srgb, var(--notification-color) 8%, var(--surface-2));
+}
+.mantine-Notification-root::before {
+  display: none;
+}
+.mantine-Notification-icon {
+  width: auto;
+  height: auto;
+  margin-inline-end: 12px;
+  background: transparent;
+  color: var(--notification-color);
+}
+.mantine-Notification-loader {
+  margin-inline-end: 12px;
 }
 
 /* --- Pending buttons ----------------------------------------------------- */
@@ -1411,14 +1471,24 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   margin: -6px -8px var(--mantine-spacing-md);
   padding: 6px 8px;
 }
+/* Sentence case, so a rule after the label does the work the capitals did: it marks where each
+   section starts. */
 .nav-section-label {
-  font-size: var(--type-micro);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--type-meta);
   font-weight: var(--fw-bold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   line-height: 16px;
-  color: var(--ink-4);
+  color: var(--ink-3);
   padding: 0 10px;
+}
+.nav-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.25;
 }
 .nav-count {
   min-width: 18px;
@@ -1522,7 +1592,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   container-type: inline-size;
   transition:
     transform var(--dur-medium) var(--ease),
-    box-shadow var(--dur-medium) var(--ease),
     border-color var(--dur-medium) var(--ease);
 }
 .cover-card:hover {
@@ -1890,11 +1959,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: rgba(255, 255, 255, 0.7);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
-/* The count pill keeps its width; the text beside it gives way first. */
+/* The count pill keeps its width; the text beside it gives way first. Onest's descenders hang below
+   a line-height of 1, so the padding widens the overflow clip and the margin gives the space back. */
 .cover-row > :first-child {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding-block: 0.2em;
+  margin-block: -0.2em;
 }
 /* A lone line ("Anime ends at ch. 120") has no pill to make room for, so it wraps instead of clipping. */
 .cover-row > :only-child {
@@ -1919,6 +1991,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   flex-shrink: 0;
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);
+  /* The row's shadow is for white text over art; on a light accent's dark text it reads as a smear. */
+  text-shadow: none;
 }
 /* Home rails already carry a brand chapter pill, so the count stays neutral to keep one accent per card. */
 .cover-new-quiet {
@@ -2664,7 +2738,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 .next-up-meta {
   display: flex;
-  gap: 6px;
+  align-items: center;
   overflow: hidden;
   color: var(--ink-3);
   font-size: var(--type-badge);
@@ -2672,8 +2746,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   white-space: nowrap;
 }
 .next-up-meta > * + *::before {
-  content: '·';
-  margin-right: 6px;
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 0.9em;
+  margin-inline: 6px;
+  vertical-align: -0.1em;
+  background: currentColor;
+  opacity: 0.35;
 }
 .next-up-progress {
   display: flex;
@@ -2954,8 +3034,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: rgba(255, 255, 255, 0.55);
 }
 .discover-sub-year::before {
-  content: '·';
-  margin-right: 5px;
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 0.9em;
+  margin-inline: 1px 6px;
+  vertical-align: -0.1em;
+  background: currentColor;
+  opacity: 0.5;
 }
 /* A rail-width card has no room for "Completed" beside the chapter count, so it reads like a
    library cover: the disc alone, the word kept for screen readers. */
@@ -3412,9 +3498,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   white-space: nowrap;
 }
 .discover-hero-strip-meta > * + *::before {
-  content: '·';
-  margin-right: 6px;
-  color: var(--ink-3);
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 0.9em;
+  margin-inline-end: 6px;
+  vertical-align: -0.1em;
+  background: currentColor;
+  opacity: 0.35;
 }
 .discover-hero-strip-rating {
   display: inline-flex;
@@ -4333,6 +4424,38 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .setup-folder[data-broken] .setup-folder-icon,
 .setup-folder[data-broken] .setup-folder-meta {
   color: var(--warn);
+}
+
+.folder-browser-list {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+}
+.folder-browser-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  color: var(--ink-2);
+}
+.folder-browser-row + .folder-browser-row {
+  border-top: 1px solid var(--border);
+}
+.folder-browser-row svg {
+  flex-shrink: 0;
+  color: var(--brand-fg, var(--brand));
+}
+.folder-browser-row:hover:not(:disabled),
+.folder-browser-row:focus-visible {
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  color: var(--ink-hi);
+}
+.folder-browser-row:disabled {
+  opacity: 0.6;
+}
+.folder-browser-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .setup-choice {
@@ -7032,6 +7155,15 @@ body.column-resizing * {
   font-size: 1.05rem;
   opacity: 0.8;
 }
+/* Under the figure, finishing its sentence at reading weight, so the figure stays the loudest thing
+   on the slide. */
+.rewind-caption {
+  margin-top: 4px;
+  font-size: 1.2rem;
+  font-weight: var(--fw-medium);
+  opacity: 0.85;
+  text-wrap: balance;
+}
 .rewind-big-number {
   font-size: clamp(3.5rem, 12vw, 6.5rem);
   font-weight: var(--fw-heavy);
@@ -8820,6 +8952,89 @@ tr:hover .mono-value-copy {
   }
 }
 
+/* Import preview: one line per folder, files only once a folder is opened. */
+.import-plan-figures {
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  margin-bottom: 0;
+}
+.import-plan-figures .figure-strip-item {
+  padding: 0.55rem 0.85rem;
+}
+.import-plan-folders {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+.import-plan-folder + .import-plan-folder {
+  border-top: 1px solid var(--border);
+}
+.import-plan-folder-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-surface);
+  color: var(--ink-hi);
+}
+button.import-plan-folder-head:hover {
+  background: var(--surface-2);
+}
+.import-plan-folder-head:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.import-plan-folder-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.import-plan-folder-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.import-plan-arrow {
+  flex-shrink: 0;
+  color: var(--ink-3);
+}
+.import-plan-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ink-3);
+  transition: transform var(--dur-medium) var(--ease);
+}
+.import-plan-folder[data-open] .import-plan-chevron {
+  transform: rotate(180deg);
+}
+.import-plan-folder-body {
+  padding: 2px 12px 14px;
+}
+.import-plan-files {
+  display: grid;
+  border-top: 1px solid var(--border);
+}
+.import-plan-file {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 4.5rem;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+.import-plan-file-name {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.import-plan-file-link {
+  white-space: nowrap;
+}
+.import-plan-file-size {
+  text-align: right;
+}
+
 /* --- Operational page chrome (ported from redesignv2) --- */
 
 .health-filter-rail {
@@ -9353,11 +9568,9 @@ tr:hover .mono-value-copy {
   position: sticky;
   top: var(--app-shell-header-offset, 0px);
   z-index: 20;
-  border-left: 2px solid var(--brand);
-  border-right: 0;
-  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+  border-color: color-mix(in srgb, var(--brand) 30%, var(--border));
   background:
-    linear-gradient(color-mix(in srgb, var(--surface-2) 72%, transparent), color-mix(in srgb, var(--surface-2) 72%, transparent)),
+    linear-gradient(color-mix(in srgb, var(--brand) 9%, var(--surface-2)), color-mix(in srgb, var(--brand) 9%, var(--surface-2))),
     var(--app-bg);
   box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
 }
@@ -9373,12 +9586,11 @@ tr:hover .mono-value-copy {
     flex-shrink: 0;
   }
 }
+/* A full border and fill in the tone, with the leading icon in it; no stripe down the left. */
 [data-mantine-color-scheme] .series-detail-chapter-hint,
 [data-mantine-color-scheme] .series-files-hint {
-  border-left: 2px solid var(--warn);
-  border-right: 0;
-  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
-  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 35%, var(--border));
+  background: color-mix(in srgb, var(--warn) 7%, var(--surface-2));
 }
 .series-detail-chapter-table {
   overflow: hidden;
@@ -9495,10 +9707,9 @@ tr:hover .mono-value-copy {
   border-color: var(--ink-4);
 }
 .relink-outcome {
-  border: 1px solid var(--border);
-  border-left: 2px solid var(--brand);
-  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
-  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--border));
+  border-radius: var(--radius-surface);
+  background: color-mix(in srgb, var(--brand) 7%, var(--surface-2));
 }
 .relink-cell.is-held {
   background: transparent;
@@ -9675,7 +9886,6 @@ tr:hover .mono-value-copy {
   align-items: end;
   column-gap: clamp(18px, 2.4vw, 30px);
   padding: clamp(20px, 2.6vw, 36px);
-  animation: continue-hero-in 0.4s var(--ease) both;
 }
 /* The glance has two homes (`ContinueHero` renders it in both and one is always `display: none`):
    in the hero as a column on its right when wide, or as a row under the actions on a phone, and
@@ -9687,16 +9897,6 @@ tr:hover .mono-value-copy {
 }
 .continue-glance-below {
   margin-top: var(--mantine-spacing-md);
-}
-@keyframes continue-hero-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
 }
 .continue-hero-poster {
   position: relative;
@@ -9749,30 +9949,18 @@ tr:hover .mono-value-copy {
 :root[data-theme='light'] .continue-hero.has-accent {
   --tile-accent-fg: color-mix(in oklab, var(--series-accent) 82%, black);
 }
-.continue-hero-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-bottom: 10px;
+/* Says which of the two cards this is: part-way through a chapter, or the next one not started. */
+.continue-hero-label {
+  margin-bottom: 8px;
   color: var(--brand-fg);
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
 }
-.continue-hero-eyebrow::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--brand);
-}
-.continue-hero-eyebrow-when {
+.continue-hero-when {
+  margin: 8px 0 2px;
   color: var(--ink-3);
+  font-size: var(--type-meta);
   font-weight: var(--fw-medium);
-}
-.continue-hero-eyebrow-when::before {
-  content: '·';
-  margin-right: 9px;
-  color: var(--ink-4);
 }
 .continue-hero-title {
   display: -webkit-box;
@@ -9896,7 +10084,7 @@ tr:hover .mono-value-copy {
     grid-row: 1 / span 6;
     align-self: start;
   }
-  .continue-hero-eyebrow-when {
+  .continue-hero-when {
     display: none;
   }
   .continue-hero-copy {

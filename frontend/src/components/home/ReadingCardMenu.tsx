@@ -1,7 +1,7 @@
 import { errorText } from '../../api/errorText'
 import { useNavigate } from 'react-router-dom'
 import { ActionIcon, Button, Group, Menu, Text } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { IconBook, IconDots, IconEyeOff } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useHideHomeReading, type HomeReadingItem } from '../../api/hooks'

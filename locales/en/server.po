@@ -1384,6 +1384,11 @@ msgstr "Root folder is in use by one or more series"
 msgid "error.rootFolder.inUseArchived"
 msgstr "{count, plural, one {# archived series still uses} other {# archived series still use}} this folder. Delete or move them first."
 
+#. {path} is the folder the folder picker tried to open.
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.notReadable"
+msgstr "Maki can't read this folder: {path}"
+
 #: src/Maki.Api/Controllers/RootFolderController.cs
 msgid "error.rootFolder.pathRequired"
 msgstr "Path is required"
@@ -2543,6 +2548,26 @@ msgstr "Backup \"{name}\" was not found."
 #: src/Maki.Api/Controllers/SystemController.cs
 msgid "error.system.restoreStaged"
 msgstr "Restore staged. Restarting to apply."
+
+#. Shown in the response to a successful restore request when nothing will start Maki again by itself.
+#: src/Maki.Api/Controllers/SystemController.cs
+msgid "error.system.restoreStagedManualStart"
+msgstr "Restore staged. Maki is stopping now. Start it again to apply the restore."
+
+#. The desktop app has not finished downloading an update, or none is newer than this version.
+#: src/Maki.Api/Controllers/SystemController.cs
+msgid "error.system.noUpdateReady"
+msgstr "No update has been downloaded yet. Try again in a few minutes."
+
+#. Docker installs must listen on every network inside the container.
+#: src/Maki.Api/Controllers/SystemController.cs
+msgid "error.system.networkAccessDocker"
+msgstr "Network access is set by the container's port mapping, not here."
+
+#. Maki was started by hand, so nothing would start it again after it stops.
+#: src/Maki.Api/Controllers/SystemController.cs
+msgid "error.system.restartUnsupervised"
+msgstr "Maki can't restart itself here. Stop it and start it again by hand."
 
 #. The cause is in the server log.
 #: src/Maki.Api/Controllers/SystemController.cs
@@ -4009,6 +4034,24 @@ msgstr "A previous startup migration failed ({error}). Check the startup logs."
 msgid "health.check.diagnosticsUnavailable"
 msgstr "Database or scheduler diagnostics could not complete"
 
+#: src/Maki.Api/Services/HealthMonitor.cs
+msgid "health.check.browserInstalled"
+msgstr "Headless browser: installed"
+
+#. {percent} is a number from 0 to 100.
+#: src/Maki.Api/Services/HealthMonitor.cs
+msgid "health.check.browserInstalling"
+msgstr "Headless browser: downloading, {percent}%"
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+msgid "health.check.browserFailed"
+msgstr "Headless browser: the install failed. The reason is in the server log, and Maki tries again the next time a source needs it."
+
+#. {sources} is a comma-separated list of source names, never translated.
+#: src/Maki.Api/Services/HealthMonitor.cs
+msgid "health.check.browserMissing"
+msgstr "Headless browser: not installed yet. It downloads (about 100 MB) the first time {sources} needs it."
+
 #. {service} is a product name (Prowlarr, Jackett, Kavita, qBittorrent, FlareSolverr), never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.notConfigured"
@@ -4664,3 +4707,66 @@ msgstr "The published vectors use a newer schema than this build reads."
 #: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
 msgid "install.tasteVectors.truncated"
 msgstr "The published vectors look truncated; ignoring them."
+
+#: src/Maki.Desktop/TrayApp.cs
+msgid "desktop.tray.open"
+msgstr "Open Maki"
+
+#: src/Maki.Desktop/TrayApp.cs
+msgid "desktop.tray.start"
+msgstr "Start Maki"
+
+#: src/Maki.Desktop/TrayApp.cs
+msgid "desktop.tray.startWithWindows"
+msgstr "Start with Windows"
+
+#: src/Maki.Desktop/TrayApp.cs
+msgid "desktop.tray.viewLogs"
+msgstr "View logs"
+
+#: src/Maki.Desktop/TrayApp.cs
+msgid "desktop.tray.quit"
+msgstr "Quit Maki"
+
+#. {version} is a version number such as 0.35.0.
+#: src/Maki.Desktop/TrayApp.cs
+msgid "desktop.tray.restartToUpdate"
+msgstr "Restart to update to {version}"
+
+#. Tooltip on the notification-area icon. Windows cuts it at 127 characters.
+#: src/Maki.Desktop/TrayApp.cs
+msgid "desktop.tray.tooltipStarting"
+msgstr "Maki is starting"
+
+#. Tooltip on the notification-area icon. Windows cuts it at 127 characters.
+#: src/Maki.Desktop/TrayApp.cs
+msgid "desktop.tray.tooltipRunning"
+msgstr "Maki is running"
+
+#. Tooltip on the notification-area icon. Windows cuts it at 127 characters.
+#: src/Maki.Desktop/TrayApp.cs
+msgid "desktop.tray.tooltipStopped"
+msgstr "Maki is stopped"
+
+#. Tooltip on the notification-area icon. Windows cuts it at 127 characters.
+#: src/Maki.Desktop/TrayApp.cs
+msgid "desktop.tray.tooltipStopping"
+msgstr "Maki is stopping"
+
+#: src/Maki.Desktop/TrayApp.cs
+msgid "desktop.notice.firstRun"
+msgstr "Maki is running. Its icon stays here in the notification area; right-click it for options."
+
+#. {port} is a network port number. "Port" and "config.json" are literal names, never translated.
+#: src/Maki.Desktop/TrayApp.cs
+msgid "desktop.notice.portInUse"
+msgstr "Another program is using port {port}, so Maki can't start. Close that program, or change Port in config.json, then choose Start Maki."
+
+#: src/Maki.Desktop/TrayApp.cs
+msgid "desktop.notice.stopped"
+msgstr "Maki stopped and could not start again. View logs shows why."
+
+#. {version} is a version number such as 0.35.0.
+#: src/Maki.Desktop/TrayApp.cs
+msgid "desktop.notice.updateReady"
+msgstr "Maki {version} is downloaded. Choose Restart to update when it suits you."
