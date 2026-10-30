@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The Windows tray app: starts Maki.Api as a child process, starts it again after a restore or a
+    crash, and installs updates through Velopack. It never hosts Maki itself, so Maki.Api stays the
+    same program on every OS. Published self-contained into the package root, with Maki.Api in a
+    server\ folder beside it; see distribution/build-desktop.ps1.
+
+    EnableWindowsTargeting lets the solution build on the Linux CI runner. Nothing runs it there.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Maki</AssemblyName>
+    <RootNamespace>Maki.Desktop</RootNamespace>
+    <ApplicationIcon>maki.ico</ApplicationIcon>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="maki.ico" LogicalName="maki.ico" />
+    <!-- The tray's own words live under desktop.* in the server catalogues, so they are translated
+         with everything else rather than in a second place nobody remembers. -->
+    <EmbeddedResource Include="..\..\locales\*\server.po">
+      <LogicalName>Maki.Locales.$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(FullPath)')))).po</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Velopack" Version="1.2.161" />
+  </ItemGroup>
+
+</Project>

@@ -3523,6 +3523,10 @@ msgstr "全期間"
 msgid "All: every chapter. Smart: only the next few ahead of your reading. Main only: skips specials."
 msgstr "All：すべての章。Smart：読んでいる位置の少し先の章だけ。Main only：特別編をスキップ。"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Allow other devices on your network"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Allow replacing unknown-tier files"
@@ -7372,6 +7376,10 @@ msgstr "表紙をダウンロード中"
 msgid "Downloading metadata database"
 msgstr "メタデータデータベースをダウンロード中"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Downloading the update in the background."
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Downloading…"
@@ -9424,9 +9432,8 @@ msgstr "読み方"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "https, require https, trusted proxies, hsts"
-msgstr "https, HTTPSを必須, 信頼するプロキシ, hsts, require https, trusted proxies"
+msgid "https, require https, trusted proxies, hsts, other devices, lan, localhost, firewall, phone"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -9916,6 +9923,10 @@ msgstr ""
 #, fuzzy
 msgid "Installing metadata database"
 msgstr "メタデータデータベースをインストール中"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Installing the update. This page reconnects when Maki is back."
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
@@ -11102,6 +11113,10 @@ msgstr ""
 msgid "Maki could not list the sample series under both versions to compare them."
 msgstr ""
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Maki downloads updates in the background and installs them when you restart it."
+msgstr ""
+
 #: src/components/pageconversion/CompareStep.tsx
 msgid "Maki found no suitable pages to suggest. Pick one from your library."
 msgstr ""
@@ -11110,6 +11125,10 @@ msgstr ""
 #, fuzzy
 msgid "Maki is restarting to apply it. Reload in a moment."
 msgstr "適用のためMakiを再起動しています。しばらくしてから再読み込みしてください。"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Maki is restarting. This page reconnects when it is back."
+msgstr ""
 
 #: src/components/import/RecentImports.tsx
 msgid "Maki is still looking for sources. Undoing stops the search."
@@ -12136,6 +12155,10 @@ msgstr "否定"
 #, fuzzy
 msgid "Network"
 msgstr "ネットワーク"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Network access changes after Maki restarts."
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -14614,6 +14637,14 @@ msgstr "この環境では個人の追加による重み付けは無効です。
 msgid "Phone reader"
 msgstr "スマートフォンリーダー"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Phones and other computers can open Maki at this computer's address, port {port}. If Windows blocked Maki once, allow it under Windows Security, Firewall, \"Allow an app through firewall\"."
+msgstr ""
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Phones and other computers can open Maki at this computer's address, port {port}. Off means only this computer can."
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Pick a chapter language first"
@@ -16599,6 +16630,14 @@ msgstr "IDで解決。高精度"
 msgid "Restart"
 msgstr ""
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Restart now"
+msgstr ""
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Restart to update"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -17319,6 +17358,10 @@ msgstr ""
 #, fuzzy
 msgid "Saved. Leave empty to keep it."
 msgstr "保存しました。空欄のままにすると、現在の値を保持します。"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Saved. Restart Maki to apply it."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -20137,6 +20180,10 @@ msgstr "ゴミ箱のコピーがありません"
 msgid "The trashed copy of this file is gone"
 msgstr "このファイルのゴミ箱のコピーがありません"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "The update is downloaded. Maki is offline for about a minute while it installs."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "The upgrade scan could not run. The server log has the details."
@@ -22403,6 +22450,10 @@ msgstr "あなた"
 #, fuzzy
 msgid "You"
 msgstr "あなた"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "You are on this page from another device. After the restart, Maki only answers on the computer it runs on."
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy

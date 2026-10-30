@@ -579,7 +579,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Network`,
     admin: true,
     keywords: msg({
-      message: `https, require https, trusted proxies, hsts`,
+      message: `https, require https, trusted proxies, hsts, other devices, lan, localhost, firewall, phone`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },

@@ -2943,6 +2943,10 @@ msgstr "All time"
 msgid "All: every chapter. Smart: only the next few ahead of your reading. Main only: skips specials."
 msgstr "All: every chapter. Smart: only the next few ahead of your reading. Main only: skips specials."
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Allow other devices on your network"
+msgstr "Allow other devices on your network"
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Allow replacing unknown-tier files"
 msgstr "Allow replacing unknown-tier files"
@@ -6159,6 +6163,10 @@ msgstr "Downloading cover"
 msgid "Downloading metadata database"
 msgstr "Downloading metadata database"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Downloading the update in the background."
+msgstr "Downloading the update in the background."
+
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Downloading…"
 msgstr "Downloading…"
@@ -7875,8 +7883,8 @@ msgstr "How you read"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "https, require https, trusted proxies, hsts"
-msgstr "https, require https, trusted proxies, hsts"
+msgid "https, require https, trusted proxies, hsts, other devices, lan, localhost, firewall, phone"
+msgstr "https, require https, trusted proxies, hsts, other devices, lan, localhost, firewall, phone"
 
 #: src/pages/HealthPage.tsx
 msgid "I approve applying these replacement files."
@@ -8280,6 +8288,10 @@ msgstr "Installed, version {0}"
 #: src/components/MetadataDumpProgress.tsx
 msgid "Installing metadata database"
 msgstr "Installing metadata database"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Installing the update. This page reconnects when Maki is back."
+msgstr "Installing the update. This page reconnects when Maki is back."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
@@ -9267,6 +9279,10 @@ msgstr "Maki could not find the page images on the chapter page. Describe them u
 msgid "Maki could not list the sample series under both versions to compare them."
 msgstr "Maki could not list the sample series under both versions to compare them."
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Maki downloads updates in the background and installs them when you restart it."
+msgstr "Maki downloads updates in the background and installs them when you restart it."
+
 #: src/components/pageconversion/CompareStep.tsx
 msgid "Maki found no suitable pages to suggest. Pick one from your library."
 msgstr "Maki found no suitable pages to suggest. Pick one from your library."
@@ -9274,6 +9290,10 @@ msgstr "Maki found no suitable pages to suggest. Pick one from your library."
 #: src/pages/settings/SystemCards.tsx
 msgid "Maki is restarting to apply it. Reload in a moment."
 msgstr "Maki is restarting to apply it. Reload in a moment."
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Maki is restarting. This page reconnects when it is back."
+msgstr "Maki is restarting. This page reconnects when it is back."
 
 #: src/components/import/RecentImports.tsx
 msgid "Maki is still looking for sources. Undoing stops the search."
@@ -10128,6 +10148,10 @@ msgstr "Negate"
 #: src/pages/settings/registry.ts
 msgid "Network"
 msgstr "Network"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Network access changes after Maki restarts."
+msgstr "Network access changes after Maki restarts."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Neutral"
@@ -12202,6 +12226,14 @@ msgstr "Personal add weighting is disabled for this instance."
 msgid "Phone reader"
 msgstr "Phone reader"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Phones and other computers can open Maki at this computer's address, port {port}. If Windows blocked Maki once, allow it under Windows Security, Firewall, \"Allow an app through firewall\"."
+msgstr "Phones and other computers can open Maki at this computer's address, port {port}. If Windows blocked Maki once, allow it under Windows Security, Firewall, \"Allow an app through firewall\"."
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Phones and other computers can open Maki at this computer's address, port {port}. Off means only this computer can."
+msgstr "Phones and other computers can open Maki at this computer's address, port {port}. Off means only this computer can."
+
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Pick a chapter language first"
 msgstr "Pick a chapter language first"
@@ -13847,6 +13879,14 @@ msgstr "Resolved using ID. High accuracy"
 msgid "Restart"
 msgstr "Restart"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Restart now"
+msgstr "Restart now"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Restart to update"
+msgstr "Restart to update"
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -14467,6 +14507,10 @@ msgstr "Saved rules could not be loaded; saving will replace them."
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "Saved. Leave empty to keep it."
 msgstr "Saved. Leave empty to keep it."
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Saved. Restart Maki to apply it."
+msgstr "Saved. Restart Maki to apply it."
 
 #: src/pages/LibraryPage.tsx
 msgid "Saves the current search, sort and every filter in the panel as a named preset."
@@ -16819,6 +16863,10 @@ msgstr "The trashed copy is gone"
 msgid "The trashed copy of this file is gone"
 msgstr "The trashed copy of this file is gone"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "The update is downloaded. Maki is offline for about a minute while it installs."
+msgstr "The update is downloaded. Maki is offline for about a minute while it installs."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "The upgrade scan could not run. The server log has the details."
@@ -18706,6 +18754,10 @@ msgstr "you"
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "You"
 msgstr "You"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "You are on this page from another device. After the restart, Maki only answers on the computer it runs on."
+msgstr "You are on this page from another device. After the restart, Maki only answers on the computer it runs on."
 
 #: src/components/settings/SecuritySection.tsx
 msgid "You are on this page over plain HTTP. After a restart, signing in at this address will be refused. Open Maki through its HTTPS address first, or make sure you can reach it that way."

@@ -267,6 +267,24 @@ builds some on the old version first.
 - [ ] **9.2** Anything new that copies to the clipboard, generates an id, or hashes in the browser
       gets tried on the insecure origin specifically.
 
+## 10. Native builds
+
+The `Native builds` workflow runs on the tag push, like the Docker one, and attaches its files to the
+GitHub release once that exists (it waits up to 90 minutes for it). A release candidate gets the
+same files, but installed copies never update to it: the tray only follows stable releases.
+
+- [ ] **10.1** The workflow is green, and the release carries the Windows setup and portable zip,
+      the Velopack feed (`releases.win.json`, `assets.win.json`, `RELEASES`, the `.nupkg` files)
+      and both Linux tarballs.
+- [ ] **10.2** **[manual]** On a Windows machine with the previous version installed, **Restart to
+      update** appears within a few hours (or after restarting the tray) and installs this one.
+      Settings > System > Updates shows the new version afterwards.
+- [ ] **10.3** **[manual]** A fresh install from the setup exe opens the browser, starts with
+      Windows, and only answers on localhost until network access is switched on.
+- [ ] **10.4** **[manual]** The setup exe installs into a folder picked on its folder page (say
+      `D:\Apps\Maki`), refuses a folder that already has other files in it, and the copy there
+      updates and uninstalls like a default one. Uninstalling leaves `%LOCALAPPDATA%\Maki` alone.
+
 ## Recording a run
 
 Report each item as pass, fail or skipped. For a fail, give the steps, what happened, and the

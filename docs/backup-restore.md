@@ -12,6 +12,7 @@ are forward-only, so this is your recovery path if an upgrade goes wrong.
 > downloaded backup like a password.
 
 **Restoring** replaces the database and settings, then restarts Maki. Under Docker
-(`restart: unless-stopped`) or systemd it comes back on its own; a process started with
-`dotnet run` or the Windows executable exits and must be started again by hand. You can restore a
-backup from another machine, but not one taken by a newer Maki version.
+(`restart: unless-stopped`), the Windows app or systemd it comes back on its own; a process started
+by hand, such as `dotnet run` or `./Maki.Api` from the Linux tarball, exits and must be started again
+the same way. You can restore a backup from another machine, but not one taken by a newer Maki
+version.
