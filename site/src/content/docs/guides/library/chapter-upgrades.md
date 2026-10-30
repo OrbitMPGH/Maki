@@ -28,7 +28,7 @@ uses the default profile unless you pin another from its **Quality profile** men
 | Setting | What it does |
 | --- | --- |
 | **Tier order**, **Allowed** | Which tiers count, and in what order |
-| **Cutoff** | Upgrading stops once a file reaches this tier |
+| **Cutoff** | Upgrading stops once a file reaches this tier and, if **Upgrade until score** is set, that score |
 | **Upgrade until score** | A score a file must reach before upgrading stops. `0` ignores the score, so only the cutoff matters |
 | **Minimum score gain** | How much better a same-tier copy must score to replace the file |
 | **Maximum score loss for a higher tier** | How much worse a higher-tier copy may score and still replace the file. Empty means a higher tier always wins |
@@ -38,9 +38,10 @@ uses the default profile unless you pin another from its **Quality profile** men
 | **Format scores** | Points for each quality format |
 | **Let the daily scan upgrade this profile's series** | Includes the profile in the daily scan |
 
-Starter profiles are added on first run: **Never upgrades** (keeps what was downloaded first),
-**Replace aggregator copies**, **Upgrade to official releases** and **Upgrade to digital volumes**.
-You can edit or delete them.
+Starter profiles are added on first run: **Never upgrade** (keeps what was downloaded first),
+**Replace aggregator copies**, **Upgrade to official releases**, **Upgrade to digital volumes** and
+**Best copy from any source**. On a fresh install, **Best copy from any source** is the default
+profile. You can edit or delete them.
 
 ## Quality formats and scores
 
@@ -84,10 +85,12 @@ change can be reverted.
 ## The daily scan
 
 The scan runs once a day at **Daily scan hour**, in server local time, and queues upgrades for
-series whose profile allows it.
+series whose profile allows it. The scan is off by default. Turn on **Run the daily scan** and pick
+a **Default profile** under **Upgrade scan** on the Downloads tab.
 
 - **Max upgrades per day**: `0` means no cap.
-- **Quiet period (days)**: a chapter is skipped this long after it was added or last upgraded.
+- **Quiet period (days)**: a chapter is skipped this long after it was added or last upgraded. Only
+  the daily scan waits. A manual scan ignores it.
 - **Scan incognito series**: off skips series set to No scrobble or Full incognito.
 
 Replaced files wait in `.maki-trash/<SeriesId>/` in the root folder for **Trash retention (days)**

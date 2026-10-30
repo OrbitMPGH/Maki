@@ -23,8 +23,9 @@ hidden even from admins.
 
 ## Play Rewind
 
-Rewind is a slideshow of one year: pages turned, time in the reader, your busiest month, your
-most-read series, the series you kept coming back to, and how much your library grew.
+Rewind is a slideshow of one year: chapters and volumes read, time in the reader, your busiest
+month, your most-read series, the genre you kept coming back to, how much your library grew, the
+series you finished and the ones you dropped, and a recap.
 
 1. Open **Stats**.
 2. Click **Play Rewind**. It stays disabled until that year has reading, downloads, or series added
@@ -41,7 +42,7 @@ Choose **Incognito** from the series' menu:
 
 - **Off** records everything.
 - **No scrobble** skips tracker pushes only. The series still counts in your stats.
-- **Full** also leaves the series out of Rewind and reading history.
+- **Full** also leaves the series out of Stats, and so out of Rewind.
 
 The reader toolbar has a separate **Incognito (don't record this session)** toggle for the current
 session.

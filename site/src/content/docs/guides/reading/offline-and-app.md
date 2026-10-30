@@ -23,6 +23,7 @@ Home Screen" still works over plain HTTP, without the offline parts.
 - **iPhone and iPad.** Safari clears site data after seven days without use unless Maki is added to
   the home screen, and only delivers push to the installed app. Install it before saving chapters.
 - **Push.** Turn it on per device under **Settings → Preferences → Push notifications** (**Send
-  test** checks it). The Notifications table has a Push column next to Bell for picking events. New
-  chapters and finished downloads push by default. Up to 20 devices per account.
+  test** checks it). The Notifications table has a Push column next to Bell for picking events. A push
+  needs Bell on for that event, and push turned on for the device. New chapters and finished downloads
+  push by default. Up to 20 devices per account.
 

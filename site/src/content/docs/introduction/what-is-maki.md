@@ -3,7 +3,7 @@ title: What is Maki
 description: A self-hosted manga manager in the spirit of Sonarr and Radarr, with a reader built in.
 ---
 
-![Alt text](../../../assets/home.png)
+![Home screen with a Continue reading hero card, a Next up tray and Recently added covers](../../../assets/home.png)
 <hr>
 
 Maki watches manga sites for new chapters, downloads the pages and writes CBZ files with
@@ -22,7 +22,7 @@ so the schema and API can still change between releases. Issues and pull request
   catalog suggest what to read next, all on your server. See
   [How recommendations work](/Maki/guides/recommendations/how-it-works/).
 - **Automatic monitoring.** Maki picks the best source for each series and queues new chapters as
-  they appear. An Upcoming view shows when the next chapter is likely.
+  they appear. The Upcoming tab on the Activity page shows a likely release window for each series.
 - **Scrobbling.** Reading progress goes to AniList, MyAnimeList, Kitsu, MangaBaka and MangaUpdates,
   whether you read in Maki, over OPDS or in Kavita.
 - **Plain files, any reader.** Everything is saved as CBZ with ComicInfo.xml, and nothing is locked

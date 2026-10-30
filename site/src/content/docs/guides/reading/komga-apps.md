@@ -9,13 +9,16 @@ OPDS feeds, such as Panels, Chunky, KOReader and Mihon's OPDS source, use the fe
 
 ## Turn it on
 
-In **Settings → Reading → OPDS catalogue**, turn on **Enable the OPDS catalogue** and confirm your
-password, then turn on **Komga-compatible API**. Both must stay on for the API to answer.
+In **Settings → Reading → OPDS catalogue**, turn on **Enable the OPDS catalogue**. The first time
+you do, confirm your password, then turn on **Komga-compatible API**. Both must stay on for the API
+to answer.
 
 The card shows the two values an app needs:
 
 - **Server address**, for example `http://your-host:8990/komga`.
-- **API key**, which is your OPDS token. It is the last part of the feed URL, after `/opds/`.
+- **API key**, which is your OPDS token, the last part of the feed URL after `/opds/`. It is shown
+  only right after you enable the catalogue or regenerate the token. If you miss it, regenerate for a
+  new one.
 
 ## Connect the app
 
@@ -36,7 +39,7 @@ so it counts in Stats and reaches your trackers and Kavita. For the full picture
 - A single chapter the app reports as read counts as a read.
 - A jump over several chapters marks them read in one go, so it does not show up as a day's reading
   in Rewind.
-- The API only marks chapters read. It never marks one unread.
+- A DELETE on a book or a series marks its chapters unread. A PATCH with `completed: false` never does.
 
 Loading a page does not count as progress here, unlike OPDS.
 
@@ -47,5 +50,5 @@ the page for that request, which uses server CPU.
 
 :::tip
 AVIF pages do not open in KOReader or on iOS. If you read on those, keep page conversion on a format
-they can open. See [Files and library](/Maki/features/files-and-library/).
+they can open. See [WebP and AVIF conversion](/Maki/guides/library/page-conversion/).
 :::

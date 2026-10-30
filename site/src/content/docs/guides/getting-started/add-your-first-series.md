@@ -5,12 +5,12 @@ description: From an empty library to your first downloaded chapter.
 
 1. Click **Add series**, search for a title and pick it. Maki links sources and syncs chapters in the
    background.
-2. Open the series. Download a chapter, or click **Download all wanted** to queue every chapter
-   you don't have yet.
+2. Open the series. Download a chapter, or click **Download N wanted**, where N is the number of
+   wanted chapters you don't have yet, to queue them.
 3. Follow progress under **Activity**. See [Activity and the queue](/Maki/guides/getting-started/activity-and-queue/).
 
 If a source you want needs Cloudflare solving, set up FlareSolverr first. See
-[FlareSolverr and Suwayomi](/Maki/installation/companions/).
+[Kavita, FlareSolverr and Suwayomi](/Maki/installation/companions/).
 
 ## Already have a library?
 

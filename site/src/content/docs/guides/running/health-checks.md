@@ -11,9 +11,9 @@ an error.
 
 - System checks run every 15 minutes. **Check now** runs them immediately.
 - Custom sources are probed every six hours, since a probe can take minutes.
-- File scans run once a day at **Daily scan hour**. New files are analysed as they arrive. To stop
-  the daily scan, turn off **Analyze new files and run daily reconciliation** under **Settings →
-  System → Library health**.
+- File scans run once a day at **Daily scan hour**. New files are analysed as they arrive. Turning
+  off **Analyze new files and run daily reconciliation** under **Settings → System → Library
+  health** stops both the daily scan and new-file analysis. **Scan files** still works by hand.
 
 ## What the system checks cover
 

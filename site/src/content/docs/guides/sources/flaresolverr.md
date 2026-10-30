@@ -12,9 +12,11 @@ when the site challenges it.
 
 ## Which sources need it
 
-These built-in sources are marked **Needs FlareSolverr**:
+These built-in sources are tagged **FlareSolverr** in Manage sources:
 
 - MangaFire
+- Weeb Central
+- Flame Comics
 - TopManhua
 - Olympus Scanlation
 - MangaKakalot
@@ -26,8 +28,8 @@ These built-in sources are marked **Needs FlareSolverr**:
 
 Cứu Truyện uses FlareSolverr only when its site serves a challenge. The other built-in sources don't need it.
 
-Custom sources whose definition says so are tagged **Needs FlareSolverr** in the wizard and in Manage
-sources. See [Custom sources](/Maki/guides/sources/custom-sources/).
+Custom sources whose definition turns on **Needs FlareSolverr** in the wizard are tagged
+**FlareSolverr** in Manage sources. See [Custom sources](/Maki/guides/sources/custom-sources/).
 
 If a source needs FlareSolverr and no URL is set, Maki's health checks warn about it and the queue
 says the source needs it to get past its anti-bot check.

@@ -5,7 +5,7 @@ description: Send reading progress to AniList, MyAnimeList, Kitsu, MangaBaka and
 
 ## Scrobbling
 
-![Alt text](../../../assets/scrobble.png)
+![Scrobble page with tracker status chips, a Needs review panel and a Recent syncs table](../../../assets/scrobble.png)
 <hr>
 
 Sends read progress to AniList, MyAnimeList, Kitsu, MangaBaka and MangaUpdates, whether the reading
@@ -14,10 +14,10 @@ imported into the library from Settings.
 
 ## Anime tie-in
 
-![Alt text](../../../assets/anime-continue.png)
+![Continue from the anime rail of cover cards, each labelled with the chapter the anime ends at](../../../assets/anime-continue.png)
 <hr>
 
-![Alt text](../../../assets/anime-seasons.png)
+![Notice that the anime covers up to chapter 38, above an anime coverage bar with season 1 and a film](../../../assets/anime-seasons.png)
 <hr>
 
 For a series with an anime adaptation, Maki can start you at the chapter where the anime ended.

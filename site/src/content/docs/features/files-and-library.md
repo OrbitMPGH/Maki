@@ -5,22 +5,26 @@ description: Output layout, page conversion, the library view, health checks and
 
 ## Output
 
-The default layout is `{Series}/{Series} Vol.X Ch.Y.cbz`, with configurable folder and file naming.
-ComicInfo.xml carries series, chapter number, volume, authors, genres, language and reading
-direction. Files are written atomically, so a reader never sees a half-written CBZ. Maki can also
-write a `cover.jpg` into each series folder for readers that look for one.
+The default layout is one folder per series, such as `Berserk (1989)`, holding files such as
+`Berserk Vol.3 Ch.24.cbz`, with configurable folder and file naming. ComicInfo.xml carries series,
+chapter number, volume, authors, genres, language and reading direction. Files are written
+atomically, so a reader never sees a half-written CBZ. Maki can also write a `cover.jpg` into each
+series folder for readers that look for one, if you turn on **Save a cover.jpg into each series'
+library folder** under Settings, Library.
 
 ## Page conversion
 
-![Alt text](../../../assets/conversion.png)
+![Page conversion setup, Format step: WebP, AVIF and Off options and a Keep PNG pages lossless checkbox](../../../assets/conversion.png)
 <hr>
 
 Off by default (Settings, Library, Page conversion). Pick WebP or AVIF and a quality. New downloads
-are stored with their JPEG pages in that format and their PNG pages as lossless WebP.
+are stored with their JPEG pages in that format, unless the quality is Lossless. PNG pages are
+lossless WebP at the Lossless stop or with **Keep PNG pages lossless** on, and follow the quality
+otherwise.
 
 A pausable library pass converts the files already on disk, one at a time, and shows what it saved.
-Several pages of a file are encoded at once; the card sets how many (by default half the cores, at
-most 4).
+Several pages of a file are encoded at once; the card sets how many (by default half the cores,
+between 2 and 4).
 
 **Skipped on purpose**
 
@@ -41,16 +45,16 @@ look like a worse release.
 
 ## Library view
 
-![Alt text](../../../assets/library.png)
+![Library grid of series covers with read and new-chapter badges, above the summary counts and filter bar](../../../assets/library.png)
 <hr>
 
 Grid or list view with density options. Shows download state, read badges and monitor status.
-Filter by source, chapter count or user tag, save filters, and set Wanted in bulk. Per-series
-incognito mode keeps a title out of stats and progress without hiding it.
+Filter by source, chapter count or user tag, save filters, and set monitoring for the selected
+series in bulk. Per-series incognito mode keeps a title out of stats and progress without hiding it.
 
 ## Library health
 
-![Alt text](../../../assets/health.png)
+![Health overview showing zero system issues and zero open file findings, with the image cache panel below](../../../assets/health.png)
 <hr>
 
 Admins can index and verify archives, and find missing, unreadable, duplicate or suspicious files.

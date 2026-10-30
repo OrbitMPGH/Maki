@@ -8,10 +8,13 @@ Outside apps can read from Maki over OPDS or the Komga-compatible API. Both are 
 ## OPDS
 
 OPDS 1.2 with page streaming (OPDS-PSE) works with Panels, Chunky, KOReader and Mihon. Each user's
-feed URL carries its own rotatable token, and pages streamed this way count as read.
+feed URL carries its own rotatable token. Each page an app streams saves your position. A chapter
+completes on its last page after you open it, so an app that fetches that page early does not mark
+it read.
 
 1. Turn on the OPDS catalogue under **Settings → Reading → OPDS catalogue**.
-2. Copy the feed URL it shows.
+2. Copy the feed URL it shows. It is shown once, right after you turn the catalogue on or regenerate
+   the token.
 3. Paste it into your app as a new catalogue.
 
 From outside your network, swap the host for the address you use there. See

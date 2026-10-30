@@ -17,7 +17,7 @@ Other settings:
 
 - **Direction**: right to left for manga or left to right (`D`).
 - **Page fit**: **Fit height**, **Fit width**, **Fit screen** or **Original size (1:1)**.
-- **Crop borders** (`C`) trims plain white or black margins.
+- **Crop borders** (`C`, paged layouts only) trims plain white or black margins.
 - **Wide pages** (single page layout only): shown whole, split into two pages, or rotated to fit.
 - **Tap zones** (paged layouts only): click the screen edges to turn the page.
 
@@ -48,8 +48,10 @@ combinations with Ctrl, Cmd or Alt are left to the browser.
 
 | Key | Action |
 | --- | --- |
-| `→` or `Space` | Next page. Reversed when reading right to left. |
-| `←` or `Shift` + `Space` | Previous page. Reversed when reading right to left. |
+| `→` | Next page. Reversed when reading right to left. |
+| `←` | Previous page. Reversed when reading right to left. |
+| `Space` | Next page. |
+| `Shift` + `Space` | Previous page. |
 | `Home` / `End` | First page / last page |
 | `1`, `2`, `3` | Single page, double page, continuous |
 | `D` | Switch reading direction |

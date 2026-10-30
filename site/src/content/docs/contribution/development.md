@@ -37,7 +37,7 @@ npm --prefix frontend run dev
 # Tests
 dotnet test
 
-# Release publish (what the container ships)
+# Release publish
 dotnet publish src/Maki.Api -c Release
 ```
 

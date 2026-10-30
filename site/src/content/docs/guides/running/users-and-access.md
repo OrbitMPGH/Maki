@@ -16,18 +16,18 @@ one copy of the files and one set of series and chapters, so a second reader cos
 
 ## Library access
 
-Access is granted per root folder under **Settings → Users**. An account with no grants sees an empty
-library. Series, chapters, covers, search, OPDS and KOReader sync all respect it, and the same grants
-decide where someone with the **Add series** permission may add a title.
+Access is granted per root folder under **Settings → Users & security**. An account with no grants
+sees an empty library. Series, chapters, covers, search, OPDS and KOReader sync all respect it, and
+the same grants decide where someone with the **Add series** permission may add a title.
 
 ## Single-user mode
 
 While only one account is enabled, Maki hides requests, leaderboards and the other multi-user parts.
-It switches off by itself when a second account is enabled. The switch is at the top of **Settings →
-Users**.
+It switches off by itself when a second account is enabled. The switch is at the top of
+**Settings → Users & security**.
 
 ## Kavita
 
 Kavita is one server with one API key, so everything it reports is a single person's reading.
-**Settings → Kavita** chooses which Maki account that is (unset means the first admin). Only that
-account can sync read status with Kavita.
+**Settings → Integrations → Kavita**, field **Attribute Kavita's reading to**, chooses which Maki
+account that is (unset means the first admin). Only that account can sync read status with Kavita.

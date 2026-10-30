@@ -9,8 +9,8 @@ should work.
 
 Register Maki with your provider as a confidential or public client using the authorization code
 flow with PKCE. The redirect URI is `https://<your-host>/api/v1/auth/oidc/callback`. Then fill in
-**Settings → Single sign-on** and **restart Maki**; the provider configuration is read once at
-startup.
+**Settings → Users & security → Single sign-on** and **restart Maki**; the provider configuration
+is read once at startup.
 
 | Field | Notes |
 |---|---|
@@ -21,10 +21,10 @@ startup.
 | Admin claim / Permission claim | Optional, see below. |
 
 - **New accounts start with no library access.** Grant a root folder under **Settings → Users**.
-- **Linking.** An account is identified by the provider's `sub` claim, so upstream renames do not
-  strand anyone. The first time an unknown subject signs in, Maki links it to a local account with
-  the same email if the provider marks the address as verified and exactly one account has it.
-  Otherwise it creates an account (if allowed) or refuses.
+- **Linking.** An account is identified by the provider's `sub` claim, scoped to the issuer URL, so
+  upstream renames do not strand anyone. The first time an unknown subject signs in, Maki links it
+  to a local account with the same email if the provider marks the address as verified and exactly
+  one account has it. Otherwise it creates an account (if allowed) or refuses.
 - **Claim mapping is all-or-nothing.** With both claim fields empty, the provider only says *who*
   someone is and permissions stay as set on the Users page. Fill either one in and the provider
   becomes the authority: permissions are recomputed on every sign-in, and edits on the Users page

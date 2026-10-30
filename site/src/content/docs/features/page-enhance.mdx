@@ -16,9 +16,10 @@ screen. It is off until a reader turns it on. Library files are never modified.
 
 - **Browser methods** (**Light**, **Balanced**, **Strong**) run Anime4K shaders on the reader's own
   device. They are always available and need WebGL2.
-- **Server methods** (**Sharp**, **Crisp line art**) run ONNX models on the Maki server and appear
-  in the Method list once an admin has enabled them. Sharp is IllustrationJaNai SPAN-S. Crisp line
-  art is Real-ESRGAN animevideov3 and flattens screentone.
+- **Server methods** (**Sharp (server)**, **Crisp line art (server)**) run ONNX models on the Maki
+  server. They appear in the Method list once an admin has enabled them, and stay disabled, marked
+  Downloading or Not available, until the model is ready. Sharp is IllustrationJaNai SPAN-S. Crisp
+  line art is Real-ESRGAN animevideov3 and flattens screentone.
 
 A greyscale page stays greyscale whichever method draws it.
 
@@ -28,8 +29,8 @@ In the reader toolbar's settings popover, set **Enhance** to Off, Auto or Always
 **Method**. The same two fields are in reading profiles and in per-series overrides, so they follow
 the usual order: series override, pinned profile, type profile, your default.
 
-**Auto** enhances a page only when it is shown at least 1.2 times larger than its source, so a small
-window stays plain and a large monitor does not.
+**Auto** enhances a page when it is shown at least 1.2 times larger than its source on either side,
+or when the page itself looks soft and blurry. A sharp page in a small window stays plain.
 
 Hold **H** or the toolbar's compare button to see the original page.
 
@@ -57,7 +58,7 @@ on this device".
 
 ## Server upscaling (admins)
 
-![Alt text](../../../assets/server-upscaling.png)
+![Server upscaling settings: the enable switch, Sharp with a Download button, and Crisp line art marked Ready](../../../assets/server-upscaling.png)
 
 Settings, Library, **Server upscaling** has:
 
@@ -66,8 +67,8 @@ Settings, Library, **Server upscaling** has:
 - the cache cap (1 GB by default) and **Clear cache**
 - **Test speed**, which times one built-in sample page
 
-Models are not bundled. Maki downloads each one on first use from a Maki GitHub release and checks
-its SHA-256. Some are licensed for non-commercial use only; the per-model licences are in
+Models are not bundled. Maki downloads each one from a Maki GitHub release when an admin ticks it
+and saves, or from its Download button, and checks its SHA-256. Some are licensed for non-commercial use only; the per-model licences are in
 [THIRD_PARTY_NOTICES.md](https://github.com/OrbitMPGH/Maki/blob/main/THIRD_PARTY_NOTICES.md).
 
 A page takes seconds of server CPU, a few times longer on a NAS, so the queue is capped per reader
@@ -75,5 +76,6 @@ and shared fairly between readers.
 
 ## Privacy
 
-Nothing leaves your server or your device. Upscaled pages are a disposable cache under the config
-folder, oldest-used dropped first, and they can be cleared at any time.
+Pages never leave your server or your device. The only outside traffic is model downloads from
+GitHub, and those start only when an admin asks for a model. Upscaled pages are a disposable cache
+under the config folder, oldest-used dropped first, and they can be cleared at any time.

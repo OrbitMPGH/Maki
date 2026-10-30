@@ -3,7 +3,7 @@ title: Ports, paths and files on disk
 description: The port Maki listens on, what is in the config folder, where trash goes, and which URLs Maki serves.
 ---
 
-Paths are shown as they appear inside the container.
+Paths below are relative to the config folder, which is set by `MAKI_CONFIG_DIR` and is `/config` in the container.
 
 ## Port
 
@@ -13,11 +13,11 @@ If you change it, update the container side of the `ports` mapping in your compo
 
 ## The config folder
 
-The config folder is `/config` in the container, set by `MAKI_CONFIG_DIR`. Outside Docker, the fallback order is in [Environment variables](/Maki/reference/environment-variables/). Maki creates most of these on first start.
+The config folder is `/config` in the container. The Windows app uses `%LOCALAPPDATA%\Maki`, and a server started by hand falls back to `%APPDATA%\Maki`. The full order is in [Environment variables](/Maki/reference/environment-variables/). Maki creates most of these on first start.
 
 | Path | What it holds |
 |---|---|
-| `config.json` | Written on first start. Port, log level, HTTP request logging, slow-request threshold, log file size and count. No credentials. |
+| `config.json` | Written on first start. Port, bind address, log level, HTTP request logging, access log, slow-request threshold, log file size and count. No credentials. |
 | `maki.db` | The main SQLite database: the library, accounts and settings. |
 | `mangabaka.db` | The local MangaBaka metadata database. Maki downloads it in the background. |
 | `embeddings.db` | The embeddings database used by semantic search. |

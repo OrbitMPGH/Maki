@@ -1,5 +1,5 @@
 ---
-title: FlareSolverr and Suwayomi
+title: Kavita, FlareSolverr and Suwayomi
 description: The optional Kavita, FlareSolverr and Suwayomi containers, and where each one is set up in Maki.
 ---
 
@@ -65,8 +65,9 @@ connect the two, fill in the Kavita card under **Settings → Integrations → K
 
 - **URL** is the address Maki uses to reach Kavita, here `http://kavita:5000`.
 - **API key** comes from Kavita under User Settings, 3rd Party Clients.
-- **Path mapping** is only needed when Maki and Kavita see the library folder at different paths.
-  The compose file mounts it at `/library` in both, so leave both fields empty.
+- **Path as Maki sees it** and **Path as Kavita sees it** are only needed when Maki and Kavita see the
+  library folder at different paths. The compose file mounts it at `/library` in both, so leave both
+  fields empty.
 - **Attribute Kavita's reading to** picks the Kavita user that reading progress is attributed to.
 
 If you read in Kavita or another app, see [Reading over OPDS and Komga](/Maki/guides/reading/opds-apps/).

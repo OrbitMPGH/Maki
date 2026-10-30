@@ -3,7 +3,8 @@ title: How recommendations work
 description: What the Discover engine does, and what stays on your server.
 ---
 
-Recommendations run entirely on your server. Nothing about your reading is sent anywhere.
+Recommendations are computed on your server. Your reading is sent only to the trackers you connect.
+Anime lookups go to AniList and MyAnimeList, and detail cards fetch MyAnimeList reviews.
 
 ## The index
 
@@ -16,7 +17,7 @@ things end up close together, which finds matches that shared genre tags would m
 
 Recommendations start from titles you already have. Seed them from your whole library or from
 specific titles, then filter by year, rating, type, status, genre, chapter count, content rating and
-popularity.
+obscurity, from popular to hidden gems.
 
 ## Rails
 

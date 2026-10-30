@@ -19,11 +19,11 @@ extensions. A site that isn't built in can be added as a
 | GigaViewer sites | Official Japanese: Shonen Jump+, Comic Days, Sunday Webry, MAGCOMI, Tonari no Young Jump, Comic Zenon, Kurage Bunch (free episodes only) |
 | KadoComi (Comic Walker) | Official, Japanese |
 | MangaPill | |
-| Weeb Central | |
+| Weeb Central | requires FlareSolverr |
 | MangaFire | Language filter, requires [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) |
 | TCB Scans | Domain override via `MAKI_SOURCE_TCBSCANS_BASEURL` |
 | Asura Scans | Manhwa/manhua |
-| Flame Comics | Manhwa/manhua |
+| Flame Comics | Manhwa/manhua/manga, requires FlareSolverr |
 | TopManhua | Manhwa/manhua, requires FlareSolverr |
 | MangaKatana | |
 | MangaKakalot | Requires FlareSolverr |
@@ -42,7 +42,7 @@ extensions. A site that isn't built in can be added as a
 | MangaWorld | Italian |
 | MangaLib | Russian |
 | MangaDenizi | Turkish |
-| Shinigami | Indonesian, manhwa/manhua/manga |
+| Shinigami | Indonesian, manhwa/manga |
 | Cứu Truyện | Vietnamese, FlareSolverr when challenged, mirror override via `MAKI_SOURCE_CUUTRUYEN_BASEURL` |
 | Team-X | Arabic, requires FlareSolverr; the domain rotates, override it with `MAKI_SOURCE_TEAMX_BASEURL` |
 | Sen Manga | Japanese raws |

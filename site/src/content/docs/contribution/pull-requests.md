@@ -14,7 +14,7 @@ Branch from `dev` and open pull requests against `dev`. Name branches with the c
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <summary>`.
 
 - **Type:** `feat` (new capability), `fix`, `refactor` (no behavior change), `perf`, `test`, `docs`, `build` (Dockerfile, dependencies, build scripts), `ci` (`.github/workflows/`) or `chore` (anything else).
-- **Scope** (optional): the owning project in lowercase, `core`, `data`, `sources`, `metadata`, `api` or `frontend`. Omit it when a change spans several.
+- **Scope** (optional): the project or feature area in lowercase, such as `series`, `auth`, `native`, `sources` or `opds`. Omit it when a change spans several.
 - **Summary:** imperative, lowercase first word, no full stop, about 50 characters or fewer.
 - **Body:** only the why, when the diff does not show it, such as a constraint or trade-off.
 

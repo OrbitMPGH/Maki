@@ -3,16 +3,18 @@ title: Tune what you see
 description: Thumbs, hiding, the Manage signals list, and the never-show list that keep unwanted titles out of Discover.
 ---
 
-Every recommendation can be changed from its card. For how the ranking works, see
-[How recommendations work](/Maki/guides/recommendations/how-it-works/).
+Each recommendation can be changed from its detail panel, which opens when you select its card.
+For how the ranking works, see [How recommendations work](/Maki/guides/recommendations/how-it-works/).
 
 ## Thumbs up and thumbs down
 
-- **Thumbs up** (**More like this**) counts toward your taste, so similar titles rank higher.
+- **Thumbs up** (**More like this**) counts toward your taste, so similar titles rank higher. The
+  title itself is never recommended again.
 - **Thumbs down** (**Not for me**) removes the title from your recommendations and pushes down titles
   that sit closer to it than to what you kept.
 
-Press a thumb again to remove the vote. A series you rated 4 or under also counts as a dislike.
+Press a thumb again to remove the vote. A series you rated 1 to 4 pushes down similar titles, more
+the lower the rating, but unlike a thumbs down it is not hidden.
 
 ## The more feedback menu
 
@@ -44,8 +46,9 @@ The list has **Titles** and **Anime** tabs. Filter by **All**, **Rated**, **Thum
 
 **Excluded from taste** keeps a shelf title out of the ranking without changing your reading history.
 
-The **Anime** tab needs an AniList or MyAnimeList tracker connected and anime signals switched on in
-the Taste tab. See [Connect a tracker](/Maki/guides/trackers/connect/).
+The **Anime** tab appears once an AniList or MyAnimeList tracker is connected. Anime only feeds
+recommendations after you switch on **Anime you've watched** in the Taste tab. See
+[Connect a tracker](/Maki/guides/trackers/connect/).
 
 ## Hidden everywhere
 

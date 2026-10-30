@@ -22,8 +22,8 @@ with the share of your read series carrying each, and links to the Taste tab.
 
 ## Based on your recent activity
 
-Its subtitle, **Because you read**, names up to three of the series it was built from. It uses the
-six series you read most recently. Series in full incognito are skipped, and titles you thumbed down,
+Under **Because you read**, it shows covers of up to six series you read most recently, each
+linking to its series page. Series in full incognito are skipped, and titles you thumbed down,
 rated low or ignored as a seed are left out.
 
 ## New from creators you follow
@@ -36,7 +36,7 @@ follow someone. See [Follow creators](/Maki/guides/recommendations/follow-creato
 One row per smaller theme on your shelf, each titled **Another side of your library** followed by the
 theme name.
 
-- A theme needs at least two works that mark it as a core story element, and must cover less than 35%
+- A theme needs at least two works that mark it as a core story element, and must cover at most 35%
   of your library, so common themes do not qualify.
 - At most two rows show, and a row needs at least three matching picks.
 - With no vector index, or fewer than six series on your shelf, the section is left out.

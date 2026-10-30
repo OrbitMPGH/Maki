@@ -9,8 +9,8 @@ bell and push are personal: what appears in your bell, and what your browsers re
 ## Outbound connections
 
 Admins add them under **Settings → Integrations → Notification connections**. Each connection is one
-destination. Types: Discord, Webhook, Telegram, Notifiarr, ntfy, Gotify, Pushover, Apprise, and Slack
-/ Mattermost. A Webhook connection POSTs each event as JSON to a URL you choose, with an optional
+destination. Types: Discord, Webhook, Telegram, Notifiarr, ntfy, Gotify, Pushover, Apprise, and Slack /
+Mattermost, which takes any Slack-compatible webhook, Rocket.Chat included. A Webhook connection POSTs each event as JSON to a URL you choose, with an optional
 bearer token.
 
 Every connection has a name, an **Enabled** switch and its own list of events. **Test** sends a test
@@ -22,8 +22,8 @@ failure.
 - **Downloads:** Chapter downloaded, Download failed, New chapter available, Import completed.
 - **Library:** Series added, Series removed, Series archived, Manual match needed, Series status
   changed.
-- **Requests:** Request submitted, Request resolved. Only shown when more than one account is
-  enabled.
+- **Requests:** Request submitted, Request resolved. Hidden while single-user mode is on, which
+  turns on by itself when only one account is enabled.
 - **System:** Health issue, Update available.
 
 ### Tags

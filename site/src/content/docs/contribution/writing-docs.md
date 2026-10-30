@@ -19,7 +19,7 @@ npm run dev
 
 ## Where pages go
 
-Pages live in `site/src/content/docs/`, one folder per section: `introduction/`, `features/`, `installation/`, `guides/`, `contribution/` and `qa/`. A page is a `.md` file with a `title` and `description` in its frontmatter:
+Pages live in `site/src/content/docs/`, one folder per section: `introduction/`, `features/`, `installation/`, `guides/`, `reference/`, `contribution/` and `qa/`. A page is a `.md` file with a `title` and `description` in its frontmatter:
 
 ```md
 ---

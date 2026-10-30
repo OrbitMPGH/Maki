@@ -6,8 +6,10 @@ description: OPDS, KOReader sync and the Komga-compatible API.
 ## OPDS server
 
 OPDS 1.2 with page streaming (OPDS-PSE), so Panels, Chunky, KOReader and Mihon read straight from
-Maki. Off by default. Each user's feed URL carries its own rotatable token, and pages streamed this
-way count as read.
+Maki. Off by default. Each user's feed URL carries its own rotatable token. Each page a reader
+fetches saves your position, and a chapter is marked read when you reach its last page after
+opening it. Turn this off with **Track reading progress from OPDS** under Settings, Reading, OPDS
+catalogue.
 
 ## KOReader progress sync
 

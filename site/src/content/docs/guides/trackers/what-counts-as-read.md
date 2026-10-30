@@ -56,8 +56,10 @@ Apps using the Komga API report a page number and an optional completed flag.
 ## One-shots
 
 A one-shot is a single chapter with no number, so there is nothing to move the high-water mark to.
-Maki counts it only once it is finished, and only when the tracker agrees the work is complete or has
-a single chapter. Until then it is not sent as a finished read.
+Maki counts it only once it is finished, and never when the tracker lists more than one chapter or
+says the work is still releasing. If the library already marks the work complete, that is enough.
+Without that mark, the tracker must say the work is not releasing, or list exactly one chapter.
+Until then it is not sent as a finished read.
 
 :::tip
 If a chapter has not reached a tracker, check that it was completed, not only opened. Then wait for

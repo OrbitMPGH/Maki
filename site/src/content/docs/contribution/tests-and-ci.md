@@ -53,7 +53,7 @@ Full notes: [`.claude/rules/storybook.md`](https://github.com/OrbitMPGH/Maki/blo
 
 CI runs on every push to `main` and on every pull request.
 
-**Backend** (Ubuntu, .NET 10.0.x): restore, `dotnet build -c Release`, `dotnet test --no-build -c Release`.
+**Backend** (Ubuntu, .NET 10.0.x): restore, `dotnet build --no-restore -c Release`, `dotnet test --no-build -c Release`.
 
 **Frontend** (Ubuntu, Node 24, in `frontend/`):
 

@@ -6,16 +6,18 @@ description: What the MangaBaka snapshot and the embedding index are, how big th
 Maki keeps two local datasets so search, metadata and recommendations work without calling an outside
 service per request: a copy of the [MangaBaka](https://mangabaka.org) database, and an index of
 vectors built from it. Both are built from public catalogue data, and nothing about your reading is
-sent to MangaBaka. For how recommendations use them, see
+sent to MangaBaka unless you connect it as a tracker. For how recommendations use them, see
 [How recommendations work](/Maki/guides/recommendations/how-it-works/).
 
 ## The MangaBaka database
 
 The snapshot is about 350 MB to download and 3.5 GB on disk. Maki downloads it in the background on
-first start and refreshes it nightly. Your setup finishes once it is installed.
+first start, then checks every six hours and installs each new snapshot once MangaBaka publishes
+one. Your setup finishes once it is installed.
 
 **Settings → Library → Metadata database** shows its size and last refresh. **Refresh now** downloads
-a newer snapshot if one exists. A failed download is retried on the next scheduled run. A series
+a newer snapshot if one exists. A failed download is retried after 15 minutes, then 30, 60 and so on, while no usable snapshot is
+installed. Otherwise it waits for the next six-hourly run. A series
 MangaBaka added after the latest snapshot appears with the next one.
 
 The snapshot powers:
@@ -34,7 +36,7 @@ meaning, and recommendations use it to find similar titles, even when they share
 Toggle it in **Settings → Library → Semantic search & recommendations**. It needs the MangaBaka
 database first. Turning it on starts a model switch that downloads the model and index, with progress
 on the status line. Maki tries the prebuilt vectors first. If none are available, it builds the index
-on your machine, which takes a long time on a CPU. While on, it uses about 240 MB of RAM.
+on your machine, which takes a long time on a CPU. While loaded, it uses about 240 MB of RAM. It unloads after 5 idle minutes by default.
 
 With the switch off, search falls back to title matching, and rails that need the index are left out.
 Side interests, for example, have no rows without it.

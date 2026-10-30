@@ -10,4 +10,4 @@ description: Short answers to common questions, grouped by topic.
 - [Accounts and security](/Maki/qa/accounts/): Two-factor, exposing Maki, library access and sign-in.
 - [Troubleshooting and logs](/Maki/qa/troubleshooting/): Logs, the Health page, memory, permissions and bug reports.
 
-Still stuck? Open an issue on [GitHub](https://github.com/OrbitMPGH/Maki/issues).
+Still stuck? Ask on [GitHub Discussions](https://github.com/OrbitMPGH/Maki/discussions). Open an issue only for a bug.

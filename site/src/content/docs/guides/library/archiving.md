@@ -49,8 +49,8 @@ The series comes back with its old monitoring mode, and Maki refreshes it in the
 Chapters released while it was archived are held and announced, not downloaded all at once, so you
 can choose what to download.
 
-If the files were removed, a dialog asks what to do. **Restore only** skips them. **Restore and
-download** queues them again and needs the permission to download chapters.
+If no chapter file is left and some were removed, a dialog asks what to do. **Restore only** skips
+them. **Restore and download** queues them again and needs the permission to download chapters.
 
 :::tip
 Archiving is reversible and leaves files alone unless you ask. If you are unsure whether a series is

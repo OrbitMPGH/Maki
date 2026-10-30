@@ -11,8 +11,9 @@ see [Page enhance](/Maki/features/page-enhance/).
 Nothing runs until both steps are done.
 
 1. Open **Settings, Library, Server upscaling** and switch on **Enable server upscaling**.
-2. Pick the models readers may use. Models are not bundled. Each downloads on first use from a Maki
-   GitHub release, and Maki checks its SHA-256 before using it. Some models are non-commercial only,
+2. Pick the models readers may use. Models are not bundled. Each downloads from a Maki
+   GitHub release when you tick it and save, or from its Download button, and Maki checks its
+   SHA-256 before using it. Some models are non-commercial only,
    and the licences are listed in `THIRD_PARTY_NOTICES.md` in the Maki repository.
 
 Readers then turn **Enhance** on in the reader's settings popover, where the **Method** list shows

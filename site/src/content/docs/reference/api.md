@@ -21,7 +21,7 @@ Send the key in the `X-Api-Key` header.
 curl -H "X-Api-Key: <your key>" http://localhost:8990/api/v1/series
 ```
 
-- The header is the only way in. A `?apikey=` query parameter is rejected, because URLs end up in browser history and server logs.
+- The header is the only way in. A `?apikey=` query parameter is ignored, so the request is unauthenticated. Keys stay out of URLs because they end up in browser history and server logs.
 - A key has the permissions of the account that created it. Only full-access keys work on `/api/v1`.
 - OPDS tokens and API keys are not interchangeable.
 

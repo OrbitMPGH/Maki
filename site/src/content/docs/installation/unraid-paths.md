@@ -16,8 +16,8 @@ Change the host side of each mapping to any share or folder you want. Do not cha
 side.
 
 The template sets `PUID` to `99` and `PGID` to `100`, Unraid's `nobody` user and `users` group. Maki
-changes the ownership of everything in `/config` to that pair on every start, so appdata ends up
-owned by `nobody:users`. The library folder must be writable by that pair too. See
+changes the owner of anything in `/config` that is not already `99:100` on every start, so appdata
+ends up owned by `nobody:users`. The library folder must be writable by that pair too. See
 [Volumes, PUID and PGID](/Maki/installation/volumes-and-permissions/).
 
 ## Appdata

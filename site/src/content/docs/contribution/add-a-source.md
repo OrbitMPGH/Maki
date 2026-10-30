@@ -29,7 +29,7 @@ Override these defaults only when they differ: `Kind` (aggregator), `Content` (m
 ## Steps
 
 1. Create `src/Maki.Sources/<Site>/<Site>Source.cs` in namespace `Maki.Sources.<Site>`.
-2. Implement `ISource`. Return chapters through `SourceChapterList.Normalize`, which removes duplicates by number, volume and language.
+2. Implement `ISource`. Return chapters through `SourceChapterList.Normalize`, which removes duplicates by number, volume and language, and by title when a chapter has no number.
 3. Register it in `src/Maki.Api/Program.cs` with `builder.Services.AddSingleton<ISource, <Site>Source>();`, next to the other source lines. Add a named HTTP client there if the source needs one.
 4. Add a row to the table in [`docs/sources.md`](https://github.com/OrbitMPGH/Maki/blob/main/docs/sources.md), and to the copy of that table in the "Show all sources" dropdown in `README.md`. Bump the built-in count in `README.md` too.
 5. Add tests in `tests/Maki.Sources.Tests/<Site>SourceTests.cs`.

@@ -8,13 +8,13 @@ description: How to report a bug, request a feature, ask a question or help with
 Open a bug report from the [issues page](https://github.com/OrbitMPGH/Maki/issues/new/choose). Blank issues are off, so the bug template is the only way in. It asks for:
 
 - **What happened** and what you expected. Rough notes are fine.
-- **Maki version**, shown on the Settings page.
-- **How it is installed:** Docker, bare install, built from source, or not sure.
+- **Maki version**, shown in the sidebar footer.
+- **How it is installed:** Docker, Windows installer, Linux tarball, bare install, built from source, or not sure.
 - **Anything else:** steps to reproduce, screenshots, logs.
 
 Steps to reproduce matter most. List what you did in order, starting from a state anyone can reach, such as a fresh library with one series.
 
-Logs are in `/config/logs` in Docker and `%APPDATA%\Maki\logs` on Windows. Paste the `[ERR]` or `[WRN]` lines from around the time of the problem, with a little context.
+Logs are in `/config/logs` in Docker and `%LOCALAPPDATA%\Maki\logs` for the Windows app. Paste the `[ERR]` or `[WRN]` lines from around the time of the problem, with a little context.
 
 :::caution
 Scrub API keys, passwords and tokens from logs and screenshots before you post them.

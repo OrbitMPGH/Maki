@@ -21,7 +21,8 @@ Accounts are connected on the **Scrobble** page (`/scrobble`). Each tracker has 
 AniList tokens last about a year and cannot be refreshed. When the token expires, connect again.
 
 AniList and MyAnimeList both have an anime list. The **Use anime for recommendation taste** switch
-lets Discover learn from it. See [Discover](/Maki/features/discover/).
+lets Discover learn from it, once **Anime you've watched** is also on in the Taste tab. See
+[Discover](/Maki/features/discover/).
 
 ## MyAnimeList
 
@@ -47,17 +48,23 @@ minute or so to show on mangaupdates.com. Entries on custom MangaUpdates lists a
 
 ## What Maki syncs
 
-Every tracker block has two switches:
+Every tracker block has these switches:
 
 - **Scrobble reading** sends your progress. See
   [What counts as read](/Maki/guides/trackers/what-counts-as-read/) for when a chapter is sent.
-- **Sync ratings** sends your Maki ratings.
+- **Sync ratings** sends your final Maki ratings.
+- **Also sync "so far" ratings** sends the scores you set partway through a series. It needs
+  **Sync ratings** on.
+- On AniList and MyAnimeList, **Use anime for recommendation taste** controls whether Discover reads
+  your anime list.
+
+Series in incognito, at either level, are never sent to a tracker.
 
 Progress only moves forward. Maki never lowers a tracker's progress and never demotes a completed
 entry.
 
 Each block also has an **Import ratings** button, enabled once the tracker is connected, which brings
-ratings from the tracker into Maki.
+ratings from the tracker into Maki. Imported scores always become final ratings.
 
 The Scrobble page runs a sync on a schedule (an admin sets the interval) and shows the last and next
 sync. Series Maki cannot match with confidence appear under **Needs review**, where you can

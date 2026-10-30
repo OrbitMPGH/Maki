@@ -5,7 +5,7 @@ description: Where logs are, how to raise the log level, the Health page, memory
 
 ### Where are the logs?
 
-In `/config/logs` (`./maki-config/logs` on the host in the compose example), or `%APPDATA%\Maki\logs` on Windows. Maki writes `maki-<date>.log` per day and starts a new file when one reaches its size limit. The same lines go to the console, so `docker logs maki` works too.
+In `/config/logs` (`./maki-config/logs` on the host in the compose example), or `%LOCALAPPDATA%\Maki\logs` for the Windows app. Maki writes `maki-<date>.log` per day and starts a new file when one reaches its size limit. The same lines go to the console, so `docker logs maki` works too.
 
 ### How do I get more detail in the logs?
 

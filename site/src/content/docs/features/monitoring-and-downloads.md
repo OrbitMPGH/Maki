@@ -5,7 +5,7 @@ description: Scheduled checks, release-aware refresh, source matching, torrents 
 
 ## Monitoring
 
-![Alt text](../../../assets/chapters.png)
+![Chapters tab of a series: each row has a Wanted toggle, release date, source and download status](../../../assets/chapters.png)
 <hr>
 
 Chapter lists refresh on a schedule and new chapters are queued automatically. Whole-series monitor
@@ -14,13 +14,16 @@ specials out.
 
 ## Release-aware refresh
 
-Series that released recently are checked every 30 minutes, quieter ones every 2 hours, 6 hours or
-once a day. A new chapter puts a series back on the fast schedule. Turn off **Check quiet series
-less often** in Settings, Downloads to check everything every 30 minutes.
+A series with a new chapter in the last six hours is checked every 30 minutes. One with a chapter
+in the last two weeks is checked every 2 hours, and one with a chapter in the last 60 days every 6
+hours (or with no dated chapter yet). Completed series with nothing new in two weeks, and series
+quiet for longer, are checked once a day. A new chapter puts a series back on the fast schedule.
+Turn off **Check quiet series less often** in Settings, Downloads to check everything every 30
+minutes.
 
 ## Upcoming
 
-![Alt text](../../../assets/upcoming.png)
+![Activity's Upcoming tab: a bar per series spanning the days its next chapter is likely, with blue diamonds on announced dates](../../../assets/upcoming.png)
 <hr>
 
 The Upcoming tab in Activity shows each series' likely next chapter on a five-week grid, as a span
@@ -30,7 +33,7 @@ the next check is due.
 
 ## Automatic source matching
 
-![Alt text](../../../assets/source-match.png)
+![Sources panel on a series page: four sources marked Found and one still searching](../../../assets/source-match.png)
 <hr>
 
 Adding a series returns instantly. Matching runs in the background and can be re-run or fixed by
@@ -38,7 +41,8 @@ hand.
 
 - Sources are drag-ordered by preference and can be disabled globally.
 - The series page can compare linked sources side by side on sampled page quality.
-- A single chapter can be re-fetched from whichever linked source has the better copy.
+- A single chapter can be re-fetched from another linked source: pick the copy that looks best
+  and Maki downloads it again from there.
 
 ## Multilingual libraries
 

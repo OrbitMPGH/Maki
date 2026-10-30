@@ -13,9 +13,10 @@ IDs. Maki then links the series to the [sources](/Maki/guides/sources/built-in-s
 
 ## 2. Watch
 
-Maki checks your sources on a schedule and picks the best one for each series. Series that
-release often are checked every 30 minutes. New chapters are queued on their own, and you can
-follow the queue under **Activity**.
+Maki checks your sources on a schedule and picks the best one for each series. Checks slow down as
+a series goes quiet: every 30 minutes for six hours after a new chapter, every two hours for two
+weeks, every six hours up to 60 days, then once a day. Completed series get the daily check after
+two weeks. New chapters are queued on their own, and you can follow the queue under **Activity**.
 
 ## 3. Save
 
@@ -31,7 +32,8 @@ your trackers.
 
 ## Where the data lives
 
-- `/config` volume: database, logs, covers, page cache and `config.json`.
+- `/config` volume: database, logs, covers, page cache and `config.json`. The Windows app keeps
+  the same files in `%LOCALAPPDATA%\Maki`.
 - `/library` volume: chapters.
 
 Back up both. See [Backup and restore](/Maki/guides/running/backup-restore/).

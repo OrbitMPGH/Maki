@@ -18,7 +18,7 @@ body:
     id: version
     attributes:
       label: Maki version
-      description: Shown on the Settings page. "Latest" or "not sure" is fine too.
+      description: Shown in the sidebar footer. "Latest" or "not sure" is fine too.
       placeholder: "0.19.0"
     validations:
       required: false
@@ -29,6 +29,8 @@ body:
       label: How is it installed?
       options:
         - Docker
+        - Windows installer
+        - Linux tarball
         - Bare install
         - Built from source
         - Not sure
@@ -41,7 +43,7 @@ body:
       label: Anything else?
       description: >-
         Optional — steps to reproduce, screenshots, or logs. Logs live in `/config/logs`
-        (Docker) or `%APPDATA%\Maki\logs` (Windows). **Please scrub API keys, passwords and
+        (Docker) or `%LOCALAPPDATA%\Maki\logs` (Windows app). **Please scrub API keys, passwords and
         tokens before pasting.**
     validations:
       required: false

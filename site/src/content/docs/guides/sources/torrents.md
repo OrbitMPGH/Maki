@@ -37,9 +37,12 @@ active at a time).
 The **Finished torrents** switches control what happens after an import:
 
 - **Hardlink imported torrents when possible** links the files into your library and leaves them in
-  place, so the torrent can keep seeding. Both folders must be on the same filesystem.
+  place, so the torrent can keep seeding. Both folders must be on the same filesystem, otherwise
+  Maki copies the files.
 - **Remove torrents from the download client after import**
-- **Also delete the downloaded files** removes the files along with the torrent.
+- **Also delete the downloaded files** removes the files with the torrent, but only when the import
+  placed every library file itself, the download doesn't overlap a root folder, the torrent wasn't in
+  the client before the grab, and the switch above is on.
 
 ## Getting a release
 
@@ -70,6 +73,7 @@ The queue reports these problems:
 
 - **The torrent never appeared in the download client**: Maki added it, but the client doesn't list it.
   Check the client's URL, login and label.
-- **The torrent is no longer in the download client**: someone removed it from the client.
+- **The torrent is no longer in the download client**: it was deleted in the client, moved to another
+  category or label, or dropped.
 - **The download client reports an error on this torrent**: open the torrent in the client for its
   own message.

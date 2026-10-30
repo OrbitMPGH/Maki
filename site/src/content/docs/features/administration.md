@@ -34,8 +34,9 @@ picks which events show in the bell and which push to their devices.
 - Eight accent colours (Blush by default) and nine backgrounds, including Cover tint (takes the
   colour of the cover on screen), OLED black and the light Paper.
 - The sidebar can collapse into a slim header.
-- Page transitions can be turned off or sped up under Settings, Appearance, Motion.
-- The sign-in page can show a blurred mosaic of Safe-rated covers.
+- Page transitions can be turned off or sped up under Settings, Preferences, Appearance, Motion.
+- The sign-in page can show a blurred mosaic of Safe-rated covers. Admins turn this on under
+  Settings, Users & security, Sign-in page.
 
 ## REST API
 

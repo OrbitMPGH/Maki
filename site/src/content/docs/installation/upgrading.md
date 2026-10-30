@@ -55,8 +55,10 @@ To roll back to the version you had before:
 
 1. Start the older image. Pin its tag, such as `ghcr.io/orbitmpgh/maki:X.Y.Z`, in your compose file or
    on the `docker run` line.
-2. Restore the backup taken just before the upgrade. Restoring replaces the database and settings,
-   then restarts Maki. See [Backup and restore](/Maki/guides/running/backup-restore/).
+2. Restore the backup taken just before the upgrade. Maki stages the restore and exits, then applies
+   it on its next start. Something has to start it again: Docker's restart policy, systemd or the
+   Windows app. A bare start stays down until you start it. See
+   [Backup and restore](/Maki/guides/running/backup-restore/).
 
 Restoring a backup taken by a newer version is refused, so use the pre-upgrade backup. Some changes
 made after that backup are kept on restore, such as revoked API keys. Passwords, SSO links and other

@@ -22,7 +22,7 @@ Use this page to find where a control lives. Each row is one card.
 
 | Card | Who sees it | What it holds |
 |---|---|---|
-| Appearance | Everyone | Theme (light, dark or match the system), accent colour, and motion (reduced motion, faster animations, moving covers, page transitions). |
+| Appearance | Everyone | Theme (light, dark or match the system), accent colour, and motion (page transitions, moving covers and faster animations, which stay off when the device asks for reduced motion). |
 | Language | Everyone | Interface language. |
 | Title language | Everyone | Which form of series titles to show, such as romaji, native or original. |
 | Content rating | Everyone with the `ChangeContentRating` permission | Which content ratings you see. |
@@ -35,8 +35,9 @@ Use this page to find where a control lives. Each row is one card.
 
 | Card | Who sees it | What it holds |
 |---|---|---|
-| Reader profiles | Everyone | Reading direction, page fit, tap zones, auto next chapter, and profiles by series type. |
+| Reader profiles | Everyone | Reading direction, page fit, tap zones, auto next chapter, Enhance, and profiles by series type. |
 | Progress & achievements | Everyone | Achievements, levels, streak and reading goal, leaderboard, time zone. |
+| Rating prompts | Everyone | Whether Maki asks how a series is going while you read, and at the end of each volume. |
 | OPDS catalogue | Permission `UseOpds` | Your feed URL and token for reading apps, and the Komga address. |
 | KOReader progress sync | Permission `UseOpds` | Syncing reading progress with KOReader. |
 | Offline reading | Everyone | Saving series to this device for offline reading, and installing Maki as an app. |
@@ -46,14 +47,14 @@ Use this page to find where a control lives. Each row is one card.
 
 | Card | Who sees it | What it holds |
 |---|---|---|
-| Root folders | Everyone | The library folders Maki reads, with the free space on each. |
+| Root folders | Everyone | The library folders Maki reads, with the free space on each. Add one by path or with the folder browser. |
 | Folder & file naming | Admin | Naming templates for series folders and files, and renaming existing ones. |
 | File name parsing | Admin | The markers and terms Maki looks for in file names, such as volume and chapter markers. |
-| ComicInfo & covers | Admin | ComicInfo.xml and cover image files written next to the series. |
-| Page conversion | Admin | Converting pages to WebP or AVIF to save disk space. The wizard also has its own page at `/settings/page-conversion`. |
-| Server upscaling | Admin | The upscaling model and CPU threads. |
+| ComicInfo & covers | Admin | Writing ComicInfo.xml into imported files, and saving a cover.jpg in each series folder. |
+| Page conversion | Admin | Converting pages to WebP or AVIF to save disk space, how many pages convert at once, and the pass over the existing library. The wizard also has its own page at `/settings/page-conversion`. |
+| Server upscaling | Admin | Whether upscaling is on, the models to download, CPU threads and the disk cache size. |
 | Recycle bin | Permission `DeleteSeries` | How long deleted files are kept (14 days by default) and restoring them. |
-| New series defaults | Admin | Defaults for new series: monitoring, specials and omake, decimal chapters, incognito. |
+| New series defaults | Admin | Defaults for new series: monitoring, skip specials, incognito. |
 | Metadata database | Admin | The local MangaBaka database: its status and a refresh. |
 | Semantic search & recommendations | Admin | The embedding model behind semantic search and recommendations. |
 
@@ -63,14 +64,14 @@ Every card on this tab is admin only.
 
 | Card | What it holds |
 |---|---|
-| Download queue | Concurrent workers, retry count, max attempts and backoff. |
+| Download queue | Concurrent chapter downloads, retry attempts, and the time before giving up on a chapter. |
 | Smart Download | Smart Download and its unread trigger. |
 | Clean up read chapters | Automatic deletion of read chapters, with a retention period. |
 | Languages | The languages to download, and their priority. |
-| Sources | Source order and priority, which sources are on, and adult sources. |
+| Sources | Source order and priority, which sources are on, adult sources, and [custom sources](/Maki/guides/sources/custom-sources/) and their repositories. |
 | FlareSolverr | The FlareSolverr address, used for Cloudflare-protected sources. |
-| Indexer | The indexer connection (Prowlarr, Jackett or Torznab) and its categories. |
-| Download client | The torrent client (qBittorrent, Transmission or Deluge), its categories and path mapping. |
+| Indexer | The indexer connection (Prowlarr or Jackett) and its categories. |
+| Download client | The torrent client (qBittorrent, Transmission or Deluge), its categories and path mapping, and whether finished torrents are hardlinked or removed after import. |
 | Quality profiles | Upgrade profiles: the cutoff score, the minimum gain and maximum loss limits, and the resolution and compression weights. |
 | Quality formats | Format scores and the conditions that match them, such as regex, minimum width and image format. |
 | Upgrade scan | The default profile and automatic upgrades. |
@@ -82,7 +83,7 @@ Every card on this tab is admin only.
 |---|---|---|
 | Kavita | Admin | The Kavita connection, its libraries, path mapping, and which account owns progress. |
 | Suwayomi | Admin | The Suwayomi connection and its extension sources. See [Built-in sources](/Maki/guides/sources/built-in-sources/). |
-| Trackers | Permission `UseTrackers` | AniList, MyAnimeList, Kitsu, MangaUpdates and MangaBaka connections, and the sync interval. |
+| Trackers | Permission `UseTrackers` | AniList, MyAnimeList, Kitsu, MangaUpdates and MangaBaka connections, rating sync for each one (including "so far" ratings), and the sync interval. |
 | Import lists | Permission `UseTrackers` | Importing series from tracker lists, with optional automatic adding. |
 | Notification connections | Admin | Outgoing notifications to Discord, webhooks, Telegram, ntfy and other services, and the events each one receives. |
 
@@ -103,8 +104,8 @@ Every card on this tab is admin only.
 
 | Card | What it holds |
 |---|---|
-| Network | The HTTPS requirement, trusted proxies and HSTS. |
-| Backup & restore | Creating and restoring backups, and how many to keep. |
+| Network | The HTTPS requirement (which also sends HSTS), trusted proxies and allowing other devices on your network. |
+| Backup & restore | Creating and restoring backups, scheduled backups, and how many to keep. |
 | Image cache | Rebuilding the image cache and clearing cached covers. |
-| Library health | The scheduled scan time, the low disk threshold and the stale backup warning. |
+| Library health | Automatic scanning and the daily reconciliation, when it runs, and the disk and backup freshness thresholds. |
 | Updates | Checking for a new Maki version. |

@@ -54,9 +54,9 @@ CBZ. Your originals stay where they are. PDFs are kept as they are and read in p
 ## After the import
 
 The import returns at once. Maki then searches the sources for each series in the background and
-links your files to their chapters. Until that finishes, a folder reads **linking once sources are
-found**. A file whose chapter number Maki cannot read is reported as unrecognized, and a file that
-matches no chapter becomes a chapter of its own.
+links your files to their chapters. Until that finishes, a folder reads **added N files, linking
+once sources are found**. A file whose chapter number Maki cannot read is reported as unrecognized,
+and a file that matches no chapter becomes a chapter of its own.
 
 Every import is listed under **Recent imports** with **Undo this import**, available for 30 days.
 Undo removes a series only when the import created it and nothing has been downloaded or read

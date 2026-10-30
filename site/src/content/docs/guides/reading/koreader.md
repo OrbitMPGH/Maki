@@ -8,7 +8,8 @@ KOReader works with Maki as an **OPDS catalogue** (browse and download chapters)
 and you can carry on in Maki's reader where you stopped).
 
 Both use your OPDS token. Turn on the catalogue under **Settings → Reading → OPDS catalogue** first
-and keep the feed URL it shows. The token is the part after `/api/v1/opds/`.
+and copy the feed URL it shows. It is shown only once, right after you turn the catalogue on or
+regenerate the token. The token is the part after `/api/v1/opds/`.
 
 ## Download chapters over OPDS
 
@@ -35,8 +36,8 @@ What Maki does with a pushed page:
 - In a volume archive with several chapters, a page marks the chapters before it read and saves your
   place in the chapter it falls in. If Maki can't tell where chapters start (no chapter markers in
   the archive's page names), the chapters are only marked read once you reach the last page.
-- Books that didn't come from Maki are accepted and ignored, so they don't hold up KOReader's retry
-  queue.
+- Books that didn't come from Maki get an OK reply like any other push, so KOReader's retry queue
+  moves on. Maki holds them for up to a week in case the file shows up, then drops them.
 - A page pushed for a file Maki hasn't recognised yet, such as one you just copied over, is kept for
   up to a week and applied once the background pass records the file. It is held in memory only, so
   restarting Maki drops it. Push again from KOReader afterwards.

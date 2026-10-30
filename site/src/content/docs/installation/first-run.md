@@ -24,8 +24,9 @@ The setup guide opens after the account is created. It has six steps:
    them to Maki's standard, or keep their names and download into them or into a new folder. Two
    more switches write **ComicInfo.xml** into imported files and save a `cover.jpg` into each series
    folder.
-3. **Discover.** Shows the status of the local MangaBaka database. Also sets the recommendation
-   model and the most explicit content rating Discover may show outside your own library.
+3. **Discover.** Shows the status of the local MangaBaka database. Also sets **Recommendations and
+   search by description** and the most explicit content rating Discover may show outside your own
+   library.
 4. **Downloads.** Pick the languages Maki looks for and which chapters it skips.
 5. **Connections.** Optional. Add tools you already run, such as FlareSolverr, Kavita, an indexer or a
    download client. Maki downloads from its built-in sources without any of them.

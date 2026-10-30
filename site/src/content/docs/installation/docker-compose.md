@@ -42,7 +42,7 @@ docker run -d --name maki \
   </TabItem>
   <TabItem label="Synology / Portainer">
 Paste the compose file above into a Portainer stack, or into a Synology Container Manager project. Map
-`/config` and `/library` to shared folders that the user set in `PUID` and `PGID` can write to.
+`/config` and `/library` to shared folders that the `PUID:PGID` user can write to.
   </TabItem>
 </Tabs>
 
@@ -69,7 +69,7 @@ briefly need close to 1 GB.
 ## Optional companions
 
 The compose file for Kavita, FlareSolverr and Suwayomi, and where each is connected in Maki, is on
-[FlareSolverr and Suwayomi](/Maki/installation/companions/).
+[Kavita, FlareSolverr and Suwayomi](/Maki/installation/companions/).
 
 ## Next
 

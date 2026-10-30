@@ -11,8 +11,11 @@ src/
 ├── Maki.Core/       Domain: entities, ISource and IMetadataProvider, parsing, CBZ pipeline
 ├── Maki.Data/       EF Core and SQLite, migrations
 ├── Maki.Sources/    One ISource implementation per site
-└── Maki.Metadata/   MangaBaka provider, local dump and embeddings
+├── Maki.Metadata/   MangaBaka provider, local dump and embeddings
+└── Maki.Desktop/    Windows tray host
 frontend/            Vite, React, TypeScript and Mantine SPA
+site/                Documentation site (Starlight)
+distribution/        Packaging and release scripts
 ```
 
 ## Maki.Core

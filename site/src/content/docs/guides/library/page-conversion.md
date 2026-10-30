@@ -22,8 +22,9 @@ Clients that cannot decode a page's format can ask Maki for JPEG or PNG instead.
 
 ## What gets converted
 
-JPEG pages become the chosen format. PNG pages become lossless WebP, or lossy too when the quality
-is set to a lossy stop, unless you choose to keep them lossless.
+JPEG pages become the chosen format, except at the Lossless stop, where they are kept as they are.
+PNG pages become lossless WebP at the Lossless stop or with **Keep PNG pages lossless** on. At a
+lossy stop they become the chosen format too.
 
 Left as they are:
 

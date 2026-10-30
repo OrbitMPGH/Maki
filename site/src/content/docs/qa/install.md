@@ -18,7 +18,7 @@ Yes. Maki writes plain CBZ files with ComicInfo.xml, so Kavita reads the same fi
 
 ### How do I upgrade?
 
-Updates are manual. **Settings → System → Updates** shows the steps for your install. With Docker Compose: `docker compose pull`, then `docker compose up -d`.
+Docker and Unraid updates are manual. The Windows app checks for and installs updates itself, and the Linux tarball does not update itself. **Settings → System → Updates** shows the steps for your install. With Docker Compose: `docker compose pull`, then `docker compose up -d`.
 
 ### Does an upgrade change my data?
 
@@ -30,4 +30,4 @@ The first page asks you to set a username and password. Your library, history an
 
 ### Can I run Maki without Docker?
 
-Yes. Building from source needs .NET 10 and Node 24, see the [development guide](/Maki/contribution/development/). On Windows, state is in `%APPDATA%\Maki`. On Unraid, install from the Apps tab, see [Unraid](/Maki/installation/unraid/).
+Yes. Maki has a Windows installer and Linux tarballs for x64 and arm64, both on the [releases page](https://github.com/OrbitMPGH/Maki/releases). The Windows app runs from the tray and keeps its data in `%LOCALAPPDATA%\Maki`. You can also build from source, which needs .NET 10 and Node 24, see the [development guide](/Maki/contribution/development/). On Unraid, install from the Apps tab, see [Unraid](/Maki/installation/unraid/).

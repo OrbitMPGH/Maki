@@ -23,8 +23,8 @@ Backups skip the MangaBaka database, embeddings, covers and cache, so they stay 
 your settings in plain text, so treat a backup, `config.json` and a copy of the database like
 passwords. See [Backup and restore](/Maki/guides/running/backup-restore/).
 
-Keep `/config` on a folder only Maki uses. The container changes the ownership of everything in it
-on every start, so a shared folder can end up with a new owner.
+Keep `/config` on a folder only Maki uses. On every start the container changes the owner of anything
+in it that is not already `PUID:PGID`, so a shared folder can end up with a new owner.
 
 ## /library
 
@@ -39,7 +39,7 @@ there already.
 The container starts as root only long enough to prepare `/config`, then runs Maki as `PUID:PGID`:
 
 1. It creates `/config` if it is missing.
-2. It runs `chown -R` on `/config` to `PUID:PGID`.
+2. It changes the owner of each file and folder in `/config` that is not already `PUID:PGID`.
 3. It starts Maki as `PUID:PGID` with `HOME` set to `/config`.
 
 Use numeric IDs, since the entrypoint passes them straight to `gosu` and does not look up names. They
@@ -70,8 +70,10 @@ access:
 sudo chown -R 1000:1000 /path/to/manga-library
 ```
 
-**The container exits right away with a `chown` error.** The `/config` mount is read-only, or it sits
-on a filesystem that rejects ownership changes. Maki stops on that error, so mount a writable folder.
+**The container exits right away with a `chown` error.** `/config` holds files owned by another user,
+and its mount rejects ownership changes, as a read-only mount or some filesystems do. Maki stops on
+that error. Mount a writable folder, or change the owner of those files to `PUID:PGID`. A read-only
+`/config` whose files already belong to `PUID:PGID` starts, then fails on the first write.
 
 On Unraid, the template uses `99` and `100` for `PUID` and `PGID`. See
 [Unraid paths and appdata](/Maki/installation/unraid-paths/).

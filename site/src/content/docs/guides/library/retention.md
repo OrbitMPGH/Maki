@@ -25,8 +25,8 @@ file, and if the series has moved to a new folder, the file goes to the new one.
 Set **Keep deleted files (days)** under **Settings, Library, Recycle bin**. `0` deletes binned files
 on the next housekeeping pass. **Empty bin** is on the same card.
 
-- **Delete file** on a chapter moves the file into the bin. The chapter stays in the list, marked as
-  removed.
+- **Delete file** on a chapter moves the file into the bin. The chapter stays in the list with a **File
+  removed** badge.
 - **Remove chapters** deletes the chapter rows and moves their files into the bin. Use it for a wrong
   source match.
 - **Delete series** with files moves every file in the series' folders into the bin, then removes
@@ -47,9 +47,13 @@ scan** (default 14). Until housekeeping purges a replaced file, the replacement 
 
 ## Read file cleanup
 
-Off by default. When an admin turns it on, Maki deletes a chapter's file a set number of days after
-every reader who has progress in the series has finished it. The file is deleted outright, not
-trashed, and the chapter stays in the list marked **Auto-removed**.
+Off by default. An admin turns it on in the **Clean up read chapters** card on the Downloads tab,
+where the delay defaults to 7 days. Maki deletes a chapter's file that many days after every reader
+who has progress in the series has finished it. The file is deleted outright, not trashed, and the
+chapter stays in the list marked **Auto-removed**.
+
+Until the deletion, the chapter shows **Removed in N days** and gets no upgrades. Cleanup unticks
+**Wanted** on the chapter, so Maki does not download it again. Tick **Wanted** again to queue it.
 
 Cleanup keeps each reader's most recent finished chapter, and skips a series while a download is
 running for it.

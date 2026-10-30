@@ -10,21 +10,25 @@ or another reader.
 ## What is inside
 
 - `ComicInfo.xml` at the root.
-- One image per page, named `001.jpg`, `002.jpg` and so on. Names have at least three digits, so
-  readers that sort names as text still get the pages in order.
+- One image per page, numbered `001`, `002` and so on, with the source page's extension. Numbers have
+  at least three digits, so readers that sort names as text still get the pages in order. Page
+  conversion can rewrite the pages as WebP or AVIF and keep the numbers. See
+  [WebP and AVIF conversion](/Maki/guides/library/page-conversion/).
 
 Page images are stored without compression, since JPEG and PNG are already compressed. Maki writes
 the archive to a `.partial` file and moves it into place when complete, so a reader never opens a
 half-written file.
 
-The series folder may also get a `cover.jpg` beside the CBZ files, not inside them.
+Off by default. With **Save a cover.jpg into each series' library folder** on, under **Settings,
+Library, ComicInfo & covers**, the series folder also gets a `cover.jpg` beside the CBZ files, not
+inside them.
 
 ## ComicInfo.xml fields
 
 | Field | Source |
 | --- | --- |
 | `Series` | The series' English title |
-| `LocalizedSeries` | An alt title in the chapter's language, else the original title |
+| `LocalizedSeries` | Original title for English chapters. Other languages take an alt title in their language, else the original title |
 | `Title` | The chapter title. If there is none, `Chapter N`, or the series title for a chapter without a number |
 | `Number` | The chapter number |
 | `Volume` | The chapter's volume, when the source gives one |
@@ -40,7 +44,7 @@ The series folder may also get a `cover.jpg` beside the CBZ files, not inside th
 | `LanguageISO` | The chapter's language |
 | `Manga` | Reading direction, from the series type (see below) |
 | `AgeRating` | From the series content rating (see below) |
-| `ScanInformation` | The scanlation group, when there is one |
+| `ScanInformation` | The scanlation group. A scanlator site with no group on the chapter uses the site name |
 | `PageCount` | Number of pages in the chapter |
 
 `Manga` follows the series type:
@@ -60,10 +64,12 @@ say nothing about violence.
 ## Files Maki adopts
 
 Files Maki did not download, such as library imports or finished torrents, can get their
-ComicInfo.xml rewritten:
+ComicInfo.xml rewritten. The **Write ComicInfo.xml into imported files** switch, on by default under
+**Settings, Library, ComicInfo & covers**, controls this:
 
 - Series-level fields (title, summary, authors, genres) are standardized to Maki's metadata.
-- Chapter-level fields such as number and title are kept, or filled in from the linked chapter.
+- Number and volume always come from the linked chapter or the file name. The date comes from the
+  chapter when it has one. Title is kept unless it is empty.
 - Fields Maki has no opinion on, such as translator or characters, and unknown elements stay as
   they were.
 

@@ -11,10 +11,10 @@ In the timer and cache variables below, a value that is not a whole number or is
 
 | Variable | Default | What it does |
 |---|---|---|
-| `PUID` | `1000` | User ID Maki runs as. The container chowns `/config` to this user on each start. |
+| `PUID` | `1000` | User ID Maki runs as. On each start the container changes the owner of anything in `/config` that is not already `PUID:PGID`. |
 | `PGID` | `1000` | Group ID Maki runs as. |
-| `MAKI_RUNTIME` | `docker` in the image | Marks the install as Docker. The update check reports it as `IsDocker`. |
-| `MAKI_CONFIG_DIR` | `/config` in the image | Folder for the database, logs, covers, caches and `config.json`. Unset: `/config` if it exists, otherwise the per-user app data folder (`%APPDATA%\Maki` on Windows). See [Ports, paths and files on disk](/Maki/reference/ports-and-paths/). |
+| `MAKI_RUNTIME` | `docker` in the image | `docker` or `desktop`. Any other value is treated as unset. Unset: Docker if `/.dockerenv` exists, otherwise a bare start. The update check reports Docker as `IsDocker`. |
+| `MAKI_CONFIG_DIR` | `/config` in the image | Folder for the database, logs, covers, caches and `config.json`. Unset: `/config` if it exists, otherwise `%APPDATA%\Maki` on Windows. The Windows app sets it to `%LOCALAPPDATA%\Maki`. See [Ports, paths and files on disk](/Maki/reference/ports-and-paths/). |
 
 ## Sign-in
 
@@ -27,7 +27,7 @@ In the timer and cache variables below, a value that is not a whole number or is
 | Variable | Default | What it does |
 |---|---|---|
 | `MAKI_DUMP_BOOT_DOWNLOAD` | On | With no MangaBaka database installed, the download starts about 5 seconds after boot. `0` delays it to 2 minutes. |
-| `MAKI_DROP_SCAN_CACHE` | On | After a scan reads a file end to end, the OS drops its cached pages. `0` keeps them, which suits a machine with RAM to spare. |
+| `MAKI_DROP_SCAN_CACHE` | On | After a scan reads a file end to end, the OS drops its cached pages. Linux only. `0` keeps them, which suits a machine with RAM to spare. |
 | `MAKI_EMBED_IDLE_MINUTES` | `5` | Minutes idle before the embedding model is unloaded from memory. `0` keeps it loaded. |
 | `MAKI_ARTIFACT_IDLE_MINUTES` | `10` | Minutes idle before the in-memory catalogue and recommendation indexes are dropped. `0` keeps them loaded. |
 | `MAKI_VECTOR_IDLE_MINUTES` | `15` | Minutes idle before the search vectors are dropped from memory. `0` keeps them loaded. |

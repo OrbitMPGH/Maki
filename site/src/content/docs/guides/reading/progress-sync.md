@@ -9,16 +9,16 @@ from it, or both.
 | Where you read | What reaches Maki | What goes back out |
 | --- | --- | --- |
 | Maki's reader | Your position, and each chapter you finish | Trackers, and Kavita if you turn on the Kavita push switch |
-| OPDS apps | Each page an app loads counts as read | Trackers and Stats, like any other read |
+| OPDS apps | Each page saves your position. A chapter completes on its last page once you have opened it | Trackers and Stats, like any other read |
 | KOReader | Page positions, including reads made offline | Your Maki position, when you open the book in KOReader |
 | Kavita | Read state for series that match, through the scrobble check and the live switch | Trackers. Maki's reads reach Kavita only if the push switch is on |
 | Komga-compatible apps | Progress the app reports | Read state, so the app shows the same chapters as read |
 
 ## Reading in Maki
 
-Progress is saved as you read. Time is counted only while the tab is visible and in focus. Offline
-progress is kept on the device and sent when the connection comes back. Reads show up in Stats and
-Rewind as they happen.
+Progress is saved as you read. Time is counted only while the tab is visible and in focus, and it
+stops after five minutes with no input. Offline progress is kept on the device and sent when the
+connection comes back. Reads show up in Stats and Rewind as they happen.
 
 ## OPDS apps
 

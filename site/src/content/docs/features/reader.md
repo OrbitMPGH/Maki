@@ -5,31 +5,32 @@ description: Maki's built-in reader, reading profiles, the Home screen and offli
 
 ## Built-in reader
 
-![Alt text](../../../assets/reader.png)
+![Reader on a manga page with the settings panel open, showing layout, fit and enhance options](../../../assets/reader.png)
 <hr>
 
-Paged, double-page, 1:1 (original size) and continuous-scroll modes. Progress is tracked and merged
-with Kavita so nothing double-counts. A read meter shows how far through the series you are, and
-time-remaining estimates are based on comparable chapters.
+Single, double and continuous layouts, plus a 1:1 (original size) fit. Progress is tracked and merged
+with Kavita so nothing double-counts. A read meter shows how far through the series you are. The
+series page estimates time to finish from comparable chapters.
 
 - Wide pages in single-page mode can be shown whole, split into two halves in reading order, or
   rotated.
 - **Crop borders** (shortcut C) trims plain white or black margins.
 - Chapters with very tall pages open in continuous mode on their own.
-- On touch, pull past the end of a chapter to open the next one.
+- In continuous mode, scrolling past the end of a chapter opens the next one. On touch, pull past
+  the end instead.
 - The page bar has one segment per page, lit up to the page on screen. Hover a segment for that
   page's thumbnail, and click or drag to jump.
 
 ## Reading profiles
 
-![Alt text](../../../assets/reader-profiles.png)
+![Reader profiles list with Default, Comic, Manga and Webtoon profiles and their settings](../../../assets/reader-profiles.png)
 <hr>
 
 Per-user defaults for page fit, direction and mode by series type, with per-series overrides on top.
 
 ## Home
 
-![Alt text](../../../assets/home.png)
+![Home screen with a Continue reading hero card, a Next up tray and Recently added covers](../../../assets/home.png)
 <hr>
 
 Opens on one large card for the series you read last, with the rest of **Continue reading** in a

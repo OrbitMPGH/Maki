@@ -14,9 +14,10 @@ The **Activity** page (`/activity`) has three tabs.
 - **Upcoming** shows each series' likely next chapter on a five-week grid, as a span with a
   confidence, not a date. A release time that a source announces appears on its day.
 
-The queue updates live. Each row can be moved to the top, moved up or down, retried or removed.
-**Clear queue** removes everything still pending and cancels downloads in progress. Finished and
-cancelled downloads move to **History** below the queue.
+The queue updates live. Each row can be moved to the top, moved up or down, retried or
+removed. Rows in **Needs review** also get a **Review** button. **Clear queue** removes everything
+still pending and cancels downloads in progress. Finished and cancelled downloads move to
+**History** below the queue.
 
 A long queue shows only the first items. A line under the table gives the total, and the rest
 still download.
@@ -40,8 +41,9 @@ On a series page, filter the chapter list to **Wanted (N)** (or use the **Wanted
 select chapters to choose **Want** or **Don't want**. Unwanted chapters are skipped by every
 download that queues "all wanted" chapters, and by Smart.
 
-Read file cleanup can delete a file you have finished. Its chapter stays listed as removed and is
-not downloaded again unless you turn **Wanted** back on.
+The **Clean up read chapters** card under **Settings → Downloads** can delete a file you have
+finished. Its chapter stays listed as removed and is not downloaded again unless you turn **Wanted**
+back on.
 
 ## Downloading what is missing
 

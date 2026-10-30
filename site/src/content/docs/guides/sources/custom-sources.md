@@ -15,7 +15,8 @@ one and appears in **Manage sources** with a **Custom** tag. See
 ## Set up a site
 
 1. Open **Settings → Downloads → Sources**, select **Manage sources**, then **Add source → Set up a site**.
-2. Paste the address of a series page from the site, and the address of a chapter page from that series.
+2. Paste the address of a series page from the site. A chapter page from that series is optional, but
+   the guess is far better with one.
 3. Maki reads both pages and guesses the chapter list, the page images and the search. Each guess shows
    what it read from the live site.
 4. Check the guesses. If Maki couldn't find something, describe it under **Advanced**, or edit the
@@ -55,8 +56,9 @@ and enter the **Repository address**.
   confirmation lists them.
 - Maki checks each repository once a day. **Check now** runs the check straight away.
 
-Plain `http://` repositories can be added and installed from. Only an `https://` repository can keep its
-sources up to date on its own.
+Plain `http://` repositories can be added and installed from. Only an `https://` repository can keep
+its sources up to date on its own, and only when each definition file is served over https with a
+checksum listed.
 
 ## Updates
 

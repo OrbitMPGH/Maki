@@ -11,7 +11,9 @@ When you add a series, Maki searches every enabled source for it in the backgrou
 shows as matching until the searches finish.
 
 - A result is accepted when its title agrees closely enough with the series. If the main title finds
-  nothing on a source, Maki retries with the alternative titles.
+  nothing on a source, Maki retries with alternative titles: up to two English ones on a source that
+  publishes English, otherwise the alt title in the source's own language, then the original title if
+  its script fits.
 - Some sources publish tracker ids such as MyAnimeList or AniList. When one matches the series, Maki
   accepts the result without comparing titles.
 - WEBTOON CANVAS results are user-made, so they only match when the credited author agrees with the
@@ -27,9 +29,9 @@ are not linked yet.
 
 ## Priority order
 
-In **Settings → Downloads → Sources → Manage sources**, drag sources into order on the **Priority**
-tab. The top source is tried first when several carry the same series. Newly enabled sources join at
-the bottom.
+In **Settings → Downloads → Sources → Manage sources**, drag sources into order in the **Priority**
+panel beside **All sources**. On narrow screens it is a tab instead. The top source is tried first
+when several carry the same series. Newly enabled sources join at the bottom.
 
 Languages affect the order too. In **Settings → Downloads → Languages**, list your languages, most
 preferred first. Maki ranks each source by the most preferred enabled language it publishes in, and
@@ -49,7 +51,7 @@ Each linked source also has a priority number. In manual order, a lower number i
 quality order, the priority number only breaks ties between sources of equal quality.
 
 Quality comes from sampling. **Measure** on the series page takes a few pages from three chapters on
-every linked source and records a quality tier for each, and **Compare** shows two sources side by
+every enabled source and records a quality tier for each, and **Compare** shows two sources side by
 side. To measure new series automatically, turn on **Measure sources when a series is added** in the
 Sources section of Downloads settings.
 
