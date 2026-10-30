@@ -3698,6 +3698,10 @@ msgstr ""
 msgid "Also set this series to Never"
 msgstr ""
 
+#: src/components/TrackerSyncControls.tsx
+msgid "Also sync \"so far\" ratings"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Alt titles"
@@ -10221,6 +10225,10 @@ msgstr "Не выключать экран"
 #, fuzzy
 msgid "Keep the screen awake while reading"
 msgstr "Не выключать экран во время чтения"
+
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Keep them in Maki"
+msgstr ""
 
 #: src/components/import/MihonImport.tsx
 #, fuzzy
@@ -17045,6 +17053,10 @@ msgstr "отозвано"
 msgid "Rhythm"
 msgstr "Ритм"
 
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Right now a \"so far\" score stays in Maki, and only your final rating goes to your trackers. You can change this for each tracker in Settings."
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "right to left"
@@ -18073,6 +18085,10 @@ msgstr "Семантический поиск и рекомендации"
 msgid "Semantic search and recommendations are off."
 msgstr "Семантический поиск и рекомендации отключены."
 
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Send \"so far\" scores to {trackers} too?"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Send reading progress to AniList, MyAnimeList, Kitsu, MangaBaka or MangaUpdates."
@@ -18092,6 +18108,10 @@ msgstr "Отправлять без звука"
 #, fuzzy
 msgid "Send test"
 msgstr "Отправить тест"
+
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Send them"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy

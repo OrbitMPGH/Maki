@@ -54,6 +54,7 @@ import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, type NavItem } from './nav'
 import { DocumentTitle, DocumentTitleProvider } from './lib/documentTitle'
 import { lazyRoute, preloadRoutes } from './lib/routePreload'
+import { SoFarSyncAskDialog } from './components/SoFarSyncAskDialog'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
 // (StartPageRedirect), so splitting them would only add a round trip to the first paint.
 import HomePage from './pages/HomePage'
@@ -205,6 +206,7 @@ function AuthGate() {
     <DocumentTitleProvider>
       <LiveEvents />
       <OfflineSync />
+      <SoFarSyncAskDialog />
       <DocumentTitle />
       <MetadataGate>
         {inReader ? (

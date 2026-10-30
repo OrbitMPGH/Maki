@@ -3083,6 +3083,10 @@ msgstr "Also remove the files to free {size}"
 msgid "Also set this series to Never"
 msgstr "Also set this series to Never"
 
+#: src/components/TrackerSyncControls.tsx
+msgid "Also sync \"so far\" ratings"
+msgstr "Also sync \"so far\" ratings"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Alt titles"
 msgstr "Alt titles"
@@ -8525,6 +8529,10 @@ msgstr "Keep the screen awake"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Keep the screen awake while reading"
 msgstr "Keep the screen awake while reading"
+
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Keep them in Maki"
+msgstr "Keep them in Maki"
 
 #: src/components/import/MihonImport.tsx
 msgid "Keep this page open until it finishes. Leaving it stops the import; run it again to carry on."
@@ -14222,6 +14230,10 @@ msgstr "revoked"
 msgid "Rhythm"
 msgstr "Rhythm"
 
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Right now a \"so far\" score stays in Maki, and only your final rating goes to your trackers. You can change this for each tracker in Settings."
+msgstr "Right now a \"so far\" score stays in Maki, and only your final rating goes to your trackers. You can change this for each tracker in Settings."
+
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "right to left"
 msgstr "right to left"
@@ -15081,6 +15093,10 @@ msgstr "Semantic search and recommendations"
 msgid "Semantic search and recommendations are off."
 msgstr "Semantic search and recommendations are off."
 
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Send \"so far\" scores to {trackers} too?"
+msgstr "Send \"so far\" scores to {trackers} too?"
+
 #: src/components/SetupWizard.tsx
 msgid "Send reading progress to AniList, MyAnimeList, Kitsu, MangaBaka or MangaUpdates."
 msgstr "Send reading progress to AniList, MyAnimeList, Kitsu, MangaBaka or MangaUpdates."
@@ -15096,6 +15112,10 @@ msgstr "Send silently"
 #: src/components/settings/PushNotificationsSection.tsx
 msgid "Send test"
 msgstr "Send test"
+
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Send them"
+msgstr "Send them"
 
 #: src/pages/ScrobblePage.tsx
 msgid "Sends what you read to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Progress on a tracker is never lowered."

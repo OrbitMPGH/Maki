@@ -246,6 +246,7 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/settings/scrobble'), () => HttpResponse.json(d.scrobbleSettings)),
   putEcho('/settings/scrobble'),
   http.get(api('/scrobble/status'), () => HttpResponse.json(d.scrobbleStatus)),
+  http.put(api('/scrobble/sofar'), async ({ request }) => HttpResponse.json(await request.json())),
   http.put(api('/scrobble/preferences/:service'), async ({ request, params }) =>
     HttpResponse.json({ service: params.service, ...((await request.json()) as object) }),
   ),

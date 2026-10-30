@@ -796,6 +796,12 @@ public static class SettingKeys
     /// <summary>Per-tracker "push ratings to this service" toggle. Unset = on.</summary>
     public static string ScrobbleRatingsKey(string service) => $"scrobble.{service}.ratings";
 
+    /// <summary>
+    /// Per user, per tracker: also push "so far" scores. "true" or "false" once the reader answered;
+    /// unset = off and not asked yet, which is what the one-time question looks for.
+    /// </summary>
+    public static string ScrobbleSoFarKey(string service) => $"scrobble.{service}.sofar";
+
     /// <summary>Instance switch for the scheduled import list pass. Unset = on.</summary>
     public const string ImportListEnabled = "importlist.enabled";
     /// <summary>Minutes between scheduled import list passes. Default 360.</summary>

@@ -19,6 +19,7 @@ import type { ReleaseParsedDto } from './upgrades'
 import { obtainedCount } from '../lib/chapterCounts'
 import { activeSeries } from '../lib/series'
 import { isProvisional, ratesProvisionally } from '../lib/rating'
+import { askSoFarSync } from '../lib/soFarSyncAsk'
 import type {
   AddSeriesRequest,
   ArchivePreview,
@@ -2667,6 +2668,8 @@ export interface SetRatingResult {
   rating: number | null
   provisionalRating?: number | null
   provisionalAtChapter?: number | null
+  /** Trackers to ask once whether "so far" scores should go to them too. "So far" writes only. */
+  soFarSyncAsk?: { service: string; label: string }[]
 }
 
 /**
@@ -2691,11 +2694,16 @@ export function useSetRating() {
   })
 }
 
-function useRatingMutation<V extends { seriesId: number }>(mutationFn: (vars: V) => Promise<SetRatingResult>) {
+function useRatingMutation<V extends { seriesId: number }>(
+  mutationFn: (vars: V) => Promise<SetRatingResult>,
+  after?: (data: SetRatingResult, vars: V) => void,
+) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn,
-    onSuccess: (_data, { seriesId }) => {
+    onSuccess: (data, vars) => {
+      const { seriesId } = vars
+      after?.(data, vars)
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['rating-checkpoint', seriesId] })
@@ -2761,12 +2769,26 @@ export function useSaveRatingPromptsSettings() {
 
 /** A "so far" score: never pushed to a tracker, and ignored by the server while a final rating exists. */
 export function useSetProvisionalRating() {
-  return useRatingMutation(({ seriesId, rating }: { seriesId: number; rating: number | null }) =>
-    api<SetRatingResult>(`/series/${seriesId}/rating/provisional`, {
-      method: 'PUT',
-      body: JSON.stringify({ rating }),
-    }),
+  return useRatingMutation(
+    ({ seriesId, rating }: { seriesId: number; rating: number | null }) =>
+      api<SetRatingResult>(`/series/${seriesId}/rating/provisional`, {
+        method: 'PUT',
+        body: JSON.stringify({ rating }),
+      }),
+    (data, { seriesId }) => {
+      if (data.soFarSyncAsk?.length) askSoFarSync({ trackers: data.soFarSyncAsk, seriesId })
+    },
   )
+}
+
+/** The answer to the one-time question, stored for each tracker it named. */
+export function useSetSoFarSync() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { services: string[]; enabled: boolean; seriesId?: number }) =>
+      api<{ services: string[]; enabled: boolean }>('/scrobble/sofar', { method: 'PUT', body: JSON.stringify(body) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scrobble', 'status'] }),
+  })
 }
 
 /** Makes the "so far" score the rating, which pushes it to trackers like any other rating. */
@@ -4141,6 +4163,8 @@ export interface ScrobbleConnection {
   syncReading: boolean
   /** Per-tracker: push ratings to this service. */
   syncRatings: boolean
+  /** Per-tracker: push "so far" scores too, on top of `syncRatings`. Absent on older responses. */
+  syncSoFar?: boolean
   /** Whether this tracker can hand over an anime list at all, which is what draws the switch. */
   animeList: boolean
   /** Per-tracker: let this service's watched anime steer recommendations. */
@@ -4289,16 +4313,19 @@ export function useScrobblePreferences() {
       reading,
       ratings,
       anime,
+      soFar,
     }: {
       service: string
       reading: boolean
       ratings: boolean
       /** Omitted for trackers with no anime list, so the server leaves that setting alone. */
       anime?: boolean
+      /** Omitted unless this switch changed: an unset value is also what "not asked yet" means. */
+      soFar?: boolean
     }) =>
-      api<{ service: string; reading: boolean; ratings: boolean; anime: boolean | null }>(
+      api<{ service: string; reading: boolean; ratings: boolean; anime: boolean | null; soFar: boolean | null }>(
         `/scrobble/preferences/${service}`,
-        { method: 'PUT', body: JSON.stringify({ reading, ratings, anime }) },
+        { method: 'PUT', body: JSON.stringify({ reading, ratings, anime, soFar }) },
       ),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scrobble', 'status'] }),
   })

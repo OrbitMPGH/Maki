@@ -195,11 +195,11 @@ Decided 2026-10-30:
 - **Hide from Home: no stars.** It stays a one-click action.
 - **Bulk archive: no stars.**
 
-Still open, built at the recommended default:
+Accepted at the recommended default, 2026-10-30:
 
-1. Separate `ProvisionalRating` column rather than a flag on `Rating`.
-2. Stars on a part-read series set a "so far" score, with a one-time tracker ask (phase 3).
-3. Checkpoint prompts on by default, Hooked and Caught up only, Volume end opt-in.
+- Separate `ProvisionalRating` column rather than a flag on `Rating`.
+- Stars on a part-read series set a "so far" score, with a one-time tracker ask (phase 3).
+- Checkpoint prompts on by default, Hooked and Caught up only, Volume end opt-in.
 
 ## Implementation status
 
@@ -220,4 +220,11 @@ Phase 2, committed 2026-10-30:
 - Per-user switch `ratings.prompts` ("off", unset = on): `GET/PUT settings/rating-prompts` and a "Rating prompts" card in Settings > Reading.
 - Frontend: `RatingCheckpointPrompt` on the reader's end screen and the series page, and optional stars in `ArchiveSeriesDialog` that set a final rating when the archive goes through (series page only).
 
-Not started: the Feedback Lab count, the tracker switch and one-time ask (phase 3), Volume end and snapshots (phase 4).
+Phase 3, committed 2026-10-30:
+
+- Per-user, per-tracker `scrobble.{service}.sofar`: "true" sends "so far" scores too (only with "Sync ratings" on), "false" keeps them in Maki, unset means off and not asked yet. An "Also sync "so far" ratings" switch under "Sync ratings" in `TrackerSyncControls`, sent only when it changes so toggling another switch never counts as an answer.
+- `PUT series/{id}/rating/provisional` pushes the score (0 when cleared) to the trackers with the switch on, and answers `soFarSyncAsk`: the trackers with stored sign-in details, rating sync on and the key unset. It reads credentials from the database only, since `AuthenticatedAsync` can call a tracker.
+- `PUT scrobble/sofar` stores the answer for the named trackers and, on yes, pushes the series' current "so far" score.
+- `SoFarSyncAskDialog`, mounted beside `LiveEvents` so it works in the reader too: "Send them" or "Keep them in Maki" store the answer; closing it stores nothing and does not ask again until the page reloads.
+
+Not started: the Feedback Lab count, Volume end and snapshots (phase 4).

@@ -2254,7 +2254,8 @@ public class SeriesController(
             return this.Fail(localizer, "error.series.invalidRating");
         }
 
-        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        var series = await db.Series.FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
         {
             return NotFound();
         }
@@ -2276,11 +2277,24 @@ public class SeriesController(
             }
         }, ct);
 
+        var ask = Array.Empty<object>();
+        if (state.Rating is null)
+        {
+            // Only trackers with the "so far" switch on take it; a cleared score clears it there too.
+            scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0, soFar: true);
+            if (request.Rating is not null && currentUser.Has(MakiPermission.UseTrackers))
+            {
+                ask = [.. (await scrobbler.SoFarAskAsync(db, currentUser.UserId, ct))
+                    .Select(t => new { service = t.Service, label = t.Label })];
+            }
+        }
+
         return Ok(new
         {
             rating = state.Rating,
             provisionalRating = state.ProvisionalRating,
             provisionalAtChapter = state.ProvisionalAtChapter,
+            soFarSyncAsk = ask,
         });
     }
 

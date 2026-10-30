@@ -3698,6 +3698,10 @@ msgstr ""
 msgid "Also set this series to Never"
 msgstr ""
 
+#: src/components/TrackerSyncControls.tsx
+msgid "Also sync \"so far\" ratings"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Alt titles"
@@ -10221,6 +10225,10 @@ msgstr "保持屏幕常亮"
 #, fuzzy
 msgid "Keep the screen awake while reading"
 msgstr "阅读时保持屏幕常亮"
+
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Keep them in Maki"
+msgstr ""
 
 #: src/components/import/MihonImport.tsx
 #, fuzzy
@@ -17045,6 +17053,10 @@ msgstr "已撤销"
 msgid "Rhythm"
 msgstr "节奏"
 
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Right now a \"so far\" score stays in Maki, and only your final rating goes to your trackers. You can change this for each tracker in Settings."
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "right to left"
@@ -18073,6 +18085,10 @@ msgstr "语义搜索和推荐"
 msgid "Semantic search and recommendations are off."
 msgstr "语义搜索和推荐已关闭。"
 
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Send \"so far\" scores to {trackers} too?"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Send reading progress to AniList, MyAnimeList, Kitsu, MangaBaka or MangaUpdates."
@@ -18092,6 +18108,10 @@ msgstr "静默发送"
 #, fuzzy
 msgid "Send test"
 msgstr "发送测试"
+
+#: src/components/SoFarSyncAskDialog.tsx
+msgid "Send them"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
