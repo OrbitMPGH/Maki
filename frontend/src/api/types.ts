@@ -71,7 +71,7 @@ export interface SeriesDto {
   /** You finished this series. The stars set a "so far" score only while it is part-read. */
   finished?: boolean
   /** The "how is it so far?" prompt waiting for you. Detail endpoint only. */
-  ratingCheckpoint?: 'hooked' | 'caughtUp' | null
+  ratingCheckpoint?: 'hooked' | 'caughtUp' | 'volumeEnd' | null
   mangaBakaId: number | null
   aniListId: number | null
   malId: number | null

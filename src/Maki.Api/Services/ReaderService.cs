@@ -575,7 +575,7 @@ public class ReaderService(
         if (justCompleted)
         {
             await OnChapterCompletedAsync(slice.Series, chapter, row, at, CancellationToken.None);
-            await ArmRatingCheckpointAsync(slice.Series);
+            await ArmRatingCheckpointAsync(slice.Series, chapter);
         }
 
         return justCompleted;
@@ -1020,11 +1020,11 @@ public class ReaderService(
     }
 
     /// <summary>A failure here costs a prompt and nothing else, so it never reaches the progress write.</summary>
-    private async Task ArmRatingCheckpointAsync(Series series)
+    private async Task ArmRatingCheckpointAsync(Series series, Chapter chapter)
     {
         try
         {
-            await RatingCheckpointService.ArmAsync(db, UserId, series, DateTime.UtcNow, CancellationToken.None);
+            await RatingCheckpointService.ArmAsync(db, UserId, series, DateTime.UtcNow, CancellationToken.None, chapter);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {

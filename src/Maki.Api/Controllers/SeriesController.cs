@@ -2212,7 +2212,12 @@ public class SeriesController(
     // EditMetadata for exactly as long as it was a shared column on Series, where a reader-only
     // account could overwrite the admin's score on the admin's AniList profile.
     [HttpPut("{id:int}/rating")]
-    public async Task<IActionResult> SetRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct)
+    public Task<IActionResult> SetRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct) =>
+        SetRatingCoreAsync(id, request, null, ct);
+
+    /// <param name="origin">For the history; null works it out from whether a prompt was waiting.</param>
+    private async Task<IActionResult> SetRatingCoreAsync(int id, SetRatingRequest request,
+        RatingSnapshotOrigin? origin, CancellationToken ct)
     {
         if (request.Rating is { } r && r is < 1 or > 10)
         {
@@ -2225,15 +2230,24 @@ public class SeriesController(
             return NotFound();
         }
 
+        var prompted = false;
         var state = await UpsertUserStateAsync(id, s =>
         {
             s.Rating = request.Rating;
             if (request.Rating is not null)
             {
+                prompted = s.PendingRatingCheckpoint != RatingCheckpoints.None;
                 ClearProvisional(s);
                 RatingCheckpointService.Answered(s);
             }
         }, ct);
+
+        if (request.Rating is { } rated)
+        {
+            await RatingSnapshotService.RecordAsync(db, currentUser.UserId, id, rated, final: true,
+                await HighestReadChapterAsync(id, ct),
+                origin ?? (prompted ? RatingSnapshotOrigin.Checkpoint : RatingSnapshotOrigin.Manual), ct);
+        }
 
         // Push the score (0 clears it on trackers that support that) in the background — tracker
         // auth-checks + network + pacing take several seconds, and the UI shouldn't wait on them.
@@ -2261,6 +2275,7 @@ public class SeriesController(
         }
 
         var atChapter = request.Rating is null ? null : await HighestReadChapterAsync(id, ct);
+        var prompted = false;
         var state = await UpsertUserStateAsync(id, s =>
         {
             if (s.Rating is not null)
@@ -2268,6 +2283,7 @@ public class SeriesController(
                 return;
             }
 
+            prompted = s.PendingRatingCheckpoint != RatingCheckpoints.None;
             s.ProvisionalRating = request.Rating;
             s.ProvisionalRatedAt = request.Rating is null ? null : DateTime.UtcNow;
             s.ProvisionalAtChapter = atChapter;
@@ -2278,6 +2294,12 @@ public class SeriesController(
         }, ct);
 
         var ask = Array.Empty<object>();
+        if (state.Rating is null && request.Rating is { } soFar)
+        {
+            await RatingSnapshotService.RecordAsync(db, currentUser.UserId, id, soFar, final: false, atChapter,
+                prompted ? RatingSnapshotOrigin.Checkpoint : RatingSnapshotOrigin.Manual, ct);
+        }
+
         if (state.Rating is null)
         {
             // Only trackers with the "so far" switch on take it; a cleared score clears it there too.
@@ -2307,9 +2329,25 @@ public class SeriesController(
             .Select(s => s.ProvisionalRating)
             .FirstOrDefaultAsync(ct);
         return provisional is { } rating
-            ? await SetRating(id, new SetRatingRequest(rating), ct)
+            ? await SetRatingCoreAsync(id, new SetRatingRequest(rating), RatingSnapshotOrigin.Finish, ct)
             : this.Fail(localizer, "error.series.noProvisionalRating");
     }
+
+    /// <summary>The caller's score on this series over time, oldest first.</summary>
+    [HttpGet("{id:int}/rating-history")]
+    public async Task<IActionResult> RatingHistory(int id, CancellationToken ct) =>
+        Ok(await db.RatingSnapshots
+            .Where(s => s.SeriesId == id)
+            .OrderBy(s => s.CreatedAt).ThenBy(s => s.Id)
+            .Select(s => new
+            {
+                rating = s.Rating,
+                final = s.Final,
+                atChapter = s.AtChapter,
+                origin = s.Origin.ToString(),
+                createdAt = s.CreatedAt,
+            })
+            .ToListAsync(ct));
 
     /// <summary>
     /// The "how is it so far?" prompt waiting on this series for the caller, if any, for the reader's

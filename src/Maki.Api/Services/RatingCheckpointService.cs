@@ -26,8 +26,9 @@ public static class RatingCheckpointService
     public const double StaleShare = 0.25;
 
     /// <summary>Called after a chapter completion. Arms at most one checkpoint, and never two on one UTC day.</summary>
+    /// <param name="completed">The chapter just finished, which decides Volume end; null skips that checkpoint.</param>
     public static async Task ArmAsync(MakiDbContext db, int userId, Series series, DateTime nowUtc,
-        CancellationToken ct)
+        CancellationToken ct, Chapter? completed = null)
     {
         if (series.Incognito == IncognitoMode.Full ||
             await db.UserSettings.AnyAsync(s => s.Key == SettingKeys.RatingPrompts && s.Value == "off", ct))
@@ -49,7 +50,9 @@ public static class RatingCheckpointService
             return;
         }
 
-        var checkpoint = await DueAsync(db, userId, series, state, nowUtc, ct);
+        var volumes = completed is { Volume: not null } &&
+            await db.UserSettings.AnyAsync(s => s.Key == SettingKeys.RatingPromptsVolumes && s.Value == "on", ct);
+        var checkpoint = await DueAsync(db, userId, series, state, nowUtc, volumes ? completed : null, ct);
         if (checkpoint == RatingCheckpoints.None)
         {
             return;
@@ -68,7 +71,7 @@ public static class RatingCheckpointService
     }
 
     private static async Task<RatingCheckpoints> DueAsync(MakiDbContext db, int userId, Series series,
-        UserSeriesState? state, DateTime nowUtc, CancellationToken ct)
+        UserSeriesState? state, DateTime nowUtc, Chapter? volumeChapter, CancellationToken ct)
     {
         var seen = state?.RatingCheckpointsSeen ?? RatingCheckpoints.None;
 
@@ -81,25 +84,64 @@ public static class RatingCheckpointService
             }
         }
 
-        if (series.Status == SeriesStatus.Completed ||
-            state?.LastRatingCheckpointAt is { } last && nowUtc - last < StaleAfter)
+        if (state?.LastRatingCheckpointAt is { } last && nowUtc - last < StaleAfter)
         {
             return RatingCheckpoints.None;
         }
 
-        // Position, not evidence: ReadCounts.Read includes watched chapters, the same count the
-        // reader's end screen shows, so a reader who watched the anime first can still catch up.
         var wanted = await db.Chapters.CountAsync(c => c.SeriesId == series.Id &&
             (c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null), ct);
-        var read = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == series.Id, ct);
-        if (wanted == 0 || read < wanted)
+        if (wanted == 0)
         {
             return RatingCheckpoints.None;
         }
 
-        return await StaleAsync(db, series.Id, state, wanted, nowUtc, ct)
-            ? RatingCheckpoints.CaughtUp
+        var candidate = RatingCheckpoints.None;
+        if (series.Status != SeriesStatus.Completed)
+        {
+            // Position, not evidence: ReadCounts.Read includes watched chapters, the same count the
+            // reader's end screen shows, so a reader who watched the anime first can still catch up.
+            var read = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == series.Id, ct);
+            if (read >= wanted)
+            {
+                candidate = RatingCheckpoints.CaughtUp;
+            }
+        }
+
+        if (candidate == RatingCheckpoints.None && volumeChapter is not null &&
+            await EndsVolumeAsync(db, series.Id, volumeChapter, ct))
+        {
+            candidate = RatingCheckpoints.VolumeEnd;
+        }
+
+        return candidate != RatingCheckpoints.None && await StaleAsync(db, series.Id, state, wanted, nowUtc, ct)
+            ? candidate
             : RatingCheckpoints.None;
+    }
+
+    /// <summary>
+    /// The chapter is a whole-volume entry, or the highest-numbered chapter its volume has. Chapters
+    /// with no volume never end one, which is most webtoons.
+    /// </summary>
+    private static async Task<bool> EndsVolumeAsync(MakiDbContext db, int seriesId, Chapter chapter,
+        CancellationToken ct)
+    {
+        if (chapter.Volume is not { } volume)
+        {
+            return false;
+        }
+
+        if (chapter.Number is null)
+        {
+            return Chapter.IsVolumeEntry(chapter);
+        }
+
+        // In memory: SQLite cannot aggregate a decimal column in SQL.
+        var numbers = await db.Chapters
+            .Where(c => c.SeriesId == seriesId && c.Volume == volume && c.Number != null)
+            .Select(c => c.Number!.Value)
+            .ToListAsync(ct);
+        return numbers.Count > 0 && chapter.Number.Value >= numbers.Max();
     }
 
     /// <summary>
@@ -153,11 +195,12 @@ public static class RatingCheckpointService
         state.RatingPromptDismissals++;
     }
 
-    /// <summary>The wire name of a checkpoint: "hooked", "caughtUp", or null for none.</summary>
+    /// <summary>The wire name of a checkpoint: "hooked", "caughtUp", "volumeEnd", or null for none.</summary>
     public static string? WireName(RatingCheckpoints checkpoint) => checkpoint switch
     {
         RatingCheckpoints.Hooked => "hooked",
         RatingCheckpoints.CaughtUp => "caughtUp",
+        RatingCheckpoints.VolumeEnd => "volumeEnd",
         _ => null,
     };
 }

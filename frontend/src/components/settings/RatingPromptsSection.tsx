@@ -1,4 +1,4 @@
-import { Switch, Text } from '@mantine/core'
+import { Stack, Switch, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { useRatingPromptsSettings, useSaveRatingPromptsSettings } from '../../api/hooks'
@@ -10,26 +10,38 @@ export function RatingPromptsSection() {
   const { t } = useLingui()
   const { data } = useRatingPromptsSettings()
   const save = useSaveRatingPromptsSettings()
+  const enabled = data?.enabled ?? true
+  const volumes = data?.volumes ?? false
+  const update = (next: { enabled?: boolean; volumes?: boolean }) =>
+    save.mutate(
+      { enabled: next.enabled ?? enabled, volumes: next.volumes ?? volumes },
+      { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
+    )
 
   return (
     <SettingsSection id="rating-prompts" title={<Trans>Rating prompts</Trans>}>
-      <Switch
-        label={t`Ask how a series is going while I read it`}
-        checked={data?.enabled ?? true}
-        disabled={!data}
-        onChange={(e) =>
-          save.mutate(
-            { enabled: e.currentTarget.checked },
-            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
-          )
-        }
-      />
-      <Text size="xs" c="var(--ink-3)" mt={4}>
-        <Trans>
-          About ten chapters in, and when you catch up on a series that's still running. At most once a day, and
-          never once you've rated it. A "so far" score isn't sent to your trackers.
-        </Trans>
-      </Text>
+      <Stack gap="sm">
+        <div>
+          <Switch
+            label={t`Ask how a series is going while I read it`}
+            checked={enabled}
+            disabled={!data}
+            onChange={(e) => update({ enabled: e.currentTarget.checked })}
+          />
+          <Text size="xs" c="var(--ink-3)" mt={4}>
+            <Trans>
+              About ten chapters in, and when you catch up on a series that's still running. At most once a day,
+              and never once you've rated it.
+            </Trans>
+          </Text>
+        </div>
+        <Switch
+          label={t`Also ask at the end of each volume`}
+          checked={enabled && volumes}
+          disabled={!data || !enabled}
+          onChange={(e) => update({ volumes: e.currentTarget.checked })}
+        />
+      </Stack>
     </SettingsSection>
   )
 }

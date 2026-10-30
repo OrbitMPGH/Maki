@@ -2707,12 +2707,29 @@ function useRatingMutation<V extends { seriesId: number }>(
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['rating-checkpoint', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['rating-history', seriesId] })
       for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 }
 
-export type RatingCheckpoint = 'hooked' | 'caughtUp'
+export type RatingCheckpoint = 'hooked' | 'caughtUp' | 'volumeEnd'
+
+export interface RatingHistoryEntry {
+  rating: number
+  final: boolean
+  atChapter: number | null
+  origin: 'Manual' | 'Checkpoint' | 'Finish' | 'Import'
+  createdAt: string
+}
+
+/** The reader's score on a series over time, oldest first. */
+export function useRatingHistory(seriesId: number) {
+  return useQuery({
+    queryKey: ['rating-history', seriesId],
+    queryFn: () => api<RatingHistoryEntry[]>(`/series/${seriesId}/rating-history`),
+  })
+}
 
 export interface RatingCheckpointState {
   checkpoint: RatingCheckpoint | null
@@ -2749,6 +2766,8 @@ export function useDismissRatingCheckpoint() {
 
 export interface RatingPromptsSettings {
   enabled: boolean
+  /** Also ask at the end of each volume. Off unless chosen. */
+  volumes: boolean
 }
 
 export function useRatingPromptsSettings() {

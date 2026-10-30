@@ -92,6 +92,7 @@ public static class UserSettingKeys
         SettingKeys.UserTimeZone,
         SettingKeys.UserGamification,
         SettingKeys.RatingPrompts,
+        SettingKeys.RatingPromptsVolumes,
         SettingKeys.NotificationsInbox,
         SettingKeys.NotificationsPush,
         SettingKeys.ProgressLastNotifiedLevel,

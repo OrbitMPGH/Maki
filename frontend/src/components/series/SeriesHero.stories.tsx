@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, waitFor } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { Button, Tabs } from '@mantine/core'
 import { http, HttpResponse } from 'msw'
 import { api, neverResolve } from '../../../.storybook/mocks/api'
@@ -58,6 +58,26 @@ export const RatedSoFar: Story = {
     await expect(await canvas.findByText('so far, at ch. 34')).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Make this my rating' }))
     await waitFor(() => expect(args.onFinalize).toHaveBeenCalledOnce())
+  },
+}
+
+export const RatingHistory: Story = {
+  args: { series: seriesDto(3, { rating: 9 }) },
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/series/:id/rating-history'), () =>
+        HttpResponse.json([
+          { rating: 7, final: false, atChapter: 12, origin: 'Checkpoint', createdAt: '2026-09-01T10:00:00Z' },
+          { rating: 9, final: true, atChapter: 120, origin: 'Finish', createdAt: '2026-10-10T10:00:00Z' },
+        ]),
+      ),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Your rating over time' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByText('7/10 so far, at ch. 12')).toBeVisible()
+    await expect(await body.findByText('9/10, your rating at ch. 120')).toBeVisible()
   },
 }
 

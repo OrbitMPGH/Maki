@@ -29,6 +29,7 @@ import { useReadTracking } from '../../api/reader'
 import { useChapters } from '../../api/hooks'
 import { formatDecimal } from '../../format'
 import { isProvisional, shownRating } from '../../lib/rating'
+import { RatingHistoryButton } from './RatingHistoryButton'
 import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
@@ -305,6 +306,7 @@ export function SeriesHero({
                                                     <IconX size={14} />
                                                 </ActionIcon>
                                             </Tooltip>
+                                            <RatingHistoryButton seriesId={series.id} />
                                         </>
                                     ) : (
                                         <Text size="sm" c="var(--ink-4)">

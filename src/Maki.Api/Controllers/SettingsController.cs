@@ -702,18 +702,25 @@ public class SettingsController(
         return NoContent();
     }
 
-    public record RatingPromptsSettings(bool Enabled);
+    /// <param name="Volumes">Also ask at the end of each volume. Off unless set.</param>
+    public record RatingPromptsSettings(bool Enabled, bool Volumes = false);
 
     /// <summary>Whether the caller is asked "how is it so far?" while reading. Theirs alone; unset = on.</summary>
     [HttpGet("rating-prompts")]
-    public async Task<IActionResult> GetRatingPrompts(CancellationToken ct) =>
-        Ok(new RatingPromptsSettings(await userSettings.GetAsync(SettingKeys.RatingPrompts, ct) != "off"));
+    public async Task<IActionResult> GetRatingPrompts(CancellationToken ct)
+    {
+        var rows = await userSettings.GetManyAsync([SettingKeys.RatingPrompts, SettingKeys.RatingPromptsVolumes], ct);
+        return Ok(new RatingPromptsSettings(
+            rows.GetValueOrDefault(SettingKeys.RatingPrompts) != "off",
+            rows.GetValueOrDefault(SettingKeys.RatingPromptsVolumes) == "on"));
+    }
 
     [HttpPut("rating-prompts")]
     public async Task<IActionResult> SetRatingPrompts([FromBody] RatingPromptsSettings request, CancellationToken ct)
     {
-        // On is the absence of a row, so switching back on deletes it rather than storing "on".
+        // Each default is the absence of a row, so going back to it deletes the row.
         await userSettings.SetAsync(SettingKeys.RatingPrompts, request.Enabled ? "" : "off", ct);
+        await userSettings.SetAsync(SettingKeys.RatingPromptsVolumes, request.Volumes ? "on" : "", ct);
         return Ok(request);
     }
 

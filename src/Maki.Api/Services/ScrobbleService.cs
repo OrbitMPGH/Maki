@@ -1307,6 +1307,11 @@ public class ScrobbleService(
             }
 
             state.Rating = scores[seriesId];
+            db.RatingSnapshots.Add(new RatingSnapshot
+            {
+                UserId = userId, SeriesId = seriesId, Rating = scores[seriesId], Final = true,
+                Origin = RatingSnapshotOrigin.Import, CreatedAt = DateTime.UtcNow,
+            });
             // The final rating wins, the same as a rating set on the series page.
             state.ProvisionalRating = null;
             state.ProvisionalRatedAt = null;

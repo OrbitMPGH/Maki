@@ -1853,6 +1853,22 @@ msgstr "{queued, plural, one {Проверка улучшений заверше
 msgid "{rated} rated"
 msgstr "{rated} оценено"
 
+#: src/components/series/RatingHistoryButton.tsx
+msgid "{rating}/10 so far"
+msgstr ""
+
+#: src/components/series/RatingHistoryButton.tsx
+msgid "{rating}/10 so far, at ch. {chapter}"
+msgstr ""
+
+#: src/components/series/RatingHistoryButton.tsx
+msgid "{rating}/10, your rating"
+msgstr ""
+
+#: src/components/series/RatingHistoryButton.tsx
+msgid "{rating}/10, your rating at ch. {chapter}"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "{ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read"
@@ -3094,7 +3110,7 @@ msgid "about a minute left"
 msgstr "осталась примерно минута"
 
 #: src/components/settings/RatingPromptsSection.tsx
-msgid "About ten chapters in, and when you catch up on a series that's still running. At most once a day, and never once you've rated it. A \"so far\" score isn't sent to your trackers."
+msgid "About ten chapters in, and when you catch up on a series that's still running. At most once a day, and never once you've rated it."
 msgstr ""
 
 #: src/components/AppearancePicker.tsx
@@ -3651,6 +3667,10 @@ msgstr "Уже обновлено"
 #, fuzzy
 msgid "Already yours"
 msgstr "Уже у вас"
+
+#: src/components/settings/RatingPromptsSection.tsx
+msgid "Also ask at the end of each volume"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -19743,6 +19763,10 @@ msgstr "Это была ваша {label}"
 msgid "That's every chapter on disk."
 msgstr "Это все главы на диске."
 
+#: src/components/series/RatingCheckpointPrompt.tsx
+msgid "That's the end of a volume. How is it so far?"
+msgstr ""
+
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "The {engineLabel} preset reads this part of the site. Nothing to set up here."
 msgstr ""
@@ -22868,6 +22892,10 @@ msgstr ""
 
 #: src/components/series/ArchiveSeriesDialog.tsx
 msgid "Your rating for {title}"
+msgstr ""
+
+#: src/components/series/RatingHistoryButton.tsx
+msgid "Your rating over time"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx

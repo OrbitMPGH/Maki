@@ -76,7 +76,7 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/reader/used'), () => HttpResponse.json({ used: true, kavita: true })),
   http.get(api('/settings/reader'), () => HttpResponse.json(d.readerSettings)),
   putEcho('/settings/reader'),
-  http.get(api('/settings/rating-prompts'), () => HttpResponse.json({ enabled: true })),
+  http.get(api('/settings/rating-prompts'), () => HttpResponse.json({ enabled: true, volumes: false })),
   putEcho('/settings/rating-prompts'),
   http.get(api('/readingprofiles'), () => HttpResponse.json(d.readingProfiles)),
   http.post(api('/readingprofiles'), async ({ request }) => HttpResponse.json({ id: 10, ...((await request.json()) as object) })),

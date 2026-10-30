@@ -26,6 +26,8 @@ export function RatingCheckpointPrompt({
       <Text size="sm" c="var(--ink-3)">
         {checkpoint === 'caughtUp' ? (
           <Trans>You're caught up. How is it so far?</Trans>
+        ) : checkpoint === 'volumeEnd' ? (
+          <Trans>That's the end of a volume. How is it so far?</Trans>
         ) : (
           <Trans>How is it going so far?</Trans>
         )}

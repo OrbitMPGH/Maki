@@ -191,6 +191,69 @@ public sealed class RatingCheckpointTests : IDisposable
         Assert.Equal(RatingCheckpoints.CaughtUp, await Arm(alice, seriesId));
     }
 
+    /// <summary>Two volumes of five chapters; the first <paramref name="read"/> completed. Returns chapter ids by number.</summary>
+    private Dictionary<int, Chapter> SeedVolumes(int userId, int seriesId, int read)
+    {
+        using var db = _db.NewContext();
+        var chapters = new Dictionary<int, Chapter>();
+        for (var n = 1; n <= 10; n++)
+        {
+            var chapter = new Chapter
+            {
+                SeriesId = seriesId, Number = n, Volume = n <= 5 ? 1 : 2, Wanted = true, FileRemovedAt = Now,
+            };
+            db.Chapters.Add(chapter);
+            db.SaveChanges();
+            chapters[n] = chapter;
+            if (n <= read)
+            {
+                db.ChapterProgress.Add(new ChapterProgress
+                {
+                    UserId = userId, SeriesId = seriesId, ChapterId = chapter.Id, PageCount = 20,
+                    Completed = true, StartedAt = Now, UpdatedAt = Now,
+                });
+            }
+        }
+
+        db.SaveChanges();
+        return chapters;
+    }
+
+    private async Task<RatingCheckpoints> ArmAfter(int userId, int seriesId, Chapter completed)
+    {
+        using var db = _db.NewContext(userId);
+        var series = await db.Series.SingleAsync(s => s.Id == seriesId);
+        await RatingCheckpointService.ArmAsync(db, userId, series, Now, default, completed);
+        return await db.UserSeriesStates.Where(s => s.SeriesId == seriesId)
+            .Select(s => s.PendingRatingCheckpoint).FirstOrDefaultAsync();
+    }
+
+    [Fact]
+    public async Task Finishing_a_volume_arms_volume_end_once_switched_on()
+    {
+        var alice = _db.SeedUser("alice");
+        var seriesId = SeedSeries(SeriesStatus.Completed, total: 10);
+        var chapters = SeedVolumes(alice, seriesId, read: 5);
+        SeedState(alice, seriesId, s => s.RatingCheckpointsSeen = RatingCheckpoints.Hooked);
+
+        Assert.Equal(RatingCheckpoints.None, await ArmAfter(alice, seriesId, chapters[5]));
+
+        _db.SetUserConfig(alice, (SettingKeys.RatingPromptsVolumes, "on"));
+        Assert.Equal(RatingCheckpoints.VolumeEnd, await ArmAfter(alice, seriesId, chapters[5]));
+    }
+
+    [Fact]
+    public async Task A_chapter_inside_a_volume_does_not_end_it()
+    {
+        var alice = _db.SeedUser("alice");
+        var seriesId = SeedSeries(SeriesStatus.Completed, total: 10);
+        var chapters = SeedVolumes(alice, seriesId, read: 4);
+        SeedState(alice, seriesId, s => s.RatingCheckpointsSeen = RatingCheckpoints.Hooked);
+        _db.SetUserConfig(alice, (SettingKeys.RatingPromptsVolumes, "on"));
+
+        Assert.Equal(RatingCheckpoints.None, await ArmAfter(alice, seriesId, chapters[4]));
+    }
+
     [Fact]
     public void Answering_marks_the_checkpoint_seen_and_resets_dismissals()
     {

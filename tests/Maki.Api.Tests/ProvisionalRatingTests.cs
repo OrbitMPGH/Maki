@@ -157,6 +157,57 @@ public sealed class ProvisionalRatingTests : IDisposable
         Assert.IsType<BadRequestObjectResult>(await Controller(db, alice).FinalizeRating(seriesId, default));
     }
 
+    private List<RatingSnapshot> History(int userId, int seriesId)
+    {
+        using var db = _db.NewContext();
+        return db.RatingSnapshots.AsNoTracking()
+            .Where(s => s.UserId == userId && s.SeriesId == seriesId)
+            .OrderBy(s => s.Id).ToList();
+    }
+
+    [Fact]
+    public async Task Every_score_lands_in_the_history_and_a_repeat_does_not()
+    {
+        var alice = _db.SeedUser("alice");
+        var seriesId = SeedSeries();
+
+        using (var db = _db.NewContext(alice))
+        {
+            var controller = Controller(db, alice);
+            await controller.SetProvisionalRating(seriesId, new SeriesController.SetRatingRequest(7), default);
+            await controller.SetProvisionalRating(seriesId, new SeriesController.SetRatingRequest(7), default);
+            await controller.SetProvisionalRating(seriesId, new SeriesController.SetRatingRequest(8), default);
+            await controller.FinalizeRating(seriesId, default);
+        }
+
+        var history = History(alice, seriesId);
+        Assert.Equal([7, 8, 8], history.Select(s => s.Rating));
+        Assert.Equal([false, false, true], history.Select(s => s.Final));
+        Assert.Equal(RatingSnapshotOrigin.Finish, history[^1].Origin);
+    }
+
+    [Fact]
+    public async Task Answering_a_prompt_is_recorded_as_a_checkpoint()
+    {
+        var alice = _db.SeedUser("alice");
+        var seriesId = SeedSeries();
+        using (var seed = _db.NewContext())
+        {
+            seed.UserSeriesStates.Add(new UserSeriesState
+            {
+                UserId = alice, SeriesId = seriesId, PendingRatingCheckpoint = RatingCheckpoints.CaughtUp,
+            });
+            seed.SaveChanges();
+        }
+
+        using (var db = _db.NewContext(alice))
+        {
+            await Controller(db, alice).SetProvisionalRating(seriesId, new SeriesController.SetRatingRequest(6), default);
+        }
+
+        Assert.Equal(RatingSnapshotOrigin.Checkpoint, Assert.Single(History(alice, seriesId)).Origin);
+    }
+
     [Fact]
     public async Task A_provisional_rating_steers_less_than_the_same_rating_finalised()
     {
