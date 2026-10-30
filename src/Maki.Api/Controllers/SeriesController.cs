@@ -1073,6 +1073,7 @@ public class SeriesController(
             PendingProposalId = pendingProposalId,
             ArchiveHintEligible = currentUser.Has(MakiPermission.ArchiveSeries) &&
                                   await SeriesArchiveService.FinishedHintAsync(db, series, ct),
+            RateHintEligible = await RateHintAsync(db, id, ct),
             ReadTimeEstimate = estimate is null
                 ? null
                 : new ReadingTimeEstimateDto(
@@ -2216,6 +2217,28 @@ public class SeriesController(
         }
 
         await UpsertUserStateAsync(id, s => s.ArchiveHintDismissedAt = DateTime.UtcNow, ct);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Whether the series page asks the caller to rate the series: they finished it (a completed series
+    /// read to its last chapter), have not rated it and have not dismissed the ask. <paramref name="db"/>
+    /// is the caller's scoped context.
+    /// </summary>
+    internal static async Task<bool> RateHintAsync(MakiDbContext db, int seriesId, CancellationToken ct) =>
+        !await db.UserSeriesStates.AnyAsync(s => s.SeriesId == seriesId && (s.Rating != null || s.RateHintDismissedAt != null), ct) &&
+        await db.ReadingStates.AnyAsync(r => r.SeriesId == seriesId && r.Finished, ct);
+
+    /// <summary>Hides the "finished, rate it?" hint on this series for the caller, on every device.</summary>
+    [HttpPost("{id:int}/rate-hint/dismiss")]
+    public async Task<IActionResult> DismissRateHint(int id, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        await UpsertUserStateAsync(id, s => s.RateHintDismissedAt = DateTime.UtcNow, ct);
         return NoContent();
     }
 

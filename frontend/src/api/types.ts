@@ -122,6 +122,8 @@ export interface SeriesDto {
   archivedByUserId: number | null
   /** The "finished, archive it?" hint applies to you. Detail endpoint only; false without ArchiveSeries or once dismissed. */
   archiveHintEligible?: boolean
+  /** You finished this series and have not rated it or dismissed the ask. Detail endpoint only. */
+  rateHintEligible?: boolean
   /** Personal time left from comparable timed chapters in the built-in reader. Detail endpoint only. */
   readTimeEstimate?: {
     seconds: number
@@ -753,6 +755,24 @@ export interface UpdateStatusDto {
   releaseUrl: string | null
   releaseNotes: string | null
   checkedAt: string | null
+  /** How this instance was started; the desktop build updates itself through its tray app. */
+  runtime: HostRuntime
+  /** Desktop only: the tray app has the update downloaded, so a restart installs it. */
+  updateReady: boolean
+}
+
+export type HostRuntime = 'docker' | 'desktop' | 'bare'
+
+export interface HostInfoDto {
+  runtime: HostRuntime
+  /** Something starts Maki again after it stops: Docker, the desktop tray app or systemd. */
+  supervised: boolean
+  port: number
+  bindAddress: string
+  configuredBindAddress: string
+  networkAccess: boolean
+  /** Differs from networkAccess while a change waits for a restart. */
+  configuredNetworkAccess: boolean
 }
 
 export interface UpdateSettingsDto {

@@ -65,6 +65,7 @@ import {
   useSources,
   useArchiveSeries,
   useDismissArchiveHint,
+  useDismissRateHint,
   useDeleteSeries,
   useRemoveArchivedFiles,
   useRestoreSeries,
@@ -154,6 +155,7 @@ import {
 } from '../components/series/chapterTable'
 import { ArchivedBanner } from '../components/series/ArchivedBanner'
 import { ArchiveHint } from '../components/series/ArchiveHint'
+import { RateHint } from '../components/series/RateHint'
 import { RemoveArchivedFilesDialog } from '../components/series/RemoveArchivedFilesDialog'
 import { ArchiveSeriesDialog } from '../components/series/ArchiveSeriesDialog'
 import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
@@ -520,6 +522,7 @@ function SeriesDetailBody() {
   const deleteSeries = useDeleteSeries()
   const archiveSeries = useArchiveSeries()
   const dismissArchiveHint = useDismissArchiveHint()
+  const dismissRateHint = useDismissRateHint()
   const restoreSeries = useRestoreSeries()
   const removeArchivedFiles = useRemoveArchivedFiles()
   const refresh = useRefreshSeries()
@@ -2198,7 +2201,10 @@ function SeriesDetailBody() {
             }
         />
 
-        {series.archiveHintEligible && series.archivedAt == null && canArchive && (
+        {/* One hint at a time: rating comes first, the archive offer follows once it is settled. */}
+        {series.rateHintEligible ? (
+          <RateHint onRate={submitRating} onDismiss={() => dismissRateHint.mutate(series.id)} />
+        ) : series.archiveHintEligible && series.archivedAt == null && canArchive && (
           <ArchiveHint
             onArchive={openArchiveDialog}
             onDismiss={() => dismissArchiveHint.mutate(series.id)}

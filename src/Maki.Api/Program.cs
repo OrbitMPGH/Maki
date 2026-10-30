@@ -70,6 +70,12 @@ using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Serilog;
 
+if (args.Contains("--selftest"))
+{
+    Environment.ExitCode = Maki.Api.SelfTest.Run(Console.Out);
+    return;
+}
+
 AppPaths paths;
 ConfigFileProvider configFile;
 LoggingOptions loggingOptions;
@@ -104,10 +110,20 @@ catch (Exception ex) when (ex is not HostAbortedException)
 
 try
 {
-    var builder = WebApplication.CreateBuilder(args);
+    // The content root decides where wwwroot is looked for, and the default is the current directory.
+    // An installed build is started from anywhere (a Start menu shortcut, a shell in someone's home),
+    // so prefer the folder the executable is in when the SPA is there. A development checkout keeps
+    // the default: `dotnet run` starts in the project folder, which is where the Debug build puts it.
+    var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+    {
+        Args = args,
+        ContentRootPath = Directory.Exists(Path.Combine(AppContext.BaseDirectory, "wwwroot"))
+            ? AppContext.BaseDirectory
+            : null,
+    });
 
     builder.Host.UseSerilog();
-    builder.WebHost.UseUrls($"http://*:{configFile.Config.Port}");
+    builder.WebHost.UseUrls(ConfigFileProvider.ListenUrl(configFile.Config));
 
     builder.Services.AddSingleton(paths);
     builder.Services.AddSingleton(configFile);
@@ -741,6 +757,7 @@ try
     // stay testable without FlareSolverr and settings in the way.
     builder.Services.AddSingleton<IHtmlFetcher>(sp => sp.GetRequiredService<ChallengeAwareFetcher>());
 
+    builder.Services.AddSingleton<BrowserInstaller>();
     builder.Services.AddSingleton<SharedPlaywright>();
     builder.Services.AddSingleton<MangaFireBrowser>();
     builder.Services.AddSingleton<TopManhuaImageBrowser>();
@@ -896,6 +913,9 @@ try
         client.Timeout = TimeSpan.FromSeconds(15);
     });
     builder.Services.AddSingleton<UpdateCheckService>();
+    builder.Services.AddSingleton<HostRestarter>();
+    if (DesktopParentWatcher.Applies)
+        builder.Services.AddHostedService<DesktopParentWatcher>();
     builder.Services.AddSingleton<HealthState>();
     builder.Services.AddScoped<HealthCheckService>();
     builder.Services.AddScoped<HealthMonitor>();

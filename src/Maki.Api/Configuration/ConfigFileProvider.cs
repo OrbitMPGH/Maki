@@ -5,6 +5,14 @@ namespace Maki.Api.Configuration;
 public class ConfigFile
 {
     public int Port { get; set; } = 8990;
+
+    /// <summary>
+    /// Where Kestrel listens: <c>*</c> for every network, <c>localhost</c> for this machine only, or
+    /// one IP address. The desktop build starts on <c>localhost</c> because a laptop on public Wi-Fi
+    /// should not offer Maki to everyone on it; inside a container only <c>*</c> is reachable.
+    /// </summary>
+    public string BindAddress { get; set; } = HostRuntime.Kind == HostRuntimeKind.Desktop ? "localhost" : "*";
+
     public string LogLevel { get; set; } = "Information";
 
     /// <summary>
@@ -64,11 +72,51 @@ public class ConfigFileProvider
         // ones already in effect, so this never changes behaviour.
         if (raw is null || raw.Contains("\"apiKey\"", StringComparison.OrdinalIgnoreCase) || IsMissingKeys(raw))
         {
-            // Written beside the file and moved over it, so a crash mid-write cannot leave an empty config.json.
-            var temp = paths.ConfigFile + ".tmp";
-            File.WriteAllText(temp, JsonSerializer.Serialize(Config, JsonOptions));
-            File.Move(temp, paths.ConfigFile, overwrite: true);
+            Write(Config);
         }
+    }
+
+    /// <summary>
+    /// Changes config.json on disk for the next start. <see cref="Config"/> keeps describing what this
+    /// process is running with, since nothing in this file is re-read while it runs.
+    /// </summary>
+    public ConfigFile UpdateOnDisk(Action<ConfigFile> change)
+    {
+        var onDisk = ReadOnDisk();
+        change(onDisk);
+        Write(onDisk);
+        return onDisk;
+    }
+
+    public ConfigFile ReadOnDisk() =>
+        File.Exists(paths.ConfigFile)
+            ? JsonSerializer.Deserialize<ConfigFile>(File.ReadAllText(paths.ConfigFile), ReadOptions) ?? new ConfigFile()
+            : new ConfigFile();
+
+    /// <summary>The URL Kestrel listens on. Throws on a bind address that is not <c>*</c>,
+    /// <c>localhost</c> or an IP address, so a typo stops startup with a reason instead of binding
+    /// somewhere unexpected.</summary>
+    public static string ListenUrl(ConfigFile config)
+    {
+        var address = config.BindAddress.Trim();
+        if (address is "*" or "" || address.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+            return $"http://{(address is "" ? "*" : address.ToLowerInvariant())}:{config.Port}";
+
+        if (!System.Net.IPAddress.TryParse(address, out var ip))
+            throw new InvalidOperationException(
+                $"BindAddress \"{config.BindAddress}\" in config.json must be *, localhost or an IP address.");
+
+        return ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6
+            ? $"http://[{ip}]:{config.Port}"
+            : $"http://{ip}:{config.Port}";
+    }
+
+    private void Write(ConfigFile config)
+    {
+        // Written beside the file and moved over it, so a crash mid-write cannot leave an empty config.json.
+        var temp = paths.ConfigFile + ".tmp";
+        File.WriteAllText(temp, JsonSerializer.Serialize(config, JsonOptions));
+        File.Move(temp, paths.ConfigFile, overwrite: true);
     }
 
     private static bool IsMissingKeys(string raw)

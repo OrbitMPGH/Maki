@@ -260,7 +260,7 @@ public sealed class TopManhuaImageBrowser(
 
         var session = await fetcher.GetBrowserSessionAsync($"{BaseUrl}/", ct);
 
-        _playwright ??= await shared.AcquireAsync();
+        _playwright ??= await shared.AcquireAsync(ct);
         try
         {
             _browser ??= await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions

@@ -119,6 +119,23 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             var needsFlare = sources.All.Any(s => !disabled.Contains(s.Name) && s.Capabilities.HasFlag(SourceCapabilities.NeedsFlareSolverr));
             await Probe("FlareSolverr", SettingKeys.FlareSolverrUrl, null, needsFlare,
                 (url, _, token) => services.GetRequiredService<FlareSolverrClient>().PingAsync(url, token));
+            var browserSources = sources.All
+                .Where(s => !disabled.Contains(s.Name) && s.Capabilities.HasFlag(SourceCapabilities.NeedsBrowser))
+                .Select(s => s.DisplayName).ToList();
+            if (browserSources.Count > 0)
+            {
+                // The Docker image ships the browser, so this only ever says something on a native build.
+                var browser = services.GetRequiredService<Maki.Sources.Common.BrowserInstaller>();
+                if (browser.IsInstalled())
+                    Add("browser", "system", "healthy", "health.check.browserInstalled");
+                else if (browser.State == Maki.Sources.Common.BrowserInstallState.Installing)
+                    Add("browser", "system", "pending", "health.check.browserInstalling", new { percent = browser.Percent ?? 0 });
+                else if (browser.State == Maki.Sources.Common.BrowserInstallState.Failed)
+                    Add("browser", "system", "error", "health.check.browserFailed");
+                else
+                    Add("browser", "system", "pending", "health.check.browserMissing",
+                        new { sources = string.Join(", ", browserSources) });
+            }
             var indexer = await IndexerSettingsStore.LoadAsync(settings, ct);
             var indexerKeys = IndexerSettingsStore.KeysFor(indexer.Backend);
             await Probe("indexer", indexerKeys.Url, indexerKeys.ApiKey, false,

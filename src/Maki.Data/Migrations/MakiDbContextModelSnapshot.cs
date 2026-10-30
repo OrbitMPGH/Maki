@@ -3026,6 +3026,9 @@ namespace Maki.Data.Migrations
                     b.Property<int>("NotificationMode")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("RateHintDismissedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("Rating")
                         .HasColumnType("INTEGER");
 

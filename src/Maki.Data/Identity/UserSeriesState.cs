@@ -79,5 +79,8 @@ public class UserSeriesState : IUserOwned
     /// <summary>When this reader dismissed the series page's "finished, archive it?" hint.</summary>
     public DateTime? ArchiveHintDismissedAt { get; set; }
 
+    /// <summary>When this reader dismissed the series page's "finished, rate it?" hint.</summary>
+    public DateTime? RateHintDismissedAt { get; set; }
+
     public DateTime UpdatedAt { get; set; }
 }
