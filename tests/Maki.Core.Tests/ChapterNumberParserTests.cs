@@ -34,12 +34,90 @@ public class ChapterNumberParserTests
     [InlineData("Chapter 10,11", 10, null, false)]
     [InlineData("12,13", 12, null, false)]
     [InlineData("Ch.6,10", 6.1, null, false)]
+    [InlineData("第12話", 12, null, false)]
+    [InlineData("第1話: 第1話", 1, null, false)]
+    [InlineData("第 13", 13, null, false)]
+    [InlineData("第2.1話", 2.1, null, false)]
+    [InlineData("【第14話】ピュアでいられない大谷くん", 14, null, false)]
+    [InlineData("ｅｐ．１\u3000こちとらマドンナ", 1, null, false)]
+    [InlineData("ｅｐｉｓｏｄｅ９\u3000溢れる想い", 9, null, false)]
+    [InlineData("EP・15 めくるめくって", 15, null, false)]
+    [InlineData("第5回", 5, null, false)]
+    [InlineData("12話 タイトル", 12, null, false)]
+    [InlineData("Chapter ③", 3, null, false)]
+    [InlineData("③", 3, null, false)]
+    [InlineData("第⑤話", 5, null, false)]
     public void Parses_chapter_numbers(string input, double expected, int? volume, bool oneShot)
     {
         var result = ChapterNumberParser.Parse(input);
         Assert.Equal((decimal)expected, result.Number);
         Assert.Equal(volume, result.Volume);
         Assert.Equal(oneShot, result.IsOneShot);
+    }
+
+    [Theory]
+    [InlineData("1巻", 1)]
+    [InlineData("12巻", 12)]
+    [InlineData("第3巻", 3)]
+    public void Reads_japanese_volume_labels_as_volumes(string input, int volume)
+    {
+        var result = ChapterNumberParser.Parse(input);
+        Assert.Null(result.Number);
+        Assert.Equal(volume, result.Volume);
+        Assert.False(result.IsOneShot);
+    }
+
+    [Fact]
+    public void A_label_that_only_mentions_a_volume_stays_a_special()
+    {
+        var result = ChapterNumberParser.Parse("2巻発売記念 特別編");
+        Assert.Null(result.Volume);
+        Assert.True(result.IsOneShot);
+    }
+
+    [Theory]
+    [InlineData("ｅｐｉｓｏｄｅ４\u3000制御不能な恋心（２）", 4, 2, 4.2)]
+    [InlineData("第13話 一重まぶたの光ちゃん(4)(2)", 13, 2, 13.2)]
+    [InlineData("【episode22(2)】キラキラのち、チカチカ", 22, 2, 22.2)]
+    [InlineData("第2話①", 2, 1, 2.1)]
+    [InlineData("第2話②", 2, 2, 2.2)]
+    [InlineData("第9話 -1", 9, 1, 9.1)]
+    [InlineData("第5話 前編", 5, 1, 5.1)]
+    [InlineData("第5話 後編", 5, 3, 5.3)]
+    [InlineData("第69話➁　ド派手な初陣", 69, 2, 69.2)]
+    [InlineData("第2.5話(1)", 2.5, 1, 2.51)]
+    public void Reads_the_part_of_a_split_chapter(string input, double number, int part, double withPart)
+    {
+        var result = ChapterNumberParser.Parse(input);
+        Assert.Equal((decimal)number, result.Number);
+        Assert.Equal(part, result.Part);
+        Assert.Equal((decimal)withPart, result.NumberWithPart);
+    }
+
+    [Theory]
+    [InlineData("第12話")]
+    [InlineData("Ch. 10")]
+    [InlineData("第14話 ピュアでいられない大谷くん")]
+    [InlineData("第3話 2024-05")]
+    [InlineData("第5話 Lv(10)")]
+    [InlineData("第5話（12）")]
+    [InlineData("Ch. 5 - 3 Little Pigs")]
+    [InlineData("Ch. 10-11")]
+    public void A_whole_chapter_has_no_part(string input)
+    {
+        var result = ChapterNumberParser.Parse(input);
+        Assert.Null(result.Part);
+        Assert.NotNull(result.Number);
+        Assert.Equal(result.Number, result.NumberWithPart);
+    }
+
+    [Fact]
+    public void A_numbered_part_under_a_part_word_is_the_hundredths()
+    {
+        var result = ChapterNumberParser.Parse("第60話 後編②　エリオール大森林の永久凍土");
+        Assert.Equal(3, result.Part);
+        Assert.Equal(2, result.SubPart);
+        Assert.Equal(60.32m, result.NumberWithPart);
     }
 
     [Theory]
