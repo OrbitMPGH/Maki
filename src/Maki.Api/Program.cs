@@ -949,6 +949,7 @@ try
     builder.Services.AddScoped<ReleaseOutlookService>();
     builder.Services.AddScoped<SourceMappingRemovalService>();
     builder.Services.AddScoped<SeriesArchiveService>();
+    builder.Services.AddSingleton<RivalTitleProvider>();
     builder.Services.AddScoped<SourceMatchService>();
     builder.Services.AddSingleton<SourceMatchQueue>();
     // Singleton because it owns detached jobs the request that started them no longer waits on.

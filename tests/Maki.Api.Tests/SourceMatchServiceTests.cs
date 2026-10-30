@@ -70,7 +70,7 @@ public class SourceMatchServiceTests : IDisposable
         var service = new SourceMatchService(
             context, new SourceRegistry(sources), appSettings, availability,
             new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
-            _store, NullLogger<SourceMatchService>.Instance);
+            _store.Provider(), NullLogger<SourceMatchService>.Instance);
         return await service.AutoMatchAsync(series, default, progress);
     }
 
@@ -151,7 +151,7 @@ public class SourceMatchServiceTests : IDisposable
         var service = new SourceMatchService(
             context, new SourceRegistry([first, miss, second]), appSettings, Sources.AllEnabled,
             new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
-            _store, NullLogger<SourceMatchService>.Instance);
+            _store.Provider(), NullLogger<SourceMatchService>.Instance);
 
         var candidates = (await Candidates(service, new Series { Id = seriesId, Title = "Hajime no Ippo" }))
             .OrderBy(c => c.Priority)
@@ -181,7 +181,7 @@ public class SourceMatchServiceTests : IDisposable
             _db.NewContext(), new SourceRegistry([slow, fast]),
             new FakeAppSettings().Set(SettingKeys.SourcePriorityOrder, "slow,fast"), Sources.AllEnabled,
             new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
-            _store, NullLogger<SourceMatchService>.Instance);
+            _store.Provider(), NullLogger<SourceMatchService>.Instance);
 
         var found = Channel.CreateUnbounded<SourceCandidate>();
         var run = service.FindCandidatesAsync(new Series { Title = "Hajime no Ippo" }, found.Writer);
@@ -223,7 +223,7 @@ public class SourceMatchServiceTests : IDisposable
         var searchCache = new SourceMatchSearchCache(TimeProvider.System);
         SourceMatchService NewService() => new(
             _db.NewContext(), sources, appSettings, Sources.AllEnabled,
-            new SourceExternalIdCache(TimeProvider.System), searchCache, _store, NullLogger<SourceMatchService>.Instance);
+            new SourceExternalIdCache(TimeProvider.System), searchCache, _store.Provider(), NullLogger<SourceMatchService>.Instance);
 
         await Candidates(NewService(), new Series { Title = "Hajime no Ippo", MangaBakaId = 42 });
 
@@ -469,6 +469,71 @@ public class SourceMatchServiceTests : IDisposable
 
         Assert.Empty(mapped);
         Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Fact]
+    public async Task A_weaker_result_naming_the_series_wins_once_the_parent_is_refused()
+    {
+        // The parent scores 0.72 and the arc's longer listing 0.71, so picking before refusing
+        // would take the parent.
+        var seriesId = _db.SeedSeries("Call of the Night: Paradise Arc", configure: s => s.MangaBakaId = 7);
+        _store.Related[7] = ["Call of the Night"];
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnSearch = _ =>
+            [
+                Hit("parent", "Call of the Night"),
+                Hit("arc", "Call of the Night: Paradise Arc (Official Anthology Comic)")
+            ]
+        };
+
+        Assert.Equal(["fake"], await RunAutoMatch(seriesId, source));
+        Assert.Equal("arc", Assert.Single(MappingsOf(seriesId)).SourceSeriesId);
+    }
+
+    [Fact]
+    public async Task A_dump_that_cannot_be_read_matches_without_relations()
+    {
+        var seriesId = _db.SeedSeries("Hajime no Ippo", configure: s => s.MangaBakaId = 7);
+        _store.Broken = true;
+        var source = new FakeSource { Name = "fake", OnSearch = _ => [Hit("Hajime no Ippo")] };
+
+        Assert.Equal(["fake"], await RunAutoMatch(seriesId, source));
+    }
+
+    [Fact]
+    public async Task A_preview_does_not_take_its_own_library_row_for_a_rival()
+    {
+        // A preview's series has no id yet, so its library row is only recognised by MangaBaka id.
+        // Its extra alt title would otherwise outscore the preview's own title.
+        _db.SeedSeries("Call of the Night: Paradise Arc", configure: s =>
+        {
+            s.MangaBakaId = 7;
+            s.AltTitles = [new LocalizedTitle("Call of the Night: Paradise Arc Full Color", "en")];
+        });
+        var source = new FakeSource
+        {
+            Name = "fake", OnSearch = _ => [Hit("colored", "Call of the Night: Paradise Arc Full Color")]
+        };
+        var service = new SourceMatchService(
+            _db.NewContext(), new SourceRegistry([source]), new FakeAppSettings(), Sources.AllEnabled,
+            new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
+            _store.Provider(), NullLogger<SourceMatchService>.Instance);
+
+        var candidates = await Candidates(service, new Series { Title = "Call of the Night: Paradise Arc", MangaBakaId = 7 });
+
+        Assert.Equal("colored", Assert.Single(candidates).SourceSeriesId);
+    }
+
+    [Fact]
+    public void A_preview_is_reused_under_the_same_rivals_in_any_order_only()
+    {
+        var series = new Series { Title = "Call of the Night: Paradise Arc" };
+        var target = SourceMatchService.MatchTarget.For(series, ["Call of the Night", "Yofukashi no Uta"]);
+
+        Assert.True(target.SameAs(SourceMatchService.MatchTarget.For(series, ["Yofukashi no Uta", "Call of the Night"])));
+        Assert.False(target.SameAs(SourceMatchService.MatchTarget.For(series, ["Call of the Night"])));
     }
 
     [Theory]
