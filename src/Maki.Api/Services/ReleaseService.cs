@@ -52,12 +52,20 @@ public record ReleaseResultDto(
 
 public record ReleaseSearchResponse(string Query, IReadOnlyList<ReleaseResultDto> Releases);
 
-/// <summary>Payload persisted on torrent queue items (DownloadQueueItem.ReleaseInfoJson).</summary>
+/// <summary>
+/// Payload persisted on torrent queue items (DownloadQueueItem.ReleaseInfoJson). <see cref="ContentPath"/>
+/// is where the client said the finished download is, as the client sees it (before the path map), so
+/// the files can still be found once the client no longer lists the torrent. <see cref="AddedBeforeGrab"/>
+/// says the client already had the torrent when Maki grabbed it (a duplicate add the client accepted, or a
+/// torrent claimed by name), so it is the user's and Maki never removes it; null until the poll first sees it.
+/// </summary>
 public record ReleaseInfo(
     string Guid,
     string Title,
     string Indexer,
-    string? TorrentHash);
+    string? TorrentHash,
+    string? ContentPath = null,
+    bool? AddedBeforeGrab = null);
 
 public record ReleaseSearchResult(string Query, IReadOnlyList<ReleaseDto> Releases)
 {
@@ -73,6 +81,7 @@ public sealed class ReleaseRefusedException(string key, string message) : Invali
     public const string NoDownloadLink = "error.release.noDownloadLink";
     public const string IndexerNotConfigured = "error.release.indexerNotConfigured";
     public const string DownloadClientNotConfigured = "error.release.downloadClientNotConfigured";
+    public const string SeriesArchived = "error.series.archived";
 
     public string Key { get; } = key;
 }
@@ -82,12 +91,17 @@ public class ReleaseService(
     IndexerRegistry indexers,
     TorrentClientRegistry torrentClients,
     SettingsService settings,
-    ILogger<ReleaseService> logger)
+    ILogger<ReleaseService> logger,
+    TorrentPollState? pollState = null)
 {
     public virtual async Task<ReleaseSearchResult> SearchAsync(int seriesId, string? query = null, CancellationToken ct = default)
     {
         var series = await db.Series.FindAsync([seriesId], ct)
             ?? throw new ReleaseRefusedException(ReleaseRefusedException.SeriesNotFound, "Series not found");
+        if (series.ArchivedAt is not null)
+        {
+            throw new ReleaseRefusedException(ReleaseRefusedException.SeriesArchived, "Series is archived");
+        }
 
         var indexerSettings = await GetIndexerSettingsAsync(ct);
         var indexer = indexers.For(indexerSettings.Backend);
@@ -127,9 +141,16 @@ public class ReleaseService(
         int seriesId, ReleaseDto release, DownloadOrigin origin, int? queuedByUserId, string? upgradeInfoJson,
         CancellationToken ct = default)
     {
-        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        var series = await db.Series
+            .Where(s => s.Id == seriesId)
+            .Select(s => new { s.ArchivedAt })
+            .FirstOrDefaultAsync(ct)
+            ?? throw new ReleaseRefusedException(ReleaseRefusedException.SeriesNotFound, "Series not found");
+
+        // The queue's own backstop never sees this row: it is inserted here, not through an Enqueue method.
+        if (series.ArchivedAt is not null)
         {
-            throw new ReleaseRefusedException(ReleaseRefusedException.SeriesNotFound, "Series not found");
+            throw new ReleaseRefusedException(ReleaseRefusedException.SeriesArchived, "Series is archived");
         }
 
         var client = await GetClientSettingsAsync(ct);
@@ -155,6 +176,7 @@ public class ReleaseService(
         };
         db.DownloadQueue.Add(item);
         await db.SaveChangesAsync(ct);
+        pollState?.TorrentAdded();
 
         logger.LogInformation("Grabbed '{Title}' from {Indexer} for series {SeriesId}",
             release.Title, release.Indexer, seriesId);

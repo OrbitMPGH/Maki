@@ -23,6 +23,11 @@ public static class ChapterLabel
     /// </summary>
     public static string For(decimal? number, int? volume, string? title, bool isOneShot)
     {
+        if (!isOneShot && number is null && volume is { } entry)
+        {
+            return $"Vol.{entry}";
+        }
+
         if (isOneShot || number is null)
         {
             return title ?? "One-shot";

@@ -30,6 +30,15 @@ public class ImageCodecTests : IDisposable
     }
 
     [Fact]
+    public void A_colour_page_reads_as_colour_and_grey_stored_as_rgb_does_not()
+    {
+        Assert.True(ImageCodec.IsColour(Gradient(400, 600).EncodeJpeg(90)));
+        Assert.False(ImageCodec.IsColour(ArchivePageConverterTests.Scan(400, 600, 1).EncodeJpeg(90)));
+        Assert.False(ImageCodec.IsColour(ArchivePageConverterTests.LineArt(400, 600, 2).EncodePng()));
+        Assert.Null(ImageCodec.IsColour("<!doctype html>"u8.ToArray()));
+    }
+
+    [Fact]
     public void Identify_reads_the_header_and_names_the_format()
     {
         Assert.Equal(new ImageHeader(40, 30, ImageFormat.Webp), ImageCodec.Identify(Gradient(40, 30).EncodeWebp(80)));

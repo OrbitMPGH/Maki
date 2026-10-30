@@ -1,5 +1,6 @@
 using Maki.Api.Configuration;
 using Maki.Core.Images;
+using Maki.Core.Io;
 using Maki.Core.Reading;
 
 namespace Maki.Api.Services;
@@ -71,12 +72,22 @@ public sealed class ReaderThumbnailCache(AppPaths paths, ReaderService reader, I
                     return;
                 }
 
+                // One copy into an array of the exact size: the thumbnailer takes nothing else,
+                // and a growing MemoryStream allocated a series of large buffers per page.
                 byte[] bytes;
                 await using (source)
                 {
-                    using var copy = new MemoryStream();
-                    await source.CopyToAsync(copy, ct);
-                    bytes = copy.ToArray();
+                    if (source.CanSeek)
+                    {
+                        bytes = new byte[source.Length - source.Position];
+                        await source.ReadExactlyAsync(bytes, ct);
+                    }
+                    else
+                    {
+                        using var copy = PooledStreams.Get("thumbnail");
+                        await source.CopyToAsync(copy, ct);
+                        bytes = copy.ToArray();
+                    }
                 }
 
                 var thumbnail = Render(bytes);

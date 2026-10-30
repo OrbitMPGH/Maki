@@ -14,13 +14,14 @@ import {
   UnstyledButton,
 } from '@mantine/core'
 import { IconFileZip, IconSearch, IconX } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import { useChapters, useLinkChapters, useUnlinkChapters } from '../api/hooks'
 import type { ChapterDto, SeriesFileDto } from '../api/types'
 
 function chapterLabel(c: ChapterDto): string {
+  if (!c.isOneShot && c.number === null && c.volume !== null) return now`Vol.${c.volume}`
   if (c.isOneShot || c.number === null) return c.title ?? now`One-shot`
   return c.volume !== null ? now`Vol.${c.volume} Ch.${c.number}` : now`Ch.${c.number}`
 }

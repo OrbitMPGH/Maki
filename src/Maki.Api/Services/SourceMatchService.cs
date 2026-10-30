@@ -477,8 +477,9 @@ public partial class SourceMatchService(
     }
 
     /// <summary>
-    /// The titles to score a result against besides the English one: the original title, and for a
-    /// source that publishes no English, the alt title in the language it does publish.
+    /// The titles to score a result against besides the English one: the original title, the other
+    /// English titles for a source that publishes English, and for a source that publishes no
+    /// English, the alt title in the language it does publish.
     /// </summary>
     private static List<string> NativeTitles(ISource source, MatchTarget target)
     {
@@ -488,8 +489,11 @@ public partial class SourceMatchService(
             titles.Add(target.OriginalTitle);
         }
 
-        if (!PublishesEnglish(source) &&
-            LocalizedTitle.Pick(target.AltTitles, source.SupportedLanguages) is { } alt &&
+        if (PublishesEnglish(source))
+        {
+            titles.AddRange(EnglishAltTitles(target));
+        }
+        else if (LocalizedTitle.Pick(target.AltTitles, source.SupportedLanguages) is { } alt &&
             !titles.Contains(alt, StringComparer.OrdinalIgnoreCase))
         {
             titles.Insert(0, alt);
@@ -499,17 +503,19 @@ public partial class SourceMatchService(
     }
 
     /// <summary>
-    /// Queries for a source that publishes no English, other than the title already searched: the alt
-    /// title in the source's own language, and the original title only where its script is one the
-    /// source is written in, so a Spanish site is not asked for a Japanese title.
+    /// Queries tried once the main title found nothing. A source that publishes English gets the
+    /// series' other English titles, since sites often list a work under one the provider files as an
+    /// alt. Any other source gets the alt title in its own language, and the original title only where
+    /// its script is one the source is written in, so a Spanish site is not asked for a Japanese title.
     /// </summary>
     private static List<string> NativeSearchTerms(ISource source, MatchTarget target)
     {
-        var terms = new List<string>();
         if (PublishesEnglish(source))
         {
-            return terms;
+            return EnglishAltTitles(target);
         }
+
+        var terms = new List<string>();
 
         if (LocalizedTitle.Pick(target.AltTitles, source.SupportedLanguages) is { } alt)
         {
@@ -539,6 +545,22 @@ public partial class SourceMatchService(
             _ => false,
         });
     }
+
+    /// <summary>
+    /// English alt titles that read differently from the main title, at most
+    /// <see cref="MaxEnglishAltSearches"/> of them: each one can cost a rate-limited search.
+    /// </summary>
+    internal static List<string> EnglishAltTitles(MatchTarget target)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal) { Compact(target.Title) };
+        return [.. target.AltTitles
+            .Where(t => LocalizedTitle.Matches(t.Language, "en") && !string.IsNullOrWhiteSpace(t.Title))
+            .Select(t => t.Title.Trim())
+            .Where(t => Compact(t).Length > 0 && seen.Add(Compact(t)))
+            .Take(MaxEnglishAltSearches)];
+    }
+
+    private const int MaxEnglishAltSearches = 2;
 
     private static bool PublishesEnglish(ISource source) =>
         source.SupportedLanguages.Any(l => LocalizedTitle.Matches(l, "en"));
@@ -593,7 +615,9 @@ public partial class SourceMatchService(
         var work = orderedSources
             .Select((source, index) => (Source: source, Priority: index + 1))
             .Where(item => !disabledSources.Contains(item.Source.Name, StringComparer.OrdinalIgnoreCase)
-                           && !skip.Contains(item.Source.Name))
+                           && !skip.Contains(item.Source.Name)
+                           // A custom source with no search is linked by URL only; asking it would just read "No match".
+                           && item.Source is not Maki.Sources.Custom.CustomSource { HasSearch: false })
             .ToList();
 
         foreach (var (source, _) in work)

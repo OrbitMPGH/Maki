@@ -1,6 +1,6 @@
 import { Trans } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { useDeleteCustomRail } from '../../api/customRails'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 

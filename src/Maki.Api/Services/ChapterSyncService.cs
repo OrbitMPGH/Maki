@@ -26,7 +26,8 @@ public class ChapterSyncService(
     IAppSettings appSettings,
     ILogger<ChapterSyncService> logger,
     AnimeResumePendingService? animeResumePending = null,
-    PendingReadImportService? pendingReadImports = null)
+    PendingReadImportService? pendingReadImports = null,
+    CbzLinkService? cbzLinks = null)
 {
     /// <returns>Ids of newly discovered chapters.</returns>
     public Task<List<int>> SyncSeriesAsync(int seriesId, CancellationToken ct = default) =>
@@ -111,6 +112,10 @@ public class ChapterSyncService(
                 // Read before the snapshot changes: what the mapping listed until now decides which
                 // of its new links are releases and which are a catalogue arriving all at once.
                 var firstSnapshot = mapping.ChapterSnapshotAt is null && mapping.ChapterLinks.Count == 0;
+                // What a mapping lists for the first time since a restore was released while the series
+                // was archived. Decided per mapping, so one failing source keeps it for its own next sync.
+                var firstSinceRestore = series.RestoredAt is { } restoredAt &&
+                                        (mapping.ChapterSnapshotAt is null || mapping.ChapterSnapshotAt < restoredAt);
                 var listedUpTo = mapping.ChapterLinks.Max(l => l.Chapter?.Number);
 
                 chapterLists.Store(source, mapping.SourceSeriesId, mapping.LanguageFilter, sourceChapters);
@@ -179,7 +184,7 @@ public class ChapterSyncService(
 
                 var fileGroups = ReplaceSnapshot(
                     mapping, snapshotLinks, ChapterFileQualityService.SiteGroup(source),
-                    firstSnapshot ? null : listedUpTo ?? decimal.MinValue);
+                    firstSnapshot || firstSinceRestore ? null : listedUpTo ?? decimal.MinValue);
                 await BackfillFileGroupsAsync(mapping.SourceName, fileGroups, ct);
 
                 mapping.LastRefresh = DateTime.UtcNow;
@@ -254,6 +259,15 @@ public class ChapterSyncService(
         if (newChapters.Count > 0 && pendingReadImports is not null)
         {
             await pendingReadImports.ApplyAsync(seriesId, ct);
+        }
+
+        // A volume entry's file belongs to the chapters a source has just listed for that volume.
+        // Handed over here rather than at the next rescan, or the monitored refresh queues them for
+        // download while their file is on disk.
+        if (newChapters.Count > 0 && cbzLinks is not null && existing.Any(Chapter.IsVolumeEntry))
+        {
+            var withRoot = await db.Series.Include(s => s.RootFolder).FirstAsync(s => s.Id == seriesId, ct);
+            await cbzLinks.RescanSeriesAsync(withRoot, ct);
         }
 
         return newChapters.Select(c => c.Id).ToList();
@@ -453,7 +467,12 @@ public class ChapterSyncService(
                 keeper.Title ??= dup.Title;
                 keeper.ReleaseDate ??= dup.ReleaseDate;
                 keeper.ChapterFileId ??= dup.ChapterFileId;
-                keeper.FileRemovedAt ??= dup.FileRemovedAt;
+                if (keeper.FileRemovedAt is null)
+                {
+                    keeper.FileRemovedAt = dup.FileRemovedAt;
+                    keeper.FileAutoRemoved = dup.FileAutoRemoved;
+                }
+
                 keeper.Wanted |= dup.Wanted;
                 await reads.MoveAsync(dup, keeper, ct);
 

@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor } from 'storybook/test'
-import { continueReading, jumpBackIn } from '../../../.storybook/mocks/home'
+import { continueReading, notStarted } from '../../../.storybook/mocks/home'
 import { ReadingRail } from './ReadingRail'
 
 const meta = {
   component: ReadingRail,
   tags: ['ai-generated'],
-  args: { items: continueReading, rail: 'continue' },
+  args: { items: continueReading },
   parameters: { layout: 'padded' },
 } satisfies Meta<typeof ReadingRail>
 
@@ -21,9 +21,9 @@ export const Default: Story = {
 }
 
 export const NotStartedAndNoCover: Story = {
-  args: { items: jumpBackIn, rail: 'jumpback' },
+  args: { items: notStarted },
   play: async ({ canvas }) => {
-    await waitFor(() => expect(canvas.getAllByText('Start')).toHaveLength(jumpBackIn.length))
+    await waitFor(() => expect(canvas.getAllByText('Start')).toHaveLength(notStarted.length))
   },
 }
 

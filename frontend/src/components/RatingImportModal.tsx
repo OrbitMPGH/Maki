@@ -13,7 +13,7 @@ import {
   Stack,
   Text,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { useQueryClient } from '@tanstack/react-query'

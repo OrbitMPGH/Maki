@@ -3,6 +3,7 @@ using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Localization;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
@@ -44,7 +45,7 @@ public class ChapterController(
     [HttpGet]
     public async Task<IActionResult> List(
         [FromQuery] int seriesId, [FromServices] UpgradeEvaluationService upgrades,
-        [FromServices] ReadFileCleanupService readFileCleanup, CancellationToken ct)
+        [FromServices] IAppSettings settings, CancellationToken ct)
     {
         var rows = await db.Chapters
             .Where(c => c.SeriesId == seriesId)
@@ -62,6 +63,7 @@ public class ChapterController(
                 c.Wanted,
                 HasFile = c.ChapterFileId != null,
                 FileRemovedAt = c.ChapterFileId == null ? c.FileRemovedAt : null,
+                FileAutoRemoved = c.ChapterFileId == null && c.FileRemovedAt != null && c.FileAutoRemoved,
                 FilePath = c.ChapterFile != null ? c.ChapterFile.RelativePath : null,
                 // Where the file came from: a registered source's name, the literal "import" for a
                 // file the user brought in from disk, or "torrent:{indexer}" for a grabbed release.
@@ -84,6 +86,8 @@ public class ChapterController(
                     ImageFormat = c.ChapterFile.ImageFormat,
                     OriginalImageFormat = c.ChapterFile.OriginalImageFormat,
                     ConversionSavedBytes = c.ChapterFile.ConversionSavedBytes,
+                    ConversionCheckedAtUtc = c.ChapterFile.ConversionCheckedAtUtc,
+                    CheckedWith = c.ChapterFile.CheckedWith,
                     MeasuredAtUtc = c.ChapterFile.MeasuredAtUtc,
                     Trusted = c.ChapterFile.Trusted
                 }
@@ -92,11 +96,7 @@ public class ChapterController(
         var evaluator = await upgrades.ForSeriesAsync(seriesId, ct);
 
         // When each file is due to be cleaned up, so the table can say so ahead of time.
-        var cleanupOptions = await readFileCleanup.OptionsAsync(ct);
-        var cleanupMode = await db.Series.Where(s => s.Id == seriesId).Select(s => s.ReadFileCleanup).FirstOrDefaultAsync(ct);
-        var deleteDue = rows.Count > 0 && ReadFileCleanupService.AppliesTo(cleanupMode, cleanupOptions)
-            ? await readFileCleanup.ScheduleAsync(seriesId, cleanupOptions, ct)
-            : [];
+        var deleteDue = rows.Count > 0 ? await ReadFileCleanupService.PendingAsync(db, settings, seriesId, ct) : [];
 
         // When a chapter's backing file is a volume/compilation CBZ, surface that
         // volume so the UI can show "Vol.x Ch.y" even for scrape-source chapters that
@@ -116,6 +116,7 @@ public class ChapterController(
             c.Wanted,
             c.HasFile,
             c.FileRemovedAt,
+            c.FileAutoRemoved,
             FileDeleteDueAt = deleteDue.TryGetValue(c.Id, out var dueAt) ? dueAt : (DateTime?)null,
             c.FilePath,
             c.FileSourceName,
@@ -149,7 +150,8 @@ public class ChapterController(
 
     /// <summary>
     /// Sets whether the user wants this chapter. Nothing in the download pipeline writes this flag,
-    /// so a choice made here survives Smart top-ups and series monitor-mode changes.
+    /// so a choice made here survives Smart top-ups and series monitor-mode changes. Turning it on for
+    /// a chapter whose file was removed clears the removal, so the chapter reads as missing again.
     /// </summary>
     [Authorize(Policy = Policies.EditMetadata)]
     [HttpPut("{id:int}/wanted")]
@@ -159,6 +161,11 @@ public class ChapterController(
         if (chapter is null)
         {
             return NotFound();
+        }
+
+        if (wanted && !chapter.Wanted && chapter.ChapterFileId == null)
+        {
+            chapter.FileRemovedAt = null;
         }
 
         chapter.Wanted = wanted;
@@ -180,7 +187,11 @@ public class ChapterController(
 
         var updated = await db.Chapters
             .Where(c => request.ChapterIds.Contains(c.Id))
-            .ExecuteUpdateAsync(u => u.SetProperty(c => c.Wanted, request.Wanted), ct);
+            .ExecuteUpdateAsync(u => u
+                .SetProperty(c => c.FileRemovedAt, c => request.Wanted && !c.Wanted && c.ChapterFileId == null
+                    ? null
+                    : c.FileRemovedAt)
+                .SetProperty(c => c.Wanted, request.Wanted), ct);
         return Ok(new { updated });
     }
 
@@ -205,8 +216,14 @@ public class ChapterController(
 
         var chapters = await db.Chapters
             .Where(c => request.ChapterIds.Contains(c.Id) && c.ChapterFileId == null)
-            .Select(c => new { c.Id, c.SeriesId, c.Number, SeriesTitle = c.Series!.Title })
+            .Select(c => new { c.Id, c.SeriesId, c.Number, SeriesTitle = c.Series!.Title, Archived = c.Series.ArchivedAt != null })
             .ToListAsync(ct);
+
+        // A mixed selection queues what it can; one made only of archived series would answer "0 queued".
+        if (chapters.Count > 0 && chapters.All(c => c.Archived))
+        {
+            return this.Conflict(localizer, "error.series.archived");
+        }
 
         // A selection can span series, and one unmapped series must not throw away the rest; the
         // bulk enqueue skips that series and reports why.
@@ -595,6 +612,12 @@ public class ChapterController(
     [HttpPost("{id:int}/search")]
     public async Task<IActionResult> Search(int id, CancellationToken ct)
     {
+        // The queue answers null for an archived series too, which would read as "already queued".
+        if (await db.Chapters.AnyAsync(c => c.Id == id && c.Series!.ArchivedAt != null, ct))
+        {
+            return this.Conflict(localizer, "error.series.archived");
+        }
+
         try
         {
             var item = await queue.EnqueueChapterAsync(id, ct, DownloadOrigin.Manual, currentUser.UserId);
@@ -635,6 +658,11 @@ public class ChapterController(
         if (chapter is null)
         {
             return NotFound();
+        }
+
+        if (await db.Series.AnyAsync(s => s.Id == chapter.SeriesId && s.ArchivedAt != null, ct))
+        {
+            return this.Conflict(localizer, "error.series.archived");
         }
 
         var mapping = await db.SourceMappings.FindAsync([request.SourceMappingId], ct);
@@ -716,6 +744,12 @@ public class ChapterController(
     public async Task<IActionResult> Redownload(
         [FromBody] RedownloadRequest request, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
     {
+        // Before the source listing below, which is a live request to the site.
+        if (await db.Series.AnyAsync(s => s.Id == request.SeriesId && s.ArchivedAt != null, ct))
+        {
+            return this.Conflict(localizer, "error.series.archived");
+        }
+
         var mapping = await db.SourceMappings
             .FirstOrDefaultAsync(m => m.SeriesId == request.SeriesId && m.SourceName == request.SourceName, ct);
         if (mapping is null || sourceRegistry.Find(request.SourceName) is not { } source)

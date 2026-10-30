@@ -61,19 +61,11 @@ export const SeparationTagged: Story = {
   },
 }
 
-export const ReadingSectionsAsRails: Story = {
-  parameters: { msw: homePage(layout({ hero: { continue: false, jumpback: false } })) },
+export const ContinueAsRail: Story = {
+  parameters: { msw: homePage(layout({ hero: { continue: false } })) },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('heading', { level: 2, name: /jump back in/i })).toBeVisible()
-    await expect(canvas.queryByRole('heading', { name: /next up|next to jump back in/i })).toBeNull()
-  },
-}
-
-export const JumpBackInHero: Story = {
-  parameters: { msw: homePage(layout({ hero: { continue: true, jumpback: true } })) },
-  play: async ({ canvas }) => {
-    await waitFor(() => expect(canvas.getByRole('heading', { level: 2, name: 'Next up' })).toBeVisible())
-    await waitFor(() => expect(canvas.getByRole('heading', { level: 2, name: 'Next to jump back in' })).toBeVisible())
+    await expect(await canvas.findByRole('heading', { level: 2, name: /continue reading/i })).toBeVisible()
+    await expect(canvas.queryByRole('heading', { name: /next up/i })).toBeNull()
   },
 }
 
@@ -168,7 +160,7 @@ export const NoReadTracking: Story = {
   parameters: {
     msw: homePage(
       http.get(api('/reader/used'), () => HttpResponse.json({ used: false })),
-      http.get(api('/home/reading'), () => HttpResponse.json({ continueReading: [], jumpBackIn: [] })),
+      http.get(api('/home/reading'), () => HttpResponse.json({ continueReading: [] })),
     ),
   },
   play: async ({ canvas }) => {
@@ -179,7 +171,7 @@ export const NoReadTracking: Story = {
 
 export const NothingToPickUp: Story = {
   parameters: {
-    msw: homePage(http.get(api('/home/reading'), () => HttpResponse.json({ continueReading: [], jumpBackIn: [] }))),
+    msw: homePage(http.get(api('/home/reading'), () => HttpResponse.json({ continueReading: [] }))),
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Nothing to pick up yet')).toBeVisible()
@@ -247,7 +239,7 @@ export const LibraryFailed: Story = {
 export const EverySectionOff: Story = {
   parameters: {
     msw: homePage(
-      layout({ off: ['continue', 'jumpback', 'recent', 'recommended', 'fromanime', 'following', 'popular'] }),
+      layout({ off: ['continue', 'recent', 'recommended', 'fromanime', 'following', 'popular'] }),
     ),
   },
   play: async ({ canvas }) => {

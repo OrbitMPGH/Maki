@@ -17,11 +17,9 @@ namespace Maki.Api.Tests;
 /// Restore staging validates the backup before touching an existing staged restore, the API answers
 /// a damaged upload with 400, and applying a staged restore never loses the live database.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public class BackupRestoreTests : IDisposable
 {
     private readonly string _configDir;
-    private readonly string? _priorEnv;
     private readonly AppPaths _paths;
     private readonly MakiDbContext _db;
     private readonly FakeAppSettings _settings = new();
@@ -29,10 +27,8 @@ public class BackupRestoreTests : IDisposable
     public BackupRestoreTests()
     {
         _configDir = Path.Combine(Path.GetTempPath(), "maki-restore-tests", Guid.NewGuid().ToString("N"));
-        _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
 
-        _paths = new AppPaths();
+        _paths = new AppPaths(_configDir);
         _db = new MakiDbContext(new DbContextOptionsBuilder<MakiDbContext>()
             .UseSqlite($"Data Source={_paths.DatabasePath}")
             .Options);
@@ -43,7 +39,6 @@ public class BackupRestoreTests : IDisposable
     {
         _db.Dispose();
         SqliteConnection.ClearAllPools();
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
         try
         {
             Directory.Delete(_configDir, recursive: true);

@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using Maki.Core.Io;
 
 namespace Maki.Core.Reading;
 
@@ -159,19 +160,28 @@ public static class CbzReader
         var entry = archive.GetEntry(entryName);
         if (entry is null) return null;
         if (entry.Length > MaxEntryBytes) return null;
+        var copy = PooledStreams.Get("page", entry.Length is > 0 and < MaxPresizeBytes ? entry.Length : 0);
         try
         {
             using var source = entry.Open();
-            var copy = new MemoryStream(entry.Length is > 0 and < MaxPresizeBytes ? (int)entry.Length : 0);
             // The declared length is untrusted, so the copy is bounded independently of it.
-            if (!CopyBounded(source, copy, MaxEntryBytes)) return null;
-            copy.Position = 0;
-            return copy;
+            if (CopyBounded(source, copy, MaxEntryBytes))
+            {
+                copy.Position = 0;
+                return copy;
+            }
         }
         catch (InvalidDataException)
         {
-            return null;
         }
+        catch
+        {
+            copy.Dispose();
+            throw;
+        }
+
+        copy.Dispose();
+        return null;
     }
 
     /// <summary>The declared size is untrusted input, so it only pre-sizes the buffer up to this.</summary>

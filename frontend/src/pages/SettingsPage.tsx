@@ -43,6 +43,7 @@ import {
   RootFoldersSection,
 } from './settings/LibraryCards'
 import { PageConversionSection } from './settings/PageConversionSection'
+import { UpscalingSection } from './settings/UpscalingSection'
 import {
   DownloadQueueSection,
   FlareSolverrCard,
@@ -96,6 +97,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       'name-parsing': <NameParsingSection />,
       'library-files': <LibraryFilesSection />,
       'page-conversion': <PageConversionSection />,
+      upscaling: <UpscalingSection />,
       'recycle-bin': <RecycleBinSection />,
       monitoring: <NewSeriesDefaultsSection />,
       metadata: <MetadataSection />,
@@ -287,9 +289,6 @@ export default function SettingsPage() {
               <div className="settings-layout">
                 <SettingsJump entries={tabEntries} />
                 <Stack className="settings-content" gap="xl">
-                  <Text size="sm" c="var(--ink-3)">
-                    {renderLabel(tab.description)}
-                  </Text>
                   {tabEntries.map((entry) => (
                     <div key={entry.id} id={`setting-${entry.id}`} className="settings-entry">
                       {sectionNodes[entry.id]}

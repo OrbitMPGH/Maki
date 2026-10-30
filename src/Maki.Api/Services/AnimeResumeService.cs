@@ -150,7 +150,7 @@ public class AnimeResumeService(
     /// <summary>
     /// Series whose anime the reader finished and whose reading has not caught up with it: library
     /// series first, then manga nobody has added yet. Once they have read or watched past the
-    /// frontier, Jump back in covers the series instead. The page is capped at
+    /// frontier, Continue reading covers the series instead. The page is capped at
     /// <paramref name="limit"/>; <see cref="RailPage.Total"/> is every match, so a count can stay honest.
     /// </summary>
     public async Task<RailPage> RailAsync(CancellationToken ct, int limit = RailLimit)
@@ -195,7 +195,7 @@ public class AnimeResumeService(
     private async Task<List<HomeAnimeResumeItem>> LibraryRailAsync(
         List<AnimeSignalRow> rows, List<int> candidates, CancellationToken ct)
     {
-        var series = await SeriesQuery(s => s.MangaBakaId != null && candidates.Contains(s.MangaBakaId.Value))
+        var series = await SeriesQuery(s => s.ArchivedAt == null && s.MangaBakaId != null && candidates.Contains(s.MangaBakaId.Value))
             .ToListAsync(ct);
         if (series.Count == 0) return [];
 
@@ -252,7 +252,7 @@ public class AnimeResumeService(
         if (ids.Count == 0 || !await catalogue.IsAvailableAsync(ct)) return [];
 
         var suppressed = await RecommendationFeedbackService.SuppressedAsync(db, UserId, ct);
-        var isHidden = await hidden.PredicateAsync(ct);
+        var isHidden = await hidden.PredicateAsync(ids, ct);
         ids = ids.Where(id => !suppressed.Contains(id) && isHidden?.Invoke(id) != true).ToList();
         if (ids.Count == 0) return [];
 

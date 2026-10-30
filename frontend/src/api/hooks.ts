@@ -17,8 +17,16 @@ import type { RequestSummaryDto, SourceReliabilityDto } from './stats'
 import type { IncognitoMode } from '../components/ui/incognito'
 import type { ReleaseParsedDto } from './upgrades'
 import { obtainedCount } from '../lib/chapterCounts'
+import { activeSeries } from '../lib/series'
 import type {
   AddSeriesRequest,
+  ArchivePreview,
+  ArchiveSeriesRequest,
+  ArchiveSeriesResponse,
+  BulkArchiveSeriesRequest,
+  BulkArchiveSeriesResponse,
+  RestoreSeriesRequest,
+  RestoreSeriesResponse,
   ChapterDto,
   LocalizedTitle,
   CompareSnapshot,
@@ -91,7 +99,7 @@ export interface LibraryStats {
 export function useLibraryStats(): LibraryStats {
   const { data: series } = useSeries()
   return useMemo(() => {
-    const list = series ?? []
+    const list = activeSeries(series ?? [])
     let downloaded = 0
     let missing = 0
     let monitored = 0
@@ -633,6 +641,10 @@ export interface DiscoverRail {
   /** Set on a custom catalogue rail, so "Show more" keeps its order and owned-series setting. */
   sort?: BrowseSort
   excludeOwned?: boolean
+  /** Set on the follow rail, so "Show more" also leaves out what the reader liked, disliked or marked seen. */
+  excludeInteracted?: boolean
+  /** Set on the follow rail, so "Show more" keeps its release window. */
+  releasedWithinMonths?: number
 }
 
 /** A seed series as the Discover page draws it: the title, the position, and which state that is. */
@@ -656,6 +668,10 @@ export interface DiscoverFeedRequest {
   sort?: BrowseSort
   /** Leave out series already in the library. */
   excludeOwned?: boolean
+  /** Leave out owned series and anything thumbed up or down, on top of the hidden, dismissed and seen ones every feed drops. */
+  excludeInteracted?: boolean
+  /** Only titles first published this many months back or later. */
+  releasedWithinMonths?: number
 }
 
 export type BrowseSort = 'popular' | 'rating' | 'newest' | 'oldest'
@@ -948,7 +964,7 @@ export function useCreditSuggestions(query: string, role?: string | null) {
   })
 }
 
-/** One poster on Home's "Continue reading" or "Jump back in" rail. */
+/** One poster on Home's Continue reading list. */
 export interface HomeReadingItem {
   seriesId: number
   seriesTitle: string
@@ -960,6 +976,7 @@ export interface HomeReadingItem {
   page: number
   /** Slice length. 0 on Kavita-imported rows, which is how the resume bar knows to hide. */
   pageCount: number
+  /** When anything in the series was last read, which is what orders the list. */
   lastReadAt: string
   unreadChapters: number
   /** The colour the cover lends to the card's bar and button, `#rrggbb`; null keeps the theme accent. */
@@ -967,19 +984,20 @@ export interface HomeReadingItem {
 }
 
 export interface HomeReadingResponse {
+  /** Most recently read first, whether part-way through a chapter (`page` > 0) or between two. */
   continueReading: HomeReadingItem[]
-  jumpBackIn: HomeReadingItem[]
 }
 
-/** A series that recently gained chapter files. */
+/** A series that recently gained chapter files it still has unread. */
 export interface HomeRecentSeriesItem {
   seriesId: number
   seriesTitle: string
   coverUrl: string | null
   addedAt: string
+  /** Unread files in the series' latest batch of downloads. */
   newChapterCount: number
   newestChapterLabel: string | null
-  /** Next unread downloaded chapter; null once everything downloaded has been read. */
+  /** Next unread downloaded chapter. The server drops fully read series, so null is only defensive. */
   readChapterId: number | null
 }
 
@@ -987,10 +1005,10 @@ export interface HomeRecentSeriesItem {
 export const HOME_RAIL_LIMIT = 100
 
 /**
- * Home's two reading rails.
+ * Home's reading list.
  *
  * `refetchOnMount: 'always'` because reader position writes are fire-and-forget and invalidate
- * nothing; without it, coming back from `/read/:id` shows the resume page the rail was built with
+ * nothing; without it, coming back from `/read/:id` shows the resume page the list was built with
  * rather than where you actually stopped.
  */
 export function useHomeReading(limit = HOME_RAIL_LIMIT, enabled = true) {
@@ -1004,8 +1022,8 @@ export function useHomeReading(limit = HOME_RAIL_LIMIT, enabled = true) {
 }
 
 /**
- * Takes a series off both reading rails (or puts it back, for Undo). The server keeps it off until
- * the series is next read. Removal is applied to the cached rails straight away so the card leaves
+ * Takes a series off the reading list (or puts it back, for Undo). The server keeps it off until
+ * the series is next read. Removal is applied to the cached list straight away so the card leaves
  * on click rather than after a round trip.
  */
 export function useHideHomeReading() {
@@ -1017,10 +1035,7 @@ export function useHideHomeReading() {
       if (!hidden) return
       await queryClient.cancelQueries({ queryKey: ['home', 'reading'] })
       queryClient.setQueriesData<HomeReadingResponse>({ queryKey: ['home', 'reading'] }, (data) =>
-        data && {
-          continueReading: data.continueReading.filter((i) => i.seriesId !== seriesId),
-          jumpBackIn: data.jumpBackIn.filter((i) => i.seriesId !== seriesId),
-        },
+        data && { continueReading: data.continueReading.filter((i) => i.seriesId !== seriesId) },
       )
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['home', 'reading'] }),
@@ -1041,7 +1056,6 @@ export function useHomeRecentlyAdded(limit = HOME_RAIL_LIMIT, enabled = true) {
 /** Home section keys, in the order they ship. Mirrors `HomeSections.All` on the server exactly. */
 export const HOME_SECTIONS = [
   'continue',
-  'jumpback',
   'recent',
   'recommended',
   'fromanime',
@@ -1060,7 +1074,6 @@ export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
 export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
   continue: msg`Continue reading`,
   recent: msg`Recently added`,
-  jumpback: msg`Jump back in`,
   fromanime: msg`Continue from the anime`,
   following: msg`New from creators you follow`,
   recommended: msg`You might like`,
@@ -1068,16 +1081,15 @@ export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
 }
 
 /** Sections that can lead with a hero, and whether they do by default. Mirrors the server. */
-export const HOME_HERO_DEFAULTS: Record<string, boolean> = { continue: true, jumpback: false }
+export const HOME_HERO_DEFAULTS: Record<string, boolean> = { continue: true }
 
 /**
  * The reading sections' own switches and their defaults. Mirrors `HomeHeroOptions` on the server.
- * `glance` is the last five weeks as a card in the Continue hero; `nextUpBeside` puts the rest of a
- * hero section in a list beside the hero instead of a tray of posters under it.
+ * `glance` is the last five weeks as a card in the Continue hero; `nextUpBeside` puts the rest of
+ * the section in a list beside the hero instead of a tray of posters under it.
  */
 export const HOME_SECTION_OPTIONS: Record<string, Record<string, boolean>> = {
   continue: { glance: true, nextUpBeside: false },
-  jumpback: { nextUpBeside: false },
 }
 
 /** Discover Browse tab section keys, in the order they ship. Mirrors `DiscoverSections.All`. */
@@ -1720,10 +1732,90 @@ export function useDeleteSeries() {
   })
 }
 
-export function useChapters(seriesId: number) {
+/** What an archive, restore or file removal changes: the lists, the one series, its chapters and the recycle bin. */
+function invalidateArchiveQueries(queryClient: ReturnType<typeof useQueryClient>, seriesIds: number[]) {
+  void queryClient.invalidateQueries({ queryKey: ['series'] })
+  void queryClient.invalidateQueries({ queryKey: ['recycle-bin'] })
+  void queryClient.invalidateQueries({ queryKey: ['archive-preview'] })
+  for (const id of seriesIds) {
+    void queryClient.invalidateQueries({ queryKey: ['series', id] })
+    void queryClient.invalidateQueries({ queryKey: ['chapters', id] })
+    void queryClient.invalidateQueries({ queryKey: ['series-files', id] })
+  }
+  for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
+}
+
+/** The archive and restore dialogs' figures. Fetched only while a dialog is open: the size stats every file. */
+export function useArchivePreview(id: number | null, enabled = true) {
+  return useQuery({
+    queryKey: ['archive-preview', id],
+    queryFn: () => api<ArchivePreview>(`/series/${id}/archive-preview`),
+    enabled: enabled && id !== null,
+    staleTime: 0,
+  })
+}
+
+export function useArchiveSeries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, removeFiles, permanent = false }: { id: number } & ArchiveSeriesRequest) =>
+      api<ArchiveSeriesResponse>(`/series/${id}/archive`, {
+        method: 'POST',
+        body: JSON.stringify({ removeFiles, permanent }),
+      }),
+    onSuccess: (_, { id }) => invalidateArchiveQueries(queryClient, [id]),
+  })
+}
+
+export function useBulkArchiveSeries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesIds, removeFiles, permanent = false }: BulkArchiveSeriesRequest) =>
+      api<BulkArchiveSeriesResponse>('/series/archive/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ seriesIds, removeFiles, permanent }),
+      }),
+    onSuccess: (_, { seriesIds }) => invalidateArchiveQueries(queryClient, seriesIds),
+  })
+}
+
+export function useRestoreSeries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, redownloadRemoved = false }: { id: number } & Partial<RestoreSeriesRequest>) =>
+      api<RestoreSeriesResponse>(`/series/${id}/restore`, {
+        method: 'POST',
+        body: JSON.stringify({ redownloadRemoved }),
+      }),
+    onSuccess: (_, { id }) => invalidateArchiveQueries(queryClient, [id]),
+  })
+}
+
+export function useDismissArchiveHint() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/series/${id}/archive-hint/dismiss`, { method: 'POST' }),
+    onSuccess: (_, id) => void queryClient.invalidateQueries({ queryKey: ['series', id] }),
+  })
+}
+
+export function useRemoveArchivedFiles() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, permanent = false }: { id: number; permanent?: boolean }) =>
+      api<ArchiveSeriesResponse>(`/series/${id}/archive/removefiles`, {
+        method: 'POST',
+        body: JSON.stringify({ permanent }),
+      }),
+    onSuccess: (_, { id }) => invalidateArchiveQueries(queryClient, [id]),
+  })
+}
+
+export function useChapters(seriesId: number, enabled = true) {
   return useQuery({
     queryKey: ['chapters', seriesId],
     queryFn: () => api<ChapterDto[]>(`/chapter?seriesId=${seriesId}`),
+    enabled,
   })
 }
 
@@ -2427,6 +2519,22 @@ export function useSetReadFileCleanup() {
   })
 }
 
+/** Pins how this series' files are converted: follow the rules, never, or a fixed quality. */
+export function useSetSeriesPageConversion() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, mode }: { seriesId: number; mode: string }) =>
+      api<{ pageConversion: string }>(`/series/${seriesId}/pageconversion`, {
+        method: 'POST',
+        body: JSON.stringify({ mode }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['page-conversion'], exact: true })
+    },
+  })
+}
+
 export interface ReadFileCleanupSettings {
   enabled: boolean
   days: number
@@ -2818,9 +2926,11 @@ export interface SourceInfo {
   displayName: string
   baseUrl: string
   /** Set for a source that is not built in. A Suwayomi source's `baseUrl` is the Suwayomi server, not the site. */
-  provider?: 'suwayomi' | null
+  provider?: 'suwayomi' | 'custom' | null
   /** Set for a Suwayomi source. */
   suwayomi?: SuwayomiSourceState | null
+  /** Set for a custom source an admin defined. */
+  custom?: CustomSourceState | null
   needsFlareSolverr: boolean
   /**
    * Whether this source honours a mapping's `languageFilter`, so the mappings card offers a
@@ -2842,6 +2952,32 @@ export interface SourceInfo {
   defaultRank?: number
   /** How this source's copies measure in general; null when nothing has measured it. */
   quality?: SourceQualitySummary | null
+}
+
+export interface CustomSourceState {
+  /** The definition's id, the part of `name` after `custom-`. */
+  id: string
+  /** False for a site with neither search nor a catalogue page: series are linked by URL only. */
+  hasSearch: boolean
+  /** The stored definition can't be used by this build; `problem` says why. */
+  invalid: boolean
+  problem: string | null
+  /** The health job's last check failed, or the definition is invalid. Older servers leave it out. */
+  failing?: boolean
+  /** The repository it was installed from, or null for a hand-made one. */
+  origin?: {
+    /** Admins only: a private repository's URL can carry a token. */
+    repository: string | null
+    repositoryName: string | null
+    version: number
+    /** A newer version waits, and the source isn't detached. */
+    updateAvailable: boolean
+    latestVersion: number | null
+  } | null
+  /** Edited here after it was installed, so the repository's updates no longer apply. */
+  detached?: boolean
+  /** An update replaced an earlier version that can be put back. */
+  canRevert?: boolean
 }
 
 export interface SuwayomiSourceState {
@@ -2963,9 +3099,12 @@ export function useCreateMapping() {
       url: string
       priority?: number
     }) => api<SourceMappingDto>('/sourcemapping', { method: 'POST', body: JSON.stringify(mapping) }),
+    // The server lists the new source's chapters before it answers.
     onSuccess: (_d, v) => {
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['source-order', v.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters', v.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series', v.seriesId] })
     },
   })
 }
@@ -3710,7 +3849,13 @@ export interface DownloadSettings {
   scoutOnMatch: boolean
   /** Check each series on a tier picked from how recently it had a new chapter, instead of every 30 minutes. */
   adaptiveRefresh: boolean
+  /** When Maki removes an imported torrent from the download client. */
+  removeCompleted: TorrentRemovalMode
+  /** Delete the downloaded files with the torrent, where the library is known to hold its own copy. */
+  removeData: boolean
 }
+
+export type TorrentRemovalMode = 'never' | 'afterimport'
 
 /** `manual` follows each mapping's priority; `quality` ranks sources by the series' upgrade profile. */
 export type SourceOrderMode = 'manual' | 'quality'
@@ -3833,6 +3978,26 @@ export function useAddRootFolder() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['rootfolders'] })
     },
+  })
+}
+
+/** One level of the server's filesystem for the folder picker. An empty `path` is the drive list (Windows). */
+export interface FolderListing {
+  path: string
+  parent: string | null
+  folders: { name: string; path: string }[]
+}
+
+/** The picker shows its own failure inline, so the toast stays out of it. */
+export function useBrowseFolders(path: string | null) {
+  return useQuery({
+    queryKey: ['rootfolders', 'browse', path],
+    queryFn: () =>
+      api<FolderListing>(`/rootfolder/browse${path ? `?path=${encodeURIComponent(path)}` : ''}`),
+    enabled: path !== null,
+    placeholderData: keepPreviousData,
+    staleTime: 0,
+    meta: { silent: true },
   })
 }
 

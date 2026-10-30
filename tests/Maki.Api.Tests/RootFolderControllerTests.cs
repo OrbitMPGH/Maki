@@ -103,6 +103,42 @@ public class RootFolderControllerTests : IDisposable
         Assert.Equal(Policies.AddSeries, PolicyOf(nameof(RootFolderController.List)));
         Assert.Equal(Policies.Admin, PolicyOf(nameof(RootFolderController.Add)));
         Assert.Equal(Policies.Admin, PolicyOf(nameof(RootFolderController.Delete)));
+        Assert.Equal(Policies.Admin, PolicyOf(nameof(RootFolderController.Browse)));
+    }
+
+    [Fact]
+    public void Browse_lists_subfolders_sorted_and_names_the_parent()
+    {
+        var dir = TempDir();
+        var beta = Directory.CreateDirectory(Path.Combine(dir, "beta")).FullName;
+        var alpha = Directory.CreateDirectory(Path.Combine(dir, "Alpha")).FullName;
+        _tempDirs.Insert(0, beta);
+        _tempDirs.Insert(0, alpha);
+        File.WriteAllText(Path.Combine(dir, "not-a-folder.txt"), "");
+
+        var listing = (RootFolderController.FolderListing)((OkObjectResult)Controller().Browse(dir)).Value!;
+
+        Assert.Equal(Path.GetFullPath(dir), listing.Path);
+        Assert.Equal(Directory.GetParent(dir)!.FullName, listing.Parent);
+        Assert.Equal(["Alpha", "beta"], listing.Folders.Select(f => f.Name));
+        Assert.Equal(alpha, listing.Folders[0].Path);
+        File.Delete(Path.Combine(dir, "not-a-folder.txt"));
+    }
+
+    [Fact]
+    public void Browse_rejects_a_missing_folder()
+    {
+        var missing = Path.Combine(Path.GetTempPath(), "does-not-exist-" + Guid.NewGuid());
+        Assert.IsType<BadRequestObjectResult>(Controller().Browse(missing));
+    }
+
+    [Fact]
+    public void Browse_without_a_path_starts_at_the_top()
+    {
+        var listing = (RootFolderController.FolderListing)((OkObjectResult)Controller().Browse(null)).Value!;
+
+        Assert.NotEmpty(listing.Folders);
+        Assert.Null(listing.Parent);
     }
 
     [Fact]
@@ -167,6 +203,34 @@ public class RootFolderControllerTests : IDisposable
 
         Assert.IsType<ConflictObjectResult>(await Controller().Delete(folderId, CancellationToken.None));
     }
+
+    [Fact]
+    public async Task Delete_names_archived_series_only_when_no_active_series_remain()
+    {
+        var folderId = SeedFolder();
+        using (var db = _db.NewContext())
+        {
+            var archivedAt = DateTime.UtcNow;
+            db.Series.Add(new Series { Title = "A", RootFolderId = folderId, ArchivedAt = archivedAt });
+            db.Series.Add(new Series { Title = "B", RootFolderId = folderId, ArchivedAt = archivedAt });
+            db.SaveChanges();
+        }
+
+        Assert.Equal("error.rootFolder.inUseArchived(count=2)", ConflictError(
+            await Controller().Delete(folderId, CancellationToken.None)));
+
+        using (var db = _db.NewContext())
+        {
+            db.Series.Add(new Series { Title = "C", RootFolderId = folderId });
+            db.SaveChanges();
+        }
+
+        Assert.Equal("error.rootFolder.inUse", ConflictError(
+            await Controller().Delete(folderId, CancellationToken.None)));
+    }
+
+    private static string ConflictError(IActionResult result) =>
+        (string)((ConflictObjectResult)result).Value!.GetType().GetProperty("error")!.GetValue(((ConflictObjectResult)result).Value)!;
 
     [Fact]
     public async Task Delete_rejects_a_folder_whose_series_are_outside_the_callers_scope()

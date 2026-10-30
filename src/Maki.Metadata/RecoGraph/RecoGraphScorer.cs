@@ -72,17 +72,17 @@ public static class RecoGraphScorer
                 continue;
             }
 
-            var neighbours = graph.NeighboursAt(seedNode);
-            var votes = graph.WeightsAt(seedNode);
+            var edges = graph.EdgesAt(seedNode);
 
-            for (var i = 0; i < neighbours.Length; i++)
+            for (var i = 0; i < edges.Length; i++)
             {
-                if (votes[i] < tuning.MinVotes)
+                var votes = edges.Weight(i);
+                if (votes < tuning.MinVotes)
                 {
                     continue;
                 }
 
-                var node = neighbours[i];
+                var node = edges.Neighbour(i);
                 var id = graph.IdAt(node);
 
                 // A seed recommending another seed is not a recommendation the user can act on.
@@ -101,7 +101,7 @@ public static class RecoGraphScorer
                     penaltyByNode[node] = penalty;
                 }
 
-                var contribution = seedWeight * Math.Log(1 + votes[i]) / penalty;
+                var contribution = seedWeight * Math.Log(1 + votes) / penalty;
                 scores[id] = scores.GetValueOrDefault(id) + contribution;
             }
         }

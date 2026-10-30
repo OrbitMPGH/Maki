@@ -25,7 +25,7 @@ public class DiscoverRailCacheTests
 
         public override async Task<IReadOnlyList<MangaBakaRecommendation>> GetBrowseAsync(
             BrowseFeed feed, int limit, string? genre = null,
-            RecommendationFilters? filters = null, CancellationToken ct = default)
+            RecommendationFilters? filters = null, CancellationToken ct = default, DateOnly? releasedSince = null)
         {
             Interlocked.Increment(ref _queries);
             if (Gate is { } gate)
@@ -96,8 +96,8 @@ public class DiscoverRailCacheTests
         var cold = discover.GetFeedsAsync(refresh: false, ContentRating.Safe);
         await store.Entered.Task.WaitAsync(Timeout);
 
+        // Queued behind the cold build rather than served from the warm entry.
         var refresh = discover.GetFeedsAsync(refresh: true, ContentRating.Suggestive);
-        await Task.Delay(50);
         Assert.False(refresh.IsCompleted);
 
         store.Gate.SetResult();

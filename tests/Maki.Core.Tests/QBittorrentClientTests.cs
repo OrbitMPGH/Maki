@@ -18,19 +18,21 @@ public class QBittorrentClientTests
     private sealed class RecordingHandler : HttpMessageHandler
     {
         public List<string> Paths { get; } = [];
+        public List<string> Bodies { get; } = [];
         public int Forbidden { get; set; }
         public string Torrents { get; set; } = "[]";
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             Paths.Add(request.RequestUri!.AbsolutePath);
+            Bodies.Add(request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(ct));
             if (request.RequestUri.AbsolutePath.EndsWith("/auth/login"))
             {
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent));
+                return new HttpResponseMessage(HttpStatusCode.NoContent);
             }
 
             var status = Forbidden-- > 0 ? HttpStatusCode.Forbidden : HttpStatusCode.OK;
-            return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(Torrents) });
+            return new HttpResponseMessage(status) { Content = new StringContent(Torrents) };
         }
     }
 
@@ -63,6 +65,46 @@ public class QBittorrentClientTests
             handler.Paths);
     }
 
+    private static string OneTorrent(string category) =>
+        $$"""[{"hash":"abc","name":"n","state":"stalledUP","progress":1.0,"content_path":"/dl/n","added_on":1700000000,"category":"{{category}}"}]""";
+
+    [Theory]
+    [InlineData(true, "deleteFiles=true")]
+    [InlineData(false, "deleteFiles=false")]
+    public async Task Removing_a_torrent_in_makis_category_deletes_it_with_the_data_flag(bool deleteData, string flag)
+    {
+        var handler = new RecordingHandler { Torrents = OneTorrent("maki") };
+
+        var removal = await new QBittorrentClient(handler).RemoveAsync(Settings(), "abc", deleteData);
+
+        Assert.Equal(TorrentRemoval.Removed, removal);
+        var delete = handler.Paths.IndexOf("/api/v2/torrents/delete");
+        Assert.True(delete >= 0);
+        Assert.Equal("hashes=abc&" + flag, handler.Bodies[delete]);
+    }
+
+    [Fact]
+    public async Task A_torrent_qbittorrent_does_not_have_is_absent_and_nothing_is_deleted()
+    {
+        var handler = new RecordingHandler();
+
+        var removal = await new QBittorrentClient(handler).RemoveAsync(Settings(), "abc", deleteData: true);
+
+        Assert.Equal(TorrentRemoval.Absent, removal);
+        Assert.DoesNotContain("/api/v2/torrents/delete", handler.Paths);
+    }
+
+    [Fact]
+    public async Task A_torrent_the_user_moved_to_another_category_is_left_alone()
+    {
+        var handler = new RecordingHandler { Torrents = OneTorrent("keep-seeding") };
+
+        var removal = await new QBittorrentClient(handler).RemoveAsync(Settings(), "abc", deleteData: true);
+
+        Assert.Equal(TorrentRemoval.HeldOutsideLabel, removal);
+        Assert.DoesNotContain("/api/v2/torrents/delete", handler.Paths);
+    }
+
     [Fact]
     public async Task Listed_torrents_are_normalised_and_only_a_healthy_finished_one_is_complete()
     {
@@ -73,16 +115,17 @@ public class QBittorrentClientTests
                   {"hash":"ABCDEF","name":"done","state":"stalledUP","progress":1.0,"content_path":"/dl/done","save_path":"/dl","added_on":1700000000},
                   {"hash":"b","name":"missing","state":"missingFiles","progress":1.0,"content_path":"/dl/missing","save_path":"/dl","added_on":1700000000},
                   {"hash":"c","name":"checking","state":"checkingUP","progress":1.0,"content_path":"/dl/checking","save_path":"/dl","added_on":1700000000},
-                  {"hash":"d","name":"half","state":"downloading","progress":0.5,"content_path":"/dl/half","save_path":"/dl","added_on":1700000000}
+                  {"hash":"d","name":"half","state":"downloading","progress":0.5,"content_path":"/dl/half","save_path":"/dl","added_on":1700000000},
+                  {"hash":"e","name":"moving","state":"moving","progress":1.0,"content_path":"/incomplete/moving","save_path":"/dl","added_on":1700000000}
                 ]
                 """
         };
 
         var torrents = await new QBittorrentClient(handler).ListAsync(Settings());
 
-        Assert.Equal(["abcdef", "b", "c", "d"], torrents.Select(t => t.Hash));
-        Assert.Equal([true, false, false, false], torrents.Select(t => t.IsComplete));
-        Assert.Equal([false, true, false, false], torrents.Select(t => t.IsErrored));
+        Assert.Equal(["abcdef", "b", "c", "d", "e"], torrents.Select(t => t.Hash));
+        Assert.Equal([true, false, false, false, false], torrents.Select(t => t.IsComplete));
+        Assert.Equal([false, true, false, false, false], torrents.Select(t => t.IsErrored));
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1700000000), torrents[0].AddedAt);
         Assert.Equal("/dl/done", torrents[0].ContentPath);
     }

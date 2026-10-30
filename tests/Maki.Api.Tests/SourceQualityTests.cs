@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
+[Collection(OneRunPerProcessCollection.Name)]
 public class SourceQualityTests : IDisposable
 {
     private const long ReferenceSize = 5_625_000; // 1.5 bits per pixel over 20 pages of 1000x1500

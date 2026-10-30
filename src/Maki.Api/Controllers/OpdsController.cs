@@ -4,6 +4,7 @@ using Maki.Api.Auth;
 using Maki.Api.Services;
 using Maki.Core.Opds;
 using Maki.Core.Reading;
+using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
@@ -103,7 +104,7 @@ public class OpdsController(
             return NotFound();
         }
 
-        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        if (!await db.Series.Active().AnyAsync(s => s.Id == seriesId, ct))
         {
             return NotFound();
         }
@@ -227,8 +228,8 @@ public class OpdsController(
             return NotFound();
         }
 
-        var slice = await reader.SliceAsync(chapterId, ct);
-        if (slice is null)
+        if (!await db.Chapters.Active().AnyAsync(c => c.Id == chapterId, ct) ||
+            await reader.SliceAsync(chapterId, ct) is not { } slice)
         {
             return NotFound();
         }
@@ -270,7 +271,9 @@ public class OpdsController(
             return NotFound();
         }
 
-        var slice = await reader.PageSliceAsync(chapterId, ct);
+        var slice = await db.Chapters.Active().AnyAsync(c => c.Id == chapterId, ct)
+            ? await reader.PageSliceAsync(chapterId, ct)
+            : null;
         if (slice is null || page < 0 || page >= slice.PageCount)
         {
             return NotFound();
@@ -332,7 +335,9 @@ public class OpdsController(
             return NotFound();
         }
 
-        var slice = await reader.PageSliceAsync(chapterId, ct);
+        var slice = await db.Chapters.Active().AnyAsync(c => c.Id == chapterId, ct)
+            ? await reader.PageSliceAsync(chapterId, ct)
+            : null;
         if (slice is null || slice.PageCount == 0)
         {
             return NotFound();

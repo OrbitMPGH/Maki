@@ -67,6 +67,31 @@ export const RootFolderAdd: Story = {
   },
 }
 
+export const RootFolderBrowse: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Browse' }))
+    const dialog = await dialogOf(canvasElement.ownerDocument.body)
+    await userEvent.click(await dialog.findByRole('button', { name: 'data' }))
+    await userEvent.click(await dialog.findByRole('button', { name: 'media' }))
+    await userEvent.click(await dialog.findByRole('button', { name: 'manga' }))
+    await waitFor(() => expect(dialog.getByRole('textbox', { name: 'Folder path' })).toHaveValue('/data/media/manga'))
+    await expect(await dialog.findByText('No folders in here.')).toBeVisible()
+    await userEvent.click(dialog.getByRole('button', { name: 'Use this folder' }))
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Path' })).toHaveValue('/data/media/manga'))
+  },
+}
+
+export const RootFolderBrowseMissing: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.type(await canvas.findByRole('textbox', { name: 'Path' }), '/nope')
+    await userEvent.click(await canvas.findByRole('button', { name: 'Browse' }))
+    const dialog = await dialogOf(canvasElement.ownerDocument.body)
+    await expect(await dialog.findByText('Folder does not exist: /nope')).toBeVisible()
+    await userEvent.click(dialog.getByRole('button', { name: 'Go back' }))
+    await expect(await dialog.findByRole('button', { name: 'library' })).toBeVisible()
+  },
+}
+
 export const RootFolderAddRejected: Story = {
   parameters: {
     msw: settingsMsw(http.post(api('/rootfolder'), () => failWith(400, 'That folder does not exist or Maki cannot write to it.'))),

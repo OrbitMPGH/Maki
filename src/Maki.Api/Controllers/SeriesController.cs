@@ -170,11 +170,20 @@ public class SeriesController(
     /// </summary>
     private async Task<IActionResult> QueueNextWantedAsync(int id, int count, CancellationToken ct)
     {
-        var title = await db.Series.Where(s => s.Id == id).Select(s => s.Title).FirstOrDefaultAsync(ct);
-        if (title is null)
+        var series = await db.Series.Where(s => s.Id == id)
+            .Select(s => new { s.Title, s.ArchivedAt })
+            .FirstOrDefaultAsync(ct);
+        if (series is null)
         {
             return NotFound();
         }
+
+        if (series.ArchivedAt is not null)
+        {
+            return this.Conflict(localizer, "error.series.archived");
+        }
+
+        var title = series.Title;
 
         var chapters = await db.Chapters.Where(c => c.SeriesId == id).ToListAsync(ct);
         return await QueueChaptersAsync(id, title, Chapter.NextWanted(chapters, count), ct);
@@ -200,9 +209,15 @@ public class SeriesController(
     [HttpPost("{id:int}/refresh")]
     public async Task<IActionResult> Refresh(int id, CancellationToken ct)
     {
-        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        var series = await db.Series.Where(s => s.Id == id).Select(s => new { s.ArchivedAt }).FirstOrDefaultAsync(ct);
+        if (series is null)
         {
             return NotFound();
+        }
+
+        if (series.ArchivedAt is not null)
+        {
+            return this.Conflict(localizer, "error.series.archived");
         }
 
         var newChapters = await chapterSyncService.SyncSeriesAsync(id, ct);
@@ -230,14 +245,18 @@ public class SeriesController(
             return this.Fail(localizer, "error.series.noRootFolder");
         }
 
-        try
+        // An archived series does not talk to its sources; relinking what is on disk still works.
+        if (series.ArchivedAt is null)
         {
-            await chapterSyncService.SyncSeriesAsync(id, ct);
-        }
-        catch (Exception ex)
-        {
-            // A dead source shouldn't block relinking files already on disk.
-            logger.LogWarning(ex, "Chapter sync failed during rescan of series {Id}", id);
+            try
+            {
+                await chapterSyncService.SyncSeriesAsync(id, ct);
+            }
+            catch (Exception ex)
+            {
+                // A dead source shouldn't block relinking files already on disk.
+                logger.LogWarning(ex, "Chapter sync failed during rescan of series {Id}", id);
+            }
         }
 
         var result = await cbzLinkService.RescanSeriesAsync(series, ct);
@@ -944,7 +963,7 @@ public class SeriesController(
         var suppressed = await recommendationFeedback.SuppressedAsync(currentUser.UserId, ct);
         return Ok(HiddenContentService.Without(
             related.Where(r => !long.TryParse(r.ProviderId, out var providerId) || !suppressed.Contains(providerId)).ToList(),
-            await hidden.PredicateAsync(ct)));
+            await hidden.PredicateAsync(related, ct)));
     }
 
     /// <summary>
@@ -988,7 +1007,7 @@ public class SeriesController(
             .ToListAsync(ct);
         var ownedSet = new HashSet<long>(owned);
         var suppressed = await recommendationFeedback.SuppressedAsync(currentUser.UserId, ct);
-        var visible = HiddenContentService.Without(pool, await hidden.PredicateAsync(ct));
+        var visible = HiddenContentService.Without(pool, await hidden.PredicateAsync(pool, ct));
         return Ok(visible
             .Where(r => !long.TryParse(r.ProviderId, out var providerId) ||
                 !ownedSet.Contains(providerId) && !suppressed.Contains(providerId))
@@ -1052,6 +1071,8 @@ public class SeriesController(
             RemovedChapterCount = counts?.Removed ?? 0,
             ReadFileCleanupActive = ReadFileCleanupService.AppliesTo(series.ReadFileCleanup, await readFileCleanup.OptionsAsync(ct)),
             PendingProposalId = pendingProposalId,
+            ArchiveHintEligible = currentUser.Has(MakiPermission.ArchiveSeries) &&
+                                  await SeriesArchiveService.FinishedHintAsync(db, series, ct),
             ReadTimeEstimate = estimate is null
                 ? null
                 : new ReadingTimeEstimateDto(
@@ -1094,6 +1115,13 @@ public class SeriesController(
 
         if (result.Series is null)
         {
+            // Only when the caller can open that series: otherwise it is the plain "already exists".
+            if (result.Error is SeriesCreationError.ArchivedInLibrary && result.ExistingSeriesId is int archivedId
+                && await db.Series.AnyAsync(s => s.Id == archivedId, ct))
+            {
+                return this.ArchivedExists(localizer, archivedId);
+            }
+
             return result.Error switch
             {
                 SeriesCreationError.RootFolderNotFound => this.Fail(localizer, "error.series.rootFolderNotFound"),
@@ -1213,6 +1241,129 @@ public class SeriesController(
         return NoContent();
     }
 
+    public record ArchiveSeriesRequest(bool RemoveFiles = false, bool Permanent = false);
+
+    public record BulkArchiveSeriesRequest(List<int>? SeriesIds, bool RemoveFiles = false, bool Permanent = false);
+
+    public record RemoveArchivedFilesRequest(bool Permanent = false);
+
+    public record RestoreSeriesRequest(bool RedownloadRemoved = false);
+
+    /// <summary>
+    /// The figures the archive and restore dialogs show. Its own endpoint because the size stats every
+    /// chapter file, which the series GET (polled while a source match runs) should not do.
+    /// </summary>
+    [Authorize(Policy = Policies.ArchiveSeries)]
+    [HttpGet("{id:int}/archive-preview")]
+    public async Task<IActionResult> ArchivePreview(int id, CancellationToken ct)
+    {
+        var series = await db.Series.AsNoTracking().Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(new ArchivePreviewDto(
+            FreeableBytes: await SeriesArchiveService.FreeableBytesAsync(db, series, ct),
+            OtherActiveReaders: await SeriesArchiveService.OtherActiveReadersAsync(
+                db, id, currentUser.UserId, DateTime.UtcNow, ct),
+            RedownloadableChapters: await SeriesArchiveService.RedownloadableChaptersAsync(db, id, ct)));
+    }
+
+    public sealed record ArchivePreviewDto(long FreeableBytes, int OtherActiveReaders, int RedownloadableChapters);
+
+    /// <summary>
+    /// Moves a series out of the library: it stops talking to sources and the queue and keeps every
+    /// row. Removing the files as well also needs <see cref="MakiPermission.DeleteSeries"/>.
+    /// </summary>
+    [Authorize(Policy = Policies.ArchiveSeries)]
+    [HttpPost("{id:int}/archive")]
+    public async Task<IActionResult> Archive(
+        int id, [FromBody] ArchiveSeriesRequest request, [FromServices] SeriesArchiveService archive, CancellationToken ct)
+    {
+        if (request.RemoveFiles && !currentUser.Permissions.Grants(MakiPermission.DeleteSeries))
+        {
+            return Forbid();
+        }
+
+        var result = await archive.ArchiveAsync(id, request.RemoveFiles, request.Permanent, ct);
+        return ArchiveResponse(result, () => Ok(new { deleted = result.FilesDeleted, failed = result.FilesFailed }));
+    }
+
+    /// <summary>
+    /// <see cref="Archive"/> for each id. Always 200: each id carries its own outcome, and a refused
+    /// one does not stop the rest.
+    /// </summary>
+    [Authorize(Policy = Policies.ArchiveSeries)]
+    [HttpPost("archive/bulk")]
+    public async Task<IActionResult> ArchiveBulk(
+        [FromBody] BulkArchiveSeriesRequest request, [FromServices] SeriesArchiveService archive, CancellationToken ct)
+    {
+        if (request.RemoveFiles && !currentUser.Permissions.Grants(MakiPermission.DeleteSeries))
+        {
+            return Forbid();
+        }
+
+        var results = await archive.ArchiveManyAsync(request.SeriesIds ?? [], request.RemoveFiles, request.Permanent, ct);
+        return Ok(new
+        {
+            results = results.Select(r => new
+            {
+                seriesId = r.SeriesId,
+                ok = r.Result.Succeeded,
+                notFound = r.Result.Status == SeriesArchiveStatus.NotFound,
+                code = r.Result.ErrorKey,
+                error = r.Result.ErrorKey is { } key ? localizer.Get(key, null) : null,
+                permanentDeleteAvailable = r.Result.Status == SeriesArchiveStatus.BinRefused,
+                deleted = r.Result.FilesDeleted,
+                failed = r.Result.FilesFailed,
+            }),
+        });
+    }
+
+    /// <summary>Removes the files of a series archived with its files kept.</summary>
+    [Authorize(Policy = Policies.DeleteSeries)]
+    [HttpPost("{id:int}/archive/removefiles")]
+    public async Task<IActionResult> RemoveArchivedFiles(
+        int id, [FromBody] RemoveArchivedFilesRequest request, [FromServices] SeriesArchiveService archive,
+        CancellationToken ct)
+    {
+        var result = await archive.RemoveFilesAsync(id, request.Permanent, ct);
+        return ArchiveResponse(result, () => Ok(new { deleted = result.FilesDeleted, failed = result.FilesFailed }));
+    }
+
+    /// <summary>
+    /// Puts an archived series back in the library with its old monitoring mode and refreshes it in
+    /// the background. Downloading the removed chapters again also needs
+    /// <see cref="MakiPermission.DownloadChapters"/>.
+    /// </summary>
+    [Authorize(Policy = Policies.ArchiveSeries)]
+    [HttpPost("{id:int}/restore")]
+    public async Task<IActionResult> Restore(
+        int id, [FromBody] RestoreSeriesRequest request, [FromServices] SeriesArchiveService archive, CancellationToken ct)
+    {
+        if (request.RedownloadRemoved && !currentUser.Permissions.Grants(MakiPermission.DownloadChapters))
+        {
+            return Forbid();
+        }
+
+        var result = await archive.RestoreAsync(id, request.RedownloadRemoved, ct);
+        return ArchiveResponse(result, () => Ok(new
+        {
+            queued = result.Queued,
+            queueError = result.QueueError is { } key ? localizer.Get(key, null) : null,
+        }));
+    }
+
+    private IActionResult ArchiveResponse(SeriesArchiveResult result, Func<IActionResult> ok) => result.Status switch
+    {
+        SeriesArchiveStatus.Ok => ok(),
+        SeriesArchiveStatus.NotFound => NotFound(),
+        SeriesArchiveStatus.Conflict => this.Conflict(localizer, result.ErrorKey!),
+        SeriesArchiveStatus.BinRefused => this.BinRefused(localizer, result.ErrorKey!),
+        _ => this.Fail(localizer, result.ErrorKey!),
+    };
+
     /// <param name="Folder">The series' own folder, when it resolves without passing a link.</param>
     /// <param name="RemoveFolderWhole">Bin everything in <paramref name="Folder"/>, then prune it.</param>
     /// <param name="Files">Single files to bin, for folders the series does not own outright.</param>
@@ -1232,23 +1383,9 @@ public class SeriesController(
             logger.LogWarning("Leaving {Folder} on disk: it is or sits under a symbolic link or junction", linked);
         }
 
-        // Older data can give two series one folder. A recursive delete of it would take the other
-        // series' files too, so then only the files this series tracks go. Case is ignored on every
-        // host, since a case-insensitive share under Docker holds "One Piece" and "one piece" as one.
-        var shared = (await SeriesCreationService.SeriesFoldersInRootAsync(db, series.RootFolderId, series.Id, ct))
-            .Contains(series.FolderName);
-        if (!shared)
-        {
-            var pattern = series.FolderName.Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_") + "%";
-            shared = (await db.ChapterFiles
-                    .Where(f => f.SeriesId != series.Id &&
-                                db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == series.RootFolderId) &&
-                                EF.Functions.Like(f.RelativePath, pattern, @"\"))
-                    .Select(f => f.RelativePath)
-                    .ToListAsync(ct))
-                .Any(p => LibraryPaths.FolderComparer.Equals(LibraryPaths.TopFolder(p), series.FolderName));
-        }
-
+        // A recursive delete of a folder two series share would take the other series' files too,
+        // so then only the files this series tracks go.
+        var shared = await SeriesFolders.SharedAsync(db, series, ct);
         if (shared)
         {
             logger.LogWarning("Folder {Folder} is shared with another series; deleting only the files series {SeriesId} tracks",
@@ -1390,13 +1527,7 @@ public class SeriesController(
 
         foreach (var dir in plan.PruneIfEmpty)
         {
-            Attempt(dir, () =>
-            {
-                if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any())
-                {
-                    Directory.Delete(dir, recursive: false);
-                }
-            });
+            Attempt(dir, () => SeriesFolders.RemoveIfEmpty(dir));
         }
 
         if (plan.Trash is { } trash && Directory.Exists(trash))
@@ -1411,28 +1542,11 @@ public class SeriesController(
     /// </summary>
     private void PruneSeriesFolder(SeriesDiskPlan plan, string folder, int seriesId)
     {
-        foreach (var dir in LibraryPaths.EnumerateDirectoriesNoLinks(folder).OrderByDescending(d => d.Length).ToList())
-        {
-            if (!Directory.EnumerateFileSystemEntries(dir).Any())
-            {
-                Directory.Delete(dir, recursive: false);
-            }
-        }
-
-        var left = Directory.EnumerateFileSystemEntries(folder).ToList();
-        if (left.Any(p => !IsMakiCover(plan, p) || Directory.Exists(p)))
+        if (SeriesFolders.PruneTree(folder, plan.MakiCover) is var left and > 0)
         {
             logger.LogWarning("Kept {Folder} for removed series {SeriesId}: {Count} entries are still in it",
-                folder, seriesId, left.Count);
-            return;
+                folder, seriesId, left);
         }
-
-        foreach (var cover in left)
-        {
-            System.IO.File.Delete(cover);
-        }
-
-        Directory.Delete(folder, recursive: false);
     }
 
     /// <param name="MoveFiles">
@@ -1952,6 +2066,65 @@ public class SeriesController(
         return Ok(new { readFileCleanup = mode.ToString() });
     }
 
+    /// <param name="Mode">"Default", "Never", "Smallest", "Compact", "Balanced", "High" or "Lossless".</param>
+    public record PageConversionRequest(string Mode);
+
+    /// <summary>
+    /// The series' own page conversion choice. Files already checked that the plan now decides
+    /// differently are put back in line for the next pass; converted ones stay as they are.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("{id:int}/pageconversion")]
+    public async Task<IActionResult> SetPageConversion(int id, [FromBody] PageConversionRequest request,
+        [FromServices] PageConversionPlanService plans, CancellationToken ct)
+    {
+        if (!Enum.TryParse<PageConversionOverride>(request.Mode, true, out var mode) || !Enum.IsDefined(mode) ||
+            int.TryParse(request.Mode, out _))
+        {
+            return this.Fail(localizer, "error.series.invalidPageConversion");
+        }
+
+        var series = await db.Series.FindAsync([id], ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (series.PageConversion != mode)
+        {
+            series.PageConversion = mode;
+            await db.SaveChangesAsync(ct);
+            await plans.RecheckAsync(await PageConversionOptions.LoadPlanAsync(db, ct), id, ct);
+        }
+
+        return Ok(new { pageConversion = mode.ToString() });
+    }
+
+    /// <summary>What page conversion did to the series, and how much of it an undo can still put back.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("{id:int}/pageconversion/history")]
+    public async Task<IActionResult> PageConversionHistory(int id, [FromServices] PageConversionUndoService undo,
+        CancellationToken ct) =>
+        await undo.HistoryAsync(id, ct) is { } history ? Ok(history) : NotFound();
+
+    /// <param name="SetNever">Also set the series to Never afterwards.</param>
+    /// <param name="ConvertAgain">Convert the restored originals again under the current plan.</param>
+    public record PageConversionUndoRequest(bool SetNever, bool ConvertAgain);
+
+    /// <summary>Puts back the originals of the series' converted files that are still in the trash.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("{id:int}/pageconversion/undo")]
+    public async Task<IActionResult> UndoPageConversion(int id, [FromBody] PageConversionUndoRequest request,
+        [FromServices] PageConversionUndoService undo, CancellationToken ct)
+    {
+        if (request.SetNever && request.ConvertAgain)
+        {
+            return this.Fail(localizer, "error.pageConversion.undoConflict");
+        }
+
+        return await undo.UndoAsync(id, request.SetNever, request.ConvertAgain, ct) is { } result ? Ok(result) : NotFound();
+    }
+
     /// <param name="UpgradeProfileId">Null clears every pin so the series follow the instance default.</param>
     public record BulkUpgradeProfileRequest(List<int>? SeriesIds, int? UpgradeProfileId);
 
@@ -2031,6 +2204,19 @@ public class SeriesController(
         // The scrobble log records what synced.
         scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0);
         return Ok(new { rating = state.Rating });
+    }
+
+    /// <summary>Hides the "finished, archive it?" hint on this series for the caller, on every device.</summary>
+    [HttpPost("{id:int}/archive-hint/dismiss")]
+    public async Task<IActionResult> DismissArchiveHint(int id, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        await UpsertUserStateAsync(id, s => s.ArchiveHintDismissedAt = DateTime.UtcNow, ct);
+        return NoContent();
     }
 
     /// <summary>

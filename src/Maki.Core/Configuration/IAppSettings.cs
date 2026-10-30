@@ -54,6 +54,10 @@ public static class SettingKeys
     public const string DownloadClientPathMapFrom = "downloadclient.pathmapfrom";
     /// <summary>...the path Maki can actually read (e.g. @"Z:\downloads"). Empty = no rewrite.</summary>
     public const string DownloadClientPathMapTo = "downloadclient.pathmapto";
+    /// <summary>When Maki removes a torrent from the client: <c>never</c> (unset) or <c>afterimport</c>.</summary>
+    public const string DownloadClientRemoveCompleted = "downloadclient.removecompleted";
+    /// <summary>"false" keeps the downloaded files when a torrent is removed; unset or "true" deletes them.</summary>
+    public const string DownloadClientRemoveData = "downloadclient.removedata";
     public const string KavitaUrl = "kavita.url";
     public const string KavitaApiKey = "kavita.apikey";
     public const string KavitaPathMapFrom = "kavita.pathmapfrom";
@@ -84,6 +88,13 @@ public static class SettingKeys
     /// A snapshot, so the source registry is the same at startup whether Suwayomi is reachable or not.
     /// </summary>
     public const string SuwayomiSources = "suwayomi.sources";
+
+    /// <summary>
+    /// JSON array of custom source definitions (<c>CustomSourceDefinition</c>), written only through
+    /// <c>CustomSourceStore</c>. Entries are kept verbatim, so one this build can't read survives.
+    /// </summary>
+    public const string CustomSources = "sources.custom";
+    public const string CustomRepositories = "sources.customrepositories";
 
     /// <summary>"true" → new series default to MonitorNewItems.MainOnly (specials unmonitored).</summary>
     public const string MonitoringUnmonitorSpecials = "monitoring.unmonitorspecials";
@@ -468,17 +479,38 @@ public static class SettingKeys
     /// <summary>"webp" or "avif" converts the pages of new downloads and lets the library pass run. Unset is off.</summary>
     public const string PageConversionFormat = "library.pageconversion.format";
 
-    /// <summary>1 to 100. Unset is <c>PageConversionSettings.DefaultWebpQuality</c>.</summary>
-    public const string PageConversionWebpQuality = "library.pageconversion.webpquality";
+    /// <summary>"smallest", "compact", "balanced", "high" or "lossless". Unset is <c>PageConversionSettings.DefaultStop</c>.</summary>
+    public const string PageConversionStop = "library.pageconversion.stop";
 
-    /// <summary>1 to 100. Unset is <c>PageConversionSettings.DefaultAvifQuality</c>.</summary>
-    public const string PageConversionAvifQuality = "library.pageconversion.avifquality";
+    /// <summary>"true" keeps PNG pages lossless at every stop. Unset is off.</summary>
+    public const string PageConversionPngLossless = "library.pageconversion.pnglossless";
+
+    /// <summary>
+    /// Pages converted at once, 1 to the core count, across the library pass and downloads
+    /// (<c>ImageWorkGate.ConversionLimit</c>). Unset is <c>ImageWorkGate.Parallelism</c>.
+    /// </summary>
+    public const string PageConversionParallel = "library.pageconversion.parallel";
 
     /// <summary>"running" or "paused" while the library pass has work left; unset when idle.</summary>
     public const string PageConversionPass = "library.pageconversion.pass";
 
     /// <summary>JSON totals of the last library pass, for the settings card.</summary>
     public const string PageConversionLastPass = "library.pageconversion.lastpass";
+
+    /// <summary>"true" turns on server-side page enhancement (ONNX upscaling). Unset is off.</summary>
+    public const string UpscalingEnabled = "library.upscaling.enabled";
+
+    /// <summary>CSV of the model ids readers may pick. Unset or empty means none.</summary>
+    public const string UpscalingModels = "library.upscaling.models";
+
+    /// <summary>ONNX Runtime intra-op threads per run. Unset is half the cores, between 1 and 4.</summary>
+    public const string UpscalingThreads = "library.upscaling.threads";
+
+    /// <summary>Cap of the upscaled page cache in MB. Unset is 1024.</summary>
+    public const string UpscalingCacheMb = "library.upscaling.cachemb";
+
+    /// <summary>Where to read the model manifest instead of the GitHub release: an http(s) or file URL, or a path.</summary>
+    public const string UpscalingManifestUrl = "library.upscaling.manifesturl";
 
     /// <summary>"false" leaves incognito series out of the upgrade scan. Default on.</summary>
     public const string UpgradesScanIncognito = "upgrades.scanIncognito";

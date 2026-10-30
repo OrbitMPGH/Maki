@@ -1,5 +1,5 @@
 import { t } from '@lingui/core/macro'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { useMemo, useSyncExternalStore } from 'react'
 import { api, ApiError, apiWithOrigin, getInitialize, isOfflineUnavailable, trackedFetch, UnauthorizedError } from '../api/client'
 import type { HomeReadingResponse } from '../api/hooks'

@@ -86,7 +86,9 @@ function FileAction({ file }: { file: ImportPlanFile }) {
 
 function FolderPlan({ plan }: { plan: ImportPlan }) {
   const label = useLabel()
+  const { t } = useLingui()
   const { folderName, targetFolderName, seriesFolderName, seriesTitle } = plan
+  const title = seriesTitle ?? folderName
   const files = plan.files ?? []
   const skipped = plan.skipped ?? []
   const built = files.filter((f) => f.action === 'build' || f.action === 'rebuildInPlace').length
@@ -114,10 +116,16 @@ function FolderPlan({ plan }: { plan: ImportPlan }) {
               </Text>
             </>
           )}
-          {plan.existingSeriesId !== null && (
+          {plan.kind === 'restore' ? (
             <Badge size="xs" variant="light">
-              <Trans>In library</Trans>
+              {t({ message: `Restore ${title}`, context: 'series' })}
             </Badge>
+          ) : (
+            plan.existingSeriesId !== null && (
+              <Badge size="xs" variant="light">
+                <Trans>In library</Trans>
+              </Badge>
+            )
           )}
         </Group>
         <Text size="xs" c="var(--ink-3)">
@@ -223,10 +231,7 @@ export function ImportPlanModal({
         </Text>
         {deferred && (
           <Alert color="var(--info)" icon={<IconInfoCircle size={16} />}>
-            <Trans>
-              Final linking happens after sources are found. Until then the chapters below are read
-              off the file names, and a file whose chapter the sources do not list stays unlinked.
-            </Trans>
+            <Trans>Chapters below are read off the file names until sources are found.</Trans>
           </Alert>
         )}
         {plan.isPending && (

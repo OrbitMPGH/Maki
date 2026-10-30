@@ -8,7 +8,6 @@ namespace Maki.Api.Tests;
 /// A row with no resolved source must not be resolved onto a source that is cooling down or paused.
 /// When only such a source lists the chapter, the row waits on it instead of downloading from it.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public class ChapterDownloadProcessorHeldSourceTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();

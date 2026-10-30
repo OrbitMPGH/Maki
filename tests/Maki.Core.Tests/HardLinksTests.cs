@@ -13,16 +13,9 @@ public class HardLinksTests
         {
             var original = Path.Combine(dir, "a.cbz");
             File.WriteAllText(original, "bytes");
-            if (HardLinks.Count(original) is null)
-            {
-                return;
-            }
-
+            Assert.Equal(1, HardLinks.Count(original));
             Assert.False(HardLinks.IsShared(original));
-            if (!FileLinker.TryHardlink(original, Path.Combine(dir, "b.cbz")))
-            {
-                return;
-            }
+            Assert.True(FileLinker.TryHardlink(original, Path.Combine(dir, "b.cbz")), "this filesystem cannot hardlink");
 
             Assert.Equal(2, HardLinks.Count(original));
             Assert.True(HardLinks.IsShared(original));

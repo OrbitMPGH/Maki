@@ -311,6 +311,7 @@ export type UpgradeReasonCode =
   | 'upgrade_rejected'
   | 'reverted_by_user'
   | 'repeated_failure'
+  | 'removal_scheduled'
 
 /** Bucket codes only `UpgradeScanResultDto.skipped` carries, never an attempt/queue-row reason. */
 export type UpgradeSkipReasonCode =
@@ -348,6 +349,7 @@ export const UPGRADE_REASON_LABELS: Record<UpgradeReasonCode | UpgradeSkipReason
   upgrade_rejected: msg`Rejected after downloading the full chapter`,
   reverted_by_user: msg`Reverted by a user`,
   repeated_failure: msg`Its download failed too many times`,
+  removal_scheduled: msg`Read file cleanup is going to delete this file`,
   unmeasured: msg`Not measured yet`,
   trusted: msg`Protected from upgrades`,
   cutoff_met: msg`Already meets the cutoff`,
@@ -369,7 +371,7 @@ export function upgradeReasonLabel(renderLabel: (m: MessageDescriptor) => string
   return renderLabel(UPGRADE_REASON_LABELS[code as UpgradeReasonCode | UpgradeSkipReasonCode] ?? code)
 }
 
-/** Why a scan passed chapters or candidates over, most common first: "Label (3) · Label (1)". */
+/** Why a scan passed chapters or candidates over, most common first: "Label (3), Label (1)". */
 export function scanReasonSummary(
   renderLabel: (m: MessageDescriptor) => string,
   skipped: Record<string, number> | null | undefined,
@@ -378,7 +380,7 @@ export function scanReasonSummary(
     .filter(([, count]) => count > 0)
     .sort(([, a], [, b]) => b - a)
     .map(([code, count]) => `${upgradeReasonLabel(renderLabel, code)} (${i18n.number(count)})`)
-    .join(' · ')
+    .join(', ')
 }
 
 export interface NumberRangeDto {

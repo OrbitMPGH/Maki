@@ -79,6 +79,14 @@ public static class BrowseSort
 
 /// <summary>Request for the expanded (filtered, larger, pageable) view of a single rail.</summary>
 /// <param name="ExcludeOwned">Leave out series the caller already has, as a catalogue custom rail can.</param>
+/// <param name="ExcludeInteracted">
+/// Leave out owned series and anything the caller thumbed up or down, as well as what every feed
+/// drops (hidden, dismissed, marked seen). The follow rail's "new to you".
+/// </param>
+/// <param name="ReleasedWithinMonths">
+/// Only titles first published in this many months up to today, undated ones left out. A request
+/// field rather than a filter so the follow rail's window survives edits in its expanded view.
+/// </param>
 /// <param name="Offset">
 /// Rows to skip. Honoured only on the in-memory path, which is the only one that can page
 /// coherently: <see cref="MangaBakaLocalStore.GetBrowseAsync"/> over-fetches and dedupes by title in
@@ -91,7 +99,9 @@ public record DiscoverFeedRequest(
     int Limit = 120,
     int Offset = 0,
     string Sort = BrowseSort.Popular,
-    bool ExcludeOwned = false);
+    bool ExcludeOwned = false,
+    bool ExcludeInteracted = false,
+    int? ReleasedWithinMonths = null);
 
 /// <summary>One creator or publisher, and the works credited to them.</summary>
 public record CreatorRequest(
@@ -520,13 +530,14 @@ public class DiscoverService(
 
         if (exclude is not { Count: > 0 })
         {
-            return await store.GetBrowseAsync(sqlFeed, limit, request.Genre, request.Filters, ct);
+            return await store.GetBrowseAsync(
+                sqlFeed, limit, request.Genre, request.Filters, ct, ReleasedSince(request));
         }
 
         // Each excluded id can remove at most one row, so this is enough to fill the page however
         // many of the head rows the caller already owns. The scan costs the same at any LIMIT.
         var fetched = await store.GetBrowseAsync(
-            sqlFeed, limit + exclude.Count, request.Genre, request.Filters, ct);
+            sqlFeed, limit + exclude.Count, request.Genre, request.Filters, ct, ReleasedSince(request));
         return fetched
             .Where(r => !long.TryParse(r.ProviderId, out var id) || !exclude.Contains(id))
             .Take(limit)
@@ -691,7 +702,7 @@ public class DiscoverService(
             return 0;
         }
 
-        var plan = WithExclusions(index, index.Plan(filters), exclude);
+        var plan = PlanFor(index, filters, request, exclude);
         if (plan.Impossible)
         {
             return 0;
@@ -729,11 +740,23 @@ public class DiscoverService(
             sort = BrowseSort.Newest;
         }
 
-        return OrderRows(index, WithExclusions(index, index.Plan(filters), exclude), sort, offset, limit);
+        return OrderRows(index, PlanFor(index, filters, request, exclude), sort, offset, limit);
     }
 
-    private static FilterPlan WithExclusions(VectorIndex index, FilterPlan plan, IReadOnlyCollection<long>? exclude) =>
-        exclude is { Count: > 0 } ? plan with { Exclude = index.BuildRowMask(exclude.ToArray()) } : plan;
+    private static FilterPlan PlanFor(
+        VectorIndex index, RecommendationFilters filters, DiscoverFeedRequest request, IReadOnlyCollection<long>? exclude)
+    {
+        var plan = index.Plan(filters) with { MinStartDay = ReleasedSince(request)?.DayNumber };
+        return exclude is { Count: > 0 } ? plan with { Exclude = index.BuildRowMask(exclude.ToArray()) } : plan;
+    }
+
+    /// <summary>Ten years: past that a release window is no narrower than the catalogue.</summary>
+    private const int MaxReleasedWithinMonths = 120;
+
+    private static DateOnly? ReleasedSince(DiscoverFeedRequest request) =>
+        request.ReleasedWithinMonths is int months and > 0
+            ? DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(-Math.Min(months, MaxReleasedWithinMonths))
+            : null;
 
     /// <summary>
     /// The popularity rank a title needs for <see cref="BrowseSort.Rating"/> to trust its score,

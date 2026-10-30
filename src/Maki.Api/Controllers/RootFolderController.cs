@@ -54,6 +54,69 @@ public class RootFolderController(
         return Ok(ToDto(folder));
     }
 
+    /// <summary>
+    /// The subfolders of <paramref name="path"/>, for the folder picker. No path lists the drives on
+    /// Windows and <c>/</c> elsewhere. A parent of <c>""</c> means "back to the drive list".
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("browse")]
+    public IActionResult Browse([FromQuery] string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                var drives = DriveInfo.GetDrives()
+                    .Where(d => d.IsReady)
+                    .Select(d => new FolderEntry(d.Name.TrimEnd('\\'), d.RootDirectory.FullName))
+                    .ToList();
+                return Ok(new FolderListing("", null, drives));
+            }
+
+            path = "/";
+        }
+
+        string full;
+        try
+        {
+            full = Path.GetFullPath(path);
+        }
+        catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return this.Fail(localizer, "error.rootFolder.doesNotExist", new { path });
+        }
+
+        if (!Directory.Exists(full))
+        {
+            return this.Fail(localizer, "error.rootFolder.doesNotExist", new { path });
+        }
+
+        List<FolderEntry> entries;
+        try
+        {
+            entries = new DirectoryInfo(full)
+                .EnumerateDirectories("*", new EnumerationOptions
+                {
+                    IgnoreInaccessible = true,
+                    AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
+                })
+                .Select(d => new FolderEntry(d.Name, d.FullName))
+                .OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return this.Fail(localizer, "error.rootFolder.notReadable", new { path = full });
+        }
+
+        var parent = Directory.GetParent(full)?.FullName ?? (OperatingSystem.IsWindows() ? "" : null);
+        return Ok(new FolderListing(full, parent, entries));
+    }
+
+    public record FolderEntry(string Name, string Path);
+
+    public record FolderListing(string Path, string? Parent, List<FolderEntry> Folders);
+
     [Authorize(Policy = Policies.Admin)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
@@ -66,9 +129,15 @@ public class RootFolderController(
 
         // Past the library scope: an admin granted only some folders must still be refused for one
         // whose series they cannot see, not hit the foreign key.
-        if (await db.Series.IgnoreQueryFilters().AnyAsync(s => s.RootFolderId == id, ct))
+        var users = db.Series.IgnoreQueryFilters().Where(s => s.RootFolderId == id);
+        if (await users.Active().AnyAsync(ct))
         {
             return this.Conflict(localizer, "error.rootFolder.inUse");
+        }
+
+        if (await users.CountAsync(ct) is > 0 and var archived)
+        {
+            return this.Conflict(localizer, "error.rootFolder.inUseArchived", new { count = archived });
         }
 
         // The grants cascade away, but a cached snapshot still lists this id until it is evicted.

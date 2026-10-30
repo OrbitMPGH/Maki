@@ -35,6 +35,7 @@ import { useCoverTint } from '../../lib/coverTint'
 import {HeroBackdrop} from './HeroBackdrop'
 import { MetadataLock } from './EditMetadataModal'
 import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
+import { MetaList } from '../ui/MetaList'
 
 /** Where the back link points for a series nobody navigated to: a bookmark, or a pasted link. */
 const LIBRARY_FALLBACK = { to: '/library', label: msg`Library` }
@@ -184,6 +185,7 @@ export function SeriesHero({
                                 className="series-hero-poster"
                                 src={series.coverUrl}
                                 alt={series.displayTitle}
+                                fetchPriority="high"
                             />
                         )}
 
@@ -197,14 +199,15 @@ export function SeriesHero({
                                 // Capped: a well-covered series carries dozens of these (One Piece
                                 // has 37), and the full list belongs in the Metadata card, not
                                 // wrapped across four lines under the heading.
-                                <Text size="sm" pt="xs" c="var(--ink-3)">
-                                    {altTitles.slice(0, MAX_HERO_ALT_TITLES).map((t) => t.title).join(' · ')}
-                                    {overflow > 0 && (
-                                        <>
-                                            {' · '}
-                                            <Plural value={overflow} one="+# more" other="+# more" />
-                                        </>
-                                    )}
+                                <Text component="div" size="sm" pt="xs" c="var(--ink-3)">
+                                    <MetaList
+                                        items={[
+                                            ...altTitles.slice(0, MAX_HERO_ALT_TITLES).map((t) => t.title),
+                                            overflow > 0 && (
+                                                <Plural key="more" value={overflow} one="+# more" other="+# more" />
+                                            ),
+                                        ]}
+                                    />
                                 </Text>
                             )}
 
@@ -283,8 +286,8 @@ export function SeriesHero({
                             </Group>
 
                             {facts.length > 0 && (
-                                <Text size="sm" c="var(--ink-4)" mt={9}>
-                                    {facts.join(' · ')}
+                                <Text component="div" size="sm" c="var(--ink-4)" mt={9}>
+                                    <MetaList items={facts} />
                                 </Text>
                             )}
 

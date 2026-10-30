@@ -70,7 +70,6 @@ internal sealed class SettableClock(DateTimeOffset now) : TimeProvider
         new(new DateTimeOffset(DateTime.SpecifyKind(new DateTime(2026, 9, 29, 12, 0, 0), DateTimeKind.Local)));
 }
 
-[Collection(ConfigDirCollection.Name)]
 public class TorrentUpgradeServiceTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();

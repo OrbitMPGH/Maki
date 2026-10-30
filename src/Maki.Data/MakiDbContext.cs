@@ -95,6 +95,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<UpgradeAttempt> UpgradeAttempts => Set<UpgradeAttempt>();
     public DbSet<SourceQualitySample> SourceQualitySamples => Set<SourceQualitySample>();
     public DbSet<UpgradeHistory> UpgradeHistory => Set<UpgradeHistory>();
+    public DbSet<PageConversionRule> PageConversionRules => Set<PageConversionRule>();
+    public DbSet<PageConversionHistory> PageConversionHistory => Set<PageConversionHistory>();
     public DbSet<RecycleBinEntry> RecycleBin => Set<RecycleBinEntry>();
     public DbSet<TorrentProposal> TorrentProposals => Set<TorrentProposal>();
     public DbSet<SeriesMetadataChange> SeriesMetadataChanges => Set<SeriesMetadataChange>();
@@ -395,6 +397,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(s => s.SortTitle);
             e.HasIndex(s => s.MangaBakaId);
             e.HasIndex(s => s.NextCheckAt);
+            e.HasIndex(s => s.ArchivedAt);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.ArchivedByUserId).OnDelete(DeleteBehavior.SetNull);
             e.Property(s => s.Genres).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
             e.Property(s => s.Tags).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
             e.Property(s => s.AltTitles).HasConversion(LocalizedTitleListConverter.Instance, LocalizedTitleListComparer.Instance);
@@ -573,6 +577,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // MAX(SortOrder) on every enqueue spans settled rows too, which the partial index omits.
             e.HasIndex(q => q.SortOrder);
             e.HasIndex(q => q.HealthOperationId);
+            e.HasIndex(q => q.ClientRemovalPendingAt).HasFilter("\"ClientRemovalPendingAt\" IS NOT NULL");
 
             // One active row per chapter. SQLite allows any number of NULLs in a unique index, so
             // settled rows never collide.
@@ -615,6 +620,15 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // No FK to ChapterFile: a torrent replacement removes the superseded file's row and its
             // history has to outlive it so the group can be reverted.
         });
+
+        modelBuilder.Entity<PageConversionHistory>(e =>
+        {
+            e.HasQueryFilter(h => _scope.Unrestricted || Series.Any(s => s.Id == h.SeriesId));
+            e.HasIndex(h => new { h.SeriesId, h.UndoneAtUtc });
+            e.HasOne<Series>().WithMany().HasForeignKey(h => h.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            // No FK to ChapterFile or Chapter: the original in the trash outlives both, and the purge
+            // still has to find it by this row.
+        });
 
         modelBuilder.Entity<SeriesMetadataChange>(e =>
         {

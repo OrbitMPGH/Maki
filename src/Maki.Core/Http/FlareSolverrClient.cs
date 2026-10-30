@@ -14,11 +14,13 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
 
     private readonly SemaphoreSlim _solves = new(MaxConcurrentSolves, MaxConcurrentSolves);
 
+    /// <param name="Url">The page the browser ended on, after any redirects; null when FlareSolverr didn't say.</param>
     public record FlareSolution(
         int Status,
         string Html,
         string UserAgent,
-        IReadOnlyDictionary<string, string> Cookies);
+        IReadOnlyDictionary<string, string> Cookies,
+        string? Url = null);
 
     public Task<FlareSolution> GetAsync(string flareSolverrUrl, string targetUrl, CancellationToken ct = default) =>
         SolveAsync(flareSolverrUrl, targetUrl, postData: null, cookies: null, ct);
@@ -79,7 +81,8 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
             body.Solution.Status,
             body.Solution.Response ?? string.Empty,
             body.Solution.UserAgent ?? string.Empty,
-            CookieMap(body.Solution.Cookies, new Uri(targetUrl).Host));
+            CookieMap(body.Solution.Cookies, new Uri(targetUrl).Host),
+            body.Solution.Url);
     }
 
     /// <summary>
@@ -157,6 +160,9 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
 
         [JsonPropertyName("userAgent")]
         public string? UserAgent { get; set; }
+
+        [JsonPropertyName("url")]
+        public string? Url { get; set; }
 
         [JsonPropertyName("cookies")]
         public List<FlareCookie> Cookies { get; set; } = [];

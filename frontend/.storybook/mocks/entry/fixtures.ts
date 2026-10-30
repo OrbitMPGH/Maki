@@ -61,6 +61,13 @@ export function makeManifest(overrides: Partial<ReaderManifest> & Pick<ReaderMan
     pinnedProfileId: null,
     autoProfileId: 1,
     pageVersion: 'v1',
+    enhanceServer: {
+      enabled: true,
+      models: [
+        { id: 'span-s', ready: true },
+        { id: 'realesrgan-av3', ready: false },
+      ],
+    },
     ...overrides,
   }
 }
@@ -239,6 +246,8 @@ export function librarySeries(entry: CatalogueEntry): SeriesDto {
     tagIds: [],
     monitored: true,
     monitorNewItems: 'All',
+    archivedAt: null,
+    archivedByUserId: null,
     rootFolderId: 1,
     folderName: entry.title,
     rootFolderPath: `/library/${entry.title}`,
@@ -261,6 +270,7 @@ export function librarySeries(entry: CatalogueEntry): SeriesDto {
     removedChapterCount: 0,
     readFileCleanup: 'Off',
     readFileCleanupActive: false,
+    pageConversion: 'Default',
     knownChapterCount: entry.chapters,
     queuedCount: 0,
     downloadingCount: 0,

@@ -178,14 +178,11 @@ public class GigaViewerSourceTests
         var pages = await new ShonenJumpPlusSource(factory).GetPagesAsync(chapter);
 
         Assert.Equal(71, pages.Pages.Count);
-        Assert.All(pages.Pages, p =>
-        {
-            Assert.NotNull(p.Data);
-            Assert.NotEmpty(p.Data!);
-            Assert.Equal(chapter.Url, p.Headers?["Referer"]);
-        });
+        Assert.All(pages.Pages, p => Assert.Equal(chapter.Url, p.Headers?["Referer"]));
+        var fetched = await Task.WhenAll(pages.Pages.Select(p => p.Fetch!(CancellationToken.None)));
+        Assert.All(fetched, Assert.NotEmpty);
 
-        Assert.Equal(ImageFormat.Jpeg, ImageCodec.Identify(pages.Pages[0].Data!).Format);
+        Assert.Equal(ImageFormat.Jpeg, ImageCodec.Identify(fetched[0]).Format);
     }
 
     [Fact]
@@ -211,6 +208,7 @@ public class GigaViewerSourceTests
         var page = Assert.Single(pages.Pages);
         Assert.Equal("https://cdn.example.test/page1.jpg", page.Url);
         Assert.Null(page.Data);
+        Assert.Null(page.Fetch);
         Assert.Equal("https://shonenjumpplus.com/episode/1", page.Headers?["Referer"]);
     }
 

@@ -74,6 +74,13 @@ public class ChapterFile
     public string? OriginalImageFormat { get; set; }
 
     /// <summary>
+    /// What the conversion plan answered when the file was last checked: "skip", or a settings name
+    /// such as "webp:high". A settings change clears the check only where the answer is now different.
+    /// Null on files checked before the plan was recorded.
+    /// </summary>
+    public string? CheckedWith { get; set; }
+
+    /// <summary>
     /// The size the file had when it was acquired. Upgrade scoring, source quality samples and quality
     /// snapshots read this and <see cref="QualityImageFormat"/>, so converting pages never makes a
     /// copy look like a worse release than the one that was downloaded.
@@ -87,6 +94,7 @@ public class ChapterFile
     public void ResetConversion()
     {
         ConversionCheckedAtUtc = null;
+        CheckedWith = null;
         ConversionSavedBytes = 0;
         OriginalImageFormat = null;
     }

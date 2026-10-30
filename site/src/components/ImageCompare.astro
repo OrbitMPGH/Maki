@@ -1,0 +1,172 @@
+---
+import { Image } from 'astro:assets';
+
+interface Props {
+  before: ImageMetadata;
+  after: ImageMetadata;
+  beforeLabel?: string;
+  afterLabel?: string;
+  alt?: string;
+  /** Starting position of the divider, 0–100 */
+  start?: number;
+}
+
+const {
+  before,
+  after,
+  beforeLabel = 'Normal',
+  afterLabel = 'Upscaled',
+  alt = 'Image comparison',
+  start = 50,
+} = Astro.props;
+---
+
+<div
+  class="compare not-content"
+  data-compare
+  style={`--pos: ${start}%; aspect-ratio: ${before.width} / ${before.height};`}
+>
+  <!-- Bottom layer: "before" (left side) -->
+  <div class="layer">
+    <Image src={before} alt={`${alt} (${beforeLabel})`} />
+    <span class="label">{beforeLabel}</span>
+  </div>
+
+  <!-- Top layer: "after" (right side), clipped to everything right of the divider -->
+  <div class="layer layer-after">
+    <Image src={after} alt={`${alt} (${afterLabel})`} />
+    <span class="label label-after">{afterLabel}</span>
+  </div>
+
+  <div class="divider" aria-hidden="true">
+    <span class="knob">‹ ›</span>
+  </div>
+
+  <!-- Invisible native range input handles mouse, touch and keyboard -->
+  <input
+    type="range"
+    min="0"
+    max="100"
+    step="0.1"
+    value={start}
+    aria-label={`Drag to compare ${beforeLabel} and ${afterLabel}`}
+  />
+</div>
+
+<style>
+  .compare {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    border: 1px solid var(--sl-color-gray-5);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .layer {
+    position: absolute;
+    inset: 0;
+  }
+
+  .layer :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    object-fit: cover;
+    pointer-events: none;
+  }
+
+  .layer-after {
+    clip-path: inset(0 0 0 var(--pos));
+  }
+
+  .label {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: #fff;
+    background: rgb(0 0 0 / 0.75);
+    border-radius: 0.25rem;
+    pointer-events: none;
+  }
+
+  .label-after {
+    left: calc(var(--pos) + 0.75rem);
+  }
+
+  .divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--pos);
+    width: 3px;
+    transform: translateX(-50%);
+    background: var(--sl-color-accent);
+    pointer-events: none;
+  }
+
+  .knob {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: var(--sl-color-accent);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.1em;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+  }
+
+  input[type='range'] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    cursor: ew-resize;
+    touch-action: pan-y; /* horizontal drags move the slider, vertical still scrolls */
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+  }
+
+  input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 1px;
+    height: 100vh;
+  }
+
+  input[type='range']::-moz-range-thumb {
+    width: 1px;
+    height: 100vh;
+    border: 0;
+  }
+
+  .compare:focus-within {
+    outline: 2px solid var(--sl-color-accent-high);
+    outline-offset: 2px;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-compare]').forEach((el) => {
+    const input = el.querySelector<HTMLInputElement>('input[type="range"]')!;
+    const update = () => el.style.setProperty('--pos', `${input.value}%`);
+    input.addEventListener('input', update);
+    update();
+  });
+</script>

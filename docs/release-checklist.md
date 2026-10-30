@@ -175,6 +175,15 @@ Use a scratch series here: reaching a chapter's last page marks it read and adds
 - [ ] **5.5** Incognito toggle: reading with it on writes no progress.
 - [ ] **5.6** Phone width (375px): the reader and the series page are usable, nothing overflows
       sideways.
+- [ ] **5.7** Enhance, when the release touches the reader or the enhance engine: in the settings
+      popover set **Enhance** to Always with **Balanced**. Paged, double-page and continuous scroll
+      each show sharper pages, including after a crop or a split. Switch to Light and Strong, then
+      Off, and the plain pages return. With Auto in a small window nothing is enhanced, and
+      maximised on a large monitor it is.
+- [ ] **5.8** Hold-to-compare: holding **H** shows the original page and releasing it brings the
+      enhanced one back. Holding the toolbar button does the same, and so does a touch hold.
+- [ ] **5.9** Save a chapter for offline with Enhance on, go offline and open it. Pages show,
+      enhanced by the browser method, and a server method falls back to Balanced. Nothing errors.
 
 ## 6. Library, Home, Discover, Stats [both]
 
@@ -227,6 +236,13 @@ Use a scratch series here: reaching a chapter's last page marks it read and adds
 - [ ] **7.11** Image formats, when the release touches NetVips or the image libraries: a chapter
       containing JPEG, PNG, WebP, AVIF and GIF pages opens in the reader and in the Health page
       preview, covers render for each, and none of them logs a loader error.
+- [ ] **7.12** Server upscaling, when the release touches the upscaler, the image libraries or the
+      Docker image: on a fresh container, start with an empty config folder and confirm the log is
+      clean. Under **Settings → Library → Server upscaling** enable the tier and a model. It
+      downloads and shows Ready. **Test speed** returns a time. Pick that model as the reader's
+      Method on a scratch series: pages show Balanced, then swap to the server result. Lower the
+      cache cap to 128 MB, page through several chapters, and `cache/upscale` stays under it.
+      **Clear cache** empties it. Repeat the model load on both `amd64` and `arm64` images.
 
 ## 8. Upgrade from the previous release
 

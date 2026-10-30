@@ -40,7 +40,8 @@ internal static class AnimeResumeFixture
             new UserSettingsService(context, user),
             new VectorIndexCache(new EmbeddingOptions("", "", "", EmbeddingModelProfile.Base), dump,
                 NullLogger<VectorIndexCache>.Instance),
-            new CatalogueIndexCache(dump, NullLogger<CatalogueIndexCache>.Instance));
+            new CatalogueIndexCache(dump, NullLogger<CatalogueIndexCache>.Instance),
+            store);
         return new AnimeResumeService(context, signals, reader, progress, store, user, hidden);
     }
 

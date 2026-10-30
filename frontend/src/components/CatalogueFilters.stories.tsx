@@ -73,7 +73,7 @@ export const WithActiveFilters: Story = {
     } satisfies RecommendationFilters,
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText(/^Studio Lark · /)).toBeVisible()
+    await expect(await canvas.findByText('Studio Lark')).toBeVisible()
     await expect(await canvas.findByText(/Rated ★ 7\.0 or more/)).toBeVisible()
   },
 }

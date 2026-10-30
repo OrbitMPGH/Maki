@@ -213,6 +213,7 @@ public class SmartDownloadJob(
     {
         var smartSeries = await db.Series
             .AsNoTracking()
+            .Active()
             .Where(s => s.MonitorNewItems == NewChapterMonitorMode.Smart && s.PendingImportLink == PendingImportLink.None)
             .ToListAsync(ct);
         if (smartSeries.Count == 0)

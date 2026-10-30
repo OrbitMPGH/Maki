@@ -17,7 +17,7 @@ public class CoverAccentCache(CoverService covers, ILogger<CoverAccentCache> log
     public string? AccentFor(int seriesId)
     {
         var path = covers.CoverPathFor(seriesId);
-        var version = CoverVersionCache.Get(seriesId, path);
+        var version = CoverVersionCache.Get(path);
         if (version is null)
         {
             return null;

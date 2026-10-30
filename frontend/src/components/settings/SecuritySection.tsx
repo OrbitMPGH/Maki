@@ -11,7 +11,7 @@ import {
   TextInput,
 } from '@mantine/core'
 import { IconCheck, IconCopy } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import {
   useOidcSettings,
   useSaveOidcSettings,
@@ -84,7 +84,7 @@ export function SecuritySection() {
     <SettingsSection
       id="security"
       title={<Trans>Sign-in policy</Trans>}
-      description={<Trans>Lockout and session rules for password sign-in. Changes take effect after Maki restarts.</Trans>}
+      description={<Trans>Changes take effect after Maki restarts.</Trans>}
       dirty={dirty}
       saving={saving}
       onDiscard={discard}
@@ -101,7 +101,6 @@ export function SecuritySection() {
         />
         <SettingsNumberInput
           label={t`Lockout duration (minutes)`}
-          description={t`Counted from the moment the limit is hit.`}
           min={1}
           max={10080}
           value={draft.lockoutMinutes}
@@ -148,7 +147,6 @@ export function SignInPageSection() {
     <SettingsSection
       id="signin-page"
       title={<Trans>Sign-in page</Trans>}
-      description={<Trans>What people see behind the sign-in form before they have signed in.</Trans>}
       dirty={coverMosaic !== data.coverMosaic}
       saving={save.isPending}
       onDiscard={discard}
@@ -156,7 +154,7 @@ export function SignInPageSection() {
     >
       <Switch
         label={t`Show covers from the library`}
-        description={t`Up to 24 covers rated Safe from folders every account can see, blurred into one image, shown to anyone who can open the sign-in page. Off: Maki's own art, and nothing from the library.`}
+        description={t`Up to 24 Safe covers, blurred.`}
         checked={coverMosaic}
         onChange={(e) => setCoverMosaic(e.currentTarget.checked)}
       />
@@ -185,7 +183,7 @@ export function NetworkSection() {
     <SettingsSection
       id="network"
       title={<Trans>Network</Trans>}
-      description={<Trans>How Maki is reached. Changes take effect after Maki restarts.</Trans>}
+      description={<Trans>Changes take effect after Maki restarts.</Trans>}
       dirty={dirty}
       saving={saving}
       onDiscard={discard}
@@ -194,7 +192,7 @@ export function NetworkSection() {
       <Stack gap="md">
         <Switch
           label={t`Require HTTPS`}
-          description={t`Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure. Only turn this on once Maki is behind TLS; over plain HTTP, sign-in is refused with a message saying so.`}
+          description={t`Only turn this on once Maki is behind TLS.`}
           checked={draft.requireHttps}
           onChange={(e) => setDraft({ ...draft, requireHttps: e.currentTarget.checked })}
         />
@@ -209,7 +207,7 @@ export function NetworkSection() {
 
         <TextInput
           label={t`Trusted proxies`}
-          description={t`Comma-separated IPs or CIDR networks allowed to set X-Forwarded-For. Needed behind a reverse proxy so lockout sees the real client. Leave empty if Maki is reached directly.`}
+          description={t`Comma-separated IPs or CIDR networks. Needed behind a reverse proxy.`}
           placeholder="172.18.0.0/16, 10.0.0.5"
           value={draft.trustedProxies}
           onChange={(e) => setDraft({ ...draft, trustedProxies: e.currentTarget.value })}
@@ -286,12 +284,7 @@ export function OidcSection() {
     <SettingsSection
       id="oidc"
       title={<Trans>Single sign-on</Trans>}
-      description={
-        <Trans>
-          Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes
-          take effect after Maki restarts.
-        </Trans>
-      }
+      description={<Trans>Changes take effect after Maki restarts.</Trans>}
       dirty={dirty}
       saving={save.isPending}
       onDiscard={() => data && setDraft(data)}
@@ -311,23 +304,19 @@ export function OidcSection() {
             </Button>
           </Group>
           <Text size="xs" c="dimmed">
-            <Trans>
-              Register this as the client&apos;s redirect URI. If Maki is reached at another host too,
-              register that host&apos;s variant as well.
-            </Trans>
+            <Trans>Register this as the client&apos;s redirect URI.</Trans>
           </Text>
         </Stack>
 
         <Switch
           label={t`Enable single sign-on`}
-          description={t`Adds a button to the login page. Local passwords keep working unless you restrict them below.`}
           checked={draft.enabled}
           onChange={(e) => setDraft({ ...draft, enabled: e.currentTarget.checked })}
         />
 
         <TextInput
           label={t`Issuer URL`}
-          description={t`The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself.`}
+          description={t`Without /.well-known/openid-configuration.`}
           placeholder="https://auth.example.com"
           value={draft.authority}
           onChange={(e) => setDraft({ ...draft, authority: e.currentTarget.value })}
@@ -352,7 +341,7 @@ export function OidcSection() {
         <Group grow align="flex-start">
           <TextInput
             label={t`Scopes`}
-            description={t`Space-separated. openid is always added. Keep email so existing accounts can be matched by their verified address.`}
+            description={t`Space-separated. Keep email to match existing accounts.`}
             placeholder="profile email"
             value={draft.scopes}
             onChange={(e) => setDraft({ ...draft, scopes: e.currentTarget.value })}
@@ -367,7 +356,7 @@ export function OidcSection() {
 
         <Switch
           label={t`Require single sign-on`}
-          description={t`Refuses password sign-in for everyone except administrators, who keep it so a provider outage can never lock you out of your own library.`}
+          description={t`Administrators keep password sign-in.`}
           checked={draft.oidcOnly}
           onChange={(e) => setDraft({ ...draft, oidcOnly: e.currentTarget.checked })}
         />
@@ -384,14 +373,14 @@ export function OidcSection() {
 
         <Switch
           label={t`Create accounts on first sign-in`}
-          description={t`Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches.`}
+          description={t`Anyone your provider signs in gets an account, with no library access.`}
           checked={draft.autoProvision}
           onChange={(e) => setDraft({ ...draft, autoProvision: e.currentTarget.checked })}
         />
 
         <TextInput
           label={t`Username claim`}
-          description={t`Used when creating an account. The durable link is always the provider's subject, so renaming a user upstream does not strand them here.`}
+          description={t`Used when creating an account.`}
           placeholder="preferred_username"
           value={draft.usernameClaim}
           onChange={(e) => setDraft({ ...draft, usernameClaim: e.currentTarget.value })}
@@ -407,7 +396,7 @@ export function OidcSection() {
           />
           <TextInput
             label={t`Permission claim`}
-            description={<Trans>Claim whose values name permissions, e.g. <Code>DownloadChapters</Code>. Values that match nothing are ignored.</Trans>}
+            description={<Trans>Values name permissions, e.g. <Code>DownloadChapters</Code>.</Trans>}
             placeholder="groups"
             value={draft.permissionClaim}
             onChange={(e) => setDraft({ ...draft, permissionClaim: e.currentTarget.value })}

@@ -301,9 +301,11 @@ export const RepairsManyFailures: Story = {
   play: async ({ canvas, userEvent }) => {
     await expect(await canvas.findByText('100 deletions')).toBeVisible()
     await expect(await canvas.findByText('2 replacements')).toBeVisible()
-    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Review' })).toHaveLength(5))
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Review' })).toHaveLength(2))
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Details' })).toHaveLength(3))
+    await expect(await canvas.findByRole('button', { name: 'Dismiss all' })).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Show all 100 operations' }))
-    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Review' })).toHaveLength(102))
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Details' })).toHaveLength(100))
   },
 }
 

@@ -1,6 +1,9 @@
+using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Sources;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -60,7 +63,7 @@ public sealed class ReadFileCleanupTests : IDisposable
         {
             var relative = Path.Combine("Series", $"f{i}.cbz");
             File.WriteAllText(Path.Combine(_root, relative), "cbz");
-            var file = new ChapterFile { SeriesId = seriesId, RelativePath = relative, SourceName = "Test", DateAdded = Now };
+            var file = new ChapterFile { SeriesId = seriesId, RelativePath = relative, SourceName = "Test", DateAdded = Now.AddYears(-1) };
             db.ChapterFiles.Add(file);
             db.SaveChanges();
             foreach (var n in files[i])
@@ -221,8 +224,62 @@ public sealed class ReadFileCleanupTests : IDisposable
         using var check = _db.NewContext();
         var chapter = await check.Chapters.SingleAsync();
         Assert.Equal(deletes, chapter.FileRemovedAt != null);
+        Assert.Equal(deletes, chapter.FileAutoRemoved);
+        Assert.Equal(!deletes, chapter.Wanted);
         Assert.True((await check.ChapterProgress.SingleAsync()).Completed);
     }
+
+    [Fact]
+    public async Task A_file_downloaded_again_after_the_read_gets_the_full_wait()
+    {
+        var (seriesId, ch) = Seed(ReadFileCleanup.Default, [1m]);
+        Finish(1, seriesId, ch[1m], daysAgo: 30);
+        using (var db = _db.NewContext())
+        {
+            db.ChapterFiles.ExecuteUpdate(s => s.SetProperty(f => f.DateAdded, Now.AddDays(-2)));
+        }
+
+        using var check = _db.NewContext();
+        Assert.Equal(Now.AddDays(5), Assert.Single(await Service(check).ScheduleAsync(seriesId, On7, default)).Value);
+    }
+
+    [Fact]
+    public async Task Wanting_an_auto_removed_chapter_again_makes_it_missing()
+    {
+        _db.SetConfig((SettingKeys.ReadFileCleanupEnabled, "true"), (SettingKeys.ReadFileCleanupDays, "7"),
+            (SettingKeys.ReadFileCleanupKeepLast, "false"));
+        var (seriesId, ch) = Seed(ReadFileCleanup.Default, [1m]);
+        Finish(1, seriesId, ch[1m], daysAgo: 8);
+        using (var db = _db.NewContext())
+        {
+            Assert.Equal(1, await Service(db).RunAsync(default));
+        }
+
+        using (var db = _db.NewContext())
+        {
+            Assert.IsType<OkObjectResult>(await ChapterController(db).SetWanted(ch[1m], true, default));
+        }
+
+        using var check = _db.NewContext();
+        var chapter = await check.Chapters.SingleAsync();
+        Assert.True(Chapter.IsMissing(chapter));
+    }
+
+    private ChapterController ChapterController(Maki.Data.MakiDbContext db) => new(
+        new TestLocalizer(),
+        db,
+        new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
+        new StatsEventService(db),
+        new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
+        new SourceRegistry([]),
+        new SourceAvailability(new FakeAppSettings(), new SourceRegistry([])),
+        new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
+        new DownloadBatchNotifier(
+            new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(),
+            new TestUserLocaleResolver(), TimeProvider.System,
+            NullLogger<DownloadBatchNotifier>.Instance),
+        new TestCurrentUser(1),
+        NullLogger<ChapterController>.Instance);
 
     [Fact]
     public async Task Run_leaves_a_file_not_yet_due()

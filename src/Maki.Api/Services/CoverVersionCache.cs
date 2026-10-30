@@ -6,16 +6,17 @@ namespace Maki.Api.Services;
 /// The write time of each series' cover file, read once and then kept. Cover URLs are built for
 /// every series on every list, home, stats and inbox response, and a file stat per series adds up
 /// when the config directory is on a network share. <see cref="CoverService"/> updates it whenever
-/// it rewrites a cover and removes it when the cover is deleted.
+/// it rewrites a cover and removes it when the cover is deleted. Keyed by the cover's path, so two
+/// config directories in one process (the tests) cannot read each other's entries.
 /// </summary>
 internal static class CoverVersionCache
 {
-    private static readonly ConcurrentDictionary<int, long> Ticks = new();
+    private static readonly ConcurrentDictionary<string, long> Ticks = new();
 
     /// <summary>UTC ticks of the cover's write time, or null when the file cannot be read (not cached).</summary>
-    public static long? Get(int seriesId, string coverPath)
+    public static long? Get(string coverPath)
     {
-        if (Ticks.TryGetValue(seriesId, out var cached))
+        if (Ticks.TryGetValue(coverPath, out var cached))
         {
             return cached;
         }
@@ -29,7 +30,7 @@ internal static class CoverVersionCache
             }
 
             var ticks = info.LastWriteTimeUtc.Ticks;
-            Ticks[seriesId] = ticks;
+            Ticks[coverPath] = ticks;
             return ticks;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
@@ -38,9 +39,7 @@ internal static class CoverVersionCache
         }
     }
 
-    public static void Set(int seriesId, long ticks) => Ticks[seriesId] = ticks;
+    public static void Set(string coverPath, long ticks) => Ticks[coverPath] = ticks;
 
-    public static void Remove(int seriesId) => Ticks.TryRemove(seriesId, out _);
-
-    internal static void Clear() => Ticks.Clear();
+    public static void Remove(string coverPath) => Ticks.TryRemove(coverPath, out _);
 }

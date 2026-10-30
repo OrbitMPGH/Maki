@@ -1,6 +1,8 @@
-import { ActionIcon, Loader, Menu, Text } from '@mantine/core'
-import { useState } from 'react'
+import { ActionIcon, Loader, Menu, Text, Tooltip } from '@mantine/core'
+import { useState, type ReactElement } from 'react'
 import {
+    IconArchive,
+    IconArchiveOff,
     IconBell,
     IconDeviceMobileDown,
     IconDeviceMobileOff,
@@ -11,12 +13,14 @@ import {
     IconEye,
     IconPencil,
     IconPhoto,
+    IconPhotoCog,
     IconRefresh,
     IconScan,
     IconSearch,
     IconSparkles,
     IconTrash,
     IconTrashX,
+    IconArrowBackUp,
 } from '@tabler/icons-react'
 import { useIncognitoOptions } from '../ui/incognito'
 import { useSeriesNotificationOptions } from '../ui/seriesNotifications'
@@ -25,9 +29,14 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../../i18n-context'
 import type { UpgradeProfileDto } from '../../api/upgrades'
+import { PAGE_CONVERSION_STOPS, type PageConversionStop } from '../../api/pageConversion'
+import { STOP_LABELS } from '../pageconversion/labels'
 
 /** Sentinel for "Instance default" in the profile RadioGroup, which only carries strings. */
 const INSTANCE_DEFAULT = ''
+
+/** The series endpoint names a fixed quality the way the enum does: "Balanced". */
+const stopMode = (stop: PageConversionStop) => stop.charAt(0).toUpperCase() + stop.slice(1)
 
 /** Mirrors the labels the old monitor Select carried, so the toast after a change still matches. */
 export const MONITOR_OPTIONS = [
@@ -54,6 +63,8 @@ export function SeriesActionsMenu({
                                       upgradeProfiles,
                                       readFileCleanup,
                                       readFileCleanupActive,
+                                      pageConversion,
+                                      canSetPageConversion,
                                       canEdit,
                                       canCleanUpReadFiles,
                                       canScanUpgrades,
@@ -71,8 +82,15 @@ export function SeriesActionsMenu({
                                       onSetNotify,
                                       onSetUpgradeProfile,
                                       onSetReadFileCleanup,
+                                      onSetPageConversion,
+                                      onUndoConversion,
                                       onScanUpgrades,
                                       onSearchVolumes,
+                                      canArchive,
+                                      archived,
+                                      sourceToolsDisabledReason = null,
+                                      onArchive,
+                                      onRestore,
                                       canRemove,
                                       onRemove,
                                       offlineSaved,
@@ -89,6 +107,10 @@ export function SeriesActionsMenu({
     readFileCleanup: string
     /** The choice and the instance switch combined, for the value shown inline. */
     readFileCleanupActive: boolean
+    /** "Default" | "Never" | "Smallest" | "Compact" | "Balanced" | "High" | "Lossless". */
+    pageConversion: string
+    /** Admin: page conversion is a library-wide setting, so the per-series override is too. */
+    canSetPageConversion: boolean
     /** EditMetadata: gates every item that changes the series itself. Notify is per user and stays. */
     canEdit: boolean
     /** DeleteSeries: "On" overrides the instance switch, and the cleanup deletes files for good. */
@@ -109,8 +131,18 @@ export function SeriesActionsMenu({
     onSetNotify: (mode: string) => void
     onSetUpgradeProfile: (upgradeProfileId: number | null) => void
     onSetReadFileCleanup: (mode: string) => void
+    onSetPageConversion: (mode: string) => void
+    /** Set only when some of this series' converted files still have their original in the trash. */
+    onUndoConversion?: () => void
     onScanUpgrades: () => void
     onSearchVolumes: () => void
+    /** ArchiveSeries: gates both the Archive and the Restore to library entry. */
+    canArchive: boolean
+    archived: boolean
+    /** Why the items that talk to a source are switched off (an archived series), or null while they work. */
+    sourceToolsDisabledReason?: string | null
+    onArchive: () => void
+    onRestore: () => void
     canRemove: boolean
     onRemove: () => void
     /** Chapters of this series saved on this device; undefined where the browser cannot save any. */
@@ -128,9 +160,33 @@ export function SeriesActionsMenu({
         value: string,
     ) => options.find((o) => o.value === value)?.label ?? value
     const instanceDefaultLabel = t`Instance default`
+    const pageConversionValue =
+        pageConversion === 'Default'
+            ? t`Rules`
+            : pageConversion === 'Never'
+              ? t`Never`
+              : renderLabel(STOP_LABELS[pageConversion.toLowerCase() as PageConversionStop] ?? pageConversion)
     const upgradeProfileValue = upgradeProfileId == null ? INSTANCE_DEFAULT : String(upgradeProfileId)
     const upgradeProfileLabel =
         upgradeProfiles.find((p) => p.id === upgradeProfileId)?.name ?? instanceDefaultLabel
+
+    const toolsOff = sourceToolsDisabledReason !== null
+    const offProps = {
+        'data-disabled': toolsOff || undefined,
+        'aria-disabled': toolsOff || undefined,
+        closeMenuOnClick: !toolsOff,
+    }
+    const whenOn = (action: () => void) => () => {
+        if (!toolsOff) action()
+    }
+    const withReason = (item: ReactElement) =>
+        toolsOff ? (
+            <Tooltip label={sourceToolsDisabledReason} position="left" withArrow events={{ hover: true, focus: true, touch: true }}>
+                {item}
+            </Tooltip>
+        ) : (
+            item
+        )
 
     return (
         // Taller than a phone screen, so it opens toward the roomier side, stops at the screen edge
@@ -166,9 +222,11 @@ export function SeriesActionsMenu({
                 {canEdit && (
                     <>
                         <Menu.Label><Trans>Series</Trans></Menu.Label>
-                        <Menu.Item leftSection={<IconRefresh size={16} />} onClick={onRefreshChapters}>
-                            <Trans>Refresh chapters</Trans>
-                        </Menu.Item>
+                        {withReason(
+                            <Menu.Item leftSection={<IconRefresh size={16} />} onClick={whenOn(onRefreshChapters)} {...offProps}>
+                                <Trans>Refresh chapters</Trans>
+                            </Menu.Item>,
+                        )}
                         <Menu.Item leftSection={<IconPhoto size={16} />} onClick={onRefreshMetadata}>
                             <Trans>Refresh metadata and poster</Trans>
                         </Menu.Item>
@@ -179,7 +237,7 @@ export function SeriesActionsMenu({
                         <Menu.Divider />
                     </>
                 )}
-                {(canEdit || canCleanUpReadFiles) && (
+                {(canEdit || canCleanUpReadFiles || canSetPageConversion) && (
                     <>
                         <Menu.Label><Trans>Files</Trans></Menu.Label>
                         {canEdit && (
@@ -228,6 +286,46 @@ export function SeriesActionsMenu({
                                 </Menu.Sub.Dropdown>
                             </Menu.Sub>
                         )}
+                        {canSetPageConversion && (
+                            <Menu.Sub floatingStrategy="fixed">
+                                <Menu.Sub.Target>
+                                    <Menu.Sub.Item
+                                        leftSection={<IconPhotoCog size={16} />}
+                                        rightSection={
+                                            <Text size="xs" c="var(--ink-3)">
+                                                {pageConversionValue}
+                                            </Text>
+                                        }
+                                    >
+                                        <Trans>Page conversion</Trans>
+                                    </Menu.Sub.Item>
+                                </Menu.Sub.Target>
+                                <Menu.Sub.Dropdown maw={264}>
+                                    <Menu.Label>
+                                        <Trans>How this series' pages are stored</Trans>
+                                    </Menu.Label>
+                                    <Menu.RadioGroup value={pageConversion} onChange={onSetPageConversion}>
+                                        <Menu.RadioItem value="Default">
+                                            <Trans>Follow the rules</Trans>
+                                        </Menu.RadioItem>
+                                        <Menu.RadioItem value="Never">
+                                            <Trans>Never</Trans>
+                                        </Menu.RadioItem>
+                                        {PAGE_CONVERSION_STOPS.map((stop) => (
+                                            <Menu.RadioItem key={stop} value={stopMode(stop)}>
+                                                {renderLabel(STOP_LABELS[stop])}
+                                            </Menu.RadioItem>
+                                        ))}
+                                    </Menu.RadioGroup>
+                                    <Menu.Label><Trans>Wins over the rules. Files already converted stay as they are.</Trans></Menu.Label>
+                                </Menu.Sub.Dropdown>
+                            </Menu.Sub>
+                        )}
+                        {canSetPageConversion && onUndoConversion && (
+                            <Menu.Item leftSection={<IconArrowBackUp size={16} />} onClick={onUndoConversion}>
+                                <Trans>Undo conversion...</Trans>
+                            </Menu.Item>
+                        )}
 
                         <Menu.Divider />
                     </>
@@ -251,7 +349,21 @@ export function SeriesActionsMenu({
                 )}
                 <Menu.Label><Trans>Automation</Trans></Menu.Label>
 
-                {canEdit && (
+                {canEdit && toolsOff && withReason(
+                    <Menu.Item
+                        leftSection={<IconEye size={16} />}
+                        rightSection={
+                            <Text size="xs" c="var(--ink-3)">
+                                {renderLabel(label(MONITOR_OPTIONS, monitorMode))}
+                            </Text>
+                        }
+                        {...offProps}
+                    >
+                        <Trans>Monitor</Trans>
+                    </Menu.Item>,
+                )}
+
+                {canEdit && !toolsOff && (
                     <Menu.Sub floatingStrategy="fixed">
                         <Menu.Sub.Target>
                             <Menu.Sub.Item
@@ -370,40 +482,59 @@ export function SeriesActionsMenu({
                 )}
 
                 {canScanUpgrades && (
-                    <Menu.Item
-                        leftSection={scanningUpgrades ? <Loader size={14} /> : <IconRefresh size={16} />}
-                        disabled={scanningUpgrades}
-                        onClick={onScanUpgrades}
-                    >
-                        <Trans>Scan for upgrades</Trans>
-                    </Menu.Item>
+                    withReason(
+                        <Menu.Item
+                            leftSection={scanningUpgrades ? <Loader size={14} /> : <IconRefresh size={16} />}
+                            disabled={scanningUpgrades}
+                            onClick={whenOn(onScanUpgrades)}
+                            {...offProps}
+                        >
+                            <Trans>Scan for upgrades</Trans>
+                        </Menu.Item>,
+                    )
                 )}
 
                 {canScanUpgrades && (
+                    withReason(
+                        <Menu.Item
+                            leftSection={searchingVolumes ? <Loader size={14} /> : <IconSearch size={16} />}
+                            disabled={searchingVolumes}
+                            onClick={whenOn(onSearchVolumes)}
+                            {...offProps}
+                        >
+                            <Trans>Search volume releases</Trans>
+                        </Menu.Item>,
+                    )
+                )}
+
+                {(canArchive || canRemove) && <Menu.Divider />}
+
+                {canArchive && (
                     <Menu.Item
-                        leftSection={searchingVolumes ? <Loader size={14} /> : <IconSearch size={16} />}
-                        disabled={searchingVolumes}
-                        onClick={onSearchVolumes}
+                        leftSection={archived ? <IconArchiveOff size={16} /> : <IconArchive size={16} />}
+                        closeMenuOnClick={false}
+                        onClick={() => {
+                            setOpened(false)
+                            if (archived) onRestore()
+                            else onArchive()
+                        }}
                     >
-                        <Trans>Search volume releases</Trans>
+                        {archived ? <Trans context="series">Restore to library</Trans> : <Trans context="series">Archive</Trans>}
                     </Menu.Item>
                 )}
 
                 {canRemove && (
-                    <>
-                        <Menu.Divider />
-                        <Menu.Item
-                            color="var(--danger)"
-                            leftSection={<IconTrash size={16} />}
-                            closeMenuOnClick={false}
-                            onClick={() => {
-                                setOpened(false)
-                                onRemove()
-                            }}
-                        >
-                            <Trans>Remove from library</Trans>
-                        </Menu.Item>
-                    </>
+                    <Menu.Item
+                        color="var(--danger)"
+                        leftSection={<IconTrash size={16} />}
+                        closeMenuOnClick={false}
+                        onClick={() => {
+                            setOpened(false)
+                            onRemove()
+                        }}
+                    >
+                        <Trans>Remove from library</Trans>
+                    </Menu.Item>
                 )}
             </Menu.Dropdown>
         </Menu>

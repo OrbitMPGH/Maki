@@ -1,4 +1,4 @@
-using Maki.Api.Controllers;
+﻿using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
@@ -24,13 +24,28 @@ public class SourceMappingControllerTests : IDisposable
         BuildController(new FakeAppSettings(), availability, sources);
 
     private SourceMappingController BuildController(
-        FakeAppSettings appSettings, SourceAvailability? availability, params ISource[] sources) =>
-        new(new TestLocalizer(),
-            _db.NewContext(),
-            new SourceRegistry(sources.Length > 0 ? sources : [new FakeSource { Name = "fake" }]),
-            appSettings, availability ?? Sources.AllEnabled, _queue,
+        FakeAppSettings appSettings, SourceAvailability? availability, params ISource[] sources)
+    {
+        var db = _db.NewContext();
+        var registry = new SourceRegistry(sources.Length > 0 ? sources : [new FakeSource { Name = "fake" }]);
+        availability ??= Sources.AllEnabled;
+        return new(new TestLocalizer(),
+            db, registry, appSettings, availability, _queue,
             // Every compare path exercised here is rejected before the preview service is reached.
-            null!, null!, null!, null!, null!, new TestCurrentUser(1));
+            null!, Sync(db, registry, availability, appSettings), null!, null!, null!, new TestCurrentUser(1),
+            NullLogger<SourceMappingController>.Instance);
+    }
+
+    private static ChapterSyncService Sync(
+        Maki.Data.MakiDbContext db, SourceRegistry registry, SourceAvailability availability, FakeAppSettings settings) =>
+        new(db,
+            registry,
+            new DownloadQueueService(null!, TimeProvider.System, null!,
+                NullLogger<DownloadQueueService>.Instance),
+            availability,
+            new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
+            settings,
+            NullLogger<ChapterSyncService>.Instance);
 
     /// <summary>Everything the worker was handed, in order.</summary>
     private List<int> Queued()
@@ -96,6 +111,39 @@ public class SourceMappingControllerTests : IDisposable
 
         var mapping = Assert.IsType<SourceMapping>(Assert.IsType<OkObjectResult>(result).Value);
         Assert.Equal(string.Empty, mapping.Url);
+    }
+
+    [Fact]
+    public async Task Linking_a_source_by_hand_lists_its_chapters_and_no_other_sources()
+    {
+        var seriesId = _db.SeedSeries("Berserk", mappings: Mapping("linked", 1));
+        var linked = new FakeSource { Name = "linked" };
+        var chapters = new FakeSource { Name = "added" };
+        var added = new FakeSource { Name = "added", OnListChapters = _ => [chapters.Chapter(1), chapters.Chapter(2)] };
+
+        var result = await BuildController(null, linked, added)
+            .Create(new(seriesId, "added", "sid", "https://added.test/s"), default);
+
+        var mapping = Assert.IsType<SourceMapping>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.NotNull(mapping.ChapterSnapshotAt);
+        Assert.Equal(1, added.ListCalls);
+        Assert.Equal(0, linked.ListCalls);
+        using var db = _db.NewContext();
+        Assert.Equal(2, db.Chapters.Count(c => c.SeriesId == seriesId));
+    }
+
+    [Fact]
+    public async Task A_failed_listing_still_keeps_the_hand_made_link()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        var added = new FakeSource { Name = "added", OnListChapters = _ => throw new HttpRequestException("down") };
+
+        var result = await BuildController(null, added)
+            .Create(new(seriesId, "added", "sid", "https://added.test/s"), default);
+
+        Assert.IsType<OkObjectResult>(result);
+        using var db = _db.NewContext();
+        Assert.Single(db.SourceMappings, m => m.SeriesId == seriesId);
     }
 
     [Fact]
@@ -214,7 +262,8 @@ public class SourceMappingControllerTests : IDisposable
             null!,
             null!,
             null!,
-            new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources));
+            new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources),
+            NullLogger<SourceMappingController>.Instance);
 
         var result = await controller.RemoveWithCleanup(
             123, new SourceMappingController.RemoveMappingRequest(DeleteFiles: true), default);
@@ -256,7 +305,8 @@ public class SourceMappingControllerTests : IDisposable
             null!,
             null!,
             null!,
-            new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources));
+            new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources),
+            NullLogger<SourceMappingController>.Instance);
 
         var result = await controller.RefreshSnapshots(
             new SourceMappingController.RefreshSnapshotsRequest(seriesId, ExcludeMappingId: -1), default);
@@ -313,7 +363,8 @@ public class SourceMappingControllerTests : IDisposable
             null!,
             null!,
             null!,
-            new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources));
+            new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources),
+            NullLogger<SourceMappingController>.Instance);
 
         var result = await controller.RefreshSnapshots(
             new SourceMappingController.RefreshSnapshotsRequest(seriesId, target.Id), default);

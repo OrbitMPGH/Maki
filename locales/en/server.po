@@ -432,6 +432,260 @@ msgstr "Library rails can only go on Home"
 msgid "error.customRails.tooMany"
 msgstr "You can keep at most {max} rails"
 
+#. {schema} is the definition format number the file says it uses.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.schemaUnsupported"
+msgstr "This definition uses format {schema}, which this version of Maki can't read. Update Maki or use a definition made for this version."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.idInvalid"
+msgstr "The id must be 2 to 40 lowercase letters, digits or hyphens, starting with a letter or digit."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.nameInvalid"
+msgstr "The name is required and can be at most 60 characters."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.baseUrlInvalid"
+msgstr "The base URL must be an http or https address on a domain name, with no path, such as https://example.com."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.languageInvalid"
+msgstr "The language must be one language code, such as en or pt-BR."
+
+#. {field} is the definition field name, such as kind or chapters.date.format, and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.fieldInvalid"
+msgstr "The value of {field} is not one Maki knows."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.intervalInvalid"
+msgstr "The request spacing must be between {min} and {max} milliseconds."
+
+#. {header} is an HTTP header name and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.headerRefused"
+msgstr "The header {header} can't be set by a definition."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.coverHostInvalid"
+msgstr "\"{host}\" is not a domain name."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.searchAndCatalogue"
+msgstr "Give either a search or a catalogue page, not both."
+
+#. {engine} is an engine name such as madara and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.engineSections"
+msgstr "A definition that uses the {engine} engine leaves out the search, catalogue, series, chapters and pages sections."
+
+#: src/Maki.Sources/Custom/CustomRepositoryStore.cs
+msgid "error.customRepository.urlInvalid"
+msgstr "A repository address is a full http:// or https:// URL on a public host."
+
+#. {url} is the address Maki tried and {reason} is what the site or the connection said, untranslated.
+#: src/Maki.Sources/Custom/CustomRepositoryStore.cs
+msgid "error.customRepository.fetchFailed"
+msgstr "Maki could not read {url}: {reason}"
+
+#. {url} is an address and {reason} is the JSON parser's message, untranslated.
+#: src/Maki.Sources/Custom/CustomRepositoryStore.cs
+msgid "error.customRepository.indexInvalid"
+msgstr "{url} is not a repository index: {reason}"
+
+#. {url} is an address; {max} is a number of kilobytes.
+#: src/Maki.Sources/Custom/CustomRepositoryStore.cs
+msgid "error.customRepository.tooLarge"
+msgstr "{url} is larger than {max} KB."
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.exists"
+msgstr "That repository is already added."
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.notFound"
+msgstr "There is no repository with that address."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.entryNotFound"
+msgstr "The repository has no definition called {id}."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.hashMismatch"
+msgstr "The file the repository serves for {id} does not match its checksum, so it was not used."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.idMismatch"
+msgstr "The repository's file for {id} defines a source with another id."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.idTaken"
+msgstr "A custom source called {id} already exists and was not installed from this repository."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.needsNewerMaki"
+msgstr "{id} needs a newer version of Maki."
+
+#. {id} is a custom source id and {reason} is what the validator or parser said, untranslated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.definitionInvalid"
+msgstr "The repository's definition of {id} is not valid: {reason}"
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.installTestFailed"
+msgstr "The definition did not pass its test against the site, so it was not installed."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.testFailed"
+msgstr "An update of {id} did not pass its test against the site, so it waits for you."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.updateNeedsReview"
+msgstr "An update of {id} could change which chapters its linked series have, so it waits for you."
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.autoUpdateNeedsHttps"
+msgstr "Only a repository served over https can keep its sources up to date on its own."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.noUpdate"
+msgstr "{id} has no update waiting."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.nothingToRevert"
+msgstr "There is no earlier version of {id} to go back to."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "error.customRepository.autoUpdateUnsafe"
+msgstr "An update of {id} waits for you: its file isn't served over https with a checksum, so it isn't applied on its own."
+
+#. {id} is a custom source id and is never translated.
+#: src/Maki.Api/Services/CustomSourceService.cs
+msgid "error.customSource.changedMeanwhile"
+msgstr "{id} changed while this was running, so nothing was saved. Look at it again and retry."
+
+#: src/Maki.Api/Services/CustomSourceProbe.cs
+msgid "error.customSource.probe.urlInvalid"
+msgstr "Paste the full address of a series page on the site, starting with https://."
+
+#. {host} is a domain name and is never translated.
+#: src/Maki.Api/Services/CustomSourceProbe.cs
+msgid "error.customSource.probe.otherHost"
+msgstr "The chapter page has to be on {host}, like the series page."
+
+#: src/Maki.Api/Services/CustomSourceProbe.cs
+msgid "error.customSource.probe.seriesUrlShape"
+msgstr "Maki reads the series id from the last part of the address, and this address has none. Paste the series page's own address."
+
+#. {url} is the address Maki tried and {reason} is what the site or the connection said, untranslated.
+#: src/Maki.Api/Services/CustomSourceProbe.cs
+msgid "error.customSource.probe.fetchFailed"
+msgstr "Maki could not read {url}: {reason}"
+
+#. {field} is the definition field name and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.fieldRequired"
+msgstr "{field} is required."
+
+#. {field} is the definition field name and {placeholder} a template placeholder such as seriesId in braces; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.templatePlaceholder"
+msgstr "{field} must contain {placeholder}."
+
+#. {field} is the definition field name and {host} the site's domain; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.templateHost"
+msgstr "{field} must point at {host}."
+
+#. {field} is the definition field name and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.listExtractorShape"
+msgstr "{field} needs exactly one of css, regex or json."
+
+#. {field} is the definition field name and is never translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.fieldExtractorShape"
+msgstr "{field} reads something its list items don't have, or mixes a fixed value with other settings."
+
+#. {field} is the definition field name and {selector} the CSS selector; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.cssInvalid"
+msgstr "{field}: \"{selector}\" is not a valid CSS selector."
+
+#. {field} is the definition field name and {pattern} the regular expression; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.regexInvalid"
+msgstr "{field}: \"{pattern}\" is not a valid regular expression."
+
+#. {field} is the definition field name and {path} the JSON path; neither is translated.
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.jsonPathInvalid"
+msgstr "{field}: \"{path}\" is not a valid JSON path. Use dot segments with [*] or [n]."
+
+#: src/Maki.Sources/Custom/CustomSourceValidator.cs
+msgid "error.customSource.sampleQueryRequired"
+msgstr "A source with search needs a sample search query."
+
+#. {max} is a size in kilobytes.
+#: src/Maki.Api/Services/CustomSourceService.cs
+msgid "error.customSource.tooLarge"
+msgstr "The definition is larger than {max} KB."
+
+#. {detail} is the JSON parser's own message and is never translated.
+#: src/Maki.Api/Services/CustomSourceService.cs
+msgid "error.customSource.jsonInvalid"
+msgstr "The definition is not valid JSON for a custom source: {detail}"
+
+#. {source} is the name of the source that already covers this site, never translated.
+#: src/Maki.Api/Services/CustomSourceService.cs
+msgid "error.customSource.hostTaken"
+msgstr "{source} already covers this site."
+
+#. {id} is a custom source id, never translated.
+#: src/Maki.Api/Controllers/CustomSourcesController.cs
+msgid "error.customSource.notFound"
+msgstr "There is no custom source \"{id}\"."
+
+#: src/Maki.Api/Controllers/CustomSourcesController.cs
+msgid "error.customSource.idMismatch"
+msgstr "The id in the definition does not match the one being saved."
+
+#. {count} is how many series are linked to the source.
+#: src/Maki.Api/Controllers/CustomSourcesController.cs
+msgid "error.customSource.identityChange"
+msgstr "This change could give {count, plural, one {# linked series} other {# linked series}} new chapter rows that download again. Check the differences, then save again to confirm."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleNotInSearch"
+msgstr "The search results do not include the sample series."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleSeriesUnresolved"
+msgstr "The sample series URL does not match the series URL template."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.urlTemplateMismatch"
+msgstr "The chapter URL template does not rebuild the links the chapter list shows."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleChapterNotListed"
+msgstr "The sample chapter URL is not in the chapter list."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.notAnImage"
+msgstr "The first page did not come back as an image."
+
 #. {title} is the metadata provider's title for the series, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.alreadyInLibrary"
@@ -733,9 +987,24 @@ msgstr "Choose WebP, AVIF or off"
 msgid "error.pageConversion.off"
 msgstr "Choose a format for page conversion first"
 
+#. A page conversion rule that cannot be saved: an unknown action, kind of release or page format, a convert rule without a quality, a size or bits-per-pixel bound of zero or less, or more than 50 rules.
 #: src/Maki.Api/Controllers/PageConversionController.cs
-msgid "error.pageConversion.qualityRange"
-msgstr "Quality must be between {min} and {max}"
+msgid "error.pageConversion.ruleInvalid"
+msgstr "One of the rules is not valid. Check its conditions and what it does."
+
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.stopInvalid"
+msgstr "Choose Smallest, Compact, Balanced, High or Lossless"
+
+#. {max} is the server's core count.
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.parallelInvalid"
+msgstr "Pages converted at once must be between 1 and {max}"
+
+#. Undoing a series' page conversion with both "convert again" and "set this series to Never" chosen.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.pageConversion.undoConflict"
+msgstr "Choose either to convert the files again or to set the series to Never, not both"
 
 #: src/Maki.Api/Controllers/PreviewController.cs
 msgid "error.preview.busy"
@@ -1110,6 +1379,16 @@ msgstr "Folder does not exist: {path}"
 msgid "error.rootFolder.inUse"
 msgstr "Root folder is in use by one or more series"
 
+#. Every series left in the folder is archived, so the user has to delete or move them before the folder can go. {count} is how many.
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.inUseArchived"
+msgstr "{count, plural, one {# archived series still uses} other {# archived series still use}} this folder. Delete or move them first."
+
+#. {path} is the folder the folder picker tried to open.
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.notReadable"
+msgstr "Maki can't read this folder: {path}"
+
 #: src/Maki.Api/Controllers/RootFolderController.cs
 msgid "error.rootFolder.pathRequired"
 msgstr "Path is required"
@@ -1181,6 +1460,11 @@ msgstr "Too many redirects"
 msgid "error.search.unknownSource"
 msgstr "Unknown source: {sourceName}"
 
+#. Archiving waits while a download is being written, or while a library import is still matching or linking the series.
+#: src/Maki.Api/Services/SeriesArchiveService.cs
+msgid "error.series.activeDownloadArchive"
+msgstr "Series has a download or import in progress. Wait for it to finish before archiving."
+
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.activeDownloadDelete"
 msgstr "Series has a download in progress. Wait for it to finish before deleting."
@@ -1205,6 +1489,16 @@ msgstr "Series already exists in library"
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.alreadyInRootFolder"
 msgstr "Series is already in that root folder"
+
+#. Refresh, search and download tools refuse an archived series, since it no longer talks to its sources.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.archived"
+msgstr "This series is archived. Restore it to the library first."
+
+#. Adding or approving a series that is already in the library as an archived one; the client offers Restore.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.archivedExists"
+msgstr "This series is archived. Restore it instead."
 
 #. {folder} is an absolute filesystem path and is never translated.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1268,12 +1562,20 @@ msgid "error.series.invalidReadCleanup"
 msgstr "Read file cleanup must be Default, On or Off"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.invalidPageConversion"
+msgstr "Page conversion must be Default, Never, Smallest, Compact, Balanced, High or Lossless"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.noFilesSelected"
 msgstr "No files selected"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.noRootFolder"
 msgstr "Series has no root folder"
+
+#: src/Maki.Api/Services/SeriesArchiveService.cs
+msgid "error.series.notArchived"
+msgstr "This series is not archived."
 
 #. Shown when a series create/move request names a root folder id that doesn't exist.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1756,6 +2058,44 @@ msgstr ""
 "{file} was held back for review: {reason, select, fewer_pages {it has fewer pages than the files it "
 "would replace} other {its pages could not be measured}}"
 
+#: src/Maki.Api/Controllers/ReaderController.cs
+msgid "error.enhance.disabled"
+msgstr "Server page enhancement is turned off on this server."
+
+#. The reader asked for a server model the admin has not enabled or that has not finished downloading.
+#: src/Maki.Api/Controllers/ReaderController.cs
+msgid "error.enhance.modelUnavailable"
+msgstr "This enhancement model is not available on the server."
+
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.benchmarkFailed"
+msgstr "The speed test could not run the sample page through this model."
+
+#: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
+msgid "error.upscaling.checksumMismatch"
+msgstr "The downloaded model did not match its checksum, so it was deleted. Try the download again."
+
+#: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
+msgid "error.upscaling.downloadFailed"
+msgstr "The model could not be downloaded. Check that this server can reach GitHub, then try again."
+
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.invalidCache"
+msgstr "The cache size must be between {min} and {max} MB."
+
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.invalidThreads"
+msgstr "Threads must be between {min} and {max}."
+
+#. Deleting a model whose file is still open because a page is being upscaled with it right now.
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.modelInUse"
+msgstr "The model is busy with a page right now. Try again in a moment."
+
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.unknownModel"
+msgstr "Maki does not know that model."
+
 #: src/Maki.Api/Controllers/UsersController.cs
 msgid "error.users.cannotDeleteSelf"
 msgstr "You cannot delete your own account"
@@ -1828,6 +2168,11 @@ msgstr "Download timeout must be 0 (no limit) or between {min} and {max} minutes
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.bulkHoldRange"
 msgstr "Bulk hold must be between 0 (off) and {max} chapters"
+
+#. {mode} is the value that was sent and is never translated.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.torrentRemovalModeInvalid"
+msgstr "Unknown torrent removal mode: {mode}"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.smartChaptersLeftRange"
@@ -2128,6 +2473,41 @@ msgstr "manga, manhwa, manhua and so on; blank when unknown"
 #: src/Maki.Core/Naming/NamingTokens.cs
 msgid "naming.token.seriesyear.description"
 msgstr "Release year; blank when unknown"
+
+#. A line in the result of undoing a series' page conversion: nothing was restored because a download for the series is running.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+msgid "pageConversion.undo.downloadInFlight"
+msgstr "A download for this series is running, so nothing was restored. Try again once it has finished."
+
+#. A file an undo of page conversion passed over. {name} is the file name, not translated.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+msgid "pageConversion.undo.fileChanged"
+msgstr "{name}: the file has changed since it was converted"
+
+#. A file an undo of page conversion passed over. {name} is the file name, not translated.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+msgid "pageConversion.undo.fileGone"
+msgstr "{name}: the file is no longer in the library"
+
+#. A file an undo of page conversion passed over. {name} is the file name, not translated.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+msgid "pageConversion.undo.moveFailed"
+msgstr "{name}: the original could not be moved back"
+
+#. The last line of an undo that restored originals and queued them to be converted again. {count} is a number of files.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+msgid "pageConversion.undo.queued"
+msgstr "{count, plural, one {# file is} other {# files are}} queued to be converted again with the current settings"
+
+#. A line in the result of undoing a series' page conversion: files whose conversion record no longer matches the file (downloaded again, upgraded or removed since), so there is nothing to restore. {count} is a number of files.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+msgid "pageConversion.undo.stale"
+msgstr "{count, plural, one {# older conversion no longer applies; its file was replaced or removed since} other {# older conversions no longer apply; their files were replaced or removed since}}"
+
+#. A file an undo of page conversion passed over. {name} is the file name, not translated.
+#: src/Maki.Api/Services/PageConversionUndoService.cs
+msgid "pageConversion.undo.trashGone"
+msgstr "{name}: the original is no longer in the trash"
 
 #: src/Maki.Api/Services/BackupService.cs
 msgid "error.system.backupMissingDb"
@@ -2434,6 +2814,15 @@ msgid "inbox.chapters.held.body"
 msgstr ""
 "{series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not "
 "downloaded automatically. Download them from the series page if they are real."
+
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "inbox.customSource.updated.title"
+msgstr "Custom source updated"
+
+#. {source} is a custom source's name; {from} and {to} are version numbers.
+#: src/Maki.Api/Services/CustomRepositoryService.cs
+msgid "inbox.customSource.updated.body"
+msgstr "{source} was updated from version {from} to {to} by its repository."
 
 #: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
 msgid "inbox.series.statusChanged.title"
@@ -3144,6 +3533,16 @@ msgstr "Series added"
 msgid "notify.series.added.body"
 msgstr "{series} was added to the library{hasRequester, select, yes {. Requested by {user}} other {}}"
 
+#: src/Maki.Api/Services/SeriesArchiveService.cs
+msgid "notify.series.archived.title"
+msgstr "Series archived"
+
+#. {files} is "kept" when the files stayed on disk, "binned" when they went to the recycle bin and
+#. "deleted" when they were deleted for good.
+#: src/Maki.Api/Services/SeriesArchiveService.cs
+msgid "notify.series.archived.body"
+msgstr "{series} was archived{files, select, binned {, files moved to the recycle bin} deleted {, files deleted} other {, files kept on disk}}"
+
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "notify.series.removed.title"
 msgstr "Series removed"
@@ -3449,6 +3848,14 @@ msgid "error.health.operationNotReady"
 msgstr "The operation is not ready, or its review is out of date."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.operationNotRetryable"
+msgstr "Only a failed operation can be retried."
+
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.operationNotFinished"
+msgstr "This operation is still running. Cancel it first."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.replacementIncomplete"
 msgstr "The replacement must cover every linked chapter."
 
@@ -3483,6 +3890,26 @@ msgstr "Library health checks could not complete"
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.suwayomiSourceInstalled"
 msgstr "{source} is installed in Suwayomi again."
+
+#. {source} is a custom source's name.
+#: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
+msgid "health.check.customSourceWorking"
+msgstr "{source} lists its sample series."
+
+#. {source} is a custom source's name.
+#: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
+msgid "health.check.customSourceSample"
+msgstr "{source} still works, but its sample series is gone from the site. Edit the definition and pick another one."
+
+#. {source} is a custom source's name and {reason} is what the site or the definition said, untranslated.
+#: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
+msgid "health.check.customSourceFailing"
+msgstr "{source} could not list its sample series, so the site's layout may have changed. Edit the definition to check. ({reason})"
+
+#. {source} is a custom source's name.
+#: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
+msgid "health.check.customSourceInvalid"
+msgstr "This build of Maki can't read the definition of {source}. Edit it to see why."
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.suwayomiSourceMissing"
@@ -3651,19 +4078,27 @@ msgstr "The local MangaBaka database has not been downloaded yet. Until it is, o
 msgid "health.issue.dumpDamaged"
 msgstr "The local MangaBaka database failed its integrity check, so metadata search and adding series can fail. Maki downloads it again by itself; check it in Settings → Library → Metadata database."
 
+#. {at} is the last refresh, formatted as a date in the reader's language.
 #: src/Maki.Api/Services/HealthCheckService.cs
 msgid "health.issue.dumpStale"
-msgstr "The MangaBaka local database is out of date, last refreshed {at}. The refresh may be failing."
+msgstr "The MangaBaka local database is out of date, last refreshed {at, date, short}. The refresh may be failing."
 
 #. The health audit trail. {check} is a check's id, {kind} an operation's own name, {state} a review
 #. decision: all three are stored values the page has its own words for, so they stay as they are.
-#: src/Maki.Api/Services/HealthMonitor.cs
+#. degraded and recovered are only for rows written before history stored the check's message.
+#: src/Maki.Api/Controllers/HealthController.cs
 msgid "health.history.degraded"
 msgstr "{check} changed to {status}"
 
-#: src/Maki.Api/Services/HealthMonitor.cs
+#: src/Maki.Api/Controllers/HealthController.cs
 msgid "health.history.recovered"
 msgstr "{check} recovered"
+
+#. A check changed status. {detail} is the check's own message, already worded; the page shows the
+#. old and new status beside it.
+#: src/Maki.Api/Services/HealthMonitor.cs
+msgid "health.history.transition"
+msgstr "{detail}"
 
 #: src/Maki.Api/Controllers/HealthController.cs
 msgid "health.repair.pdfUnsupported"
