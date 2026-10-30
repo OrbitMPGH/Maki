@@ -29,6 +29,15 @@ public record OpdsContext(string PathBase, string Token)
     /// </para>
     /// </summary>
     public string Cover(int seriesId) => $"{Base}/cover/{seriesId}";
+
+    /// <summary>
+    /// A chapter's own thumbnail. <c>v</c> changes whenever the slice behind it does, so the
+    /// response can be immutable instead of revalidating on every grid draw.
+    /// </summary>
+    public string ChapterThumbnail(int chapterId, string version) => $"{Base}/chapter/{chapterId}/thumbnail?v={version}";
+
+    public static string ThumbnailVersion(int chapterFileId, string archiveVersion, int startPage) =>
+        $"{chapterFileId}-{archiveVersion}-{startPage}";
 }
 
 /// <summary>
@@ -457,6 +466,8 @@ public class OpdsCatalogService(
             }
 
             var mimeType = OpdsXml.MimeType(slice.ArchivePath);
+            var thumbnail = ctx.ChapterThumbnail(row.Id,
+                OpdsContext.ThumbnailVersion(slice.ChapterFileId, slice.ArchiveVersion, slice.StartPage));
             var links = new List<OpdsLink>
             {
                 // open-access as well as plain acquisition: readers that only look for the
@@ -466,7 +477,8 @@ public class OpdsCatalogService(
                     mimeType, Length: slice.ArchiveSize),
                 new(OpdsXml.OpenAccessRel, $"{ctx.Base}/chapter/{row.Id}/file",
                     mimeType, Length: slice.ArchiveSize),
-                new(OpdsXml.ThumbnailRel, ctx.Cover(row.SeriesId), "image/jpeg"),
+                new(OpdsXml.ImageRel, thumbnail, "image/jpeg"),
+                new(OpdsXml.ThumbnailRel, thumbnail, "image/jpeg"),
             };
 
             entries.Add(new OpdsEntry(

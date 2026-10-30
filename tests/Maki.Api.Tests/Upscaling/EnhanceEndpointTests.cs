@@ -89,7 +89,7 @@ public sealed class EnhanceEndpointTests : IDisposable
             new TestLocalizer(), db,
             new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!,
                 new ReadingSessionService(db), NullLogger<ReaderService>.Instance),
-            null!, null!, null!, null!, _paths, NullLogger<ReaderController>.Instance,
+            null!, null!, null!, null!, null!, _paths,
             new TestCurrentUser(userId), null!, _settings)
         {
             ControllerContext = new ControllerContext { HttpContext = context }

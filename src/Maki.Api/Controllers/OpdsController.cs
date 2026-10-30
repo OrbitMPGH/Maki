@@ -43,6 +43,7 @@ public class OpdsController(
     OpdsCatalogService catalog,
     OpdsAccessService access,
     ReaderService reader,
+    ReaderThumbnailCache thumbnails,
     OpdsProgressWriter progressWriter,
     KoreaderDocumentIndexer koreaderDocuments,
     Maki.Data.MakiDbContext db,
@@ -270,10 +271,7 @@ public class OpdsController(
             return NotFound();
         }
 
-        var slice = await db.Chapters.Active().AnyAsync(c => c.Id == chapterId, ct)
-            ? await reader.PageSliceAsync(chapterId, ct)
-            : null;
-        if (slice is null || page < 0 || page >= slice.PageCount)
+        if (await ActiveSliceAsync(chapterId, ct) is not (var slice, _) || page < 0 || page >= slice.PageCount)
         {
             return NotFound();
         }
@@ -317,6 +315,56 @@ public class OpdsController(
         Response.Headers.CacheControl = "private, no-cache";
 
         return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
+    }
+
+    /// <summary>
+    /// The chapter's own cover for the feed: its first page, as the same 200px JPEG the native
+    /// reader's strip uses, out of the same disk cache. Chapter entries point their <c>image</c>
+    /// and <c>image/thumbnail</c> links here rather than at <c>page/0</c>, because a page fetch is
+    /// the progress signal and a reader rendering its chapter grid would otherwise mark every
+    /// chapter it shows as started. This records nothing. A first page that cannot be rendered
+    /// falls back to the series cover, which is what chapter entries showed before.
+    /// </summary>
+    [HttpGet("chapter/{chapterId:int}/thumbnail")]
+    public async Task<IActionResult> Thumbnail(string token, int chapterId, CancellationToken ct)
+    {
+        if (await AuthorizeAsync(token, ct) is null || await ActiveSliceAsync(chapterId, ct) is not (var slice, var seriesId))
+        {
+            return NotFound();
+        }
+
+        var version = OpdsContext.ThumbnailVersion(slice.ChapterFileId, slice.ArchiveVersion, slice.StartPage);
+        var etag = new EntityTagHeaderValue($"\"{version}\"");
+        if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        if (await thumbnails.GetOrRenderAsync(slice, 0, ct) is not { } cached)
+        {
+            return Redirect(Context(token).Cover(seriesId));
+        }
+
+        // Immutable only when the URL carries the current version; an old feed's link revalidates.
+        Response.Headers.CacheControl = Request.Query["v"] == version
+            ? "private, max-age=31536000, immutable"
+            : "private, no-cache";
+        return PhysicalFile(cached, "image/jpeg", lastModified: null, entityTag: etag, enableRangeProcessing: false);
+    }
+
+    /// <summary>The slice of an active chapter, with its series, or null when either is missing.</summary>
+    private async Task<(ReaderService.PageSlice Slice, int SeriesId)?> ActiveSliceAsync(int chapterId, CancellationToken ct)
+    {
+        var seriesId = await db.Chapters.Active()
+            .Where(c => c.Id == chapterId)
+            .Select(c => (int?)c.SeriesId)
+            .FirstOrDefaultAsync(ct);
+        if (seriesId is null || await reader.PageSliceAsync(chapterId, ct) is not { } slice)
+        {
+            return null;
+        }
+
+        return (slice, seriesId.Value);
     }
 
     private OpdsContext Context(string token) => new(Request.PathBase.Value ?? string.Empty, token);

@@ -76,24 +76,16 @@ public class ReaderController(
     ILocalizer localizer,
     MakiDbContext db,
     ReaderService reader,
+    ReaderThumbnailCache thumbnails,
     ContinueReadingService continueReading,
     ReadingProfileService profiles,
     KavitaReadImportService readImport,
     AchievementEvaluationQueue achievementQueue,
     AppPaths paths,
-    ILogger<ReaderController> logger,
     ICurrentUser currentUser,
     KavitaUserResolver kavitaUser,
     IAppSettings appSettings) : ControllerBase
 {
-    private const int ThumbnailWidth = 200;
-
-    /// <summary>
-    /// A strip thumbnail at quality 80. A narrower page is scaled up so the strip stays even, and a
-    /// JPEG shrinks while it decodes, so a 2000x3000 scan never exists as full-size pixels.
-    /// </summary>
-    internal static byte[] ReaderThumbnail(byte[] page) => ImageCodec.JpegThumbnail(page, ThumbnailWidth, 80, enlarge: true);
-
     /// <summary>
     /// Loads (creating on demand) this user's state row for a series, or null when the series is not
     /// theirs to see. The existence check goes through the Series query filter, so a series in a root
@@ -446,105 +438,10 @@ public class ReaderController(
             return NotFound();
         }
 
-        var absoluteIndex = slice.StartPage + page;
-        var dir = Path.Combine(paths.ReaderCacheDir, slice.ChapterFileId.ToString());
-        var cached = Path.Combine(dir, $"{slice.ArchiveVersion}-{absoluteIndex}.jpg");
-
-        if (!System.IO.File.Exists(cached))
+        var cached = await thumbnails.GetOrRenderAsync(slice, page, ct);
+        if (cached is null)
         {
-            var entry = slice.Pages[absoluteIndex];
-            try
-            {
-                // A PDF page is resized from its own cached full render rather than re-rendered,
-                // so opening a chapter's thumbnail strip does not re-run PDFium for every page it
-                // already rendered full-size. That render is already gated by ImageWorkGate on its
-                // own (PdfReader.RenderPageAsync), so it stays outside the gate below - nesting
-                // would be a reentrant wait on a semaphore that is not reentrant.
-                string? fullCached = null;
-                if (ComicFile.IsPdf(slice.ArchivePath))
-                {
-                    fullCached = await ReaderPageCache.GetOrRenderFullPageAsync(paths, slice, absoluteIndex, entry, ct);
-                    if (fullCached is null)
-                    {
-                        return NotFound();
-                    }
-                }
-
-                var missing = false;
-
-                // Gated. A client prefetching a chapter's whole thumbnail strip arrives as dozens
-                // of concurrent requests, each decoding a full page to produce a 200px JPEG, and
-                // nothing else in this path bounds them. The source page is opened inside the gate
-                // too, so a request queued behind it holds no page buffer until its turn comes.
-                await ImageWorkGate.RunAsync(async () =>
-                {
-                    var source = fullCached is not null
-                        ? System.IO.File.OpenRead(fullCached)
-                        : await reader.OpenPageAsync(slice, entry, ct);
-
-                    if (source is null)
-                    {
-                        missing = true;
-                        return;
-                    }
-
-                    // One copy into an array of the exact size: the thumbnailer takes nothing else,
-                    // and a growing MemoryStream allocated a series of large buffers per page.
-                    byte[] bytes;
-                    await using (source)
-                    {
-                        if (source.CanSeek)
-                        {
-                            bytes = new byte[source.Length - source.Position];
-                            await source.ReadExactlyAsync(bytes, ct);
-                        }
-                        else
-                        {
-                            using var copy = PooledStreams.Get("thumbnail");
-                            await source.CopyToAsync(copy, ct);
-                            bytes = copy.ToArray();
-                        }
-                    }
-
-                    var thumbnail = ReaderThumbnail(bytes);
-
-                    // Written aside and moved into place: an aborted request would otherwise leave a
-                    // truncated JPEG at the final path, served as immutable for a year.
-                    Directory.CreateDirectory(dir);
-                    var tmp = Path.Combine(dir, $"{Guid.NewGuid():N}.tmp");
-                    try
-                    {
-                        await System.IO.File.WriteAllBytesAsync(tmp, thumbnail, ct);
-                        try
-                        {
-                            System.IO.File.Move(tmp, cached, overwrite: true);
-                        }
-                        catch (Exception moveError) when (moveError is IOException or UnauthorizedAccessException &&
-                                                          System.IO.File.Exists(cached))
-                        {
-                            // Another request finished the same thumbnail and is serving it (Windows
-                            // refuses to replace an open file); the bytes match, so use that one.
-                            System.IO.File.Delete(tmp);
-                        }
-                    }
-                    catch
-                    {
-                        if (System.IO.File.Exists(tmp)) System.IO.File.Delete(tmp);
-                        throw;
-                    }
-                }, ct);
-
-                if (missing)
-                {
-                    return NotFound();
-                }
-            }
-            catch (Exception e)
-            {
-                // A page format libvips is not allowed to open (BMP among them) has no thumbnail.
-                logger.LogDebug(e, "Thumbnail failed for chapter {ChapterId} page {Page}", id, page);
-                return NotFound();
-            }
+            return NotFound();
         }
 
         SetPageCacheControl(slice);
