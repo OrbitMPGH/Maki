@@ -25,6 +25,12 @@ public class HostRuntimeTests
         Assert.Equal(expected, ConfigFileProvider.ListenUrl(new ConfigFile { BindAddress = bindAddress }));
 
     [Fact]
+    public void A_null_bind_address_listens_where_the_default_does() =>
+        Assert.Equal(
+            ConfigFileProvider.ListenUrl(new ConfigFile()),
+            ConfigFileProvider.ListenUrl(new ConfigFile { BindAddress = null! }));
+
+    [Fact]
     public void A_bind_address_that_is_not_an_address_stops_startup_with_a_reason()
     {
         var ex = Assert.Throws<InvalidOperationException>(() =>

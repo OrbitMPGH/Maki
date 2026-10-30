@@ -11,7 +11,9 @@ public class ConfigFile
     /// one IP address. The desktop build starts on <c>localhost</c> because a laptop on public Wi-Fi
     /// should not offer Maki to everyone on it; inside a container only <c>*</c> is reachable.
     /// </summary>
-    public string BindAddress { get; set; } = HostRuntime.Kind == HostRuntimeKind.Desktop ? "localhost" : "*";
+    public string BindAddress { get; set; } = DefaultBindAddress;
+
+    public static string DefaultBindAddress => HostRuntime.Kind == HostRuntimeKind.Desktop ? "localhost" : "*";
 
     public string LogLevel { get; set; } = "Information";
 
@@ -104,7 +106,8 @@ public class ConfigFileProvider
     /// somewhere unexpected.</summary>
     public static string ListenUrl(ConfigFile config)
     {
-        var address = config.BindAddress.Trim();
+        // A config.json with "BindAddress": null gets the default rather than a NullReferenceException.
+        var address = (config.BindAddress ?? ConfigFile.DefaultBindAddress).Trim();
         if (address is "*" or "" || address.Equals("localhost", StringComparison.OrdinalIgnoreCase))
             return $"http://{(address is "" ? "*" : address.ToLowerInvariant())}:{config.Port}";
 
