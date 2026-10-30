@@ -140,7 +140,7 @@ public class UpgradesControllerTests : IDisposable
 
     private TorrentUpgradeService Torrents(Maki.Data.MakiDbContext db) => new(db,
         new UpgradeEvaluationService(db, TestQuality.Create(_world.Registry)), _releases, _world.Inbox, _world.Settings,
-        TimeProvider.System, new FakeRelatedTitles(), NullLogger<TorrentUpgradeService>.Instance);
+        TimeProvider.System, new FakeRelatedTitles().Provider(), NullLogger<TorrentUpgradeService>.Instance);
 
     private int Proposal(int seriesId, string guid, Maki.Core.Entities.TorrentProposalStatus status =
         Maki.Core.Entities.TorrentProposalStatus.Pending)

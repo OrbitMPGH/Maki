@@ -12,7 +12,6 @@ using Maki.Core.Quality;
 using Maki.Core.Reading;
 using Maki.Core.Scrobbling;
 using Maki.Data;
-using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -125,7 +124,7 @@ public class TorrentUpgradeService(
     InboxService inbox,
     IAppSettings settings,
     TimeProvider time,
-    MangaBakaLocalStore store,
+    RivalTitleProvider rivalTitles,
     ILogger<TorrentUpgradeService> logger)
 {
     public static readonly TimeSpan SearchInterval = TimeSpan.FromDays(7);
@@ -133,8 +132,6 @@ public class TorrentUpgradeService(
     /// <summary>How soon a series whose search or grab failed is tried again, instead of waiting out the interval.</summary>
     public static readonly TimeSpan RetryAfterFailure = TimeSpan.FromDays(1);
     private const int MaxPlaceholders = 2000;
-
-    private List<(int SeriesId, IReadOnlyList<string> Titles)>? _libraryTitles;
 
     public async Task<IReadOnlyList<TorrentCandidateView>> EvaluateAsync(
         int seriesId, IReadOnlyList<ReleaseDto> found, CancellationToken ct)
@@ -149,7 +146,7 @@ public class TorrentUpgradeService(
         var options = await UpgradeOptions.LoadAsync(settings, ct);
         var library = evaluator is null ? null : await LibraryAsync(series, ct);
         var ourTitles = ReleaseTitleMatcher.Titles(series.Title, series.OriginalTitle, series.AltTitles);
-        var rivals = await RivalTitlesAsync(series, ourTitles, ct);
+        var rivals = await rivalTitles.ForAsync(db, series, ourTitles, ct);
 
         var views = new List<TorrentCandidateView>();
         foreach (var release in found)
@@ -203,29 +200,6 @@ public class TorrentUpgradeService(
                 Reasons = [.. verdict.Reasons.Select(r => r == SpanVerdictReasons.TitleUncertain ? SpanVerdictReasons.TitleRelatedSeries : r)]
             }
             : verdict;
-
-    /// <summary>
-    /// The titles that could take a release from this series: every title of the works MangaBaka
-    /// relates to it, and of every other library series, kept only when shaped like an extension of
-    /// one of its own (<see cref="ReleaseTitleMatcher.Rivals"/>). The library is read once per instance,
-    /// so the volume search job pays for it once a run rather than once a series.
-    /// </summary>
-    private async Task<IReadOnlyList<string>> RivalTitlesAsync(Series series, IReadOnlyList<string> ourTitles,
-        CancellationToken ct)
-    {
-        IEnumerable<string> related = series.MangaBakaId is { } id ? await store.GetRelatedTitlesAsync(id, ct) : [];
-
-        // Unfiltered on purpose: the titles are compared, never shown, and a restricted user's manual
-        // search should reach the verdict the job does.
-        _libraryTitles ??= (await db.Series.AsNoTracking().IgnoreQueryFilters()
-                .Select(s => new { s.Id, s.Title, s.OriginalTitle, s.AltTitles })
-                .ToListAsync(ct))
-            .Select(s => (s.Id, ReleaseTitleMatcher.Titles(s.Title, s.OriginalTitle, s.AltTitles)))
-            .ToList();
-        var others = _libraryTitles.Where(s => s.SeriesId != series.Id).SelectMany(s => s.Titles);
-
-        return ReleaseTitleMatcher.Rivals(ourTitles, related.Concat(others));
-    }
 
     /// <summary>Tells the results page a release would read with a marker language that is switched off.</summary>
     private static SpanVerdict WithMarkersOff(SpanVerdict verdict, bool markersOff) =>
