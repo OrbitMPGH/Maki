@@ -18,6 +18,7 @@ import type { IncognitoMode } from '../components/ui/incognito'
 import type { ReleaseParsedDto } from './upgrades'
 import { obtainedCount } from '../lib/chapterCounts'
 import { activeSeries } from '../lib/series'
+import { isProvisional, ratesProvisionally } from '../lib/rating'
 import type {
   AddSeriesRequest,
   ArchivePreview,
@@ -2664,6 +2665,8 @@ export function useBulkSetSeriesNotificationMode() {
 
 export interface SetRatingResult {
   rating: number | null
+  provisionalRating?: number | null
+  provisionalAtChapter?: number | null
 }
 
 /**
@@ -2686,6 +2689,56 @@ export function useSetRating() {
       for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
+}
+
+function useRatingMutation<V extends { seriesId: number }>(mutationFn: (vars: V) => Promise<SetRatingResult>) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: (_data, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
+    },
+  })
+}
+
+/** A "so far" score: never pushed to a tracker, and ignored by the server while a final rating exists. */
+export function useSetProvisionalRating() {
+  return useRatingMutation(({ seriesId, rating }: { seriesId: number; rating: number | null }) =>
+    api<SetRatingResult>(`/series/${seriesId}/rating/provisional`, {
+      method: 'PUT',
+      body: JSON.stringify({ rating }),
+    }),
+  )
+}
+
+/** Makes the "so far" score the rating, which pushes it to trackers like any other rating. */
+export function useFinalizeRating() {
+  return useRatingMutation(({ seriesId }: { seriesId: number }) =>
+    api<SetRatingResult>(`/series/${seriesId}/rating/finalize`, { method: 'POST' }),
+  )
+}
+
+/**
+ * The one way a star control rates a series. Part-read with no final rating sets a "so far" score;
+ * anything else sets the rating. Clearing clears whichever score is showing.
+ */
+export function useRateSeries() {
+  const final = useSetRating()
+  const provisional = useSetProvisionalRating()
+  return {
+    isPending: final.isPending || provisional.isPending,
+    rate: (
+      series: Pick<SeriesDto, 'id' | 'rating' | 'provisionalRating' | 'finished' | 'readChapterCount'>,
+      rating: number | null,
+      onSuccess?: (soFar: boolean) => void,
+    ) => {
+      const soFar = rating === null ? isProvisional(series) : ratesProvisionally(series)
+      const mutation = soFar ? provisional : final
+      mutation.mutate({ seriesId: series.id, rating }, { onSuccess: () => onSuccess?.(soFar) })
+    },
+  }
 }
 
 export function useTags() {

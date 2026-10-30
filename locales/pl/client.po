@@ -10137,6 +10137,10 @@ msgstr "Synchronizacja czytania z Kavitą"
 msgid "Kavita's reading belongs to another Maki account."
 msgstr ""
 
+#: src/components/series/RateHint.tsx
+msgid "Keep {soFar}"
+msgstr ""
+
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Keep as is"
@@ -11108,6 +11112,10 @@ msgstr "Główna historia {relatedTo}"
 #, fuzzy
 msgid "mainstream"
 msgstr "mainstreamowe"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Make this my rating"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -15316,6 +15324,11 @@ msgstr "Oceniono {rated}"
 msgid "Rated {rating}/10"
 msgstr "Oceniono na {rating}/10"
 
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Rated {rating}/10 so far"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Rated {ratingLabel} or more"
@@ -18893,6 +18906,14 @@ msgstr "Migawka na dysku: {snapshotSize}, odświeżona {refreshedAtLabel}"
 #, fuzzy
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "Migawka na dysku: {snapshotSize}, odświeżona o nieznanej porze"
+
+#: src/components/series/SeriesHero.tsx
+msgid "so far"
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "so far, at ch. {soFarChapter}"
+msgstr ""
 
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Some checks failed"
@@ -22593,6 +22614,10 @@ msgstr "Obejrzałeś anime {animeTitle}. Obejmuje ono rozdziały do {coveredTo}.
 #, fuzzy
 msgid "You follow nobody yet. Open a creator or studio and press Follow."
 msgstr "Nikogo jeszcze nie obserwujesz. Otwórz twórcę lub studio i naciśnij Obserwuj."
+
+#: src/components/series/RateHint.tsx
+msgid "You had this at {soFar} so far. Keep it?"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy

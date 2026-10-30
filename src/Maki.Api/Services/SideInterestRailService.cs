@@ -30,7 +30,7 @@ public class SideInterestRailService(
             .Active()
             .Where(s => s.MangaBakaId != null && s.Incognito != IncognitoMode.Full
                 && allowed.Contains(s.ContentRating ?? ContentRating.Safe)
-                && !db.UserSeriesStates.Any(u => u.SeriesId == s.Id && u.Rating < 5))
+                && !db.UserSeriesStates.Any(u => u.SeriesId == s.Id && (u.Rating ?? u.ProvisionalRating) < 5))
             .Select(s => new { s.MangaBakaId, s.Title, s.Genres, s.Tags })
             .ToListAsync(ct);
         var eligible = (await seedWeights.SnapshotAsync(db, scope, ct)).Effective.EligibleIds.ToHashSet();

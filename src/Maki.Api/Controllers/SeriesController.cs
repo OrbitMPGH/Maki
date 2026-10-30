@@ -115,7 +115,12 @@ public class SeriesController(
         var refreshed = await UserStateForAsync(id, ct);
         return Ok(SeriesDto.FromEntity(
             series, rating: refreshed.Rating, notificationMode: refreshed.NotificationMode,
-            titleLanguage: await TitleLanguageAsync(ct)));
+            titleLanguage: await TitleLanguageAsync(ct)) with
+        {
+            ProvisionalRating = refreshed.ProvisionalRating,
+            ProvisionalAtChapter = refreshed.ProvisionalAtChapter,
+            Finished = refreshed.Finished,
+        });
     }
 
     /// <summary>Re-standardizes the ComicInfo.xml inside every CBZ the series owns.</summary>
@@ -372,8 +377,12 @@ public class SeriesController(
         // mode with no per-series lookup. Unfiltered on Rating now that a row can exist for the
         // mode alone: filtering on it would report every muted-but-unrated series as Default.
         var userStates = await db.UserSeriesStates
-            .Select(x => new { x.SeriesId, x.Rating, x.NotificationMode })
+            .Select(x => new { x.SeriesId, x.Rating, x.ProvisionalRating, x.ProvisionalAtChapter, x.NotificationMode })
             .ToDictionaryAsync(x => x.SeriesId, x => x, ct);
+        var finishedIds = (await db.ReadingStates
+            .Where(r => r.Finished)
+            .Select(r => r.SeriesId)
+            .ToListAsync(ct)).ToHashSet();
 
         // Which sources each series is linked to, and which of those actually run. Two flat reads
         // grouped in memory rather than Include(s => s.SourceMappings) on the materialized list
@@ -434,6 +443,9 @@ public class SeriesController(
                 titleLanguage: titleLanguage) with
             {
                 RemovedChapterCount = counts?.Removed ?? 0,
+                ProvisionalRating = userState?.ProvisionalRating,
+                ProvisionalAtChapter = userState?.ProvisionalAtChapter,
+                Finished = finishedIds.Contains(s.Id),
                 Sources = [.. mappings.Select(m => m.SourceName).Distinct().Order()],
                 EnabledSources =
                 [
@@ -528,15 +540,17 @@ public class SeriesController(
     /// the entity any more, so leaving them out returns the defaults and blanks the star rating and
     /// the notification picker in the client's cache.
     /// </summary>
-    private async Task<(int? Rating, SeriesNotificationMode NotificationMode)> UserStateForAsync(
-        int seriesId, CancellationToken ct)
+    private async Task<(int? Rating, SeriesNotificationMode NotificationMode, int? ProvisionalRating,
+        double? ProvisionalAtChapter, bool Finished)> UserStateForAsync(int seriesId, CancellationToken ct)
     {
         var state = await db.UserSeriesStates
             .Where(x => x.SeriesId == seriesId)
-            .Select(x => new { x.Rating, x.NotificationMode })
+            .Select(x => new { x.Rating, x.NotificationMode, x.ProvisionalRating, x.ProvisionalAtChapter })
             .FirstOrDefaultAsync(ct);
+        var finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == seriesId && r.Finished, ct);
 
-        return (state?.Rating, state?.NotificationMode ?? SeriesNotificationMode.Default);
+        return (state?.Rating, state?.NotificationMode ?? SeriesNotificationMode.Default,
+            state?.ProvisionalRating, state?.ProvisionalAtChapter, finished);
     }
 
     /// <summary>
@@ -1042,7 +1056,11 @@ public class SeriesController(
 
         var userState = await db.UserSeriesStates
             .Where(x => x.SeriesId == id)
-            .Select(x => new { x.Rating, x.NotificationMode, x.ReaderPrefsJson, x.ReadingProfileId })
+            .Select(x => new
+            {
+                x.Rating, x.ProvisionalRating, x.ProvisionalAtChapter, x.NotificationMode, x.ReaderPrefsJson,
+                x.ReadingProfileId,
+            })
             .FirstOrDefaultAsync(ct);
         var readerPrefs = await readingProfiles.ResolveForAsync(
             series.Type, userState?.ReaderPrefsJson, userState?.ReadingProfileId, ct);
@@ -1069,6 +1087,9 @@ public class SeriesController(
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
             RemovedChapterCount = counts?.Removed ?? 0,
+            ProvisionalRating = userState?.ProvisionalRating,
+            ProvisionalAtChapter = userState?.ProvisionalAtChapter,
+            Finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == id && r.Finished, ct),
             ReadFileCleanupActive = ReadFileCleanupService.AppliesTo(series.ReadFileCleanup, await readFileCleanup.OptionsAsync(ct)),
             PendingProposalId = pendingProposalId,
             ArchiveHintEligible = currentUser.Has(MakiPermission.ArchiveSeries) &&
@@ -1841,6 +1862,9 @@ public class SeriesController(
             series, rating: moved.Rating, notificationMode: moved.NotificationMode,
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
+            ProvisionalRating = moved.ProvisionalRating,
+            ProvisionalAtChapter = moved.ProvisionalAtChapter,
+            Finished = moved.Finished,
             Warnings = [localizer.Get("error.series.folderMoved",
                 new { from = oldRootFolderPath, to = destination.Path })]
         });
@@ -2198,13 +2222,89 @@ public class SeriesController(
             return NotFound();
         }
 
-        var state = await UpsertUserStateAsync(id, s => s.Rating = request.Rating, ct);
+        var state = await UpsertUserStateAsync(id, s =>
+        {
+            s.Rating = request.Rating;
+            if (request.Rating is not null)
+            {
+                ClearProvisional(s);
+            }
+        }, ct);
 
         // Push the score (0 clears it on trackers that support that) in the background — tracker
         // auth-checks + network + pacing take several seconds, and the UI shouldn't wait on them.
         // The scrobble log records what synced.
         scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0);
-        return Ok(new { rating = state.Rating });
+        return Ok(new { rating = state.Rating, provisionalRating = state.ProvisionalRating });
+    }
+
+    /// <summary>
+    /// Sets the caller's "so far" score on a series they are partway through. Never pushed to a
+    /// tracker, and refused while a final rating exists, since the final one wins.
+    /// </summary>
+    [HttpPut("{id:int}/rating/provisional")]
+    public async Task<IActionResult> SetProvisionalRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct)
+    {
+        if (request.Rating is { } r && r is < 1 or > 10)
+        {
+            return this.Fail(localizer, "error.series.invalidRating");
+        }
+
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        var atChapter = request.Rating is null ? null : await HighestReadChapterAsync(id, ct);
+        var state = await UpsertUserStateAsync(id, s =>
+        {
+            if (s.Rating is not null)
+            {
+                return;
+            }
+
+            s.ProvisionalRating = request.Rating;
+            s.ProvisionalRatedAt = request.Rating is null ? null : DateTime.UtcNow;
+            s.ProvisionalAtChapter = atChapter;
+        }, ct);
+
+        return Ok(new
+        {
+            rating = state.Rating,
+            provisionalRating = state.ProvisionalRating,
+            provisionalAtChapter = state.ProvisionalAtChapter,
+        });
+    }
+
+    /// <summary>Makes the caller's "so far" score their rating, through <see cref="SetRating"/> so it is pushed like any other.</summary>
+    [HttpPost("{id:int}/rating/finalize")]
+    public async Task<IActionResult> FinalizeRating(int id, CancellationToken ct)
+    {
+        var provisional = await db.UserSeriesStates
+            .Where(s => s.SeriesId == id)
+            .Select(s => s.ProvisionalRating)
+            .FirstOrDefaultAsync(ct);
+        return provisional is { } rating
+            ? await SetRating(id, new SetRatingRequest(rating), ct)
+            : this.Fail(localizer, "error.series.noProvisionalRating");
+    }
+
+    private static void ClearProvisional(UserSeriesState state)
+    {
+        state.ProvisionalRating = null;
+        state.ProvisionalRatedAt = null;
+        state.ProvisionalAtChapter = null;
+    }
+
+    private async Task<double?> HighestReadChapterAsync(int seriesId, CancellationToken ct)
+    {
+        // In memory: SQLite cannot aggregate a decimal column in SQL.
+        var numbers = await ReadCounts.Read(db)
+            .Where(p => p.SeriesId == seriesId)
+            .Join(db.Chapters, p => p.ChapterId, c => c.Id, (_, c) => c.Number)
+            .Where(n => n != null)
+            .ToListAsync(ct);
+        return numbers.Count == 0 ? null : (double)numbers.Max()!.Value;
     }
 
     /// <summary>Hides the "finished, archive it?" hint on this series for the caller, on every device.</summary>

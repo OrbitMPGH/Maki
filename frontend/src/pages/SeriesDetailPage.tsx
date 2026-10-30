@@ -87,7 +87,8 @@ import {
   useSetUpgradeProfile,
   useSetReadFileCleanup,
   useSetSeriesPageConversion,
-  useSetRating,
+  useRateSeries,
+  useFinalizeRating,
   useToggleChapterWanted,
   useUnlinkChapters,
   useDeleteChapterFiles,
@@ -611,7 +612,8 @@ function SeriesDetailBody() {
   const [upgradeNowModalOpen, setUpgradeNowModalOpen] = useState(false)
   const setIncognito = useSetIncognito()
   const setNotificationMode = useSetSeriesNotificationMode()
-  const setRating = useSetRating()
+  const rateSeries = useRateSeries()
+  const finalizeRating = useFinalizeRating()
   const unlinkChapters = useUnlinkChapters()
   const setChaptersWanted = useSetChaptersWanted()
   const deleteChapters = useDeleteChapters()
@@ -1544,12 +1546,24 @@ function SeriesDetailBody() {
     queueAllWanted()
   }
 
-  const submitRating = (rating: number | null) =>
-      setRating.mutate(
-          { seriesId, rating },
+  const submitRating = (rating: number | null) => {
+    if (!series) return
+    rateSeries.rate(series, rating, (soFar) =>
+        notify.ok(
+            rating === null
+                ? staticT`Rating cleared`
+                : soFar ? staticT`Rated ${rating}/10 so far` : staticT`Rated ${rating}/10`,
+        ),
+    )
+  }
+
+  const keepRating = () =>
+      finalizeRating.mutate(
+          { seriesId },
           {
-            onSuccess: () =>
-                notify.ok(rating === null ? staticT`Rating cleared` : staticT`Rated ${rating}/10`),
+            onSuccess: ({ rating }) => {
+              if (rating != null) notify.ok(staticT`Rated ${rating}/10`)
+            },
           },
       )
 
@@ -1910,6 +1924,7 @@ function SeriesDetailBody() {
         <SeriesHero
             series={series}
             onRate={submitRating}
+            onFinalize={keepRating}
             actions={
               <>
                 {continueAt && (
@@ -2203,7 +2218,12 @@ function SeriesDetailBody() {
 
         {/* One hint at a time: rating comes first, the archive offer follows once it is settled. */}
         {series.rateHintEligible ? (
-          <RateHint onRate={submitRating} onDismiss={() => dismissRateHint.mutate(series.id)} />
+          <RateHint
+            soFar={series.provisionalRating ?? null}
+            onRate={submitRating}
+            onKeep={keepRating}
+            onDismiss={() => dismissRateHint.mutate(series.id)}
+          />
         ) : series.archiveHintEligible && series.archivedAt == null && canArchive && (
           <ArchiveHint
             onArchive={openArchiveDialog}

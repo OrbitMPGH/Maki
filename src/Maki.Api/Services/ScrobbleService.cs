@@ -1259,6 +1259,10 @@ public class ScrobbleService(
             }
 
             state.Rating = scores[seriesId];
+            // The final rating wins, the same as a rating set on the series page.
+            state.ProvisionalRating = null;
+            state.ProvisionalRatedAt = null;
+            state.ProvisionalAtChapter = null;
             state.UpdatedAt = DateTime.UtcNow;
         }
 
@@ -1278,9 +1282,11 @@ public class ScrobbleService(
             {
                 s.Id,
                 s.Title,
+                // The score the reader sees: a "so far" one stands in for a missing final rating, so
+                // a remote score equal to it is not listed as a change.
                 Rating = db.UserSeriesStates
                     .Where(u => u.UserId == userId && u.SeriesId == s.Id)
-                    .Select(u => u.Rating)
+                    .Select(u => u.Rating ?? u.ProvisionalRating)
                     .FirstOrDefault(),
                 s.MalId,
                 s.AniListId,

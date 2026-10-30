@@ -2135,6 +2135,11 @@ msgid "error.series.invalidRating"
 msgstr "평점은 1에서 10 사이이거나 지우려면 null이어야 합니다"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
+#. English: There is no "so far" rating to keep
+msgid "error.series.noProvisionalRating"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series not found on metadata provider
 #, fuzzy
 msgid "error.series.metadataNotFound"

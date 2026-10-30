@@ -1529,6 +1529,10 @@ msgid "error.series.invalidRating"
 msgstr "Rating must be between 1 and 10, or null to clear"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.noProvisionalRating"
+msgstr "There is no \"so far\" rating to keep"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.metadataNotFound"
 msgstr "Series not found on metadata provider"
 

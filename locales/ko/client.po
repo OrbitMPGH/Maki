@@ -10137,6 +10137,10 @@ msgstr "Kavita 읽기 동기화"
 msgid "Kavita's reading belongs to another Maki account."
 msgstr ""
 
+#: src/components/series/RateHint.tsx
+msgid "Keep {soFar}"
+msgstr ""
+
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Keep as is"
@@ -11108,6 +11112,10 @@ msgstr "{relatedTo}의 본편"
 #, fuzzy
 msgid "mainstream"
 msgstr "메인스트림"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Make this my rating"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -15316,6 +15324,11 @@ msgstr "평가: {rated}"
 msgid "Rated {rating}/10"
 msgstr "{rating}/10점"
 
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Rated {rating}/10 so far"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Rated {ratingLabel} or more"
@@ -18893,6 +18906,14 @@ msgstr "디스크의 스냅샷: {snapshotSize}, {refreshedAtLabel}에 새로 고
 #, fuzzy
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "디스크의 스냅샷: {snapshotSize}, 새로 고침 시간 알 수 없음"
+
+#: src/components/series/SeriesHero.tsx
+msgid "so far"
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "so far, at ch. {soFarChapter}"
+msgstr ""
 
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Some checks failed"
@@ -22593,6 +22614,10 @@ msgstr "{animeTitle}을(를) 완결했습니다. 애니메이션은 {coveredTo}�
 #, fuzzy
 msgid "You follow nobody yet. Open a creator or studio and press Follow."
 msgstr "아직 팔로우한 사람이 없습니다. 창작자나 스튜디오 페이지를 열고 팔로우를 누르세요."
+
+#: src/components/series/RateHint.tsx
+msgid "You had this at {soFar} so far. Keep it?"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy

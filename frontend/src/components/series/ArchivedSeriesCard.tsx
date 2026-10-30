@@ -7,6 +7,7 @@ import { useChapters } from '../../api/hooks'
 import { useSeriesReadProgress } from '../../api/reader'
 import type { SeriesDto } from '../../api/types'
 import { formatDate } from '../../format'
+import { isProvisional, shownRating } from '../../lib/rating'
 import { CoverCard, type OfflineAvailability } from '../ui/CoverCard'
 import { SeriesRow } from '../ui/SeriesRow'
 import { countSkipped } from './chapterTable'
@@ -102,19 +103,21 @@ export const ArchivedSeriesCard = memo(function ArchivedSeriesCard({
     </Menu>
   )
 
+  const score = shownRating(series)
   const rating = (
     <Group gap={2} wrap="nowrap">
       <Rating
         size="sm"
         count={5}
         fractions={2}
-        value={series.rating ? series.rating / 2 : 0}
+        value={score ? score / 2 : 0}
+        color={isProvisional(series) ? 'var(--ink-3)' : undefined}
         readOnly={selectMode}
         role="group"
         aria-label={t`Your rating for ${displayTitle}`}
         onChange={(v) => onRate(series.id, Math.round(v * 2) || null)}
       />
-      {series.rating && !selectMode ? (
+      {score && !selectMode ? (
         <Tooltip label={t`Clear rating`} withArrow>
           <ActionIcon
             size="xs"

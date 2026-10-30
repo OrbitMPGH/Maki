@@ -10137,6 +10137,10 @@ msgstr "Kavita 阅读同步"
 msgid "Kavita's reading belongs to another Maki account."
 msgstr ""
 
+#: src/components/series/RateHint.tsx
+msgid "Keep {soFar}"
+msgstr ""
+
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Keep as is"
@@ -11108,6 +11112,10 @@ msgstr "{relatedTo} 的正篇"
 #, fuzzy
 msgid "mainstream"
 msgstr "主流"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Make this my rating"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -15316,6 +15324,11 @@ msgstr "评分 {rated}"
 msgid "Rated {rating}/10"
 msgstr "评分 {rating}/10"
 
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Rated {rating}/10 so far"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Rated {ratingLabel} or more"
@@ -18893,6 +18906,14 @@ msgstr "磁盘上的快照：{snapshotSize}，刷新于 {refreshedAtLabel}"
 #, fuzzy
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "磁盘上的快照：{snapshotSize}，刷新时间未知"
+
+#: src/components/series/SeriesHero.tsx
+msgid "so far"
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "so far, at ch. {soFarChapter}"
+msgstr ""
 
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Some checks failed"
@@ -22593,6 +22614,10 @@ msgstr "你已看完《{animeTitle}》。动画改编到第 {coveredTo} 章。�
 #, fuzzy
 msgid "You follow nobody yet. Open a creator or studio and press Follow."
 msgstr "你还没有关注任何人。打开一个创作者或工作室页面，点击“关注”。"
+
+#: src/components/series/RateHint.tsx
+msgid "You had this at {soFar} so far. Keep it?"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy

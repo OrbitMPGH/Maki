@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { Button, Tabs } from '@mantine/core'
 import { http, HttpResponse } from 'msw'
 import { api, neverResolve } from '../../../.storybook/mocks/api'
@@ -20,6 +20,7 @@ const meta = {
   args: {
     series: seriesDto(1),
     onRate: fn(),
+    onFinalize: fn(),
     actions: <Button>Continue reading</Button>,
     tabs,
   },
@@ -49,6 +50,15 @@ export const Completed: Story = {
 
 export const Rated: Story = {
   args: { series: seriesDto(3, { rating: 8 }) },
+}
+
+export const RatedSoFar: Story = {
+  args: { series: seriesDto(3, { rating: null, provisionalRating: 7, provisionalAtChapter: 34, readChapterCount: 34 }) },
+  play: async ({ canvas, args, userEvent }) => {
+    await expect(await canvas.findByText('so far, at ch. 34')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Make this my rating' }))
+    await waitFor(() => expect(args.onFinalize).toHaveBeenCalledOnce())
+  },
 }
 
 export const LockedTitleAndManyAltTitles: Story = {

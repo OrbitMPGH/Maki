@@ -8453,6 +8453,10 @@ msgstr "Kavita read sync"
 msgid "Kavita's reading belongs to another Maki account."
 msgstr "Kavita's reading belongs to another Maki account."
 
+#: src/components/series/RateHint.tsx
+msgid "Keep {soFar}"
+msgstr "Keep {soFar}"
+
 #: src/components/SourceMeasurePanel.tsx
 msgid "Keep as is"
 msgstr "Keep as is"
@@ -9258,6 +9262,10 @@ msgstr "Main story of {relatedTo}"
 #: src/pages/DiscoverPage.tsx
 msgid "mainstream"
 msgstr "mainstream"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Make this my rating"
+msgstr "Make this my rating"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Maki {checkedVersion} is available"
@@ -12769,6 +12777,11 @@ msgstr "Rated {rated}"
 msgid "Rated {rating}/10"
 msgstr "Rated {rating}/10"
 
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Rated {rating}/10 so far"
+msgstr "Rated {rating}/10 so far"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Rated {ratingLabel} or more"
 msgstr "Rated {ratingLabel} or more"
@@ -15762,6 +15775,14 @@ msgstr "Snapshot on disk: {snapshotSize}, refreshed {refreshedAtLabel}"
 #: src/pages/settings/LibraryCards.tsx
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
+
+#: src/components/series/SeriesHero.tsx
+msgid "so far"
+msgstr "so far"
+
+#: src/components/series/SeriesHero.tsx
+msgid "so far, at ch. {soFarChapter}"
+msgstr "so far, at ch. {soFarChapter}"
 
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Some checks failed"
@@ -18843,6 +18864,10 @@ msgstr "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start
 #: src/components/discover/FollowingRail.tsx
 msgid "You follow nobody yet. Open a creator or studio and press Follow."
 msgstr "You follow nobody yet. Open a creator or studio and press Follow."
+
+#: src/components/series/RateHint.tsx
+msgid "You had this at {soFar} so far. Keep it?"
+msgstr "You had this at {soFar} so far. Keep it?"
 
 #: src/components/AnimeCoverageBar.tsx
 msgid "You have read to ch. {readChapter}"

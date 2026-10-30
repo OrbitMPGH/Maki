@@ -2135,6 +2135,11 @@ msgid "error.series.invalidRating"
 msgstr "La note doit être comprise entre 1 et 10, ou null pour l'effacer"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
+#. English: There is no "so far" rating to keep
+msgid "error.series.noProvisionalRating"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series not found on metadata provider
 #, fuzzy
 msgid "error.series.metadataNotFound"

@@ -219,6 +219,19 @@ public record SeriesDto(
     /// </summary>
     public bool RateHintEligible { get; init; }
 
+    /// <summary>The caller's "so far" score (1–10), or null. Never set alongside <see cref="Rating"/>.</summary>
+    public int? ProvisionalRating { get; init; }
+
+    /// <summary>The highest chapter number read when <see cref="ProvisionalRating"/> was set.</summary>
+    public double? ProvisionalAtChapter { get; init; }
+
+    /// <summary>
+    /// The caller finished the series (<c>ReadingState.Finished</c>). The stars set a final rating
+    /// once this is true and a "so far" one while the series is part-read. Filled by the list and
+    /// detail endpoints.
+    /// </summary>
+    public bool Finished { get; init; }
+
     /// <summary>"Default" | "On" | "Off": this series' choice about deleting read chapter files.</summary>
     public string ReadFileCleanup { get; init; } = nameof(Core.Entities.ReadFileCleanup.Default);
 
