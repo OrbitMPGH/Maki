@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Localization;
+using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Core.Storage;
@@ -145,8 +146,30 @@ public class RootFolderController(
             .Where(g => g.RootFolderId == id)
             .Select(g => g.UserId)
             .ToListAsync(ct);
-        db.RootFolders.Remove(folder);
-        await db.SaveChangesAsync(ct);
+        // Health rows, operations and scans have no foreign key to this table. An operation mid
+        // apply or delete is left for startup recovery; one waiting on a download never gets it,
+        // since the series and so its queue rows are gone.
+        await HealthOperationService.MutationGate.WaitAsync(ct);
+        try
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            var files = db.HealthFiles.Where(f => f.RootFolderId == id);
+            await db.HealthOperations
+                .Where(o => o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled"
+                    && o.Status != "applying" && o.Status != "deleting" && files.Any(f => f.Id == o.FileId))
+                .ExecuteUpdateAsync(u => u.SetProperty(o => o.Status, "cancelled").SetProperty(o => o.FinishedAt, DateTime.UtcNow), ct);
+            await db.HealthScans.Where(s => s.RootFolderId == id && (s.Status == "pending" || s.Status == "running"))
+                .ExecuteUpdateAsync(u => u.SetProperty(s => s.Status, "cancelled"), ct);
+            await HealthInventory.RetireAsync(db, files, ct);
+            db.RootFolders.Remove(folder);
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }
+        finally
+        {
+            HealthOperationService.MutationGate.Release();
+        }
+
         foreach (var userId in grantees)
         {
             snapshots.Evict(userId);

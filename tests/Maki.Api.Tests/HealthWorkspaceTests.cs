@@ -340,6 +340,24 @@ public class HealthWorkspaceTests : IDisposable
         Assert.DoesNotContain(db.HealthFindings,f=>f.State=="open");
         Assert.DoesNotContain(db.HealthFindings,f=>f.Kind=="missing");
     }
+    [Fact] public async Task A_full_scan_retires_rows_of_a_root_that_no_longer_exists_and_clears_the_duplicate_on_the_twin()
+    {
+        // A series moved to another root before its rows followed it, then the old root deleted:
+        // the stranded row keeps the file's hash, so the file's new row reads as its duplicate.
+        using var db=fixture.NewContext();var file=await Seed(db,true);
+        var stranded=new HealthFile{RootFolderId=file.RootFolderId+100,RelativePath="one.cbz",Status="complete",ContentHash=file.ContentHash,VerifiedVersion=file.VerifiedVersion,AnalyzerVersion=file.AnalyzerVersion};
+        db.HealthFiles.Add(stranded);await db.SaveChangesAsync();
+        db.HealthFindings.Add(new HealthFinding{FileId=stranded.Id,Version=stranded.Version,Kind="duplicate",MessageKey="health.finding.duplicate"});
+        db.HealthFindings.Add(new HealthFinding{FileId=file.Id,Version=file.Version,Kind="duplicate",MessageKey="health.finding.duplicate"});
+        var scan=new HealthScan();db.HealthScans.Add(scan);await db.SaveChangesAsync();
+        await new HealthScanService(db).RunAsync(scan,default);
+        db.ChangeTracker.Clear();
+        Assert.Equal("completed",scan.Status);
+        Assert.True((await db.HealthFiles.SingleAsync(f=>f.Id==stranded.Id)).Removed);
+        Assert.False((await db.HealthFiles.SingleAsync(f=>f.Id==file.Id)).Removed);
+        Assert.DoesNotContain(db.HealthFindings,f=>f.FileId==stranded.Id&&f.State=="open");
+        Assert.DoesNotContain(db.HealthFindings,f=>f.Kind=="duplicate"&&f.State=="open");
+    }
     [Fact] public async Task A_scan_still_reports_a_linked_archive_that_is_gone_from_disk()
     {
         using var db=fixture.NewContext();await Seed(db,true);

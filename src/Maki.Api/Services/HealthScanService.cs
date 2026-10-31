@@ -52,6 +52,9 @@ public class HealthScanService(MakiDbContext db)
                 .ToHashSet(seen.Comparer));
         var files = new List<HealthFile>();
         var retired = new List<int>();
+        // Rows of a deleted root are never enumerated below, and left live their hashes read as duplicates.
+        if (scan.RootFolderId == null && scan.SeriesId == null && selected.Length == 0)
+            retired.AddRange(await HealthInventory.RetireAsync(db, db.HealthFiles.Where(f => !db.RootFolders.Any(r => r.Id == f.RootFolderId)), ct));
         foreach (var root in roots)
         {
             if (scan.RootFolderId != null && root.Id != scan.RootFolderId) continue;
@@ -346,7 +349,7 @@ public class HealthScanService(MakiDbContext db)
         file.AnalyzedAt = DateTime.UtcNow;
         file.AnalysisJson = JsonSerializer.Serialize(analysis, Json);
         if (!await db.HealthFileVersions.AnyAsync(v => v.Id == file.Version, ct))
-            db.HealthFileVersions.Add(new() { Id = file.Version, FileId = file.Id, ContentHash = file.ContentHash, Size = file.Size, ModifiedAt = file.ModifiedAt, RelativePath = file.RelativePath, AnalyzerVersion = file.AnalyzerVersion });
+            db.HealthFileVersions.Add(HealthInventory.VersionOf(file));
         var cacheId = $"{analysis.Hash}:{ArchiveHealthAnalyzer.VerifyVersion}";
         if (analysis.Hash != null && analysis.Status == "complete" && !await db.HealthAnalyses.AnyAsync(a => a.Id == cacheId, ct))
             db.HealthAnalyses.Add(new() { Id = cacheId, ContentHash = analysis.Hash, AnalyzerVersion = ArchiveHealthAnalyzer.VerifyVersion, AnalysisJson = file.AnalysisJson });
