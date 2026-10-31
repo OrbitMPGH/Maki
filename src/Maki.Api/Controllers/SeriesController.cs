@@ -1821,16 +1821,25 @@ public class SeriesController(
             }
 
             series.RootFolderId = destination.Id;
+            // The inventory rows ride along in the same save, so they land with the series or
+            // not at all; detached on failure so a retry starts from what the database holds.
+            var healthRows = new List<object>();
             try
             {
                 // Cancellation must not be observed here: every file has already moved, so a
                 // cancelled save would leave the DB pointing at the old root while the files sit
                 // in the new one. CancellationToken.None keeps this write unconditional.
+                healthRows = await HealthInventory.MoveSeriesAsync(db, id, destination.Id, CancellationToken.None);
                 await db.SaveChangesAsync(CancellationToken.None);
             }
             catch (Exception ex)
             {
                 series.RootFolderId = oldRootFolderId;
+                foreach (var row in healthRows)
+                {
+                    db.Entry(row).State = EntityState.Detached;
+                }
+
                 logger.LogError(ex, "Could not save the series move for {Title} to {Destination}", series.Title, destination.Path);
                 RollbackMoves();
 

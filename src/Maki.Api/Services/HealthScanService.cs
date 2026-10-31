@@ -52,6 +52,13 @@ public class HealthScanService(MakiDbContext db)
                 .ToHashSet(seen.Comparer));
         var files = new List<HealthFile>();
         var retired = new List<int>();
+        // Rows of a root that no longer exists are never enumerated below, so a full sweep retires
+        // them here: left live, their hashes read as duplicates of the files' rows under a new root.
+        if (scan.RootFolderId == null && scan.SeriesId == null && selected.Length == 0)
+        {
+            var rootIds = roots.Select(r => r.Id).ToList();
+            retired.AddRange(await HealthInventory.RetireAsync(db, db.HealthFiles.Where(f => !rootIds.Contains(f.RootFolderId)), ct));
+        }
         foreach (var root in roots)
         {
             if (scan.RootFolderId != null && root.Id != scan.RootFolderId) continue;

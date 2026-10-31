@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Localization;
+using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Core.Storage;
@@ -145,8 +146,16 @@ public class RootFolderController(
             .Where(g => g.RootFolderId == id)
             .Select(g => g.UserId)
             .ToListAsync(ct);
-        db.RootFolders.Remove(folder);
-        await db.SaveChangesAsync(ct);
+        // The inventory has no foreign key to this table, so its rows for the folder would
+        // otherwise outlive it unvisited, still live and still carrying their content hashes.
+        await using (var transaction = await db.Database.BeginTransactionAsync(ct))
+        {
+            await HealthInventory.RetireAsync(db, db.HealthFiles.Where(f => f.RootFolderId == id), ct);
+            db.RootFolders.Remove(folder);
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }
+
         foreach (var userId in grantees)
         {
             snapshots.Evict(userId);
