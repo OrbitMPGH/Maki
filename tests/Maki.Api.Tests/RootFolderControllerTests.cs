@@ -262,6 +262,33 @@ public class RootFolderControllerTests : IDisposable
         Assert.Empty(check.RootFolders.Where(f => f.Id == folderId));
     }
 
+    [Fact]
+    public async Task Delete_cancels_waiting_health_operations_and_scans_of_the_folder()
+    {
+        var folderId = SeedFolder();
+        int waitingId, applyingId, scanId;
+        using (var db = _db.NewContext())
+        {
+            var file = new HealthFile { RootFolderId = folderId, RelativePath = "a.cbz" };
+            db.HealthFiles.Add(file);
+            db.SaveChanges();
+            var waiting = new HealthOperation { FileId = file.Id, Status = "downloading" };
+            var applying = new HealthOperation { FileId = file.Id, Status = "applying" };
+            var scan = new HealthScan { RootFolderId = folderId };
+            db.HealthOperations.AddRange(waiting, applying);
+            db.HealthScans.Add(scan);
+            db.SaveChanges();
+            (waitingId, applyingId, scanId) = (waiting.Id, applying.Id, scan.Id);
+        }
+
+        Assert.IsType<NoContentResult>(await Controller().Delete(folderId, CancellationToken.None));
+
+        using var check = _db.NewContext();
+        Assert.Equal("cancelled", check.HealthOperations.Single(o => o.Id == waitingId).Status);
+        Assert.Equal("applying", check.HealthOperations.Single(o => o.Id == applyingId).Status);
+        Assert.Equal("cancelled", check.HealthScans.Single(s => s.Id == scanId).Status);
+    }
+
     private static string ConflictError(IActionResult result) =>
         (string)((ConflictObjectResult)result).Value!.GetType().GetProperty("error")!.GetValue(((ConflictObjectResult)result).Value)!;
 
