@@ -52,6 +52,21 @@ public enum ReadFileCleanup
     Off = 2
 }
 
+/// <summary>
+/// A series' own page conversion choice. Default follows the rules and the default stop, Never
+/// leaves its files alone, and the rest convert every file at that stop.
+/// </summary>
+public enum PageConversionOverride
+{
+    Default = 0,
+    Never = 1,
+    Smallest = 2,
+    Compact = 3,
+    Balanced = 4,
+    High = 5,
+    Lossless = 6
+}
+
 public enum NewChapterMonitorMode
 {
     All = 0,
@@ -184,4 +199,39 @@ public enum QueueStatus
     /// Nothing in the pipeline may advance it on its own — see <c>TorrentImportService</c>.
     /// </summary>
     AwaitingImport = 11
+}
+
+/// <summary>
+/// The moments the reader is asked how a series is going so far. Flags, persisted in
+/// <c>UserSeriesState</c>: append only, never renumber.
+/// </summary>
+[Flags]
+public enum RatingCheckpoints
+{
+    None = 0,
+
+    /// <summary>About ten chapters in, with no rating of either kind yet.</summary>
+    Hooked = 1,
+
+    /// <summary>Read up to the last wanted chapter of a series that is still running.</summary>
+    CaughtUp = 2,
+
+    /// <summary>Finished the last chapter of a volume. Opt-in (<c>ratings.prompts.volumes</c>), and repeatable.</summary>
+    VolumeEnd = 4,
+}
+
+/// <summary>Where a <c>RatingSnapshot</c> came from. Persisted: append only.</summary>
+public enum RatingSnapshotOrigin
+{
+    /// <summary>The stars on the series page or a card.</summary>
+    Manual = 0,
+
+    /// <summary>A "how is it so far?" prompt.</summary>
+    Checkpoint = 1,
+
+    /// <summary>Keeping a "so far" score as the rating.</summary>
+    Finish = 2,
+
+    /// <summary>The tracker rating import.</summary>
+    Import = 3,
 }

@@ -119,6 +119,23 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             var needsFlare = sources.All.Any(s => !disabled.Contains(s.Name) && s.Capabilities.HasFlag(SourceCapabilities.NeedsFlareSolverr));
             await Probe("FlareSolverr", SettingKeys.FlareSolverrUrl, null, needsFlare,
                 (url, _, token) => services.GetRequiredService<FlareSolverrClient>().PingAsync(url, token));
+            var browserSources = sources.All
+                .Where(s => !disabled.Contains(s.Name) && s.Capabilities.HasFlag(SourceCapabilities.NeedsBrowser))
+                .Select(s => s.DisplayName).ToList();
+            if (browserSources.Count > 0)
+            {
+                // The Docker image ships the browser, so this only ever says something on a native build.
+                var browser = services.GetRequiredService<Maki.Sources.Common.BrowserInstaller>();
+                if (browser.IsInstalled())
+                    Add("browser", "system", "healthy", "health.check.browserInstalled");
+                else if (browser.State == Maki.Sources.Common.BrowserInstallState.Installing)
+                    Add("browser", "system", "pending", "health.check.browserInstalling", new { percent = browser.Percent ?? 0 });
+                else if (browser.State == Maki.Sources.Common.BrowserInstallState.Failed)
+                    Add("browser", "system", "error", "health.check.browserFailed");
+                else
+                    Add("browser", "system", "pending", "health.check.browserMissing",
+                        new { sources = string.Join(", ", browserSources) });
+            }
             var indexer = await IndexerSettingsStore.LoadAsync(settings, ct);
             var indexerKeys = IndexerSettingsStore.KeysFor(indexer.Backend);
             await Probe("indexer", indexerKeys.Url, indexerKeys.ApiKey, false,
@@ -269,8 +286,9 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 row.ParamsJson = check.ParamsJson;
                 row.Message = string.Empty;
                 row.Url = check.Url;
+                var announced = row.NotifiedStatus;
                 if (HealthTransitions.Observe(row, check.Status, check.Connectivity, DateTime.UtcNow))
-                    await NotifyAsync(row, !HealthTransitions.IsIssue(check.Status), ct);
+                    await NotifyAsync(row, !HealthTransitions.IsIssue(check.Status), announced, ct);
             }
             foreach (var legacyRow in old.Where(r => r.Id is "qBittorrent" or "Prowlarr").ToList())
                 db.HealthChecks.Remove(legacyRow);
@@ -292,9 +310,10 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                     // Same the other way: an outage row whose count fell under the threshold has
                     // its remaining failures back on their own rows, so the site has not recovered.
                     if (folded.Contains(row.Id) || stillFailingSources.Contains(row.Id)) { db.HealthChecks.Remove(row); continue; }
+                    var announced = row.NotifiedStatus;
                     row.Status = row.NotifiedStatus = "healthy";
                     row.ChangedAt = row.CheckedAt = DateTime.UtcNow;
-                    await NotifyAsync(row, true, ct);
+                    await NotifyAsync(row, true, announced, ct);
                 }
             await db.SaveChangesAsync(ct);
 
@@ -392,11 +411,41 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
         return true;
     }
 
+    /// <summary>A check another job runs on its own schedule, recorded through <see cref="RecordAsync"/>.</summary>
+    public record ExternalCheck(string Id, string Category, string Status, string MessageKey, object? Args, string? Url);
+
+    /// <summary>
+    /// Writes checks a job ran on its own schedule (custom sources, whose probes don't fit this
+    /// refresh's 15-minute tick), announcing a change of state like every other row. Rows under
+    /// <paramref name="prefix"/> that are neither reported nor in <paramref name="keep"/> are removed.
+    /// </summary>
+    public async Task RecordAsync(string prefix, IReadOnlyList<ExternalCheck> checks, IReadOnlySet<string> keep, CancellationToken ct)
+    {
+        var rows = await db.HealthChecks.Where(r => r.Id.StartsWith(prefix)).ToListAsync(ct);
+        foreach (var check in checks)
+        {
+            var row = rows.FirstOrDefault(r => r.Id == check.Id);
+            if (row == null) { row = new() { Id = check.Id }; db.HealthChecks.Add(row); rows.Add(row); }
+            row.Category = check.Category;
+            row.MessageKey = check.MessageKey;
+            row.ParamsJson = check.Args is null ? null : JsonSerializer.Serialize(check.Args);
+            row.Message = string.Empty;
+            row.Url = check.Url;
+            var announced = row.NotifiedStatus;
+            if (HealthTransitions.Observe(row, check.Status, false, DateTime.UtcNow))
+                await NotifyAsync(row, !HealthTransitions.IsIssue(check.Status), announced, ct);
+        }
+
+        foreach (var gone in rows.Where(r => !keep.Contains(r.Id) && checks.All(c => c.Id != r.Id)).ToList())
+            db.HealthChecks.Remove(gone);
+        await db.SaveChangesAsync(ct);
+    }
+
     /// <summary>
     /// One check changed state. The inbox row stores the check's own key and values and is worded
     /// per reader; the Discord copy renders once, in the instance's language.
     /// </summary>
-    private async Task NotifyAsync(HealthCheckRecord row, bool recovered, CancellationToken ct)
+    private async Task NotifyAsync(HealthCheckRecord row, bool recovered, string? from, CancellationToken ct)
     {
         var level = row.Status == "error" ? NotificationLevel.Error
             : recovered ? NotificationLevel.Info
@@ -414,11 +463,22 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             ? localizer.GetFor(locale, "notify.health.recovered.body", new { detail })
             : detail;
 
+        // The check's own key and values, worded per reader like the inbox row, so the audit trail
+        // names the problem instead of the check's id. The page shows the move from one status to
+        // the other beside it.
         db.HealthHistory.Add(new()
         {
             Kind = "transition",
-            MessageKey = recovered ? "health.history.recovered" : "health.history.degraded",
-            ParamsJson = JsonSerializer.Serialize(new { check = row.Id, status = row.Status }),
+            MessageKey = "health.history.transition",
+            ParamsJson = JsonSerializer.Serialize(new
+            {
+                check = row.Id,
+                from,
+                status = row.Status,
+                detailKey = row.MessageKey,
+                detailParams = row.ParamsJson,
+                detailMessage = row.Message,
+            }),
         });
         notifications.Dispatch(NotificationEventType.HealthIssue,
             new(NotificationEventType.HealthIssue, title, body, Level: level));
@@ -467,14 +527,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             using var doc = JsonDocument.Parse(json);
             foreach (var property in doc.RootElement.EnumerateObject())
             {
-                into[property.Name] = property.Value.ValueKind switch
-                {
-                    JsonValueKind.Number => property.Value.TryGetInt64(out var l) ? l : property.Value.GetDouble(),
-                    JsonValueKind.True => true,
-                    JsonValueKind.False => false,
-                    JsonValueKind.Null => null,
-                    _ => property.Value.GetString(),
-                };
+                into[property.Name] = Localization.InboxRenderer.ParamValue(property.Value);
             }
         }
         catch (JsonException)

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Button, Group, Progress, Stack, Text } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { IconCheck } from '@tabler/icons-react'
 import { Trans } from '@lingui/react/macro'
@@ -36,7 +36,7 @@ export function dumpPhaseLabel(phase: string): MessageDescriptor {
   return DUMP_PHASE_LABELS[phase] ?? msg`Metadata database`
 }
 
-/** "217.4 MB of 348.9 MB · 4.2 MB/s · 31s left", dropping whatever the server didn't report. */
+/** "217.4 MB of 348.9 MB, 4.2 MB/s, 31s left", dropping whatever the server didn't report. */
 export function dumpDetail(progress: DumpProgress): string {
   if (progress.phase !== 'downloading') {
     // Neither of the post-download phases has a measurable unit of work, so a byte count or an
@@ -55,7 +55,7 @@ export function dumpDetail(progress: DumpProgress): string {
     const eta = formatReadingTime(progress.estimatedSecondsRemaining)
     parts.push(now`${eta} left`)
   }
-  return parts.join(' · ')
+  return parts.join(', ')
 }
 
 /** The phases worth interrupting somebody for. "checking" runs every six hours and finds nothing. */

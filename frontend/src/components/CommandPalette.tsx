@@ -1,6 +1,6 @@
 import { Center, Group, Loader, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
 import { useDisclosure, useHotkeys, useOs } from '@mantine/hooks'
-import { IconAdjustments, IconBooks, IconPlus, IconSearch, IconSend } from '@tabler/icons-react'
+import { IconAdjustments, IconArchive, IconBooks, IconPlus, IconSearch, IconSend } from '@tabler/icons-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSeries } from '../api/hooks'
@@ -125,6 +125,22 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
         path: item.path,
       }))
 
+    // Not a sidebar page, so it only turns up when searched for, and only for whoever has the library.
+    const archivedLabel = _(msg({ message: 'Archived', context: 'series' }))
+    const archivedNav =
+      q && navItems.some((item) => item.path === '/library') && archivedLabel.toLowerCase().includes(q)
+        ? [
+            {
+              kind: 'nav' as const,
+              key: 'nav-/library/archived',
+              label: archivedLabel,
+              sub: _(msg`Page`),
+              icon: IconArchive,
+              path: '/library/archived',
+            },
+          ]
+        : []
+
     // Individual settings, not just the Settings page: a card is only reachable now if you know
     // which tab it sits under, and searching is the answer to that. Filtered by what the caller may
     // actually see, so a non-admin is never sent to a tab that doesn't exist for them.
@@ -157,7 +173,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
             kind: 'series' as const,
             key: `series-${s.id}`,
             label: s.displayTitle,
-            sub: renderLabel(seriesStatusVisual(s.status).label),
+            sub: s.archivedAt != null ? archivedLabel : renderLabel(seriesStatusVisual(s.status).label),
             coverUrl: s.coverUrl,
             path: `/series/${s.id}`,
           }))
@@ -179,7 +195,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
         ]
       : []
 
-    return [...navMatches, ...settingMatches, ...seriesMatches, ...searchFallback]
+    return [...navMatches, ...archivedNav, ...settingMatches, ...seriesMatches, ...searchFallback]
   }, [query, navItems, series, visibleSettings, canAdd, renderLabel, _, i18n.locale])
 
   useEffect(() => {

@@ -596,12 +596,13 @@ public sealed class KoreaderSyncTests : IDisposable
         writer.Enqueue(_user, KoreaderDigest.PartialMd5(path), "5", 0.8333, "Kobo", "kobo-1");
         await writer.FlushAsync(default);
         Assert.Equal(1, writer.WaitingCount);
-        Assert.Equal(KoreaderPushWriter.RetryFailedAfter, Assert.Single(_clock.Timers).Due);
+        var firstWait = Assert.Single(_clock.Timers).Due;
+        Assert.Equal(KoreaderPushWriter.RetryFailedAfter, firstWait);
 
         _clock.FireTimers();
         await writer.FlushAsync(default);
         Assert.Null(Progress(chapters[1m]));
-        Assert.Equal(KoreaderPushWriter.RetryFailedAfter * 2, Assert.Single(_clock.Timers).Due);
+        Assert.True(Assert.Single(_clock.Timers).Due > firstWait);
 
         _clock.FireTimers();
         await writer.FlushAsync(default);

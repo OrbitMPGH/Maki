@@ -203,4 +203,22 @@ public sealed class SettingsHomeRailsTests : IDisposable
         Assert.True(cont.Options![HomeHeroOptions.Glance]);
         Assert.Null(cont.Panels);
     }
+
+    [Fact]
+    public async Task GetUi_folds_a_stored_jump_back_in_section_into_continue()
+    {
+        var alice = _db.SeedUser("alice");
+        // Continue reading off and Jump back in on as a hero: the reader still wants reading on Home.
+        _db.SetUserConfig(alice, (SettingKeys.UiHomeSections,
+            """{"enabled":true,"sections":[{"key":"continue","enabled":false},{"key":"recent","enabled":true},{"key":"jumpback","enabled":true,"hero":true}]}"""));
+
+        var ui = Body(await Controller(alice).GetUi(CancellationToken.None));
+
+        var keys = ui.HomeLayout.Sections!.Select(s => s.Key).ToList();
+        Assert.DoesNotContain(HomeSections.JumpBackIn, keys);
+        Assert.Equal([HomeSections.RecentlyAdded, HomeSections.ContinueReading], keys.Take(2));
+        var cont = ui.HomeLayout.Sections!.Single(s => s.Key == HomeSections.ContinueReading);
+        Assert.True(cont.Enabled);
+        Assert.True(cont.Hero);
+    }
 }

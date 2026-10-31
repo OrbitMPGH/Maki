@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Entities;
@@ -15,7 +16,7 @@ namespace Maki.Api.Tests;
 /// <summary>Moving a series between root folders, and the gates in front of a relink.</summary>
 public sealed class SeriesFilesControllerTests : IDisposable
 {
-    private readonly TestDb _db = new();
+    private readonly TestDb _db = new TestDb().WithDistinctSeriesIds();
     private readonly string _temp = Path.Combine(Path.GetTempPath(), "maki-move-" + Guid.NewGuid().ToString("N")[..8]);
 
     public void Dispose()
@@ -133,14 +134,9 @@ public sealed class SeriesFilesControllerTests : IDisposable
     /// The second folder's file cannot land (its destination path is past the OS limit), so the
     /// series folder that already moved goes back and the series stays on its old root.
     /// </summary>
-    [Fact]
+    [NotWindowsFact]
     public async Task A_failed_second_folder_puts_the_first_back()
     {
-        if (OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
         var deep = Path.Combine(_temp, Path.Combine(Enumerable.Range(0, 20).Select(i => new string((char)('a' + i), 200)).ToArray()));
         var (seriesId, fromId, toId, from, to) = SeedTwoFolderSeries(deep);
         Directory.CreateDirectory(to);
@@ -196,10 +192,7 @@ public sealed class SeriesFilesControllerTests : IDisposable
         Write(Path.Combine(outside, "Berserk Ch.3.cbz"));
         var link = Path.Combine(from, "Berserk", "Extras", "linked");
         Directory.CreateDirectory(Path.GetDirectoryName(link)!);
-        if (!TestLinks.TryLinkDirectory(link, outside))
-        {
-            return;
-        }
+        Assert.True(TestLinks.TryLinkDirectory(link, outside));
 
         try
         {
@@ -227,10 +220,7 @@ public sealed class SeriesFilesControllerTests : IDisposable
         var outside = Path.Combine(_temp, "outside");
         var seriesFolder = Path.Combine(from, "Berserk");
         Directory.Move(seriesFolder, outside);
-        if (!TestLinks.TryLinkDirectory(seriesFolder, outside))
-        {
-            return;
-        }
+        Assert.True(TestLinks.TryLinkDirectory(seriesFolder, outside));
 
         try
         {
@@ -321,6 +311,55 @@ public sealed class SeriesFilesControllerTests : IDisposable
         Assert.Equal(toId, check.Series.Single(s => s.Id == seriesId).RootFolderId);
     }
 
+    /// <summary>
+    /// The inventory is keyed by root and path with no foreign key, so a move has to carry the
+    /// series' rows itself. Left behind, the next scan creates fresh rows under the new root and
+    /// flags each moved file as a duplicate of its own old row.
+    /// </summary>
+    [Fact]
+    public async Task Move_carries_the_health_rows_so_a_following_scan_raises_no_duplicate()
+    {
+        var (seriesId, fromId, toId, from, to) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        Directory.CreateDirectory(to);
+        using (var seed = _db.NewContext())
+        {
+            foreach (var chapterFile in seed.ChapterFiles.Where(f => f.SeriesId == seriesId).ToList())
+            {
+                var path = Path.Combine(from, chapterFile.RelativePath);
+                File.Delete(path);
+                using (var zip = ZipFile.Open(path, ZipArchiveMode.Create))
+                {
+                    using var entry = zip.CreateEntry("ComicInfo.xml").Open();
+                    entry.Write(System.Text.Encoding.UTF8.GetBytes($"<ComicInfo><Title>{chapterFile.Id}</Title></ComicInfo>"));
+                }
+
+                chapterFile.Size = new FileInfo(path).Length;
+                var row = new HealthFile { RootFolderId = fromId, SeriesId = seriesId, ChapterFileId = chapterFile.Id, RelativePath = chapterFile.RelativePath };
+                seed.HealthFiles.Add(row);
+                seed.SaveChanges();
+                await new HealthScanService(seed).AnalyzeAsync(row, from, true, CancellationToken.None, 0, verify: true);
+            }
+        }
+
+        using var db = _db.NewContext(userId: 1);
+        var result = await Controller(db).Move(seriesId, new SeriesController.MoveSeriesRequest(toId), CancellationToken.None);
+        Assert.IsType<OkObjectResult>(result);
+
+        using (var check = _db.NewContext())
+        {
+            Assert.Equal([toId, toId], check.HealthFiles.Select(f => f.RootFolderId).ToList());
+            var scan = new HealthScan { Verify = true };
+            check.HealthScans.Add(scan);
+            check.SaveChanges();
+            await new HealthScanService(check).RunAsync(scan, CancellationToken.None);
+        }
+
+        using var after = _db.NewContext();
+        Assert.Equal(2, after.HealthFiles.Count(f => !f.Removed && f.RootFolderId == toId));
+        Assert.DoesNotContain(after.HealthFiles, f => f.RootFolderId == fromId && f.SeriesId == seriesId);
+        Assert.DoesNotContain(after.HealthFindings, f => f.Kind == "duplicate" && f.State == "open");
+    }
+
     [Fact]
     public async Task Relink_refuses_deleting_superseded_files_without_delete_permission()
     {
@@ -367,7 +406,8 @@ public sealed class SeriesFilesControllerTests : IDisposable
         {
             relink = Controller(db).Relink(
                 seriesId, new SeriesController.RelinkRequest(null, null, DeleteSuperseded: false), CancellationToken.None);
-            await Task.Delay(200);
+            await Wait.UntilAsync(() => relink.IsCompleted || SeriesLocks.SeriesUsers(seriesId) >= 2,
+                "the relink never asked for the series lock");
             Assert.False(relink.IsCompleted);
         }
 
@@ -521,12 +561,7 @@ public sealed class SeriesFilesControllerTests : IDisposable
 
             // The folder moves before the move asks for the lock to save, so the up-front check has passed.
             var moved = Path.Combine(to, "Berserk");
-            for (var i = 0; i < 200 && !Directory.Exists(moved); i++)
-            {
-                await Task.Delay(25);
-            }
-
-            Assert.True(Directory.Exists(moved));
+            await Wait.UntilAsync(() => Directory.Exists(moved), "the move never moved the folder");
             using var seed = _db.NewContext();
             seed.Series.Add(new Series
             {

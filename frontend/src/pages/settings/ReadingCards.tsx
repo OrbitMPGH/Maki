@@ -17,7 +17,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { IconCopy, IconRefresh } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { useAuth } from '../../auth/AuthProvider'
 import { useOpdsSettings, useRotateOpdsToken, useSaveOpdsSettings } from '../../api/hooks'
@@ -51,12 +51,6 @@ export function KavitaSyncSection() {
     <SettingsSection
       id="kavita-sync"
       title={<Trans>Kavita read sync</Trans>}
-      description={
-        <Trans>
-          Keeps chapters read in Maki and in Kavita in step. Kavita's reading belongs to one Maki
-          account, chosen by an admin under Integrations.
-        </Trans>
-      }
     >
       <Stack gap="md">
         <div>
@@ -73,17 +67,11 @@ export function KavitaSyncSection() {
             }
           />
           <Text size="xs" c="var(--ink-3)" mt={4}>
-            <Trans>
-              Finishing a chapter in Maki's reader also marks it read in Kavita. Only for series
-              matched to a Kavita series. Stats never count a chapter twice.
-            </Trans>
+            <Trans>Only for series matched to a Kavita series.</Trans>
           </Text>
           {ownsKavita ? null : (
             <Text size="xs" c="var(--ink-3)" mt={4}>
-              <Trans>
-                Kavita's reading belongs to another Maki account. An admin can change that under
-                Integrations.
-              </Trans>
+              <Trans>Kavita's reading belongs to another Maki account.</Trans>
             </Text>
           )}
         </div>
@@ -141,12 +129,6 @@ function KavitaLiveReadControl() {
           )
         }
       />
-      <Text size="xs" c="var(--ink-3)" mt={4}>
-        <Trans>
-          Finished chapters show up as read within seconds, marked the same way the import marks
-          them. Without this they wait for the next scrobble sync.
-        </Trans>
-      </Text>
       {enabled && status === 'Connected' && (
         <Text size="xs" c="var(--ok)" mt={4}>
           <Trans>Connected to Kavita.</Trans>
@@ -237,10 +219,7 @@ export function OpdsSection() {
       id="opds"
       title={<Trans>OPDS catalogue</Trans>}
       description={
-        <Trans>
-          Lets reading apps like Panels, Chunky, KOReader and Mihon browse your library and download
-          or stream chapters. The feed only ever serves what your account can see.
-        </Trans>
+        <Trans>For reading apps like Panels, KOReader and Mihon.</Trans>
       }
     >
       <Stack gap="md">
@@ -255,10 +234,7 @@ export function OpdsSection() {
             }}
           />
           <Text size="xs" c="var(--ink-3)" mt={4}>
-            <Trans>
-              Anyone with the feed URL can read everything your account can. Regenerating the URL
-              breaks the apps using it and nothing else.
-            </Trans>
+            <Trans>Anyone with the feed URL can read everything your account can.</Trans>
           </Text>
         </div>
 
@@ -287,10 +263,7 @@ export function OpdsSection() {
                   </Trans>
                 </Alert>
                 <Text size="xs" c="var(--ink-3)" mt={4}>
-                  <Trans>
-                    Add it to your reading app as an OPDS catalogue. From outside your network, replace
-                    the host with the address you use there.
-                  </Trans>
+                  <Trans>From outside your network, replace the host with the address you use there.</Trans>
                 </Text>
               </>
             ) : (
@@ -318,11 +291,7 @@ export function OpdsSection() {
               onChange={(e) => saveWith({ trackProgress: e.currentTarget.checked })}
             />
             <Text size="xs" c="var(--ink-3)" mt={4}>
-              <Trans>
-                Pages a streaming app fetches count as read, so OPDS reading reaches your library,
-                Rewind and trackers. Turn it off if an app reports progress you didn't make; some
-                fetch pages ahead.
-              </Trans>
+              <Trans>Turn it off if an app reports progress you didn't make.</Trans>
             </Text>
           </div>
         )}
@@ -335,10 +304,7 @@ export function OpdsSection() {
               onChange={(e) => saveWith({ komga: e.currentTarget.checked })}
             />
             <Text size="xs" c="var(--ink-3)" mt={4}>
-              <Trans>
-                For apps that only connect to a Komga server, like the Mihon Komga extension and
-                Tachimanga. Reading progress syncs both ways; in Mihon, turn on the Komga tracker.
-              </Trans>
+              <Trans>For apps that only connect to Komga, like Tachimanga.</Trans>
             </Text>
             {komga && (
               <Stack gap={6} mt="xs">
@@ -482,13 +448,6 @@ export function KoreaderSyncSection() {
     <SettingsSection
       id="koreader-sync"
       title={<Trans>KOReader progress sync</Trans>}
-      description={
-        <Trans>
-          KOReader can send back how far you read in chapters it downloaded from Maki, even when you
-          read them offline, and pick up where you stopped here. Those pages count toward your
-          library, Rewind and trackers.
-        </Trans>
-      }
     >
       {!enabled ? (
         <Text size="sm" c="var(--ink-3)">
@@ -529,11 +488,7 @@ export function KoreaderSyncSection() {
           </List>
 
           <Text size="xs" c="var(--ink-3)">
-            <Trans>
-              Sync works for chapters downloaded through the OPDS catalogue and for files copied
-              straight from your library folders. Regenerating the OPDS token signs KOReader out
-              too.
-            </Trans>
+            <Trans>Regenerating the OPDS token signs KOReader out too.</Trans>
           </Text>
         </Stack>
       )}
@@ -607,11 +562,7 @@ function KavitaReadImportControl() {
         <Trans>Import read status from Kavita</Trans>
       </Text>
       <Text size="xs" c="var(--ink-3)" mb="sm">
-        <Trans>
-          Marks chapters you finished in Kavita as read here, so progress doesn't start from zero.
-          Safe to rerun; it never unmarks anything. These reads stay out of Rewind because Kavita
-          doesn't record when they happened.
-        </Trans>
+        <Trans>Safe to rerun, it never unmarks anything.</Trans>
       </Text>
       <Group gap="sm">
         <Button

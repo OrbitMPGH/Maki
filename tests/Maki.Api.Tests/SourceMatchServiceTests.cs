@@ -17,6 +17,7 @@ namespace Maki.Api.Tests;
 public class SourceMatchServiceTests : IDisposable
 {
     private readonly TestDb _db = new();
+    private readonly FakeRelatedTitles _store = new();
 
     public void Dispose() => _db.Dispose();
 
@@ -69,7 +70,7 @@ public class SourceMatchServiceTests : IDisposable
         var service = new SourceMatchService(
             context, new SourceRegistry(sources), appSettings, availability,
             new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
-            NullLogger<SourceMatchService>.Instance);
+            _store.Provider(), NullLogger<SourceMatchService>.Instance);
         return await service.AutoMatchAsync(series, default, progress);
     }
 
@@ -150,7 +151,7 @@ public class SourceMatchServiceTests : IDisposable
         var service = new SourceMatchService(
             context, new SourceRegistry([first, miss, second]), appSettings, Sources.AllEnabled,
             new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
-            NullLogger<SourceMatchService>.Instance);
+            _store.Provider(), NullLogger<SourceMatchService>.Instance);
 
         var candidates = (await Candidates(service, new Series { Id = seriesId, Title = "Hajime no Ippo" }))
             .OrderBy(c => c.Priority)
@@ -180,7 +181,7 @@ public class SourceMatchServiceTests : IDisposable
             _db.NewContext(), new SourceRegistry([slow, fast]),
             new FakeAppSettings().Set(SettingKeys.SourcePriorityOrder, "slow,fast"), Sources.AllEnabled,
             new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
-            NullLogger<SourceMatchService>.Instance);
+            _store.Provider(), NullLogger<SourceMatchService>.Instance);
 
         var found = Channel.CreateUnbounded<SourceCandidate>();
         var run = service.FindCandidatesAsync(new Series { Title = "Hajime no Ippo" }, found.Writer);
@@ -222,7 +223,7 @@ public class SourceMatchServiceTests : IDisposable
         var searchCache = new SourceMatchSearchCache(TimeProvider.System);
         SourceMatchService NewService() => new(
             _db.NewContext(), sources, appSettings, Sources.AllEnabled,
-            new SourceExternalIdCache(TimeProvider.System), searchCache, NullLogger<SourceMatchService>.Instance);
+            new SourceExternalIdCache(TimeProvider.System), searchCache, _store.Provider(), NullLogger<SourceMatchService>.Instance);
 
         await Candidates(NewService(), new Series { Title = "Hajime no Ippo", MangaBakaId = 42 });
 
@@ -435,6 +436,117 @@ public class SourceMatchServiceTests : IDisposable
 
         Assert.Empty(mapped);
         Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Fact]
+    public async Task Parent_series_result_is_refused_when_MangaBaka_relates_it()
+    {
+        // Regression: a spin-off whose title is the parent's plus a tail, on a site that carries
+        // the parent and not the spin-off. The parent scores 0.72 here, past the 0.6 floor, and the
+        // shape rule accepts it as the shorter form of our title, so the title pass alone maps the
+        // spin-off to the parent's whole chapter list. MangaBaka relates the two, and a result that
+        // names a related work better than it names the series is that work.
+        var seriesId = _db.SeedSeries("Call of the Night: Paradise Arc", configure: s => s.MangaBakaId = 7);
+        _store.Related[7] = ["Call of the Night", "Yofukashi no Uta"];
+        var source = new FakeSource { Name = "fake", OnSearch = _ => [Hit("parent", "Call of the Night")] };
+
+        var mapped = await RunAutoMatch(seriesId, source);
+
+        Assert.Empty(mapped);
+        Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Fact]
+    public async Task Parent_series_result_is_refused_when_the_parent_is_in_the_library()
+    {
+        // Without a MangaBaka relation, another library series with that exact title is the same
+        // evidence: the result names the neighbour, not us.
+        _db.SeedSeries("Call of the Night");
+        var seriesId = _db.SeedSeries("Call of the Night: Paradise Arc");
+        var source = new FakeSource { Name = "fake", OnSearch = _ => [Hit("parent", "Call of the Night")] };
+
+        var mapped = await RunAutoMatch(seriesId, source);
+
+        Assert.Empty(mapped);
+        Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Fact]
+    public async Task A_weaker_result_naming_the_series_wins_once_the_parent_is_refused()
+    {
+        // The parent scores 0.72 and the arc's longer listing 0.71, so picking before refusing
+        // would take the parent.
+        var seriesId = _db.SeedSeries("Call of the Night: Paradise Arc", configure: s => s.MangaBakaId = 7);
+        _store.Related[7] = ["Call of the Night"];
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnSearch = _ =>
+            [
+                Hit("parent", "Call of the Night"),
+                Hit("arc", "Call of the Night: Paradise Arc (Official Anthology Comic)")
+            ]
+        };
+
+        Assert.Equal(["fake"], await RunAutoMatch(seriesId, source));
+        Assert.Equal("arc", Assert.Single(MappingsOf(seriesId)).SourceSeriesId);
+    }
+
+    [Fact]
+    public async Task A_dump_that_cannot_be_read_matches_without_relations()
+    {
+        var seriesId = _db.SeedSeries("Hajime no Ippo", configure: s => s.MangaBakaId = 7);
+        _store.Broken = true;
+        var source = new FakeSource { Name = "fake", OnSearch = _ => [Hit("Hajime no Ippo")] };
+
+        Assert.Equal(["fake"], await RunAutoMatch(seriesId, source));
+    }
+
+    [Fact]
+    public async Task A_preview_does_not_take_its_own_library_row_for_a_rival()
+    {
+        // A preview's series has no id yet, so its library row is only recognised by MangaBaka id.
+        // Its extra alt title would otherwise outscore the preview's own title.
+        _db.SeedSeries("Call of the Night: Paradise Arc", configure: s =>
+        {
+            s.MangaBakaId = 7;
+            s.AltTitles = [new LocalizedTitle("Call of the Night: Paradise Arc Full Color", "en")];
+        });
+        var source = new FakeSource
+        {
+            Name = "fake", OnSearch = _ => [Hit("colored", "Call of the Night: Paradise Arc Full Color")]
+        };
+        var service = new SourceMatchService(
+            _db.NewContext(), new SourceRegistry([source]), new FakeAppSettings(), Sources.AllEnabled,
+            new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
+            _store.Provider(), NullLogger<SourceMatchService>.Instance);
+
+        var candidates = await Candidates(service, new Series { Title = "Call of the Night: Paradise Arc", MangaBakaId = 7 });
+
+        Assert.Equal("colored", Assert.Single(candidates).SourceSeriesId);
+    }
+
+    [Fact]
+    public void A_preview_is_reused_under_the_same_rivals_in_any_order_only()
+    {
+        var series = new Series { Title = "Call of the Night: Paradise Arc" };
+        var target = SourceMatchService.MatchTarget.For(series, ["Call of the Night", "Yofukashi no Uta"]);
+
+        Assert.True(target.SameAs(SourceMatchService.MatchTarget.For(series, ["Yofukashi no Uta", "Call of the Night"])));
+        Assert.False(target.SameAs(SourceMatchService.MatchTarget.For(series, ["Call of the Night"])));
+    }
+
+    [Theory]
+    [InlineData("Call of the Night", "Call of the Night")]
+    [InlineData("Call of the Night: Paradise Arc", null)]
+    [InlineData("Yofukashi no Uta", "Yofukashi no Uta")]
+    [InlineData("Something Else Entirely", null)]
+    public void NamesRival_blames_a_rival_only_when_it_outscores_the_series(string resultTitle, string? expected)
+    {
+        string[] queries = ["Call of the Night: Paradise Arc", "Yofukashi no Uta: The Paradise Arc"];
+        string[] rivals = ["Call of the Night", "Yofukashi no Uta"];
+
+        Assert.Equal(expected, SourceMatchService.NamesRival(queries, rivals, resultTitle));
     }
 
     [Fact]
@@ -1132,6 +1244,70 @@ public class SourceMatchServiceTests : IDisposable
         await RunAutoMatch(seriesId, english);
 
         Assert.Equal(1, english.SearchCalls);
+    }
+
+    [Fact]
+    public async Task An_English_source_is_searched_for_the_other_English_titles_when_the_main_one_finds_nothing()
+    {
+        var seriesId = _db.SeedSeries(
+            "And So, Spring Arrives", originalTitle: "かくして季節はアオを知る",
+            configure: s => s.AltTitles =
+            [
+                new LocalizedTitle("Kakushite Kisetsu wa Ao o Shiru", "ja-Latn"),
+                new LocalizedTitle("Thus, the Seasons Learn of Blue", "en"),
+            ]);
+        var queries = new List<string>();
+        var english = new FakeSource
+        {
+            Name = "english",
+            OnSearch = q =>
+            {
+                lock (queries)
+                {
+                    queries.Add(q);
+                }
+
+                return q == "Thus, the Seasons Learn of Blue" ? [Hit("e1", "Thus, the Seasons Learn of Blue")] : [];
+            }
+        };
+
+        var mapped = await RunAutoMatch(seriesId, english);
+
+        Assert.Equal(["english"], mapped);
+        Assert.Equal(["And So, Spring Arrives", "Thus, the Seasons Learn of Blue"], queries);
+    }
+
+    [Fact]
+    public async Task A_result_under_an_English_alt_title_is_accepted_from_the_main_search()
+    {
+        var seriesId = _db.SeedSeries(
+            "And So, Spring Arrives",
+            configure: s => s.AltTitles = [new LocalizedTitle("Thus, the Seasons Learn of Blue", "en")]);
+        var english = new FakeSource { Name = "english", OnSearch = _ => [Hit("e1", "Thus, the Seasons Learn of Blue")] };
+
+        var mapped = await RunAutoMatch(seriesId, english);
+
+        Assert.Equal(["english"], mapped);
+        Assert.Equal(1, english.SearchCalls);
+    }
+
+    [Fact]
+    public async Task At_most_two_English_alt_titles_are_searched()
+    {
+        var seriesId = _db.SeedSeries(
+            "Main Title",
+            configure: s => s.AltTitles =
+            [
+                new LocalizedTitle("main title", "en"),
+                new LocalizedTitle("First Other", "en"),
+                new LocalizedTitle("Second Other", "en-us"),
+                new LocalizedTitle("Third Other", "en"),
+            ]);
+        var english = new FakeSource { Name = "english", OnSearch = _ => [] };
+
+        await RunAutoMatch(seriesId, english);
+
+        Assert.Equal(3, english.SearchCalls);
     }
 
     [Fact]

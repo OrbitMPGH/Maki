@@ -39,7 +39,8 @@ public sealed record LoggingOptions(
     HttpRequestLogMode HttpRequests,
     int SlowRequestMs,
     int FileSizeMb,
-    int RetainedFiles)
+    int RetainedFiles,
+    bool AccessLog = false)
 {
     /// <summary>What the logger runs at before <c>config.json</c> has been read.</summary>
     public static LoggingOptions Defaults { get; } = new(
@@ -68,6 +69,6 @@ public sealed record LoggingOptions(
         var sizeMb = Math.Clamp(config.LogFileSizeMb, 1, 1024);
         var retained = Math.Clamp(config.RetainedLogFiles, 1, 365);
 
-        return new LoggingOptions(level, mode, slow, sizeMb, retained);
+        return new LoggingOptions(level, mode, slow, sizeMb, retained, config.AccessLog);
     }
 }

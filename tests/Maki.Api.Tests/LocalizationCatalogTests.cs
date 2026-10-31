@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using Maki.Api.Localization;
 using Maki.Core.Configuration;
 using Maki.Core.Localization;
 using Maki.Core.Naming;
@@ -274,9 +275,9 @@ public class LocalizationCatalogTests
         // of the catalogue nothing checks. `queue.` stays out because nothing keys under it; the
         // queue's reasons live under `error.download.`. `notify.` never collided at all, the setting
         // prefix there being `notifications.`, and neither does `feedback.`, whose settings live
-        // under `recommendations.`, nor `install.` or `naming.`, which name no setting at all.
+        // under `recommendations.`, nor `install.`, `naming.` or `pageConversion.`, which name no setting at all.
         var pattern = new Regex(
-            @"""((?:error|inbox|achievement|notify|opds|scrobble|health|feedback|discover|install|naming)\.[A-Za-z0-9_.]+)""",
+            @"""((?:error|inbox|achievement|notify|opds|scrobble|health|feedback|discover|install|naming|pageConversion|desktop)\.[A-Za-z0-9_.]+)""",
             RegexOptions.Compiled);
 
         var keys = new HashSet<string>(StringComparer.Ordinal);
@@ -332,15 +333,20 @@ public class LocalizationCatalogTests
             all.Add(key);
         }
 
+        // Through AchievementText itself (TestLocalizer hands back the key), so a change to the key
+        // format there is checked against the catalogue too.
+        var localizer = new TestLocalizer();
         foreach (var definition in AchievementCatalog.All)
         {
-            all.Add($"achievement.{definition.Key}.name");
-            all.Add($"achievement.{definition.Key}.description");
-        }
-
-        for (var tier = 1; tier <= AchievementCatalog.TierNames.Length; tier++)
-        {
-            all.Add($"achievement.tier.{tier}");
+            all.Add(localizer.AchievementName(definition.Key));
+            all.Add(localizer.AchievementDescription(definition.Key));
+            for (var tier = 1; tier <= AchievementCatalog.TierNames.Length; tier++)
+            {
+                if (localizer.AchievementTier(definition, tier) is { } tierKey)
+                {
+                    all.Add(tierKey);
+                }
+            }
         }
 
         foreach (var token in NamingTokens.All)

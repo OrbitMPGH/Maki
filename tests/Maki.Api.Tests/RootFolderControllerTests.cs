@@ -103,6 +103,42 @@ public class RootFolderControllerTests : IDisposable
         Assert.Equal(Policies.AddSeries, PolicyOf(nameof(RootFolderController.List)));
         Assert.Equal(Policies.Admin, PolicyOf(nameof(RootFolderController.Add)));
         Assert.Equal(Policies.Admin, PolicyOf(nameof(RootFolderController.Delete)));
+        Assert.Equal(Policies.Admin, PolicyOf(nameof(RootFolderController.Browse)));
+    }
+
+    [Fact]
+    public void Browse_lists_subfolders_sorted_and_names_the_parent()
+    {
+        var dir = TempDir();
+        var beta = Directory.CreateDirectory(Path.Combine(dir, "beta")).FullName;
+        var alpha = Directory.CreateDirectory(Path.Combine(dir, "Alpha")).FullName;
+        _tempDirs.Insert(0, beta);
+        _tempDirs.Insert(0, alpha);
+        File.WriteAllText(Path.Combine(dir, "not-a-folder.txt"), "");
+
+        var listing = (RootFolderController.FolderListing)((OkObjectResult)Controller().Browse(dir)).Value!;
+
+        Assert.Equal(Path.GetFullPath(dir), listing.Path);
+        Assert.Equal(Directory.GetParent(dir)!.FullName, listing.Parent);
+        Assert.Equal(["Alpha", "beta"], listing.Folders.Select(f => f.Name));
+        Assert.Equal(alpha, listing.Folders[0].Path);
+        File.Delete(Path.Combine(dir, "not-a-folder.txt"));
+    }
+
+    [Fact]
+    public void Browse_rejects_a_missing_folder()
+    {
+        var missing = Path.Combine(Path.GetTempPath(), "does-not-exist-" + Guid.NewGuid());
+        Assert.IsType<BadRequestObjectResult>(Controller().Browse(missing));
+    }
+
+    [Fact]
+    public void Browse_without_a_path_starts_at_the_top()
+    {
+        var listing = (RootFolderController.FolderListing)((OkObjectResult)Controller().Browse(null)).Value!;
+
+        Assert.NotEmpty(listing.Folders);
+        Assert.Null(listing.Parent);
     }
 
     [Fact]
@@ -167,6 +203,94 @@ public class RootFolderControllerTests : IDisposable
 
         Assert.IsType<ConflictObjectResult>(await Controller().Delete(folderId, CancellationToken.None));
     }
+
+    [Fact]
+    public async Task Delete_names_archived_series_only_when_no_active_series_remain()
+    {
+        var folderId = SeedFolder();
+        using (var db = _db.NewContext())
+        {
+            var archivedAt = DateTime.UtcNow;
+            db.Series.Add(new Series { Title = "A", RootFolderId = folderId, ArchivedAt = archivedAt });
+            db.Series.Add(new Series { Title = "B", RootFolderId = folderId, ArchivedAt = archivedAt });
+            db.SaveChanges();
+        }
+
+        Assert.Equal("error.rootFolder.inUseArchived(count=2)", ConflictError(
+            await Controller().Delete(folderId, CancellationToken.None)));
+
+        using (var db = _db.NewContext())
+        {
+            db.Series.Add(new Series { Title = "C", RootFolderId = folderId });
+            db.SaveChanges();
+        }
+
+        Assert.Equal("error.rootFolder.inUse", ConflictError(
+            await Controller().Delete(folderId, CancellationToken.None)));
+    }
+
+    /// <summary>
+    /// Nothing visits an inventory row whose root is gone, so the delete retires them itself. Hard
+    /// deleting is out: versions, operations and history point at the rows.
+    /// </summary>
+    [Fact]
+    public async Task Delete_retires_the_folders_health_rows_and_resolves_their_findings()
+    {
+        var folderId = SeedFolder();
+        var keptId = SeedFolder();
+        int goneId, keptRowId;
+        using (var db = _db.NewContext())
+        {
+            var gone = new HealthFile { RootFolderId = folderId, RelativePath = "a.cbz", Status = "complete", ContentHash = "H" };
+            var kept = new HealthFile { RootFolderId = keptId, RelativePath = "b.cbz", Status = "complete", ContentHash = "K" };
+            db.HealthFiles.AddRange(gone, kept);
+            db.SaveChanges();
+            goneId = gone.Id;
+            keptRowId = kept.Id;
+            db.HealthFindings.Add(new HealthFinding { FileId = gone.Id, Version = gone.Version, Kind = "unlinked", MessageKey = "health.finding.unlinked" });
+            db.HealthFindings.Add(new HealthFinding { FileId = kept.Id, Version = kept.Version, Kind = "unlinked", MessageKey = "health.finding.unlinked" });
+            db.SaveChanges();
+        }
+
+        Assert.IsType<NoContentResult>(await Controller().Delete(folderId, CancellationToken.None));
+
+        using var check = _db.NewContext();
+        Assert.True(check.HealthFiles.Single(f => f.Id == goneId).Removed);
+        Assert.Equal("resolved", check.HealthFindings.Single(f => f.FileId == goneId).State);
+        Assert.False(check.HealthFiles.Single(f => f.Id == keptRowId).Removed);
+        Assert.Equal("open", check.HealthFindings.Single(f => f.FileId == keptRowId).State);
+        Assert.Empty(check.RootFolders.Where(f => f.Id == folderId));
+    }
+
+    [Fact]
+    public async Task Delete_cancels_waiting_health_operations_and_scans_of_the_folder()
+    {
+        var folderId = SeedFolder();
+        int waitingId, applyingId, scanId;
+        using (var db = _db.NewContext())
+        {
+            var file = new HealthFile { RootFolderId = folderId, RelativePath = "a.cbz" };
+            db.HealthFiles.Add(file);
+            db.SaveChanges();
+            var waiting = new HealthOperation { FileId = file.Id, Status = "downloading" };
+            var applying = new HealthOperation { FileId = file.Id, Status = "applying" };
+            var scan = new HealthScan { RootFolderId = folderId };
+            db.HealthOperations.AddRange(waiting, applying);
+            db.HealthScans.Add(scan);
+            db.SaveChanges();
+            (waitingId, applyingId, scanId) = (waiting.Id, applying.Id, scan.Id);
+        }
+
+        Assert.IsType<NoContentResult>(await Controller().Delete(folderId, CancellationToken.None));
+
+        using var check = _db.NewContext();
+        Assert.Equal("cancelled", check.HealthOperations.Single(o => o.Id == waitingId).Status);
+        Assert.Equal("applying", check.HealthOperations.Single(o => o.Id == applyingId).Status);
+        Assert.Equal("cancelled", check.HealthScans.Single(s => s.Id == scanId).Status);
+    }
+
+    private static string ConflictError(IActionResult result) =>
+        (string)((ConflictObjectResult)result).Value!.GetType().GetProperty("error")!.GetValue(((ConflictObjectResult)result).Value)!;
 
     [Fact]
     public async Task Delete_rejects_a_folder_whose_series_are_outside_the_callers_scope()

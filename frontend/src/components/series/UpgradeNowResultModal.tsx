@@ -20,6 +20,7 @@ const CHAPTER_LEVEL_SKIPS = [
   'unmeasured',
   'shared_file',
   'unsupported_file',
+  'removal_scheduled',
 ] as const
 
 /** `<width>px, <n> pages, score <s>`, only the parts a probe actually measured. */

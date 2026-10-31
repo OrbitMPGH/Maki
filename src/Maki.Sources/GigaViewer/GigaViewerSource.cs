@@ -222,8 +222,7 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
 
             if (choJuGiga == "baku")
             {
-                var bytes = await FetchAndDescrambleAsync(src, episodeUrl, ct);
-                pages.Add(new PageRequest(src, headers, Data: bytes));
+                pages.Add(new PageRequest(src, headers, Fetch: token => FetchAndDescrambleAsync(src, episodeUrl, token)));
             }
             else
             {
@@ -349,6 +348,8 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
         using var response = await ImageClient.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
         var bytes = await response.Content.ReadAsByteArrayAsync(ct);
-        return await ImageWorkGate.RunAsync(() => Task.FromResult(GigaViewerDescrambler.Descramble(bytes)), ct);
+        // A descramble holds the decoded page twice: the source and the reassembled copy.
+        return await ImageWorkGate.RunAsync(
+            () => Task.FromResult(GigaViewerDescrambler.Descramble(bytes)), 2 * ImageWorkGate.Weigh(bytes), ct);
     }
 }

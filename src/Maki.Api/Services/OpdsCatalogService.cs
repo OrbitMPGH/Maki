@@ -29,6 +29,15 @@ public record OpdsContext(string PathBase, string Token)
     /// </para>
     /// </summary>
     public string Cover(int seriesId) => $"{Base}/cover/{seriesId}";
+
+    /// <summary>
+    /// A chapter's own thumbnail. <c>v</c> changes whenever the slice behind it does, so the
+    /// response can be immutable instead of revalidating on every grid draw.
+    /// </summary>
+    public string ChapterThumbnail(int chapterId, string version) => $"{Base}/chapter/{chapterId}/thumbnail?v={version}";
+
+    public static string ThumbnailVersion(int chapterFileId, string archiveVersion, int startPage) =>
+        $"{chapterFileId}-{archiveVersion}-{startPage}";
 }
 
 /// <summary>
@@ -120,7 +129,7 @@ public class OpdsCatalogService(
     {
         // Series with nothing downloaded are omitted: an OPDS reader has no concept of a series
         // Maki is merely tracking, so they would render as empty folders.
-        var source = db.Series.AsNoTracking().Where(s => s.Chapters.Any(c => c.ChapterFileId != null));
+        var source = db.Series.AsNoTracking().Active().Where(s => s.Chapters.Any(c => c.ChapterFileId != null));
 
         List<SeriesRow> rows;
         int total;
@@ -249,6 +258,7 @@ public class OpdsCatalogService(
     {
         var series = await db.Series
             .AsNoTracking()
+            .Active()
             .Where(s => s.Id == seriesId)
             .Select(s => new { s.Id, s.Title, s.CoverPath })
             .FirstOrDefaultAsync(ct);
@@ -301,6 +311,7 @@ public class OpdsCatalogService(
         var recentFiles = await db.ChapterFiles
             .AsNoTracking()
             .Where(ChapterFile.IsNewContent)
+            .Where(f => db.Series.Active().Any(s => s.Id == f.SeriesId))
             .OrderByDescending(f => f.DateAdded)
             .Take(RecentFileScan)
             .Select(f => new { f.Id, f.DateAdded })
@@ -334,6 +345,7 @@ public class OpdsCatalogService(
         var recent = await db.ChapterProgress
             .AsNoTracking()
             .OwnedByScopeUser(db)
+            .Where(p => db.Series.Active().Any(s => s.Id == p.SeriesId))
             .OrderByDescending(p => p.UpdatedAt)
             .Take(RecentProgressScan)
             .Select(p => new { p.SeriesId, p.UpdatedAt })
@@ -367,6 +379,7 @@ public class OpdsCatalogService(
         return await ShelfAsync(ctx, "on-deck", localizer.Get("opds.onDeck.title"), ordered, ct);
     }
 
+    /// <param name="rows">Already free of archived series, filtered before the shelf was cut to size.</param>
     private async Task<OpdsFeed> ShelfAsync(
         OpdsContext ctx, string slug, string title, IReadOnlyList<ChapterRow> rows, CancellationToken ct)
     {
@@ -376,6 +389,7 @@ public class OpdsCatalogService(
             .Where(s => seriesIds.Contains(s.Id))
             .Select(s => new { s.Id, s.Title })
             .ToDictionaryAsync(s => s.Id, s => s.Title, ct);
+        rows = [.. rows.Where(r => titles.ContainsKey(r.SeriesId))];
 
         var entries = await ChapterEntriesAsync(ctx, rows, titles, includeSeriesTitle: true, ct);
 
@@ -452,6 +466,8 @@ public class OpdsCatalogService(
             }
 
             var mimeType = OpdsXml.MimeType(slice.ArchivePath);
+            var thumbnail = ctx.ChapterThumbnail(row.Id,
+                OpdsContext.ThumbnailVersion(slice.ChapterFileId, slice.ArchiveVersion, slice.StartPage));
             var links = new List<OpdsLink>
             {
                 // open-access as well as plain acquisition: readers that only look for the
@@ -461,7 +477,8 @@ public class OpdsCatalogService(
                     mimeType, Length: slice.ArchiveSize),
                 new(OpdsXml.OpenAccessRel, $"{ctx.Base}/chapter/{row.Id}/file",
                     mimeType, Length: slice.ArchiveSize),
-                new(OpdsXml.ThumbnailRel, ctx.Cover(row.SeriesId), "image/jpeg"),
+                new(OpdsXml.ImageRel, thumbnail, "image/jpeg"),
+                new(OpdsXml.ThumbnailRel, thumbnail, "image/jpeg"),
             };
 
             entries.Add(new OpdsEntry(

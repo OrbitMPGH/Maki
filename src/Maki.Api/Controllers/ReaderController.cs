@@ -2,12 +2,16 @@
 using Maki.Api.Dtos;
 using Maki.Api.Localization;
 using Maki.Api.Services;
+using Maki.Api.Services.Upscaling;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Images;
+using Maki.Core.Images.Upscaling;
 using Maki.Core.Progress;
+using Maki.Core.Quality;
 using Maki.Core.Reading;
 using Maki.Core.Security;
+using Maki.Core.Io;
 using Maki.Data;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -47,6 +51,12 @@ public record SeriesReadingProfileRequest(int? ProfileId);
 /// </summary>
 public record SetChaptersStateRequest(int[] ChapterIds, string State);
 
+/// <summary>
+/// Pages of a chapter to upscale on the server, current page first, plus the first pages of the
+/// next chapter once the window runs past the last page. See <see cref="ReaderController.Enhance"/>.
+/// </summary>
+public record EnhancePagesRequest(string? Model, int[]? Pages, int? NextChapterId = null, int[]? NextPages = null);
+
 /// <summary>Chapters a device holds offline copies of. See <see cref="ReaderController.ChapterVersions"/>.</summary>
 public record ChapterVersionsRequest(int[]? Ids);
 
@@ -66,24 +76,16 @@ public class ReaderController(
     ILocalizer localizer,
     MakiDbContext db,
     ReaderService reader,
+    ReaderThumbnailCache thumbnails,
     ContinueReadingService continueReading,
     ReadingProfileService profiles,
     KavitaReadImportService readImport,
     AchievementEvaluationQueue achievementQueue,
     AppPaths paths,
-    ILogger<ReaderController> logger,
     ICurrentUser currentUser,
     KavitaUserResolver kavitaUser,
     IAppSettings appSettings) : ControllerBase
 {
-    private const int ThumbnailWidth = 200;
-
-    /// <summary>
-    /// A strip thumbnail at quality 80. A narrower page is scaled up so the strip stays even, and a
-    /// JPEG shrinks while it decodes, so a 2000x3000 scan never exists as full-size pixels.
-    /// </summary>
-    internal static byte[] ReaderThumbnail(byte[] page) => ImageCodec.JpegThumbnail(page, ThumbnailWidth, 80, enlarge: true);
-
     /// <summary>
     /// Loads (creating on demand) this user's state row for a series, or null when the series is not
     /// theirs to see. The existence check goes through the Series query filter, so a series in a root
@@ -167,7 +169,7 @@ public class ReaderController(
     }
 
     [HttpGet("chapter/{id:int}")]
-    public async Task<IActionResult> Manifest(int id, CancellationToken ct)
+    public async Task<IActionResult> Manifest(int id, [FromServices] EnhanceAvailability enhanceAvailability, CancellationToken ct)
     {
         var slice = await reader.SliceAsync(id, ct);
         if (slice is null)
@@ -212,6 +214,12 @@ public class ReaderController(
                 .FirstOrDefaultAsync(ct)
             : null;
 
+        var enhanceServer = await enhanceAvailability.GetAsync(ct);
+        var tier = await db.ChapterFiles.AsNoTracking()
+            .Where(f => f.Id == slice.ChapterFileId)
+            .Select(f => f.Tier)
+            .FirstOrDefaultAsync(ct);
+
         return Ok(new
         {
             chapterId = slice.Chapter.Id,
@@ -237,7 +245,9 @@ public class ReaderController(
             profileId = resolved.ProfileId,
             pinnedProfileId = resolved.PinnedProfileId,
             autoProfileId = resolved.AutoProfileId,
-            pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion)
+            pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion),
+            tier = QualitySnapshot.TierName(tier),
+            enhanceServer
         });
     }
 
@@ -292,6 +302,133 @@ public class ReaderController(
             ? "private, max-age=31536000, immutable"
             : "private, no-cache";
 
+    /// <summary>
+    /// Asks for server upscales of a window of pages. Pages already cached answer <c>ready</c>; a page
+    /// that just failed or was skipped answers that instead of queueing again. The rest become this
+    /// reader's pending work, replacing what they had pending for another chapter or model. Each one
+    /// is pushed as <c>pageEnhanced</c> when the worker starts it (<c>working</c>) and when it finishes.
+    /// Pages of the next chapter queue after them in whatever room is left under the cap, so the next
+    /// chapter opens on pages already upscaled. They are not answered here; that chapter's own request
+    /// picks them up.
+    /// </summary>
+    [HttpPost("chapter/{id:int}/enhance")]
+    public async Task<IActionResult> Enhance(
+        int id,
+        [FromBody] EnhancePagesRequest request,
+        [FromServices] UpscaleModelStore store,
+        [FromServices] UpscaleQueue queue,
+        [FromServices] UpscaleCache cache,
+        CancellationToken ct)
+    {
+        var (refusal, model) = await EnhanceAvailability.CheckAsync(appSettings, store, request.Model, ct);
+        if (refusal is not null)
+        {
+            return this.Conflict(localizer, refusal);
+        }
+
+        var slice = await reader.PageSliceAsync(id, ct);
+        if (slice is null)
+        {
+            return NotFound();
+        }
+
+        var pages = (request.Pages ?? []).Distinct().Take(UpscaleQueue.MaxPendingPerUser).ToList();
+        var states = new string[pages.Count];
+        var wanted = new List<(int Index, UpscaleRequestItem Item)>();
+        for (var i = 0; i < pages.Count; i++)
+        {
+            var page = pages[i];
+            if (page < 0 || page >= slice.PageCount)
+            {
+                states[i] = "skipped";
+                continue;
+            }
+
+            var key = new UpscaleWorkKey(slice.ChapterFileId, slice.ArchiveVersion, slice.StartPage + page, model.Value);
+            if (cache.TryGet(key) is not null)
+            {
+                states[i] = "ready";
+                continue;
+            }
+
+            switch (queue.RecentOutcome(key))
+            {
+                case UpscaleOutcome.Failed:
+                    states[i] = "failed";
+                    continue;
+                case UpscaleOutcome.Skipped:
+                    states[i] = "skipped";
+                    continue;
+            }
+
+            wanted.Add((i, new UpscaleRequestItem(key, new UpscaleTarget(id, page), slice)));
+        }
+
+        var items = wanted.Select(w => w.Item).ToList();
+        var room = UpscaleQueue.MaxPendingPerUser - items.Count;
+        if (request.NextChapterId is { } nextId && nextId != id && request.NextPages is { Length: > 0 } nextPages && room > 0
+            && await reader.PageSliceAsync(nextId, ct) is { } next)
+        {
+            // Two chapters served from one whole archive share keys; the page asked for as this chapter's keeps its waiter.
+            var asked = items.Select(item => item.Key).ToHashSet();
+            items.AddRange(nextPages
+                .Distinct()
+                .Where(page => page >= 0 && page < next.PageCount)
+                .Select(page => new UpscaleRequestItem(
+                    new UpscaleWorkKey(next.ChapterFileId, next.ArchiveVersion, next.StartPage + page, model.Value),
+                    new UpscaleTarget(nextId, page), next))
+                .Where(item => !asked.Contains(item.Key) && cache.TryGet(item.Key) is null && queue.RecentOutcome(item.Key) is null)
+                .Take(room));
+        }
+
+        var queued = queue.Replace(currentUser.UserId, id, model.Value, items);
+        for (var i = 0; i < wanted.Count; i++)
+        {
+            states[wanted[i].Index] = queued[i] == UpscaleJobState.Working ? "working" : "queued";
+        }
+
+        return Ok(new { pages = pages.Select((page, i) => new { page, state = states[i] }).ToList() });
+    }
+
+    /// <summary>A server upscale from the cache. 404 until it is there; this never queues one.</summary>
+    [HttpGet("chapter/{id:int}/page/{page:int}/enhanced")]
+    public async Task<IActionResult> EnhancedPage(
+        int id,
+        int page,
+        [FromQuery] string? model,
+        [FromServices] UpscaleModelStore store,
+        [FromServices] UpscaleCache cache,
+        CancellationToken ct)
+    {
+        var (refusal, modelId) = await EnhanceAvailability.CheckAsync(appSettings, store, model, ct);
+        if (refusal is not null)
+        {
+            return this.Conflict(localizer, refusal);
+        }
+
+        var slice = await reader.PageSliceAsync(id, ct);
+        if (slice is null || page < 0 || page >= slice.PageCount)
+        {
+            return NotFound();
+        }
+
+        var key = new UpscaleWorkKey(slice.ChapterFileId, slice.ArchiveVersion, slice.StartPage + page, modelId.Value);
+        var cached = cache.TryGet(key);
+        if (cached is null)
+        {
+            return NotFound();
+        }
+
+        var etag = new EntityTagHeaderValue($"\"{key.ChapterFileId}-{key.ArchiveVersion}-{key.AbsIndex}-{key.Model}\"");
+        SetPageCacheControl(slice);
+        if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        return PhysicalFile(cached, UpscaleCache.ContentType(cached), lastModified: null, entityTag: etag, enableRangeProcessing: false);
+    }
+
     [HttpGet("chapter/{id:int}/thumb/{page:int}")]
     public async Task<IActionResult> Thumbnail(int id, int page, CancellationToken ct)
     {
@@ -301,95 +438,10 @@ public class ReaderController(
             return NotFound();
         }
 
-        var absoluteIndex = slice.StartPage + page;
-        var dir = Path.Combine(paths.ReaderCacheDir, slice.ChapterFileId.ToString());
-        var cached = Path.Combine(dir, $"{slice.ArchiveVersion}-{absoluteIndex}.jpg");
-
-        if (!System.IO.File.Exists(cached))
+        var cached = await thumbnails.GetOrRenderAsync(slice, page, ct);
+        if (cached is null)
         {
-            var entry = slice.Pages[absoluteIndex];
-            try
-            {
-                // A PDF page is resized from its own cached full render rather than re-rendered,
-                // so opening a chapter's thumbnail strip does not re-run PDFium for every page it
-                // already rendered full-size. That render is already gated by ImageWorkGate on its
-                // own (PdfReader.RenderPageAsync), so it stays outside the gate below - nesting
-                // would be a reentrant wait on a semaphore that is not reentrant.
-                string? fullCached = null;
-                if (ComicFile.IsPdf(slice.ArchivePath))
-                {
-                    fullCached = await ReaderPageCache.GetOrRenderFullPageAsync(paths, slice, absoluteIndex, entry, ct);
-                    if (fullCached is null)
-                    {
-                        return NotFound();
-                    }
-                }
-
-                var missing = false;
-
-                // Gated. A client prefetching a chapter's whole thumbnail strip arrives as dozens
-                // of concurrent requests, each decoding a full page to produce a 200px JPEG, and
-                // nothing else in this path bounds them. The source page is opened inside the gate
-                // too, so a request queued behind it holds no page buffer until its turn comes.
-                await ImageWorkGate.RunAsync(async () =>
-                {
-                    var source = fullCached is not null
-                        ? System.IO.File.OpenRead(fullCached)
-                        : await reader.OpenPageAsync(slice, entry, ct);
-
-                    if (source is null)
-                    {
-                        missing = true;
-                        return;
-                    }
-
-                    byte[] bytes;
-                    await using (source)
-                    {
-                        using var copy = new MemoryStream();
-                        await source.CopyToAsync(copy, ct);
-                        bytes = copy.ToArray();
-                    }
-
-                    var thumbnail = ReaderThumbnail(bytes);
-
-                    // Written aside and moved into place: an aborted request would otherwise leave a
-                    // truncated JPEG at the final path, served as immutable for a year.
-                    Directory.CreateDirectory(dir);
-                    var tmp = Path.Combine(dir, $"{Guid.NewGuid():N}.tmp");
-                    try
-                    {
-                        await System.IO.File.WriteAllBytesAsync(tmp, thumbnail, ct);
-                        try
-                        {
-                            System.IO.File.Move(tmp, cached, overwrite: true);
-                        }
-                        catch (Exception moveError) when (moveError is IOException or UnauthorizedAccessException &&
-                                                          System.IO.File.Exists(cached))
-                        {
-                            // Another request finished the same thumbnail and is serving it (Windows
-                            // refuses to replace an open file); the bytes match, so use that one.
-                            System.IO.File.Delete(tmp);
-                        }
-                    }
-                    catch
-                    {
-                        if (System.IO.File.Exists(tmp)) System.IO.File.Delete(tmp);
-                        throw;
-                    }
-                }, ct);
-
-                if (missing)
-                {
-                    return NotFound();
-                }
-            }
-            catch (Exception e)
-            {
-                // A page format libvips is not allowed to open (BMP among them) has no thumbnail.
-                logger.LogDebug(e, "Thumbnail failed for chapter {ChapterId} page {Page}", id, page);
-                return NotFound();
-            }
+            return NotFound();
         }
 
         SetPageCacheControl(slice);

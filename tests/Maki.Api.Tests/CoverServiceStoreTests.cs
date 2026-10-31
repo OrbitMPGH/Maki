@@ -5,23 +5,19 @@ using Maki.Core.Images;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
 public class CoverServiceStoreTests : IDisposable
 {
     private readonly string _configDir =
         Path.Combine(Path.GetTempPath(), "maki-cover-store-" + Guid.NewGuid().ToString("N"));
-    private readonly string? _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
     private readonly CoverService _covers;
 
     public CoverServiceStoreTests()
     {
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
-        _covers = new CoverService(null!, new AppPaths(), new FakeAppSettings(), NullLogger<CoverService>.Instance);
+        _covers = new CoverService(null!, new AppPaths(_configDir), new FakeAppSettings(), NullLogger<CoverService>.Instance);
     }
 
     public void Dispose()
     {
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
         try
         {
             Directory.Delete(_configDir, recursive: true);

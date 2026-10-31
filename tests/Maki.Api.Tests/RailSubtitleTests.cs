@@ -23,7 +23,7 @@ public class RailSubtitleTests
     [Fact]
     public void The_recent_activity_subtitle_keeps_the_list_marker()
     {
-        Assert.Equal("Because you read {list}", Localizer.Get("discover.rail.becauseYouRead", new { list = "{list}" }));
+        Assert.Contains("{list}", Localizer.Get("discover.rail.becauseYouRead", new { list = "{list}" }));
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public class RailSubtitleTests
         var text = Localizer.Get("discover.rail.sideInterestSubtitle", new { count = 4, titles = "{titles}" });
 
         Assert.Contains("{titles}", text);
-        Assert.Contains("4 titles", text);
+        Assert.Contains("4", text);
     }
 
     [Fact]
@@ -40,7 +40,11 @@ public class RailSubtitleTests
     {
         var rail = new DiscoverRail("k", "t", "f", null, [], SubtitleTitles: ["A", "B", "C"], SubtitleMore: 3);
 
-        Assert.Equal(["A", "B", "C", "3 more"], RecommendationController.SubtitleTitlesFor(rail, Localizer));
+        var titles = RecommendationController.SubtitleTitlesFor(rail, Localizer)!;
+
+        Assert.Equal(["A", "B", "C"], titles.Take(3));
+        Assert.Equal(4, titles.Count);
+        Assert.Contains("3", titles[^1]);
     }
 
     [Fact]

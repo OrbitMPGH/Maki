@@ -16,8 +16,11 @@ import {
   statusToken,
 } from '../ui/status'
 import { relationPhrase } from '../ui/DiscoverRail'
+import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
 import { useLabel } from '../../i18n-context'
 import { formatFixedDecimal } from '../../format'
+import { onRovingKeyDown } from '../../lib/rovingFocus'
+import { MetaList } from '../ui/MetaList'
 
 /** How long one pick holds the band before the next takes it. */
 const ROTATE_MS = 5000
@@ -142,6 +145,7 @@ export function DiscoverHero({
   const item = picks[active] as RecommendationItem | undefined
   const { data: detail } = useRecommendationDetail(item?.providerId ?? null)
   const titleRef = useTitleFit(item?.title)
+  const ownedArchived = useIsArchivedSeries(item ? seriesIdFor?.(item) : null)
 
   const choose = useCallback((n: number) => {
     setAutoRotate(false)
@@ -229,6 +233,7 @@ export function DiscoverHero({
               <button
                 type="button"
                 className="discover-hero-poster"
+                data-series-cover={ownedSeriesId ?? undefined}
                 onClick={() => onOpen(item)}
                 aria-label={t`View ${title}`}
               >
@@ -241,7 +246,8 @@ export function DiscoverHero({
                 <Trans>Your next read</Trans>
               </Text>
 
-              <Title order={1} className="series-hero-title" ref={titleRef}>
+              {/* The page's h1 is "Discover"; the featured pick is a section of it. */}
+              <Title order={2} className="series-hero-title" ref={titleRef}>
                 <button type="button" className="discover-hero-title" title={title} onClick={() => onOpen(item)}>
                   {title}
                 </button>
@@ -339,7 +345,22 @@ export function DiscoverHero({
               <Group gap="xs" className="discover-hero-actions">
                 {/* Adding needs a root folder, the caller's permissions and the request path for
                     non-admins, all of which `DiscoverLibraryRail` handles inside the detail card. */}
-                {ownedSeriesId != null ? (
+                {ownedSeriesId != null && ownedArchived ? (
+                  <>
+                    <Badge color="gray" variant="light" size="lg">
+                      <Trans context="series">Archived</Trans>
+                    </Badge>
+                    <RestoreArchivedButton seriesId={ownedSeriesId} aria-label={t({ message: `Restore ${title}`, context: 'series' })} />
+                    <Button
+                      variant="default"
+                      rightSection={<IconArrowRight size={16} />}
+                      onClick={() => navigate(`/series/${ownedSeriesId}`)}
+                      aria-label={t`View series: ${title}`}
+                    >
+                      <Trans>View series</Trans>
+                    </Button>
+                  </>
+                ) : ownedSeriesId != null ? (
                   <Button
                     color="var(--ok)"
                     variant="light"
@@ -381,6 +402,7 @@ export function DiscoverHero({
               className="discover-hero-strip-row"
               role="tablist"
               aria-label={t`Other picks for you`}
+              onKeyDown={onRovingKeyDown}
             >
               {picks.map((p, n) => {
                 const pickStatus = seriesStatusVisual(p.status)
@@ -393,6 +415,7 @@ export function DiscoverHero({
                     type="button"
                     role="tab"
                     aria-selected={n === active}
+                    tabIndex={n === active ? 0 : -1}
                     className="discover-hero-strip-item"
                     onClick={() => choose(n)}
                   >
@@ -420,7 +443,7 @@ export function DiscoverHero({
                         )}
                       </span>
                       {matches.length > 0 && (
-                        <span className="discover-hero-strip-match">{matches.join(' · ')}</span>
+                        <span className="discover-hero-strip-match"><MetaList inline items={matches} /></span>
                       )}
                     </span>
                     {n === active && canAutoRotate && !halted && (

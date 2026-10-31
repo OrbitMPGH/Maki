@@ -274,12 +274,25 @@ const primaryShades = new Map<MantineColorsTuple, { light: number; dark: number 
  */
 const variantColorResolver: VariantColorsResolver = (input) => {
   const resolved = defaultVariantColorsResolver(input)
-  const isBrand = !input.color || input.color === 'brand' || input.color === input.theme.primaryColor
+  const isBrand =
+    !input.color || input.color === 'brand' || input.color === 'var(--brand)' || input.color === input.theme.primaryColor
   if (input.variant === 'filled' && isBrand) return { ...resolved, color: 'var(--brand-on)' }
+  // The light variant writes in the fill shade, which Emerald and Amber keep too pale for text in Light.
+  if (input.variant === 'light' && isBrand) return { ...resolved, color: 'var(--brand-fg)' }
   // Danger text on its own 10% tint falls just under 4.5:1 in dark.
   if (input.variant === 'light' && input.color === 'var(--danger)') return { ...resolved, color: 'var(--danger-fg)' }
   return resolved
 }
+
+/**
+ * Light-variant badges and buttons write in shade 9 in Light, which misses 4.5:1 on its own tint for
+ * the warmer hues (yellow 2.3:1 on Paper). Each is darkened just enough to clear 4.6:1 on Paper.
+ */
+const lightVariantText = Object.fromEntries(
+  Object.entries({ red: 85, blue: 95, cyan: 90, teal: 85, green: 80, lime: 70, yellow: 65, orange: 75 }).map(
+    ([hue, share]) => [`--mantine-color-${hue}-light-color`, `color-mix(in srgb, var(--mantine-color-${hue}-9) ${share}%, black)`],
+  ),
+)
 
 /**
  * Anchors take `--brand-fg`. Mantine colours them with the primary shade, a fill colour that
@@ -288,7 +301,11 @@ const variantColorResolver: VariantColorsResolver = (input) => {
  */
 export const cssVariablesResolver: CSSVariablesResolver = () => ({
   variables: {},
-  light: { '--mantine-color-anchor': 'var(--brand-fg)', '--mantine-color-text': 'var(--ink)' },
+  light: {
+    '--mantine-color-anchor': 'var(--brand-fg)',
+    '--mantine-color-text': 'var(--ink)',
+    ...lightVariantText,
+  },
   dark: { '--mantine-color-anchor': 'var(--brand-fg)', '--mantine-color-text': 'var(--ink)' },
 })
 

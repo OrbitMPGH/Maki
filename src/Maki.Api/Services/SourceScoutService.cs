@@ -100,7 +100,7 @@ public sealed class SourceScoutService(
     {
         var enabled = await db.AppConfig.AsNoTracking()
             .AnyAsync(c => c.Key == SettingKeys.SourcesScoutOnMatch && c.Value == "true", ct);
-        if (enabled)
+        if (enabled && !await db.Series.AnyAsync(s => s.Id == seriesId && s.ArchivedAt != null, ct))
         {
             Start(seriesId);
         }

@@ -64,6 +64,14 @@ export interface SeriesDto {
   publisher: string | null
   /** The user's own rating on a 1–10 scale, or null if unrated. */
   rating: number | null
+  /** The user's "so far" score while partway through, or null. Never set alongside `rating`. Absent on older responses. */
+  provisionalRating?: number | null
+  /** The highest chapter number read when `provisionalRating` was set. */
+  provisionalAtChapter?: number | null
+  /** You finished this series. The stars set a "so far" score only while it is part-read. */
+  finished?: boolean
+  /** The "how is it so far?" prompt waiting for you. Detail endpoint only. */
+  ratingCheckpoint?: 'hooked' | 'caughtUp' | 'volumeEnd' | null
   mangaBakaId: number | null
   aniListId: number | null
   malId: number | null
@@ -81,6 +89,8 @@ export interface SeriesDto {
   readFileCleanup: string
   /** Whether read files are actually being deleted, the choice and the instance switch combined. Detail endpoint only. */
   readFileCleanupActive: boolean
+  /** "Default" | "Never" | "Smallest" | "Compact" | "Balanced" | "High" | "Lossless": this series' page conversion choice. */
+  pageConversion: string
   /** Every chapter known to exist, wanted or not. Denominator fallback when nothing is wanted. */
   knownChapterCount: number
   /** Chapters queued but not yet actively downloading (Queued / RateLimited). */
@@ -115,6 +125,13 @@ export interface SeriesDto {
    * defers to the `seriesDefault` on your inbox prefs.
    */
   notificationMode: string
+  /** When the series was archived out of the active library, or null while it is active. */
+  archivedAt: string | null
+  archivedByUserId: number | null
+  /** The "finished, archive it?" hint applies to you. Detail endpoint only; false without ArchiveSeries or once dismissed. */
+  archiveHintEligible?: boolean
+  /** You finished this series and have not rated it or dismissed the ask. Detail endpoint only. */
+  rateHintEligible?: boolean
   /** Personal time left from comparable timed chapters in the built-in reader. Detail endpoint only. */
   readTimeEstimate?: {
     seconds: number
@@ -303,6 +320,8 @@ export interface ChapterDto {
   hasFile: boolean
   /** When Maki deleted this chapter's file on purpose; null while it has a file. Not missing, never re-queued on its own. */
   fileRemovedAt: string | null
+  /** The removal was read file cleanup's, which also turned Wanted off. False while the chapter has a file. */
+  fileAutoRemoved: boolean
   /** When read file cleanup will delete this chapter's file, or null when it isn't scheduled. */
   fileDeleteDueAt: string | null
   filePath: string | null
@@ -618,6 +637,59 @@ export interface CompareSnapshot {
   panels: ComparePanel[]
 }
 
+export interface ArchiveSeriesRequest {
+  removeFiles: boolean
+  /** Set once the server said the files cannot go to the recycle bin and the user chose to delete them. */
+  permanent?: boolean
+}
+
+export interface ArchiveSeriesResponse {
+  deleted: number
+  failed: number
+}
+
+export interface BulkArchiveSeriesRequest extends ArchiveSeriesRequest {
+  seriesIds: number[]
+}
+
+export interface BulkArchiveSeriesResult {
+  seriesId: number
+  ok: boolean
+  notFound: boolean
+  /** Catalogue key of the refusal, e.g. error.series.archived. */
+  code: string | null
+  error: string | null
+  /** The recycle bin refused this one's files; archiving it again with permanent: true would work. */
+  permanentDeleteAvailable: boolean
+  deleted: number
+  failed: number
+}
+
+export interface BulkArchiveSeriesResponse {
+  results: BulkArchiveSeriesResult[]
+}
+
+export interface RestoreSeriesRequest {
+  /** Queue the chapters whose files were removed for download again. */
+  redownloadRemoved: boolean
+}
+
+export interface RestoreSeriesResponse {
+  queued: number
+  /** Localized reason the removed chapters could not be queued, or null. */
+  queueError: string | null
+}
+
+/** GET series/{id}/archive-preview: what the archive and restore dialogs show. */
+export interface ArchivePreview {
+  /** Bytes removing the series' files would free, leaving out hardlinked files. */
+  freeableBytes: number
+  /** Other users who read the series in the last 30 days and have not finished it. */
+  otherActiveReaders: number
+  /** Chapters a restore with redownload would queue: removed, no file, still wanted. */
+  redownloadableChapters: number
+}
+
 export interface AddSeriesRequest {
   metadataProviderId: string
   rootFolderId: number
@@ -675,6 +747,7 @@ export interface NotificationEvents {
   updateAvailable: boolean
   seriesAdded: boolean
   seriesRemoved: boolean
+  seriesArchived: boolean
   requestSubmitted: boolean
   requestResolved: boolean
   manualMatchNeeded: boolean
@@ -690,6 +763,24 @@ export interface UpdateStatusDto {
   releaseUrl: string | null
   releaseNotes: string | null
   checkedAt: string | null
+  /** How this instance was started; the desktop build updates itself through its tray app. */
+  runtime: HostRuntime
+  /** Desktop only: the tray app has the update downloaded, so a restart installs it. */
+  updateReady: boolean
+}
+
+export type HostRuntime = 'docker' | 'desktop' | 'bare'
+
+export interface HostInfoDto {
+  runtime: HostRuntime
+  /** Something starts Maki again after it stops: Docker, the desktop tray app or systemd. */
+  supervised: boolean
+  port: number
+  bindAddress: string
+  configuredBindAddress: string
+  networkAccess: boolean
+  /** Differs from networkAccess while a change waits for a restart. */
+  configuredNetworkAccess: boolean
 }
 
 export interface UpdateSettingsDto {

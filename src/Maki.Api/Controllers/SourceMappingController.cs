@@ -29,7 +29,8 @@ public class SourceMappingController(
     SourceMappingRemovalService removalService,
     SourceOrderService sourceOrder,
     SourceScoutService scout,
-    ICurrentUser currentUser) : ControllerBase
+    ICurrentUser currentUser,
+    ILogger<SourceMappingController> logger) : ControllerBase
 {
     public record CreateMappingRequest(
         int SeriesId, string SourceName, string SourceSeriesId, string? Url,
@@ -101,7 +102,25 @@ public class SourceMappingController(
         };
         db.SourceMappings.Add(mapping);
         await db.SaveChangesAsync(ct);
-        return Ok(mapping);
+
+        // Only the new mapping: the others keep their own schedule. An archived series does not
+        // talk to its sources, and its restore refresh lists this one with the rest.
+        if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId && s.ArchivedAt != null, ct))
+        {
+            try
+            {
+                await chapterSync.SyncMappingsAsync(request.SeriesId, [mapping.Id], ct);
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
+            {
+                // The link itself is saved; the next scheduled refresh lists the chapters.
+                logger.LogWarning(ex, "Chapter sync after linking {Source} to series {SeriesId} failed",
+                    sourceName, request.SeriesId);
+            }
+        }
+
+        // Re-read untracked: the sync filled the tracked row's Series, which would serialize a cycle.
+        return Ok(await db.SourceMappings.AsNoTracking().FirstAsync(m => m.Id == mapping.Id, ct));
     }
 
     /// <summary>
@@ -124,9 +143,14 @@ public class SourceMappingController(
         }
 
         // Query filters apply, so ids outside the caller's root folders simply don't come back.
-        var pending = await db.Series
+        var matching = await db.Series
             .Where(s => ids.Contains(s.Id) && !s.SourceMatchPending)
             .ToListAsync(ct);
+        var pending = matching.Where(s => s.ArchivedAt is null).ToList();
+        if (matching.Count > 0 && pending.Count == 0)
+        {
+            return this.Conflict(localizer, "error.series.archived");
+        }
 
         foreach (var series in pending)
         {
@@ -156,9 +180,9 @@ public class SourceMappingController(
     public async Task<IActionResult> RefreshSnapshots(
         [FromBody] RefreshSnapshotsRequest request, CancellationToken ct)
     {
-        if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId, ct))
+        if (await MissingOrArchivedAsync(request.SeriesId, ct) is { } blocked)
         {
-            return NotFound();
+            return blocked;
         }
 
         var disabled = await sourceAvailability.DisabledAsync(ct);
@@ -204,9 +228,9 @@ public class SourceMappingController(
     {
         // Resolved through EF so the series' global query filter decides visibility, exactly as in
         // MediaCoverController: a series outside the caller's root folders is a 404, not a 403.
-        if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId, ct))
+        if (await MissingOrArchivedAsync(request.SeriesId, ct) is { } blocked)
         {
-            return NotFound();
+            return blocked;
         }
 
         var disabled = await sourceAvailability.DisabledAsync(ct);
@@ -235,9 +259,9 @@ public class SourceMappingController(
     public async Task<IActionResult> Quality(
         [FromQuery] int seriesId, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
     {
-        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        if (await MissingOrArchivedAsync(seriesId, ct) is { } blocked)
         {
-            return NotFound();
+            return blocked;
         }
 
         var estimates = await SourceQualitySamples.EstimatesAsync(db, seriesId, ct);
@@ -266,6 +290,17 @@ public class SourceMappingController(
 
     public record ScoutRequest(int SeriesId);
 
+    private async Task<IActionResult?> MissingOrArchivedAsync(int seriesId, CancellationToken ct)
+    {
+        var target = await db.Series.Where(s => s.Id == seriesId).Select(s => new { s.ArchivedAt }).FirstOrDefaultAsync(ct);
+        if (target is null)
+        {
+            return NotFound();
+        }
+
+        return target.ArchivedAt is null ? null : this.Conflict(localizer, "error.series.archived");
+    }
+
     /// <summary>
     /// Samples a few chapters from every enabled source of the series, in the background. Available
     /// whether or not <see cref="SettingKeys.SourcesScoutOnMatch"/> is on; poll <c>GET quality</c>.
@@ -273,9 +308,9 @@ public class SourceMappingController(
     [HttpPost("scout")]
     public async Task<IActionResult> Scout([FromBody] ScoutRequest request, CancellationToken ct)
     {
-        if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId, ct))
+        if (await MissingOrArchivedAsync(request.SeriesId, ct) is { } blocked)
         {
-            return NotFound();
+            return blocked;
         }
 
         return Accepted(scout.Start(request.SeriesId));

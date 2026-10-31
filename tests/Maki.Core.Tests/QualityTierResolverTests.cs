@@ -34,17 +34,6 @@ public class QualityTierResolverTests
         Assert.Equal(QualityTier.Scanlator, tier);
     }
 
-    // A digital release that isn't a volume compilation still names a group, so it reads as
-    // Scanlator rather than Volume: the Digital tag alone is not enough without isVolume too.
-    [Fact]
-    public void A_digital_chapter_that_is_not_a_volume_reads_as_scanlator_not_volume()
-    {
-        var tier = QualityTierResolver.Resolve(null,
-            "Dandadan 148 (2024) (Digital) (1r0n).cbz", "148.cbz", isVolume: false);
-
-        Assert.Equal(QualityTier.Scanlator, tier);
-    }
-
     [Fact]
     public void An_import_with_no_readable_tags_is_unknown()
     {

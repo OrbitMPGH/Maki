@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Badge, Button, Card, Group, Modal, Stack, Text } from '@mantine/core'
 import { IconArrowBackUp, IconArrowRight, IconHistory } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { formatDateTime } from '../../format'
@@ -13,6 +13,7 @@ import {
   type ImportBatchFolder,
   type ImportUndoOutcome,
 } from '../../api/libraryImport'
+import { MetaList } from '../ui/MetaList'
 
 type UndoTarget = { batchId: string; count: number } | { folderId: number; name: string }
 
@@ -155,14 +156,16 @@ function FolderRow({
             </Badge>
           )}
         </Group>
-        <Text size="xs" c="var(--ink-3)">
-          {seriesTitle} · <Plural value={folder.fileCount} one="# file" other="# files" />
-          {folder.builtCount > 0 && (
-            <>
-              {' · '}
-              <Plural value={folder.builtCount} one="# CBZ built" other="# CBZs built" />
-            </>
-          )}
+        <Text component="div" size="xs" c="var(--ink-3)">
+          <MetaList
+            items={[
+              seriesTitle,
+              <Plural key="files" value={folder.fileCount} one="# file" other="# files" />,
+              folder.builtCount > 0 && (
+                <Plural key="built" value={folder.builtCount} one="# CBZ built" other="# CBZs built" />
+              ),
+            ]}
+          />
         </Text>
         {undoneOn && folder.diskPending ? (
           <Text size="xs" c="var(--warn)">
@@ -178,7 +181,7 @@ function FolderRow({
           </Text>
         ) : folder.linkPending ? (
           <Text size="xs" c="var(--ink-3)">
-            <Trans>Still finding sources. Undoing cancels that.</Trans>
+            <Trans>Maki is still looking for sources. Undoing stops the search.</Trans>
           </Text>
         ) : null}
       </div>

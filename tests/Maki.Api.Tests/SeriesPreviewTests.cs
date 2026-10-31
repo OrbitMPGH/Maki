@@ -11,7 +11,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Maki.Api.Tests;
 
 /// <summary>Which chapter the Discover preview opens on a source's listing, and how a run ends.</summary>
-[Collection(ConfigDirCollection.Name)]
 public class SeriesPreviewTests : IDisposable
 {
     private readonly TestDb _db = new();
@@ -68,26 +67,15 @@ public class SeriesPreviewTests : IDisposable
             sp.GetRequiredService<MakiDbContext>(), new SourceRegistry(sources),
             new FakeAppSettings().Set(SettingKeys.SourcePriorityOrder, string.Join(",", sources.Select(s => s.Name))),
             Sources.AllEnabled, new SourceExternalIdCache(TimeProvider.System),
-            new SourceMatchSearchCache(TimeProvider.System), NullLogger<SourceMatchService>.Instance));
+            new SourceMatchSearchCache(TimeProvider.System), new FakeRelatedTitles().Provider(),
+            NullLogger<SourceMatchService>.Instance));
 
         var queue = new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance);
-        var prior = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
-        AppPaths paths;
-        try
-        {
-            Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
-            paths = new AppPaths();
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", prior);
-        }
-
         return new SeriesPreviewService(
             services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(),
             new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
             new PageDownloader(new StubHttpClientFactory(""), queue, TimeProvider.System, NullLogger<PageDownloader>.Instance),
-            queue, paths, NullLogger<SeriesPreviewService>.Instance);
+            queue, new AppPaths(_configDir), NullLogger<SeriesPreviewService>.Instance);
     }
 
     private static readonly Series Ippo = new() { Title = "Hajime no Ippo" };

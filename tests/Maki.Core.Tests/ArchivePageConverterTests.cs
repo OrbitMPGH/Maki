@@ -10,8 +10,8 @@ public class ArchivePageConverterTests : IDisposable
     private readonly string _dir = Directory.CreateTempSubdirectory("maki-page-conversion-").FullName;
     public void Dispose() => Directory.Delete(_dir, true);
 
-    private static readonly PageConversionSettings Webp = new(PageConversionFormat.Webp, 80);
-    private static readonly PageConversionSettings Avif = new(PageConversionFormat.Avif, 55);
+    private static readonly PageConversionSettings Webp = new(PageConversionFormat.Webp, PageConversionStop.Balanced, false);
+    private static readonly PageConversionSettings Avif = new(PageConversionFormat.Avif, PageConversionStop.Compact, false);
 
     /// <summary>Gradients with fine grain, which a JPEG at 95 stores at several bits per pixel.</summary>
     internal static Raster Scan(int width, int height, int seed)
@@ -106,7 +106,7 @@ public class ArchivePageConverterTests : IDisposable
     }
 
     [Fact]
-    public async Task A_png_page_becomes_lossless_webp_with_the_same_pixels_even_when_avif_is_chosen()
+    public async Task A_png_page_kept_lossless_becomes_lossless_webp_with_the_same_pixels_even_when_avif_is_chosen()
     {
         var art = LineArt(900, 1300, 4);
         var png = art.EncodePng();
@@ -114,7 +114,7 @@ public class ArchivePageConverterTests : IDisposable
         var source = Cbz("ch1.cbz", ("001.png", png));
         var target = Path.Combine(_dir, "out.cbz");
 
-        var result = await ArchivePageConverter.ConvertAsync(source, target, Avif, CancellationToken.None);
+        var result = await ArchivePageConverter.ConvertAsync(source, target, Avif with { PngLossless = true }, CancellationToken.None);
 
         Assert.Equal(ArchiveConversionOutcome.Converted, result.Outcome);
         using var zip = ZipFile.OpenRead(target);
@@ -122,6 +122,37 @@ public class ArchivePageConverterTests : IDisposable
         using var buffer = new MemoryStream();
         stream.CopyTo(buffer);
         var decoded = Raster.Decode(buffer.ToArray());
+        Assert.Equal(art.Pixels, decoded.Bands == 3 ? decoded.Pixels : WithoutAlpha(decoded));
+    }
+
+    [Theory]
+    [InlineData(PageConversionFormat.Webp, ".webp")]
+    [InlineData(PageConversionFormat.Avif, ".avif")]
+    public void A_png_page_goes_lossy_in_the_chosen_format_at_a_lossy_stop(PageConversionFormat format, string extension)
+    {
+        var png = Scan(600, 900, 20).EncodePng();
+
+        var page = PageConversion.Convert(png, ".png", new PageConversionSettings(format, PageConversionStop.High, false));
+
+        Assert.True(page.Converted, page.Skipped?.ToString());
+        Assert.Equal(extension, page.Extension);
+        Assert.Equal("png", page.SourceFormat);
+    }
+
+    [Fact]
+    public void At_lossless_a_png_goes_to_lossless_webp_and_a_jpeg_is_kept()
+    {
+        var lossless = new PageConversionSettings(PageConversionFormat.Avif, PageConversionStop.Lossless, false);
+        var jpeg = Scan(600, 900, 21).EncodeJpeg(95);
+        var art = LineArt(900, 1300, 22);
+
+        var kept = PageConversion.Convert(jpeg, ".jpg", lossless);
+        var png = PageConversion.Convert(art.EncodePng(), ".png", lossless);
+
+        Assert.Equal(PageSkip.Lossless, kept.Skipped);
+        Assert.Same(jpeg, kept.Bytes);
+        Assert.Equal(".webp", png.Extension);
+        var decoded = Raster.Decode(png.Bytes);
         Assert.Equal(art.Pixels, decoded.Bands == 3 ? decoded.Pixels : WithoutAlpha(decoded));
     }
 
@@ -170,8 +201,8 @@ public class ArchivePageConverterTests : IDisposable
         var source = Cbz("ch1.cbz", ("001.jpg", Scan(600, 900, 8).EncodeJpeg(40)));
         var target = Path.Combine(_dir, "out.cbz");
 
-        var result = await ArchivePageConverter.ConvertAsync(source, target, new PageConversionSettings(PageConversionFormat.Webp, 100),
-            CancellationToken.None);
+        var result = await ArchivePageConverter.ConvertAsync(source, target,
+            new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.High, false), CancellationToken.None);
 
         Assert.Equal(ArchiveConversionOutcome.NotSmaller, result.Outcome);
         Assert.Equal(1, result.Skipped[PageSkip.NotSmaller]);
@@ -215,7 +246,7 @@ public class ArchivePageConverterTests : IDisposable
             ("Series - c002 (v01) - p002.jpg", Scan(600, 900, 15).EncodeJpeg(95)));
         var target = Path.Combine(_dir, "out.cbz");
 
-        var result = await ArchivePageConverter.ConvertAsync(source, target, Webp, CancellationToken.None);
+        var result = await ArchivePageConverter.ConvertAsync(source, target, Webp with { PngLossless = true }, CancellationToken.None);
 
         Assert.Equal(ArchiveConversionOutcome.Converted, result.Outcome);
         Assert.Equal("mixed", result.SourceFormat);
@@ -223,6 +254,42 @@ public class ArchivePageConverterTests : IDisposable
         Assert.Equal(
             ["Series - c001 (v01) - p000.webp", "Series - c001 (v01) - p001.webp", "Series - c002 (v01) - p002.webp"],
             CbzReader.PageNames(zip));
+    }
+
+    [Fact]
+    public async Task Pages_encoded_in_parallel_are_written_in_source_order()
+    {
+        var entries = Enumerable.Range(0, ImageWorkGate.Parallelism * 3)
+            .Select(i => ($"{i:000}.jpg", Scan(600, 900, 100 + i).EncodeJpeg(95)))
+            .ToList();
+        entries.Insert(4, ("ComicInfo.xml", "<ComicInfo />"u8.ToArray()));
+        var source = Cbz("ch1.cbz", [.. entries]);
+        var target = Path.Combine(_dir, "out.cbz");
+
+        var result = await ArchivePageConverter.ConvertAsync(source, target, Webp, CancellationToken.None);
+
+        Assert.Equal(ArchiveConversionOutcome.Converted, result.Outcome);
+        using var zip = ZipFile.OpenRead(target);
+        Assert.Equal(
+            entries.Select(e => e.Item1.Replace(".jpg", ".webp")),
+            zip.Entries.Select(e => e.FullName));
+    }
+
+    [Fact]
+    public async Task A_broken_page_ahead_of_pages_still_encoding_leaves_no_partial()
+    {
+        var entries = Enumerable.Range(0, ImageWorkGate.Parallelism * 3)
+            .Select(i => ($"{i:000}.jpg", Scan(600, 900, 200 + i).EncodeJpeg(95)))
+            .ToList();
+        entries[1] = ("001.jpg", entries[1].Item2[..20_000]);
+        var source = Cbz("ch1.cbz", [.. entries]);
+        var target = Path.Combine(_dir, "out.cbz");
+
+        var result = await ArchivePageConverter.ConvertAsync(source, target, Webp, CancellationToken.None);
+
+        Assert.Equal(ArchiveConversionOutcome.Unreadable, result.Outcome);
+        Assert.False(File.Exists(target));
+        Assert.False(File.Exists(target + ".partial"));
     }
 
     [Fact]

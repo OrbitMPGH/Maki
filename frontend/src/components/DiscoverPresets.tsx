@@ -12,7 +12,7 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import {
   IconBookmark,
   IconDeviceFloppy,

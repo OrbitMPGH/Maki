@@ -1,5 +1,5 @@
 import { Badge, Button, Group, Paper, Stack, Text, Tooltip } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { IconDownload, IconX } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'

@@ -6,6 +6,25 @@ namespace Maki.Sources.Common;
 internal static class BrowserSupport
 {
     /// <summary>
+    /// Analytics, share-button and web-font hosts the scrapers' pages load and nothing they read
+    /// needs. Recorded from live MangaFire and TopManhua sessions on 2026-10-26. A denylist rather
+    /// than an allowlist on purpose: an allowlist breaks the source the day a site moves its CDN.
+    /// </summary>
+    private static readonly string[] UnneededHosts =
+    [
+        "googletagmanager.com",
+        "google-analytics.com",
+        "sharethis.com",
+        "amung.us",
+        "fonts.googleapis.com",
+        "fonts.gstatic.com",
+    ];
+
+    public static bool IsUnneeded(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
+        UnneededHosts.Any(h => uri.Host == h || uri.Host.EndsWith("." + h, StringComparison.Ordinal));
+
+    /// <summary>
     /// Sec-CH-UA headers consistent with <paramref name="userAgent"/>, replacing the headless shell's own.
     /// <paramref name="brandSecond"/> keeps TopManhua's original brand order, which its fingerprint was tuned on.
     /// </summary>

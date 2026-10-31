@@ -21,7 +21,7 @@ const SPECIAL_SOURCE_LABELS: Record<string, MessageDescriptor> = {
 /**
  * Display name for a raw source/origin key, as it shows up on download-queue rows, the series
  * Sources table and the library's "Downloaded from" facet: a registered source's `displayName`,
- * one of the sentinels above, `<indexer> · Torrent` for a grabbed release, or the raw key itself
+ * one of the sentinels above, `Torrent (<indexer>)` for a grabbed release, or the raw key itself
  * when nothing matches (a source since removed from the registry still has to show something).
  */
 export function useSourceLabel(): (key: string) => string {
@@ -33,7 +33,7 @@ export function useSourceLabel(): (key: string) => string {
       if (known) return known
       if (key.startsWith('torrent:')) {
         const indexer = key.slice('torrent:'.length)
-        if (indexer) return renderLabel(msg`${indexer} · Torrent`)
+        if (indexer) return renderLabel(msg`Torrent (${indexer})`)
         return renderLabel(SPECIAL_SOURCE_LABELS.torrent)
       }
       return renderLabel(SPECIAL_SOURCE_LABELS[key] ?? key)

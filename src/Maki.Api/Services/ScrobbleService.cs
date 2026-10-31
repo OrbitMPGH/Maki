@@ -161,6 +161,52 @@ public class ScrobbleService(
     public async Task<bool> SyncRatingsEnabledAsync(int userId, string service, CancellationToken ct = default) =>
         await userSettings.GetAsync(userId, SettingKeys.ScrobbleRatingsKey(service), ct) != "false";
 
+    /// <summary>Per-user, per-tracker toggle: also push "so far" scores? Unset = off.</summary>
+    public async Task<bool> SyncSoFarEnabledAsync(int userId, string service, CancellationToken ct = default) =>
+        await userSettings.GetAsync(userId, SettingKeys.ScrobbleSoFarKey(service), ct) == "true";
+
+    /// <summary>
+    /// The trackers to ask "send so-far scores here too?": this reader holds sign-in details for them,
+    /// syncs ratings to them, and has never answered for them. Reads stored credentials only, never a
+    /// tracker, because it runs inside a rating write. <paramref name="db"/> is the caller's scoped context.
+    /// </summary>
+    public async Task<IReadOnlyList<(string Service, string Label)>> SoFarAskAsync(
+        MakiDbContext db, int userId, CancellationToken ct = default)
+    {
+        var services = (await db.ScrobbleTokens.Where(t => t.UserId == userId).Select(t => t.Service).ToListAsync(ct))
+            .ToHashSet(StringComparer.Ordinal);
+        var lazy = new Dictionary<string, string>
+        {
+            [SettingKeys.ScrobbleMangaBakaToken] = "mangabaka",
+            [SettingKeys.ScrobbleKitsuEmail] = "kitsu",
+            [SettingKeys.ScrobbleMangaUpdatesUsername] = "mangaupdates",
+        };
+        var lazyKeys = lazy.Keys.ToList();
+        var rows = await db.UserSettings
+            .Where(s => s.UserId == userId && (lazyKeys.Contains(s.Key) || s.Key.StartsWith("scrobble.")))
+            .Select(s => new { s.Key, s.Value })
+            .ToDictionaryAsync(s => s.Key, s => s.Value, ct);
+        foreach (var (key, service) in lazy)
+        {
+            if (rows.TryGetValue(key, out var value) && value.Length > 0)
+            {
+                services.Add(service);
+            }
+        }
+
+        if (services.Count == 0)
+        {
+            return [];
+        }
+
+        return _trackers
+            .Where(t => services.Contains(t.Name) &&
+                rows.GetValueOrDefault(SettingKeys.ScrobbleRatingsKey(t.Name)) != "false" &&
+                !rows.ContainsKey(SettingKeys.ScrobbleSoFarKey(t.Name)))
+            .Select(t => (t.Name, t.Label))
+            .ToList();
+    }
+
     public async Task<int> IntervalMinutesAsync(CancellationToken ct = default) =>
         int.TryParse(await settings.GetAsync(SettingKeys.ScrobbleIntervalMinutes, ct), out var m) && m >= 5
             ? m
@@ -710,6 +756,7 @@ public class ScrobbleService(
     {
         List<NativeProgress> rows;
         List<NativeProgress> zeroProgress;
+        HashSet<int> archived;
         using (var scope = scopeFactory.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -737,14 +784,21 @@ public class ScrobbleService(
                     .ToListAsync(ct)
                 : [];
 
-            zeroProgress = await db.Series
+            // Archived series stay in: a finished one-shot among them still reports its completion.
+            var candidates = await db.Series
                 .Where(s => s.Incognito == IncognitoMode.Off &&
                     (s.MalId != null || s.AniListId != null || s.MangaBakaId != null || s.KitsuId != null ||
                         s.MangaUpdatesId != null))
-                .Select(s => new NativeProgress(
-                    s.Id, s.Title, 0, 0, s.MalId, s.AniListId, s.MangaBakaId, s.KitsuId, s.MangaUpdatesId))
+                .Select(s => new
+                {
+                    Row = new NativeProgress(
+                        s.Id, s.Title, 0, 0, s.MalId, s.AniListId, s.MangaBakaId, s.KitsuId, s.MangaUpdatesId),
+                    Archived = s.ArchivedAt != null,
+                })
                 .ToListAsync(ct);
-            zeroProgress = zeroProgress
+            archived = candidates.Where(c => c.Archived).Select(c => c.Row.SeriesId).ToHashSet();
+            zeroProgress = candidates
+                .Select(c => c.Row)
                 .Where(s => !trackedSeriesIds.Contains(s.SeriesId) && !kavitaTrackedSeriesIds.Contains(s.SeriesId))
                 .ToList();
         }
@@ -771,13 +825,14 @@ public class ScrobbleService(
         {
             ct.ThrowIfCancellationRequested();
             await batcher.FlushStaleAsync();
+            var planToReadRow = planToRead && !archived.Contains(row.SeriesId);
             if (oneShots.TryGetValue(row.SeriesId, out var completedLocally))
             {
                 await PushNativeRowAsync(
-                    userId, row, 0, 0, planToRead ? ScrobbleStatus.PlanToRead : null, trackers, ct, Counters,
+                    userId, row, 0, 0, planToReadRow ? ScrobbleStatus.PlanToRead : null, trackers, ct, Counters,
                     finished: true, completedLocally, batcher);
             }
-            else if (planToRead)
+            else if (planToReadRow)
             {
                 await PushNativeRowAsync(
                     userId, row, 0, 0, ScrobbleStatus.PlanToRead, trackers, ct, Counters, batcher: batcher);
@@ -1047,7 +1102,8 @@ public class ScrobbleService(
     /// (so the request ending doesn't cancel it); the scrobble log records the outcome. Failures are
     /// swallowed here — PushRatingAsync already logs per-tracker.
     /// </summary>
-    public void QueueRatingPush(int userId, Series series, int score)
+    /// <param name="soFar">A "so far" score: only trackers with that switch on as well as "Sync ratings" get it.</param>
+    public void QueueRatingPush(int userId, Series series, int score, bool soFar = false)
     {
         if (series.Incognito != IncognitoMode.Off)
         {
@@ -1070,7 +1126,7 @@ public class ScrobbleService(
         {
             try
             {
-                await PushRatingAsync(userId, snapshot, score, CancellationToken.None);
+                await PushRatingAsync(userId, snapshot, score, CancellationToken.None, soFar);
             }
             catch (Exception e)
             {
@@ -1086,13 +1142,14 @@ public class ScrobbleService(
     /// accepted the write; a per-tracker failure is logged and skipped, never thrown.
     /// </summary>
     public async Task<IReadOnlyList<string>> PushRatingAsync(
-        int userId, Series series, int score, CancellationToken ct = default)
+        int userId, Series series, int score, CancellationToken ct = default, bool soFar = false)
     {
         var synced = new List<string>();
         foreach (var tracker in await ActiveTrackersAsync(userId, ct))
         {
-            // Per-tracker "sync ratings" toggle.
-            if (!await SyncRatingsEnabledAsync(userId, tracker.Name, ct))
+            // Per-tracker "sync ratings" toggle, and the "so far" one under it.
+            if (!await SyncRatingsEnabledAsync(userId, tracker.Name, ct) ||
+                soFar && !await SyncSoFarEnabledAsync(userId, tracker.Name, ct))
             {
                 continue;
             }
@@ -1250,6 +1307,15 @@ public class ScrobbleService(
             }
 
             state.Rating = scores[seriesId];
+            db.RatingSnapshots.Add(new RatingSnapshot
+            {
+                UserId = userId, SeriesId = seriesId, Rating = scores[seriesId], Final = true,
+                Origin = RatingSnapshotOrigin.Import, CreatedAt = DateTime.UtcNow,
+            });
+            // The final rating wins, the same as a rating set on the series page.
+            state.ProvisionalRating = null;
+            state.ProvisionalRatedAt = null;
+            state.ProvisionalAtChapter = null;
             state.UpdatedAt = DateTime.UtcNow;
         }
 
@@ -1269,9 +1335,11 @@ public class ScrobbleService(
             {
                 s.Id,
                 s.Title,
+                // The score the reader sees: a "so far" one stands in for a missing final rating, so
+                // a remote score equal to it is not listed as a change.
                 Rating = db.UserSeriesStates
                     .Where(u => u.UserId == userId && u.SeriesId == s.Id)
-                    .Select(u => u.Rating)
+                    .Select(u => u.Rating ?? u.ProvisionalRating)
                     .FirstOrDefault(),
                 s.MalId,
                 s.AniListId,

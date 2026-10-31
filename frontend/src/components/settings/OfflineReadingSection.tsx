@@ -166,7 +166,7 @@ function OfflineControls() {
 
       <Select
         label={t`Keep upcoming chapters`}
-        description={t`For each series you are reading, saves the next unread chapters while online and removes them once read. Chapters you save yourself stay until you remove them.`}
+        description={t`Removed once read. Chapters you save yourself stay.`}
         data={keepOptions}
         value={keep === null ? null : String(keep)}
         disabled={keep === null}

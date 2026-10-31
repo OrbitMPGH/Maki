@@ -1,0 +1,63 @@
+---
+title: Features
+description: Everything Maki does, one page per area.
+---
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+## Highlights
+
+- **Automatic monitoring.** Maki maps each series to every source that carries it and downloads
+  new chapters from your preferred one on the next scheduled check.
+- **Reader with progress sync.** Paged, double-page, or continuous scroll. Progress is merged
+  with Kavita and sent to AniList, MyAnimeList, Kitsu, MangaBaka, and MangaUpdates. Pages read
+  over OPDS in Panels, Chunky, KOReader, or Mihon count as read too, and KOReader's progress
+  sync brings back chapters read offline.
+- **Recommendations.** Local ONNX embeddings over the MangaBaka catalog find titles similar to
+  what is already in your library, using more than shared genre tags. The Discover tab adds
+  catalogue and genre rails, side interests, **Readers like you**, and a **Your Taste** tab showing
+  how your reading has shifted.
+- **"So far" ratings.** Score a series partway through. The score stays apart from your final
+  rating and steers recommendations less. Trackers get it only when you turn that on. See
+  [Ratings and "so far" scores](/Maki/guides/trackers/ratings/).
+- **Local metadata.** A local copy of the [MangaBaka](https://mangabaka.org) database gives
+  instant search with no API rate limits, and links each series to its MyAnimeList, AniList,
+  MangaUpdates, and Kitsu IDs. It is required: Maki downloads it on first start and opens once
+  it is installed. Until then the reader still opens chapters already on disk, and admins can
+  reach Settings and Health.
+- **Torrents alongside scrapers.** Search releases through Prowlarr or Jackett and send them to
+  qBittorrent, Transmission or Deluge. Maki imports each one when it finishes, repacking anything
+  that is not already CBZ, and can remove the torrent from the client afterwards (off by default).
+- **Windows installer and Linux tarball.** The Windows installer adds a tray icon that keeps Maki
+  running and installs updates. The Linux tarball runs where Docker is not an option. See
+  [Windows](/Maki/installation/windows/) and [Linux](/Maki/installation/linux/).
+- **Custom sources.** Add a site Maki does not ship with as a JSON definition, built in the
+  wizard, imported, or installed from a repository. See
+  [Custom sources](/Maki/guides/sources/custom-sources/).
+- **Archive finished series.** Archiving takes a series out of the active library and stops its
+  downloads. Its chapters, history and ratings stay. See
+  [Archiving a series](/Maki/guides/library/archiving/).
+- **WebP and AVIF pages.** Re-encode chapter pages as WebP or AVIF to save space, for new
+  downloads and files already on disk. It is off until you choose a format. See
+  [WebP and AVIF conversion](/Maki/guides/library/page-conversion/).
+- **Install it, read offline.** Install to a phone or desktop home screen, keep saved chapters
+  on the device, and get push notifications for new chapters.
+- **Built for a household.** Per-user history, preferences, tracker accounts, and library access
+  over one shared set of files. It also supports two-factor authentication, API keys, and OpenID
+  Connect single sign-on.
+- **You own the files.** Everything lands on disk as plain CBZ + ComicInfo.xml, so nothing is
+  locked in Maki's database. Any CBZ reader, including Kavita, can use the same folder.
+
+## By area
+
+<CardGrid>
+  <LinkCard title="The reader" description="Paged, double-page and scroll modes, profiles, Home, offline." href="/Maki/features/reader/" />
+  <LinkCard title="Reading in other apps" description="OPDS, KOReader sync, Komga API." href="/Maki/features/reading-apps/" />
+  <LinkCard title="Trackers and scrobbling" description="AniList, MyAnimeList, Kitsu, MangaBaka, MangaUpdates." href="/Maki/features/trackers/" />
+  <LinkCard title="Page enhance" description="Sharper pages in the reader." href="/Maki/features/page-enhance/" />
+  <LinkCard title="Discover" description="Recommendations, rails, metadata." href="/Maki/features/discover/" />
+  <LinkCard title="Stats and Rewind" description="History, levels, streaks." href="/Maki/features/stats/" />
+  <LinkCard title="Monitoring and downloads" description="Schedules, sources, torrents, the queue." href="/Maki/features/monitoring-and-downloads/" />
+  <LinkCard title="Files and library" description="Output, conversion, health, imports." href="/Maki/features/files-and-library/" />
+  <LinkCard title="Administration" description="Users, security, backups, API." href="/Maki/features/administration/" />
+</CardGrid>

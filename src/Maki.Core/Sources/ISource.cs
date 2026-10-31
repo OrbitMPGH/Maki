@@ -195,7 +195,11 @@ public enum SourceCapabilities
     /// language": MANGA Plus publishes nine and declares this false, because each of them is a
     /// separate series id rather than a filter over one list.
     /// </summary>
-    SupportsLanguageFilter = 2
+    SupportsLanguageFilter = 2,
+
+    /// <summary>Launches a headless browser through Playwright. Native builds install it on first use;
+    /// <c>HealthMonitor</c> reports the install while such a source is enabled.</summary>
+    NeedsBrowser = 4
 }
 
 /// <summary>
@@ -258,9 +262,13 @@ public record ChapterPages(IReadOnlyList<PageRequest> Pages);
 /// issuing an HTTP request — for a source whose CDN only accepts a real browser's
 /// in-page image fetch (e.g. TopManhua, blocked when re-requested by a plain client),
 /// so the bytes must be captured during that browser session, not re-fetched by URL.
+/// Fetch, when set, produces the page's bytes when the downloader writes it: for a source that has
+/// to fetch and descramble each page itself. Doing that inside GetPagesAsync held every page of the
+/// chapter in memory until the first was written.
 /// </summary>
 public record PageRequest(
     string Url,
     IReadOnlyDictionary<string, string>? Headers = null,
     string? XorKeyHex = null,
-    byte[]? Data = null);
+    byte[]? Data = null,
+    Func<CancellationToken, Task<byte[]>>? Fetch = null);

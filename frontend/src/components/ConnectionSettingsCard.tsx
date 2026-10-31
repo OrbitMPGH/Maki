@@ -4,7 +4,7 @@ import { Button, Group, PasswordInput, Select, TextInput } from '@mantine/core'
 import { SettingsSection } from '../pages/settings/SettingsSection'
 import { SaveButton } from './settings/SaveButton'
 import { FieldAction } from './settings/FieldAction'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { Trans } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import {
@@ -50,7 +50,7 @@ export function ConnectionSettingsCard({
 }: {
   name: ConnectionName
   title: string
-  description: string
+  description?: string
   fields: ConnectionFields
   /** A second set of fields in the same card that saves through its own endpoint. */
   extra?: SaveGroup

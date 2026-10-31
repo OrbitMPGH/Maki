@@ -26,7 +26,7 @@ import {
   IconRefresh,
   IconX,
 } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import {
   useChapters,
   useDownloadChapterFrom,
@@ -47,17 +47,18 @@ import { QUALITY_TIER_COLOR, QUALITY_TIER_LABELS, upgradeReasonLabel } from '../
 import type { QualityTierName } from '../api/upgrades'
 import { formatBytes } from '../format'
 import { useLabel } from '../i18n-context'
+import { MetaList } from './ui/MetaList'
 
 const COLUMN_WIDTH = 300
 
-/** "Aggregator · 969px", or just the tier when no page width could be measured for this column. */
+/** "Aggregator, 969px", or just the tier when no page width could be measured for this column. */
 function tierWidthLabel(
   renderLabel: (m: MessageDescriptor) => string,
   tier: QualityTierName,
   width: number | null,
 ): string {
   const tierLabel = renderLabel(QUALITY_TIER_LABELS[tier])
-  return width != null ? now`${tierLabel} · ${width}px` : tierLabel
+  return width != null ? now`${tierLabel}, ${width}px` : tierLabel
 }
 
 /** "Current: Aggregator 969px, score 0" for the pick-mode header, from whichever parts are known. */
@@ -428,16 +429,9 @@ export function SourceCompareModal({
         <Stack gap="md" style={{ flex: 1, minHeight: 0 }}>
           <Text size="sm" c="var(--ink-3)">
             {pick ? (
-              <Trans>
-                This chapter as each source scans it, heaviest first. Pick the one that looks best
-                and Maki downloads it again from there, replacing the file you have.
-              </Trans>
+              <Trans>Pick the one that looks best and Maki downloads it again from there.</Trans>
             ) : (
-              <Trans>
-                The same chapter as each source scans it, heaviest first. Drag the columns so your
-                favourite is first, then save: that becomes the order chapters download in for this
-                series.
-              </Trans>
+              <Trans>Drag your favourite first and save to set this series' download order.</Trans>
             )}
           </Text>
 
@@ -481,7 +475,7 @@ export function SourceCompareModal({
             <Group gap="md">
               {snapshot?.pagesAligned && (
                 <Tooltip
-                  label={t`Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page.`}
+                  label={t`Pages are matched by image content, so each row is the same drawing in every column.`}
                   withArrow
                   multiline
                   w={300}
@@ -633,7 +627,7 @@ export function SourceCompareModal({
 
                       {panel.status === 'ready' && panel.pages.some((x) => x !== null) && (
                         <Tooltip
-                          label={t`Total bytes across the pages shown. Over the same pages it tracks how hard the source compressed them, which is why the columns start in this order, but a source that upscales its scans is bigger without being better.`}
+                          label={t`Total bytes across the pages shown. Bigger is not always better.`}
                           withArrow
                           multiline
                           w={280}
@@ -692,8 +686,10 @@ export function SourceCompareModal({
                                   onClick={() => setZoom({ panel: i, page: pageIndex })}
                                 />
                                 <Text fz="var(--type-micro)" c="var(--ink-3)" ta="center" mt={2}>
-                                  {page.width ? `${page.width}×${page.height} · ` : ''}
-                                  {formatBytes(page.bytes)}
+                                  <MetaList
+                                    inline
+                                    items={[page.width ? `${page.width}×${page.height}` : null, formatBytes(page.bytes)]}
+                                  />
                                 </Text>
                               </Box>
                             ) : (
@@ -835,11 +831,16 @@ export function SourceCompareModal({
                 </ActionIcon>
               </Group>
               <Text size="xs" c="var(--ink-3)">
-                <Trans>
-                  Row {zoomRowNumber} of {zoomTotalPages}
-                </Trans>
-                {zoomPage.width ? ` · ${zoomPage.width}×${zoomPage.height}` : ''} ·{' '}
-                {formatBytes(zoomPage.bytes)}
+                <MetaList
+                  inline
+                  items={[
+                    <Trans key="row">
+                      Row {zoomRowNumber} of {zoomTotalPages}
+                    </Trans>,
+                    zoomPage.width ? `${zoomPage.width}×${zoomPage.height}` : null,
+                    formatBytes(zoomPage.bytes),
+                  ]}
+                />
               </Text>
               <ActionIcon
                 variant="subtle"
@@ -860,7 +861,14 @@ export function SourceCompareModal({
             </Box>
 
             <Text size="xs" c="var(--ink-3)" ta="center" px="sm" py={6}>
-              <Trans>← → swap source</Trans> · <Trans>↑ ↓ change page</Trans> · <Trans>Esc closes</Trans>
+              <MetaList
+                inline
+                items={[
+                  <Trans key="swap">← → swap source</Trans>,
+                  <Trans key="page">↑ ↓ change page</Trans>,
+                  <Trans key="esc">Esc closes</Trans>,
+                ]}
+              />
             </Text>
           </Stack>
         )}

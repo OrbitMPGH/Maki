@@ -26,9 +26,9 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
     private const string CdnUrl = "https://cdn.taiyo.moe";
     private const string DefaultMeilisearchUrl = "https://meilisearch.taiyo.moe";
 
-    private const int MaxChapterPages = 200;
-    private const int MaxScannedScripts = 12;
-    private static readonly TimeSpan DiscoveryFailureTtl = TimeSpan.FromMinutes(5);
+    internal const int MaxChapterPages = 200;
+    internal const int MaxScannedScripts = 12;
+    internal static readonly TimeSpan DiscoveryFailureTtl = TimeSpan.FromMinutes(5);
 
     private static readonly HtmlParser Parser = new();
 

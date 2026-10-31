@@ -112,6 +112,7 @@ export const scrobbleHandlers = (status: ScrobbleStatus = scrobbleStatus): HttpH
     HttpResponse.json({ url: `/mock/oauth/${String(params.service)}` }),
   ),
   http.post(api('/scrobble/auth/:service/disconnect'), () => HttpResponse.json({ message: 'Disconnected.' })),
+  http.put(api('/scrobble/sofar'), async ({ request }) => HttpResponse.json(await request.json())),
   http.put(api('/scrobble/preferences/:service'), async ({ params, request }) => {
     const body = (await request.json()) as { reading: boolean; ratings: boolean; anime?: boolean }
     return HttpResponse.json({ service: String(params.service), reading: body.reading, ratings: body.ratings, anime: body.anime ?? null })

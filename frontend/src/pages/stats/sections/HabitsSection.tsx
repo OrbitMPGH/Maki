@@ -47,7 +47,7 @@ function BehaviourRow({
 }) {
   return (
     <li className="stats-row">
-      <SeriesThumb url={item.coverUrl} alt={item.title} />
+      <SeriesThumb url={item.coverUrl} alt={item.title} seriesId={item.seriesId} />
       <div style={{ minWidth: 0 }}>
         <div className="stats-row-title">
           <SeriesLink id={item.seriesId} title={item.title} />
@@ -244,7 +244,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
               <p className="stats-panel-sub">{t`Stopped before finishing`}</p>
               {behaviour.abandoned.length === 0 ? (
                 <Text c="var(--ink-3)" size="sm">
-                  {t`Nothing dropped. Keep it that way.`}
+                  {t`You haven't dropped any series.`}
                 </Text>
               ) : (
                 <ul className="stats-rows">

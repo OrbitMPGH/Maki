@@ -27,9 +27,10 @@ public class SideInterestRailService(
         db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
         var allowed = ContentRating.Allowed(scope.MaxContentRating);
         var rows = await db.Series.AsNoTracking()
+            .Active()
             .Where(s => s.MangaBakaId != null && s.Incognito != IncognitoMode.Full
                 && allowed.Contains(s.ContentRating ?? ContentRating.Safe)
-                && !db.UserSeriesStates.Any(u => u.SeriesId == s.Id && u.Rating < 5))
+                && !db.UserSeriesStates.Any(u => u.SeriesId == s.Id && (u.Rating ?? u.ProvisionalRating) < 5))
             .Select(s => new { s.MangaBakaId, s.Title, s.Genres, s.Tags })
             .ToListAsync(ct);
         var eligible = (await seedWeights.SnapshotAsync(db, scope, ct)).Effective.EligibleIds.ToHashSet();
@@ -77,7 +78,7 @@ public class SideInterestRailService(
         return selected;
     }
 
-    internal static IReadOnlyList<string> CoreStoryTags(byte[]? blob, IReadOnlyDictionary<int, TagInfo> vocabulary) =>
+    internal static IReadOnlyList<string> CoreStoryTags(ReadOnlySpan<byte> blob, IReadOnlyDictionary<int, TagInfo> vocabulary) =>
         TagMath.Unpack(blob)
             .Where(t => t.Class == TagMath.Core && vocabulary.TryGetValue(t.Id, out var info)
                 && !info.IsSpoiler && TagMath.IsStoryCategory(info.Category))

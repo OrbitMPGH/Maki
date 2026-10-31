@@ -1,3 +1,4 @@
+using Maki.Core.Parsing;
 using Maki.Core.Sources;
 using Maki.Sources.ComicWalker;
 
@@ -229,13 +230,13 @@ public class ComicWalkerSourceTests
     [InlineData("第1話　帰り着いた場所で", 1)]
     public void ChapterNumber_parses_plan_samples(string title, decimal expected)
     {
-        Assert.Equal(expected, ComicWalkerChapterNumber.Parse(title));
+        Assert.Equal(expected, ChapterNumberParser.Parse(title).NumberWithPart);
     }
 
     [Fact]
     public void ChapterNumber_falls_back_to_ChapterNumberParser()
     {
-        Assert.Equal(12m, ComicWalkerChapterNumber.Parse("Chapter 12"));
+        Assert.Equal(12m, ChapterNumberParser.Parse("Chapter 12").NumberWithPart);
     }
 
     [Theory]
@@ -243,19 +244,19 @@ public class ComicWalkerSourceTests
     [InlineData("第३話")]
     public void ChapterNumber_does_not_throw_on_non_ascii_digits(string title)
     {
-        Assert.Null(ComicWalkerChapterNumber.Parse(title));
+        Assert.Null(ChapterNumberParser.Parse(title).NumberWithPart);
     }
 
     [Fact]
     public void ChapterNumber_folds_fullwidth_digits()
     {
-        Assert.Equal(12m, ComicWalkerChapterNumber.Parse("第１２話"));
+        Assert.Equal(12m, ChapterNumberParser.Parse("第１２話").NumberWithPart);
     }
 
     [Fact]
     public void ChapterNumber_returns_null_for_unparseable_text()
     {
-        Assert.Null(ComicWalkerChapterNumber.Parse("特別読み切り"));
+        Assert.Null(ChapterNumberParser.Parse("特別読み切り").NumberWithPart);
     }
 
     [Fact]

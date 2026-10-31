@@ -1,0 +1,23 @@
+# Keeps a reader's ordinary traffic out of the generic HTTP scenarios. Opening a chapter pulls one
+# request per page and per strip thumbnail, and a library page one per cover, which is exactly what
+# crowdsecurity/http-crawl-non_statics looks for. A series without a poster also answers 404 once
+# per tile, which http-probing counts.
+#
+# A whitelisted line is dropped before every scenario, Maki's own included, so the sign-in and
+# password endpoints are never whitelisted here: maki/maki-bf has to see them.
+name: maki/maki-whitelist
+description: "Whitelist signed-in Maki traffic and image requests"
+filter: "evt.Parsed.program == 'maki'"
+whitelist:
+  reason: "Maki reader traffic"
+  expression:
+    # Anything a signed-in account, an API key or a valid OPDS, Komga or KOReader token made, except
+    # the sign-in, two-factor and password-confirming endpoints.
+    - evt.Parsed.remote_user != '-' && evt.Parsed.remote_user != '' && not (evt.Meta.http_path matches '^/api/v1/(auth/|account/(password|2fa|apikeys)|settings/opds)')
+    # Covers, reader pages and thumbnails, previews and the sign-in mosaic. Only answered requests:
+    # a 401 here still counts, since it means nobody was signed in.
+    - evt.Meta.http_verb in ['GET', 'HEAD'] && evt.Meta.http_status in ['200', '206', '304', '404', '499'] && evt.Meta.http_path matches '^/(api/v1/(mediacover/|reader/chapter/[0-9]+/(page|thumb)/|search/cover|suwayomi/thumbnail/|preview/|signin/mosaic)|komga/api/v1/(series|books)/[^/]+/(thumbnail|pages))'
+    # A 401 anywhere but sign-in: a tab whose session expired still saving reading progress, or a
+    # Komga client that only sends its token after being challenged. crowdsecurity's generic 401
+    # scenario would ban both. Guessing an API key or a feed token this way is not practical.
+    - evt.Meta.http_status == '401' && evt.Meta.http_path matches '^/(api/|komga/|signalr/)' && not (evt.Meta.http_path matches '^/api/v1/(auth/|account/(password|2fa|apikeys)|settings/opds)')

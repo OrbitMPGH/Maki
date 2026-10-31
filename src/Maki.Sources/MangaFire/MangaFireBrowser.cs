@@ -411,7 +411,7 @@ public sealed class MangaFireBrowser(
 
         var session = await fetcher.GetBrowserSessionAsync($"{BaseUrl}/home", ct);
 
-        _playwright ??= await shared.AcquireAsync();
+        _playwright ??= await shared.AcquireAsync(ct);
         if (_browser == null)
         {
             // Use the ~100 MB headless shell, not full Chromium — we never render headed, and it
@@ -464,13 +464,14 @@ public sealed class MangaFireBrowser(
         // title's selection, which desynchronises the pager mid-walk. Start every navigation clean.
         await context.AddInitScriptAsync("try { localStorage.clear(); sessionStorage.clear(); } catch (e) { }");
 
-        // only the JSON responses matter — skip images/media/fonts to cut nav time and bandwidth.
+        // only the JSON responses matter — skip images/media/fonts and the analytics and share scripts
+        // to cut nav time, bandwidth and renderer work.
         await context.RouteAsync("**/*", async route =>
         {
             try
             {
                 var type = route.Request.ResourceType;
-                if (type is "image" or "media" or "font")
+                if (type is "image" or "media" or "font" || BrowserSupport.IsUnneeded(route.Request.Url))
                 {
                     await route.AbortAsync();
                 }

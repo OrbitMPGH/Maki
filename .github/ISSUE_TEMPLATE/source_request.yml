@@ -1,7 +1,7 @@
 name: New source request
 description: Ask for a manga/manhwa/manhua site to be added as a source.
 title: "[Source]: "
-labels: ["feature-request"]
+labels: ["type:feature", "area:sources"]
 body:
   - type: markdown
     attributes:

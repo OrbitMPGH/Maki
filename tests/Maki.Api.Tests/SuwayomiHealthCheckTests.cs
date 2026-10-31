@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
+[Collection(OneRunPerProcessCollection.Name)]
 public sealed class SuwayomiHealthCheckTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();
@@ -49,7 +49,7 @@ public sealed class SuwayomiHealthCheckTests : IDisposable
     {
         using var db = _world.Db.NewContext();
         var services = new ServiceCollection().AddSingleton(_world.Queue).AddSingleton(_client).BuildServiceProvider();
-        var monitor = new HealthMonitor(db, null!, _world.Settings, new AppPaths(), _registry,
+        var monitor = new HealthMonitor(db, null!, _world.Settings, _world.Paths, _registry,
             new SourceAvailability(_world.Settings, _registry), services, new RecordingNotifications(), _world.Inbox,
             new TestLocalizer(), new TestUserLocaleResolver(), null!);
         await monitor.RefreshAsync(CancellationToken.None);

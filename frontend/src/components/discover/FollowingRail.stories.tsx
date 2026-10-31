@@ -30,7 +30,7 @@ export const Default: Story = {
     await expect(await canvas.findByRole('heading', { name: 'New from creators you follow' })).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Show more' }))
     await waitFor(() => expect(args.onShowMore).toHaveBeenCalledWith(
-      expect.objectContaining({ key: 'following', sort: 'newest', excludeOwned: true }),
+      expect.objectContaining({ key: 'following', sort: 'newest', excludeInteracted: true, releasedWithinMonths: 12 }),
     ))
   },
 }
@@ -53,10 +53,10 @@ export const Unfollow: Story = {
   },
 }
 
-export const EverythingOwned: Story = {
+export const NothingNew: Story = {
   parameters: { msw: discoverPage(http.post(api('/recommendations/discover/feed'), () => HttpResponse.json([]))) },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText(/already in your library/)).toBeVisible()
+    await expect(await canvas.findByText(/Nothing new from them in the last 12 months/)).toBeVisible()
   },
 }
 

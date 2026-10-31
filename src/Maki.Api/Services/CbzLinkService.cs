@@ -23,7 +23,8 @@ public record RescanResult(int NewFiles, int Relinked, int Removed, int Unrecogn
 public class CbzLinkService(
     MakiDbContext db, SourceRegistry sources, KavitaScanService kavitaScans,
     StatsEventService stats, ReaderArchiveCache archives, SourceAvailability sourceAvailability,
-    ChapterFileQualityService quality, IAppSettings settings, ILogger<CbzLinkService> logger)
+    ChapterFileQualityService quality, IAppSettings settings, ILogger<CbzLinkService> logger,
+    ChapterFromFilesService? fromFiles = null)
 {
     /// <param name="files">Absolute paths of CBZ files, already inside the series folder.</param>
     /// <param name="seriesDir">Absolute path of the series folder (for relative paths).</param>
@@ -64,6 +65,7 @@ public class CbzLinkService(
         var index = 0;
         var unlinkedVolumeFiles = new List<(ParsedReleaseFile Parsed, ChapterFile Record, string Path)>();
         var volumeFiles = new List<(int FileId, string AbsolutePath, ParsedReleaseFile Parsed)>();
+        var processed = new List<ChapterFromFilesService.FileOnDisk>();
 
         foreach (var file in ordered)
         {
@@ -88,6 +90,7 @@ public class CbzLinkService(
 
             chapterFile.Size = size;
             chapterFile.ReleaseName ??= releaseName;
+            processed.Add(new(chapterFile.Id, file, parsed));
 
             if (parsed.IsVolume)
             {
@@ -151,6 +154,13 @@ public class CbzLinkService(
 
         linked += await LinkLoneFileAsync(series, chapters, ct);
         await EstimateCompletedVolumeLinksAsync(series, chapters, ct);
+        // An upgrade links against part of the chapter list, so it builds nothing from what it left over.
+        if (fromFiles is not null && language is null && displaceableFileIds is null)
+        {
+            await fromFiles.RetireVolumeEntriesAsync(series, chapters, ct);
+            linked += await fromFiles.BuildAsync(series, chapters, processed, ct);
+        }
+
         // Only a grabbed torrent is a download. Adopting files that were already on disk (rescan,
         // library import) is linking, and counting it would credit a whole back catalogue as downloaded.
         if (created > 0 && sourceName.StartsWith("torrent:", StringComparison.Ordinal))
@@ -345,9 +355,10 @@ public class CbzLinkService(
             removed++;
         }
 
-        // 2. Known files no chapter points at: retry matching with current chapter data.
+        // 2. Known files no chapter points at: retry matching with current chapter data. A file only a
+        // volume entry holds is retried too, so chapters a source lists since can take it over.
         var linkedFileIds = chapters
-            .Where(c => c.ChapterFileId != null)
+            .Where(c => c.ChapterFileId != null && !Chapter.IsVolumeEntry(c))
             .Select(c => c.ChapterFileId!.Value)
             .ToHashSet();
         var unlinkedFiles = dbFiles
@@ -401,6 +412,16 @@ public class CbzLinkService(
             .Select(f => (f.Id, f.AbsolutePath!, f.Parsed))
             .ToList();
         relinked += FillVolumeContents(chapters, volumeFilesOnDisk, volumeFileIds, replaceExisting: true);
+
+        if (fromFiles is not null)
+        {
+            await fromFiles.RetireVolumeEntriesAsync(series, chapters, ct);
+            var present = volumeFilesOnDisk
+                .Where(f => File.Exists(f.Item2))
+                .Select(f => new ChapterFromFilesService.FileOnDisk(f.Id, f.Item2, f.Parsed))
+                .ToList();
+            relinked += await fromFiles.BuildAsync(series, chapters, present, ct);
+        }
 
         await db.SaveChangesAsync(ct);
 

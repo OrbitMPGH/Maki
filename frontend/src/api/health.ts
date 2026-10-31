@@ -116,6 +116,7 @@ export interface HealthOperation {
   version: string
   error?: string
   createdAt: string
+  finishedAt?: string | null
   /** What the operation acts on; the list endpoint fills these, the detail endpoint leaves them null. */
   relativePath?: string | null
   seriesId?: number | null
@@ -140,6 +141,8 @@ export interface OperationDetail {
   chapters: { id: number; title?: string; wanted: boolean }[]
   candidates: { chapterId: number; analysis: Analysis }[]
   requiresReset: boolean
+  /** Failed, and the file is still the version it failed on, so the same request can run again. */
+  retryable: boolean
 }
 
 /** The series behind a grouped source warning, and how far a refresh of them has got. */

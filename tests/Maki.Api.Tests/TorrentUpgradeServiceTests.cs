@@ -56,8 +56,16 @@ internal sealed class FakeRelatedTitles() : MangaBakaLocalStore(new MangaBakaDum
 {
     public Dictionary<long, IReadOnlyList<string>> Related { get; } = [];
 
+    /// <summary>Throws on every read, as a dump being replaced or a corrupt one does.</summary>
+    public bool Broken { get; set; }
+
     public override Task<IReadOnlyList<string>> GetRelatedTitlesAsync(long id, CancellationToken ct = default) =>
-        Task.FromResult(Related.GetValueOrDefault(id) ?? []);
+        Broken
+            ? throw new InvalidOperationException("dump unreadable")
+            : Task.FromResult(Related.GetValueOrDefault(id) ?? []);
+
+    public RivalTitleProvider Provider() =>
+        new(this, TimeProvider.System, NullLogger<RivalTitleProvider>.Instance);
 }
 
 internal sealed class SettableClock(DateTimeOffset now) : TimeProvider
@@ -70,7 +78,6 @@ internal sealed class SettableClock(DateTimeOffset now) : TimeProvider
         new(new DateTimeOffset(DateTime.SpecifyKind(new DateTime(2026, 9, 29, 12, 0, 0), DateTimeKind.Local)));
 }
 
-[Collection(ConfigDirCollection.Name)]
 public class TorrentUpgradeServiceTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();
@@ -90,7 +97,7 @@ public class TorrentUpgradeServiceTests : IDisposable
 
     private TorrentUpgradeService Service(MakiDbContext db) => new(db,
         new UpgradeEvaluationService(db, TestQuality.Create(_world.Registry)), _releases, _world.Inbox, _world.Settings,
-        _clock, _store, NullLogger<TorrentUpgradeService>.Instance);
+        _clock, _store.Provider(), NullLogger<TorrentUpgradeService>.Instance);
 
     private int Chapter(decimal number, int? volume, bool withFile = true, bool wanted = true, Action<ChapterFile>? file = null,
         string language = "en")

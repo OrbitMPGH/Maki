@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using AngleSharp.Html.Parser;
+using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 using Maki.Sources.Common;
@@ -23,10 +24,8 @@ namespace Maki.Sources.FlameComics;
 /// <c>/series/{seriesId}/{token}</c> needs.
 /// </para>
 /// </summary>
-public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
+public class FlameComicsSource(IHtmlFetcher fetcher) : ISource
 {
-    public const string HttpClientName = "source-flamecomics";
-
     /// <summary>Images and covers live on a separate host that needs no Referer.</summary>
     private const string CdnUrl = "https://cdn.flamecomics.xyz";
 
@@ -37,11 +36,9 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
     public string Name => "flamecomics";
     public string DisplayName => "Flame Comics";
     public string BaseUrl => "https://flamecomics.xyz";
-    public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
     public SourceKind Kind => SourceKind.Scanlator;
     public SourceContent Content => SourceContent.Manhwa | SourceContent.Manhua | SourceContent.Manga;
-
-    private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 
     public string? ResolveSeriesIdFromUrl(Uri url)
     {
@@ -179,7 +176,7 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
     /// </summary>
     private async Task<JsonElement> GetPagePropsAsync(string path, CancellationToken ct)
     {
-        var doc = await Parser.ParseDocumentAsync(await Client.GetStringAsync(path, ct), ct);
+        var doc = await Parser.ParseDocumentAsync(await fetcher.GetContentHtmlAsync($"{BaseUrl}/{path}", ct), ct);
         var payload = doc.QuerySelector("script#__NEXT_DATA__")?.TextContent;
         if (string.IsNullOrWhiteSpace(payload))
         {

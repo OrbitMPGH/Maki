@@ -27,6 +27,7 @@ import {
   IconPhotoSearch,
   IconSparkles,
   IconTrash,
+  IconTrashX,
 } from '@tabler/icons-react'
 import { queueErrorMessage } from '../../api/queue'
 import type { ChapterProgressDto, ChapterReadState } from '../../api/reader'
@@ -37,6 +38,7 @@ import type { SaveProgress } from '../../pwa/offlineChapters'
 import type { AnimeMarker, AnimeSpan } from '../../lib/animeCoverage'
 import { onPressKey, pressable } from '../../lib/pressable'
 import type { PickChapter } from '../SourceCompareModal'
+import { MetaList } from '../ui/MetaList'
 import { queueStatusVisual, statusColor } from '../ui/status'
 import { FileQualityBadge } from './FileQualityBadge'
 import { HoverTooltip } from './HoverTooltip'
@@ -83,6 +85,8 @@ type ChapterRowProps = {
   canDownload: boolean
   canDelete: boolean
   canFindBetterCopy: boolean
+  /** Why the actions that talk to a source are switched off (an archived series), or null while they work. */
+  sourceToolsDisabledReason?: string | null
   /** This browser can keep chapters for offline reading (a secure context with a service worker). */
   canSaveOffline: boolean
   /** This device's copy of the chapter, if it keeps one. */
@@ -112,6 +116,7 @@ export const ChapterRow = memo(function ChapterRow({
   canDownload,
   canDelete,
   canFindBetterCopy,
+  sourceToolsDisabledReason = null,
   canSaveOffline,
   offline,
   offlineSaving,
@@ -130,9 +135,10 @@ export const ChapterRow = memo(function ChapterRow({
   const { read, inProgress, external, watched } = readStateOf(rowProgress)
   const pageIndex = rowProgress ? rowProgress.pageIndex + 1 : null
   const pageCount = rowProgress ? rowProgress.pageCount : null
+  const removing = c.hasFile && c.fileDeleteDueAt !== null
   return (
       <Table.Tr
-          opacity={c.wanted || c.hasFile ? 1 : 0.55}
+          opacity={c.wanted || c.hasFile || c.fileAutoRemoved ? 1 : 0.55}
           className={[
             watched
                 ? 'chapter-row-watched'
@@ -141,6 +147,7 @@ export const ChapterRow = memo(function ChapterRow({
                     : inProgress
                         ? 'chapter-row-reading'
                         : '',
+            removing ? 'chapter-row-removing' : '',
             selectMode ? 'chapter-row-selectable' : '',
             isSelected ? 'chapter-row-selected' : '',
           ]
@@ -200,11 +207,11 @@ export const ChapterRow = memo(function ChapterRow({
                             span
                                 ? marker.kind === 'start'
                                     ? folded
-                                        ? t`${markerLabel} Anime adaptation starts here · click to expand`
-                                        : t`${markerLabel} Anime adaptation starts here · click to collapse`
+                                        ? t`${markerLabel} Anime adaptation starts here. Click to expand.`
+                                        : t`${markerLabel} Anime adaptation starts here. Click to collapse.`
                                     : folded
-                                        ? t`${markerLabel} Anime adaptation ends here · click to expand`
-                                        : t`${markerLabel} Anime adaptation ends here · click to collapse`
+                                        ? t`${markerLabel} Anime adaptation ends here. Click to expand.`
+                                        : t`${markerLabel} Anime adaptation ends here. Click to collapse.`
                                 : marker.kind === 'start'
                                     ? t`${markerLabel} Anime adaptation starts here`
                                     : t`${markerLabel} Anime adaptation ends here`
@@ -318,20 +325,42 @@ export const ChapterRow = memo(function ChapterRow({
                         0,
                         Math.ceil((Date.parse(c.fileDeleteDueAt) - Date.now()) / 86_400_000),
                     )
+                    const dueOn = formatCalendarDate(c.fileDeleteDueAt)
                     return (
-                        <HoverTooltip label={t`Read file cleanup is on for this series`} withArrow>
-                          <LightBadge color="var(--neutral)" leftSection={<IconClock size={12} />}>
+                        <HoverTooltip
+                            label={t`Everyone has read this chapter, so read file cleanup deletes the file around ${dueOn}. It gets no upgrades until then.`}
+                            withArrow
+                            multiline
+                            w={280}
+                        >
+                          <LightBadge color="var(--warn)" leftSection={<IconClock size={12} />}>
                             {daysLeft === 0
-                                ? t`File removed soon`
+                                ? t`Removal pending`
                                 : plural(daysLeft, {
-                                  one: 'File removed in # day',
-                                  other: 'File removed in # days',
+                                  one: 'Removed in # day',
+                                  other: 'Removed in # days',
                                 })}
                           </LightBadge>
                         </HoverTooltip>
                     )
                   })()}
                 </>
+            ) : c.fileRemovedAt && c.fileAutoRemoved ? (
+                (() => {
+                  const removedOn = formatCalendarDate(c.fileRemovedAt)
+                  return (
+                      <HoverTooltip
+                          label={t`Read file cleanup deleted the file on ${removedOn} after everyone read it. Turn Wanted back on to download it again.`}
+                          withArrow
+                          multiline
+                          w={280}
+                      >
+                        <LightBadge color="var(--neutral)" leftSection={<IconTrashX size={12} />}>
+                          <Trans>Auto-removed</Trans>
+                        </LightBadge>
+                      </HoverTooltip>
+                  )
+                })()
             ) : c.fileRemovedAt ? (
                 <HoverTooltip label={t`The file was deleted on purpose. Maki won't download it again unless you ask.`} withArrow>
                   <LightBadge color="var(--neutral)" leftSection={<IconTrash size={12} />}>
@@ -422,11 +451,15 @@ export const ChapterRow = memo(function ChapterRow({
                 </HoverTooltip>
             )}
             {!c.hasFile && canDownload && (
-                <HoverTooltip label={t`Download this chapter`} withArrow>
+                <HoverTooltip label={sourceToolsDisabledReason ?? t`Download this chapter`} withArrow>
                   <LightActionIcon
                       variant="subtle"
                       color="brand"
-                      onClick={() => actions.download(c.id, chapterLbl)}
+                      data-disabled={sourceToolsDisabledReason !== null || undefined}
+                      aria-disabled={sourceToolsDisabledReason !== null || undefined}
+                      onClick={() => {
+                        if (sourceToolsDisabledReason === null) actions.download(c.id, chapterLbl)
+                      }}
                       aria-label={t`Download ${chapterLbl}`}
                   >
                     <IconDownload size={17} />
@@ -462,29 +495,42 @@ export const ChapterRow = memo(function ChapterRow({
                         </Menu.Item>
                     )}
                     {canSaveOffline && (canDownload || canDelete) && <Menu.Divider />}
-                    {canDownload && c.number !== null && canFindBetterCopy && (
+                    {canDownload && c.number !== null && canFindBetterCopy && !removing && (
+                        <Tooltip label={sourceToolsDisabledReason} position="left" withArrow disabled={sourceToolsDisabledReason === null} events={{ hover: true, focus: true, touch: true }}>
                         <Menu.Item
                             leftSection={<IconPhotoSearch size={14} />}
-                            onClick={() =>
-                                actions.pickChapter({
-                                  id: c.id,
-                                  number: c.number!,
-                                  label: chapterLbl,
-                                  currentSourceName: c.fileSourceName,
-                                })
-                            }
+                            data-disabled={sourceToolsDisabledReason !== null || undefined}
+                            aria-disabled={sourceToolsDisabledReason !== null || undefined}
+                            closeMenuOnClick={sourceToolsDisabledReason === null}
+                            onClick={() => {
+                              if (sourceToolsDisabledReason !== null) return
+                              actions.pickChapter({
+                                id: c.id,
+                                number: c.number!,
+                                label: chapterLbl,
+                                currentSourceName: c.fileSourceName,
+                              })
+                            }}
                         >
                           <Trans>Find better copy</Trans>
                         </Menu.Item>
+                        </Tooltip>
                     )}
-                    {canDownload && (
+                    {canDownload && !removing && (
+                    <Tooltip label={sourceToolsDisabledReason} position="left" withArrow disabled={sourceToolsDisabledReason === null} events={{ hover: true, focus: true, touch: true }}>
                     <Menu.Item
                         leftSection={upgradingThis ? <Loader size={14} /> : <IconSparkles size={14} />}
                         disabled={upgradePending}
-                        onClick={() => actions.upgradeNow(c.id)}
+                        data-disabled={sourceToolsDisabledReason !== null || undefined}
+                        aria-disabled={sourceToolsDisabledReason !== null || undefined}
+                        closeMenuOnClick={sourceToolsDisabledReason === null}
+                        onClick={() => {
+                          if (sourceToolsDisabledReason === null) actions.upgradeNow(c.id)
+                        }}
                     >
                       <Trans>Upgrade now</Trans>
                     </Menu.Item>
+                    </Tooltip>
                     )}
                     {canDownload && c.fileQuality && (
                         <Menu.Item
@@ -607,8 +653,8 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
               label={
                 mixed
                     ? plural(total, {
-                        one: `${wantedCount} of # chapter wanted · click to want all`,
-                        other: `${wantedCount} of # chapters wanted · click to want all`,
+                        one: `${wantedCount} of # chapter wanted. Click to want all.`,
+                        other: `${wantedCount} of # chapters wanted. Click to want all.`,
                       })
                     : allWanted
                         ? plural(total, { one: 'All # chapter wanted', other: 'All # chapters wanted' })
@@ -649,32 +695,19 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
           </Group>
         </Table.Td>
         <Table.Td>
-          <Text size="sm" c="var(--ink-3)" className="tnum">
-            {plural(total, {
-              one: `# chapter · ${downloadedCount} downloaded`,
-              other: `# chapters · ${downloadedCount} downloaded`,
-            })}
-            {watchedCount > 0 && (
-                <>
-                  {' · '}
-                  <Trans>{watchedCount} watched</Trans>
-                </>
-            )}
-            {readCount > 0 && (
-                <>
-                  {' · '}
-                  <Trans>{readCount} read</Trans>
-                </>
-            )}
-            {/* Spelled out only when the range disagrees with itself: the switch alone can show
-              that state but not its size, and hovering for a tooltip is a poor way to find out. */}
-            {mixed && (
-                <>
-                  {' · '}
-                  <Trans>{wantedCount} wanted</Trans>
-                </>
-            )}
-          </Text>
+          {/* Wanted is spelled out only when the range disagrees with itself: the switch alone can
+            show that state but not its size, and hovering for a tooltip is a poor way to find out. */}
+          <MetaList
+              className="tnum"
+              style={{ color: 'var(--ink-3)', fontSize: 'var(--mantine-font-size-sm)' }}
+              items={[
+                plural(total, { one: '# chapter', other: '# chapters' }),
+                t`${downloadedCount} downloaded`,
+                watchedCount > 0 && <Trans>{watchedCount} watched</Trans>,
+                readCount > 0 && <Trans>{readCount} read</Trans>,
+                mixed && <Trans>{wantedCount} wanted</Trans>,
+              ]}
+          />
         </Table.Td>
         <Table.Td />
         <Table.Td />

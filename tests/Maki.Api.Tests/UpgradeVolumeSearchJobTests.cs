@@ -9,7 +9,7 @@ using Quartz;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
+[Collection(OneRunPerProcessCollection.Name)]
 public class UpgradeVolumeSearchJobTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();
@@ -32,7 +32,7 @@ public class UpgradeVolumeSearchJobTests : IDisposable
     {
         using var db = _world.Db.NewContext();
         var torrents = new TorrentUpgradeService(db, new UpgradeEvaluationService(db, TestQuality.Create(_world.Registry)),
-            _releases, _world.Inbox, _world.Settings, _clock, new FakeRelatedTitles(), NullLogger<TorrentUpgradeService>.Instance);
+            _releases, _world.Inbox, _world.Settings, _clock, new FakeRelatedTitles().Provider(), NullLogger<TorrentUpgradeService>.Instance);
         var job = new UpgradeVolumeSearchJob(torrents, _world.Settings, _clock, NullLogger<UpgradeVolumeSearchJob>.Instance);
         await job.Execute(new TestJobContext(force ? new JobDataMap { [UpgradeVolumeSearchJob.ForceKey] = true } : null, ct));
     }

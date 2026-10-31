@@ -3,7 +3,9 @@ import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
-import { sourcePriority, sources } from '../../../.storybook/mocks/settings/data'
+import {
+  customSourceInfos, customSourcesList, sourcePriority, sources,
+} from '../../../.storybook/mocks/settings/data'
 import { ManageSourcesModal } from './ManageSourcesModal'
 
 const meta = {
@@ -172,6 +174,102 @@ export const SourcesFailedToLoad: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await openDialog(canvasElement)
     await waitFor(() => expect(dialog.getByRole('button', { name: 'Save changes' })).toBeDisabled())
+  },
+}
+
+const withCustomSources = () => settingsMsw(
+  http.get(api('/search/sources'), () => HttpResponse.json([...sources, ...customSourceInfos])),
+  http.get(api('/settings/sources/priority'), () =>
+    HttpResponse.json({ ...sourcePriority, order: [...sourcePriority.order, 'custom-quietpen', 'custom-later'] }),
+  ),
+  http.get(api('/custom-sources'), () => HttpResponse.json(customSourcesList)),
+)
+
+export const CustomSources: Story = {
+  parameters: { msw: withCustomSources() },
+  play: async ({ canvasElement }) => {
+    const dialog = await openDialog(canvasElement)
+    await expect(await dialog.findByRole('switch', { name: 'Enable Quiet Pen' })).toBeInTheDocument()
+    await expect(await dialog.findByText('Link by URL')).toBeVisible()
+    await expect(await dialog.findByText('Not working')).toBeVisible()
+    await expect(await dialog.findByRole('button', { name: 'More for Quiet Pen' })).toBeVisible()
+  },
+}
+
+export const CustomSourceProviderFilter: Story = {
+  args: { initialProvider: 'custom' },
+  parameters: { msw: withCustomSources() },
+  play: async ({ canvasElement }) => {
+    const dialog = await openDialog(canvasElement)
+    await expect(await dialog.findByRole('switch', { name: 'Enable Quiet Pen' })).toBeInTheDocument()
+    await expect(dialog.queryByRole('switch', { name: 'Enable MangaDex' })).toBeNull()
+  },
+}
+
+export const ImportACustomSource: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await openDialog(canvasElement)
+    await userEvent.click(await dialog.findByRole('button', { name: 'Add source' }))
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Import definition' }))
+    const editor = await body.findByRole('textbox', { name: 'Definition' })
+    await userEvent.click(editor)
+    await userEvent.paste(JSON.stringify(customSourcesList[0].definition))
+    await waitFor(() => expect(body.getByRole('button', { name: 'Save' })).toBeDisabled())
+    await userEvent.click(await body.findByRole('button', { name: 'Test' }))
+    await expect(await body.findByText('Every check passed')).toBeVisible()
+    await waitFor(() => expect(body.getByRole('button', { name: 'Save' })).toBeEnabled())
+  },
+}
+
+export const SetUpASite: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await openDialog(canvasElement)
+    await userEvent.click(await dialog.findByRole('button', { name: 'Add source' }))
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Set up a site' }))
+    await userEvent.type(await body.findByRole('textbox', { name: 'Series page' }), 'https://quietpen.example/series/blue/')
+    await userEvent.type(body.getByRole('textbox', { name: /Chapter page/ }), 'https://quietpen.example/blue-chapter-2/')
+    await userEvent.click(body.getByRole('button', { name: 'Read the site' }))
+    await expect(await body.findByText('Read Blue Hour directly.')).toBeVisible()
+    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await expect(await body.findByText('Ch. 2')).toBeVisible()
+    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await expect(await body.findByText('40 pages on the sample chapter.')).toBeVisible()
+    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await userEvent.click(await body.findByRole('button', { name: 'Find search' }))
+    await expect(await body.findByRole('radio', { name: /Use the site's search/ })).toBeChecked()
+    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await waitFor(() => expect(body.getByRole('button', { name: 'Save' })).toBeDisabled())
+    await userEvent.click(body.getByRole('button', { name: 'Test' }))
+    await expect(await body.findByText('Every check passed')).toBeVisible()
+    await waitFor(() => expect(body.getByRole('button', { name: 'Save' })).toBeEnabled())
+  },
+}
+
+export const Repositories: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await openDialog(canvasElement)
+    await userEvent.click(await dialog.findByRole('button', { name: 'Add source' }))
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Repositories' }))
+    await expect(await body.findByText('Quiet sources')).toBeVisible()
+    await expect(body.getByRole('button', { name: 'Install' })).toBeVisible()
+    await expect(body.getByRole('button', { name: 'Replace with repository version' })).toBeVisible()
+    await expect(body.getByText('Needs a newer Maki')).toBeVisible()
+    await userEvent.click(body.getByRole('button', { name: 'Update to version 2' }))
+    await expect(await body.findByText('Version 1 to 2. These parts of the definition change:')).toBeVisible()
+    await userEvent.click(body.getByRole('button', { name: 'Apply update' }))
+    await waitFor(() => expect(body.queryByRole('button', { name: 'Apply update' })).toBeNull())
+  },
+}
+
+export const ReaderSeesNoAddButton: Story = {
+  parameters: { auth: 'reader' },
+  play: async ({ canvasElement }) => {
+    const dialog = await openDialog(canvasElement)
+    await dialog.findByRole('switch', { name: 'Enable MangaDex' })
+    await expect(dialog.queryByRole('button', { name: 'Add source' })).toBeNull()
   },
 }
 

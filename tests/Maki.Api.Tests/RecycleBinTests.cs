@@ -17,26 +17,22 @@ namespace Maki.Api.Tests;
 /// The three user deletes send files to the bin rather than deleting them, a restore puts them
 /// back, and nothing along the way can leave a file in neither place.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public class RecycleBinTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly string _configDir = Path.Combine(Path.GetTempPath(), "maki-recycle-" + Guid.NewGuid().ToString("N"));
     private readonly string _root;
-    private readonly string? _previousConfigDir = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
     private readonly FakeAppSettings _settings = new();
 
     public RecycleBinTests()
     {
         _root = Path.Combine(_configDir, "library");
         Directory.CreateDirectory(Path.Combine(_root, "Berserk"));
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
     }
 
     public void Dispose()
     {
         _db.Dispose();
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _previousConfigDir);
         try
         {
             Directory.Delete(_configDir, recursive: true);
@@ -85,7 +81,7 @@ public class RecycleBinTests : IDisposable
     private SeriesController SeriesApi(MakiDbContext db) => new(
         localizer: new TestLocalizer(),
         db: db,
-        coverService: new CoverService(null!, new AppPaths(), new FakeAppSettings(), NullLogger<CoverService>.Instance),
+        coverService: new CoverService(null!, new AppPaths(_configDir), new FakeAppSettings(), NullLogger<CoverService>.Instance),
         chapterSyncService: null!,
         cbzLinkService: null!,
         relinkPlanner: null!,
@@ -246,7 +242,7 @@ public class RecycleBinTests : IDisposable
         var folder = Path.Combine(_root, "Berserk");
         var cover = Path.Combine(folder, "cover.jpg");
         File.WriteAllText(cover, "maki cover");
-        var record = Path.Combine(new AppPaths().MediaCoverDir, s.SeriesId.ToString(), "library-cover.sha256");
+        var record = Path.Combine(new AppPaths(_configDir).MediaCoverDir, s.SeriesId.ToString(), "library-cover.sha256");
         Directory.CreateDirectory(Path.GetDirectoryName(record)!);
         File.WriteAllText(record, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(cover))));
 
@@ -449,17 +445,14 @@ public class RecycleBinTests : IDisposable
         Assert.Equal(s.RelativePath, Assert.Single(check.ChapterFiles).RelativePath);
     }
 
-    [Fact]
+    [Maki.Core.Tests.FileSymlinkFact]
     public async Task A_binned_link_whose_target_is_gone_can_still_be_restored()
     {
         var s = Seed();
         var target = Path.Combine(_configDir, "elsewhere.cbz");
         File.WriteAllText(target, "elsewhere");
         File.Delete(s.Absolute);
-        if (!Maki.Core.Tests.TestLinks.TryLinkFile(s.Absolute, target))
-        {
-            return;
-        }
+        Assert.True(Maki.Core.Tests.TestLinks.TryLinkFile(s.Absolute, target));
 
         using (var db = _db.NewContext())
         {
@@ -577,8 +570,9 @@ public class RecycleBinTests : IDisposable
 
         using (var db = _db.NewContext())
         {
-            var job = new HousekeepingJob(db, new AppPaths(),
+            var job = new HousekeepingJob(db, new AppPaths(_configDir),
                 new UpgradeTrashService(db, _settings, NullLogger<UpgradeTrashService>.Instance),
+                new Maki.Api.Services.Upscaling.UpscaleCache(new AppPaths(_configDir), _settings, NullLogger<Maki.Api.Services.Upscaling.UpscaleCache>.Instance),
                 NullLogger<HousekeepingJob>.Instance);
             await job.Execute(new TestJobContext());
         }

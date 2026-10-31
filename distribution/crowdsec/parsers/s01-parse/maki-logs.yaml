@@ -1,0 +1,33 @@
+# Parses Maki's access log (logs/access-*.log, "AccessLog": true in config.json). The lines use
+# the combined log format, so the fields below match what crowdsecurity/nginx-logs produces and the
+# stock HTTP scenarios (crowdsecurity/base-http-scenarios) work on them unchanged.
+name: maki/maki-logs
+description: "Parse the Maki access log"
+filter: "evt.Parsed.program == 'maki'"
+onsuccess: next_stage
+pattern_syntax:
+  MAKIUSER: '[a-zA-Z0-9\.\@\-\+_%]+'
+nodes:
+  - grok:
+      pattern: '%{IPORHOST:remote_addr} - %{MAKIUSER:remote_user} \[%{HTTPDATE:time_local}\] "%{WORD:verb} %{DATA:request} HTTP/%{NUMBER:http_version}" %{NUMBER:status} %{NUMBER:body_bytes_sent} "%{NOTDQUOTE:http_referer}" "%{NOTDQUOTE:http_user_agent}"'
+      apply_on: message
+statics:
+  - meta: service
+    value: http
+  - meta: log_type
+    value: http_access-log
+  - target: evt.StrTime
+    expression: evt.Parsed.time_local
+  - meta: source_ip
+    expression: evt.Parsed.remote_addr
+  - meta: http_status
+    expression: evt.Parsed.status
+  - meta: http_path
+    expression: evt.Parsed.request
+  - meta: http_verb
+    expression: evt.Parsed.verb
+  - meta: http_user_agent
+    expression: evt.Parsed.http_user_agent
+  # "-" for an anonymous request, else the account (or opds-user-<id> for a feed token).
+  - meta: username
+    expression: "evt.Parsed.remote_user == '-' ? '' : evt.Parsed.remote_user"

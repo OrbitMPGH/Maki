@@ -56,16 +56,9 @@ export function NotificationPrefsSection() {
     <SettingsSection
       id="notification-prefs"
       title={<Trans>Notifications</Trans>}
-      description={
-        <Trans>
-          What lands in your bell. Only affects you. Alerts to Discord and other apps are set up by
-          an admin under Integrations.
-        </Trans>
-      }
     >
       <Switch
         label={t`Show a popup when a notification arrives`}
-        description={t`Turn this off to only see them in the bell.`}
         checked={prefs.toasts}
         onChange={(e) => save.mutate({ toasts: e.currentTarget.checked })}
       />
@@ -76,10 +69,7 @@ export function NotificationPrefsSection() {
         <Trans>Which series notify me</Trans>
       </Text>
       <Text size="xs" c="var(--ink-3)" mb="xs">
-        <Trans>
-          The default for every series event: new chapters, downloads, upgrades. Any series can be
-          set differently from its own page, or many at once from the Library's Select mode.
-        </Trans>
+        <Trans>Any series can be set differently from its own page.</Trans>
       </Text>
       <SegmentedControl
         aria-label={t`Which series notify me`}
@@ -164,11 +154,7 @@ export function NotificationPrefsSection() {
         ))}
       </table>
       <Text size="xs" c="var(--ink-3)" mt="sm">
-        <Trans>
-          Push applies to every device signed in as you, once it is turned on in Push notifications
-          below. Only events that also land in the bell can push, so Push is unavailable while Bell
-          is off.
-        </Trans>
+        <Trans>Push needs Bell on, and push turned on for the device below.</Trans>
       </Text>
     </SettingsSection>
   )

@@ -12,7 +12,6 @@ using Maki.Core.Quality;
 using Maki.Core.Reading;
 using Maki.Core.Scrobbling;
 using Maki.Data;
-using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -73,16 +72,18 @@ public static class TorrentUpgradeRules
     /// A chapter with a file is an upgrade when the profile would take the release over it. Nothing is
     /// measured before the download, so the file's measured points are left out of the comparison
     /// rather than counted against a release that has none; the post-download guard checks the pages.
-    /// A chapter without a file is only ever classified, never wanted by this.
+    /// A chapter without a file is only ever classified, never wanted by this. One read file cleanup is
+    /// about to delete (<paramref name="removalScheduled"/>) is never an upgrade.
     /// </summary>
-    public static ChapterSpanState StateOf(UpgradeEvaluator evaluator, Chapter chapter, ChapterFile? file, QualityScore candidate)
+    public static ChapterSpanState StateOf(UpgradeEvaluator evaluator, Chapter chapter, ChapterFile? file, QualityScore candidate,
+        bool removalScheduled = false)
     {
         if (file is null)
         {
             return chapter.Wanted && chapter.FileRemovedAt == null ? ChapterSpanState.Missing : ChapterSpanState.Skipped;
         }
 
-        if (file.Trusted || evaluator.Evaluate(file, chapter.Language) is not { } current)
+        if (removalScheduled || file.Trusted || evaluator.Evaluate(file, chapter.Language) is not { } current)
         {
             return ChapterSpanState.AlreadyMet;
         }
@@ -123,7 +124,7 @@ public class TorrentUpgradeService(
     InboxService inbox,
     IAppSettings settings,
     TimeProvider time,
-    MangaBakaLocalStore store,
+    RivalTitleProvider rivalTitles,
     ILogger<TorrentUpgradeService> logger)
 {
     public static readonly TimeSpan SearchInterval = TimeSpan.FromDays(7);
@@ -131,8 +132,6 @@ public class TorrentUpgradeService(
     /// <summary>How soon a series whose search or grab failed is tried again, instead of waiting out the interval.</summary>
     public static readonly TimeSpan RetryAfterFailure = TimeSpan.FromDays(1);
     private const int MaxPlaceholders = 2000;
-
-    private List<(int SeriesId, IReadOnlyList<string> Titles)>? _libraryTitles;
 
     public async Task<IReadOnlyList<TorrentCandidateView>> EvaluateAsync(
         int seriesId, IReadOnlyList<ReleaseDto> found, CancellationToken ct)
@@ -147,7 +146,7 @@ public class TorrentUpgradeService(
         var options = await UpgradeOptions.LoadAsync(settings, ct);
         var library = evaluator is null ? null : await LibraryAsync(series, ct);
         var ourTitles = ReleaseTitleMatcher.Titles(series.Title, series.OriginalTitle, series.AltTitles);
-        var rivals = await RivalTitlesAsync(series, ourTitles, ct);
+        var rivals = await rivalTitles.ForAsync(db, series, ourTitles, ct);
 
         var views = new List<TorrentCandidateView>();
         foreach (var release in found)
@@ -201,29 +200,6 @@ public class TorrentUpgradeService(
                 Reasons = [.. verdict.Reasons.Select(r => r == SpanVerdictReasons.TitleUncertain ? SpanVerdictReasons.TitleRelatedSeries : r)]
             }
             : verdict;
-
-    /// <summary>
-    /// The titles that could take a release from this series: every title of the works MangaBaka
-    /// relates to it, and of every other library series, kept only when shaped like an extension of
-    /// one of its own (<see cref="ReleaseTitleMatcher.Rivals"/>). The library is read once per instance,
-    /// so the volume search job pays for it once a run rather than once a series.
-    /// </summary>
-    private async Task<IReadOnlyList<string>> RivalTitlesAsync(Series series, IReadOnlyList<string> ourTitles,
-        CancellationToken ct)
-    {
-        IEnumerable<string> related = series.MangaBakaId is { } id ? await store.GetRelatedTitlesAsync(id, ct) : [];
-
-        // Unfiltered on purpose: the titles are compared, never shown, and a restricted user's manual
-        // search should reach the verdict the job does.
-        _libraryTitles ??= (await db.Series.AsNoTracking().IgnoreQueryFilters()
-                .Select(s => new { s.Id, s.Title, s.OriginalTitle, s.AltTitles })
-                .ToListAsync(ct))
-            .Select(s => (s.Id, ReleaseTitleMatcher.Titles(s.Title, s.OriginalTitle, s.AltTitles)))
-            .ToList();
-        var others = _libraryTitles.Where(s => s.SeriesId != series.Id).SelectMany(s => s.Titles);
-
-        return ReleaseTitleMatcher.Rivals(ourTitles, related.Concat(others));
-    }
 
     /// <summary>Tells the results page a release would read with a marker language that is switched off.</summary>
     private static SpanVerdict WithMarkersOff(SpanVerdict verdict, bool markersOff) =>
@@ -513,6 +489,7 @@ public class TorrentUpgradeService(
     {
         var cutoff = time.GetUtcNow().UtcDateTime - SearchInterval;
         var rows = await db.Series.IgnoreQueryFilters()
+            .Active()
             .Where(s => s.LastVolumeSearchUtc == null || s.LastVolumeSearchUtc < cutoff)
             .Where(s => !db.TorrentProposals.IgnoreQueryFilters()
                 .Any(p => p.SeriesId == s.Id && p.Status == TorrentProposalStatus.Pending))
@@ -590,7 +567,9 @@ public class TorrentUpgradeService(
             .Where(c => c.SeriesId == series.Id && c.ChapterFileId != null && !c.ChapterFile!.Trusted)
             .Include(c => c.ChapterFile)
             .ToListAsync(ct);
-        return chapters.Any(c => TorrentUpgradeRules.StateOf(evaluator, c, c.ChapterFile, volume) == ChapterSpanState.Upgrade)
+        var removing = await ReadFileCleanupService.PendingAsync(db, settings, series.Id, ct);
+        return chapters.Any(c => TorrentUpgradeRules.StateOf(evaluator, c, c.ChapterFile, volume,
+                removing.ContainsKey(c.Id)) == ChapterSpanState.Upgrade)
             ? null
             : VolumeSearchReasons.NothingBelowCutoff;
     }
@@ -705,6 +684,7 @@ public class TorrentUpgradeService(
             .Where(c => c.SeriesId == series.Id)
             .Include(c => c.ChapterFile)
             .ToListAsync(ct));
+        var removing = await ReadFileCleanupService.PendingAsync(db, settings, series.Id, ct);
 
         // A volume file already in the library says which volume its chapters belong to, by its name
         // and by the chapter markers in its page names, even where the chapter rows carry no volume.
@@ -738,10 +718,11 @@ public class TorrentUpgradeService(
             }
         }
 
-        return new LibraryState(language, chapters, inferred);
+        return new LibraryState(language, chapters, inferred, removing.Keys.ToHashSet());
     }
 
-    private sealed class LibraryState(string? language, List<Chapter> chapters, Dictionary<int, int> inferred)
+    private sealed class LibraryState(
+        string? language, List<Chapter> chapters, Dictionary<int, int> inferred, HashSet<int> removing)
     {
         public string? Language => language;
 
@@ -750,7 +731,7 @@ public class TorrentUpgradeService(
         public List<SpanChapter> All(UpgradeEvaluator evaluator, QualityScore score) =>
         [
             .. chapters.Select(c => new SpanChapter(c.Number ?? 0, VolumeOf(c),
-                TorrentUpgradeRules.StateOf(evaluator, c, c.ChapterFile, score), c.ChapterFileId))
+                TorrentUpgradeRules.StateOf(evaluator, c, c.ChapterFile, score, removing.Contains(c.Id)), c.ChapterFileId))
         ];
 
         public (List<SpanChapter> Chapters, bool MappingKnown) Covered(ReleaseSpan span, UpgradeEvaluator evaluator, QualityScore score)
@@ -767,7 +748,8 @@ public class TorrentUpgradeService(
                 }
 
                 result.Add(new SpanChapter(chapter.Number ?? 0, volume,
-                    TorrentUpgradeRules.StateOf(evaluator, chapter, chapter.ChapterFile, score), chapter.ChapterFileId));
+                    TorrentUpgradeRules.StateOf(evaluator, chapter, chapter.ChapterFile, score, removing.Contains(chapter.Id)),
+                    chapter.ChapterFileId));
             }
 
             var numbers = chapters.Where(c => c.Number is not null).Select(c => c.Number!.Value).ToHashSet();

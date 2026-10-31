@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Maki.Core.Quality;
 
 namespace Maki.Core.Reading;
 
@@ -58,7 +59,26 @@ public record ReaderPrefsSpec(
     /// because choosing a layout there is the explicit choice the detection must not override.
     /// See <see cref="WithAutoWebtoon"/>.
     /// </summary>
-    bool? AutoWebtoon = null)
+    bool? AutoWebtoon = null,
+    /// <summary>Sharpen low-resolution pages: <c>off</c>, <c>auto</c> (only when a page is shown larger than its source or measures soft in the browser) or <c>always</c>.</summary>
+    string Enhance = ReaderPrefsSpec.EnhanceOff,
+    /// <summary>
+    /// How <see cref="Enhance"/> is done: a browser shader preset (<c>a4k-*</c>) or a server model
+    /// (<c>server:*</c>). A server method is kept even when the server tier is off, so the choice
+    /// survives an admin toggling it; the client decides the fallback.
+    /// </summary>
+    string EnhanceMethod = ReaderPrefsSpec.EnhanceMethodDefault,
+    /// <summary>
+    /// The browser preset a server <see cref="EnhanceMethod"/> shows until its upscale is ready, and
+    /// whenever the server tier cannot be used: an <c>a4k-*</c> preset, or <c>off</c> for the plain page.
+    /// </summary>
+    string EnhanceFallback = ReaderPrefsSpec.EnhanceMethodDefault,
+    /// <summary>
+    /// Quality tiers (<c>QualityTier</c> names in lower case) whose chapters are never enhanced,
+    /// whatever <see cref="Enhance"/> says. Null means unset and becomes <see cref="DefaultEnhanceSkipTiers"/>:
+    /// a digital volume is already clean, and sharpening it only adds artefacts.
+    /// </summary>
+    IReadOnlyList<string>? EnhanceSkipTiers = null)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";
@@ -78,6 +98,9 @@ public record ReaderPrefsSpec(
 
     public const string SplitOff = "off";
 
+    public const string EnhanceOff = "off";
+    public const string EnhanceMethodDefault = "a4k-m";
+
     public const string FitWidth = "width";
     public const string FitHeight = "height";
     public const string FitScreen = "screen";
@@ -94,6 +117,13 @@ public record ReaderPrefsSpec(
     private static readonly string[] Fits = [FitWidth, FitHeight, FitScreen, FitOriginal];
     private static readonly string[] Filters = [FilterNone, "grayscale", "sepia", "invert"];
     private static readonly string[] SplitModes = [SplitOff, "split", "rotate"];
+    private static readonly string[] EnhanceModes = [EnhanceOff, "auto", "always"];
+    private static readonly string[] EnhanceMethods =
+        ["a4k-s", EnhanceMethodDefault, "a4k-a", "server:span-s", "server:realesrgan-av3"];
+    private static readonly string[] EnhanceFallbacks = ["a4k-s", EnhanceMethodDefault, "a4k-a", EnhanceOff];
+    private static readonly string[] Tiers = [.. Enum.GetValues<QualityTier>().Select(QualitySnapshot.TierName)];
+
+    public static readonly IReadOnlyList<string> DefaultEnhanceSkipTiers = ["volume"];
 
     /// <summary>Clamps free-text fields back onto known values so a bad write can't wedge the reader.</summary>
     public ReaderPrefsSpec Sanitized() => this with
@@ -107,6 +137,12 @@ public record ReaderPrefsSpec(
         Dim = Math.Clamp(Dim, 0, 80),
         Filter = Filters.Contains(Filter) ? Filter : FilterNone,
         SplitWide = SplitModes.Contains(SplitWide) ? SplitWide : SplitOff,
+        Enhance = EnhanceModes.Contains(Enhance) ? Enhance : EnhanceOff,
+        EnhanceMethod = EnhanceMethods.Contains(EnhanceMethod) ? EnhanceMethod : EnhanceMethodDefault,
+        EnhanceFallback = EnhanceFallbacks.Contains(EnhanceFallback) ? EnhanceFallback : EnhanceMethodDefault,
+        EnhanceSkipTiers = EnhanceSkipTiers is null
+            ? DefaultEnhanceSkipTiers
+            : [.. Tiers.Where(EnhanceSkipTiers.Contains)],
     };
 
     /// <summary>Fills an unset <see cref="AutoWebtoon"/> with the layer's default: on for the global defaults only.</summary>
@@ -117,7 +153,7 @@ public record ReaderPrefsSpec(
     {
         if (string.IsNullOrWhiteSpace(json))
         {
-            return new ReaderPrefsSpec();
+            return new ReaderPrefsSpec().Sanitized();
         }
 
         try
@@ -126,7 +162,7 @@ public record ReaderPrefsSpec(
         }
         catch (JsonException)
         {
-            return new ReaderPrefsSpec();
+            return new ReaderPrefsSpec().Sanitized();
         }
     }
 

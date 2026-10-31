@@ -1063,6 +1063,19 @@ public class MangaBakaLocalStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task A_release_floor_keeps_only_titles_published_on_or_after_it()
+    {
+        _db.AddSeries(1, "Old", rating: 8.0, coverUrl: "c", publishedStartDate: "2024-05-01")
+            .AddSeries(2, "Edge", rating: 8.0, coverUrl: "c", publishedStartDate: "2025-10-27")
+            .AddSeries(3, "Recent", rating: 8.0, coverUrl: "c", publishedStartDate: "2026-02-01")
+            .AddSeries(4, "Undated", rating: 8.0, coverUrl: "c");
+
+        var rail = await Store.GetBrowseAsync(BrowseFeed.New, 10, releasedSince: new DateOnly(2025, 10, 27));
+
+        Assert.Equal(["Recent", "Edge"], rail.Select(r => r.Title));
+    }
+
+    [Fact]
     public async Task An_empty_content_rating_list_matches_nothing_rather_than_everything()
     {
         _db.AddSeries(1, "Safe One", rating: 8.0, coverUrl: "c", popularity: 10, contentRating: "safe")

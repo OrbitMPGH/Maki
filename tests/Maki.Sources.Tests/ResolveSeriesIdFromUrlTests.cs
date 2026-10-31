@@ -30,6 +30,7 @@ namespace Maki.Sources.Tests;
 public class ResolveSeriesIdFromUrlTests
 {
     private static readonly FakeHttpClientFactory Factory = new([]);
+    private static readonly FakeHtmlFetcher Fetcher = new([]);
 
     [Theory]
     [InlineData("https://mangadex.org/title/a1b2c3d4-e5f6-4a1b-8c2d-0123456789ab", "a1b2c3d4-e5f6-4a1b-8c2d-0123456789ab")]
@@ -74,7 +75,7 @@ public class ResolveSeriesIdFromUrlTests
     [InlineData("https://weebcentral.com/chapters/01J76XYFKV2Q4NBZKJ0YD3TSJP", null)]
     public void WeebCentral(string url, string? expected)
     {
-        ISource source = new WeebCentralSource(Factory);
+        ISource source = new WeebCentralSource(Fetcher);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 
@@ -89,7 +90,7 @@ public class ResolveSeriesIdFromUrlTests
     [InlineData("https://example.com/series/2", null)]
     public void FlameComics(string url, string? expected)
     {
-        ISource source = new FlameComicsSource(Factory);
+        ISource source = new FlameComicsSource(Fetcher);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 

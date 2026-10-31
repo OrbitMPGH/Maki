@@ -26,11 +26,15 @@ import {
   VisuallyHidden,
 } from '@mantine/core'
 import {
+  IconAlertOctagon,
+  IconAlertTriangle,
   IconBooks,
+  IconCircleCheck,
   IconChevronDown,
   IconClockPlay,
   IconDatabase,
   IconDownload,
+  IconEye,
   IconFileImport,
   IconPlugConnected,
   IconPhotoScan,
@@ -61,6 +65,7 @@ import {
   type SourceFailures,
   type UnlinkedMatch,
 } from '../api/health'
+import { MetaList } from '../components/ui/MetaList'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -70,7 +75,7 @@ import { FigureStrip } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
 import { MonoValue } from '../components/ui/MonoValue'
 import { SeriesCell } from '../components/SeriesCell'
-import { formatBytes, formatDateTime, formatNumber } from '../format'
+import { formatBytes, formatDateTime, formatNumber, formatTime, formatWeekdayDate } from '../format'
 import { useLabel } from '../i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
@@ -151,6 +156,9 @@ const PAGE_SIZE = 30
 
 const RUNNING_STATES = ['pending', 'running', 'applying', 'deleting', 'downloading']
 
+/** Operation states with nothing left to do, which the Repairs list lets you dismiss. */
+const FINISHED_STATES = ['completed', 'cancelled', 'failed']
+
 /** HealthScanService's finding kinds, in the order the filter lists them. */
 const FINDING_LABEL: Record<string, MessageDescriptor> = {
   missing: msg`Missing`,
@@ -174,6 +182,36 @@ const HISTORY_KIND_LABEL: Record<string, MessageDescriptor> = {
   delete: msg`Delete`,
   job: msg`Job`,
   transition: msg`Status change`,
+  review: msg`Review`,
+}
+
+const HISTORY_KIND_ICON: Record<string, Icon> = {
+  scan: IconScan,
+  repair: IconRefresh,
+  delete: IconTrash,
+  job: IconClockPlay,
+  transition: IconStethoscope,
+  review: IconEye,
+}
+
+/** Keyed by tone, so every status that reads as fixed, a warning or broken shares a shape. */
+const TRANSITION_ICON: Record<string, Icon> = {
+  ok: IconCircleCheck,
+  warn: IconAlertTriangle,
+  danger: IconAlertOctagon,
+}
+
+const TODAY = msg`Today`
+const YESTERDAY = msg`Yesterday`
+
+interface HistoryEntry {
+  id: number
+  createdAt: string
+  kind: string
+  message: string
+  status?: string | null
+  /** The status a status change left. Unknown for a check's first change. */
+  from?: string | null
 }
 
 function Status({ value, hint }: { value: string; hint?: boolean }) {
@@ -227,10 +265,10 @@ export default function HealthPage() {
     tab === 'repairs',
     (data) => (data?.items.some((g) => RUNNING_STATES.includes(g.status)) ? 5000 : false),
   )
-  const history = useHealthData<{
-    items: { id: number; createdAt: string; kind: string; message: string }[]
-    total: number
-  }>(`/history?page=${historyPage}`, tab === 'history')
+  const history = useHealthData<{ items: HistoryEntry[]; total: number }>(
+    `/history?page=${historyPage}`,
+    tab === 'history',
+  )
 
   // Separate instances so one control's pending state does not spin the others.
   const action = useHealthAction()
@@ -319,11 +357,7 @@ export default function HealthPage() {
                     <Trans>Index</Trans>
                   </Text>
                   <Text size="xs" c="var(--ink-4)">
-                    <Trans>
-                      Reads each archive's table of contents, not its contents. Seconds for a whole library.
-                      Finds files that went missing, arrived on their own, changed size, or stopped being a
-                      readable archive.
-                    </Trans>
+                    <Trans>Finds missing, new or broken files. Takes seconds.</Trans>
                   </Text>
                 </Menu.Item>
                 <Menu.Item onClick={() => run('/scans', { rootFolderId: scanRoot, verify: true })}>
@@ -331,12 +365,7 @@ export default function HealthPage() {
                     <Trans>Verify</Trans>
                   </Text>
                   <Text size="xs" c="var(--ink-4)">
-                    <Trans>
-                      Reads every byte and checks it against the archive's own checksums, which is what catches
-                      a file that has rotted on disk. A full read of the library: around half an hour per 100 GB
-                      on a hard disk. Files are verified as they arrive, so this is for re-checking what is
-                      already there.
-                    </Trans>
+                    <Trans>Reads every byte to catch rotted files. About half an hour per 100 GB.</Trans>
                   </Text>
                 </Menu.Item>
               </Menu.Dropdown>
@@ -673,17 +702,8 @@ export default function HealthPage() {
 
         <Tabs.Panel value="history">
           <Stack>
-            {history.data?.items.map((entry) => (
-              <Group key={entry.id} align="flex-start">
-                <Badge variant="light">{renderLabel(HISTORY_KIND_LABEL[entry.kind] ?? entry.kind)}</Badge>
-                <div>
-                  <Text size="sm">{entry.message}</Text>
-                  <Text size="xs" c="var(--ink-3)">
-                    {formatDateTime(entry.createdAt)}
-                  </Text>
-                </div>
-              </Group>
-            ))}
+            {history.isLoading && <TableSkeleton columns={2} />}
+            {!!history.data?.items.length && <HistoryTimeline entries={history.data.items} />}
             {history.data?.items.length === 0 && (
               <Text c="var(--ink-3)">
                 <Trans>Nothing in the history yet.</Trans>
@@ -711,7 +731,7 @@ export default function HealthPage() {
         />
       )}
       {operationId != null && (
-        <OperationReview key={operationId} id={operationId} close={() => setOperationId(null)} />
+        <OperationReview key={operationId} id={operationId} close={() => setOperationId(null)} open={setOperationId} />
       )}
 
       <BulkDeleteModal
@@ -742,6 +762,81 @@ export default function HealthPage() {
         }
       />
     </SurfaceFrame>
+  )
+}
+
+/** The audit trail as a timeline, one block per day, newest first as the server pages it. */
+function HistoryTimeline({ entries }: { entries: HistoryEntry[] }) {
+  const { i18n } = useLingui()
+  const renderLabel = useLabel()
+  const days = useMemo(() => {
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    const today = startOfDay(new Date())
+    const groups: { key: number; label: string; entries: HistoryEntry[] }[] = []
+    for (const entry of entries) {
+      const key = startOfDay(new Date(entry.createdAt))
+      let group = groups.at(-1)
+      if (group?.key !== key) {
+        const ago = Math.round((today - key) / 86_400_000)
+        const label = ago === 0 ? i18n._(TODAY) : ago === 1 ? i18n._(YESTERDAY) : formatWeekdayDate(entry.createdAt)
+        group = { key, label, entries: [] }
+        groups.push(group)
+      }
+      group.entries.push(entry)
+    }
+    return groups
+  }, [entries, i18n])
+
+  return (
+    <Panel p={0} className="health-history">
+      {days.map((day) => (
+        <section key={day.key} className="health-history-day">
+          <h3 className="health-history-date">{day.label}</h3>
+          <ol className="health-history-rows">
+            {day.entries.map((entry) => {
+              const change = entry.kind === 'transition' && entry.status ? entry.status : null
+              // A status change shows where it ended by shape as well as colour, so a fix and a
+              // breakage never differ by hue alone.
+              const KindIcon = change
+                ? (TRANSITION_ICON[tone(change)] ?? IconStethoscope)
+                : (HISTORY_KIND_ICON[entry.kind] ?? IconStethoscope)
+              // A clean scan is routine; colour only what changed state or came back partial.
+              const routine = !entry.status || (entry.kind === 'scan' && entry.status === 'completed')
+              const entryTone = routine ? 'neutral' : tone(entry.status!)
+              const previous = entry.from ? renderLabel(STATUS_LABEL[entry.from] ?? entry.from) : null
+              return (
+                <li key={entry.id} className="health-history-row" data-tone={entryTone}>
+                  <span className="health-history-icon" aria-hidden>
+                    <KindIcon size={15} stroke={1.8} />
+                  </span>
+                  <div className="health-history-body">
+                    <Text size="sm" className="health-history-message">
+                      {entry.message}
+                    </Text>
+                    <Text size="xs" c="var(--ink-3)" className="health-history-meta">
+                      <span>{renderLabel(HISTORY_KIND_LABEL[entry.kind] ?? entry.kind)}</span>
+                      {change && (
+                        <>
+                          <span className="health-history-status">{renderLabel(STATUS_LABEL[change] ?? change)}</span>
+                          {previous && (
+                            <span>
+                              <Trans>from {previous}</Trans>
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </Text>
+                  </div>
+                  <time dateTime={entry.createdAt} title={formatDateTime(entry.createdAt)} className="health-history-time">
+                    {formatTime(entry.createdAt)}
+                  </time>
+                </li>
+              )
+            })}
+          </ol>
+        </section>
+      ))}
+    </Panel>
   )
 }
 
@@ -1017,14 +1112,13 @@ function CheckGroup({ checks, run }: { checks: HealthCheck[]; run: (path: string
           <Text size="sm" c={unsettled.length === 0 ? 'var(--ink-3)' : 'var(--ink-2)'}>
             {headline}
           </Text>
-          <Text size="xs" c="var(--ink-4)" mt={2}>
-            {formatDateTime(latest)}
-            {acknowledged > 0 && (
-              <>
-                {' · '}
-                <Plural value={acknowledged} one="# acknowledged" other="# acknowledged" />
-              </>
-            )}
+          <Text component="div" size="xs" c="var(--ink-4)" mt={2}>
+            <MetaList
+              items={[
+                formatDateTime(latest),
+                acknowledged > 0 && <Plural value={acknowledged} one="# acknowledged" other="# acknowledged" />,
+              ]}
+            />
           </Text>
           <Button
             size="compact-xs"
@@ -1086,9 +1180,13 @@ function CheckRow({ check, run }: { check: HealthCheck; run: (path: string, body
         <Text size="sm" c={check.acknowledged ? 'var(--ink-3)' : 'var(--ink-2)'}>
           {check.message}
         </Text>
-        <Text size="xs" c="var(--ink-4)" mt={2}>
-          {formatDateTime(check.checkedAt)}
-          {check.acknowledged && <Trans> · Acknowledged, hidden from the header badge</Trans>}
+        <Text component="div" size="xs" c="var(--ink-4)" mt={2}>
+          <MetaList
+            items={[
+              formatDateTime(check.checkedAt),
+              check.acknowledged && <Trans>Acknowledged, hidden from the header badge</Trans>,
+            ]}
+          />
         </Text>
         {source !== null && count > 0 && (
           <Button
@@ -1214,10 +1312,15 @@ function FileReview({
                 <Text fw={600} component="div">
                   <MonoValue value={data.file.relativePath} copy />
                 </Text>
-                <Text size="sm" c="var(--ink-3)" mt={4}>
-                  {bytes(data.file.size, t`Missing`)} · <Plural value={pageCount} one="# page" other="# pages" /> ·{' '}
-                  {data.analysis.status} ·{' '}
-                  {data.analysis.verified ? <Trans>contents read</Trans> : <Trans>indexed only</Trans>}
+                <Text component="div" size="sm" c="var(--ink-3)" mt={4}>
+                  <MetaList
+                    items={[
+                      bytes(data.file.size, t`Missing`),
+                      <Plural key="pages" value={pageCount} one="# page" other="# pages" />,
+                      data.analysis.status,
+                      data.analysis.verified ? <Trans key="read">contents read</Trans> : <Trans key="read">indexed only</Trans>,
+                    ]}
+                  />
                 </Text>
                 <Text size="xs" c="var(--ink-4)" mt={4} style={{ overflowWrap: 'anywhere' }}>
                   SHA-256: {data.file.contentHash ?? <Trans>Unavailable</Trans>}
@@ -1303,12 +1406,7 @@ function FileReview({
 
               {!data.analysis.verified && (
                 <Alert color="var(--neutral)">
-                  <Trans>
-                    This archive has only been indexed: what it says it holds is known, whether it still holds
-                    it is not. Verifying reads every byte and checks it against the archive's own checksums. It
-                    is also what produces the content hash that replacing or deleting this file checks against,
-                    so those need it first.
-                  </Trans>
+                  <Trans>Not verified yet. Replacing or deleting this file needs a verify first.</Trans>
                 </Alert>
               )}
             </div>
@@ -1327,7 +1425,7 @@ function FileReview({
                     { value: AUTOMATIC, label: t`Automatic (source priority)` },
                     ...data.mappings.map((m) => {
                       const { sourceName, priority } = m
-                      return { value: String(m.id), label: t`${sourceName} · priority ${priority}` }
+                      return { value: String(m.id), label: t`${sourceName} (priority ${priority})` }
                     }),
                   ]}
                 />
@@ -1751,31 +1849,51 @@ function OperationGroup({ group, onReview }: { group: OperationGroupData; onRevi
     `/operations/group?key=${encodeURIComponent(group.key)}&take=${Math.min(group.count, GROUP_ROWS_MAX)}`,
     expanded,
   )
+  const dismiss = useHealthAction()
   const count = group.count
   const max = GROUP_ROWS_MAX
   const shown = expanded && all.data ? all.data.items : group.rows
+  const finished = FINISHED_STATES.includes(group.status)
   return (
     <Panel p={0} className="health-op-group">
       <div className="health-op-head">
-        <Group gap="sm">
-          <Text fw={650}>
-            {group.kind === 'delete' ? (
-              count === 1 ? (
-                <Trans>Deletion</Trans>
+        <Group justify="space-between" wrap="nowrap">
+          <Group gap="sm">
+            <Text fw={650}>
+              {group.kind === 'delete' ? (
+                count === 1 ? (
+                  <Trans>Deletion</Trans>
+                ) : (
+                  <Plural value={count} one="# deletion" other="# deletions" />
+                )
+              ) : count === 1 ? (
+                <Trans>Replacement</Trans>
               ) : (
-                <Plural value={count} one="# deletion" other="# deletions" />
-              )
-            ) : count === 1 ? (
-              <Trans>Replacement</Trans>
-            ) : (
-              <Plural value={count} one="# replacement" other="# replacements" />
-            )}
-          </Text>
-          <Status value={group.status} />
+                <Plural value={count} one="# replacement" other="# replacements" />
+              )}
+            </Text>
+            <Status value={group.status} />
+          </Group>
+          {finished && (
+            <Button
+              size="compact-sm"
+              variant="subtle"
+              color="var(--neutral)"
+              loading={dismiss.isPending}
+              onClick={() => dismiss.mutate({ path: '/operations/group/dismiss', body: { key: group.key } })}
+            >
+              {count === 1 ? <Trans>Dismiss</Trans> : <Trans>Dismiss all</Trans>}
+            </Button>
+          )}
         </Group>
         {group.error && (
           <Text size="sm" c="var(--ink-3)">
             {group.error}
+          </Text>
+        )}
+        {dismiss.error && (
+          <Text size="sm" c="var(--danger)">
+            {dismiss.error.message}
           </Text>
         )}
       </div>
@@ -1799,7 +1917,7 @@ function OperationGroup({ group, onReview }: { group: OperationGroupData; onRevi
                 {formatDateTime(op.createdAt)}
               </Text>
               <Button size="compact-sm" variant="default" onClick={() => onReview(op.id)}>
-                <Trans>Review</Trans>
+                {op.status === 'review' ? <Trans>Review</Trans> : <Trans>Details</Trans>}
               </Button>
             </li>
           )
@@ -1830,7 +1948,7 @@ function OperationGroup({ group, onReview }: { group: OperationGroupData; onRevi
   )
 }
 
-function OperationReview({ id, close }: { id: number; close: () => void }) {
+function OperationReview({ id, close, open }: { id: number; close: () => void; open: (id: number) => void }) {
   const { t } = useLingui()
   const { data, error } = useHealthData<OperationDetail>(`/operations/${id}`, true, (detail) =>
     detail && RUNNING_STATES.includes(detail.operation.status) ? 3000 : false,
@@ -1839,13 +1957,13 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
   const [confirm, setConfirm] = useState(false)
   const [reset, setReset] = useState(false)
   const chaptersCount = data?.chapters.length ?? 0
-  const opStatus = data?.operation.status
+  const finished = !!data && FINISHED_STATES.includes(data.operation.status)
 
   return (
     <Modal
       opened
       onClose={close}
-      title={t`Review operation`}
+      title={finished ? t`Operation details` : t`Review operation`}
       size="min(1060px, 94vw)"
       centered
     >
@@ -1857,7 +1975,9 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
           <div className="health-review">
             <div className="health-review-column">
               {data.operation.error && <Alert color="var(--danger)">{data.operation.error}</Alert>}
-              {data.operation.kind === 'delete' ? (
+              {finished ? (
+                <OperationOutcome detail={data} />
+              ) : data.operation.kind === 'delete' ? (
                 <Alert color={data.file.size < 0 ? 'var(--warn)' : 'var(--danger)'}>
                   {data.file.size < 0 ? (
                     <Trans>
@@ -1924,79 +2044,141 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                 <Text fw={600} mt="sm" component="div">
                   <MonoValue value={data.file.relativePath} copy />
                 </Text>
-                <Text size="sm" c="var(--ink-3)" mt={4}>
-                  {bytes(data.file.size, t`Missing`)} ·{' '}
-                  <Plural value={chaptersCount} one="# affected chapter" other="# affected chapters" />
+                <Text component="div" size="sm" c="var(--ink-3)" mt={4}>
+                  <MetaList
+                    items={[
+                      bytes(data.file.size, t`Missing`),
+                      <Plural key="chapters" value={chaptersCount} one="# affected chapter" other="# affected chapters" />,
+                    ]}
+                  />
                 </Text>
               </Panel>
 
               <Panel p="md">
-                <Stack gap="sm">
-                  {data.operation.kind === 'repair' && data.requiresReset && (
-                    <Checkbox
-                      checked={reset}
-                      onChange={(e) => setReset(e.currentTarget.checked)}
-                      label={t`Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved.`}
-                    />
-                  )}
-                  {data.operation.status === 'review' && (
-                    <>
-                      <Checkbox
-                        checked={confirm}
-                        onChange={(e) => setConfirm(e.currentTarget.checked)}
-                        label={
-                          data.operation.kind !== 'delete'
-                            ? t`I approve applying these replacement files.`
-                            : data.file.size < 0
-                              ? t`I confirm removing the file links for this missing archive.`
-                              : t`I confirm permanent deletion of this archive and all its file links.`
-                        }
-                      />
+                {finished ? (
+                  <Group gap="sm">
+                    {data.retryable && (
                       <Button
-                        color={data.operation.kind === 'delete' ? 'var(--danger)' : 'brand'}
-                        loading={action.isPending && action.variables?.path.endsWith('/apply')}
-                        disabled={!confirm || (data.operation.kind === 'repair' && data.requiresReset && !reset)}
+                        loading={action.isPending && action.variables?.path.endsWith('/retry')}
                         onClick={() =>
-                          action.mutate(
-                            {
-                              path: `/operations/${id}/apply`,
-                              body: { version: data.operation.version, confirmed: confirm, resetPositions: reset },
-                            },
-                            { onSuccess: close },
-                          )
+                          action.mutate({ path: `/operations/${id}/retry` }, { onSuccess: (next) => open(next.id) })
                         }
                       >
-                        {data.operation.kind !== 'delete' ? (
-                          <Trans>Apply replacement</Trans>
-                        ) : data.file.size < 0 ? (
-                          <Trans>Remove the record</Trans>
-                        ) : (
-                          <Trans>Permanently delete</Trans>
-                        )}
+                        <Trans>Retry</Trans>
                       </Button>
-                    </>
-                  )}
-                  {!['completed', 'cancelled', 'failed'].includes(data.operation.status) && (
+                    )}
+                    <Button
+                      variant="default"
+                      loading={action.isPending && action.variables?.path.endsWith('/dismiss')}
+                      onClick={() => action.mutate({ path: `/operations/${id}/dismiss` }, { onSuccess: close })}
+                    >
+                      <Trans>Dismiss</Trans>
+                    </Button>
+                  </Group>
+                ) : (
+                  <Stack gap="sm">
+                    {data.operation.kind === 'repair' && data.requiresReset && (
+                      <Checkbox
+                        checked={reset}
+                        onChange={(e) => setReset(e.currentTarget.checked)}
+                        label={t`Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved.`}
+                      />
+                    )}
+                    {data.operation.status === 'review' && (
+                      <>
+                        <Checkbox
+                          checked={confirm}
+                          onChange={(e) => setConfirm(e.currentTarget.checked)}
+                          label={
+                            data.operation.kind !== 'delete'
+                              ? t`I approve applying these replacement files.`
+                              : data.file.size < 0
+                                ? t`I confirm removing the file links for this missing archive.`
+                                : t`I confirm permanent deletion of this archive and all its file links.`
+                          }
+                        />
+                        <Button
+                          color={data.operation.kind === 'delete' ? 'var(--danger)' : 'brand'}
+                          loading={action.isPending && action.variables?.path.endsWith('/apply')}
+                          disabled={!confirm || (data.operation.kind === 'repair' && data.requiresReset && !reset)}
+                          onClick={() =>
+                            action.mutate(
+                              {
+                                path: `/operations/${id}/apply`,
+                                body: { version: data.operation.version, confirmed: confirm, resetPositions: reset },
+                              },
+                              { onSuccess: close },
+                            )
+                          }
+                        >
+                          {data.operation.kind !== 'delete' ? (
+                            <Trans>Apply replacement</Trans>
+                          ) : data.file.size < 0 ? (
+                            <Trans>Remove the record</Trans>
+                          ) : (
+                            <Trans>Permanently delete</Trans>
+                          )}
+                        </Button>
+                      </>
+                    )}
                     <Button
                       variant="default"
                       onClick={() => action.mutate({ path: `/operations/${id}/cancel` }, { onSuccess: close })}
                     >
                       <Trans>Cancel operation</Trans>
                     </Button>
-                  )}
-                  {['completed', 'cancelled', 'failed'].includes(data.operation.status) &&
-                    data.operation.status !== 'review' && (
-                      <Text size="sm" c="var(--ink-4)">
-                        <Trans>This operation is {opStatus} and needs no further action.</Trans>
-                      </Text>
-                    )}
-                </Stack>
+                  </Stack>
+                )}
               </Panel>
             </div>
           </div>
         )}
       </Stack>
     </Modal>
+  )
+}
+
+/** What a finished operation did, in place of the review it no longer needs. */
+function OperationOutcome({ detail }: { detail: OperationDetail }) {
+  const { operation, file, retryable } = detail
+  const requested = formatDateTime(operation.createdAt)
+  const finishedAt = operation.finishedAt ? formatDateTime(operation.finishedAt) : null
+  return (
+    <Stack gap="xs">
+      <Text>
+        {operation.status === 'completed' ? (
+          operation.kind !== 'delete' ? (
+            <Trans>The replacement was applied.</Trans>
+          ) : file.size < 0 ? (
+            <Trans>The record of the missing archive was removed.</Trans>
+          ) : (
+            <Trans>The archive was deleted.</Trans>
+          )
+        ) : operation.status === 'cancelled' ? (
+          <Trans>Cancelled. Nothing in the library was changed.</Trans>
+        ) : (
+          <Trans>Nothing in the library was changed.</Trans>
+        )}
+      </Text>
+      {operation.status === 'failed' && (
+        <Text size="sm" c="var(--ink-3)">
+          {retryable ? (
+            <Trans>The file has not changed since, so you can run this again.</Trans>
+          ) : (
+            <Trans>The file has changed or is gone since, so this cannot run again.</Trans>
+          )}
+        </Text>
+      )}
+      <Text size="sm" c="var(--ink-3)">
+        {finishedAt ? (
+          <Trans>
+            Requested {requested}, finished {finishedAt}
+          </Trans>
+        ) : (
+          <Trans>Requested {requested}</Trans>
+        )}
+      </Text>
+    </Stack>
   )
 }
 

@@ -2,7 +2,7 @@ import { useEffect, useReducer, useState } from 'react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { Button, Group, PasswordInput, Select, Stack, Text, TextInput } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { savedToast } from './sharedRecord'
 import { ManageSourcesModal } from './ManageSourcesModal'
@@ -64,7 +64,7 @@ export function SuwayomiCard() {
     <SettingsSection
       id="suwayomi"
       title="Suwayomi"
-      description={t`Optional. Point Maki at a Suwayomi server to use the sources of the extensions installed there, alongside Maki's own. Extensions are installed and configured in Suwayomi; Maki only reads from it.`}
+      description={t`Uses the sources of the extensions installed in Suwayomi.`}
       dirty={dirty}
       saving={save.isPending}
       onSave={() => save.mutate(input(), { onSuccess: savedToast })}
