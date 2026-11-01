@@ -142,6 +142,27 @@ public sealed class ScrobbleSettingsSecretTests : IDisposable
     }
 
     [Fact]
+    public async Task Changing_the_kitsu_credentials_drops_the_stored_token()
+    {
+        var userId = _db.SeedUser("reader", MakiPermission.UseTrackers);
+        static SettingsController.ScrobbleSettings KitsuRequest(string? email, string? password) =>
+            new(null, null, null, null, null, null, null, email, password, 30, false, null);
+        await Controller(userId).SetScrobble(KitsuRequest("me@example.com", "hunter2"), default);
+        await SeedMuTokenAsync(userId, "kitsu");
+
+        await Controller(userId).SetScrobble(KitsuRequest("me@example.com", null), default);
+        await Controller(userId).SetScrobble(KitsuRequest("me@example.com", "hunter2"), default);
+        Assert.True(await HasTokenAsync(userId, "kitsu"));
+
+        await Controller(userId).SetScrobble(KitsuRequest("me@example.com", "new-password"), default);
+        Assert.False(await HasTokenAsync(userId, "kitsu"));
+
+        await SeedMuTokenAsync(userId, "kitsu");
+        await Controller(userId).SetScrobble(KitsuRequest("other@example.com", null), default);
+        Assert.False(await HasTokenAsync(userId, "kitsu"));
+    }
+
+    [Fact]
     public async Task The_mangabaka_token_is_never_returned_and_follows_the_same_null_and_empty_rules()
     {
         var userId = _db.SeedUser("reader", MakiPermission.UseTrackers);

@@ -7,6 +7,13 @@ import { readSessionUser, writeSessionUser } from '../pwa/db'
  */
 let known: Promise<number | null> | null = null
 
+/** Bumped on every change of user, so a late 401 from an earlier session can be told apart. */
+let generation = 0
+
+export function userGeneration(): number {
+  return generation
+}
+
 export function currentUser(): Promise<number | null> {
   known ??= readSessionUser().catch(() => null)
   return known
@@ -15,6 +22,7 @@ export function currentUser(): Promise<number | null> {
 export async function setUser(userId: number | null): Promise<void> {
   const previous = known
   known = Promise.resolve(userId)
+  generation++
   if (previous && (await previous) === userId) return
   try {
     await writeSessionUser(userId)

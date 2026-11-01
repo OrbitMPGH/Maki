@@ -298,7 +298,17 @@ public sealed class CustomRepositoryService(
                     continue;
                 }
 
-                var result = await ApplyAsync(repository, entry, stored, confirmed: false, ct, requireTest: true);
+                object result;
+                try
+                {
+                    result = await ApplyAsync(repository, entry, stored, confirmed: false, ct, requireTest: true);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+                {
+                    // One repository or site misbehaving must not cost every other update its turn.
+                    logger.LogWarning(ex, "Update of custom source {Id} from {Repository} failed", entry.Id, repository.Url);
+                    continue;
+                }
                 var held = result switch
                 {
                     CustomSourceService.Saved => null,

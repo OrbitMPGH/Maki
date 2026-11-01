@@ -84,6 +84,22 @@ public class NotificationProviderTests
         Assert.Equal("5", embed.GetProperty("fields")[0].GetProperty("value").GetString());
     }
 
+    [Theory]
+    [InlineData("/series/7", false)]
+    [InlineData("https://maki.example/series/7", true)]
+    public async Task Discord_links_the_embed_only_to_an_absolute_url(string url, bool linked)
+    {
+        var (provider, handler) = Build(f => new DiscordNotificationProvider(f));
+
+        await provider.SendAsync(DiscordConnection(), new NotificationMessage(
+            NotificationEventType.SeriesAdded, "Series added", "b", SeriesTitle: "Naruto", Url: url));
+
+        using var payload = JsonDocument.Parse(handler.Body!);
+        var embed = payload.RootElement.GetProperty("embeds")[0];
+        Assert.Equal(linked, embed.TryGetProperty("url", out _));
+        Assert.Equal(linked, embed.GetProperty("author").TryGetProperty("url", out _));
+    }
+
     [Fact]
     public async Task Discord_colors_by_event_but_a_failure_level_wins()
     {

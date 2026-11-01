@@ -185,6 +185,12 @@ public class MalTracker(
             using var _ = response;
             if (!response.IsSuccessStatusCode)
             {
+                // A 429 or 5xx says nothing about the refresh token, so only a refusal drops it.
+                if (response.StatusCode is not (HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized))
+                {
+                    throw new TrackerException($"MAL token refresh failed ({(int)response.StatusCode})");
+                }
+
                 // Only the token that was actually rejected is dropped; one stored since (an OAuth
                 // reconnect mid-refresh) is still good.
                 if ((await tokens.GetAsync(userId, Name, ct))?.RefreshToken == sent)

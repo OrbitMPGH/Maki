@@ -18,7 +18,21 @@ internal sealed class ServerProcess
     /// <summary>Raised on a thread-pool thread with the exit code.</summary>
     public event Action<int>? Exited;
 
-    public bool IsRunning => _process is { HasExited: false };
+    public bool IsRunning
+    {
+        get
+        {
+            try
+            {
+                return _process is { HasExited: false };
+            }
+            catch (InvalidOperationException)
+            {
+                // Disposed by the Exited handler before Start stored it.
+                return false;
+            }
+        }
+    }
 
     public void Start()
     {
@@ -38,6 +52,7 @@ internal sealed class ServerProcess
         process.Exited += (_, _) =>
         {
             var code = process.ExitCode;
+            Interlocked.CompareExchange(ref _process, null, process);
             process.Dispose();
             Exited?.Invoke(code);
         };

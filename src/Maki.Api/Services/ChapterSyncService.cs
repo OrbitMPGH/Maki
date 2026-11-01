@@ -45,6 +45,29 @@ public class ChapterSyncService(
     private async Task<List<int>> SyncSeriesAsync(
         int seriesId, HashSet<int>? mappingIds, CancellationToken ct)
     {
+        // Two syncs of one series would both see a new chapter as missing and both insert it.
+        List<int> newChapterIds;
+        bool rescanVolumeEntries;
+        using (await SeriesLocks.SeriesAsync(seriesId, ct))
+        {
+            (newChapterIds, rescanVolumeEntries) = await SyncUnderLockAsync(seriesId, mappingIds, ct);
+        }
+
+        // A volume entry's file belongs to the chapters a source has just listed for that volume.
+        // Handed over here rather than at the next rescan, or the monitored refresh queues them for
+        // download while their file is on disk. The rescan takes the series lock itself.
+        if (rescanVolumeEntries)
+        {
+            var withRoot = await db.Series.Include(s => s.RootFolder).FirstAsync(s => s.Id == seriesId, ct);
+            await cbzLinks!.RescanSeriesAsync(withRoot, ct);
+        }
+
+        return newChapterIds;
+    }
+
+    private async Task<(List<int> NewChapterIds, bool RescanVolumeEntries)> SyncUnderLockAsync(
+        int seriesId, HashSet<int>? mappingIds, CancellationToken ct)
+    {
         var series = await db.Series
             .Include(s => s.SourceMappings)
             .FirstOrDefaultAsync(s => s.Id == seriesId, ct)
@@ -264,16 +287,8 @@ public class ChapterSyncService(
             await pendingReadImports.ApplyAsync(seriesId, ct);
         }
 
-        // A volume entry's file belongs to the chapters a source has just listed for that volume.
-        // Handed over here rather than at the next rescan, or the monitored refresh queues them for
-        // download while their file is on disk.
-        if (newChapters.Count > 0 && cbzLinks is not null && existing.Any(Chapter.IsVolumeEntry))
-        {
-            var withRoot = await db.Series.Include(s => s.RootFolder).FirstAsync(s => s.Id == seriesId, ct);
-            await cbzLinks.RescanSeriesAsync(withRoot, ct);
-        }
-
-        return newChapters.Select(c => c.Id).ToList();
+        return (newChapters.Select(c => c.Id).ToList(),
+            newChapters.Count > 0 && cbzLinks is not null && existing.Any(Chapter.IsVolumeEntry));
     }
 
     /// <summary>

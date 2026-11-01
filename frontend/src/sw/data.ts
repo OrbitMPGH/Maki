@@ -1,6 +1,6 @@
 import { cacheNames } from '../pwa/contract'
 import { isImage, isJson, isUnreachable, markOffline, matchIn, offlineResponse, store, tryFetch } from './net'
-import { currentUser, setUser } from './user'
+import { currentUser, setUser, userGeneration } from './user'
 
 const API = '/api/v1/'
 const DATA_CAP = 2000
@@ -34,9 +34,12 @@ export function apiPath(url: URL): string | null {
   return url.pathname.startsWith(API) ? url.pathname.slice(API.length) : null
 }
 
-/** A 401 means the session is gone: stop serving and storing that user's data. Caches stay. */
-export function noteStatus(res: Response): void {
-  if (res.status === 401) void setUser(null)
+/**
+ * A 401 means the session is gone: stop serving and storing that user's data. Caches stay. A 401 to
+ * a request sent before the user last changed answers an earlier session and is ignored.
+ */
+export function noteStatus(res: Response, since: number): void {
+  if (res.status === 401 && since === userGeneration()) void setUser(null)
 }
 
 /**
@@ -51,9 +54,10 @@ export async function networkFirst(
 ): Promise<Response> {
   const { request } = event
   const before = await currentUser()
+  const since = userGeneration()
   const res = await tryFetch(request)
   if (res && !isUnreachable(res)) {
-    noteStatus(res)
+    noteStatus(res, since)
     if (onLive) await onLive(res)
     // A response sent under one account must not land in the cache of whoever signed in meanwhile.
     // `auth/me` is the exception: it is what says who that is.
@@ -90,9 +94,10 @@ async function cover(event: FetchEvent): Promise<Response> {
   if (userId === null) return passThrough(request)
   const cached = await matchIn(cacheNames.covers(userId), request.url)
   if (cached) return cached
+  const since = userGeneration()
   const res = await tryFetch(request)
   if (!res || isUnreachable(res)) return offlineResponse()
-  noteStatus(res)
+  noteStatus(res, since)
   if (res.status === 200 && isImage(res)) {
     event.waitUntil(store(cacheNames.covers(userId), request.url, res.clone(), COVER_CAP))
   }
@@ -100,9 +105,10 @@ async function cover(event: FetchEvent): Promise<Response> {
 }
 
 export async function passThrough(request: Request): Promise<Response> {
+  const since = userGeneration()
   const res = await tryFetch(request)
   if (!res || isUnreachable(res)) return offlineResponse()
-  noteStatus(res)
+  noteStatus(res, since)
   return res
 }
 

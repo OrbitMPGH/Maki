@@ -15,14 +15,27 @@ public sealed class ScrobbleControllerMatchTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private ScrobbleController Controller(int userId)
+    private ScrobbleController Controller(int userId) => Controller(userId, NewService());
+
+    private ScrobbleController Controller(int userId, ScrobbleService service, bool authenticated = true)
+    {
+        var tokens = new ScrobbleTokenStore(_db.ScopeFactory());
+        var db = _db.NewContext(userId);
+        var currentUser = new TestCurrentUser(
+            userId, permissions: MakiPermission.UseTrackers, authenticated: authenticated);
+        return new ScrobbleController(
+            new TestLocalizer(), service, animeSources: null!, tokens, settings: null!,
+            new UserSettingsService(db, currentUser), db, currentUser, schedulerFactory: null!);
+    }
+
+    private ScrobbleService NewService()
     {
         var http = new NoHttpClientFactory();
         var appSettings = new FakeAppSettings();
         var tokens = new ScrobbleTokenStore(_db.ScopeFactory());
         var userSettings = new UserSettingsStoreService(_db.ScopeFactory());
         var options = new ScrobbleTrackerOptions();
-        var service = new ScrobbleService(
+        return new ScrobbleService(
             _db.ScopeFactory(), settings: null!, userSettings, kavitaUser: null!, kavita: null!,
             volumeBoundaries: null!,
             anilist: new AniListTracker(http, appSettings, tokens, options, NullLogger<AniListTracker>.Instance),
@@ -34,12 +47,6 @@ public sealed class ScrobbleControllerMatchTests : IDisposable
             mangaUpdates: new MangaUpdatesTracker(
                 http, userSettings, tokens, options, NullLogger<MangaUpdatesTracker>.Instance),
             logger: NullLogger<ScrobbleService>.Instance);
-
-        var db = _db.NewContext(userId);
-        var currentUser = new TestCurrentUser(userId, permissions: MakiPermission.UseTrackers);
-        return new ScrobbleController(
-            new TestLocalizer(), service, animeSources: null!, tokens, settings: null!,
-            new UserSettingsService(db, currentUser), db, currentUser, schedulerFactory: null!);
     }
 
     private sealed class NoHttpClientFactory : IHttpClientFactory
@@ -61,6 +68,24 @@ public sealed class ScrobbleControllerMatchTests : IDisposable
         using var db = _db.NewContext(userId);
         return db.UserSettings.AsNoTracking().Where(s => s.UserId == userId && s.Key == key)
             .Select(s => s.Value).SingleOrDefault();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task An_oauth_callback_from_another_account_never_exchanges_the_code(bool signedIn)
+    {
+        var starter = _db.SeedUser("starter", MakiPermission.UseTrackers);
+        var other = _db.SeedUser("other", MakiPermission.UseTrackers);
+        var service = NewService();
+        var session = service.StartOAuthSession(starter, "anilist", "http://maki/api/v1/scrobble/oauth/anilist");
+
+        // The http factory throws if asked for a client, so reaching the exchange would fail the test.
+        var result = await Controller(signedIn ? other : 0, service, authenticated: signedIn)
+            .OAuthCallback("anilist", "code", session.State, default);
+
+        var redirect = Assert.IsType<RedirectResult>(result);
+        Assert.Contains("error.scrobble.oauthUserMismatch", redirect.Url);
     }
 
     [Fact]

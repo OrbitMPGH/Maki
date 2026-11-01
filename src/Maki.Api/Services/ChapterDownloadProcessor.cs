@@ -105,6 +105,19 @@ public class ChapterDownloadProcessor(
         var series = item.Series!;
         var rootFolder = series.RootFolder!;
 
+        // A plain download revived after its chapter got a file, or lost one on purpose, would overwrite
+        // or undo that. A file or removal older than the row is what the row was queued against.
+        if (item.HealthOperationId == null && item.UpgradeInfoJson == null &&
+            await db.Chapters.AnyAsync(c => c.Id == chapter.Id &&
+                ((c.ChapterFile != null && c.ChapterFile.DateAdded >= item.QueuedAt) ||
+                 (c.FileRemovedAt != null && c.FileRemovedAt >= item.QueuedAt)), ct))
+        {
+            await batches.DiscardAsync(series.Id, item.Id);
+            item.Status = QueueStatus.Cancelled;
+            await db.SaveChangesAsync(ct);
+            return DownloadOutcome.Settled;
+        }
+
         var workingDir = Path.Combine(paths.DownloadCacheDir, item.Id.ToString());
 
         // Tracks whichever mapping is actually in use, kept up to date even across the mid-flight

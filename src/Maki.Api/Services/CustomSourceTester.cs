@@ -30,7 +30,7 @@ public static class CustomSourceTester
         }
         else
         {
-            steps.Add(await RunStep("search", async () =>
+            steps.Add(await RunStep("search", ct, async () =>
             {
                 var results = await source.SearchAsync(definition.Sample.Query ?? "", ct);
                 var found = seriesId is not null && results.Any(r => r.SourceSeriesId == seriesId);
@@ -45,14 +45,14 @@ public static class CustomSourceTester
             return new Report(false, steps);
         }
 
-        steps.Add(await RunStep("series", async () =>
+        steps.Add(await RunStep("series", ct, async () =>
         {
             var series = await source.GetSeriesAsync(seriesId, ct);
             return (null, new { id = seriesId, series.Title, series.CoverUrl, series.Status, description = series.Description?.Length > 200 ? series.Description[..200] : series.Description });
         }));
 
         IReadOnlyList<CustomSource.ListedChapter> listed = [];
-        steps.Add(await RunStep("chapters", async () =>
+        steps.Add(await RunStep("chapters", ct, async () =>
         {
             listed = await source.ListEntriesAsync(seriesId, ct);
             var chapters = SourceChapterList.Normalize(listed.Select(e => e.Chapter));
@@ -88,7 +88,7 @@ public static class CustomSourceTester
         }
 
         IReadOnlyList<PageRequest> pages = [];
-        steps.Add(await RunStep("pages", async () =>
+        steps.Add(await RunStep("pages", ct, async () =>
         {
             pages = (await source.GetPagesAsync(sample, ct)).Pages;
             return (null, new { count = pages.Count, chapter = Summary(sample), first = pages.Take(3).Select(p => p.Url).ToList() });
@@ -100,7 +100,7 @@ public static class CustomSourceTester
         }
         else
         {
-            steps.Add(await RunStep("image", async () =>
+            steps.Add(await RunStep("image", ct, async () =>
             {
                 var first = pages[0];
                 var bytes = first.Fetch is { } fetch
@@ -117,14 +117,15 @@ public static class CustomSourceTester
 
     private static object Summary(SourceChapter c) => new { c.SourceChapterId, c.NumberRaw, c.Number, c.Volume, c.Title, c.ReleaseDate, c.Url };
 
-    private static async Task<Step> RunStep(string name, Func<Task<(string? ErrorKey, object? Detail)>> run)
+    private static async Task<Step> RunStep(
+        string name, CancellationToken ct, Func<Task<(string? ErrorKey, object? Detail)>> run)
     {
         try
         {
             var (errorKey, detail) = await run();
             return new Step(name, errorKey is null ? "ok" : "failed", errorKey, Detail: detail);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             return new Step(name, "failed", Error: ex.Message);
         }

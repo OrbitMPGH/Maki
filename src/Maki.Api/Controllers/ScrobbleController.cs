@@ -19,8 +19,8 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/scrobble")]
 // Connecting and pushing to a tracker is per-account behaviour, so it rides on UseTrackers rather
-// than on admin. The OAuth callback below opts out — the provider redirects the user's browser there
-// and it is authenticated by the random state instead.
+// than on admin. The OAuth callback below opts out, since the provider redirects the user's browser
+// there; it checks the random state and that the session belongs to whoever started the flow.
 [Authorize(Policy = Policies.UseTrackers)]
 public class ScrobbleController(
     ILocalizer localizer,
@@ -35,8 +35,8 @@ public class ScrobbleController(
 {
     /// <summary>
     /// Everything here acts for the signed-in caller: their tokens, their mappings, their toggles.
-    /// The one exception is the OAuth callback, which reads the user id out of the in-flight session
-    /// because no cookie reaches it.
+    /// The OAuth callback is anonymous at the policy level but still requires the caller's session to
+    /// match the in-flight one.
     /// </summary>
     private int UserId => currentUser.UserId;
 
@@ -562,9 +562,8 @@ public class ScrobbleController(
     /// and controls none of Maki's credentials. The random <c>state</c>, bound to the in-flight
     /// session that started the flow, is what authenticates the request.
     /// <para>
-    /// Being anonymous is also why this must stay a GET that only exchanges a code and redirects —
-    /// it is the one unauthenticated write path in the app, and the state is the whole of its
-    /// security. Per-user tracker tokens bind that state to the initiating user id.
+    /// Being anonymous is also why this must stay a GET that only exchanges a code and redirects.
+    /// The state picks the flow and the signed-in session must belong to the account that started it.
     /// </para>
     /// </summary>
     [HttpGet("/api/v1/scrobble/oauth/{service}")]
@@ -585,12 +584,18 @@ public class ScrobbleController(
                 localizer.Get("error.scrobble.oauthStateMismatch")));
         }
 
+        // The state proves which flow this is, not which browser finished it. The session cookie
+        // rides this top-level GET under Lax, so only the account that started the flow may end it.
+        if (!currentUser.IsAuthenticated || currentUser.UserId != session.UserId)
+        {
+            return Redirect("/scrobble?error=" + Uri.EscapeDataString(
+                localizer.Get("error.scrobble.oauthUserMismatch")));
+        }
+
         try
         {
             switch (service)
             {
-                // session.UserId, never the request's — there is no authenticated caller here, and
-                // the state that matched is the only thing that says whose flow this was.
                 case "anilist":
                     await scrobbler.AniList.ExchangeCodeAsync(session.UserId, code, session.RedirectUri, ct);
                     break;

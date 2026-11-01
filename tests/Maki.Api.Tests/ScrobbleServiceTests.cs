@@ -113,6 +113,30 @@ public class ScrobbleServiceTests
     }
 
     [Fact]
+    public async Task NativePassAsync_PushesVolumeProgressForASeriesReadOnlyByVolume()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var series = db.SeedSeries("Volumes only", configure: s => s.MangaBakaId = 300);
+        using (var seed = db.NewContext())
+        {
+            seed.ReadingStates.Add(new ReadingState
+            {
+                UserId = user, SeriesId = series, Title = "Volumes only",
+                MaxChapter = 0, MaxVolume = 3, LastProgressAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+            });
+            seed.SaveChanges();
+        }
+
+        var tracker = new FakeScrobbleTracker();
+
+        await BuildService(db, new FakeUserSettingsStore(db))
+            .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        Assert.Contains(tracker.Pushes, p => p.RemoteId == "300" && p.Volume == 3 && p.Status == ScrobbleStatus.Reading);
+    }
+
+    [Fact]
     public async Task NativePassAsync_PushesToMangaUpdatesFromTheSeriesSlug()
     {
         using var db = new TestDb();

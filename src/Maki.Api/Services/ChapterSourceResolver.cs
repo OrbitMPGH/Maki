@@ -124,7 +124,7 @@ public class ChapterSourceResolver(
 
                 errors.Add($"{source.Name}: chapter not listed");
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
                 throw;
             }

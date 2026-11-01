@@ -1978,6 +1978,12 @@ msgstr "OAuth zostało anulowane lub nie zwróciło kodu"
 msgid "error.scrobble.oauthStateMismatch"
 msgstr "Niezgodność stanu OAuth lub wygasła sesja, spróbuj połączyć ponownie"
 
+#. The OAuth callback reached a browser signed in to a different Maki account (or none) than the one that started the connection.
+#: src/Maki.Api/Controllers/ScrobbleController.cs
+#. English: This connection was started from another account. Sign in as that account and connect again
+msgid "error.scrobble.oauthUserMismatch"
+msgstr ""
+
 #. Reused for every "no such tracker/service name" case on the scrobble endpoints (Match, SetPreferences, StartRatingImport, AuthStart, the OAuth callback, Disconnect).
 #: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: unknown service

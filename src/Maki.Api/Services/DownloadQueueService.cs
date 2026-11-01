@@ -1291,7 +1291,8 @@ public class DownloadQueueService(
     /// Re-queues Failed scraper items whose backoff has elapsed and whose attempt count is still
     /// under <paramref name="maxAttempts"/>. Torrent items are excluded — they're tracked
     /// externally by <c>CompletedDownloadJob</c> against the download client, and re-signalling one
-    /// wouldn't resubmit the grab. Returns the number re-queued.
+    /// wouldn't resubmit the grab. A plain download whose chapter got a file or was removed on purpose
+    /// after the row was queued is stale and stays Failed. Returns the number re-queued.
     /// </summary>
     public Task<int> RequeueEligibleFailuresAsync(int maxAttempts, CancellationToken ct = default) =>
         RequeueFailuresAsync(maxAttempts, null, null, manual: false, callerScope: null, ct);
@@ -1328,7 +1329,10 @@ public class DownloadQueueService(
                         q.RetryCount < maxAttempts &&
                         (q.ErrorKey == null || !PermanentErrorKeys.Contains(q.ErrorKey)) &&
                         (manual || q.NextAttempt == null || q.NextAttempt <= now) &&
-                        (q.ChapterId == null || !db.DownloadQueue.Any(o => o.ActiveChapterId == q.ChapterId)))
+                        (q.ChapterId == null || !db.DownloadQueue.Any(o => o.ActiveChapterId == q.ChapterId)) &&
+                        (q.UpgradeInfoJson != null || q.Chapter == null || !(
+                            (q.Chapter.ChapterFile != null && q.Chapter.ChapterFile.DateAdded >= q.QueuedAt) ||
+                            (q.Chapter.FileRemovedAt != null && q.Chapter.FileRemovedAt >= q.QueuedAt))))
             .ToListAsync(ct);
 
         // A chapter can hold several failed rows from separate enqueues, and only one may go active.

@@ -107,6 +107,17 @@ public class KitsuTracker(
     private async Task<string> PasswordAsync(int userId, CancellationToken ct) =>
         await userSettings.GetAsync(userId, SettingKeys.ScrobbleKitsuPassword, ct) ?? "";
 
+    /// <summary>Drops what this tracker remembers about the user's Kitsu account, for when it changes.</summary>
+    public void Forget(int userId)
+    {
+        _cachedUserId.TryRemove(userId, out _);
+        _authCache.TryRemove(userId, out _);
+        foreach (var key in _entryIds.Keys.Where(k => k.UserId == userId).ToList())
+        {
+            _entryIds.TryRemove(key, out _);
+        }
+    }
+
     /// <summary>
     /// True when a usable token exists or one can be obtained now. Doubles as the "log
     /// in" trigger since Kitsu has no redirect flow to do that from — a failed attempt

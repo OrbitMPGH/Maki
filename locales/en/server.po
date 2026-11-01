@@ -1418,6 +1418,11 @@ msgstr "OAuth was cancelled or returned no code"
 msgid "error.scrobble.oauthStateMismatch"
 msgstr "OAuth state mismatch or session expired, retry the connection"
 
+#. The OAuth callback reached a browser signed in to a different Maki account (or none) than the one that started the connection.
+#: src/Maki.Api/Controllers/ScrobbleController.cs
+msgid "error.scrobble.oauthUserMismatch"
+msgstr "This connection was started from another account. Sign in as that account and connect again"
+
 #. Reused for every "no such tracker/service name" case on the scrobble endpoints (Match, SetPreferences, StartRatingImport, AuthStart, the OAuth callback, Disconnect).
 #: src/Maki.Api/Controllers/ScrobbleController.cs
 msgid "error.scrobble.unknownService"

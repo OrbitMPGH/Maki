@@ -104,10 +104,10 @@ public class DiscordNotificationProvider(
         author = new
         {
             name = Truncate($"{IconFor(message.EventType)} {message.Title}", TitleLimit),
-            url = message.Url
+            url = AbsoluteUrl(message)
         },
         title = Truncate(NullIfBlank(message.SeriesTitle), TitleLimit),
-        url = message.Url,
+        url = AbsoluteUrl(message),
         description = Truncate(Description(message), DescriptionLimit),
         color = ColorFor(message),
         thumbnail = withPoster ? new { url = $"attachment://{PosterFileName}" } : null,
@@ -115,6 +115,9 @@ public class DiscordNotificationProvider(
         footer = new { text = "Maki" },
         timestamp = DateTimeOffset.UtcNow.ToString("o")
     };
+
+    private static string? AbsoluteUrl(NotificationMessage message) =>
+        Uri.IsWellFormedUriString(message.Url, UriKind.Absolute) ? message.Url : null;
 
     /// <summary>
     /// Drops the leading "{series} — " the senders write into every body: the series is the embed's

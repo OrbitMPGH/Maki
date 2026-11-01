@@ -762,7 +762,7 @@ public class ScrobbleService(
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
             db.Scope.SetUser(userId, await AllRootFoldersAsync(userId, ct));
             rows = await db.ReadingStates
-                .Where(r => r.UserId == userId && r.SeriesId != null && r.MaxChapter > 0 &&
+                .Where(r => r.UserId == userId && r.SeriesId != null && (r.MaxChapter > 0 || r.MaxVolume > 0) &&
                     (!ownsKavita || r.KavitaSeriesId == null))
                 .Join(db.Series, r => r.SeriesId, s => s.Id, (r, s) => new { r, s })
                 .Where(x => x.s.Incognito == IncognitoMode.Off)

@@ -81,7 +81,8 @@ public class SettingsController(
     ILogger<SettingsController> logger,
     AccountSecurityAlerts? alerts = null,
     IScrobbleTokenStore? scrobbleTokens = null,
-    MangaUpdatesTracker? mangaUpdates = null) : ControllerBase
+    MangaUpdatesTracker? mangaUpdates = null,
+    KitsuTracker? kitsu = null) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
     public record IndexerConnection(string? Backend, string? Url, string? ApiKey);
@@ -2451,14 +2452,7 @@ public class SettingsController(
             await userSettings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
         }
 
-        await userSettings.SetAsync(SettingKeys.ScrobbleKitsuEmail, request.KitsuEmail, ct);
-        // Null means "leave it" for the token and the password: GET never returns either, so a client
-        // that did not touch the field sends nothing back.
-        if (request.KitsuPassword is not null)
-        {
-            await userSettings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
-        }
-
+        await SaveKitsuCredentialsAsync(request, ct);
         await SaveMangaUpdatesCredentialsAsync(request, ct);
 
         await userSettings.SetAsync(
@@ -2484,6 +2478,36 @@ public class SettingsController(
 
         await settings.SetAsync(SettingKeys.ScrobbleLibraryIds, request.LibraryIds, ct);
         return await GetScrobble(ct);
+    }
+
+    /// <summary>
+    /// The email is always written. Null leaves the password as it is: GET never returns it, so a
+    /// client that did not touch the field sends nothing back. A real change of either drops the
+    /// stored token and the tracker's in-memory state for this user, since both belong to the old account.
+    /// </summary>
+    private async Task SaveKitsuCredentialsAsync(ScrobbleSettings request, CancellationToken ct)
+    {
+        var stored = await userSettings.GetManyAsync(
+            [SettingKeys.ScrobbleKitsuEmail, SettingKeys.ScrobbleKitsuPassword], ct);
+        var changed = (request.KitsuEmail?.Trim() ?? "") !=
+                      (stored.GetValueOrDefault(SettingKeys.ScrobbleKitsuEmail, "").Trim());
+        await userSettings.SetAsync(SettingKeys.ScrobbleKitsuEmail, request.KitsuEmail, ct);
+
+        if (request.KitsuPassword is not null)
+        {
+            changed |= request.KitsuPassword != stored.GetValueOrDefault(SettingKeys.ScrobbleKitsuPassword, "");
+            await userSettings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
+        }
+
+        if (changed)
+        {
+            if (scrobbleTokens is not null)
+            {
+                await scrobbleTokens.DeleteAsync(currentUser.UserId, "kitsu", ct);
+            }
+
+            kitsu?.Forget(currentUser.UserId);
+        }
     }
 
     /// <summary>
