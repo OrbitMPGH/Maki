@@ -229,6 +229,66 @@ public class RootFolderControllerTests : IDisposable
             await Controller().Delete(folderId, CancellationToken.None)));
     }
 
+    /// <summary>
+    /// Nothing visits an inventory row whose root is gone, so the delete retires them itself. Hard
+    /// deleting is out: versions, operations and history point at the rows.
+    /// </summary>
+    [Fact]
+    public async Task Delete_retires_the_folders_health_rows_and_resolves_their_findings()
+    {
+        var folderId = SeedFolder();
+        var keptId = SeedFolder();
+        int goneId, keptRowId;
+        using (var db = _db.NewContext())
+        {
+            var gone = new HealthFile { RootFolderId = folderId, RelativePath = "a.cbz", Status = "complete", ContentHash = "H" };
+            var kept = new HealthFile { RootFolderId = keptId, RelativePath = "b.cbz", Status = "complete", ContentHash = "K" };
+            db.HealthFiles.AddRange(gone, kept);
+            db.SaveChanges();
+            goneId = gone.Id;
+            keptRowId = kept.Id;
+            db.HealthFindings.Add(new HealthFinding { FileId = gone.Id, Version = gone.Version, Kind = "unlinked", MessageKey = "health.finding.unlinked" });
+            db.HealthFindings.Add(new HealthFinding { FileId = kept.Id, Version = kept.Version, Kind = "unlinked", MessageKey = "health.finding.unlinked" });
+            db.SaveChanges();
+        }
+
+        Assert.IsType<NoContentResult>(await Controller().Delete(folderId, CancellationToken.None));
+
+        using var check = _db.NewContext();
+        Assert.True(check.HealthFiles.Single(f => f.Id == goneId).Removed);
+        Assert.Equal("resolved", check.HealthFindings.Single(f => f.FileId == goneId).State);
+        Assert.False(check.HealthFiles.Single(f => f.Id == keptRowId).Removed);
+        Assert.Equal("open", check.HealthFindings.Single(f => f.FileId == keptRowId).State);
+        Assert.Empty(check.RootFolders.Where(f => f.Id == folderId));
+    }
+
+    [Fact]
+    public async Task Delete_cancels_waiting_health_operations_and_scans_of_the_folder()
+    {
+        var folderId = SeedFolder();
+        int waitingId, applyingId, scanId;
+        using (var db = _db.NewContext())
+        {
+            var file = new HealthFile { RootFolderId = folderId, RelativePath = "a.cbz" };
+            db.HealthFiles.Add(file);
+            db.SaveChanges();
+            var waiting = new HealthOperation { FileId = file.Id, Status = "downloading" };
+            var applying = new HealthOperation { FileId = file.Id, Status = "applying" };
+            var scan = new HealthScan { RootFolderId = folderId };
+            db.HealthOperations.AddRange(waiting, applying);
+            db.HealthScans.Add(scan);
+            db.SaveChanges();
+            (waitingId, applyingId, scanId) = (waiting.Id, applying.Id, scan.Id);
+        }
+
+        Assert.IsType<NoContentResult>(await Controller().Delete(folderId, CancellationToken.None));
+
+        using var check = _db.NewContext();
+        Assert.Equal("cancelled", check.HealthOperations.Single(o => o.Id == waitingId).Status);
+        Assert.Equal("applying", check.HealthOperations.Single(o => o.Id == applyingId).Status);
+        Assert.Equal("cancelled", check.HealthScans.Single(s => s.Id == scanId).Status);
+    }
+
     private static string ConflictError(IActionResult result) =>
         (string)((ConflictObjectResult)result).Value!.GetType().GetProperty("error")!.GetValue(((ConflictObjectResult)result).Value)!;
 

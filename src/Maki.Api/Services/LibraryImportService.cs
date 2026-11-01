@@ -1095,6 +1095,8 @@ public class LibraryImportService(
         if (series.RootFolderId != rootFolder.Id ||
             !string.Equals(series.FolderName, seriesFolderName, StringComparison.Ordinal))
         {
+            if (series.RootFolderId != rootFolder.Id)
+                await HealthInventory.MoveSeriesAsync(db, series.Id, rootFolder.Id, [], ct);
             series.RootFolderId = rootFolder.Id;
             series.FolderName = seriesFolderName;
             await db.SaveChangesAsync(ct);
