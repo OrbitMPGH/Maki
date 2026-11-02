@@ -1404,57 +1404,90 @@ public class MangaBakaLocalStore(
         };
 
         using var conn = Open();
-        using var cmd = conn.CreateCommand();
-        // Optional user filters (year/status/type/rating/chapters/genre) from the expanded view.
-        var filterClause = filters.BuildClause(cmd, "series");
-        if (releasedSince is { } since)
+
+        // The ids come from the browse table (or series, before the job has backfilled it) in rail
+        // order; the card columns are then read from series by id. Over-fetch so title-dedupe still
+        // leaves `limit` rows even when filters thin the set.
+        var source = MangaBakaDumpService.BrowseSource(conn);
+        var ids = new List<long>();
+        using (var cmd = conn.CreateCommand())
         {
-            filterClause += " AND published_start_date >= $since";
-            cmd.Parameters.AddWithValue("$since", since.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            // Optional user filters (year/status/type/rating/chapters/genre) from the expanded view.
+            var filterClause = filters.BuildClause(cmd, source);
+            if (releasedSince is { } since)
+            {
+                filterClause += " AND published_start_date >= $since";
+                cmd.Parameters.AddWithValue("$since", since.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            }
+
+            cmd.CommandText = $"""
+                SELECT id FROM {source}
+                WHERE {where}{filterClause}
+                ORDER BY {orderBy}
+                LIMIT $take
+                """;
+            cmd.Parameters.AddWithValue("$take", limit * 5);
+            if (feed == BrowseFeed.New)
+            {
+                cmd.Parameters.AddWithValue("$today", DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            }
+            else if (feed == BrowseFeed.GenreSpotlight)
+            {
+                cmd.Parameters.AddWithValue("$genre", $"%\"{genre}\"%");
+            }
+
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                ids.Add(reader.GetInt64(0));
+            }
         }
-        // Over-fetch so title-dedupe still leaves `limit` rows even when filters thin the set.
-        cmd.CommandText = $"""
-            SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating, total_chapters, description,
-                   cover_x250_x1, cover_x250_x2
-            FROM series
-            WHERE {where}{filterClause}
-            ORDER BY {orderBy}
-            LIMIT $take
-            """;
-        cmd.Parameters.AddWithValue("$take", limit * 5);
-        if (feed == BrowseFeed.New)
+
+        if (ids.Count == 0)
         {
-            cmd.Parameters.AddWithValue("$today", DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            return [];
         }
-        else if (feed == BrowseFeed.GenreSpotlight)
+
+        var cards = new Dictionary<long, MangaBakaRecommendation>(ids.Count);
+        using (var hydrate = conn.CreateCommand())
         {
-            cmd.Parameters.AddWithValue("$genre", $"%\"{genre}\"%");
+            hydrate.CommandText = $"""
+                SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating, total_chapters, description,
+                       cover_x250_x1, cover_x250_x2
+                FROM series
+                WHERE id IN (SELECT value FROM json_each($ids))
+                """;
+            hydrate.Parameters.AddWithValue("$ids", System.Text.Json.JsonSerializer.Serialize(ids));
+            using var reader = await hydrate.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                var id = reader.GetInt64(0);
+                cards[id] = new MangaBakaRecommendation(
+                    id.ToString(CultureInfo.InvariantCulture),
+                    GetString(reader, 1) ?? string.Empty,
+                    GetString(reader, 2),
+                    GetInt(reader, 3),
+                    GetString(reader, 7),
+                    MangaBakaProvider.MapStatus(GetString(reader, 4)),
+                    reader.IsDBNull(5) ? null : reader.GetDouble(5),
+                    ParseCount(GetString(reader, 6)),
+                    [], [], false,
+                    null, null,
+                    ThumbUrl: GetString(reader, 8),
+                    ThumbUrlHiDpi: GetString(reader, 9));
+            }
         }
 
         var results = new List<MangaBakaRecommendation>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        using var reader = await cmd.ExecuteReaderAsync(ct);
-        while (await reader.ReadAsync(ct))
+        foreach (var id in ids)
         {
-            var title = GetString(reader, 1) ?? string.Empty;
-            if (!seen.Add(title.Trim()))
+            if (!cards.TryGetValue(id, out var card) || !seen.Add(card.Title.Trim()))
             {
                 continue; // first sighting is best per the ORDER BY; skip later duplicates
             }
 
-            results.Add(new MangaBakaRecommendation(
-                reader.GetInt64(0).ToString(CultureInfo.InvariantCulture),
-                title,
-                GetString(reader, 2),
-                GetInt(reader, 3),
-                GetString(reader, 7),
-                MangaBakaProvider.MapStatus(GetString(reader, 4)),
-                reader.IsDBNull(5) ? null : reader.GetDouble(5),
-                ParseCount(GetString(reader, 6)),
-                [], [], false,
-                null, null,
-                ThumbUrl: GetString(reader, 8),
-                ThumbUrlHiDpi: GetString(reader, 9)));
+            results.Add(card);
             if (results.Count >= limit)
             {
                 break;
@@ -1843,7 +1876,7 @@ public class MangaBakaLocalStore(
     /// External manga id -> canonical MangaBaka id, for the ids that resolve.
     /// <para>
     /// Chunked <c>IN (...)</c> rather than a temp table or a join, because queries open the dump
-    /// read-only. Each column has a partial index (<c>ix_ext_*</c>), built by
+    /// read-only. Each column has a partial index (<c>mb_ext_*</c> on the browse table), built by
     /// <see cref="MangaBakaDumpService"/> on the staged file at install and backfilled on the live
     /// one at startup, so a chunk is an index lookup rather than a scan.
     /// </para>
@@ -1871,6 +1904,7 @@ public class MangaBakaLocalStore(
         var pending = new List<(long External, long SeriesId)>();
 
         using var conn = Open();
+        var table = MangaBakaDumpService.BrowseSource(conn);
         const int chunkSize = 500;
         for (var offset = 0; offset < wanted.Count; offset += chunkSize)
         {
@@ -1878,7 +1912,7 @@ public class MangaBakaLocalStore(
             using var cmd = conn.CreateCommand();
             cmd.CommandText = $"""
                 SELECT {column}, id, state, merged_with, type
-                FROM series
+                FROM {table}
                 WHERE {column} IN ({string.Join(",", chunk.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
                 """;
             cmd.CommandTimeout = 600;
@@ -1924,7 +1958,7 @@ public class MangaBakaLocalStore(
     /// MangaUpdates slug -> canonical MangaBaka id. <c>source_manga_updates_id</c> is text, so this is a
     /// separate parameterized lookup rather than another column in the numeric one. Slugs are lowercase
     /// base36 and the dump is lowercase apart from a couple of stray rows, so both sides are compared
-    /// lowercased, through the expression index <c>ix_ext_mangaupdates</c>. The <c>IS NOT NULL</c> term
+    /// lowercased, through the expression index <c>mb_ext_mangaupdates</c>. The <c>IS NOT NULL</c> term
     /// is what lets SQLite prove the partial index applies. Keys of the result are lowercase.
     /// </summary>
     public virtual async Task<IReadOnlyDictionary<string, long>> GetIdsByMangaUpdatesIdsAsync(
@@ -1944,6 +1978,7 @@ public class MangaBakaLocalStore(
         var pending = new List<(string External, long SeriesId)>();
 
         using var conn = Open();
+        var source = MangaBakaDumpService.BrowseSource(conn);
         const int chunkSize = 500;
         for (var offset = 0; offset < wanted.Count; offset += chunkSize)
         {
@@ -1958,7 +1993,7 @@ public class MangaBakaLocalStore(
 
             cmd.CommandText = $"""
                 SELECT lower(source_manga_updates_id), id, state, merged_with, type
-                FROM series
+                FROM {source}
                 WHERE source_manga_updates_id IS NOT NULL
                   AND lower(source_manga_updates_id) IN ({string.Join(",", names)})
                 """;

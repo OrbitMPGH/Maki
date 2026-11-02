@@ -242,7 +242,10 @@ public class MangaBakaDumpService(
         return Convert.ToHexStringLower(sha1.GetHashAndReset());
     }
 
-    /// <summary>Sanity-checks the staged database and builds the FTS5 index over all title variants.</summary>
+    /// <summary>
+    /// Sanity-checks the staged database, then builds the FTS5 title index and the browse table in
+    /// one pass over it, and the browse table's indexes after.
+    /// </summary>
     private void PrepareStagedDatabase(string stagingPath, CancellationToken ct)
     {
         using var conn = new SqliteConnection($"Data Source={stagingPath};Pooling=False");
@@ -253,9 +256,9 @@ public class MangaBakaDumpService(
         Execute(conn, "PRAGMA journal_mode = OFF");
         Execute(conn, "PRAGMA synchronous = OFF");
 
-        // Each browse index is a full scan of the 3.5 GB table; reading it through a mapping rather
-        // than a copy per page halved that step (13-17 s to 7 s) on the 2026-11 dump. SQLite caps the
-        // size at its compile-time maximum and falls back to plain reads where the map fails.
+        // Reading the 3.5 GB table through a mapping rather than a copy per page halved the time
+        // of a full scan on the 2026-11 dump. SQLite caps the size at its compile-time maximum and
+        // falls back to plain reads where the map fails.
         Execute(conn, $"PRAGMA mmap_size = {StagingMmapBytes}");
 
         Interruptible(conn, ct, () =>
@@ -267,8 +270,8 @@ public class MangaBakaDumpService(
             }
 
             status.ReportIndexed(CountShare);
-            logger.LogInformation("Building MangaBaka search index over {Count} series…", count);
-            BuildSearchIndex(conn, Slice(status.ReportIndexed, CountShare, SearchShare));
+            logger.LogInformation("Building MangaBaka search index and browse table over {Count} series…", count);
+            BuildSearchIndex(conn, Slice(status.ReportIndexed, CountShare, SearchShare), withBrowseTable: true);
 
             logger.LogInformation("Building MangaBaka browse indexes…");
             BuildBrowseIndexes(conn, logger, progress: Slice(status.ReportIndexed, SearchShare, 1));
@@ -276,13 +279,13 @@ public class MangaBakaDumpService(
     }
 
     /// <summary>
-    /// Where the row count and the search index end on the indexing bar. On the 2026-11 standard
-    /// dump with the file mapped, the count took 0.5 to 6 s, the search index 13 to 14 s and the
-    /// browse indexes about 8 s, depending on how much of the file the page cache held.
+    /// Where the row count and the search pass end on the indexing bar. On the 2026-11 standard dump
+    /// with the file mapped, the count took 0.5 to 6 s, the search pass with the browse table copy
+    /// riding on it 11 to 14.5 s, and the browse indexes on the narrow table 2 to 3.5 s.
     /// </summary>
     private const double CountShare = 0.05;
 
-    private const double SearchShare = 0.6;
+    private const double SearchShare = 0.85;
 
     private const long StagingMmapBytes = 8L * 1024 * 1024 * 1024;
 
@@ -315,11 +318,75 @@ public class MangaBakaDumpService(
         }
     }
 
+    /// <summary>
+    /// A narrow copy of the <c>series</c> columns that the Discover rails, the external id lookups
+    /// and the duplicate-title lookup filter and sort on, keyed by the same id, with the browse
+    /// indexes on it instead of on <c>series</c>.
+    ///
+    /// <para>
+    /// The dump's rows are ~6 KB, mostly overflow pages, so every index built on <c>series</c> read
+    /// nearly the whole 3.5 GB file again: ten of them took 9 to 67 s depending on the page cache.
+    /// The copy rides on the search index's pass, which reads every row that far anyway, and costs
+    /// nothing measurable there; the indexes on the copy take 2 to 3.5 s.
+    /// </para>
+    ///
+    /// <para>
+    /// Results are the same as querying <c>series</c>: the columns keep their declared types, so
+    /// values and comparisons are identical, and the id is the rowid on both, so ties sort the same.
+    /// Checked on the real dump over every rail, ceiling and filter, and every lookup. The dump is
+    /// never written after install, so the copy cannot go stale.
+    /// </para>
+    /// </summary>
+    public const string BrowseTableName = "maki_browse";
+
+    private static readonly string[] BrowseColumns =
+    [
+        "id", "state", "type", "rating", "cover_raw_url", "title", "content_rating", "year", "status",
+        "total_chapters", "genres", "merged_with", "popularity_global_current",
+        "popularity_global_history_1w", "popularity_global_history_1mo", "popularity_global_history_3mo",
+        "popularity_type_current", "published_start_date", "source_anilist_id", "source_my_anime_list_id",
+        "source_kitsu_id", "source_manga_updates_id",
+    ];
+
+    /// <summary>
+    /// The table the rails and lookups read from: <see cref="BrowseTableName"/> once it exists, and
+    /// <c>series</c> before that, which is an installed dump the job has not backfilled yet. Both
+    /// have the same column names, so the queries differ only in the name.
+    /// </summary>
+    public static string BrowseSource(SqliteConnection conn, string schema = "main")
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"SELECT 1 FROM {schema}.sqlite_master WHERE type = 'table' AND name = '{BrowseTableName}'";
+        return cmd.ExecuteScalar() is null ? "series" : BrowseTableName;
+    }
+
+    /// <summary>Creates the empty browse table with the columns this dump has; returns them.</summary>
+    private static List<string> CreateBrowseTable(SqliteConnection conn, SqliteTransaction tx)
+    {
+        // In the order series stores them, so each row is read front to back once.
+        var types = ColumnTypes(conn, "series", tx);
+        var columns = types.Keys.Where(c => BrowseColumns.Contains(c, StringComparer.OrdinalIgnoreCase)).ToList();
+        Execute(conn, $"DROP TABLE IF EXISTS {BrowseTableName}", tx);
+        Execute(conn, $"""
+            CREATE TABLE {BrowseTableName} (
+                {string.Join(",\n    ", columns.Select(c => c == "id" ? "id INTEGER PRIMARY KEY" : $"[{c}] {types[c]}"))}
+            )
+            """, tx);
+        return columns;
+    }
+
+    private static string CopyIntoBrowseTable(IReadOnlyList<string> columns, bool ranged)
+    {
+        var list = string.Join(", ", columns.Select(c => $"[{c}]"));
+        return $"INSERT INTO {BrowseTableName} ({list}) SELECT {list} FROM series"
+            + (ranged ? " WHERE rowid BETWEEN $lo AND $hi" : string.Empty);
+    }
+
     /// <summary>The names of the indexes <see cref="BuildBrowseIndexes"/> creates.</summary>
     private static readonly string[] BrowseIndexNames =
     [
-        "ix_browse_pop", "ix_browse_trend", "ix_browse_new", "ix_browse_rating", "ix_browse_type",
-        "ix_title_nocase", "ix_ext_anilist", "ix_ext_mal", "ix_ext_kitsu", "ix_ext_mangaupdates",
+        "mb_browse_pop", "mb_browse_trend", "mb_browse_new", "mb_browse_rating", "mb_browse_type",
+        "mb_title_nocase", "mb_ext_anilist", "mb_ext_mal", "mb_ext_kitsu", "mb_ext_mangaupdates",
     ];
 
     /// <summary>
@@ -328,7 +395,7 @@ public class MangaBakaDumpService(
     /// </summary>
     private static HashSet<string> BuildableIndexNames(SqliteConnection conn)
     {
-        var present = ColumnsOf(conn);
+        var present = ColumnTypes(conn, "series", null).Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var buildable = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (name, columns, _) in IndexDefinitions())
         {
@@ -341,18 +408,29 @@ public class MangaBakaDumpService(
         return buildable;
     }
 
-    private static HashSet<string> ColumnsOf(SqliteConnection conn)
+    /// <summary>Column name to declared type, case-insensitive, in the table's column order.</summary>
+    private static OrderedDictionary<string, string> ColumnTypes(SqliteConnection conn, string table, SqliteTransaction? tx)
     {
-        var present = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var columns = new OrderedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "PRAGMA table_info(series)";
+        cmd.Transaction = tx;
+        cmd.CommandText = $"PRAGMA table_info({table})";
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
-            present.Add(reader.GetString(1));
+            columns[reader.GetString(1)] = reader.IsDBNull(2) ? string.Empty : reader.GetString(2);
         }
 
-        return present;
+        return columns;
+    }
+
+    private static bool TableExists(SqliteConnection conn, string table, SqliteTransaction? tx)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = $name";
+        cmd.Parameters.AddWithValue("$name", table);
+        return cmd.ExecuteScalar() is not null;
     }
 
     /// <summary>
@@ -371,32 +449,32 @@ public class MangaBakaDumpService(
     private static (string Name, string[] Columns, string Sql)[] IndexDefinitions() =>
     [
         // Popular, and the shared prefix for anything ordering by global popularity.
-        ("ix_browse_pop", ["popularity_global_current"], $"""
-            CREATE INDEX IF NOT EXISTS ix_browse_pop ON series (popularity_global_current)
+        ("mb_browse_pop", ["popularity_global_current"], $"""
+            CREATE INDEX IF NOT EXISTS mb_browse_pop ON {BrowseTableName} (popularity_global_current)
             WHERE {BrowseGate} AND popularity_global_current IS NOT NULL
             """),
 
         // Trending sorts on (history - current), which no index can order directly; carrying both
         // columns still lets the planner walk the far smaller filtered set instead of the table.
-        ("ix_browse_trend", ["popularity_global_current", "popularity_global_history_1mo"], $"""
-            CREATE INDEX IF NOT EXISTS ix_browse_trend ON series (popularity_global_current, popularity_global_history_1mo)
+        ("mb_browse_trend", ["popularity_global_current", "popularity_global_history_1mo"], $"""
+            CREATE INDEX IF NOT EXISTS mb_browse_trend ON {BrowseTableName} (popularity_global_current, popularity_global_history_1mo)
             WHERE {BrowseGate} AND popularity_global_current IS NOT NULL
               AND popularity_global_history_1mo IS NOT NULL
             """),
 
-        ("ix_browse_new", ["published_start_date"], $"""
-            CREATE INDEX IF NOT EXISTS ix_browse_new ON series (published_start_date DESC)
+        ("mb_browse_new", ["published_start_date"], $"""
+            CREATE INDEX IF NOT EXISTS mb_browse_new ON {BrowseTableName} (published_start_date DESC)
             WHERE {BrowseGate} AND published_start_date IS NOT NULL
             """),
 
-        ("ix_browse_rating", ["rating", "popularity_global_current"], $"""
-            CREATE INDEX IF NOT EXISTS ix_browse_rating ON series (rating DESC)
+        ("mb_browse_rating", ["rating", "popularity_global_current"], $"""
+            CREATE INDEX IF NOT EXISTS mb_browse_rating ON {BrowseTableName} (rating DESC)
             WHERE {BrowseGate} AND popularity_global_current IS NOT NULL
             """),
 
         // Serves both PopularManhwa and PopularManhua.
-        ("ix_browse_type", ["type", "popularity_type_current"], $"""
-            CREATE INDEX IF NOT EXISTS ix_browse_type ON series (type, popularity_type_current)
+        ("mb_browse_type", ["type", "popularity_type_current"], $"""
+            CREATE INDEX IF NOT EXISTS mb_browse_type ON {BrowseTableName} (type, popularity_type_current)
             WHERE {BrowseGate} AND popularity_type_current IS NOT NULL
             """),
 
@@ -404,49 +482,44 @@ public class MangaBakaDumpService(
         // looks a seed's title back up to find the dump's second entry for the same work. Without it
         // that lookup is a full scan of the same ~558k rows - 1.5s on an idle machine, against 0.9ms
         // with it - and it is paid once per uncached recommendation request, which for the
-        // single-seed "More like this" rail is a ~70ms request. Costs 1.8s to build. Restricted to
-        // active rows because the exclusion only ever asks about those, which keeps it small.
-        ("ix_title_nocase", ["title", "state"], """
-            CREATE INDEX IF NOT EXISTS ix_title_nocase ON series (title COLLATE NOCASE)
+        // single-seed "More like this" rail is a ~70ms request. Restricted to active rows because
+        // the exclusion only ever asks about those, which keeps it small.
+        ("mb_title_nocase", ["title", "state"], $"""
+            CREATE INDEX IF NOT EXISTS mb_title_nocase ON {BrowseTableName} (title COLLATE NOCASE)
             WHERE state = 'active'
             """),
 
         // Serve MangaBakaLocalStore.GetIdsByExternalIdsAsync (anime signals, import lists), whose
         // chunked IN (...) lookups were a full scan per 500 ids without them: 1.1 s warm and 5.5 s
         // cold per chunk. Partial because most rows carry none of these ids, which keeps each small.
-        ("ix_ext_anilist", ["source_anilist_id"], """
-            CREATE INDEX IF NOT EXISTS ix_ext_anilist ON series (source_anilist_id)
+        ("mb_ext_anilist", ["source_anilist_id"], $"""
+            CREATE INDEX IF NOT EXISTS mb_ext_anilist ON {BrowseTableName} (source_anilist_id)
             WHERE source_anilist_id IS NOT NULL
             """),
 
-        ("ix_ext_mal", ["source_my_anime_list_id"], """
-            CREATE INDEX IF NOT EXISTS ix_ext_mal ON series (source_my_anime_list_id)
+        ("mb_ext_mal", ["source_my_anime_list_id"], $"""
+            CREATE INDEX IF NOT EXISTS mb_ext_mal ON {BrowseTableName} (source_my_anime_list_id)
             WHERE source_my_anime_list_id IS NOT NULL
             """),
 
-        ("ix_ext_kitsu", ["source_kitsu_id"], """
-            CREATE INDEX IF NOT EXISTS ix_ext_kitsu ON series (source_kitsu_id)
+        ("mb_ext_kitsu", ["source_kitsu_id"], $"""
+            CREATE INDEX IF NOT EXISTS mb_ext_kitsu ON {BrowseTableName} (source_kitsu_id)
             WHERE source_kitsu_id IS NOT NULL
             """),
 
         // MangaUpdates ids are text slugs, looked up lowercased (GetIdsByMangaUpdatesIdsAsync), so
         // this indexes the lowercased value; a plain column index would not serve that query.
-        ("ix_ext_mangaupdates", ["source_manga_updates_id"], """
-            CREATE INDEX IF NOT EXISTS ix_ext_mangaupdates ON series (lower(source_manga_updates_id))
+        ("mb_ext_mangaupdates", ["source_manga_updates_id"], $"""
+            CREATE INDEX IF NOT EXISTS mb_ext_mangaupdates ON {BrowseTableName} (lower(source_manga_updates_id))
             WHERE source_manga_updates_id IS NOT NULL
             """),
     ];
 
     /// <summary>
-    /// Indexes the columns the Discover rails filter and sort on. The dump ships with <b>no indexes
+    /// Indexes the columns the Discover rails filter and sort on, on <see cref="BrowseTableName"/>,
+    /// creating and filling that table first when it is missing. The dump ships with <b>no indexes
     /// at all</b>, so without these every rail is a full scan of ~558k rows across ~3.5 GB plus a
-    /// sort: measured at 11s for the six-rail set, and far worse whenever the page cache is cold or
-    /// the disk is busy, which is what makes the endpoint's tail latency unbounded.
-    ///
-    /// <para>
-    /// Measured 17.25s to 0.43s over the six rails, a 40x improvement, with every rail reporting an
-    /// index rather than a scan. Costs ~15s to build and ~13 MB.
-    /// </para>
+    /// sort: measured at 11s for the six-rail set, against 0.43s with them.
     ///
     /// <para>
     /// All are <b>partial</b> indexes over the rails' common quality gate (see <c>BrowseGate</c>), which
@@ -460,30 +533,41 @@ public class MangaBakaDumpService(
     ///
     /// <para>
     /// <paramref name="onlyMissing"/> is for the installed file, which readers are querying while
-    /// this runs: it drops nothing and creates only what is absent, so the indexes already there
-    /// keep serving the rails. The staged file drops and rebuilds the whole set.
+    /// this runs: it drops nothing and creates only what is absent. Everything happens in one
+    /// transaction, so a reader sees either no browse table, and stays on <c>series</c>, or the
+    /// table with its indexes. The staged file drops and rebuilds the whole set.
     /// </para>
     /// </summary>
     internal static void BuildBrowseIndexes(
         SqliteConnection conn, ILogger? logger = null, bool onlyMissing = false, Action<double>? progress = null)
     {
-        var present = ColumnsOf(conn);
-        var totalWeight = IndexDefinitions().Sum(d => IndexWeight(d.Name)) + AnalyzeWeight;
-        var doneWeight = 0.0;
-        var existing = onlyMissing ? IndexesOf(conn) : [];
+        using var tx = conn.BeginTransaction();
+        var copied = !TableExists(conn, BrowseTableName, tx);
+        if (copied)
+        {
+            var columns = CreateBrowseTable(conn, tx);
+            Execute(conn, CopyIntoBrowseTable(columns, ranged: false), tx);
+        }
+
+        var present = ColumnTypes(conn, BrowseTableName, tx).Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var definitions = IndexDefinitions();
+        var totalWeight = (copied ? CopyWeight : 0) + definitions.Length + AnalyzeWeight;
+        var doneWeight = copied ? CopyWeight : 0.0;
+        progress?.Invoke(doneWeight / totalWeight);
+        var existing = onlyMissing ? IndexesOf(conn, tx) : [];
 
         if (!onlyMissing)
         {
             foreach (var name in BrowseIndexNames)
             {
-                Execute(conn, $"DROP INDEX IF EXISTS {name}");
+                Execute(conn, $"DROP INDEX IF EXISTS {name}", tx);
             }
         }
 
         var builtNames = new List<string>();
-        foreach (var (name, columns, sql) in IndexDefinitions())
+        foreach (var (name, columns, sql) in definitions)
         {
-            doneWeight += IndexWeight(name);
+            doneWeight += 1;
             if (existing.Contains(name))
             {
                 continue;
@@ -499,40 +583,37 @@ public class MangaBakaDumpService(
                 continue;
             }
 
-            Execute(conn, sql);
+            Execute(conn, sql, tx);
             builtNames.Add(name);
             progress?.Invoke(doneWeight / totalWeight);
         }
 
         // Without stats the planner has been observed preferring a scan over a partial index on a
         // table this size. Only the new indexes are analyzed: a bare ANALYZE also counts the whole
-        // table and the FTS shadow tables, 6 to 9 s on the real dump against 0.3 s for the indexes,
+        // dump and the FTS shadow tables, 6 to 9 s on the real dump against 0.3 s for the indexes,
         // and every rail and id lookup was checked to plan the same either way.
         foreach (var name in builtNames)
         {
-            Execute(conn, $"ANALYZE {name}");
+            Execute(conn, $"ANALYZE {name}", tx);
         }
 
+        tx.Commit();
         progress?.Invoke(1);
     }
 
     /// <summary>
-    /// Relative cost of each browse index, so the bar moves with the time spent rather than the
-    /// number of statements. Seconds on the 2026-11 standard dump; only the ratios matter.
+    /// Relative cost of a full copy into the browse table against one index on it (each about
+    /// 0.15 s), used only when the table did not exist yet. Measured on the 2026-11 dump.
     /// </summary>
-    private static double IndexWeight(string name) => name switch
-    {
-        "ix_browse_pop" or "ix_browse_trend" or "ix_browse_new" or "ix_browse_type" => 1.6,
-        "ix_browse_rating" or "ix_title_nocase" => 1.4,
-        _ => 1,
-    };
+    private const double CopyWeight = 40;
 
-    private const double AnalyzeWeight = 0.3;
+    private const double AnalyzeWeight = 2;
 
-    private static HashSet<string> IndexesOf(SqliteConnection conn)
+    private static HashSet<string> IndexesOf(SqliteConnection conn, SqliteTransaction? tx = null)
     {
         var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
         cmd.CommandText = "SELECT name FROM sqlite_master WHERE type = 'index'";
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
@@ -543,17 +624,16 @@ public class MangaBakaDumpService(
         return existing;
     }
 
-
     /// <summary>
-    /// Builds the browse indexes on the <em>installed</em> dump when they are missing, and does
-    /// nothing when they are already there.
+    /// Builds the browse table and its indexes on the <em>installed</em> dump when either is
+    /// missing, and does nothing when they are already there.
     ///
     /// <para>
-    /// Needed because the indexes are otherwise only created on the staged file during a download,
-    /// and the dump only downloads when its published SHA1 changes. Without this an install that
-    /// already has a current dump would keep paying the full-scan cost until MangaBaka happened to
-    /// publish a new one - which is every existing install on upgrade, the exact case that reported
-    /// the slow endpoint.
+    /// Needed because they are otherwise only created on the staged file during a download, and the
+    /// dump only downloads when its published SHA1 changes. Without this an install that already has
+    /// a current dump keeps querying <c>series</c> until MangaBaka publishes a new one. An install
+    /// from before the browse table also has the older <c>ix_*</c> indexes on <c>series</c>; they
+    /// are left in place, since dropping them is a write that buys nothing.
     /// </para>
     /// </summary>
     public async Task<bool> EnsureBrowseIndexesAsync(CancellationToken ct = default)
@@ -571,36 +651,40 @@ public class MangaBakaDumpService(
         // index on every job tick forever.
         var expected = BuildableIndexNames(conn);
         var existing = IndexesOf(conn);
+        var hasTable = TableExists(conn, BrowseTableName, null);
 
         // Any write changes the dump stamp and invalidates the in-memory catalogue indexes, so a
         // complete set must leave the file untouched.
-        if (expected.IsSubsetOf(existing))
+        if (hasTable && expected.IsSubsetOf(existing))
         {
             return false;
         }
 
         logger.LogInformation(
-            "Backfilling MangaBaka browse indexes ({Existing} of {Expected} present)…",
-            expected.Count(existing.Contains), expected.Count);
+            "Backfilling the MangaBaka browse table ({State}, {Existing} of {Expected} indexes present)…",
+            hasTable ? "table present" : "table missing", expected.Count(existing.Contains), expected.Count);
         var started = DateTime.UtcNow;
         Interruptible(conn, ct, () => BuildBrowseIndexes(conn, logger, onlyMissing: true));
         logger.LogInformation(
-            "MangaBaka browse indexes built in {Elapsed:F1}s", (DateTime.UtcNow - started).TotalSeconds);
+            "MangaBaka browse table and indexes built in {Elapsed:F1}s", (DateTime.UtcNow - started).TotalSeconds);
         return true;
     }
 
     /// <summary>
-    /// Indexes every title variant of non-merged series into the FTS5 search table.
+    /// Indexes every title variant of non-merged series into the FTS5 search table, and with
+    /// <paramref name="withBrowseTable"/> fills <see cref="BrowseTableName"/> in the same pass.
     ///
     /// <para>
     /// Works through the table in rowid ranges of <see cref="SearchChunkRows"/>, reading each row's
     /// title columns in one go. The rows are ~6 KB, mostly overflow pages, and native_title and
     /// romanized_title sit near the end of them, so one pass per column read the 3.5 GB file four
-    /// times: 23 to 51 s on the 2026-11 dump against 11 to 13 s this way. The ranges are also
-    /// what gives <paramref name="progress"/> something to report.
+    /// times: 23 to 51 s on the 2026-11 dump against 11 to 13 s this way. The browse copy runs on
+    /// each range straight after, while its pages are still in the cache, which is what makes it
+    /// cheap. The ranges are also what gives <paramref name="progress"/> something to report.
     /// </para>
     /// </summary>
-    internal static void BuildSearchIndex(SqliteConnection conn, Action<double>? progress = null)
+    internal static void BuildSearchIndex(
+        SqliteConnection conn, Action<double>? progress = null, bool withBrowseTable = false)
     {
         Execute(conn, $"DROP TABLE IF EXISTS {SearchTableName}");
         Execute(conn, $"CREATE VIRTUAL TABLE {SearchTableName} USING fts5(title, series_id UNINDEXED, tokenize='unicode61 remove_diacritics 2')");
@@ -618,39 +702,57 @@ public class MangaBakaDumpService(
         }
 
         using var tx = conn.BeginTransaction();
-        using var titles = ChunkCommand(conn, tx, $"""
-            INSERT INTO {SearchTableName} (series_id, title)
-            SELECT s.id, t.value
-            FROM series s, json_each(json_array(
-                CAST(s.title AS TEXT), CAST(s.native_title AS TEXT), CAST(s.romanized_title AS TEXT))) t
-            WHERE s.state = 'active' AND s.rowid BETWEEN $lo AND $hi AND t.value IS NOT NULL
-            """);
-
-        // The titles column holds every alternative title as JSON: [{"title": …, "language": …}, …].
-        // Same range straight after, so its pages are still in the cache.
-        using var altTitles = ChunkCommand(conn, tx, $"""
-            INSERT INTO {SearchTableName} (series_id, title)
-            SELECT s.id, json_extract(je.value, '$.title')
-            FROM series s, json_each(s.titles) je
-            WHERE s.state = 'active' AND s.titles IS NOT NULL AND s.rowid BETWEEN $lo AND $hi
-              AND json_extract(je.value, '$.title') IS NOT NULL
-            """);
-
-        var span = (double)(last - first + 1);
-        for (var start = first; start <= last; start += SearchChunkRows)
+        var commands = new List<SqliteCommand>
         {
-            var end = Math.Min(last, start + SearchChunkRows - 1);
-            foreach (var cmd in new[] { titles, altTitles })
-            {
-                cmd.Parameters["$lo"].Value = start;
-                cmd.Parameters["$hi"].Value = end;
-                cmd.ExecuteNonQuery();
-            }
+            ChunkCommand(conn, tx, $"""
+                INSERT INTO {SearchTableName} (series_id, title)
+                SELECT s.id, t.value
+                FROM series s, json_each(json_array(
+                    CAST(s.title AS TEXT), CAST(s.native_title AS TEXT), CAST(s.romanized_title AS TEXT))) t
+                WHERE s.state = 'active' AND s.rowid BETWEEN $lo AND $hi AND t.value IS NOT NULL
+                """),
 
-            progress?.Invoke((end - first + 1) / span);
+            // The titles column holds every alternative title as JSON: [{"title": …, "language": …}, …].
+            ChunkCommand(conn, tx, $"""
+                INSERT INTO {SearchTableName} (series_id, title)
+                SELECT s.id, json_extract(je.value, '$.title')
+                FROM series s, json_each(s.titles) je
+                WHERE s.state = 'active' AND s.titles IS NOT NULL AND s.rowid BETWEEN $lo AND $hi
+                  AND json_extract(je.value, '$.title') IS NOT NULL
+                """),
+        };
+
+        if (withBrowseTable)
+        {
+            commands.Add(ChunkCommand(conn, tx, CopyIntoBrowseTable(CreateBrowseTable(conn, tx), ranged: true)));
         }
 
-        tx.Commit();
+        try
+        {
+            var span = (double)(last - first + 1);
+            for (var start = first; start <= last; start += SearchChunkRows)
+            {
+                var end = Math.Min(last, start + SearchChunkRows - 1);
+                foreach (var cmd in commands)
+                {
+                    cmd.Parameters["$lo"].Value = start;
+                    cmd.Parameters["$hi"].Value = end;
+                    cmd.ExecuteNonQuery();
+                }
+
+                progress?.Invoke((end - first + 1) / span);
+            }
+
+            tx.Commit();
+        }
+        finally
+        {
+            foreach (var cmd in commands)
+            {
+                cmd.Dispose();
+            }
+        }
+
         progress?.Invoke(1);
     }
 

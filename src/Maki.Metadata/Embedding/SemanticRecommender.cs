@@ -2311,10 +2311,10 @@ public class SemanticRecommender(
             cmd.Parameters.AddWithValue(name, title);
         }
 
-        // state = 'active' matches ix_title_nocase's WHERE clause so the planner can use it; without
+        // state = 'active' matches mb_title_nocase's WHERE clause so the planner can use it; without
         // that the predicate is a full table scan (see the index's remarks for what that costs).
         cmd.CommandText =
-            "SELECT id, title FROM dump.series " +
+            $"SELECT id, title FROM dump.{MangaBakaDumpService.BrowseSource(conn, "dump")} " +
             $"WHERE state = 'active' AND title COLLATE NOCASE IN ({string.Join(",", names)})";
         using var reader = await cmd.ExecuteReaderAsync(ct);
         while (await reader.ReadAsync(ct))
