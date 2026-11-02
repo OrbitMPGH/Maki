@@ -57,11 +57,25 @@ public sealed class CatalogueIndexCache(
     /// <summary>Whether anything read it within <paramref name="window"/>, loaded now or not.</summary>
     public bool UsedWithin(TimeSpan window) => _idle.UsedWithin(window);
 
+    /// <summary>
+    /// Where the built indexes are kept between unloads (<see cref="SnapshotFile"/>), beside the dump
+    /// they are built from and keyed by its write time and length, like the in-memory copy.
+    /// </summary>
+    internal string SnapshotPath =>
+        Path.Combine(Path.GetDirectoryName(dumpOptions.DatabasePath) ?? ".",
+            Path.GetFileNameWithoutExtension(dumpOptions.DatabasePath) + ".catalogue");
+
+    private const ulong SnapshotMagic = 0x3154414345494B4D; // "MKIECAT1"
+
+    /// <summary>Test hook: the latest background snapshot write.</summary>
+    internal Task SnapshotSavedForTest { get; private set; } = Task.CompletedTask;
+
     /// <summary>Drops the cached indexes so the next read rebuilds. Cheap; safe any time.</summary>
     public void Invalidate()
     {
         _entry = null;
         _failed.Clear();
+        SnapshotFile.TryDelete(SnapshotPath);
         logger.LogDebug("Catalogue indexes invalidated");
     }
 
@@ -226,7 +240,7 @@ public sealed class CatalogueIndexCache(
         CatalogueIndexes? built;
         try
         {
-            built = Build(CancellationToken.None);
+            built = Build(ticks, length, CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -249,7 +263,69 @@ public sealed class CatalogueIndexCache(
         return entry;
     }
 
-    private CatalogueIndexes? Build(CancellationToken ct)
+    private CatalogueIndexes? Build(long ticks, long length, CancellationToken ct)
+    {
+        var key = $"{SnapshotFile.BuildIdentity}|{ticks}:{length}";
+        var started = DateTime.UtcNow;
+        try
+        {
+            if (SnapshotFile.Load(SnapshotPath, SnapshotMagic, key, ReadSnapshot) is { } saved)
+            {
+                logger.LogInformation(
+                    "Loaded the catalogue indexes from their snapshot in {Elapsed:F2}s",
+                    (DateTime.UtcNow - started).TotalSeconds);
+                return saved;
+            }
+        }
+        catch (Exception ex)
+        {
+            // A damaged or half-written file only costs this load its shortcut.
+            logger.LogInformation(ex, "Ignoring an unreadable catalogue snapshot; rebuilding");
+        }
+        finally
+        {
+            PageCache.DropAfterScan(SnapshotPath);
+        }
+
+        var built = BuildFromDump(ct);
+        if (built is not null)
+        {
+            SaveSnapshot(built, key);
+        }
+
+        return built;
+    }
+
+    private static CatalogueIndexes? ReadSnapshot(BinaryReader reader) =>
+        CreditIndex.ReadFrom(reader) is { } credits && FuzzyTermIndex.ReadFrom(reader) is { } terms
+            ? new CatalogueIndexes(credits, terms)
+            : null;
+
+    /// <summary>Off the request path; a failure only costs the next reload its shortcut.</summary>
+    private void SaveSnapshot(CatalogueIndexes indexes, string key)
+    {
+        SnapshotSavedForTest = Task.Run(() =>
+        {
+            try
+            {
+                SnapshotFile.Save(SnapshotPath, SnapshotMagic, key, writer =>
+                {
+                    indexes.Credits.WriteTo(writer);
+                    indexes.Terms.WriteTo(writer);
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.LogInformation(ex, "Could not save the catalogue snapshot");
+            }
+            finally
+            {
+                PageCache.DropAfterScan(SnapshotPath);
+            }
+        });
+    }
+
+    private CatalogueIndexes? BuildFromDump(CancellationToken ct)
     {
         try
         {

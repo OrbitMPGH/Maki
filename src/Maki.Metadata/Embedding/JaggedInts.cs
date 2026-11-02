@@ -27,6 +27,13 @@ public sealed class JaggedInts
         _offsets = offsets;
     }
 
+    /// <summary>Rebuilds an instance from the arrays <see cref="Values"/> and <see cref="Offsets"/> hand out.</summary>
+    internal static JaggedInts FromParts(int[] values, int[] offsets) => new(values, offsets);
+
+    internal int[] Values => _values;
+
+    internal int[] Offsets => _offsets;
+
     /// <summary>An instance with no rows, for a column an index does not carry.</summary>
     public static JaggedInts Empty { get; } = new([], [0]);
 

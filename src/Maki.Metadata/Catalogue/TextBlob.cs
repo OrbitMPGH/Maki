@@ -27,7 +27,28 @@ internal sealed class TextBlob
         }
     }
 
+    private TextBlob(char[] chars, int[] offsets)
+    {
+        _chars = chars;
+        _offsets = offsets;
+    }
+
     public int Count => _offsets.Length - 1;
+
+    internal void WriteTo(BinaryWriter writer)
+    {
+        SnapshotFile.WriteArray(writer, _chars.AsSpan());
+        SnapshotFile.WriteArray(writer, _offsets.AsSpan());
+    }
+
+    internal static TextBlob ReadFrom(BinaryReader reader)
+    {
+        var chars = SnapshotFile.ReadArray<char>(reader);
+        var offsets = SnapshotFile.ReadArray<int>(reader);
+        return offsets.Length > 0 && offsets[^1] == chars.Length
+            ? new TextBlob(chars, offsets)
+            : throw new InvalidDataException("A text blob in a snapshot does not add up");
+    }
 
     public ReadOnlySpan<char> this[int index] => _chars.AsSpan(_offsets[index], _offsets[index + 1] - _offsets[index]);
 

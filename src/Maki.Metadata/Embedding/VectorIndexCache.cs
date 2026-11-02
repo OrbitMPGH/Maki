@@ -53,6 +53,9 @@ public sealed class VectorIndexCache(
     private readonly object _publish = new();
     private long _generation;
 
+    /// <summary>Test hook: the latest background snapshot write.</summary>
+    internal Task SnapshotSavedForTest { get; private set; } = Task.CompletedTask;
+
     /// <summary>Test hook: runs after a build finishes reading and before it is published.</summary>
     internal Action? AfterBuildForTest { get; set; }
     private readonly SharedBuild<Loaded> _builds = new();
@@ -161,6 +164,25 @@ public sealed class VectorIndexCache(
         return true;
     }
 
+    /// <summary>
+    /// Where the built index is kept between unloads (<see cref="VectorIndexSnapshot"/>), beside
+    /// the vector database it is built from.
+    /// </summary>
+    internal string SnapshotPath =>
+        Path.Combine(Path.GetDirectoryName(options.VectorDbPath) ?? ".", Path.GetFileNameWithoutExtension(options.VectorDbPath) + ".vecindex");
+
+    private void DeleteSnapshot()
+    {
+        try
+        {
+            File.Delete(SnapshotPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogDebug(ex, "Could not delete the search vector snapshot");
+        }
+    }
+
     /// <summary>Drops the cached index so the next search rebuilds it. Cheap; safe any time.</summary>
     public void Invalidate()
     {
@@ -168,6 +190,7 @@ public sealed class VectorIndexCache(
         {
             _generation++;
             _loaded = null;
+            DeleteSnapshot();
         }
 
         logger.LogDebug("Search vector index invalidated");
@@ -189,6 +212,7 @@ public sealed class VectorIndexCache(
             {
                 _generation++;
                 _loaded = null;
+                DeleteSnapshot();
             }
 
             SqliteConnection.ClearAllPools();
@@ -284,18 +308,25 @@ public sealed class VectorIndexCache(
 
         try
         {
-            var built = Build(CancellationToken.None);
+            var (built, fresh, key) = Build(ticks, length, CancellationToken.None);
             AfterBuildForTest?.Invoke();
             var loaded = built is null ? null : new Loaded(built, ticks, length, generation);
+            var current = false;
             lock (_publish)
             {
                 if (generation == _generation)
                 {
                     _loaded = loaded;
+                    current = true;
                 }
             }
 
             _idle.Touch();
+            if (current && fresh is not null)
+            {
+                SaveSnapshot(fresh, key, generation);
+            }
+
             return loaded;
         }
         catch (Exception ex)
@@ -326,7 +357,7 @@ public sealed class VectorIndexCache(
         }
     }
 
-    private VectorIndex? Build(CancellationToken ct)
+    private (VectorIndex? Index, VectorIndexParts? Fresh, string Key) Build(long dumpTicks, long dumpLength, CancellationToken ct)
     {
         var started = DateTime.UtcNow;
         using var conn = new SqliteConnection($"Data Source={options.VectorDbPath};Mode=ReadOnly;Pooling=False");
@@ -352,7 +383,7 @@ public sealed class VectorIndexCache(
         if (total == 0)
         {
             logger.LogInformation("Search vector index empty — nothing embedded yet");
-            return null;
+            return (null, null, string.Empty);
         }
 
         // Served anyway: refusing would turn search off for the hours a local re-embed takes, and
@@ -364,6 +395,15 @@ public sealed class VectorIndexCache(
                 "The vector database holds {Stored} vectors but this install embeds queries with {Current}; "
                 + "search ranks poorly until the prebuilt index is installed or the index is rebuilt",
                 stored, options.ModelVersion);
+        }
+
+        var key = SnapshotKey(conn, dumpTicks, dumpLength);
+        if (TryReadSnapshot(key) is { } saved)
+        {
+            logger.LogInformation(
+                "Loaded the search vector index from its snapshot: {Rows} series × {Dim} dims in {Elapsed:F1}s",
+                saved.Ids.Length, saved.Dimensions, (DateTime.UtcNow - started).TotalSeconds);
+            return (Assemble(saved, conn), null, key);
         }
 
         var ids = new long[total];
@@ -392,7 +432,7 @@ public sealed class VectorIndexCache(
         if (cells > int.MaxValue)
         {
             logger.LogWarning("Vector index too large to hold in memory ({Cells} cells)", cells);
-            return null;
+            return (null, null, key);
         }
 
         // Packed as it is read, never materialized as int8: the int8 form of this table is 93 MB
@@ -492,7 +532,7 @@ public sealed class VectorIndexCache(
                 "Search vector index empty: no eligible catalogue rows with usable vectors " +
                 "({Mismatched} stored vector(s) have the wrong model width)",
                 mismatched);
-            return null;
+            return (null, null, key);
         }
 
         // The vector count includes missing/ineligible dump rows and old model widths. Trim to
@@ -533,8 +573,13 @@ public sealed class VectorIndexCache(
             rows, dimensions, rows * (double)stride / (1024 * 1024), (DateTime.UtcNow - started).TotalSeconds,
             mismatched > 0 ? $"; skipped {mismatched} vector(s) from an older model" : string.Empty);
 
-        var tagVocabulary = ReadTagVocabulary(conn);
-        return new VectorIndex(
+        var authorsById = new string[authorIds.Count];
+        foreach (var (name, id) in authorIds)
+        {
+            authorsById[id] = name;
+        }
+
+        var parts = new VectorIndexParts(
             ids,
             data,
             scales,
@@ -544,11 +589,117 @@ public sealed class VectorIndexCache(
                 JaggedInts.From(genreIdx), JaggedInts.From(authorIdx), JaggedInts.From(artistIdx),
                 popularity, new PackedTags(tagBytes.WrittenSpan.ToArray(), tagOffsets),
                 contentRatingIdx, [], startDays),
+            typeIds, statusIds, genreIds, authorsById, contentRatingIds);
+        return (Assemble(parts, conn), parts, key);
+    }
+
+    /// <summary>
+    /// The index over <paramref name="parts"/>, with the pieces that are read live whichever way
+    /// the parts arrived: the tag vocabulary (a few thousand rows), the behavioural layer (its own
+    /// artifact, installed independently) and the franchise components (deferred to first use).
+    /// </summary>
+    private VectorIndex Assemble(VectorIndexParts parts, SqliteConnection conn)
+    {
+        var tagVocabulary = ReadTagVocabulary(conn);
+        var ids = parts.Ids;
+        return new VectorIndex(
+            ids,
+            parts.Data,
+            parts.Scales,
+            parts.Dimensions,
+            parts.Columns,
             new VectorIndexVocabularies(
-                typeIds, statusIds, genreIds, NameMap.From(authorIds), tagVocabulary.Tags, contentRatingIds,
-                tagVocabulary.Subtrees),
+                parts.Types, parts.Statuses, parts.Genres, new NameMap(parts.AuthorsById), tagVocabulary.Tags,
+                parts.ContentRatings, tagVocabulary.Subtrees),
             LoadTaste(ids),
             franchiseLoader: () => LoadFranchises(ids));
+    }
+
+    /// <summary>
+    /// What a snapshot has to have been written under to stand in for a build: this assembly, the
+    /// dump file, the vector database's content (<see cref="EmbeddingStore.ContentVersionKey"/>,
+    /// or the file itself when nothing has written one yet, which is a downloaded artifact nothing
+    /// has modified), and the model.
+    /// </summary>
+    private string SnapshotKey(SqliteConnection conn, long dumpTicks, long dumpLength)
+    {
+        string? content = null;
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT value FROM main.meta WHERE key = $key";
+            cmd.Parameters.AddWithValue("$key", EmbeddingStore.ContentVersionKey);
+            try
+            {
+                content = cmd.ExecuteScalar() as string;
+            }
+            catch (SqliteException)
+            {
+            }
+        }
+
+        if (content is null)
+        {
+            var file = new FileInfo(options.VectorDbPath);
+            content = $"file:{file.LastWriteTimeUtc.Ticks}:{file.Length}";
+        }
+
+        return string.Join('|',
+            SnapshotFile.BuildIdentity, $"{dumpTicks}:{dumpLength}", content, StoredModelVersion(conn) ?? "-",
+            options.ModelVersion, options.Dimensions.ToString(CultureInfo.InvariantCulture));
+    }
+
+    private VectorIndexParts? TryReadSnapshot(string key)
+    {
+        try
+        {
+            return VectorIndexSnapshot.TryRead(SnapshotPath, key);
+        }
+        catch (Exception ex)
+        {
+            // A damaged or half-written file only costs this load its shortcut.
+            logger.LogInformation(ex, "Ignoring an unreadable search vector snapshot; rebuilding");
+            return null;
+        }
+        finally
+        {
+            PageCache.DropAfterScan(SnapshotPath);
+        }
+    }
+
+    /// <summary>
+    /// Writes the snapshot off the request path. A build that an invalidation outdated while it was
+    /// being written deletes its own file, so the next load cannot read what the invalidation meant
+    /// to throw away.
+    /// </summary>
+    private void SaveSnapshot(VectorIndexParts parts, string key, long generation)
+    {
+        SnapshotSavedForTest = Task.Run(() =>
+        {
+            try
+            {
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+                VectorIndexSnapshot.Write(SnapshotPath, key, parts);
+                lock (_publish)
+                {
+                    if (generation != _generation)
+                    {
+                        DeleteSnapshot();
+                        return;
+                    }
+                }
+
+                logger.LogDebug("Saved the search vector snapshot in {Elapsed:F1}s", clock.Elapsed.TotalSeconds);
+            }
+            catch (Exception ex)
+            {
+                // Only costs the next reload its shortcut.
+                logger.LogInformation(ex, "Could not save the search vector snapshot");
+            }
+            finally
+            {
+                PageCache.DropAfterScan(SnapshotPath);
+            }
+        });
     }
 
     /// <summary>

@@ -61,6 +61,28 @@ public sealed class FuzzyTermIndex
 
     private readonly record struct Term(int Start, int Length, int Doc);
 
+    internal void WriteTo(BinaryWriter writer)
+    {
+        SnapshotFile.WriteArray(writer, _terms.AsSpan());
+        SnapshotFile.WriteArray(writer, _offsets.AsSpan());
+        SnapshotFile.WriteArray(writer, _docFrequency.AsSpan());
+        SnapshotFile.WriteArray(writer, _charMask.AsSpan());
+        SnapshotFile.WriteArray(writer, _lengthStart.AsSpan());
+    }
+
+    internal static FuzzyTermIndex? ReadFrom(BinaryReader reader)
+    {
+        var terms = SnapshotFile.ReadArray<byte>(reader);
+        var offsets = SnapshotFile.ReadArray<int>(reader);
+        var docFrequency = SnapshotFile.ReadArray<int>(reader);
+        var charMask = SnapshotFile.ReadArray<uint>(reader);
+        var lengthStart = SnapshotFile.ReadArray<int>(reader);
+        var count = offsets.Length - 1;
+        return count >= 0 && docFrequency.Length == count && charMask.Length == count && offsets[^1] == terms.Length
+            ? new FuzzyTermIndex(terms, offsets, docFrequency, charMask, lengthStart)
+            : null;
+    }
+
     public int TermCount => _offsets.Length - 1;
 
     public bool IsEmpty => TermCount == 0;

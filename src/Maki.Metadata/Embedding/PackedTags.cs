@@ -18,6 +18,10 @@ public sealed class PackedTags
 
     public int Count => _offsets.Length - 1;
 
+    internal byte[] Data => _data;
+
+    internal int[] Offsets => _offsets;
+
     public ReadOnlySpan<byte> this[int row] => _data.AsSpan(_offsets[row], _offsets[row + 1] - _offsets[row]);
 
     /// <summary>Packs one blob per row, a null blob meaning no tags.</summary>
