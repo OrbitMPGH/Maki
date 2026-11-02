@@ -105,14 +105,13 @@ function SubPage({
   const { t } = useLingui()
   return (
     <div>
-      <Group gap={6} mb="sm" wrap="nowrap">
-        <ActionIcon ref={backRef} variant="subtle" color="gray" size="sm" onClick={onBack} aria-label={t`Back`}>
+      <UnstyledButton ref={backRef} className="drill-back reader-settings-back" onClick={onBack}>
+        <span className="drill-back-icon" aria-hidden>
           <IconArrowLeft size={16} />
-        </ActionIcon>
-        <Text fz="sm" fw={650}>
-          {title}
-        </Text>
-      </Group>
+        </span>
+        <VisuallyHidden>{t`Back`}</VisuallyHidden>
+        <span>{title}</span>
+      </UnstyledButton>
       {children}
     </div>
   )
@@ -222,12 +221,21 @@ export default function ReaderSettings({
 
   const inForce = profiles.find((p) => p.id === selection) ?? (selection === 'auto' ? autoProfile : undefined)
   const inForceName = inForce?.name
+  // Said on the first view: a Fit tweak on a shared profile changes every series that uses it.
   const editsAffect =
-    source === 'Series'
-      ? t`Changes apply to this series only.`
-      : source === 'Profile' && inForce
-        ? t`Changes retune "${inForceName}", so every series using it.`
-        : t`Changes apply to your reader defaults.`
+    source === 'Series' ? (
+      <Trans>
+        Changes apply to <strong>this series</strong> only.
+      </Trans>
+    ) : source === 'Profile' && inForce ? (
+      <Trans>
+        Changes apply to the <strong>{inForceName}</strong> profile and every series using it.
+      </Trans>
+    ) : (
+      <Trans>
+        Changes apply to <strong>your reader defaults</strong>.
+      </Trans>
+    )
 
   const { scale } = prefs
   const enhanceOn = prefs.enhance !== 'off'
@@ -265,6 +273,7 @@ export default function ReaderSettings({
     { value: 'screen', label: t`Fit screen`, icon: IconArrowsMaximize },
     { value: 'original', label: t`Original size (1:1)`, icon: IconSquare },
   ] as const
+  const fitName = fits.find((fit) => fit.value === prefs.fit)?.label ?? t`Fit`
   const filters = [
     { value: 'none', label: t`None` },
     { value: 'grayscale', label: t`Gray` },
@@ -341,65 +350,67 @@ export default function ReaderSettings({
         <DrillPanes page={view} depth={view === 'main' ? 0 : 1} bleed={8}>
           {view === 'main' && (
             <Stack gap="md">
-              <Group gap={8} wrap="nowrap">
-                <Menu
-                  opened={profileMenu}
-                  onChange={setProfileMenu}
-                  position="bottom-start"
-                  width={260}
-                  offset={6}
-                  {...NESTED_COMBOBOX}
-                >
-                  <Menu.Target>
-                    <UnstyledButton
-                      className="reader-settings-chip"
-                      data-expanded={profileMenu || undefined}
-                      aria-label={t`Reading profile: ${profileName}`}
-                    >
-                      <IconUserCircle size={16} aria-hidden />
-                      <Text fz="xs" fw={600} c="inherit" truncate>
-                        {profileName}
-                      </Text>
-                      <IconChevronDown size={12} aria-hidden className="reader-settings-chip-caret" />
-                    </UnstyledButton>
-                  </Menu.Target>
-                  <Menu.Dropdown className="reader-settings-profiles">
-                    <Menu.Label>
-                      <Trans>Reading profile</Trans>
-                    </Menu.Label>
-                    <Menu.RadioGroup
-                      value={String(selection)}
-                      onChange={(value) => onSelection(value === 'auto' || value === 'series' ? value : Number(value))}
-                    >
-                      {profileData.map((option) => (
-                        <Menu.RadioItem key={option.value} value={option.value} closeMenuOnClick>
-                          {option.label}
-                        </Menu.RadioItem>
-                      ))}
-                    </Menu.RadioGroup>
-                    <Menu.Divider />
-                    <Text fz="xs" c="var(--ink-3)" px="sm" py={6}>
-                      {editsAffect}
-                    </Text>
-                  </Menu.Dropdown>
-                </Menu>
-                <Tooltip
-                  label={incognito ? t`Incognito, this session isn't being recorded` : t`Don't record this session`}
-                  withArrow
-                  zIndex={OVERLAY_Z + 1}
-                >
-                  <Button
-                    size="compact-xs"
-                    radius="xl"
-                    variant={incognito ? 'filled' : 'default'}
-                    leftSection={<IconEyeOff size={14} />}
-                    aria-pressed={incognito}
-                    onClick={() => onIncognito(!incognito)}
+              <div>
+                <Group gap={8} wrap="nowrap">
+                  <Menu
+                    opened={profileMenu}
+                    onChange={setProfileMenu}
+                    position="bottom-start"
+                    width={260}
+                    offset={6}
+                    {...NESTED_COMBOBOX}
                   >
-                    <Trans>Incognito</Trans>
-                  </Button>
-                </Tooltip>
-              </Group>
+                    <Menu.Target>
+                      <UnstyledButton
+                        className="reader-settings-chip"
+                        data-expanded={profileMenu || undefined}
+                        aria-label={t`Reading profile: ${profileName}`}
+                      >
+                        <IconUserCircle size={16} aria-hidden />
+                        <Text fz="xs" fw={600} c="inherit" truncate>
+                          {profileName}
+                        </Text>
+                        <IconChevronDown size={12} aria-hidden className="reader-settings-chip-caret" />
+                      </UnstyledButton>
+                    </Menu.Target>
+                    <Menu.Dropdown className="reader-settings-profiles">
+                      <Menu.Label>
+                        <Trans>Reading profile</Trans>
+                      </Menu.Label>
+                      <Menu.RadioGroup
+                        value={String(selection)}
+                        onChange={(value) => onSelection(value === 'auto' || value === 'series' ? value : Number(value))}
+                      >
+                        {profileData.map((option) => (
+                          <Menu.RadioItem key={option.value} value={option.value} closeMenuOnClick>
+                            {option.label}
+                          </Menu.RadioItem>
+                        ))}
+                      </Menu.RadioGroup>
+                    </Menu.Dropdown>
+                  </Menu>
+                  <Tooltip
+                    label={incognito ? t`Incognito, this session isn't being recorded` : t`Don't record this session`}
+                    withArrow
+                    zIndex={OVERLAY_Z + 1}
+                  >
+                    <Button
+                      className="reader-settings-pill"
+                      size="xs"
+                      radius="xl"
+                      variant={incognito ? 'filled' : 'default'}
+                      leftSection={<IconEyeOff size={14} />}
+                      aria-pressed={incognito}
+                      onClick={() => onIncognito(!incognito)}
+                    >
+                      <Trans>Incognito</Trans>
+                    </Button>
+                  </Tooltip>
+                </Group>
+                <Text className="reader-settings-scope" fz="xs" c="var(--ink-3)" mt={6}>
+                  {editsAffect}
+                </Text>
+              </div>
 
               <div>
                 <div role="radiogroup" aria-label={t`Layout`} className="reader-settings-tiles">
@@ -467,9 +478,8 @@ export default function ReaderSettings({
                     />
                   </div>
                   <div>
-                    <FieldLabel>
-                      <Trans>Fit</Trans>
-                    </FieldLabel>
+                    {/* The segments are icons; naming the current one here is the label a touch screen never gets from the tooltips. */}
+                    <FieldLabel>{fitName}</FieldLabel>
                     <SegmentedControl
                       aria-label={t`Fit`}
                       size="xs"
@@ -613,7 +623,7 @@ export default function ReaderSettings({
                   description={t`Trims plain white or black margins. Single and Double only.`}
                   checked={prefs.cropBorders}
                   onChange={(event) => onPrefs({ cropBorders: event.currentTarget.checked })}
-                  classNames={{ body: 'reader-settings-switch' }}
+                  classNames={{ body: 'reader-settings-switch', description: 'reader-settings-hint' }}
                 />
               </Stack>
             </SubPage>
@@ -708,6 +718,8 @@ export default function ReaderSettings({
                       size="xs"
                       comboboxProps={NESTED_COMBOBOX}
                       placeholder={t`Every quality is enhanced`}
+                      // Hidden rather than dropped once a pill is in: without one Mantine stops the field taking a click.
+                      classNames={{ inputField: prefs.enhanceSkipTiers.length ? 'reader-settings-filled' : undefined }}
                       value={prefs.enhanceSkipTiers}
                       onChange={(value) => onPrefs({ enhanceSkipTiers: value as ReaderPrefs['enhanceSkipTiers'] })}
                       data={ENHANCE_SKIP_TIERS.map((tier) => ({ value: tier.value, label: renderLabel(tier.label) }))}
@@ -730,7 +742,7 @@ export default function ReaderSettings({
                     description={toggle.hint}
                     checked={prefs[toggle.key]}
                     onChange={(event) => onPrefs({ [toggle.key]: event.currentTarget.checked })}
-                    classNames={{ body: 'reader-settings-switch' }}
+                    classNames={{ body: 'reader-settings-switch', description: 'reader-settings-hint' }}
                   />
                 ))}
               </Stack>

@@ -1,5 +1,5 @@
-import { ActionIcon, Group, Loader, Menu, Text, Tooltip } from '@mantine/core'
-import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react'
+import { ActionIcon, Group, Loader, Menu, Text, UnstyledButton, VisuallyHidden } from '@mantine/core'
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import {
     IconArchive,
     IconArchiveOff,
@@ -14,6 +14,7 @@ import {
     IconFileText,
     IconFolder,
     IconFolderSymlink,
+    IconInfoCircle,
     IconEye,
     IconPencil,
     IconPhoto,
@@ -27,14 +28,14 @@ import {
     IconArrowBackUp,
 } from '@tabler/icons-react'
 import { useIncognitoOptions } from '../ui/incognito'
-import { useSeriesNotificationOptions } from '../ui/seriesNotifications'
+import { useSeriesNotificationHelp, type SeriesNotificationMode } from '../ui/seriesNotifications'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../../i18n-context'
 import type { UpgradeProfileDto } from '../../api/upgrades'
 import { PAGE_CONVERSION_STOPS, type PageConversionStop } from '../../api/pageConversion'
-import { STOP_LABELS } from '../pageconversion/labels'
+import { STOP_HINTS, STOP_LABELS } from '../pageconversion/labels'
 import { DrillPanes } from '../ui/DrillPanes'
 
 /** Sentinel for "Instance default" in the profile RadioGroup, which only carries strings. */
@@ -51,15 +52,40 @@ export const MONITOR_OPTIONS = [
     { value: 'None', label: msg`None` },
 ] as const
 
+// Short names for the segmented controls, where the full labels don't fit four across.
+const MONITOR_SHORT: Record<string, MessageDescriptor> = {
+    All: msg({ message: 'All', context: 'monitor mode' }),
+    Smart: msg`Smart`,
+    MainOnly: msg({ message: 'Main only', comment: 'Monitor mode that skips specials' }),
+    None: msg`None`,
+}
+
+const MONITOR_HELP: Record<string, MessageDescriptor> = {
+    All: msg`Every chapter released from now on is wanted.`,
+    Smart: msg`Chapters released from now on are wanted and queued a batch at a time, ahead of where you're reading.`,
+    MainOnly: msg`Chapters released from now on are wanted, except specials.`,
+    None: msg`Chapters released from now on aren't wanted.`,
+}
+
+const NOTIFY_SHORT: Record<SeriesNotificationMode, MessageDescriptor> = {
+    Default: msg`Default`,
+    All: msg({ message: 'All', context: 'notify about every chapter' }),
+    Reading: msg({ message: 'Reading', comment: 'Notify only while the user is partway through the series' }),
+    Muted: msg`Muted`,
+}
+
+const INCOGNITO_HELP: Record<string, MessageDescriptor> = {
+    Off: msg`Reading counts in your stats and goes to your trackers.`,
+    ScrobbleOnly: msg`Reading counts in your stats but isn't sent to your trackers.`,
+    Full: msg`Kept out of your trackers, Rewind, stats and reading history.`,
+}
+
 type Page =
     | 'root'
     | 'files'
     | 'automation'
     | 'upgrades'
     | 'device'
-    | 'monitor'
-    | 'notify'
-    | 'incognito'
     | 'profile'
     | 'cleanup'
     | 'conversion'
@@ -70,9 +96,6 @@ const PARENT: Record<Page, Page> = {
     automation: 'root',
     upgrades: 'root',
     device: 'root',
-    monitor: 'automation',
-    notify: 'automation',
-    incognito: 'automation',
     profile: 'upgrades',
     cleanup: 'files',
     conversion: 'files',
@@ -81,7 +104,8 @@ const PARENT: Record<Page, Page> = {
 /**
  * The series page's "More actions" menu: a short root list whose groups and settings open in place
  * behind a back row. The single long list with hover submenus it replaced outgrew the screen.
- * Picking a value returns to the group, so the new value shows next to the setting.
+ * Picking a value returns to the group, so the new value shows next to the setting. The
+ * Automation settings are segmented controls on their group's page, one tap each.
  */
 export function SeriesActionsMenu({
                                       monitorMode,
@@ -98,7 +122,9 @@ export function SeriesActionsMenu({
                                       canScanUpgrades,
                                       scanningUpgrades,
                                       searchingVolumes,
-                                      busy,
+                                      refreshingChapters = false,
+                                      refreshingMetadata = false,
+                                      rescanning = false,
                                       onRefreshChapters,
                                       onRefreshMetadata,
                                       onEditMetadata,
@@ -147,7 +173,10 @@ export function SeriesActionsMenu({
     canScanUpgrades: boolean
     scanningUpgrades: boolean
     searchingVolumes: boolean
-    busy: boolean
+    /** Each running action spins and waits on its own item; the rest of the menu stays usable. */
+    refreshingChapters?: boolean
+    refreshingMetadata?: boolean
+    rescanning?: boolean
     onRefreshChapters: () => void
     onRefreshMetadata: () => void
     onEditMetadata: () => void
@@ -185,11 +214,8 @@ export function SeriesActionsMenu({
     const { t } = useLingui()
     const renderLabel = useLabel()
     const incognitoOptions = useIncognitoOptions()
-    const notificationOptions = useSeriesNotificationOptions()
-    const label = (
-        options: readonly { value: string; label: string | MessageDescriptor }[],
-        value: string,
-    ) => options.find((o) => o.value === value)?.label ?? value
+    const notifyHelp = useSeriesNotificationHelp(notificationMode as SeriesNotificationMode)
+    const hintId = useId()
     const instanceDefaultLabel = t`Instance default`
     const pageConversionValue =
         pageConversion === 'Default'
@@ -210,17 +236,15 @@ export function SeriesActionsMenu({
     const whenOn = (action: () => void) => () => {
         if (!toolsOff) action()
     }
-    const withReason = (item: ReactElement) =>
-        toolsOff ? (
-            <Tooltip label={sourceToolsDisabledReason} position="left" withArrow events={{ hover: true, focus: true, touch: true }}>
-                {item}
-            </Tooltip>
-        ) : (
-            item
-        )
+    // Said once, above the first item it switches off, rather than in a tooltip touch never shows.
+    const reason = toolsOff && (
+        <div className="series-actions-reason">
+            <IconInfoCircle size={14} aria-hidden />
+            <span>{sourceToolsDisabledReason}</span>
+        </div>
+    )
 
-    // A reader's Automation group would hold Notify alone, so for them it sits on the root list.
-    const parentOf = (p: Page): Page => (p === 'notify' && !canEdit ? 'root' : PARENT[p])
+    const parentOf = (p: Page): Page => PARENT[p]
     const depthOf = (p: Page): number => (p === 'root' ? 0 : 1 + depthOf(parentOf(p)))
     const go = (to: Page) => {
         cameFrom.current = page
@@ -263,39 +287,37 @@ export function SeriesActionsMenu({
             {title}
         </Menu.Item>
     )
+    // Same header as the reader settings' pages. The hidden word keeps the page title in the name.
     const back = (title: ReactNode) => (
         <Menu.Item
-            className="series-actions-back"
+            className="drill-back"
             leftSection={
-                <span className="series-actions-back-icon">
+                <span className="drill-back-icon" aria-hidden>
                     <IconArrowLeft size={16} />
                 </span>
             }
             closeMenuOnClick={false}
             onClick={() => go(parentOf(page))}
-            aria-label={t`Back`}
         >
+            <VisuallyHidden>{t`Back`}</VisuallyHidden>
             {title}
         </Menu.Item>
     )
     const choice = ({
                         title,
-                        hint,
                         current,
                         options,
                         onPick,
                         note,
                     }: {
         title: ReactNode
-        hint?: ReactNode
         current: string
-        options: readonly { value: string; label: ReactNode }[]
+        options: readonly { value: string; label: ReactNode; hint?: ReactNode }[]
         onPick: (value: string) => void
         note?: ReactNode
     }) => (
         <>
             {back(title)}
-            {hint && <Menu.Label>{hint}</Menu.Label>}
             <Menu.RadioGroup
                 value={current}
                 onChange={(v) => {
@@ -304,19 +326,114 @@ export function SeriesActionsMenu({
                 }}
             >
                 {options.map((o) => (
-                    <Menu.RadioItem key={o.value} value={o.value} closeMenuOnClick={false}>
+                    <Menu.RadioItem
+                        key={o.value}
+                        value={o.value}
+                        closeMenuOnClick={false}
+                        aria-describedby={o.hint ? `${hintId}-${o.value}` : undefined}
+                    >
                         {o.label}
+                        {/* Kept out of the name so an option is still called by its label, and read as its description. */}
+                        {o.hint && (
+                            <span id={`${hintId}-${o.value}`} className="series-actions-option-hint" aria-hidden>
+                                {o.hint}
+                            </span>
+                        )}
                     </Menu.RadioItem>
                 ))}
             </Menu.RadioGroup>
             {note && <Menu.Label>{note}</Menu.Label>}
         </>
     )
+    const field = ({
+                       icon,
+                       title,
+                       current,
+                       options,
+                       onPick,
+                       help,
+                       disabled = false,
+                   }: {
+        icon: ReactNode
+        title: string
+        current: string
+        options: { value: string; label: string }[]
+        onPick: (value: string) => void
+        help?: ReactNode
+        disabled?: boolean
+    }) => (
+        <div className="series-actions-field" data-disabled={disabled || undefined}>
+            <div className="series-actions-field-title" aria-hidden>
+                {icon}
+                <span>{title}</span>
+            </div>
+            {/* Drawn as a segmented control but built from menu radio items: a menu may only hold
+                items, groups and separators, so a real radio group in here would be invalid. */}
+            <div role="group" aria-label={title} className="series-actions-segments">
+                {options.map((o) => (
+                    <UnstyledButton
+                        key={o.value}
+                        role="menuitemradio"
+                        aria-checked={o.value === current}
+                        data-checked={o.value === current || undefined}
+                        disabled={disabled}
+                        tabIndex={-1}
+                        className="series-actions-segment"
+                        onClick={() => o.value !== current && onPick(o.value)}
+                    >
+                        {o.label}
+                    </UnstyledButton>
+                ))}
+            </div>
+            {help && <div className="series-actions-field-help">{help}</div>}
+        </div>
+    )
+
+    // Mantine's arrow keys only know its own items. Up and Down treat each segmented field as one
+    // stop (its chosen segment) between the items; Left and Right move along a field's segments.
+    const stepThroughFields = (e: KeyboardEvent) => {
+        const target = e.target as HTMLElement
+        if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && target.matches('.series-actions-segment')) {
+            const segments = Array.from(target.parentElement?.querySelectorAll<HTMLElement>('.series-actions-segment:not(:disabled)') ?? [])
+            const at = segments.indexOf(target)
+            e.preventDefault()
+            e.stopPropagation()
+            segments[(at + (e.key === 'ArrowRight' ? 1 : -1) + segments.length) % segments.length]?.focus()
+            return
+        }
+        if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+        const pane = dropdownRef.current?.querySelector('[data-drill-pane]:not([inert])')
+        if (!pane?.querySelector('.series-actions-field')) return
+        const stops = Array.from(
+            pane.querySelectorAll<HTMLElement>('[data-menu-item]:not([data-disabled]), .series-actions-field:not([data-disabled])'),
+        )
+            .map((el) =>
+                el.matches('.series-actions-field')
+                    ? (el.querySelector<HTMLElement>('.series-actions-segment[data-checked]') ??
+                      el.querySelector<HTMLElement>('.series-actions-segment'))
+                    : el,
+            )
+            .filter((el): el is HTMLElement => el !== null)
+        if (stops.length === 0) return
+        e.preventDefault()
+        e.stopPropagation()
+        const field = target.closest('.series-actions-field')
+        const at = stops.findIndex((el) => el === target || (field !== null && field.contains(el)))
+        const step = e.key === 'ArrowDown' ? 1 : -1
+        const next = at === -1 ? (step === 1 ? 0 : stops.length - 1) : (at + step + stops.length) % stops.length
+        stops[next].focus()
+    }
 
     const hasFiles = canEdit || canCleanUpReadFiles || canSetPageConversion
     const hasUpgrades = canEdit || canScanUpgrades
-    const monitorLabel = renderLabel(label(MONITOR_OPTIONS, monitorMode))
-    const notifyRow = drill('notify', <IconBell size={16} />, <Trans>Notify</Trans>, renderLabel(label(notificationOptions, notificationMode)))
+    const notifyField = field({
+        icon: <IconBell size={16} />,
+        title: t`Notify`,
+        current: notificationMode,
+        options: Object.entries(NOTIFY_SHORT).map(([mode, short]) => ({ value: mode, label: renderLabel(short) })),
+        onPick: onSetNotify,
+        help: notifyHelp,
+    })
 
     const content = () => {
         switch (page) {
@@ -325,12 +442,20 @@ export function SeriesActionsMenu({
                     <>
                         {canEdit && (
                             <>
-                                {withReason(
-                                    <Menu.Item leftSection={<IconRefresh size={16} />} onClick={whenOn(onRefreshChapters)} {...offProps}>
-                                        <Trans>Refresh chapters</Trans>
-                                    </Menu.Item>,
-                                )}
-                                <Menu.Item leftSection={<IconPhoto size={16} />} onClick={onRefreshMetadata}>
+                                {reason}
+                                <Menu.Item
+                                    leftSection={refreshingChapters ? <Loader size={14} /> : <IconRefresh size={16} />}
+                                    disabled={refreshingChapters}
+                                    onClick={whenOn(onRefreshChapters)}
+                                    {...offProps}
+                                >
+                                    <Trans>Refresh chapters</Trans>
+                                </Menu.Item>
+                                <Menu.Item
+                                    leftSection={refreshingMetadata ? <Loader size={14} /> : <IconPhoto size={16} />}
+                                    disabled={refreshingMetadata}
+                                    onClick={onRefreshMetadata}
+                                >
                                     <Trans>Refresh metadata and poster</Trans>
                                 </Menu.Item>
                                 <Menu.Item leftSection={<IconPencil size={16} />} onClick={onEditMetadata}>
@@ -340,7 +465,8 @@ export function SeriesActionsMenu({
                             </>
                         )}
                         {hasFiles && drill('files', <IconFolder size={16} />, <Trans>Files</Trans>)}
-                        {canEdit ? drill('automation', <IconEye size={16} />, <Trans>Automation</Trans>) : notifyRow}
+                        {/* A reader's Automation page would hold Notify alone, so for them it sits here. */}
+                        {canEdit ? drill('automation', <IconEye size={16} />, <Trans>Automation</Trans>) : notifyField}
                         {hasUpgrades && drill('upgrades', <IconSparkles size={16} />, <Trans>Upgrades</Trans>)}
                         {offlineSaved !== undefined &&
                             drill('device', <IconDeviceMobile size={16} />, <Trans>This device</Trans>)}
@@ -380,7 +506,11 @@ export function SeriesActionsMenu({
                         {back(<Trans>Files</Trans>)}
                         {canEdit && (
                             <>
-                                <Menu.Item leftSection={<IconScan size={16} />} onClick={onRescan}>
+                                <Menu.Item
+                                    leftSection={rescanning ? <Loader size={14} /> : <IconScan size={16} />}
+                                    disabled={rescanning}
+                                    onClick={onRescan}
+                                >
                                     <Trans>Rescan files</Trans>
                                 </Menu.Item>
                                 <Menu.Item leftSection={<IconFolderSymlink size={16} />} onClick={onMove}>
@@ -407,44 +537,53 @@ export function SeriesActionsMenu({
                 return (
                     <>
                         {back(<Trans>Automation</Trans>)}
-                        {toolsOff
-                            ? withReason(
-                                <Menu.Item leftSection={<IconEye size={16} />} rightSection={value(monitorLabel)} {...offProps}>
-                                    <Trans>Monitor</Trans>
-                                </Menu.Item>,
-                            )
-                            : drill('monitor', <IconEye size={16} />, <Trans>Monitor</Trans>, monitorLabel)}
-                        {notifyRow}
-                        {drill('incognito', <IconEyeOff size={16} />, <Trans>Incognito</Trans>, renderLabel(label(incognitoOptions, incognito)))}
+                        {reason}
+                        {field({
+                            icon: <IconEye size={16} />,
+                            title: t`Monitor`,
+                            current: monitorMode,
+                            options: MONITOR_OPTIONS.map((o) => ({ value: o.value, label: renderLabel(MONITOR_SHORT[o.value]) })),
+                            onPick: onSetMonitor,
+                            help: MONITOR_HELP[monitorMode] && renderLabel(MONITOR_HELP[monitorMode]),
+                            disabled: toolsOff,
+                        })}
+                        {notifyField}
+                        {field({
+                            icon: <IconEyeOff size={16} />,
+                            title: t`Incognito`,
+                            current: incognito,
+                            options: incognitoOptions,
+                            onPick: onSetIncognito,
+                            help: INCOGNITO_HELP[incognito] && renderLabel(INCOGNITO_HELP[incognito]),
+                        })}
                     </>
                 )
             case 'upgrades':
                 return (
                     <>
                         {back(<Trans>Upgrades</Trans>)}
+                        {canScanUpgrades && reason}
                         {canEdit && drill('profile', <IconSparkles size={16} />, <Trans>Quality profile</Trans>, upgradeProfileLabel)}
-                        {canScanUpgrades &&
-                            withReason(
-                                <Menu.Item
-                                    leftSection={scanningUpgrades ? <Loader size={14} /> : <IconRefresh size={16} />}
-                                    disabled={scanningUpgrades}
-                                    onClick={whenOn(onScanUpgrades)}
-                                    {...offProps}
-                                >
-                                    <Trans>Scan for upgrades</Trans>
-                                </Menu.Item>,
-                            )}
-                        {canScanUpgrades &&
-                            withReason(
-                                <Menu.Item
-                                    leftSection={searchingVolumes ? <Loader size={14} /> : <IconSearch size={16} />}
-                                    disabled={searchingVolumes}
-                                    onClick={whenOn(onSearchVolumes)}
-                                    {...offProps}
-                                >
-                                    <Trans>Search volume releases</Trans>
-                                </Menu.Item>,
-                            )}
+                        {canScanUpgrades && (
+                            <Menu.Item
+                                leftSection={scanningUpgrades ? <Loader size={14} /> : <IconRefresh size={16} />}
+                                disabled={scanningUpgrades}
+                                onClick={whenOn(onScanUpgrades)}
+                                {...offProps}
+                            >
+                                <Trans>Scan for upgrades</Trans>
+                            </Menu.Item>
+                        )}
+                        {canScanUpgrades && (
+                            <Menu.Item
+                                leftSection={searchingVolumes ? <Loader size={14} /> : <IconSearch size={16} />}
+                                disabled={searchingVolumes}
+                                onClick={whenOn(onSearchVolumes)}
+                                {...offProps}
+                            >
+                                <Trans>Search volume releases</Trans>
+                            </Menu.Item>
+                        )}
                     </>
                 )
             case 'device':
@@ -463,29 +602,6 @@ export function SeriesActionsMenu({
                         </Menu.Item>
                     </>
                 )
-            case 'monitor':
-                return choice({
-                    title: <Trans>Monitor</Trans>,
-                    hint: <Trans>What happens to chapters released later</Trans>,
-                    current: monitorMode,
-                    options: MONITOR_OPTIONS.map((o) => ({ value: o.value, label: renderLabel(o.label) })),
-                    onPick: onSetMonitor,
-                })
-            case 'notify':
-                return choice({
-                    title: <Trans>Notify</Trans>,
-                    current: notificationMode,
-                    options: notificationOptions,
-                    onPick: onSetNotify,
-                })
-            case 'incognito':
-                return choice({
-                    title: <Trans>Incognito</Trans>,
-                    current: incognito,
-                    options: incognitoOptions,
-                    onPick: onSetIncognito,
-                    note: <Trans>Full also excludes this series from Rewind stats and reading history.</Trans>,
-                })
             case 'profile':
                 return choice({
                     title: <Trans>Quality profile</Trans>,
@@ -499,12 +615,22 @@ export function SeriesActionsMenu({
             case 'cleanup':
                 return choice({
                     title: <Trans>Clean up read files</Trans>,
-                    hint: <Trans>Delete a chapter's file some days after everyone has read it</Trans>,
                     current: readFileCleanup,
                     options: [
-                        { value: 'Default', label: <Trans>Follow the setting</Trans> },
-                        { value: 'On', label: <Trans>On for this series</Trans> },
-                        { value: 'Off', label: <Trans>Off for this series</Trans> },
+                        {
+                            value: 'Default',
+                            label: <Trans>Use the Downloads setting</Trans>,
+                            // Only while it is the choice does the combined value say what the setting is.
+                            hint:
+                                readFileCleanup === 'Default' &&
+                                (readFileCleanupActive ? <Trans>It's on there now.</Trans> : <Trans>It's off there now.</Trans>),
+                        },
+                        {
+                            value: 'On',
+                            label: <Trans>On for this series</Trans>,
+                            hint: <Trans>Each chapter's file is deleted for good some days after everyone has read it.</Trans>,
+                        },
+                        { value: 'Off', label: <Trans>Off for this series</Trans>, hint: <Trans>Read files stay on disk.</Trans> },
                     ],
                     onPick: onSetReadFileCleanup,
                 })
@@ -513,9 +639,17 @@ export function SeriesActionsMenu({
                     title: <Trans>Page conversion</Trans>,
                     current: pageConversion,
                     options: [
-                        { value: 'Default', label: <Trans>Follow the rules</Trans> },
-                        { value: 'Never', label: <Trans>Never</Trans> },
-                        ...PAGE_CONVERSION_STOPS.map((stop) => ({ value: stopMode(stop), label: renderLabel(STOP_LABELS[stop]) })),
+                        {
+                            value: 'Default',
+                            label: <Trans>Follow the rules</Trans>,
+                            hint: <Trans>The page conversion rules in Settings decide.</Trans>,
+                        },
+                        { value: 'Never', label: <Trans>Never</Trans>, hint: <Trans>Pages stay as they were downloaded.</Trans> },
+                        ...PAGE_CONVERSION_STOPS.map((stop) => ({
+                            value: stopMode(stop),
+                            label: renderLabel(STOP_LABELS[stop]),
+                            hint: renderLabel(STOP_HINTS[stop]),
+                        })),
                     ],
                     onPick: onSetPageConversion,
                     note: <Trans>Files already converted stay as they are.</Trans>,
@@ -527,7 +661,7 @@ export function SeriesActionsMenu({
         // Capped at the screen edge with an inner scroll, for phones held sideways.
         <Menu
             position="bottom-end"
-            width={288}
+            width={304}
             withinPortal
             shadow="md"
             opened={opened}
@@ -547,7 +681,6 @@ export function SeriesActionsMenu({
                     size={42}
                     radius="md"
                     aria-label={t`More actions`}
-                    disabled={busy}
                     style={{
                         color: 'var(--ink-3)',
                         background: 'color-mix(in srgb, var(--app-bg) 45%, transparent)',
@@ -571,9 +704,11 @@ export function SeriesActionsMenu({
                     }
                 }}
             >
-                <DrillPanes page={page} depth={depthOf(page)} bleed={6}>
-                    {content()}
-                </DrillPanes>
+                <div onKeyDownCapture={stepThroughFields}>
+                    <DrillPanes page={page} depth={depthOf(page)} bleed={6}>
+                        {content()}
+                    </DrillPanes>
+                </div>
             </Menu.Dropdown>
         </Menu>
     )

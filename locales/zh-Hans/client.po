@@ -3544,6 +3544,16 @@ msgstr "聚合站"
 msgid "All"
 msgstr "全部"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgctxt "monitor mode"
+msgid "All"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgctxt "notify about every chapter"
+msgid "All"
+msgstr ""
+
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
 msgid "All ({total})"
@@ -5244,19 +5254,31 @@ msgid "Changes apply straight to the grid behind this panel."
 msgstr "更改会直接应用到此面板后面的网格。"
 
 #: src/pages/reader/ReaderSettings.tsx
-#, fuzzy
-msgid "Changes apply to this series only."
-msgstr "更改仅应用于此系列。"
+msgid "Changes apply to <0>this series</0> only."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Changes apply to <0>your reader defaults</0>."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Changes apply to the <0>{inForceName}</0> profile and every series using it."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
-msgid "Changes apply to your reader defaults."
-msgstr "更改会应用到你的阅读器默认设置。"
+#~ msgid "Changes apply to this series only."
+#~ msgstr "更改仅应用于此系列。"
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
-msgid "Changes retune \"{inForceName}\", so every series using it."
-msgstr "更改会重新调整“{inForceName}”，因此也会影响所有使用它的系列。"
+#~ msgid "Changes apply to your reader defaults."
+#~ msgstr "更改会应用到你的阅读器默认设置。"
+
+#: src/pages/reader/ReaderSettings.tsx
+#, fuzzy
+#~ msgid "Changes retune \"{inForceName}\", so every series using it."
+#~ msgstr "更改会重新调整“{inForceName}”，因此也会影响所有使用它的系列。"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5477,6 +5499,18 @@ msgstr "每页章节数"
 #, fuzzy
 msgid "Chapters read in this series"
 msgstr "此系列中已读章节"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on are wanted and queued a batch at a time, ahead of where you're reading."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on are wanted, except specials."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on aren't wanted."
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #, fuzzy
@@ -6954,6 +6988,7 @@ msgstr "决定你的阅读日何时结束。"
 msgid "Decimal chapters like 10.5 stay listed but are never downloaded."
 msgstr "像 10.5 这样的小数章节会保留在列表中，但从不下载。"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/ui/seriesNotifications.ts
 #: src/components/ui/viewPrefs.tsx
@@ -7040,8 +7075,8 @@ msgstr "删除 {name}？"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Delete a chapter's file some days after everyone has read it"
-msgstr "在所有人读完某个章节后的若干天，自动删除该章节的文件"
+#~ msgid "Delete a chapter's file some days after everyone has read it"
+#~ msgstr "在所有人读完某个章节后的若干天，自动删除该章节的文件"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -7738,6 +7773,10 @@ msgstr "例如：连载中和落后"
 msgid "Each bar spans the days a chapter is likely, never a promise. A diamond marks a day the source announced."
 msgstr "每个条形覆盖章节可能更新的日期范围，绝非承诺。菱形标记来源公布的日期。"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Each chapter's file is deleted for good some days after everyone has read it."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Each language adds its own chapter rows and files."
@@ -8112,6 +8151,10 @@ msgstr "每个章节都已关联到当前可用的最佳文件。"
 #, fuzzy
 msgid "Every chapter is already on the best file available. Nothing to change."
 msgstr "每个章节都已关联到当前可用的最佳文件。无需更改。"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Every chapter released from now on is wanted."
+msgstr ""
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -8989,8 +9032,8 @@ msgstr "遵循规则"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Follow the setting"
-msgstr "沿用设置"
+#~ msgid "Follow the setting"
+#~ msgstr "沿用设置"
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -9155,8 +9198,8 @@ msgstr "完整"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Full also excludes this series from Rewind stats and reading history."
-msgstr "完整模式还会将此系列排除在 Rewind 统计和阅读历史之外。"
+#~ msgid "Full also excludes this series from Rewind stats and reading history."
+#~ msgstr "完整模式还会将此系列排除在 Rewind 统计和阅读历史之外。"
 
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
@@ -10351,6 +10394,14 @@ msgstr "它可能已从资料库中移除。"
 msgid "It needs a quality profile and downloaded chapters."
 msgstr "它需要质量配置和已下载的章节。"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "It's off there now."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "It's on there now."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -10574,6 +10625,10 @@ msgstr "保持现有关联"
 #, fuzzy
 msgid "Kept lossless"
 msgstr "保持无损"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Kept out of your trackers, Rewind, stats and reading history."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -11447,6 +11502,8 @@ msgstr "正篇（{visibleMainCount}）"
 msgid "main (no specials)"
 msgstr "主要（无特殊章节）"
 
+#. Monitor mode that skips specials
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Main only"
@@ -12428,6 +12485,7 @@ msgstr "封面动效"
 msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
 msgstr "因为启用了多个账户，多用户模式已开启。若要切回，请停用或删除其他账户。"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Muted"
@@ -14949,6 +15007,10 @@ msgstr "页面部分"
 msgid "Pages stay as they are downloaded. Files already converted stay converted."
 msgstr "页面保持下载时的样子。已转换的文件保持转换后的状态。"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Pages stay as they were downloaded."
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Pages under 16 KB are always kept as they are."
@@ -16004,6 +16066,10 @@ msgstr "所有人读完后，读取文件清理已于 {removedOn} 删除该文�
 msgid "Read file cleanup is going to delete this file"
 msgstr "读取文件清理将删除此文件"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Read files stay on disk."
+msgstr ""
+
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
 msgid "Read first chapter"
@@ -16139,8 +16205,10 @@ msgstr "像你一样的读者也推荐了此内容"
 msgid "Readers who finished {finished} also finished this"
 msgstr "读完 {finished} 的读者也读完了这部"
 
+#. Notify only while the user is partway through the series
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/settings/registry.ts
@@ -16154,6 +16222,14 @@ msgstr "阅读"
 #, fuzzy
 msgid "Reading apps connected over OPDS, Komga or KOReader keep working in the meantime."
 msgstr "在此期间，通过 OPDS、Komga 或 KOReader 连接的阅读应用仍可继续使用。"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Reading counts in your stats and goes to your trackers."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Reading counts in your stats but isn't sent to your trackers."
+msgstr ""
 
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
@@ -20717,6 +20793,10 @@ msgstr "超过此数量后，最旧的页面会被丢弃。"
 msgid "The others were converted on download or their original has been purged."
 msgstr "其余的在下载时已转换，或其原件已被清除。"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "The page conversion rules in Settings decide."
+msgstr ""
+
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
 msgid "The preview expired. Try again."
@@ -22450,6 +22530,10 @@ msgstr "用于品味"
 msgid "Use OPDS"
 msgstr "使用 OPDS"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Use the Downloads setting"
+msgstr ""
+
 #. placeholder {0}: found.results
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -23029,8 +23113,8 @@ msgstr "西方（OEL）"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "What happens to chapters released later"
-msgstr "之后发布的章节会怎样"
+#~ msgid "What happens to chapters released later"
+#~ msgstr "之后发布的章节会怎样"
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy

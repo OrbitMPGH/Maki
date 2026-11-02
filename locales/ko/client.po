@@ -3544,6 +3544,16 @@ msgstr "애그리게이터"
 msgid "All"
 msgstr "모두"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgctxt "monitor mode"
+msgid "All"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgctxt "notify about every chapter"
+msgid "All"
+msgstr ""
+
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
 msgid "All ({total})"
@@ -5244,19 +5254,31 @@ msgid "Changes apply straight to the grid behind this panel."
 msgstr "변경 사항은 이 패널 뒤의 그리드에 즉시 적용됩니다."
 
 #: src/pages/reader/ReaderSettings.tsx
-#, fuzzy
-msgid "Changes apply to this series only."
-msgstr "변경 사항은 이 시리즈에만 적용됩니다."
+msgid "Changes apply to <0>this series</0> only."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Changes apply to <0>your reader defaults</0>."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Changes apply to the <0>{inForceName}</0> profile and every series using it."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
-msgid "Changes apply to your reader defaults."
-msgstr "변경 사항은 리더 기본값에 적용됩니다."
+#~ msgid "Changes apply to this series only."
+#~ msgstr "변경 사항은 이 시리즈에만 적용됩니다."
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
-msgid "Changes retune \"{inForceName}\", so every series using it."
-msgstr "변경 사항은 \"{inForceName}\"을 조정하므로 이를 사용하는 모든 시리즈에 적용됩니다."
+#~ msgid "Changes apply to your reader defaults."
+#~ msgstr "변경 사항은 리더 기본값에 적용됩니다."
+
+#: src/pages/reader/ReaderSettings.tsx
+#, fuzzy
+#~ msgid "Changes retune \"{inForceName}\", so every series using it."
+#~ msgstr "변경 사항은 \"{inForceName}\"을 조정하므로 이를 사용하는 모든 시리즈에 적용됩니다."
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5477,6 +5499,18 @@ msgstr "페이지당 챕터 수"
 #, fuzzy
 msgid "Chapters read in this series"
 msgstr "이 시리즈에서 읽은 챕터"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on are wanted and queued a batch at a time, ahead of where you're reading."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on are wanted, except specials."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on aren't wanted."
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #, fuzzy
@@ -6954,6 +6988,7 @@ msgstr "독서 하루가 끝나는 시점을 정합니다."
 msgid "Decimal chapters like 10.5 stay listed but are never downloaded."
 msgstr "10.5 같은 소수 챕터는 목록에 표시되지만 다운로드하지 않습니다."
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/ui/seriesNotifications.ts
 #: src/components/ui/viewPrefs.tsx
@@ -7040,8 +7075,8 @@ msgstr "{name}을(를) 삭제할까요?"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Delete a chapter's file some days after everyone has read it"
-msgstr "모든 사람이 챕터를 읽은 뒤 며칠이 지나면 챕터 파일을 삭제합니다"
+#~ msgid "Delete a chapter's file some days after everyone has read it"
+#~ msgstr "모든 사람이 챕터를 읽은 뒤 며칠이 지나면 챕터 파일을 삭제합니다"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -7738,6 +7773,10 @@ msgstr "예: 연재 중 및 미수록"
 msgid "Each bar spans the days a chapter is likely, never a promise. A diamond marks a day the source announced."
 msgstr "각 막대는 챕터가 나올 가능성이 있는 날짜 범위를 나타내며, 약속이 아닙니다. 다이아몬드는 소스가 공지한 날입니다."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Each chapter's file is deleted for good some days after everyone has read it."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Each language adds its own chapter rows and files."
@@ -8112,6 +8151,10 @@ msgstr "모든 챕터가 이미 사용할 수 있는 최적의 파일에 연결�
 #, fuzzy
 msgid "Every chapter is already on the best file available. Nothing to change."
 msgstr "모든 챕터가 이미 사용할 수 있는 최적의 파일에 연결되어 있습니다. 변경할 내용이 없습니다."
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Every chapter released from now on is wanted."
+msgstr ""
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -8989,8 +9032,8 @@ msgstr "규칙 따르기"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Follow the setting"
-msgstr "설정 따르기"
+#~ msgid "Follow the setting"
+#~ msgstr "설정 따르기"
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -9155,8 +9198,8 @@ msgstr "전체"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Full also excludes this series from Rewind stats and reading history."
-msgstr "전체는 이 시리즈를 Rewind 통계 및 읽기 기록에서도 제외합니다."
+#~ msgid "Full also excludes this series from Rewind stats and reading history."
+#~ msgstr "전체는 이 시리즈를 Rewind 통계 및 읽기 기록에서도 제외합니다."
 
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
@@ -10351,6 +10394,14 @@ msgstr "라이브러리에서 삭제되었을 수 있습니다."
 msgid "It needs a quality profile and downloaded chapters."
 msgstr "품질 프로필과 다운로드한 챕터가 필요합니다."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "It's off there now."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "It's on there now."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -10574,6 +10625,10 @@ msgstr "기존 연결 유지"
 #, fuzzy
 msgid "Kept lossless"
 msgstr "무손실로 유지됨"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Kept out of your trackers, Rewind, stats and reading history."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -11447,6 +11502,8 @@ msgstr "본편 ({visibleMainCount})"
 msgid "main (no specials)"
 msgstr "Main (스페셜 없음)"
 
+#. Monitor mode that skips specials
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Main only"
@@ -12428,6 +12485,7 @@ msgstr "표지 이동 효과"
 msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
 msgstr "계정이 둘 이상 켜져 있어 다중 사용자 모드가 켜져 있습니다. 다른 계정을 끄거나 삭제하면 되돌아갑니다."
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Muted"
@@ -14949,6 +15007,10 @@ msgstr "페이지 섹션"
 msgid "Pages stay as they are downloaded. Files already converted stay converted."
 msgstr "페이지는 받은 그대로 유지됩니다. 이미 변환된 파일은 변환된 상태를 유지합니다."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Pages stay as they were downloaded."
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Pages under 16 KB are always kept as they are."
@@ -16004,6 +16066,10 @@ msgstr "모두 읽은 뒤 읽은 파일 정리가 {removedOn}에 파일을 삭�
 msgid "Read file cleanup is going to delete this file"
 msgstr "읽은 파일 정리가 이 파일을 삭제할 예정입니다"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Read files stay on disk."
+msgstr ""
+
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
 msgid "Read first chapter"
@@ -16139,8 +16205,10 @@ msgstr "나와 비슷한 독자도 이 항목을 추천함"
 msgid "Readers who finished {finished} also finished this"
 msgstr "{finished}을(를) 완독한 독자들이 이 작품도 완독했습니다."
 
+#. Notify only while the user is partway through the series
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/settings/registry.ts
@@ -16154,6 +16222,14 @@ msgstr "읽는 중"
 #, fuzzy
 msgid "Reading apps connected over OPDS, Komga or KOReader keep working in the meantime."
 msgstr "OPDS, Komga 또는 KOReader로 연결된 읽기 앱은 그동안에도 계속 작동합니다."
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Reading counts in your stats and goes to your trackers."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Reading counts in your stats but isn't sent to your trackers."
+msgstr ""
 
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
@@ -20717,6 +20793,10 @@ msgstr "이 값을 넘으면 가장 오래된 페이지부터 버려집니다."
 msgid "The others were converted on download or their original has been purged."
 msgstr "나머지는 다운로드할 때 변환되었거나 원본이 정리되었습니다."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "The page conversion rules in Settings decide."
+msgstr ""
+
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
 msgid "The preview expired. Try again."
@@ -22450,6 +22530,10 @@ msgstr "취향에 반영"
 msgid "Use OPDS"
 msgstr "OPDS 사용"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Use the Downloads setting"
+msgstr ""
+
 #. placeholder {0}: found.results
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -23029,8 +23113,8 @@ msgstr "서양 (OEL)"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "What happens to chapters released later"
-msgstr "나중에 출시되는 챕터에 적용되는 내용"
+#~ msgid "What happens to chapters released later"
+#~ msgstr "나중에 출시되는 챕터에 적용되는 내용"
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy

@@ -64,8 +64,10 @@ export const SettingsOpen: Story = {
     await summonChrome({ canvasElement, userEvent })
     await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
     const body = within(canvasElement.ownerDocument.body)
-    await userEvent.click(await body.findByRole('button', { name: /^Reading profile: / }))
-    await waitFor(() => expect(body.getByText(/^Changes /)).toHaveTextContent('Changes retune'))
+    await expect(await body.findByRole('button', { name: /^Reading profile: / })).toBeVisible()
+    await waitFor(() =>
+      expect(canvasElement.ownerDocument.querySelector('.reader-settings-scope')).toHaveTextContent(/profile and every series using it/),
+    )
   },
 }
 

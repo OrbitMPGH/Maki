@@ -2095,7 +2095,9 @@ function SeriesDetailBody() {
                     canCleanUpReadFiles={canDelete}
                     canScanUpgrades={canDownload}
                     scanningUpgrades={runUpgradeScan.isPending || scanning}
-                    busy={refresh.isPending || refreshMetadata.isPending || rescan.isPending}
+                    refreshingChapters={refresh.isPending}
+                    refreshingMetadata={refreshMetadata.isPending}
+                    rescanning={rescan.isPending}
                     onRefreshChapters={() =>
                         refresh.mutate(seriesId, {
                           onSuccess: (r) =>

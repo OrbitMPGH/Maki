@@ -2877,6 +2877,16 @@ msgstr "Aggregator"
 msgid "All"
 msgstr "All"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgctxt "monitor mode"
+msgid "All"
+msgstr "All"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgctxt "notify about every chapter"
+msgid "All"
+msgstr "All"
+
 #: src/components/import/ImportPlanModal.tsx
 msgid "All ({total})"
 msgstr "All ({total})"
@@ -4264,16 +4274,28 @@ msgid "Changes apply straight to the grid behind this panel."
 msgstr "Changes apply straight to the grid behind this panel."
 
 #: src/pages/reader/ReaderSettings.tsx
-msgid "Changes apply to this series only."
-msgstr "Changes apply to this series only."
+msgid "Changes apply to <0>this series</0> only."
+msgstr "Changes apply to <0>this series</0> only."
 
 #: src/pages/reader/ReaderSettings.tsx
-msgid "Changes apply to your reader defaults."
-msgstr "Changes apply to your reader defaults."
+msgid "Changes apply to <0>your reader defaults</0>."
+msgstr "Changes apply to <0>your reader defaults</0>."
 
 #: src/pages/reader/ReaderSettings.tsx
-msgid "Changes retune \"{inForceName}\", so every series using it."
-msgstr "Changes retune \"{inForceName}\", so every series using it."
+msgid "Changes apply to the <0>{inForceName}</0> profile and every series using it."
+msgstr "Changes apply to the <0>{inForceName}</0> profile and every series using it."
+
+#: src/pages/reader/ReaderSettings.tsx
+#~ msgid "Changes apply to this series only."
+#~ msgstr "Changes apply to this series only."
+
+#: src/pages/reader/ReaderSettings.tsx
+#~ msgid "Changes apply to your reader defaults."
+#~ msgstr "Changes apply to your reader defaults."
+
+#: src/pages/reader/ReaderSettings.tsx
+#~ msgid "Changes retune \"{inForceName}\", so every series using it."
+#~ msgstr "Changes retune \"{inForceName}\", so every series using it."
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Changes take effect after Maki restarts."
@@ -4453,6 +4475,18 @@ msgstr "Chapters per page"
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Chapters read in this series"
 msgstr "Chapters read in this series"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on are wanted and queued a batch at a time, ahead of where you're reading."
+msgstr "Chapters released from now on are wanted and queued a batch at a time, ahead of where you're reading."
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on are wanted, except specials."
+msgstr "Chapters released from now on are wanted, except specials."
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on aren't wanted."
+msgstr "Chapters released from now on aren't wanted."
 
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Chapters saved on this device, to read without a connection."
@@ -5653,6 +5687,7 @@ msgstr "Decides when your reading day ends."
 msgid "Decimal chapters like 10.5 stay listed but are never downloaded."
 msgstr "Decimal chapters like 10.5 stay listed but are never downloaded."
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/ui/seriesNotifications.ts
 #: src/components/ui/viewPrefs.tsx
@@ -5724,8 +5759,8 @@ msgid "Delete {name}?"
 msgstr "Delete {name}?"
 
 #: src/components/series/SeriesActionsMenu.tsx
-msgid "Delete a chapter's file some days after everyone has read it"
-msgstr "Delete a chapter's file some days after everyone has read it"
+#~ msgid "Delete a chapter's file some days after everyone has read it"
+#~ msgstr "Delete a chapter's file some days after everyone has read it"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Delete backup"
@@ -6297,6 +6332,10 @@ msgstr "e.g. Ongoing & behind"
 msgid "Each bar spans the days a chapter is likely, never a promise. A diamond marks a day the source announced."
 msgstr "Each bar spans the days a chapter is likely, never a promise. A diamond marks a day the source announced."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Each chapter's file is deleted for good some days after everyone has read it."
+msgstr "Each chapter's file is deleted for good some days after everyone has read it."
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Each language adds its own chapter rows and files."
 msgstr "Each language adds its own chapter rows and files."
@@ -6600,6 +6639,10 @@ msgstr "Every chapter is already on the best file available."
 #: src/components/RelinkFilesModal.tsx
 msgid "Every chapter is already on the best file available. Nothing to change."
 msgstr "Every chapter is already on the best file available. Nothing to change."
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Every chapter released from now on is wanted."
+msgstr "Every chapter released from now on is wanted."
 
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Every check passed"
@@ -7312,8 +7355,8 @@ msgid "Follow the rules"
 msgstr "Follow the rules"
 
 #: src/components/series/SeriesActionsMenu.tsx
-msgid "Follow the setting"
-msgstr "Follow the setting"
+#~ msgid "Follow the setting"
+#~ msgstr "Follow the setting"
 
 #: src/pages/CreatorPage.tsx
 msgid "Following"
@@ -7446,8 +7489,8 @@ msgid "Full"
 msgstr "Full"
 
 #: src/components/series/SeriesActionsMenu.tsx
-msgid "Full also excludes this series from Rewind stats and reading history."
-msgstr "Full also excludes this series from Rewind stats and reading history."
+#~ msgid "Full also excludes this series from Rewind stats and reading history."
+#~ msgstr "Full also excludes this series from Rewind stats and reading history."
 
 #: src/components/discover/DiscoverReviews.tsx
 msgid "Full review"
@@ -8418,6 +8461,14 @@ msgstr "It may have been removed from the library."
 msgid "It needs a quality profile and downloaded chapters."
 msgstr "It needs a quality profile and downloaded chapters."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "It's off there now."
+msgstr "It's off there now."
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "It's on there now."
+msgstr "It's on there now."
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Italian"
@@ -8597,6 +8648,10 @@ msgstr "Kept as linked"
 #: src/components/pageconversion/StartStep.tsx
 msgid "Kept lossless"
 msgstr "Kept lossless"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Kept out of your trackers, Rewind, stats and reading history."
+msgstr "Kept out of your trackers, Rewind, stats and reading history."
 
 #: src/components/RelinkFilesModal.tsx
 msgid "kept where it is"
@@ -9309,6 +9364,8 @@ msgstr "Main ({visibleMainCount})"
 msgid "main (no specials)"
 msgstr "main (no specials)"
 
+#. Monitor mode that skips specials
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Main only"
 msgstr "Main only"
@@ -10106,6 +10163,7 @@ msgstr "Moving covers"
 msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
 msgstr "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/ui/seriesNotifications.ts
 msgid "Muted"
 msgstr "Muted"
@@ -12150,6 +12208,10 @@ msgstr "Pages section"
 msgid "Pages stay as they are downloaded. Files already converted stay converted."
 msgstr "Pages stay as they are downloaded. Files already converted stay converted."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Pages stay as they were downloaded."
+msgstr "Pages stay as they were downloaded."
+
 #: src/components/pageconversion/labels.ts
 msgid "Pages under 16 KB are always kept as they are."
 msgstr "Pages under 16 KB are always kept as they are."
@@ -13007,6 +13069,10 @@ msgstr "Read file cleanup deleted the file on {removedOn} after everyone read it
 msgid "Read file cleanup is going to delete this file"
 msgstr "Read file cleanup is going to delete this file"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Read files stay on disk."
+msgstr "Read files stay on disk."
+
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "Read first chapter"
 msgstr "Read first chapter"
@@ -13116,8 +13182,10 @@ msgstr "Readers like you also recommended this"
 msgid "Readers who finished {finished} also finished this"
 msgstr "Readers who finished {finished} also finished this"
 
+#. Notify only while the user is partway through the series
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/settings/registry.ts
@@ -13129,6 +13197,14 @@ msgstr "Reading"
 #: src/pages/MetadataGatePage.tsx
 msgid "Reading apps connected over OPDS, Komga or KOReader keep working in the meantime."
 msgstr "Reading apps connected over OPDS, Komga or KOReader keep working in the meantime."
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Reading counts in your stats and goes to your trackers."
+msgstr "Reading counts in your stats and goes to your trackers."
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Reading counts in your stats but isn't sent to your trackers."
+msgstr "Reading counts in your stats but isn't sent to your trackers."
 
 #: src/pages/stats/ReadingHeatmap.tsx
 msgid "Reading days"
@@ -16840,6 +16916,10 @@ msgstr "The oldest pages are dropped past this."
 msgid "The others were converted on download or their original has been purged."
 msgstr "The others were converted on download or their original has been purged."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "The page conversion rules in Settings decide."
+msgstr "The page conversion rules in Settings decide."
+
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "The preview expired. Try again."
 msgstr "The preview expired. Try again."
@@ -18247,6 +18327,10 @@ msgstr "Use for taste"
 msgid "Use OPDS"
 msgstr "Use OPDS"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Use the Downloads setting"
+msgstr "Use the Downloads setting"
+
 #. placeholder {0}: found.results
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Use the series list page ({0} series), matched by title"
@@ -18717,8 +18801,8 @@ msgid "Western (OEL)"
 msgstr "Western (OEL)"
 
 #: src/components/series/SeriesActionsMenu.tsx
-msgid "What happens to chapters released later"
-msgstr "What happens to chapters released later"
+#~ msgid "What happens to chapters released later"
+#~ msgstr "What happens to chapters released later"
 
 #: src/components/discover/discoverSectionDefs.ts
 msgid "What readers who finished the same series as you went on to finish."

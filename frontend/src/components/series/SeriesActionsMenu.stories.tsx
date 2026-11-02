@@ -21,7 +21,6 @@ const meta = {
     canScanUpgrades: true,
     scanningUpgrades: false,
     searchingVolumes: false,
-    busy: false,
     canArchive: true,
     archived: false,
     canRemove: true,
@@ -81,13 +80,33 @@ export const Admin: Story = {
 
 export const PickMonitorMode: Story = {
   play: async (ctx) => {
-    const page = await openAt(ctx, 'Automation', /^Monitor/)
-    await expect(await page.findByText('What happens to chapters released later')).toBeVisible()
-    const smart = await page.findByRole('menuitemradio', { name: 'Smart' })
-    smart.focus()
-    await ctx.userEvent.keyboard('{Enter}')
+    const page = await openAt(ctx, 'Automation')
+    await expect(await page.findByText('Every chapter released from now on is wanted.')).toBeVisible()
+    await ctx.userEvent.click(within(await page.findByRole('group', { name: 'Monitor' })).getByText('Smart'))
     await waitFor(() => expect(ctx.args.onSetMonitor).toHaveBeenCalledWith('Smart'))
-    await expect(await page.findByRole('menuitem', { name: /^Incognito/ })).toBeVisible()
+    // A segmented choice applies in place: the page stays, with Notify and Incognito beside it.
+    await expect(await page.findByRole('group', { name: 'Incognito' })).toBeVisible()
+  },
+}
+
+/** Up and Down step from the back row to each control's choice; Left and Right walk a control. */
+export const ArrowKeysThroughAutomation: Story = {
+  play: async (ctx) => {
+    const page = await openAt(ctx, 'Automation')
+    ;(await page.findByRole('menuitem', { name: /^Back/ })).focus()
+    await ctx.userEvent.keyboard('{ArrowDown}')
+    const monitor = await page.findByRole('group', { name: 'Monitor' })
+    await waitFor(() => expect(within(monitor).getByRole('menuitemradio', { name: 'All' })).toHaveFocus())
+    await ctx.userEvent.keyboard('{ArrowDown}')
+    const notify = await page.findByRole('group', { name: 'Notify' })
+    await waitFor(() => expect(within(notify).getByRole('menuitemradio', { name: 'Default' })).toHaveFocus())
+    await ctx.userEvent.keyboard('{ArrowRight}')
+    await waitFor(() => expect(within(notify).getByRole('menuitemradio', { name: 'All' })).toHaveFocus())
+    await ctx.userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(ctx.args.onSetNotify).toHaveBeenCalledWith('All'))
+    // Left inside a control moves along it rather than leaving the page.
+    await ctx.userEvent.keyboard('{ArrowLeft}')
+    await expect(page.getByRole('group', { name: 'Monitor' })).toBeVisible()
   },
 }
 
@@ -95,7 +114,7 @@ export const BackReturnsToGroupRow: Story = {
   play: async (ctx) => {
     const page = await openAt(ctx, 'Files')
     await expect(await page.findByRole('menuitem', { name: 'Rescan files' })).toBeVisible()
-    ;(await page.findByRole('menuitem', { name: 'Back' })).focus()
+    ;(await page.findByRole('menuitem', { name: /^Back/ })).focus()
     await ctx.userEvent.keyboard('{Enter}')
     const files = await page.findByRole('menuitem', { name: 'Files' })
     await waitFor(() => expect(files).toHaveFocus())
@@ -115,10 +134,10 @@ export const PointerNavigationKeepsArrowKeys: Story = {
 
 export const ArrowLeftGoesBack: Story = {
   play: async (ctx) => {
-    const page = await openAt(ctx, 'Automation', /^Incognito/)
-    await expect(await page.findByText(/Full also excludes this series/)).toBeVisible()
+    const page = await openAt(ctx, 'Files', /Page conversion/)
+    await expect(await page.findByText('Files already converted stay as they are.')).toBeVisible()
     await ctx.userEvent.keyboard('{ArrowLeft}')
-    await expect(await page.findByRole('menuitem', { name: /^Notify/ })).toBeVisible()
+    await expect(await page.findByRole('menuitem', { name: 'Rescan files' })).toBeVisible()
     await ctx.userEvent.keyboard('{ArrowLeft}')
     await expect(await page.findByRole('menuitem', { name: 'Edit metadata' })).toBeVisible()
   },
@@ -147,7 +166,7 @@ export const ReaderPermissions: Story = {
   args: { canEdit: false, canCleanUpReadFiles: false, canSetPageConversion: false, canScanUpgrades: false, canArchive: false, canRemove: false },
   play: async (ctx) => {
     const page = await openAt(ctx)
-    await expect(await page.findByRole('menuitem', { name: /^Notify/ })).toBeVisible()
+    await expect(await page.findByRole('group', { name: 'Notify' })).toBeVisible()
     await expect(page.queryByRole('menuitem', { name: 'Edit metadata' })).toBeNull()
     await expect(page.queryByRole('menuitem', { name: 'Files' })).toBeNull()
     await expect(page.queryByRole('menuitem', { name: 'Automation' })).toBeNull()
@@ -159,12 +178,9 @@ export const ReaderPermissions: Story = {
 export const ReaderPicksNotify: Story = {
   args: ReaderPermissions.args,
   play: async (ctx) => {
-    const page = await openAt(ctx, /^Notify/)
-    const muted = await page.findByRole('menuitemradio', { name: 'Muted' })
-    muted.focus()
-    await ctx.userEvent.keyboard('{Enter}')
+    const page = await openAt(ctx)
+    await ctx.userEvent.click(within(await page.findByRole('group', { name: 'Notify' })).getByText('Muted'))
     await waitFor(() => expect(ctx.args.onSetNotify).toHaveBeenCalledWith('Muted'))
-    await expect(await page.findByRole('menuitem', { name: /^Notify/ })).toBeVisible()
   },
 }
 
@@ -243,8 +259,13 @@ export const ProfilePinnedAndCleanupOn: Story = {
   args: { upgradeProfileId: 2, readFileCleanup: 'On', readFileCleanupActive: true, incognito: 'ScrobbleOnly', notificationMode: 'Muted', monitorMode: 'MainOnly' },
   play: async (ctx) => {
     const page = await openAt(ctx, 'Automation')
-    await expect(await page.findByRole('menuitem', { name: /^Notify/ })).toHaveTextContent('Muted')
-    await expect(await page.findByRole('menuitem', { name: /^Incognito/ })).toHaveTextContent('No scrobble')
+    const notify = await page.findByRole('group', { name: 'Notify' })
+    await waitFor(() => expect(within(notify).getByRole('menuitemradio', { name: 'Muted' })).toHaveAttribute('aria-checked', 'true'))
+    const incognito = await page.findByRole('group', { name: 'Incognito' })
+    await waitFor(() =>
+      expect(within(incognito).getByRole('menuitemradio', { name: 'No scrobble' })).toHaveAttribute('aria-checked', 'true'),
+    )
+    await expect(page.getByText("Reading counts in your stats but isn't sent to your trackers.")).toBeVisible()
   },
 }
 
@@ -253,11 +274,12 @@ export const ArchivedSourceToolsOff: Story = {
   play: async (ctx) => {
     const page = await openAt(ctx)
     await expect(await page.findByRole('menuitem', { name: 'Restore to library' })).toBeVisible()
+    // The reason is written out, not left to a tooltip.
+    await expect(await page.findByText('Restore the series to use its sources')).toBeVisible()
     await ctx.userEvent.click(await page.findByRole('menuitem', { name: 'Automation' }))
-    const monitor = await page.findByRole('menuitem', { name: /^Monitor/ })
-    await expect(monitor).toHaveAttribute('aria-disabled', 'true')
-    await ctx.userEvent.click(monitor)
-    await expect(page.queryByRole('menuitemradio', { name: 'Smart' })).toBeNull()
+    const monitor = await page.findByRole('group', { name: 'Monitor' })
+    await waitFor(() => expect(within(monitor).getByRole('menuitemradio', { name: 'Smart' })).toBeDisabled())
+    await expect(page.getByText('Restore the series to use its sources')).toBeVisible()
   },
 }
 
@@ -270,9 +292,13 @@ export const OfflineSaving: Story = {
   },
 }
 
-export const Busy: Story = {
-  args: { busy: true },
-  play: async ({ canvas }) => {
-    await waitFor(() => expect(canvas.getByRole('button', { name: 'More actions' })).toBeDisabled())
+/** A running refresh holds its own item only; the menu and the other actions stay usable. */
+export const RefreshRunning: Story = {
+  args: { refreshingChapters: true },
+  play: async (ctx) => {
+    const page = await openAt(ctx)
+    await waitFor(() => expect(page.getByRole('menuitem', { name: 'Refresh chapters' })).toBeDisabled())
+    await ctx.userEvent.click(await page.findByRole('menuitem', { name: 'Edit metadata' }))
+    await waitFor(() => expect(ctx.args.onEditMetadata).toHaveBeenCalledOnce())
   },
 }

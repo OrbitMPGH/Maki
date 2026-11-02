@@ -7952,8 +7952,9 @@ body.reader-open {
 .reader-settings-chip {
   flex: 1;
   min-width: 0;
+  min-height: 32px;
   gap: 6px;
-  padding: 4px 10px 4px 6px;
+  padding: 4px 10px 4px 8px;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--brand) 14%, transparent);
   color: var(--brand-fg);
@@ -7974,15 +7975,67 @@ body.reader-open {
   justify-content: space-between;
   gap: 12px;
 }
+.reader-settings .reader-settings-hint {
+  color: var(--ink-3);
+  line-height: 1.45;
+}
+.reader-settings-filled::placeholder {
+  color: transparent;
+}
+.reader-settings .reader-settings-pill {
+  height: 32px;
+}
+.reader-settings-scope strong {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+/* The swatches stay 24px to look at but take a 32px tap. */
+.reader-settings-swatch::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+}
 .reader-settings-profiles [role='menuitemradio'][data-checked],
-.series-actions [role='menuitemradio'][data-checked] {
+.series-actions .mantine-Menu-item[role='menuitemradio'][data-checked] {
   background: color-mix(in srgb, var(--brand) 16%, transparent);
   color: var(--brand-fg);
   font-weight: 600;
 }
 .reader-settings-profiles [role='menuitemradio'][data-checked]:hover,
-.series-actions [role='menuitemradio'][data-checked]:hover {
+.series-actions .mantine-Menu-item[role='menuitemradio'][data-checked]:hover {
   background: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+/* Back header of a drill-down page, shared by the reader settings and the series actions menu. */
+.drill-back {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 650;
+  text-align: start;
+}
+.drill-back-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  transition: background var(--dur-fast) var(--ease);
+}
+.drill-back:hover .drill-back-icon,
+.drill-back:focus-visible .drill-back-icon {
+  background: var(--surface-hover);
+}
+.reader-settings-back {
+  width: calc(100% + 12px);
+  min-height: 36px;
+  margin: -4px -6px 8px;
+  padding: 4px 6px;
+  border-radius: var(--radius-control);
 }
 
 /* The series page's "More actions" menu, drawn like the reader settings panel above. */
@@ -7993,7 +8046,7 @@ body.reader-open {
   padding: 9px 10px;
   border-radius: var(--radius-control);
 }
-.series-actions .mantine-Menu-item:not(.series-actions-danger, .series-actions-back) .mantine-Menu-itemSection[data-position='left'] {
+.series-actions .mantine-Menu-item:not(.series-actions-danger, .drill-back) .mantine-Menu-itemSection[data-position='left'] {
   color: var(--brand);
 }
 .series-actions .mantine-Menu-label {
@@ -8006,25 +8059,116 @@ body.reader-open {
   margin: 4px -6px;
   border-color: var(--border);
 }
-.series-actions .series-actions-back {
+.series-actions .drill-back {
   margin-bottom: 4px;
-  padding-block: 6px;
-  font-weight: 650;
+  padding: 5px 10px 5px 5px;
 }
-.series-actions-back-icon {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: var(--radius-control);
-  color: var(--ink-2);
-  transition: background var(--dur-fast) var(--ease);
-}
-.series-actions .series-actions-back:hover .series-actions-back-icon {
-  background: var(--surface-hover);
-}
-.series-actions .series-actions-back:hover {
+.series-actions .drill-back:hover {
   background: transparent;
+}
+.series-actions-option-hint {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-3);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 400;
+  line-height: 1.4;
+}
+.series-actions .mantine-Menu-item[role='menuitemradio'] .mantine-Menu-itemIndicator {
+  align-self: flex-start;
+  margin-top: 7px;
+}
+.series-actions [data-checked] .series-actions-option-hint {
+  color: inherit;
+  opacity: 0.8;
+}
+.series-actions-field {
+  padding: 8px 10px 10px;
+}
+.series-actions-field-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: var(--mantine-font-size-sm);
+}
+.series-actions-field-title svg {
+  flex-shrink: 0;
+  color: var(--brand);
+}
+.series-actions-field[data-disabled] .series-actions-field-title {
+  opacity: 0.6;
+}
+.series-actions-field-help {
+  margin-top: 6px;
+  color: var(--ink-3);
+  font-size: var(--mantine-font-size-xs);
+  line-height: 1.45;
+}
+/* Matches Mantine's xs SegmentedControl, which the reader settings use. */
+.series-actions-segments {
+  display: flex;
+  padding: 4px;
+  border-radius: var(--mantine-radius-default);
+  background-color: var(--mantine-color-dark-8);
+}
+[data-mantine-color-scheme='light'] .series-actions-segments {
+  background-color: var(--mantine-color-gray-1);
+}
+.series-actions-segment {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 28px;
+  padding: 2px 6px;
+  border-radius: calc(var(--mantine-radius-default) - 4px);
+  color: var(--mantine-color-dark-1);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 500;
+  /* Short names, but a translation can still run long: wrap rather than spill out. */
+  line-height: 1.2;
+  text-align: center;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+[data-mantine-color-scheme='light'] .series-actions-segment {
+  color: var(--mantine-color-gray-7);
+}
+.series-actions-segment:not(:disabled, [data-checked]):hover {
+  color: var(--mantine-color-text);
+}
+.series-actions-segment[data-checked] {
+  background-color: var(--mantine-color-dark-5);
+  color: var(--mantine-color-white);
+}
+[data-mantine-color-scheme='light'] .series-actions-segment[data-checked] {
+  background-color: var(--mantine-color-white);
+  color: var(--mantine-color-black);
+}
+.series-actions-segment:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.series-actions-segment:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+.series-actions-reason {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 2px 0 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  background: var(--surface-hover);
+  color: var(--ink-2);
+  font-size: var(--mantine-font-size-xs);
+  line-height: 1.4;
+}
+.series-actions-reason svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--ink-3);
 }
 
 /* Thumbnail rail. Sits above the bottom bar and hides with the rest of the chrome. */

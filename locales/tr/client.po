@@ -3544,6 +3544,16 @@ msgstr "Toplayıcı"
 msgid "All"
 msgstr "Tümü"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgctxt "monitor mode"
+msgid "All"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgctxt "notify about every chapter"
+msgid "All"
+msgstr ""
+
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
 msgid "All ({total})"
@@ -5244,19 +5254,31 @@ msgid "Changes apply straight to the grid behind this panel."
 msgstr "Değişiklikler bu panelin arkasındaki ızgaraya doğrudan uygulanır."
 
 #: src/pages/reader/ReaderSettings.tsx
-#, fuzzy
-msgid "Changes apply to this series only."
-msgstr "Değişiklikler yalnızca bu seriye uygulanır."
+msgid "Changes apply to <0>this series</0> only."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Changes apply to <0>your reader defaults</0>."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Changes apply to the <0>{inForceName}</0> profile and every series using it."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
-msgid "Changes apply to your reader defaults."
-msgstr "Değişiklikler okuyucu varsayılanlarınıza uygulanır."
+#~ msgid "Changes apply to this series only."
+#~ msgstr "Değişiklikler yalnızca bu seriye uygulanır."
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
-msgid "Changes retune \"{inForceName}\", so every series using it."
-msgstr "Değişiklikler \"{inForceName}\"i yeniden ayarlar, dolayısıyla onu kullanan her seriyi."
+#~ msgid "Changes apply to your reader defaults."
+#~ msgstr "Değişiklikler okuyucu varsayılanlarınıza uygulanır."
+
+#: src/pages/reader/ReaderSettings.tsx
+#, fuzzy
+#~ msgid "Changes retune \"{inForceName}\", so every series using it."
+#~ msgstr "Değişiklikler \"{inForceName}\"i yeniden ayarlar, dolayısıyla onu kullanan her seriyi."
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5477,6 +5499,18 @@ msgstr "Sayfa başına bölüm"
 #, fuzzy
 msgid "Chapters read in this series"
 msgstr "Bu seride okunan bölümler"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on are wanted and queued a batch at a time, ahead of where you're reading."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on are wanted, except specials."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on aren't wanted."
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #, fuzzy
@@ -6954,6 +6988,7 @@ msgstr "Okuma gününüzün ne zaman bittiğine karar verir."
 msgid "Decimal chapters like 10.5 stay listed but are never downloaded."
 msgstr "10.5 gibi ondalıklı bölümler listelenir ama hiçbir zaman indirilmez."
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/ui/seriesNotifications.ts
 #: src/components/ui/viewPrefs.tsx
@@ -7040,8 +7075,8 @@ msgstr "{name} silinsin mi?"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Delete a chapter's file some days after everyone has read it"
-msgstr "Herkes okuduktan birkaç gün sonra bir bölümün dosyasını sil"
+#~ msgid "Delete a chapter's file some days after everyone has read it"
+#~ msgstr "Herkes okuduktan birkaç gün sonra bir bölümün dosyasını sil"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -7738,6 +7773,10 @@ msgstr "örn. Devam ediyor ve geride"
 msgid "Each bar spans the days a chapter is likely, never a promise. A diamond marks a day the source announced."
 msgstr "Her çubuk, bir bölümün büyük olasılıkla çıkacağı günleri gösterir, bir söz değildir. Kaynağın duyurduğu bir gün elmasla işaretlenir."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Each chapter's file is deleted for good some days after everyone has read it."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Each language adds its own chapter rows and files."
@@ -8112,6 +8151,10 @@ msgstr "Her bölüm zaten kullanılabilecek en iyi dosyayla eşleşmiş."
 #, fuzzy
 msgid "Every chapter is already on the best file available. Nothing to change."
 msgstr "Her bölüm zaten kullanılabilecek en iyi dosyayla eşleşmiş. Değiştirilecek bir şey yok."
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Every chapter released from now on is wanted."
+msgstr ""
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -8989,8 +9032,8 @@ msgstr "Kuralları takip et"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Follow the setting"
-msgstr "Genel ayarı kullan"
+#~ msgid "Follow the setting"
+#~ msgstr "Genel ayarı kullan"
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -9155,8 +9198,8 @@ msgstr "Full"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Full also excludes this series from Rewind stats and reading history."
-msgstr "Full, bu seriyi Rewind istatistiklerinden ve okuma geçmişinden de hariç tutar."
+#~ msgid "Full also excludes this series from Rewind stats and reading history."
+#~ msgstr "Full, bu seriyi Rewind istatistiklerinden ve okuma geçmişinden de hariç tutar."
 
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
@@ -10351,6 +10394,14 @@ msgstr "Kitaplıktan kaldırılmış olabilir."
 msgid "It needs a quality profile and downloaded chapters."
 msgstr "Bir kalite profiline ve indirilmiş bölümlere ihtiyacı var."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "It's off there now."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "It's on there now."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -10574,6 +10625,10 @@ msgstr "Mevcut bağlantı korundu"
 #, fuzzy
 msgid "Kept lossless"
 msgstr "Kayıpsız tutuldu"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Kept out of your trackers, Rewind, stats and reading history."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -11447,6 +11502,8 @@ msgstr "Ana bölümler ({visibleMainCount})"
 msgid "main (no specials)"
 msgstr "main (özel bölüm yok)"
 
+#. Monitor mode that skips specials
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Main only"
@@ -12428,6 +12485,7 @@ msgstr "Hareket eden kapaklar"
 msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
 msgstr "Birden fazla hesap etkin olduğu için çok kullanıcılı mod açık. Geri dönmek için diğerlerini devre dışı bırakın veya silin."
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Muted"
@@ -14949,6 +15007,10 @@ msgstr "Sayfalar bölümü"
 msgid "Pages stay as they are downloaded. Files already converted stay converted."
 msgstr "Sayfalar indirildiği gibi kalır. Daha önce dönüştürülmüş dosyalar dönüştürülmüş kalır."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Pages stay as they were downloaded."
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Pages under 16 KB are always kept as they are."
@@ -16004,6 +16066,10 @@ msgstr "Herkes okuduktan sonra okunmuş dosya temizliği bu dosyayı {removedOn}
 msgid "Read file cleanup is going to delete this file"
 msgstr "Okunmuş dosya temizliği bu dosyayı silecek"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Read files stay on disk."
+msgstr ""
+
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
 msgid "Read first chapter"
@@ -16139,8 +16205,10 @@ msgstr "Sizin gibi okuyucular bunu da önerdi"
 msgid "Readers who finished {finished} also finished this"
 msgstr "{finished} serisini bitirenler bunu da bitirdi"
 
+#. Notify only while the user is partway through the series
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/settings/registry.ts
@@ -16154,6 +16222,14 @@ msgstr "Okuyor"
 #, fuzzy
 msgid "Reading apps connected over OPDS, Komga or KOReader keep working in the meantime."
 msgstr "OPDS, Komga veya KOReader üzerinden bağlı okuma uygulamaları bu sırada çalışmaya devam eder."
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Reading counts in your stats and goes to your trackers."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Reading counts in your stats but isn't sent to your trackers."
+msgstr ""
 
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
@@ -20717,6 +20793,10 @@ msgstr "En eski sayfalar bunun ötesinde atılır."
 msgid "The others were converted on download or their original has been purged."
 msgstr "Diğerleri indirilirken dönüştürüldü ya da orijinalleri silindi."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "The page conversion rules in Settings decide."
+msgstr ""
+
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
 msgid "The preview expired. Try again."
@@ -22450,6 +22530,10 @@ msgstr "Zevk profili için kullan"
 msgid "Use OPDS"
 msgstr "OPDS kullanır"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Use the Downloads setting"
+msgstr ""
+
 #. placeholder {0}: found.results
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -23029,8 +23113,8 @@ msgstr "Batı (OEL)"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "What happens to chapters released later"
-msgstr "Daha sonra yayımlanan bölümlere ne olacağı"
+#~ msgid "What happens to chapters released later"
+#~ msgstr "Daha sonra yayımlanan bölümlere ne olacağı"
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy

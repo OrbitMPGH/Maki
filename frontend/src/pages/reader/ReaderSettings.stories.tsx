@@ -124,7 +124,7 @@ export const EscapeStepsBackThenCloses: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const b = body(canvasElement)
     await userEvent.click(await b.findByRole('button', { name: /^While reading/ }))
-    await expect(await b.findByRole('button', { name: 'Back' })).toHaveFocus()
+    await expect(await b.findByRole('button', { name: /^Back/ })).toHaveFocus()
     await userEvent.keyboard('{Escape}')
     await expect(await b.findByRole('radiogroup', { name: 'Layout' })).toBeVisible()
     await waitFor(() => expect(b.getByRole('button', { name: /^While reading/ })).toHaveFocus())
@@ -142,7 +142,7 @@ export const WhileReading: Story = {
     await userEvent.click(row)
     await userEvent.click(await b.findByRole('switch', { name: /Tap zones/ }))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ tapZones: false }))
-    await userEvent.click(b.getByRole('button', { name: 'Back' }))
+    await userEvent.click(b.getByRole('button', { name: /^Back/ }))
     await waitFor(() => expect(b.getByRole('button', { name: /^While reading/ }).textContent).not.toBe(before))
   },
 }
@@ -155,7 +155,7 @@ export const PageLook: Story = {
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ background: '#000000' }))
     await userEvent.click(b.getByRole('switch', { name: /Crop borders/ }))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ cropBorders: true }))
-    await userEvent.click(b.getByRole('button', { name: 'Back' }))
+    await userEvent.click(b.getByRole('button', { name: /^Back/ }))
     await expect(await b.findByRole('button', { name: /^Page look\s*OLED black, cropped$/ })).toBeVisible()
   },
 }
@@ -172,8 +172,9 @@ export const WidePages: Story = {
 export const ProfileDropdown: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const b = body(canvasElement)
+    // Which settings a change edits is said on the first view, before anything is opened.
+    await waitFor(() => expect(canvasElement.ownerDocument.querySelector('.reader-settings-scope')).toHaveTextContent('Changes apply to the Manga profile and every series using it.'))
     await userEvent.click(await b.findByRole('button', { name: 'Reading profile: Auto (Manga)' }))
-    await expect(await b.findByText('Changes retune "Manga", so every series using it.')).toBeVisible()
     // The list drops from the chip; the panel stays on its first page behind it.
     await expect(b.getByRole('radiogroup', { name: 'Layout' })).toBeVisible()
     await userEvent.click(await b.findByRole('menuitemradio', { name: 'Night reading' }))
@@ -197,19 +198,17 @@ export const EscapeClosesTheProfileListFirst: Story = {
 
 export const SeriesOverride: Story = {
   args: { selection: 'series', source: 'Series' },
-  play: async ({ canvasElement, userEvent }) => {
-    const b = body(canvasElement)
-    await userEvent.click(await b.findByRole('button', { name: 'Reading profile: Just this series' }))
-    await expect(await b.findByText('Changes apply to this series only.')).toBeVisible()
+  play: async ({ canvasElement }) => {
+    await expect(await body(canvasElement).findByRole('button', { name: 'Reading profile: Just this series' })).toBeVisible()
+    await waitFor(() => expect(canvasElement.ownerDocument.querySelector('.reader-settings-scope')).toHaveTextContent('Changes apply to this series only.'))
   },
 }
 
 export const GlobalDefaults: Story = {
   args: { selection: 'auto', source: 'Global', autoProfileId: null },
-  play: async ({ canvasElement, userEvent }) => {
-    const b = body(canvasElement)
-    await userEvent.click(await b.findByRole('button', { name: 'Reading profile: Auto (my defaults)' }))
-    await expect(await b.findByText('Changes apply to your reader defaults.')).toBeVisible()
+  play: async ({ canvasElement }) => {
+    await expect(await body(canvasElement).findByRole('button', { name: 'Reading profile: Auto (my defaults)' })).toBeVisible()
+    await waitFor(() => expect(canvasElement.ownerDocument.querySelector('.reader-settings-scope')).toHaveTextContent('Changes apply to your reader defaults.'))
   },
 }
 

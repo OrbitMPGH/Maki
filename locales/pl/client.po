@@ -3544,6 +3544,16 @@ msgstr "Agregator"
 msgid "All"
 msgstr "Wszystkie"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgctxt "monitor mode"
+msgid "All"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgctxt "notify about every chapter"
+msgid "All"
+msgstr ""
+
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
 msgid "All ({total})"
@@ -5244,19 +5254,31 @@ msgid "Changes apply straight to the grid behind this panel."
 msgstr "Zmiany są stosowane bezpośrednio do siatki za tym panelem."
 
 #: src/pages/reader/ReaderSettings.tsx
-#, fuzzy
-msgid "Changes apply to this series only."
-msgstr "Zmiany dotyczą tylko tej serii."
+msgid "Changes apply to <0>this series</0> only."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Changes apply to <0>your reader defaults</0>."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Changes apply to the <0>{inForceName}</0> profile and every series using it."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
-msgid "Changes apply to your reader defaults."
-msgstr "Zmiany dotyczą Twoich domyślnych ustawień czytnika."
+#~ msgid "Changes apply to this series only."
+#~ msgstr "Zmiany dotyczą tylko tej serii."
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
-msgid "Changes retune \"{inForceName}\", so every series using it."
-msgstr "Zmiany dostrajają „{inForceName}”, więc dotyczą każdej serii, która go używa."
+#~ msgid "Changes apply to your reader defaults."
+#~ msgstr "Zmiany dotyczą Twoich domyślnych ustawień czytnika."
+
+#: src/pages/reader/ReaderSettings.tsx
+#, fuzzy
+#~ msgid "Changes retune \"{inForceName}\", so every series using it."
+#~ msgstr "Zmiany dostrajają „{inForceName}”, więc dotyczą każdej serii, która go używa."
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5477,6 +5499,18 @@ msgstr "Rozdziałów na stronę"
 #, fuzzy
 msgid "Chapters read in this series"
 msgstr "Rozdziały przeczytane w tej serii"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on are wanted and queued a batch at a time, ahead of where you're reading."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on are wanted, except specials."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Chapters released from now on aren't wanted."
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #, fuzzy
@@ -6954,6 +6988,7 @@ msgstr "Określa, kiedy kończy się Twój dzień czytania."
 msgid "Decimal chapters like 10.5 stay listed but are never downloaded."
 msgstr "Rozdziały dziesiętne, jak 10.5, pozostają na liście, ale nigdy nie są pobierane."
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/ui/seriesNotifications.ts
 #: src/components/ui/viewPrefs.tsx
@@ -7040,8 +7075,8 @@ msgstr "Usunąć {name}?"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Delete a chapter's file some days after everyone has read it"
-msgstr "Usuwaj plik rozdziału kilka dni po tym, jak wszyscy go przeczytali"
+#~ msgid "Delete a chapter's file some days after everyone has read it"
+#~ msgstr "Usuwaj plik rozdziału kilka dni po tym, jak wszyscy go przeczytali"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -7738,6 +7773,10 @@ msgstr "np. W trakcie i w tyle"
 msgid "Each bar spans the days a chapter is likely, never a promise. A diamond marks a day the source announced."
 msgstr "Każdy słupek obejmuje dni, w których rozdział jest prawdopodobny, nigdy nie jest obietnicą. Romb oznacza dzień, który źródło ogłosiło."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Each chapter's file is deleted for good some days after everyone has read it."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Each language adds its own chapter rows and files."
@@ -8112,6 +8151,10 @@ msgstr "Każdy rozdział jest już powiązany z najlepszym dostępnym plikiem."
 #, fuzzy
 msgid "Every chapter is already on the best file available. Nothing to change."
 msgstr "Każdy rozdział jest już powiązany z najlepszym dostępnym plikiem. Nie ma nic do zmiany."
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Every chapter released from now on is wanted."
+msgstr ""
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -8989,8 +9032,8 @@ msgstr "Stosuj reguły"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Follow the setting"
-msgstr "Zgodnie z ustawieniem"
+#~ msgid "Follow the setting"
+#~ msgstr "Zgodnie z ustawieniem"
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -9155,8 +9198,8 @@ msgstr "Pełne"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Full also excludes this series from Rewind stats and reading history."
-msgstr "Pełne wyciszenie wyklucza także tę serię ze statystyk Rewind i historii czytania."
+#~ msgid "Full also excludes this series from Rewind stats and reading history."
+#~ msgstr "Pełne wyciszenie wyklucza także tę serię ze statystyk Rewind i historii czytania."
 
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
@@ -10351,6 +10394,14 @@ msgstr "Mógł zostać usunięty z biblioteki."
 msgid "It needs a quality profile and downloaded chapters."
 msgstr "Potrzebuje profilu jakości i pobranych rozdziałów."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "It's off there now."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "It's on there now."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -10574,6 +10625,10 @@ msgstr "Pozostawiono dotychczasowe powiązanie"
 #, fuzzy
 msgid "Kept lossless"
 msgstr "Zachowane bezstratnie"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Kept out of your trackers, Rewind, stats and reading history."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -11447,6 +11502,8 @@ msgstr "Główne ({visibleMainCount})"
 msgid "main (no specials)"
 msgstr "main (bez specjałów)"
 
+#. Monitor mode that skips specials
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Main only"
@@ -12428,6 +12485,7 @@ msgstr "Przesuwanie okładek"
 msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
 msgstr "Tryb wielu użytkowników jest włączony, bo włączone jest więcej niż jedno konto. Wyłącz lub usuń pozostałe, aby wrócić."
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Muted"
@@ -14949,6 +15007,10 @@ msgstr "Sekcja stron"
 msgid "Pages stay as they are downloaded. Files already converted stay converted."
 msgstr "Strony zostają w formacie, w jakim zostały pobrane. Pliki już przekonwertowane pozostają przekonwertowane."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Pages stay as they were downloaded."
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Pages under 16 KB are always kept as they are."
@@ -16004,6 +16066,10 @@ msgstr "Porządkowanie przeczytanych plików usunęło plik {removedOn}, po tym 
 msgid "Read file cleanup is going to delete this file"
 msgstr "Porządkowanie przeczytanych plików usunie ten plik"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Read files stay on disk."
+msgstr ""
+
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
 msgid "Read first chapter"
@@ -16139,8 +16205,10 @@ msgstr "Czytelnicy podobni do Ciebie również to polecili"
 msgid "Readers who finished {finished} also finished this"
 msgstr "Czytelnicy, którzy ukończyli {finished}, ukończyli też to"
 
+#. Notify only while the user is partway through the series
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/settings/registry.ts
@@ -16154,6 +16222,14 @@ msgstr "Czytane"
 #, fuzzy
 msgid "Reading apps connected over OPDS, Komga or KOReader keep working in the meantime."
 msgstr "Aplikacje do czytania podłączone przez OPDS, Komga lub KOReader działają w międzyczasie."
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Reading counts in your stats and goes to your trackers."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Reading counts in your stats but isn't sent to your trackers."
+msgstr ""
 
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
@@ -20717,6 +20793,10 @@ msgstr "Najstarsze strony są usuwane powyżej tego limitu."
 msgid "The others were converted on download or their original has been purged."
 msgstr "Pozostałe zostały przekonwertowane przy pobieraniu albo ich oryginał został usunięty."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "The page conversion rules in Settings decide."
+msgstr ""
+
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
 msgid "The preview expired. Try again."
@@ -22450,6 +22530,10 @@ msgstr "Użyj do określania gustu"
 msgid "Use OPDS"
 msgstr "Korzystaj z OPDS"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Use the Downloads setting"
+msgstr ""
+
 #. placeholder {0}: found.results
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -23029,8 +23113,8 @@ msgstr "Western (OEL)"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "What happens to chapters released later"
-msgstr "Co się dzieje z rozdziałami wydanymi później"
+#~ msgid "What happens to chapters released later"
+#~ msgstr "Co się dzieje z rozdziałami wydanymi później"
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
