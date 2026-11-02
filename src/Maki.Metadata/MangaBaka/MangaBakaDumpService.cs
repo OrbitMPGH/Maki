@@ -253,6 +253,11 @@ public class MangaBakaDumpService(
         Execute(conn, "PRAGMA journal_mode = OFF");
         Execute(conn, "PRAGMA synchronous = OFF");
 
+        // Each browse index is a full scan of the 3.5 GB table; reading it through a mapping rather
+        // than a copy per page halved that step (13-17 s to 7 s) on the 2026-11 dump. SQLite caps the
+        // size at its compile-time maximum and falls back to plain reads where the map fails.
+        Execute(conn, $"PRAGMA mmap_size = {StagingMmapBytes}");
+
         Interruptible(conn, ct, () =>
         {
             var count = (long)Scalar(conn, "SELECT COUNT(*) FROM series")!;
@@ -272,12 +277,14 @@ public class MangaBakaDumpService(
 
     /// <summary>
     /// Where the row count and the search index end on the indexing bar. On the 2026-11 standard
-    /// dump the count took 1.5 to 10 s, the search index 11 to 13 s and the browse indexes 13 to
-    /// 60 s, depending on how much of the file the page cache held.
+    /// dump with the file mapped, the count took 0.5 to 6 s, the search index 13 to 14 s and the
+    /// browse indexes about 8 s, depending on how much of the file the page cache held.
     /// </summary>
-    private const double CountShare = 0.08;
+    private const double CountShare = 0.05;
 
-    private const double SearchShare = 0.45;
+    private const double SearchShare = 0.6;
+
+    private const long StagingMmapBytes = 8L * 1024 * 1024 * 1024;
 
     /// <summary>Maps a step's own 0 to 1 onto its stretch of the whole bar.</summary>
     private static Action<double> Slice(Action<double> report, double from, double to) =>
