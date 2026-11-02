@@ -531,6 +531,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
 
             // Same idea for page conversion's pass over the library.
             e.HasIndex(f => f.ConversionCheckedAtUtc).HasFilter("ConversionCheckedAtUtc IS NULL");
+            e.HasIndex(f => f.ConversionQueuedAtUtc).HasFilter("ConversionQueuedAtUtc IS NOT NULL");
 
             e.HasOne<Series>().WithMany().HasForeignKey(f => f.SeriesId).OnDelete(DeleteBehavior.Cascade);
         });
@@ -637,7 +638,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne<Series>().WithMany().HasForeignKey(h => h.SeriesId).OnDelete(DeleteBehavior.Cascade);
             // No FK to ChapterFile or Chapter: the original in the trash outlives both, and the purge
             // still has to find it by this row.
-        });
+        });
 
         modelBuilder.Entity<SeriesMetadataChange>(e =>
         {

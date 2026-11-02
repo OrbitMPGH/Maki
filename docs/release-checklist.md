@@ -157,8 +157,11 @@ grows with the page number, so wrong page order is obvious in the reader.
       a magnet-only result reaches the client. Then switch back to Prowlarr and check its indexer
       selection is still there.
 - [ ] **4.8** Page conversion, when the release touches images or the converter: under
-      **Settings → Library → Page conversion** pick WebP, download a chapter, and open the CBZ. JPEG
-      pages are WebP and PNG pages are lossless WebP. Repeat with AVIF. Run the library pass on a
+      **Settings → Library → Page conversion** pick WebP and download a chapter. The download
+      completes without waiting on the encode, the card shows it under New downloads, and within a
+      minute or so the CBZ has WebP pages for JPEG and lossless WebP for PNG. Open a chapter in the
+      reader while it is still queued: it stays as downloaded until ten minutes after you stop
+      reading. Repeat with AVIF. Run the library pass on a
       small series: it shows what it saved, pausing and resuming works, and the originals are in
       `.maki-trash/<series id>/conv-*`. The chapter still opens in the reader.
 

@@ -165,6 +165,9 @@ namespace Maki.Data.Migrations
                     b.Property<DateTime?>("ConversionCheckedAtUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("ConversionQueuedAtUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<long>("ConversionSavedBytes")
                         .HasColumnType("INTEGER");
 
@@ -228,6 +231,9 @@ namespace Maki.Data.Migrations
 
                     b.HasIndex("ConversionCheckedAtUtc")
                         .HasFilter("ConversionCheckedAtUtc IS NULL");
+
+                    b.HasIndex("ConversionQueuedAtUtc")
+                        .HasFilter("ConversionQueuedAtUtc IS NOT NULL");
 
                     b.HasIndex("DateAdded");
 

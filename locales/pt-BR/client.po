@@ -1881,6 +1881,10 @@ msgstr "{profileCount, plural, one {Pontuado em # perfil} many {Pontuado em # pe
 msgid "{pushingDown} kept out of your taste"
 msgstr "{pushingDown} mantidos fora do seu gosto"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{queued, plural, one {# file waiting to be converted. A chapter someone is reading is converted once they stop.} other {# files waiting to be converted. A chapter someone is reading is converted once they stop.}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
@@ -7764,6 +7768,10 @@ msgstr "Baixando…"
 msgid "Downloads"
 msgstr "Downloads"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Downloads and torrent imports are converted in the background once they finish."
+msgstr ""
+
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Downloads now try {bestName} first."
@@ -12825,6 +12833,10 @@ msgstr "Novos capítulos, downloads concluídos e conquistas desbloqueadas apare
 #, fuzzy
 msgid "New default"
 msgstr "Novo padrão"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "New downloads"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy

@@ -2,7 +2,6 @@ using Maki.Core.Entities;
 using Maki.Core.Images;
 using Maki.Core.Paths;
 using Maki.Core.Quality;
-using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -60,19 +59,6 @@ public class PageConversionPlanService(MakiDbContext db)
     public static PlanCandidate Candidate(ChapterFile file, SeriesFacts series) => Candidate(
         new FileFacts(file.Id, file.SeriesId, file.Tier, file.SourceName, file.ImageFormat, file.Size, file.PageCount,
             file.MedianWidth, file.MedianHeight), series);
-
-    /// <summary>
-    /// A download has no row yet: the tier comes from the source's kind, the way quality stamping
-    /// derives it, and the format and size from the archive as it was packaged.
-    /// </summary>
-    public static async Task<PlanCandidate> ForDownloadAsync(MakiDbContext db, int seriesId, SourceKind kind,
-        string sourceName, ChapterFileMeasurement measurement, long size, CancellationToken ct)
-    {
-        var series = await SeriesFactsAsync(db, seriesId, ct);
-        var tier = QualityTierResolver.Resolve(kind, null, "", isVolume: false);
-        return new PlanCandidate(series.Override, series.Type, series.Tags, tier, sourceName, measurement.ImageFormat, size,
-            measurement.PageCount, measurement.MedianWidth, measurement.MedianHeight);
-    }
 
     /// <summary>
     /// Puts back in line every checked, unconverted file the plan now answers differently for, and

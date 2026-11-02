@@ -232,6 +232,27 @@ public class TorrentImportServiceTests : IDisposable
         Assert.Equal(1, db.StatsEvents.Count(e => e.SeriesId == series.Id && e.Type == StatsEventType.ChapterDownloaded));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task An_imported_file_joins_the_conversion_queue_only_while_conversion_is_on(bool conversionOn)
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        SeedVolumeDownload(1, 2, 3);
+        if (conversionOn)
+        {
+            using var config = _db.NewContext();
+            config.AppConfig.Add(new AppConfigEntry { Key = SettingKeys.PageConversionFormat, Value = "webp" });
+            config.SaveChanges();
+        }
+
+        await Service().ImportAsync(item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+
+        using var db = _db.NewContext();
+        var file = Assert.Single(db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
+        Assert.Equal(conversionOn, file.ConversionQueuedAtUtc is not null);
+    }
+
     /// <summary>
     /// A row written on Windows carries a backslash; the same file adopted again under Docker is
     /// spelled with a slash, and the two must still be one row.

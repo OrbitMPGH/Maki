@@ -80,6 +80,7 @@ public sealed class QualitySnapshot
     public void RestoreFormatOnto(Entities.ChapterFile file, DateTime now)
     {
         file.ResetConversion();
+        file.ConversionQueuedAtUtc = null;
         file.ImageFormat = StoredImageFormat ?? ImageFormat;
         if (StoredImageFormat is not null)
         {

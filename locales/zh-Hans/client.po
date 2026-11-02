@@ -1881,6 +1881,10 @@ msgstr "{profileCount, plural, other {已在 # 个配置中计分}}"
 msgid "{pushingDown} kept out of your taste"
 msgstr "{pushingDown} 个被排除在品味之外"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{queued, plural, one {# file waiting to be converted. A chapter someone is reading is converted once they stop.} other {# files waiting to be converted. A chapter someone is reading is converted once they stop.}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
@@ -7764,6 +7768,10 @@ msgstr "下载中……"
 msgid "Downloads"
 msgstr "下载"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Downloads and torrent imports are converted in the background once they finish."
+msgstr ""
+
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Downloads now try {bestName} first."
@@ -12825,6 +12833,10 @@ msgstr "新章节、已完成的下载和已解锁的成就都会显示在这里
 #, fuzzy
 msgid "New default"
 msgstr "新默认"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "New downloads"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy

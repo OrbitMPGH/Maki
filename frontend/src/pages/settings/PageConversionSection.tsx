@@ -66,6 +66,13 @@ export function PageConversionSection() {
             )}
           </Group>
 
+          {status.settings.format && (
+            <>
+              <Divider />
+              <NewDownloads queued={status.library.queuedFiles} />
+            </>
+          )}
+
           <Divider />
           <LibraryPass status={status} />
 
@@ -74,6 +81,27 @@ export function PageConversionSection() {
         </Stack>
       )}
     </SettingsSection>
+  )
+}
+
+function NewDownloads({ queued }: { queued: number }) {
+  return (
+    <Stack gap={2}>
+      <Text fw={500} size="sm">
+        <Trans>New downloads</Trans>
+      </Text>
+      <Text size="sm" c="var(--ink-3)">
+        {queued > 0 ? (
+          <Plural
+            value={queued}
+            one="# file waiting to be converted. A chapter someone is reading is converted once they stop."
+            other="# files waiting to be converted. A chapter someone is reading is converted once they stop."
+          />
+        ) : (
+          <Trans>Downloads and torrent imports are converted in the background once they finish.</Trans>
+        )}
+      </Text>
+    </Stack>
   )
 }
 

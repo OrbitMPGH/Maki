@@ -522,7 +522,7 @@ public class TorrentImportService(
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, seriesDir, imported, $"torrent:{ReleaseInfoOf(item)?.Indexer}",
             updateComicInfo: writeComicInfo, releaseName: ReleaseInfoOf(item)?.Title ?? item.Title,
-            replaceExisting: mode == TorrentImportMode.Replace, ct: ct,
+            replaceExisting: mode == TorrentImportMode.Replace, ct: ct, queueConversion: true,
             // An upgrade may only take chapters off the files its verdict marked; a protected or
             // already good file inside the volume's span keeps its chapter.
             displaceableFileIds: mode == TorrentImportMode.Replace && upgrade is { ReplacedFileIds.Count: > 0 }

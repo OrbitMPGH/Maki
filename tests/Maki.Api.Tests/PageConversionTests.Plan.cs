@@ -262,11 +262,13 @@ public sealed partial class PageConversionTests
         }
 
         await _world.ProcessAsync(itemId);
+        await QueueWorker().RunQueueAsync(CancellationToken.None);
 
         using var check = _world.Db.NewContext();
         Assert.Equal(QueueStatus.Completed, check.DownloadQueue.Single(q => q.Id == itemId).Status);
         var file = check.Chapters.Include(c => c.ChapterFile).Single(c => c.Id == chapterId).ChapterFile!;
         Assert.NotNull(file.ConversionCheckedAtUtc);
+        Assert.Null(file.ConversionQueuedAtUtc);
         if (skipOfficial)
         {
             Assert.Equal(("skip", "jpg", (string?)null), (file.CheckedWith, file.ImageFormat, file.OriginalImageFormat));
