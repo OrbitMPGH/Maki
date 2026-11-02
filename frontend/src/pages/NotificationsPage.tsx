@@ -286,7 +286,7 @@ function FeedSkeleton() {
       </Box>
       {[64, 48, 72, 56, 44, 60].map((width, i) => (
         <Group key={i} className="inbox-record" gap="sm" wrap="nowrap" align="flex-start" px="md" py="sm">
-          <Skeleton w={34} h={49} radius="sm" mt={2} style={{ flexShrink: 0 }} />
+          <Skeleton w={34} h={49} radius="xs" mt={2} style={{ flexShrink: 0 }} />
           <Stack gap={7} style={{ flex: 1 }} pt={3}>
             <Skeleton h={12} w={width * 5} maw="80%" />
             <Skeleton h={10} w={(width - 12) * 5} maw="70%" />

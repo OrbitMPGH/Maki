@@ -708,7 +708,7 @@ export function PosterSkeletons({
         {Array.from({ length: visibleCount }, (_, i) => (
           <div key={i} className={`series-row ${density}`}>
             <Skeleton
-              radius="sm"
+              radius="var(--radius-thumb)"
               style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}
             />
             <div className="row-body">
@@ -730,7 +730,7 @@ export function PosterSkeletons({
       aria-hidden
     >
       {Array.from({ length: visibleCount }, (_, i) => (
-        <Skeleton key={i} radius="lg" style={{ aspectRatio: '2 / 3' }} />
+        <Skeleton key={i} radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
       ))}
     </SimpleGrid>
   )

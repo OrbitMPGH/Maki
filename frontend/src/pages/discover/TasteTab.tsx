@@ -118,7 +118,7 @@ function TasteSkeleton() {
           <div className="discover-rail">
             {Array.from({ length: 8 }, (_, j) => (
               <div key={j} className="discover-rail-item">
-                <Skeleton radius="lg" style={{ aspectRatio: '2 / 3' }} />
+                <Skeleton radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
               </div>
             ))}
           </div>
