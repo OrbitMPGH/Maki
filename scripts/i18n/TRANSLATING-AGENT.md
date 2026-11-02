@@ -34,7 +34,8 @@ Work one language at a time, in chunks, committing as you go.
 node scripts/i18n/todo.mjs --locale de --limit 200
 
 # 2. Edit locales/de/client.po and locales/de/server.po, filling the msgstr of each listed key.
-#    Add "#, fuzzy" above each entry you fill, if it is not already there.
+#    Add "#, fuzzy" to each entry you fill, if it is not already there: after the "#." and "#:"
+#    comment lines, before msgctxt if the entry has one, otherwise before msgid.
 
 # 3. Check your work. This must pass before you commit.
 node scripts/i18n/validate.mjs --locale de
