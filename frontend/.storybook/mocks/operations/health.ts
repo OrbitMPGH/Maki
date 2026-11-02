@@ -2,9 +2,11 @@ import { http, HttpResponse } from 'msw'
 import type { ImageCacheInfo } from '../../../src/api/hooks'
 import type {
   Analysis,
+  DuplicateCopy,
   FileDetail,
   HealthCheck,
   HealthFile,
+  HealthFilesPage,
   HealthFinding,
   HealthOperation,
   HealthOptions,
@@ -158,6 +160,8 @@ export const fileDetails: Record<number, FileDetail> = {
       { id: 2, sourceName: 'Comick', priority: 2 },
     ],
     match: null,
+    copies: [],
+    relinkTo: null,
   },
   2: {
     file: healthFiles[1],
@@ -176,6 +180,8 @@ export const fileDetails: Record<number, FileDetail> = {
       chapters: [{ id: 1304, number: 4, title: 'Low Tide', hasFile: false }],
       counterparts: [],
     },
+    copies: [],
+    relinkTo: null,
   },
   3: {
     file: healthFiles[2],
@@ -206,6 +212,8 @@ export const fileDetails: Record<number, FileDetail> = {
         },
       ],
     },
+    copies: [],
+    relinkTo: null,
   },
   4: {
     file: healthFiles[3],
@@ -217,7 +225,87 @@ export const fileDetails: Record<number, FileDetail> = {
     ],
     mappings: [{ id: 4, sourceName: 'MangaDex', priority: 1 }],
     match: null,
+    copies: [],
+    relinkTo: null,
   },
+}
+
+/** Volume 10 twice over: the copy chapters 77 to 85 read from, and a byte-identical spare beside it. */
+const volumeHash = 'c0ffee5d1e7a20b49e8f3d6a71b2c4d5'
+const volumeSize = 212_400_000
+const keptVolume = file(7, 'Ashen Crown Regression/Ashen Crown Regression v10.cbz', {
+  seriesId: 9,
+  size: volumeSize,
+  contentHash: volumeHash,
+  findings: [finding(108, 7, 'duplicate', 'warning', 'Byte-identical archives exist in the library')],
+})
+const spareVolume = file(8, 'Ashen Crown Regression/Ashen Crown Regression - Volume 10 (Digital).cbz', {
+  seriesId: undefined,
+  chapterFileId: undefined,
+  size: volumeSize,
+  contentHash: volumeHash,
+  findings: [
+    finding(109, 8, 'duplicate', 'warning', 'Byte-identical archives exist in the library'),
+    finding(110, 8, 'unlinked', 'warning', 'This archive backs no chapter'),
+  ],
+})
+const volumeChapters = Array.from({ length: 9 }, (_, i) => ({ id: 7700 + i, number: 77 + i }))
+const volumeCopies: DuplicateCopy[] = [
+  { id: 7, version: 'fv7', relativePath: keptVolume.relativePath, size: volumeSize, kept: true, spare: false, missing: false, rootPath: '/library/manga', chapters: volumeChapters },
+  { id: 8, version: 'fv8', relativePath: spareVolume.relativePath, size: volumeSize, kept: false, spare: true, missing: false, rootPath: '/library/manga', chapters: [] },
+]
+
+/** The copy that backs the chapters: delete the spare, or hand the chapters to it and delete this one. */
+export const keptDuplicateDetail: FileDetail = {
+  file: keptVolume,
+  analysis: analysis('complete', true, 184),
+  findings: keptVolume.findings,
+  chapters: volumeChapters.map((c) => ({ ...c, wanted: true })),
+  mappings: [{ id: 5, sourceName: 'MangaDex', priority: 1 }],
+  match: null,
+  copies: volumeCopies,
+  relinkTo: { id: 8, relativePath: spareVolume.relativePath },
+}
+
+/** The spare itself, opened from its own row: unlinked too, but its only rival is its own twin. */
+export const spareDuplicateDetail: FileDetail = {
+  file: spareVolume,
+  analysis: analysis('complete', true, 184),
+  findings: spareVolume.findings,
+  chapters: [],
+  mappings: [],
+  match: {
+    recognized: true,
+    labelKind: 'volume',
+    number: 10,
+    seriesId: 9,
+    seriesTitle: 'Ashen Crown Regression',
+    chapters: volumeChapters.map((c) => ({ ...c, hasFile: true })),
+    counterparts: [
+      {
+        chapterFileId: 3007,
+        relativePath: keptVolume.relativePath,
+        size: volumeSize,
+        sourceName: 'Nyaa',
+        healthFileId: 7,
+        version: 'fv7',
+        status: 'complete',
+        pages: 184,
+        pixelHeight: 257_600,
+        contentHash: volumeHash,
+        chapterIds: volumeChapters.map((c) => c.id),
+      },
+    ],
+  },
+  copies: volumeCopies,
+  relinkTo: null,
+}
+
+/** What the Duplicate filter serves: one row per set, the kept copy leading, and the spares for the cleanup bar. */
+export const duplicateFilesPage: HealthFilesPage = {
+  items: [{ ...keptVolume, copies: volumeCopies.map(({ id, version, relativePath, kept, spare, missing }) => ({ id, version, relativePath, kept, spare, missing, findings: id === 7 ? keptVolume.findings : spareVolume.findings })) }],
+  total: 1,
+  spares: { total: 1, items: [{ id: 8, version: 'fv8', relativePath: spareVolume.relativePath }] },
 }
 
 export const unlinkedNoSeries: FileDetail = {
@@ -312,6 +400,7 @@ export const operationDetails: Record<number, OperationDetail> = {
     ],
     requiresReset: true,
     retryable: false,
+    relinkTo: null,
   },
   2: {
     operation: operations[1],
@@ -320,6 +409,7 @@ export const operationDetails: Record<number, OperationDetail> = {
     candidates: [],
     requiresReset: false,
     retryable: false,
+    relinkTo: null,
   },
   3: {
     operation: operations[2],
@@ -328,8 +418,20 @@ export const operationDetails: Record<number, OperationDetail> = {
     candidates: [],
     requiresReset: false,
     retryable: false,
+    relinkTo: null,
   },
 }
+/** Deleting the copy that backs chapters, with an identical copy beside it to take them over. */
+export const relinkDeleteDetail: OperationDetail = {
+  operation: operation(6, 7, 'delete', 'review', { relativePath: keptVolume.relativePath, seriesId: 9, seriesTitle: 'Ashen Crown Regression' }),
+  file: keptVolume,
+  chapters: volumeChapters.map((c) => ({ ...c, wanted: true })),
+  relinkTo: { id: 8, relativePath: spareVolume.relativePath },
+  candidates: [],
+  requiresReset: false,
+  retryable: false,
+}
+
 export const healthyDeleteDetail: OperationDetail = {
   operation: operations[1],
   file: healthFiles[0],
@@ -337,6 +439,7 @@ export const healthyDeleteDetail: OperationDetail = {
   candidates: [],
   requiresReset: false,
   retryable: false,
+  relinkTo: null,
 }
 
 export const historyEntries = [
@@ -405,6 +508,7 @@ export const healthHandlers = [
     const search = (params.get('search') ?? '').toLowerCase()
     const state = params.get('state')
     const kind = params.get('kind')
+    if (kind === 'duplicate') return HttpResponse.json(duplicateFilesPage)
     const items = healthFiles.filter(
       (f) =>
         f.relativePath.toLowerCase().includes(search) &&
@@ -443,6 +547,7 @@ export const healthHandlers = [
   http.post(api('/health/imports'), () => HttpResponse.json(operations[0])),
   http.post(api('/health/repairs'), () => HttpResponse.json(operations[0])),
   http.post(api('/health/deletions/preview'), () => HttpResponse.json(operations[1])),
+  http.post(api('/health/deletions'), () => HttpResponse.json(operations[3])),
   http.post(api('/health/deletions/bulk'), async ({ request }) => {
     const body = (await request.json()) as { files: { fileId: number }[] }
     return HttpResponse.json({

@@ -8820,6 +8820,88 @@ body.reader-open {
   background: color-mix(in srgb, var(--brand) 10%, transparent);
 }
 
+/* Identical copies: which one stays is read first, by the role label leading each row, and the
+   path second. The open file is the shaded row so "this one" never needs a second look. */
+.health-copies {
+  display: grid;
+  gap: var(--mantine-spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.health-copy {
+  display: grid;
+  gap: 4px;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+}
+.health-copy[data-this] {
+  background: var(--surface-2);
+}
+.health-copy-head {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+}
+.health-copy-role {
+  font-size: var(--type-meta);
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  color: var(--ink-2);
+  background: color-mix(in srgb, var(--neutral) 16%, transparent);
+}
+.health-copy-role[data-role='keep'] {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+}
+.health-copy-role[data-role='spare'] {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+}
+.health-copy-actions {
+  margin-top: var(--mantine-spacing-md);
+}
+/* The inline confirmation sits where the button was, so the eye does not have to travel to a dialog. */
+.health-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm);
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+}
+/* The other copies of a grouped Files row, under the kept one's path. */
+.health-copy-list {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.health-copy-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.health-copy-list .health-copy-role {
+  flex-shrink: 0;
+  padding: 0 6px;
+}
+.health-copy-link {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mantine-font-family-monospace);
+}
+
 /* Two archives, same rows, so "which of these is the better copy" is read down a column instead of
    held in your head between two cards. Label column first, then this file, then the linked one. */
 .health-compare {

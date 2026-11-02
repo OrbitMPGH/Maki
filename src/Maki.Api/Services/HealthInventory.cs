@@ -124,12 +124,7 @@ public static class HealthInventory
         await db.HealthFiles.Where(f => ids.Contains(f.Id)).ExecuteUpdateAsync(u => u.SetProperty(f => f.Removed, true), ct);
         await db.HealthFindings.Where(f => ids.Contains(f.FileId) && f.State != "resolved")
             .ExecuteUpdateAsync(u => u.SetProperty(f => f.State, "resolved"), ct);
-        if (hashes.Count > 0)
-            await db.HealthFindings
-                .Where(x => x.Kind == "duplicate" && x.State != "resolved")
-                .Where(x => db.HealthFiles.Any(f => f.Id == x.FileId && !f.Removed && f.ContentHash != null && hashes.Contains(f.ContentHash)
-                    && !db.HealthFiles.Any(o => o.Id != f.Id && !o.Removed && o.ContentHash == f.ContentHash)))
-                .ExecuteUpdateAsync(u => u.SetProperty(x => x.State, "resolved"), ct);
+        if (hashes.Count > 0) await HealthDuplicates.ResolveLonelyAsync(db, hashes, ct);
         return ids;
     }
 

@@ -766,6 +766,9 @@ namespace Maki.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("RelinkFileId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("SourceMappingId")
                         .HasColumnType("INTEGER");
 

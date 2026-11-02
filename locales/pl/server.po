@@ -5443,6 +5443,11 @@ msgid "error.health.reviewStale"
 msgstr "Ten przegląd jest nieaktualny. Przeskanuj ponownie i przejrzyj jeszcze raz."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The identical copy these chapters were going to move to has changed or is gone. Nothing was deleted. Review the file again.
+msgid "error.health.relinkTargetChanged"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
 #. English: The root folder no longer exists.
 #, fuzzy
 msgid "error.health.rootGone"
@@ -5914,6 +5919,11 @@ msgstr "Trwale usunięto {path}; zachowano rekordy rozdziałów i oznaczenia „
 #, fuzzy
 msgid "health.history.deletedMissing"
 msgstr "Usunięto wpis o brakującym pliku {path}; zachowano rekordy rozdziałów i oznaczenia „Chciane”"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Deleted duplicate {path}; its chapters now read from the identical copy {target}
+msgid "health.history.deletedRelinked"
+msgstr ""
 
 #: src/Maki.Api/Services/HealthScanService.cs
 #. English: Scan {scan}: {completed} of {total} files, {status}

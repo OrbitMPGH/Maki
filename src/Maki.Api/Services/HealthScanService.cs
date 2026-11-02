@@ -152,6 +152,8 @@ public class HealthScanService(MakiDbContext db)
         if (retired.Count > 0)
             await db.HealthFindings.Where(f => retired.Contains(f.FileId) && f.State != "resolved")
                 .ExecuteUpdateAsync(u => u.SetProperty(f => f.State, "resolved"), ct);
+        // Clears duplicates left open by deletes from before deletion resolved them itself.
+        await HealthDuplicates.ResolveLonelyAsync(db, null, ct);
 
         // From here the scan works by id and lets every entity go after each file. Keeping them
         // tracked is what a scan naturally does and it does not survive a real library: each

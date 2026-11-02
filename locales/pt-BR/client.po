@@ -106,11 +106,12 @@ msgstr "{0, plural, one {# capítulo reassociado} many {# capítulos reassociado
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, one {# capítulo selecionado} many {# capítulos selecionados} other {# capítulos selecionados}}"
 
+#. placeholder {0}: chapters.length
 #. placeholder {0}: goal.target
 #. placeholder {0}: removed.length
-#. placeholder {0}: selected.size
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/settings/ProgressSection.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{0, plural, one {# chapter} other {# chapters}}"
 msgstr "{0, plural, one {# capítulo} many {# capítulos} other {# capítulos}}"
@@ -849,6 +850,10 @@ msgstr "{chaptersChecked, plural, one {Verificação de upgrades concluída: nen
 msgid "{chaptersCount, plural, one {# affected chapter} other {# affected chapters}}"
 msgstr "{chaptersCount, plural, one {# capítulo afetado} many {# capítulos afetados}other {# capítulos afetados}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{chaptersCount, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
@@ -929,6 +934,10 @@ msgstr "{converted} convertidos ({saved} economizados), {unchanged} mantidos com
 msgid "{convertedFiles, plural, one {# file converted so far, {saved} saved.} other {# files converted so far, {saved} saved.}}"
 msgstr "{convertedFiles, plural, one {# arquivo convertido até agora, {saved} economizados.} many {# arquivos convertidos até agora, {saved} economizados.} other {# arquivos convertidos até agora, {saved} economizados.}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{copyCount, plural, one {# copy} other {# copies}}"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "{count, plural, =2 {Both trackers} other {All # trackers}}"
@@ -1008,6 +1017,14 @@ msgstr "{count, plural, one {Um capítulo está salvo neste dispositivo, mas est
 #, fuzzy
 msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr "{count, plural, one {Excluir # arquivo?} many {Excluir # arquivos?}other {Excluir # arquivos?}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Delete # spare copy?} other {Delete # spare copies?}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Delete spare copy} other {Delete # spare copies}}"
+msgstr ""
 
 #: src/components/series/RestoreSeriesDialog.tsx
 #, fuzzy
@@ -1118,6 +1135,18 @@ msgstr "{daysLeft, plural, one {Removido em # dia} many {Removido em # dias} oth
 #, fuzzy
 msgid "{decade}s"
 msgstr "anos {decade}"
+
+#: src/pages/HealthPage.tsx
+msgid "{deletableCount, plural, one {Delete # spare copy} other {Delete # spare copies}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{deleted, plural, one {Deleted # archive} other {Deleted # archives}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{deleted, plural, one {Deleted # spare copy} other {Deleted # spare copies}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2282,6 +2311,26 @@ msgstr "{sourceName} publica cada série em um único idioma, então não há na
 #, fuzzy
 msgid "{sources, plural, one {Measuring # source on chapters {chapters}} other {Measuring # sources on chapters {chapters}}}"
 msgstr "{sources, plural, one {Medindo # fonte nos capítulos {chapters}} many {Medindo # fontes nos capítulos {chapters}} other {Medindo # fontes nos capítulos {chapters}}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{spareCount, plural, one {Delete the spare copy from disk? This file stays and no chapter changes.} other {Delete # spare copies from disk? This file stays and no chapter changes.}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{spareCount, plural, one {Delete the spare copy} other {Delete # spare copies}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{spareCount, plural, one {One other file is byte for byte the same as this one, and no chapter reads from it. Deleting it loses nothing.} other {# other files are byte for byte the same as this one, and no chapter reads from them. Deleting them loses nothing.}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{sparesShown, plural, one {Delete the spare copy} other {Delete all # spare copies}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{sparesTotal, plural, one {# spare copy is identical to a file that stays, and no chapter reads from it.} other {# spare copies are identical to files that stay, and no chapter reads from them.}}"
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -3861,11 +3910,6 @@ msgstr "Analisar novos arquivos e executar a reconciliação diária"
 msgid "and"
 msgstr "e"
 
-#: src/pages/HealthPage.tsx
-#, fuzzy
-msgid "and {remaining} more selected on other pages"
-msgstr "e mais {remaining} selecionados em outras páginas"
-
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "and {rest} more"
@@ -5265,21 +5309,6 @@ msgstr ""
 msgid "Changes apply to the <0>{inForceName}</0> profile and every series using it."
 msgstr ""
 
-#: src/pages/reader/ReaderSettings.tsx
-#, fuzzy
-#~ msgid "Changes apply to this series only."
-#~ msgstr "As alterações se aplicam somente a esta série."
-
-#: src/pages/reader/ReaderSettings.tsx
-#, fuzzy
-#~ msgid "Changes apply to your reader defaults."
-#~ msgstr "As alterações se aplicam aos padrões do seu leitor."
-
-#: src/pages/reader/ReaderSettings.tsx
-#, fuzzy
-#~ msgid "Changes retune \"{inForceName}\", so every series using it."
-#~ msgstr "As alterações reajustam \"{inForceName}\", para todas as séries que o usam."
-
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Changes take effect after Maki restarts."
@@ -5494,6 +5523,10 @@ msgstr ""
 #, fuzzy
 msgid "Chapters per page"
 msgstr "Capítulos por página"
+
+#: src/pages/HealthPage.tsx
+msgid "Chapters read from it: {reads}"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -7073,11 +7106,6 @@ msgstr "Excluir {label}"
 msgid "Delete {name}?"
 msgstr "Excluir {name}?"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#, fuzzy
-#~ msgid "Delete a chapter's file some days after everyone has read it"
-#~ msgstr "Excluir o arquivo de um capítulo alguns dias depois que todos já leram"
-
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Delete backup"
@@ -7175,6 +7203,10 @@ msgstr "Excluir série"
 msgid "Delete tag"
 msgstr "Excluir tag"
 
+#: src/pages/HealthPage.tsx
+msgid "Delete the first {sparesShown}"
+msgstr ""
+
 #: src/components/rails/DeleteRailDialog.tsx
 #, fuzzy
 msgid "Delete the rail \"{railName}\"? Its filters go with it."
@@ -7184,6 +7216,18 @@ msgstr "Excluir o trilho “{railName}”? Os filtros dele também serão exclu�
 #, fuzzy
 msgid "Delete them, free {emptiedSize}"
 msgstr "Excluir os arquivos e liberar {emptiedSize}"
+
+#: src/pages/HealthPage.tsx
+msgid "Delete this copy"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Delete this file from disk? {span} then read from {relinkPath}, so nothing becomes unavailable."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Delete this file from disk? The kept copy stays and no chapter changes."
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -7226,6 +7270,14 @@ msgstr "Arquivo excluído"
 #, fuzzy
 msgid "Deleted saved filter {name}."
 msgstr "Filtro salvo {name} excluído."
+
+#: src/pages/HealthPage.tsx
+msgid "Deleted the spare copy"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Deleted this copy. Its chapters now read from {relinkPath}."
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -7792,6 +7844,10 @@ msgstr "Cada idioma escolhido é pesquisado separadamente."
 msgid "Each Mihon category becomes a tag on the series. Manga in Mihon's Default category get no tag."
 msgstr "Cada categoria do Mihon vira uma tag na série. Mangás na categoria Padrão do Mihon não recebem tag."
 
+#: src/pages/HealthPage.tsx
+msgid "Each of these is byte for byte the same as another file that stays in the library, and no chapter reads from it. Deleting them frees the space and clears the duplicate findings. Nothing else changes."
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on."
@@ -8160,6 +8216,10 @@ msgstr ""
 #, fuzzy
 msgid "Every check passed"
 msgstr "Todas as verificações passaram"
+
+#: src/pages/HealthPage.tsx
+msgid "Every copy backs chapters of its own, so deleting any of them takes the file away from those chapters. Open a copy to compare it before deciding."
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -9030,11 +9090,6 @@ msgstr "Seguir a qualidade"
 msgid "Follow the rules"
 msgstr "Seguir as regras"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#, fuzzy
-#~ msgid "Follow the setting"
-#~ msgstr "Seguir a configuração"
-
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Following"
@@ -9195,11 +9250,6 @@ msgstr "De: {start}"
 #, fuzzy
 msgid "Full"
 msgstr "Completo"
-
-#: src/components/series/SeriesActionsMenu.tsx
-#, fuzzy
-#~ msgid "Full also excludes this series from Rewind stats and reading history."
-#~ msgstr "Completo também exclui esta série das estatísticas e do histórico de leitura do Rewind."
 
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
@@ -9363,6 +9413,10 @@ msgstr "Alvo da meta"
 #, fuzzy
 msgid "Goals"
 msgstr "Metas"
+
+#: src/pages/HealthPage.tsx
+msgid "Gone from disk"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -9816,11 +9870,6 @@ msgstr "Quanto eles contam"
 msgid "How signals work"
 msgstr "Como os sinais funcionam"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#, fuzzy
-#~ msgid "How this series' pages are stored"
-#~ msgstr "Como as páginas desta série são guardadas"
-
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "How to import"
@@ -9866,6 +9915,10 @@ msgstr "Eu salvei"
 #, fuzzy
 msgid "Id"
 msgstr "ID"
+
+#: src/pages/HealthPage.tsx
+msgid "Identical copies"
+msgstr ""
 
 #: src/components/pageconversion/labels.ts
 #, fuzzy
@@ -10506,6 +10559,10 @@ msgstr "Sincronização de leitura do Kavita"
 msgid "Kavita's reading belongs to another Maki account."
 msgstr "A leitura do Kavita pertence a outra conta do Maki."
 
+#: src/pages/HealthPage.tsx
+msgid "Keep"
+msgstr ""
+
 #: src/components/series/RateHint.tsx
 #, fuzzy
 msgid "Keep {soFar}"
@@ -10570,6 +10627,10 @@ msgstr "Manter o nome e baixar em uma nova pasta padrão"
 #, fuzzy
 msgid "Keep the name, download into it too"
 msgstr "Manter o nome e baixar também nesta pasta"
+
+#: src/pages/HealthPage.tsx
+msgid "Keep the other copy and delete this one instead"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -12491,11 +12552,6 @@ msgstr "O modo multiusuário está ativo porque mais de uma conta está habilita
 msgid "Muted"
 msgstr "Silenciado"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#, fuzzy
-#~ msgid "Muted means nothing from this series at all."
-#~ msgstr "Silenciado significa que nada desta série será mostrado."
-
 #: src/components/UserMenu.tsx
 #, fuzzy
 msgid "My account"
@@ -12975,6 +13031,10 @@ msgstr "Nenhum capítulo aqui tem tempo de leitura, então não há ritmo a info
 msgid "no chapter or volume number in the name"
 msgstr "sem número de capítulo ou volume no nome"
 
+#: src/pages/HealthPage.tsx
+msgid "No chapter reads from it"
+msgstr ""
+
 #: src/api/libraryImport.ts
 #, fuzzy
 msgid "no chapter with this number in the series"
@@ -13232,6 +13292,10 @@ msgstr "sem número no nome, vincula se a série tiver exatamente um capítulo"
 #, fuzzy
 msgid "No one else on this instance has opted in yet."
 msgstr "Mais ninguém nesta instância aderiu ainda."
+
+#: src/pages/HealthPage.tsx
+msgid "No other copy is left. Verify this file to clear the finding."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -14811,6 +14875,10 @@ msgstr "Título original"
 msgid "Other"
 msgstr "Outro"
 
+#: src/pages/HealthPage.tsx
+msgid "Other actions"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
 msgid "Other picks for you"
@@ -16080,11 +16148,6 @@ msgstr "Ler primeiro capítulo"
 msgid "Read from"
 msgstr "Lido de"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#, fuzzy
-#~ msgid "Read history stays, and the chapters aren't downloaded again."
-#~ msgstr "O histórico de leitura continua, e os capítulos não são baixados de novo."
-
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read in Kavita"
@@ -17071,6 +17134,10 @@ msgstr "Reparos"
 msgid "Replace"
 msgstr "Substituição"
 
+#: src/pages/HealthPage.tsx
+msgid "Replace this archive from a source, or delete it through a review. Only needed when the copies themselves are damaged."
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "Replace what it covers"
@@ -17618,6 +17685,10 @@ msgstr "Revertido por um usuário"
 #, fuzzy
 msgid "Review"
 msgstr "Revisar"
+
+#: src/pages/HealthPage.tsx
+msgid "Review {copyPath}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -18340,11 +18411,6 @@ msgstr "A retícula é suavizada, os traços continuam intactos."
 msgid "Scrobble"
 msgstr "Scrobble"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#, fuzzy
-#~ msgid "Scrobble only skips tracker pushes."
-#~ msgstr "O Scrobble apenas impede envios ao tracker."
-
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
 msgid "Scrobble reading"
@@ -18691,6 +18757,10 @@ msgstr "Selecionar tudo"
 #, fuzzy
 msgid "Select all on disk"
 msgstr "Selecionar tudo no disco"
+
+#: src/pages/HealthPage.tsx
+msgid "Select every copy of {relativePath}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -19804,6 +19874,10 @@ msgstr "Espanhol"
 msgid "Spanish (LATAM)"
 msgstr "Espanhol (LATAM)"
 
+#: src/pages/HealthPage.tsx
+msgid "Spare"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Specials ({specialsFilterCount})"
@@ -20788,6 +20862,10 @@ msgstr "Não foi possível mover o arquivo antigo para o lado para o upgrade"
 msgid "The oldest pages are dropped past this."
 msgstr "As páginas mais antigas são descartadas além disso."
 
+#: src/pages/HealthPage.tsx
+msgid "The other copy is no longer on disk. Open it to clear its record."
+msgstr ""
+
 #: src/components/series/UndoConversionModal.tsx
 #, fuzzy
 msgid "The others were converted on download or their original has been purged."
@@ -21215,9 +21293,17 @@ msgid "This device could not subscribe to push notifications."
 msgstr "Este dispositivo não conseguiu assinar as notificações push."
 
 #: src/pages/HealthPage.tsx
+msgid "This file"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "This file is already gone from disk, so nothing is deleted. It drops the record that still links these chapters to it, so they stop reading as downloaded."
 msgstr "Este arquivo já desapareceu do disco, então nada é excluído. Isto remove o registro que ainda vincula estes capítulos a ele, para que deixem de aparecer como baixados."
+
+#: src/pages/HealthPage.tsx
+msgid "This file is byte for byte the same as the copy marked Keep, and no chapter reads from it. Deleting it loses nothing."
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -21272,14 +21358,20 @@ msgid "This pass:"
 msgstr "Esta passagem:"
 
 #: src/pages/HealthPage.tsx
-#, fuzzy
-msgid "This permanently deletes {count, plural, one {the file} other {these files}} from disk. Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
-msgstr "Isto exclui permanentemente {count, plural, one {o arquivo} many {estes arquivos}other {estes arquivos}} do disco. Os registros de capítulos, as marcações de desejado e o histórico de leitura são mantidos, então tudo que ainda for desejado pode ser baixado novamente. Arquivos já ausentes do disco não têm nada para excluir; nesses casos, isto apenas limpa o registro que ainda informa que seus capítulos foram baixados."
+msgid "This permanently deletes {count, plural, one {the file} other {these files}} from disk. Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
-#, fuzzy
-msgid "This permanently deletes the archive. Chapter records and reading history remain."
-msgstr "Isto exclui permanentemente o arquivo. Os registros de capítulos e o histórico de leitura permanecem."
+msgid "This permanently deletes the archive, and {chapterLabel} read from it. They will show as not downloaded. Chapter records and reading history remain."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "This permanently deletes the archive. {chapterLabel} then read from the identical copy at {relinkPath}, so nothing becomes unavailable."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "This permanently deletes the archive. No chapter reads from it."
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -23111,11 +23203,6 @@ msgstr "Bem-vindo ao Maki"
 msgid "Western (OEL)"
 msgstr "Ocidental (OEL)"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#, fuzzy
-#~ msgid "What happens to chapters released later"
-#~ msgstr "O que acontece com capítulos lançados posteriormente"
-
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "What readers who finished the same series as you went on to finish."
@@ -23258,11 +23345,6 @@ msgstr "De qual fonte um capítulo é baixado primeiro."
 msgid "While reading"
 msgstr "Durante a leitura"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#, fuzzy
-#~ msgid "While reading only tells you about new chapters while you are partway through."
-#~ msgstr "Durante a leitura apenas informa sobre novos capítulos enquanto você estiver no meio da série."
-
 #: src/pages/reader/ReaderSettings.tsx
 msgid "While the bars are hidden. The toolbar always shows it."
 msgstr ""
@@ -23308,11 +23390,6 @@ msgstr "Pacote da série inteira, a decisão é sua"
 #, fuzzy
 msgid "Wide pages"
 msgstr "Páginas largas"
-
-#: src/components/series/SeriesActionsMenu.tsx
-#, fuzzy
-#~ msgid "Wins over the rules. Files already converted stay as they are."
-#~ msgstr "Prevalece sobre as regras. Arquivos já convertidos ficam como estão."
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy

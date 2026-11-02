@@ -89,11 +89,12 @@ msgstr "{0, plural, one {# chapter relinked} other {# chapters relinked}}"
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, one {# chapter selected} other {# chapters selected}}"
 
+#. placeholder {0}: chapters.length
 #. placeholder {0}: goal.target
 #. placeholder {0}: removed.length
-#. placeholder {0}: selected.size
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/settings/ProgressSection.tsx
+#: src/pages/HealthPage.tsx
 msgid "{0, plural, one {# chapter} other {# chapters}}"
 msgstr "{0, plural, one {# chapter} other {# chapters}}"
 
@@ -706,6 +707,10 @@ msgstr "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for
 msgid "{chaptersCount, plural, one {# affected chapter} other {# affected chapters}}"
 msgstr "{chaptersCount, plural, one {# affected chapter} other {# affected chapters}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{chaptersCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{chaptersCount, plural, one {# chapter} other {# chapters}}"
+
 #: src/pages/rewind/slides.tsx
 msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
 msgstr "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
@@ -770,6 +775,10 @@ msgstr "{converted} converted ({saved} saved), {unchanged} left as they were, {h
 msgid "{convertedFiles, plural, one {# file converted so far, {saved} saved.} other {# files converted so far, {saved} saved.}}"
 msgstr "{convertedFiles, plural, one {# file converted so far, {saved} saved.} other {# files converted so far, {saved} saved.}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{copyCount, plural, one {# copy} other {# copies}}"
+msgstr "{copyCount, plural, one {# copy} other {# copies}}"
+
 #: src/pages/ScrobblePage.tsx
 msgid "{count, plural, =2 {Both trackers} other {All # trackers}}"
 msgstr "{count, plural, =2 {Both trackers} other {All # trackers}}"
@@ -833,6 +842,14 @@ msgstr "{count, plural, one {A chapter is saved on this device, but this tab can
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Delete # spare copy?} other {Delete # spare copies?}}"
+msgstr "{count, plural, one {Delete # spare copy?} other {Delete # spare copies?}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Delete spare copy} other {Delete # spare copies}}"
+msgstr "{count, plural, one {Delete spare copy} other {Delete # spare copies}}"
 
 #: src/components/series/RestoreSeriesDialog.tsx
 msgid "{count, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
@@ -921,6 +938,18 @@ msgstr "{daysLeft, plural, one {Removed in # day} other {Removed in # days}}"
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "{decade}s"
 msgstr "{decade}s"
+
+#: src/pages/HealthPage.tsx
+msgid "{deletableCount, plural, one {Delete # spare copy} other {Delete # spare copies}}"
+msgstr "{deletableCount, plural, one {Delete # spare copy} other {Delete # spare copies}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{deleted, plural, one {Deleted # archive} other {Deleted # archives}}"
+msgstr "{deleted, plural, one {Deleted # archive} other {Deleted # archives}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{deleted, plural, one {Deleted # spare copy} other {Deleted # spare copies}}"
+msgstr "{deleted, plural, one {Deleted # spare copy} other {Deleted # spare copies}}"
 
 #: src/pages/HealthPage.tsx
 msgid "{deletedCount} deleted, {failedCount} refused:"
@@ -1856,6 +1885,26 @@ msgstr "{sourceName} publishes one language per series, so there is nothing to f
 #: src/components/SourceMeasurePanel.tsx
 msgid "{sources, plural, one {Measuring # source on chapters {chapters}} other {Measuring # sources on chapters {chapters}}}"
 msgstr "{sources, plural, one {Measuring # source on chapters {chapters}} other {Measuring # sources on chapters {chapters}}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{spareCount, plural, one {Delete the spare copy from disk? This file stays and no chapter changes.} other {Delete # spare copies from disk? This file stays and no chapter changes.}}"
+msgstr "{spareCount, plural, one {Delete the spare copy from disk? This file stays and no chapter changes.} other {Delete # spare copies from disk? This file stays and no chapter changes.}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{spareCount, plural, one {Delete the spare copy} other {Delete # spare copies}}"
+msgstr "{spareCount, plural, one {Delete the spare copy} other {Delete # spare copies}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{spareCount, plural, one {One other file is byte for byte the same as this one, and no chapter reads from it. Deleting it loses nothing.} other {# other files are byte for byte the same as this one, and no chapter reads from them. Deleting them loses nothing.}}"
+msgstr "{spareCount, plural, one {One other file is byte for byte the same as this one, and no chapter reads from it. Deleting it loses nothing.} other {# other files are byte for byte the same as this one, and no chapter reads from them. Deleting them loses nothing.}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{sparesShown, plural, one {Delete the spare copy} other {Delete all # spare copies}}"
+msgstr "{sparesShown, plural, one {Delete the spare copy} other {Delete all # spare copies}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{sparesTotal, plural, one {# spare copy is identical to a file that stays, and no chapter reads from it.} other {# spare copies are identical to files that stay, and no chapter reads from them.}}"
+msgstr "{sparesTotal, plural, one {# spare copy is identical to a file that stays, and no chapter reads from it.} other {# spare copies are identical to files that stay, and no chapter reads from them.}}"
 
 #: src/components/MetadataDumpProgress.tsx
 msgid "{speed}/s"
@@ -3134,10 +3183,6 @@ msgstr "Analyze new files and run daily reconciliation"
 msgid "and"
 msgstr "and"
 
-#: src/pages/HealthPage.tsx
-msgid "and {remaining} more selected on other pages"
-msgstr "and {remaining} more selected on other pages"
-
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "and {rest} more"
 msgstr "and {rest} more"
@@ -4285,18 +4330,6 @@ msgstr "Changes apply to <0>your reader defaults</0>."
 msgid "Changes apply to the <0>{inForceName}</0> profile and every series using it."
 msgstr "Changes apply to the <0>{inForceName}</0> profile and every series using it."
 
-#: src/pages/reader/ReaderSettings.tsx
-#~ msgid "Changes apply to this series only."
-#~ msgstr "Changes apply to this series only."
-
-#: src/pages/reader/ReaderSettings.tsx
-#~ msgid "Changes apply to your reader defaults."
-#~ msgstr "Changes apply to your reader defaults."
-
-#: src/pages/reader/ReaderSettings.tsx
-#~ msgid "Changes retune \"{inForceName}\", so every series using it."
-#~ msgstr "Changes retune \"{inForceName}\", so every series using it."
-
 #: src/components/settings/SecuritySection.tsx
 msgid "Changes take effect after Maki restarts."
 msgstr "Changes take effect after Maki restarts."
@@ -4471,6 +4504,10 @@ msgstr "Chapters of very tall pages open in Continuous"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Chapters per page"
 msgstr "Chapters per page"
+
+#: src/pages/HealthPage.tsx
+msgid "Chapters read from it: {reads}"
+msgstr "Chapters read from it: {reads}"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Chapters read in this series"
@@ -5758,10 +5795,6 @@ msgstr "Delete {label}"
 msgid "Delete {name}?"
 msgstr "Delete {name}?"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#~ msgid "Delete a chapter's file some days after everyone has read it"
-#~ msgstr "Delete a chapter's file some days after everyone has read it"
-
 #: src/pages/settings/SystemCards.tsx
 msgid "Delete backup"
 msgstr "Delete backup"
@@ -5841,6 +5874,10 @@ msgstr "Delete series"
 msgid "Delete tag"
 msgstr "Delete tag"
 
+#: src/pages/HealthPage.tsx
+msgid "Delete the first {sparesShown}"
+msgstr "Delete the first {sparesShown}"
+
 #: src/components/rails/DeleteRailDialog.tsx
 msgid "Delete the rail \"{railName}\"? Its filters go with it."
 msgstr "Delete the rail \"{railName}\"? Its filters go with it."
@@ -5848,6 +5885,18 @@ msgstr "Delete the rail \"{railName}\"? Its filters go with it."
 #: src/components/RelinkFilesModal.tsx
 msgid "Delete them, free {emptiedSize}"
 msgstr "Delete them, free {emptiedSize}"
+
+#: src/pages/HealthPage.tsx
+msgid "Delete this copy"
+msgstr "Delete this copy"
+
+#: src/pages/HealthPage.tsx
+msgid "Delete this file from disk? {span} then read from {relinkPath}, so nothing becomes unavailable."
+msgstr "Delete this file from disk? {span} then read from {relinkPath}, so nothing becomes unavailable."
+
+#: src/pages/HealthPage.tsx
+msgid "Delete this file from disk? The kept copy stays and no chapter changes."
+msgstr "Delete this file from disk? The kept copy stays and no chapter changes."
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Delete this file permanently?"
@@ -5882,6 +5931,14 @@ msgstr "Deleted file"
 #: src/pages/LibraryPage.tsx
 msgid "Deleted saved filter {name}."
 msgstr "Deleted saved filter {name}."
+
+#: src/pages/HealthPage.tsx
+msgid "Deleted the spare copy"
+msgstr "Deleted the spare copy"
+
+#: src/pages/HealthPage.tsx
+msgid "Deleted this copy. Its chapters now read from {relinkPath}."
+msgstr "Deleted this copy. Its chapters now read from {relinkPath}."
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Deletes a chapter's file once everyone has read it. The chapter and its history stay."
@@ -6348,6 +6405,10 @@ msgstr "Each language you pick is searched separately."
 msgid "Each Mihon category becomes a tag on the series. Manga in Mihon's Default category get no tag."
 msgstr "Each Mihon category becomes a tag on the series. Manga in Mihon's Default category get no tag."
 
+#: src/pages/HealthPage.tsx
+msgid "Each of these is byte for byte the same as another file that stays in the library, and no chapter reads from it. Deleting them frees the space and clears the duplicate findings. Nothing else changes."
+msgstr "Each of these is byte for byte the same as another file that stays in the library, and no chapter reads from it. Deleting them frees the space and clears the duplicate findings. Nothing else changes."
+
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on."
 msgstr "Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on."
@@ -6647,6 +6708,10 @@ msgstr "Every chapter released from now on is wanted."
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Every check passed"
 msgstr "Every check passed"
+
+#: src/pages/HealthPage.tsx
+msgid "Every copy backs chapters of its own, so deleting any of them takes the file away from those chapters. Open a copy to compare it before deciding."
+msgstr "Every copy backs chapters of its own, so deleting any of them takes the file away from those chapters. Open a copy to compare it before deciding."
 
 #: src/components/settings/ProgressSection.tsx
 msgid "Every day"
@@ -7354,10 +7419,6 @@ msgstr "Follow the quality"
 msgid "Follow the rules"
 msgstr "Follow the rules"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#~ msgid "Follow the setting"
-#~ msgstr "Follow the setting"
-
 #: src/pages/CreatorPage.tsx
 msgid "Following"
 msgstr "Following"
@@ -7487,10 +7548,6 @@ msgstr "From: {start}"
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Full"
 msgstr "Full"
-
-#: src/components/series/SeriesActionsMenu.tsx
-#~ msgid "Full also excludes this series from Rewind stats and reading history."
-#~ msgstr "Full also excludes this series from Rewind stats and reading history."
 
 #: src/components/discover/DiscoverReviews.tsx
 msgid "Full review"
@@ -7624,6 +7681,10 @@ msgstr "Goal target"
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "Goals"
 msgstr "Goals"
+
+#: src/pages/HealthPage.tsx
+msgid "Gone from disk"
+msgstr "Gone from disk"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Good quality"
@@ -7992,10 +8053,6 @@ msgstr "How much they count"
 msgid "How signals work"
 msgstr "How signals work"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#~ msgid "How this series' pages are stored"
-#~ msgstr "How this series' pages are stored"
-
 #: src/components/ImportReviewModal.tsx
 msgid "How to import"
 msgstr "How to import"
@@ -8032,6 +8089,10 @@ msgstr "I have saved them"
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Id"
 msgstr "Id"
+
+#: src/pages/HealthPage.tsx
+msgid "Identical copies"
+msgstr "Identical copies"
 
 #: src/components/pageconversion/labels.ts
 msgid "Identical pixels."
@@ -8553,6 +8614,10 @@ msgstr "Kavita read sync"
 msgid "Kavita's reading belongs to another Maki account."
 msgstr "Kavita's reading belongs to another Maki account."
 
+#: src/pages/HealthPage.tsx
+msgid "Keep"
+msgstr "Keep"
+
 #: src/components/series/RateHint.tsx
 msgid "Keep {soFar}"
 msgstr "Keep {soFar}"
@@ -8604,6 +8669,10 @@ msgstr "Keep the name, download into a new standard folder"
 #: src/components/SetupWizard.tsx
 msgid "Keep the name, download into it too"
 msgstr "Keep the name, download into it too"
+
+#: src/pages/HealthPage.tsx
+msgid "Keep the other copy and delete this one instead"
+msgstr "Keep the other copy and delete this one instead"
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Keep the screen awake"
@@ -10168,10 +10237,6 @@ msgstr "Multi-user mode is on because more than one account is enabled. Disable 
 msgid "Muted"
 msgstr "Muted"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#~ msgid "Muted means nothing from this series at all."
-#~ msgstr "Muted means nothing from this series at all."
-
 #: src/components/UserMenu.tsx
 msgid "My account"
 msgstr "My account"
@@ -10561,6 +10626,10 @@ msgstr "No chapter here carries a reading time, so there is no pace to report."
 msgid "no chapter or volume number in the name"
 msgstr "no chapter or volume number in the name"
 
+#: src/pages/HealthPage.tsx
+msgid "No chapter reads from it"
+msgstr "No chapter reads from it"
+
 #: src/api/libraryImport.ts
 msgid "no chapter with this number in the series"
 msgstr "no chapter with this number in the series"
@@ -10768,6 +10837,10 @@ msgstr "no number in the name, links if the series has exactly one chapter"
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "No one else on this instance has opted in yet."
 msgstr "No one else on this instance has opted in yet."
+
+#: src/pages/HealthPage.tsx
+msgid "No other copy is left. Verify this file to clear the finding."
+msgstr "No other copy is left. Verify this file to clear the finding."
 
 #: src/pages/HealthPage.tsx
 msgid "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
@@ -12048,6 +12121,10 @@ msgstr "Original title"
 msgid "Other"
 msgstr "Other"
 
+#: src/pages/HealthPage.tsx
+msgid "Other actions"
+msgstr "Other actions"
+
 #: src/components/discover/DiscoverHero.tsx
 msgid "Other picks for you"
 msgstr "Other picks for you"
@@ -13081,10 +13158,6 @@ msgstr "Read first chapter"
 msgid "Read from"
 msgstr "Read from"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#~ msgid "Read history stays, and the chapters aren't downloaded again."
-#~ msgstr "Read history stays, and the chapters aren't downloaded again."
-
 #: src/components/series/ChapterTableRows.tsx
 msgid "Read in Kavita"
 msgstr "Read in Kavita"
@@ -13886,6 +13959,10 @@ msgstr "Repairs"
 msgid "Replace"
 msgstr "Replace"
 
+#: src/pages/HealthPage.tsx
+msgid "Replace this archive from a source, or delete it through a review. Only needed when the copies themselves are damaged."
+msgstr "Replace this archive from a source, or delete it through a review. Only needed when the copies themselves are damaged."
+
 #: src/components/ImportReviewModal.tsx
 msgid "Replace what it covers"
 msgstr "Replace what it covers"
@@ -14336,6 +14413,10 @@ msgstr "Reverted by a user"
 #: src/pages/PageConversionWizardPage.tsx
 msgid "Review"
 msgstr "Review"
+
+#: src/pages/HealthPage.tsx
+msgid "Review {copyPath}"
+msgstr "Review {copyPath}"
 
 #: src/pages/HealthPage.tsx
 msgid "Review archive"
@@ -14928,10 +15009,6 @@ msgstr "Screentone is smoothed away, lines stay intact."
 msgid "Scrobble"
 msgstr "Scrobble"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#~ msgid "Scrobble only skips tracker pushes."
-#~ msgstr "Scrobble only skips tracker pushes."
-
 #: src/components/TrackerSyncControls.tsx
 msgid "Scrobble reading"
 msgstr "Scrobble reading"
@@ -15211,6 +15288,10 @@ msgstr "Select all"
 #: src/components/SeriesFilesSection.tsx
 msgid "Select all on disk"
 msgstr "Select all on disk"
+
+#: src/pages/HealthPage.tsx
+msgid "Select every copy of {relativePath}"
+msgstr "Select every copy of {relativePath}"
 
 #: src/pages/HealthPage.tsx
 msgid "Select every file on this page"
@@ -16115,6 +16196,10 @@ msgstr "Spanish"
 msgid "Spanish (LATAM)"
 msgstr "Spanish (LATAM)"
 
+#: src/pages/HealthPage.tsx
+msgid "Spare"
+msgstr "Spare"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Specials ({specialsFilterCount})"
 msgstr "Specials ({specialsFilterCount})"
@@ -16912,6 +16997,10 @@ msgstr "The old file could not be moved aside for the upgrade"
 msgid "The oldest pages are dropped past this."
 msgstr "The oldest pages are dropped past this."
 
+#: src/pages/HealthPage.tsx
+msgid "The other copy is no longer on disk. Open it to clear its record."
+msgstr "The other copy is no longer on disk. Open it to clear its record."
+
 #: src/components/series/UndoConversionModal.tsx
 msgid "The others were converted on download or their original has been purged."
 msgstr "The others were converted on download or their original has been purged."
@@ -17256,8 +17345,16 @@ msgid "This device could not subscribe to push notifications."
 msgstr "This device could not subscribe to push notifications."
 
 #: src/pages/HealthPage.tsx
+msgid "This file"
+msgstr "This file"
+
+#: src/pages/HealthPage.tsx
 msgid "This file is already gone from disk, so nothing is deleted. It drops the record that still links these chapters to it, so they stop reading as downloaded."
 msgstr "This file is already gone from disk, so nothing is deleted. It drops the record that still links these chapters to it, so they stop reading as downloaded."
+
+#: src/pages/HealthPage.tsx
+msgid "This file is byte for byte the same as the copy marked Keep, and no chapter reads from it. Deleting it loses nothing."
+msgstr "This file is byte for byte the same as the copy marked Keep, and no chapter reads from it. Deleting it loses nothing."
 
 #: src/components/ImportListsSection.tsx
 msgid "This files a request for every matching entry from your {label} list, up to the per-run limit."
@@ -17302,12 +17399,20 @@ msgid "This pass:"
 msgstr "This pass:"
 
 #: src/pages/HealthPage.tsx
-msgid "This permanently deletes {count, plural, one {the file} other {these files}} from disk. Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
-msgstr "This permanently deletes {count, plural, one {the file} other {these files}} from disk. Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
+msgid "This permanently deletes {count, plural, one {the file} other {these files}} from disk. Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
+msgstr "This permanently deletes {count, plural, one {the file} other {these files}} from disk. Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
 
 #: src/pages/HealthPage.tsx
-msgid "This permanently deletes the archive. Chapter records and reading history remain."
-msgstr "This permanently deletes the archive. Chapter records and reading history remain."
+msgid "This permanently deletes the archive, and {chapterLabel} read from it. They will show as not downloaded. Chapter records and reading history remain."
+msgstr "This permanently deletes the archive, and {chapterLabel} read from it. They will show as not downloaded. Chapter records and reading history remain."
+
+#: src/pages/HealthPage.tsx
+msgid "This permanently deletes the archive. {chapterLabel} then read from the identical copy at {relinkPath}, so nothing becomes unavailable."
+msgstr "This permanently deletes the archive. {chapterLabel} then read from the identical copy at {relinkPath}, so nothing becomes unavailable."
+
+#: src/pages/HealthPage.tsx
+msgid "This permanently deletes the archive. No chapter reads from it."
+msgstr "This permanently deletes the archive. No chapter reads from it."
 
 #: src/api/queue.ts
 msgid "This queue item has no chapter to find a source for"
@@ -18800,10 +18905,6 @@ msgstr "Welcome to Maki"
 msgid "Western (OEL)"
 msgstr "Western (OEL)"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#~ msgid "What happens to chapters released later"
-#~ msgstr "What happens to chapters released later"
-
 #: src/components/discover/discoverSectionDefs.ts
 msgid "What readers who finished the same series as you went on to finish."
 msgstr "What readers who finished the same series as you went on to finish."
@@ -18918,10 +19019,6 @@ msgstr "Which source a chapter downloads from first."
 msgid "While reading"
 msgstr "While reading"
 
-#: src/components/series/SeriesActionsMenu.tsx
-#~ msgid "While reading only tells you about new chapters while you are partway through."
-#~ msgstr "While reading only tells you about new chapters while you are partway through."
-
 #: src/pages/reader/ReaderSettings.tsx
 msgid "While the bars are hidden. The toolbar always shows it."
 msgstr "While the bars are hidden. The toolbar always shows it."
@@ -18959,10 +19056,6 @@ msgstr "Whole-series pack, needs your call"
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Wide pages"
 msgstr "Wide pages"
-
-#: src/components/series/SeriesActionsMenu.tsx
-#~ msgid "Wins over the rules. Files already converted stay as they are."
-#~ msgstr "Wins over the rules. Files already converted stay as they are."
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."

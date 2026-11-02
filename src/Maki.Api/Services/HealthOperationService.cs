@@ -3,6 +3,7 @@ using System.Text.Json;
 using Maki.Api.Hubs;
 using Maki.Api.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Images;
 using Maki.Core.Reading;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -44,7 +45,10 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
     internal Action? TestHookAfterFileDeleted;
     public static List<RepairCandidate> Candidates(HealthOperation op) => JsonSerializer.Deserialize<List<RepairCandidate>>(op.JournalJson, HealthScanService.Json) ?? [];
 
-    public async Task<(HealthFile File, RootFolder Root, List<Chapter> Chapters)> ValidateAsync(int id, string version, CancellationToken ct, int? operationId = null)
+    /// <param name="readBytes">False only where nothing acts on the bytes yet (a deletion preview):
+    /// the hash is a full read of the archive, and apply checks it again before anything happens.</param>
+    public async Task<(HealthFile File, RootFolder Root, List<Chapter> Chapters)> ValidateAsync(int id, string version, CancellationToken ct,
+        int? operationId = null, bool readBytes = true)
     {
         var file = await db.HealthFiles.FindAsync([id], ct) ?? throw new HealthRefusedException("error.health.fileGone");
         if (file.Removed || file.Version != version || file.Status == "pending") throw new HealthRefusedException("error.health.reviewStale");
@@ -54,12 +58,9 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         var info = new FileInfo(path);
         if ((info.Exists ? info.Length : -1) != file.Size || (info.Exists ? info.LastWriteTimeUtc : DateTime.MinValue) != file.ModifiedAt)
             throw new HealthRefusedException("error.health.fileChanged");
-        if (info.Exists)
-        {
-            await using var stream = File.OpenRead(path);
-            if (file.ContentHash == null || Convert.ToHexString(await SHA256.HashDataAsync(stream, ct)) != file.ContentHash)
-                throw new HealthRefusedException("error.health.fileContentChanged");
-        }
+        if (info.Exists && file.ContentHash == null) throw new HealthRefusedException("error.health.fileContentChanged");
+        if (info.Exists && readBytes && !await HashMatchesAsync(path, file.ContentHash!, ct))
+            throw new HealthRefusedException("error.health.fileContentChanged");
         var chapterFiles = await db.ChapterFiles.Where(f => db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == root.Id) && f.RelativePath == file.RelativePath).Select(f => f.Id).ToListAsync(ct);
         var chapters = await db.Chapters.Where(c => c.ChapterFileId != null && chapterFiles.Contains(c.ChapterFileId.Value)).ToListAsync(ct);
         if (await db.HealthOperations.AnyAsync(o => o.FileId == id && o.Id != operationId && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
@@ -125,13 +126,31 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         await MutationGate.WaitAsync(ct);
         try
         {
-            await ValidateAsync(fileId, version, ct);
-            var op = new HealthOperation { Kind = "delete", Status = "review", FileId = fileId, Version = version, UserId = userId };
+            var (file, _, chapters) = await ValidateAsync(fileId, version, ct, readBytes: false);
+            var target = chapters.Count > 0 ? await HealthDuplicates.RelinkTargetAsync(db, file, ct) : null;
+            var op = new HealthOperation { Kind = "delete", Status = "review", FileId = fileId, Version = version, UserId = userId, RelinkFileId = target?.Id };
             db.HealthOperations.Add(op);
             await db.SaveChangesAsync(ct);
             return op;
         }
         finally { MutationGate.Release(); }
+    }
+
+    /// <summary>
+    /// Preview and apply under one confirmation the caller already has. A refusal at apply fails the
+    /// operation instead of leaving it in review, where it would block every later request on the file.
+    /// </summary>
+    public async Task<HealthOperation> DeleteNowAsync(int fileId, string version, int userId, CancellationToken ct)
+    {
+        var op = await PreviewDeleteAsync(fileId, version, userId, ct);
+        try { await ApplyAsync(op.Id, version, true, false, ct); }
+        catch (HealthRefusedException ex) when (op.Status == "review")
+        {
+            op.Status = "failed"; op.ErrorKey = ex.Key; op.FinishedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync(CancellationToken.None);
+            throw;
+        }
+        return op;
     }
 
     /// <summary>A failed operation that could run again: its file is still the version it failed on.</summary>
@@ -165,6 +184,17 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             var (file, root, chapters) = await ValidateAsync(op.FileId, version, ct, op.Id);
             if (op.Kind == "delete")
             {
+                if (op.RelinkFileId is { } relinkId)
+                {
+                    // The chapters were promised a home. If that copy changed or found another use
+                    // since the review, unlinking them instead is not what was confirmed.
+                    var target = await HealthDuplicates.RelinkTargetAsync(db, file, ct);
+                    var targetPath = target == null ? null : HealthPaths.Resolve(root.Path, target.RelativePath);
+                    var targetInfo = targetPath == null ? null : new FileInfo(targetPath);
+                    if (target?.Id != relinkId || targetInfo is not { Exists: true } || targetInfo.Length != target.Size
+                        || targetInfo.LastWriteTimeUtc != target.ModifiedAt || !await HashMatchesAsync(targetPath!, file.ContentHash!, ct))
+                        throw new HealthRefusedException("error.health.relinkTargetChanged");
+                }
                 op.Status = "deleting";
                 await db.SaveChangesAsync(ct);
                 // An archive the inventory recorded as missing has nothing to delete, so the
@@ -383,7 +413,31 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         var oldFiles = await db.ChapterFiles.Where(f => f.RelativePath == file.RelativePath && db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == root.Id)).ToListAsync(ct);
         var ids = oldFiles.Select(f => f.Id).ToArray();
-        foreach (var chapter in await db.Chapters.Where(c => c.ChapterFileId != null && ids.Contains(c.ChapterFileId.Value)).ToListAsync(ct)) chapter.ChapterFileId = null;
+        var chapters = await db.Chapters.Where(c => c.ChapterFileId != null && ids.Contains(c.ChapterFileId.Value)).ToListAsync(ct);
+        // Recovery after a crash lands here too, by which time the copy may have gone as well.
+        var target = op.RelinkFileId is { } relinkId ? await db.HealthFiles.FindAsync([relinkId], ct) : null;
+        if (target != null && (target.Removed || !File.Exists(HealthPaths.Resolve(root.Path, target.RelativePath)))) target = null;
+        if (target != null && chapters.Count > 0)
+        {
+            // The row moves rather than being rebuilt, so the chapters keep their file id and with it
+            // everything keyed on it: quality, conversion state, KOReader documents.
+            var kept = oldFiles.First(f => chapters.Any(c => c.ChapterFileId == f.Id));
+            kept.RelativePath = target.RelativePath;
+            // Whether a file is hardlinked belongs to the path, so conversion has to look again.
+            if (kept.CheckedWith == PlanAction.HardSkipName) { kept.CheckedWith = null; kept.ConversionCheckedAtUtc = null; }
+            foreach (var chapter in chapters) chapter.ChapterFileId = kept.Id;
+            target.ChapterFileId = kept.Id;
+            target.SeriesId = kept.SeriesId;
+            foreach (var finding in await db.HealthFindings.Where(f => f.FileId == target.Id && f.Kind == "unlinked" && f.State != "resolved").ToListAsync(ct))
+                finding.State = "resolved";
+            oldFiles.Remove(kept);
+            Invalidate(kept.Id);
+        }
+        else
+        {
+            target = null;
+            foreach (var chapter in chapters) chapter.ChapterFileId = null;
+        }
         db.ChapterFiles.RemoveRange(oldFiles);
         foreach (var old in oldFiles) Invalidate(old.Id);
         file.Removed = true;
@@ -392,11 +446,20 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         db.HealthHistory.Add(new()
         {
             Kind = "delete", FileId = file.Id, UserId = op.UserId,
-            MessageKey = file.Size < 0 ? "health.history.deletedMissing" : "health.history.deletedFile",
-            ParamsJson = JsonSerializer.Serialize(new { path = file.RelativePath }),
+            MessageKey = target != null ? "health.history.deletedRelinked" : file.Size < 0 ? "health.history.deletedMissing" : "health.history.deletedFile",
+            ParamsJson = target != null
+                ? JsonSerializer.Serialize(new { path = file.RelativePath, target = target.RelativePath })
+                : JsonSerializer.Serialize(new { path = file.RelativePath }),
         });
         await db.SaveChangesAsync(ct);
+        if (file.ContentHash != null) await HealthDuplicates.ResolveLonelyAsync(db, [file.ContentHash], ct);
         await transaction.CommitAsync(ct);
+    }
+
+    private static async Task<bool> HashMatchesAsync(string path, string hash, CancellationToken ct)
+    {
+        await using var stream = File.OpenRead(path);
+        return Convert.ToHexString(await SHA256.HashDataAsync(stream, ct)) == hash;
     }
 
     private void Invalidate(int id)

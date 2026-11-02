@@ -33,6 +33,44 @@ export interface HealthFile {
   status: string
   analyzedAt?: string
   findings: HealthFinding[]
+  /** Only under the Duplicate filter: the row is the copy to keep, and this is the whole set. */
+  copies?: DuplicateListCopy[]
+}
+
+/** One copy of a set of byte-identical archives. `kept` backs chapters (or is the oldest when none does); `spare` is everything else still on disk. */
+export interface DuplicateListCopy {
+  id: number
+  version: string
+  relativePath: string
+  kept: boolean
+  spare: boolean
+  missing: boolean
+  findings: HealthFinding[]
+}
+
+export interface DuplicateCopy {
+  id: number
+  version: string
+  relativePath: string
+  size: number
+  kept: boolean
+  spare: boolean
+  missing: boolean
+  rootPath?: string
+  chapters: { id: number; title?: string; number?: number }[]
+}
+
+export interface FileRef {
+  id: number
+  version: string
+  relativePath: string
+}
+
+export interface HealthFilesPage {
+  items: HealthFile[]
+  total: number
+  /** Only under the Duplicate filter: every spare copy the filter covers, capped at one bulk delete. */
+  spares?: { total: number; items: FileRef[] }
 }
 
 export interface HealthScan {
@@ -106,6 +144,10 @@ export interface FileDetail {
   chapters: { id: number; title?: string; number?: number; wanted: boolean }[]
   mappings: { id: number; sourceName: string; priority: number }[]
   match: UnlinkedMatch | null
+  /** Every byte-identical copy, this file included; empty when there is no other copy. */
+  copies: DuplicateCopy[]
+  /** Where this file's chapters move if it is deleted: an identical copy in the same series folder. */
+  relinkTo: { id: number; relativePath: string } | null
 }
 
 export interface HealthOperation {
@@ -138,7 +180,9 @@ export interface OperationGroup {
 export interface OperationDetail {
   operation: HealthOperation
   file: HealthFile
-  chapters: { id: number; title?: string; wanted: boolean }[]
+  chapters: { id: number; title?: string; number?: number; wanted: boolean }[]
+  /** A deletion whose chapters move to this identical copy instead of losing their file. */
+  relinkTo: { id: number; relativePath: string } | null
   candidates: { chapterId: number; analysis: Analysis }[]
   requiresReset: boolean
   /** Failed, and the file is still the version it failed on, so the same request can run again. */

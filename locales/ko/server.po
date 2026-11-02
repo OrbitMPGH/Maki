@@ -5442,6 +5442,11 @@ msgid "error.health.reviewStale"
 msgstr "이 검토는 오래되었습니다. 다시 스캔하고 검토하세요."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The identical copy these chapters were going to move to has changed or is gone. Nothing was deleted. Review the file again.
+msgid "error.health.relinkTargetChanged"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
 #. English: The root folder no longer exists.
 #, fuzzy
 msgid "error.health.rootGone"
@@ -5912,6 +5917,11 @@ msgstr "{path} 파일을 영구 삭제했습니다. 챕터 기록과 원함 상�
 #, fuzzy
 msgid "health.history.deletedMissing"
 msgstr "누락된 {path}의 기록을 삭제했습니다. 챕터 기록과 원함 상태를 보존했습니다."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Deleted duplicate {path}; its chapters now read from the identical copy {target}
+msgid "health.history.deletedRelinked"
+msgstr ""
 
 #: src/Maki.Api/Services/HealthScanService.cs
 #. English: Scan {scan}: {completed} of {total} files, {status}

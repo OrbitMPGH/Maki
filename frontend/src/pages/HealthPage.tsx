@@ -50,13 +50,17 @@ import { Fragment, useMemo, useState } from 'react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useImageCache, useRebuildImageCache } from '../api/hooks'
+import { chapterRangeLabel } from '../api/requests'
+import { notifications } from '../lib/toast'
 import {
   useHealthAction,
   useHealthData,
   type Analysis,
   type FileDetail,
+  type FileRef,
   type HealthCheck,
   type HealthFile,
+  type HealthFilesPage,
   type HealthOperation,
   type HealthOverview,
   type MatchCounterpart,
@@ -175,6 +179,21 @@ const FINDING_LABEL: Record<string, MessageDescriptor> = {
 
 const FINDING_STATES = ['open', 'acknowledged', 'ignored', 'resolved']
 
+/** What one copy of a set of identical archives is for. */
+const COPY_ROLE: Record<'keep' | 'spare' | 'missing', MessageDescriptor> = {
+  keep: msg`Keep`,
+  spare: msg`Spare`,
+  missing: msg`Missing`,
+}
+
+const copyRole = (c: { kept: boolean; missing: boolean }) => (c.kept ? 'keep' : c.missing ? 'missing' : 'spare')
+
+/** "Ch. 77–85" from whatever chapters a file backs, or null when none carries a number. */
+function chapterSpan(chapters: { number?: number }[]) {
+  const numbers = chapters.map((c) => c.number).filter((n): n is number => n != null)
+  return numbers.length === 0 ? null : chapterRangeLabel(Math.min(...numbers), Math.max(...numbers))
+}
+
 /** What a history entry records, as HealthScanService/HealthOperationService/HealthMonitor tag it. */
 const HISTORY_KIND_LABEL: Record<string, MessageDescriptor> = {
   scan: msg`Scan`,
@@ -243,8 +262,10 @@ export default function HealthPage() {
   const [page, setPage] = useState(1)
   // Value is the file's displayed version at the moment it was selected, so a bulk delete can
   // tell the server what the reviewer actually saw rather than trusting whatever is current now.
-  const [selected, setSelected] = useState<Map<number, string>>(new Map())
-  const [deleteOpen, setDeleteOpen] = useState(false)
+  // Path and role ride along so a selection spanning pages can still name and filter what it deletes.
+  const [selected, setSelected] = useState<Map<number, Picked>>(new Map())
+  // What the bulk delete dialog will remove. `spares` words it for identical copies, where nothing is lost.
+  const [deleteTargets, setDeleteTargets] = useState<{ files: FileRef[]; spares: boolean } | null>(null)
   const [deleteReport, setDeleteReport] = useState<DeleteReport | null>(null)
   const [historyPage, setHistoryPage] = useState(1)
   const [repairPage, setRepairPage] = useState(1)
@@ -255,7 +276,9 @@ export default function HealthPage() {
   if (kind) query.set('kind', kind)
   if (state) query.set('state', state)
 
-  const files = useHealthData<{ items: HealthFile[]; total: number }>(
+  // The server answers the Duplicate filter with one row per set of identical copies.
+  const grouped = kind === 'duplicate'
+  const files = useHealthData<HealthFilesPage>(
     `/files?${query}`,
     tab === 'files',
     scanning ? 5000 : false,
@@ -299,7 +322,29 @@ export default function HealthPage() {
     return { loading: mine, disabled: action.isPending && !mine }
   }
   const ids = [...selected.keys()]
-  const pageIds = files.data?.items.map((f) => f.id) ?? []
+  // A grouped row stands for every copy in it, so selecting it selects them all.
+  const rowEntries = (file: HealthFile): [number, Picked][] =>
+    grouped && file.copies
+      ? file.copies.map((c) => [c.id, { version: c.version, relativePath: c.relativePath, spare: c.spare }])
+      : [[file.id, { version: file.version, relativePath: file.relativePath, spare: false }]]
+  const toggle = (entries: [number, Picked][], on: boolean) => {
+    const next = new Map(selected)
+    for (const [id, pick] of entries) {
+      if (on) next.set(id, pick)
+      else next.delete(id)
+    }
+    setSelected(next)
+  }
+  const pageEntries = files.data?.items.flatMap(rowEntries) ?? []
+  const pageIds = pageEntries.map(([id]) => id)
+  // Under the Duplicate filter a selection holds kept copies too; deleting only ever takes the spares.
+  const deletable: FileRef[] = [...selected]
+    .filter(([, pick]) => !grouped || pick.spare)
+    .map(([id, { version, relativePath }]) => ({ id, version, relativePath }))
+  const spares = grouped ? files.data?.spares : undefined
+  const sparesTotal = spares?.total ?? 0
+  const sparesShown = spares?.items.length ?? 0
+  const deletableCount = deletable.length
   const queryError = overview.error ?? files.error ?? operations.error ?? history.error
   const error = queryError ?? action.error ?? quick.error ?? refresh.error
   // Acknowledged checks are still issues, but they are issues someone has already decided about,
@@ -544,14 +589,44 @@ export default function HealthPage() {
                     color="var(--danger)"
                     variant="light"
                     leftSection={<IconTrash size={14} />}
-                    onClick={() => setDeleteOpen(true)}
+                    disabled={deletable.length === 0}
+                    onClick={() => setDeleteTargets({ files: deletable, spares: grouped })}
                   >
-                    <Trans>Delete</Trans>
+                    {grouped ? (
+                      <Plural value={deletableCount} one="Delete # spare copy" other="Delete # spare copies" />
+                    ) : (
+                      <Trans>Delete</Trans>
+                    )}
                   </Button>
                   <Button size="xs" variant="subtle" onClick={() => setSelected(new Map())}>
                     <Trans>Clear</Trans>
                   </Button>
                 </Group>
+              </Panel>
+            )}
+
+            {selectedCount === 0 && sparesTotal > 0 && (
+              <Panel p="xs" className="health-bulk-bar">
+                <Text size="sm">
+                  <Plural
+                    value={sparesTotal}
+                    one="# spare copy is identical to a file that stays, and no chapter reads from it."
+                    other="# spare copies are identical to files that stay, and no chapter reads from them."
+                  />
+                </Text>
+                <Button
+                  size="xs"
+                  color="var(--danger)"
+                  variant="light"
+                  leftSection={<IconTrash size={14} />}
+                  onClick={() => setDeleteTargets({ files: spares!.items, spares: true })}
+                >
+                  {sparesShown < sparesTotal ? (
+                    <Trans>Delete the first {sparesShown}</Trans>
+                  ) : (
+                    <Plural value={sparesShown} one="Delete the spare copy" other="Delete all # spare copies" />
+                  )}
+                </Button>
               </Panel>
             )}
 
@@ -592,15 +667,7 @@ export default function HealthPage() {
                               indeterminate={
                                 pageIds.some((i) => selected.has(i)) && !pageIds.every((i) => selected.has(i))
                               }
-                              onChange={(e) => {
-                                const checked = e.currentTarget.checked
-                                const next = new Map(selected)
-                                for (const file of files.data?.items ?? []) {
-                                  if (checked) next.set(file.id, file.version)
-                                  else next.delete(file.id)
-                                }
-                                setSelected(next)
-                              }}
+                              onChange={(e) => toggle(pageEntries, e.currentTarget.checked)}
                             />
                           </Table.Th>
                           <Table.Th>
@@ -621,26 +688,58 @@ export default function HealthPage() {
                       <Table.Tbody>
                         {files.data?.items.map((file) => {
                           const { relativePath } = file
+                          const entries = rowEntries(file)
+                          const rowSelected = entries.every(([id]) => selected.has(id))
+                          const others = grouped ? (file.copies ?? []).filter((c) => c.id !== file.id) : []
                           return (
-                          <Table.Tr key={file.id} data-selected={selected.has(file.id) || undefined}>
+                          <Table.Tr key={file.id} data-selected={rowSelected || undefined}>
                             <Table.Td>
                               <Checkbox
-                                aria-label={t`Select ${relativePath}`}
-                                checked={selected.has(file.id)}
-                                onChange={(e) => {
-                                  const checked = e.currentTarget.checked
-                                  const next = new Map(selected)
-                                  if (checked) next.set(file.id, file.version)
-                                  else next.delete(file.id)
-                                  setSelected(next)
-                                }}
+                                aria-label={
+                                  grouped ? t`Select every copy of ${relativePath}` : t`Select ${relativePath}`
+                                }
+                                checked={rowSelected}
+                                indeterminate={!rowSelected && entries.some(([id]) => selected.has(id))}
+                                onChange={(e) => toggle(entries, e.currentTarget.checked)}
                               />
                             </Table.Td>
                             <Table.Td>
                               <MonoValue value={file.relativePath} copy fz="var(--type-meta)" />
-                              <Text size="xs" c="var(--ink-3)">
-                                {file.analyzedAt ? formatDateTime(file.analyzedAt) : <Trans>Not analyzed</Trans>}
-                              </Text>
+                              {grouped ? (
+                                <ul className="health-copy-list">
+                                  {others.length === 0 && (
+                                    <li>
+                                      <Text size="xs" c="var(--ink-3)">
+                                        <Trans>No other copy is left. Verify this file to clear the finding.</Trans>
+                                      </Text>
+                                    </li>
+                                  )}
+                                  {others.map((copy) => {
+                                    const { relativePath: copyPath } = copy
+                                    return (
+                                      <li key={copy.id}>
+                                        <span className="health-copy-role" data-role={copyRole(copy)}>
+                                          {renderLabel(COPY_ROLE[copyRole(copy)])}
+                                        </span>
+                                        <Anchor
+                                          component="button"
+                                          type="button"
+                                          size="xs"
+                                          className="health-copy-link"
+                                          aria-label={t`Review ${copyPath}`}
+                                          onClick={() => setFileId(copy.id)}
+                                        >
+                                          {copyPath}
+                                        </Anchor>
+                                      </li>
+                                    )
+                                  })}
+                                </ul>
+                              ) : (
+                                <Text size="xs" c="var(--ink-3)">
+                                  {file.analyzedAt ? formatDateTime(file.analyzedAt) : <Trans>Not analyzed</Trans>}
+                                </Text>
+                              )}
                             </Table.Td>
                             <Table.Td>{bytes(file.size, t`Missing`)}</Table.Td>
                             <Table.Td>
@@ -735,27 +834,34 @@ export default function HealthPage() {
       )}
 
       <BulkDeleteModal
-        opened={deleteOpen}
-        close={() => setDeleteOpen(false)}
-        ids={ids}
-        // Only the current page's rows are loaded, so a selection carried across pages can name
-        // fewer paths than it deletes. Say so rather than showing a list that looks complete.
-        named={files.data?.items.filter((f) => selected.has(f.id)).map((f) => f.relativePath) ?? []}
+        // A fresh dialog per batch, so a confirmation ticked for one never carries over to the next.
+        key={deleteTargets ? deleteTargets.files.map((f) => f.id).join(',') : 'closed'}
+        opened={deleteTargets != null}
+        close={() => setDeleteTargets(null)}
+        files={deleteTargets?.files ?? []}
+        spares={deleteTargets?.spares ?? false}
         pending={action.isPending && action.variables?.path === '/deletions/bulk'}
         onConfirm={() =>
           action.mutate(
             {
               path: '/deletions/bulk',
               body: {
-                files: [...selected].map(([fileId, version]) => ({ fileId, version })),
+                files: (deleteTargets?.files ?? []).map(({ id: fileId, version }) => ({ fileId, version })),
                 confirmed: true,
               },
             },
             {
               onSuccess: (result) => {
+                const report = result as unknown as DeleteReport
+                const { deleted } = report
                 setSelected(new Map())
-                setDeleteOpen(false)
-                setDeleteReport(result as unknown as DeleteReport)
+                setDeleteTargets(null)
+                setDeleteReport(report)
+                if (report.deleted > 0 && report.failures.length === 0)
+                  notifications.show({
+                    color: 'var(--ok)',
+                    message: plural(deleted, { one: 'Deleted # archive', other: 'Deleted # archives' }),
+                  })
               },
             },
           )
@@ -840,6 +946,13 @@ function HistoryTimeline({ entries }: { entries: HistoryEntry[] }) {
   )
 }
 
+/** A selected file as it read when it was ticked; the version is what a bulk delete tells the server was reviewed. */
+interface Picked {
+  version: string
+  relativePath: string
+  spare: boolean
+}
+
 interface DeleteReport {
   deleted: number
   failures: { id: number; relativePath: string; message: string }[]
@@ -855,79 +968,96 @@ interface DeleteReport {
 function BulkDeleteModal({
   opened,
   close,
-  ids,
-  named,
+  files,
+  spares,
   pending,
   onConfirm,
 }: {
   opened: boolean
   close: () => void
-  ids: number[]
-  named: string[]
+  files: FileRef[]
+  /** Every file is a spare copy of one that stays, so no chapter loses anything. */
+  spares: boolean
   pending: boolean
   onConfirm: () => void
 }) {
   const { i18n } = useLingui()
   const [confirmed, setConfirmed] = useState(false)
-  const count = ids.length
-  const remaining = ids.length - named.length
+  const count = files.length
+  const dismiss = () => {
+    setConfirmed(false)
+    close()
+  }
 
   // `plural` is the core macro, which reads the catalogue when it runs rather than subscribing.
   // `i18n.locale` in the deps is what makes these follow a language switch.
   const [title, confirmLabel] = useMemo(
     () => [
-      plural(count, { one: 'Delete # archive?', other: 'Delete # archives?' }),
+      spares
+        ? plural(count, { one: 'Delete # spare copy?', other: 'Delete # spare copies?' })
+        : plural(count, { one: 'Delete # archive?', other: 'Delete # archives?' }),
       plural(count, {
         one: 'I confirm permanent deletion of # archive.',
         other: 'I confirm permanent deletion of # archives.',
       }),
     ],
-    [count, i18n.locale],
+    [count, spares, i18n.locale],
   )
 
   return (
     <Modal
       opened={opened}
-      onClose={close}
+      onClose={dismiss}
       title={title}
       centered
       size="lg"
-      attributes={{ content: { 'data-edge': 'danger' } }}
+      attributes={{ content: spares ? undefined : { 'data-edge': 'danger' } }}
     >
       <Stack gap="md">
-        <Alert color="var(--danger)">
-          <Trans>
-            This permanently deletes <Plural value={count} one="the file" other="these files" /> from disk.
-            Chapter records, Wanted flags and reading history are kept, so anything still wanted can be
-            downloaded again. Archives already missing from disk have nothing to delete: for those this only
-            clears the record that still says their chapters are downloaded.
-          </Trans>
-        </Alert>
+        {spares ? (
+          <Alert color="var(--info)">
+            <Trans>
+              Each of these is byte for byte the same as another file that stays in the library, and no chapter
+              reads from it. Deleting them frees the space and clears the duplicate findings. Nothing else changes.
+            </Trans>
+          </Alert>
+        ) : (
+          <Alert color="var(--danger)">
+            <Trans>
+              This permanently deletes <Plural value={count} one="the file" other="these files" /> from disk.
+              Chapter records, Wanted flags and reading history are kept, so anything still wanted can be
+              downloaded again. A file with an identical copy in the same series folder hands its chapters to that
+              copy instead. Archives already missing from disk have nothing to delete: for those this only clears
+              the record that still says their chapters are downloaded.
+            </Trans>
+          </Alert>
+        )}
         <Panel p="sm">
           <Stack gap={4}>
-            {named.map((path) => (
-              <Text key={path} size="xs" c="var(--ink-3)" style={{ overflowWrap: 'anywhere' }}>
-                {path}
+            {files.map((file) => (
+              <Text key={file.id} size="xs" c="var(--ink-3)" style={{ overflowWrap: 'anywhere' }}>
+                {file.relativePath}
               </Text>
             ))}
-            {remaining > 0 && (
-              <Text size="xs" c="var(--ink-4)">
-                <Trans>and {remaining} more selected on other pages</Trans>
-              </Text>
-            )}
           </Stack>
         </Panel>
-        <Checkbox
-          checked={confirmed}
-          onChange={(e) => setConfirmed(e.currentTarget.checked)}
-          label={confirmLabel}
-        />
+        {!spares && (
+          <Checkbox
+            checked={confirmed}
+            onChange={(e) => setConfirmed(e.currentTarget.checked)}
+            label={confirmLabel}
+          />
+        )}
         <Group justify="flex-end">
-          <Button variant="default" onClick={close}>
+          <Button variant="default" onClick={dismiss}>
             <Trans>Cancel</Trans>
           </Button>
-          <Button color="var(--danger-fill)" disabled={!confirmed} loading={pending} onClick={onConfirm}>
-            <Trans>Delete permanently</Trans>
+          <Button color="var(--danger-fill)" disabled={!spares && !confirmed} loading={pending} onClick={onConfirm}>
+            {spares ? (
+              <Plural value={count} one="Delete spare copy" other="Delete # spare copies" />
+            ) : (
+              <Trans>Delete permanently</Trans>
+            )}
           </Button>
         </Group>
       </Stack>
@@ -1282,6 +1412,17 @@ function FileReview({
   const gone = (data?.file.size ?? 0) < 0
   const pageCount = data?.analysis.pages.length ?? 0
   const sourceNames = data?.mappings.map((m) => m.sourceName).join(', ') || t`the series' sources`
+  const duplicate = (data?.copies.length ?? 0) > 1
+  // A duplicate's own panel already answers what to do; replacing or deleting through a review is
+  // for damaged copies, so it waits behind a toggle.
+  const [moreOpen, setMoreOpen] = useState(false)
+  const showActions = !duplicate || moreOpen
+  // When the file it would compete with is this file's own twin, the unlinked comparison only
+  // repeats the duplicate panel.
+  const counterparts = data?.match?.counterparts ?? []
+  const twinOnly =
+    duplicate && counterparts.length > 0 && counterparts.every((c) => c.contentHash === data?.file.contentHash)
+  const span = data ? chapterSpan(data.chapters) : null
 
   return (
     <Modal
@@ -1297,7 +1438,8 @@ function FileReview({
           <Loader />
         ) : (
           <>
-          {data.match && (
+          {duplicate && <DuplicatePanel detail={data} openFile={openFile} close={close} />}
+          {data.match && !twinOnly && (
             <UnlinkedPanel
               file={data.file}
               analysis={data.analysis}
@@ -1334,7 +1476,7 @@ function FileReview({
                   ))}
                 <Text size="sm" c="var(--ink-3)" mt="sm">
                   <Trans>Affected chapters:</Trans>{' '}
-                  {data.chapters.map((c) => c.number ?? c.title ?? c.id).join(', ') || <Trans>None linked</Trans>}
+                  {span ?? (data.chapters.map((c) => c.title ?? c.id).join(', ') || <Trans>None linked</Trans>)}
                 </Text>
                 <Divider my="md" color="var(--hairline)" />
                 <Group gap="xs">
@@ -1412,6 +1554,30 @@ function FileReview({
             </div>
 
             <div className="health-review-column">
+              {duplicate && (
+                <Panel p="md">
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    px={0}
+                    aria-expanded={moreOpen}
+                    rightSection={
+                      <IconChevronDown size={14} style={{ transform: moreOpen ? 'rotate(180deg)' : undefined }} />
+                    }
+                    onClick={() => setMoreOpen((open) => !open)}
+                  >
+                    <Trans>Other actions</Trans>
+                  </Button>
+                  <Text size="xs" c="var(--ink-4)" mt={4}>
+                    <Trans>
+                      Replace this archive from a source, or delete it through a review. Only needed when the
+                      copies themselves are damaged.
+                    </Trans>
+                  </Text>
+                </Panel>
+              )}
+              {showActions && (
+              <>
               <Panel p="md">
                 <Title order={3} size="h4" fz="var(--type-subhead)" mb="sm">
                   <Trans>Request replacement</Trans>
@@ -1491,6 +1657,7 @@ function FileReview({
                   variant="light"
                   fullWidth
                   leftSection={<IconTrash size={16} />}
+                  loading={action.isPending && action.variables?.path === '/deletions/preview'}
                   onClick={() =>
                     action.mutate(
                       { path: '/deletions/preview', body: { fileId: id, version: data.file.version } },
@@ -1501,12 +1668,245 @@ function FileReview({
                   {gone ? <Trans>Review record removal</Trans> : <Trans>Review permanent deletion</Trans>}
                 </Button>
               </Panel>
+              </>
+              )}
             </div>
           </div>
           </>
         )}
       </Stack>
     </Modal>
+  )
+}
+
+/**
+ * Byte-identical copies of this archive, and the one action they usually need.
+ *
+ * The finding sits on every copy, so the panel first says which copy stays (the one chapters read
+ * from) and which are spare. Deleting a spare loses nothing, so it is confirmed inline rather than
+ * through a review screen. Deleting the kept copy instead is offered only when its chapters have
+ * somewhere to go: an identical copy in the same series folder takes them over.
+ */
+function DuplicatePanel({ detail, openFile, close }: { detail: FileDetail; openFile: (id: number) => void; close: () => void }) {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
+  const action = useHealthAction()
+  const [confirming, setConfirming] = useState<'spares' | 'self' | null>(null)
+  const [failures, setFailures] = useState<DeleteReport['failures']>([])
+  const { file, copies, relinkTo, chapters } = detail
+  const self = copies.find((c) => c.id === file.id)
+  const selfSpare = self?.spare ?? false
+  const spares = selfSpare ? copies.filter((c) => c.id === file.id) : copies.filter((c) => c.spare)
+  const spareCount = spares.length
+  const copyCount = copies.length
+  const allKept = copies.every((c) => c.kept)
+  const relinkPath = relinkTo?.relativePath ?? ''
+  const span = chapterSpan(chapters) ?? plural(chapters.length, { one: '# chapter', other: '# chapters' })
+
+  const finish = (message: string, deletedSelf: boolean) => {
+    notifications.show({ color: 'var(--ok)', message })
+    setConfirming(null)
+    if (deletedSelf) close()
+  }
+  const deleteSpares = () => {
+    if (spares.length === 1) {
+      const [only] = spares
+      action.mutate(
+        { path: '/deletions', body: { fileId: only.id, version: only.version, confirmed: true } },
+        { onSuccess: () => finish(t`Deleted the spare copy`, selfSpare) },
+      )
+      return
+    }
+    action.mutate(
+      { path: '/deletions/bulk', body: { files: spares.map((c) => ({ fileId: c.id, version: c.version })), confirmed: true } },
+      {
+        onSuccess: (result) => {
+          const report = result as unknown as DeleteReport
+          const { deleted } = report
+          setFailures(report.failures)
+          if (report.failures.length === 0)
+            finish(plural(deleted, { one: 'Deleted # spare copy', other: 'Deleted # spare copies' }), false)
+          else setConfirming(null)
+        },
+      },
+    )
+  }
+  const deleteSelf = () =>
+    action.mutate(
+      { path: '/deletions', body: { fileId: file.id, version: file.version, confirmed: true } },
+      { onSuccess: () => finish(t`Deleted this copy. Its chapters now read from ${relinkPath}.`, true) },
+    )
+
+  return (
+    <Panel p="md">
+      <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
+        <Title order={3} size="h4" fz="var(--type-subhead)">
+          <Trans>Identical copies</Trans>
+        </Title>
+        <Badge variant="light" color="var(--neutral)">
+          <Plural value={copyCount} one="# copy" other="# copies" />
+        </Badge>
+      </Group>
+
+      <Text size="sm" c="var(--ink-3)" mb="md">
+        {selfSpare ? (
+          <Trans>
+            This file is byte for byte the same as the copy marked Keep, and no chapter reads from it. Deleting it
+            loses nothing.
+          </Trans>
+        ) : spareCount > 0 ? (
+          <Plural
+            value={spareCount}
+            one="One other file is byte for byte the same as this one, and no chapter reads from it. Deleting it loses nothing."
+            other="# other files are byte for byte the same as this one, and no chapter reads from them. Deleting them loses nothing."
+          />
+        ) : allKept ? (
+          <Trans>
+            Every copy backs chapters of its own, so deleting any of them takes the file away from those chapters.
+            Open a copy to compare it before deciding.
+          </Trans>
+        ) : (
+          <Trans>The other copy is no longer on disk. Open it to clear its record.</Trans>
+        )}
+      </Text>
+
+      <ul className="health-copies">
+        {copies.map((copy) => {
+          const role = copyRole(copy)
+          const isThis = copy.id === file.id
+          const reads = chapterSpan(copy.chapters) ?? String(copy.chapters.length)
+          return (
+            <li key={copy.id} className="health-copy" data-this={isThis || undefined}>
+              <div className="health-copy-head">
+                <span className="health-copy-role" data-role={role}>
+                  {renderLabel(COPY_ROLE[role])}
+                </span>
+                <MonoValue value={copy.relativePath} copy fz="var(--type-meta)" />
+                {isThis ? (
+                  <Text size="xs" c="var(--ink-4)">
+                    <Trans>This file</Trans>
+                  </Text>
+                ) : (
+                  <Button size="compact-xs" variant="subtle" onClick={() => openFile(copy.id)}>
+                    <Trans>Open</Trans>
+                  </Button>
+                )}
+              </div>
+              <Text component="div" size="xs" c="var(--ink-3)">
+                <MetaList
+                  items={[
+                    copy.missing ? (
+                      <Trans key="disk">Gone from disk</Trans>
+                    ) : copy.chapters.length > 0 ? (
+                      <Trans key="reads">Chapters read from it: {reads}</Trans>
+                    ) : (
+                      <Trans key="reads">No chapter reads from it</Trans>
+                    ),
+                    copy.rootPath && copy.rootPath !== self?.rootPath ? copy.rootPath : null,
+                    copy.missing ? null : bytes(copy.size, t`Missing`),
+                  ]}
+                />
+              </Text>
+            </li>
+          )
+        })}
+      </ul>
+
+      {failures.length > 0 && (
+        <Alert color="var(--danger)" mt="md">
+          {failures.map((failure) => (
+            <Text key={failure.id} size="xs" style={{ overflowWrap: 'anywhere' }}>
+              {failure.relativePath}: {failure.message}
+            </Text>
+          ))}
+        </Alert>
+      )}
+
+      {spareCount > 0 && (
+        <div className="health-copy-actions">
+          {confirming === 'spares' ? (
+            <div className="health-confirm">
+              <Text size="sm">
+                {selfSpare ? (
+                  <Trans>Delete this file from disk? The kept copy stays and no chapter changes.</Trans>
+                ) : (
+                  <Plural
+                    value={spareCount}
+                    one="Delete the spare copy from disk? This file stays and no chapter changes."
+                    other="Delete # spare copies from disk? This file stays and no chapter changes."
+                  />
+                )}
+              </Text>
+              <Group gap="xs">
+                <Button
+                  color="var(--danger-fill)"
+                  size="xs"
+                  leftSection={<IconTrash size={14} />}
+                  loading={action.isPending}
+                  onClick={deleteSpares}
+                >
+                  <Trans>Delete</Trans>
+                </Button>
+                <Button variant="default" size="xs" disabled={action.isPending} onClick={() => setConfirming(null)}>
+                  <Trans>Cancel</Trans>
+                </Button>
+              </Group>
+            </div>
+          ) : (
+            <Button
+              color="var(--danger)"
+              variant="light"
+              leftSection={<IconTrash size={16} />}
+              onClick={() => setConfirming('spares')}
+            >
+              {selfSpare ? (
+                <Trans>Delete this copy</Trans>
+              ) : (
+                <Plural value={spareCount} one="Delete the spare copy" other="Delete # spare copies" />
+              )}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {self?.kept && relinkTo && confirming !== 'spares' && (
+        <div className="health-copy-actions">
+          {confirming === 'self' ? (
+            <div className="health-confirm">
+              <Text size="sm">
+                <Trans>
+                  Delete this file from disk? {span} then read from {relinkPath}, so nothing becomes unavailable.
+                </Trans>
+              </Text>
+              <Group gap="xs">
+                <Button
+                  color="var(--danger-fill)"
+                  size="xs"
+                  leftSection={<IconTrash size={14} />}
+                  loading={action.isPending}
+                  onClick={deleteSelf}
+                >
+                  <Trans>Delete</Trans>
+                </Button>
+                <Button variant="default" size="xs" disabled={action.isPending} onClick={() => setConfirming(null)}>
+                  <Trans>Cancel</Trans>
+                </Button>
+              </Group>
+            </div>
+          ) : (
+            <Button variant="subtle" size="xs" px={0} onClick={() => setConfirming('self')}>
+              <Trans>Keep the other copy and delete this one instead</Trans>
+            </Button>
+          )}
+        </div>
+      )}
+
+      {action.error && (
+        <Alert color="var(--danger)" mt="md">
+          {action.error.message}
+        </Alert>
+      )}
+    </Panel>
   )
 }
 
@@ -1958,6 +2358,9 @@ function OperationReview({ id, close, open }: { id: number; close: () => void; o
   const [reset, setReset] = useState(false)
   const chaptersCount = data?.chapters.length ?? 0
   const finished = !!data && FINISHED_STATES.includes(data.operation.status)
+  const chapterLabel =
+    (data && chapterSpan(data.chapters)) ?? plural(chaptersCount, { one: '# chapter', other: '# chapters' })
+  const relinkPath = data?.relinkTo?.relativePath ?? ''
 
   return (
     <Modal
@@ -1978,16 +2381,26 @@ function OperationReview({ id, close, open }: { id: number; close: () => void; o
               {finished ? (
                 <OperationOutcome detail={data} />
               ) : data.operation.kind === 'delete' ? (
-                <Alert color={data.file.size < 0 ? 'var(--warn)' : 'var(--danger)'}>
+                <Alert color={data.file.size < 0 || data.relinkTo || chaptersCount === 0 ? 'var(--warn)' : 'var(--danger)'}>
                   {data.file.size < 0 ? (
                     <Trans>
                       This file is already gone from disk, so nothing is deleted. It drops the record that
                       still links these chapters to it, so they stop reading as downloaded.
                     </Trans>
+                  ) : data.relinkTo ? (
+                    <Trans>
+                      This permanently deletes the archive. {chapterLabel} then read from the identical copy at{' '}
+                      {relinkPath}, so nothing becomes unavailable.
+                    </Trans>
+                  ) : chaptersCount > 0 ? (
+                    <Trans>
+                      This permanently deletes the archive, and {chapterLabel} read from it. They will show as not
+                      downloaded. Chapter records and reading history remain.
+                    </Trans>
                   ) : (
-                    <Trans>This permanently deletes the archive. Chapter records and reading history remain.</Trans>
+                    <Trans>This permanently deletes the archive. No chapter reads from it.</Trans>
                   )}{' '}
-                  {data.chapters.some((c) => c.wanted) && (
+                  {!data.relinkTo && data.chapters.some((c) => c.wanted) && (
                     <Trans>Wanted chapters may be downloaded again by existing automation.</Trans>
                   )}
                 </Alert>

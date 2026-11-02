@@ -258,6 +258,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         if (!string.IsNullOrWhiteSpace(search)) query = query.Where(f => f.RelativePath.Contains(search));
         if (rootId != null) query = query.Where(f => f.RootFolderId == rootId);
         if (kind != null || state != null) query = query.Where(f => db.HealthFindings.Any(i => i.FileId == f.Id && i.Version == f.Version && (kind == null || i.Kind == kind) && (state == null || i.State == state)));
+        if (kind == "duplicate") return await DuplicateGroups(query, page, ct);
         var total = await query.CountAsync(ct);
         var files = await query.AsNoTracking().OrderBy(f => f.RelativePath).Skip((Math.Max(page, 1) - 1) * 30).Take(30)
             .Select(f => new { f.Id, f.RelativePath, f.Version, f.RootFolderId, f.SeriesId, f.ChapterFileId, f.Size, f.ContentHash, f.Status, f.AnalyzedAt })
@@ -265,6 +266,50 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         var ids = files.Select(f => f.Id).ToArray();
         var findings = await db.HealthFindings.AsNoTracking().Where(f => ids.Contains(f.FileId) && f.State != "resolved").ToListAsync(ct);
         return Ok(new { total, items = files.Select(f => new { f.Id, f.RelativePath, f.Version, f.RootFolderId, f.SeriesId, f.ChapterFileId, f.Size, f.ContentHash, f.Status, f.AnalyzedAt, findings = findings.Where(i => i.FileId == f.Id && i.Version == f.Version).Select(Rendered) }) });
+    }
+
+    /// <summary>The most spare copies one "Delete spare copies" can name; the bulk delete's own cap.</summary>
+    private const int SpareBatch = 100;
+
+    /// <summary>
+    /// The Duplicate filter, one row per set of identical copies rather than one per copy, since the
+    /// finding sits on every copy and a pair otherwise reads as two problems. Each row is the copy to
+    /// keep, carrying the whole set; <c>spares</c> is every spare across the filter, for the one-click
+    /// cleanup above the table.
+    /// </summary>
+    private async Task<IActionResult> DuplicateGroups(IQueryable<HealthFile> query, int page, CancellationToken ct)
+    {
+        var groups = (await HealthDuplicates.GroupsAsync(db, query.Where(f => f.ContentHash != null).Select(f => f.ContentHash!).Distinct(), ct))
+            .Values.OrderBy(g => g[0].RelativePath, StringComparer.OrdinalIgnoreCase).ToList();
+        var shown = groups.Skip((Math.Max(page, 1) - 1) * 30).Take(30).ToList();
+        var leadIds = shown.Select(g => g[0].Id).ToArray();
+        var leads = await db.HealthFiles.AsNoTracking().Where(f => leadIds.Contains(f.Id))
+            .Select(f => new { f.Id, f.RelativePath, f.Version, f.RootFolderId, f.SeriesId, f.ChapterFileId, f.Size, f.ContentHash, f.Status, f.AnalyzedAt })
+            .ToDictionaryAsync(f => f.Id, ct);
+        var memberIds = shown.SelectMany(g => g).Select(c => c.Id).ToArray();
+        var findings = (await db.HealthFindings.AsNoTracking().Where(f => memberIds.Contains(f.FileId) && f.State != "resolved").ToListAsync(ct))
+            .Where(f => shown.SelectMany(g => g).Any(c => c.Id == f.FileId && c.Version == f.Version))
+            .ToLookup(f => f.FileId);
+        var spares = groups.SelectMany(g => g).Where(c => c.Spare).ToList();
+        return Ok(new
+        {
+            total = groups.Count,
+            items = shown.Where(g => leads.ContainsKey(g[0].Id)).Select(g =>
+            {
+                var f = leads[g[0].Id];
+                return new
+                {
+                    f.Id, f.RelativePath, f.Version, f.RootFolderId, f.SeriesId, f.ChapterFileId, f.Size, f.ContentHash, f.Status, f.AnalyzedAt,
+                    findings = findings[f.Id].Select(Rendered),
+                    copies = g.Select(c => new { c.Id, c.Version, c.RelativePath, c.Kept, c.Spare, c.Missing, findings = findings[c.Id].Select(Rendered) }),
+                };
+            }),
+            spares = new
+            {
+                total = spares.Count,
+                items = spares.Take(SpareBatch).Select(c => new { c.Id, c.Version, c.RelativePath }),
+            },
+        });
     }
 
     [HttpGet("files/{id:int}")]
@@ -276,6 +321,16 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         // Priority order, so the list reads as the order an automatic request would try them in.
         var mappings = await db.SourceMappings.Where(m => m.SeriesId == file.SeriesId && m.Enabled)
             .OrderBy(m => m.Priority).ThenBy(m => m.Id).Select(m => new { m.Id, m.SourceName, m.Priority }).ToListAsync(ct);
+        var hash = file.ContentHash;
+        var group = hash == null || file.Removed
+            ? []
+            : (await HealthDuplicates.GroupsAsync(db, db.HealthFiles.Where(f => f.Id == file.Id).Select(f => f.ContentHash!), ct)).GetValueOrDefault(hash) ?? [];
+        var linkedIds = group.Where(c => c.ChapterFileId != null).Select(c => c.ChapterFileId!.Value).ToList();
+        var linkedChapters = (await db.Chapters.Where(c => c.ChapterFileId != null && linkedIds.Contains(c.ChapterFileId.Value))
+                .Select(c => new { c.Id, c.Title, c.Number, ChapterFileId = c.ChapterFileId!.Value }).ToListAsync(ct))
+            .ToLookup(c => c.ChapterFileId);
+        var roots = await db.RootFolders.ToDictionaryAsync(r => r.Id, r => r.Path, ct);
+        var relink = chapters.Count > 0 && !file.Removed ? await HealthDuplicates.RelinkTargetAsync(db, file, ct) : null;
         return Ok(new
         {
             file,
@@ -283,6 +338,14 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             chapters,
             mappings,
             match = await matches.MatchAsync(file, ct),
+            // Only meaningful with a twin; a lone row is just this file.
+            copies = group.Count < 2 ? [] : group.Select(c => new
+            {
+                c.Id, c.Version, c.RelativePath, c.Size, c.Kept, c.Spare, c.Missing,
+                RootPath = roots.GetValueOrDefault(c.RootFolderId),
+                Chapters = c.ChapterFileId is { } cf ? linkedChapters[cf].Select(x => new { x.Id, x.Title, x.Number }) : [],
+            }).ToList(),
+            relinkTo = relink == null ? null : new { relink.Id, relink.RelativePath },
             findings = (await db.HealthFindings.AsNoTracking().Where(f => f.FileId == id && f.Version == file.Version).ToListAsync(ct))
                 .Select(Rendered),
         });
@@ -480,8 +543,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         {
             try
             {
-                var op = await operations.PreviewDeleteAsync(item.FileId, item.Version, user.UserId, ct);
-                await operations.ApplyAsync(op.Id, item.Version, true, false, ct);
+                await operations.DeleteNowAsync(item.FileId, item.Version, user.UserId, ct);
                 deleted++;
             }
             catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
@@ -509,6 +571,19 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         await db.SaveChangesAsync(ct);
         return Ok(new { deleted, failures });
     }
+
+    public record ConfirmedDelete(int FileId, string Version, bool Confirmed);
+    /// <summary>
+    /// Preview and apply in one call, for a delete the page already confirmed inline (a spare copy of
+    /// a duplicate). Validation is the same as the two-step path; only the review screen is skipped.
+    /// </summary>
+    [HttpPost("deletions")]
+    public Task<IActionResult> Delete(ConfirmedDelete request, CancellationToken ct) =>
+        ConflictGuard($"file {request.FileId}", async () =>
+        {
+            if (!request.Confirmed) return this.Fail(localizer, "error.health.confirmationRequired");
+            return Ok(Rendered(await operations.DeleteNowAsync(request.FileId, request.Version, user.UserId, ct)));
+        });
 
     [HttpPost("deletions/preview")]
     public Task<IActionResult> DeletePreview(FileReview request, CancellationToken ct) =>
@@ -691,13 +766,15 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         var op = await db.HealthOperations.FindAsync([id], ct);
         if (op == null) return NotFound();
         var file = await db.HealthFiles.FindAsync([op.FileId], ct);
-        var chapters = await db.Chapters.Where(c => file != null && file.ChapterFileId != null && c.ChapterFileId == file.ChapterFileId).Select(c => new { c.Id, c.Title, c.Wanted }).ToListAsync(ct);
+        var chapters = await db.Chapters.Where(c => file != null && file.ChapterFileId != null && c.ChapterFileId == file.ChapterFileId).Select(c => new { c.Id, c.Title, c.Number, c.Wanted }).ToListAsync(ct);
         var candidates = HealthOperationService.Candidates(op);
+        var relink = op.RelinkFileId is { } relinkId ? await db.HealthFiles.FindAsync([relinkId], ct) : null;
         return Ok(new
         {
             operation = Rendered(op),
             file,
             chapters,
+            relinkTo = relink == null ? null : new { relink.Id, relink.RelativePath },
             candidates = candidates.Select(c => new { c.ChapterId, c.RelativePath, c.Hash, Analysis = RenderedAnalysis(c.Analysis), c.FinalPath, c.SourceMappingId }),
             requiresReset = file != null && HealthOperationService.RequiresReset(file, candidates, chapters.Count),
             retryable = HealthOperationService.Retryable(op, file),
