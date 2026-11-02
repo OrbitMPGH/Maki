@@ -169,12 +169,14 @@ const StripPage = memo(function StripPage({
         data-no-cover-fallback
         src={url}
         alt={alt}
+        // Stays painted under the enhanced page: Firefox snaps a canvas's edges on its own, worst
+        // while scrolling, and a seam that opens between two pages then shows this page, not the background.
+        aria-hidden={enhance && covered ? true : undefined}
         className={`reader-page ${FIT_CLASS[fit]}`}
         style={{
           ...(fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined),
           ...(tone ? { filter: tone } : undefined),
           ...(failed ? { display: 'none' } : undefined),
-          ...(enhance && covered ? { visibility: 'hidden' } : undefined),
         }}
         // A window around the current page rather than the whole prefix: resuming at page 300
         // of a webtoon strip would otherwise fetch and decode 300 pages at once. Only the

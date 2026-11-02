@@ -145,7 +145,7 @@ const compareKey = (type: 'keydown' | 'keyup') => window.dispatchEvent(new Keybo
 
 /**
  * Only the enhance range is enhanced, each canvas drawn over its page image, which stays in the
- * strip's flow. Holding H shows the originals.
+ * strip's flow and painted underneath (hidden from assistive tech only). Holding H shows the originals.
  */
 export const Enhanced: Story = {
   args: { enhance: 'always', enhanceMethod: 'a4k-s' },
@@ -168,7 +168,8 @@ export const Enhanced: Story = {
       { timeout: ENGINE_TIMEOUT },
     )
     await expect(enhanced).toHaveAccessibleName('Chapter 40 - page 1')
-    await waitFor(() => expect(original).not.toBeVisible())
+    await waitFor(() => expect(original).toHaveAttribute('aria-hidden', 'true'))
+    await expect(original).toBeVisible()
     const a = original.getBoundingClientRect()
     const b = enhanced.getBoundingClientRect()
     await expect(Math.abs(a.top - b.top) + Math.abs(a.left - b.left) + Math.abs(a.width - b.width)).toBeLessThan(2)
@@ -176,12 +177,12 @@ export const Enhanced: Story = {
     await expect(canvasElement.querySelectorAll('canvas.reader-enhanced').length).toBeLessThanOrEqual(range.length)
 
     compareKey('keydown')
-    await waitFor(() => expect(original).toBeVisible())
-    await expect(enhanced).not.toBeVisible()
+    await waitFor(() => expect(enhanced).not.toBeVisible())
+    await waitFor(() => expect(original).not.toHaveAttribute('aria-hidden'))
 
     compareKey('keyup')
     await waitFor(() => expect(enhanced).toBeVisible())
-    await waitFor(() => expect(original).not.toBeVisible())
+    await waitFor(() => expect(original).toHaveAttribute('aria-hidden', 'true'))
   },
 }
 
