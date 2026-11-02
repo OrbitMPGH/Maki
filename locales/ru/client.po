@@ -726,8 +726,8 @@ msgid "{archiveCount, plural, one {# series} other {# series}}"
 msgstr "{archiveCount, plural, one {# серия} few {# серии} many {# серий} other {# серии}}"
 
 #: src/pages/LibraryPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "{archivedCount, plural, one {Archived (#)} other {Archived (#)}}"
 msgstr "{archivedCount, plural, one {Архив (#)} few {Архив (#)} many {Архив (#)} other {Архив (#)}}"
 
@@ -1855,8 +1855,8 @@ msgid "{queued, plural, one {Queued # removed chapter} other {Queued # removed c
 msgstr "{queued, plural, one {В очередь добавлена # удалённая глава} few {В очередь добавлены # удалённые главы} many {В очередь добавлено # удалённых глав} other {В очередь добавлены # удалённые главы}}"
 
 #: src/components/series/restoreToast.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "{queued, plural, one {Restored to the library, # chapter queued} other {Restored to the library, # chapters queued}}"
 msgstr "{queued, plural, one {Возвращено в библиотеку, в очередь добавлена # глава} few {Возвращено в библиотеку, в очередь добавлены # главы} many {Возвращено в библиотеку, в очередь добавлено # глав} other {Возвращено в библиотеку, в очередь добавлены # главы}}"
 
@@ -4124,20 +4124,20 @@ msgstr "Архив"
 #: src/components/series/ArchiveSeriesDialog.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Archive"
 msgstr "Архивировать"
 
 #: src/components/series/ArchiveSeriesDialog.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Archive {title}?"
 msgstr "Архивировать {title}?"
 
 #: src/components/settings/UsersSection.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Archive series"
 msgstr "Архивировать серии"
 
@@ -4146,14 +4146,14 @@ msgstr "Архивировать серии"
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Archived"
 msgstr "Архив"
 
 #: src/components/series/ArchivedSeriesCard.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Archived {date}"
 msgstr "В архиве с {date}"
 
@@ -4183,8 +4183,8 @@ msgid "Archives inventoried"
 msgstr "Архивы проиндексированы"
 
 #: src/pages/LibraryPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Archiving a finished series stops Maki checking its sources and keeps your reading history and rating. Archived series show up here."
 msgstr "Архивация завершённой серии останавливает проверку источников Maki и сохраняет историю чтения и оценку. Архивные серии показываются здесь."
 
@@ -11534,8 +11534,8 @@ msgid "Maki speaks your language"
 msgstr "Maki говорит на вашем языке"
 
 #: src/components/series/ArchiveSeriesDialog.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Maki stops checking sources for new chapters and moves it to Archived. Your reading history, rating and chapters stay. You can restore it any time."
 msgstr "Maki перестаёт проверять источники на новые главы и переносит серию в архив. История чтения, оценка и главы сохраняются. Её можно восстановить в любое время."
 
@@ -13760,8 +13760,8 @@ msgid "Note (optional)"
 msgstr "Примечание (необязательно)"
 
 #: src/pages/LibraryPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Nothing archived"
 msgstr "В архиве ничего нет"
 
@@ -16247,8 +16247,8 @@ msgid "Recently added"
 msgstr "Недавно добавлено"
 
 #: src/pages/LibraryPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Recently archived"
 msgstr "Недавно в архиве"
 
@@ -17211,16 +17211,16 @@ msgstr "Восстановить"
 #: src/components/series/RestoreSeriesDialog.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/LibraryPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restore"
 msgstr "Восстановить"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/import/ImportPlanModal.tsx
 #: src/pages/ImportPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restore {title}"
 msgstr "Восстановить {title}"
 
@@ -17235,8 +17235,8 @@ msgid "Restore and convert again with the current settings"
 msgstr "Восстановить и преобразовать снова с текущими настройками"
 
 #: src/components/series/RestoreSeriesDialog.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restore and download"
 msgstr "Восстановить и загрузить"
 
@@ -17266,8 +17266,8 @@ msgid "Restore hidden or dismissed title"
 msgstr "Восстановить скрытое или отклонённое название"
 
 #: src/components/series/RestoreSeriesDialog.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restore only"
 msgstr "Только восстановить"
 
@@ -17289,14 +17289,14 @@ msgstr "Восстановить это название"
 #: src/components/series/ArchivedBanner.tsx
 #: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/series/SeriesActionsMenu.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restore to library"
 msgstr "Вернуть в библиотеку"
 
 #: src/components/series/RestoreSeriesDialog.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restore to the library?"
 msgstr "Вернуть в библиотеку?"
 
@@ -17321,20 +17321,20 @@ msgid "Restored from the provider"
 msgstr "Восстановлено из данных провайдера"
 
 #: src/components/series/restoreToast.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restored to the library"
 msgstr "Возвращено в библиотеку"
 
 #: src/components/series/restoreToast.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restored to the library, but the removed chapters were not queued: {queueError}"
 msgstr "Возвращено в библиотеку, но удалённые главы не попали в очередь: {queueError}"
 
 #: src/pages/ImportPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restoring an archived series needs the Archive series permission"
 msgstr "Восстановление архивной серии требует права «Архивировать серии»"
 
@@ -18703,8 +18703,8 @@ msgid "Series archived"
 msgstr "Серия архивирована"
 
 #: src/pages/settings/LibraryCards.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Series archived"
 msgstr "Серия архивирована"
 
@@ -20739,8 +20739,8 @@ msgid "The send failed"
 msgstr "Отправка не удалась"
 
 #: src/components/series/RemoveArchivedFilesDialog.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "The series stays in Archived with its chapters, reading history and rating. Restoring it later can download the chapters again."
 msgstr "Серия остаётся в архиве вместе с главами, историей чтения и оценкой. Если восстановить её позже, главы можно загрузить снова."
 

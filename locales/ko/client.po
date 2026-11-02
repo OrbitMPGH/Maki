@@ -726,8 +726,8 @@ msgid "{archiveCount, plural, one {# series} other {# series}}"
 msgstr "{archiveCount, plural, other {시리즈 #개}}"
 
 #: src/pages/LibraryPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "{archivedCount, plural, one {Archived (#)} other {Archived (#)}}"
 msgstr "{archivedCount, plural, other {보관됨 (#)}}"
 
@@ -1855,8 +1855,8 @@ msgid "{queued, plural, one {Queued # removed chapter} other {Queued # removed c
 msgstr "{queued, plural, other {삭제했던 챕터 #개를 대기열에 추가했습니다}}"
 
 #: src/components/series/restoreToast.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "{queued, plural, one {Restored to the library, # chapter queued} other {Restored to the library, # chapters queued}}"
 msgstr "{queued, plural, other {라이브러리로 복원했고, 챕터 #개를 대기열에 추가했습니다}}"
 
@@ -4124,20 +4124,20 @@ msgstr "보관 파일"
 #: src/components/series/ArchiveSeriesDialog.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Archive"
 msgstr "보관"
 
 #: src/components/series/ArchiveSeriesDialog.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Archive {title}?"
 msgstr "{title}을(를) 보관할까요?"
 
 #: src/components/settings/UsersSection.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Archive series"
 msgstr "시리즈 보관"
 
@@ -4146,14 +4146,14 @@ msgstr "시리즈 보관"
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Archived"
 msgstr "보관됨"
 
 #: src/components/series/ArchivedSeriesCard.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Archived {date}"
 msgstr "보관됨 {date}"
 
@@ -4183,8 +4183,8 @@ msgid "Archives inventoried"
 msgstr "보관 파일 확인 완료"
 
 #: src/pages/LibraryPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Archiving a finished series stops Maki checking its sources and keeps your reading history and rating. Archived series show up here."
 msgstr "완결된 시리즈를 보관하면 Maki가 소스를 확인하지 않으며, 읽기 기록과 평점은 그대로 남습니다. 보관된 시리즈는 여기에 표시됩니다."
 
@@ -11534,8 +11534,8 @@ msgid "Maki speaks your language"
 msgstr "Maki가 이제 당신의 언어를 지원합니다"
 
 #: src/components/series/ArchiveSeriesDialog.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Maki stops checking sources for new chapters and moves it to Archived. Your reading history, rating and chapters stay. You can restore it any time."
 msgstr "Maki가 새 챕터를 더 이상 소스에서 확인하지 않고 보관됨으로 옮깁니다. 읽기 기록, 평점, 챕터는 그대로 남으며 언제든 복원할 수 있습니다."
 
@@ -13760,8 +13760,8 @@ msgid "Note (optional)"
 msgstr "메모 (선택 사항)"
 
 #: src/pages/LibraryPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Nothing archived"
 msgstr "보관된 항목 없음"
 
@@ -16247,8 +16247,8 @@ msgid "Recently added"
 msgstr "최근 추가됨"
 
 #: src/pages/LibraryPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Recently archived"
 msgstr "최근 보관됨"
 
@@ -17211,16 +17211,16 @@ msgstr "복원"
 #: src/components/series/RestoreSeriesDialog.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/LibraryPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restore"
 msgstr "복원"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/import/ImportPlanModal.tsx
 #: src/pages/ImportPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restore {title}"
 msgstr "{title} 복원"
 
@@ -17235,8 +17235,8 @@ msgid "Restore and convert again with the current settings"
 msgstr "현재 설정으로 복원한 뒤 다시 변환"
 
 #: src/components/series/RestoreSeriesDialog.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restore and download"
 msgstr "복원하고 다운로드"
 
@@ -17266,8 +17266,8 @@ msgid "Restore hidden or dismissed title"
 msgstr "숨겨지거나 일시 숨김 처리된 작품 복원"
 
 #: src/components/series/RestoreSeriesDialog.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restore only"
 msgstr "복원만"
 
@@ -17289,14 +17289,14 @@ msgstr "이 작품 복원"
 #: src/components/series/ArchivedBanner.tsx
 #: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/series/SeriesActionsMenu.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restore to library"
 msgstr "라이브러리로 복원"
 
 #: src/components/series/RestoreSeriesDialog.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restore to the library?"
 msgstr "라이브러리로 복원할까요?"
 
@@ -17321,20 +17321,20 @@ msgid "Restored from the provider"
 msgstr "제공자에서 복원됨"
 
 #: src/components/series/restoreToast.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restored to the library"
 msgstr "라이브러리로 복원했습니다"
 
 #: src/components/series/restoreToast.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restored to the library, but the removed chapters were not queued: {queueError}"
 msgstr "라이브러리로 복원했지만 삭제했던 챕터는 대기열에 넣지 못했습니다: {queueError}"
 
 #: src/pages/ImportPage.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Restoring an archived series needs the Archive series permission"
 msgstr "보관된 시리즈를 복원하려면 '시리즈 보관' 권한이 필요합니다"
 
@@ -18703,8 +18703,8 @@ msgid "Series archived"
 msgstr "시리즈 보관됨"
 
 #: src/pages/settings/LibraryCards.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "Series archived"
 msgstr "시리즈 보관됨"
 
@@ -20739,8 +20739,8 @@ msgid "The send failed"
 msgstr "전송에 실패했습니다"
 
 #: src/components/series/RemoveArchivedFilesDialog.tsx
-msgctxt "series"
 #, fuzzy
+msgctxt "series"
 msgid "The series stays in Archived with its chapters, reading history and rating. Restoring it later can download the chapters again."
 msgstr "시리즈는 챕터, 읽기 기록, 평점과 함께 보관됨 상태로 남습니다. 나중에 복원하면 챕터를 다시 다운로드할 수 있습니다."
 
