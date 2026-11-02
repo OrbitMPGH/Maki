@@ -7,11 +7,13 @@ namespace Maki.Metadata.MangaBaka;
 /// </param>
 /// <param name="DownloadedBytes">Compressed bytes received, which is what the total is measured in.</param>
 /// <param name="TotalBytes">Compressed size from Content-Length; null when the server withheld it.</param>
+/// <param name="IndexProgress">Share of the index build done, 0 to 1; null outside the indexing phase.</param>
 public record MangaBakaDumpProgress(
     bool Running,
     string Phase,
     long DownloadedBytes,
     long? TotalBytes,
+    double? IndexProgress,
     long? BytesPerSecond,
     int? EstimatedSecondsRemaining,
     DateTime? StartedAt,
@@ -33,6 +35,11 @@ public class MangaBakaDumpStatus(Func<DateTime>? clock = null)
     /// </summary>
     private const double RateSmoothing = 0.3;
 
+    /// <summary>The first few percent of the build are too short to extrapolate a countdown from.</summary>
+    private const double MinIndexedForEstimate = 0.03;
+
+    private const double MinIndexSecondsForEstimate = 3;
+
     private readonly Func<DateTime> _clock = clock ?? (() => DateTime.UtcNow);
     private readonly object _gate = new();
     private bool _running;
@@ -42,6 +49,8 @@ public class MangaBakaDumpStatus(Func<DateTime>? clock = null)
     private double _bytesPerSecond;
     private DateTime? _lastReportAt;
     private long _lastReportBytes;
+    private double _indexed;
+    private DateTime? _indexStartedAt;
     private DateTime? _startedAt;
     private DateTime? _finishedAt;
     private bool _lastInstalled;
@@ -70,6 +79,8 @@ public class MangaBakaDumpStatus(Func<DateTime>? clock = null)
             _bytesPerSecond = 0;
             _lastReportAt = null;
             _lastReportBytes = 0;
+            _indexed = 0;
+            _indexStartedAt = null;
             _startedAt = _clock();
             _finishedAt = null;
             _lastError = null;
@@ -95,6 +106,25 @@ public class MangaBakaDumpStatus(Func<DateTime>? clock = null)
             _bytesPerSecond = 0;
             _lastReportAt = _clock();
             _lastReportBytes = 0;
+        }
+    }
+
+    public void BeginIndexing()
+    {
+        lock (_gate)
+        {
+            _phase = "indexing";
+            _indexed = 0;
+            _indexStartedAt = _clock();
+        }
+    }
+
+    /// <summary>Share of the index build done. Never moves backwards, so a coarse step can't make the bar jump back.</summary>
+    public void ReportIndexed(double fraction)
+    {
+        lock (_gate)
+        {
+            _indexed = Math.Max(_indexed, Math.Clamp(fraction, 0, 1));
         }
     }
 
@@ -172,6 +202,7 @@ public class MangaBakaDumpStatus(Func<DateTime>? clock = null)
         {
             return new MangaBakaDumpProgress(
                 _running, _phase, _downloaded, _total,
+                _phase == "indexing" ? _indexed : null,
                 _bytesPerSecond > 0 ? (long)_bytesPerSecond : null,
                 EstimateSecondsRemaining(),
                 _startedAt, _finishedAt, _lastInstalled, _lastError);
@@ -179,24 +210,43 @@ public class MangaBakaDumpStatus(Func<DateTime>? clock = null)
     }
 
     /// <summary>
-    /// Bytes left over the smoothed throughput. Null outside the download phase: the index build
-    /// that follows has no measurable unit of work, and reporting the download's ETA through it
-    /// would show a countdown that reached zero and then sat there. Caller holds <see cref="_gate"/>.
+    /// Bytes left over the smoothed throughput while downloading, and the elapsed build time scaled
+    /// by the share left while indexing. Null in the other phases and until the index build has
+    /// enough behind it to extrapolate from. Caller holds <see cref="_gate"/>.
     /// </summary>
     private int? EstimateSecondsRemaining()
     {
-        if (!_running || _phase != "downloading" || _total is not { } total || _bytesPerSecond <= 0)
+        if (!_running)
         {
             return null;
         }
 
-        var remaining = total - _downloaded;
-        if (remaining <= 0)
+        double seconds;
+        if (_phase == "indexing" && _indexStartedAt is { } indexStarted)
         {
-            return 0;
+            var elapsed = (_clock() - indexStarted).TotalSeconds;
+            if (_indexed < MinIndexedForEstimate || elapsed < MinIndexSecondsForEstimate)
+            {
+                return null;
+            }
+
+            seconds = elapsed * (1 - _indexed) / _indexed;
+        }
+        else if (_phase == "downloading" && _total is { } total && _bytesPerSecond > 0)
+        {
+            var remaining = total - _downloaded;
+            if (remaining <= 0)
+            {
+                return 0;
+            }
+
+            seconds = remaining / _bytesPerSecond;
+        }
+        else
+        {
+            return null;
         }
 
-        var seconds = remaining / _bytesPerSecond;
         return (int)Math.Max(0, Math.Min(seconds, TimeSpan.FromDays(1).TotalSeconds));
     }
 }

@@ -3696,6 +3696,8 @@ export interface DumpProgress {
   downloadedBytes: number
   /** Null when the server withheld Content-Length, which leaves bytes but no percentage. */
   totalBytes: number | null
+  /** Share of the index build done, 0 to 1; null outside the 'indexing' phase. */
+  indexProgress: number | null
   bytesPerSecond: number | null
   estimatedSecondsRemaining: number | null
   startedAt: string | null

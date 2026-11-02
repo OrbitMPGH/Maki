@@ -21,6 +21,7 @@ const TOAST_ID = 'mangabaka-dump'
 
 /** Null while there is nothing to divide by, which is what leaves the bar indeterminate. */
 export function dumpPercent(progress: DumpProgress): number | null {
+  if (progress.phase === 'indexing' && progress.indexProgress !== null) return progress.indexProgress * 100
   if (progress.phase !== 'downloading' || !progress.totalBytes) return null
   return Math.min(100, (progress.downloadedBytes / progress.totalBytes) * 100)
 }
@@ -38,9 +39,11 @@ export function dumpPhaseLabel(phase: string): MessageDescriptor {
 
 /** "217.4 MB of 348.9 MB, 4.2 MB/s, 31s left", dropping whatever the server didn't report. */
 export function dumpDetail(progress: DumpProgress): string {
+  if (progress.phase === 'indexing' && progress.estimatedSecondsRemaining !== null) {
+    const eta = formatReadingTime(progress.estimatedSecondsRemaining)
+    return now`${eta} left`
+  }
   if (progress.phase !== 'downloading') {
-    // Neither of the post-download phases has a measurable unit of work, so a byte count or an
-    // ETA here would be the download's, frozen.
     return now`This takes a minute or two and only happens once per snapshot.`
   }
 
