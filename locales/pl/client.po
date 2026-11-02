@@ -1790,6 +1790,10 @@ msgstr "{newChapterCount, plural, one {# nowy} few {# nowe} many {# nowych} othe
 msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
 msgstr "{newChapterCount, plural, one {# ostatni plik rozdziału} few {# ostatnie pliki rozdziału} many {# ostatnich plików rozdziału} other {# ostatniego pliku rozdziału}}"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "{newChapters, plural, one {+# chapter} other {+# chapters}}"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
@@ -2128,6 +2132,10 @@ msgstr "{sampleChapters, plural, one {na podstawie # podobnego czytania} few {na
 #, fuzzy
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Zmierzono na podstawie # rozdziału z {series} serii w Twojej bibliotece: {bpp} bitów na piksel, odpowiednik JPG.} few {Zmierzono na podstawie # rozdziałów z {series} serii w Twojej bibliotece: {bpp} bitów na piksel, odpowiednik JPG.} many {Zmierzono na podstawie # rozdziałów z {series} serii w Twojej bibliotece: {bpp} bitów na piksel, odpowiednik JPG.} other {Zmierzono na podstawie # rozdziału z {series} serii w Twojej bibliotece: {bpp} bitów na piksel, odpowiednik JPG.}}"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
+msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -2477,6 +2485,10 @@ msgstr "{tierLabel}, {width}px"
 msgid "{timedChapters, plural, one {Pace is from {formattedTimed} timed chapter; only the built-in reader records time.} other {Pace is from {formattedTimed} timed chapters; only the built-in reader records time.}}"
 msgstr "{timedChapters, plural, one {Tempo pochodzi z {formattedTimed} zmierzonego rozdziału; tylko wbudowany czytnik zapisuje czas.} few {Tempo pochodzi z {formattedTimed} zmierzonych rozdziałów; tylko wbudowany czytnik zapisuje czas.} many {Tempo pochodzi z {formattedTimed} zmierzonych rozdziałów; tylko wbudowany czytnik zapisuje czas.} other {Tempo pochodzi z {formattedTimed} zmierzonego rozdziału; tylko wbudowany czytnik zapisuje czas.}}"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "{title} is hidden from your recommendations and left your shortlist."
+msgstr ""
+
 #: src/components/ConnectionSettingsCard.tsx
 #, fuzzy
 msgid "{title} is reachable"
@@ -2582,6 +2594,7 @@ msgid "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter} 
 msgstr "{total, plural, one {Chciane dla {spanLabel}: {wantedCount} z # rozdziału} few {Chciane dla {spanLabel}: {wantedCount} z # rozdziałów} many {Chciane dla {spanLabel}: {wantedCount} z # rozdziałów} other {Chciane dla {spanLabel}: {wantedCount} z # rozdziału}}"
 
 #: src/components/ui/DiscoverRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "{totalChapters} ch."
 msgstr "{totalChapters} rozdz."
@@ -2785,6 +2798,10 @@ msgstr "{volumesRead, plural, one {…plus # cały tom.} few {…plus # całe to
 #, fuzzy
 msgid "{volumesText} + {chaptersText}"
 msgstr "{volumesText} + {chaptersText}"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -3084,6 +3101,10 @@ msgstr "Anime ocenione na 10/10 zaczyna z wagą {topSeed}, a nieoceniona manga n
 msgid "A connection has unsaved changes."
 msgstr "Połączenie ma niezapisane zmiany."
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "a creator page"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "A few choices to get your library running. Everything saves as you go, and all of it is in Settings afterwards."
@@ -3192,10 +3213,18 @@ msgstr "Osobny wiersz dla każdego mniejszego motywu w Twojej bibliotece."
 msgid "A scan is already running"
 msgstr "Skan już trwa"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "a search"
+msgstr ""
+
 #: src/api/libraryImport.ts
 #, fuzzy
 msgid "a second copy of another comic in the folder, which is used instead"
 msgstr "druga kopia innego komiksu w folderze, która zostanie użyta zamiast tego"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "a series page"
+msgstr ""
 
 #: src/components/releases/UpcomingView.tsx
 #, fuzzy
@@ -3517,6 +3546,7 @@ msgstr "Dodaj serię do biblioteki albo poproś o nią, aby czytać dalej."
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Add to library"
 msgstr "Dodaj do biblioteki"
@@ -3662,6 +3692,7 @@ msgstr "Agregator"
 #: src/components/import/MihonReview.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -3967,6 +3998,10 @@ msgstr "Administrator decyduje, gdzie trafi seria i co zostanie pobrane."
 #, fuzzy
 msgid "An admin will see it on the Requests page."
 msgstr "Administrator zobaczy to zgłoszenie na stronie próśb."
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "an import list"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -4296,6 +4331,7 @@ msgstr "Archiwizuj serię"
 #: src/components/CommandPalette.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4351,6 +4387,10 @@ msgstr "Ułóż, co wyświetla Start."
 #, fuzzy
 msgid "Art"
 msgstr "Rysunek"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "As owned"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4890,6 +4930,7 @@ msgid "Browse tags to include"
 msgstr "Przeglądaj tagi do uwzględnienia"
 
 #: src/api/hooks.ts
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Browse the catalogue"
@@ -5073,6 +5114,10 @@ msgstr "Anulować to zgłoszenie?"
 #, fuzzy
 msgid "Cancelled"
 msgstr "Anulowane"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Cancelled since you saved it"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5381,6 +5426,14 @@ msgstr "Zmień tylko ten tytuł"
 #, fuzzy
 msgid "Changed"
 msgstr "Zmienione"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Changed since saved"
+msgstr ""
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Changed since you saved them"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -6154,6 +6207,7 @@ msgstr "Kompletne"
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/stats/labels.ts
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -6165,6 +6219,10 @@ msgstr "Zakończone"
 #, fuzzy
 msgid "Completed and cancelled downloads show up here."
 msgstr "Tutaj pojawiają się ukończone i anulowane pobrania."
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Completed since you saved it"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -6356,6 +6414,7 @@ msgstr "Kontynuuj"
 
 #: src/api/hooks.ts
 #: src/components/home/AnimeResumeRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Continue from the anime"
@@ -6617,6 +6676,10 @@ msgstr "Nie udało się wczytać tego rozdziału."
 msgid "Could not load your progress. The server logs will say why."
 msgstr "Nie udało się wczytać Twojego postępu. Logi serwera wyjaśnią dlaczego."
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Could not load your shortlist"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "Could not load your signals: {loadError}"
@@ -6673,6 +6736,7 @@ msgid "Could not undo: {reason}"
 msgstr "Nie udało się cofnąć: {reason}"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Could not update feedback: {reason}"
 msgstr "Nie udało się zaktualizować opinii: {reason}"
@@ -7552,6 +7616,10 @@ msgstr "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, 
 msgid "Discover"
 msgstr "Odkrywanie"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Discover's catalogue is not downloaded yet"
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Disk size"
@@ -8065,6 +8133,10 @@ msgstr "Edytuj układ"
 #, fuzzy
 msgid "Edit metadata"
 msgstr "Edytuj metadane"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Edit note"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -9554,6 +9626,10 @@ msgstr ""
 msgid "Good quality"
 msgstr "Dobra jakość"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Got it"
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
 #, fuzzy
@@ -9655,6 +9731,10 @@ msgstr "Ma wyłączone źródło"
 #, fuzzy
 msgid "Has all of"
 msgstr "Zawiera wszystkie"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Has an anime"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -9841,6 +9921,7 @@ msgid "Hide this and its franchise"
 msgstr "Ukryj ten tytuł i całe uniwersum"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Hide this title"
 msgstr "Ukryj ten tytuł"
@@ -10000,6 +10081,10 @@ msgstr "Jak bardzo się liczą"
 #, fuzzy
 msgid "How signals work"
 msgstr "Jak działają sygnały"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "How the shortlist differs from your library"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -10363,6 +10448,10 @@ msgstr "W trakcie"
 #, fuzzy
 msgid "In queue"
 msgstr "W kolejce"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "In the library"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -11296,6 +11385,7 @@ msgstr "Awans poziomu"
 #: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -12494,6 +12584,10 @@ msgstr "Więcej działań"
 msgid "More actions for {chapterLbl}"
 msgstr "Więcej działań dla {chapterLbl}"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "More actions for {title}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "More download options"
@@ -13145,6 +13239,10 @@ msgstr "Dalej..."
 msgid "Night"
 msgstr "Noc"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "No"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "No activity in {windowLabel}."
@@ -13375,6 +13473,10 @@ msgstr "nie ma już w Suwayomi"
 #, fuzzy
 msgid "No longer in Suwayomi"
 msgstr "Nie ma już w Suwayomi"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "No longer in the catalogue"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -13921,6 +14023,7 @@ msgid "Not every source carries chapter {chapterNumber}, so some columns are sho
 msgstr "Nie każde źródło ma rozdział {chapterNumber}, więc niektóre kolumny pokazują zamiast tego swój pierwszy rozdział. Każda kolumna podaje, który to rozdział."
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Not for me"
 msgstr "Nie dla mnie"
@@ -14110,6 +14213,11 @@ msgstr "Jeszcze niezsynchronizowane"
 #, fuzzy
 msgid "Note (optional)"
 msgstr "Notatka (opcjonalnie)"
+
+#: src/components/discover/ShortlistButton.tsx
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Note for later"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -14308,6 +14416,14 @@ msgstr "Brak nowości od nich w ciągu ostatnich {FOLLOWING_RAIL_MONTHS} mies., 
 msgid "Nothing of theirs is in the searchable part of the catalogue."
 msgstr "Nic od tego twórcy nie znajduje się w przeszukiwalnej części katalogu."
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Nothing on your shortlist"
+msgstr ""
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Nothing on your shortlist matches this filter."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Nothing queued: {displayName} doesn't list those chapters."
@@ -14492,6 +14608,10 @@ msgstr "Powiadomienia są zablokowane dla tej strony. Zmień uprawnienie w ustaw
 msgid "Notifications muted"
 msgstr "Powiadomienia wyciszone"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Notifications of any kind"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Notifications: {notificationMode}"
@@ -14652,6 +14772,7 @@ msgstr "Starsze mogą pasować. Wczytaj więcej, aby sprawdzić dalej wstecz."
 msgid "Oldest"
 msgstr "Najstarsze"
 
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Oldest first"
@@ -14691,6 +14812,10 @@ msgstr "Włączone na tym urządzeniu."
 msgid "On for this series"
 msgstr "Włączone dla tej serii"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "On hiatus since you saved it"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "On hold"
@@ -14721,6 +14846,10 @@ msgstr "Na tym urządzeniu; najlepsze na czystych liniach, może powodować plam
 #, fuzzy
 msgid "On your shelf, not used for ranking"
 msgstr "Na Twojej półce, nieużywane do rankingu"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "On your shortlist"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -14937,6 +15066,10 @@ msgstr "Otwórz w"
 msgid "Open on {label}"
 msgstr "Otwórz w {label}"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Open on MangaBaka"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Open Recommended with these filters from now on"
@@ -14945,6 +15078,7 @@ msgstr "Od teraz otwieraj Polecane z tymi filtrami"
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/series/AnimeResumeCallout.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -15468,6 +15602,10 @@ msgstr "Oczekujące pobrania zostaną usunięte. Pobrania już w trakcie zostan�
 #, fuzzy
 msgid "per chapter"
 msgstr "na rozdział"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Per chapter"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -16683,6 +16821,10 @@ msgstr "Ostatnio zmienione"
 msgid "Recently read"
 msgstr "Ostatnio czytane"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Recently saved"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Recommend from this"
@@ -17016,6 +17158,11 @@ msgstr "Usunąć {removingSourceName}?"
 msgid "Remove {seriesTitle} from this device"
 msgstr "Usuń {seriesTitle} z tego urządzenia"
 
+#: src/components/ui/DiscoverRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Remove {title} from your shortlist"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Remove and clean up"
@@ -17104,6 +17251,11 @@ msgstr "Usuń z biblioteki"
 #, fuzzy
 msgid "Remove from queue"
 msgstr "Usuń z kolejki"
+
+#: src/components/ui/DiscoverRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Remove from shortlist"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -17247,6 +17399,10 @@ msgstr "Usunięte"
 #, fuzzy
 msgid "Removed {seriesTitle}. It comes back when you read it again."
 msgstr "Usunięto {seriesTitle}. Pojawi się ponownie, gdy znów zaczniesz ją czytać."
+
+#: src/components/discover/shortlistActions.tsx
+msgid "Removed {title} from your shortlist."
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -17421,6 +17577,10 @@ msgstr "Repozytoria"
 msgid "Repository address"
 msgstr "Adres repozytorium"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Request"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Request chapters"
@@ -17462,6 +17622,7 @@ msgid "Request submitted"
 msgstr "Prośba wysłana"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Requested"
 msgstr "Zgłoszono"
@@ -17821,6 +17982,10 @@ msgstr "Wznów o"
 msgid "Resume Rewind"
 msgstr "Wznów Rewind"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Resumed since you saved it"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Retried {retryCount}x"
@@ -17845,6 +18010,7 @@ msgstr "Ponowiono {retryCount}x - następna próba {nextAttemptTime}"
 #: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -18376,6 +18542,14 @@ msgstr "Zapisz kody odzyskiwania"
 msgid "Saved"
 msgstr "Zapisano"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Saved {when}"
+msgstr ""
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Saved {when} from {source}"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -18611,6 +18785,7 @@ msgid "Scopes"
 msgstr "Zakresy"
 
 #: src/pages/ActivityPage.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Score"
 msgstr "Wynik"
@@ -18959,6 +19134,10 @@ msgstr "Na podstawie"
 #, fuzzy
 msgid "Seeds"
 msgstr "Seedy"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Seeds or avoids in recommendations"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -19499,6 +19678,21 @@ msgstr "Wyostrza miękkie strony w czytniku modelami działającymi na tym serwe
 msgid "Shift + Space"
 msgstr "Shift + Spacja"
 
+#: src/components/discover/ShortlistButton.tsx
+#: src/components/ui/DiscoverRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
+#: src/pages/DiscoverPage.tsx
+msgid "Shortlist"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Shortlist {title}"
+msgstr ""
+
+#: src/components/discover/ShortlistButton.tsx
+msgid "Shortlisted"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Shoujo"
@@ -19620,6 +19814,10 @@ msgstr ""
 #, fuzzy
 msgid "Show the Home page"
 msgstr "Pokaż stronę Start"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Show the oldest"
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -20038,6 +20236,7 @@ msgstr "Coś poszło nie tak, Maki spróbuje ponownie"
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Sort"
 msgstr "Sortuj"
@@ -20103,6 +20302,10 @@ msgstr "Zaktualizowano priorytet źródeł"
 #, fuzzy
 msgid "Source removed without cleanup"
 msgstr "Źródło usunięte bez czyszczenia"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Source search, chapter sync, downloads"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -20325,6 +20528,10 @@ msgstr "Statystyki"
 msgid "Stats sections"
 msgstr "Sekcje statystyk"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Stats, Rewind, XP"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -20342,6 +20549,10 @@ msgstr "Status"
 #, fuzzy
 msgid "Status change"
 msgstr "Zmiana statusu"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Status changed since you saved it"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -20409,6 +20620,10 @@ msgstr "Nadal wczesny dostęp na {source}, Maki sprawdzi ponownie później"
 #, fuzzy
 msgid "Still going"
 msgstr "Nadal czytane"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Still shown in Discover rails"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -20847,6 +21062,10 @@ msgstr "Przeglądarka zachowa zapisane rozdziały, nawet gdy zabraknie miejsca."
 msgid "The browser may clear saved chapters when the device runs low on space."
 msgstr "Przeglądarka może wyczyścić zapisane rozdziały, gdy na urządzeniu zabraknie miejsca."
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "the catalogue"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "The catalogue badges weight titles by popularity rank, standing in for how many people actually read them."
@@ -20861,6 +21080,10 @@ msgstr "Katalog nie ma opisu dla tej pozycji."
 #, fuzzy
 msgid "The catalogue needs the local MangaBaka database (Settings, then Metadata)."
 msgstr "Katalog wymaga lokalnej bazy danych MangaBaka (Ustawienia, następnie Metadane)."
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "The catalogue no longer lists this title. You can still remove it."
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -21157,6 +21380,10 @@ msgstr "Pozostałe zostały przekonwertowane przy pobieraniu albo ich oryginał 
 
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "The page conversion rules in Settings decide."
+msgstr ""
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "the page for {detail}"
 msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
@@ -21848,12 +22075,17 @@ msgstr "Kciuki"
 msgid "Thumbs down"
 msgstr "Kciuk w dół"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Thumbs down. {title} is out of your recommendations and left your shortlist."
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
 msgstr "Kciuk w dół. Ten tytuł wypada z rekomendacji, a tytuły bliższe jemu niż temu, co zachowujesz, zajmują niższe miejsca."
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Thumbs up"
 msgstr "Kciuk w górę"
@@ -21937,6 +22169,7 @@ msgstr "Czerń z odcieniem"
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -21993,6 +22226,10 @@ msgstr "Tytuły z"
 #, fuzzy
 msgid "titles on the shelf"
 msgstr "tytułów na półce"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Titles you want to come back to. Nothing here is downloaded or counted in your taste until you add it."
+msgstr ""
 
 #: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
@@ -22378,6 +22615,7 @@ msgid "Underscore (_)"
 msgstr "Podkreślenie (_)"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/discover/shortlistActions.tsx
 #: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/import/RecentImports.tsx
@@ -22922,6 +23160,10 @@ msgstr "Użyj do określania gustu"
 msgid "Use OPDS"
 msgstr "Korzystaj z OPDS"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Use the bookmark on any cover in Discover, or Shortlist on its card, to keep a title here without adding it."
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Use the Downloads setting"
 msgstr ""
@@ -23168,9 +23410,14 @@ msgstr "Widok"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "View {title}"
 msgstr "Zobacz {title}"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "View {title}, on your shortlist"
+msgstr ""
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
@@ -23378,6 +23625,10 @@ msgstr "Oczekiwanie na bazę metadanych."
 msgid "Waiting for the server"
 msgstr "Czekanie na serwer"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Waiting for you"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Want"
@@ -23502,6 +23753,10 @@ msgstr "Witaj w Maki"
 #, fuzzy
 msgid "Western (OEL)"
 msgstr "Western (OEL)"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "What it does"
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
@@ -23774,6 +24029,14 @@ msgstr "Rok: {yearMin}–{yearMax}"
 msgid "Year: {yearRangeMin}–{yearRangeMax}"
 msgstr "Rok: {yearRangeMin}–{yearRangeMax}"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Yes"
+msgstr ""
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Yes, marked"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/NotificationsPage.tsx
@@ -23987,6 +24250,10 @@ msgstr "Skończyłeś to. Zarchiwizować?"
 #, fuzzy
 msgid "You've finished this. How was it?"
 msgstr "Skończyłeś to. Jak było?"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "your {detail} list"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy

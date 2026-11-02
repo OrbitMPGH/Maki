@@ -4,7 +4,8 @@ import { IconChevronRight } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { DiscoverRail, RecommendationItem } from '../../api/hooks'
 import { onRovingKeyDown } from '../../lib/rovingFocus'
-import { RecommendationCard } from '../ui/DiscoverRail'
+import { RecommendationCard, type OpenItem } from '../ui/DiscoverRail'
+import { sectionSource } from '../../api/shortlist'
 
 /**
  * The catalogue rails as one grid with a chip row, instead of five stacked rails.
@@ -29,7 +30,7 @@ export function DiscoverCatalogue({
       window's, so this grid has no column count of its own. */
   cols: Record<string, number>
   seriesIdFor: (item: RecommendationItem) => number | null
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
   /** Shows the selected feed in full, sorted and filtered, on the Add page. */
   onShowMore: (rail: DiscoverRail) => void
 }) {
@@ -80,6 +81,7 @@ export function DiscoverCatalogue({
             inLibrarySeriesId={seriesIdFor(item)}
             onOpen={onOpen}
             reasonOverride={null}
+            savedFrom={sectionSource('catalogue')}
           />
         ))}
       </SimpleGrid>

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { ApiError, api } from './client'
 
 export interface FeedbackState {
@@ -102,9 +102,13 @@ const affectedKeys = [
   'recommendations', 'discover-recent-activity', 'discover-side-interests',
   'discover-cohort', 'discover-rails', 'discover-feed', 'discover-genres',
   'taste-insights', 'taste-profile', 'series-related', 'series-similar', 'home',
-  'anime-signals', 'custom-rail-items',
+  'anime-signals', 'custom-rail-items', 'shortlist-ids', 'shortlist',
 ]
-const stateKeys = ['feedback-lab', 'feedback-states', 'feedback-state', 'feedback-activity', 'signal-overrides']
+// The shortlist is here because a hide or thumbs down, and an add, delete the entry on the server.
+const stateKeys = [
+  'feedback-lab', 'feedback-states', 'feedback-state', 'feedback-activity', 'signal-overrides',
+  'shortlist-ids', 'shortlist',
+]
 const outputKeys = [
   'recommendations', 'discover-recent-activity', 'discover-side-interests',
   'discover-cohort', 'discover-rails', 'discover-feed', 'discover-genres',
@@ -148,6 +152,22 @@ export function useFeedbackState(id: number) {
       }
     },
   })
+}
+
+/** The revision a feedback write has to quote, read fresh so a title with earlier feedback does not 409. */
+export async function currentFeedbackRevision(client: QueryClient, id: number): Promise<number> {
+  const state = await client.fetchQuery({
+    queryKey: ['feedback-state', id],
+    staleTime: 0,
+    queryFn: async () => {
+      try { return await api<FeedbackState>(`/recommendations/feedback/${id}`) }
+      catch (error) {
+        if (error instanceof ApiError && error.status === 404) return null
+        throw error
+      }
+    },
+  })
+  return state?.revision ?? 0
 }
 
 export function useFeedbackActivity(cursor?: number) {

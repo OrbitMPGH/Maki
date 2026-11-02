@@ -2958,6 +2958,107 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     opacity: 1;
   }
 }
+/* On the shortlist: the plus becomes the filled bookmark and stays, since it is a fact about the title. */
+.discover-corner[data-saved='true'] {
+  color: var(--brand-on);
+  background: var(--brand);
+}
+/* The one real control besides the poster button. It follows `.discover-card-action` in the DOM and
+   sits above that overlay, or the overlay would swallow the click. Drawn only where a pointer can
+   hover; a touch screen saves from the detail modal, where the button is large. Focus shows it too,
+   so it is reachable by keyboard everywhere else. */
+.discover-card-save {
+  position: absolute;
+  top: 8px;
+  right: 36px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #fff;
+  background: color-mix(in srgb, black 55%, transparent);
+  box-shadow: 0 2px 6px color-mix(in srgb, black 35%, transparent);
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
+}
+.discover-card-save:hover {
+  background: color-mix(in srgb, black 80%, transparent);
+}
+.discover-card-save[aria-pressed='true'] {
+  color: var(--brand-on);
+  background: var(--brand);
+}
+.discover-card-save:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .discover-card:hover .discover-card-save,
+  .discover-card:focus-within .discover-card-save {
+    opacity: 1;
+  }
+}
+@media (hover: none), (pointer: coarse) {
+  .discover-card-save {
+    display: none;
+  }
+}
+.row-shortlist {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-chip);
+  cursor: pointer;
+  color: var(--ink-3);
+  background: transparent;
+  transition: color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
+}
+.row-shortlist:hover {
+  color: var(--ink-hi);
+  background: var(--surface-2);
+}
+.row-shortlist[aria-pressed='true'] {
+  color: var(--brand);
+}
+.row-shortlist:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+/* Preview and Shortlist side by side under the add panel. The preview button's longer labels wrap
+   instead of truncating in the half column. */
+.discover-modal-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mantine-spacing-xs);
+  align-items: start;
+}
+.discover-modal-actions .preview-chapter-button,
+.discover-modal-actions .shortlist-button {
+  padding-inline: 8px;
+  font-size: var(--type-meta);
+}
+.discover-modal-actions .preview-chapter-button {
+  height: auto;
+  min-height: var(--button-height);
+  padding-block: 6px;
+}
+.discover-modal-actions .preview-chapter-button .mantine-Button-label {
+  white-space: normal;
+  text-align: center;
+}
 /* MangaBaka's 0-100 score, shown out of 10, top-left. */
 .discover-rating {
   position: absolute;
@@ -12473,4 +12574,204 @@ button.import-plan-folder-head:hover {
 .pc-pick-list {
   max-height: 320px;
   overflow: auto;
+}
+
+/* --- Discover shortlist ------------------------------------------------- */
+.shortlist-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.shortlist-chip-count {
+  margin-inline-start: 4px;
+  color: var(--ink-4);
+}
+.shortlist-row {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 146px;
+}
+.shortlist-row[data-changed] {
+  border-color: color-mix(in srgb, var(--brand) 38%, var(--border));
+}
+.shortlist-cover {
+  position: relative;
+  display: block;
+  width: 76px;
+  height: 114px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--cover-rim);
+  border-radius: var(--radius-cover);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-cover);
+}
+button.shortlist-cover {
+  cursor: pointer;
+}
+.shortlist-cover:focus-visible,
+.shortlist-title:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.shortlist-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.shortlist-cover .cover-placeholder {
+  padding: 6px;
+  font-size: var(--type-badge);
+}
+.shortlist-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.shortlist-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  max-width: 100%;
+}
+.shortlist-title {
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: start;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-section);
+  font-weight: var(--fw-bold);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+button.shortlist-title {
+  cursor: pointer;
+}
+button.shortlist-title:hover {
+  text-decoration: underline;
+}
+.shortlist-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--ink-2);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.shortlist-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: var(--radius-chip);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.shortlist-pill[data-quiet] {
+  color: var(--ink-3);
+  border: 1px solid var(--border-strong);
+}
+.shortlist-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 62ch;
+  padding-inline-start: 10px;
+  border-inline-start: 2px solid var(--border-strong);
+}
+.shortlist-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 200px;
+}
+.shortlist-actions .preview-chapter-button {
+  height: auto;
+  min-height: var(--button-height);
+  padding-block: 6px;
+}
+.shortlist-actions .preview-chapter-button .mantine-Button-label {
+  white-space: normal;
+  text-align: center;
+}
+@media (max-width: 40rem) {
+  .shortlist-row {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+  .shortlist-actions {
+    grid-column: 1 / -1;
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .shortlist-actions > * {
+    flex: 1 1 auto;
+  }
+}
+.shortlist-waited {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-card);
+}
+.shortlist-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 0 24px;
+}
+.shortlist-empty-disc {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+}
+.shortlist-empty-compare {
+  width: min(560px, 100%);
+  margin-top: 16px;
+}
+.shortlist-compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--type-meta);
+}
+.shortlist-compare th,
+.shortlist-compare td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--hairline);
+  text-align: start;
+}
+.shortlist-compare thead th {
+  color: var(--ink-3);
+  font-weight: var(--fw-semibold);
+}
+.shortlist-compare tbody th {
+  color: var(--ink-2);
+  font-weight: var(--fw-regular);
+}
+.shortlist-compare tbody tr:last-child > * {
+  border-bottom: 0;
 }

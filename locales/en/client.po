@@ -1470,6 +1470,10 @@ msgstr "{newChapterCount, plural, one {# new} other {# new}}"
 msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
 msgstr "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "{newChapters, plural, one {+# chapter} other {+# chapters}}"
+msgstr "{newChapters, plural, one {+# chapter} other {+# chapters}}"
+
 #: src/components/series/SeriesHero.tsx
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
@@ -1745,6 +1749,10 @@ msgstr "{sampleChapters, plural, one {based on # similar read} other {based on #
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
+msgstr "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
 
 #: src/components/CatalogueBrowser.tsx
 msgid "{searchCap}+ matches"
@@ -2032,6 +2040,10 @@ msgstr "{tierLabel}, {width}px"
 msgid "{timedChapters, plural, one {Pace is from {formattedTimed} timed chapter; only the built-in reader records time.} other {Pace is from {formattedTimed} timed chapters; only the built-in reader records time.}}"
 msgstr "{timedChapters, plural, one {Pace is from {formattedTimed} timed chapter; only the built-in reader records time.} other {Pace is from {formattedTimed} timed chapters; only the built-in reader records time.}}"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "{title} is hidden from your recommendations and left your shortlist."
+msgstr "{title} is hidden from your recommendations and left your shortlist."
+
 #: src/components/ConnectionSettingsCard.tsx
 msgid "{title} is reachable"
 msgstr "{title} is reachable"
@@ -2118,6 +2130,7 @@ msgid "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter} 
 msgstr "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter} other {Wanted for {spanLabel}: {wantedCount} of # chapters}}"
 
 #: src/components/ui/DiscoverRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
 msgid "{totalChapters} ch."
 msgstr "{totalChapters} ch."
 
@@ -2281,6 +2294,10 @@ msgstr "{volumesRead, plural, one {…plus # whole volume.} other {…plus # who
 #: src/api/upgrades.ts
 msgid "{volumesText} + {chaptersText}"
 msgstr "{volumesText} + {chaptersText}"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
+msgstr "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "{wantedCount} wanted"
@@ -2522,6 +2539,10 @@ msgstr "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on yo
 msgid "A connection has unsaved changes."
 msgstr "A connection has unsaved changes."
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "a creator page"
+msgstr "a creator page"
+
 #: src/components/SetupWizard.tsx
 msgid "A few choices to get your library running. Everything saves as you go, and all of it is in Settings afterwards."
 msgstr "A few choices to get your library running. Everything saves as you go, and all of it is in Settings afterwards."
@@ -2612,9 +2633,17 @@ msgstr "A row for each smaller theme on your shelf."
 msgid "A scan is already running"
 msgstr "A scan is already running"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "a search"
+msgstr "a search"
+
 #: src/api/libraryImport.ts
 msgid "a second copy of another comic in the folder, which is used instead"
 msgstr "a second copy of another comic in the folder, which is used instead"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "a series page"
+msgstr "a series page"
 
 #: src/components/releases/UpcomingView.tsx
 msgid "A series shows up here once its chapters come out on a steady enough rhythm, or when its source announces the next one."
@@ -2878,6 +2907,7 @@ msgstr "Add the series to your library, or request it, to keep reading."
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
 msgid "Add to library"
 msgstr "Add to library"
 
@@ -2996,6 +3026,7 @@ msgstr "Aggregator"
 #: src/components/import/MihonReview.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -3244,6 +3275,10 @@ msgstr "An admin decides where it lands and what gets downloaded."
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "An admin will see it on the Requests page."
 msgstr "An admin will see it on the Requests page."
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "an import list"
+msgstr "an import list"
 
 #: src/components/NotificationsSection.tsx
 msgid "An incoming webhook from Slack or Mattermost."
@@ -3515,6 +3550,7 @@ msgstr "Archive series"
 #: src/components/CommandPalette.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgctxt "series"
@@ -3560,6 +3596,10 @@ msgstr "Arrange what Home shows."
 #: src/pages/SeriesDetailPage.tsx
 msgid "Art"
 msgstr "Art"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "As owned"
+msgstr "As owned"
 
 #: src/pages/LibraryPage.tsx
 msgid "Ascending"
@@ -3999,6 +4039,7 @@ msgid "Browse tags to include"
 msgstr "Browse tags to include"
 
 #: src/api/hooks.ts
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/DiscoverPage.tsx
 msgid "Browse the catalogue"
 msgstr "Browse the catalogue"
@@ -4154,6 +4195,10 @@ msgstr "Cancel this request?"
 #: src/pages/stats/labels.ts
 msgid "Cancelled"
 msgstr "Cancelled"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Cancelled since you saved it"
+msgstr "Cancelled since you saved it"
 
 #: src/pages/HealthPage.tsx
 msgid "Cancelled. Nothing in the library was changed."
@@ -4403,6 +4448,14 @@ msgstr "Change this title only"
 #: src/components/series/MetadataHistoryModal.tsx
 msgid "Changed"
 msgstr "Changed"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Changed since saved"
+msgstr "Changed since saved"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Changed since you saved them"
+msgstr "Changed since you saved them"
 
 #: src/pages/LibraryPage.tsx
 msgid "Changes apply straight to the grid behind this panel."
@@ -5042,6 +5095,7 @@ msgstr "Complete"
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/stats/labels.ts
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -5051,6 +5105,10 @@ msgstr "Completed"
 #: src/pages/ActivityPage.tsx
 msgid "Completed and cancelled downloads show up here."
 msgstr "Completed and cancelled downloads show up here."
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Completed since you saved it"
+msgstr "Completed since you saved it"
 
 #: src/pages/LibraryPage.tsx
 msgid "Completeness"
@@ -5208,6 +5266,7 @@ msgstr "Continue"
 
 #: src/api/hooks.ts
 #: src/components/home/AnimeResumeRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HomePage.tsx
 msgid "Continue from the anime"
 msgstr "Continue from the anime"
@@ -5419,6 +5478,10 @@ msgstr "Could not load this chapter."
 msgid "Could not load your progress. The server logs will say why."
 msgstr "Could not load your progress. The server logs will say why."
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Could not load your shortlist"
+msgstr "Could not load your shortlist"
+
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Could not load your signals: {loadError}"
 msgstr "Could not load your signals: {loadError}"
@@ -5464,6 +5527,7 @@ msgid "Could not undo: {reason}"
 msgstr "Could not undo: {reason}"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/pages/discover/ShortlistTab.tsx
 msgid "Could not update feedback: {reason}"
 msgstr "Could not update feedback: {reason}"
 
@@ -6183,6 +6247,10 @@ msgstr "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, 
 msgid "Discover"
 msgstr "Discover"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Discover's catalogue is not downloaded yet"
+msgstr "Discover's catalogue is not downloaded yet"
+
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Disk size"
 msgstr "Disk size"
@@ -6608,6 +6676,10 @@ msgstr "Edit layout"
 #: src/components/settings/UsersSection.tsx
 msgid "Edit metadata"
 msgstr "Edit metadata"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Edit note"
+msgstr "Edit note"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -7821,6 +7893,10 @@ msgstr "Gone from disk"
 msgid "Good quality"
 msgstr "Good quality"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Got it"
+msgstr "Got it"
+
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
 msgid "Grab"
@@ -7902,6 +7978,10 @@ msgstr "Has a disabled source"
 #: src/components/CatalogueRules.tsx
 msgid "Has all of"
 msgstr "Has all of"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Has an anime"
+msgstr "Has an anime"
 
 #: src/components/CatalogueRules.tsx
 msgid "Has any of"
@@ -8053,6 +8133,7 @@ msgid "Hide this and its franchise"
 msgstr "Hide this and its franchise"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/pages/discover/ShortlistTab.tsx
 msgid "Hide this title"
 msgstr "Hide this title"
 
@@ -8183,6 +8264,10 @@ msgstr "How much they count"
 #: src/pages/discover/FeedbackLab.tsx
 msgid "How signals work"
 msgstr "How signals work"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "How the shortlist differs from your library"
+msgstr "How the shortlist differs from your library"
 
 #: src/components/ImportReviewModal.tsx
 msgid "How to import"
@@ -8480,6 +8565,10 @@ msgstr "In progress"
 #: src/pages/LibraryPage.tsx
 msgid "In queue"
 msgstr "In queue"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "In the library"
+msgstr "In the library"
 
 #: src/pages/rewind/slides.tsx
 msgid "in the reader"
@@ -9240,6 +9329,7 @@ msgstr "Level up"
 #: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -10218,6 +10308,10 @@ msgstr "More actions"
 msgid "More actions for {chapterLbl}"
 msgstr "More actions for {chapterLbl}"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "More actions for {title}"
+msgstr "More actions for {title}"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "More download options"
 msgstr "More download options"
@@ -10750,6 +10844,10 @@ msgstr "Next..."
 msgid "Night"
 msgstr "Night"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "No"
+msgstr "No"
+
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "No activity in {windowLabel}."
 msgstr "No activity in {windowLabel}."
@@ -10936,6 +11034,10 @@ msgstr "no longer in Suwayomi"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "No longer in Suwayomi"
 msgstr "No longer in Suwayomi"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "No longer in the catalogue"
+msgstr "No longer in the catalogue"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "no longer steers your taste"
@@ -11380,6 +11482,7 @@ msgid "Not every source carries chapter {chapterNumber}, so some columns are sho
 msgstr "Not every source carries chapter {chapterNumber}, so some columns are showing their own first chapter instead. Each column says which one it got."
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/pages/discover/ShortlistTab.tsx
 msgid "Not for me"
 msgstr "Not for me"
 
@@ -11534,6 +11637,11 @@ msgstr "Not yet synced"
 #: src/pages/RequestsPage.tsx
 msgid "Note (optional)"
 msgstr "Note (optional)"
+
+#: src/components/discover/ShortlistButton.tsx
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Note for later"
+msgstr "Note for later"
 
 #: src/pages/LibraryPage.tsx
 msgctxt "series"
@@ -11694,6 +11802,14 @@ msgstr "Nothing new from them in the last {FOLLOWING_RAIL_MONTHS} months that yo
 msgid "Nothing of theirs is in the searchable part of the catalogue."
 msgstr "Nothing of theirs is in the searchable part of the catalogue."
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Nothing on your shortlist"
+msgstr "Nothing on your shortlist"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Nothing on your shortlist matches this filter."
+msgstr "Nothing on your shortlist matches this filter."
+
 #: src/components/SourceCompareModal.tsx
 msgid "Nothing queued: {displayName} doesn't list those chapters."
 msgstr "Nothing queued: {displayName} doesn't list those chapters."
@@ -11843,6 +11959,10 @@ msgstr "Notifications are blocked for this site. Change the permission in your b
 msgid "Notifications muted"
 msgstr "Notifications muted"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Notifications of any kind"
+msgstr "Notifications of any kind"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Notifications: {notificationMode}"
 msgstr "Notifications: {notificationMode}"
@@ -11975,6 +12095,7 @@ msgstr "Older ones may match. Load more to look further back."
 msgid "Oldest"
 msgstr "Oldest"
 
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Oldest first"
 msgstr "Oldest first"
@@ -12007,6 +12128,10 @@ msgstr "On for this device."
 msgid "On for this series"
 msgstr "On for this series"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "On hiatus since you saved it"
+msgstr "On hiatus since you saved it"
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "On hold"
 msgstr "On hold"
@@ -12031,6 +12156,10 @@ msgstr "On this device; best on clean line art, can mottle screentone"
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "On your shelf, not used for ranking"
 msgstr "On your shelf, not used for ranking"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "On your shortlist"
+msgstr "On your shortlist"
 
 #: src/components/settings/ProgressSection.tsx
 msgid "One missed day a week is forgiven, and today never breaks a streak."
@@ -12207,6 +12336,10 @@ msgstr "Open on"
 msgid "Open on {label}"
 msgstr "Open on {label}"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Open on MangaBaka"
+msgstr "Open on MangaBaka"
+
 #: src/pages/DiscoverPage.tsx
 msgid "Open Recommended with these filters from now on"
 msgstr "Open Recommended with these filters from now on"
@@ -12214,6 +12347,7 @@ msgstr "Open Recommended with these filters from now on"
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/series/AnimeResumeCallout.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 msgid "Open series"
@@ -12641,6 +12775,10 @@ msgstr "Pending downloads will be removed. Downloads already in progress will be
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "per chapter"
 msgstr "per chapter"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Per chapter"
+msgstr "Per chapter"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Per kind: automatic, manual and scheduled."
@@ -13636,6 +13774,10 @@ msgstr "Recently changed"
 msgid "Recently read"
 msgstr "Recently read"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Recently saved"
+msgstr "Recently saved"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "Recommend from this"
 msgstr "Recommend from this"
@@ -13912,6 +14054,11 @@ msgstr "Remove {removingSourceName}?"
 msgid "Remove {seriesTitle} from this device"
 msgstr "Remove {seriesTitle} from this device"
 
+#: src/components/ui/DiscoverRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Remove {title} from your shortlist"
+msgstr "Remove {title} from your shortlist"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove and clean up"
 msgstr "Remove and clean up"
@@ -13983,6 +14130,11 @@ msgstr "Remove from library"
 #: src/pages/ActivityPage.tsx
 msgid "Remove from queue"
 msgstr "Remove from queue"
+
+#: src/components/ui/DiscoverRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Remove from shortlist"
+msgstr "Remove from shortlist"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Remove from this device"
@@ -14098,6 +14250,10 @@ msgstr "Removed"
 #: src/components/home/ReadingCardMenu.tsx
 msgid "Removed {seriesTitle}. It comes back when you read it again."
 msgstr "Removed {seriesTitle}. It comes back when you read it again."
+
+#: src/components/discover/shortlistActions.tsx
+msgid "Removed {title} from your shortlist."
+msgstr "Removed {title} from your shortlist."
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Removed chapter"
@@ -14238,6 +14394,10 @@ msgstr "Repositories"
 msgid "Repository address"
 msgstr "Repository address"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Request"
+msgstr "Request"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Request chapters"
 msgstr "Request chapters"
@@ -14272,6 +14432,7 @@ msgid "Request submitted"
 msgstr "Request submitted"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
 msgid "Requested"
 msgstr "Requested"
 
@@ -14566,6 +14727,10 @@ msgstr "Resume at"
 msgid "Resume Rewind"
 msgstr "Resume Rewind"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Resumed since you saved it"
+msgstr "Resumed since you saved it"
+
 #: src/pages/ActivityPage.tsx
 msgid "Retried {retryCount}x"
 msgstr "Retried {retryCount}x"
@@ -14588,6 +14753,7 @@ msgstr "Retried {retryCount}x - next attempt {nextAttemptTime}"
 #: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -15028,6 +15194,14 @@ msgstr "Save your recovery codes"
 msgid "Saved"
 msgstr "Saved"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Saved {when}"
+msgstr "Saved {when}"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Saved {when} from {source}"
+msgstr "Saved {when} from {source}"
+
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/DiscoverPage.tsx
 msgid "Saved as your default"
@@ -15220,6 +15394,7 @@ msgid "Scopes"
 msgstr "Scopes"
 
 #: src/pages/ActivityPage.tsx
+#: src/pages/discover/ShortlistTab.tsx
 msgid "Score"
 msgstr "Score"
 
@@ -15501,6 +15676,10 @@ msgstr "Seeded from"
 #: src/components/ReleaseSearchModal.tsx
 msgid "Seeds"
 msgstr "Seeds"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Seeds or avoids in recommendations"
+msgstr "Seeds or avoids in recommendations"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Seen anime"
@@ -15939,6 +16118,21 @@ msgstr "Sharpens soft pages in the reader with models that run on this server."
 msgid "Shift + Space"
 msgstr "Shift + Space"
 
+#: src/components/discover/ShortlistButton.tsx
+#: src/components/ui/DiscoverRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
+#: src/pages/DiscoverPage.tsx
+msgid "Shortlist"
+msgstr "Shortlist"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Shortlist {title}"
+msgstr "Shortlist {title}"
+
+#: src/components/discover/ShortlistButton.tsx
+msgid "Shortlisted"
+msgstr "Shortlisted"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Shoujo"
 msgstr "Shoujo"
@@ -16041,6 +16235,10 @@ msgstr "Show the chapter name"
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Show the Home page"
 msgstr "Show the Home page"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Show the oldest"
+msgstr "Show the oldest"
 
 #: src/pages/CreatorPage.tsx
 msgid "Show their newest titles in a rail on Home and Discover"
@@ -16380,6 +16578,7 @@ msgstr "Something went wrong, Maki will try again"
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/discover/ShortlistTab.tsx
 msgid "Sort"
 msgstr "Sort"
 
@@ -16433,6 +16632,10 @@ msgstr "Source priority updated"
 #: src/components/SourceMappingsSection.tsx
 msgid "Source removed without cleanup"
 msgstr "Source removed without cleanup"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Source search, chapter sync, downloads"
+msgstr "Source search, chapter sync, downloads"
 
 #: src/pages/LibraryPage.tsx
 msgid "Source state"
@@ -16614,6 +16817,10 @@ msgstr "Stats"
 msgid "Stats sections"
 msgstr "Stats sections"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Stats, Rewind, XP"
+msgstr "Stats, Rewind, XP"
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -16629,6 +16836,10 @@ msgstr "Status"
 #: src/pages/HealthPage.tsx
 msgid "Status change"
 msgstr "Status change"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Status changed since you saved it"
+msgstr "Status changed since you saved it"
 
 #: src/pages/LibraryPage.tsx
 msgid "Status, type, content rating, chapters"
@@ -16683,6 +16894,10 @@ msgstr "Still early access on {source}, Maki will check again later"
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Still going"
 msgstr "Still going"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Still shown in Discover rails"
+msgstr "Still shown in Discover rails"
 
 #: src/pages/LibraryPage.tsx
 msgid "Stop"
@@ -17039,6 +17254,10 @@ msgstr "The browser keeps saved chapters even when space runs low."
 msgid "The browser may clear saved chapters when the device runs low on space."
 msgstr "The browser may clear saved chapters when the device runs low on space."
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "the catalogue"
+msgstr "the catalogue"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "The catalogue badges weight titles by popularity rank, standing in for how many people actually read them."
 msgstr "The catalogue badges weight titles by popularity rank, standing in for how many people actually read them."
@@ -17050,6 +17269,10 @@ msgstr "The catalogue has no synopsis for this one."
 #: src/components/CatalogueBrowser.tsx
 msgid "The catalogue needs the local MangaBaka database (Settings, then Metadata)."
 msgstr "The catalogue needs the local MangaBaka database (Settings, then Metadata)."
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "The catalogue no longer lists this title. You can still remove it."
+msgstr "The catalogue no longer lists this title. You can still remove it."
 
 #: src/pages/DiscoverPage.tsx
 msgid "The catalogue rails need the local MangaBaka database (Settings → Library → Metadata database)."
@@ -17292,6 +17515,10 @@ msgstr "The others were converted on download or their original has been purged.
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "The page conversion rules in Settings decide."
 msgstr "The page conversion rules in Settings decide."
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "the page for {detail}"
+msgstr "the page for {detail}"
 
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "The preview expired. Try again."
@@ -17853,11 +18080,16 @@ msgstr "Thumbs"
 msgid "Thumbs down"
 msgstr "Thumbs down"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Thumbs down. {title} is out of your recommendations and left your shortlist."
+msgstr "Thumbs down. {title} is out of your recommendations and left your shortlist."
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
 msgstr "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/pages/discover/ShortlistTab.tsx
 msgid "Thumbs up"
 msgstr "Thumbs up"
 
@@ -17926,6 +18158,7 @@ msgstr "Tinted black"
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/discover/ShortlistTab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Title"
@@ -17971,6 +18204,10 @@ msgstr "Titles from"
 #: src/pages/discover/FeedbackLab.tsx
 msgid "titles on the shelf"
 msgstr "titles on the shelf"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Titles you want to come back to. Nothing here is downloaded or counted in your taste until you add it."
+msgstr "Titles you want to come back to. Nothing here is downloaded or counted in your taste until you add it."
 
 #: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
@@ -18286,6 +18523,7 @@ msgid "Underscore (_)"
 msgstr "Underscore (_)"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/discover/shortlistActions.tsx
 #: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/import/RecentImports.tsx
@@ -18732,6 +18970,10 @@ msgstr "Use for taste"
 msgid "Use OPDS"
 msgstr "Use OPDS"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Use the bookmark on any cover in Discover, or Shortlist on its card, to keep a title here without adding it."
+msgstr "Use the bookmark on any cover in Discover, or Shortlist on its card, to keep a title here without adding it."
+
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Use the Downloads setting"
 msgstr "Use the Downloads setting"
@@ -18933,8 +19175,13 @@ msgstr "View"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
+#: src/pages/discover/ShortlistTab.tsx
 msgid "View {title}"
 msgstr "View {title}"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "View {title}, on your shortlist"
+msgstr "View {title}, on your shortlist"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
@@ -19104,6 +19351,10 @@ msgstr "Waiting for the metadata database."
 msgid "Waiting for the server"
 msgstr "Waiting for the server"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Waiting for you"
+msgstr "Waiting for you"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Want"
 msgstr "Want"
@@ -19204,6 +19455,10 @@ msgstr "Welcome to Maki"
 #: src/api/readingProfiles.ts
 msgid "Western (OEL)"
 msgstr "Western (OEL)"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "What it does"
+msgstr "What it does"
 
 #: src/components/discover/discoverSectionDefs.ts
 msgid "What readers who finished the same series as you went on to finish."
@@ -19424,6 +19679,14 @@ msgstr "Year: {yearMin}–{yearMax}"
 msgid "Year: {yearRangeMin}–{yearRangeMax}"
 msgstr "Year: {yearRangeMin}–{yearRangeMax}"
 
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Yes"
+msgstr "Yes"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Yes, marked"
+msgstr "Yes, marked"
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/NotificationsPage.tsx
@@ -19595,6 +19858,10 @@ msgstr "You've finished this. Archive it?"
 #: src/components/series/RateHint.tsx
 msgid "You've finished this. How was it?"
 msgstr "You've finished this. How was it?"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "your {detail} list"
+msgstr "your {detail} list"
 
 #: src/pages/rewind/slides.tsx
 msgid "Your {label}"

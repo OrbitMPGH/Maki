@@ -54,7 +54,8 @@ import { OfflineHome } from '../components/home/OfflineHome'
 import { AnimeResumeExpandModal, AnimeResumeRail } from '../components/home/AnimeResumeRail'
 import { ReadingWeeks, ReadingWeeksPlaceholder, rollingWeeks } from '../components/home/ReadingWeeks'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
-import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
+import { DiscoverRailRow, EngineRailRow, type OpenItem } from '../components/ui/DiscoverRail'
+import { ANIME_SOURCE, OTHER_SOURCE, type ShortlistSource } from '../api/shortlist'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RailSkeleton } from '../components/ui/RailSkeleton'
@@ -152,6 +153,11 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
 
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
+  const [detailSource, setDetailSource] = useState<ShortlistSource>(OTHER_SOURCE)
+  const openDetail: OpenItem = (item, source) => {
+    setDetailItem(item)
+    setDetailSource(source ?? OTHER_SOURCE)
+  }
   const [fromAnimeExpanded, setFromAnimeExpanded] = useState(false)
   const navigate = useNavigate()
 
@@ -348,11 +354,11 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
             }
             chevron
           />
-          <AnimeResumeRail items={fromAnime.items} onOpen={setDetailItem} />
+          <AnimeResumeRail items={fromAnime.items} onOpen={(item) => openDetail(item, ANIME_SOURCE)} />
           <AnimeResumeExpandModal
             opened={fromAnimeExpanded}
             onClose={() => setFromAnimeExpanded(false)}
-            onOpen={setDetailItem}
+            onOpen={(item) => openDetail(item, ANIME_SOURCE)}
           />
         </>
       )
@@ -363,7 +369,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
         enabled={needsDiscover && on('following')}
         limit={RAIL_SIZE}
         seriesIdFor={seriesIdFor}
-        onOpen={setDetailItem}
+        onOpen={openDetail}
         onShowMore={(rail) => navigate('/discover', { state: { expandFollowing: rail } })}
       />
     ),
@@ -374,7 +380,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
       youMightLike.length > 0 && (
         <>
           <SectionHeader icon={IconSparkles} title={t`You might like`} action={<FindMore />} chevron />
-          <EngineRailRow items={youMightLike} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+          <EngineRailRow items={youMightLike} seriesIdFor={seriesIdFor} onOpen={openDetail} />
         </>
       )
     ),
@@ -388,7 +394,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
           <DiscoverRailRow
             items={popular.slice(0, RAIL_SIZE)}
             seriesIdFor={seriesIdFor}
-            onOpen={setDetailItem}
+            onOpen={openDetail}
           />
         </>
       )
@@ -402,7 +408,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
     if (!isRailKey(key)) return sections[key]
     const rail = homeRails?.find((r) => r.id === railIdOf(key))
     if (!rail || (rail.spec.source !== 'library' && !discoverAvailable)) return null
-    return <CustomRailSection rail={rail} limit={RAIL_SIZE} onOpen={setDetailItem} />
+    return <CustomRailSection rail={rail} limit={RAIL_SIZE} onOpen={openDetail} />
   }
 
   const inLibraryZone = (key: HomeLayoutKey) =>
@@ -470,6 +476,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
+        savedFrom={detailSource}
       />
     </SurfaceFrame>
   )

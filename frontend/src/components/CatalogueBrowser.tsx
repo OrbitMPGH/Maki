@@ -57,7 +57,8 @@ import { FilterMatchCount } from './CatalogueRules'
 import { HiddenContentButton, PresetMenu } from './DiscoverPresets'
 import { DiscoverDetailModal } from './discover/DiscoverDetailModal'
 import { EmptyState } from './ui/EmptyState'
-import { RecommendationCard, RecommendationRow } from './ui/DiscoverRail'
+import { RecommendationCard, RecommendationRow, type OpenItem } from './ui/DiscoverRail'
+import { CATALOGUE_SOURCE, SEARCH_SOURCE, type ShortlistSource } from '../api/shortlist'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from './ui/useWindowedRows'
 import {
   POSTER_COLS_BY_DENSITY,
@@ -259,6 +260,7 @@ export function CatalogueBrowser({
   const { data: rootFolders } = useRootFolders()
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
+  const savedFrom = searching ? SEARCH_SOURCE : CATALOGUE_SOURCE
 
   const searchCap = PAGE_SIZE
   const items = searching ? (search.data?.items ?? []) : (browse.data ?? [])
@@ -476,7 +478,7 @@ export function CatalogueBrowser({
             />
           )}
 
-          {items.length > 0 && <Results items={items} prefs={prefs} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />}
+          {items.length > 0 && <Results items={items} prefs={prefs} seriesIdFor={seriesIdFor} onOpen={setDetailItem} savedFrom={savedFrom} />}
 
           {canLoadMore && (
             <Group justify="center" mt="lg">
@@ -497,6 +499,7 @@ export function CatalogueBrowser({
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
+        savedFrom={savedFrom}
       />
     </>
   )
@@ -609,11 +612,13 @@ export function Results({
   prefs,
   seriesIdFor,
   onOpen,
+  savedFrom,
 }: {
   items: RecommendationItem[]
   prefs: ViewPrefs
   seriesIdFor: (item: RecommendationItem) => number | null
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
+  savedFrom?: ShortlistSource
 }) {
   // Same windowing as Library; all three callers page up to the 600-item ceiling in the window scroll.
   const windowed = useWindowedRows(items.length, items.length >= WINDOW_MIN_ITEMS)
@@ -629,6 +634,7 @@ export function Results({
             inLibrarySeriesId={seriesIdFor(item)}
             onOpen={onOpen}
             reasonOverride={null}
+            savedFrom={savedFrom}
           />
         ))}
       </SimpleGrid>
@@ -644,6 +650,7 @@ export function Results({
             density={prefs.density}
             onOpen={onOpen}
             reasonOverride={null}
+            savedFrom={savedFrom}
           />
         ))}
       </Stack>
