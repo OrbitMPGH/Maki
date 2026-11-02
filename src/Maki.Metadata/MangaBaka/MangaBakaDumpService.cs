@@ -248,6 +248,11 @@ public class MangaBakaDumpService(
         using var conn = new SqliteConnection($"Data Source={stagingPath};Pooling=False");
         conn.Open();
 
+        // The staged file is deleted on any failure and on the next refresh after a crash, so it
+        // needs neither a rollback journal nor fsyncs. Neither setting outlives this connection.
+        Execute(conn, "PRAGMA journal_mode = OFF");
+        Execute(conn, "PRAGMA synchronous = OFF");
+
         Interruptible(conn, ct, () =>
         {
             var count = (long)Scalar(conn, "SELECT COUNT(*) FROM series")!;
@@ -267,13 +272,12 @@ public class MangaBakaDumpService(
 
     /// <summary>
     /// Where the row count and the search index end on the indexing bar. On the 2026-11 standard
-    /// dump the count and search index took 82% of a 114 s build with a cold page cache and 49% of a
-    /// 28 s one with a warm cache, while the browse indexes took about 15 s either way; these sit
-    /// between the two.
+    /// dump the count took 1.5 to 10 s, the search index 11 to 13 s and the browse indexes 13 to
+    /// 60 s, depending on how much of the file the page cache held.
     /// </summary>
-    private const double CountShare = 0.06;
+    private const double CountShare = 0.08;
 
-    private const double SearchShare = 0.7;
+    private const double SearchShare = 0.45;
 
     /// <summary>Maps a step's own 0 to 1 onto its stretch of the whole bar.</summary>
     private static Action<double> Slice(Action<double> report, double from, double to) =>
@@ -494,18 +498,12 @@ public class MangaBakaDumpService(
         }
 
         // Without stats the planner has been observed preferring a scan over a partial index on a
-        // table this size. Cheap here because the indexes are already built. On the live file only
-        // the new indexes are analyzed, so the ones already serving queries are left alone.
-        if (onlyMissing)
+        // table this size. Only the new indexes are analyzed: a bare ANALYZE also counts the whole
+        // table and the FTS shadow tables, 6 to 9 s on the real dump against 0.3 s for the indexes,
+        // and every rail and id lookup was checked to plan the same either way.
+        foreach (var name in builtNames)
         {
-            foreach (var name in builtNames)
-            {
-                Execute(conn, $"ANALYZE {name}");
-            }
-        }
-        else if (builtNames.Count > 0)
-        {
-            Execute(conn, "ANALYZE");
+            Execute(conn, $"ANALYZE {name}");
         }
 
         progress?.Invoke(1);
@@ -522,7 +520,7 @@ public class MangaBakaDumpService(
         _ => 1,
     };
 
-    private const double AnalyzeWeight = 2;
+    private const double AnalyzeWeight = 0.3;
 
     private static HashSet<string> IndexesOf(SqliteConnection conn)
     {
@@ -585,9 +583,15 @@ public class MangaBakaDumpService(
     }
 
     /// <summary>
-    /// Indexes every title variant of non-merged series into the FTS5 search table. Each pass runs
-    /// in rowid ranges of <see cref="SearchChunkRows"/> so <paramref name="progress"/> has something
-    /// to report between them; one statement per pass leaves the bar still for half a minute.
+    /// Indexes every title variant of non-merged series into the FTS5 search table.
+    ///
+    /// <para>
+    /// Works through the table in rowid ranges of <see cref="SearchChunkRows"/>, reading each row's
+    /// title columns in one go. The rows are ~6 KB, mostly overflow pages, and native_title and
+    /// romanized_title sit near the end of them, so one pass per column read the 3.5 GB file four
+    /// times: 23 to 51 s on the 2026-11 dump against 11 to 13 s this way. The ranges are also
+    /// what gives <paramref name="progress"/> something to report.
+    /// </para>
     /// </summary>
     internal static void BuildSearchIndex(SqliteConnection conn, Action<double>? progress = null)
     {
@@ -606,68 +610,56 @@ public class MangaBakaDumpService(
             }
         }
 
-        var passes = new (string Sql, double Weight)[]
-        {
-            (TitlePass("title"), TitlePassWeight),
-            (TitlePass("native_title"), NativeTitlePassWeight),
-            (TitlePass("romanized_title"), RomanizedTitlePassWeight),
-
-            // The titles column holds every alternative title as JSON: [{"title": …, "language": …}, …]
-            ($"""
-                INSERT INTO {SearchTableName} (series_id, title)
-                SELECT s.id, json_extract(je.value, '$.title')
-                FROM series s, json_each(s.titles) je
-                WHERE s.state = 'active' AND s.titles IS NOT NULL AND s.rowid BETWEEN $lo AND $hi
-                  AND json_extract(je.value, '$.title') IS NOT NULL
-                """, AltTitlesPassWeight),
-        };
-
-        var totalWeight = passes.Sum(p => p.Weight);
-        var span = (double)(last - first + 1);
-        var doneWeight = 0.0;
-
         using var tx = conn.BeginTransaction();
-        foreach (var (sql, weight) in passes)
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = sql;
-            cmd.Transaction = tx;
-            cmd.CommandTimeout = 600;
-            var lo = cmd.Parameters.Add("$lo", SqliteType.Integer);
-            var hi = cmd.Parameters.Add("$hi", SqliteType.Integer);
+        using var titles = ChunkCommand(conn, tx, $"""
+            INSERT INTO {SearchTableName} (series_id, title)
+            SELECT s.id, t.value
+            FROM series s, json_each(json_array(
+                CAST(s.title AS TEXT), CAST(s.native_title AS TEXT), CAST(s.romanized_title AS TEXT))) t
+            WHERE s.state = 'active' AND s.rowid BETWEEN $lo AND $hi AND t.value IS NOT NULL
+            """);
 
-            for (var start = first; start <= last; start += SearchChunkRows)
+        // The titles column holds every alternative title as JSON: [{"title": …, "language": …}, …].
+        // Same range straight after, so its pages are still in the cache.
+        using var altTitles = ChunkCommand(conn, tx, $"""
+            INSERT INTO {SearchTableName} (series_id, title)
+            SELECT s.id, json_extract(je.value, '$.title')
+            FROM series s, json_each(s.titles) je
+            WHERE s.state = 'active' AND s.titles IS NOT NULL AND s.rowid BETWEEN $lo AND $hi
+              AND json_extract(je.value, '$.title') IS NOT NULL
+            """);
+
+        var span = (double)(last - first + 1);
+        for (var start = first; start <= last; start += SearchChunkRows)
+        {
+            var end = Math.Min(last, start + SearchChunkRows - 1);
+            foreach (var cmd in new[] { titles, altTitles })
             {
-                var end = Math.Min(last, start + SearchChunkRows - 1);
-                lo.Value = start;
-                hi.Value = end;
+                cmd.Parameters["$lo"].Value = start;
+                cmd.Parameters["$hi"].Value = end;
                 cmd.ExecuteNonQuery();
-                progress?.Invoke((doneWeight + (weight * (end - first + 1) / span)) / totalWeight);
             }
 
-            doneWeight += weight;
+            progress?.Invoke((end - first + 1) / span);
         }
 
         tx.Commit();
         progress?.Invoke(1);
     }
 
-    private static string TitlePass(string column) => $"""
-        INSERT INTO {SearchTableName} (series_id, title)
-        SELECT id, [{column}] FROM series
-        WHERE state = 'active' AND [{column}] IS NOT NULL AND rowid BETWEEN $lo AND $hi
-        """;
+    private static SqliteCommand ChunkCommand(SqliteConnection conn, SqliteTransaction tx, string sql)
+    {
+        var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        cmd.Transaction = tx;
+        cmd.CommandTimeout = 600;
+        cmd.Parameters.Add("$lo", SqliteType.Integer);
+        cmd.Parameters.Add("$hi", SqliteType.Integer);
+        return cmd;
+    }
 
-    /// <summary>About 25 steps per pass over the ~609k rowids of the 2026-11 dump.</summary>
-    private const long SearchChunkRows = 25_000;
-
-    // Relative cost of each pass on the 2026-11 standard dump, between a cold page cache (0.5, 30,
-    // 38 and 14 s) and a warm one (0.4, 2.8, 2.8 and 6.5 s). The title column sits near the start of
-    // the ~6 KB row; the later ones are on its overflow pages, which is what a cold read pays for.
-    private const double TitlePassWeight = 1;
-    private const double NativeTitlePassWeight = 12;
-    private const double RomanizedTitlePassWeight = 14;
-    private const double AltTitlesPassWeight = 10;
+    /// <summary>About 60 steps over the ~609k rowids of the 2026-11 dump, ~65 MB of rows each.</summary>
+    private const long SearchChunkRows = 10_000;
 
     private async Task SwapIntoPlaceAsync(string stagingPath, CancellationToken ct)
     {
