@@ -731,6 +731,10 @@ msgctxt "series"
 msgid "{archivedCount, plural, one {Archived (#)} other {Archived (#)}}"
 msgstr "{archivedCount, plural, one {Zarchiwizowane (#)} few {Zarchiwizowane (#)} many {Zarchiwizowane (#)} other {Zarchiwizowane (#)}}"
 
+#: src/pages/reader/ReaderSettings.tsx
+msgid "{backgroundName}, cropped"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{beforeLabel} to {afterLabel}"
@@ -1507,6 +1511,10 @@ msgstr "{left, plural, one {# pozostało} few {# pozostało} many {# pozostało}
 #, fuzzy
 msgid "{left, plural, one {# left} other {# left}}, about {eta}"
 msgstr "{left, plural, one {Pozostało #} few {Pozostało #} many {Pozostało #} other {Pozostało #}}, około {eta}"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "{levelName}, {methodName}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2379,6 +2387,10 @@ msgstr "Połączenie z {title} działa"
 #, fuzzy
 msgid "{title}: {reason}"
 msgstr "{title}: {reason}"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "{togglesOn} of {togglesTotal} on"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -4278,17 +4290,17 @@ msgstr "Przypisz czytanie z Kavity do"
 msgid "Auto"
 msgstr "Auto"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Auto ({autoProfileName})"
 msgstr "Auto ({autoProfileName})"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Auto (my defaults)"
 msgstr "Auto (moje domyślne)"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Auto-advance to next chapter"
 msgstr "Automatycznie przechodź do następnego rozdziału"
@@ -4376,6 +4388,7 @@ msgstr "Unikane"
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Back"
@@ -4431,7 +4444,7 @@ msgstr "Twórz kopie według harmonogramu"
 
 #: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Background"
 msgstr "Tło"
@@ -4686,6 +4699,18 @@ msgstr "Dół"
 #, fuzzy
 msgid "Boys Love"
 msgstr "Boys Love"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Briefly, when a new chapter opens"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Brightness"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Brightness and tint"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -5217,17 +5242,17 @@ msgstr "Zmienione"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "Zmiany są stosowane bezpośrednio do siatki za tym panelem."
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Changes apply to this series only."
 msgstr "Zmiany dotyczą tylko tej serii."
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Changes apply to your reader defaults."
 msgstr "Zmiany dotyczą Twoich domyślnych ustawień czytnika."
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Changes retune \"{inForceName}\", so every series using it."
 msgstr "Zmiany dostrajają „{inForceName}”, więc dotyczą każdej serii, która go używa."
@@ -5438,6 +5463,10 @@ msgstr "Znane rozdziały"
 #, fuzzy
 msgid "Chapters not listed by another enabled source will be removed. Files downloaded from this source will be detached so they cannot be read as the correct chapter."
 msgstr "Rozdziały niewymienione przez żadne inne włączone źródło zostaną usunięte. Pliki pobrane z tego źródła zostaną odłączone, aby nie były odczytywane jako właściwy rozdział."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Chapters of very tall pages open in Continuous"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5857,7 +5886,7 @@ msgid "Colour {c}"
 msgstr "Kolor {c}"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Colour filter"
 msgstr "Filtr kolorów"
@@ -6189,7 +6218,7 @@ msgid "Continue without saving"
 msgstr "Kontynuuj bez zapisywania"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Continuous"
@@ -6205,7 +6234,7 @@ msgstr "Tylko układ ciągły."
 msgid "Continuous vertical (webtoon)"
 msgstr "Ciągły pionowy (webtoon)"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Continuous, because this chapter's pages are very tall."
 msgstr "Ciągły, bo strony tego rozdziału są bardzo wysokie."
@@ -6726,7 +6755,7 @@ msgid "Crisp line art (server)"
 msgstr "Ostre linie (serwer)"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Crop borders"
 msgstr "Przytnij marginesy"
@@ -6859,7 +6888,7 @@ msgid "Damaged image"
 msgstr "Uszkodzony obraz"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Dark"
 msgstr "Ciemny"
@@ -7242,19 +7271,12 @@ msgid "Didn't score higher than the current file"
 msgstr "Nie uzyskało wyższego wyniku niż obecny plik"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Dim"
 msgstr "Przyciemnienie"
 
-#. placeholder {0}: prefs.dim
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Dim ({0}%)"
-msgstr "Przyciemnienie ({0}%)"
-
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Direction"
 msgstr "Kierunek"
@@ -7408,7 +7430,7 @@ msgid "Don't auto-queue more than (chapters)"
 msgstr "Nie dodawaj automatycznie więcej niż (rozdziałów)"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Don't enhance"
 msgstr "Nie poprawiaj"
@@ -7422,6 +7444,10 @@ msgstr "Nie pobieraj ponownie usuniętych wydań torrent"
 #, fuzzy
 msgid "Don't grab this release again"
 msgstr "Nie pobieraj ponownie tego wydania"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Don't record this session"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -7441,7 +7467,7 @@ msgstr "Nie chcę"
 msgid "Done"
 msgstr "Gotowe"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Double"
 msgstr "Podwójna"
@@ -7606,7 +7632,7 @@ msgstr "Pobrano gotowy indeks"
 #: src/components/SetupWizard.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Downloading"
@@ -7980,7 +8006,7 @@ msgid "English markers like v01 and Ch. 12 are always read. Turn on a language t
 msgstr "Angielskie oznaczenia, jak v01 i Ch. 12, są zawsze odczytywane. Włącz język, aby odczytywać też jego oznaczenia."
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Enhance"
 msgstr "Popraw"
@@ -8135,7 +8161,7 @@ msgid "Every notification goes, read and unread. This can't be undone."
 msgstr "Wszystkie powiadomienia, przeczytane i nieprzeczytane, zostaną usunięte. Tej zmiany nie można cofnąć."
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Every quality is enhanced"
 msgstr "Każda jakość jest poprawiana"
@@ -8823,7 +8849,7 @@ msgstr "Pierwsza strona"
 msgid "First page image"
 msgstr "Obraz pierwszej strony"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Fit"
 msgstr "Dopasuj"
@@ -8834,6 +8860,7 @@ msgid "fit height"
 msgstr "dopasuj wysokość"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Fit height"
 msgstr "Dopasuj wysokość"
@@ -8844,6 +8871,7 @@ msgid "fit screen"
 msgstr "dopasuj ekran"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Fit screen"
 msgstr "Dopasuj ekran"
@@ -8854,6 +8882,7 @@ msgid "fit width"
 msgstr "dopasuj szerokość"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Fit width"
 msgstr "Dopasuj szerokość"
@@ -8873,11 +8902,6 @@ msgstr "Po zapisaniu zostaje na stałe."
 #, fuzzy
 msgid "FlareSolverr"
 msgstr "FlareSolverr"
-
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Flash chapter name on chapter change"
-msgstr "Pokazuj na chwilę nazwę rozdziału przy jego zmianie"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -9310,7 +9334,7 @@ msgstr "Pobrano z {indexer}"
 msgid "Grabbed from {indexer}: {releaseName}"
 msgstr "Pobrano z {indexer}: {releaseName}"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Gray"
 msgstr "Szarość"
@@ -9449,11 +9473,6 @@ msgstr "Sprawne"
 #, fuzzy
 msgid "Heaviest kind of file"
 msgstr "Najcięższy rodzaj pliku"
-
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Height"
-msgstr "Wysokość"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -9691,6 +9710,10 @@ msgstr "Godziny"
 #, fuzzy
 msgid "Hover a cell for its number."
 msgstr "Najedź kursorem na komórkę, aby zobaczyć jej numer."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "How a two-page spread shows in the Single layout."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10144,14 +10167,10 @@ msgstr "Łącznie z folderami głównymi dodanymi później."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Incognito"
 msgstr "Incognito"
-
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Incognito (don't record this session)"
-msgstr "Incognito (nie zapisuj tej sesji)"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -10168,6 +10187,7 @@ msgstr "Tryb incognito dla {ratingLabel}"
 msgid "Incognito series are excluded"
 msgstr "Serie w trybie incognito są wykluczone"
 
+#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Incognito, this session isn't being recorded"
@@ -10283,7 +10303,7 @@ msgid "Interface language"
 msgstr "Język interfejsu"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Invert"
 msgstr "Odwróć"
@@ -10396,7 +10416,7 @@ msgstr "przed chwilą"
 msgid "Just point the series at the new root folder, I already moved the files"
 msgstr "Po prostu wskaż serii nowy folder główny, pliki zostały już przeniesione"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Just this series"
 msgstr "Tylko ta seria"
@@ -10487,7 +10507,7 @@ msgstr "Zachowaj nazwę folderu, ale pobieraj do nowego folderu w standardowym f
 msgid "Keep the name, download into it too"
 msgstr "Zachowaj nazwę i pobieraj do tego folderu"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Keep the screen awake"
 msgstr "Nie wyłączaj ekranu"
@@ -10844,7 +10864,7 @@ msgid "Latest year"
 msgstr "Najnowszy rok"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Layout"
@@ -10941,7 +10961,7 @@ msgid "left to right"
 msgstr "od lewej do prawej"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Left to right"
 msgstr "Od lewej do prawej"
@@ -11386,6 +11406,11 @@ msgstr "Małe litery, cyfry i myślniki."
 #, fuzzy
 msgid "Lowest-numbered admin"
 msgstr "Administrator o najniższym numerze"
+
+#. Short for "left to right", the reading direction
+#: src/pages/reader/ReaderSettings.tsx
+msgid "LTR"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Main ({mainFilterCount})"
@@ -11971,7 +11996,7 @@ msgid "Metadata saved"
 msgstr "Zapisano metadane"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Method"
 msgstr "Metoda"
@@ -13403,7 +13428,7 @@ msgstr "brak"
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/reader/enhanceMethods.ts
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
@@ -13495,7 +13520,7 @@ msgstr "Nie jest ulepszeniem: {reason}"
 msgid "Not analyzed"
 msgstr "Nieprzeanalizowane"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Not available"
 msgstr "Niedostępne"
@@ -13708,7 +13733,7 @@ msgstr "Jeszcze nie skonfigurowano."
 msgid "Not set up yet. An admin can add it in Settings."
 msgstr "Jeszcze nie skonfigurowano. Administrator może dodać to w Ustawieniach."
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Not supported on this device"
 msgstr "Nieobsługiwane na tym urządzeniu"
@@ -14215,11 +14240,16 @@ msgstr "czasu czytania"
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/enhanceMethods.ts
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Off"
 msgstr "Wyłączone"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Off for this chapter"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Off for this chapter because of its quality."
 msgstr "Wyłączone dla tego rozdziału ze względu na jego jakość."
@@ -14297,7 +14327,7 @@ msgid "Oldest first"
 msgstr "Od najstarszych"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #: src/theme-context.tsx
 #, fuzzy
 msgid "OLED black"
@@ -14680,6 +14710,7 @@ msgid "Original script"
 msgstr "Oryginalny zapis"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Original size (1:1)"
 msgstr "Rozmiar oryginalny (1:1)"
@@ -14805,6 +14836,10 @@ msgstr "Odstęp między stronami"
 #, fuzzy
 msgid "Page images come from different hosts."
 msgstr "Obrazy stron pochodzą z różnych hostów."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Page look"
+msgstr ""
 
 #: src/App.tsx
 #, fuzzy
@@ -16047,7 +16082,7 @@ msgstr "Liczby czytelników zastąpią to, gdy te dane zostaną zainstalowane."
 msgid "Reader profiles"
 msgstr "Profile czytnika"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Reader settings"
 msgstr "Ustawienia czytnika"
@@ -16121,10 +16156,14 @@ msgstr "Historia czytania pozostaje widoczna, gdy źródło jest wykluczone z re
 msgid "Reading mode"
 msgstr "Tryb czytania"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Reading profile"
 msgstr "Profil czytania"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Reading profile: {profileName}"
+msgstr ""
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/series/ChapterTableRows.tsx
@@ -17560,7 +17599,7 @@ msgstr "Na razie wynik „na razie” zostaje w Maki, a do trackerów trafia tyl
 msgid "right to left"
 msgstr "od prawej do lewej"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Right to left"
 msgstr "Od prawej do lewej"
@@ -17607,7 +17646,7 @@ msgstr "Foldery główne"
 msgid "Rose"
 msgstr "Różowy"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Rotate"
 msgstr "Obróć"
@@ -17621,6 +17660,11 @@ msgstr "Obróć, by dopasować"
 #, fuzzy
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "Wiersz {zoomRowNumber} z {zoomTotalPages}"
+
+#. Short for "right to left", the reading direction
+#: src/pages/reader/ReaderSettings.tsx
+msgid "RTL"
+msgstr ""
 
 #: src/components/pageconversion/EstimateTable.tsx
 #, fuzzy
@@ -18000,15 +18044,14 @@ msgid "Savoured"
 msgstr "Czytane bez pośpiechu"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Scale"
 msgstr "Skala"
 
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
+#: src/pages/reader/ReaderSettings.tsx
 msgid "Scale ({scale}%)"
-msgstr "Skala ({scale}%)"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
@@ -18180,11 +18223,6 @@ msgstr "Scraper"
 msgid "scrapers, manage sources, priority, source priority, source order, best quality, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe, custom source, add site, set up a site, scanlator, website, definition, import definition"
 msgstr "scrapery, zarządzaj źródłami, priorytet, priorytet źródeł, kolejność źródeł, najlepsza jakość, 18+, źródła dla dorosłych, mangadex, mangafire, webtoons, asura, tcb, flame comics, uporządkuj źródła, wyłącz źródło, auto-match, zmień kolejność, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
 
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Screen"
-msgstr "Ekran"
-
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Screentone gets lighter but stays visible."
@@ -18246,7 +18284,7 @@ msgstr "Przewiń do przodu"
 msgid "Scroll to finish the preview"
 msgstr "Przewiń, aby zakończyć podgląd"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Scroll webtoon chapters"
 msgstr "Przewijaj rozdziały webtoonów"
@@ -18646,7 +18684,7 @@ msgid "Sent to the download client: {title}"
 msgstr "Wysłano do klienta pobierania: {title}"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Sepia"
 msgstr "Sepia"
@@ -19103,7 +19141,7 @@ msgid "Show or hide this list"
 msgstr "Pokaż lub ukryj tę listę"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Show page number"
 msgstr "Pokazuj numer strony"
@@ -19127,6 +19165,10 @@ msgstr "Pokaż zastąpione pliki"
 #, fuzzy
 msgid "Show source text"
 msgstr "Pokaż tekst źródła"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Show the chapter name"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -19278,7 +19320,7 @@ msgstr "Podobieństwo do początku"
 msgid "Simple"
 msgstr "Proste"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Single"
 msgstr "Pojedyncza"
@@ -19694,7 +19736,7 @@ msgstr "Spin-off"
 msgid "Spin-off of {relatedTo}"
 msgstr "Spin-off serii {relatedTo}"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Split"
 msgstr "Podziel"
@@ -20171,7 +20213,11 @@ msgstr "Tagi do wykluczenia"
 msgid "Tags to include"
 msgstr "Tagi do uwzględnienia"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Tap the page edges to turn pages"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Tap zones"
 msgstr "Strefy dotyku"
@@ -21646,6 +21692,10 @@ msgstr "Obecnie popularne"
 msgid "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
 msgstr "Próbuje {sourceNames} w kolejności priorytetu i wybiera pierwsze, które ma ten rozdział. Wskazanie konkretnego źródła zamiast tego przypina je: brak awaryjnego przełączania, więc zawsze otrzymujesz kandydata tylko stamtąd, skąd wybrałeś."
 
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Trims plain white or black margins. Single and Double only."
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "Trust {name}"
@@ -23080,6 +23130,7 @@ msgid "Which source a chapter downloads from first."
 msgstr "Z którego źródła rozdział pobiera się najpierw."
 
 #: src/components/ui/seriesNotifications.ts
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "While reading"
 msgstr "Podczas czytania"
@@ -23089,12 +23140,12 @@ msgstr "Podczas czytania"
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "\"Podczas czytania\" informuje o nowych rozdziałach tylko, gdy jesteś w trakcie lektury."
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "While the server works"
 msgstr "Gdy serwer pracuje"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Whole"
 msgstr "Całość"
@@ -23126,15 +23177,10 @@ msgid "Whole-series pack, needs your call"
 msgstr "Paczka całej serii, wymaga Twojej decyzji"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Wide pages"
 msgstr "Szerokie strony"
-
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Width"
-msgstr "Szerokość"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy

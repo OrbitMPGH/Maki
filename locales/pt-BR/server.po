@@ -3704,6 +3704,12 @@ msgstr "Restauração preparada. O Maki está parando agora. Inicie-o de novo pa
 msgid "error.system.noUpdateReady"
 msgstr "Nenhuma atualização foi baixada ainda. Tente de novo em alguns minutos."
 
+#. Check now in Settings > System > Updates: neither the GitHub API nor the release page answered, often because GitHub limits update checks from this network.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Couldn't reach GitHub to check for updates. Try again later.
+msgid "error.updates.checkFailed"
+msgstr ""
+
 #. Docker installs must listen on every network inside the container.
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: Network access is set by the container's port mapping, not here.

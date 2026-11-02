@@ -5,9 +5,26 @@ description: Reading modes, reading profiles and the keyboard shortcuts in Maki'
 
 For what the reader can do overall, see the [reader feature overview](/Maki/features/reader/).
 
+## Reader settings
+
+<!-- screenshot: the reader settings popover -->
+
+The gear in the bottom bar opens the settings. The top of the popover has the settings you change
+while reading: the layout, direction, page fit, a brightness slider and four colour filters
+(none, gray, sepia, invert), each shown on the page you are on. The rows under them show their
+current value and open a page of their own:
+
+- **Wide pages**, in the single page layout only.
+- **Page look**: the background (dark or OLED black) and **Crop borders**.
+- **Enhance**, see below.
+- **While reading**: tap zones, the page number, showing the chapter name when a new chapter
+  opens, auto-advance to the next chapter, scrolling webtoon chapters and **Keep the screen awake**.
+
+`Esc` on one of those pages goes back to the first one, and `Esc` there closes the popover.
+
 ## Reading modes
 
-The toolbar's layout setting picks the mode:
+The layout setting picks the mode:
 
 - **Single page** (`1`)
 - **Double page** (`2`), two pages side by side
@@ -34,8 +51,8 @@ is the rightmost segment. Press `T` to open the page thumbnails strip.
 
 <!-- screenshot: the reader settings popover with the Enhance section open -->
 
-Enhance sharpens soft pages. Its controls are in the settings popover: **Enhance** (Off, Auto or
-Always), **Method** and **Don't enhance**, which appear once Enhance is on. **While the server
+Enhance sharpens soft pages. Its controls are on the **Enhance** page of the settings popover:
+**Enhance** (Off, Auto or Always), **Method** and **Don't enhance**, which appear once Enhance is on. **While the server
 works** appears only with a server method. Hold `H`, or the compare button in the top bar, to see
 the original page. See [Page enhance](/Maki/features/page-enhance/).
 
@@ -52,12 +69,12 @@ Maki picks the settings for a series in this order, and the first one that is se
 3. The profile for the series' type.
 4. Your reader defaults.
 
-The **Reading profile** control in the reader's settings popover shows which one is in use. It
-offers **Auto** (labelled with the profile it picked, or **my defaults**), each of your profiles, and
-**Just this series**. The line under it says what your next change will touch: this series only, the
-profile in use, or your reader defaults.
+The chip at the top of the reader's settings popover shows which one is in use. Click it to change
+it: the list offers **Auto** (labelled with the profile it picked, or **my defaults**), each of your
+profiles, and **Just this series**. The line under it says what your next change will touch: this
+series only, the profile in use, or your reader defaults.
 
-The popover also has **Keep the screen awake** and **Incognito (don't record this session)**.
+**Incognito**, next to the profile chip, stops recording the current session.
 
 ## Keyboard shortcuts
 

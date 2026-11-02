@@ -3704,6 +3704,12 @@ msgstr "恢复已暂存。Maki 正在停止。请再次启动以应用恢复。"
 msgid "error.system.noUpdateReady"
 msgstr "尚未下载任何更新。请几分钟后再试。"
 
+#. Check now in Settings > System > Updates: neither the GitHub API nor the release page answered, often because GitHub limits update checks from this network.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Couldn't reach GitHub to check for updates. Try again later.
+msgid "error.updates.checkFailed"
+msgstr ""
+
 #. Docker installs must listen on every network inside the container.
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: Network access is set by the container's port mapping, not here.

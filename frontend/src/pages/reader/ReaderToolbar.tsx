@@ -1,17 +1,4 @@
-import {
-  ActionIcon,
-  Group,
-  MultiSelect,
-  Popover,
-  Progress,
-  SegmentedControl,
-  Select,
-  Slider,
-  Stack,
-  Switch,
-  Text,
-  Tooltip,
-} from '@mantine/core'
+import { ActionIcon, Group, Progress, Text, Tooltip } from '@mantine/core'
 import {
   IconArrowLeft,
   IconBookmark,
@@ -23,7 +10,6 @@ import {
   IconLayoutGrid,
   IconMaximize,
   IconMinimize,
-  IconSettings,
   IconSquareHalf,
   IconZoomIn,
   IconZoomOut,
@@ -35,33 +21,11 @@ import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
-import { wakeLockSupported } from '../../lib/wakeLock'
-import { useLabel } from '../../i18n-context'
-import {
-  BROWSER_ENHANCE_METHODS,
-  ENHANCE_FALLBACKS,
-  ENHANCE_LEVELS,
-  ENHANCE_SKIP_TIERS,
-  SERVER_ENHANCE_METHODS,
-  enhanceMethodInfo,
-  isServerMethod,
-  serverModelId,
-} from './enhanceMethods'
-import { BACKGROUNDS, enhanceFor, type PrefsSelection, type ReaderPrefs } from './prefs'
+import type { PrefsSelection, ReaderPrefs } from './prefs'
 import { setCompareHeld, useCompareHeld } from './compareHold'
 import { useEnhanceEngine } from './enhanceRuntime'
 import PageScrubber from './PageScrubber'
-
-/**
- * The reader renders above Mantine's popover layer, so anything that portals to <body> has to
- * be lifted past it explicitly, otherwise it paints underneath the page and looks like the
- * control simply doesn't work.
- */
-const OVERLAY_Z = 500
-
-// Inside the settings popover, a portalled list counts as outside it: the first touch on the list
-// closed both, so it could never be scrolled. Rendered in place, fixed so the popover does not clip it.
-const NESTED_COMBOBOX = { zIndex: OVERLAY_Z + 1, withinPortal: false, floatingStrategy: 'fixed' } as const
+import ReaderSettings, { OVERLAY_Z } from './ReaderSettings'
 
 export default function ReaderToolbar({
   manifest,
@@ -151,52 +115,15 @@ export default function ReaderToolbar({
   shownTo?: number
 }) {
   const { t } = useLingui()
-  const renderLabel = useLabel()
-  const { scale } = prefs
 
   // The slider and the chapter chevrons mirror in RTL: the left chevron goes to the next chapter,
   // so each chevron's disabled state follows the chapter it actually opens.
   const rtl = prefs.direction === 'rtl'
   const [settingsOpen, setSettingsOpen] = useState(false)
 
-  // "Auto" names the profile the series' type resolves to, so choosing it says what it will do.
-  const autoProfile = profiles.find((p) => p.id === autoProfileId)
-  const autoProfileName = autoProfile?.name
-  const autoLabel = autoProfile ? t`Auto (${autoProfileName})` : t`Auto (my defaults)`
-
-  const inForce = profiles.find((p) => p.id === selection) ?? (selection === 'auto' ? autoProfile : undefined)
-  const inForceName = inForce?.name
-  const editsAffect =
-    source === 'Series'
-      ? t`Changes apply to this series only.`
-      : source === 'Profile' && inForce
-        ? t`Changes retune "${inForceName}", so every series using it.`
-        : t`Changes apply to your reader defaults.`
-
   const enhanceOn = prefs.enhance !== 'off'
   const engineStatus = useEnhanceEngine(enhanceOn).status
-  const browserUnsupported = engineStatus === 'unsupported'
   const compareHeld = useCompareHeld()
-  const enhanceModels = manifest.enhanceServer?.models
-  const enhanceOptions = [
-    ...BROWSER_ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label), disabled: browserUnsupported })),
-    ...SERVER_ENHANCE_METHODS.flatMap((m) => {
-      const model = enhanceModels?.find((entry) => entry.id === serverModelId(m.id))
-      if (!model && m.id !== prefs.enhanceMethod) return []
-      return [{ value: m.id, label: renderLabel(m.label), disabled: !model || !model.ready }]
-    }),
-  ]
-  const enhanceNote = (value: string): string | undefined => {
-    const model = enhanceModels?.find((entry) => entry.id === serverModelId(value))
-    if (serverModelId(value) !== null) {
-      if (!model) return t`Not available`
-      if (!model.ready) return t`Downloading`
-    } else if (browserUnsupported) {
-      return t`Not supported on this device`
-    }
-    const info = enhanceMethodInfo(value)
-    return info ? renderLabel(info.hint) : undefined
-  }
 
   // Shared between the tooltip and the icon button's own aria-label, which say the same thing.
   const backChapterLabel = rtl ? t`Next chapter` : t`Previous chapter`
@@ -221,21 +148,6 @@ export default function ReaderToolbar({
       if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false)
     },
   }
-
-  // Escape closes the settings first. Mantine only closes on Escape when focus is inside the
-  // dropdown, and focus is usually still on the gear, so the reader's own Escape (leave the reader)
-  // would win. Captured on the window so it runs before the reader's listener, which skips a key
-  // that is already handled.
-  useEffect(() => {
-    if (!settingsOpen) return
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.preventDefault()
-      setSettingsOpen(false)
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [settingsOpen])
 
   // How much of the series is left, on the same footing as the series page: downloaded chapters as
   // the denominator, completed ones as the numerator.
@@ -444,325 +356,22 @@ export default function ReaderToolbar({
             </ActionIcon>
           </Tooltip>
 
-          <Popover
-            width={280}
-            position="top-end"
-            withArrow
-            shadow="md"
-            zIndex={OVERLAY_Z}
+          <ReaderSettings
             opened={settingsOpen}
-            onChange={setSettingsOpen}
-          >
-            <Popover.Target>
-              <ActionIcon
-                variant={settingsOpen ? 'light' : 'subtle'}
-                color="gray"
-                onClick={() => setSettingsOpen((open) => !open)}
-                aria-label={t`Reader settings`}
-              >
-                <IconSettings size={18} />
-              </ActionIcon>
-            </Popover.Target>
-            {/* Taller than a landscape phone or a short window: it scrolls rather than running off the top. */}
-            <Popover.Dropdown style={{ maxHeight: 'calc(100dvh - 72px)', overflowY: 'auto' }}>
-              <Stack gap="sm">
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Layout</Trans>
-                  </Text>
-                  <SegmentedControl
-                    aria-label={t`Layout`}
-                    fullWidth
-                    size="xs"
-                    value={prefs.mode}
-                    onChange={(value) => onPrefs({ mode: value as ReaderPrefs['mode'] })}
-                    data={[
-                      { label: t`Single`, value: 'paged' },
-                      { label: t`Double`, value: 'double' },
-                      { label: t`Continuous`, value: 'vertical' },
-                    ]}
-                  />
-                  {autoLayout && (
-                    <Text fz="xs" c="var(--ink-3)" mt={4}>
-                      <Trans>Continuous, because this chapter's pages are very tall.</Trans>
-                    </Text>
-                  )}
-                </div>
-                {prefs.mode === 'paged' && (
-                  <div>
-                    <Text fz="xs" c="var(--ink-3)" mb={4}>
-                      <Trans>Wide pages</Trans>
-                    </Text>
-                    <SegmentedControl
-                      aria-label={t`Wide pages`}
-                      fullWidth
-                      size="xs"
-                      value={prefs.splitWide}
-                      onChange={(value) => onPrefs({ splitWide: value as ReaderPrefs['splitWide'] })}
-                      data={[
-                        { label: t`Whole`, value: 'off' },
-                        { label: t`Split`, value: 'split' },
-                        { label: t`Rotate`, value: 'rotate' },
-                      ]}
-                    />
-                  </div>
-                )}
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Direction</Trans>
-                  </Text>
-                  <SegmentedControl
-                    aria-label={t`Direction`}
-                    fullWidth
-                    size="xs"
-                    value={prefs.direction}
-                    onChange={(value) => onPrefs({ direction: value as ReaderPrefs['direction'] })}
-                    data={[
-                      { label: t`Left to right`, value: 'ltr' },
-                      { label: t`Right to left`, value: 'rtl' },
-                    ]}
-                  />
-                </div>
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Fit</Trans>
-                  </Text>
-                  <SegmentedControl
-                    aria-label={t`Fit`}
-                    fullWidth
-                    size="xs"
-                    value={prefs.fit}
-                    onChange={(value) => onPrefs({ fit: value as ReaderPrefs['fit'] })}
-                    data={[
-                      { label: t`Width`, value: 'width' },
-                      { label: t`Height`, value: 'height' },
-                      { label: t`Screen`, value: 'screen' },
-                      { label: '1:1', value: 'original' },
-                    ]}
-                  />
-                </div>
-                {prefs.fit === 'original' && (
-                  <div>
-                    <Text fz="xs" c="var(--ink-3)" mb={4}>
-                      <Trans>Scale ({scale}%)</Trans>
-                    </Text>
-                    <Slider
-                      thumbLabel={t`Scale`}
-                      size="xs"
-                      min={25}
-                      max={400}
-                      step={5}
-                      value={prefs.scale}
-                      onChange={(value) => onPrefs({ scale: value })}
-                    />
-                  </div>
-                )}
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Background</Trans>
-                  </Text>
-                  <SegmentedControl
-                    aria-label={t`Background`}
-                    fullWidth
-                    size="xs"
-                    value={prefs.background === BACKGROUNDS.oled ? 'oled' : 'dark'}
-                    onChange={(value) =>
-                      onPrefs({ background: value === 'oled' ? BACKGROUNDS.oled : BACKGROUNDS.dark })
-                    }
-                    data={[
-                      { label: t`Dark`, value: 'dark' },
-                      { label: t`OLED black`, value: 'oled' },
-                    ]}
-                  />
-                </div>
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Dim ({prefs.dim}%)</Trans>
-                  </Text>
-                  <Slider
-                    thumbLabel={t`Dim`}
-                    size="xs"
-                    min={0}
-                    max={80}
-                    step={5}
-                    label={null}
-                    value={prefs.dim}
-                    onChange={(value) => onPrefs({ dim: value })}
-                  />
-                </div>
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Colour filter</Trans>
-                  </Text>
-                  <SegmentedControl
-                    aria-label={t`Colour filter`}
-                    fullWidth
-                    size="xs"
-                    value={prefs.filter}
-                    onChange={(value) => onPrefs({ filter: value as ReaderPrefs['filter'] })}
-                    data={[
-                      { label: t`None`, value: 'none' },
-                      { label: t`Gray`, value: 'grayscale' },
-                      { label: t`Sepia`, value: 'sepia' },
-                      { label: t`Invert`, value: 'invert' },
-                    ]}
-                  />
-                </div>
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Enhance</Trans>
-                  </Text>
-                  <SegmentedControl
-                    aria-label={t`Enhance`}
-                    fullWidth
-                    size="xs"
-                    value={prefs.enhance}
-                    onChange={(value) => onPrefs({ enhance: value as ReaderPrefs['enhance'] })}
-                    data={ENHANCE_LEVELS.map((level) => ({ label: renderLabel(level.label), value: level.value }))}
-                  />
-                  {prefs.enhance !== 'off' && enhanceFor(prefs, manifest.tier) === 'off' && (
-                    <Text fz="xs" c="var(--ink-3)" mt={4}>
-                      <Trans>Off for this chapter because of its quality.</Trans>
-                    </Text>
-                  )}
-                </div>
-                {prefs.enhance !== 'off' && (
-                  <div>
-                    <Text fz="xs" c="var(--ink-3)" mb={4}>
-                      <Trans>Method</Trans>
-                    </Text>
-                    <Select
-                      aria-label={t`Method`}
-                      size="xs"
-                      comboboxProps={NESTED_COMBOBOX}
-                      allowDeselect={false}
-                      value={prefs.enhanceMethod}
-                      onChange={(value) => value && onPrefs({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })}
-                      data={enhanceOptions}
-                      renderOption={({ option }) => (
-                        <div>
-                          <Text fz="xs">{option.label}</Text>
-                          <Text fz="xs" c="var(--ink-3)">
-                            {enhanceNote(option.value)}
-                          </Text>
-                        </div>
-                      )}
-                    />
-                  </div>
-                )}
-                {prefs.enhance !== 'off' && (
-                  <div>
-                    <Text fz="xs" c="var(--ink-3)" mb={4}>
-                      <Trans>Don't enhance</Trans>
-                    </Text>
-                    <MultiSelect
-                      aria-label={t`Don't enhance`}
-                      size="xs"
-                      comboboxProps={NESTED_COMBOBOX}
-                      placeholder={t`Every quality is enhanced`}
-                      value={prefs.enhanceSkipTiers}
-                      onChange={(value) => onPrefs({ enhanceSkipTiers: value as ReaderPrefs['enhanceSkipTiers'] })}
-                      data={ENHANCE_SKIP_TIERS.map((tier) => ({ value: tier.value, label: renderLabel(tier.label) }))}
-                    />
-                  </div>
-                )}
-                {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
-                  <div>
-                    <Text fz="xs" c="var(--ink-3)" mb={4}>
-                      <Trans>While the server works</Trans>
-                    </Text>
-                    <SegmentedControl
-                      aria-label={t`While the server works`}
-                      fullWidth
-                      size="xs"
-                      value={prefs.enhanceFallback}
-                      onChange={(value) => onPrefs({ enhanceFallback: value as ReaderPrefs['enhanceFallback'] })}
-                      data={ENHANCE_FALLBACKS.map((f) => ({
-                        label: renderLabel(f.label),
-                        value: f.value,
-                        disabled: browserUnsupported && f.value !== 'off',
-                      }))}
-                    />
-                  </div>
-                )}
-                <Switch
-                  size="xs"
-                  label={t`Crop borders`}
-                  checked={prefs.cropBorders}
-                  onChange={(event) => onPrefs({ cropBorders: event.currentTarget.checked })}
-                />
-                <Switch
-                  size="xs"
-                  label={t`Scroll webtoon chapters`}
-                  checked={prefs.autoWebtoon}
-                  onChange={(event) => onPrefs({ autoWebtoon: event.currentTarget.checked })}
-                />
-                <Switch
-                  size="xs"
-                  label={t`Tap zones`}
-                  checked={prefs.tapZones}
-                  onChange={(event) => onPrefs({ tapZones: event.currentTarget.checked })}
-                />
-                <Switch
-                  size="xs"
-                  label={t`Show page number`}
-                  checked={prefs.showPageNumber}
-                  onChange={(event) => onPrefs({ showPageNumber: event.currentTarget.checked })}
-                />
-                <Switch
-                  size="xs"
-                  label={t`Flash chapter name on chapter change`}
-                  checked={prefs.chapterBanner}
-                  onChange={(event) => onPrefs({ chapterBanner: event.currentTarget.checked })}
-                />
-                <Switch
-                  size="xs"
-                  label={t`Auto-advance to next chapter`}
-                  checked={prefs.autoNextChapter}
-                  onChange={(event) => onPrefs({ autoNextChapter: event.currentTarget.checked })}
-                />
-                {wakeLockSupported() && (
-                  <Switch
-                    size="xs"
-                    label={t`Keep the screen awake`}
-                    checked={prefs.keepAwake}
-                    onChange={(event) => onPrefs({ keepAwake: event.currentTarget.checked })}
-                  />
-                )}
-                <Switch
-                  size="xs"
-                  label={t`Incognito (don't record this session)`}
-                  checked={incognito}
-                  onChange={(event) => onIncognito(event.currentTarget.checked)}
-                />
-
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Reading profile</Trans>
-                  </Text>
-                  <Select
-                    aria-label={t`Reading profile`}
-                    size="xs"
-                    comboboxProps={NESTED_COMBOBOX}
-                    allowDeselect={false}
-                    value={String(selection)}
-                    onChange={(value) => {
-                      if (!value) return
-                      onSelection(value === 'auto' || value === 'series' ? value : Number(value))
-                    }}
-                    data={[
-                      { label: autoLabel, value: 'auto' },
-                      ...profiles.map((p) => ({ label: p.name, value: String(p.id) })),
-                      { label: t`Just this series`, value: 'series' },
-                    ]}
-                  />
-                  <Text fz="xs" c="var(--ink-3)" mt={4}>
-                    {editsAffect}
-                  </Text>
-                </div>
-              </Stack>
-            </Popover.Dropdown>
-          </Popover>
+            onOpenedChange={setSettingsOpen}
+            manifest={manifest}
+            prefs={prefs}
+            onPrefs={onPrefs}
+            autoLayout={autoLayout}
+            selection={selection}
+            onSelection={onSelection}
+            source={source}
+            autoProfileId={autoProfileId}
+            profiles={profiles}
+            incognito={incognito}
+            onIncognito={onIncognito}
+            previewSrc={thumbs[page]}
+          />
 
           {/* No keyboard on a touch screen, so nothing for this to list there. */}
           <Tooltip label={t`Keyboard shortcuts (?)`} withArrow zIndex={OVERLAY_Z}>

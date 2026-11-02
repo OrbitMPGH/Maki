@@ -731,6 +731,10 @@ msgctxt "series"
 msgid "{archivedCount, plural, one {Archived (#)} other {Archived (#)}}"
 msgstr "{archivedCount, plural, other {已归档（#）}}"
 
+#: src/pages/reader/ReaderSettings.tsx
+msgid "{backgroundName}, cropped"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{beforeLabel} to {afterLabel}"
@@ -1507,6 +1511,10 @@ msgstr "{left, plural, other {还剩 # 个}}"
 #, fuzzy
 msgid "{left, plural, one {# left} other {# left}}, about {eta}"
 msgstr "{left, plural, other {剩余 #}}，约 {eta}"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "{levelName}, {methodName}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2379,6 +2387,10 @@ msgstr "{title} 可访问"
 #, fuzzy
 msgid "{title}: {reason}"
 msgstr "{title}：{reason}"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "{togglesOn} of {togglesTotal} on"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -4278,17 +4290,17 @@ msgstr "将 Kavita 的阅读归属于"
 msgid "Auto"
 msgstr "自动"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Auto ({autoProfileName})"
 msgstr "自动（{autoProfileName}）"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Auto (my defaults)"
 msgstr "自动（我的默认设置）"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Auto-advance to next chapter"
 msgstr "自动前进到下一章"
@@ -4376,6 +4388,7 @@ msgstr "已避开"
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Back"
@@ -4431,7 +4444,7 @@ msgstr "定时备份"
 
 #: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Background"
 msgstr "背景"
@@ -4686,6 +4699,18 @@ msgstr "底部"
 #, fuzzy
 msgid "Boys Love"
 msgstr "耽美"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Briefly, when a new chapter opens"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Brightness"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Brightness and tint"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -5217,17 +5242,17 @@ msgstr "已更改"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "更改会直接应用到此面板后面的网格。"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Changes apply to this series only."
 msgstr "更改仅应用于此系列。"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Changes apply to your reader defaults."
 msgstr "更改会应用到你的阅读器默认设置。"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Changes retune \"{inForceName}\", so every series using it."
 msgstr "更改会重新调整“{inForceName}”，因此也会影响所有使用它的系列。"
@@ -5438,6 +5463,10 @@ msgstr "已知章节"
 #, fuzzy
 msgid "Chapters not listed by another enabled source will be removed. Files downloaded from this source will be detached so they cannot be read as the correct chapter."
 msgstr "其他已启用来源未列出的章节将被移除。从此来源下载的文件会取消关联，避免被当作正确章节读取。"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Chapters of very tall pages open in Continuous"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5857,7 +5886,7 @@ msgid "Colour {c}"
 msgstr "颜色 {c}"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Colour filter"
 msgstr "颜色滤镜"
@@ -6189,7 +6218,7 @@ msgid "Continue without saving"
 msgstr "不保存并继续"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Continuous"
@@ -6205,7 +6234,7 @@ msgstr "仅限连续布局。"
 msgid "Continuous vertical (webtoon)"
 msgstr "连续垂直（条漫）"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Continuous, because this chapter's pages are very tall."
 msgstr "因为本章页面很高，使用连续布局。"
@@ -6726,7 +6755,7 @@ msgid "Crisp line art (server)"
 msgstr "锐利线稿（服务器）"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Crop borders"
 msgstr "裁切边框"
@@ -6859,7 +6888,7 @@ msgid "Damaged image"
 msgstr "图像已损坏"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Dark"
 msgstr "深色"
@@ -7242,19 +7271,12 @@ msgid "Didn't score higher than the current file"
 msgstr "分数没有高于当前文件"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Dim"
 msgstr "变暗"
 
-#. placeholder {0}: prefs.dim
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Dim ({0}%)"
-msgstr "变暗（{0}%）"
-
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Direction"
 msgstr "方向"
@@ -7408,7 +7430,7 @@ msgid "Don't auto-queue more than (chapters)"
 msgstr "自动排队数量不超过（章节）"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Don't enhance"
 msgstr "不增强"
@@ -7422,6 +7444,10 @@ msgstr "不再抓取已移除的种子版本"
 #, fuzzy
 msgid "Don't grab this release again"
 msgstr "不再抓取此版本"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Don't record this session"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -7441,7 +7467,7 @@ msgstr "不想要"
 msgid "Done"
 msgstr "完成"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Double"
 msgstr "双页"
@@ -7606,7 +7632,7 @@ msgstr "已下载预构建索引"
 #: src/components/SetupWizard.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Downloading"
@@ -7980,7 +8006,7 @@ msgid "English markers like v01 and Ch. 12 are always read. Turn on a language t
 msgstr "像 v01 和 Ch. 12 这样的英文标记始终会被读取。开启某种语言后，也会读取该语言的标记。"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Enhance"
 msgstr "增强"
@@ -8135,7 +8161,7 @@ msgid "Every notification goes, read and unread. This can't be undone."
 msgstr "已读和未读通知都会被清除。此操作无法撤销。"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Every quality is enhanced"
 msgstr "所有质量都会被增强"
@@ -8823,7 +8849,7 @@ msgstr "第一页"
 msgid "First page image"
 msgstr "第一页图片"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Fit"
 msgstr "适应"
@@ -8834,6 +8860,7 @@ msgid "fit height"
 msgstr "适应高度"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Fit height"
 msgstr "适应高度"
@@ -8844,6 +8871,7 @@ msgid "fit screen"
 msgstr "适应屏幕"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Fit screen"
 msgstr "适应屏幕"
@@ -8854,6 +8882,7 @@ msgid "fit width"
 msgstr "适应宽度"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Fit width"
 msgstr "适应宽度"
@@ -8873,11 +8902,6 @@ msgstr "保存后即固定。"
 #, fuzzy
 msgid "FlareSolverr"
 msgstr "FlareSolverr"
-
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Flash chapter name on chapter change"
-msgstr "换章时闪现章节名称"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -9310,7 +9334,7 @@ msgstr "已从 {indexer} 抓取"
 msgid "Grabbed from {indexer}: {releaseName}"
 msgstr "已从 {indexer} 抓取：{releaseName}"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Gray"
 msgstr "灰色"
@@ -9449,11 +9473,6 @@ msgstr "正常"
 #, fuzzy
 msgid "Heaviest kind of file"
 msgstr "体积最大的文件类型"
-
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Height"
-msgstr "高度"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -9691,6 +9710,10 @@ msgstr "小时"
 #, fuzzy
 msgid "Hover a cell for its number."
 msgstr "将鼠标悬停在单元格上可查看章节编号。"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "How a two-page spread shows in the Single layout."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10144,14 +10167,10 @@ msgstr "包括之后添加的根文件夹。"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Incognito"
 msgstr "隐身"
-
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Incognito (don't record this session)"
-msgstr "隐身（不记录此会话）"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -10168,6 +10187,7 @@ msgstr "对 {ratingLabel} 启用隐身"
 msgid "Incognito series are excluded"
 msgstr "已排除隐身系列"
 
+#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Incognito, this session isn't being recorded"
@@ -10283,7 +10303,7 @@ msgid "Interface language"
 msgstr "界面语言"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Invert"
 msgstr "反色"
@@ -10396,7 +10416,7 @@ msgstr "刚刚"
 msgid "Just point the series at the new root folder, I already moved the files"
 msgstr "只需将系列指向新的根文件夹，文件我已经移动好了"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Just this series"
 msgstr "仅此系列"
@@ -10487,7 +10507,7 @@ msgstr "保留名称，下载到新的标准文件夹"
 msgid "Keep the name, download into it too"
 msgstr "保留名称，也下载到该文件夹"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Keep the screen awake"
 msgstr "保持屏幕常亮"
@@ -10844,7 +10864,7 @@ msgid "Latest year"
 msgstr "最晚年份"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Layout"
@@ -10941,7 +10961,7 @@ msgid "left to right"
 msgstr "从左到右"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Left to right"
 msgstr "从左到右"
@@ -11386,6 +11406,11 @@ msgstr "小写字母、数字和连字符。"
 #, fuzzy
 msgid "Lowest-numbered admin"
 msgstr "编号最小的管理员"
+
+#. Short for "left to right", the reading direction
+#: src/pages/reader/ReaderSettings.tsx
+msgid "LTR"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Main ({mainFilterCount})"
@@ -11971,7 +11996,7 @@ msgid "Metadata saved"
 msgstr "元数据已保存"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Method"
 msgstr "方法"
@@ -13403,7 +13428,7 @@ msgstr "无"
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/reader/enhanceMethods.ts
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
@@ -13495,7 +13520,7 @@ msgstr "不是升级：{reason}"
 msgid "Not analyzed"
 msgstr "未分析"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Not available"
 msgstr "不可用"
@@ -13708,7 +13733,7 @@ msgstr "尚未设置。"
 msgid "Not set up yet. An admin can add it in Settings."
 msgstr "尚未设置。管理员可以在设置中添加。"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Not supported on this device"
 msgstr "此设备不支持"
@@ -14215,11 +14240,16 @@ msgstr "阅读时间的"
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/enhanceMethods.ts
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Off"
 msgstr "关闭"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Off for this chapter"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Off for this chapter because of its quality."
 msgstr "因为此章节的质量，此项已关闭。"
@@ -14297,7 +14327,7 @@ msgid "Oldest first"
 msgstr "最早优先"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #: src/theme-context.tsx
 #, fuzzy
 msgid "OLED black"
@@ -14680,6 +14710,7 @@ msgid "Original script"
 msgstr "原始文字"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Original size (1:1)"
 msgstr "原始大小（1:1）"
@@ -14805,6 +14836,10 @@ msgstr "页面间距"
 #, fuzzy
 msgid "Page images come from different hosts."
 msgstr "页面图片来自不同的主机。"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Page look"
+msgstr ""
 
 #: src/App.tsx
 #, fuzzy
@@ -16047,7 +16082,7 @@ msgstr "安装该数据后，阅读器计数会取代它。"
 msgid "Reader profiles"
 msgstr "阅读器配置"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Reader settings"
 msgstr "阅读器设置"
@@ -16121,10 +16156,14 @@ msgstr "来源从推荐中排除后，阅读记录仍会显示。"
 msgid "Reading mode"
 msgstr "阅读模式"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Reading profile"
 msgstr "阅读配置文件"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Reading profile: {profileName}"
+msgstr ""
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/series/ChapterTableRows.tsx
@@ -17560,7 +17599,7 @@ msgstr "目前，「截至目前」的评分只保留在 Maki 中，只有你的
 msgid "right to left"
 msgstr "从右到左"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Right to left"
 msgstr "从右到左"
@@ -17607,7 +17646,7 @@ msgstr "根文件夹"
 msgid "Rose"
 msgstr "玫瑰色"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Rotate"
 msgstr "旋转"
@@ -17621,6 +17660,11 @@ msgstr "旋转以适应"
 #, fuzzy
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "第 {zoomRowNumber}/{zoomTotalPages} 行"
+
+#. Short for "right to left", the reading direction
+#: src/pages/reader/ReaderSettings.tsx
+msgid "RTL"
+msgstr ""
 
 #: src/components/pageconversion/EstimateTable.tsx
 #, fuzzy
@@ -18000,15 +18044,14 @@ msgid "Savoured"
 msgstr "慢慢品读"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Scale"
 msgstr "缩放"
 
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
+#: src/pages/reader/ReaderSettings.tsx
 msgid "Scale ({scale}%)"
-msgstr "缩放（{scale}%）"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
@@ -18180,11 +18223,6 @@ msgstr "爬虫"
 msgid "scrapers, manage sources, priority, source priority, source order, best quality, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe, custom source, add site, set up a site, scanlator, website, definition, import definition"
 msgstr "抓取来源, 管理来源, 优先级, 来源优先级, 来源顺序, 最佳质量, 18+, 成人来源, mangadex, mangafire, webtoons, asura, tcb, flame comics, 排序来源, 禁用来源, 自动匹配, 重新排序, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
 
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Screen"
-msgstr "屏幕"
-
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Screentone gets lighter but stays visible."
@@ -18246,7 +18284,7 @@ msgstr "向前滚动"
 msgid "Scroll to finish the preview"
 msgstr "滚动以结束预览"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Scroll webtoon chapters"
 msgstr "滚动条漫章节"
@@ -18646,7 +18684,7 @@ msgid "Sent to the download client: {title}"
 msgstr "已发送到下载客户端：{title}"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Sepia"
 msgstr "复古棕"
@@ -19103,7 +19141,7 @@ msgid "Show or hide this list"
 msgstr "显示或隐藏此列表"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Show page number"
 msgstr "显示页码"
@@ -19127,6 +19165,10 @@ msgstr "显示被替换的文件"
 #, fuzzy
 msgid "Show source text"
 msgstr "显示来源文本"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Show the chapter name"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -19278,7 +19320,7 @@ msgstr "与起点的相似度"
 msgid "Simple"
 msgstr "简单"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Single"
 msgstr "单页"
@@ -19694,7 +19736,7 @@ msgstr "衍生："
 msgid "Spin-off of {relatedTo}"
 msgstr "{relatedTo} 的衍生作品"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Split"
 msgstr "拆分"
@@ -20171,7 +20213,11 @@ msgstr "要排除的标签"
 msgid "Tags to include"
 msgstr "要包含的标签"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Tap the page edges to turn pages"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Tap zones"
 msgstr "点击区域"
@@ -21646,6 +21692,10 @@ msgstr "当前热门"
 msgid "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
 msgstr "按优先级顺序尝试 {sourceNames}，并采用第一个包含该章节的来源。指定来源则会将其固定：不会回退，因此候选项只会来自你选择的来源。"
 
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Trims plain white or black margins. Single and Double only."
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "Trust {name}"
@@ -23080,6 +23130,7 @@ msgid "Which source a chapter downloads from first."
 msgstr "章节首先从哪个来源下载。"
 
 #: src/components/ui/seriesNotifications.ts
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "While reading"
 msgstr "阅读时"
@@ -23089,12 +23140,12 @@ msgstr "阅读时"
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "阅读时仅会在你阅读系列期间通知你新章节。"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "While the server works"
 msgstr "服务器处理期间"
 
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Whole"
 msgstr "整页"
@@ -23126,15 +23177,10 @@ msgid "Whole-series pack, needs your call"
 msgstr "整系列合集包，需要你来决定"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Wide pages"
 msgstr "宽页"
-
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Width"
-msgstr "宽度"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy

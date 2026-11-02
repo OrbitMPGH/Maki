@@ -16,7 +16,7 @@ Nothing runs until both steps are done.
    SHA-256 before using it. Some models are non-commercial only,
    and the licences are listed in `THIRD_PARTY_NOTICES.md` in the Maki repository.
 
-Readers then turn **Enhance** on in the reader's settings popover, where the **Method** list shows
+Readers then turn **Enhance** on under **Enhance** in the reader's settings popover, where the **Method** list shows
 **Sharp (server)** and **Crisp line art (server)**. They still choose Off, Auto or Always for
 themselves, so enabling the feature changes nobody's reading.
 

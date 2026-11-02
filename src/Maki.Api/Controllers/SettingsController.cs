@@ -1951,7 +1951,10 @@ public class SettingsController(
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPost("updates/check")]
-    public async Task<IActionResult> CheckForUpdatesNow(CancellationToken ct) => Ok(await updateCheck.CheckAsync(ct));
+    public async Task<IActionResult> CheckForUpdatesNow(CancellationToken ct) =>
+        await updateCheck.CheckAsync(ct) is { } status
+            ? Ok(status)
+            : this.BadGateway(localizer, "error.updates.checkFailed");
 
     public record RecommendationIndexResponse(
         bool ModelPresent, bool DumpPresent, int VectorCount, int? RecommendableTotal,

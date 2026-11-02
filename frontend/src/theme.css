@@ -7723,6 +7723,129 @@ body.reader-open {
   color: #fff;
 }
 
+/* Reader settings popover (portalled, so not under .reader-bar). */
+.reader-settings-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.reader-settings-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.reader-settings-tile {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 8px 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+.reader-settings-tile:hover {
+  background: var(--surface-hover);
+}
+.reader-settings-tile[data-checked] {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand-fg);
+}
+.reader-settings-tile:has(input:focus-visible),
+.reader-settings-swatch:has(input:focus-visible) {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.reader-settings-glyph-page {
+  fill: currentColor;
+  fill-opacity: 0.22;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.reader-settings-pair {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.reader-settings-fit {
+  display: block;
+  line-height: 0;
+}
+.reader-settings-swatches {
+  display: flex;
+  gap: 8px;
+}
+.reader-settings-swatch {
+  position: relative;
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  outline: 2px solid var(--border);
+  outline-offset: 2px;
+  cursor: pointer;
+}
+.reader-settings-swatch[data-checked] {
+  outline-color: var(--brand);
+}
+/* The page on screen when there is one, otherwise paper and ink so every filter still reads. */
+.reader-settings-swatch-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f3ede2 0 55%, #e7a9bd 55% 75%, #2b2b2e 75%);
+  background-size: 260%;
+  background-position: 40% 30%;
+}
+.reader-settings-rows {
+  margin-inline: -6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.reader-settings-row,
+.reader-settings-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.reader-settings-row {
+  padding: 9px 10px;
+  border-radius: var(--radius-control);
+}
+.reader-settings-row:hover {
+  background: var(--surface-hover);
+}
+.reader-settings-row-icon {
+  flex-shrink: 0;
+  color: var(--brand);
+}
+.reader-settings-chip {
+  flex: 1;
+  min-width: 0;
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  color: var(--brand-fg);
+}
+.reader-settings-chip:hover {
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+.reader-settings-switch {
+  justify-content: space-between;
+  gap: 12px;
+}
+
 /* Thumbnail rail. Sits above the bottom bar and hides with the rest of the chrome. */
 .reader-strip-wrap {
   position: absolute;

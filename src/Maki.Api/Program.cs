@@ -913,6 +913,12 @@ try
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         client.Timeout = TimeSpan.FromSeconds(15);
     });
+    builder.Services.AddHttpClient(UpdateCheckService.ReleasePageClientName, client =>
+    {
+        client.BaseAddress = new Uri("https://github.com/");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromSeconds(15);
+    }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
     builder.Services.AddSingleton<UpdateCheckService>();
     builder.Services.AddSingleton<HostRestarter>();
     if (DesktopParentWatcher.Applies)

@@ -2572,6 +2572,11 @@ msgstr "Restore staged. Maki is stopping now. Start it again to apply the restor
 msgid "error.system.noUpdateReady"
 msgstr "No update has been downloaded yet. Try again in a few minutes."
 
+#. Check now in Settings > System > Updates: neither the GitHub API nor the release page answered, often because GitHub limits update checks from this network.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.updates.checkFailed"
+msgstr "Couldn't reach GitHub to check for updates. Try again later."
+
 #. Docker installs must listen on every network inside the container.
 #: src/Maki.Api/Controllers/SystemController.cs
 msgid "error.system.networkAccessDocker"
