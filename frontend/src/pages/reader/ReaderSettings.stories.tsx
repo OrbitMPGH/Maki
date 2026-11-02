@@ -170,14 +170,28 @@ export const WidePages: Story = {
 }
 
 export const ProfileDropdown: Story = {
-  parameters: { realMotion: true },
   play: async ({ args, canvasElement, userEvent }) => {
     const b = body(canvasElement)
     await userEvent.click(await b.findByRole('button', { name: 'Reading profile: Auto (Manga)' }))
     await expect(await b.findByText('Changes retune "Manga", so every series using it.')).toBeVisible()
-    await userEvent.click(await b.findByLabelText('Reading profile', { selector: 'input' }))
-    await userEvent.click(await b.findByRole('option', { name: 'Night reading' }))
+    // The list drops from the chip; the panel stays on its first page behind it.
+    await expect(b.getByRole('radiogroup', { name: 'Layout' })).toBeVisible()
+    await userEvent.click(await b.findByRole('menuitemradio', { name: 'Night reading' }))
     await waitFor(() => expect(args.onSelection).toHaveBeenCalledWith(3))
+    await waitFor(() => expect(b.queryByRole('menuitemradio', { name: 'Night reading' })).toBeNull())
+    await expect(args.onOpenedChange).not.toHaveBeenCalled()
+  },
+}
+
+export const EscapeClosesTheProfileListFirst: Story = {
+  play: async ({ args, canvasElement, userEvent }) => {
+    const b = body(canvasElement)
+    await userEvent.click(await b.findByRole('button', { name: 'Reading profile: Auto (Manga)' }))
+    await expect(await b.findByRole('menuitemradio', { name: 'Night reading' })).toBeVisible()
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(b.queryByRole('menuitemradio', { name: 'Night reading' })).toBeNull())
+    await expect(b.getByRole('radiogroup', { name: 'Layout' })).toBeVisible()
+    await expect(args.onOpenedChange).not.toHaveBeenCalled()
   },
 }
 

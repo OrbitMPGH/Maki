@@ -2,6 +2,7 @@ import {
   ActionIcon,
   Button,
   Group,
+  Menu,
   MultiSelect,
   Popover,
   SegmentedControl,
@@ -19,6 +20,7 @@ import {
   IconArrowAutofitWidth,
   IconArrowLeft,
   IconArrowsMaximize,
+  IconChevronDown,
   IconChevronRight,
   IconEyeOff,
   IconListCheck,
@@ -37,6 +39,7 @@ import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
 import { wakeLockSupported } from '../../lib/wakeLock'
 import { useLabel } from '../../i18n-context'
+import { DrillPanes } from '../../components/ui/DrillPanes'
 import {
   BROWSER_ENHANCE_METHODS,
   ENHANCE_FALLBACKS,
@@ -61,7 +64,7 @@ export const OVERLAY_Z = 500
 // both, so it could never be scrolled. Rendered in place, fixed so the popover does not clip it.
 const NESTED_COMBOBOX = { zIndex: OVERLAY_Z + 1, withinPortal: false, floatingStrategy: 'fixed' } as const
 
-type View = 'main' | 'profile' | 'wide' | 'look' | 'enhance' | 'reading'
+type View = 'main' | 'wide' | 'look' | 'enhance' | 'reading'
 
 type Toggle = 'tapZones' | 'showPageNumber' | 'chapterBanner' | 'autoNextChapter' | 'autoWebtoon' | 'keepAwake'
 
@@ -162,14 +165,23 @@ export default function ReaderSettings({
   const { t } = useLingui()
   const renderLabel = useLabel()
   const [view, setView] = useState<View>('main')
+  const [profileMenu, setProfileMenu] = useState(false)
+
+  // Reset as the popover opens, not as it closes, so its closing fade doesn't show a page sliding.
+  const [wasOpened, setWasOpened] = useState(opened)
+  if (opened !== wasOpened) {
+    setWasOpened(opened)
+    if (opened) setView('main')
+    else setProfileMenu(false)
+  }
 
   // Opening a page puts focus on its back button; going back returns it to the row that opened it.
   const backRef = useRef<HTMLButtonElement>(null)
   const rowRefs = useRef<Partial<Record<View, HTMLButtonElement | null>>>({})
   const cameFrom = useRef<View | null>(null)
   useEffect(() => {
-    if (view !== 'main') backRef.current?.focus()
-    else if (cameFrom.current) rowRefs.current[cameFrom.current]?.focus()
+    if (view !== 'main') backRef.current?.focus({ preventScroll: true })
+    else if (cameFrom.current) rowRefs.current[cameFrom.current]?.focus({ preventScroll: true })
   }, [view])
   const open = (next: View) => {
     cameFrom.current = next
@@ -178,10 +190,7 @@ export default function ReaderSettings({
   const back = () => setView('main')
 
   useEffect(() => {
-    if (!opened) {
-      cameFrom.current = null
-      setView('main')
-    }
+    if (!opened) cameFrom.current = null
   }, [opened])
 
   // Mantine only closes on Escape when focus is inside the dropdown, and focus is usually still on
@@ -192,12 +201,13 @@ export default function ReaderSettings({
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       event.preventDefault()
-      if (view === 'main') onOpenedChange(false)
+      if (profileMenu) setProfileMenu(false)
+      else if (view === 'main') onOpenedChange(false)
       else setView('main')
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [opened, view, onOpenedChange])
+  }, [opened, view, profileMenu, onOpenedChange])
 
   const autoProfile = profiles.find((p) => p.id === autoProfileId)
   const autoProfileName = autoProfile?.name
@@ -327,377 +337,387 @@ export default function ReaderSettings({
       </Popover.Target>
       {/* Taller than a landscape phone or a short window: it scrolls rather than running off the top. */}
       <Popover.Dropdown className="reader-settings" style={{ maxHeight: 'calc(100dvh - 72px)', overflowY: 'auto' }}>
-        {view === 'main' && (
-          <Stack gap="md">
-            <Group gap={8} wrap="nowrap">
-              <UnstyledButton
-                ref={(node) => {
-                  rowRefs.current.profile = node
-                }}
-                className="reader-settings-chip"
-                onClick={() => open('profile')}
-                aria-label={t`Reading profile: ${profileName}`}
-              >
-                <IconUserCircle size={16} aria-hidden />
-                <Text fz="xs" fw={600} c="inherit" truncate>
-                  {profileName}
-                </Text>
-                <IconChevronRight size={12} aria-hidden style={{ marginInlineStart: 'auto', flexShrink: 0 }} />
-              </UnstyledButton>
-              <Tooltip
-                label={incognito ? t`Incognito, this session isn't being recorded` : t`Don't record this session`}
-                withArrow
-                zIndex={OVERLAY_Z + 1}
-              >
-                <Button
-                  size="compact-xs"
-                  radius="xl"
-                  variant={incognito ? 'filled' : 'default'}
-                  leftSection={<IconEyeOff size={14} />}
-                  aria-pressed={incognito}
-                  onClick={() => onIncognito(!incognito)}
+        <DrillPanes page={view} depth={view === 'main' ? 0 : 1} bleed={8}>
+          {view === 'main' && (
+            <Stack gap="md">
+              <Group gap={8} wrap="nowrap">
+                <Menu
+                  opened={profileMenu}
+                  onChange={setProfileMenu}
+                  position="bottom-start"
+                  width={260}
+                  offset={6}
+                  {...NESTED_COMBOBOX}
                 >
-                  <Trans>Incognito</Trans>
-                </Button>
-              </Tooltip>
-            </Group>
-
-            <div>
-              <div role="radiogroup" aria-label={t`Layout`} className="reader-settings-tiles">
-                {layouts.map((layout) => (
-                  <label key={layout.value} className="reader-settings-tile" data-checked={prefs.mode === layout.value || undefined}>
-                    <input
-                      className="reader-settings-radio"
-                      type="radio"
-                      name="reader-layout"
-                      value={layout.value}
-                      checked={prefs.mode === layout.value}
-                      onChange={() => onPrefs({ mode: layout.value })}
-                    />
-                    <LayoutGlyph mode={layout.value} />
-                    <Text fz="xs" fw={prefs.mode === layout.value ? 600 : 500} c="inherit">
-                      {layout.label}
+                  <Menu.Target>
+                    <UnstyledButton
+                      className="reader-settings-chip"
+                      data-expanded={profileMenu || undefined}
+                      aria-label={t`Reading profile: ${profileName}`}
+                    >
+                      <IconUserCircle size={16} aria-hidden />
+                      <Text fz="xs" fw={600} c="inherit" truncate>
+                        {profileName}
+                      </Text>
+                      <IconChevronDown size={12} aria-hidden className="reader-settings-chip-caret" />
+                    </UnstyledButton>
+                  </Menu.Target>
+                  <Menu.Dropdown className="reader-settings-profiles">
+                    <Menu.Label>
+                      <Trans>Reading profile</Trans>
+                    </Menu.Label>
+                    <Menu.RadioGroup
+                      value={String(selection)}
+                      onChange={(value) => onSelection(value === 'auto' || value === 'series' ? value : Number(value))}
+                    >
+                      {profileData.map((option) => (
+                        <Menu.RadioItem key={option.value} value={option.value} closeMenuOnClick>
+                          {option.label}
+                        </Menu.RadioItem>
+                      ))}
+                    </Menu.RadioGroup>
+                    <Menu.Divider />
+                    <Text fz="xs" c="var(--ink-3)" px="sm" py={6}>
+                      {editsAffect}
                     </Text>
-                  </label>
-                ))}
-              </div>
-              {autoLayout && (
-                <Text fz="xs" c="var(--ink-3)" mt={6}>
-                  <Trans>Continuous, because this chapter's pages are very tall.</Trans>
-                </Text>
-              )}
-            </div>
+                  </Menu.Dropdown>
+                </Menu>
+                <Tooltip
+                  label={incognito ? t`Incognito, this session isn't being recorded` : t`Don't record this session`}
+                  withArrow
+                  zIndex={OVERLAY_Z + 1}
+                >
+                  <Button
+                    size="compact-xs"
+                    radius="xl"
+                    variant={incognito ? 'filled' : 'default'}
+                    leftSection={<IconEyeOff size={14} />}
+                    aria-pressed={incognito}
+                    onClick={() => onIncognito(!incognito)}
+                  >
+                    <Trans>Incognito</Trans>
+                  </Button>
+                </Tooltip>
+              </Group>
 
-            <div>
-              <div className="reader-settings-pair">
-                <div>
-                  <FieldLabel>
-                    <Trans>Direction</Trans>
-                  </FieldLabel>
-                  <SegmentedControl
-                    aria-label={t`Direction`}
-                    size="xs"
-                    value={prefs.direction}
-                    onChange={(value) => onPrefs({ direction: value as ReaderPrefs['direction'] })}
-                    data={[
-                      {
-                        value: 'rtl',
-                        label: (
-                          <>
-                            <VisuallyHidden>{t`Right to left`}</VisuallyHidden>
-                            <span aria-hidden>
-                              {'← '}
-                              {t({ message: 'RTL', comment: 'Short for "right to left", the reading direction' })}
-                            </span>
-                          </>
-                        ),
-                      },
-                      {
-                        value: 'ltr',
-                        label: (
-                          <>
-                            <VisuallyHidden>{t`Left to right`}</VisuallyHidden>
-                            <span aria-hidden>
-                              {t({ message: 'LTR', comment: 'Short for "left to right", the reading direction' })}
-                              {' →'}
-                            </span>
-                          </>
-                        ),
-                      },
-                    ]}
-                  />
-                </div>
-                <div>
-                  <FieldLabel>
-                    <Trans>Fit</Trans>
-                  </FieldLabel>
-                  <SegmentedControl
-                    aria-label={t`Fit`}
-                    size="xs"
-                    value={prefs.fit}
-                    onChange={(value) => onPrefs({ fit: value as ReaderPrefs['fit'] })}
-                    data={fits.map((fit) => ({
-                      value: fit.value,
-                      label: (
-                        <Tooltip label={fit.label} withArrow zIndex={OVERLAY_Z + 1}>
-                          <span className="reader-settings-fit">
-                            <fit.icon size={16} aria-hidden />
-                            <VisuallyHidden>{fit.label}</VisuallyHidden>
-                          </span>
-                        </Tooltip>
-                      ),
-                    }))}
-                  />
-                </div>
-              </div>
-              {prefs.fit === 'original' && (
-                <div style={{ marginTop: 10 }}>
-                  <FieldLabel>
-                    <Trans>Scale ({scale}%)</Trans>
-                  </FieldLabel>
-                  <Slider
-                    thumbLabel={t`Scale`}
-                    size="xs"
-                    min={25}
-                    max={400}
-                    step={5}
-                    value={prefs.scale}
-                    onChange={(value) => onPrefs({ scale: value })}
-                  />
-                </div>
-              )}
-            </div>
-
-            <div>
-              <Group justify="space-between" wrap="nowrap" mb={8}>
-                <Text fz="xs" fw={600} c="var(--ink-3)">
-                  <Trans>Brightness and tint</Trans>
-                </Text>
-                <div role="radiogroup" aria-label={t`Colour filter`} className="reader-settings-swatches">
-                  {filters.map((filter) => (
-                    <Tooltip key={filter.value} label={filter.label} withArrow zIndex={OVERLAY_Z + 1}>
-                      <label className="reader-settings-swatch" data-checked={prefs.filter === filter.value || undefined}>
-                        <input
-                          className="reader-settings-radio"
-                          type="radio"
-                          name="reader-filter"
-                          value={filter.value}
-                          aria-label={filter.label}
-                          checked={prefs.filter === filter.value}
-                          onChange={() => onPrefs({ filter: filter.value })}
-                        />
-                        <span
-                          aria-hidden
-                          className="reader-settings-swatch-fill"
-                          style={{
-                            backgroundImage: previewSrc ? `url("${previewSrc}")` : undefined,
-                            filter: toneFilter({ dim: 0, filter: filter.value }),
-                          }}
-                        />
-                      </label>
-                    </Tooltip>
+              <div>
+                <div role="radiogroup" aria-label={t`Layout`} className="reader-settings-tiles">
+                  {layouts.map((layout) => (
+                    <label key={layout.value} className="reader-settings-tile" data-checked={prefs.mode === layout.value || undefined}>
+                      <input
+                        className="reader-settings-radio"
+                        type="radio"
+                        name="reader-layout"
+                        value={layout.value}
+                        checked={prefs.mode === layout.value}
+                        onChange={() => onPrefs({ mode: layout.value })}
+                      />
+                      <LayoutGlyph mode={layout.value} />
+                      <Text fz="xs" fw={prefs.mode === layout.value ? 600 : 500} c="inherit">
+                        {layout.label}
+                      </Text>
+                    </label>
                   ))}
                 </div>
-              </Group>
-              <Group gap={8} wrap="nowrap">
-                <IconMoon size={14} color="var(--ink-3)" aria-hidden />
-                <Slider
-                  style={{ flex: 1 }}
-                  thumbLabel={t`Brightness`}
-                  size="xs"
-                  min={20}
-                  max={100}
-                  step={5}
-                  label={(value) => `${value}%`}
-                  value={100 - prefs.dim}
-                  onChange={(value) => onPrefs({ dim: 100 - value })}
-                />
-                <IconSun size={14} color="var(--ink-3)" aria-hidden />
-              </Group>
-            </div>
-
-            <Stack gap={0} className="reader-settings-rows">
-              {prefs.mode === 'paged' && row('wide', IconViewportWide, t`Wide pages`, wideLabel)}
-              {row('look', IconPalette, t`Page look`, lookSummary)}
-              {row('enhance', IconSparkles, t`Enhance`, enhanceSummary)}
-              {row('reading', IconListCheck, t`While reading`, t`${togglesOn} of ${togglesTotal} on`)}
-            </Stack>
-          </Stack>
-        )}
-
-        {view === 'profile' && (
-          <SubPage title={t`Reading profile`} onBack={back} backRef={backRef}>
-            <Select
-              aria-label={t`Reading profile`}
-              size="xs"
-              comboboxProps={NESTED_COMBOBOX}
-              allowDeselect={false}
-              value={String(selection)}
-              onChange={(value) => {
-                if (!value) return
-                onSelection(value === 'auto' || value === 'series' ? value : Number(value))
-              }}
-              data={profileData}
-            />
-            <Text fz="xs" c="var(--ink-3)" mt={8}>
-              {editsAffect}
-            </Text>
-          </SubPage>
-        )}
-
-        {view === 'wide' && (
-          <SubPage title={t`Wide pages`} onBack={back} backRef={backRef}>
-            <SegmentedControl
-              aria-label={t`Wide pages`}
-              fullWidth
-              size="xs"
-              value={prefs.splitWide}
-              onChange={(value) => onPrefs({ splitWide: value as ReaderPrefs['splitWide'] })}
-              data={[
-                { label: t`Whole`, value: 'off' },
-                { label: t`Split`, value: 'split' },
-                { label: t`Rotate`, value: 'rotate' },
-              ]}
-            />
-            <Text fz="xs" c="var(--ink-3)" mt={8}>
-              <Trans>How a two-page spread shows in the Single layout.</Trans>
-            </Text>
-          </SubPage>
-        )}
-
-        {view === 'look' && (
-          <SubPage title={t`Page look`} onBack={back} backRef={backRef}>
-            <Stack gap="md">
-              <div>
-                <FieldLabel>
-                  <Trans>Background</Trans>
-                </FieldLabel>
-                <SegmentedControl
-                  aria-label={t`Background`}
-                  fullWidth
-                  size="xs"
-                  value={prefs.background === BACKGROUNDS.oled ? 'oled' : 'dark'}
-                  onChange={(value) =>
-                    onPrefs({ background: value === 'oled' ? BACKGROUNDS.oled : BACKGROUNDS.dark })
-                  }
-                  data={[
-                    { label: t`Dark`, value: 'dark' },
-                    { label: t`OLED black`, value: 'oled' },
-                  ]}
-                />
-              </div>
-              <Switch
-                size="xs"
-                labelPosition="left"
-                label={t`Crop borders`}
-                description={t`Trims plain white or black margins. Single and Double only.`}
-                checked={prefs.cropBorders}
-                onChange={(event) => onPrefs({ cropBorders: event.currentTarget.checked })}
-                classNames={{ body: 'reader-settings-switch' }}
-              />
-            </Stack>
-          </SubPage>
-        )}
-
-        {view === 'enhance' && (
-          <SubPage title={t`Enhance`} onBack={back} backRef={backRef}>
-            <Stack gap="sm">
-              <div>
-                <SegmentedControl
-                  aria-label={t`Enhance`}
-                  fullWidth
-                  size="xs"
-                  value={prefs.enhance}
-                  onChange={(value) => onPrefs({ enhance: value as ReaderPrefs['enhance'] })}
-                  data={ENHANCE_LEVELS.map((level) => ({ label: renderLabel(level.label), value: level.value }))}
-                />
-                {skippedHere && (
-                  <Text fz="xs" c="var(--ink-3)" mt={4}>
-                    <Trans>Off for this chapter because of its quality.</Trans>
+                {autoLayout && (
+                  <Text fz="xs" c="var(--ink-3)" mt={6}>
+                    <Trans>Continuous, because this chapter's pages are very tall.</Trans>
                   </Text>
                 )}
               </div>
-              {enhanceOn && (
-                <div>
-                  <FieldLabel>
-                    <Trans>Method</Trans>
-                  </FieldLabel>
-                  <Select
-                    aria-label={t`Method`}
-                    size="xs"
-                    comboboxProps={NESTED_COMBOBOX}
-                    allowDeselect={false}
-                    value={prefs.enhanceMethod}
-                    onChange={(value) => value && onPrefs({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })}
-                    data={enhanceOptions}
-                    renderOption={({ option }) => (
-                      <div>
-                        <Text fz="xs">{option.label}</Text>
-                        <Text fz="xs" c="var(--ink-3)">
-                          {enhanceNote(option.value)}
-                        </Text>
-                      </div>
-                    )}
-                  />
+
+              <div>
+                <div className="reader-settings-pair">
+                  <div>
+                    <FieldLabel>
+                      <Trans>Direction</Trans>
+                    </FieldLabel>
+                    <SegmentedControl
+                      aria-label={t`Direction`}
+                      size="xs"
+                      value={prefs.direction}
+                      onChange={(value) => onPrefs({ direction: value as ReaderPrefs['direction'] })}
+                      data={[
+                        {
+                          value: 'rtl',
+                          label: (
+                            <>
+                              <VisuallyHidden>{t`Right to left`}</VisuallyHidden>
+                              <span aria-hidden>
+                                {'← '}
+                                {t({ message: 'RTL', comment: 'Short for "right to left", the reading direction' })}
+                              </span>
+                            </>
+                          ),
+                        },
+                        {
+                          value: 'ltr',
+                          label: (
+                            <>
+                              <VisuallyHidden>{t`Left to right`}</VisuallyHidden>
+                              <span aria-hidden>
+                                {t({ message: 'LTR', comment: 'Short for "left to right", the reading direction' })}
+                                {' →'}
+                              </span>
+                            </>
+                          ),
+                        },
+                      ]}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>
+                      <Trans>Fit</Trans>
+                    </FieldLabel>
+                    <SegmentedControl
+                      aria-label={t`Fit`}
+                      size="xs"
+                      value={prefs.fit}
+                      onChange={(value) => onPrefs({ fit: value as ReaderPrefs['fit'] })}
+                      data={fits.map((fit) => ({
+                        value: fit.value,
+                        label: (
+                          <Tooltip label={fit.label} withArrow zIndex={OVERLAY_Z + 1}>
+                            <span className="reader-settings-fit">
+                              <fit.icon size={16} aria-hidden />
+                              <VisuallyHidden>{fit.label}</VisuallyHidden>
+                            </span>
+                          </Tooltip>
+                        ),
+                      }))}
+                    />
+                  </div>
                 </div>
-              )}
-              {enhanceOn && isServerMethod(prefs.enhanceMethod) && (
+                {prefs.fit === 'original' && (
+                  <div style={{ marginTop: 10 }}>
+                    <FieldLabel>
+                      <Trans>Scale ({scale}%)</Trans>
+                    </FieldLabel>
+                    <Slider
+                      thumbLabel={t`Scale`}
+                      size="xs"
+                      min={25}
+                      max={400}
+                      step={5}
+                      value={prefs.scale}
+                      onChange={(value) => onPrefs({ scale: value })}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <Group justify="space-between" wrap="nowrap" mb={8}>
+                  <Text fz="xs" fw={600} c="var(--ink-3)">
+                    <Trans>Brightness and tint</Trans>
+                  </Text>
+                  <div role="radiogroup" aria-label={t`Colour filter`} className="reader-settings-swatches">
+                    {filters.map((filter) => (
+                      <Tooltip key={filter.value} label={filter.label} withArrow zIndex={OVERLAY_Z + 1}>
+                        <label className="reader-settings-swatch" data-checked={prefs.filter === filter.value || undefined}>
+                          <input
+                            className="reader-settings-radio"
+                            type="radio"
+                            name="reader-filter"
+                            value={filter.value}
+                            aria-label={filter.label}
+                            checked={prefs.filter === filter.value}
+                            onChange={() => onPrefs({ filter: filter.value })}
+                          />
+                          <span
+                            aria-hidden
+                            className="reader-settings-swatch-fill"
+                            style={{
+                              backgroundImage: previewSrc ? `url("${previewSrc}")` : undefined,
+                              filter: toneFilter({ dim: 0, filter: filter.value }),
+                            }}
+                          />
+                        </label>
+                      </Tooltip>
+                    ))}
+                  </div>
+                </Group>
+                <Group gap={8} wrap="nowrap">
+                  <IconMoon size={14} color="var(--ink-3)" aria-hidden />
+                  <Slider
+                    style={{ flex: 1 }}
+                    thumbLabel={t`Brightness`}
+                    size="xs"
+                    min={20}
+                    max={100}
+                    step={5}
+                    label={(value) => `${value}%`}
+                    value={100 - prefs.dim}
+                    onChange={(value) => onPrefs({ dim: 100 - value })}
+                  />
+                  <IconSun size={14} color="var(--ink-3)" aria-hidden />
+                </Group>
+              </div>
+
+              <Stack gap={0} className="reader-settings-rows">
+                {prefs.mode === 'paged' && row('wide', IconViewportWide, t`Wide pages`, wideLabel)}
+                {row('look', IconPalette, t`Page look`, lookSummary)}
+                {row('enhance', IconSparkles, t`Enhance`, enhanceSummary)}
+                {row('reading', IconListCheck, t`While reading`, t`${togglesOn} of ${togglesTotal} on`)}
+              </Stack>
+            </Stack>
+          )}
+
+
+          {view === 'wide' && (
+            <SubPage title={t`Wide pages`} onBack={back} backRef={backRef}>
+              <SegmentedControl
+                aria-label={t`Wide pages`}
+                fullWidth
+                size="xs"
+                value={prefs.splitWide}
+                onChange={(value) => onPrefs({ splitWide: value as ReaderPrefs['splitWide'] })}
+                data={[
+                  { label: t`Whole`, value: 'off' },
+                  { label: t`Split`, value: 'split' },
+                  { label: t`Rotate`, value: 'rotate' },
+                ]}
+              />
+              <Text fz="xs" c="var(--ink-3)" mt={8}>
+                <Trans>How a two-page spread shows in the Single layout.</Trans>
+              </Text>
+            </SubPage>
+          )}
+
+          {view === 'look' && (
+            <SubPage title={t`Page look`} onBack={back} backRef={backRef}>
+              <Stack gap="md">
                 <div>
                   <FieldLabel>
-                    <Trans>While the server works</Trans>
+                    <Trans>Background</Trans>
                   </FieldLabel>
                   <SegmentedControl
-                    aria-label={t`While the server works`}
+                    aria-label={t`Background`}
                     fullWidth
                     size="xs"
-                    value={prefs.enhanceFallback}
-                    onChange={(value) => onPrefs({ enhanceFallback: value as ReaderPrefs['enhanceFallback'] })}
-                    data={ENHANCE_FALLBACKS.map((f) => ({
-                      label: renderLabel(f.label),
-                      value: f.value,
-                      disabled: browserUnsupported && f.value !== 'off',
-                    }))}
+                    value={prefs.background === BACKGROUNDS.oled ? 'oled' : 'dark'}
+                    onChange={(value) =>
+                      onPrefs({ background: value === 'oled' ? BACKGROUNDS.oled : BACKGROUNDS.dark })
+                    }
+                    data={[
+                      { label: t`Dark`, value: 'dark' },
+                      { label: t`OLED black`, value: 'oled' },
+                    ]}
                   />
                 </div>
-              )}
-              {enhanceOn && (
-                <div>
-                  <FieldLabel>
-                    <Trans>Don't enhance</Trans>
-                  </FieldLabel>
-                  <MultiSelect
-                    aria-label={t`Don't enhance`}
-                    size="xs"
-                    comboboxProps={NESTED_COMBOBOX}
-                    placeholder={t`Every quality is enhanced`}
-                    value={prefs.enhanceSkipTiers}
-                    onChange={(value) => onPrefs({ enhanceSkipTiers: value as ReaderPrefs['enhanceSkipTiers'] })}
-                    data={ENHANCE_SKIP_TIERS.map((tier) => ({ value: tier.value, label: renderLabel(tier.label) }))}
-                  />
-                </div>
-              )}
-            </Stack>
-          </SubPage>
-        )}
-
-        {view === 'reading' && (
-          <SubPage title={t`While reading`} onBack={back} backRef={backRef}>
-            <Stack gap={12}>
-              {toggles.map((toggle) => (
                 <Switch
-                  key={toggle.key}
                   size="xs"
                   labelPosition="left"
-                  label={toggle.label}
-                  description={toggle.hint}
-                  checked={prefs[toggle.key]}
-                  onChange={(event) => onPrefs({ [toggle.key]: event.currentTarget.checked })}
+                  label={t`Crop borders`}
+                  description={t`Trims plain white or black margins. Single and Double only.`}
+                  checked={prefs.cropBorders}
+                  onChange={(event) => onPrefs({ cropBorders: event.currentTarget.checked })}
                   classNames={{ body: 'reader-settings-switch' }}
                 />
-              ))}
-            </Stack>
-          </SubPage>
-        )}
+              </Stack>
+            </SubPage>
+          )}
+
+          {view === 'enhance' && (
+            <SubPage title={t`Enhance`} onBack={back} backRef={backRef}>
+              <Stack gap="sm">
+                <div>
+                  <SegmentedControl
+                    aria-label={t`Enhance`}
+                    fullWidth
+                    size="xs"
+                    value={prefs.enhance}
+                    onChange={(value) => onPrefs({ enhance: value as ReaderPrefs['enhance'] })}
+                    data={ENHANCE_LEVELS.map((level) => ({ label: renderLabel(level.label), value: level.value }))}
+                  />
+                  {skippedHere && (
+                    <Text fz="xs" c="var(--ink-3)" mt={4}>
+                      <Trans>Off for this chapter because of its quality.</Trans>
+                    </Text>
+                  )}
+                </div>
+                {enhanceOn && (
+                  <div>
+                    <FieldLabel>
+                      <Trans>Method</Trans>
+                    </FieldLabel>
+                    <Select
+                      aria-label={t`Method`}
+                      size="xs"
+                      comboboxProps={NESTED_COMBOBOX}
+                      allowDeselect={false}
+                      value={prefs.enhanceMethod}
+                      onChange={(value) => value && onPrefs({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })}
+                      data={enhanceOptions}
+                      renderOption={({ option }) => (
+                        <div>
+                          <Text fz="xs">{option.label}</Text>
+                          <Text fz="xs" c="var(--ink-3)">
+                            {enhanceNote(option.value)}
+                          </Text>
+                        </div>
+                      )}
+                    />
+                  </div>
+                )}
+                {enhanceOn && isServerMethod(prefs.enhanceMethod) && (
+                  <div>
+                    <FieldLabel>
+                      <Trans>While the server works</Trans>
+                    </FieldLabel>
+                    <SegmentedControl
+                      aria-label={t`While the server works`}
+                      fullWidth
+                      size="xs"
+                      value={prefs.enhanceFallback}
+                      onChange={(value) => onPrefs({ enhanceFallback: value as ReaderPrefs['enhanceFallback'] })}
+                      data={ENHANCE_FALLBACKS.map((f) => ({
+                        label: renderLabel(f.label),
+                        value: f.value,
+                        disabled: browserUnsupported && f.value !== 'off',
+                      }))}
+                    />
+                  </div>
+                )}
+                {enhanceOn && (
+                  <div>
+                    <FieldLabel>
+                      <Trans>Don't enhance</Trans>
+                    </FieldLabel>
+                    <MultiSelect
+                      aria-label={t`Don't enhance`}
+                      size="xs"
+                      comboboxProps={NESTED_COMBOBOX}
+                      placeholder={t`Every quality is enhanced`}
+                      value={prefs.enhanceSkipTiers}
+                      onChange={(value) => onPrefs({ enhanceSkipTiers: value as ReaderPrefs['enhanceSkipTiers'] })}
+                      data={ENHANCE_SKIP_TIERS.map((tier) => ({ value: tier.value, label: renderLabel(tier.label) }))}
+                    />
+                  </div>
+                )}
+              </Stack>
+            </SubPage>
+          )}
+
+          {view === 'reading' && (
+            <SubPage title={t`While reading`} onBack={back} backRef={backRef}>
+              <Stack gap={12}>
+                {toggles.map((toggle) => (
+                  <Switch
+                    key={toggle.key}
+                    size="xs"
+                    labelPosition="left"
+                    label={toggle.label}
+                    description={toggle.hint}
+                    checked={prefs[toggle.key]}
+                    onChange={(event) => onPrefs({ [toggle.key]: event.currentTarget.checked })}
+                    classNames={{ body: 'reader-settings-switch' }}
+                  />
+                ))}
+              </Stack>
+            </SubPage>
+          )}
+        </DrillPanes>
       </Popover.Dropdown>
     </Popover>
   )

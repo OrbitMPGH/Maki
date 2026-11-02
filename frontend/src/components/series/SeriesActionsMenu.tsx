@@ -3,8 +3,8 @@ import { useEffect, useRef, useState, type ReactElement, type ReactNode } from '
 import {
     IconArchive,
     IconArchiveOff,
+    IconArrowLeft,
     IconBell,
-    IconChevronLeft,
     IconChevronRight,
     IconDeviceMobile,
     IconDeviceMobileDown,
@@ -35,6 +35,7 @@ import { useLabel } from '../../i18n-context'
 import type { UpgradeProfileDto } from '../../api/upgrades'
 import { PAGE_CONVERSION_STOPS, type PageConversionStop } from '../../api/pageConversion'
 import { STOP_LABELS } from '../pageconversion/labels'
+import { DrillPanes } from '../ui/DrillPanes'
 
 /** Sentinel for "Instance default" in the profile RadioGroup, which only carries strings. */
 const INSTANCE_DEFAULT = ''
@@ -220,6 +221,7 @@ export function SeriesActionsMenu({
 
     // A reader's Automation group would hold Notify alone, so for them it sits on the root list.
     const parentOf = (p: Page): Page => (p === 'notify' && !canEdit ? 'root' : PARENT[p])
+    const depthOf = (p: Page): number => (p === 'root' ? 0 : 1 + depthOf(parentOf(p)))
     const go = (to: Page) => {
         cameFrom.current = page
         setPage(to)
@@ -231,11 +233,13 @@ export function SeriesActionsMenu({
     useEffect(() => {
         const root = dropdownRef.current
         if (cameFrom.current === null || !root) return
-        if (!viaKeyboard.current) return root.focus()
+        if (!viaKeyboard.current) return root.focus({ preventScroll: true })
+        // The page sliding out is still in the dropdown, so look only in the one arriving.
+        const pane = '[data-drill-pane]:not([inert])'
         const target =
-            root.querySelector<HTMLElement>(`[data-page="${cameFrom.current}"]`) ??
-            root.querySelector<HTMLElement>('[role="menuitem"]:not([data-disabled])')
-        target?.focus()
+            root.querySelector<HTMLElement>(`${pane} [data-page="${cameFrom.current}"]`) ??
+            root.querySelector<HTMLElement>(`${pane} [data-menu-item]:not([data-disabled])`)
+        target?.focus({ preventScroll: true })
     }, [page])
 
     const value = (text: ReactNode) => (
@@ -260,18 +264,19 @@ export function SeriesActionsMenu({
         </Menu.Item>
     )
     const back = (title: ReactNode) => (
-        <>
-            <Menu.Item
-                leftSection={<IconChevronLeft size={16} />}
-                closeMenuOnClick={false}
-                onClick={() => go(parentOf(page))}
-                aria-label={t`Back`}
-                fw={600}
-            >
-                {title}
-            </Menu.Item>
-            <Menu.Divider />
-        </>
+        <Menu.Item
+            className="series-actions-back"
+            leftSection={
+                <span className="series-actions-back-icon">
+                    <IconArrowLeft size={16} />
+                </span>
+            }
+            closeMenuOnClick={false}
+            onClick={() => go(parentOf(page))}
+            aria-label={t`Back`}
+        >
+            {title}
+        </Menu.Item>
     )
     const choice = ({
                         title,
@@ -355,6 +360,7 @@ export function SeriesActionsMenu({
                         )}
                         {canRemove && (
                             <Menu.Item
+                                className="series-actions-danger"
                                 color="var(--danger)"
                                 leftSection={<IconTrash size={16} />}
                                 closeMenuOnClick={false}
@@ -521,7 +527,7 @@ export function SeriesActionsMenu({
         // Capped at the screen edge with an inner scroll, for phones held sideways.
         <Menu
             position="bottom-end"
-            width={272}
+            width={288}
             withinPortal
             shadow="md"
             opened={opened}
@@ -533,7 +539,7 @@ export function SeriesActionsMenu({
                 setOpened(next)
             }}
             middlewares={{ flip: { fallbackStrategy: 'bestFit' }, shift: true, size: { padding: 8 } }}
-            classNames={{ dropdown: 'menu-dropdown-scroll' }}
+            classNames={{ dropdown: 'series-actions menu-dropdown-scroll' }}
         >
             <Menu.Target>
                 <ActionIcon
@@ -565,7 +571,9 @@ export function SeriesActionsMenu({
                     }
                 }}
             >
-                {content()}
+                <DrillPanes page={page} depth={depthOf(page)} bleed={6}>
+                    {content()}
+                </DrillPanes>
             </Menu.Dropdown>
         </Menu>
     )
