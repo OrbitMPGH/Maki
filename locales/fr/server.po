@@ -4392,7 +4392,7 @@ msgstr "Import de liste terminé"
 #. English: {tracker}: {added, plural, other {# added}}{requested, plural, =0 {} other {, # requested}}{shortlisted, plural, =0 {} other {, # shortlisted}}{skipped, plural, =0 {} other {, # skipped}}{errors, plural, =0 {} one {, # error} other {, # errors}}
 #, fuzzy
 msgid "inbox.importList.finished.body"
-msgstr "{tracker} : {added, plural, one {# série ajoutée} many {# séries ajoutées} other {# séries ajoutées}}{requested, plural, =0 {} one {, # demande créée} many {, # demandes créées} other {, # demandes créées}}{shortlisted, plural, =0 {} other {, # shortlisted}}{skipped, plural, =0 {} one {, # série ignorée} many {, # séries ignorées} other {, # séries ignorées}}{errors, plural, =0 {} one {, # erreur} many {, # erreurs} other {, # erreurs}}"
+msgstr "{tracker} : {added, plural, one {# série ajoutée} many {# séries ajoutées} other {# séries ajoutées}}{requested, plural, =0 {} one {, # demande créée} many {, # demandes créées} other {, # demandes créées}}{shortlisted, plural, =0 {} one {, # shortlisted} many {, # shortlisted} other {, # shortlisted}}{skipped, plural, =0 {} one {, # série ignorée} many {, # séries ignorées} other {, # séries ignorées}}{errors, plural, =0 {} one {, # erreur} many {, # erreurs} other {, # erreurs}}"
 
 #. {creator} is a person's or studio's name from the catalogue and is not translated.
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs

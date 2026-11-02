@@ -2133,10 +2133,6 @@ msgstr "{sampleChapters, plural, one {на основе # похожего пр�
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Измерено по # главе, серий в вашей библиотеке: {series}. {bpp} бит на пиксель, эквивалент JPG.} few {Измерено по # главам, серий в вашей библиотеке: {series}. {bpp} бит на пиксель, эквивалент JPG.} many {Измерено по # главам, серий в вашей библиотеке: {series}. {bpp} бит на пиксель, эквивалент JPG.} other {Измерено по # главам, серий в вашей библиотеке: {series}. {bpp} бит на пиксель, эквивалент JPG.}}"
 
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
-#~ msgstr ""
-
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "{searchCap}+ matches"
@@ -11171,16 +11167,6 @@ msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
-#~ msgstr "Последний запуск {when}: добавлено {added}, запрошено {requested}, пропущено {skipped}"
-
-#: src/components/ImportListsSection.tsx
-#, fuzzy
-#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
-#~ msgstr "Последний запуск {when}: добавлено {added}, запрошено {requested}, пропущено {skipped}, ошибок {errors}"
-
-#: src/components/ImportListsSection.tsx
-#, fuzzy
 msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
 msgstr "Последний запуск {when}: пропущен, локальная база MangaBaka ещё не загружена"
 
@@ -12601,10 +12587,6 @@ msgid "More actions for {chapterLbl}"
 msgstr "Другие действия для главы {chapterLbl}"
 
 #: src/pages/discover/ShortlistTab.tsx
-#~ msgid "More actions for {named}"
-#~ msgstr ""
-
-#: src/pages/discover/ShortlistTab.tsx
 msgid "More actions for {title}"
 msgstr ""
 
@@ -13493,10 +13475,6 @@ msgstr "больше нет в Suwayomi"
 #, fuzzy
 msgid "No longer in Suwayomi"
 msgstr "Больше нет в Suwayomi"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "No longer in the catalogue"
-#~ msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -16101,10 +16079,6 @@ msgid "pull the new image and recreate the container"
 msgstr "загрузите новый образ и пересоздайте контейнер"
 
 #: src/pages/reader/NextChapterHint.tsx
-#~ msgid "Pull up"
-#~ msgstr ""
-
-#: src/pages/reader/NextChapterHint.tsx
 msgctxt "next chapter gesture"
 msgid "Pull up"
 msgstr ""
@@ -17055,10 +17029,6 @@ msgid "Related to your seeds"
 msgstr "Связано с вашими начальными элементами"
 
 #: src/pages/reader/NextChapterHint.tsx
-#~ msgid "Release"
-#~ msgstr ""
-
-#: src/pages/reader/NextChapterHint.tsx
 msgctxt "next chapter gesture"
 msgid "Release"
 msgstr ""
@@ -17170,10 +17140,6 @@ msgstr "Удалить {label}"
 #, fuzzy
 msgid "Remove {label} from this device"
 msgstr "Удалить {label} с этого устройства"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "Remove {named} from your shortlist"
-#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -23438,10 +23404,6 @@ msgstr "Вьетнамский"
 #, fuzzy
 msgid "View"
 msgstr "Вид"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "View {named}"
-#~ msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx

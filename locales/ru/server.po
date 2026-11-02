@@ -4392,7 +4392,7 @@ msgstr "Импорт списка завершён"
 #. English: {tracker}: {added, plural, other {# added}}{requested, plural, =0 {} other {, # requested}}{shortlisted, plural, =0 {} other {, # shortlisted}}{skipped, plural, =0 {} other {, # skipped}}{errors, plural, =0 {} one {, # error} other {, # errors}}
 #, fuzzy
 msgid "inbox.importList.finished.body"
-msgstr "{tracker}: {added, plural, one {# добавлена} few {# добавлены} many {# добавлено} other {# добавлено}}{requested, plural, =0 {} one {, # запрошена} few {, # запрошены} many {, # запрошено} other {, # запрошено}}{shortlisted, plural, =0 {} other {, # shortlisted}}{skipped, plural, =0 {} one {, # пропущена} few {, # пропущены} many {, # пропущено} other {, # пропущено}}{errors, plural, =0 {} one {, # ошибка} few {, # ошибки} many {, # ошибок} other {, # ошибки}}"
+msgstr "{tracker}: {added, plural, one {# добавлена} few {# добавлены} many {# добавлено} other {# добавлено}}{requested, plural, =0 {} one {, # запрошена} few {, # запрошены} many {, # запрошено} other {, # запрошено}}{shortlisted, plural, =0 {} one {, # shortlisted} few {, # shortlisted} many {, # shortlisted} other {, # shortlisted}}{skipped, plural, =0 {} one {, # пропущена} few {, # пропущены} many {, # пропущено} other {, # пропущено}}{errors, plural, =0 {} one {, # ошибка} few {, # ошибки} many {, # ошибок} other {, # ошибки}}"
 
 #. {creator} is a person's or studio's name from the catalogue and is not translated.
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs

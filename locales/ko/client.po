@@ -2133,10 +2133,6 @@ msgstr "{sampleChapters, plural, other {비슷하게 읽은 작품 #개를 기�
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, other {라이브러리의 시리즈 {series}개에 걸친 챕터 #개에서 측정: 픽셀당 {bpp}비트, JPG 환산.}}"
 
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
-#~ msgstr ""
-
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "{searchCap}+ matches"
@@ -11171,16 +11167,6 @@ msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
-#~ msgstr "마지막 실행 {when}: {added}개 추가, {requested}개 요청, {skipped}개 건너뜀"
-
-#: src/components/ImportListsSection.tsx
-#, fuzzy
-#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
-#~ msgstr "마지막 실행 {when}: {added}개 추가, {requested}개 요청, {skipped}개 건너뜀, 오류 {errors}개"
-
-#: src/components/ImportListsSection.tsx
-#, fuzzy
 msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
 msgstr "마지막 실행 {when}: 건너뜀, 로컬 MangaBaka 데이터베이스를 아직 다운로드하지 않았습니다"
 
@@ -12601,10 +12587,6 @@ msgid "More actions for {chapterLbl}"
 msgstr "{chapterLbl} 추가 작업"
 
 #: src/pages/discover/ShortlistTab.tsx
-#~ msgid "More actions for {named}"
-#~ msgstr ""
-
-#: src/pages/discover/ShortlistTab.tsx
 msgid "More actions for {title}"
 msgstr ""
 
@@ -13493,10 +13475,6 @@ msgstr "Suwayomi에 더 이상 없음"
 #, fuzzy
 msgid "No longer in Suwayomi"
 msgstr "Suwayomi에 더 이상 없음"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "No longer in the catalogue"
-#~ msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -16101,10 +16079,6 @@ msgid "pull the new image and recreate the container"
 msgstr "새 이미지를 가져와 컨테이너를 다시 생성"
 
 #: src/pages/reader/NextChapterHint.tsx
-#~ msgid "Pull up"
-#~ msgstr ""
-
-#: src/pages/reader/NextChapterHint.tsx
 msgctxt "next chapter gesture"
 msgid "Pull up"
 msgstr ""
@@ -17055,10 +17029,6 @@ msgid "Related to your seeds"
 msgstr "내 시드와 관련됨"
 
 #: src/pages/reader/NextChapterHint.tsx
-#~ msgid "Release"
-#~ msgstr ""
-
-#: src/pages/reader/NextChapterHint.tsx
 msgctxt "next chapter gesture"
 msgid "Release"
 msgstr ""
@@ -17170,10 +17140,6 @@ msgstr "{label} 삭제"
 #, fuzzy
 msgid "Remove {label} from this device"
 msgstr "이 기기에서 {label} 제거"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "Remove {named} from your shortlist"
-#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -23438,10 +23404,6 @@ msgstr "베트남어"
 #, fuzzy
 msgid "View"
 msgstr "보기"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "View {named}"
-#~ msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx

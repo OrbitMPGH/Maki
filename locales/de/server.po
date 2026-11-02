@@ -4392,7 +4392,7 @@ msgstr "Listenimport abgeschlossen"
 #. English: {tracker}: {added, plural, other {# added}}{requested, plural, =0 {} other {, # requested}}{shortlisted, plural, =0 {} other {, # shortlisted}}{skipped, plural, =0 {} other {, # skipped}}{errors, plural, =0 {} one {, # error} other {, # errors}}
 #, fuzzy
 msgid "inbox.importList.finished.body"
-msgstr "{tracker}: {added, plural, one {# hinzugefügt} other {# hinzugefügt}}{requested, plural, =0 {} one {, # angefragt} other {, # angefragt}}{shortlisted, plural, =0 {} other {, # shortlisted}}{skipped, plural, =0 {} one {, # übersprungen} other {, # übersprungen}}{errors, plural, =0 {} one {, # Fehler} other {, # Fehler}}"
+msgstr "{tracker}: {added, plural, one {# hinzugefügt} other {# hinzugefügt}}{requested, plural, =0 {} one {, # angefragt} other {, # angefragt}}{shortlisted, plural, =0 {} one {, # shortlisted} other {, # shortlisted}}{skipped, plural, =0 {} one {, # übersprungen} other {, # übersprungen}}{errors, plural, =0 {} one {, # Fehler} other {, # Fehler}}"
 
 #. {creator} is a person's or studio's name from the catalogue and is not translated.
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs

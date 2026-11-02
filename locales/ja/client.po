@@ -2133,10 +2133,6 @@ msgstr "{sampleChapters, plural, other {似た読書#件をもとに}}"
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, other {ライブラリの{series}シリーズにまたがる#章から測定：ピクセルあたり{bpp}ビット（JPG換算）。}}"
 
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
-#~ msgstr ""
-
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "{searchCap}+ matches"
@@ -11171,16 +11167,6 @@ msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
-#~ msgstr "前回の実行 {when}: 追加 {added} 件、リクエスト {requested} 件、スキップ {skipped} 件"
-
-#: src/components/ImportListsSection.tsx
-#, fuzzy
-#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
-#~ msgstr "前回の実行 {when}: 追加 {added} 件、リクエスト {requested} 件、スキップ {skipped} 件、エラー {errors} 件"
-
-#: src/components/ImportListsSection.tsx
-#, fuzzy
 msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
 msgstr "前回の実行 {when}：スキップ、ローカルのMangaBakaデータベースがまだダウンロードされていません"
 
@@ -12601,10 +12587,6 @@ msgid "More actions for {chapterLbl}"
 msgstr "{chapterLbl}のその他の操作"
 
 #: src/pages/discover/ShortlistTab.tsx
-#~ msgid "More actions for {named}"
-#~ msgstr ""
-
-#: src/pages/discover/ShortlistTab.tsx
 msgid "More actions for {title}"
 msgstr ""
 
@@ -13493,10 +13475,6 @@ msgstr "Suwayomiにはもうありません"
 #, fuzzy
 msgid "No longer in Suwayomi"
 msgstr "Suwayomiにはもうありません"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "No longer in the catalogue"
-#~ msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -16101,10 +16079,6 @@ msgid "pull the new image and recreate the container"
 msgstr "新しいイメージを取得してコンテナを再作成"
 
 #: src/pages/reader/NextChapterHint.tsx
-#~ msgid "Pull up"
-#~ msgstr ""
-
-#: src/pages/reader/NextChapterHint.tsx
 msgctxt "next chapter gesture"
 msgid "Pull up"
 msgstr ""
@@ -17055,10 +17029,6 @@ msgid "Related to your seeds"
 msgstr "シードに関連"
 
 #: src/pages/reader/NextChapterHint.tsx
-#~ msgid "Release"
-#~ msgstr ""
-
-#: src/pages/reader/NextChapterHint.tsx
 msgctxt "next chapter gesture"
 msgid "Release"
 msgstr ""
@@ -17170,10 +17140,6 @@ msgstr "{label} を削除"
 #, fuzzy
 msgid "Remove {label} from this device"
 msgstr "この端末から{label}を削除"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "Remove {named} from your shortlist"
-#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -23438,10 +23404,6 @@ msgstr "ベトナム語"
 #, fuzzy
 msgid "View"
 msgstr "表示"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "View {named}"
-#~ msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx

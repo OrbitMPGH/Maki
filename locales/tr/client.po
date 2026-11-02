@@ -2133,10 +2133,6 @@ msgstr "{sampleChapters, plural, one {# benzer okumaya dayanır} other {# benzer
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Kitaplığınızdaki {series} seride # bölüm üzerinden ölçüldü: piksel başına {bpp} bit, JPG eşdeğeri.} other {Kitaplığınızdaki {series} seride # bölüm üzerinden ölçüldü: piksel başına {bpp} bit, JPG eşdeğeri.}}"
 
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
-#~ msgstr ""
-
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "{searchCap}+ matches"
@@ -11171,16 +11167,6 @@ msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
-#~ msgstr "Son çalıştırma {when}: {added} eklendi, {requested} istendi, {skipped} atlandı"
-
-#: src/components/ImportListsSection.tsx
-#, fuzzy
-#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
-#~ msgstr "Son çalıştırma {when}: {added} eklendi, {requested} istendi, {skipped} atlandı, {errors} hata"
-
-#: src/components/ImportListsSection.tsx
-#, fuzzy
 msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
 msgstr "Son çalıştırma {when}: atlandı, yerel MangaBaka veritabanı henüz indirilmedi"
 
@@ -12601,10 +12587,6 @@ msgid "More actions for {chapterLbl}"
 msgstr "{chapterLbl} için diğer işlemler"
 
 #: src/pages/discover/ShortlistTab.tsx
-#~ msgid "More actions for {named}"
-#~ msgstr ""
-
-#: src/pages/discover/ShortlistTab.tsx
 msgid "More actions for {title}"
 msgstr ""
 
@@ -13493,10 +13475,6 @@ msgstr "artık Suwayomi'de yok"
 #, fuzzy
 msgid "No longer in Suwayomi"
 msgstr "Artık Suwayomi'de yok"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "No longer in the catalogue"
-#~ msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -16101,10 +16079,6 @@ msgid "pull the new image and recreate the container"
 msgstr "yeni imajı çekip kapsayıcıyı yeniden oluşturun"
 
 #: src/pages/reader/NextChapterHint.tsx
-#~ msgid "Pull up"
-#~ msgstr ""
-
-#: src/pages/reader/NextChapterHint.tsx
 msgctxt "next chapter gesture"
 msgid "Pull up"
 msgstr ""
@@ -17055,10 +17029,6 @@ msgid "Related to your seeds"
 msgstr "Tohumlarınızla ilgili"
 
 #: src/pages/reader/NextChapterHint.tsx
-#~ msgid "Release"
-#~ msgstr ""
-
-#: src/pages/reader/NextChapterHint.tsx
 msgctxt "next chapter gesture"
 msgid "Release"
 msgstr ""
@@ -17170,10 +17140,6 @@ msgstr "{label} öğesini kaldır"
 #, fuzzy
 msgid "Remove {label} from this device"
 msgstr "{label} bu cihazdan kaldır"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "Remove {named} from your shortlist"
-#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -23438,10 +23404,6 @@ msgstr "Vietnamca"
 #, fuzzy
 msgid "View"
 msgstr "Görünüm"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "View {named}"
-#~ msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx

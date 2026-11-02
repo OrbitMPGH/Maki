@@ -1750,10 +1750,6 @@ msgstr "{sampleChapters, plural, one {based on # similar read} other {based on #
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
-#~ msgstr "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
-
 #: src/components/CatalogueBrowser.tsx
 msgid "{searchCap}+ matches"
 msgstr "{searchCap}+ matches"
@@ -9158,14 +9154,6 @@ msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shor
 msgstr "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped, {errors} errors"
 
 #: src/components/ImportListsSection.tsx
-#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
-#~ msgstr "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
-
-#: src/components/ImportListsSection.tsx
-#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
-#~ msgstr "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
-
-#: src/components/ImportListsSection.tsx
 msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
 msgstr "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
 
@@ -10325,10 +10313,6 @@ msgid "More actions for {chapterLbl}"
 msgstr "More actions for {chapterLbl}"
 
 #: src/pages/discover/ShortlistTab.tsx
-#~ msgid "More actions for {named}"
-#~ msgstr "More actions for {named}"
-
-#: src/pages/discover/ShortlistTab.tsx
 msgid "More actions for {title}"
 msgstr "More actions for {title}"
 
@@ -11054,10 +11038,6 @@ msgstr "no longer in Suwayomi"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "No longer in Suwayomi"
 msgstr "No longer in Suwayomi"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "No longer in the catalogue"
-#~ msgstr "No longer in the catalogue"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "no longer steers your taste"
@@ -13185,10 +13165,6 @@ msgid "pull the new image and recreate the container"
 msgstr "pull the new image and recreate the container"
 
 #: src/pages/reader/NextChapterHint.tsx
-#~ msgid "Pull up"
-#~ msgstr "Pull up"
-
-#: src/pages/reader/NextChapterHint.tsx
 msgctxt "next chapter gesture"
 msgid "Pull up"
 msgstr "Pull up"
@@ -13969,10 +13945,6 @@ msgid "Related to your seeds"
 msgstr "Related to your seeds"
 
 #: src/pages/reader/NextChapterHint.tsx
-#~ msgid "Release"
-#~ msgstr "Release"
-
-#: src/pages/reader/NextChapterHint.tsx
 msgctxt "next chapter gesture"
 msgid "Release"
 msgstr "Release"
@@ -14068,10 +14040,6 @@ msgstr "Remove {label}"
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Remove {label} from this device"
 msgstr "Remove {label} from this device"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "Remove {named} from your shortlist"
-#~ msgstr "Remove {named} from your shortlist"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove {removingSourceName}?"
@@ -19203,10 +19171,6 @@ msgstr "Vietnamese"
 #: src/pages/LibraryPage.tsx
 msgid "View"
 msgstr "View"
-
-#: src/pages/discover/ShortlistTab.tsx
-#~ msgid "View {named}"
-#~ msgstr "View {named}"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx

@@ -4392,7 +4392,7 @@ msgstr "İçe aktarma listesi tamamlandı"
 #. English: {tracker}: {added, plural, other {# added}}{requested, plural, =0 {} other {, # requested}}{shortlisted, plural, =0 {} other {, # shortlisted}}{skipped, plural, =0 {} other {, # skipped}}{errors, plural, =0 {} one {, # error} other {, # errors}}
 #, fuzzy
 msgid "inbox.importList.finished.body"
-msgstr "{tracker}: {added, plural, one {# eklendi} other {# eklendi}}{requested, plural, =0 {} one {, # istendi} other {, # istendi}}{shortlisted, plural, =0 {} other {, # shortlisted}}{skipped, plural, =0 {} one {, # atlandı} other {, # atlandı}}{errors, plural, =0 {} one {, # hata} other {, # hata}}"
+msgstr "{tracker}: {added, plural, one {# eklendi} other {# eklendi}}{requested, plural, =0 {} one {, # istendi} other {, # istendi}}{shortlisted, plural, =0 {} one {, # shortlisted} other {, # shortlisted}}{skipped, plural, =0 {} one {, # atlandı} other {, # atlandı}}{errors, plural, =0 {} one {, # hata} other {, # hata}}"
 
 #. {creator} is a person's or studio's name from the catalogue and is not translated.
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
