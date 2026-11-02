@@ -1,20 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
+import { VisuallyHidden } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
 import { enhanceMethodInfo } from './enhanceMethods'
-import type { EnhanceMethod } from './prefs'
+import type { EnhanceMethod, EnhanceProgress } from './prefs'
 import type { ServerEnhance } from './useServerEnhance'
 
-type Phase = 'queued' | 'working' | 'loading' | 'done' | 'failed'
+export type EnhancePhase = 'queued' | 'working' | 'loading' | 'done' | 'failed'
 
 const SHOW_AFTER_MS = 400
 const DONE_MS = 1200
 const FAILED_MS = 2500
 
-const PENDING: ReadonlySet<Phase | null> = new Set<Phase>(['queued', 'working', 'loading'])
+const PENDING: ReadonlySet<EnhancePhase | null> = new Set<EnhancePhase>(['queued', 'working', 'loading'])
+
+export function isPendingPhase(phase: EnhancePhase | null): boolean {
+  return PENDING.has(phase)
+}
 
 /** Where the pages on screen stand with the server, or null when it was not asked about any of them. */
-function phaseOf(server: ServerEnhance | null, pages: number[]): Phase | null {
+function phaseOf(server: ServerEnhance | null, pages: number[]): EnhancePhase | null {
   if (!server) return null
   const asked = pages.filter((page) => server.states.has(page))
   if (asked.length === 0) return null
@@ -27,23 +32,13 @@ function phaseOf(server: ServerEnhance | null, pages: number[]): Phase | null {
 }
 
 /**
- * A pill over the reader while the page on screen waits for its server upscale: queued, running,
- * then loading. It appears only when the wait outlasts a short delay, so a cached page never
- * flashes it, says so briefly once the upscale is drawn, and says so too when the server gave up.
+ * The server upscale phase worth showing for the pages on screen. A wait only shows once it outlasts
+ * a short delay, so a cached page never flashes it; `done` shows briefly after a wait that was shown,
+ * and `failed` briefly whenever the server gave up.
  */
-export default function ServerEnhanceStatus({
-  server,
-  pages,
-  method,
-}: {
-  server: ServerEnhance | null
-  pages: number[]
-  method: EnhanceMethod
-}) {
-  const { t } = useLingui()
-  const renderLabel = useLabel()
+export function useEnhancePhase(server: ServerEnhance | null, pages: number[]): EnhancePhase | null {
   const phase = phaseOf(server, pages)
-  const [visible, setVisible] = useState<Phase | null>(null)
+  const [visible, setVisible] = useState<EnhancePhase | null>(null)
   const visibleRef = useRef(visible)
   visibleRef.current = visible
   const pagesKey = pages.join(',')
@@ -66,25 +61,63 @@ export default function ServerEnhanceStatus({
     return () => clearTimeout(timer)
   }, [phase, pagesKey])
 
-  if (!visible) return null
+  return visible
+}
+
+export function useEnhancePhaseLabel() {
+  const { t } = useLingui()
+  return (phase: EnhancePhase) =>
+    ({
+      queued: t`Waiting for the server`,
+      working: t`Upscaling this page`,
+      loading: t`Loading the upscaled page`,
+      done: t`Upscaled page shown`,
+      failed: t`Could not upscale this page`,
+    })[phase]
+}
+
+/**
+ * The server upscale's progress over the page while the bars are hidden: a thin line on the
+ * screen's bottom edge, the labelled pill, or nothing, as `style` says. With the bars up the toolbar
+ * shows it instead. Screen readers hear the phase in every style.
+ */
+export default function ServerEnhanceStatus({
+  phase,
+  method,
+  style,
+  chrome,
+  rtl,
+}: {
+  phase: EnhancePhase | null
+  method: EnhanceMethod
+  style: EnhanceProgress
+  chrome: boolean
+  rtl: boolean
+}) {
+  const renderLabel = useLabel()
+  const labelOf = useEnhancePhaseLabel()
+  const label = phase ? labelOf(phase) : null
   const info = enhanceMethodInfo(method)
-  const label = {
-    queued: t`Waiting for the server`,
-    working: t`Upscaling this page`,
-    loading: t`Loading the upscaled page`,
-    done: t`Upscaled page shown`,
-    failed: t`Could not upscale this page`,
-  }[visible]
 
   return (
-    <div className="reader-enhance-status" data-phase={visible} role="status">
-      <span>
-        {info && <span className="reader-enhance-status-method">{renderLabel(info.label)}</span>}
-        {label}
-      </span>
-      <div className="reader-next-chapter-bar">
-        {visible !== 'failed' && <div className="reader-next-chapter-fill reader-enhance-status-fill" />}
-      </div>
-    </div>
+    <>
+      <VisuallyHidden role="status">{label}</VisuallyHidden>
+      {phase && !chrome && style === 'line' && (
+        <div className="reader-enhance-line" data-phase={phase} data-rtl={rtl || undefined} aria-hidden>
+          <div className="reader-enhance-line-fill" />
+        </div>
+      )}
+      {phase && !chrome && style === 'detailed' && (
+        <div className="reader-enhance-status" data-phase={phase} aria-hidden>
+          <span>
+            {info && <span className="reader-enhance-status-method">{renderLabel(info.label)}</span>}
+            {label}
+          </span>
+          <div className="reader-next-chapter-bar">
+            {phase !== 'failed' && <div className="reader-next-chapter-fill reader-enhance-status-fill" />}
+          </div>
+        </div>
+      )}
+    </>
   )
 }

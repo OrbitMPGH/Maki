@@ -7243,6 +7243,10 @@ msgstr "대상 루트 폴더"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "분리된 CBZ는 삭제하도록 선택하지 않는 한 파일 섹션에 유지됩니다."
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Detailed"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -9528,6 +9532,7 @@ msgstr "휴재"
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/reader/enhanceMethods.ts
 #, fuzzy
 msgid "Hidden"
 msgstr "숨김"
@@ -9714,6 +9719,10 @@ msgstr "시간"
 #, fuzzy
 msgid "Hover a cell for its number."
 msgstr "숫자를 보려면 셀 위에 마우스를 올리세요."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "How a page waiting for the server shows it while the reader's bars are hidden."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "How a two-page spread shows in the Single layout."
@@ -11094,6 +11103,10 @@ msgstr "예상 {range}"
 msgid "Likely {range}. {confidence}: {hits} of the last {checked} came out inside their window."
 msgstr "예상 {range}. {confidence}: 최근 {checked}개 중 {hits}개가 예상 기간 안에서 나왔습니다."
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Line"
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -11256,6 +11269,10 @@ msgstr "목록에 있음"
 #, fuzzy
 msgid "Load more"
 msgstr "더 불러오기"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Loading"
+msgstr ""
 
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
@@ -13756,6 +13773,10 @@ msgstr "이 애니메이션이 아닌가요?"
 #, fuzzy
 msgid "Not updated"
 msgstr "업데이트되지 않음"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Not upscaled"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -22352,16 +22373,29 @@ msgstr "이미지 업로드"
 msgid "Upper Case"
 msgstr "대문자"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Upscale progress"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "upscale, upscaling, enhance, sharpen, model, onnx, real-esrgan, span, cpu threads, page cache"
 msgstr "업스케일, 업스케일링, 향상, 선명, 모델, onnx, real-esrgan, span, cpu 스레드, 페이지 캐시"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Upscaled"
+msgstr ""
+
 #: src/pages/reader/ServerEnhanceStatus.tsx
 #, fuzzy
 msgid "Upscaled page shown"
 msgstr "업스케일한 페이지 표시됨"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Upscaling"
+msgstr ""
 
 #: src/pages/reader/ServerEnhanceStatus.tsx
 #, fuzzy
@@ -22848,6 +22882,7 @@ msgstr "{fromLabel}~{toLabel} 대비"
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx
+#: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Waiting"
 msgstr "대기 중"
@@ -23143,6 +23178,10 @@ msgstr "읽는 중"
 #, fuzzy
 #~ msgid "While reading only tells you about new chapters while you are partway through."
 #~ msgstr "읽는 중은 시리즈를 읽는 동안 새 챕터에 관한 내용만 알려줍니다."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "While the bars are hidden. The toolbar always shows it."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy

@@ -16,6 +16,8 @@ export interface PageScrubberProps {
   onSeek: (page: number) => void
   /** Pages the server has upscaled; the ones ahead are marked like a video's buffer. */
   enhanced?: ReadonlySet<number>
+  /** Pages the server is upscaling right now; the ones ahead pulse. */
+  upscaling?: ReadonlySet<number>
   /** Thumbnail URL per page, shown above the segment under the pointer. */
   thumbs: string[]
 }
@@ -25,7 +27,7 @@ export interface PageScrubberProps {
  * page's thumbnail; pressing and dragging scrubs, and the page changes on release. In right-to-left
  * reading page 1 is the rightmost segment.
  */
-export default function PageScrubber({ count, page, shownTo, rtl, onSeek, enhanced, thumbs }: PageScrubberProps) {
+export default function PageScrubber({ count, page, shownTo, rtl, onSeek, enhanced, upscaling, thumbs }: PageScrubberProps) {
   const { t } = useLingui()
   const { ref, width } = useElementSize()
   const track = useRef<HTMLDivElement>(null)
@@ -105,6 +107,7 @@ export default function PageScrubber({ count, page, shownTo, rtl, onSeek, enhanc
             className="reader-scrub-segment"
             data-lit={index <= to || undefined}
             data-ready={(index > to && enhanced?.has(index)) || undefined}
+            data-upscaling={(index > to && upscaling?.has(index)) || undefined}
             data-hover={index === hover || undefined}
           />
         ))}

@@ -248,6 +248,10 @@ export const EnhanceServerFallback: Story = {
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceFallback: 'a4k-a' }))
     await userEvent.click(within(fallback).getByText('None'))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceFallback: 'off' }))
+    const progress = await b.findByRole('radiogroup', { name: 'Upscale progress' })
+    await waitFor(() => expect(within(progress).getByLabelText('Line')).toBeChecked())
+    await userEvent.click(within(progress).getByText('Hidden'))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceProgress: 'off' }))
   },
 }
 

@@ -26,6 +26,7 @@ import { setCompareHeld, useCompareHeld } from './compareHold'
 import { useEnhanceEngine } from './enhanceRuntime'
 import PageScrubber from './PageScrubber'
 import ReaderSettings, { OVERLAY_Z } from './ReaderSettings'
+import { isPendingPhase, useEnhancePhaseLabel, type EnhancePhase } from './ServerEnhanceStatus'
 
 export default function ReaderToolbar({
   manifest,
@@ -63,6 +64,8 @@ export default function ReaderToolbar({
   onShortcuts,
   serverEnhancing = false,
   enhancedPages,
+  upscalingPages,
+  enhancePhase = null,
   thumbs = [],
   shownTo,
 }: {
@@ -109,6 +112,10 @@ export default function ReaderToolbar({
   serverEnhancing?: boolean
   /** Pages the server has upscaled; the ones ahead are marked on the slider like a video's buffer. */
   enhancedPages?: ReadonlySet<number>
+  /** Pages the server is upscaling right now, pulsing on the slider. */
+  upscalingPages?: ReadonlySet<number>
+  /** Where the server upscale of the pages on screen stands, shown on the compare button. */
+  enhancePhase?: EnhancePhase | null
   /** Thumbnail URL per page, shown above the slider under the pointer. */
   thumbs?: string[]
   /** The last page on screen, past `page` when a spread shows two. */
@@ -124,6 +131,16 @@ export default function ReaderToolbar({
   const enhanceOn = prefs.enhance !== 'off'
   const engineStatus = useEnhanceEngine(enhanceOn).status
   const compareHeld = useCompareHeld()
+  const phaseLabel = useEnhancePhaseLabel()
+  const phaseShort = enhancePhase
+    ? {
+        queued: t`Waiting`,
+        working: t`Upscaling`,
+        loading: t`Loading`,
+        done: t`Upscaled`,
+        failed: t`Not upscaled`,
+      }[enhancePhase]
+    : null
 
   // Shared between the tooltip and the icon button's own aria-label, which say the same thing.
   const backChapterLabel = rtl ? t`Next chapter` : t`Previous chapter`
@@ -230,36 +247,58 @@ export default function ReaderToolbar({
             </Group>
           </div>
           {enhanceOn && (serverEnhancing || (engineStatus !== 'unsupported' && engineStatus !== 'broken')) && (
-            <Tooltip label={t`Hold to compare with the original (H)`} withArrow zIndex={OVERLAY_Z}>
-              <ActionIcon
-                variant={compareHeld ? 'light' : 'subtle'}
-                color="gray"
-                aria-label={t`Hold to compare`}
-                aria-pressed={compareHeld}
-                style={{ touchAction: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
-                onPointerDown={(event) => {
-                  event.currentTarget.setPointerCapture?.(event.pointerId)
-                  setCompareHeld(true)
-                }}
-                onPointerUp={() => setCompareHeld(false)}
-                onPointerCancel={() => setCompareHeld(false)}
-                onLostPointerCapture={() => setCompareHeld(false)}
-                onPointerLeave={() => setCompareHeld(false)}
-                onKeyDown={(event) => {
-                  if ((event.key === ' ' || event.key === 'Enter') && !event.repeat) {
-                    event.preventDefault()
-                    setCompareHeld(true)
-                  }
-                }}
-                onKeyUp={(event) => {
-                  if (event.key === ' ' || event.key === 'Enter') setCompareHeld(false)
-                }}
-                onBlur={() => setCompareHeld(false)}
-                onContextMenu={(event) => event.preventDefault()}
+            <Group gap={6} wrap="nowrap" className="reader-compare" data-phase={enhancePhase ?? undefined}>
+              {phaseShort && (
+                <Text visibleFrom="sm" fz="xs" c="var(--ink-3)" className="reader-compare-phase" aria-hidden>
+                  {phaseShort}
+                </Text>
+              )}
+              <Tooltip
+                label={
+                  enhancePhase ? (
+                    <>
+                      <div>{phaseLabel(enhancePhase)}</div>
+                      <div>{t`Hold to compare with the original (H)`}</div>
+                    </>
+                  ) : (
+                    t`Hold to compare with the original (H)`
+                  )
+                }
+                withArrow
+                zIndex={OVERLAY_Z}
               >
-                <IconSquareHalf size={18} />
-              </ActionIcon>
-            </Tooltip>
+                <ActionIcon
+                  className="reader-compare-button"
+                  data-busy={isPendingPhase(enhancePhase) || undefined}
+                  variant={compareHeld ? 'light' : 'subtle'}
+                  color="gray"
+                  aria-label={t`Hold to compare`}
+                  aria-pressed={compareHeld}
+                  style={{ touchAction: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
+                  onPointerDown={(event) => {
+                    event.currentTarget.setPointerCapture?.(event.pointerId)
+                    setCompareHeld(true)
+                  }}
+                  onPointerUp={() => setCompareHeld(false)}
+                  onPointerCancel={() => setCompareHeld(false)}
+                  onLostPointerCapture={() => setCompareHeld(false)}
+                  onPointerLeave={() => setCompareHeld(false)}
+                  onKeyDown={(event) => {
+                    if ((event.key === ' ' || event.key === 'Enter') && !event.repeat) {
+                      event.preventDefault()
+                      setCompareHeld(true)
+                    }
+                  }}
+                  onKeyUp={(event) => {
+                    if (event.key === ' ' || event.key === 'Enter') setCompareHeld(false)
+                  }}
+                  onBlur={() => setCompareHeld(false)}
+                  onContextMenu={(event) => event.preventDefault()}
+                >
+                  <IconSquareHalf size={18} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
           )}
           {incognito && (
             <Tooltip label={t`Incognito, this session isn't being recorded`} withArrow zIndex={OVERLAY_Z}>
@@ -318,6 +357,7 @@ export default function ReaderToolbar({
             rtl={rtl}
             onSeek={onSeek}
             enhanced={enhancedPages}
+            upscaling={upscalingPages}
             thumbs={thumbs}
           />
 

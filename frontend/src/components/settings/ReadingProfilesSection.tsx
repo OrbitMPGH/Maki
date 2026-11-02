@@ -37,6 +37,7 @@ import { SettingsNumberInput } from './SettingsNumberInput'
 import { useReportUnsaved } from './SaveButton'
 import {
   ENHANCE_FALLBACKS,
+  ENHANCE_PROGRESS_STYLES,
   ENHANCE_LEVELS,
   ENHANCE_METHODS,
   ENHANCE_SKIP_TIERS,
@@ -506,6 +507,16 @@ function ProfileEditor({
           value={prefs.enhanceFallback}
           onChange={(value) => value && set({ enhanceFallback: value as ReaderPrefs['enhanceFallback'] })}
           data={ENHANCE_FALLBACKS.map((f) => ({ value: f.value, label: renderLabel(f.label) }))}
+        />
+      )}
+      {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
+        <Select
+          label={t`Upscale progress`}
+          description={t`How a page waiting for the server shows it while the reader's bars are hidden.`}
+          allowDeselect={false}
+          value={prefs.enhanceProgress}
+          onChange={(value) => value && set({ enhanceProgress: value as ReaderPrefs['enhanceProgress'] })}
+          data={ENHANCE_PROGRESS_STYLES.map((style) => ({ value: style.value, label: renderLabel(style.label) }))}
         />
       )}
 

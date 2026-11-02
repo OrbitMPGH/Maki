@@ -7544,6 +7544,14 @@ body.reader-open {
 .reader-scrub-segment[data-ready] {
   background: rgba(255, 255, 255, 0.38);
 }
+.reader-scrub-segment[data-upscaling] {
+  animation: reader-scrub-upscaling 1.2s var(--ease) infinite alternate;
+}
+@keyframes reader-scrub-upscaling {
+  to {
+    background: rgba(255, 255, 255, 0.38);
+  }
+}
 .reader-scrub-segment[data-lit] {
   background: var(--mantine-primary-color-filled);
 }
@@ -7672,6 +7680,108 @@ body.reader-open {
     transform: translateX(290%);
   }
 }
+
+/* The quiet form (ServerEnhanceStatus, `line`): a hairline on the screen's bottom edge, sweeping in
+   reading direction while the page waits or runs, filling once it loads. */
+.reader-enhance-line {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--reader-overlay-z-index);
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  animation: reader-enhance-status-in var(--dur-medium) var(--ease);
+}
+.reader-enhance-line[data-rtl] {
+  transform: scaleX(-1);
+}
+.reader-enhance-line-fill {
+  height: 100%;
+  width: 100%;
+  background: var(--brand);
+  transition: width var(--dur-slow) var(--ease);
+}
+.reader-enhance-line[data-phase='queued'] .reader-enhance-line-fill,
+.reader-enhance-line[data-phase='working'] .reader-enhance-line-fill {
+  width: 25%;
+  animation: reader-enhance-line-sweep 1.8s var(--ease) infinite;
+}
+.reader-enhance-line[data-phase='queued'] .reader-enhance-line-fill {
+  opacity: 0.4;
+  animation-duration: 3s;
+}
+.reader-enhance-line[data-phase='loading'] .reader-enhance-line-fill {
+  width: 85%;
+}
+.reader-enhance-line[data-phase='done'] {
+  animation: reader-enhance-line-out 1.2s var(--ease) forwards;
+}
+.reader-enhance-line[data-phase='failed'] .reader-enhance-line-fill {
+  background: var(--danger);
+  opacity: 0.7;
+}
+.reader-enhance-line[data-phase='failed'] {
+  animation: reader-enhance-line-out 2.5s var(--ease) forwards;
+}
+@keyframes reader-enhance-line-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(400%);
+  }
+}
+@keyframes reader-enhance-line-out {
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* The same state on the toolbar's compare button while the bars are up. */
+.reader-compare-button {
+  position: relative;
+  overflow: visible;
+}
+.reader-compare-button::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  pointer-events: none;
+  transition: border-color var(--dur-base) var(--ease);
+}
+.reader-compare-button[data-busy]::after {
+  border-color: rgba(255, 255, 255, 0.12);
+  border-top-color: var(--brand);
+  animation: reader-enhance-spin 1s linear infinite;
+}
+.reader-compare[data-phase='queued'] .reader-compare-button::after {
+  border-top-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  animation-duration: 2s;
+}
+.reader-compare[data-phase='done'] .reader-compare-button::after {
+  border-color: var(--brand);
+}
+.reader-compare[data-phase='failed'] .reader-compare-button::after {
+  border-color: color-mix(in srgb, var(--danger) 70%, transparent);
+}
+.reader-compare[data-phase='failed'] .reader-compare-phase {
+  color: var(--danger);
+}
+.reader-compare-phase {
+  white-space: nowrap;
+}
+@keyframes reader-enhance-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 @keyframes reader-enhance-status-in {
   from {
     opacity: 0;
@@ -7679,9 +7789,19 @@ body.reader-open {
 }
 @media (prefers-reduced-motion: reduce) {
   .reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill,
-  .reader-enhance-status[data-phase='working'] .reader-enhance-status-fill {
+  .reader-enhance-status[data-phase='working'] .reader-enhance-status-fill,
+  .reader-enhance-line[data-phase='queued'] .reader-enhance-line-fill,
+  .reader-enhance-line[data-phase='working'] .reader-enhance-line-fill {
     width: 100%;
     animation: none;
+  }
+  .reader-compare-button[data-busy]::after {
+    animation: none;
+    border-color: var(--brand);
+  }
+  .reader-scrub-segment[data-upscaling] {
+    animation: none;
+    background: rgba(255, 255, 255, 0.26);
   }
 }
 

@@ -589,6 +589,44 @@ export const ServerEnhanceWaiting: Story = {
   play: async ({ canvas, canvasElement }) => {
     await waitFor(() => expect(waitingAsked[0]?.slice(0, 2)).toEqual([5, 6]))
     await expectFallback(canvasElement, canvas)
+    await waitFor(() => expect(canvasElement.querySelector('.reader-enhance-line')?.getAttribute('data-phase')).toBe('queued'))
+    await expect(canvasElement.querySelector('.reader-enhance-status')).toBeNull()
+    await expect(await canvas.findByText('Waiting for the server')).toBeInTheDocument()
+  },
+}
+
+/** The detailed style: the labelled pill over the page instead of the edge line. */
+export const ServerEnhanceWaitingDetailed: Story = {
+  parameters: {
+    ...open(7719),
+    msw: [
+      serverMethod(7719, undefined, { enhanceProgress: 'detailed' }),
+      enhanceAnswer(7719, 'queued'),
+      http.get(api('/reader/chapter/7719/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(canvasElement.querySelector('.reader-enhance-status')?.textContent).toContain('Waiting for the server'))
+    await expect(canvasElement.querySelector('.reader-enhance-line')).toBeNull()
+  },
+}
+
+/** Hidden: nothing over the page, the toolbar's compare button still shows the wait once the bars are up. */
+export const ServerEnhanceWaitingHidden: Story = {
+  parameters: {
+    ...open(7720),
+    msw: [
+      serverMethod(7720, undefined, { enhanceProgress: 'off' }),
+      enhanceAnswer(7720, 'queued'),
+      http.get(api('/reader/chapter/7720/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(await canvas.findByText('Waiting for the server')).toBeInTheDocument()
+    await expect(canvasElement.querySelector('.reader-enhance-line')).toBeNull()
+    await expect(canvasElement.querySelector('.reader-enhance-status')).toBeNull()
+    await waitFor(() => expect(canvasElement.querySelector('.reader-compare')?.getAttribute('data-phase')).toBe('queued'))
+    await expect(canvasElement.querySelector('.reader-compare-button')).toHaveAttribute('data-busy')
   },
 }
 

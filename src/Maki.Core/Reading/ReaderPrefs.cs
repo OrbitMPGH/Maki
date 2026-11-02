@@ -78,7 +78,13 @@ public record ReaderPrefsSpec(
     /// whatever <see cref="Enhance"/> says. Null means unset and becomes <see cref="DefaultEnhanceSkipTiers"/>:
     /// a digital volume is already clean, and sharpening it only adds artefacts.
     /// </summary>
-    IReadOnlyList<string>? EnhanceSkipTiers = null)
+    IReadOnlyList<string>? EnhanceSkipTiers = null,
+    /// <summary>
+    /// How the reader shows a server upscale in progress while the bars are hidden: <c>line</c> (a
+    /// thin line on the screen's bottom edge), <c>detailed</c> (a labelled pill) or <c>off</c>. The
+    /// toolbar shows it whenever the bars are up.
+    /// </summary>
+    string EnhanceProgress = ReaderPrefsSpec.EnhanceProgressDefault)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";
@@ -100,6 +106,7 @@ public record ReaderPrefsSpec(
 
     public const string EnhanceOff = "off";
     public const string EnhanceMethodDefault = "a4k-m";
+    public const string EnhanceProgressDefault = "line";
 
     public const string FitWidth = "width";
     public const string FitHeight = "height";
@@ -121,6 +128,7 @@ public record ReaderPrefsSpec(
     private static readonly string[] EnhanceMethods =
         ["a4k-s", EnhanceMethodDefault, "a4k-a", "server:span-s", "server:realesrgan-av3"];
     private static readonly string[] EnhanceFallbacks = ["a4k-s", EnhanceMethodDefault, "a4k-a", EnhanceOff];
+    private static readonly string[] EnhanceProgressStyles = [EnhanceProgressDefault, "detailed", "off"];
     private static readonly string[] Tiers = [.. Enum.GetValues<QualityTier>().Select(QualitySnapshot.TierName)];
 
     public static readonly IReadOnlyList<string> DefaultEnhanceSkipTiers = ["volume"];
@@ -143,6 +151,7 @@ public record ReaderPrefsSpec(
         EnhanceSkipTiers = EnhanceSkipTiers is null
             ? DefaultEnhanceSkipTiers
             : [.. Tiers.Where(EnhanceSkipTiers.Contains)],
+        EnhanceProgress = EnhanceProgressStyles.Contains(EnhanceProgress) ? EnhanceProgress : EnhanceProgressDefault,
     };
 
     /// <summary>Fills an unset <see cref="AutoWebtoon"/> with the layer's default: on for the global defaults only.</summary>

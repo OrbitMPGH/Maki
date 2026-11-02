@@ -140,6 +140,18 @@ public class ReaderPrefsTests
         Assert.Contains("\"enhanceMethod\":\"server:span-s\"", json);
     }
 
+    [Theory]
+    [InlineData(null, "line")]
+    [InlineData("line", "line")]
+    [InlineData("detailed", "detailed")]
+    [InlineData("off", "off")]
+    [InlineData("loud", "line")]
+    public void Sanitized_keeps_known_enhance_progress_styles(string? stored, string expected)
+    {
+        var json = stored is null ? """{"enhance":"always"}""" : $$"""{"enhanceProgress":"{{stored}}"}""";
+        Assert.Equal(expected, ReaderPrefsSpec.Parse(json).EnhanceProgress);
+    }
+
     [Fact]
     public void Parse_of_a_blob_without_skip_tiers_skips_volumes()
     {

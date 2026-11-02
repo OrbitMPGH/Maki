@@ -7243,6 +7243,10 @@ msgstr "目标根文件夹"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "已取消关联的 CBZ 会保留在文件部分，除非你选择删除它们。"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Detailed"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -9528,6 +9532,7 @@ msgstr "暂停连载"
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/reader/enhanceMethods.ts
 #, fuzzy
 msgid "Hidden"
 msgstr "已隐藏"
@@ -9714,6 +9719,10 @@ msgstr "小时"
 #, fuzzy
 msgid "Hover a cell for its number."
 msgstr "将鼠标悬停在单元格上可查看章节编号。"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "How a page waiting for the server shows it while the reader's bars are hidden."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "How a two-page spread shows in the Single layout."
@@ -11094,6 +11103,10 @@ msgstr "可能在 {range}"
 msgid "Likely {range}. {confidence}: {hits} of the last {checked} came out inside their window."
 msgstr "可能在 {range}。{confidence}：最近 {checked} 个章节中有 {hits} 个落在对应范围内。"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Line"
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -11256,6 +11269,10 @@ msgstr "已列出"
 #, fuzzy
 msgid "Load more"
 msgstr "加载更多"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Loading"
+msgstr ""
 
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
@@ -13756,6 +13773,10 @@ msgstr "不是这部动画？"
 #, fuzzy
 msgid "Not updated"
 msgstr "未更新"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Not upscaled"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -22352,16 +22373,29 @@ msgstr "上传图片"
 msgid "Upper Case"
 msgstr "大写"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Upscale progress"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "upscale, upscaling, enhance, sharpen, model, onnx, real-esrgan, span, cpu threads, page cache"
 msgstr "放大, 放大处理, 增强, 锐化, 模型, onnx, real-esrgan, span, CPU 线程, 页面缓存"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Upscaled"
+msgstr ""
+
 #: src/pages/reader/ServerEnhanceStatus.tsx
 #, fuzzy
 msgid "Upscaled page shown"
 msgstr "已显示放大后的页面"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Upscaling"
+msgstr ""
 
 #: src/pages/reader/ServerEnhanceStatus.tsx
 #, fuzzy
@@ -22848,6 +22882,7 @@ msgstr "与 {fromLabel} 至 {toLabel} 相比"
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx
+#: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Waiting"
 msgstr "等待中"
@@ -23143,6 +23178,10 @@ msgstr "阅读时"
 #, fuzzy
 #~ msgid "While reading only tells you about new chapters while you are partway through."
 #~ msgstr "阅读时仅会在你阅读系列期间通知你新章节。"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "While the bars are hidden. The toolbar always shows it."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy

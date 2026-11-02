@@ -43,6 +43,7 @@ import { DrillPanes } from '../../components/ui/DrillPanes'
 import {
   BROWSER_ENHANCE_METHODS,
   ENHANCE_FALLBACKS,
+  ENHANCE_PROGRESS_STYLES,
   ENHANCE_LEVELS,
   ENHANCE_SKIP_TIERS,
   SERVER_ENHANCE_METHODS,
@@ -677,6 +678,24 @@ export default function ReaderSettings({
                         disabled: browserUnsupported && f.value !== 'off',
                       }))}
                     />
+                  </div>
+                )}
+                {enhanceOn && isServerMethod(prefs.enhanceMethod) && (
+                  <div>
+                    <FieldLabel>
+                      <Trans>Upscale progress</Trans>
+                    </FieldLabel>
+                    <SegmentedControl
+                      aria-label={t`Upscale progress`}
+                      fullWidth
+                      size="xs"
+                      value={prefs.enhanceProgress}
+                      onChange={(value) => onPrefs({ enhanceProgress: value as ReaderPrefs['enhanceProgress'] })}
+                      data={ENHANCE_PROGRESS_STYLES.map((style) => ({ label: renderLabel(style.label), value: style.value }))}
+                    />
+                    <Text fz="xs" c="var(--ink-3)" mt={4}>
+                      <Trans>While the bars are hidden. The toolbar always shows it.</Trans>
+                    </Text>
                   </div>
                 )}
                 {enhanceOn && (

@@ -5889,6 +5889,10 @@ msgstr "Destination root folder"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "Detached CBZs stay in the Files section unless you choose to delete them."
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Detailed"
+msgstr "Detailed"
+
 #: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7749,6 +7753,7 @@ msgstr "Hiatus"
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/reader/enhanceMethods.ts
 msgid "Hidden"
 msgstr "Hidden"
 
@@ -7899,6 +7904,10 @@ msgstr "Hours"
 #: src/components/RelinkFilesModal.tsx
 msgid "Hover a cell for its number."
 msgstr "Hover a cell for its number."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "How a page waiting for the server shows it while the reader's bars are hidden."
+msgstr "How a page waiting for the server shows it while the reader's bars are hidden."
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "How a two-page spread shows in the Single layout."
@@ -9019,6 +9028,10 @@ msgstr "Likely {range}"
 msgid "Likely {range}. {confidence}: {hits} of the last {checked} came out inside their window."
 msgstr "Likely {range}. {confidence}: {hits} of the last {checked} came out inside their window."
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Line"
+msgstr "Line"
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -9150,6 +9163,10 @@ msgstr "Listed"
 #: src/pages/NotificationsPage.tsx
 msgid "Load more"
 msgstr "Load more"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Loading"
+msgstr "Loading"
 
 #: src/components/LinkFileToChaptersModal.tsx
 msgid "Loading chapters…"
@@ -11177,6 +11194,10 @@ msgstr "Not this anime?"
 #: src/pages/ScrobblePage.tsx
 msgid "Not updated"
 msgstr "Not updated"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Not upscaled"
+msgstr "Not upscaled"
 
 #: src/components/NotificationsSection.tsx
 msgid "Not used yet"
@@ -18160,14 +18181,27 @@ msgstr "Upload image"
 msgid "Upper Case"
 msgstr "Upper Case"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Upscale progress"
+msgstr "Upscale progress"
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "upscale, upscaling, enhance, sharpen, model, onnx, real-esrgan, span, cpu threads, page cache"
 msgstr "upscale, upscaling, enhance, sharpen, model, onnx, real-esrgan, span, cpu threads, page cache"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Upscaled"
+msgstr "Upscaled"
+
 #: src/pages/reader/ServerEnhanceStatus.tsx
 msgid "Upscaled page shown"
 msgstr "Upscaled page shown"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Upscaling"
+msgstr "Upscaling"
 
 #: src/pages/reader/ServerEnhanceStatus.tsx
 msgid "Upscaling this page"
@@ -18565,6 +18599,7 @@ msgstr "vs {fromLabel} to {toLabel}"
 
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx
+#: src/pages/reader/ReaderToolbar.tsx
 msgid "Waiting"
 msgstr "Waiting"
 
@@ -18802,6 +18837,10 @@ msgstr "While reading"
 #: src/components/series/SeriesActionsMenu.tsx
 #~ msgid "While reading only tells you about new chapters while you are partway through."
 #~ msgstr "While reading only tells you about new chapters while you are partway through."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "While the bars are hidden. The toolbar always shows it."
+msgstr "While the bars are hidden. The toolbar always shows it."
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "While the server works"

@@ -19,6 +19,7 @@ export type EnhanceMethod =
   | 'server:span-s'
   | 'server:realesrgan-av3'
 export type EnhanceFallback = 'a4k-s' | 'a4k-m' | 'a4k-a' | 'off'
+export type EnhanceProgress = 'line' | 'detailed' | 'off'
 
 export interface ReaderPrefs {
   mode: ReaderMode
@@ -55,6 +56,8 @@ export interface ReaderPrefs {
   enhanceFallback: EnhanceFallback
   /** Chapters whose file has one of these quality tiers are never enhanced. */
   enhanceSkipTiers: QualityTierName[]
+  /** How a server upscale in progress shows while the bars are hidden. The toolbar shows it whenever they are up. */
+  enhanceProgress: EnhanceProgress
 }
 
 /** The two page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. */
@@ -90,6 +93,7 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   enhanceMethod: 'a4k-m',
   enhanceFallback: 'a4k-m',
   enhanceSkipTiers: ['volume'],
+  enhanceProgress: 'line',
 }
 
 /** The enhance level a chapter actually gets: off when its file's tier is one the prefs skip. */

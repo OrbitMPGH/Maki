@@ -24,7 +24,7 @@ import { notifications } from '../../lib/toast'
 import { t as now } from '@lingui/core/macro'
 import ShortcutSheet from './ShortcutSheet'
 import ContinuousView from './ContinuousView'
-import ServerEnhanceStatus from './ServerEnhanceStatus'
+import ServerEnhanceStatus, { useEnhancePhase } from './ServerEnhanceStatus'
 import { serverModelFor, useServerEnhance } from './useServerEnhance'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
@@ -277,6 +277,18 @@ export default function ReaderPage() {
         : undefined,
     [serverStates],
   )
+  const upscalingPages = useMemo(
+    () =>
+      serverStates
+        ? new Set([...serverStates].filter(([, state]) => state === 'working').map(([index]) => index))
+        : undefined,
+    [serverStates],
+  )
+  const onScreen = useMemo(
+    () => (atEnd ? [] : mode === 'vertical' ? [page] : (spreads[spreadIndex] ?? [page])),
+    [atEnd, mode, page, spreads, spreadIndex],
+  )
+  const enhancePhase = useEnhancePhase(server, onScreen)
 
   const tone = useMemo(() => toneFilter(prefs), [prefs])
   useWakeLock(prefs.keepAwake)
@@ -850,6 +862,8 @@ export default function ReaderPage() {
         onShortcuts={() => setShortcutsOpen(true)}
         serverEnhancing={server !== null}
         enhancedPages={enhancedPages}
+        upscalingPages={upscalingPages}
+        enhancePhase={enhancePhase}
         thumbs={thumbs}
         shownTo={shownTo}
       />
@@ -936,13 +950,13 @@ export default function ReaderPage() {
           )}
         </div>
       )}
-      {!atEnd && (
-        <ServerEnhanceStatus
-          server={server}
-          pages={mode === 'vertical' ? [page] : (spreads[spreadIndex] ?? [page])}
-          method={prefs.enhanceMethod}
-        />
-      )}
+      <ServerEnhanceStatus
+        phase={enhancePhase}
+        method={prefs.enhanceMethod}
+        style={prefs.enhanceProgress}
+        chrome={chrome}
+        rtl={prefs.direction === 'rtl'}
+      />
 
       {stripOpen && (
         <div

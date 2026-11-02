@@ -94,10 +94,12 @@ screen. It is off until a reader turns it on. Library files are never modified.
   they are, whatever Enhance says. It starts with Volume, since a digital volume is already clean.
 - **Hold to compare.** Hold **H** or the toolbar's compare button to see the original page, and
   let go to return to the enhanced one.
-- **Server progress.** While a server method is still working on the page on screen, a pill at
-  the bottom says whether it is waiting, upscaling or loading, and the fallback shows meanwhile. The
-  page bar marks the pages ahead that are already upscaled in light grey, like the buffered part
-  of a video.
+- **Server progress.** While a server method is still working on the page on screen, the fallback
+  shows and a thin line runs along the bottom edge of the screen. **Upscale progress** in the
+  Enhance settings swaps the line for a labelled pill (Detailed) or hides it (Hidden). With the
+  bars up, the compare button spins and says whether the page is waiting, upscaling or loading,
+  whatever that setting says. The page bar marks the pages ahead that are already upscaled in
+  light grey, like the buffered part of a video, and pulses the ones being upscaled.
 - **Working ahead.** Paged mode enhances the pages in the preload window. Continuous mode sizes its
   range by pixels instead of pages, so a chapter of many short slices is enhanced well down the
   strip and one of a few very tall slices only a page or two ahead, within what the device can hold.
