@@ -24,7 +24,7 @@
   <a href="#quick-start">Quick start</a> ·
   <a href="#download">Download</a> ·
   <a href="#sources">Sources</a> ·
-  <a href="#documentation">Documentation</a> ·
+  <a href="https://orbitmpgh.github.io/Maki/">Docs site</a> ·
   <a href="#languages">Languages</a>
 </p>
 
@@ -192,6 +192,12 @@ Notes on languages, FlareSolverr and mirror overrides are also in
 </details>
 
 ## Documentation
+
+The full documentation lives at **[orbitmpgh.github.io/Maki](https://orbitmpgh.github.io/Maki/)**:
+installation for every platform, setup guides, how each feature works and how to contribute. Its
+source is in [`site/`](site), so fixes to the docs go through a normal pull request.
+
+The guides below are also kept in the repository.
 
 | Guide | Covers |
 |---|---|
