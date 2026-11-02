@@ -11154,14 +11154,22 @@ msgid "Last run {finishedDate}."
 msgstr "前回の実行：{finishedDate}。"
 
 #: src/components/ImportListsSection.tsx
-#, fuzzy
-msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
-msgstr "前回の実行 {when}: 追加 {added} 件、リクエスト {requested} 件、スキップ {skipped} 件"
+msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped"
+msgstr ""
+
+#: src/components/ImportListsSection.tsx
+msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped, {errors} errors"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "前回の実行 {when}: 追加 {added} 件、リクエスト {requested} 件、スキップ {skipped} 件、エラー {errors} 件"
+#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
+#~ msgstr "前回の実行 {when}: 追加 {added} 件、リクエスト {requested} 件、スキップ {skipped} 件"
+
+#: src/components/ImportListsSection.tsx
+#, fuzzy
+#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "前回の実行 {when}: 追加 {added} 件、リクエスト {requested} 件、スキップ {skipped} 件、エラー {errors} 件"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -15753,11 +15761,14 @@ msgstr "品質プロファイルのメニューから、シリーズに1つ固�
 msgid "Plain title search. Matches from just two characters."
 msgstr "単純なタイトル検索。2文字だけで一致します。"
 
-#: src/components/ImportListsSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Plan to read"
 msgstr "読む予定"
+
+#: src/components/ImportListsSection.tsx
+msgid "Plan to read (to your shortlist)"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -24370,6 +24381,10 @@ msgstr "自分のリクエスト"
 #, fuzzy
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
 msgstr "棚、評価、読書履歴がランキングに反映されます。評価・非表示・視聴済みはそれぞれ1タイトルのみに影響します。"
+
+#: src/components/ImportListsSection.tsx
+msgid "Your shortlist is full."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy

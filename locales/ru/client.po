@@ -11154,14 +11154,22 @@ msgid "Last run {finishedDate}."
 msgstr "Последний запуск {finishedDate}."
 
 #: src/components/ImportListsSection.tsx
-#, fuzzy
-msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
-msgstr "Последний запуск {when}: добавлено {added}, запрошено {requested}, пропущено {skipped}"
+msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped"
+msgstr ""
+
+#: src/components/ImportListsSection.tsx
+msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped, {errors} errors"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "Последний запуск {when}: добавлено {added}, запрошено {requested}, пропущено {skipped}, ошибок {errors}"
+#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
+#~ msgstr "Последний запуск {when}: добавлено {added}, запрошено {requested}, пропущено {skipped}"
+
+#: src/components/ImportListsSection.tsx
+#, fuzzy
+#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "Последний запуск {when}: добавлено {added}, запрошено {requested}, пропущено {skipped}, ошибок {errors}"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -15753,11 +15761,14 @@ msgstr "Закрепите один за серией через меню её �
 msgid "Plain title search. Matches from just two characters."
 msgstr "Обычный поиск по названию. Совпадения находятся уже от двух символов."
 
-#: src/components/ImportListsSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Plan to read"
 msgstr "План чтения"
+
+#: src/components/ImportListsSection.tsx
+msgid "Plan to read (to your shortlist)"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -24370,6 +24381,10 @@ msgstr "Твои запросы"
 #, fuzzy
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
 msgstr "Ранжирование строится на полке, оценках и чтении. Лайк, скрытие и «видел» затрагивают только одно название каждый."
+
+#: src/components/ImportListsSection.tsx
+msgid "Your shortlist is full."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy

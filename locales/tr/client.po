@@ -11154,14 +11154,22 @@ msgid "Last run {finishedDate}."
 msgstr "Son çalıştırma {finishedDate}."
 
 #: src/components/ImportListsSection.tsx
-#, fuzzy
-msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
-msgstr "Son çalıştırma {when}: {added} eklendi, {requested} istendi, {skipped} atlandı"
+msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped"
+msgstr ""
+
+#: src/components/ImportListsSection.tsx
+msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped, {errors} errors"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "Son çalıştırma {when}: {added} eklendi, {requested} istendi, {skipped} atlandı, {errors} hata"
+#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
+#~ msgstr "Son çalıştırma {when}: {added} eklendi, {requested} istendi, {skipped} atlandı"
+
+#: src/components/ImportListsSection.tsx
+#, fuzzy
+#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "Son çalıştırma {when}: {added} eklendi, {requested} istendi, {skipped} atlandı, {errors} hata"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -15753,11 +15761,14 @@ msgstr "Bir seriye, Kalite profili menüsünden bir tane sabitleyin."
 msgid "Plain title search. Matches from just two characters."
 msgstr "Basit başlık araması. Yalnızca iki karakterden itibaren eşleşir."
 
-#: src/components/ImportListsSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Plan to read"
 msgstr "Okumayı planlıyor"
+
+#: src/components/ImportListsSection.tsx
+msgid "Plan to read (to your shortlist)"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -24370,6 +24381,10 @@ msgstr "İsteklerin"
 #, fuzzy
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
 msgstr "Rafınız, puanlarınız ve okuma geçmişiniz sıralamayı besler. Beğeni, gizleme ve görülme işaretleri yalnızca birer başlığı etkiler."
+
+#: src/components/ImportListsSection.tsx
+msgid "Your shortlist is full."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy

@@ -4388,12 +4388,12 @@ msgid "inbox.importList.finished.title"
 msgstr "Import listy zakończony"
 
 #. {tracker} is a site name (AniList, MyAnimeList, Kitsu, MangaBaka) and is not translated. The
-#. requested, skipped and errors counts drop out through their =0 branch; keep every =0 {} empty.
+#. requested, shortlisted, skipped and errors counts drop out through their =0 branch; keep every =0 {} empty.
 #: src/Maki.Api/Services/ImportListService.cs
-#. English: {tracker}: {added, plural, other {# added}}{requested, plural, =0 {} other {, # requested}}{skipped, plural, =0 {} other {, # skipped}}{errors, plural, =0 {} one {, # error} other {, # errors}}
+#. English: {tracker}: {added, plural, other {# added}}{requested, plural, =0 {} other {, # requested}}{shortlisted, plural, =0 {} other {, # shortlisted}}{skipped, plural, =0 {} other {, # skipped}}{errors, plural, =0 {} one {, # error} other {, # errors}}
 #, fuzzy
 msgid "inbox.importList.finished.body"
-msgstr "{tracker}: {added, plural, one {dodano # serię} few {dodano # serie} many {dodano # serii} other {dodano # serii}}{requested, plural, =0 {} one {, zgłoszono # prośbę} few {, zgłoszono # prośby} many {, zgłoszono # próśb} other {, zgłoszono # prośby}}{skipped, plural, =0 {} one {, pominięto # serię} few {, pominięto # serie} many {, pominięto # serii} other {, pominięto # serii}}{errors, plural, =0 {} one {, # błąd} few {, # błędy} many {, # błędów} other {, # błędu}}"
+msgstr "{tracker}: {added, plural, one {dodano # serię} few {dodano # serie} many {dodano # serii} other {dodano # serii}}{requested, plural, =0 {} one {, zgłoszono # prośbę} few {, zgłoszono # prośby} many {, zgłoszono # próśb} other {, zgłoszono # prośby}}{shortlisted, plural, =0 {} other {, # shortlisted}}{skipped, plural, =0 {} one {, pominięto # serię} few {, pominięto # serie} many {, pominięto # serii} other {, pominięto # serii}}{errors, plural, =0 {} one {, # błąd} few {, # błędy} many {, # błędów} other {, # błędu}}"
 
 #. {creator} is a person's or studio's name from the catalogue and is not translated.
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs

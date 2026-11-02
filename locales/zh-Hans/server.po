@@ -4387,12 +4387,12 @@ msgid "inbox.importList.finished.title"
 msgstr "列表导入已完成"
 
 #. {tracker} is a site name (AniList, MyAnimeList, Kitsu, MangaBaka) and is not translated. The
-#. requested, skipped and errors counts drop out through their =0 branch; keep every =0 {} empty.
+#. requested, shortlisted, skipped and errors counts drop out through their =0 branch; keep every =0 {} empty.
 #: src/Maki.Api/Services/ImportListService.cs
-#. English: {tracker}: {added, plural, other {# added}}{requested, plural, =0 {} other {, # requested}}{skipped, plural, =0 {} other {, # skipped}}{errors, plural, =0 {} one {, # error} other {, # errors}}
+#. English: {tracker}: {added, plural, other {# added}}{requested, plural, =0 {} other {, # requested}}{shortlisted, plural, =0 {} other {, # shortlisted}}{skipped, plural, =0 {} other {, # skipped}}{errors, plural, =0 {} one {, # error} other {, # errors}}
 #, fuzzy
 msgid "inbox.importList.finished.body"
-msgstr "{tracker}：{added, plural, other {已添加 # 个}}{requested, plural, =0 {} other {，已申请 # 个}}{skipped, plural, =0 {} other {，已跳过 # 个}}{errors, plural, =0 {} other {，# 个错误}}"
+msgstr "{tracker}：{added, plural, other {已添加 # 个}}{requested, plural, =0 {} other {，已申请 # 个}}{shortlisted, plural, =0 {} other {, # shortlisted}}{skipped, plural, =0 {} other {，已跳过 # 个}}{errors, plural, =0 {} other {，# 个错误}}"
 
 #. {creator} is a person's or studio's name from the catalogue and is not translated.
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs

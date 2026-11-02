@@ -11154,14 +11154,22 @@ msgid "Last run {finishedDate}."
 msgstr "Última ejecución {finishedDate}."
 
 #: src/components/ImportListsSection.tsx
-#, fuzzy
-msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
-msgstr "Última ejecución {when}: {added} añadidas, {requested} solicitadas, {skipped} omitidas"
+msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped"
+msgstr ""
+
+#: src/components/ImportListsSection.tsx
+msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped, {errors} errors"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "Última ejecución {when}: {added} añadidas, {requested} solicitadas, {skipped} omitidas, {errors} errores"
+#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
+#~ msgstr "Última ejecución {when}: {added} añadidas, {requested} solicitadas, {skipped} omitidas"
+
+#: src/components/ImportListsSection.tsx
+#, fuzzy
+#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "Última ejecución {when}: {added} añadidas, {requested} solicitadas, {skipped} omitidas, {errors} errores"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -15753,11 +15761,14 @@ msgstr "Fija uno a una serie desde su menú de perfil de calidad."
 msgid "Plain title search. Matches from just two characters."
 msgstr "Búsqueda simple por título. Encuentra coincidencias desde solo dos caracteres."
 
-#: src/components/ImportListsSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Plan to read"
 msgstr "Pendiente de lectura"
+
+#: src/components/ImportListsSection.tsx
+msgid "Plan to read (to your shortlist)"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -24370,6 +24381,10 @@ msgstr "Tus solicitudes"
 #, fuzzy
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
 msgstr "Tu estantería, valoraciones y lectura alimentan el ranking. Los pulgares, ocultar y visto solo afectan a un título cada uno."
+
+#: src/components/ImportListsSection.tsx
+msgid "Your shortlist is full."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy

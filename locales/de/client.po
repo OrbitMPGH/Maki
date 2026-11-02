@@ -11154,14 +11154,22 @@ msgid "Last run {finishedDate}."
 msgstr "Letzter Lauf {finishedDate}."
 
 #: src/components/ImportListsSection.tsx
-#, fuzzy
-msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
-msgstr "Letzter Lauf {when}: {added} hinzugefügt, {requested} angefragt, {skipped} übersprungen"
+msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped"
+msgstr ""
+
+#: src/components/ImportListsSection.tsx
+msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped, {errors} errors"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "Letzter Lauf {when}: {added} hinzugefügt, {requested} angefragt, {skipped} übersprungen, {errors} Fehler"
+#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
+#~ msgstr "Letzter Lauf {when}: {added} hinzugefügt, {requested} angefragt, {skipped} übersprungen"
+
+#: src/components/ImportListsSection.tsx
+#, fuzzy
+#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "Letzter Lauf {when}: {added} hinzugefügt, {requested} angefragt, {skipped} übersprungen, {errors} Fehler"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -15753,11 +15761,14 @@ msgstr "Fixiere eine davon für eine Serie im Menü ihres Qualitätsprofils."
 msgid "Plain title search. Matches from just two characters."
 msgstr "Einfache Titelsuche. Treffer ab zwei Zeichen."
 
-#: src/components/ImportListsSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Plan to read"
 msgstr "Lesen geplant"
+
+#: src/components/ImportListsSection.tsx
+msgid "Plan to read (to your shortlist)"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -24370,6 +24381,10 @@ msgstr "Deine Anfragen"
 #, fuzzy
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
 msgstr "Dein Regal, deine Bewertungen und dein Leseverhalten fließen ins Ranking ein. Daumen, Ausblenden und Gesehen betreffen jeweils nur einen Titel."
+
+#: src/components/ImportListsSection.tsx
+msgid "Your shortlist is full."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy

@@ -9142,12 +9142,20 @@ msgid "Last run {finishedDate}."
 msgstr "Last run {finishedDate}."
 
 #: src/components/ImportListsSection.tsx
-msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
-msgstr "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
+msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped"
+msgstr "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped"
 
 #: src/components/ImportListsSection.tsx
-msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
+msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped, {errors} errors"
+msgstr "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped, {errors} errors"
+
+#: src/components/ImportListsSection.tsx
+#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
+#~ msgstr "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
+
+#: src/components/ImportListsSection.tsx
+#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
 
 #: src/components/ImportListsSection.tsx
 msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
@@ -12898,10 +12906,13 @@ msgstr "Pin one to a series from its Quality profile menu."
 msgid "Plain title search. Matches from just two characters."
 msgstr "Plain title search. Matches from just two characters."
 
-#: src/components/ImportListsSection.tsx
 #: src/components/ui/status.tsx
 msgid "Plan to read"
 msgstr "Plan to read"
+
+#: src/components/ImportListsSection.tsx
+msgid "Plan to read (to your shortlist)"
+msgstr "Plan to read (to your shortlist)"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Planning"
@@ -19955,6 +19966,10 @@ msgstr "Your requests"
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
 msgstr "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
+
+#: src/components/ImportListsSection.tsx
+msgid "Your shortlist is full."
+msgstr "Your shortlist is full."
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Your source changes have not been saved. Closing now discards them."

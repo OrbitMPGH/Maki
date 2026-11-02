@@ -11154,14 +11154,22 @@ msgid "Last run {finishedDate}."
 msgstr "마지막 실행 {finishedDate}."
 
 #: src/components/ImportListsSection.tsx
-#, fuzzy
-msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
-msgstr "마지막 실행 {when}: {added}개 추가, {requested}개 요청, {skipped}개 건너뜀"
+msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped"
+msgstr ""
+
+#: src/components/ImportListsSection.tsx
+msgid "Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped, {errors} errors"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "마지막 실행 {when}: {added}개 추가, {requested}개 요청, {skipped}개 건너뜀, 오류 {errors}개"
+#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
+#~ msgstr "마지막 실행 {when}: {added}개 추가, {requested}개 요청, {skipped}개 건너뜀"
+
+#: src/components/ImportListsSection.tsx
+#, fuzzy
+#~ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "마지막 실행 {when}: {added}개 추가, {requested}개 요청, {skipped}개 건너뜀, 오류 {errors}개"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -15753,11 +15761,14 @@ msgstr "시리즈의 품질 프로필 메뉴에서 하나를 고정하세요."
 msgid "Plain title search. Matches from just two characters."
 msgstr "일반 제목 검색입니다. 두 글자만으로 일치 항목을 찾습니다."
 
-#: src/components/ImportListsSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Plan to read"
 msgstr "읽을 예정"
+
+#: src/components/ImportListsSection.tsx
+msgid "Plan to read (to your shortlist)"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -24370,6 +24381,10 @@ msgstr "내 요청"
 #, fuzzy
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
 msgstr "라이브러리, 평점, 독서 기록이 순위 산정에 반영됩니다. 좋아요/싫어요, 숨기기, 봄 표시는 해당 작품에만 영향을 줍니다."
+
+#: src/components/ImportListsSection.tsx
+msgid "Your shortlist is full."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
