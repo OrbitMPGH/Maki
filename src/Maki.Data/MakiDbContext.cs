@@ -36,6 +36,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<RatingSnapshot> RatingSnapshots => Set<RatingSnapshot>();
     public DbSet<RecommendationFeedback> RecommendationFeedback => Set<RecommendationFeedback>();
     public DbSet<RecommendationFeedbackEvent> RecommendationFeedbackEvents => Set<RecommendationFeedbackEvent>();
+    public DbSet<ShortlistEntry> ShortlistEntries => Set<ShortlistEntry>();
     public DbSet<RecommendationSignalOverride> RecommendationSignalOverrides => Set<RecommendationSignalOverride>();
     public DbSet<RecommendationProfileState> RecommendationProfileStates => Set<RecommendationProfileState>();
     public DbSet<RecommendationMutationReceipt> RecommendationMutationReceipts => Set<RecommendationMutationReceipt>();
@@ -289,6 +290,15 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         {
             e.Property(x => x.Revision).IsConcurrencyToken();
             e.HasIndex(x => new { x.UserId, x.Provider, x.ProviderId }).IsUnique();
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+        modelBuilder.Entity<ShortlistEntry>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.MangaBakaId }).IsUnique();
+            e.Property(x => x.Title).HasMaxLength(ShortlistEntry.TitleMaxLength);
+            e.Property(x => x.Note).HasMaxLength(ShortlistEntry.NoteMaxLength);
+            e.Property(x => x.SavedFromDetail).HasMaxLength(ShortlistEntry.SavedFromDetailMaxLength);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
         });

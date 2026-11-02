@@ -12,6 +12,13 @@ using Microsoft.Extensions.Logging;
 
 namespace Maki.Metadata.MangaBaka;
 
+/// <summary>
+/// One shortlist entry's dump answer: the canonical work its stored id resolves to, that row's
+/// <c>state</c> (null when the chain ends on no row), and its card when the row is active, not a
+/// novel and within the caller's ceiling.
+/// </summary>
+public sealed record MangaBakaShortlistRow(long CanonicalId, string? State, MangaBakaRecommendation? Item);
+
 /// <summary>What a title search found, and the spelling it had to fall back on to find it.</summary>
 /// <param name="CorrectedQuery">
 /// Non-null only when the query as typed found next to nothing and a respelling did better. The UI
@@ -1191,6 +1198,106 @@ public class MangaBakaLocalStore(
         }
 
         return ids.Select(byId.GetValueOrDefault).OfType<MangaBakaRecommendation>().ToList();
+    }
+
+    /// <summary>
+    /// What a shortlist needs for each stored id: the canonical work it now is and that work's card.
+    /// <para>
+    /// Two steps. Canonical ids are resolved with no ceiling, following <c>merged_with</c> up to five
+    /// hops, because a merged pointer row usually carries no rating of its own and a ceiling there
+    /// would drop every merged entry. Only then are the canonical rows hydrated, under the ceiling, in
+    /// the same shape as <see cref="GetByIdsAsync"/>, so a null rating is hidden under any ceiling.
+    /// </para>
+    /// <para>
+    /// An id whose chain ends on no row, a removed row or a novel comes back with a null
+    /// <see cref="MangaBakaShortlistRow.Item"/>. An id whose canonical row is active but above the
+    /// ceiling is left out of the result entirely. A null ceiling hydrates everything. Empty when
+    /// no dump is installed.
+    /// </para>
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<long, MangaBakaShortlistRow>> GetShortlistRowsAsync(
+        IReadOnlyCollection<long> ids, IReadOnlyList<string>? contentRatings, CancellationToken ct = default)
+    {
+        var result = new Dictionary<long, MangaBakaShortlistRow>();
+        var wanted = ids.Where(id => id > 0).Distinct().Take(MaxInlineIds).ToList();
+        if (wanted.Count == 0 || !await IsAvailableAsync(ct))
+        {
+            return result;
+        }
+
+        var rows = new Dictionary<long, (string? State, string? MergedWith, string? Type)>();
+        using (var conn = Open())
+        {
+            var pending = wanted;
+            for (var hop = 0; hop <= 5 && pending.Count > 0; hop++)
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = $"""
+                    SELECT id, state, merged_with, type FROM series
+                    WHERE id IN ({string.Join(",", pending.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+                    """;
+                var next = new List<long>();
+                using var reader = await cmd.ExecuteReaderAsync(ct);
+                while (await reader.ReadAsync(ct))
+                {
+                    var row = (GetString(reader, 1), GetString(reader, 2), GetString(reader, 3));
+                    rows[reader.GetInt64(0)] = row;
+                    if (row.Item1 == "merged" &&
+                        long.TryParse(row.Item2, NumberStyles.Integer, CultureInfo.InvariantCulture, out var target) &&
+                        !rows.ContainsKey(target))
+                    {
+                        next.Add(target);
+                    }
+                }
+
+                pending = next.Distinct().ToList();
+            }
+        }
+
+        var resolved = new Dictionary<long, (long Canonical, string? State, bool Hydrate)>(wanted.Count);
+        foreach (var id in wanted)
+        {
+            var current = id;
+            var found = false;
+            for (var hop = 0; hop <= 5 && rows.TryGetValue(current, out var row); hop++)
+            {
+                if (row.State == "merged" &&
+                    long.TryParse(row.MergedWith, NumberStyles.Integer, CultureInfo.InvariantCulture, out var target))
+                {
+                    current = target;
+                    continue;
+                }
+
+                resolved[id] = (current, row.State, row.State == "active" && row.Type != "novel");
+                found = true;
+                break;
+            }
+
+            if (!found)
+            {
+                resolved[id] = (id, null, false);
+            }
+        }
+
+        var canonicalIds = resolved.Values.Where(r => r.Hydrate).Select(r => r.Canonical).Distinct().ToList();
+        var items = canonicalIds.Count == 0
+            ? new Dictionary<long, MangaBakaRecommendation>()
+            : (await GetByIdsAsync(canonicalIds, contentRatings ?? ContentRating.All, ct))
+                .ToDictionary(r => long.Parse(r.ProviderId, CultureInfo.InvariantCulture));
+
+        foreach (var (id, row) in resolved)
+        {
+            if (!row.Hydrate)
+            {
+                result[id] = new MangaBakaShortlistRow(row.Canonical, row.State, null);
+            }
+            else if (items.TryGetValue(row.Canonical, out var item))
+            {
+                result[id] = new MangaBakaShortlistRow(row.Canonical, row.State, item);
+            }
+        }
+
+        return result;
     }
 
     /// <summary>

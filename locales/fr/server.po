@@ -2508,6 +2508,25 @@ msgstr "{service} : l'URL doit être une adresse complète en http:// ou https:/
 msgid "error.settings.trustedProxyInvalid"
 msgstr "« {entry} » n'est pas une adresse IP ni un réseau CIDR"
 
+#. Saving to the Discover shortlist when it already holds the most one person may keep.
+#. {max} is that limit.
+#: src/Maki.Api/Controllers/ShortlistController.cs
+#. English: Your shortlist is full. It holds at most {max} titles.
+msgid "error.shortlist.full"
+msgstr ""
+
+#. Saving a title to the shortlist that is already in the library, archived or not.
+#: src/Maki.Api/Controllers/ShortlistController.cs
+#. English: This title is already in the library.
+msgid "error.shortlist.inLibrary"
+msgstr ""
+
+#. Saving a title to the shortlist that the catalogue does not have, or that is hidden from this account.
+#: src/Maki.Api/Controllers/ShortlistController.cs
+#. English: This title is not in the catalogue.
+msgid "error.shortlist.notInCatalogue"
+msgstr ""
+
 #: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Series already has a mapping for this source
 #, fuzzy

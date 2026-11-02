@@ -258,6 +258,17 @@ public class SeriesCreationService(
             });
             bumpSignalFor = attributedUserId.Value;
         }
+        // Outside the incognito guard, unfiltered (approval runs under the admin's scope) and tracked,
+        // so a failed insert keeps the entry. A direct read: this holds the provider lock already.
+        if (attributedUserId is > 0 && series.MangaBakaId is int shortlisted)
+        {
+            var entry = await db.ShortlistEntries.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => x.UserId == attributedUserId && x.MangaBakaId == shortlisted, ct);
+            if (entry is not null)
+            {
+                db.ShortlistEntries.Remove(entry);
+            }
+        }
         await db.SaveChangesAsync(ct);
         // After the save, so the provenance row the revision announces is already there. Inside the
         // creation transaction when there is one, so a retry cannot see one without the other.

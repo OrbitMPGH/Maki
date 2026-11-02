@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using System.Net;
 using Maki.Api.Hubs;
 using Maki.Api.Jobs;
+using Maki.Api.Services;
 using Maki.Metadata.MangaBaka;
 using Microsoft.Extensions.Logging.Abstractions;
 using Quartz;
@@ -109,6 +110,9 @@ public class MangaBakaDumpRetryTests : IAsyncLifetime
                 dumpService, dumpOptions, status, new EventBroadcaster(null!, null!), schedulerFactory: null!,
                 new ArtifactBuildGate(NullLogger<ArtifactBuildGate>.Instance),
                 new MangaBakaDumpRetry(TimeSpan.FromMilliseconds(200)),
+                new ShortlistMergeService(null!,
+                    new MangaBakaLocalStore(dumpOptions, NullLogger<MangaBakaLocalStore>.Instance),
+                    NullLogger<ShortlistMergeService>.Instance),
                 NullLogger<MangaBakaDumpRefreshJob>.Instance);
             _scheduler.JobFactory = new OneJob(job);
             await _scheduler.Start();

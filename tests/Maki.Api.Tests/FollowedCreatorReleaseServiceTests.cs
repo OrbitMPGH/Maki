@@ -181,6 +181,32 @@ public sealed class FollowedCreatorReleaseServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Shortlisted_titles_are_left_out_for_that_reader_only()
+    {
+        var reader = Follower("reader", follows: [new CatalogueCredit("Junji Ito")]);
+        var other = Follower("other", follows: [new CatalogueCredit("Junji Ito")]);
+        await RunAsync();
+
+        _dump.AddSeries(10, "Saved", year: ThisYear, authorsJson: """["Junji Ito"]""");
+        _dump.AddSeries(11, "Fresh", year: ThisYear, authorsJson: """["Junji Ito"]""");
+        using (var db = _db.NewContext())
+        {
+            db.ShortlistEntries.Add(new ShortlistEntry
+            {
+                UserId = reader, MangaBakaId = 10, Title = "Saved", SavedFrom = "other",
+                CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow,
+            });
+            db.SaveChanges();
+        }
+
+        await RunAsync();
+
+        var mine = Assert.Single(_inbox.Raised, r => r.Audience == InboxAudience.User(reader));
+        Assert.Equal("Fresh", mine.Message.Params!["title"]);
+        Assert.Equal(2, _inbox.Raised.Count(r => r.Audience == InboxAudience.User(other)));
+    }
+
+    [Fact]
     public async Task A_role_limited_follow_ignores_the_name_in_other_roles()
     {
         Follower("reader", follows: [new CatalogueCredit("Kentaro Miura", CatalogueCredits.Artist)]);

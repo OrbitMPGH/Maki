@@ -362,6 +362,18 @@ public class RecommendationFeedbackService(
             db.Entry(state).State = EntityState.Detached;
         }
 
+        // Saved by whichever SaveChanges below runs first. Undo does not put the entry back.
+        if (action is "hide" or "dislike" && id <= int.MaxValue)
+        {
+            var shortlistKey = (int)id;
+            var shortlisted = await db.ShortlistEntries
+                .FirstOrDefaultAsync(x => x.UserId == userId && x.MangaBakaId == shortlistKey, ct);
+            if (shortlisted is not null)
+            {
+                db.ShortlistEntries.Remove(shortlisted);
+            }
+        }
+
         RecommendationFeedbackEvent? evt = null;
         if (changed)
         {

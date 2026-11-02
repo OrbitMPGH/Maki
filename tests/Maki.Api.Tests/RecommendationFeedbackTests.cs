@@ -689,6 +689,68 @@ public class RecommendationFeedbackTests : IDisposable
         Assert.Equal(3, await db.RecommendationFeedbackEvents.CountAsync());
     }
 
+    private void Shortlist(int userId, params int[] ids)
+    {
+        using var db = _fixture.NewContext();
+        db.ShortlistEntries.AddRange(ids.Select(id => new ShortlistEntry
+        {
+            UserId = userId, MangaBakaId = id, Title = "t", SavedFrom = "other",
+            CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow,
+        }));
+        db.SaveChanges();
+    }
+
+    private int[] Shortlisted(int userId)
+    {
+        using var db = _fixture.NewContext();
+        return db.ShortlistEntries.AsNoTracking().Where(x => x.UserId == userId)
+            .Select(x => x.MangaBakaId).OrderBy(x => x).ToArray();
+    }
+
+    [Fact]
+    public async Task Hide_and_thumbs_down_take_a_title_off_the_shortlist_and_dismiss_and_seen_do_not()
+    {
+        var other = _fixture.SeedUser("other");
+        Shortlist(1, 200, 201, 202, 203);
+        Shortlist(other, 200, 201);
+        using var db = _fixture.NewContext(1);
+        var service = Catalogued(db, 1, dump => dump
+            .AddSeries(200, "Hidden").AddSeries(201, "Disliked").AddSeries(202, "Dismissed").AddSeries(203, "Seen"));
+
+        await service.MutateAsync(1, 200, new FeedbackCommand("hide", Guid.NewGuid(), 0));
+        await service.MutateAsync(1, 201, new FeedbackCommand("dislike", Guid.NewGuid(), 0));
+        await service.MutateAsync(1, 202, new FeedbackCommand("dismiss", Guid.NewGuid(), 0));
+        await service.MutateAsync(1, 203, new FeedbackCommand("mark-exposed", Guid.NewGuid(), 0, Medium: "manga"));
+
+        Assert.Equal([202, 203], Shortlisted(1));
+        Assert.Equal([200, 201], Shortlisted(other));
+    }
+
+    [Fact]
+    public async Task Undoing_a_hide_does_not_put_the_title_back_on_the_shortlist()
+    {
+        Shortlist(1, 200);
+        using var db = _fixture.NewContext(1);
+        var service = Catalogued(db, 1, dump => dump.AddSeries(200, "Hidden"));
+
+        var hidden = await service.MutateAsync(1, 200, new FeedbackCommand("hide", Guid.NewGuid(), 0));
+        await service.UndoAsync(1, hidden.EventId!.Value, Guid.NewGuid(), 1);
+
+        Assert.Empty(Shortlisted(1));
+    }
+
+    [Fact]
+    public async Task Hiding_a_franchise_takes_each_visible_member_off_the_shortlist()
+    {
+        Shortlist(1, 100, 101, 102, 103);
+        using var db = _fixture.NewContext(1);
+        var service = Franchise(db);
+
+        await service.HideFranchiseAsync(1, 100, "hide", Guid.NewGuid());
+
+        Assert.Equal([103], Shortlisted(1));
+    }
+
     /// <summary>
     /// The avoidance labeller over nothing. Its inputs are the vector index, the dump and the
     /// reader's own shelf profile, and with an empty avoided set it answers before reaching any of

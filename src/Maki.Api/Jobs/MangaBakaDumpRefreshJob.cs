@@ -23,6 +23,7 @@ public class MangaBakaDumpRefreshJob(
     ISchedulerFactory schedulerFactory,
     ArtifactBuildGate gate,
     MangaBakaDumpRetry retry,
+    ShortlistMergeService shortlistMerge,
     ILogger<MangaBakaDumpRefreshJob> logger) : IJob
 {
     public static readonly JobKey Key = new("mangabaka-dump");
@@ -59,6 +60,17 @@ public class MangaBakaDumpRefreshJob(
                 var scheduler = await schedulerFactory.GetScheduler(context.CancellationToken);
                 await scheduler.TriggerJob(DiscoverCacheWarmJob.Key, context.CancellationToken);
                 await scheduler.TriggerJob(FollowedCreatorReleaseJob.Key, context.CancellationToken);
+
+                // Its own catch: a database error here is not a failed dump refresh and must not
+                // schedule a dump retry.
+                try
+                {
+                    await shortlistMerge.RekeyAsync(context.CancellationToken);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger.LogWarning(ex, "Could not move shortlist entries onto merged MangaBaka ids");
+                }
             }
         }
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
