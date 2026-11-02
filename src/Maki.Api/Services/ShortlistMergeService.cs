@@ -33,11 +33,10 @@ public class ShortlistMergeService(
             return 0;
         }
 
-        var rows = await store.GetShortlistRowsAsync(keys.Select(k => (long)k).ToList(), null, ct);
-        var groups = rows
-            .Where(r => r.Value.State is not null && r.Value.CanonicalId != r.Key &&
-                r.Value.CanonicalId is > 0 and <= int.MaxValue)
-            .GroupBy(r => (int)r.Value.CanonicalId, r => (int)r.Key)
+        var canonical = await store.ResolveCanonicalIdsAsync(keys.Select(k => (long)k).ToList(), ct);
+        var groups = canonical
+            .Where(r => r.Value != r.Key && r.Value is > 0 and <= int.MaxValue)
+            .GroupBy(r => (int)r.Value, r => (int)r.Key)
             .ToList();
 
         var rewritten = 0;

@@ -169,7 +169,7 @@ public sealed class ShortlistCleanupTests : IDisposable
             NullLogger<MangaBakaLocalStore>.Instance);
         var hidden = new HiddenContentService(new NoSettings(adder), null!, null!, store);
         var list = await new ShortlistService(scoped, store, new TestCurrentUser(adder), hidden).ListAsync();
-        var item = Assert.Single(list);
+        var item = Assert.Single(list.Entries);
         Assert.Equal(Merged, item.MangaBakaId);
         Assert.NotNull(item.Library?.SeriesId);
     }
@@ -196,6 +196,41 @@ public sealed class ShortlistCleanupTests : IDisposable
         var kept = await db.ShortlistEntries.AsNoTracking().SingleAsync(x => x.UserId == two);
         Assert.Equal(new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), kept.CreatedAtUtc);
         Assert.Equal(0, await Merge().RekeyAsync());
+    }
+
+    [Fact]
+    public async Task The_rekey_reaches_merged_keys_past_the_first_ten_thousand()
+    {
+        var one = _db.SeedUser("one");
+        var two = _db.SeedUser("two");
+        using (var db = _db.NewContext())
+        {
+            db.ShortlistEntries.AddRange(Enumerable.Range(1, 10_000).Select(i => new ShortlistEntry
+            {
+                UserId = one, MangaBakaId = i, Title = "t", SavedFrom = "other",
+                CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow,
+            }));
+            db.SaveChanges();
+        }
+
+        Store(two, Merged);
+
+        Assert.Equal(1, await Merge().RekeyAsync());
+        Assert.Contains((two, Canonical), Entries());
+    }
+
+    [Fact]
+    public async Task Canonical_resolution_follows_every_id_past_one_inline_chunk()
+    {
+        var store = new MangaBakaLocalStore(
+            new MangaBakaDumpOptions(_dump.Path, Path.GetTempPath()), NullLogger<MangaBakaLocalStore>.Instance);
+        var ids = Enumerable.Range(1, 10_000).Select(i => (long)i).Append(Merged).Append(Canonical).ToList();
+
+        var resolved = await store.ResolveCanonicalIdsAsync(ids);
+
+        Assert.Equal(2, resolved.Count);
+        Assert.Equal(Canonical, resolved[Merged]);
+        Assert.Equal(Canonical, resolved[Canonical]);
     }
 
     [Fact]

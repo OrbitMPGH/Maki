@@ -2134,8 +2134,8 @@ msgid "{samples, plural, one {Measured from # chapter across {series} series in 
 msgstr "{samples, plural, other {라이브러리의 시리즈 {series}개에 걸친 챕터 #개에서 측정: 픽셀당 {bpp}비트, JPG 환산.}}"
 
 #: src/pages/discover/ShortlistTab.tsx
-msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
-msgstr ""
+#~ msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
+#~ msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -4165,6 +4165,10 @@ msgstr "이 키를 사용하는 항목은 즉시 작동을 멈춥니다. 되돌�
 #, fuzzy
 msgid "Anything the admin should know"
 msgstr "관리자가 알아야 할 내용"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Anything you saved is kept and shows up here once the catalogue is installed."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
@@ -10666,6 +10670,10 @@ msgstr "이세계"
 msgid "Issuer URL"
 msgstr "발급자 URL"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "It also left your shortlist."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "It may have been removed from the library."
@@ -12593,6 +12601,10 @@ msgid "More actions for {chapterLbl}"
 msgstr "{chapterLbl} 추가 작업"
 
 #: src/pages/discover/ShortlistTab.tsx
+#~ msgid "More actions for {named}"
+#~ msgstr ""
+
+#: src/pages/discover/ShortlistTab.tsx
 msgid "More actions for {title}"
 msgstr ""
 
@@ -13483,8 +13495,8 @@ msgid "No longer in Suwayomi"
 msgstr "Suwayomi에 더 이상 없음"
 
 #: src/pages/discover/ShortlistTab.tsx
-msgid "No longer in the catalogue"
-msgstr ""
+#~ msgid "No longer in the catalogue"
+#~ msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -17158,6 +17170,10 @@ msgstr "{label} 삭제"
 #, fuzzy
 msgid "Remove {label} from this device"
 msgstr "이 기기에서 {label} 제거"
+
+#: src/pages/discover/ShortlistTab.tsx
+#~ msgid "Remove {named} from your shortlist"
+#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -21380,6 +21396,10 @@ msgstr "업그레이드를 위해 기존 파일을 옆으로 옮기지 못했습
 msgid "The oldest pages are dropped past this."
 msgstr "이 값을 넘으면 가장 오래된 페이지부터 버려집니다."
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "The ones on your shortlist left it."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "The other copy is no longer on disk. Open it to clear its record."
 msgstr ""
@@ -23418,6 +23438,10 @@ msgstr "베트남어"
 #, fuzzy
 msgid "View"
 msgstr "보기"
+
+#: src/pages/discover/ShortlistTab.tsx
+#~ msgid "View {named}"
+#~ msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx

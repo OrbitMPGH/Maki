@@ -1,6 +1,6 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import type { RecommendationItem } from '../../src/api/hooks'
-import type { RemovedShortlistEntry, ShortlistEntry } from '../../src/api/shortlist'
+import type { RemovedShortlistEntry, ShortlistEntry, ShortlistIdsResponse, ShortlistList } from '../../src/api/shortlist'
 import { api, daysAgo } from './api'
 import { catalogueItem } from './discover/fixtures'
 
@@ -10,12 +10,17 @@ const noContent = () => new HttpResponse(null, { status: 204 })
 /** A catalogue card for the id; an id outside {@link catalogueItem}'s range still gets one, so a write never fails. */
 const itemFor = (id: number) => catalogueItem(((id - BASE_ID) % 1000 + 1000) % 1000)
 
-function entry(n: number, overrides: Partial<Omit<ShortlistEntry, 'item'>> & { item?: Partial<RecommendationItem> } = {}): ShortlistEntry {
-  const { item: itemOverrides, ...rest } = overrides
-  const item = { ...catalogueItem(n), ...itemOverrides }
+/** A saved entry for one catalogue item, the way the server hydrates it. */
+export function shortlistEntry(
+  item: RecommendationItem,
+  overrides: Partial<Omit<ShortlistEntry, 'item'>> = {},
+): ShortlistEntry {
   return {
     mangaBakaId: Number(item.providerId),
+    title: item.title,
     item,
+    type: 'manga',
+    hasAnime: false,
     note: null,
     savedFrom: 'other',
     savedFromDetail: null,
@@ -23,33 +28,40 @@ function entry(n: number, overrides: Partial<Omit<ShortlistEntry, 'item'>> & { i
     statusChange: null,
     newChapters: null,
     library: null,
-    ...rest,
+    ...overrides,
   }
 }
 
+function entry(n: number, overrides: Partial<Omit<ShortlistEntry, 'item'>> = {}, item: Partial<RecommendationItem> = {}) {
+  return shortlistEntry({ ...catalogueItem(n), ...item }, overrides)
+}
+
 /** A title that finished since it was saved, with chapters added on top. */
-export const changedEntry = entry(6, {
-  note: 'Wait for the ending before starting.',
-  savedFrom: 'rail:trending',
-  createdAtUtc: daysAgo(70),
-  statusChange: { from: 'Ongoing', to: 'Completed' },
-  newChapters: 12,
-  item: { type: 'Manga', hasAnime: true, status: 'Completed' },
-})
+export const changedEntry = entry(
+  6,
+  {
+    note: 'Wait for the ending before starting.',
+    savedFrom: 'rail:trending',
+    createdAtUtc: daysAgo(70),
+    statusChange: { from: 'Ongoing', to: 'Completed' },
+    newChapters: 12,
+    hasAnime: true,
+  },
+  { status: 'Completed' },
+)
 
 export const hiatusEntry = entry(7, {
   savedFrom: 'importlist',
   savedFromDetail: 'AniList',
   createdAtUtc: daysAgo(400),
   statusChange: { from: 'Ongoing', to: 'Hiatus' },
-  item: { type: 'Manga', hasAnime: false },
+  type: 'manhwa',
 })
 
 export const ongoingEntry = entry(3, {
   savedFrom: 'search',
   createdAtUtc: daysAgo(20),
   newChapters: 14,
-  item: { type: 'Manga', hasAnime: false },
 })
 
 export const oldCompletedEntry = entry(10, {
@@ -57,27 +69,28 @@ export const oldCompletedEntry = entry(10, {
   savedFrom: 'creator',
   savedFromDetail: 'Haruka Ono',
   createdAtUtc: daysAgo(200),
-  item: { type: 'Manga', hasAnime: true },
+  hasAnime: true,
 })
 
 export const inLibraryEntry = entry(0, {
   savedFrom: 'rail:recent',
   createdAtUtc: daysAgo(5),
   library: { seriesId: 3, archived: false },
-  item: { type: 'Manga', hasAnime: false },
 })
 
 export const hiddenLibraryEntry = entry(12, {
   savedFrom: 'catalogue',
   createdAtUtc: daysAgo(3),
   library: { seriesId: null, archived: false },
-  item: { type: 'Manga', hasAnime: false },
 })
 
+/** The catalogue no longer has it: no card, only the title stored when it was saved. */
 export const removedEntry: ShortlistEntry = {
   mangaBakaId: 99999,
-  item: null,
   title: 'Vanished Title',
+  item: null,
+  type: null,
+  hasAnime: false,
   note: null,
   savedFrom: 'other',
   savedFromDetail: null,
@@ -88,9 +101,9 @@ export const removedEntry: ShortlistEntry = {
 }
 
 export const recentEntry = entry(14, {
-  savedFrom: 'rail:cohort',
+  savedFrom: 'rail:popular',
   createdAtUtc: daysAgo(2),
-  item: { type: 'Manga', hasAnime: true },
+  hasAnime: true,
 })
 
 export const shortlistEntries: ShortlistEntry[] = [
@@ -104,31 +117,29 @@ export const shortlistEntries: ShortlistEntry[] = [
   recentEntry,
 ]
 
-/** The same entries with the catalogue gone, as the server answers before a dump is installed. */
-export const shortlistNoDump: ShortlistEntry[] = shortlistEntries.map((e) => ({
-  ...e,
-  item: null,
-  title: e.item?.title ?? e.title ?? null,
-  statusChange: null,
-  newChapters: null,
-}))
-
-const idsOf = (list: ShortlistEntry[]) => [
-  ...new Set(list.flatMap((e) => [e.mangaBakaId, ...(e.item ? [Number(e.item.providerId)] : [])])),
-]
+const idsOf = (list: ShortlistEntry[]): ShortlistIdsResponse => ({
+  ids: [...new Set(list.flatMap((e) => [e.mangaBakaId, ...(e.item ? [Number(e.item.providerId)] : [])]))],
+  count: list.length,
+})
 
 /**
  * The handlers every story gets: an empty shortlist, so cards render unsaved and any write succeeds.
  * Registered globally because every card on every page reads `shortlist/ids`.
  */
 export const shortlistHandlers: HttpHandler[] = [
-  http.get(api('/shortlist/ids'), () => HttpResponse.json([])),
-  http.get(api('/shortlist'), () => HttpResponse.json([])),
+  http.get(api('/shortlist/ids'), () => HttpResponse.json({ ids: [], count: 0 } satisfies ShortlistIdsResponse)),
+  http.get(api('/shortlist'), () => HttpResponse.json({ catalogueAvailable: true, entries: [] } satisfies ShortlistList)),
   http.put(api('/shortlist/:id'), noContent),
   http.patch(api('/shortlist/:id'), noContent),
   http.post(api('/shortlist/:id/acknowledge'), noContent),
   http.post(api('/shortlist/:id/restore'), noContent),
   http.delete(api('/shortlist/:id'), noContent),
+]
+
+/** What the server answers before the catalogue is downloaded: no entries, and the flag that says why. */
+export const shortlistNoDumpHandlers: HttpHandler[] = [
+  http.get(api('/shortlist/ids'), () => HttpResponse.json({ ids: [], count: 0 } satisfies ShortlistIdsResponse)),
+  http.get(api('/shortlist'), () => HttpResponse.json({ catalogueAvailable: false, entries: [] } satisfies ShortlistList)),
 ]
 
 /**
@@ -139,26 +150,25 @@ export const shortlistHandlers: HttpHandler[] = [
 export function shortlistMock(initial: ShortlistEntry[]) {
   let list = initial.map((e) => ({ ...e }))
   const find = (id: number) => list.find((e) => e.mangaBakaId === id || e.item?.providerId === String(id))
+  const added = (id: number, fields: Pick<ShortlistEntry, 'note' | 'savedFrom' | 'savedFromDetail' | 'createdAtUtc'>) => {
+    const item = itemFor(id)
+    return shortlistEntry(item, { mangaBakaId: id, ...fields })
+  }
   const handlers: HttpHandler[] = [
     http.get(api('/shortlist/ids'), () => HttpResponse.json(idsOf(list))),
-    http.get(api('/shortlist'), () => HttpResponse.json(list)),
+    http.get(api('/shortlist'), () => HttpResponse.json({ catalogueAvailable: true, entries: list } satisfies ShortlistList)),
     http.put(api('/shortlist/:id'), async ({ params, request }) => {
       const id = Number(params.id)
       const body = (await request.json()) as { savedFrom: string; savedFromDetail?: string; note?: string }
       if (!find(id)) {
         list = [
           ...list,
-          {
-            mangaBakaId: id,
-            item: itemFor(id),
+          added(id, {
             note: body.note ?? null,
             savedFrom: body.savedFrom,
             savedFromDetail: body.savedFromDetail ?? null,
             createdAtUtc: new Date().toISOString(),
-            statusChange: null,
-            newChapters: null,
-            library: null,
-          },
+          }),
         ]
       }
       return noContent()
@@ -183,7 +193,7 @@ export function shortlistMock(initial: ShortlistEntry[]) {
       list = list.filter((e) => e !== target)
       return HttpResponse.json({
         mangaBakaId: target.mangaBakaId,
-        title: target.item?.title ?? target.title ?? '',
+        title: target.title,
         note: target.note,
         savedFrom: target.savedFrom,
         savedFromDetail: target.savedFromDetail,
@@ -198,17 +208,12 @@ export function shortlistMock(initial: ShortlistEntry[]) {
       if (!find(id)) {
         list = [
           ...list,
-          {
-            mangaBakaId: id,
-            item: itemFor(id),
+          added(id, {
             note: body.note,
             savedFrom: body.savedFrom,
             savedFromDetail: body.savedFromDetail,
             createdAtUtc: body.createdAtUtc,
-            statusChange: null,
-            newChapters: null,
-            library: null,
-          },
+          }),
         ]
       }
       return noContent()

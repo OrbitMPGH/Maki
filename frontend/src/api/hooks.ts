@@ -297,9 +297,6 @@ export interface RecommendationItem {
    * so on the card.
    */
   franchiseId?: number | null
-  /** Set on shortlist rows, which hydrate straight from the dump. Absent elsewhere. */
-  type?: string | null
-  hasAnime?: boolean
 }
 
 export interface RecommendationsResult {

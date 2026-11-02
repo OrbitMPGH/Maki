@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { api } from './client'
 import { CUSTOM_RAIL_PREFIX } from './customRails'
-import { DISCOVER_SECTIONS, type DiscoverRail, type RecommendationItem } from './hooks'
+import { DISCOVER_SECTIONS, HOME_SECTIONS, type DiscoverRail, type HomeSectionKey, type RecommendationItem } from './hooks'
 
 /**
  * Where a title was saved from. `savedFrom` is one of `rail:{section key}`, `rail:{custom rail id}`,
@@ -28,6 +28,13 @@ export function sectionSource(key: string): ShortlistSource {
   return SECTION_SOURCES.get(key) ?? OTHER_SOURCE
 }
 
+const HOME_SOURCES = new Map<string, ShortlistSource>(HOME_SECTIONS.map((key) => [key, { savedFrom: `rail:${key}` }]))
+
+/** The stable source for one Home section. */
+export function homeSectionSource(key: HomeSectionKey): ShortlistSource {
+  return HOME_SOURCES.get(key) ?? OTHER_SOURCE
+}
+
 /** The source for a Discover rail, which is also what its "Show more" view saves from. */
 export function railSource(rail: Pick<DiscoverRail, 'key' | 'title' | 'genre'>): ShortlistSource {
   if ((DISCOVER_SECTIONS as readonly string[]).includes(rail.key)) return sectionSource(rail.key)
@@ -49,10 +56,13 @@ export interface ShortlistLibraryState {
 export interface ShortlistEntry {
   /** The stored key. Row-level writes address this; cards and the modal use `item.providerId`. */
   mangaBakaId: number
+  /** The title as it was saved. */
+  title: string
   /** Null when the catalogue no longer has the title. */
   item: RecommendationItem | null
-  /** The stored title, for a row whose `item` is null. */
-  title?: string | null
+  /** The catalogue type (`manga`, `manhwa`, ...), set with `item`. */
+  type: string | null
+  hasAnime: boolean
   note: string | null
   savedFrom: string
   savedFromDetail: string | null
@@ -60,6 +70,19 @@ export interface ShortlistEntry {
   statusChange: ShortlistStatusChange | null
   newChapters: number | null
   library: ShortlistLibraryState | null
+}
+
+export interface ShortlistList {
+  /** False before the catalogue is downloaded; `entries` is then empty. */
+  catalogueAvailable: boolean
+  entries: ShortlistEntry[]
+}
+
+export interface ShortlistIdsResponse {
+  /** Every visible entry's id, a merged entry under both its stored and its canonical id. */
+  ids: number[]
+  /** Visible entries, a merged one counted once. */
+  count: number
 }
 
 /** What DELETE returns, and what restore takes back. */
@@ -77,15 +100,16 @@ export interface RemovedShortlistEntry {
 const IDS_KEY = ['shortlist-ids'] as const
 const LIST_KEY = ['shortlist'] as const
 
-const toSet = (ids: number[]) => new Set(ids)
+const fetchIds = () => api<ShortlistIdsResponse>('/shortlist/ids')
+const toCount = (data: ShortlistIdsResponse) => data.count
 
-/** Every id on the list, merged entries included under both ids. Drives the card ribbons and the tab count. */
-export function useShortlistIds() {
+/** How many titles are on the list, for the tab count. */
+export function useShortlistCount() {
   return useQuery({
     queryKey: IDS_KEY,
-    queryFn: () => api<number[]>('/shortlist/ids'),
+    queryFn: fetchIds,
     staleTime: 10 * 60 * 1000,
-    select: toSet,
+    select: toCount,
   })
 }
 
@@ -94,9 +118,9 @@ export function useIsShortlisted(providerId: string): boolean {
   const id = Number(providerId)
   const { data } = useQuery({
     queryKey: IDS_KEY,
-    queryFn: () => api<number[]>('/shortlist/ids'),
+    queryFn: fetchIds,
     staleTime: 10 * 60 * 1000,
-    select: (ids) => ids.includes(id),
+    select: (data) => data.ids.includes(id),
   })
   return data ?? false
 }
@@ -104,9 +128,13 @@ export function useIsShortlisted(providerId: string): boolean {
 export function useShortlist(enabled = true) {
   return useQuery({
     queryKey: LIST_KEY,
-    queryFn: () => api<ShortlistEntry[]>('/shortlist'),
+    queryFn: () => api<ShortlistList>('/shortlist'),
     enabled,
   })
+}
+
+function patchList(client: QueryClient, update: (entries: ShortlistEntry[]) => ShortlistEntry[]) {
+  client.setQueryData<ShortlistList>(LIST_KEY, (list) => (list ? { ...list, entries: update(list.entries) } : list))
 }
 
 function invalidateShortlist(client: QueryClient) {
@@ -115,9 +143,14 @@ function invalidateShortlist(client: QueryClient) {
 }
 
 function patchIds(client: QueryClient, id: number, present: boolean) {
-  client.setQueryData<number[]>(IDS_KEY, (ids) => {
-    const rest = (ids ?? []).filter((x) => x !== id)
-    return present ? [...rest, id] : rest
+  client.setQueryData<ShortlistIdsResponse>(IDS_KEY, (data) => {
+    const ids = data?.ids ?? []
+    const count = data?.count ?? 0
+    const had = ids.includes(id)
+    if (had === present) return data ?? { ids, count }
+    return present
+      ? { ids: [...ids, id], count: count + 1 }
+      : { ids: ids.filter((x) => x !== id), count: Math.max(0, count - 1) }
   })
 }
 
@@ -148,8 +181,8 @@ export function useUpdateShortlistNote() {
     mutationFn: ({ id, note }: { id: number; note: string }) =>
       api<void>(`/shortlist/${id}`, { method: 'PATCH', body: JSON.stringify({ note }) }),
     onMutate: ({ id, note }) => {
-      client.setQueryData<ShortlistEntry[]>(LIST_KEY, (list) =>
-        list?.map((e) => (e.mangaBakaId === id || e.item?.providerId === String(id) ? { ...e, note: note.trim() || null } : e)),
+      patchList(client, (entries) =>
+        entries.map((e) => (e.mangaBakaId === id || e.item?.providerId === String(id) ? { ...e, note: note.trim() || null } : e)),
       )
     },
     onSettled: () => void client.invalidateQueries({ queryKey: LIST_KEY }),
@@ -174,9 +207,7 @@ export function useRemoveFromShortlist() {
       await client.cancelQueries({ queryKey: IDS_KEY })
       await client.cancelQueries({ queryKey: LIST_KEY })
       patchIds(client, id, false)
-      client.setQueryData<ShortlistEntry[]>(LIST_KEY, (list) =>
-        list?.filter((e) => e.mangaBakaId !== id && e.item?.providerId !== String(id)),
-      )
+      patchList(client, (entries) => entries.filter((e) => e.mangaBakaId !== id && e.item?.providerId !== String(id)))
     },
     onError: (_error, { id }) => patchIds(client, id, true),
     onSettled: () => invalidateShortlist(client),

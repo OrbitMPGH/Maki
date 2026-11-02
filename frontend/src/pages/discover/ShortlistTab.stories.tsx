@@ -5,15 +5,16 @@ import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import { discoverPage, resetTabState } from '../../../.storybook/mocks/discover'
 import {
   changedEntry,
+  hiatusEntry,
+  removedEntry,
   shortlistEntries,
   shortlistMock,
-  shortlistNoDump,
+  shortlistNoDumpHandlers,
 } from '../../../.storybook/mocks/shortlist'
 import { ShortlistTab } from './ShortlistTab'
 
 const filled = shortlistMock(shortlistEntries)
 const empty = shortlistMock([])
-const noDump = shortlistMock(shortlistNoDump)
 const requester = shortlistMock(shortlistEntries)
 
 const meta = {
@@ -21,7 +22,7 @@ const meta = {
   tags: ['ai-generated'],
   beforeEach: () => {
     resetTabState()
-    for (const mock of [filled, empty, noDump, requester]) mock.reset()
+    for (const mock of [filled, empty, requester]) mock.reset()
   },
   parameters: { layout: 'padded', msw: discoverPage(...filled.handlers) },
 } satisfies Meta<typeof ShortlistTab>
@@ -37,8 +38,19 @@ export const Filled: Story = {
     await expect(await canvas.findByText('+12 chapters')).toBeVisible()
     await expect(await canvas.findByText('Wait for the ending before starting.')).toBeVisible()
     await expect(await canvas.findByText('Saved 2 months ago from Trending now')).toBeVisible()
+    await expect(await canvas.findByText(/^Saved .* from Currently popular$/)).toBeVisible()
     await expect(await canvas.findByText('2 titles have waited more than six months.')).toBeVisible()
-    await expect((await canvas.findAllByText('Vanished Title')).length).toBeGreaterThan(0)
+    await expect((await canvas.findAllByText(removedEntry.title)).length).toBeGreaterThan(0)
+    await expect(await canvas.findByRole('button', { name: `Remove ${removedEntry.title} from your shortlist` })).toBeVisible()
+    await expect(await canvas.findByText('Manhwa')).toBeVisible()
+  },
+}
+
+export const HasAnAnime: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /^Has an anime/ }))
+    await waitFor(() => expect(canvas.queryByText(hiatusEntry.title)).toBeNull())
+    await expect(await canvas.findByText(changedEntry.title)).toBeVisible()
   },
 }
 
@@ -85,11 +97,11 @@ export const EditNote: Story = {
 
 export const RemoveWithUndo: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: `Remove ${changedEntry.item?.title} from your shortlist` }))
-    await waitFor(() => expect(canvas.queryByText(changedEntry.item?.title ?? '')).toBeNull())
+    await userEvent.click(await canvas.findByRole('button', { name: `Remove ${changedEntry.title} from your shortlist` }))
+    await waitFor(() => expect(canvas.queryByText(changedEntry.title)).toBeNull())
     const body = within(canvasElement.ownerDocument.body)
     await userEvent.click(await body.findByRole('button', { name: 'Undo' }))
-    await expect(await canvas.findByText(changedEntry.item?.title ?? '')).toBeVisible()
+    await expect(await canvas.findByText(changedEntry.title)).toBeVisible()
   },
 }
 
@@ -112,9 +124,10 @@ export const EmptyDisclosureOpen: Story = {
 }
 
 export const NoDump: Story = {
-  parameters: { msw: discoverPage(...noDump.handlers) },
+  parameters: { msw: discoverPage(...shortlistNoDumpHandlers) },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Discover's catalogue is not downloaded yet")).toBeVisible()
+    await expect(canvas.queryByText('Nothing on your shortlist')).toBeNull()
   },
 }
 

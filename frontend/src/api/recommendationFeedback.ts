@@ -76,6 +76,8 @@ export interface FeedbackMutation {
   queueEffect: string
   tasteEffect: string
   feedbackEffect: string
+  /** A hide or thumbs down took the title off the caller's shortlist. */
+  shortlistRemoved: boolean
 }
 
 export interface FranchiseFeedbackResult {
@@ -83,6 +85,7 @@ export interface FranchiseFeedbackResult {
   titles: { mangaBakaId: number; title: string | null }[]
   feedbackRevision: number
   skipped?: number
+  shortlistRemoved: boolean
 }
 
 export interface SignalOverrideState {

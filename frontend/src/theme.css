@@ -3037,6 +3037,26 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
+/* The catalogue list row: like `.discover-card-action`, one button covers the row and the save
+   button is a sibling above it. */
+.discover-row-action {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  cursor: pointer;
+  background: transparent;
+}
+.discover-row-action:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.discover-row .row-shortlist {
+  position: relative;
+  z-index: 2;
+}
 /* Preview and Shortlist side by side under the add panel. The preview button's longer labels wrap
    instead of truncating in the half column. */
 .discover-modal-actions {

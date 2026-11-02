@@ -431,6 +431,14 @@ public class ImportListService(
         var planToRead = candidates.Where(c => c.PlanToReadOnly).ToList();
         candidates.RemoveAll(c => c.PlanToReadOnly);
         var allowedRatings = ContentRating.Allowed(user.MaxContentRating);
+        Dictionary<int, int>? mergedKeys = null;
+        if (planToRead.Count > 0)
+        {
+            using var keysScope = scopeFactory.CreateScope();
+            mergedKeys = await keysScope.ServiceProvider.GetRequiredService<ShortlistService>()
+                .MergedKeysAsync(user.Id, ct);
+        }
+
         foreach (var candidate in planToRead)
         {
             try
@@ -438,7 +446,7 @@ public class ImportListService(
                 using var shortlistScope = scopeFactory.CreateScope();
                 var result = await shortlistScope.ServiceProvider.GetRequiredService<ShortlistService>().InsertAsync(
                     user.Id, allowedRatings, candidate.MangaBakaId, ShortlistService.FromImportList, tracker.Label,
-                    ct: ct);
+                    mergedKeys: mergedKeys, ct: ct);
 
                 switch (result.Outcome)
                 {

@@ -1,23 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor } from 'storybook/test'
 import { catalogueItem, discoverPage, resetTabState } from '../../../.storybook/mocks/discover'
-import { shortlistMock } from '../../../.storybook/mocks/shortlist'
+import { shortlistEntry, shortlistMock } from '../../../.storybook/mocks/shortlist'
 import { ShortlistButton, ShortlistNote } from './ShortlistButton'
 
 const item = catalogueItem(1)
 const unsaved = shortlistMock([])
 const saved = shortlistMock([
-  {
-    mangaBakaId: Number(item.providerId),
-    item,
-    note: 'After the current arc ends.',
-    savedFrom: 'search',
-    savedFromDetail: null,
-    createdAtUtc: new Date().toISOString(),
-    statusChange: null,
-    newChapters: null,
-    library: null,
-  },
+  shortlistEntry(item, { note: 'After the current arc ends.', savedFrom: 'search', createdAtUtc: new Date().toISOString() }),
 ])
 
 const meta = {

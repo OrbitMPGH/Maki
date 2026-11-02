@@ -61,10 +61,10 @@ Every per-user read goes through `OwnedByScopeUser` (`UserScopedQuery.cs`) so SQ
 
 `SavedFrom` is one of a fixed set, checked on write; anything else is stored as `other`:
 
-- `rail:{key}` for a Discover or Home rail, with `{key}` a `DISCOVER_SECTIONS` key, `rail:{id}` for a custom rail
+- `rail:{key}` for a Discover or Home rail, with `{key}` a `DISCOVER_SECTIONS` or `HOME_SECTIONS` key (Home's "You might like" saves as `rail:recommended`, "Currently popular" as `rail:popular`), `rail:{id}` for a custom rail
 - `search`, `catalogue`, `creator`, `series` (the series page's "More like this" and "Related" rails), `anime` (Home's "Continue from the anime"), `importlist`, `other`
 
-`SavedFromDetail` carries what the label needs and the key cannot: the creator's name, the tracker label for `importlist`, the custom rail's title at save time. The client renders the label ("Saved 2 months ago from Trending") from `DISCOVER_SECTION_LABELS` and its own map, through `t`. A rail that has since been deleted still has its title in `SavedFromDetail`.
+`SavedFromDetail` carries what the label needs and the key cannot: the creator's name, the tracker label for `importlist`, the custom rail's title at save time. The client renders the label ("Saved 2 months ago from Trending") from `DISCOVER_SECTION_LABELS`, then `HOME_SECTION_LABELS`, then its own map, through `t`. A rail that has since been deleted still has its title in `SavedFromDetail`.
 
 ## Changes since saved
 
@@ -82,8 +82,8 @@ No job, no notification, no stored "changed" flag. It is computed on read, so it
 
 | Method | Path | Does |
 |---|---|---|
-| GET | `shortlist/ids` | `int[]` of the caller's MangaBaka ids, filtered exactly like the list (below), so the tab count and the list always agree. Cached by the client for the ribbons on every card and the tab count. |
-| GET | `shortlist` | The hydrated list (below). |
+| GET | `shortlist/ids` | `{ ids: int[], count }`, filtered exactly like the list (below), so the tab count and the list always agree. `ids` holds each visible entry's stored key, plus its canonical id when merged; `count` is the number of visible entries, a merged one counted once. Cached by the client: `ids` for the ribbons on every card, `count` for the tab badge. |
+| GET | `shortlist` | `{ catalogueAvailable, entries }`, the hydrated list (below). |
 | PUT | `shortlist/{mangaBakaId}` | Body `{ savedFrom, savedFromDetail?, note? }`. Upsert. On insert it reads the dump row for the snapshot and title; a repeat PUT changes only the note when one is sent, never the snapshot or the provenance. 404 `error.shortlist.notInCatalogue` when the dump has no active row for the id **or the row is above the caller's content ceiling** (the same answer, so it does not confirm existence, as `RecommendationFeedbackService.MutateAsync` does). 409 `error.shortlist.inLibrary` when a series with that MangaBaka id exists at all (see "In the library" below). |
 | PATCH | `shortlist/{mangaBakaId}` | Body `{ note }`. Empty clears it. |
 | POST | `shortlist/{mangaBakaId}/acknowledge` | "Got it", see above. |
@@ -100,31 +100,36 @@ Route ids are `{mangaBakaId:int}` and must be positive, else 404: `Series.MangaB
 
 PUT and restore take `SeriesLocks.ProviderIdAsync` for the MangaBaka id around their check and insert, the lock `SeriesCreationService.CreateAsync` holds, so an entry cannot be inserted between an add's cleanup and its commit. `KeyedAsyncLock` is not reentrant: the add's cleanup (below) is a direct `db.ShortlistEntries` call made while `CreateAsync` already holds the lock, and must never go through a `ShortlistService` method that takes it again.
 
-The list response, one item per entry:
+The list response is `{ catalogueAvailable: boolean, entries: [...] }`, one entry per visible shortlist row:
 
 ```
-{ mangaBakaId, item: RecommendationItem | null, note, savedFrom, savedFromDetail, createdAtUtc,
+{ mangaBakaId, title, item: RecommendationItem | null, type: string | null, hasAnime: boolean,
+  note, savedFrom, savedFromDetail, createdAtUtc,
   statusChange: { from, to } | null, newChapters: number | null,
   library: { seriesId: number | null, archived: boolean } | null }
 ```
 
+`title` is the stored `ShortlistEntry.Title`, always present; the client shows it on a row whose `item` is null and uses it for aria labels and the Title sort. `type` (the dump's `type` column) and `hasAnime` (`anime_start` or `anime_end` is set) describe the canonical row and sit on the entry rather than on `RecommendationItem`, which other surfaces share; both are null and false when `item` is null.
+
 ### Hydration
 
-`MangaBakaLocalStore.GetByIdsAsync` is not enough here: it has no `state` test and does not follow `merged_with`, unlike the detail and rail reads. A new `MangaBakaLocalStore.GetShortlistRowsAsync(ids, allowedRatings)` returns, per id, the row's `state`, its canonical id (following `merged_with` up to five hops, as `GetDetailAsync` does), status, total chapters and the same columns `GetByIdsAsync` builds a `MangaBakaRecommendation` from. It works in two steps. First it resolves canonical ids with **no** ceiling (the `FollowMergedAsync` shape), because a merged pointer row usually has no rating of its own and a ceiling on that lookup would drop every merged entry. Then it hydrates the canonical rows with the ceiling, in the same `content_rating IN` shape as `GetByIdsAsync`, so a null rating is hidden under any ceiling. It treats `type = 'novel'` like a missing row, matching `GetDetailAsync`. A null ceiling skips the filter, which is what `RekeyAsync` passes. One query covers a full list (`MaxInlineIds` is 10,000, the cap is 2000).
+`MangaBakaLocalStore.GetByIdsAsync` is not enough here: it has no `state` test and does not follow `merged_with`, unlike the detail and rail reads. A new `MangaBakaLocalStore.GetShortlistRowsAsync(ids, allowedRatings)` returns, per id, the row's `state`, its canonical id (following `merged_with` up to five hops, as `GetDetailAsync` does), status, total chapters, the canonical row's `type` and anime flag, and the same columns `GetByIdsAsync` builds a `MangaBakaRecommendation` from. It works in two steps. First it resolves canonical ids with **no** ceiling (the `FollowMergedAsync` shape), because a merged pointer row usually has no rating of its own and a ceiling on that lookup would drop every merged entry. Then it hydrates the canonical rows with the ceiling, in the same `content_rating IN` shape as `GetByIdsAsync`, so a null rating is hidden under any ceiling. It treats `type = 'novel'` like a missing row, matching `GetDetailAsync`. A null ceiling skips the filter. One query covers a full list (`MaxInlineIds` is 10,000, the cap is 2000).
+
+Callers that only need to know which work a stored key is now use `MangaBakaLocalStore.ResolveCanonicalIdsAsync(ids)`: the same first step alone (five hops, no ceiling, no hydration), chunked by `MaxInlineIds`. An id whose chain ends on no row is absent from its answer. It serves the import's merged-key duplicate check, `RekeyAsync`, and the feedback cleanup below.
 
 **GETs never write.** Both endpoints are read-only:
 
 - **Merged** (canonical id differs): hydrated in memory from the canonical row, so title, status and chapters are current. The list item keeps the stored key in `mangaBakaId` (list-row writes address that; cards and the modal use the canonical id, see "Writes reach an entry stored under a merged id") and the canonical work in `item.providerId`; the ids endpoint returns both ids for such an entry, so the ribbon shows on the canonical work's card and the modal's button reads it as saved. The stored key is fixed up after each dump install, below.
 - **Removed or no longer in the dump** (any `state` other than active, a novel, or no row): `item` is null. The row shows its stored `Title`, no cover and only Remove.
 - **Above the ceiling**: left out by `GetShortlistRowsAsync`. **On the never-show list**: left out by `HiddenContentService.PredicateAsync`, which covers only that list and returns null when the user has none. The predicate is evaluated on the **canonical** ids: with the vector index loaded it answers `index.TryGetRow(id) && !Matches`, so a merged stored key has no row and would never be hidden. Both leave the entry stored, so raising the ceiling brings it back.
-- **No dump installed**: entries come back with `item: null`, and the client words the tab as "Discover's catalogue is not downloaded yet".
+- **No dump installed**: the list answers `{ catalogueAvailable: false, entries: [] }` and the ids `{ ids: [], count: 0 }`. Without the dump a stored title cannot be checked against the ceiling or the never-show list, so nothing is sent; the entries stay stored. The client shows "Discover's catalogue is not downloaded yet" only from `catalogueAvailable === false`, never from every item being null: a list of removed rows and novels with the dump installed renders normally, each row with its stored title and Remove.
 
 The two endpoints share one `ShortlistService.VisibleAsync`, so their filtering cannot drift.
 
 **Re-keying merged entries** happens in one place: `ShortlistMergeService.RekeyAsync` (singleton with `IServiceScopeFactory`, like `FollowedCreatorReleaseService`).
 
 - **When:** from `MangaBakaDumpRefreshJob`'s `if (installed)` block, inside its own try/catch with its own log line, so a database error is not reported as a failed dump refresh and does not schedule a dump retry. And once at startup from the `RunOnceAsync` block in `Program.cs`. It returns at once when `IsAvailableAsync` is false.
-- **What:** an `AsNoTracking` scan of every entry with filters off, canonical ids resolved through `GetShortlistRowsAsync` with a null ceiling. Only entries whose stored key resolves to a *different* canonical id are touched; one with no dump row is left alone.
+- **What:** an `AsNoTracking` scan of every distinct stored key with filters off, canonical ids resolved through `ResolveCanonicalIdsAsync` (chunked, so more than 10,000 distinct keys across users are all handled, and no card is hydrated). Only entries whose stored key resolves to a *different* canonical id are touched; one with no dump row is left alone.
 - **How, per canonical id:** take `SeriesLocks.ProviderIdAsync(canonical)`, then **re-query under the lock** `ShortlistEntries.IgnoreQueryFilters()` for the group's stored keys plus the canonical id (a PUT may have landed since the scan), keep the oldest entry per user, move it to the canonical id when it is not already there, delete the rest, and save once. Each group is caught on its own and the pass continues; a failed group is retried on the next install or restart.
 
 ### In the library
@@ -144,7 +149,7 @@ The two endpoints share one `ShortlistService.VisibleAsync`, so their filtering 
   - **Tracked, not `ExecuteDeleteAsync`.** Only adds with a mutation id run in a transaction; an immediate delete followed by a failed insert would lose the entry.
 
   That covers Discover's add, the series page, import lists, Mihon and request approval. Other users' entries stay and show as in the library, see above. The lookup is by `series.MangaBakaId`, which is canonical, so an entry still stored under a merged id survives the add; it shows as in the library (the list looks up the canonical id) and is left to the user to remove.
-- **Hide and thumbs down remove the entry.** `RecommendationFeedbackService.MutateAsync` deletes the caller's entry when the new state is hidden or disliked, and `HideFranchiseAsync` does it per member through the same path. Dismiss for 30 days and "read elsewhere" leave it alone. Undoing the feedback does not restore the entry; the toast for those actions says the title left the shortlist, so it is not a surprise.
+- **Hide and thumbs down remove the entry.** `RecommendationFeedbackService.MutateAsync` deletes the caller's entry when the new state is hidden or disliked, including one stored under a key that `ResolveCanonicalIdsAsync` resolves to the feedback id (cards only know the canonical id), and `HideFranchiseAsync` does it per member through the same path, resolving the caller's keys once. Dismiss for 30 days and "read elsewhere" leave it alone. The mutation result carries `shortlistRemoved: true` when it removed an entry, and so does the franchise result when any member's went; `RecommendationFeedbackMenu`'s toast then adds that the title left the shortlist. Undoing the feedback does not restore the entry, which is why the toast says so.
 - **Deleting a series does not touch shortlists.** Nothing points at the `Series` row.
 
 ## Import lists: Plan to read goes to the shortlist
@@ -152,6 +157,7 @@ The two endpoints share one `ShortlistService.VisibleAsync`, so their filtering 
 Today `ImportListService.RunTrackerAsync` adds or requests every entry whose status is in the tracker's `Statuses` (default Reading and PlanToRead). From now on an entry whose remote status is `PlanToRead` is shortlisted instead, for every user, whatever their permissions. The `PlanToRead` checkbox in `ImportListsSection` stays and now reads "Plan to read (to your shortlist)", so turning it off still keeps those entries out entirely.
 
 - **The run has no signed-in user.** The import job's scope is unrestricted, so nothing scope-bound applies: the query filter and `OwnedByScopeUser` pass everything through and `ICurrentUser.MaxContentRating` is not the list owner's. `ShortlistService` therefore has an insert overload taking an explicit user id and allowed-ratings list; it sets `UserId` on the row and counts the cap by that id. `UserInfo` gains `MaxContentRating`, read from the user row the way `FollowedCreatorReleaseService` reads it, and the run passes `ContentRating.Allowed(user.MaxContentRating)`.
+- **Merged keys.** `InsertAsync` treats an entry stored under a key that now resolves to the inserted id as existing. The run resolves the user's stored keys once (`ShortlistService.MergedKeysAsync`, through `ResolveCanonicalIdsAsync`) and passes the map to every insert, so a 1,000-entry first import does not resolve the whole shortlist per candidate. A caller that passes no map gets it resolved per call.
 - New `ImportListSkipReason.Shortlisted = 4` (append only). Written with the MangaBaka id when an entry is shortlisted, `SavedFrom = "importlist"`, `SavedFromDetail = tracker.Label`.
 - **Where the split happens.** Right after the in-library and pending-request drop, before the `MaxPerRun` batch, the empty-batch return and the root folder check. Those return early, and a freshly provisioned SSO account has no root folders, so a split placed after them would never shortlist anything for exactly the users most likely to import a list.
 - **Duplicates.** Several remote entries can fold into one `Candidate`. Its status is the strongest across `Candidate.All` (Reading or Completed beat PlanToRead), and the shortlist decision uses that, so a PlanToRead duplicate never turns a Reading entry into a shortlist. Skip rows are written per remote entry with that entry's own outcome: `Shortlisted` only on rows whose own status is PlanToRead.
@@ -178,7 +184,7 @@ Today `ImportListService.RunTrackerAsync` adds or requests every entry whose sta
 
 ### Data
 
-`frontend/src/api/shortlist.ts`: `useShortlistIds()` (a `Set<number>`, long `staleTime`), `useShortlist()`, and mutations `useSaveToShortlist`, `useUpdateShortlistNote`, `useAcknowledgeShortlistChange`, `useRemoveFromShortlist`. Saving and removing update the ids cache optimistically and roll back on error, then invalidate `shortlist`. Adding a series and the hide/dislike feedback mutations also invalidate both keys, since the server removed the entry. MSW handlers and fixtures for Storybook under `.storybook/mocks`.
+`frontend/src/api/shortlist.ts`: `useIsShortlisted(id)` and `useShortlistCount()` over the one ids query (long `staleTime`), `useShortlist()`, and mutations `useSaveToShortlist`, `useUpdateShortlistNote`, `useAcknowledgeShortlistChange`, `useRemoveFromShortlist`. Saving and removing update the ids cache optimistically and roll back on error, then invalidate `shortlist`. Adding a series and the hide/dislike feedback mutations also invalidate both keys, since the server removed the entry. MSW handlers and fixtures for Storybook under `.storybook/mocks`.
 
 ### Discover tab
 
@@ -201,7 +207,7 @@ Each row is a `Panel`: cover (76 by 114), title in the display face, the score a
 
 Rows whose `library` is set follow "In the library" above instead of offering Add or Request.
 
-The ids cache drives the tab count. With no entries the tab shows the empty state: the bookmark disc, "Nothing on your shortlist", "Use the bookmark on any cover in Discover, or Shortlist on its card, to keep a title here without adding it.", a "Browse the catalogue" button, and under it a collapsed `Disclosure` (`components/ui/Disclosure`) titled "How the shortlist differs from your library" holding the comparison table above, minus the Home row.
+The ids response's `count` drives the tab count. With no entries the tab shows the empty state: the bookmark disc, "Nothing on your shortlist", "Use the bookmark on any cover in Discover, or Shortlist on its card, to keep a title here without adding it.", a "Browse the catalogue" button, and under it a collapsed `Disclosure` (`components/ui/Disclosure`) titled "How the shortlist differs from your library" holding the comparison table above, minus the Home row.
 
 A list/grid toggle is not in the first version. The mockup shows one; the list carries the notes and changes, which a cover grid has no room for.
 

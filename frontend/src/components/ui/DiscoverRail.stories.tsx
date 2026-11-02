@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, waitFor } from 'storybook/test'
 import { cover } from '../../../.storybook/mocks/api'
 import { catalogueItem, popularPicks, recommendedPicks } from '../../../.storybook/mocks/home'
-import { shortlistMock } from '../../../.storybook/mocks/shortlist'
+import { shortlistEntry, shortlistMock } from '../../../.storybook/mocks/shortlist'
 import { DiscoverRailRow, EngineCard, EngineRailRow, RecommendationCard, RecommendationRow } from './DiscoverRail'
 
 const item = catalogueItem(1)
@@ -66,23 +66,17 @@ export const ListRow: Story = {
     </div>
   ),
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: new RegExp(`^${item.title}`) }))
+    const open = await canvas.findByRole('button', { name: `View and add ${item.title}` })
+    await userEvent.click(open)
     await waitFor(() => expect(args.onOpen).toHaveBeenCalledWith(item))
+    await expect(open.querySelector('button')).toBeNull()
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(args.onOpen).toHaveBeenCalledTimes(2))
   },
 }
 
 const savedCard = shortlistMock([
-  {
-    mangaBakaId: Number(item.providerId),
-    item,
-    note: null,
-    savedFrom: 'rail:trending',
-    savedFromDetail: null,
-    createdAtUtc: new Date().toISOString(),
-    statusChange: null,
-    newChapters: null,
-    library: null,
-  },
+  shortlistEntry(item, { savedFrom: 'rail:trending', createdAtUtc: new Date().toISOString() }),
 ])
 const hoverCard = shortlistMock([])
 

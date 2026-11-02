@@ -2134,8 +2134,8 @@ msgid "{samples, plural, one {Measured from # chapter across {series} series in 
 msgstr "{samples, plural, other {ライブラリの{series}シリーズにまたがる#章から測定：ピクセルあたり{bpp}ビット（JPG換算）。}}"
 
 #: src/pages/discover/ShortlistTab.tsx
-msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
-msgstr ""
+#~ msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
+#~ msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -4165,6 +4165,10 @@ msgstr "このキーを使用中の機能はすぐに動かなくなります。
 #, fuzzy
 msgid "Anything the admin should know"
 msgstr "管理者に知らせること"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Anything you saved is kept and shows up here once the catalogue is installed."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
@@ -10666,6 +10670,10 @@ msgstr "異世界"
 msgid "Issuer URL"
 msgstr "発行者URL"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "It also left your shortlist."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "It may have been removed from the library."
@@ -12593,6 +12601,10 @@ msgid "More actions for {chapterLbl}"
 msgstr "{chapterLbl}のその他の操作"
 
 #: src/pages/discover/ShortlistTab.tsx
+#~ msgid "More actions for {named}"
+#~ msgstr ""
+
+#: src/pages/discover/ShortlistTab.tsx
 msgid "More actions for {title}"
 msgstr ""
 
@@ -13483,8 +13495,8 @@ msgid "No longer in Suwayomi"
 msgstr "Suwayomiにはもうありません"
 
 #: src/pages/discover/ShortlistTab.tsx
-msgid "No longer in the catalogue"
-msgstr ""
+#~ msgid "No longer in the catalogue"
+#~ msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -17158,6 +17170,10 @@ msgstr "{label} を削除"
 #, fuzzy
 msgid "Remove {label} from this device"
 msgstr "この端末から{label}を削除"
+
+#: src/pages/discover/ShortlistTab.tsx
+#~ msgid "Remove {named} from your shortlist"
+#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -21380,6 +21396,10 @@ msgstr "アップグレードのため、古いファイルを退避できませ
 msgid "The oldest pages are dropped past this."
 msgstr "これを超えると、最も古いページから削除されます。"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "The ones on your shortlist left it."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "The other copy is no longer on disk. Open it to clear its record."
 msgstr ""
@@ -23418,6 +23438,10 @@ msgstr "ベトナム語"
 #, fuzzy
 msgid "View"
 msgstr "表示"
+
+#: src/pages/discover/ShortlistTab.tsx
+#~ msgid "View {named}"
+#~ msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx

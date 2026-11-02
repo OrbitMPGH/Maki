@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith } from '../../../.storybook/mocks/api'
-import { discoverPage, resetTabState } from '../../../.storybook/mocks/discover'
+import { discoverPage, feedbackMutation, resetTabState } from '../../../.storybook/mocks/discover'
 import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
 
 const meta = {
@@ -76,6 +76,44 @@ export const HideFranchise: Story = {
   },
 }
 
+export const ThumbsDownLeavesTheShortlist: Story = {
+  parameters: {
+    msw: discoverPage(
+      http.put(api('/recommendations/feedback/:id'), async ({ params, request }) => {
+        const { action } = (await request.json()) as { action: string }
+        return HttpResponse.json({ ...feedbackMutation(Number(params.id), action), shortlistRemoved: true })
+      }),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await ready(canvas, 'Thumbs down'))
+    await expect(await body(canvasElement).findByText(/It also left your shortlist\./)).toBeVisible()
+  },
+}
+
+export const ThumbsUpSaysNothingAboutTheShortlist: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await ready(canvas, 'Thumbs up'))
+    await expect(await body(canvasElement).findByText(/Thumbs up\. This title now steers/)).toBeVisible()
+    await expect(body(canvasElement).queryByText(/left your shortlist/)).toBeNull()
+  },
+}
+
+export const HideFranchiseLeavesTheShortlist: Story = {
+  parameters: {
+    msw: discoverPage(
+      http.post(api('/recommendations/feedback/:id/franchise'), () =>
+        HttpResponse.json({ changed: 2, titles: [], feedbackRevision: 8, shortlistRemoved: true }),
+      ),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'More recommendation feedback actions' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Hide this and its franchise' }))
+    await expect(await body(canvasElement).findByText(/The ones on your shortlist left it\./)).toBeVisible()
+  },
+}
+
 export const UpdateFails: Story = {
   parameters: {
     msw: discoverPage(http.put(api('/recommendations/feedback/:id'), () => failWith(500, 'The feedback store is read-only'))),
@@ -110,6 +148,7 @@ export const NoChange: Story = {
           queueEffect: 'unchanged',
           tasteEffect: 'unchanged',
           feedbackEffect: 'neutral',
+          shortlistRemoved: false,
         }),
       ),
     ),

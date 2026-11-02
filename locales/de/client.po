@@ -2134,8 +2134,8 @@ msgid "{samples, plural, one {Measured from # chapter across {series} series in 
 msgstr "{samples, plural, one {Gemessen an # Kapitel aus {series} Serien in deiner Bibliothek: {bpp} Bit pro Pixel, JPG-Äquivalent.} other {Gemessen an # Kapiteln aus {series} Serien in deiner Bibliothek: {bpp} Bit pro Pixel, JPG-Äquivalent.}}"
 
 #: src/pages/discover/ShortlistTab.tsx
-msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
-msgstr ""
+#~ msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
+#~ msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -4165,6 +4165,10 @@ msgstr "Alles, was diesen Schlüssel noch verwendet, funktioniert sofort nicht m
 #, fuzzy
 msgid "Anything the admin should know"
 msgstr "Alles, was der Administrator wissen sollte"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Anything you saved is kept and shows up here once the catalogue is installed."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
@@ -10666,6 +10670,10 @@ msgstr "Isekai"
 msgid "Issuer URL"
 msgstr "Issuer-URL"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "It also left your shortlist."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "It may have been removed from the library."
@@ -12593,6 +12601,10 @@ msgid "More actions for {chapterLbl}"
 msgstr "Weitere Aktionen für {chapterLbl}"
 
 #: src/pages/discover/ShortlistTab.tsx
+#~ msgid "More actions for {named}"
+#~ msgstr ""
+
+#: src/pages/discover/ShortlistTab.tsx
 msgid "More actions for {title}"
 msgstr ""
 
@@ -13483,8 +13495,8 @@ msgid "No longer in Suwayomi"
 msgstr "Nicht mehr in Suwayomi"
 
 #: src/pages/discover/ShortlistTab.tsx
-msgid "No longer in the catalogue"
-msgstr ""
+#~ msgid "No longer in the catalogue"
+#~ msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -17158,6 +17170,10 @@ msgstr "{label} entfernen"
 #, fuzzy
 msgid "Remove {label} from this device"
 msgstr "{label} von diesem Gerät entfernen"
+
+#: src/pages/discover/ShortlistTab.tsx
+#~ msgid "Remove {named} from your shortlist"
+#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -21380,6 +21396,10 @@ msgstr "Die alte Datei konnte für das Upgrade nicht beiseitegeschoben werden"
 msgid "The oldest pages are dropped past this."
 msgstr "Darüber hinaus werden die ältesten Seiten verworfen."
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "The ones on your shortlist left it."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "The other copy is no longer on disk. Open it to clear its record."
 msgstr ""
@@ -23418,6 +23438,10 @@ msgstr "Vietnamesisch"
 #, fuzzy
 msgid "View"
 msgstr "Ansehen"
+
+#: src/pages/discover/ShortlistTab.tsx
+#~ msgid "View {named}"
+#~ msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx

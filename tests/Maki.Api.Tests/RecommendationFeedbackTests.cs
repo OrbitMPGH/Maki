@@ -717,13 +717,61 @@ public class RecommendationFeedbackTests : IDisposable
         var service = Catalogued(db, 1, dump => dump
             .AddSeries(200, "Hidden").AddSeries(201, "Disliked").AddSeries(202, "Dismissed").AddSeries(203, "Seen"));
 
-        await service.MutateAsync(1, 200, new FeedbackCommand("hide", Guid.NewGuid(), 0));
-        await service.MutateAsync(1, 201, new FeedbackCommand("dislike", Guid.NewGuid(), 0));
-        await service.MutateAsync(1, 202, new FeedbackCommand("dismiss", Guid.NewGuid(), 0));
-        await service.MutateAsync(1, 203, new FeedbackCommand("mark-exposed", Guid.NewGuid(), 0, Medium: "manga"));
+        var hide = await service.MutateAsync(1, 200, new FeedbackCommand("hide", Guid.NewGuid(), 0));
+        var dislike = await service.MutateAsync(1, 201, new FeedbackCommand("dislike", Guid.NewGuid(), 0));
+        var dismiss = await service.MutateAsync(1, 202, new FeedbackCommand("dismiss", Guid.NewGuid(), 0));
+        var seen = await service.MutateAsync(1, 203, new FeedbackCommand("mark-exposed", Guid.NewGuid(), 0, Medium: "manga"));
 
         Assert.Equal([202, 203], Shortlisted(1));
         Assert.Equal([200, 201], Shortlisted(other));
+        Assert.Equal((true, true, false, false),
+            (hide.ShortlistRemoved, dislike.ShortlistRemoved, dismiss.ShortlistRemoved, seen.ShortlistRemoved));
+    }
+
+    [Fact]
+    public async Task A_hide_says_nothing_left_the_shortlist_when_the_title_was_not_on_it()
+    {
+        Shortlist(1, 201);
+        using var db = _fixture.NewContext(1);
+        var service = Catalogued(db, 1, dump => dump.AddSeries(200, "Hidden").AddSeries(201, "Kept"));
+
+        var result = await service.MutateAsync(1, 200, new FeedbackCommand("hide", Guid.NewGuid(), 0));
+
+        Assert.False(result.ShortlistRemoved);
+        Assert.Equal([201], Shortlisted(1));
+    }
+
+    [Fact]
+    public async Task A_hide_by_the_canonical_id_takes_an_entry_stored_under_a_merged_id()
+    {
+        var other = _fixture.SeedUser("other");
+        Shortlist(1, 210, 211);
+        Shortlist(other, 210);
+        using var db = _fixture.NewContext(1);
+        var service = Catalogued(db, 1, dump => dump
+            .AddSeries(200, "Hidden")
+            .AddSeries(210, "Old hidden", state: "merged", mergedWith: "200", contentRating: null)
+            .AddSeries(211, "Unrelated"));
+
+        var result = await service.MutateAsync(1, 200, new FeedbackCommand("dislike", Guid.NewGuid(), 0));
+
+        Assert.True(result.ShortlistRemoved);
+        Assert.Equal([211], Shortlisted(1));
+        Assert.Equal([210], Shortlisted(other));
+    }
+
+    [Fact]
+    public async Task A_replayed_feedback_mutation_reports_the_shortlist_removal_again()
+    {
+        Shortlist(1, 200);
+        using var db = _fixture.NewContext(1);
+        var service = Catalogued(db, 1, dump => dump.AddSeries(200, "Hidden"));
+        var command = new FeedbackCommand("hide", Guid.NewGuid(), 0);
+
+        await service.MutateAsync(1, 200, command);
+        var replay = await service.MutateAsync(1, 200, command);
+
+        Assert.True(replay.ShortlistRemoved);
     }
 
     [Fact]
@@ -746,8 +794,22 @@ public class RecommendationFeedbackTests : IDisposable
         using var db = _fixture.NewContext(1);
         var service = Franchise(db);
 
-        await service.HideFranchiseAsync(1, 100, "hide", Guid.NewGuid());
+        var result = await service.HideFranchiseAsync(1, 100, "hide", Guid.NewGuid());
 
+        Assert.Equal([103], Shortlisted(1));
+        Assert.True(result.ShortlistRemoved);
+    }
+
+    [Fact]
+    public async Task Hiding_a_franchise_none_of_which_is_shortlisted_says_so()
+    {
+        Shortlist(1, 103);
+        using var db = _fixture.NewContext(1);
+        var service = Franchise(db);
+
+        var result = await service.HideFranchiseAsync(1, 100, "hide", Guid.NewGuid());
+
+        Assert.False(result.ShortlistRemoved);
         Assert.Equal([103], Shortlisted(1));
     }
 

@@ -122,10 +122,10 @@ public sealed class ShortlistControllerTests : IDisposable
             .GetProperty("code").GetString();
 
     private static async Task<IReadOnlyList<ShortlistListItem>> ListOf(ShortlistController c) =>
-        Ok<List<ShortlistListItem>>(await c.List(default));
+        Ok<ShortlistList>(await c.List(default)).Entries;
 
     private static async Task<IReadOnlyList<int>> IdsOf(ShortlistController c) =>
-        Ok<List<int>>(await c.Ids(default));
+        Ok<ShortlistIds>(await c.Ids(default)).Ids;
 
     [Fact]
     public async Task A_repeat_save_keeps_the_first_provenance_and_snapshot_and_only_changes_a_sent_note()
@@ -396,7 +396,10 @@ public sealed class ShortlistControllerTests : IDisposable
         Assert.Equal(MergedIntoFrieren, item.MangaBakaId);
         Assert.Equal(Frieren.ToString(), item.Item!.ProviderId);
         Assert.Equal("Frieren", item.Item.Title);
-        Assert.Equal([Frieren, MergedIntoFrieren], (await IdsOf(controller)).Order());
+        Assert.Equal($"Stored {MergedIntoFrieren}", item.Title);
+        var ids = Ok<ShortlistIds>(await controller.Ids(default));
+        Assert.Equal([Frieren, MergedIntoFrieren], ids.Ids.Order());
+        Assert.Equal(1, ids.Count);
 
         var after = Assert.Single(Rows(_reader));
         Assert.Equal((before.MangaBakaId, before.UpdatedAtUtc), (after.MangaBakaId, after.UpdatedAtUtc));
@@ -413,21 +416,70 @@ public sealed class ShortlistControllerTests : IDisposable
 
         Assert.Equal(3, list.Count);
         Assert.All(list, x => Assert.Null(x.Item));
+        Assert.All(list, x => Assert.Equal((null, false), (x.Type, x.HasAnime)));
+        Assert.Equal(
+            [$"Stored {Removed}", $"Stored {Novel}", "Stored 999999"],
+            list.OrderBy(x => x.MangaBakaId).Select(x => x.Title));
         Assert.Equal([Removed, Novel, 999_999], (await IdsOf(Controller(_reader))).Order());
     }
 
     [Fact]
-    public async Task Without_a_dump_every_entry_comes_back_with_no_item()
+    public async Task Without_a_dump_the_list_says_so_and_sends_no_entries()
     {
         Store(_reader, Frieren);
         Store(_reader, Spicy);
         SqliteConnection.ClearAllPools();
         File.Delete(_dump.Path);
 
-        var list = await ListOf(Controller(_reader, ceiling: "safe"));
+        var list = Ok<ShortlistList>(await Controller(_reader, ceiling: "safe").List(default));
+        var ids = Ok<ShortlistIds>(await Controller(_reader, ceiling: "safe").Ids(default));
 
-        Assert.Equal(2, list.Count);
-        Assert.All(list, x => Assert.Null(x.Item));
+        Assert.False(list.CatalogueAvailable);
+        Assert.Empty(list.Entries);
+        Assert.Equal((0, 0), (ids.Ids.Count, ids.Count));
+        Assert.Equal(2, Rows(_reader).Count);
+    }
+
+    [Fact]
+    public async Task With_a_dump_the_list_says_the_catalogue_is_available_even_when_empty()
+    {
+        var list = Ok<ShortlistList>(await Controller(_reader).List(default));
+
+        Assert.True(list.CatalogueAvailable);
+        Assert.Empty(list.Entries);
+    }
+
+    [Fact]
+    public async Task Type_and_the_anime_flag_come_from_the_canonical_row()
+    {
+        UpdateDump($"UPDATE series SET type = 'manhwa', anime_start = '1' WHERE id = {Frieren}");
+        UpdateDump($"UPDATE series SET type = 'oel' WHERE id = {MergedIntoFrieren}");
+        UpdateDump($"UPDATE series SET anime_start = '1' WHERE id = {MergedIntoSpicy}");
+        Store(_reader, MergedIntoFrieren);
+        Store(_reader, MergedIntoSpicy);
+        Store(_reader, Horror);
+        Store(_reader, Removed);
+
+        var list = (await ListOf(Controller(_reader))).ToDictionary(x => x.MangaBakaId);
+
+        Assert.Equal(("manhwa", true), (list[MergedIntoFrieren].Type, list[MergedIntoFrieren].HasAnime));
+        Assert.Equal(("manga", false), (list[MergedIntoSpicy].Type, list[MergedIntoSpicy].HasAnime));
+        Assert.Equal(("manga", false), (list[Horror].Type, list[Horror].HasAnime));
+        Assert.Equal((null, false), (list[Removed].Type, list[Removed].HasAnime));
+    }
+
+    [Fact]
+    public async Task The_count_is_one_per_visible_entry()
+    {
+        Store(_reader, MergedIntoFrieren);
+        Store(_reader, Horror);
+        Store(_reader, Spicy);
+        Store(_reader, Removed);
+
+        var ids = Ok<ShortlistIds>(await Controller(_reader, ceiling: "safe").Ids(default));
+
+        Assert.Equal([Frieren, Removed, MergedIntoFrieren, Horror], ids.Ids.Order());
+        Assert.Equal(3, ids.Count);
     }
 
     [Fact]
@@ -503,9 +555,15 @@ public sealed class ShortlistControllerTests : IDisposable
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         MakiJson.ApplyConverters(options);
 
-        var json = JsonSerializer.SerializeToElement(await ListOf(Controller(_reader)), options)[0];
+        var body = JsonSerializer.SerializeToElement(
+            Assert.IsType<OkObjectResult>(await Controller(_reader).List(default)).Value, options);
+        Assert.True(body.GetProperty("catalogueAvailable").GetBoolean());
+        var json = body.GetProperty("entries")[0];
 
         Assert.Equal(Frieren, json.GetProperty("mangaBakaId").GetInt32());
+        Assert.Equal("Frieren", json.GetProperty("title").GetString());
+        Assert.Equal("manga", json.GetProperty("type").GetString());
+        Assert.False(json.GetProperty("hasAnime").GetBoolean());
         Assert.Equal("100", json.GetProperty("item").GetProperty("providerId").GetString());
         Assert.Equal("Completed", json.GetProperty("item").GetProperty("status").GetString());
         Assert.Equal("n", json.GetProperty("note").GetString());
@@ -517,6 +575,11 @@ public sealed class ShortlistControllerTests : IDisposable
         Assert.Equal(10, json.GetProperty("newChapters").GetInt32());
         Assert.True(json.GetProperty("library").GetProperty("seriesId").GetInt32() > 0);
         Assert.False(json.GetProperty("library").GetProperty("archived").GetBoolean());
+
+        var ids = JsonSerializer.SerializeToElement(
+            Assert.IsType<OkObjectResult>(await Controller(_reader).Ids(default)).Value, options);
+        Assert.Equal([Frieren], ids.GetProperty("ids").EnumerateArray().Select(x => x.GetInt32()));
+        Assert.Equal(1, ids.GetProperty("count").GetInt32());
 
         var removed = JsonSerializer.SerializeToElement(
             Assert.IsType<OkObjectResult>(await Controller(_reader).Remove(Frieren, default)).Value, options);
@@ -566,6 +629,57 @@ public sealed class ShortlistControllerTests : IDisposable
         var row = Assert.Single(Rows(_reader));
         Assert.Equal(("importlist", "AniList"), (row.SavedFrom, row.SavedFromDetail));
         Assert.Empty(Rows(_other));
+    }
+
+    [Fact]
+    public async Task The_explicit_user_insert_finds_an_entry_stored_under_a_merged_id()
+    {
+        Store(_reader, MergedIntoFrieren);
+        using var unrestricted = _db.NewContext();
+        var store = new MangaBakaLocalStore(DumpOptions, NullLogger<MangaBakaLocalStore>.Instance);
+        var service = new ShortlistService(unrestricted, store, new Reader(0, "pornographic", true), null!);
+
+        var resolved = await service.InsertAsync(_reader, ContentRating.All, Frieren, "importlist", "AniList");
+        var given = await service.InsertAsync(_reader, ContentRating.All, Frieren, "importlist", "AniList",
+            mergedKeys: new Dictionary<int, int> { [MergedIntoFrieren] = Frieren });
+
+        Assert.Equal((ShortlistInsertOutcome.Existing, MergedIntoFrieren), (resolved.Outcome, resolved.Entry!.MangaBakaId));
+        Assert.Equal((ShortlistInsertOutcome.Existing, MergedIntoFrieren), (given.Outcome, given.Entry!.MangaBakaId));
+        Assert.Equal(MergedIntoFrieren, Assert.Single(Rows(_reader)).MangaBakaId);
+        Assert.Equal(new Dictionary<int, int> { [MergedIntoFrieren] = Frieren },
+            await service.MergedKeysAsync(_reader));
+    }
+
+    [Fact]
+    public async Task One_run_map_sees_a_merged_id_inserted_earlier_in_the_run()
+    {
+        using var unrestricted = _db.NewContext();
+        var store = new MangaBakaLocalStore(DumpOptions, NullLogger<MangaBakaLocalStore>.Instance);
+        var service = new ShortlistService(unrestricted, store, new Reader(0, "pornographic", true), null!);
+        var runMap = await service.MergedKeysAsync(_reader);
+
+        var first = await service.InsertAsync(_reader, ContentRating.All, MergedIntoFrieren, "importlist", "AniList",
+            mergedKeys: runMap);
+        var second = await service.InsertAsync(_reader, ContentRating.All, Frieren, "importlist", "AniList",
+            mergedKeys: runMap);
+
+        Assert.Equal(ShortlistInsertOutcome.Inserted, first.Outcome);
+        Assert.Equal((ShortlistInsertOutcome.Existing, MergedIntoFrieren), (second.Outcome, second.Entry!.MangaBakaId));
+        Assert.Equal(MergedIntoFrieren, Assert.Single(Rows(_reader)).MangaBakaId);
+    }
+
+    [Fact]
+    public async Task Inserting_a_merged_id_finds_the_canonical_entry()
+    {
+        Store(_reader, Frieren);
+        using var unrestricted = _db.NewContext();
+        var store = new MangaBakaLocalStore(DumpOptions, NullLogger<MangaBakaLocalStore>.Instance);
+        var service = new ShortlistService(unrestricted, store, new Reader(0, "pornographic", true), null!);
+
+        var result = await service.InsertAsync(_reader, ContentRating.All, MergedIntoFrieren, "importlist", "AniList");
+
+        Assert.Equal((ShortlistInsertOutcome.Existing, Frieren), (result.Outcome, result.Entry!.MangaBakaId));
+        Assert.Equal(Frieren, Assert.Single(Rows(_reader)).MangaBakaId);
     }
 
     private sealed class Reader(int userId, string ceiling, bool allRootFolders) : ICurrentUser

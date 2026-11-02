@@ -37,7 +37,7 @@ export function ShortlistButton({
 /** The "Note for later" field under the button. Mounted only while the title is on the list. */
 export function ShortlistNote({ providerId }: { providerId: string }) {
   const { data: list } = useShortlist()
-  const entry = list?.find((e) => String(e.mangaBakaId) === providerId || e.item?.providerId === providerId)
+  const entry = list?.entries.find((e) => String(e.mangaBakaId) === providerId || e.item?.providerId === providerId)
   if (!entry) return null
   // Keyed by the stored note so a change from another tab replaces what was typed here.
   return <NoteField key={entry.note ?? ''} id={entry.mangaBakaId} saved={entry.note ?? ''} />

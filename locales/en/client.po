@@ -1751,8 +1751,8 @@ msgid "{samples, plural, one {Measured from # chapter across {series} series in 
 msgstr "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 
 #: src/pages/discover/ShortlistTab.tsx
-msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
-msgstr "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
+#~ msgid "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
+#~ msgstr "{saved, plural, one {Your # saved title is kept. It shows up here once the catalogue is installed.} other {Your # saved titles are kept. They show up here once the catalogue is installed.}}"
 
 #: src/components/CatalogueBrowser.tsx
 msgid "{searchCap}+ matches"
@@ -3412,6 +3412,10 @@ msgstr "Anything still using this key stops working straight away. This can't be
 #: src/components/RequestForm.tsx
 msgid "Anything the admin should know"
 msgstr "Anything the admin should know"
+
+#: src/pages/discover/ShortlistTab.tsx
+msgid "Anything you saved is kept and shows up here once the catalogue is installed."
+msgstr "Anything you saved is kept and shows up here once the catalogue is installed."
 
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
@@ -8743,6 +8747,10 @@ msgstr "Isekai"
 msgid "Issuer URL"
 msgstr "Issuer URL"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "It also left your shortlist."
+msgstr "It also left your shortlist."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "It may have been removed from the library."
 msgstr "It may have been removed from the library."
@@ -10317,6 +10325,10 @@ msgid "More actions for {chapterLbl}"
 msgstr "More actions for {chapterLbl}"
 
 #: src/pages/discover/ShortlistTab.tsx
+#~ msgid "More actions for {named}"
+#~ msgstr "More actions for {named}"
+
+#: src/pages/discover/ShortlistTab.tsx
 msgid "More actions for {title}"
 msgstr "More actions for {title}"
 
@@ -11044,8 +11056,8 @@ msgid "No longer in Suwayomi"
 msgstr "No longer in Suwayomi"
 
 #: src/pages/discover/ShortlistTab.tsx
-msgid "No longer in the catalogue"
-msgstr "No longer in the catalogue"
+#~ msgid "No longer in the catalogue"
+#~ msgstr "No longer in the catalogue"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "no longer steers your taste"
@@ -14056,6 +14068,10 @@ msgstr "Remove {label}"
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Remove {label} from this device"
 msgstr "Remove {label} from this device"
+
+#: src/pages/discover/ShortlistTab.tsx
+#~ msgid "Remove {named} from your shortlist"
+#~ msgstr "Remove {named} from your shortlist"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove {removingSourceName}?"
@@ -17515,6 +17531,10 @@ msgstr "The old file could not be moved aside for the upgrade"
 msgid "The oldest pages are dropped past this."
 msgstr "The oldest pages are dropped past this."
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "The ones on your shortlist left it."
+msgstr "The ones on your shortlist left it."
+
 #: src/pages/HealthPage.tsx
 msgid "The other copy is no longer on disk. Open it to clear its record."
 msgstr "The other copy is no longer on disk. Open it to clear its record."
@@ -19183,6 +19203,10 @@ msgstr "Vietnamese"
 #: src/pages/LibraryPage.tsx
 msgid "View"
 msgstr "View"
+
+#: src/pages/discover/ShortlistTab.tsx
+#~ msgid "View {named}"
+#~ msgstr "View {named}"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx

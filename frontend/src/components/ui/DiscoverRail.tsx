@@ -292,20 +292,16 @@ export const RecommendationRow = memo(function RecommendationRow({
   const { totalChapters, title } = item
   const { saved, usable, toggle } = useShortlistToggle(item.providerId, title, savedFrom)
 
+  // Same shape as the card: one button covers the row and opens it, and the save button is a
+  // sibling stacked above it, so no control sits inside another.
   return (
-    <div
-      className={`series-row ${density}`}
-      role="button"
-      tabIndex={0}
-      onClick={() => (owned ? navigate(`/series/${inLibrarySeriesId}`) : openWith(onOpen, item, savedFrom))}
-      onKeyDown={(e) => {
-        if (e.target !== e.currentTarget) return
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          owned ? navigate(`/series/${inLibrarySeriesId}`) : openWith(onOpen, item, savedFrom)
-        }
-      }}
-    >
+    <div className={`series-row discover-row ${density}`}>
+      <button
+        type="button"
+        className="discover-row-action"
+        aria-label={cardLabel(title, owned, saved)}
+        onClick={() => (owned ? navigate(`/series/${inLibrarySeriesId}`) : openWith(onOpen, item, savedFrom))}
+      />
       <div className="row-cover" data-series-cover={inLibrarySeriesId ?? undefined} style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}>
         {posterUrl(item) ? (
           <img
@@ -359,10 +355,7 @@ export const RecommendationRow = memo(function RecommendationRow({
           aria-pressed={saved}
           aria-label={saved ? t`Remove ${title} from your shortlist` : t`Shortlist ${title}`}
           data-tip={saved ? t`Remove from shortlist` : t`Shortlist`}
-          onClick={(e) => {
-            e.stopPropagation()
-            toggle()
-          }}
+          onClick={toggle}
         >
           {saved ? <IconBookmarkFilled size={16} /> : <IconBookmark size={16} />}
         </button>

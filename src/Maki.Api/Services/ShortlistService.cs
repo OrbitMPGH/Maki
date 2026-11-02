@@ -13,10 +13,16 @@ public sealed record ShortlistStatusChange(SeriesStatus From, SeriesStatus To);
 public sealed record ShortlistLibrary(int? SeriesId, bool Archived);
 
 /// <param name="MangaBakaId">The stored key, which list-row writes address.</param>
+/// <param name="Title">The title as stored, for a row with no card.</param>
 /// <param name="Item">The canonical work's card, or null when the dump has no usable row.</param>
+/// <param name="Type">The canonical row's <c>type</c>, set with the card.</param>
+/// <param name="HasAnime">The canonical row has an anime range (<c>anime_start</c> or <c>anime_end</c>).</param>
 public sealed record ShortlistListItem(
     int MangaBakaId,
+    string Title,
     MangaBakaRecommendation? Item,
+    string? Type,
+    bool HasAnime,
     string? Note,
     string SavedFrom,
     string? SavedFromDetail,
@@ -24,6 +30,16 @@ public sealed record ShortlistListItem(
     ShortlistStatusChange? StatusChange,
     int? NewChapters,
     ShortlistLibrary? Library);
+
+/// <summary>
+/// The list. With no dump installed <paramref name="CatalogueAvailable"/> is false and the list is
+/// empty: stored titles cannot be checked against the ceiling or the never-show list without it.
+/// </summary>
+public sealed record ShortlistList(bool CatalogueAvailable, IReadOnlyList<ShortlistListItem> Entries);
+
+/// <param name="Ids">Each visible entry under its stored key and, when merged, its canonical id too.</param>
+/// <param name="Count">Visible entries, a merged one counted once.</param>
+public sealed record ShortlistIds(IReadOnlyList<int> Ids, int Count);
 
 /// <summary>An entry as it is stored, which DELETE returns and restore takes back.</summary>
 public sealed record ShortlistEntryDto(
@@ -60,13 +76,16 @@ public class ShortlistService(
         "search", "catalogue", "creator", "series", "anime", FromImportList, FromOther,
     };
 
-    private sealed record Visible(ShortlistEntry Entry, long CanonicalId, MangaBakaRecommendation? Item);
-
-    /// <summary>The caller's ids, each entry under its stored key and, when merged, its canonical id too.</summary>
-    public async Task<IReadOnlyList<int>> IdsAsync(CancellationToken ct = default)
+    private sealed record Visible(ShortlistEntry Entry, long CanonicalId, MangaBakaShortlistRow Row)
     {
+        public MangaBakaRecommendation? Item => Row.Item;
+    }
+
+    public async Task<ShortlistIds> IdsAsync(CancellationToken ct = default)
+    {
+        var visible = await VisibleAsync(ct);
         var ids = new List<int>();
-        foreach (var v in await VisibleAsync(ct))
+        foreach (var v in visible)
         {
             ids.Add(v.Entry.MangaBakaId);
             if (v.CanonicalId != v.Entry.MangaBakaId && v.CanonicalId is > 0 and <= int.MaxValue)
@@ -75,11 +94,16 @@ public class ShortlistService(
             }
         }
 
-        return ids.Distinct().ToList();
+        return new ShortlistIds(ids.Distinct().ToList(), visible.Count);
     }
 
-    public async Task<IReadOnlyList<ShortlistListItem>> ListAsync(CancellationToken ct = default)
+    public async Task<ShortlistList> ListAsync(CancellationToken ct = default)
     {
+        if (!await store.IsAvailableAsync(ct))
+        {
+            return new ShortlistList(false, []);
+        }
+
         var visible = await VisibleAsync(ct);
         var canonical = visible.Select(v => v.CanonicalId)
             .Where(id => id is > 0 and <= int.MaxValue).Select(id => (int?)(int)id).Distinct().ToList();
@@ -92,7 +116,7 @@ public class ShortlistService(
             .Where(s => canonical.Contains(s.MangaBakaId))
             .Select(s => s.Id).ToListAsync(ct)).ToHashSet();
 
-        return visible
+        return new ShortlistList(true, visible
             .OrderByDescending(v => v.Entry.CreatedAtUtc).ThenByDescending(v => v.Entry.Id)
             .Select(v =>
             {
@@ -102,10 +126,11 @@ public class ShortlistService(
                     ? null
                     : new ShortlistLibrary(seen.Contains(copy.Id) ? copy.Id : null, copy.Archived);
                 return new ShortlistListItem(
-                    v.Entry.MangaBakaId, v.Item, v.Entry.Note, v.Entry.SavedFrom, v.Entry.SavedFromDetail,
-                    v.Entry.CreatedAtUtc, StatusChange(v.Entry, v.Item), NewChapters(v.Entry, v.Item), library);
+                    v.Entry.MangaBakaId, v.Entry.Title, v.Item, v.Row.Type, v.Row.HasAnime, v.Entry.Note,
+                    v.Entry.SavedFrom, v.Entry.SavedFromDetail, v.Entry.CreatedAtUtc, StatusChange(v.Entry, v.Item),
+                    NewChapters(v.Entry, v.Item), library);
             })
-            .ToList();
+            .ToList());
     }
 
     /// <summary>
@@ -140,11 +165,16 @@ public class ShortlistService(
     /// <summary>
     /// Inserts for an explicit user, for callers with no signed-in reader (the import-list job runs
     /// unrestricted, so neither the scope nor <see cref="ICurrentUser"/> is the list owner's).
-    /// An existing entry for the id is returned unchanged.
+    /// An existing entry for the id is returned unchanged, including one stored under a merged id.
     /// </summary>
+    /// <param name="mergedKeys">
+    /// <see cref="MergedKeysAsync"/> for the user, so a caller inserting many ids resolves the stored
+    /// keys once. Resolved here when null.
+    /// </param>
     public async Task<ShortlistInsertResult> InsertAsync(
         int userId, IReadOnlyList<string> allowedRatings, int mangaBakaId, string? savedFrom,
-        string? savedFromDetail, string? note = null, CancellationToken ct = default)
+        string? savedFromDetail, string? note = null, Dictionary<int, int>? mergedKeys = null,
+        CancellationToken ct = default)
     {
         if (mangaBakaId <= 0)
         {
@@ -152,21 +182,67 @@ public class ShortlistService(
         }
 
         using var _ = await SeriesLocks.ProviderIdAsync(mangaBakaId, ct);
-        var existing = await Entries(userId).FirstOrDefaultAsync(x => x.MangaBakaId == mangaBakaId, ct)
-            ?? await ByCanonicalAsync(userId, mangaBakaId,
-                await RowsAsync(await Entries(userId).AsNoTracking().ToListAsync(ct), allowedRatings, ct), ct);
+        var existing = await Entries(userId).FirstOrDefaultAsync(x => x.MangaBakaId == mangaBakaId, ct);
+        var canonical = mangaBakaId;
+        if (existing is null)
+        {
+            mergedKeys ??= await MergedKeysAsync(userId, ct);
+            if ((await store.ResolveCanonicalIdsAsync([mangaBakaId], ct)).TryGetValue(mangaBakaId, out var resolved)
+                && resolved is > 0 and <= int.MaxValue)
+            {
+                canonical = (int)resolved;
+            }
+
+            var storedKeys = mergedKeys.Where(m => m.Value == mangaBakaId || m.Value == canonical)
+                .Select(m => m.Key).ToList();
+            if (canonical != mangaBakaId)
+            {
+                storedKeys.Add(canonical);
+            }
+
+            if (storedKeys.Count > 0)
+            {
+                existing = await Entries(userId).FirstOrDefaultAsync(x => storedKeys.Contains(x.MangaBakaId), ct);
+            }
+        }
+
         if (existing is not null)
         {
             return new ShortlistInsertResult(ShortlistInsertOutcome.Existing, existing);
         }
 
-        return await InsertUnlockedAsync(userId, allowedRatings, mangaBakaId,
+        var result = await InsertUnlockedAsync(userId, allowedRatings, mangaBakaId,
             new ShortlistEntry
             {
                 SavedFrom = NormalizeSource(savedFrom),
                 SavedFromDetail = Cap(savedFromDetail, ShortlistEntry.SavedFromDetailMaxLength),
                 Note = note is null ? null : NormalizeNote(note),
             }, keepSnapshot: false, ct);
+
+        // The caller's map is reused for its next insert, so a later id for the same work finds this one.
+        if (result.Outcome == ShortlistInsertOutcome.Inserted && canonical != mangaBakaId)
+        {
+            mergedKeys![mangaBakaId] = canonical;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// The user's stored keys that a dump merge has moved, each with its canonical id. Resolution
+    /// only: no ceiling and no card.
+    /// </summary>
+    public async Task<Dictionary<int, int>> MergedKeysAsync(int userId, CancellationToken ct = default)
+    {
+        var keys = await Entries(userId).AsNoTracking().Select(x => (long)x.MangaBakaId).ToListAsync(ct);
+        if (keys.Count == 0)
+        {
+            return new Dictionary<int, int>();
+        }
+
+        return (await store.ResolveCanonicalIdsAsync(keys, ct))
+            .Where(r => r.Value != r.Key && r.Value is > 0 and <= int.MaxValue)
+            .ToDictionary(r => (int)r.Key, r => (int)r.Value);
     }
 
     /// <summary>
@@ -251,31 +327,20 @@ public class ShortlistService(
     private async Task<IReadOnlyList<Visible>> VisibleAsync(CancellationToken ct)
     {
         var entries = await Entries(currentUser.UserId).AsNoTracking().ToListAsync(ct);
-        if (entries.Count == 0)
+        if (entries.Count == 0 || !await store.IsAvailableAsync(ct))
         {
             return [];
         }
 
-        if (!await store.IsAvailableAsync(ct))
-        {
-            return entries.Select(e => new Visible(e, e.MangaBakaId, null)).ToList();
-        }
-
-        var rows = await RowsAsync(entries, Allowed, ct);
+        var rows = await store.GetShortlistRowsAsync(entries.Select(e => (long)e.MangaBakaId).ToList(), Allowed, ct);
         var kept = entries
             .Where(e => rows.ContainsKey(e.MangaBakaId))
-            .Select(e => new Visible(e, rows[e.MangaBakaId].CanonicalId, rows[e.MangaBakaId].Item))
+            .Select(e => new Visible(e, rows[e.MangaBakaId].CanonicalId, rows[e.MangaBakaId]))
             .ToList();
         // On the canonical ids: the loaded vector index has no row for a merged key and would never hide it.
         var isHidden = await hidden.PredicateAsync(kept.Select(v => v.CanonicalId).Distinct(), ct);
         return isHidden is null ? kept : kept.Where(v => !isHidden(v.CanonicalId)).ToList();
     }
-
-    private async Task<IReadOnlyDictionary<long, MangaBakaShortlistRow>> RowsAsync(
-        IReadOnlyCollection<ShortlistEntry> entries, IReadOnlyList<string> allowed, CancellationToken ct) =>
-        entries.Count == 0
-            ? new Dictionary<long, MangaBakaShortlistRow>()
-            : await store.GetShortlistRowsAsync(entries.Select(e => (long)e.MangaBakaId).ToList(), allowed, ct);
 
     /// <summary>
     /// The caller's entry for an id, tracked: stored under that id, or else stored under a merged id
@@ -294,15 +359,6 @@ public class ShortlistService(
         return merged is null
             ? null
             : await Entries(userId).FirstOrDefaultAsync(x => x.Id == merged.Entry.Id, ct);
-    }
-
-    private async Task<ShortlistEntry?> ByCanonicalAsync(
-        int userId, int mangaBakaId, IReadOnlyDictionary<long, MangaBakaShortlistRow> rows, CancellationToken ct)
-    {
-        var storedKey = rows.FirstOrDefault(r => r.Value.CanonicalId == mangaBakaId && r.Key != mangaBakaId).Key;
-        return storedKey == 0
-            ? null
-            : await Entries(userId).FirstOrDefaultAsync(x => x.MangaBakaId == storedKey, ct);
     }
 
     /// <summary>Called with the provider-id lock held and no existing entry found.</summary>

@@ -117,7 +117,7 @@ import { reconcileLayout } from '../components/layout/pageLayout'
 import { DISCOVER_LAYOUT_CONFIG, DISCOVER_SECTION_DEFS } from '../components/discover/discoverSectionDefs'
 import { CUSTOM_RAIL_PREFIX, customRailAsDiscoverRail, useCustomRails } from '../api/customRails'
 import { FOLLOWING_RAIL_KEY } from '../api/following'
-import { OTHER_SOURCE, railSource, sectionSource, useShortlistIds, type ShortlistSource } from '../api/shortlist'
+import { OTHER_SOURCE, railSource, sectionSource, useShortlistCount, type ShortlistSource } from '../api/shortlist'
 import { CountIndicator } from '../components/ui/CountIndicator'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -1647,7 +1647,7 @@ export default function DiscoverPage() {
         : tab === 'shortlist'
           ? 'shortlist'
           : 'browse'
-  const { data: shortlistIds } = useShortlistIds()
+  const { data: shortlistCount } = useShortlistCount()
 
   // The rails are cached for an hour on both sides, so the only way back to a fresh catalogue is
   // this. It lives up here rather than in the tab so it can sit in the page header. The spinner
@@ -1728,7 +1728,7 @@ export default function DiscoverPage() {
             <Trans>Your Taste</Trans>
           </Tabs.Tab>
           <Tabs.Tab value="shortlist" disabled={editing}>
-            <CountIndicator count={shortlistIds?.size ?? 0} inline position="middle-end" offset={-14} withBorder={false}>
+            <CountIndicator count={shortlistCount ?? 0} inline position="middle-end" offset={-14} withBorder={false}>
               <Trans>Shortlist</Trans>
             </CountIndicator>
           </Tabs.Tab>

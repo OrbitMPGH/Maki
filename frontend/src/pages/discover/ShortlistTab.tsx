@@ -31,7 +31,13 @@ import {
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { DISCOVER_SECTION_LABELS, useRootFolders, useSeriesIdLookup, type RecommendationItem } from '../../api/hooks'
+import {
+  DISCOVER_SECTION_LABELS,
+  HOME_SECTION_LABELS,
+  useRootFolders,
+  useSeriesIdLookup,
+  type RecommendationItem,
+} from '../../api/hooks'
 import { errorText } from '../../api/errorText'
 import { currentFeedbackRevision, useMutateFeedback } from '../../api/recommendationFeedback'
 import { useSeriesRequests } from '../../api/requests'
@@ -65,9 +71,9 @@ type Sort = 'recent' | 'oldest' | 'score' | 'title'
 
 const WAITED_MS = 180 * 24 * 60 * 60 * 1000
 
-/** Title shown for a row whose catalogue entry is gone and whose stored title the server did not send. */
-function rowTitle(entry: ShortlistEntry, fallback: string): string {
-  return entry.item?.title ?? entry.title ?? fallback
+/** The catalogue's current title, or the one stored when the title was saved once the catalogue has none. */
+function shownTitle(entry: ShortlistEntry): string {
+  return entry.item?.title ?? entry.title
 }
 
 function isChanged(entry: ShortlistEntry): boolean {
@@ -93,6 +99,9 @@ function useChangeLabel() {
   }
 }
 
+/** Discover's labels win the keys Home shares with it (`recent`, `following`). */
+const RAIL_LABELS: Record<string, MessageDescriptor> = { ...HOME_SECTION_LABELS, ...DISCOVER_SECTION_LABELS }
+
 /** "Saved 2 months ago from Trending now", with the source named the way the reader met it. */
 function useSavedLine() {
   const { t } = useLingui()
@@ -103,7 +112,7 @@ function useSavedLine() {
     const [kind, rest] = entry.savedFrom.split(':', 2)
     let source: string | null = null
     if (kind === 'rail') {
-      const known = DISCOVER_SECTION_LABELS[rest as keyof typeof DISCOVER_SECTION_LABELS] as MessageDescriptor | undefined
+      const known = RAIL_LABELS[rest] as MessageDescriptor | undefined
       source = known ? label(known) : (detail ?? null)
     } else if (kind === 'search') {
       source = t`a search`
@@ -133,7 +142,7 @@ function ShortlistRow({
   canAdd: boolean
   requested: boolean
   onOpen: (item: RecommendationItem) => void
-  onPreview: (item: RecommendationItem) => void
+  onPreview: (entry: ShortlistEntry) => void
 }) {
   const { t } = useLingui()
   const label = useLabel()
@@ -147,9 +156,9 @@ function ShortlistRow({
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
 
-  const { item, library, statusChange, newChapters, note } = entry
-  const gone = t`No longer in the catalogue`
-  const title = rowTitle(entry, gone)
+  const { item, library, statusChange, newChapters, note, type } = entry
+  const shown = shownTitle(entry)
+  const title = shown
   const inLibrary = library != null
   const ownedId = library?.seriesId ?? null
   const feedbackId = Number(item?.providerId ?? entry.mangaBakaId)
@@ -183,7 +192,7 @@ function ShortlistRow({
   const totalChapters = item?.totalChapters ?? null
   const meta = item
     ? [
-        item.type ? label(TYPE_LABELS[item.type] ?? item.type) : null,
+        type ? label(TYPE_LABELS[type] ?? type) : null,
         item.year,
         label(seriesStatusVisual(item.status).label),
         totalChapters ? t`${totalChapters} ch.` : null,
@@ -196,7 +205,7 @@ function ShortlistRow({
     <img src={cover} alt="" loading="lazy" decoding="async" />
   ) : (
     <div className="cover-placeholder" aria-hidden>
-      {title}
+      {shown}
     </div>
   )
 
@@ -216,10 +225,10 @@ function ShortlistRow({
         <div className="shortlist-head">
           {item ? (
             <button type="button" className="shortlist-title" onClick={() => onOpen(item)}>
-              {title}
+              {shown}
             </button>
           ) : (
-            <span className="shortlist-title">{title}</span>
+            <span className="shortlist-title">{shown}</span>
           )}
           {item?.rating != null && (
             <span className="shortlist-score tnum">
@@ -313,7 +322,7 @@ function ShortlistRow({
       </div>
 
       <div className="shortlist-actions">
-        {item && !inLibrary && <PreviewChapterButton providerId={item.providerId} title={title} onRead={() => onPreview(item)} />}
+        {item && !inLibrary && <PreviewChapterButton providerId={item.providerId} title={title} onRead={() => onPreview(entry)} />}
 
         {item && !inLibrary && requested && (
           <span className="shortlist-pill" data-quiet="true">
@@ -483,14 +492,16 @@ export function ShortlistTab() {
   const { t, i18n } = useLingui()
   const { can } = useAuth()
   const canAdd = can('AddSeries')
-  const { data: entries, isPending, isError, error, refetch } = useShortlist()
+  const { data, isPending, isError, error, refetch } = useShortlist()
+  const entries = data?.entries
   const { data: requests } = useSeriesRequests('all', !canAdd)
   const { data: rootFolders } = useRootFolders()
   const seriesIdFor = useSeriesIdLookup()
   const [filter, setFilter] = usePageState<Filter>('shortlist:filter', 'all')
   const [sort, setSort] = usePageState<Sort>('shortlist:sort', 'recent')
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
-  const [previewItem, setPreviewItem] = useState<RecommendationItem | null>(null)
+  const [preview, setPreview] = useState<ShortlistEntry | null>(null)
+  const previewItem = preview?.item ?? null
 
   const requestedIds = useMemo(
     () =>
@@ -507,9 +518,8 @@ export function ShortlistTab() {
     all: all.length,
     changed: all.filter(isChanged).length,
     completed: all.filter((e) => e.item?.status === 'Completed').length,
-    anime: all.filter((e) => e.item?.hasAnime).length,
+    anime: all.filter((e) => e.hasAnime).length,
   }
-  const noDump = all.length > 0 && all.every((e) => e.item == null)
   const waited = all.filter((e) => Date.now() - new Date(e.createdAtUtc).getTime() > WAITED_MS).length
 
   const { changedRows, restRows } = useMemo(() => {
@@ -520,12 +530,12 @@ export function ShortlistTab() {
         case 'completed':
           return e.item?.status === 'Completed'
         case 'anime':
-          return Boolean(e.item?.hasAnime)
+          return e.hasAnime
         default:
           return true
       }
     }
-    const byTitle = (e: ShortlistEntry) => e.item?.title ?? e.title ?? ''
+    const byTitle = (e: ShortlistEntry) => shownTitle(e)
     const time = (e: ShortlistEntry) => new Date(e.createdAtUtc).getTime()
     const compare = (a: ShortlistEntry, b: ShortlistEntry) => {
       switch (sort) {
@@ -570,27 +580,23 @@ export function ShortlistTab() {
       </Alert>
     )
   }
-  if (all.length === 0) return <EmptyShortlist />
-  if (noDump) {
-    const saved = all.length
+  if (data?.catalogueAvailable === false) {
     return (
       <Alert color="var(--warn)" variant="light" icon={<IconAlertCircle size={16} />} title={t`Discover's catalogue is not downloaded yet`}>
         <Text size="sm">
-          {plural(saved, {
-            one: 'Your # saved title is kept. It shows up here once the catalogue is installed.',
-            other: 'Your # saved titles are kept. They show up here once the catalogue is installed.',
-          })}
+          <Trans>Anything you saved is kept and shows up here once the catalogue is installed.</Trans>
         </Text>
       </Alert>
     )
   }
+  if (all.length === 0) return <EmptyShortlist />
 
   const rowProps = (e: ShortlistEntry) => ({
     entry: e,
     canAdd,
     requested: e.item != null && requestedIds.has(e.item.providerId),
     onOpen: setDetailItem,
-    onPreview: setPreviewItem,
+    onPreview: setPreview,
   })
 
   return (
@@ -671,8 +677,8 @@ export function ShortlistTab() {
           providerId={previewItem.providerId}
           title={previewItem.title}
           coverUrl={previewItem.coverUrl ?? previewItem.thumbUrlHiDpi ?? previewItem.thumbUrl}
-          seriesType={previewItem.type ?? null}
-          onClose={() => setPreviewItem(null)}
+          seriesType={preview?.type ?? null}
+          onClose={() => setPreview(null)}
         />
       )}
     </Stack>

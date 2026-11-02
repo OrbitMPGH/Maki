@@ -702,6 +702,33 @@ public class ImportListServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_run_resolves_the_stored_keys_once_and_finds_an_entry_under_a_merged_id()
+    {
+        var user = Adder();
+        using (var db = _db.NewContext())
+        {
+            db.ShortlistEntries.Add(new ShortlistEntry
+            {
+                UserId = user, MangaBakaId = 90, Title = "t", SavedFrom = "other",
+                CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        _store.Merged[90] = 101;
+        _tracker.Entries = [Planned("r1", 101), Planned("r2", 102), Planned("r3", 103)];
+        _store.Catalogue(101, 102, 103);
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Single(_store.Resolved, ids => ids.Contains(90));
+        Assert.Equal(2, result!.Shortlisted);
+        Assert.Equal(1, result.AlreadyPresent);
+        Assert.Equal(new[] { 90, 102, 103 }, Shortlist().Select(x => x.MangaBakaId));
+        Assert.Equal(ImportListSkipReason.Shortlisted, Reasons()["r1"]);
+    }
+
+    [Fact]
     public async Task A_refused_shortlist_insert_is_recorded_unmatched()
     {
         var user = SeedUser("careful", MakiPermission.UseTrackers, ceiling: "safe");
@@ -957,6 +984,22 @@ public class ImportListServiceTests : IDisposable
 
         /// <summary>Ids the dump has no row for: series newer than the snapshot.</summary>
         public HashSet<long> NotInDump { get; } = [];
+
+        /// <summary>Merged ids and the canonical id each points at.</summary>
+        public Dictionary<long, long> Merged { get; } = [];
+
+        public int ResolveCalls { get; private set; }
+        public List<IReadOnlyCollection<long>> Resolved { get; } = [];
+
+        public override Task<IReadOnlyDictionary<long, long>> ResolveCanonicalIdsAsync(
+            IReadOnlyCollection<long> ids, CancellationToken ct = default)
+        {
+            ResolveCalls++;
+            Resolved.Add([.. ids]);
+            return Task.FromResult<IReadOnlyDictionary<long, long>>(ids
+                .Where(id => Merged.ContainsKey(id) || _catalogue.ContainsKey(id))
+                .ToDictionary(id => id, id => Merged.GetValueOrDefault(id, id)));
+        }
 
         private readonly Dictionary<long, string> _catalogue = [];
 
