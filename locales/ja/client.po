@@ -4385,6 +4385,7 @@ msgid "Avoided"
 msgstr "回避"
 
 #: src/components/pageconversion/ComparePicker.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
@@ -5438,7 +5439,6 @@ msgstr "{winnerDisplayName}にない章はそのまま残り、ディスクか�
 msgid "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
 msgstr "すでにダウンロード中の章は完了します。ダウンロードクライアントに渡されたトレントは、引き続きダウンロードされます。"
 
-#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Chapters already listed keep whatever you set on them."
@@ -8609,6 +8609,10 @@ msgstr "ファイルサイズ（MB）が未満"
 msgid "Files"
 msgstr "ファイル"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Files already converted stay as they are."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Files already on disk keep their names until you rename them."
@@ -9762,8 +9766,8 @@ msgstr "シグナルの仕組み"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "How this series' pages are stored"
-msgstr "このシリーズのページの保存方法"
+#~ msgid "How this series' pages are stored"
+#~ msgstr "このシリーズのページの保存方法"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -12414,8 +12418,8 @@ msgstr "ミュート済み"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Muted means nothing from this series at all."
-msgstr "ミュートすると、このシリーズからは何も届きません。"
+#~ msgid "Muted means nothing from this series at all."
+#~ msgstr "ミュートすると、このシリーズからは何も届きません。"
 
 #: src/components/UserMenu.tsx
 #, fuzzy
@@ -15991,8 +15995,8 @@ msgstr "開始"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Read history stays, and the chapters aren't downloaded again."
-msgstr "既読履歴は残り、章は再度ダウンロードされません。"
+#~ msgid "Read history stays, and the chapters aren't downloaded again."
+#~ msgstr "既読履歴は残り、章は再度ダウンロードされません。"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -18241,8 +18245,8 @@ msgstr "Scrobble"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Scrobble only skips tracker pushes."
-msgstr "Scrobbleはトラッカーへの送信だけをスキップします。"
+#~ msgid "Scrobble only skips tracker pushes."
+#~ msgstr "Scrobbleはトラッカーへの送信だけをスキップします。"
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -18700,7 +18704,6 @@ msgid "Sequel to {relatedTo}"
 msgstr "{relatedTo}の続編"
 
 #: src/components/CatalogueFilters.tsx
-#: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -22283,6 +22286,7 @@ msgstr "スコアまでアップグレード"
 msgid "upgrade, quality profile, default profile, automatic upgrades"
 msgstr "アップグレード, upgrade, 品質プロファイル, quality profile, 既定のプロファイル, default profile, 自動アップグレード, automatic upgrades"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Upgrades"
@@ -23137,8 +23141,8 @@ msgstr "読書中"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "While reading only tells you about new chapters while you are partway through."
-msgstr "読書中は、シリーズの途中にいる間だけ新しい章を知らせます。"
+#~ msgid "While reading only tells you about new chapters while you are partway through."
+#~ msgstr "読書中は、シリーズの途中にいる間だけ新しい章を知らせます。"
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -23184,8 +23188,8 @@ msgstr "横長のページ"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Wins over the rules. Files already converted stay as they are."
-msgstr "ルールより優先されます。すでに変換されたファイルは、そのまま残ります。"
+#~ msgid "Wins over the rules. Files already converted stay as they are."
+#~ msgstr "ルールより優先されます。すでに変換されたファイルは、そのまま残ります。"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy

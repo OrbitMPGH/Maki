@@ -4385,6 +4385,7 @@ msgid "Avoided"
 msgstr "Evitado"
 
 #: src/components/pageconversion/ComparePicker.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
@@ -5438,7 +5439,6 @@ msgstr "Os capítulos que {winnerDisplayName} não contém são deixados como es
 msgid "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
 msgstr "Capítulos que já estão baixando terminam. Torrents já enviados ao cliente de download continuam baixando."
 
-#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Chapters already listed keep whatever you set on them."
@@ -8609,6 +8609,10 @@ msgstr "Tamanho do arquivo em MB, abaixo de"
 msgid "Files"
 msgstr "Arquivos"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Files already converted stay as they are."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Files already on disk keep their names until you rename them."
@@ -9762,8 +9766,8 @@ msgstr "Como os sinais funcionam"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "How this series' pages are stored"
-msgstr "Como as páginas desta série são guardadas"
+#~ msgid "How this series' pages are stored"
+#~ msgstr "Como as páginas desta série são guardadas"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -12414,8 +12418,8 @@ msgstr "Silenciado"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Muted means nothing from this series at all."
-msgstr "Silenciado significa que nada desta série será mostrado."
+#~ msgid "Muted means nothing from this series at all."
+#~ msgstr "Silenciado significa que nada desta série será mostrado."
 
 #: src/components/UserMenu.tsx
 #, fuzzy
@@ -15991,8 +15995,8 @@ msgstr "Lido de"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Read history stays, and the chapters aren't downloaded again."
-msgstr "O histórico de leitura continua, e os capítulos não são baixados de novo."
+#~ msgid "Read history stays, and the chapters aren't downloaded again."
+#~ msgstr "O histórico de leitura continua, e os capítulos não são baixados de novo."
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -18241,8 +18245,8 @@ msgstr "Scrobble"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Scrobble only skips tracker pushes."
-msgstr "O Scrobble apenas impede envios ao tracker."
+#~ msgid "Scrobble only skips tracker pushes."
+#~ msgstr "O Scrobble apenas impede envios ao tracker."
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -18700,7 +18704,6 @@ msgid "Sequel to {relatedTo}"
 msgstr "Sequência de {relatedTo}"
 
 #: src/components/CatalogueFilters.tsx
-#: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -22283,6 +22286,7 @@ msgstr "Upgrade até a pontuação"
 msgid "upgrade, quality profile, default profile, automatic upgrades"
 msgstr "upgrade, perfil de qualidade, perfil padrão, upgrades automáticos"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Upgrades"
@@ -23137,8 +23141,8 @@ msgstr "Durante a leitura"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "While reading only tells you about new chapters while you are partway through."
-msgstr "Durante a leitura apenas informa sobre novos capítulos enquanto você estiver no meio da série."
+#~ msgid "While reading only tells you about new chapters while you are partway through."
+#~ msgstr "Durante a leitura apenas informa sobre novos capítulos enquanto você estiver no meio da série."
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -23184,8 +23188,8 @@ msgstr "Páginas largas"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Wins over the rules. Files already converted stay as they are."
-msgstr "Prevalece sobre as regras. Arquivos já convertidos ficam como estão."
+#~ msgid "Wins over the rules. Files already converted stay as they are."
+#~ msgstr "Prevalece sobre as regras. Arquivos já convertidos ficam como estão."
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy

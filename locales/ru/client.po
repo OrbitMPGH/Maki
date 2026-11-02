@@ -4385,6 +4385,7 @@ msgid "Avoided"
 msgstr "Исключено"
 
 #: src/components/pageconversion/ComparePicker.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
@@ -5438,7 +5439,6 @@ msgstr "Главы, которых нет у {winnerDisplayName}, остаютс
 msgid "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
 msgstr "Главы, которые уже загружаются, докачиваются. Торренты, переданные клиенту загрузки, продолжают загружаться."
 
-#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Chapters already listed keep whatever you set on them."
@@ -8609,6 +8609,10 @@ msgstr "Размер файла в МБ, меньше"
 msgid "Files"
 msgstr "Файлы"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Files already converted stay as they are."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Files already on disk keep their names until you rename them."
@@ -9762,8 +9766,8 @@ msgstr "Как работают сигналы"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "How this series' pages are stored"
-msgstr "Как хранятся страницы этой серии"
+#~ msgid "How this series' pages are stored"
+#~ msgstr "Как хранятся страницы этой серии"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -12414,8 +12418,8 @@ msgstr "Без звука"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Muted means nothing from this series at all."
-msgstr "Без звука означает, что от этой серии не поступает ничего."
+#~ msgid "Muted means nothing from this series at all."
+#~ msgstr "Без звука означает, что от этой серии не поступает ничего."
 
 #: src/components/UserMenu.tsx
 #, fuzzy
@@ -15991,8 +15995,8 @@ msgstr "Прочитано от"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Read history stays, and the chapters aren't downloaded again."
-msgstr "История чтения сохраняется, а главы повторно не загружаются."
+#~ msgid "Read history stays, and the chapters aren't downloaded again."
+#~ msgstr "История чтения сохраняется, а главы повторно не загружаются."
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -18241,8 +18245,8 @@ msgstr "Scrobble"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Scrobble only skips tracker pushes."
-msgstr "Scrobble пропускает только отправку данных трекерам."
+#~ msgid "Scrobble only skips tracker pushes."
+#~ msgstr "Scrobble пропускает только отправку данных трекерам."
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -18700,7 +18704,6 @@ msgid "Sequel to {relatedTo}"
 msgstr "Продолжение {relatedTo}"
 
 #: src/components/CatalogueFilters.tsx
-#: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -22283,6 +22286,7 @@ msgstr "Улучшать до оценки"
 msgid "upgrade, quality profile, default profile, automatic upgrades"
 msgstr "улучшение, профиль качества, профиль по умолчанию, автоматические улучшения"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Upgrades"
@@ -23137,8 +23141,8 @@ msgstr "Во время чтения"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "While reading only tells you about new chapters while you are partway through."
-msgstr "Во время чтения сообщает о новых главах только пока вы находитесь в середине серии."
+#~ msgid "While reading only tells you about new chapters while you are partway through."
+#~ msgstr "Во время чтения сообщает о новых главах только пока вы находитесь в середине серии."
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -23184,8 +23188,8 @@ msgstr "Широкие страницы"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Wins over the rules. Files already converted stay as they are."
-msgstr "Важнее правил. Файлы, которые уже преобразованы, остаются без изменений."
+#~ msgid "Wins over the rules. Files already converted stay as they are."
+#~ msgstr "Важнее правил. Файлы, которые уже преобразованы, остаются без изменений."
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy

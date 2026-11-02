@@ -429,6 +429,7 @@ export const EditMetadataDialog: Story = {
 export const MoveSeriesDialog: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Files' }))
     await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Move to another root folder' }))
     await expect(await body(canvasElement).findByRole('dialog', { name: 'Move series' })).toBeVisible()
   },
@@ -437,6 +438,7 @@ export const MoveSeriesDialog: Story = {
 export const RenameFilesDialog: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Files' }))
     await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Rename files' }))
     await expect(await body(canvasElement).findByRole('dialog', { name: 'Rename files' })).toBeVisible()
   },
@@ -449,6 +451,7 @@ export const UndoConversionDialog: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByRole('heading', { name: /Lanterns Over Kasumi/ })
     await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Files' }))
     await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Undo conversion...' }))
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Undo conversion' })
     await expect(await within(dialog).findByText(/48 files have their original in the trash/)).toBeVisible()
@@ -459,6 +462,7 @@ export const UndoConversionAbsentWithoutRestorableFiles: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByRole('heading', { name: /Lanterns Over Kasumi/ })
     await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Files' }))
     const menu = await body(canvasElement).findByRole('menu')
     await expect(await within(menu).findByRole('menuitem', { name: /Page conversion/ })).toBeVisible()
     await expect(within(menu).queryByRole('menuitem', { name: /Undo conversion/ })).toBeNull()

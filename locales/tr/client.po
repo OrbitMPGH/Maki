@@ -4385,6 +4385,7 @@ msgid "Avoided"
 msgstr "Kaçınıldı"
 
 #: src/components/pageconversion/ComparePicker.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
@@ -5438,7 +5439,6 @@ msgstr "{winnerDisplayName}'ın sahip olmadığı bölümler, diskten içe aktar
 msgid "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
 msgstr "Zaten inmekte olan bölümler tamamlanır. İndirme istemcisine zaten verilmiş torrentler indirilmeye devam eder."
 
-#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Chapters already listed keep whatever you set on them."
@@ -8609,6 +8609,10 @@ msgstr "Dosya boyutu MB cinsinden, altı"
 msgid "Files"
 msgstr "Dosyalar"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Files already converted stay as they are."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Files already on disk keep their names until you rename them."
@@ -9762,8 +9766,8 @@ msgstr "Sinyaller nasıl çalışır"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "How this series' pages are stored"
-msgstr "Bu serinin sayfaları nasıl saklanır"
+#~ msgid "How this series' pages are stored"
+#~ msgstr "Bu serinin sayfaları nasıl saklanır"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -12414,8 +12418,8 @@ msgstr "Sessize alındı"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Muted means nothing from this series at all."
-msgstr "Sessize alma, bu seriden hiçbir şey gelmez demektir."
+#~ msgid "Muted means nothing from this series at all."
+#~ msgstr "Sessize alma, bu seriden hiçbir şey gelmez demektir."
 
 #: src/components/UserMenu.tsx
 #, fuzzy
@@ -15991,8 +15995,8 @@ msgstr "Şuradan oku"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Read history stays, and the chapters aren't downloaded again."
-msgstr "Okuma geçmişi kalır ve bölümler yeniden indirilmez."
+#~ msgid "Read history stays, and the chapters aren't downloaded again."
+#~ msgstr "Okuma geçmişi kalır ve bölümler yeniden indirilmez."
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -18241,8 +18245,8 @@ msgstr "Scrobble"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Scrobble only skips tracker pushes."
-msgstr "Yalnızca senkronizasyon, takip hizmetine göndermeyi atlar."
+#~ msgid "Scrobble only skips tracker pushes."
+#~ msgstr "Yalnızca senkronizasyon, takip hizmetine göndermeyi atlar."
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -18700,7 +18704,6 @@ msgid "Sequel to {relatedTo}"
 msgstr "{relatedTo} devam serisi"
 
 #: src/components/CatalogueFilters.tsx
-#: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -22283,6 +22286,7 @@ msgstr "Puana kadar yükselt"
 msgid "upgrade, quality profile, default profile, automatic upgrades"
 msgstr "yükseltme, kalite profili, varsayılan profil, otomatik yükseltmeler"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Upgrades"
@@ -23137,8 +23141,8 @@ msgstr "Okurken"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "While reading only tells you about new chapters while you are partway through."
-msgstr "Okurken yalnızca, seriyi yarıda bıraktığınız sürece yeni bölümler hakkında bilgi verir."
+#~ msgid "While reading only tells you about new chapters while you are partway through."
+#~ msgstr "Okurken yalnızca, seriyi yarıda bıraktığınız sürece yeni bölümler hakkında bilgi verir."
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -23184,8 +23188,8 @@ msgstr "Geniş sayfalar"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Wins over the rules. Files already converted stay as they are."
-msgstr "Kurallara üstün gelir. Önceden dönüştürülmüş dosyalar olduğu gibi kalır."
+#~ msgid "Wins over the rules. Files already converted stay as they are."
+#~ msgstr "Kurallara üstün gelir. Önceden dönüştürülmüş dosyalar olduğu gibi kalır."
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy

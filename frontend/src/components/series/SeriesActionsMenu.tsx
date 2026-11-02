@@ -1,14 +1,18 @@
-import { ActionIcon, Loader, Menu, Text, Tooltip } from '@mantine/core'
-import { useState, type ReactElement } from 'react'
+import { ActionIcon, Group, Loader, Menu, Text, Tooltip } from '@mantine/core'
+import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react'
 import {
     IconArchive,
     IconArchiveOff,
     IconBell,
+    IconChevronLeft,
+    IconChevronRight,
+    IconDeviceMobile,
     IconDeviceMobileDown,
     IconDeviceMobileOff,
     IconDotsVertical,
     IconEyeOff,
     IconFileText,
+    IconFolder,
     IconFolderSymlink,
     IconEye,
     IconPencil,
@@ -46,14 +50,37 @@ export const MONITOR_OPTIONS = [
     { value: 'None', label: msg`None` },
 ] as const
 
+type Page =
+    | 'root'
+    | 'files'
+    | 'automation'
+    | 'upgrades'
+    | 'device'
+    | 'monitor'
+    | 'notify'
+    | 'incognito'
+    | 'profile'
+    | 'cleanup'
+    | 'conversion'
+
+const PARENT: Record<Page, Page> = {
+    root: 'root',
+    files: 'root',
+    automation: 'root',
+    upgrades: 'root',
+    device: 'root',
+    monitor: 'automation',
+    notify: 'automation',
+    incognito: 'automation',
+    profile: 'upgrades',
+    cleanup: 'files',
+    conversion: 'files',
+}
+
 /**
- * Everything that used to be an eleven-button toolbar under the hero.
- *
- * Grouped by what it touches rather than by how often it is used, because the grouping is the only
- * thing standing in for the labels the buttons used to carry. The three settings that were
- * `Select`s are submenus with their current value shown inline, and each keeps the explanatory
- * line the old tooltip carried: "what happens to chapters released later" is not obvious from the
- * word Monitor, and losing it to a redesign would be a real regression.
+ * The series page's "More actions" menu: a short root list whose groups and settings open in place
+ * behind a back row. The single long list with hover submenus it replaced outgrew the screen.
+ * Picking a value returns to the group, so the new value shows next to the setting.
  */
 export function SeriesActionsMenu({
                                       monitorMode,
@@ -151,6 +178,9 @@ export function SeriesActionsMenu({
     onRemoveOffline?: () => void
 }) {
     const [opened, setOpened] = useState(false)
+    const [page, setPage] = useState<Page>('root')
+    const dropdownRef = useRef<HTMLDivElement>(null)
+    const cameFrom = useRef<Page | null>(null)
     const { t } = useLingui()
     const renderLabel = useLabel()
     const incognitoOptions = useIncognitoOptions()
@@ -188,16 +218,320 @@ export function SeriesActionsMenu({
             item
         )
 
+    // A reader's Automation group would hold Notify alone, so for them it sits on the root list.
+    const parentOf = (p: Page): Page => (p === 'notify' && !canEdit ? 'root' : PARENT[p])
+    const go = (to: Page) => {
+        cameFrom.current = page
+        setPage(to)
+    }
+
+    // The clicked row unmounts with its page; without moving focus the arrow keys stop working. A
+    // pointer user gets the dropdown itself, so no focus ring lands on a row they never keyed to.
+    const viaKeyboard = useRef(false)
+    useEffect(() => {
+        const root = dropdownRef.current
+        if (cameFrom.current === null || !root) return
+        if (!viaKeyboard.current) return root.focus()
+        const target =
+            root.querySelector<HTMLElement>(`[data-page="${cameFrom.current}"]`) ??
+            root.querySelector<HTMLElement>('[role="menuitem"]:not([data-disabled])')
+        target?.focus()
+    }, [page])
+
+    const value = (text: ReactNode) => (
+        <Text size="xs" c="var(--ink-3)" style={{ whiteSpace: 'nowrap' }}>
+            {text}
+        </Text>
+    )
+    const drill = (to: Page, icon: ReactNode, title: ReactNode, current?: ReactNode) => (
+        <Menu.Item
+            data-page={to}
+            leftSection={icon}
+            closeMenuOnClick={false}
+            onClick={() => go(to)}
+            rightSection={
+                <Group gap={6} wrap="nowrap">
+                    {current !== undefined && value(current)}
+                    <IconChevronRight size={14} color="var(--ink-3)" />
+                </Group>
+            }
+        >
+            {title}
+        </Menu.Item>
+    )
+    const back = (title: ReactNode) => (
+        <>
+            <Menu.Item
+                leftSection={<IconChevronLeft size={16} />}
+                closeMenuOnClick={false}
+                onClick={() => go(parentOf(page))}
+                aria-label={t`Back`}
+                fw={600}
+            >
+                {title}
+            </Menu.Item>
+            <Menu.Divider />
+        </>
+    )
+    const choice = ({
+                        title,
+                        hint,
+                        current,
+                        options,
+                        onPick,
+                        note,
+                    }: {
+        title: ReactNode
+        hint?: ReactNode
+        current: string
+        options: readonly { value: string; label: ReactNode }[]
+        onPick: (value: string) => void
+        note?: ReactNode
+    }) => (
+        <>
+            {back(title)}
+            {hint && <Menu.Label>{hint}</Menu.Label>}
+            <Menu.RadioGroup
+                value={current}
+                onChange={(v) => {
+                    onPick(v)
+                    go(parentOf(page))
+                }}
+            >
+                {options.map((o) => (
+                    <Menu.RadioItem key={o.value} value={o.value} closeMenuOnClick={false}>
+                        {o.label}
+                    </Menu.RadioItem>
+                ))}
+            </Menu.RadioGroup>
+            {note && <Menu.Label>{note}</Menu.Label>}
+        </>
+    )
+
+    const hasFiles = canEdit || canCleanUpReadFiles || canSetPageConversion
+    const hasUpgrades = canEdit || canScanUpgrades
+    const monitorLabel = renderLabel(label(MONITOR_OPTIONS, monitorMode))
+    const notifyRow = drill('notify', <IconBell size={16} />, <Trans>Notify</Trans>, renderLabel(label(notificationOptions, notificationMode)))
+
+    const content = () => {
+        switch (page) {
+            case 'root':
+                return (
+                    <>
+                        {canEdit && (
+                            <>
+                                {withReason(
+                                    <Menu.Item leftSection={<IconRefresh size={16} />} onClick={whenOn(onRefreshChapters)} {...offProps}>
+                                        <Trans>Refresh chapters</Trans>
+                                    </Menu.Item>,
+                                )}
+                                <Menu.Item leftSection={<IconPhoto size={16} />} onClick={onRefreshMetadata}>
+                                    <Trans>Refresh metadata and poster</Trans>
+                                </Menu.Item>
+                                <Menu.Item leftSection={<IconPencil size={16} />} onClick={onEditMetadata}>
+                                    <Trans>Edit metadata</Trans>
+                                </Menu.Item>
+                                <Menu.Divider />
+                            </>
+                        )}
+                        {hasFiles && drill('files', <IconFolder size={16} />, <Trans>Files</Trans>)}
+                        {canEdit ? drill('automation', <IconEye size={16} />, <Trans>Automation</Trans>) : notifyRow}
+                        {hasUpgrades && drill('upgrades', <IconSparkles size={16} />, <Trans>Upgrades</Trans>)}
+                        {offlineSaved !== undefined &&
+                            drill('device', <IconDeviceMobile size={16} />, <Trans>This device</Trans>)}
+                        {(canArchive || canRemove) && <Menu.Divider />}
+                        {canArchive && (
+                            <Menu.Item
+                                leftSection={archived ? <IconArchiveOff size={16} /> : <IconArchive size={16} />}
+                                closeMenuOnClick={false}
+                                onClick={() => {
+                                    setOpened(false)
+                                    if (archived) onRestore()
+                                    else onArchive()
+                                }}
+                            >
+                                {archived ? <Trans context="series">Restore to library</Trans> : <Trans context="series">Archive</Trans>}
+                            </Menu.Item>
+                        )}
+                        {canRemove && (
+                            <Menu.Item
+                                color="var(--danger)"
+                                leftSection={<IconTrash size={16} />}
+                                closeMenuOnClick={false}
+                                onClick={() => {
+                                    setOpened(false)
+                                    onRemove()
+                                }}
+                            >
+                                <Trans>Remove from library</Trans>
+                            </Menu.Item>
+                        )}
+                    </>
+                )
+            case 'files':
+                return (
+                    <>
+                        {back(<Trans>Files</Trans>)}
+                        {canEdit && (
+                            <>
+                                <Menu.Item leftSection={<IconScan size={16} />} onClick={onRescan}>
+                                    <Trans>Rescan files</Trans>
+                                </Menu.Item>
+                                <Menu.Item leftSection={<IconFolderSymlink size={16} />} onClick={onMove}>
+                                    <Trans>Move to another root folder</Trans>
+                                </Menu.Item>
+                                <Menu.Item leftSection={<IconFileText size={16} />} onClick={onRename}>
+                                    <Trans>Rename files</Trans>
+                                </Menu.Item>
+                            </>
+                        )}
+                        {canEdit && (canCleanUpReadFiles || canSetPageConversion) && <Menu.Divider />}
+                        {canCleanUpReadFiles &&
+                            drill('cleanup', <IconTrashX size={16} />, <Trans>Clean up read files</Trans>, readFileCleanupActive ? t`On` : t`Off`)}
+                        {canSetPageConversion &&
+                            drill('conversion', <IconPhotoCog size={16} />, <Trans>Page conversion</Trans>, pageConversionValue)}
+                        {canSetPageConversion && onUndoConversion && (
+                            <Menu.Item leftSection={<IconArrowBackUp size={16} />} onClick={onUndoConversion}>
+                                <Trans>Undo conversion...</Trans>
+                            </Menu.Item>
+                        )}
+                    </>
+                )
+            case 'automation':
+                return (
+                    <>
+                        {back(<Trans>Automation</Trans>)}
+                        {toolsOff
+                            ? withReason(
+                                <Menu.Item leftSection={<IconEye size={16} />} rightSection={value(monitorLabel)} {...offProps}>
+                                    <Trans>Monitor</Trans>
+                                </Menu.Item>,
+                            )
+                            : drill('monitor', <IconEye size={16} />, <Trans>Monitor</Trans>, monitorLabel)}
+                        {notifyRow}
+                        {drill('incognito', <IconEyeOff size={16} />, <Trans>Incognito</Trans>, renderLabel(label(incognitoOptions, incognito)))}
+                    </>
+                )
+            case 'upgrades':
+                return (
+                    <>
+                        {back(<Trans>Upgrades</Trans>)}
+                        {canEdit && drill('profile', <IconSparkles size={16} />, <Trans>Quality profile</Trans>, upgradeProfileLabel)}
+                        {canScanUpgrades &&
+                            withReason(
+                                <Menu.Item
+                                    leftSection={scanningUpgrades ? <Loader size={14} /> : <IconRefresh size={16} />}
+                                    disabled={scanningUpgrades}
+                                    onClick={whenOn(onScanUpgrades)}
+                                    {...offProps}
+                                >
+                                    <Trans>Scan for upgrades</Trans>
+                                </Menu.Item>,
+                            )}
+                        {canScanUpgrades &&
+                            withReason(
+                                <Menu.Item
+                                    leftSection={searchingVolumes ? <Loader size={14} /> : <IconSearch size={16} />}
+                                    disabled={searchingVolumes}
+                                    onClick={whenOn(onSearchVolumes)}
+                                    {...offProps}
+                                >
+                                    <Trans>Search volume releases</Trans>
+                                </Menu.Item>,
+                            )}
+                    </>
+                )
+            case 'device':
+                return (
+                    <>
+                        {back(<Trans>This device</Trans>)}
+                        <Menu.Item leftSection={<IconDeviceMobileDown size={16} />} onClick={onSaveUnreadOffline}>
+                            <Trans>Save unread chapters for offline</Trans>
+                        </Menu.Item>
+                        <Menu.Item
+                            leftSection={<IconDeviceMobileOff size={16} />}
+                            disabled={offlineSaved === 0}
+                            onClick={onRemoveOffline}
+                        >
+                            <Trans>Remove offline copies</Trans>
+                        </Menu.Item>
+                    </>
+                )
+            case 'monitor':
+                return choice({
+                    title: <Trans>Monitor</Trans>,
+                    hint: <Trans>What happens to chapters released later</Trans>,
+                    current: monitorMode,
+                    options: MONITOR_OPTIONS.map((o) => ({ value: o.value, label: renderLabel(o.label) })),
+                    onPick: onSetMonitor,
+                })
+            case 'notify':
+                return choice({
+                    title: <Trans>Notify</Trans>,
+                    current: notificationMode,
+                    options: notificationOptions,
+                    onPick: onSetNotify,
+                })
+            case 'incognito':
+                return choice({
+                    title: <Trans>Incognito</Trans>,
+                    current: incognito,
+                    options: incognitoOptions,
+                    onPick: onSetIncognito,
+                    note: <Trans>Full also excludes this series from Rewind stats and reading history.</Trans>,
+                })
+            case 'profile':
+                return choice({
+                    title: <Trans>Quality profile</Trans>,
+                    current: upgradeProfileValue,
+                    options: [
+                        { value: INSTANCE_DEFAULT, label: instanceDefaultLabel },
+                        ...upgradeProfiles.map((p) => ({ value: String(p.id), label: p.name })),
+                    ],
+                    onPick: (v) => onSetUpgradeProfile(v === INSTANCE_DEFAULT ? null : Number(v)),
+                })
+            case 'cleanup':
+                return choice({
+                    title: <Trans>Clean up read files</Trans>,
+                    hint: <Trans>Delete a chapter's file some days after everyone has read it</Trans>,
+                    current: readFileCleanup,
+                    options: [
+                        { value: 'Default', label: <Trans>Follow the setting</Trans> },
+                        { value: 'On', label: <Trans>On for this series</Trans> },
+                        { value: 'Off', label: <Trans>Off for this series</Trans> },
+                    ],
+                    onPick: onSetReadFileCleanup,
+                })
+            case 'conversion':
+                return choice({
+                    title: <Trans>Page conversion</Trans>,
+                    current: pageConversion,
+                    options: [
+                        { value: 'Default', label: <Trans>Follow the rules</Trans> },
+                        { value: 'Never', label: <Trans>Never</Trans> },
+                        ...PAGE_CONVERSION_STOPS.map((stop) => ({ value: stopMode(stop), label: renderLabel(STOP_LABELS[stop]) })),
+                    ],
+                    onPick: onSetPageConversion,
+                    note: <Trans>Files already converted stay as they are.</Trans>,
+                })
+        }
+    }
+
     return (
-        // Taller than a phone screen, so it opens toward the roomier side, stops at the screen edge
-        // and scrolls inside. Scrolling the page instead would hide it once the button left view.
+        // Capped at the screen edge with an inner scroll, for phones held sideways.
         <Menu
             position="bottom-end"
-            width={264}
+            width={272}
             withinPortal
             shadow="md"
             opened={opened}
-            onChange={setOpened}
+            onChange={(next) => {
+                if (next) {
+                    cameFrom.current = null
+                    setPage('root')
+                }
+                setOpened(next)
+            }}
             middlewares={{ flip: { fallbackStrategy: 'bestFit' }, shift: true, size: { padding: 8 } }}
             classNames={{ dropdown: 'menu-dropdown-scroll' }}
         >
@@ -218,324 +552,20 @@ export function SeriesActionsMenu({
                 </ActionIcon>
             </Menu.Target>
 
-            <Menu.Dropdown>
-                {canEdit && (
-                    <>
-                        <Menu.Label><Trans>Series</Trans></Menu.Label>
-                        {withReason(
-                            <Menu.Item leftSection={<IconRefresh size={16} />} onClick={whenOn(onRefreshChapters)} {...offProps}>
-                                <Trans>Refresh chapters</Trans>
-                            </Menu.Item>,
-                        )}
-                        <Menu.Item leftSection={<IconPhoto size={16} />} onClick={onRefreshMetadata}>
-                            <Trans>Refresh metadata and poster</Trans>
-                        </Menu.Item>
-                        <Menu.Item leftSection={<IconPencil size={16} />} onClick={onEditMetadata}>
-                            <Trans>Edit metadata</Trans>
-                        </Menu.Item>
-
-                        <Menu.Divider />
-                    </>
-                )}
-                {(canEdit || canCleanUpReadFiles || canSetPageConversion) && (
-                    <>
-                        <Menu.Label><Trans>Files</Trans></Menu.Label>
-                        {canEdit && (
-                            <>
-                                <Menu.Item leftSection={<IconScan size={16} />} onClick={onRescan}>
-                                    <Trans>Rescan files</Trans>
-                                </Menu.Item>
-                                <Menu.Item leftSection={<IconFolderSymlink size={16} />} onClick={onMove}>
-                                    <Trans>Move to another root folder</Trans>
-                                </Menu.Item>
-                                <Menu.Item leftSection={<IconFileText size={16} />} onClick={onRename}>
-                                    <Trans>Rename files</Trans>
-                                </Menu.Item>
-                            </>
-                        )}
-                        {canCleanUpReadFiles && (
-                            <Menu.Sub floatingStrategy="fixed">
-                                <Menu.Sub.Target>
-                                    <Menu.Sub.Item
-                                        leftSection={<IconTrashX size={16} />}
-                                        rightSection={
-                                            <Text size="xs" c="var(--ink-3)">
-                                                {readFileCleanupActive ? t`On` : t`Off`}
-                                            </Text>
-                                        }
-                                    >
-                                        <Trans>Clean up read files</Trans>
-                                    </Menu.Sub.Item>
-                                </Menu.Sub.Target>
-                                <Menu.Sub.Dropdown maw={264}>
-                                    <Menu.Label>
-                                        <Trans>Delete a chapter's file some days after everyone has read it</Trans>
-                                    </Menu.Label>
-                                    <Menu.RadioGroup value={readFileCleanup} onChange={onSetReadFileCleanup}>
-                                        <Menu.RadioItem value="Default">
-                                            <Trans>Follow the setting</Trans>
-                                        </Menu.RadioItem>
-                                        <Menu.RadioItem value="On">
-                                            <Trans>On for this series</Trans>
-                                        </Menu.RadioItem>
-                                        <Menu.RadioItem value="Off">
-                                            <Trans>Off for this series</Trans>
-                                        </Menu.RadioItem>
-                                    </Menu.RadioGroup>
-                                    <Menu.Label><Trans>Read history stays, and the chapters aren't downloaded again.</Trans></Menu.Label>
-                                </Menu.Sub.Dropdown>
-                            </Menu.Sub>
-                        )}
-                        {canSetPageConversion && (
-                            <Menu.Sub floatingStrategy="fixed">
-                                <Menu.Sub.Target>
-                                    <Menu.Sub.Item
-                                        leftSection={<IconPhotoCog size={16} />}
-                                        rightSection={
-                                            <Text size="xs" c="var(--ink-3)">
-                                                {pageConversionValue}
-                                            </Text>
-                                        }
-                                    >
-                                        <Trans>Page conversion</Trans>
-                                    </Menu.Sub.Item>
-                                </Menu.Sub.Target>
-                                <Menu.Sub.Dropdown maw={264}>
-                                    <Menu.Label>
-                                        <Trans>How this series' pages are stored</Trans>
-                                    </Menu.Label>
-                                    <Menu.RadioGroup value={pageConversion} onChange={onSetPageConversion}>
-                                        <Menu.RadioItem value="Default">
-                                            <Trans>Follow the rules</Trans>
-                                        </Menu.RadioItem>
-                                        <Menu.RadioItem value="Never">
-                                            <Trans>Never</Trans>
-                                        </Menu.RadioItem>
-                                        {PAGE_CONVERSION_STOPS.map((stop) => (
-                                            <Menu.RadioItem key={stop} value={stopMode(stop)}>
-                                                {renderLabel(STOP_LABELS[stop])}
-                                            </Menu.RadioItem>
-                                        ))}
-                                    </Menu.RadioGroup>
-                                    <Menu.Label><Trans>Wins over the rules. Files already converted stay as they are.</Trans></Menu.Label>
-                                </Menu.Sub.Dropdown>
-                            </Menu.Sub>
-                        )}
-                        {canSetPageConversion && onUndoConversion && (
-                            <Menu.Item leftSection={<IconArrowBackUp size={16} />} onClick={onUndoConversion}>
-                                <Trans>Undo conversion...</Trans>
-                            </Menu.Item>
-                        )}
-
-                        <Menu.Divider />
-                    </>
-                )}
-                {offlineSaved !== undefined && (
-                    <>
-                        <Menu.Label><Trans>This device</Trans></Menu.Label>
-                        <Menu.Item leftSection={<IconDeviceMobileDown size={16} />} onClick={onSaveUnreadOffline}>
-                            <Trans>Save unread chapters for offline</Trans>
-                        </Menu.Item>
-                        <Menu.Item
-                            leftSection={<IconDeviceMobileOff size={16} />}
-                            disabled={offlineSaved === 0}
-                            onClick={onRemoveOffline}
-                        >
-                            <Trans>Remove offline copies</Trans>
-                        </Menu.Item>
-
-                        <Menu.Divider />
-                    </>
-                )}
-                <Menu.Label><Trans>Automation</Trans></Menu.Label>
-
-                {canEdit && toolsOff && withReason(
-                    <Menu.Item
-                        leftSection={<IconEye size={16} />}
-                        rightSection={
-                            <Text size="xs" c="var(--ink-3)">
-                                {renderLabel(label(MONITOR_OPTIONS, monitorMode))}
-                            </Text>
-                        }
-                        {...offProps}
-                    >
-                        <Trans>Monitor</Trans>
-                    </Menu.Item>,
-                )}
-
-                {canEdit && !toolsOff && (
-                    <Menu.Sub floatingStrategy="fixed">
-                        <Menu.Sub.Target>
-                            <Menu.Sub.Item
-                                leftSection={<IconEye size={16} />}
-                                rightSection={
-                                    <Text size="xs" c="var(--ink-3)">
-                                        {renderLabel(label(MONITOR_OPTIONS, monitorMode))}
-                                    </Text>
-                                }
-                            >
-                                <Trans>Monitor</Trans>
-                            </Menu.Sub.Item>
-                        </Menu.Sub.Target>
-                        <Menu.Sub.Dropdown maw={264}>
-                            <Menu.Label><Trans>What happens to chapters released later</Trans></Menu.Label>
-                            <Menu.RadioGroup value={monitorMode} onChange={onSetMonitor}>
-                                {MONITOR_OPTIONS.map((o) => (
-                                    <Menu.RadioItem key={o.value} value={o.value}>
-                                        {renderLabel(o.label)}
-                                    </Menu.RadioItem>
-                                ))}
-                            </Menu.RadioGroup>
-                            <Menu.Label><Trans>Chapters already listed keep whatever you set on them.</Trans></Menu.Label>
-                        </Menu.Sub.Dropdown>
-                    </Menu.Sub>
-                )}
-
-                {canEdit && (
-                    <Menu.Sub floatingStrategy="fixed">
-                        <Menu.Sub.Target>
-                            <Menu.Sub.Item
-                                leftSection={<IconEyeOff size={16} />}
-                                rightSection={
-                                    <Text size="xs" c="var(--ink-3)">
-                                        {renderLabel(label(incognitoOptions, incognito))}
-                                    </Text>
-                                }
-                            >
-                                <Trans>Incognito</Trans>
-                            </Menu.Sub.Item>
-                        </Menu.Sub.Target>
-                        <Menu.Sub.Dropdown maw={264}>
-                            <Menu.RadioGroup value={incognito} onChange={onSetIncognito}>
-                                {incognitoOptions.map((o) => (
-                                    <Menu.RadioItem key={o.value} value={o.value}>
-                                        {o.label}
-                                    </Menu.RadioItem>
-                                ))}
-                            </Menu.RadioGroup>
-                            <Menu.Label>
-                                <Trans>Scrobble only skips tracker pushes.</Trans>{' '}
-                                <Trans>Full also excludes this series from Rewind stats and reading history.</Trans>
-                            </Menu.Label>
-                        </Menu.Sub.Dropdown>
-                    </Menu.Sub>
-                )}
-
-                <Menu.Sub floatingStrategy="fixed">
-                    <Menu.Sub.Target>
-                        <Menu.Sub.Item
-                            leftSection={<IconBell size={16} />}
-                            rightSection={
-                                <Text size="xs" c="var(--ink-3)">
-                                    {renderLabel(label(notificationOptions, notificationMode))}
-                                </Text>
-                            }
-                        >
-                            <Trans>Notify</Trans>
-                        </Menu.Sub.Item>
-                    </Menu.Sub.Target>
-                    <Menu.Sub.Dropdown maw={264}>
-                        <Menu.RadioGroup value={notificationMode} onChange={onSetNotify}>
-                            {notificationOptions.map((o) => (
-                                <Menu.RadioItem key={o.value} value={o.value}>
-                                    {o.label}
-                                </Menu.RadioItem>
-                            ))}
-                        </Menu.RadioGroup>
-                        <Menu.Label>
-                            <Trans>While reading only tells you about new chapters while you are partway through.</Trans>{' '}
-                            <Trans>Muted means nothing from this series at all.</Trans>
-                        </Menu.Label>
-                    </Menu.Sub.Dropdown>
-                </Menu.Sub>
-
-                {canEdit && (
-                    <Menu.Sub floatingStrategy="fixed">
-                        <Menu.Sub.Target>
-                            <Menu.Sub.Item
-                                leftSection={<IconSparkles size={16} />}
-                                rightSection={
-                                    <Text size="xs" c="var(--ink-3)">
-                                        {upgradeProfileLabel}
-                                    </Text>
-                                }
-                            >
-                                <Trans>Quality profile</Trans>
-                            </Menu.Sub.Item>
-                        </Menu.Sub.Target>
-                        <Menu.Sub.Dropdown maw={264}>
-                            <Menu.RadioGroup
-                                value={upgradeProfileValue}
-                                onChange={(value) =>
-                                    onSetUpgradeProfile(value === INSTANCE_DEFAULT ? null : Number(value))
-                                }
-                            >
-                                <Menu.RadioItem value={INSTANCE_DEFAULT}>{instanceDefaultLabel}</Menu.RadioItem>
-                                {upgradeProfiles.map((profile) => (
-                                    <Menu.RadioItem key={profile.id} value={String(profile.id)}>
-                                        {profile.name}
-                                    </Menu.RadioItem>
-                                ))}
-                            </Menu.RadioGroup>
-                        </Menu.Sub.Dropdown>
-                    </Menu.Sub>
-                )}
-
-                {canScanUpgrades && (
-                    withReason(
-                        <Menu.Item
-                            leftSection={scanningUpgrades ? <Loader size={14} /> : <IconRefresh size={16} />}
-                            disabled={scanningUpgrades}
-                            onClick={whenOn(onScanUpgrades)}
-                            {...offProps}
-                        >
-                            <Trans>Scan for upgrades</Trans>
-                        </Menu.Item>,
-                    )
-                )}
-
-                {canScanUpgrades && (
-                    withReason(
-                        <Menu.Item
-                            leftSection={searchingVolumes ? <Loader size={14} /> : <IconSearch size={16} />}
-                            disabled={searchingVolumes}
-                            onClick={whenOn(onSearchVolumes)}
-                            {...offProps}
-                        >
-                            <Trans>Search volume releases</Trans>
-                        </Menu.Item>,
-                    )
-                )}
-
-                {(canArchive || canRemove) && <Menu.Divider />}
-
-                {canArchive && (
-                    <Menu.Item
-                        leftSection={archived ? <IconArchiveOff size={16} /> : <IconArchive size={16} />}
-                        closeMenuOnClick={false}
-                        onClick={() => {
-                            setOpened(false)
-                            if (archived) onRestore()
-                            else onArchive()
-                        }}
-                    >
-                        {archived ? <Trans context="series">Restore to library</Trans> : <Trans context="series">Archive</Trans>}
-                    </Menu.Item>
-                )}
-
-                {canRemove && (
-                    <Menu.Item
-                        color="var(--danger)"
-                        leftSection={<IconTrash size={16} />}
-                        closeMenuOnClick={false}
-                        onClick={() => {
-                            setOpened(false)
-                            onRemove()
-                        }}
-                    >
-                        <Trans>Remove from library</Trans>
-                    </Menu.Item>
-                )}
+            <Menu.Dropdown
+                ref={dropdownRef}
+                onPointerDown={() => {
+                    viaKeyboard.current = false
+                }}
+                onKeyDown={(e) => {
+                    viaKeyboard.current = true
+                    if (e.key === 'ArrowLeft' && page !== 'root') {
+                        e.preventDefault()
+                        go(parentOf(page))
+                    }
+                }}
+            >
+                {content()}
             </Menu.Dropdown>
         </Menu>
     )

@@ -4385,6 +4385,7 @@ msgid "Avoided"
 msgstr "已避开"
 
 #: src/components/pageconversion/ComparePicker.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
@@ -5438,7 +5439,6 @@ msgstr "{winnerDisplayName} 没有的章节会保持不变，从磁盘导入的�
 msgid "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
 msgstr "已在下载中的章节会继续完成。已交给下载客户端的种子会继续下载。"
 
-#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Chapters already listed keep whatever you set on them."
@@ -8609,6 +8609,10 @@ msgstr "文件大小（MB），小于"
 msgid "Files"
 msgstr "文件"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Files already converted stay as they are."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Files already on disk keep their names until you rename them."
@@ -9762,8 +9766,8 @@ msgstr "信号的工作方式"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "How this series' pages are stored"
-msgstr "此系列的页面如何存储"
+#~ msgid "How this series' pages are stored"
+#~ msgstr "此系列的页面如何存储"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -12414,8 +12418,8 @@ msgstr "已静音"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Muted means nothing from this series at all."
-msgstr "静音表示完全不接收此系列的任何内容。"
+#~ msgid "Muted means nothing from this series at all."
+#~ msgstr "静音表示完全不接收此系列的任何内容。"
 
 #: src/components/UserMenu.tsx
 #, fuzzy
@@ -15991,8 +15995,8 @@ msgstr "阅读起点"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Read history stays, and the chapters aren't downloaded again."
-msgstr "阅读记录会保留，这些章节也不会被重新下载。"
+#~ msgid "Read history stays, and the chapters aren't downloaded again."
+#~ msgstr "阅读记录会保留，这些章节也不会被重新下载。"
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -18241,8 +18245,8 @@ msgstr "记录"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Scrobble only skips tracker pushes."
-msgstr "仅跳过向跟踪器推送记录。"
+#~ msgid "Scrobble only skips tracker pushes."
+#~ msgstr "仅跳过向跟踪器推送记录。"
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -18700,7 +18704,6 @@ msgid "Sequel to {relatedTo}"
 msgstr "{relatedTo} 的续篇"
 
 #: src/components/CatalogueFilters.tsx
-#: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -22283,6 +22286,7 @@ msgstr "升级至分数"
 msgid "upgrade, quality profile, default profile, automatic upgrades"
 msgstr "升级，质量配置，默认配置，自动升级"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Upgrades"
@@ -23137,8 +23141,8 @@ msgstr "阅读时"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "While reading only tells you about new chapters while you are partway through."
-msgstr "阅读时仅会在你阅读系列期间通知你新章节。"
+#~ msgid "While reading only tells you about new chapters while you are partway through."
+#~ msgstr "阅读时仅会在你阅读系列期间通知你新章节。"
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -23184,8 +23188,8 @@ msgstr "宽页"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
-msgid "Wins over the rules. Files already converted stay as they are."
-msgstr "优先于规则。已转换的文件保持原样。"
+#~ msgid "Wins over the rules. Files already converted stay as they are."
+#~ msgstr "优先于规则。已转换的文件保持原样。"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy

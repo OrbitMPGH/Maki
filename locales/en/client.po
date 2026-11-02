@@ -3560,6 +3560,7 @@ msgid "Avoided"
 msgstr "Avoided"
 
 #: src/components/pageconversion/ComparePicker.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
@@ -4421,7 +4422,6 @@ msgstr "Chapters {winnerDisplayName} doesn't carry are left alone, as are files 
 msgid "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
 msgstr "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
 
-#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Chapters already listed keep whatever you set on them."
 msgstr "Chapters already listed keep whatever you set on them."
@@ -7002,6 +7002,10 @@ msgstr "File size in MB, under"
 msgid "Files"
 msgstr "Files"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Files already converted stay as they are."
+msgstr "Files already converted stay as they are."
+
 #: src/pages/settings/LibraryCards.tsx
 msgid "Files already on disk keep their names until you rename them."
 msgstr "Files already on disk keep their names until you rename them."
@@ -7937,8 +7941,8 @@ msgid "How signals work"
 msgstr "How signals work"
 
 #: src/components/series/SeriesActionsMenu.tsx
-msgid "How this series' pages are stored"
-msgstr "How this series' pages are stored"
+#~ msgid "How this series' pages are stored"
+#~ msgstr "How this series' pages are stored"
 
 #: src/components/ImportReviewModal.tsx
 msgid "How to import"
@@ -10090,8 +10094,8 @@ msgid "Muted"
 msgstr "Muted"
 
 #: src/components/series/SeriesActionsMenu.tsx
-msgid "Muted means nothing from this series at all."
-msgstr "Muted means nothing from this series at all."
+#~ msgid "Muted means nothing from this series at all."
+#~ msgstr "Muted means nothing from this series at all."
 
 #: src/components/UserMenu.tsx
 msgid "My account"
@@ -12991,8 +12995,8 @@ msgid "Read from"
 msgstr "Read from"
 
 #: src/components/series/SeriesActionsMenu.tsx
-msgid "Read history stays, and the chapters aren't downloaded again."
-msgstr "Read history stays, and the chapters aren't downloaded again."
+#~ msgid "Read history stays, and the chapters aren't downloaded again."
+#~ msgstr "Read history stays, and the chapters aren't downloaded again."
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Read in Kavita"
@@ -14828,8 +14832,8 @@ msgid "Scrobble"
 msgstr "Scrobble"
 
 #: src/components/series/SeriesActionsMenu.tsx
-msgid "Scrobble only skips tracker pushes."
-msgstr "Scrobble only skips tracker pushes."
+#~ msgid "Scrobble only skips tracker pushes."
+#~ msgstr "Scrobble only skips tracker pushes."
 
 #: src/components/TrackerSyncControls.tsx
 msgid "Scrobble reading"
@@ -15199,7 +15203,6 @@ msgid "Sequel to {relatedTo}"
 msgstr "Sequel to {relatedTo}"
 
 #: src/components/CatalogueFilters.tsx
-#: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -18104,6 +18107,7 @@ msgstr "Upgrade until score"
 msgid "upgrade, quality profile, default profile, automatic upgrades"
 msgstr "upgrade, quality profile, default profile, automatic upgrades"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Upgrades"
 msgstr "Upgrades"
@@ -18796,8 +18800,8 @@ msgid "While reading"
 msgstr "While reading"
 
 #: src/components/series/SeriesActionsMenu.tsx
-msgid "While reading only tells you about new chapters while you are partway through."
-msgstr "While reading only tells you about new chapters while you are partway through."
+#~ msgid "While reading only tells you about new chapters while you are partway through."
+#~ msgstr "While reading only tells you about new chapters while you are partway through."
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "While the server works"
@@ -18834,8 +18838,8 @@ msgid "Wide pages"
 msgstr "Wide pages"
 
 #: src/components/series/SeriesActionsMenu.tsx
-msgid "Wins over the rules. Files already converted stay as they are."
-msgstr "Wins over the rules. Files already converted stay as they are."
+#~ msgid "Wins over the rules. Files already converted stay as they are."
+#~ msgstr "Wins over the rules. Files already converted stay as they are."
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."

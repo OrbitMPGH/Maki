@@ -38,7 +38,7 @@ view another reader. `/rewind` redirects to the Stats page.
 
 ## Keep a series out of stats
 
-Choose **Incognito** from the series' menu:
+Choose **Automation → Incognito** from the series' actions menu:
 
 - **Off** records everything.
 - **No scrobble** skips tracker pushes only. The series still counts in your stats.

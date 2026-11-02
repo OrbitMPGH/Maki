@@ -23,7 +23,8 @@ A profile can reorder the tiers, group two so they rank equal, and switch any ti
 ## Quality profiles
 
 A profile decides which tiers a series accepts and when a chapter stops being upgraded. Each series
-uses the default profile unless you pin another from its **Quality profile** menu.
+uses the default profile unless you pin another under **Upgrades → Quality profile** in its actions
+menu.
 
 | Setting | What it does |
 | --- | --- |
