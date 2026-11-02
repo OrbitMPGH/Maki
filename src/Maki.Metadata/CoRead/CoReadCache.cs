@@ -46,11 +46,24 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
     /// <summary>How long since anything last read it. Meaningless while unloaded.</summary>
     public TimeSpan IdleFor => _idle.Idle;
 
+    /// <summary>
+    /// Where the loaded graph is kept between unloads (<see cref="SnapshotFile"/>): the folded CSR
+    /// arrays, read back in one pass instead of re-reading and re-sorting ~2M pairs from SQLite.
+    /// Keyed by the artifact's write time and length, since the artifact is only ever replaced whole.
+    /// </summary>
+    internal string SnapshotPath => Path.ChangeExtension(options.DatabasePath, ".pairs");
+
+    private const ulong SnapshotMagic = 0x3144414552434B4D; // "MKCREAD1"
+
+    /// <summary>Test hook: the latest background snapshot write.</summary>
+    internal Task SnapshotSavedForTest { get; private set; } = Task.CompletedTask;
+
     /// <summary>Drops the loaded graph so the next request reloads it. Cheap; safe any time.</summary>
     public void Invalidate()
     {
         _graph = null;
         _failed.Clear();
+        SnapshotFile.TryDelete(SnapshotPath);
         logger.LogDebug("Co-read graph invalidated");
     }
 
@@ -67,6 +80,7 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
         {
             await _loads.DrainAsync();
             _graph = null;
+            SnapshotFile.TryDelete(SnapshotPath);
             SqliteConnection.ClearAllPools();
 
             foreach (var sidecar in new[] { options.DatabasePath + "-wal", options.DatabasePath + "-shm" })
@@ -180,7 +194,45 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
     private PairGraphIndex? Load(CancellationToken ct)
     {
         var started = DateTime.UtcNow;
+        var file = new FileInfo(options.DatabasePath);
+        var key = $"{SnapshotFile.BuildIdentity}|{file.LastWriteTimeUtc.Ticks}:{file.Length}";
+        try
+        {
+            if (SnapshotFile.Load(SnapshotPath, SnapshotMagic, key, PairGraphIndex.ReadFrom) is { } saved)
+            {
+                logger.LogInformation(
+                    "Loaded co-read graph from its snapshot: {Series} series, {Pairs} pairs in {Elapsed:F0}ms",
+                    saved.Count, saved.EdgeCount / 2, (DateTime.UtcNow - started).TotalMilliseconds);
+                return saved;
+            }
+        }
+        catch (Exception ex)
+        {
+            // A damaged or half-written file only costs this load its shortcut.
+            logger.LogInformation(ex, "Ignoring an unreadable co-read snapshot; reloading");
+        }
 
+        var loaded = LoadFromDatabase(ct, started);
+        if (loaded is not null)
+        {
+            SnapshotSavedForTest = Task.Run(() =>
+            {
+                try
+                {
+                    SnapshotFile.Save(SnapshotPath, SnapshotMagic, key, loaded.WriteTo);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogInformation(ex, "Could not save the co-read snapshot");
+                }
+            });
+        }
+
+        return loaded;
+    }
+
+    private PairGraphIndex? LoadFromDatabase(CancellationToken ct, DateTime started)
+    {
         try
         {
             using var conn = new SqliteConnection(

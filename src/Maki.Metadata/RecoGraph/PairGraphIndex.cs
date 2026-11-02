@@ -65,6 +65,41 @@ public sealed class PairGraphIndex
         _generatedAt = generatedAt;
     }
 
+    internal void WriteTo(BinaryWriter writer)
+    {
+        SnapshotFile.WriteArray(writer, _ids.AsSpan());
+        SnapshotFile.WriteArray(writer, _offsets.AsSpan());
+        writer.Write(_narrow is not null);
+        if (_narrow is not null)
+        {
+            SnapshotFile.WriteArray(writer, _narrow.AsSpan());
+        }
+        else
+        {
+            SnapshotFile.WriteArray(writer, _wide.AsSpan());
+        }
+
+        SnapshotFile.WriteArray(writer, _weights.AsSpan());
+        writer.Write(_generatedAt?.ToBinary() ?? 0L);
+        writer.Write(_generatedAt.HasValue);
+    }
+
+    internal static PairGraphIndex? ReadFrom(BinaryReader reader)
+    {
+        var ids = SnapshotFile.ReadArray<long>(reader);
+        var offsets = SnapshotFile.ReadArray<int>(reader);
+        var isNarrow = reader.ReadBoolean();
+        var narrow = isNarrow ? SnapshotFile.ReadArray<ushort>(reader) : null;
+        var wide = isNarrow ? null : SnapshotFile.ReadArray<int>(reader);
+        var weights = SnapshotFile.ReadArray<Half>(reader);
+        var generatedAt = reader.ReadInt64();
+        var hasGeneratedAt = reader.ReadBoolean();
+        var targets = narrow?.Length ?? wide!.Length;
+        return offsets.Length == ids.Length + 1 && targets == weights.Length && offsets[^1] == weights.Length
+            ? new PairGraphIndex(ids, offsets, narrow, wide, weights, hasGeneratedAt ? DateTime.FromBinary(generatedAt) : null)
+            : null;
+    }
+
     /// <summary>Series that carry at least one edge.</summary>
     public int Count => _ids.Length;
 

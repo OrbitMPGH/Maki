@@ -1288,6 +1288,15 @@ try
             .StartAt(downloadAtBoot ? DateTimeOffset.UtcNow.AddSeconds(5) : DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
+        // Once at startup, ahead of the refresh's first run: an installed dump from before the
+        // browse and franchise tables gets them in seconds instead of after the refresh's delay.
+        q.AddJob<Maki.Api.Jobs.MangaBakaTableBackfillJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.MangaBakaTableBackfillJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.MangaBakaTableBackfillJob.Key)
+            .WithIdentity("mangabaka-table-backfill-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddSeconds(10)));
+
         // Prebuilt embedding index. Runs before the local indexer's trigger so a fresh install
         // downloads the vectors instead of spending an hour deriving them; no-ops when the
         // artifact is absent, incompatible, or older than what's installed.
