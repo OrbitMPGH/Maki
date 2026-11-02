@@ -2990,7 +2990,10 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .discover-card-save:hover {
   background: color-mix(in srgb, black 80%, transparent);
 }
+/* Saved: the corner badge already shows the bookmark, so the button sits on top of it instead of
+   beside it, turning the badge into the remove control on hover. */
 .discover-card-save[aria-pressed='true'] {
+  right: 8px;
   color: var(--brand-on);
   background: var(--brand);
 }
@@ -12615,6 +12618,7 @@ button.import-plan-folder-head:hover {
   align-items: start;
   content-visibility: auto;
   contain-intrinsic-size: auto 146px;
+  container-type: inline-size;
 }
 .shortlist-row[data-changed] {
   border-color: color-mix(in srgb, var(--brand) 38%, var(--border));
@@ -12727,6 +12731,19 @@ button.shortlist-title:hover {
 .shortlist-actions .preview-chapter-button .mantine-Button-label {
   white-space: normal;
   text-align: center;
+}
+/* A wide row has room for the actions on one line. 75rem leaves the text column its 62ch note plus
+   the cover even with a long translated label; narrower rows fall back to the stack above. */
+@container (min-width: 75rem) {
+  .shortlist-actions {
+    flex-direction: row;
+    align-items: center;
+    align-self: center;
+    width: auto;
+  }
+  .shortlist-actions .preview-chapter-button .mantine-Button-label {
+    white-space: nowrap;
+  }
 }
 @media (max-width: 40rem) {
   .shortlist-row {
