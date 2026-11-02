@@ -49,7 +49,8 @@ import {
   useTasteProfile,
 } from '../../api/hooks'
 import { DiscoverDetailModal } from '../../components/discover/DiscoverDetailModal'
-import { DiscoverRailRow } from '../../components/ui/DiscoverRail'
+import { DiscoverRailRow, type OpenItem } from '../../components/ui/DiscoverRail'
+import { sectionSource } from '../../api/shortlist'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesLink, SeriesThumb } from '../stats/SeriesLink'
@@ -134,7 +135,7 @@ function GroupCard({
   seriesIdFor,
 }: {
   group: TasteGroup
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
   seriesIdFor: (item: RecommendationItem) => number | null
 }) {
   const { t } = useLingui()
@@ -179,7 +180,7 @@ function GroupCard({
           <Text size="xs" fw={600} mb={4}>
             <Trans>More of this</Trans>
           </Text>
-          <DiscoverRailRow items={group.picks} seriesIdFor={seriesIdFor} onOpen={onOpen} />
+          <DiscoverRailRow items={group.picks} seriesIdFor={seriesIdFor} onOpen={onOpen} savedFrom={sectionSource('taste')} />
         </>
       )}
     </Panel>
@@ -755,6 +756,7 @@ export function TasteTab() {
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
+        savedFrom={sectionSource('taste')}
       />
     </Stack>
   )

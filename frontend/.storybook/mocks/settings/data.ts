@@ -837,7 +837,7 @@ export const importListsStatus: ImportListsStatusDto = {
       label: 'AniList',
       connected: true,
       prefs: { enabled: true, statuses: ['Reading', 'PlanToRead'], rootFolderId: 1, monitored: true, monitorNewItems: 'Smart', maxPerRun: 25 },
-      lastRun: { at: hoursAgo(2), added: 3, requested: 0, skipped: 4, errors: 0, dumpUnavailable: false },
+      lastRun: { at: hoursAgo(2), added: 3, requested: 0, shortlisted: 2, skipped: 4, errors: 0, dumpUnavailable: false, shortlistFull: false },
     },
     {
       service: 'mal',

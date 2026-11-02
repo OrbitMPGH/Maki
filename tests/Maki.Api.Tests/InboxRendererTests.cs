@@ -56,7 +56,7 @@ public class InboxRendererTests
         { "inbox.sourceMatch.matched", new { sources = "MangaDex, MangaPill" } },
         { "inbox.sourceMatch.none", new { } },
         { "inbox.update.available", new { latest = "1.2.0", current = "1.1.0" } },
-        { "inbox.importList.finished", new { tracker = "AniList", added = 3, requested = 0, skipped = 2, errors = 1 } },
+        { "inbox.importList.finished", new { tracker = "AniList", added = 3, requested = 0, shortlisted = 4, skipped = 2, errors = 1 } },
         { "inbox.upgrade.torrentProposal", new { replaced = 10, missing = 47, sizeBytes = 480L * 1024 * 1024 } },
         { "inbox.upgrade.volume", new { fileName = "Berserk v03.cbz", replaced = 9 } },
         { "inbox.account.ssoLinked", new { account = "alice@idp" } },

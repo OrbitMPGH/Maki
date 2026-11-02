@@ -90,6 +90,7 @@ export const Creator: Story = mirror('/creator/Aoi%20Mizuhara', CreatorStories, 
 export const Discover: Story = mirror('/discover', DiscoverStories, DiscoverStories.Browse)
 export const DiscoverRecommended: Story = mirror('/discover/recommended', DiscoverStories, DiscoverStories.Recommended)
 export const DiscoverTaste: Story = mirror('/discover/taste', DiscoverStories, DiscoverStories.YourTaste)
+export const DiscoverShortlist: Story = mirror('/discover/shortlist', DiscoverStories, DiscoverStories.Shortlist)
 export const Import: Story = mirror('/import', ImportStories, ImportStories.BeforeScanning)
 export const Activity: Story = mirror('/activity', ActivityStories, ActivityStories.Default)
 export const Requests: Story = mirror('/requests', RequestsStories, RequestsStories.PendingQueue)

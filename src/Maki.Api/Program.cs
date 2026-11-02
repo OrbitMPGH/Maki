@@ -286,6 +286,8 @@ try
     builder.Services.AddSingleton<DiscoverService>();
     builder.Services.AddSingleton<SemanticSearchState>();
     builder.Services.AddScoped<HiddenContentService>();
+    builder.Services.AddScoped<ShortlistService>();
+    builder.Services.AddSingleton<ShortlistMergeService>();
     builder.Services.AddScoped<CustomRailService>();
 
     // Semantic recommendations: a local ONNX embedding model (~110 MB, downloaded on first
@@ -1604,6 +1606,18 @@ try
 
         scope.ServiceProvider.GetRequiredService<ImportPathRepairService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Entries saved under a MangaBaka id that a dump installed while Maki was down merged away.
+        try
+        {
+            scope.ServiceProvider.GetRequiredService<ShortlistMergeService>()
+                .RekeyAsync(CancellationToken.None).GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            scope.ServiceProvider.GetRequiredService<ILogger<ShortlistMergeService>>()
+                .LogWarning(ex, "Could not move shortlist entries onto merged MangaBaka ids at startup");
+        }
 
         // Rewrites any pre-existing bare-sub AspNetUserLogins rows for the oidc provider to the
         // issuer-scoped key format. See OidcLoginIssuerRepairService.

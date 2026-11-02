@@ -13,7 +13,8 @@ import {
   useSaveFollowedCreators,
 } from '../../api/following'
 import { CREDIT_ROLE_LABELS } from '../CreditPicker'
-import { DiscoverRailRow } from '../ui/DiscoverRail'
+import { DiscoverRailRow, type OpenItem } from '../ui/DiscoverRail'
+import { sectionSource } from '../../api/shortlist'
 import { RailSkeleton } from '../ui/RailSkeleton'
 import { SectionHeader } from '../ui/SectionHeader'
 import { useLabel } from '../../i18n-context'
@@ -37,7 +38,7 @@ export function FollowingRail({
   enabled: boolean
   limit: number
   seriesIdFor: (item: RecommendationItem) => number | null
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
   /** Opens the rail's expanded view, with its creators loaded as the filter. */
   onShowMore: (rail: DiscoverRail) => void
 }) {
@@ -93,7 +94,7 @@ export function FollowingRail({
         }
       />
       {items && items.length > 0 ? (
-        <DiscoverRailRow items={items} seriesIdFor={seriesIdFor} onOpen={onOpen} />
+        <DiscoverRailRow items={items} seriesIdFor={seriesIdFor} onOpen={onOpen} savedFrom={sectionSource('following')} />
       ) : (
         <Text c="var(--ink-3)" size="sm">
           <Trans>Nothing new from them in the last {FOLLOWING_RAIL_MONTHS} months that you have not seen already.</Trans>

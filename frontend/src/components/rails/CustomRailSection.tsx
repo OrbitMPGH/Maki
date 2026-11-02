@@ -27,7 +27,6 @@ import {
   useSeriesIdLookup,
   type DiscoverRail,
   type RecommendationApplyState,
-  type RecommendationItem,
 } from '../../api/hooks'
 import {
   customRailAsDiscoverRail,
@@ -40,7 +39,8 @@ import type { SeriesDto } from '../../api/types'
 import { filtersFromSpec } from '../CatalogueFilters'
 import { activeSeries } from '../../lib/series'
 import { CoverCard } from '../ui/CoverCard'
-import { DiscoverRailRow, EngineRailRow } from '../ui/DiscoverRail'
+import { DiscoverRailRow, EngineRailRow, type OpenItem } from '../ui/DiscoverRail'
+import type { ShortlistSource } from '../../api/shortlist'
 import { EmptyState } from '../ui/EmptyState'
 import { Rail } from '../ui/Rail'
 import { SectionHeader } from '../ui/SectionHeader'
@@ -65,12 +65,16 @@ export function CustomRailSection({
 }: {
   rail: CustomRail
   limit: number
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
   onShowMoreCatalogue?: (rail: DiscoverRail) => void
 }) {
   const { t } = useLingui()
   const navigate = useNavigate()
   const seriesIdFor = useSeriesIdLookup()
+  const savedFrom = useMemo<ShortlistSource>(
+    () => ({ savedFrom: `rail:${rail.id}`, savedFromDetail: rail.name }),
+    [rail.id, rail.name],
+  )
   const { ref, entry } = useIntersection({ rootMargin: '600px' })
   const [seen, setSeen] = useState(false)
   useEffect(() => {
@@ -177,9 +181,9 @@ export function CustomRailSection({
       ) : source === 'library' ? (
         <LibraryRailRow ids={data.seriesIds} />
       ) : source === 'recommendations' ? (
-        <EngineRailRow items={data.items} seriesIdFor={seriesIdFor} onOpen={onOpen} />
+        <EngineRailRow items={data.items} seriesIdFor={seriesIdFor} onOpen={onOpen} savedFrom={savedFrom} />
       ) : (
-        <DiscoverRailRow items={data.items} seriesIdFor={seriesIdFor} onOpen={onOpen} />
+        <DiscoverRailRow items={data.items} seriesIdFor={seriesIdFor} onOpen={onOpen} savedFrom={savedFrom} />
       )}
 
       {editing && <CustomRailEditor {...editing} onClose={() => setEditing(null)} />}

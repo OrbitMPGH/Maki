@@ -231,6 +231,11 @@ public sealed class ControllerAuthorizationInventoryTests
         "SettingsController.SetRatingPrompts",
         "SettingsController.SetReader",
         "SettingsController.SetUi",
+        "ShortlistController.Acknowledge",
+        "ShortlistController.Remove",
+        "ShortlistController.Restore",
+        "ShortlistController.Save",
+        "ShortlistController.UpdateNote",
     ];
 
     /// <summary>

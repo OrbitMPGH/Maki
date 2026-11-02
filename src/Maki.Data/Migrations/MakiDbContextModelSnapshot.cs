@@ -2308,6 +2308,55 @@ namespace Maki.Data.Migrations
                     b.ToTable("SeriesTags", (string)null);
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ShortlistEntry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("MangaBakaId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SavedFrom")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SavedFromDetail")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SavedStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("SavedTotalChapters")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "MangaBakaId")
+                        .IsUnique();
+
+                    b.ToTable("ShortlistEntries");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.SourceMapping", b =>
                 {
                     b.Property<int>("Id")
@@ -3644,6 +3693,15 @@ namespace Maki.Data.Migrations
                     b.HasOne("Maki.Core.Entities.Tag", null)
                         .WithMany()
                         .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ShortlistEntry", b =>
+                {
+                    b.HasOne("Maki.Data.Identity.MakiUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

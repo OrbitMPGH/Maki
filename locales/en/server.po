@@ -1746,6 +1746,22 @@ msgstr ""
 msgid "error.settings.trustedProxyInvalid"
 msgstr "\"{entry}\" is not an IP address or CIDR network"
 
+#. Saving to the Discover shortlist when it already holds the most one person may keep.
+#. {max} is that limit.
+#: src/Maki.Api/Controllers/ShortlistController.cs
+msgid "error.shortlist.full"
+msgstr "Your shortlist is full. It holds at most {max} titles."
+
+#. Saving a title to the shortlist that is already in the library, archived or not.
+#: src/Maki.Api/Controllers/ShortlistController.cs
+msgid "error.shortlist.inLibrary"
+msgstr "This title is already in the library."
+
+#. Saving a title to the shortlist that the catalogue does not have, or that is hidden from this account.
+#: src/Maki.Api/Controllers/ShortlistController.cs
+msgid "error.shortlist.notInCatalogue"
+msgstr "This title is not in the catalogue."
+
 #: src/Maki.Api/Controllers/SourceMappingController.cs
 msgid "error.sourceMapping.alreadyMapped"
 msgstr "Series already has a mapping for this source"
@@ -3078,12 +3094,13 @@ msgid "inbox.importList.finished.title"
 msgstr "Import list finished"
 
 #. {tracker} is a site name (AniList, MyAnimeList, Kitsu, MangaBaka) and is not translated. The
-#. requested, skipped and errors counts drop out through their =0 branch; keep every =0 {} empty.
+#. requested, shortlisted, skipped and errors counts drop out through their =0 branch; keep every =0 {} empty.
 #: src/Maki.Api/Services/ImportListService.cs
 msgid "inbox.importList.finished.body"
 msgstr ""
 "{tracker}: {added, plural, other {# added}}"
 "{requested, plural, =0 {} other {, # requested}}"
+"{shortlisted, plural, =0 {} other {, # shortlisted}}"
 "{skipped, plural, =0 {} other {, # skipped}}"
 "{errors, plural, =0 {} one {, # error} other {, # errors}}"
 

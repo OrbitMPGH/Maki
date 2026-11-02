@@ -10,6 +10,7 @@ import {
 } from '../api/hooks'
 import { DiscoverDetailModal } from './discover/DiscoverDetailModal'
 import { EngineRailRow } from './ui/DiscoverRail'
+import { SERIES_SOURCE } from '../api/shortlist'
 import { SectionHeader } from './ui/SectionHeader'
 
 /**
@@ -39,7 +40,7 @@ export function SimilarSeriesSection({ seriesId }: { seriesId: number }) {
   return (
     <>
       <SectionHeader icon={IconSparkles} title={t`More like this`} />
-      <EngineRailRow items={similar} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+      <EngineRailRow items={similar} seriesIdFor={seriesIdFor} onOpen={setDetailItem} savedFrom={SERIES_SOURCE} />
 
       <DiscoverDetailModal
         item={detailItem}
@@ -47,6 +48,7 @@ export function SimilarSeriesSection({ seriesId }: { seriesId: number }) {
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
+        savedFrom={SERIES_SOURCE}
       />
     </>
   )

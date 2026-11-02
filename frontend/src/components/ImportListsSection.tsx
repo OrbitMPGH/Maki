@@ -43,7 +43,7 @@ import type {
 /** Mirrors the backend's `ScrobbleStatus` values, in the order they read best. */
 const STATUS_OPTIONS: { value: ImportListStatus; label: MessageDescriptor }[] = [
   { value: 'Reading', label: msg`Reading` },
-  { value: 'PlanToRead', label: msg`Plan to read` },
+  { value: 'PlanToRead', label: msg`Plan to read (to your shortlist)` },
   { value: 'Completed', label: msg`Completed` },
 ]
 
@@ -234,19 +234,29 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
 }
 
 function LastRunLine({ lastRun }: { lastRun: NonNullable<ImportListTrackerDto['lastRun']> }) {
-  const { added, requested, skipped, errors } = lastRun
+  const { added, requested, shortlisted, skipped, errors } = lastRun
   const when = relativeTime(lastRun.at)
   if (lastRun.dumpUnavailable) {
     return <Trans>Last run {when}: skipped, the local MangaBaka database is not downloaded yet</Trans>
   }
-  return errors > 0 ? (
-    <Trans>
-      Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors
-    </Trans>
-  ) : (
-    <Trans>
-      Last run {when}: {added} added, {requested} requested, {skipped} skipped
-    </Trans>
+  return (
+    <>
+      {errors > 0 ? (
+        <Trans>
+          Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped, {errors} errors
+        </Trans>
+      ) : (
+        <Trans>
+          Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped
+        </Trans>
+      )}
+      {lastRun.shortlistFull && (
+        <>
+          {' '}
+          <Trans>Your shortlist is full.</Trans>
+        </>
+      )}
+    </>
   )
 }
 

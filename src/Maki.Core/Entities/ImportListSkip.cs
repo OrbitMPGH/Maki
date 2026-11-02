@@ -21,6 +21,12 @@ public enum ImportListSkipReason
     /// reached it. Provenance, flipped to Removed on delete.
     /// </summary>
     Added = 3,
+
+    /// <summary>
+    /// A Plan to read entry put on the user's shortlist instead of added. Handled only while the
+    /// remote status is still Plan to read; a later Reading or Completed status is evaluated again.
+    /// </summary>
+    Shortlisted = 4,
 }
 
 /// <summary>

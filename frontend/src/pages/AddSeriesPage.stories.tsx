@@ -341,7 +341,9 @@ export const ListView: Story = {
   play: async ({ canvas, userEvent }) => {
     await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' })
     await userEvent.click(await canvas.findByLabelText('List view'))
-    await expect(await canvas.findByRole('button', { name: /^Iron Petal Academy/ })).toBeVisible()
+    await waitFor(() =>
+      expect(canvas.getByRole('button', { name: 'View and add Iron Petal Academy' })).toHaveClass('discover-row-action'),
+    )
   },
 }
 

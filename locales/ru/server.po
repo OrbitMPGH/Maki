@@ -2508,6 +2508,25 @@ msgstr "URL {service} должен быть полным адресом http:// 
 msgid "error.settings.trustedProxyInvalid"
 msgstr "\"{entry}\" не является IP-адресом или сетью CIDR"
 
+#. Saving to the Discover shortlist when it already holds the most one person may keep.
+#. {max} is that limit.
+#: src/Maki.Api/Controllers/ShortlistController.cs
+#. English: Your shortlist is full. It holds at most {max} titles.
+msgid "error.shortlist.full"
+msgstr ""
+
+#. Saving a title to the shortlist that is already in the library, archived or not.
+#: src/Maki.Api/Controllers/ShortlistController.cs
+#. English: This title is already in the library.
+msgid "error.shortlist.inLibrary"
+msgstr ""
+
+#. Saving a title to the shortlist that the catalogue does not have, or that is hidden from this account.
+#: src/Maki.Api/Controllers/ShortlistController.cs
+#. English: This title is not in the catalogue.
+msgid "error.shortlist.notInCatalogue"
+msgstr ""
+
 #: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Series already has a mapping for this source
 #, fuzzy
@@ -4368,12 +4387,12 @@ msgid "inbox.importList.finished.title"
 msgstr "Импорт списка завершён"
 
 #. {tracker} is a site name (AniList, MyAnimeList, Kitsu, MangaBaka) and is not translated. The
-#. requested, skipped and errors counts drop out through their =0 branch; keep every =0 {} empty.
+#. requested, shortlisted, skipped and errors counts drop out through their =0 branch; keep every =0 {} empty.
 #: src/Maki.Api/Services/ImportListService.cs
-#. English: {tracker}: {added, plural, other {# added}}{requested, plural, =0 {} other {, # requested}}{skipped, plural, =0 {} other {, # skipped}}{errors, plural, =0 {} one {, # error} other {, # errors}}
+#. English: {tracker}: {added, plural, other {# added}}{requested, plural, =0 {} other {, # requested}}{shortlisted, plural, =0 {} other {, # shortlisted}}{skipped, plural, =0 {} other {, # skipped}}{errors, plural, =0 {} one {, # error} other {, # errors}}
 #, fuzzy
 msgid "inbox.importList.finished.body"
-msgstr "{tracker}: {added, plural, one {# добавлена} few {# добавлены} many {# добавлено} other {# добавлено}}{requested, plural, =0 {} one {, # запрошена} few {, # запрошены} many {, # запрошено} other {, # запрошено}}{skipped, plural, =0 {} one {, # пропущена} few {, # пропущены} many {, # пропущено} other {, # пропущено}}{errors, plural, =0 {} one {, # ошибка} few {, # ошибки} many {, # ошибок} other {, # ошибки}}"
+msgstr "{tracker}: {added, plural, one {# добавлена} few {# добавлены} many {# добавлено} other {# добавлено}}{requested, plural, =0 {} one {, # запрошена} few {, # запрошены} many {, # запрошено} other {, # запрошено}}{shortlisted, plural, =0 {} one {, # shortlisted} few {, # shortlisted} many {, # shortlisted} other {, # shortlisted}}{skipped, plural, =0 {} one {, # пропущена} few {, # пропущены} many {, # пропущено} other {, # пропущено}}{errors, plural, =0 {} one {, # ошибка} few {, # ошибки} many {, # ошибок} other {, # ошибки}}"
 
 #. {creator} is a person's or studio's name from the catalogue and is not translated.
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs

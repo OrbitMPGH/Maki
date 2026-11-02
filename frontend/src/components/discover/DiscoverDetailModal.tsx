@@ -48,6 +48,8 @@ import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
 import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
 import { PreviewChapterButton } from './PreviewChapterButton'
+import { ShortlistButton, ShortlistNote } from './ShortlistButton'
+import { useIsShortlisted, type ShortlistSource } from '../../api/shortlist'
 import { SeriesPreviewReader } from './SeriesPreviewReader'
 import { DiscoverTags } from './DiscoverTags'
 import { DiceIcon } from '../LuckyButton'
@@ -64,6 +66,7 @@ export function DiscoverDetailModal({
   onClose,
   feedbackContext,
   onReroll,
+  savedFrom,
 }: {
   /** The card that was clicked; null closes the modal. Used for an instant header while detail loads. */
   item: RecommendationItem | null
@@ -75,7 +78,10 @@ export function DiscoverDetailModal({
   feedbackContext?: { surface: string }
   /** Shows a dice beside the close button that swaps in another random pick. */
   onReroll?: () => void
+  /** Where the card was opened from, kept with the title when it is shortlisted. Saves as "other" without it. */
+  savedFrom?: ShortlistSource
 }) {
+  const shortlisted = useIsShortlisted(item?.providerId ?? '')
   const { data: detail, isLoading, isError, refetch } = useRecommendationDetail(item?.providerId ?? null, true)
   const { scope: diceScope, tumble } = useDiceTumble()
   const rerolling = useRef(false)
@@ -411,12 +417,23 @@ export function DiscoverDetailModal({
                     addedFrom={feedbackContext ? 'recommendation' : 'library'}
                   />
                   {inLibrarySeriesId == null && (
-                    <PreviewChapterButton
-                      key={`preview-${item.providerId}`}
-                      providerId={item.providerId}
-                      title={title}
-                      onRead={() => setPreviewFor(item.providerId)}
-                    />
+                    <>
+                      <div className="discover-modal-actions">
+                        <PreviewChapterButton
+                          key={`preview-${item.providerId}`}
+                          providerId={item.providerId}
+                          title={title}
+                          onRead={() => setPreviewFor(item.providerId)}
+                        />
+                        <ShortlistButton
+                          key={`shortlist-${item.providerId}`}
+                          providerId={item.providerId}
+                          title={title}
+                          source={savedFrom}
+                        />
+                      </div>
+                      {shortlisted && <ShortlistNote key={`note-${item.providerId}`} providerId={item.providerId} />}
+                    </>
                   )}
                   <RecommendationFeedbackMenu providerId={item.providerId} />
                 </Stack>

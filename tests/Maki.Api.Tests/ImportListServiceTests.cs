@@ -50,6 +50,8 @@ public class ImportListServiceTests : IDisposable
             naming: new NamingService(new FakeAppSettings()),
             notifications: _notifications, locales: new TestUserLocaleResolver(), catalog: new TestLocalizer(), localizer: new TestLocalizer(),
             logger: NullLogger<SeriesCreationService>.Instance));
+        services.AddScoped(sp => new ShortlistService(
+            sp.GetRequiredService<MakiDbContext>(), _store, new User(0, true), hidden: null!));
         services.AddScoped(sp => new SeriesRequestSubmitter(
             sp.GetRequiredService<MakiDbContext>(), [_metadata], new SilentBroadcaster(), _inbox, _notifications,
             new TestUserLocaleResolver(), new TestLocalizer(), NullLogger<SeriesRequestSubmitter>.Instance));
@@ -69,9 +71,9 @@ public class ImportListServiceTests : IDisposable
         _scopes, new FakeAppSettings(), new UserSettingsStoreService(_scopes), [_tracker], _store, _inbox,
         new TestUserLocaleResolver(), new TestLocalizer(), NullLogger<ImportListService>.Instance);
 
-    private int SeedUser(string name, MakiPermission permissions, int maxPerRun = 10)
+    private int SeedUser(string name, MakiPermission permissions, int maxPerRun = 10, string ceiling = "erotica")
     {
-        var id = _db.SeedUser(name, permissions);
+        var id = _db.SeedUser(name, permissions, maxContentRating: ceiling);
         var prefs = new Dictionary<string, ImportListTrackerPrefs>
         {
             [FakeTracker.ServiceName] = new(Enabled: true, MaxPerRun: maxPerRun),
@@ -84,9 +86,27 @@ public class ImportListServiceTests : IDisposable
         SeedUser("adder", MakiPermission.AddSeries | MakiPermission.UseTrackers, maxPerRun);
 
     private static RemoteListEntry Entry(
-        string remoteId, long? mangaBaka = null, long? aniList = null, string? mangaUpdates = null) =>
-        new(remoteId, ScrobbleStatus.Reading, $"Title {remoteId}", AniListId: aniList, MangaBakaId: mangaBaka,
+        string remoteId, long? mangaBaka = null, long? aniList = null, string? mangaUpdates = null,
+        ScrobbleStatus status = ScrobbleStatus.Reading) =>
+        new(remoteId, status, $"Title {remoteId}", AniListId: aniList, MangaBakaId: mangaBaka,
             MangaUpdatesId: mangaUpdates);
+
+    private static RemoteListEntry Planned(string remoteId, long mangaBaka) =>
+        Entry(remoteId, mangaBaka, status: ScrobbleStatus.PlanToRead);
+
+    private List<(int UserId, int MangaBakaId, string SavedFrom, string? Detail)> Shortlist()
+    {
+        using var db = _db.NewContext();
+        return [.. db.ShortlistEntries.AsNoTracking().OrderBy(x => x.UserId).ThenBy(x => x.MangaBakaId)
+            .Select(x => new { x.UserId, x.MangaBakaId, x.SavedFrom, x.SavedFromDetail }).AsEnumerable()
+            .Select(x => (x.UserId, x.MangaBakaId, x.SavedFrom, x.SavedFromDetail))];
+    }
+
+    private Dictionary<string, ImportListSkipReason> Reasons()
+    {
+        using var db = _db.NewContext();
+        return db.ImportListSkips.AsNoTracking().ToDictionary(x => x.RemoteId, x => x.Reason);
+    }
 
     private List<int?> LibraryIds()
     {
@@ -655,6 +675,254 @@ public class ImportListServiceTests : IDisposable
         Assert.IsType<NotFoundResult>(await Controller(alice).DeleteSkipped(addedRow, default));
     }
 
+    [Fact]
+    public async Task Plan_to_read_goes_to_the_shortlist_for_a_user_who_can_add_and_one_who_cannot()
+    {
+        var adder = Adder();
+        var reader = SeedUser("reader", MakiPermission.UseTrackers);
+        _tracker.Entries = [Planned("r1", 101), Planned("r2", 102)];
+        _store.Catalogue(101, 102);
+
+        var forAdder = await Service().RunUserAsync(adder, null, full: false, default);
+        var forReader = await Service().RunUserAsync(reader, null, full: false, default);
+
+        Assert.Equal(2, forAdder!.Shortlisted);
+        Assert.Equal(2, forReader!.Shortlisted);
+        Assert.Equal(0, forAdder.Added + forReader.Requested);
+        var stored = Shortlist();
+        Assert.Equal(4, stored.Count);
+        Assert.All(stored, x => Assert.Equal(("importlist", "Fake"), (x.SavedFrom, x.Detail)));
+        Assert.Equal(new[] { 101, 102 }, stored.Where(x => x.UserId == adder).Select(x => x.MangaBakaId));
+        Assert.Equal(new[] { 101, 102 }, stored.Where(x => x.UserId == reader).Select(x => x.MangaBakaId));
+        Assert.Empty(LibraryIds());
+        using var db = _db.NewContext();
+        Assert.Empty(db.SeriesRequests);
+        Assert.All(db.ImportListSkips.ToList(), x => Assert.Equal(ImportListSkipReason.Shortlisted, x.Reason));
+        Assert.Equal(4, db.ImportListSkips.Count());
+    }
+
+    [Fact]
+    public async Task A_run_resolves_the_stored_keys_once_and_finds_an_entry_under_a_merged_id()
+    {
+        var user = Adder();
+        using (var db = _db.NewContext())
+        {
+            db.ShortlistEntries.Add(new ShortlistEntry
+            {
+                UserId = user, MangaBakaId = 90, Title = "t", SavedFrom = "other",
+                CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        _store.Merged[90] = 101;
+        _tracker.Entries = [Planned("r1", 101), Planned("r2", 102), Planned("r3", 103)];
+        _store.Catalogue(101, 102, 103);
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Single(_store.Resolved, ids => ids.Contains(90));
+        Assert.Equal(2, result!.Shortlisted);
+        Assert.Equal(1, result.AlreadyPresent);
+        Assert.Equal(new[] { 90, 102, 103 }, Shortlist().Select(x => x.MangaBakaId));
+        Assert.Equal(ImportListSkipReason.Shortlisted, Reasons()["r1"]);
+    }
+
+    [Fact]
+    public async Task A_refused_shortlist_insert_is_recorded_unmatched()
+    {
+        var user = SeedUser("careful", MakiPermission.UseTrackers, ceiling: "safe");
+        _tracker.Entries = [Planned("above", 101), Planned("novel", 102), Planned("newer", 103), Planned("ok", 104)];
+        _store.Catalogue(104);
+        _store.Catalogue(101, rating: "erotica");
+        _store.NotInDump.Add(103);
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(1, result!.Shortlisted);
+        Assert.Equal(3, result.Skipped);
+        Assert.Equal(104, Assert.Single(Shortlist()).MangaBakaId);
+        using var db = _db.NewContext();
+        var rows = db.ImportListSkips.ToDictionary(x => x.RemoteId);
+        Assert.Equal(ImportListSkipReason.Unmatched, rows["above"].Reason);
+        Assert.Null(rows["above"].MangaBakaId);
+        Assert.Equal(ImportListSkipReason.Unmatched, rows["novel"].Reason);
+        Assert.Null(rows["novel"].MangaBakaId);
+        Assert.Equal(ImportListSkipReason.Unmatched, rows["newer"].Reason);
+        Assert.Equal(103, rows["newer"].MangaBakaId);
+        Assert.Equal(ImportListSkipReason.Shortlisted, rows["ok"].Reason);
+    }
+
+    [Fact]
+    public async Task A_user_who_can_add_but_has_no_root_folder_still_gets_the_shortlist()
+    {
+        var user = Adder();
+        using (var db = _db.NewContext())
+        {
+            db.RootFolders.RemoveRange(db.RootFolders);
+            await db.SaveChangesAsync();
+        }
+
+        _tracker.Entries = [Planned("r1", 101)];
+        _store.Catalogue(101);
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(1, result!.Shortlisted);
+        Assert.Equal(0, result.Errors);
+        Assert.Equal(101, Assert.Single(Shortlist()).MangaBakaId);
+    }
+
+    [Fact]
+    public async Task A_shortlist_survives_the_per_run_cap_on_everything_else()
+    {
+        var user = Adder(maxPerRun: 1);
+        _tracker.Entries =
+        [
+            Planned("p1", 101), Planned("p2", 102), Planned("p3", 103),
+            Entry("a1", 201), Entry("a2", 202),
+        ];
+        _store.Catalogue(101, 102, 103);
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(3, result!.Shortlisted);
+        Assert.Equal(1, result.Added);
+        Assert.Equal(3, Shortlist().Count);
+    }
+
+    [Fact]
+    public async Task A_reading_duplicate_of_a_plan_to_read_entry_is_added_not_shortlisted()
+    {
+        var user = Adder();
+        _tracker.Entries = [Planned("p", 101), Entry("r", 101)];
+        _store.Catalogue(101);
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(1, result!.Added);
+        Assert.Equal(0, result.Shortlisted);
+        Assert.Equal(new int?[] { 101 }, LibraryIds());
+        Assert.Empty(Shortlist());
+        Assert.All(Reasons().Values, r => Assert.Equal(ImportListSkipReason.Added, r));
+        Assert.Equal(2, Reasons().Count);
+    }
+
+    [Fact]
+    public async Task A_later_reading_status_adds_a_shortlisted_entry()
+    {
+        var user = Adder();
+        _tracker.Entries = [Planned("r1", 101)];
+        _store.Catalogue(101);
+        await Service().RunUserAsync(user, null, full: false, default);
+        Assert.Single(Shortlist());
+
+        var again = await Service().RunUserAsync(user, null, full: false, default);
+        Assert.Equal(1, again!.AlreadyPresent);
+        Assert.Equal(0, again.Added);
+
+        _tracker.Entries = [Entry("r1", 101)];
+        var started = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(1, started!.Added);
+        Assert.Equal(new int?[] { 101 }, LibraryIds());
+        Assert.Empty(Shortlist());
+        Assert.Equal(ImportListSkipReason.Added, Reasons()["r1"]);
+    }
+
+    [Fact]
+    public async Task A_later_reading_status_files_a_request_for_a_user_who_cannot_add()
+    {
+        var user = SeedUser("reader", MakiPermission.UseTrackers);
+        _tracker.Entries = [Planned("r1", 101)];
+        _store.Catalogue(101);
+        await Service().RunUserAsync(user, null, full: false, default);
+
+        _tracker.Entries = [Entry("r1", 101)];
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(1, result!.Requested);
+        using var db = _db.NewContext();
+        Assert.Single(db.SeriesRequests);
+        Assert.Equal(ImportListSkipReason.Added, Reasons()["r1"]);
+    }
+
+    [Fact]
+    public async Task An_entry_removed_from_the_shortlist_by_hand_is_not_shortlisted_again()
+    {
+        var user = Adder();
+        _tracker.Entries = [Planned("r1", 101)];
+        _store.Catalogue(101);
+        await Service().RunUserAsync(user, null, full: false, default);
+        using (var db = _db.NewContext())
+        {
+            db.ShortlistEntries.RemoveRange(db.ShortlistEntries);
+            await db.SaveChangesAsync();
+        }
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(0, result!.Shortlisted);
+        Assert.Equal(1, result.AlreadyPresent);
+        Assert.Empty(Shortlist());
+        Assert.Equal(ImportListSkipReason.Shortlisted, Reasons()["r1"]);
+    }
+
+    [Fact]
+    public async Task A_full_shortlist_stops_the_run_without_writing_a_row()
+    {
+        var user = Adder();
+        using (var db = _db.NewContext())
+        {
+            db.ShortlistEntries.AddRange(Enumerable.Range(0, ShortlistEntry.MaxPerUser).Select(i => new ShortlistEntry
+            {
+                UserId = user, MangaBakaId = 900_000 + i, Title = "t", SavedFrom = "other",
+                CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow,
+            }));
+            await db.SaveChangesAsync();
+        }
+
+        _tracker.Entries = [Planned("r1", 101), Planned("r2", 102)];
+        _store.Catalogue(101, 102);
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(0, result!.Shortlisted);
+        Assert.True(result.ShortlistFull);
+        Assert.Empty(Reasons());
+        Assert.Equal(ShortlistEntry.MaxPerUser, Shortlist().Count);
+        var lastRun = ImportListLastRun.Parse(await new UserSettingsStoreService(_scopes)
+            .GetAsync(user, SettingKeys.ImportListLastRunKey(FakeTracker.ServiceName)));
+        Assert.True(lastRun!.ShortlistFull);
+    }
+
+    [Fact]
+    public async Task A_run_that_only_shortlists_raises_the_inbox_row()
+    {
+        var user = Adder();
+        _tracker.Entries = [Planned("r1", 101)];
+        _store.Catalogue(101);
+
+        await Service().RunUserAsync(user, null, full: false, default);
+
+        var raised = Assert.Single(_inbox.Raised, r => r.Type == Maki.Core.Inbox.InboxEventType.ImportListFinished);
+        Assert.Equal(1, raised.Message.Params!["shortlisted"]);
+        var lastRun = ImportListLastRun.Parse(await new UserSettingsStoreService(_scopes)
+            .GetAsync(user, SettingKeys.ImportListLastRunKey(FakeTracker.ServiceName)));
+        Assert.Equal(1, lastRun!.Shortlisted);
+    }
+
+    [Fact]
+    public void A_last_run_stored_before_the_shortlist_still_reads()
+    {
+        var parsed = ImportListLastRun.Parse(
+            """{"at":"2026-01-01T00:00:00Z","added":2,"requested":1,"skipped":3,"errors":0,"dumpUnavailable":false}""");
+
+        Assert.Equal(2, parsed!.Added);
+        Assert.Equal(0, parsed.Shortlisted);
+        Assert.False(parsed.ShortlistFull);
+    }
+
     // ---- fakes ----
 
     private sealed class User(int userId, bool allRootFolders) : ICurrentUser
@@ -716,6 +984,43 @@ public class ImportListServiceTests : IDisposable
 
         /// <summary>Ids the dump has no row for: series newer than the snapshot.</summary>
         public HashSet<long> NotInDump { get; } = [];
+
+        /// <summary>Merged ids and the canonical id each points at.</summary>
+        public Dictionary<long, long> Merged { get; } = [];
+
+        public int ResolveCalls { get; private set; }
+        public List<IReadOnlyCollection<long>> Resolved { get; } = [];
+
+        public override Task<IReadOnlyDictionary<long, long>> ResolveCanonicalIdsAsync(
+            IReadOnlyCollection<long> ids, CancellationToken ct = default)
+        {
+            ResolveCalls++;
+            Resolved.Add([.. ids]);
+            return Task.FromResult<IReadOnlyDictionary<long, long>>(ids
+                .Where(id => Merged.ContainsKey(id) || _catalogue.ContainsKey(id))
+                .ToDictionary(id => id, id => Merged.GetValueOrDefault(id, id)));
+        }
+
+        private readonly Dictionary<long, string> _catalogue = [];
+
+        /// <summary>Ids the shortlist insert can find, each with the content rating the dump gives it.</summary>
+        public void Catalogue(params long[] ids) => Catalogue(ids, "safe");
+
+        public void Catalogue(long id, string rating) => Catalogue([id], rating);
+
+        private void Catalogue(IEnumerable<long> ids, string rating)
+        {
+            foreach (var id in ids) _catalogue[id] = rating;
+        }
+
+        public override Task<IReadOnlyDictionary<long, MangaBakaShortlistRow>> GetShortlistRowsAsync(
+            IReadOnlyCollection<long> ids, IReadOnlyList<string>? contentRatings, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyDictionary<long, MangaBakaShortlistRow>>(ids
+                .Where(id => _catalogue.TryGetValue(id, out var rating) &&
+                             (contentRatings is null || contentRatings.Contains(rating)))
+                .ToDictionary(id => id, id => new MangaBakaShortlistRow(id, "active",
+                    new MangaBakaRecommendation(id.ToString(), $"Series {id}", null, 2020, null, SeriesStatus.Ongoing,
+                        null, 10, [], [], false, null, null))));
 
         public override Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(Available);
 

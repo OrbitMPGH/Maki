@@ -828,10 +828,13 @@ export interface ImportListRunSummary {
   at: string
   added: number
   requested: number
+  shortlisted: number
   skipped: number
   errors: number
   /** Nothing ran because the local MangaBaka database is not downloaded yet. */
   dumpUnavailable: boolean
+  /** The run stopped shortlisting Plan to read entries because the shortlist is full. */
+  shortlistFull: boolean
 }
 
 export interface ImportListTrackerDto {
@@ -842,8 +845,8 @@ export interface ImportListTrackerDto {
   lastRun: ImportListRunSummary | null
 }
 
-/** Unmatched | Removed | Ignored | Added. */
-export type ImportListSkipReason = 'Unmatched' | 'Removed' | 'Ignored' | 'Added'
+/** Unmatched | Removed | Ignored | Added | Shortlisted. */
+export type ImportListSkipReason = 'Unmatched' | 'Removed' | 'Ignored' | 'Added' | 'Shortlisted'
 
 export interface ImportListSkipDto {
   id: number

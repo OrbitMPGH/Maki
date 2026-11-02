@@ -88,7 +88,7 @@ const feedbackEffect: Record<string, string> = {
   'mark-exposed': 'neutral-exposure',
 }
 
-function mutated(id: number, action: string, medium?: string): FeedbackMutation {
+export function feedbackMutation(id: number, action: string, medium?: string): FeedbackMutation {
   const state: FeedbackState = {
     mangaBakaId: id,
     suppression: action === 'hide' || action === 'dislike' ? 'hidden' : action === 'dismiss' ? 'dismissed' : 'none',
@@ -110,6 +110,7 @@ function mutated(id: number, action: string, medium?: string): FeedbackMutation 
     queueEffect: state.suppression === 'none' ? 'unchanged' : 'suppressed',
     tasteEffect: 'unchanged',
     feedbackEffect: feedbackEffect[action] ?? 'neutral',
+    shortlistRemoved: false,
   }
 }
 
@@ -190,13 +191,13 @@ export const discoverHandlers: HttpHandler[] = [
   ),
   http.put(api('/recommendations/feedback/:id'), async ({ params, request }) => {
     const body = (await request.json()) as { action: string; medium?: string }
-    return HttpResponse.json(mutated(Number(params.id), body.action, body.medium))
+    return HttpResponse.json(feedbackMutation(Number(params.id), body.action, body.medium))
   }),
   http.post(api('/recommendations/feedback/:id/franchise'), () =>
-    HttpResponse.json({ changed: 3, titles: [], feedbackRevision: 8 }),
+    HttpResponse.json({ changed: 3, titles: [], feedbackRevision: 8, shortlistRemoved: false }),
   ),
   http.post(api('/recommendations/feedback/events/:eventId/undo'), ({ params }) =>
-    HttpResponse.json(mutated(Number(params.eventId) - 900, 'clear-suppression')),
+    HttpResponse.json(feedbackMutation(Number(params.eventId) - 900, 'clear-suppression')),
   ),
   http.get(api('/recommendations/signal-overrides'), () => HttpResponse.json(signalOverrides)),
   http.put(api('/recommendations/signal-overrides/:id'), async ({ params, request }) => {
