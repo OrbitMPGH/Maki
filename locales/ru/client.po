@@ -13431,7 +13431,7 @@ msgstr "Нет совпадающей страницы"
 msgid "No metadata match found."
 msgstr "Совпадение метаданных не найдено."
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "No more chapters"
 msgstr "Больше глав нет"
@@ -15939,7 +15939,16 @@ msgstr "обновите код до последней версии и пере
 msgid "pull the new image and recreate the container"
 msgstr "загрузите новый образ и пересоздайте контейнер"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
+#~ msgid "Pull up"
+#~ msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Pull up"
+msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "Pull up for next chapter"
 msgstr "Потяните вверх для следующей главы"
@@ -16880,12 +16889,21 @@ msgstr "Связано с вашей библиотекой"
 msgid "Related to your seeds"
 msgstr "Связано с вашими начальными элементами"
 
+#: src/pages/reader/NextChapterHint.tsx
+#~ msgid "Release"
+#~ msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Release"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Release checks per scan"
 msgstr "Проверок релизов за сканирование"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "Release for next chapter"
 msgstr "Отпустите для следующей главы"
@@ -18671,12 +18689,17 @@ msgstr "Синхронизация"
 msgid "Scroll"
 msgstr "Прокрутка"
 
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Scroll"
+msgstr ""
+
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll back"
 msgstr "Прокрутить назад"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "Scroll for next chapter"
 msgstr "Прокрутить к следующей главе"

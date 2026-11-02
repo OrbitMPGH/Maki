@@ -914,6 +914,7 @@ export default function ReaderPage() {
               seekVersion={seekVersion}
               onPastEnd={continuousPastEnd}
               hasNext={manifest.nextChapterId != null}
+              nextLabel={manifest.nextChapterLabel}
               fit={fit}
               scale={prefs.scale}
               tone={tone}
@@ -991,6 +992,7 @@ export default function ReaderPage() {
           seriesTitle={manifest.seriesTitle}
           label={manifest.label}
           pageCount={manifest.pageCount}
+          coverUrl={manifest.seriesCoverUrl}
         />
       )}
 

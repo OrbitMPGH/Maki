@@ -13431,7 +13431,7 @@ msgstr "Keine passende Seite"
 msgid "No metadata match found."
 msgstr "Kein Metadatentreffer gefunden."
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "No more chapters"
 msgstr "Keine weiteren Kapitel"
@@ -15939,7 +15939,16 @@ msgstr "neuesten Code abrufen und neu erstellen"
 msgid "pull the new image and recreate the container"
 msgstr "neues Image abrufen und den Container neu erstellen"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
+#~ msgid "Pull up"
+#~ msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Pull up"
+msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "Pull up for next chapter"
 msgstr "Nach oben ziehen für das nächste Kapitel"
@@ -16880,12 +16889,21 @@ msgstr "Mit deiner Bibliothek verbunden"
 msgid "Related to your seeds"
 msgstr "Mit deinen Ausgangstiteln verbunden"
 
+#: src/pages/reader/NextChapterHint.tsx
+#~ msgid "Release"
+#~ msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Release"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Release checks per scan"
 msgstr "Veröffentlichungsprüfungen pro Scan"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "Release for next chapter"
 msgstr "Loslassen für das nächste Kapitel"
@@ -18671,12 +18689,17 @@ msgstr "Scrobbling"
 msgid "Scroll"
 msgstr "Scrollen"
 
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Scroll"
+msgstr ""
+
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll back"
 msgstr "Zurückscrollen"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "Scroll for next chapter"
 msgstr "Für das nächste Kapitel scrollen"

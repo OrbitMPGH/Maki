@@ -113,8 +113,8 @@ export default function ServerEnhanceStatus({
             {info && <span className="reader-enhance-status-method">{renderLabel(info.label)}</span>}
             {label}
           </span>
-          <div className="reader-next-chapter-bar">
-            {phase !== 'failed' && <div className="reader-next-chapter-fill reader-enhance-status-fill" />}
+          <div className="reader-enhance-status-bar">
+            {phase !== 'failed' && <div className="reader-enhance-status-fill" />}
           </div>
         </div>
       )}

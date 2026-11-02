@@ -7607,7 +7607,131 @@ body.reader-open {
   background: #000;
 }
 
-.reader-next-chapter-hint,
+/* The reader's floating card, shared by the chapter banner and the next-chapter meter. Centred
+   with auto margins rather than left: 50%, which would cap its width at half the screen. */
+.reader-card {
+  inset-inline: 16px;
+  z-index: var(--reader-overlay-z-index);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  max-width: min(560px, calc(100% - 32px));
+  margin-inline: auto;
+  padding: 10px 16px 10px 10px;
+  border-radius: var(--radius-hero);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 10, 11, 0.88);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.8);
+  color: #fff;
+  pointer-events: none;
+}
+.reader-card:not(:has(> .reader-card-cover, > .reader-ring)) {
+  padding-inline-start: 14px;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .reader-card {
+    background: #0a0a0b;
+  }
+}
+.reader-card-cover {
+  width: 40px;
+  aspect-ratio: 2 / 3;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 5px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+.reader-card-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.reader-card-eyebrow {
+  overflow: hidden;
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+  color: var(--brand-fg-on-art);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.reader-card-title {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 1.1875rem;
+  font-weight: var(--fw-bold);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.reader-card-title[data-wrap] {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.reader-card-meta {
+  font-size: var(--type-micro);
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Bottom-of-strip meter (NextChapterHint). The ring is the toolbar's upscale ring at a larger
+   size; on touch a full ring turns solid and waits for the finger to lift. */
+.reader-next-chapter-hint {
+  position: fixed;
+  bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  animation: reader-enhance-status-in var(--dur-medium) var(--ease);
+}
+.reader-ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.reader-ring-svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+  fill: none;
+  stroke-width: 2.5;
+}
+.reader-ring-track {
+  stroke: rgba(255, 255, 255, 0.14);
+}
+.reader-ring-fill {
+  stroke: var(--brand);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 60ms linear;
+}
+.reader-next-chapter-hint[data-state='ready'] .reader-ring {
+  background: var(--brand);
+  color: var(--brand-on);
+}
+.reader-next-chapter-hint[data-state='ready'] .reader-ring-svg {
+  display: none;
+}
+.reader-next-chapter-hint[data-state='end'] .reader-ring {
+  color: rgba(255, 255, 255, 0.4);
+}
+.reader-next-chapter-hint[data-state='end'] .reader-card-title {
+  color: rgba(255, 255, 255, 0.72);
+}
+/* The meter and the upscale pill share the bottom slot; a pull in progress wins it. */
+.reader-root:has(.reader-next-chapter-hint) .reader-enhance-status {
+  visibility: hidden;
+}
+
+/* Server enhance progress (ServerEnhanceStatus): a pill with a sweep while the page waits or
+   runs and a fill once it is loading. */
 .reader-enhance-status {
   position: fixed;
   left: 50%;
@@ -7625,29 +7749,14 @@ body.reader-open {
   color: #fff;
   font-size: var(--type-meta);
   pointer-events: none;
+  animation: reader-enhance-status-in var(--dur-medium) var(--ease);
 }
-/* Last chapter: same prompt, but the track stays empty since it can't fill. */
-.reader-next-chapter-hint.is-end {
-  color: rgba(255, 255, 255, 0.72);
-}
-.reader-next-chapter-bar {
+.reader-enhance-status-bar {
   width: 160px;
   height: 4px;
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.18);
   overflow: hidden;
-}
-.reader-next-chapter-fill {
-  height: 100%;
-  background: var(--brand);
-  border-radius: var(--radius-pill);
-  transition: width 60ms linear;
-}
-
-/* Server enhance progress (ServerEnhanceStatus): the next-chapter pill's shape, with a sweep while
-   the page waits or runs and a fill once it is loading. */
-.reader-enhance-status {
-  animation: reader-enhance-status-in var(--dur-medium) var(--ease);
 }
 .reader-enhance-status-method {
   margin-right: 8px;
@@ -7655,6 +7764,9 @@ body.reader-open {
 }
 .reader-enhance-status-fill {
   width: 100%;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
   transition: width var(--dur-slow) var(--ease);
 }
 .reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill,
@@ -8236,39 +8348,14 @@ body.reader-open {
   background: rgba(0, 0, 0, 0.65);
 }
 
-/* Chapter-change flash. Sits above the top bar's height so it doesn't collide with the chrome
-   when that happens to be up, and never takes a pointer event: a tap through it is a page turn. */
+/* Chapter-change flash (a .reader-card). Sits below the top bar, safe area included, so it doesn't
+   collide with the chrome when that happens to be up. It never takes a pointer event: a tap
+   through it is a page turn. */
 .reader-chapter-banner {
   position: absolute;
-  top: 72px;
-  left: 50%;
+  top: calc(56px + var(--safe-top) + 12px);
   z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  max-width: min(560px, 86vw);
-  padding: 10px 20px;
-  border-radius: var(--radius-hero);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #0a0a0b;
-  text-align: center;
-  pointer-events: none;
   animation: reader-chapter-banner 2400ms var(--ease) both;
-}
-.reader-chapter-banner-series {
-  font-size: var(--type-meta);
-  color: rgba(255, 255, 255, 0.6);
-}
-.reader-chapter-banner-label {
-  font-size: var(--type-section);
-  font-weight: var(--fw-semibold);
-  color: #fff;
-}
-.reader-chapter-banner-pages {
-  font-size: var(--type-micro);
-  font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.55);
 }
 
 /* End of chapter. The cover, blurred far past recognition, is the only colour on the screen: the
@@ -8406,19 +8493,19 @@ body.reader-open {
 @keyframes reader-chapter-banner {
   0% {
     opacity: 0;
-    transform: translate(-50%, -10px);
+    transform: translateY(-10px);
   }
   10% {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: none;
   }
   78% {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: none;
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -6px);
+    transform: translateY(-6px);
   }
 }
 
@@ -8542,7 +8629,7 @@ body.reader-open {
   .reader-chapter-banner {
     animation: none !important;
     opacity: 1;
-    transform: translateX(-50%);
+    transform: none;
   }
 }
 

@@ -13431,7 +13431,7 @@ msgstr "Brak pasującej strony"
 msgid "No metadata match found."
 msgstr "Nie znaleziono dopasowania metadanych."
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "No more chapters"
 msgstr "Brak kolejnych rozdziałów"
@@ -15939,7 +15939,16 @@ msgstr "pobierz najnowszy kod i przebuduj"
 msgid "pull the new image and recreate the container"
 msgstr "pobierz nowy obraz i utwórz kontener ponownie"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
+#~ msgid "Pull up"
+#~ msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Pull up"
+msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "Pull up for next chapter"
 msgstr "Pociągnij w górę, aby przejść do następnego rozdziału"
@@ -16880,12 +16889,21 @@ msgstr "Powiązane z Twoją biblioteką"
 msgid "Related to your seeds"
 msgstr "Powiązane z Twoimi tytułami bazowymi"
 
+#: src/pages/reader/NextChapterHint.tsx
+#~ msgid "Release"
+#~ msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Release"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Release checks per scan"
 msgstr "Sprawdzenia wydań na skanowanie"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "Release for next chapter"
 msgstr "Puść, aby przejść do następnego rozdziału"
@@ -18671,12 +18689,17 @@ msgstr "Scrobblowanie"
 msgid "Scroll"
 msgstr "Przewijanie"
 
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Scroll"
+msgstr ""
+
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll back"
 msgstr "Przewiń wstecz"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "Scroll for next chapter"
 msgstr "Przewiń, aby przejść do następnego rozdziału"

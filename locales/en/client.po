@@ -10982,7 +10982,7 @@ msgstr "No matching page"
 msgid "No metadata match found."
 msgstr "No metadata match found."
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 msgid "No more chapters"
 msgstr "No more chapters"
 
@@ -13023,7 +13023,16 @@ msgstr "pull the latest code and rebuild"
 msgid "pull the new image and recreate the container"
 msgstr "pull the new image and recreate the container"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
+#~ msgid "Pull up"
+#~ msgstr "Pull up"
+
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Pull up"
+msgstr "Pull up"
+
+#: src/pages/reader/NextChapterHint.tsx
 msgid "Pull up for next chapter"
 msgstr "Pull up for next chapter"
 
@@ -13794,11 +13803,20 @@ msgstr "Related to your library"
 msgid "Related to your seeds"
 msgstr "Related to your seeds"
 
+#: src/pages/reader/NextChapterHint.tsx
+#~ msgid "Release"
+#~ msgstr "Release"
+
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Release"
+msgstr "Release"
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Release checks per scan"
 msgstr "Release checks per scan"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 msgid "Release for next chapter"
 msgstr "Release for next chapter"
 
@@ -15265,11 +15283,16 @@ msgstr "Scrobbling"
 msgid "Scroll"
 msgstr "Scroll"
 
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Scroll"
+msgstr "Scroll"
+
 #: src/components/ui/Rail.tsx
 msgid "Scroll back"
 msgstr "Scroll back"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 msgid "Scroll for next chapter"
 msgstr "Scroll for next chapter"
 

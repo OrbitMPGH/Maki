@@ -13431,7 +13431,7 @@ msgstr "没有匹配的页面"
 msgid "No metadata match found."
 msgstr "未找到元数据匹配。"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "No more chapters"
 msgstr "没有更多章节"
@@ -15939,7 +15939,16 @@ msgstr "拉取最新代码并重新构建"
 msgid "pull the new image and recreate the container"
 msgstr "拉取新镜像并重新创建容器"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
+#~ msgid "Pull up"
+#~ msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Pull up"
+msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "Pull up for next chapter"
 msgstr "上拉以阅读下一章"
@@ -16880,12 +16889,21 @@ msgstr "与你的资料库相关"
 msgid "Related to your seeds"
 msgstr "与你的种子相关"
 
+#: src/pages/reader/NextChapterHint.tsx
+#~ msgid "Release"
+#~ msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Release"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Release checks per scan"
 msgstr "每次扫描的版本检查数量"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "Release for next chapter"
 msgstr "松开以阅读下一章"
@@ -18671,12 +18689,17 @@ msgstr "阅读记录"
 msgid "Scroll"
 msgstr "滚动"
 
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Scroll"
+msgstr ""
+
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll back"
 msgstr "向后滚动"
 
-#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "Scroll for next chapter"
 msgstr "滚动以阅读下一章"

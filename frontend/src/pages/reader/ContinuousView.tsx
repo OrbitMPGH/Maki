@@ -4,6 +4,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { enhanceBudget } from '../../lib/enhance/budget'
 import type { EnhanceFallback, EnhanceMethod, ReaderEnhance, ReaderFit } from './prefs'
 import EnhancedPage from './EnhancedPage'
+import NextChapterHint from './NextChapterHint'
 import { useCompareKey } from './compareHold'
 import { EnhanceScope, presetFor, useEnhanceEngine, type PageEnhance } from './enhanceRuntime'
 import { FULL_REGION } from './pageShape'
@@ -237,6 +238,7 @@ export default function ContinuousView({
   seekVersion,
   onPastEnd,
   hasNext,
+  nextLabel,
   fit,
   scale,
   tone,
@@ -263,6 +265,8 @@ export default function ContinuousView({
   /** Picks which bottom-of-strip prompt shows: the fillable "scroll for next chapter" meter, or,
    *  on the last chapter, an inert "no more chapters" one that never advances anywhere. */
   hasNext: boolean
+  /** The next chapter's label, which the meter names as its target. */
+  nextLabel?: string | null
   /** What the fillable meter says; the Discover preview has no next chapter to scroll into. */
   pastEndLabel?: React.ReactNode
   fit: ReaderFit
@@ -675,30 +679,13 @@ export default function ContinuousView({
         <div ref={sentinel} style={{ height: 1 }} />
       </div>
       {(pastEndProgress > 0 || atLibraryEnd) && (
-        <div className={`reader-next-chapter-hint${atLibraryEnd ? ' is-end' : ''}`}>
-          <span>
-            {atLibraryEnd ? (
-              <Trans>No more chapters</Trans>
-            ) : (
-              pastEndLabel ??
-              (!pulling ? (
-                <Trans>Scroll for next chapter</Trans>
-              ) : pastEndProgress >= 1 ? (
-                <Trans>Release for next chapter</Trans>
-              ) : (
-                <Trans>Pull up for next chapter</Trans>
-              ))
-            )}
-          </span>
-          <div className="reader-next-chapter-bar">
-            {!atLibraryEnd && (
-              <div
-                className="reader-next-chapter-fill"
-                style={{ width: `${Math.min(1, pastEndProgress) * 100}%` }}
-              />
-            )}
-          </div>
-        </div>
+        <NextChapterHint
+          progress={pastEndProgress}
+          pulling={pulling}
+          atEnd={atLibraryEnd}
+          nextLabel={nextLabel}
+          fallbackLabel={pastEndLabel}
+        />
       )}
     </>
   )
