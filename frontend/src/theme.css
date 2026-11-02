@@ -8876,6 +8876,50 @@ body.reader-open {
   border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--danger) 7%, transparent);
 }
+.health-confirm[data-tone='neutral'] {
+  border-color: var(--hairline);
+  background: var(--surface-2);
+}
+/* A filter's answers above the table, one row per thing to do, the action on the right. */
+.health-summary {
+  display: grid;
+  padding-block: 0;
+}
+.health-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm);
+  padding-block: var(--mantine-spacing-xs);
+}
+.health-summary-row + .health-summary-row {
+  border-top: 1px solid var(--hairline);
+}
+.health-summary-row[data-active] {
+  box-shadow: inset 3px 0 0 var(--brand);
+  padding-inline-start: var(--mantine-spacing-sm);
+}
+.health-summary-label {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+/* What a list row learned beyond its own findings: where a missing file went, what an unlinked one needs. */
+.health-row-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 4px;
+}
+.health-row-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mantine-font-family-monospace);
+}
 /* The other copies of a grouped Files row, under the kept one's path. */
 .health-copy-list {
   display: grid;

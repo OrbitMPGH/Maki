@@ -35,6 +35,44 @@ export interface HealthFile {
   findings: HealthFinding[]
   /** Only under the Duplicate filter: the row is the copy to keep, and this is the whole set. */
   copies?: DuplicateListCopy[]
+  /** Only under the Unlinked filter: what this file needs, and for `outside` the folder it sits in. */
+  detail?: { case: UnlinkedCase; folder?: string | null } | null
+}
+
+/** HealthMatchService.Cases: what an unlinked archive needs. */
+export type UnlinkedCase = 'moved' | 'identical' | 'outside' | 'unrecognized' | 'noChapter' | 'rival' | 'import'
+
+/**
+ * How sure the match between a missing file and the file found at a new path is, strongest first.
+ * Only `nameOnly` is held back from a bulk relink.
+ */
+export type MoveEvidence = 'identical' | 'samePages' | 'likely' | 'nameOnly'
+
+export interface MoveRef {
+  fileId: number
+  version: string
+  relativePath: string
+  targetId: number
+  targetVersion: string
+  targetPath: string
+  evidence: MoveEvidence
+}
+
+/** The Missing filter's answers: files found at a new path, and the rest grouped by folder. */
+export interface MissingSummary {
+  total: number
+  /** Found by name alone; reviewed one at a time. */
+  weak: number
+  items: MoveRef[]
+  /** The rows on this page that were found somewhere, keyed by file id. */
+  rows: Record<string, { targetPath: string; evidence: MoveEvidence }>
+  gone: { folder: string; count: number; items: FileRef[] }[]
+}
+
+export interface UnlinkedSummary {
+  counts: { case: UnlinkedCase; count: number }[]
+  outside: { folder: string; count: number }[]
+  importable: { total: number; items: FileRef[] }
 }
 
 /** One copy of a set of byte-identical archives. `kept` backs chapters (or is the oldest when none does); `spare` is everything else still on disk. */
@@ -71,6 +109,10 @@ export interface HealthFilesPage {
   total: number
   /** Only under the Duplicate filter: every spare copy the filter covers, capped at one bulk delete. */
   spares?: { total: number; items: FileRef[] }
+  /** Only under the Missing filter. */
+  moves?: MissingSummary
+  /** Only under the Unlinked filter. */
+  cases?: UnlinkedSummary
 }
 
 export interface HealthScan {
@@ -144,6 +186,18 @@ export interface FileDetail {
   chapters: { id: number; title?: string; number?: number; wanted: boolean }[]
   mappings: { id: number; sourceName: string; priority: number }[]
   match: UnlinkedMatch | null
+  /** For a missing file: where it most likely went. */
+  moved: {
+    targetId: number
+    targetVersion: string
+    targetPath: string
+    targetSize: number
+    targetPages: number
+    evidence: MoveEvidence
+  } | null
+  /** The chapter file record's own size and page count, for comparing with what is on disk. */
+  recordSize: number | null
+  recordPages: number | null
   /** Every byte-identical copy, this file included; empty when there is no other copy. */
   copies: DuplicateCopy[]
   /** Where this file's chapters move if it is deleted: an identical copy in the same series folder. */

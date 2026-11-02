@@ -264,8 +264,10 @@ msgstr "{0, plural, one {# more chapter is in the same volume file and loses it 
 msgid "{0, plural, one {# needs attention} other {# need attention}}"
 msgstr "{0, plural, one {# needs attention} other {# need attention}}"
 
+#. placeholder {0}: moved.targetPages
 #. placeholder {0}: panel.pageCount
 #: src/components/SourceCompareModal.tsx
+#: src/pages/HealthPage.tsx
 msgid "{0, plural, one {# page} other {# pages}}"
 msgstr "{0, plural, one {# page} other {# pages}}"
 
@@ -792,6 +794,10 @@ msgid "{count, plural, one {# deletion} other {# deletions}}"
 msgstr "{count, plural, one {# deletion} other {# deletions}}"
 
 #: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# file gone, nowhere else in the library} other {# files gone, nowhere else in the library}}"
+msgstr "{count, plural, one {# file gone, nowhere else in the library} other {# files gone, nowhere else in the library}}"
+
+#: src/pages/HealthPage.tsx
 msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
 msgstr "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
 
@@ -922,6 +928,10 @@ msgstr "{currentStreak, plural, one {# day streak} other {# day streak}}"
 #: src/pages/stats/ActivityFeed.tsx
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
 msgstr "{cycles, plural, one {re-added #×} other {re-added #×}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{damagedCount, plural, one {Get a new copy} other {Get # new copies}}"
+msgstr "{damagedCount, plural, one {Get a new copy} other {Get # new copies}}"
 
 #: src/pages/settings/PageConversionSection.tsx
 msgid "{days, plural, one {The originals ({trash}) wait in the upgrade trash for # day, then are deleted.} other {The originals ({trash}) wait in the upgrade trash for # days, then are deleted.}}"
@@ -1161,6 +1171,10 @@ msgstr "{importedCount, plural, one {# imported} other {# imported}}"
 msgid "{importedCount, plural, one {Import # file} other {Import # files}}"
 msgstr "{importedCount, plural, one {Import # file} other {Import # files}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{importShown, plural, one {Import it} other {Import all #}}"
+msgstr "{importShown, plural, one {Import it} other {Import all #}}"
+
 #: src/pages/ImportPage.tsx
 msgid "{inLibraryCount, plural, one {Show # series already in the library} other {Show # series already in the library}}"
 msgstr "{inLibraryCount, plural, one {Show # series already in the library} other {Show # series already in the library}}"
@@ -1277,6 +1291,10 @@ msgstr "{lineLabel}. Click to collapse."
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "{linked, plural, one {# series stays linked to it and stops updating from it. Importing the same definition again picks the link back up.} other {# series stay linked to it and stop updating from it. Importing the same definition again picks the links back up.}}"
 msgstr "{linked, plural, one {# series stays linked to it and stops updating from it. Importing the same definition again picks the link back up.} other {# series stay linked to it and stop updating from it. Importing the same definition again picks the links back up.}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{linked, plural, one {Imported # archive} other {Imported # archives}}"
+msgstr "{linked, plural, one {Imported # archive} other {Imported # archives}}"
 
 #: src/pages/ImportPage.tsx
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
@@ -1644,6 +1662,10 @@ msgstr "{reason}: {detail}"
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
 
+#: src/pages/HealthPage.tsx
+msgid "{relinked, plural, one {Relinked # file} other {Relinked # files}}"
+msgstr "{relinked, plural, one {Relinked # file} other {Relinked # files}}"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -1664,6 +1686,10 @@ msgstr "{replacedFiles, plural, one {Replaces # file} other {Replaces # files}}"
 msgid "{requested, plural, one {# sent for approval} other {# sent for approval}}"
 msgstr "{requested, plural, one {# sent for approval} other {# sent for approval}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{requested, plural, one {Requested # replacement} other {Requested # replacements}}"
+msgstr "{requested, plural, one {Requested # replacement} other {Requested # replacements}}"
+
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "{requestsOpen} open"
 msgstr "{requestsOpen} open"
@@ -1671,6 +1697,10 @@ msgstr "{requestsOpen} open"
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "{requestsOpen} open, median {resolvedHours}h"
 msgstr "{requestsOpen} open, median {resolvedHours}h"
+
+#: src/pages/HealthPage.tsx
+msgid "{resizedCount, plural, one {Update the record} other {Update # records}}"
+msgstr "{resizedCount, plural, one {Update the record} other {Update # records}}"
 
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "{resolved, plural, one {# resolved} other {# resolved}}"
@@ -1822,6 +1852,10 @@ msgstr "{seriesTotalCount, plural, one {This re-downloads the poster for the # s
 msgid "{seriesWantedCount, plural, one {# in series} other {# in series}}"
 msgstr "{seriesWantedCount, plural, one {# in series} other {# in series}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{shown, plural, one {Relink it} other {Relink all #}}"
+msgstr "{shown, plural, one {Relink it} other {Relink all #}}"
+
 #: src/components/TagBrowserModal.tsx
 msgid "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
 msgstr "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
@@ -1889,6 +1923,18 @@ msgstr "{sourceName} publishes one language per series, so there is nothing to f
 #: src/components/SourceMeasurePanel.tsx
 msgid "{sources, plural, one {Measuring # source on chapters {chapters}} other {Measuring # sources on chapters {chapters}}}"
 msgstr "{sources, plural, one {Measuring # source on chapters {chapters}} other {Measuring # sources on chapters {chapters}}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{span} still read from this file, so they show as downloaded but cannot be opened."
+msgstr "{span} still read from this file, so they show as downloaded but cannot be opened."
+
+#: src/pages/HealthPage.tsx
+msgid "{span} will show as not downloaded. Nothing downloads them again on its own."
+msgstr "{span} will show as not downloaded. Nothing downloads them again on its own."
+
+#: src/pages/HealthPage.tsx
+msgid "{span} will show as not downloaded. They are still wanted, so automation may download them again."
+msgstr "{span} will show as not downloaded. They are still wanted, so automation may download them again."
 
 #: src/pages/HealthPage.tsx
 msgid "{spareCount, plural, one {Delete the spare copy from disk? This file stays and no chapter changes.} other {Delete # spare copies from disk? This file stays and no chapter changes.}}"
@@ -2026,6 +2072,10 @@ msgstr "{total, plural, one {# chapter listed, none wanted, nothing will downloa
 #: src/components/series/ChapterTableRows.tsx
 msgid "{total, plural, one {# chapter} other {# chapters}}"
 msgstr "{total, plural, one {# chapter} other {# chapters}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{total, plural, one {# file found at a new path} other {# files found at a new path}}"
+msgstr "{total, plural, one {# file found at a new path} other {# files found at a new path}}"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "{total, plural, one {All # chapter wanted} other {All # chapters wanted}}"
@@ -2184,6 +2234,10 @@ msgstr "{updated, plural, one {Quality profile set for # series} other {Quality 
 msgid "{updated, plural, one {Tagged # series} other {Tagged # series}}"
 msgstr "{updated, plural, one {Tagged # series} other {Tagged # series}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{updated, plural, one {Updated # record} other {Updated # records}}"
+msgstr "{updated, plural, one {Updated # record} other {Updated # records}}"
+
 #: src/api/upgrades.ts
 msgid "{upgradeCount, plural, one {Replaces # file} other {Replaces # files}}"
 msgstr "{upgradeCount, plural, one {Replaces # file} other {Replaces # files}}"
@@ -2235,6 +2289,10 @@ msgstr "{wantedCount} wanted"
 #: src/components/series/ChapterTableRows.tsx
 msgid "{watchedCount} watched"
 msgstr "{watchedCount} watched"
+
+#: src/pages/HealthPage.tsx
+msgid "{weak, plural, one {# more matches a file by name only. Open it to compare before relinking.} other {# more match a file by name only. Open each to compare before relinking.}}"
+msgstr "{weak, plural, one {# more matches a file by name only. Open it to compare before relinking.} other {# more match a file by name only. Open each to compare before relinking.}}"
 
 #: src/components/home/ReadingWeeks.tsx
 msgid "{weekChapters, plural, one {# chapter this week} other {# chapters this week}}"
@@ -2496,6 +2554,14 @@ msgstr "A health review is active for this series"
 msgid "A large selection can take a while."
 msgstr "A large selection can take a while."
 
+#: src/pages/HealthPage.tsx
+msgid "A missing file's record most likely belongs to this file. The Missing filter relinks it."
+msgstr "A missing file's record most likely belongs to this file. The Missing filter relinks it."
+
+#: src/pages/HealthPage.tsx
+msgid "A new copy is downloaded from the series' sources and shown to you before it replaces this one."
+msgstr "A new copy is downloaded from the series' sources and shown to you before it replaces this one."
+
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "A new URL clears the saved password, so enter it again."
 msgstr "A new URL clears the saved password, so enter it again."
@@ -2507,6 +2573,14 @@ msgstr "A newer upgrade has replaced this file since"
 #: src/api/queue.ts
 msgid "A page the source sent is not a readable image"
 msgstr "A page the source sent is not a readable image"
+
+#: src/pages/HealthPage.tsx
+msgid "A PDF cannot be fetched from a source again."
+msgstr "A PDF cannot be fetched from a source again."
+
+#: src/pages/HealthPage.tsx
+msgid "A PDF was placed as it is, so there is no source to fetch it from again. Replace the file by hand, or delete it under Other actions."
+msgstr "A PDF was placed as it is, so there is no source to fetch it from again. Replace the file by hand, or delete it under Other actions."
 
 #: src/components/RelinkFilesModal.tsx
 msgid "A proportional guess for a finished series whose volumes are all on disk. Only used when nothing better covers the chapter."
@@ -3240,6 +3314,10 @@ msgstr "Announced by the source"
 msgid "Another custom source already has this id"
 msgstr "Another custom source already has this id"
 
+#: src/pages/HealthPage.tsx
+msgid "Another file already backs the chapter. Open each one to compare the two before keeping either."
+msgstr "Another file already backs the chapter. Open each one to compare the two before keeping either."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
 msgstr "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
@@ -3424,6 +3502,10 @@ msgstr "Archive"
 msgctxt "series"
 msgid "Archive {title}?"
 msgstr "Archive {title}?"
+
+#: src/pages/HealthPage.tsx
+msgid "Archive is damaged"
+msgstr "Archive is damaged"
 
 #: src/components/settings/UsersSection.tsx
 msgctxt "series"
@@ -3962,6 +4044,10 @@ msgid "By type"
 msgstr "By type"
 
 #: src/pages/HealthPage.tsx
+msgid "Byte for byte the same as another file. The Duplicate filter deletes the spare copy."
+msgstr "Byte for byte the same as another file. The Duplicate filter deletes the spare copy."
+
+#: src/pages/HealthPage.tsx
 msgid "Byte-identical to the linked file. Importing gains nothing; delete one of them."
 msgstr "Byte-identical to the linked file. Importing gains nothing; delete one of them."
 
@@ -4391,6 +4477,10 @@ msgstr "chapter {ranges}"
 msgid "Chapter {resumeAt} is not downloaded yet"
 msgstr "Chapter {resumeAt} is not downloaded yet"
 
+#: src/pages/HealthPage.tsx
+msgid "Chapter already has a file"
+msgstr "Chapter already has a file"
+
 #: src/components/NotificationsSection.tsx
 msgid "Chapter downloaded"
 msgstr "Chapter downloaded"
@@ -4414,6 +4504,10 @@ msgstr "Chapter languages"
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Chapter list"
 msgstr "Chapter list"
+
+#: src/pages/HealthPage.tsx
+msgid "Chapter not in the series yet"
+msgstr "Chapter not in the series yet"
 
 #: src/components/NamingTokenModal.tsx
 msgid "Chapter number and volume also take zero-padding: <0>{paddingExampleToken}</0> renders 24 as 024."
@@ -4726,6 +4820,10 @@ msgstr "Clear rating"
 msgid "Clear read or seen"
 msgstr "Clear read or seen"
 
+#: src/pages/HealthPage.tsx
+msgid "Clear records"
+msgstr "Clear records"
+
 #: src/components/CatalogueBrowser.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/TagBrowserModal.tsx
@@ -4752,6 +4850,10 @@ msgstr "Clear the thumbs up"
 #: src/pages/DiscoverPage.tsx
 msgid "Clear your saved default"
 msgstr "Clear your saved default"
+
+#: src/pages/HealthPage.tsx
+msgid "Cleared the record"
+msgstr "Cleared the record"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Clearing cached images..."
@@ -6205,6 +6307,10 @@ msgstr "Download {chapterLbl}"
 msgid "Download {missingWanted} wanted"
 msgstr "Download {missingWanted} wanted"
 
+#: src/pages/HealthPage.tsx
+msgid "Download again"
+msgstr "Download again"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Download all wanted"
 msgstr "Download all wanted"
@@ -6243,6 +6349,10 @@ msgstr "Download failed: {detail}"
 #: src/components/CatalogueBrowser.tsx
 msgid "Download index"
 msgstr "Download index"
+
+#: src/pages/HealthPage.tsx
+msgid "Download it again"
+msgstr "Download it again"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Download next chapters"
@@ -7072,6 +7182,14 @@ msgstr "Fewest chapters"
 msgid "File"
 msgstr "File"
 
+#: src/pages/HealthPage.tsx
+msgid "File changed outside Maki"
+msgstr "File changed outside Maki"
+
+#: src/pages/HealthPage.tsx
+msgid "File is gone from disk"
+msgstr "File is gone from disk"
+
 #: src/pages/ActivityPage.tsx
 msgid "File name"
 msgstr "File name"
@@ -7478,6 +7596,7 @@ msgid "Formats"
 msgstr "Formats"
 
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/HealthPage.tsx
 msgid "Found"
 msgstr "Found"
 
@@ -7610,6 +7729,10 @@ msgstr "Genres in the library"
 #: src/pages/settings/PreferenceCards.tsx
 msgid "German"
 msgstr "German"
+
+#: src/pages/HealthPage.tsx
+msgid "Get a new copy"
+msgstr "Get a new copy"
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
@@ -8106,6 +8229,10 @@ msgstr "Identical copies"
 msgid "Identical pixels."
 msgstr "Identical pixels."
 
+#: src/pages/HealthPage.tsx
+msgid "Identical to another file"
+msgstr "Identical to another file"
+
 #: src/components/ImportListsSection.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/HealthPage.tsx
@@ -8169,6 +8296,7 @@ msgid "Image formats"
 msgstr "Image formats"
 
 #: src/nav.ts
+#: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
 msgid "Import"
 msgstr "Import"
@@ -8280,6 +8408,10 @@ msgstr "Import rejected, the library was left as it was"
 #: src/pages/HealthPage.tsx
 msgid "Import runs the ordinary rescan on {seriesTitle}, so any other new archive in that folder is adopted at the same time."
 msgstr "Import runs the ordinary rescan on {seriesTitle}, so any other new archive in that folder is adopted at the same time."
+
+#: src/pages/HealthPage.tsx
+msgid "Import the first {importShown}"
+msgstr "Import the first {importShown}"
 
 #: src/pages/HealthPage.tsx
 msgid "Import this archive"
@@ -9495,6 +9627,10 @@ msgstr "Maki can't reach the server. Home comes back as soon as it does."
 msgid "Maki can't reach this folder"
 msgstr "Maki can't reach this folder"
 
+#: src/pages/HealthPage.tsx
+msgid "Maki cannot open this file"
+msgstr "Maki cannot open this file"
+
 #: src/components/RelinkFilesModal.tsx
 msgid "Maki checked the folder against the chapter list. Tick what to trust and watch the map. Nothing changes until you press Relink."
 msgstr "Maki checked the folder against the chapter list. Tick what to trust and watch the map. Nothing changes until you press Relink."
@@ -9569,6 +9705,10 @@ msgstr "Maki won't find series on this site by itself. You'll link each series b
 #: src/components/LanguageAnnouncementModal.tsx
 msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
 msgstr "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
+
+#: src/pages/HealthPage.tsx
+msgid "Maki's record says {recorded}, the file on disk is {onDisk}. Usually a tagger or another library tool rewrote its metadata. Updating the record makes Maki measure the file again; the file itself is not touched."
+msgstr "Maki's record says {recorded}, the file on disk is {onDisk}. Usually a tagger or another library tool rewrote its metadata. Updating the record makes Maki measure the file again; the file itself is not touched."
 
 #: src/components/discover/FollowingRail.tsx
 #: src/components/home/OfflineHome.tsx
@@ -10130,6 +10270,10 @@ msgstr "Moss"
 msgid "Most chapters"
 msgstr "Most chapters"
 
+#: src/pages/HealthPage.tsx
+msgid "Most likely a folder renamed or reorganised outside Maki. Relinking points the records at the files where they are now; nothing on disk moves."
+msgstr "Most likely a folder renamed or reorganised outside Maki. Relinking points the records at the files where they are now; nothing on disk moves."
+
 #: src/pages/LibraryPage.tsx
 msgid "Most missing"
 msgstr "Most missing"
@@ -10300,6 +10444,10 @@ msgstr "n/a"
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Name"
 msgstr "Name"
+
+#: src/pages/HealthPage.tsx
+msgid "Name not recognised"
+msgstr "Name not recognised"
 
 #: src/components/pageconversion/RuleCard.tsx
 msgid "Name of rule {number}"
@@ -10493,6 +10641,10 @@ msgstr "New OPDS feed URL generated"
 msgid "New password"
 msgstr "New password"
 
+#: src/pages/HealthPage.tsx
+msgid "New path of a missing file"
+msgstr "New path of a missing file"
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "New profile"
@@ -10641,6 +10793,10 @@ msgstr "no chapter or volume number in the name"
 #: src/pages/HealthPage.tsx
 msgid "No chapter reads from it"
 msgstr "No chapter reads from it"
+
+#: src/pages/HealthPage.tsx
+msgid "No chapter reads from this file, so there is nothing to download in its place."
+msgstr "No chapter reads from this file, so there is nothing to download in its place."
 
 #: src/api/libraryImport.ts
 msgid "no chapter with this number in the series"
@@ -10970,6 +11126,10 @@ msgstr "No series match that search."
 msgid "No series match the current filter. Try clearing the search or status filter."
 msgstr "No series match the current filter. Try clearing the search or status filter."
 
+#: src/pages/HealthPage.tsx
+msgid "No series owns the folder these sit in. Bring the folder in from the Import page."
+msgstr "No series owns the folder these sit in. Bring the folder in from the Import page."
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "No shows match."
 msgstr "No shows match."
@@ -10990,6 +11150,10 @@ msgstr "No source has listed this series' chapters yet, so there is no total to 
 #: src/api/queue.ts
 msgid "No source has this chapter right now"
 msgstr "No source has this chapter right now"
+
+#: src/pages/HealthPage.tsx
+msgid "No source is enabled for this series, so there is nowhere to download it from."
+msgstr "No source is enabled for this series, so there is nowhere to download it from."
 
 #: src/pages/LibraryPage.tsx
 msgid "No sources linked"
@@ -11227,6 +11391,10 @@ msgstr "Not found"
 msgid "Not imported"
 msgstr "Not imported"
 
+#: src/pages/HealthPage.tsx
+msgid "Not in a series folder"
+msgstr "Not in a series folder"
+
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Not in Continuous layout."
 msgstr "Not in Continuous layout."
@@ -11429,6 +11597,10 @@ msgstr "Nothing here"
 #: src/components/SetupWizard.tsx
 msgid "Nothing here is final. Every option is also in Settings."
 msgstr "Nothing here is final. Every option is also in Settings."
+
+#: src/pages/HealthPage.tsx
+msgid "Nothing holds these chapters yet, so importing just links them. Nothing to compare."
+msgstr "Nothing holds these chapters yet, so importing just links them. Nothing to compare."
 
 #: src/api/upgrades.ts
 msgid "Nothing in it beats what you have"
@@ -11936,6 +12108,14 @@ msgstr "Only series I'm reading"
 #: src/pages/discover/TasteTab.tsx
 msgid "Only the built-in reader records it."
 msgstr "Only the built-in reader records it."
+
+#: src/pages/HealthPage.tsx
+msgid "Only the file name matches"
+msgstr "Only the file name matches"
+
+#: src/pages/HealthPage.tsx
+msgid "Only the name matches, so open the file and check it is the same chapter first. Relinking points {span} at {targetPath}."
+msgstr "Only the name matches, so open the file and check it is the same chapter first. Relinking points {span} at {targetPath}."
 
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Only this account can import from Kavita or push reads back."
@@ -12552,6 +12732,10 @@ msgstr "Pick the folders Maki reads from and downloads into, and how it treats t
 msgid "Pick the one that looks best and Maki downloads it again from there."
 msgstr "Pick the one that looks best and Maki downloads it again from there."
 
+#: src/pages/HealthPage.tsx
+msgid "Pick the source a replacement comes from, or delete the file through a review."
+msgstr "Pick the source a replacement comes from, or delete the file through a review."
+
 #: src/components/discover/discoverSectionDefs.ts
 msgid "Picks based on the series you read most recently."
 msgstr "Picks based on the series you read most recently."
@@ -12646,6 +12830,10 @@ msgstr "Position"
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Positive"
 msgstr "Positive"
+
+#: src/pages/HealthPage.tsx
+msgid "Possible match"
+msgstr "Possible match"
 
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
@@ -13150,6 +13338,10 @@ msgstr "Read backup"
 msgid "Read ch. {resumeAt}"
 msgstr "Read ch. {resumeAt}"
 
+#: src/pages/HealthPage.tsx
+msgid "Read every page: nothing is wrong with this file after all."
+msgstr "Read every page: nothing is wrong with this file after all."
+
 #: src/components/series/ChapterTableRows.tsx
 msgid "Read file cleanup deleted the file on {removedOn} after everyone read it. Turn Wanted back on to download it again."
 msgstr "Read file cleanup deleted the file on {removedOn} after everyone read it. Turn Wanted back on to download it again."
@@ -13350,6 +13542,10 @@ msgstr "Reads every byte to catch rotted files. About half an hour per 100 GB."
 msgid "Ready"
 msgstr "Ready"
 
+#: src/pages/HealthPage.tsx
+msgid "Ready to import"
+msgstr "Ready to import"
+
 #: src/pages/reader/enhanceMethods.ts
 msgid "Real-ESRGAN; flattens screentone"
 msgstr "Real-ESRGAN; flattens screentone"
@@ -13454,6 +13650,10 @@ msgstr "Recommendations on"
 #: src/pages/DiscoverPage.tsx
 msgid "Recommended"
 msgstr "Recommended"
+
+#: src/pages/HealthPage.tsx
+msgid "Record"
+msgstr "Record"
 
 #: src/pages/LoginPage.tsx
 msgid "Recovery code"
@@ -13628,6 +13828,10 @@ msgstr "Releases too irregularly to estimate."
 msgid "Releasing"
 msgstr "Releasing"
 
+#: src/pages/HealthPage.tsx
+msgid "Relink"
+msgstr "Relink"
+
 #: src/components/RelinkFilesModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -13637,6 +13841,18 @@ msgstr "Relink files"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand."
 msgstr "Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand."
+
+#: src/pages/HealthPage.tsx
+msgid "Relink the first {shown}"
+msgstr "Relink the first {shown}"
+
+#: src/pages/HealthPage.tsx
+msgid "Relink to this file"
+msgstr "Relink to this file"
+
+#: src/pages/HealthPage.tsx
+msgid "Relinked. {span} read from {targetPath} again."
+msgstr "Relinked. {span} read from {targetPath} again."
 
 #: src/components/home/OfflineHome.tsx
 #: src/components/RouteErrorBoundary.tsx
@@ -13971,10 +14187,6 @@ msgstr "Repairs"
 msgid "Replace"
 msgstr "Replace"
 
-#: src/pages/HealthPage.tsx
-msgid "Replace this archive from a source, or delete it through a review. Only needed when the copies themselves are damaged."
-msgstr "Replace this archive from a source, or delete it through a review. Only needed when the copies themselves are damaged."
-
 #: src/components/ImportReviewModal.tsx
 msgid "Replace what it covers"
 msgstr "Replace what it covers"
@@ -14052,6 +14264,10 @@ msgstr "Requested {requested}"
 #: src/pages/HealthPage.tsx
 msgid "Requested {requested}, finished {finishedAt}"
 msgstr "Requested {requested}, finished {finishedAt}"
+
+#: src/pages/HealthPage.tsx
+msgid "Requested {requested}. {verifying} only indexed so far are being read in full first; request those again once that finishes."
+msgstr "Requested {requested}. {verifying} only indexed so far are being read in full first; request those again once that finishes."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Requested {title}"
@@ -14627,9 +14843,21 @@ msgstr "Safe to rerun, it never unmarks anything."
 msgid "same author"
 msgstr "same author"
 
+#: src/pages/HealthPage.tsx
+msgid "Same bytes as before"
+msgstr "Same bytes as before"
+
 #: src/api/upgrades.ts
 msgid "Same copy as the file on disk"
 msgstr "Same copy as the file on disk"
+
+#: src/pages/HealthPage.tsx
+msgid "Same page count and nearly the same size"
+msgstr "Same page count and nearly the same size"
+
+#: src/pages/HealthPage.tsx
+msgid "Same pages; only the metadata changed"
+msgstr "Same pages; only the metadata changed"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Sample a few pages from three chapters on every enabled source and update each source's quality."
@@ -15696,6 +15924,10 @@ msgstr "Shoujo"
 msgid "Shounen"
 msgstr "Shounen"
 
+#: src/pages/HealthPage.tsx
+msgid "Show"
+msgstr "Show"
+
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "Show a popup when a notification arrives"
 msgstr "Show a popup when a notification arrives"
@@ -15705,8 +15937,13 @@ msgid "Show again"
 msgstr "Show again"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/HealthPage.tsx
 msgid "Show all"
 msgstr "Show all"
+
+#: src/pages/HealthPage.tsx
+msgid "Show all unlinked files"
+msgstr "Show all unlinked files"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Show covers from the library"
@@ -15744,6 +15981,10 @@ msgstr "Show newest {max} of {count}"
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Show on"
 msgstr "Show on"
+
+#: src/pages/HealthPage.tsx
+msgid "Show only: {label}"
+msgstr "Show only: {label}"
 
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Show or hide this list"
@@ -16885,6 +17126,10 @@ msgstr "The file is missing from the bin folder."
 msgid "The file is named for its chapter."
 msgstr "The file is named for its chapter."
 
+#: src/pages/HealthPage.tsx
+msgid "The file is there but could not be read. Check that the account Maki runs as can read it, and that the drive or share it is on is mounted, then rescan."
+msgstr "The file is there but could not be read. Check that the account Maki runs as can read it, and that the drive or share it is on is mounted, then rescan."
+
 #: src/api/inbox.ts
 msgid "The file is waiting in the trash folder."
 msgstr "The file is waiting in the trash folder."
@@ -16892,6 +17137,10 @@ msgstr "The file is waiting in the trash folder."
 #: src/pages/HealthPage.tsx
 msgid "The file name carries no chapter or volume number, so nothing can be matched to it. Rename it to the library's naming format and rescan, or link it by hand from the series' Files tab."
 msgstr "The file name carries no chapter or volume number, so nothing can be matched to it. Rename it to the library's naming format and rescan, or link it by hand from the series' Files tab."
+
+#: src/pages/HealthPage.tsx
+msgid "The file name has no chapter or volume number. Rename it to the library's format and rescan."
+msgstr "The file name has no chapter or volume number. Rename it to the library's format and rescan."
 
 #: src/api/queue.ts
 msgid "The file this upgrade was meant to replace is gone"
@@ -17093,6 +17342,10 @@ msgstr "The selected series will be removed from Maki and stop being monitored."
 #: src/components/NotificationsSection.tsx
 msgid "The send failed"
 msgstr "The send failed"
+
+#: src/pages/HealthPage.tsx
+msgid "The series has no chapter with this number. Refresh the series, then import."
+msgstr "The series has no chapter with this number. Refresh the series, then import."
 
 #: src/components/series/RemoveArchivedFilesDialog.tsx
 msgctxt "series"
@@ -17359,6 +17612,10 @@ msgstr "This device could not subscribe to push notifications."
 #: src/pages/HealthPage.tsx
 msgid "This file"
 msgstr "This file"
+
+#: src/pages/HealthPage.tsx
+msgid "This file has only been indexed. It is read in full first, and a new copy is only downloaded if that read confirms the damage."
+msgstr "This file has only been indexed. It is read in full first, and a new copy is only downloaded if that read confirms the damage."
 
 #: src/pages/HealthPage.tsx
 msgid "This file is already gone from disk, so nothing is deleted. It drops the record that still links these chapters to it, so they stop reading as downloaded."
@@ -18262,10 +18519,18 @@ msgstr "Update available"
 msgid "Update available: {latestVersion}"
 msgstr "Update available: {latestVersion}"
 
+#: src/pages/HealthPage.tsx
+msgid "Update the record"
+msgstr "Update the record"
+
 #. placeholder {0}: entry.version
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 msgid "Update to version {0}"
 msgstr "Update to version {0}"
+
+#: src/pages/HealthPage.tsx
+msgid "Updated the record"
+msgstr "Updated the record"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Updated. This title can appear in recommendations again."

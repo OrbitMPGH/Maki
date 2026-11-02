@@ -4,6 +4,7 @@ using Maki.Api.Hubs;
 using Maki.Api.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Images;
+using Maki.Core.Paths;
 using Maki.Core.Reading;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -151,6 +152,137 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             throw;
         }
         return op;
+    }
+
+    /// <summary>
+    /// Points a missing file's record at the copy <see cref="HealthMovedFiles"/> found for it. Nothing
+    /// on disk changes: the record moves, so the chapters keep their file id, reads and quality.
+    /// </summary>
+    /// <param name="allowWeak">Accept a match on the name alone. Only a reviewer looking at the one
+    /// file sets it; a bulk relink never does.</param>
+    public async Task RelinkMovedAsync(int missingId, string missingVersion, int targetId, string targetVersion,
+        bool allowWeak, int userId, CancellationToken ct)
+    {
+        await MutationGate.WaitAsync(ct);
+        try
+        {
+            var missing = await db.HealthFiles.FindAsync([missingId], ct) ?? throw new HealthRefusedException("error.health.fileGone");
+            if (missing.Removed || missing.Version != missingVersion || missing.Size >= 0 || missing.ChapterFileId == null)
+                throw new HealthRefusedException("error.health.reviewStale");
+            var root = await db.RootFolders.FindAsync([missing.RootFolderId], ct) ?? throw new HealthRefusedException("error.health.rootGone");
+            if (!Directory.Exists(root.Path)) throw new HealthRefusedException("error.health.rootUnavailable");
+            if (File.Exists(HealthPaths.Resolve(root.Path, missing.RelativePath))) throw new HealthRefusedException("error.health.fileChanged");
+            var found = (await HealthMovedFiles.FindAsync(db, [missingId], ct)).GetValueOrDefault(missingId);
+            if (found == null || found.TargetId != targetId || found.TargetVersion != targetVersion)
+                throw new HealthRefusedException("error.health.movedTargetChanged");
+            if (!allowWeak && !HealthMovedFiles.Strong(found.Evidence)) throw new HealthRefusedException("error.health.relinkWeakMatch");
+            var target = await db.HealthFiles.FindAsync([targetId], ct) ?? throw new HealthRefusedException("error.health.movedTargetChanged");
+            var info = new FileInfo(HealthPaths.Resolve(root.Path, target.RelativePath));
+            if (!info.Exists || info.Length != target.Size || info.LastWriteTimeUtc != target.ModifiedAt)
+                throw new HealthRefusedException("error.health.movedTargetChanged");
+            var record = await db.ChapterFiles.FindAsync([missing.ChapterFileId], ct) ?? throw new HealthRefusedException("error.health.reviewStale");
+            if (await db.HealthOperations.AnyAsync(o => (o.FileId == missingId || o.FileId == targetId) && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
+                throw new HealthRefusedException("error.health.operationActive");
+            if (await db.DownloadQueue.AnyAsync(q => q.SeriesId == record.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Failed, ct))
+                throw new HealthRefusedException("error.health.downloadsActive");
+
+            using var seriesLock = await SeriesLocks.SeriesAsync(record.SeriesId, ct);
+            var oldPath = record.RelativePath;
+            // Other bytes under the same row: whatever was measured or converted was about the old file.
+            if (found.Evidence != HealthMovedFiles.Identical || record.Size != target.Size)
+            {
+                record.MeasuredAtUtc = null;
+                record.ResetConversion();
+            }
+            record.RelativePath = target.RelativePath;
+            record.Size = target.Size;
+            Invalidate(record.Id);
+            target.ChapterFileId = record.Id;
+            target.SeriesId = record.SeriesId;
+            target.Status = "pending";
+            missing.Removed = true;
+            foreach (var finding in await db.HealthFindings.Where(f => (f.FileId == missingId || (f.FileId == targetId && f.Kind == "unlinked")) && f.State != "resolved").ToListAsync(ct))
+                finding.State = "resolved";
+            db.HealthHistory.Add(new()
+            {
+                Kind = "relink", FileId = targetId, UserId = userId,
+                MessageKey = "health.history.relinkedMoved",
+                ParamsJson = JsonSerializer.Serialize(new { path = oldPath, target = target.RelativePath }),
+            });
+            db.HealthScans.Add(new() { FileIdsJson = JsonSerializer.Serialize(new[] { targetId }), Force = true });
+            await db.SaveChangesAsync(ct);
+            await FollowFolderAsync(record, oldPath, root, userId, ct);
+            HealthWorker.Wake();
+        }
+        finally { MutationGate.Release(); }
+    }
+
+    /// <summary>
+    /// Once the last record has left a series folder that no longer exists, the series moves with
+    /// it, so new downloads land beside the files instead of recreating the old folder.
+    /// </summary>
+    private async Task FollowFolderAsync(ChapterFile moved, string oldPath, RootFolder root, int userId, CancellationToken ct)
+    {
+        var series = await db.Series.FindAsync([moved.SeriesId], ct);
+        var from = LibraryPaths.TopFolder(oldPath);
+        var to = LibraryPaths.TopFolder(moved.RelativePath);
+        if (series == null || from == null || to == null || LibraryPaths.FolderComparer.Equals(from, to)) return;
+        if (!LibraryPaths.FolderComparer.Equals(series.FolderName, from) || Directory.Exists(HealthPaths.Resolve(root.Path, from))) return;
+        var others = await db.ChapterFiles.Where(f => f.SeriesId == series.Id && f.Id != moved.Id).Select(f => f.RelativePath).ToListAsync(ct);
+        if (others.Any(p => LibraryPaths.FolderComparer.Equals(LibraryPaths.TopFolder(p), from))) return;
+        using var names = await SeriesLocks.FolderNamesAsync(ct);
+        var taken = await db.Series.Where(s => s.Id != series.Id && s.RootFolderId == root.Id).Select(s => s.FolderName).ToListAsync(ct);
+        if (taken.Any(n => LibraryPaths.FolderComparer.Equals(n, to))) return;
+        series.FolderName = to;
+        db.HealthHistory.Add(new()
+        {
+            Kind = "relink", UserId = userId,
+            MessageKey = "health.history.seriesFolderFollowed",
+            ParamsJson = JsonSerializer.Serialize(new { from, to }),
+        });
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// Brings a record's size back in line with the file on disk, for a file changed outside Maki.
+    /// The same reset a rescan does when it sees new bytes under a known name; a rescan only
+    /// does it for names it has not seen.
+    /// </summary>
+    public async Task<int> RefreshRecordsAsync(IReadOnlyCollection<int> fileIds, int userId, CancellationToken ct)
+    {
+        await MutationGate.WaitAsync(ct);
+        try
+        {
+            var files = await db.HealthFiles.Where(f => fileIds.Contains(f.Id) && !f.Removed && f.ChapterFileId != null && f.Size >= 0).ToListAsync(ct);
+            var roots = await db.RootFolders.ToDictionaryAsync(r => r.Id, ct);
+            var updated = new List<int>();
+            foreach (var file in files)
+            {
+                if (!roots.TryGetValue(file.RootFolderId, out var root) || !Directory.Exists(root.Path)) continue;
+                var info = new FileInfo(HealthPaths.Resolve(root.Path, file.RelativePath));
+                var record = await db.ChapterFiles.FindAsync([file.ChapterFileId], ct);
+                if (!info.Exists || record == null || record.Size == info.Length) continue;
+                record.Size = info.Length;
+                record.MeasuredAtUtc = null;
+                record.ResetConversion();
+                Invalidate(record.Id);
+                updated.Add(file.Id);
+            }
+            if (updated.Count > 0)
+            {
+                db.HealthScans.Add(new() { FileIdsJson = JsonSerializer.Serialize(updated), Force = true });
+                db.HealthHistory.Add(new()
+                {
+                    Kind = "record", UserId = userId,
+                    MessageKey = "health.history.recordsRefreshed",
+                    ParamsJson = JsonSerializer.Serialize(new { count = updated.Count }),
+                });
+                await db.SaveChangesAsync(ct);
+                HealthWorker.Wake();
+            }
+            return updated.Count;
+        }
+        finally { MutationGate.Release(); }
     }
 
     /// <summary>A failed operation that could run again: its file is still the version it failed on.</summary>

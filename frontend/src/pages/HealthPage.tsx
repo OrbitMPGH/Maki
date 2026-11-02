@@ -36,6 +36,7 @@ import {
   IconDownload,
   IconEye,
   IconFileImport,
+  IconLink,
   IconPlugConnected,
   IconPhotoScan,
   IconRefresh,
@@ -46,7 +47,7 @@ import {
   IconTrash,
   type Icon,
 } from '@tabler/icons-react'
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useImageCache, useRebuildImageCache } from '../api/hooks'
@@ -64,10 +65,14 @@ import {
   type HealthOperation,
   type HealthOverview,
   type MatchCounterpart,
+  type MissingSummary,
+  type MoveEvidence,
   type OperationDetail,
   type OperationGroup as OperationGroupData,
   type SourceFailures,
+  type UnlinkedCase,
   type UnlinkedMatch,
+  type UnlinkedSummary,
 } from '../api/health'
 import { MetaList } from '../components/ui/MetaList'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -188,6 +193,29 @@ const COPY_ROLE: Record<'keep' | 'spare' | 'missing', MessageDescriptor> = {
 
 const copyRole = (c: { kept: boolean; missing: boolean }) => (c.kept ? 'keep' : c.missing ? 'missing' : 'spare')
 
+/** HealthMatchService.Cases, in the order the Unlinked summary lists them: one-click first. */
+const CASE_ORDER: UnlinkedCase[] = ['import', 'rival', 'noChapter', 'outside', 'unrecognized', 'identical', 'moved']
+
+const CASE_LABEL: Record<UnlinkedCase, MessageDescriptor> = {
+  import: msg`Ready to import`,
+  rival: msg`Chapter already has a file`,
+  noChapter: msg`Chapter not in the series yet`,
+  outside: msg`Not in a series folder`,
+  unrecognized: msg`Name not recognised`,
+  identical: msg`Identical to another file`,
+  moved: msg`New path of a missing file`,
+}
+
+const CASE_HINT: Record<UnlinkedCase, MessageDescriptor> = {
+  import: msg`Nothing holds these chapters yet, so importing just links them. Nothing to compare.`,
+  rival: msg`Another file already backs the chapter. Open each one to compare the two before keeping either.`,
+  noChapter: msg`The series has no chapter with this number. Refresh the series, then import.`,
+  outside: msg`No series owns the folder these sit in. Bring the folder in from the Import page.`,
+  unrecognized: msg`The file name has no chapter or volume number. Rename it to the library's format and rescan.`,
+  identical: msg`Byte for byte the same as another file. The Duplicate filter deletes the spare copy.`,
+  moved: msg`A missing file's record most likely belongs to this file. The Missing filter relinks it.`,
+}
+
 /** "Ch. 77–85" from whatever chapters a file backs, or null when none carries a number. */
 function chapterSpan(chapters: { number?: number }[]) {
   const numbers = chapters.map((c) => c.number).filter((n): n is number => n != null)
@@ -202,6 +230,9 @@ const HISTORY_KIND_LABEL: Record<string, MessageDescriptor> = {
   job: msg`Job`,
   transition: msg`Status change`,
   review: msg`Review`,
+  import: msg`Import`,
+  relink: msg`Relink`,
+  record: msg`Record`,
 }
 
 const HISTORY_KIND_ICON: Record<string, Icon> = {
@@ -211,6 +242,9 @@ const HISTORY_KIND_ICON: Record<string, Icon> = {
   job: IconClockPlay,
   transition: IconStethoscope,
   review: IconEye,
+  import: IconFileImport,
+  relink: IconLink,
+  record: IconRefresh,
 }
 
 /** Keyed by tone, so every status that reads as fixed, a warning or broken shares a shape. */
@@ -266,7 +300,10 @@ export default function HealthPage() {
   const [selected, setSelected] = useState<Map<number, Picked>>(new Map())
   // What the bulk delete dialog will remove. `spares` words it for identical copies, where nothing is lost.
   const [deleteTargets, setDeleteTargets] = useState<{ files: FileRef[]; spares: boolean } | null>(null)
-  const [deleteReport, setDeleteReport] = useState<DeleteReport | null>(null)
+  // What a bulk action could not do, kept on screen until dismissed.
+  const [report, setReport] = useState<{ summary: string; failures: DeleteReport['failures'] } | null>(null)
+  // Under the Unlinked filter, one case of it.
+  const [fileCase, setFileCase] = useState<UnlinkedCase | null>(null)
   const [historyPage, setHistoryPage] = useState(1)
   const [repairPage, setRepairPage] = useState(1)
 
@@ -275,6 +312,7 @@ export default function HealthPage() {
   if (root) query.set('rootId', root)
   if (kind) query.set('kind', kind)
   if (state) query.set('state', state)
+  if (kind === 'unlinked' && fileCase) query.set('case', fileCase)
 
   // The server answers the Duplicate filter with one row per set of identical copies.
   const grouped = kind === 'duplicate'
@@ -309,6 +347,23 @@ export default function HealthPage() {
   }
   const bulk = (path: string, body: object) =>
     action.mutate({ path, body }, { onSuccess: () => setSelected(new Map()) })
+  // A bulk action that reports what it could not do: a toast when everything went, the list otherwise.
+  const bulkWithReport = (path: string, body: object, summarize: (result: BulkResult) => string) =>
+    action.mutate(
+      { path, body },
+      {
+        onSuccess: (raw) => {
+          const result = raw as unknown as BulkResult
+          setSelected(new Map())
+          const summary = summarize(result)
+          if (result.failures?.length) setReport({ summary, failures: result.failures })
+          else {
+            setReport(null)
+            notifications.show({ color: 'var(--ok)', message: summary })
+          }
+        },
+      },
+    )
   // The bulk buttons share one mutation; only the one that started it shows pending.
   const bulkKey = (v: typeof action.variables) => {
     if (!v) return null
@@ -325,8 +380,16 @@ export default function HealthPage() {
   // A grouped row stands for every copy in it, so selecting it selects them all.
   const rowEntries = (file: HealthFile): [number, Picked][] =>
     grouped && file.copies
-      ? file.copies.map((c) => [c.id, { version: c.version, relativePath: c.relativePath, spare: c.spare }])
-      : [[file.id, { version: file.version, relativePath: file.relativePath, spare: false }]]
+      ? file.copies.map((c) => [
+          c.id,
+          { version: c.version, relativePath: c.relativePath, spare: c.spare, kinds: c.findings.map((f) => f.kind) },
+        ])
+      : [
+          [
+            file.id,
+            { version: file.version, relativePath: file.relativePath, spare: false, kinds: file.findings.map((f) => f.kind) },
+          ],
+        ]
   const toggle = (entries: [number, Picked][], on: boolean) => {
     const next = new Map(selected)
     for (const [id, pick] of entries) {
@@ -345,6 +408,15 @@ export default function HealthPage() {
   const sparesTotal = spares?.total ?? 0
   const sparesShown = spares?.items.length ?? 0
   const deletableCount = deletable.length
+  const pickedWith = (kinds: string[]) =>
+    [...selected].filter(([, pick]) => pick.kinds.some((k) => kinds.includes(k)))
+  // Replacements are capped at 100 by the server, like deletion.
+  const damaged = pickedWith(DAMAGE).slice(0, 100)
+  const damagedCount = damaged.length
+  const resized = pickedWith(['sizeMismatch'])
+  const resizedCount = resized.length
+  const moves = kind === 'missing' ? files.data?.moves : undefined
+  const cases = kind === 'unlinked' ? files.data?.cases : undefined
   const queryError = overview.error ?? files.error ?? operations.error ?? history.error
   const error = queryError ?? action.error ?? quick.error ?? refresh.error
   // Acknowledged checks are still issues, but they are issues someone has already decided about,
@@ -355,8 +427,6 @@ export default function HealthPage() {
   const issuesTone = openChecks.some((c) => c.status !== 'warning') ? 'danger' : issues > 0 ? 'warn' : undefined
   const partialScanError = overview.data?.scans.find((s) => s.error)?.error
   const selectedCount = selected.size
-  const deletedCount = deleteReport?.deleted ?? 0
-  const failedCount = deleteReport?.failures.length ?? 0
 
   return (
     <SurfaceFrame pageStyle="operational" className="health-surface">
@@ -522,7 +592,12 @@ export default function HealthPage() {
                 placeholder={t`All findings`}
                 clearable
                 value={kind}
-                onChange={(v) => refilter(() => setKind(v))}
+                onChange={(v) =>
+                  refilter(() => {
+                    setKind(v)
+                    setFileCase(null)
+                  })
+                }
                 data={Object.entries(FINDING_LABEL)
                   .filter(([value]) => value !== 'ambiguousNames')
                   .map(([value, label]) => ({ value, label: renderLabel(label) }))}
@@ -584,6 +659,44 @@ export default function HealthPage() {
                       )}
                     </Button>
                   ))}
+                  {damagedCount > 0 && (
+                    <Button
+                      size="xs"
+                      variant="default"
+                      leftSection={<IconDownload size={14} />}
+                      {...bulkPending('/repairs/bulk')}
+                      onClick={() =>
+                        bulkWithReport(
+                          '/repairs/bulk',
+                          { files: damaged.map(([fileId, { version }]) => ({ fileId, version })) },
+                          (r) => {
+                            const requested = r.requested ?? 0
+                            const verifying = r.verifying ?? 0
+                            return verifying > 0
+                              ? t`Requested ${requested}. ${verifying} only indexed so far are being read in full first; request those again once that finishes.`
+                              : plural(requested, { one: 'Requested # replacement', other: 'Requested # replacements' })
+                          },
+                        )
+                      }
+                    >
+                      <Plural value={damagedCount} one="Get a new copy" other="Get # new copies" />
+                    </Button>
+                  )}
+                  {resizedCount > 0 && (
+                    <Button
+                      size="xs"
+                      variant="default"
+                      leftSection={<IconRefresh size={14} />}
+                      {...bulkPending('/records/refresh')}
+                      onClick={() =>
+                        bulkWithReport('/records/refresh', { fileIds: resized.map(([id]) => id) }, ({ updated = 0 }) =>
+                          plural(updated, { one: 'Updated # record', other: 'Updated # records' }),
+                        )
+                      }
+                    >
+                      <Plural value={resizedCount} one="Update the record" other="Update # records" />
+                    </Button>
+                  )}
                   <Button
                     size="xs"
                     color="var(--danger)"
@@ -630,19 +743,60 @@ export default function HealthPage() {
               </Panel>
             )}
 
-            {deleteReport && failedCount > 0 && (
+            {selectedCount === 0 && moves && (
+              <MissingBar
+                moves={moves}
+                action={action}
+                onRelinkAll={() =>
+                  bulkWithReport(
+                    '/moves/bulk',
+                    {
+                      items: moves.items.map((m) => ({
+                        fileId: m.fileId,
+                        version: m.version,
+                        targetId: m.targetId,
+                        targetVersion: m.targetVersion,
+                      })),
+                    },
+                    ({ relinked = 0 }) => plural(relinked, { one: 'Relinked # file', other: 'Relinked # files' }),
+                  )
+                }
+                onFetch={(items) =>
+                  bulkWithReport(
+                    '/repairs/bulk',
+                    { files: items.map(({ id: fileId, version }) => ({ fileId, version })) },
+                    ({ requested = 0 }) => plural(requested, { one: 'Requested # replacement', other: 'Requested # replacements' }),
+                  )
+                }
+                onClear={(items) => setDeleteTargets({ files: items, spares: false })}
+              />
+            )}
+
+            {cases && (
+              <CasesBar
+                cases={cases}
+                active={fileCase}
+                select={(next) => refilter(() => setFileCase(next))}
+                pending={action.isPending && action.variables?.path === '/imports'}
+                onImportAll={() =>
+                  bulkWithReport('/imports', { fileIds: cases.importable.items.map((f) => f.id) }, ({ linked = 0 }) =>
+                    plural(linked, { one: 'Imported # archive', other: 'Imported # archives' }),
+                  )
+                }
+              />
+            )}
+
+            {report && (
               <Alert
                 color="var(--danger)"
                 withCloseButton
                 closeButtonLabel={t`Dismiss`}
-                onClose={() => setDeleteReport(null)}
+                onClose={() => setReport(null)}
               >
                 <Text size="sm" mb="xs">
-                  <Trans>
-                    {deletedCount} deleted, {failedCount} refused:
-                  </Trans>
+                  {report.summary}
                 </Text>
-                {deleteReport.failures.map((failure) => (
+                {report.failures.map((failure) => (
                   <Text key={failure.id} size="xs" style={{ overflowWrap: 'anywhere' }}>
                     {failure.relativePath}: {failure.message}
                   </Text>
@@ -691,6 +845,9 @@ export default function HealthPage() {
                           const entries = rowEntries(file)
                           const rowSelected = entries.every(([id]) => selected.has(id))
                           const others = grouped ? (file.copies ?? []).filter((c) => c.id !== file.id) : []
+                          const foundAt = moves?.rows[String(file.id)]
+                          // Only worth a label while the list mixes cases.
+                          const fileCaseOf = !fileCase ? file.detail?.case : undefined
                           return (
                           <Table.Tr key={file.id} data-selected={rowSelected || undefined}>
                             <Table.Td>
@@ -738,6 +895,19 @@ export default function HealthPage() {
                               ) : (
                                 <Text size="xs" c="var(--ink-3)">
                                   {file.analyzedAt ? formatDateTime(file.analyzedAt) : <Trans>Not analyzed</Trans>}
+                                </Text>
+                              )}
+                              {foundAt && (
+                                <Text size="xs" c="var(--ink-3)" className="health-row-note">
+                                  <span className="health-copy-role" data-role={foundAt.evidence === 'nameOnly' ? 'spare' : 'keep'}>
+                                    {foundAt.evidence === 'nameOnly' ? <Trans>Possible match</Trans> : <Trans>Found</Trans>}
+                                  </span>
+                                  <span className="health-row-path">{foundAt.targetPath}</span>
+                                </Text>
+                              )}
+                              {fileCaseOf && (
+                                <Text size="xs" c="var(--ink-3)" className="health-row-note">
+                                  <span className="health-copy-role">{renderLabel(CASE_LABEL[fileCaseOf])}</span>
                                 </Text>
                               )}
                             </Table.Td>
@@ -852,12 +1022,14 @@ export default function HealthPage() {
             },
             {
               onSuccess: (result) => {
-                const report = result as unknown as DeleteReport
-                const { deleted } = report
+                const outcome = result as unknown as DeleteReport
+                const { deleted } = outcome
+                const deletedCount = deleted
+                const failedCount = outcome.failures.length
                 setSelected(new Map())
                 setDeleteTargets(null)
-                setDeleteReport(report)
-                if (report.deleted > 0 && report.failures.length === 0)
+                if (failedCount > 0) setReport({ summary: t`${deletedCount} deleted, ${failedCount} refused:`, failures: outcome.failures })
+                else if (deleted > 0)
                   notifications.show({
                     color: 'var(--ok)',
                     message: plural(deleted, { one: 'Deleted # archive', other: 'Deleted # archives' }),
@@ -868,6 +1040,180 @@ export default function HealthPage() {
         }
       />
     </SurfaceFrame>
+  )
+}
+
+/**
+ * The Missing filter's two answers above the table: files found again at a new path, relinked in
+ * one go, and files gone for good, grouped by folder because a deleted or renamed series folder
+ * takes every file in it along.
+ */
+function MissingBar({
+  moves,
+  action,
+  onRelinkAll,
+  onFetch,
+  onClear,
+}: {
+  moves: MissingSummary
+  action: ReturnType<typeof useHealthAction>
+  onRelinkAll: () => void
+  onFetch: (items: FileRef[]) => void
+  onClear: (items: FileRef[]) => void
+}) {
+  const { total, weak, items, gone } = moves
+  const shown = items.length
+  if (total === 0 && weak === 0 && gone.length === 0) return null
+  return (
+    <Panel p="sm" className="health-summary">
+      {total > 0 && (
+        <div className="health-summary-row">
+          <div>
+            <Text size="sm" fw={600}>
+              <Plural value={total} one="# file found at a new path" other="# files found at a new path" />
+            </Text>
+            <Text size="xs" c="var(--ink-3)">
+              <Trans>
+                Most likely a folder renamed or reorganised outside Maki. Relinking points the records at the files
+                where they are now; nothing on disk moves.
+              </Trans>
+            </Text>
+          </div>
+          <Button
+            size="xs"
+            leftSection={<IconLink size={14} />}
+            loading={action.isPending && action.variables?.path === '/moves/bulk'}
+            disabled={action.isPending && action.variables?.path !== '/moves/bulk'}
+            onClick={onRelinkAll}
+          >
+            {shown < total ? <Trans>Relink the first {shown}</Trans> : <Plural value={shown} one="Relink it" other="Relink all #" />}
+          </Button>
+        </div>
+      )}
+      {weak > 0 && (
+        <Text size="xs" c="var(--ink-3)" className="health-summary-row">
+          <Plural
+            value={weak}
+            one="# more matches a file by name only. Open it to compare before relinking."
+            other="# more match a file by name only. Open each to compare before relinking."
+          />
+        </Text>
+      )}
+      {gone.map((group) => {
+        const { folder, count } = group
+        return (
+          <div key={folder} className="health-summary-row">
+            <div className="health-summary-label">
+              <MonoValue value={folder || '/'} fz="var(--type-meta)" />
+              <Text size="xs" c="var(--ink-3)">
+                <Plural value={count} one="# file gone, nowhere else in the library" other="# files gone, nowhere else in the library" />
+              </Text>
+            </div>
+            <Group gap="xs" wrap="nowrap">
+              <Button
+                size="xs"
+                variant="default"
+                leftSection={<IconDownload size={14} />}
+                disabled={action.isPending}
+                onClick={() => onFetch(group.items)}
+              >
+                <Trans>Download again</Trans>
+              </Button>
+              <Button size="xs" color="var(--danger)" variant="subtle" onClick={() => onClear(group.items)}>
+                <Trans>Clear records</Trans>
+              </Button>
+            </Group>
+          </div>
+        )
+      })}
+    </Panel>
+  )
+}
+
+/**
+ * The Unlinked filter sorted by what each file needs. The ones that only need importing go in one
+ * click; every other case filters the table down to itself and says what to do about it.
+ */
+function CasesBar({
+  cases,
+  active,
+  select,
+  pending,
+  onImportAll,
+}: {
+  cases: UnlinkedSummary
+  active: UnlinkedCase | null
+  select: (next: UnlinkedCase | null) => void
+  pending: boolean
+  onImportAll: () => void
+}) {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
+  const count = (c: UnlinkedCase) => cases.counts.find((x) => x.case === c)?.count ?? 0
+  const present = CASE_ORDER.filter((c) => count(c) > 0)
+  if (present.length === 0) return null
+  const importShown = cases.importable.items.length
+  const importTotal = cases.importable.total
+
+  return (
+    <Panel p="sm" className="health-summary">
+      {present.map((c) => {
+        const n = count(c)
+        const label = renderLabel(CASE_LABEL[c])
+        return (
+          <div key={c} className="health-summary-row" data-active={active === c || undefined}>
+            <div>
+              <Text size="sm" fw={600}>
+                <span className="tnum">{formatNumber(n)}</span> {label}
+              </Text>
+              <Text size="xs" c="var(--ink-3)">
+                {renderLabel(CASE_HINT[c])}
+              </Text>
+              {c === 'outside' && (
+                <ul className="health-copy-list">
+                  {cases.outside.map((o) => {
+                    const { folder, count: inFolder } = o
+                    return (
+                      <li key={folder}>
+                        <MonoValue value={folder} fz="var(--type-meta)" />
+                        <Text size="xs" c="var(--ink-4)" className="tnum">
+                          {formatNumber(inFolder)}
+                        </Text>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+            <Group gap="xs" wrap="nowrap">
+              {c === 'import' && (
+                <Button size="xs" leftSection={<IconFileImport size={14} />} loading={pending} onClick={onImportAll}>
+                  {importShown < importTotal ? (
+                    <Trans>Import the first {importShown}</Trans>
+                  ) : (
+                    <Plural value={importShown} one="Import it" other="Import all #" />
+                  )}
+                </Button>
+              )}
+              {c === 'outside' && (
+                <Button component={Link} to="/import" size="xs" variant="default">
+                  <Trans>Import page</Trans>
+                </Button>
+              )}
+              <Button
+                size="xs"
+                variant={active === c ? 'light' : 'subtle'}
+                aria-pressed={active === c}
+                aria-label={active === c ? t`Show all unlinked files` : t`Show only: ${label}`}
+                onClick={() => select(active === c ? null : c)}
+              >
+                {active === c ? <Trans>Show all</Trans> : <Trans>Show</Trans>}
+              </Button>
+            </Group>
+          </div>
+        )
+      })}
+    </Panel>
   )
 }
 
@@ -951,6 +1297,19 @@ interface Picked {
   version: string
   relativePath: string
   spare: boolean
+  /** Open finding kinds, so the bulk bar offers only what applies to the selection. */
+  kinds: string[]
+}
+
+/** What the bulk endpoints answer; each fills the counts it has. */
+interface BulkResult {
+  deleted?: number
+  relinked?: number
+  requested?: number
+  verifying?: number
+  updated?: number
+  linked?: number
+  failures?: DeleteReport['failures']
 }
 
 interface DeleteReport {
@@ -1413,10 +1772,11 @@ function FileReview({
   const pageCount = data?.analysis.pages.length ?? 0
   const sourceNames = data?.mappings.map((m) => m.sourceName).join(', ') || t`the series' sources`
   const duplicate = (data?.copies.length ?? 0) > 1
-  // A duplicate's own panel already answers what to do; replacing or deleting through a review is
-  // for damaged copies, so it waits behind a toggle.
+  const lead = data ? leadPanel(data) : null
+  // A lead panel already answers what to do; picking a source by hand or deleting through a review
+  // is the exception, so it waits behind a toggle.
   const [moreOpen, setMoreOpen] = useState(false)
-  const showActions = !duplicate || moreOpen
+  const showActions = !lead || moreOpen
   // When the file it would compete with is this file's own twin, the unlinked comparison only
   // repeats the duplicate panel.
   const counterparts = data?.match?.counterparts ?? []
@@ -1438,7 +1798,13 @@ function FileReview({
           <Loader />
         ) : (
           <>
-          {duplicate && <DuplicatePanel detail={data} openFile={openFile} close={close} />}
+          {lead === 'duplicate' && <DuplicatePanel detail={data} openFile={openFile} close={close} />}
+          {lead === 'missing' && (
+            <MissingPanel detail={data} openFile={openFile} openOperation={openOperation} close={close} />
+          )}
+          {lead === 'damaged' && <DamagedPanel detail={data} openOperation={openOperation} />}
+          {lead === 'size' && <SizePanel detail={data} />}
+          {lead === 'unreadable' && <UnreadablePanel detail={data} />}
           {data.match && !twinOnly && (
             <UnlinkedPanel
               file={data.file}
@@ -1554,7 +1920,7 @@ function FileReview({
             </div>
 
             <div className="health-review-column">
-              {duplicate && (
+              {lead && (
                 <Panel p="md">
                   <Button
                     variant="subtle"
@@ -1570,8 +1936,7 @@ function FileReview({
                   </Button>
                   <Text size="xs" c="var(--ink-4)" mt={4}>
                     <Trans>
-                      Replace this archive from a source, or delete it through a review. Only needed when the
-                      copies themselves are damaged.
+                      Pick the source a replacement comes from, or delete the file through a review.
                     </Trans>
                   </Text>
                 </Panel>
@@ -1676,6 +2041,416 @@ function FileReview({
         )}
       </Stack>
     </Modal>
+  )
+}
+
+/** Finding kinds a new copy fixes: the archive's own bytes are wrong. Mirrors HealthController.Damage. */
+const DAMAGE = ['corrupt', 'damagedImage', 'empty', 'noPages']
+
+type Lead = 'duplicate' | 'missing' | 'damaged' | 'size' | 'unreadable'
+
+/** Which answer the review opens with: the most pressing finding that has one. */
+function leadPanel(detail: FileDetail): Lead | null {
+  const open = new Set(detail.findings.filter((f) => f.state !== 'resolved').map((f) => f.kind))
+  if (detail.copies.length > 1) return 'duplicate'
+  if (detail.file.size < 0 && detail.file.chapterFileId) return 'missing'
+  if (DAMAGE.some((k) => open.has(k))) return 'damaged'
+  if (open.has('sizeMismatch')) return 'size'
+  if (open.has('unreadable')) return 'unreadable'
+  return null
+}
+
+const isPdf = (path: string) => path.toLowerCase().endsWith('.pdf')
+
+/** The confirmation that takes a button's place, so nothing needs a second dialog. */
+function InlineConfirm({
+  children,
+  confirmLabel,
+  danger = true,
+  pending,
+  onConfirm,
+  onCancel,
+}: {
+  children: ReactNode
+  confirmLabel: string
+  danger?: boolean
+  pending: boolean
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  return (
+    <div className="health-confirm" data-tone={danger ? undefined : 'neutral'}>
+      <Text size="sm">{children}</Text>
+      <Group gap="xs">
+        <Button
+          color={danger ? 'var(--danger-fill)' : undefined}
+          size="xs"
+          leftSection={danger ? <IconTrash size={14} /> : undefined}
+          loading={pending}
+          onClick={onConfirm}
+        >
+          {confirmLabel}
+        </Button>
+        <Button variant="default" size="xs" disabled={pending} onClick={onCancel}>
+          <Trans>Cancel</Trans>
+        </Button>
+      </Group>
+    </div>
+  )
+}
+
+const MOVE_EVIDENCE: Record<MoveEvidence, MessageDescriptor> = {
+  identical: msg`Same bytes as before`,
+  samePages: msg`Same pages; only the metadata changed`,
+  likely: msg`Same page count and nearly the same size`,
+  nameOnly: msg`Only the file name matches`,
+}
+
+/**
+ * A file chapters read from is gone. First: did it just move? A renamed or reorganised folder
+ * leaves the same file under a new path, and relinking keeps everything. Then the two ways to let
+ * it go: fetch it again (a replacement, so the chapters keep their record until the new copy is in)
+ * or clear the record, saying plainly what that does to Wanted chapters.
+ */
+function MissingPanel({
+  detail,
+  openFile,
+  openOperation,
+  close,
+}: {
+  detail: FileDetail
+  openFile: (id: number) => void
+  openOperation: (id: number) => void
+  close: () => void
+}) {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
+  const action = useHealthAction()
+  const [confirming, setConfirming] = useState<'relink' | 'clear' | null>(null)
+  const { file, moved, chapters, mappings } = detail
+  const span = chapterSpan(chapters) ?? plural(chapters.length, { one: '# chapter', other: '# chapters' })
+  const wanted = chapters.some((c) => c.wanted)
+  const targetPath = moved?.targetPath ?? ''
+  const weak = moved?.evidence === 'nameOnly'
+  const canFetch = mappings.length > 0 && chapters.length > 0 && !isPdf(file.relativePath)
+
+  const relink = () =>
+    moved &&
+    action.mutate(
+      {
+        path: '/moves',
+        body: { fileId: file.id, version: file.version, targetId: moved.targetId, targetVersion: moved.targetVersion, allowWeak: weak },
+      },
+      {
+        onSuccess: () => {
+          notifications.show({ color: 'var(--ok)', message: t`Relinked. ${span} read from ${targetPath} again.` })
+          close()
+        },
+      },
+    )
+  const clear = () =>
+    action.mutate(
+      { path: '/deletions', body: { fileId: file.id, version: file.version, confirmed: true } },
+      {
+        onSuccess: () => {
+          notifications.show({ color: 'var(--ok)', message: t`Cleared the record` })
+          close()
+        },
+      },
+    )
+
+  return (
+    <Panel p="md">
+      <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
+        <Title order={3} size="h4" fz="var(--type-subhead)">
+          <Trans>File is gone from disk</Trans>
+        </Title>
+        <Badge variant="light" color="var(--neutral)">
+          {span}
+        </Badge>
+      </Group>
+      <Text size="sm" c="var(--ink-3)" mb="md">
+        <Trans>
+          {span} still read from this file, so they show as downloaded but cannot be opened.
+        </Trans>
+      </Text>
+
+      {moved && (
+        <div className="health-copy" data-this>
+          <div className="health-copy-head">
+            <span className="health-copy-role" data-role={weak ? 'spare' : 'keep'}>
+              {weak ? <Trans>Possible match</Trans> : <Trans>Found</Trans>}
+            </span>
+            <MonoValue value={moved.targetPath} copy fz="var(--type-meta)" />
+            <Button size="compact-xs" variant="subtle" onClick={() => openFile(moved.targetId)}>
+              <Trans>Open</Trans>
+            </Button>
+          </div>
+          <Text component="div" size="xs" c="var(--ink-3)">
+            <MetaList
+              items={[
+                renderLabel(MOVE_EVIDENCE[moved.evidence]),
+                <Plural key="pages" value={moved.targetPages} one="# page" other="# pages" />,
+                bytes(moved.targetSize, t`Missing`),
+              ]}
+            />
+          </Text>
+        </div>
+      )}
+
+      <div className="health-copy-actions">
+        {confirming === 'relink' ? (
+          <InlineConfirm
+            danger={false}
+            confirmLabel={t`Relink`}
+            pending={action.isPending}
+            onConfirm={relink}
+            onCancel={() => setConfirming(null)}
+          >
+            <Trans>
+              Only the name matches, so open the file and check it is the same chapter first. Relinking points{' '}
+              {span} at {targetPath}.
+            </Trans>
+          </InlineConfirm>
+        ) : confirming === 'clear' ? (
+          <InlineConfirm
+            confirmLabel={t`Clear the record`}
+            pending={action.isPending}
+            onConfirm={clear}
+            onCancel={() => setConfirming(null)}
+          >
+            {wanted ? (
+              <Trans>
+                {span} will show as not downloaded. They are still wanted, so automation may download them again.
+              </Trans>
+            ) : (
+              <Trans>{span} will show as not downloaded. Nothing downloads them again on its own.</Trans>
+            )}
+          </InlineConfirm>
+        ) : (
+          <Group gap="xs">
+            {moved && (
+              <Button
+                leftSection={<IconLink size={16} />}
+                loading={action.isPending && action.variables?.path === '/moves'}
+                onClick={() => (weak ? setConfirming('relink') : relink())}
+              >
+                <Trans>Relink to this file</Trans>
+              </Button>
+            )}
+            <Button
+              variant={moved ? 'default' : 'filled'}
+              leftSection={<IconDownload size={16} />}
+              disabled={!canFetch}
+              loading={action.isPending && action.variables?.path === '/repairs'}
+              onClick={() =>
+                action.mutate(
+                  { path: '/repairs', body: { fileId: file.id, version: file.version, sourceMappingId: null } },
+                  { onSuccess: (op) => openOperation(op.id) },
+                )
+              }
+            >
+              <Trans>Download it again</Trans>
+            </Button>
+            <Button color="var(--danger)" variant="subtle" onClick={() => setConfirming('clear')}>
+              <Trans>Clear the record</Trans>
+            </Button>
+          </Group>
+        )}
+      </div>
+      {!canFetch && !confirming && (
+        <Text size="xs" c="var(--ink-4)" mt="xs">
+          {isPdf(file.relativePath) ? (
+            <Trans>A PDF cannot be fetched from a source again.</Trans>
+          ) : (
+            <Trans>No source is enabled for this series, so there is nowhere to download it from.</Trans>
+          )}
+        </Text>
+      )}
+      {action.error && (
+        <Alert color="var(--danger)" mt="md">
+          {action.error.message}
+        </Alert>
+      )}
+    </Panel>
+  )
+}
+
+/**
+ * The archive's own bytes are wrong, and a fresh copy is the fix. A file only indexed so far is
+ * read in full first (the server needs its hash to replace it), and if that read finds nothing
+ * wrong after all, no download is started.
+ */
+function DamagedPanel({ detail, openOperation }: { detail: FileDetail; openOperation: (id: number) => void }) {
+  const { t } = useLingui()
+  const action = useHealthAction()
+  const { file, findings, chapters, mappings, analysis } = detail
+  const span = chapterSpan(chapters)
+  const problems = findings.filter((f) => f.state !== 'resolved' && DAMAGE.includes(f.kind))
+  const pdf = isPdf(file.relativePath)
+  const canFetch = mappings.length > 0 && chapters.length > 0 && !pdf
+
+  return (
+    <Panel p="md">
+      <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
+        <Title order={3} size="h4" fz="var(--type-subhead)">
+          <Trans>Archive is damaged</Trans>
+        </Title>
+        {span && (
+          <Badge variant="light" color="var(--neutral)">
+            {span}
+          </Badge>
+        )}
+      </Group>
+      <Stack gap={4} mb="md">
+        {problems.map((p) => (
+          <Group key={p.id} gap="sm" wrap="nowrap" align="flex-start">
+            <Status value={p.severity} />
+            <Text size="sm">{p.message}</Text>
+          </Group>
+        ))}
+      </Stack>
+      {pdf ? (
+        <Text size="sm" c="var(--ink-3)">
+          <Trans>
+            A PDF was placed as it is, so there is no source to fetch it from again. Replace the file by hand, or
+            delete it under Other actions.
+          </Trans>
+        </Text>
+      ) : chapters.length === 0 ? (
+        <Text size="sm" c="var(--ink-3)">
+          <Trans>No chapter reads from this file, so there is nothing to download in its place.</Trans>
+        </Text>
+      ) : (
+        <>
+          <Text size="sm" c="var(--ink-3)" mb="sm">
+            {analysis.verified ? (
+              <Trans>
+                A new copy is downloaded from the series' sources and shown to you before it replaces this one.
+              </Trans>
+            ) : (
+              <Trans>
+                This file has only been indexed. It is read in full first, and a new copy is only downloaded if that
+                read confirms the damage.
+              </Trans>
+            )}
+          </Text>
+          <Button
+            leftSection={<IconDownload size={16} />}
+            disabled={!canFetch}
+            loading={action.isPending}
+            onClick={() =>
+              action.mutate(
+                { path: '/repairs/auto', body: { fileId: file.id, version: file.version } },
+                {
+                  onSuccess: (result) => {
+                    const answer = result as unknown as { state: 'clean' | 'requested'; operation: HealthOperation | null }
+                    if (answer.operation) openOperation(answer.operation.id)
+                    else
+                      notifications.show({
+                        color: 'var(--ok)',
+                        message: t`Read every page: nothing is wrong with this file after all.`,
+                      })
+                  },
+                },
+              )
+            }
+          >
+            <Trans>Get a new copy</Trans>
+          </Button>
+          {mappings.length === 0 && (
+            <Text size="xs" c="var(--ink-4)" mt="xs">
+              <Trans>No source is enabled for this series, so there is nowhere to download it from.</Trans>
+            </Text>
+          )}
+        </>
+      )}
+      {action.error && (
+        <Alert color="var(--danger)" mt="md">
+          {action.error.message}
+        </Alert>
+      )}
+    </Panel>
+  )
+}
+
+/** The record's size disagrees with the file: something outside Maki rewrote it. The fix is the record. */
+function SizePanel({ detail }: { detail: FileDetail }) {
+  const { t } = useLingui()
+  const action = useHealthAction()
+  const { file, recordSize } = detail
+  const recorded = recordSize == null ? t`Unknown` : formatBytes(recordSize)
+  const onDisk = bytes(file.size, t`Missing`)
+
+  return (
+    <Panel p="md">
+      <Title order={3} size="h4" fz="var(--type-subhead)" mb="sm">
+        <Trans>File changed outside Maki</Trans>
+      </Title>
+      <Text size="sm" c="var(--ink-3)" mb="md">
+        <Trans>
+          Maki's record says {recorded}, the file on disk is {onDisk}. Usually a tagger or another library tool
+          rewrote its metadata. Updating the record makes Maki measure the file again; the file itself is not
+          touched.
+        </Trans>
+      </Text>
+      <Button
+        leftSection={<IconRefresh size={16} />}
+        loading={action.isPending}
+        onClick={() =>
+          action.mutate(
+            { path: '/records/refresh', body: { fileIds: [file.id] } },
+            { onSuccess: () => notifications.show({ color: 'var(--ok)', message: t`Updated the record` }) },
+          )
+        }
+      >
+        <Trans>Update the record</Trans>
+      </Button>
+      {action.error && (
+        <Alert color="var(--danger)" mt="md">
+          {action.error.message}
+        </Alert>
+      )}
+    </Panel>
+  )
+}
+
+/** Maki could not open the file at all. Nothing here can fix permissions or a mount, so it says where to look. */
+function UnreadablePanel({ detail }: { detail: FileDetail }) {
+  const action = useHealthAction()
+  const { file, findings } = detail
+  const message = findings.find((f) => f.kind === 'unreadable' && f.state !== 'resolved')?.message
+
+  return (
+    <Panel p="md">
+      <Title order={3} size="h4" fz="var(--type-subhead)" mb="sm">
+        <Trans>Maki cannot open this file</Trans>
+      </Title>
+      {message && (
+        <Text size="sm" mb="xs">
+          {message}
+        </Text>
+      )}
+      <Text size="sm" c="var(--ink-3)" mb="md">
+        <Trans>
+          The file is there but could not be read. Check that the account Maki runs as can read it, and that the
+          drive or share it is on is mounted, then rescan.
+        </Trans>
+      </Text>
+      <Button
+        variant="default"
+        leftSection={<IconRefresh size={16} />}
+        loading={action.isPending}
+        onClick={() => action.mutate({ path: '/scans', body: { fileIds: [file.id], force: true } })}
+      >
+        <Trans>Rescan</Trans>
+      </Button>
+      {action.error && (
+        <Alert color="var(--danger)" mt="md">
+          {action.error.message}
+        </Alert>
+      )}
+    </Panel>
   )
 }
 

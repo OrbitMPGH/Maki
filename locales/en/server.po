@@ -3846,6 +3846,14 @@ msgid "error.health.reviewStale"
 msgstr "This review is out of date. Rescan and review again."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.movedTargetChanged"
+msgstr "The file found at the new path has changed or is gone. Nothing was relinked. Review the file again."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.relinkWeakMatch"
+msgstr "Only the file name matches, so this file has to be relinked on its own after you have compared it."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.relinkTargetChanged"
 msgstr "The identical copy these chapters were going to move to has changed or is gone. Nothing was deleted. Review the file again."
 
@@ -4179,6 +4187,18 @@ msgstr "Permanently deleted {path}; chapter records and Wanted flags preserved"
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "health.history.deletedMissing"
 msgstr "Cleared the record for missing {path}; chapter records and Wanted flags preserved"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "health.history.relinkedMoved"
+msgstr "Found missing {path} at {target} and pointed its chapters there"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "health.history.seriesFolderFollowed"
+msgstr "Series folder {from} is gone and every file is now in {to}, so the series moved there too"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "health.history.recordsRefreshed"
+msgstr "{count, plural, one {Updated # record to the file's size on disk} other {Updated # records to the files' sizes on disk}}"
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "health.history.deletedRelinked"

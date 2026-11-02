@@ -359,7 +359,8 @@ public class HealthScanService(MakiDbContext db)
         // the file. It stays on the analysis and never becomes a finding.
         var problems = analysis.Problems.Where(p => p.Kind != "incomplete").ToList();
         if (file.ChapterFileId == null) problems.Add(new("unlinked", "warning", "health.finding.unlinked"));
-        else if (await db.ChapterFiles.AnyAsync(f => f.Id == file.ChapterFileId && f.Size != size, ct))
+        // A missing file has no size to compare; it is already reported as missing.
+        else if (size >= 0 && await db.ChapterFiles.AnyAsync(f => f.Id == file.ChapterFileId && f.Size != size, ct))
             problems.Add(new("sizeMismatch", "warning", "health.finding.sizeMismatch"));
         // Byte-identical archives can only be spotted by files that have both been read.
         if (analysis.Hash != null)
@@ -386,8 +387,12 @@ public class HealthScanService(MakiDbContext db)
         // from reading them. A finding on bytes that have since changed is resolved regardless:
         // the version check above owns that.
         var blind = analysis.Verified ? [] : new[] { "damagedImage", "corrupt", "duplicate" };
+        // These two come from the database, not the archive, so they are decided on every pass
+        // whatever the archive's status. A missing file never reaches "complete", and without this
+        // the size mismatch it used to be given alongside "missing" would never close.
+        string[] fromRecords = ["unlinked", "sizeMismatch"];
         foreach (var old in existing.Where(x => x.Version != file.Version ||
-                     (analysis.Status == "complete" && !blind.Contains(x.Kind) && !problems.Any(p => p.Kind == x.Kind))))
+                     ((analysis.Status == "complete" || fromRecords.Contains(x.Kind)) && !blind.Contains(x.Kind) && !problems.Any(p => p.Kind == x.Kind))))
             old.State = "resolved";
         foreach (var group in problems.GroupBy(p => p.Kind))
         {
