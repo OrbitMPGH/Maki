@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using Maki.Metadata.MangaBaka;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
@@ -152,6 +153,7 @@ public sealed class CreditIndex
         // the catalogue mostly uses rather than whichever row happened to be read first.
         var spellingCounts = new Dictionary<(int NameId, string Spelling), int>();
         var bestSpelling = new List<int>(160_000);
+        var keyOf = new Dictionary<string, string>(200_000, StringComparer.Ordinal);
         var rows = 0;
 
         using (var scan = conn.CreateCommand())
@@ -160,9 +162,9 @@ public sealed class CreditIndex
             // into random reads across the multi-GB dump; scan the table in storage order instead.
             // Sort the projected rows afterward to retain title order, which breaks ties between
             // equally common display spellings and assigns name ids used by autocomplete.
-            scan.CommandText = """
+            scan.CommandText = $"""
                 SELECT id, authors, artists, publishers, popularity_global_current
-                FROM series NOT INDEXED
+                FROM {MangaBakaDumpService.BrowseSource(conn)} NOT INDEXED
                 WHERE state = 'active' AND type != 'novel'
                 ORDER BY title COLLATE NOCASE
                 """;
@@ -191,7 +193,13 @@ public sealed class CreditIndex
                             continue;
                         }
 
-                        var key = CatalogueText.RomanizationKey(raw);
+                        // ~650k credits are ~115k names spelled the same way over and over, so the
+                        // normalization is done once per spelling.
+                        if (!keyOf.TryGetValue(raw, out var key))
+                        {
+                            keyOf[raw] = key = CatalogueText.RomanizationKey(raw);
+                        }
+
                         if (key.Length == 0)
                         {
                             continue;

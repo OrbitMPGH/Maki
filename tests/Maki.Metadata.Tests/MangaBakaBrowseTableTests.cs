@@ -229,6 +229,61 @@ public class MangaBakaBrowseTableTests : IDisposable
         Assert.Equal(built, version.ExecuteScalar());
     }
 
+    private void SeedFranchises()
+    {
+        // Ids spread past one search chunk, linked through typed edges, flat columns and a
+        // relation type that is not the same work, plus an edge to an id the dump does not hold.
+        _db.AddSeries(1, "Root", relationshipsV2: """[{"relation_type": "sequel", "to_series_id": 25001}]""")
+            .AddSeries(25001, "Sequel", sequels: "[60000]")
+            .AddSeries(60000, "Third")
+            .AddSeries(70000, "Adaptation", relationshipsV2: """[{"relation_type": "adaptation", "to_series_id": 1}]""")
+            .AddSeries(80000, "Spin", relationshipsV2: """[{"relation_type": "spin_off", "to_series_id": 999999}]""")
+            .AddSeries(90000, "Broken", relationshipsV2: "not json")
+            .AddSeries(12, "Alone");
+    }
+
+    [Fact]
+    public void The_franchise_table_written_during_the_search_pass_matches_a_fresh_build()
+    {
+        SeedFranchises();
+        using var conn = _db.Open();
+        var fresh = FranchiseGraph.Build(conn);
+        Assert.Null(FranchiseGraph.Read(conn));
+
+        MangaBakaDumpService.BuildSearchIndex(conn, withBrowseTable: true, withFranchiseTable: true);
+        var stored = FranchiseGraph.Read(conn);
+
+        Assert.NotNull(stored);
+        Assert.Equal(fresh.OrderBy(kv => kv.Key), stored.OrderBy(kv => kv.Key));
+        Assert.Equal(stored[1], stored[60000]);
+        Assert.NotEqual(stored[1], stored[80000]);
+        Assert.DoesNotContain(70000L, stored.Keys);
+    }
+
+    [Fact]
+    public async Task The_live_backfill_writes_the_franchise_table_and_rebuilds_a_browse_table_missing_columns()
+    {
+        SeedFranchises();
+        using (var conn = _db.Open())
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"CREATE TABLE {MangaBakaDumpService.BrowseTableName} AS SELECT id, state, title FROM series";
+            cmd.ExecuteNonQuery();
+        }
+
+        var service = new MangaBakaDumpService(null!,
+            new MangaBakaDumpOptions(_db.Path, Path.GetTempPath()), new FakeAppSettings(),
+            new MangaBakaDumpStatus(), NullLogger<MangaBakaDumpService>.Instance);
+        Assert.True(await service.EnsureBrowseIndexesAsync());
+
+        using var check = _db.Open();
+        Assert.Equal(FranchiseGraph.Build(check).OrderBy(kv => kv.Key), FranchiseGraph.Read(check)!.OrderBy(kv => kv.Key));
+        using var columns = check.CreateCommand();
+        columns.CommandText = $"SELECT COUNT(*) FROM pragma_table_info('{MangaBakaDumpService.BrowseTableName}') WHERE name IN ('authors', 'publishers', 'popularity_global_current')";
+        Assert.Equal(3L, columns.ExecuteScalar());
+        Assert.False(await service.EnsureBrowseIndexesAsync());
+    }
+
     private static List<string> Dump(SqliteConnection conn)
     {
         using var cmd = conn.CreateCommand();

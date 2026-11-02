@@ -410,9 +410,14 @@ public sealed class VectorIndexCache(
         // is what lets the recommender answer its author-match term without touching SQLite.
         var authorIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
+        // The browse table carries every dump column this reads, keyed and typed like series, so
+        // the 127k lookups below stay inside it instead of reading the 6 KB series rows, which after
+        // an idle unload are cold (the dump is dropped from the page cache after each scan).
+        var dumpTable = MangaBakaDumpService.BrowseSource(conn, "dump");
+
         // Older dumps have no publication date, and a missing column would fail the whole build
         // rather than just the date sort, which falls back to the year.
-        var startDateColumn = HasDumpColumn(conn, "published_start_date")
+        var startDateColumn = HasDumpColumn(conn, dumpTable, "published_start_date")
             ? "d.published_start_date"
             : "NULL";
 
@@ -424,7 +429,7 @@ public sealed class VectorIndexCache(
                        d.genres, t.tags, d.authors, d.popularity_global_current, d.content_rating,
                        d.artists, {startDateColumn}
                 FROM series_vectors v
-                CROSS JOIN dump.series d ON d.id = v.id
+                CROSS JOIN dump.{dumpTable} d ON d.id = v.id
                 LEFT JOIN series_tags t ON t.id = v.id
                 WHERE {CandidateWhere}
                 """;
@@ -571,7 +576,10 @@ public sealed class VectorIndexCache(
                 Pooling = false,
             }.ToString());
             conn.Open();
-            var componentOf = FranchiseGraph.Build(conn);
+
+            // Stored when the dump was installed; building it here parses every relation blob in
+            // the file, 3 to 7 s cold. Same components and ids either way.
+            var componentOf = FranchiseGraph.Read(conn) ?? FranchiseGraph.Build(conn);
             var covered = 0;
             for (var row = 0; row < ids.Length; row++)
             {
@@ -827,10 +835,10 @@ public sealed class VectorIndexCache(
         reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
 
     /// <summary>total_chapters is TEXT and may be fractional (see the dump notes).</summary>
-    private static bool HasDumpColumn(SqliteConnection conn, string column)
+    private static bool HasDumpColumn(SqliteConnection conn, string table, string column)
     {
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "PRAGMA dump.table_info(series)";
+        cmd.CommandText = $"PRAGMA dump.table_info({table})";
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
         {

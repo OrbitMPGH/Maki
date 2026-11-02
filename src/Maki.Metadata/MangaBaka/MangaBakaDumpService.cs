@@ -271,7 +271,8 @@ public class MangaBakaDumpService(
 
             status.ReportIndexed(CountShare);
             logger.LogInformation("Building MangaBaka search index and browse table over {Count} series…", count);
-            BuildSearchIndex(conn, Slice(status.ReportIndexed, CountShare, SearchShare), withBrowseTable: true);
+            BuildSearchIndex(
+                conn, Slice(status.ReportIndexed, CountShare, SearchShare), withBrowseTable: true, withFranchiseTable: true);
 
             logger.LogInformation("Building MangaBaka browse indexes…");
             BuildBrowseIndexes(conn, logger, progress: Slice(status.ReportIndexed, SearchShare, 1));
@@ -321,7 +322,9 @@ public class MangaBakaDumpService(
     /// <summary>
     /// A narrow copy of the <c>series</c> columns that the Discover rails, the external id lookups
     /// and the duplicate-title lookup filter and sort on, keyed by the same id, with the browse
-    /// indexes on it instead of on <c>series</c>.
+    /// indexes on it instead of on <c>series</c>. The search vector index and the credit index load
+    /// from it too, which is why it carries the credit columns: their reloads after an idle unload
+    /// otherwise read the whole dump cold (it is dropped from the page cache after each scan).
     ///
     /// <para>
     /// The dump's rows are ~6 KB, mostly overflow pages, so every index built on <c>series</c> read
@@ -345,7 +348,7 @@ public class MangaBakaDumpService(
         "total_chapters", "genres", "merged_with", "popularity_global_current",
         "popularity_global_history_1w", "popularity_global_history_1mo", "popularity_global_history_3mo",
         "popularity_type_current", "published_start_date", "source_anilist_id", "source_my_anime_list_id",
-        "source_kitsu_id", "source_manga_updates_id",
+        "source_kitsu_id", "source_manga_updates_id", "authors", "artists", "publishers",
     ];
 
     /// <summary>
@@ -542,7 +545,9 @@ public class MangaBakaDumpService(
         SqliteConnection conn, ILogger? logger = null, bool onlyMissing = false, Action<double>? progress = null)
     {
         using var tx = conn.BeginTransaction();
-        var copied = !TableExists(conn, BrowseTableName, tx);
+        // A table from before a column was added to BrowseColumns is rebuilt whole, or a reader
+        // asking for the new column would fail on it.
+        var copied = !TableExists(conn, BrowseTableName, tx) || !BrowseTableComplete(conn, tx);
         if (copied)
         {
             var columns = CreateBrowseTable(conn, tx);
@@ -609,6 +614,18 @@ public class MangaBakaDumpService(
 
     private const double AnalyzeWeight = 2;
 
+    /// <summary>Whether the browse table has every column of <see cref="BrowseColumns"/> that series has.</summary>
+    private static bool BrowseTableComplete(SqliteConnection conn, SqliteTransaction? tx)
+    {
+        var have = ColumnTypes(conn, BrowseTableName, tx);
+        return ColumnTypes(conn, "series", tx).Keys
+            .Where(c => BrowseColumns.Contains(c, StringComparer.OrdinalIgnoreCase))
+            .All(have.ContainsKey);
+    }
+
+    private static HashSet<string> SeriesColumns(SqliteConnection conn, SqliteTransaction? tx) =>
+        ColumnTypes(conn, "series", tx).Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
     private static HashSet<string> IndexesOf(SqliteConnection conn, SqliteTransaction? tx = null)
     {
         var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -652,27 +669,47 @@ public class MangaBakaDumpService(
         var expected = BuildableIndexNames(conn);
         var existing = IndexesOf(conn);
         var hasTable = TableExists(conn, BrowseTableName, null);
+        var browseDone = hasTable && BrowseTableComplete(conn, null) && expected.IsSubsetOf(existing);
+        var franchiseDone = !FranchiseGraph.HasEdgeColumns(SeriesColumns(conn, null))
+            || TableExists(conn, FranchiseGraph.TableName, null);
 
         // Any write changes the dump stamp and invalidates the in-memory catalogue indexes, so a
         // complete set must leave the file untouched.
-        if (hasTable && expected.IsSubsetOf(existing))
+        if (browseDone && franchiseDone)
         {
             return false;
         }
 
-        logger.LogInformation(
-            "Backfilling the MangaBaka browse table ({State}, {Existing} of {Expected} indexes present)…",
-            hasTable ? "table present" : "table missing", expected.Count(existing.Contains), expected.Count);
         var started = DateTime.UtcNow;
-        Interruptible(conn, ct, () => BuildBrowseIndexes(conn, logger, onlyMissing: true));
+        if (!browseDone)
+        {
+            logger.LogInformation(
+                "Backfilling the MangaBaka browse table ({State}, {Existing} of {Expected} indexes present)…",
+                hasTable ? "table present" : "table missing", expected.Count(existing.Contains), expected.Count);
+            Interruptible(conn, ct, () => BuildBrowseIndexes(conn, logger, onlyMissing: true));
+        }
+
+        if (!franchiseDone)
+        {
+            logger.LogInformation("Backfilling the MangaBaka franchise table…");
+            Interruptible(conn, ct, () =>
+            {
+                var componentOf = FranchiseGraph.Build(conn);
+                using var tx = conn.BeginTransaction();
+                FranchiseGraph.Write(conn, tx, componentOf);
+                tx.Commit();
+            });
+        }
+
         logger.LogInformation(
-            "MangaBaka browse table and indexes built in {Elapsed:F1}s", (DateTime.UtcNow - started).TotalSeconds);
+            "MangaBaka browse and franchise tables backfilled in {Elapsed:F1}s", (DateTime.UtcNow - started).TotalSeconds);
         return true;
     }
 
     /// <summary>
-    /// Indexes every title variant of non-merged series into the FTS5 search table, and with
-    /// <paramref name="withBrowseTable"/> fills <see cref="BrowseTableName"/> in the same pass.
+    /// Indexes every title variant of non-merged series into the FTS5 search table, and in the same
+    /// pass fills <see cref="BrowseTableName"/> with <paramref name="withBrowseTable"/> and
+    /// <see cref="FranchiseGraph.TableName"/> with <paramref name="withFranchiseTable"/>.
     ///
     /// <para>
     /// Works through the table in rowid ranges of <see cref="SearchChunkRows"/>, reading each row's
@@ -684,7 +721,8 @@ public class MangaBakaDumpService(
     /// </para>
     /// </summary>
     internal static void BuildSearchIndex(
-        SqliteConnection conn, Action<double>? progress = null, bool withBrowseTable = false)
+        SqliteConnection conn, Action<double>? progress = null, bool withBrowseTable = false,
+        bool withFranchiseTable = false)
     {
         Execute(conn, $"DROP TABLE IF EXISTS {SearchTableName}");
         Execute(conn, $"CREATE VIRTUAL TABLE {SearchTableName} USING fts5(title, series_id UNINDEXED, tokenize='unicode61 remove_diacritics 2')");
@@ -727,6 +765,13 @@ public class MangaBakaDumpService(
             commands.Add(ChunkCommand(conn, tx, CopyIntoBrowseTable(CreateBrowseTable(conn, tx), ranged: true)));
         }
 
+        // A dump without the relation columns gets no table, and loads fall back to building the
+        // graph from series, which finds nothing either; that is the old behaviour.
+        var franchise = withFranchiseTable && FranchiseGraph.HasEdgeColumns(SeriesColumns(conn, tx))
+            ? new FranchiseGraph.Builder()
+            : null;
+        using var edges = franchise is null ? null : ChunkCommand(conn, tx, FranchiseGraph.EdgeQuery("series", ranged: true));
+
         try
         {
             var span = (double)(last - first + 1);
@@ -740,7 +785,19 @@ public class MangaBakaDumpService(
                     cmd.ExecuteNonQuery();
                 }
 
+                if (edges is not null)
+                {
+                    edges.Parameters["$lo"].Value = start;
+                    edges.Parameters["$hi"].Value = end;
+                    franchise!.Add(edges);
+                }
+
                 progress?.Invoke((end - first + 1) / span);
+            }
+
+            if (franchise is not null)
+            {
+                FranchiseGraph.Write(conn, tx, franchise.Components());
             }
 
             tx.Commit();

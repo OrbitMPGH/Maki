@@ -229,7 +229,7 @@ public class SemanticRecommender(
         }
 
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT MAX(popularity_global_current) FROM dump.series";
+        cmd.CommandText = $"SELECT MAX(popularity_global_current) FROM dump.{MangaBakaDumpService.BrowseSource(conn, "dump")}";
         cmd.CommandTimeout = 600;
         _maxPopularity = await cmd.ExecuteScalarAsync(ct) is long l && l > 0 ? l : 300000;
         return _maxPopularity;
@@ -244,7 +244,7 @@ public class SemanticRecommender(
         }
 
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT COUNT(*) FROM dump.series WHERE state = 'active'";
+        cmd.CommandText = $"SELECT COUNT(*) FROM dump.{MangaBakaDumpService.BrowseSource(conn, "dump")} WHERE state = 'active'";
         cmd.CommandTimeout = 600;
         _activeCount = await cmd.ExecuteScalarAsync(ct) is long l && l > 0 ? l : 300000;
         return _activeCount;
@@ -312,6 +312,11 @@ public class SemanticRecommender(
         diversity = Math.Clamp(diversity, 0, 1);
         store.EnsureSchema(); // older DBs predate the tag tables the index build joins
         DropStatsIfDumpChanged();
+
+        // The graphs live in their own files, so after an idle unload they load alongside the
+        // vector index instead of after it. The awaits further down join these same loads.
+        Observe(coGraph && graphTuning.Weight > 0 ? graphCache.GetAsync(ct) : null);
+        Observe(coRead && coReadTuning.Weight > 0 ? coReadCache.GetAsync(ct) : null);
 
         var index = await cache.GetAsync(ct);
         if (index is null || index.Count == 0)
@@ -1835,6 +1840,13 @@ public class SemanticRecommender(
             return byCosine != 0 ? byCosine : y.Row.CompareTo(x.Row);
         }
     }
+
+    /// <summary>
+    /// Keeps a load started only to warm its cache from surfacing as an unobserved exception when
+    /// the call returns before awaiting it. A failure still reaches whoever awaits the load.
+    /// </summary>
+    private static void Observe(Task? load) =>
+        load?.ContinueWith(static t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
 
     /// <summary>
     /// Co-recommendation score per index row, from the graph artifact. Empty when there is no
