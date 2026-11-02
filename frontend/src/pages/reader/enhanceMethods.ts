@@ -1,0 +1,62 @@
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
+import type { EnhanceFallback, EnhanceMethod, ReaderEnhance } from './prefs'
+import { QUALITY_TIERS, QUALITY_TIER_LABELS, type QualityTierName } from '../../api/upgrades'
+
+export interface EnhanceMethodInfo {
+  id: EnhanceMethod
+  label: MessageDescriptor
+  hint: MessageDescriptor
+}
+
+export const ENHANCE_LEVELS: { value: ReaderEnhance; label: MessageDescriptor }[] = [
+  { value: 'off', label: msg`Off` },
+  { value: 'auto', label: msg`Auto` },
+  { value: 'always', label: msg`Always` },
+]
+
+export const BROWSER_ENHANCE_METHODS: EnhanceMethodInfo[] = [
+  { id: 'a4k-s', label: msg`Light`, hint: msg`Fastest, on this device` },
+  { id: 'a4k-m', label: msg`Balanced`, hint: msg`On this device` },
+  {
+    id: 'a4k-a',
+    label: msg`Strong`,
+    hint: msg`On this device; best on clean line art, can mottle screentone`,
+  },
+]
+
+export const SERVER_ENHANCE_METHODS: EnhanceMethodInfo[] = [
+  { id: 'server:span-s', label: msg`Sharp (server)`, hint: msg`IllustrationJaNai SPAN-S` },
+  {
+    id: 'server:realesrgan-av3',
+    label: msg`Crisp line art (server)`,
+    hint: msg`Real-ESRGAN; flattens screentone`,
+  },
+]
+
+export const ENHANCE_FALLBACKS: { value: EnhanceFallback; label: MessageDescriptor }[] = [
+  ...BROWSER_ENHANCE_METHODS.map((m) => ({ value: m.id as EnhanceFallback, label: m.label })),
+  { value: 'off', label: msg`None` },
+]
+
+/** Best first, for the "Don't enhance" picker. */
+export const ENHANCE_SKIP_TIERS: { value: QualityTierName; label: MessageDescriptor }[] = [...QUALITY_TIERS]
+  .reverse()
+  .map((tier) => ({ value: tier, label: QUALITY_TIER_LABELS[tier] }))
+
+export const ENHANCE_METHODS: EnhanceMethodInfo[] = [...BROWSER_ENHANCE_METHODS, ...SERVER_ENHANCE_METHODS]
+
+const SERVER_PREFIX = 'server:'
+
+export function isServerMethod(id: string): boolean {
+  return id.startsWith(SERVER_PREFIX)
+}
+
+/** The model id the server knows a `server:*` method by, or null for a browser preset. */
+export function serverModelId(id: string): string | null {
+  return isServerMethod(id) ? id.slice(SERVER_PREFIX.length) : null
+}
+
+export function enhanceMethodInfo(id: string): EnhanceMethodInfo | undefined {
+  return ENHANCE_METHODS.find((m) => m.id === id)
+}

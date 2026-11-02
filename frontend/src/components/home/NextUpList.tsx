@@ -6,7 +6,6 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HomeReadingItem } from '../../api/hooks'
 import { relativeTime } from '../ui/time'
-import type { ReadingRailKind } from './ReadingCardMenu'
 
 /**
  * Next up as a list of rows in a card beside the Continue hero: thumb, title, chapter and recency,
@@ -14,7 +13,7 @@ import type { ReadingRailKind } from './ReadingCardMenu'
  * hero, with a fade at whichever end has more. Each row opens its chapter in the reader, like
  * every other reading card.
  */
-export function NextUpList({ items, rail }: { items: HomeReadingItem[]; rail: ReadingRailKind }) {
+export function NextUpList({ items }: { items: HomeReadingItem[] }) {
   const { t } = useLingui()
   const listRef = useRef<HTMLDivElement>(null)
   const frame = useRef(0)
@@ -48,9 +47,11 @@ export function NextUpList({ items, rail }: { items: HomeReadingItem[]; rail: Re
   }, [measure, items.length])
 
   return (
-    <section className="next-up" aria-label={rail === 'jumpback' ? t`Next to jump back in` : t`Next up`}>
+    <section className="next-up" aria-label={t`Next up`}>
       <div className="next-up-head">
-        <h2 className="next-up-title">{rail === 'jumpback' ? <Trans>Next to jump back in</Trans> : <Trans>Next up</Trans>}</h2>
+        <h2 className="next-up-title">
+          <Trans>Next up</Trans>
+        </h2>
         <span className="next-up-count tnum">{items.length}</span>
       </div>
       <div

@@ -29,28 +29,30 @@ public class TasteAvoidanceTests
         string name, long df, params long[] carriers) => new(name, true, df, carriers);
 
     [Fact]
-    public void Two_dislikes_sharing_a_theme_name_nothing()
+    public void Too_few_dislikes_sharing_a_theme_name_nothing()
     {
+        var carriers = Enumerable.Range(1, TasteAvoidanceService.MinSupport - 1).Select(i => (long)i).ToArray();
         var labels = TasteAvoidanceService.Select(
-            [Facet("Harem", NarrowDf, 1, 2)], Titles(2), Corpus);
+            [Facet("Harem", NarrowDf, carriers)], Titles(carriers.Length), Corpus);
 
-        // Two is a coincidence a reader would read as a rule, and the ranking has not acted on a
-        // genre, so saying one back would be inventing an opinion and appearing to have used it.
+        // A coincidence a reader would read as a rule, and the ranking has not acted on a genre, so
+        // saying one back would be inventing an opinion and appearing to have used it.
         Assert.Empty(labels);
     }
 
     [Fact]
-    public void Three_dislikes_sharing_a_theme_name_it()
+    public void Enough_dislikes_sharing_a_theme_name_it()
     {
+        var carriers = Enumerable.Range(1, TasteAvoidanceService.MinSupport).Select(i => (long)i).ToArray();
         var labels = TasteAvoidanceService.Select(
-            [Facet("Harem", NarrowDf, 1, 2, 3)], Titles(3), Corpus);
+            [Facet("Harem", NarrowDf, carriers)], Titles(carriers.Length), Corpus);
 
         var label = Assert.Single(labels);
         Assert.Equal("Harem", label.Label);
         Assert.Equal("tag", label.Kind);
-        Assert.Equal(3, label.Support);
+        Assert.Equal(carriers.Length, label.Support);
         Assert.Equal(1.0, label.Share);
-        Assert.Equal(["Avoided 1", "Avoided 2", "Avoided 3"], label.Examples.Select(x => x.Title));
+        Assert.Equal(carriers.Select(i => $"Avoided {i}"), label.Examples.Select(x => x.Title));
     }
 
     [Fact]
@@ -67,10 +69,12 @@ public class TasteAvoidanceTests
     [Fact]
     public void A_theme_on_a_minority_of_the_avoided_set_names_nothing()
     {
+        var carriers = Enumerable.Range(1, TasteAvoidanceService.MinSupport).Select(i => (long)i).ToArray();
+        var total = (int)Math.Ceiling(TasteAvoidanceService.MinSupport / TasteAvoidanceService.MinShare) + 1;
         var labels = TasteAvoidanceService.Select(
-            [Facet("Harem", NarrowDf, 1, 2, 3)], Titles(10), Corpus);
+            [Facet("Harem", NarrowDf, carriers)], Titles(total), Corpus);
 
-        // Three of ten is a corner of the set, not a description of it.
+        // Enough carriers to clear the support floor, but a corner of the set, not a description of it.
         Assert.Empty(labels);
     }
 
@@ -98,15 +102,31 @@ public class TasteAvoidanceTests
     [Fact]
     public void A_theme_the_readers_own_shelf_is_full_of_names_nothing()
     {
-        // Four of five pushed down and 63 of 90 on the shelf. The reader reads this; four of them
-        // disappointing says something about those four, not about the theme.
+        // Four of five pushed down, and the shelf carries it almost as heavily. The reader reads
+        // this; four of them disappointing says something about those four, not about the theme.
+        const int shelf = 100;
+        var positive = (int)Math.Ceiling((0.8 - TasteAvoidanceService.MinContrast) * shelf) + 1;
         var labels = TasteAvoidanceService.Select(
-            [Facet("Romance", NarrowDf, 1, 2, 3, 4) with { PositiveSupport = 63 }],
+            [Facet("Romance", NarrowDf, 1, 2, 3, 4) with { PositiveSupport = positive }],
             Titles(5),
             Corpus,
-            shelfCount: 90);
+            shelfCount: shelf);
 
         Assert.Empty(labels);
+    }
+
+    [Fact]
+    public void A_theme_far_more_common_among_the_dislikes_than_on_the_shelf_is_named()
+    {
+        const int shelf = 100;
+        var positive = (int)Math.Floor((0.8 - TasteAvoidanceService.MinContrast) * shelf) - 5;
+        var labels = TasteAvoidanceService.Select(
+            [Facet("Romance", NarrowDf, 1, 2, 3, 4) with { PositiveSupport = positive }],
+            Titles(5),
+            Corpus,
+            shelfCount: shelf);
+
+        Assert.Single(labels);
     }
 
     [Fact]
@@ -130,8 +150,9 @@ public class TasteAvoidanceTests
     public void A_shelf_of_nothing_leaves_the_contrast_out_of_the_way()
     {
         // No shelf profile to read, so the rule cannot fire and the other three cuts decide alone.
+        var carriers = Enumerable.Range(1, TasteAvoidanceService.MinSupport).Select(i => (long)i).ToArray();
         var labels = TasteAvoidanceService.Select(
-            [Facet("Harem", NarrowDf, 1, 2, 3)], Titles(3), Corpus, shelfCount: 0);
+            [Facet("Harem", NarrowDf, carriers)], Titles(carriers.Length), Corpus, shelfCount: 0);
 
         Assert.Single(labels);
     }

@@ -5,28 +5,16 @@ import {
   IconDeviceMobileCheck,
   IconDownload,
   IconEyeOff,
-  IconPlayerPause,
-  IconPlayerPlay,
-  IconX,
-  type Icon,
 } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
-import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusVisual, statusColor, statusOnColor } from './status'
+import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusGlyph, seriesStatusVisual, statusColor, statusOnColor } from './status'
 import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 
 /** What a library entry offers while the server is out of reach. */
 export type OfflineAvailability = 'saved' | 'unavailable'
-
-/** Glyphs for the status chip; anything else falls back to the icon `seriesStatusVisual` picks. */
-const STATUS_GLYPH: Record<string, Icon> = {
-  Ongoing: IconPlayerPlay,
-  Completed: IconCheck,
-  Hiatus: IconPlayerPause,
-  Cancelled: IconX,
-}
 
 /**
  * Poster card for the library grid: cover art is the hero, with a bottom
@@ -71,7 +59,7 @@ export const CoverCard = memo(function CoverCard({
   const download = seriesDownloadStateVisual(series)
   const status = seriesStatusVisual(series.status)
   const statusLabel = renderLabel(status.label)
-  const StatusGlyph = STATUS_GLYPH[series.status] ?? status.Icon
+  const StatusGlyph = seriesStatusGlyph(series.status)
   // Shared with the list row (`SeriesRow`) so the two views can never report different numbers
   // for the same series.
   const { total, nothingWanted, have, pct, complete, readPct, unread } = seriesProgressVisual(

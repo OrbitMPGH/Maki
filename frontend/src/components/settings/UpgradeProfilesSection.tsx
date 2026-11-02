@@ -16,7 +16,7 @@ import {
   Textarea,
   Tooltip,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { SettingsNumberInput } from './SettingsNumberInput'
 import {
   IconArrowDown,
@@ -148,11 +148,7 @@ export function UpgradeProfilesSection() {
       id="profiles"
       title={<Trans>Quality profiles</Trans>}
       description={
-        <Trans>
-          A profile picks which release tier Maki prefers for a series and how far it goes to
-          replace what's already downloaded. Pin one to a series from its Quality profile menu.
-          The default for every other series is set under Upgrade scan below.
-        </Trans>
+        <Trans>Pin one to a series from its Quality profile menu.</Trans>
       }
       actions={
         <Button
@@ -451,7 +447,6 @@ function ProfileEditor({
       />
       <Textarea
         label={t`Description`}
-        description={t`What picking this profile does, shown in the profile list.`}
         value={description}
         maxLength={300}
         autosize
@@ -464,12 +459,7 @@ function ProfileEditor({
           <Trans>Tier order</Trans>
         </Text>
         <SettingsHelp mb="xs">
-          <Trans>
-            Highest priority first. Switch a tier off to never prefer or accept it. Grouped tiers rank the same, so
-            the better scoring copy wins between them. Volume is a digital volume release, Official the
-            publisher's own site, Scanlator a translation group, Aggregator a site that reposts others'
-            releases.
-          </Trans>
+          <Trans>Highest priority first. Grouped tiers rank the same.</Trans>
         </SettingsHelp>
         <Stack gap={4}>
           {groups.map((group) => {
@@ -493,7 +483,7 @@ function ProfileEditor({
 
       <Select
         label={t`Cutoff`}
-        description={t`Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise). A grouped tier's cutoff is its whole group.`}
+        description={t`Upgrading stops once a file reaches this tier.`}
         value={effectiveCutoff}
         onChange={(value) => value && setCutoff(value as QualityTierName)}
         data={cutoffData}
@@ -502,7 +492,6 @@ function ProfileEditor({
 
       <Switch
         label={t`Let the daily scan upgrade this profile's series`}
-        description={t`When the instance switch is on, the daily scan may replace files of series on this profile with better copies.`}
         checked={upgradesEnabled}
         onChange={(e) => setUpgradesEnabled(e.currentTarget.checked)}
       />
@@ -510,14 +499,14 @@ function ProfileEditor({
       <Group grow align="flex-start">
         <SettingsNumberInput
           label={t`Minimum score gain`}
-          description={t`Within the same tier, a candidate must beat the current file's score by at least this much. A higher tier is governed by the next field.`}
+          description={t`Within the same tier.`}
           min={0}
           value={minScoreDelta}
           onChange={setMinScoreDelta}
         />
         <NumberInput
           label={t`Maximum score loss for a higher tier`}
-          description={t`A higher tier still replaces the current file when its score is at most this much lower. Leave empty to let a higher tier always win.`}
+          description={t`Leave empty to let a higher tier always win.`}
           min={0}
           allowDecimal={false}
           value={maxTierScoreDrop}
@@ -527,14 +516,14 @@ function ProfileEditor({
       <Group grow align="flex-start">
         <SettingsNumberInput
           label={t`Upgrade until score`}
-          description={t`Keep taking better scoring copies once the cutoff is reached, until a file scores this much. 0 stops at the cutoff. Set it very high to never stop.`}
+          description={t`0 stops at the cutoff.`}
           min={0}
           value={upgradeUntilScore}
           onChange={setUpgradeUntilScore}
         />
         <SettingsNumberInput
           label={t`Page tolerance %`}
-          description={t`How much shorter a candidate's page count may be and still count as an upgrade.`}
+          description={t`How much shorter a candidate may be.`}
           min={0}
           max={100}
           value={pageTolerancePercent}
@@ -547,15 +536,11 @@ function ProfileEditor({
           <Trans>Measured quality</Trans>
         </Text>
         <SettingsHelp mb="xs">
-          <Trans>
-            Points from the pages themselves, so a somewhat sharper or less compressed copy scores somewhat higher. Each
-            weight is the points for doubling that measurement. 0 turns it off.
-          </Trans>
+          <Trans>Points for doubling each measurement. 0 turns it off.</Trans>
         </SettingsHelp>
         <Group grow align="flex-start">
           <SettingsNumberInput
             label={t`Resolution weight`}
-            description={t`Scored on median page width, from 500 to 2000 pixels.`}
             min={0}
             max={50}
             value={resolutionWeight}
@@ -563,7 +548,6 @@ function ProfileEditor({
           />
           <SettingsNumberInput
             label={t`Compression weight`}
-            description={t`Scored on image data per pixel, adjusted so PNG and WebP compare fairly with JPG.`}
             min={0}
             max={50}
             value={compressionWeight}
@@ -583,7 +567,7 @@ function ProfileEditor({
           <Trans>Format scores</Trans>
         </Text>
         <SettingsHelp mb="xs">
-          <Trans>Points added to a file's score for each quality format it matches. 0 means the format isn't scored by this profile.</Trans>
+          <Trans>0 means the format isn't scored.</Trans>
         </SettingsHelp>
         {formats.length === 0 ? (
           <Text size="sm" c="var(--ink-3)">
@@ -653,12 +637,7 @@ export function QualityFormatsSection() {
       id="formats"
       title={<Trans>Quality formats</Trans>}
       description={
-        <Trans>
-          A format matches a file by its source, kind, release group or name, resolution, image
-          codec, size per page, page count or language. Every required condition must match; when a
-          format also has optional conditions, at least one of those must match too. Scores for a
-          format are set inside each profile.
-        </Trans>
+        <Trans>Scores are set inside each profile.</Trans>
       }
       actions={
         <Button

@@ -3,7 +3,7 @@ import { expect, fn, waitFor, within } from 'storybook/test'
 import { activityFor } from '../../../.storybook/mocks/insights'
 import { RewindIntro } from './RewindIntro'
 
-// slides.tsx only exports `buildSlides`, so each story plays the real overlay and steps to the slide.
+// slides.tsx only exports `buildSlides`, so the stories play the real overlay and step through it.
 const stats = activityFor('2026-01-01', '2026-12-31', 'rich')
 
 const meta = {
@@ -16,27 +16,30 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-function slide(index: number, text: string | RegExp): Story {
-  return {
-    play: async ({ canvasElement, userEvent }) => {
-      const body = within(canvasElement.ownerDocument.body)
-      await body.findByRole('dialog')
-      for (let i = 0; i < index; i++) await userEvent.keyboard('{ArrowRight}')
-      await waitFor(() => expect(body.getByText(text)).toBeVisible(), { timeout: 4000 })
-    },
-  }
-}
+const SLIDES: (string | RegExp)[] = [
+  'Maki Rewind',
+  'chapters read',
+  'spent in the reader',
+  'was your busiest month',
+  'was your most read series',
+  'was what you kept coming back to',
+  'series added',
+  /series finished/,
+  'Maybe next year.',
+  'That was your 2026',
+]
 
-export const Title: Story = slide(0, 'Maki Rewind')
-export const ChaptersRead: Story = slide(1, 'You turned a lot of pages')
-export const TimeInReader: Story = slide(2, 'Time spent in the reader')
-export const BusiestMonth: Story = slide(3, 'Your busiest month')
-export const MostReadSeries: Story = slide(4, 'Your most read series')
-export const FavouriteGenres: Story = slide(5, 'You kept coming back to')
-export const LibraryGrowth: Story = slide(6, 'Your library grew')
-export const Finished: Story = slide(7, 'Seen through to the end')
-export const Stalled: Story = slide(8, 'Maybe next year')
-export const Summary: Story = slide(9, 'That was your 2026')
+/** Steps through every slide in order with the arrow key. */
+export const AllSlides: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await body.findByRole('dialog')
+    for (const [i, text] of SLIDES.entries()) {
+      if (i > 0) await userEvent.keyboard('{ArrowRight}')
+      await waitFor(() => expect(body.getByText(text)).toBeVisible())
+    }
+  },
+}
 
 /** One finished series gets its own poster and title instead of a fan of covers. */
 export const SingleFinish: Story = {
@@ -45,6 +48,6 @@ export const SingleFinish: Story = {
     const body = within(canvasElement.ownerDocument.body)
     await body.findByRole('dialog')
     for (let i = 0; i < 7; i++) await userEvent.keyboard('{ArrowRight}')
-    await waitFor(() => expect(body.getByText('The Ninth Kitchen')).toBeVisible(), { timeout: 4000 })
+    await waitFor(() => expect(body.getByText('The Ninth Kitchen')).toBeVisible())
   },
 }

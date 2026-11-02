@@ -23,7 +23,7 @@ public sealed class CustomRailsControllerTests : IDisposable
     private CustomRailsController Controller(int userId)
     {
         var db = _db.NewContext(userId);
-        var service = new CustomRailService(db, new TestCurrentUser(userId), null!, null!, null!, null!, null!, null!);
+        var service = new CustomRailService(db, new TestCurrentUser(userId), null!, null!, null!, null!, null!);
         return new CustomRailsController(new TestLocalizer(), db, service);
     }
 

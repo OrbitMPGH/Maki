@@ -44,7 +44,7 @@ public class RecommendationController(
             var result = await recommendations.GetAsync(request with { Filters = filters }, currentUser, ct);
             // Relations skip the catalogue filters on purpose (a sequel is shown whatever the panel
             // says), but a never-show list is not a panel setting.
-            var isHidden = await hidden.PredicateAsync(ct);
+            var isHidden = await hidden.PredicateAsync(result.Related, ct);
             return Ok(isHidden is null
                 ? result
                 : result with { Related = HiddenContentService.Without(result.Related, isHidden) });
@@ -145,9 +145,10 @@ public class RecommendationController(
         try
         {
             var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
-            var isHidden = await hidden.PredicateAsync(ct);
             var rails = await discover.GetFeedsAsync(
-                SharedRefresh(refresh), currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
+                SharedRefresh(refresh), currentUser.MaxContentRating, ct,
+                RailDepth(suppressed, await hidden.HasTermsAsync(ct)));
+            var isHidden = await hidden.PredicateAsync(rails.SelectMany(r => r.Items), ct);
             return Ok(LocalizeRails(FilterRails(rails, suppressed, isHidden)));
         }
         catch (LocalCatalogueUnavailableException ex)
@@ -162,8 +163,8 @@ public class RecommendationController(
     {
         try
         {
-            var isHidden = await hidden.PredicateAsync(ct);
             var rails = await sideInterests.GetAsync(currentUser, refresh, ct);
+            var isHidden = await hidden.PredicateAsync(rails.SelectMany(r => r.Items), ct);
             return Ok(LocalizeRails(
                 rails.Select(r => r with { Items = HiddenContentService.Without(r.Items, isHidden) }).ToList()));
         }
@@ -189,11 +190,13 @@ public class RecommendationController(
     {
         try
         {
-            var isHidden = await hidden.PredicateAsync(ct);
             var rail = await recentActivity.GetAsync(currentUser, refresh, ct);
             return Ok(rail is null
                 ? null
-                : LocalizeRail(rail with { Items = HiddenContentService.Without(rail.Items, isHidden) }));
+                : LocalizeRail(rail with
+                {
+                    Items = HiddenContentService.Without(rail.Items, await hidden.PredicateAsync(rail.Items, ct))
+                }));
         }
         catch (LocalCatalogueUnavailableException)
         {
@@ -208,9 +211,10 @@ public class RecommendationController(
         try
         {
             var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
-            var isHidden = await hidden.PredicateAsync(ct);
             var rails = await discover.GetGenreFeedsAsync(
-                SharedRefresh(refresh), currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
+                SharedRefresh(refresh), currentUser.MaxContentRating, ct,
+                RailDepth(suppressed, await hidden.HasTermsAsync(ct)));
+            var isHidden = await hidden.PredicateAsync(rails.SelectMany(r => r.Items), ct);
             return Ok(LocalizeRails(FilterRails(rails, suppressed, isHidden)));
         }
         catch (LocalCatalogueUnavailableException ex)
@@ -229,7 +233,7 @@ public class RecommendationController(
         try
         {
             var clamped = await ScopeAsync(request.Filters, ct);
-            var exclude = await customRails.ExclusionsAsync(request.ExcludeOwned, ct);
+            var exclude = await customRails.ExclusionsAsync(request.ExcludeOwned, request.ExcludeInteracted, ct);
             return Ok(await discover.GetFeedAsync(request with { Filters = clamped }, ct, exclude));
         }
         catch (LocalCatalogueUnavailableException ex)
@@ -413,7 +417,7 @@ public class RecommendationController(
     public async Task<IActionResult> DiscoverCount([FromBody] DiscoverFeedRequest request, CancellationToken ct)
     {
         var scoped = await ScopeAsync(request.Filters, ct);
-        var exclude = await customRails.ExclusionsAsync(request.ExcludeOwned, ct);
+        var exclude = await customRails.ExclusionsAsync(request.ExcludeOwned, request.ExcludeInteracted, ct);
         return Ok(new { count = await discover.CountAsync(request with { Filters = scoped }, ct, exclude) });
     }
 
@@ -497,8 +501,8 @@ public class RecommendationController(
     /// Refill headroom only for a caller who has something to filter out of the rails. The cached
     /// set is built that deep either way; this only decides how much of it comes back.
     /// </summary>
-    private static int RailDepth(HashSet<long> suppressed, Func<long, bool>? isHidden) =>
-        suppressed.Count > 0 || isHidden is not null ? DiscoverService.RefillRailSize : DiscoverService.RailSize;
+    private static int RailDepth(HashSet<long> suppressed, bool hasHidden) =>
+        suppressed.Count > 0 || hasHidden ? DiscoverService.RefillRailSize : DiscoverService.RailSize;
 
     /// <summary>
     /// The shared Discover rails are one cache for every reader at a ceiling, so a reader's refresh

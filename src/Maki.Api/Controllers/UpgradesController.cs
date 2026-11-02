@@ -157,9 +157,15 @@ public class UpgradesController(
             return Accepted(new { started = true });
         }
 
-        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        var target = await db.Series.Where(s => s.Id == seriesId).Select(s => new { s.ArchivedAt }).FirstOrDefaultAsync(ct);
+        if (target is null)
         {
             return NotFound();
+        }
+
+        if (target.ArchivedAt is not null)
+        {
+            return this.Conflict(localizer, "error.series.archived");
         }
 
         if (UpgradeVolumeSearchJob.IsRunning)
@@ -231,6 +237,11 @@ public class UpgradesController(
 
         if (request.ChapterId is { } chapterId)
         {
+            if (await db.Chapters.AnyAsync(c => c.Id == chapterId && c.Series!.ArchivedAt != null, ct))
+            {
+                return this.Conflict(localizer, "error.series.archived");
+            }
+
             if (!await db.Chapters.AnyAsync(c => c.Id == chapterId && c.ChapterFileId != null, ct))
             {
                 return this.NotFoundMessage(localizer, "error.upgrades.chapterHasNoFile");
@@ -238,9 +249,15 @@ public class UpgradesController(
         }
         else if (request.SeriesId is { } seriesId)
         {
-            if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+            var target = await db.Series.Where(s => s.Id == seriesId).Select(s => new { s.ArchivedAt }).FirstOrDefaultAsync(ct);
+            if (target is null)
             {
                 return NotFound();
+            }
+
+            if (target.ArchivedAt is not null)
+            {
+                return this.Conflict(localizer, "error.series.archived");
             }
 
             if (UpgradeScanService.IsRunning)

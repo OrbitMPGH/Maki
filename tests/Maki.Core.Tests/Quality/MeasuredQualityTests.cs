@@ -32,31 +32,81 @@ public class MeasuredQualityTests
         Assert.Equal((0, 0), MeasuredQuality.Points(Profile(), Candidate()));
     }
 
-    [Theory]
-    [InlineData(2000, 10)]
-    [InlineData(1414, 5)]
-    [InlineData(500, -10)]
-    [InlineData(4000, 10)]
-    [InlineData(200, -10)]
-    public void Resolution_is_points_per_doubling_of_width_within_the_clamp(int width, int expected)
+    [Fact]
+    public void Resolution_is_points_per_doubling_of_width()
     {
-        Assert.Equal(expected, MeasuredQuality.Points(Profile(), Candidate(width: width)).Resolution);
+        Assert.Equal(10, MeasuredQuality.Points(Profile(), Candidate(width: MeasuredQuality.ReferenceWidth * 2)).Resolution);
+        Assert.Equal(20, MeasuredQuality.Points(Profile(20, 10), Candidate(width: MeasuredQuality.ReferenceWidth * 2)).Resolution);
+
+        // Log scale, not linear: a linear scale would give 4 here.
+        Assert.Equal(5, MeasuredQuality.Points(Profile(), Candidate(width: (int)(MeasuredQuality.ReferenceWidth * Math.Sqrt(2)))).Resolution);
+    }
+
+    [Fact]
+    public void A_wider_copy_never_scores_lower_on_resolution_and_the_ends_are_clamped()
+    {
+        var profile = Profile();
+        var points = Enumerable.Range(1, 80).Select(i => i * 100)
+            .Select(width => MeasuredQuality.Points(profile, Candidate(width: width)).Resolution)
+            .ToList();
+
+        Assert.Equal(points.Order(), points);
+        Assert.True(points[0] < points[^1]);
+        Assert.Equal(
+            MeasuredQuality.Points(profile, Candidate(width: MeasuredQuality.MaxWidth)).Resolution,
+            MeasuredQuality.Points(profile, Candidate(width: MeasuredQuality.MaxWidth * 3)).Resolution);
+        Assert.Equal(
+            MeasuredQuality.Points(profile, Candidate(width: MeasuredQuality.MinWidth)).Resolution,
+            MeasuredQuality.Points(profile, Candidate(width: MeasuredQuality.MinWidth / 3)).Resolution);
+    }
+
+    [Fact]
+    public void Compression_is_points_per_doubling_of_jpg_equivalent_bits_per_pixel()
+    {
+        Assert.Equal(10, MeasuredQuality.Points(Profile(), Candidate(bitsPerPixel: MeasuredQuality.ReferenceBitsPerPixel * 2)).Compression);
+        Assert.Equal(-10, MeasuredQuality.Points(Profile(), Candidate(bitsPerPixel: MeasuredQuality.ReferenceBitsPerPixel / 2)).Compression);
+    }
+
+    [Fact]
+    public void A_lighter_compressed_copy_never_scores_lower_and_the_ends_are_clamped()
+    {
+        var profile = Profile();
+        var points = Enumerable.Range(1, 120).Select(i => i * 0.05)
+            .Select(bpp => MeasuredQuality.Points(profile, Candidate(bitsPerPixel: bpp)).Compression)
+            .ToList();
+
+        Assert.Equal(points.Order(), points);
+        Assert.True(points[0] < points[^1]);
+        Assert.Equal(
+            MeasuredQuality.Points(profile, Candidate(bitsPerPixel: MeasuredQuality.MaxBitsPerPixel)).Compression,
+            MeasuredQuality.Points(profile, Candidate(bitsPerPixel: MeasuredQuality.MaxBitsPerPixel * 50)).Compression);
+        Assert.Equal(
+            MeasuredQuality.Points(profile, Candidate(bitsPerPixel: MeasuredQuality.MinBitsPerPixel)).Compression,
+            MeasuredQuality.Points(profile, Candidate(bitsPerPixel: MeasuredQuality.MinBitsPerPixel / 50)).Compression);
     }
 
     [Theory]
-    [InlineData(3.0, "jpg", 10)]
-    [InlineData(0.75, "jpg", -10)]
-    [InlineData(100, "jpg", 20)]
-    [InlineData(0.01, "jpg", -20)]
-    [InlineData(1.5 / 0.65, "png", 0)]
-    [InlineData(1.5 / 1.4, "webp", 0)]
-    [InlineData(0.75, "avif", 0)]
-    [InlineData(1.5, "mixed", 0)]
-    public void Compression_is_points_per_doubling_of_jpg_equivalent_bits_per_pixel(
-        double bitsPerPixel, string format, int expected)
+    [InlineData("png")]
+    [InlineData("webp")]
+    [InlineData("avif")]
+    [InlineData("jpg")]
+    [InlineData("mixed")]
+    public void Bits_per_pixel_are_compared_after_converting_to_jpg_equivalent(string format)
     {
-        Assert.Equal(expected,
-            MeasuredQuality.Points(Profile(), Candidate(bitsPerPixel: bitsPerPixel, format: format)).Compression);
+        var atReference = Candidate(bitsPerPixel: MeasuredQuality.ReferenceBitsPerPixel / MeasuredQuality.FormatEfficiency(format), format: format);
+
+        Assert.Equal(0, MeasuredQuality.Points(Profile(), atReference).Compression);
+    }
+
+    [Fact]
+    public void Png_is_discounted_and_webp_and_avif_are_credited_against_jpg()
+    {
+        Assert.True(MeasuredQuality.FormatEfficiency("png") < 1);
+        Assert.True(MeasuredQuality.FormatEfficiency("webp") > 1);
+        Assert.True(MeasuredQuality.FormatEfficiency("avif") >= MeasuredQuality.FormatEfficiency("webp"));
+        Assert.Equal(1, MeasuredQuality.FormatEfficiency("jpg"));
+        Assert.Equal(1, MeasuredQuality.FormatEfficiency("mixed"));
+        Assert.Equal(1, MeasuredQuality.FormatEfficiency(null));
     }
 
     [Fact]
@@ -79,8 +129,15 @@ public class MeasuredQualityTests
     [Fact]
     public void Optimistic_points_assume_the_best_only_for_what_is_unknown()
     {
-        Assert.Equal((10, 20), MeasuredQuality.OptimisticPoints(Profile(), Candidate(width: null, bitsPerPixel: null)));
-        Assert.Equal((-10, 20), MeasuredQuality.OptimisticPoints(Profile(), Candidate(width: 500, bitsPerPixel: null)));
+        var profile = Profile();
+        var best = MeasuredQuality.Points(
+            profile, Candidate(width: MeasuredQuality.MaxWidth, bitsPerPixel: MeasuredQuality.MaxBitsPerPixel));
+        var narrow = MeasuredQuality.Points(profile, Candidate(width: MeasuredQuality.MinWidth, bitsPerPixel: null));
+
+        Assert.Equal(best, MeasuredQuality.OptimisticPoints(profile, Candidate(width: null, bitsPerPixel: null)));
+        Assert.Equal(
+            (narrow.Resolution, best.Compression),
+            MeasuredQuality.OptimisticPoints(profile, Candidate(width: MeasuredQuality.MinWidth, bitsPerPixel: null)));
     }
 
     [Fact]

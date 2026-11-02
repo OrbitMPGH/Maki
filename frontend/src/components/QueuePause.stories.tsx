@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, waitFor, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api } from '../../.storybook/mocks/api'
 import { pausedAll, pausedSources } from '../../.storybook/mocks/operations/queue'
@@ -14,7 +14,18 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+const onPause = fn()
+
 export const Default: Story = {
+  parameters: {
+    msw: [
+      http.put(api('/queue/pause'), async ({ request }) => {
+        onPause(await request.json())
+        return HttpResponse.json({ all: { until: null }, sources: [] })
+      }),
+    ],
+  },
+  beforeEach: () => onPause.mockClear(),
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Pause downloads' }))
     const body = within(canvasElement.ownerDocument.body)
@@ -22,6 +33,9 @@ export const Default: Story = {
     await waitFor(() => expect(within(dialog).getByRole('combobox', { name: 'What to pause' })).toBeVisible())
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Pause' }))
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument())
+    // The default scope is every source, which the request says by naming none.
+    await waitFor(() => expect(onPause).toHaveBeenCalledTimes(1))
+    await expect(onPause.mock.calls[0][0]).not.toHaveProperty('source')
   },
 }
 

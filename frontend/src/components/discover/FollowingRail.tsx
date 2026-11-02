@@ -6,6 +6,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useDiscoverFeed, type CatalogueCredit, type DiscoverRail, type RecommendationItem } from '../../api/hooks'
 import {
   FOLLOWING_RAIL_KEY,
+  FOLLOWING_RAIL_MONTHS,
   followingFeedRequest,
   sameCredit,
   useFollowedCreators,
@@ -22,7 +23,8 @@ export function creatorHref(c: CatalogueCredit) {
 }
 
 /**
- * The newest catalogue titles credited to anyone the reader follows, owned series left out. Renders
+ * The last year's catalogue titles credited to anyone the reader follows, minus what they own or have
+ * liked, disliked, hidden or marked seen. Renders
  * nothing for somebody who follows nobody: the follow button on a creator page is how it starts.
  */
 export function FollowingRail({
@@ -59,7 +61,8 @@ export function FollowingRail({
     items: items ?? [],
     filters: { credits: creators },
     sort: 'newest',
-    excludeOwned: true,
+    excludeInteracted: true,
+    releasedWithinMonths: FOLLOWING_RAIL_MONTHS,
   }
 
   return (
@@ -93,7 +96,7 @@ export function FollowingRail({
         <DiscoverRailRow items={items} seriesIdFor={seriesIdFor} onOpen={onOpen} />
       ) : (
         <Text c="var(--ink-3)" size="sm">
-          <Trans>Everything they have in the catalogue is already in your library.</Trans>
+          <Trans>Nothing new from them in the last {FOLLOWING_RAIL_MONTHS} months that you have not seen already.</Trans>
         </Text>
       )}
       <FollowingManager opened={managing} creators={creators} onClose={() => setManaging(false)} />

@@ -10,6 +10,7 @@ services:
       - /path/to/manga-library:/library
     ports:
       - "8990:8990"
+    mem_reservation: 512m
     restart: unless-stopped
 
   # Optional. Point a Kavita library at the same folder.

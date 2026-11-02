@@ -12,7 +12,7 @@ import {
   Text,
 } from '@mantine/core'
 import { IconDownload, IconRefresh } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'

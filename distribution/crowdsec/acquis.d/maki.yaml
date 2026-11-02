@@ -1,0 +1,6 @@
+# Point this at Maki's log folder: {ConfigDir}/logs, which is /config/logs in the Docker image.
+# Turn the access log on first: "AccessLog": true in config.json, then restart Maki.
+filenames:
+  - /path/to/maki/config/logs/access-*.log
+labels:
+  type: maki

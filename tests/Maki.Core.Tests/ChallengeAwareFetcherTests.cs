@@ -27,7 +27,8 @@ public class ChallengeAwareFetcherTests
         public string FlareCookies { get; set; } =
             """[{"name":"cf_clearance","value":"abc"},{"name":"toonily-mature","value":"1"}]""";
 
-        public TimeSpan FlareDelay { get; set; } = TimeSpan.Zero;
+        /// <summary>Awaited inside each solve, given how many solves are in flight, so a test can hold solves open.</summary>
+        public Func<int, Task>? FlareGate { get; set; }
 
         public int MaxFlareInFlight;
         private int _flareInFlight;
@@ -46,9 +47,9 @@ public class ChallengeAwareFetcherTests
                         FlarePayloads.Add(payload);
                     }
 
-                    if (FlareDelay > TimeSpan.Zero)
+                    if (FlareGate is { } gate)
                     {
-                        await Task.Delay(FlareDelay, ct);
+                        await gate(inFlight).WaitAsync(ct);
                     }
 
                     var solution = $$"""{"status":"ok","solution":{"status":{{FlareStatus}},"response":"<html>solved</html>","userAgent":"FlareUA","cookies":"""
@@ -307,13 +308,27 @@ public class ChallengeAwareFetcherTests
     public async Task Concurrent_fetches_on_a_cold_host_share_one_solve()
     {
         var (fetcher, handler) = Build();
-        handler.FlareDelay = TimeSpan.FromMilliseconds(200);
+        // The solve stays open until all six have been turned away, so none of them can find a cookie already cached.
+        var challenged = 0;
+        var allChallenged = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        handler.FlareGate = _ => allChallenged.Task;
         handler.OnTarget = request =>
-            request.Headers.TryGetValues("Cookie", out var cookies) && cookies.Single().Contains("cf_clearance")
-                ? Ok("<html>ok</html>")
-                : new HttpResponseMessage(HttpStatusCode.Forbidden);
+        {
+            if (request.Headers.TryGetValues("Cookie", out var cookies) && cookies.Single().Contains("cf_clearance"))
+            {
+                return Ok("<html>ok</html>");
+            }
 
-        var results = await Task.WhenAll(Enumerable.Range(0, 6).Select(_ => fetcher.GetHtmlAsync(Target)));
+            if (Interlocked.Increment(ref challenged) == 6)
+            {
+                allChallenged.TrySetResult();
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.Forbidden);
+        };
+
+        var results = await Task.WhenAll(Enumerable.Range(0, 6).Select(_ => fetcher.GetHtmlAsync(Target)))
+            .WaitAsync(TimeSpan.FromSeconds(10));
 
         Assert.Single(handler.FlarePayloads);
         Assert.Equal(5, results.Count(r => r == "<html>ok</html>"));
@@ -323,10 +338,21 @@ public class ChallengeAwareFetcherTests
     public async Task Flaresolverr_runs_at_most_two_solves_at_once()
     {
         var (fetcher, handler) = Build();
-        handler.FlareDelay = TimeSpan.FromMilliseconds(150);
+        // No solve finishes until a second one is running alongside it, so reaching two is certain, not a race.
+        var two = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        handler.FlareGate = inFlight =>
+        {
+            if (inFlight >= 2)
+            {
+                two.TrySetResult();
+            }
+
+            return two.Task;
+        };
         handler.OnTarget = _ => new HttpResponseMessage(HttpStatusCode.Forbidden);
 
-        await Task.WhenAll(Enumerable.Range(0, 5).Select(i => fetcher.GetHtmlAsync($"https://host{i}.test/")));
+        await Task.WhenAll(Enumerable.Range(0, 5).Select(i => fetcher.GetHtmlAsync($"https://host{i}.test/")))
+            .WaitAsync(TimeSpan.FromSeconds(10));
 
         Assert.Equal(5, handler.FlarePayloads.Count);
         Assert.Equal(2, handler.MaxFlareInFlight);

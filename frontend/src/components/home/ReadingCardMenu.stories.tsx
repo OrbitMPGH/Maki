@@ -8,7 +8,7 @@ import { ReadingCardMenu } from './ReadingCardMenu'
 const meta = {
   component: ReadingCardMenu,
   tags: ['ai-generated'],
-  args: { item: continueReading[0], rail: 'continue', className: '', variant: 'default', size: 36 },
+  args: { item: continueReading[0], className: '', variant: 'default', size: 36 },
   parameters: { layout: 'centered' },
 } satisfies Meta<typeof ReadingCardMenu>
 
@@ -24,15 +24,6 @@ export const Default: Story = {
     const body = within(canvasElement.ownerDocument.body)
     await waitFor(() => expect(body.getByRole('menuitem', { name: 'Open series' })).toBeVisible())
     await expect(await body.findByRole('menuitem', { name: 'Remove from Continue reading' })).toBeVisible()
-  },
-}
-
-export const OnJumpBackIn: Story = {
-  args: { rail: 'jumpback' },
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: TRIGGER }))
-    const body = within(canvasElement.ownerDocument.body)
-    await waitFor(() => expect(body.getByRole('menuitem', { name: 'Remove from Jump back in' })).toBeVisible())
   },
 }
 

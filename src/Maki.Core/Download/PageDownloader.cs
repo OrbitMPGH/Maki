@@ -79,6 +79,11 @@ public class PageDownloader(
             // this URL from here would hit the same block that made the browser fetch necessary.
             await File.WriteAllBytesAsync(temp, page.Data, ct);
         }
+        else if (page.Fetch != null)
+        {
+            await cooldown.WaitAsync(sourceName, ct);
+            await File.WriteAllBytesAsync(temp, await page.Fetch(ct), ct);
+        }
         else
         {
             // Another download from the same source may have tripped its backoff after this chapter

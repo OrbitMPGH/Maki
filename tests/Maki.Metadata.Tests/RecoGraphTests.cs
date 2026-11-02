@@ -60,8 +60,8 @@ public class RecoGraphTests : IDisposable
     {
         var graph = await Load((1, 2, 42));
 
-        Assert.Equal(42, graph!.WeightsAt(Node(graph, 1))[0]);
-        Assert.Equal(42, graph.WeightsAt(Node(graph, 2))[0]);
+        Assert.Equal(42, graph!.EdgesAt(Node(graph, 1)).Weight(0));
+        Assert.Equal(42, graph.EdgesAt(Node(graph, 2)).Weight(0));
     }
 
     [Fact]
@@ -197,14 +197,12 @@ public class RecoGraphTests : IDisposable
 
     private static int VotesBetween(PairGraphIndex graph, long from, long to)
     {
-        var node = Node(graph, from);
-        var neighbours = graph.NeighboursAt(node);
-        var weights = graph.WeightsAt(node);
-        for (var i = 0; i < neighbours.Length; i++)
+        var edges = graph.EdgesAt(Node(graph, from));
+        for (var i = 0; i < edges.Length; i++)
         {
-            if (graph.IdAt(neighbours[i]) == to)
+            if (graph.IdAt(edges.Neighbour(i)) == to)
             {
-                return (int)weights[i];
+                return (int)edges.Weight(i);
             }
         }
 
@@ -248,12 +246,11 @@ public class RecoGraphTests : IDisposable
 
     private static long[] Neighbours(PairGraphIndex graph, long id)
     {
-        var node = Node(graph, id);
-        var neighbours = graph.NeighboursAt(node);
-        var ids = new long[neighbours.Length];
-        for (var i = 0; i < neighbours.Length; i++)
+        var edges = graph.EdgesAt(Node(graph, id));
+        var ids = new long[edges.Length];
+        for (var i = 0; i < edges.Length; i++)
         {
-            ids[i] = graph.IdAt(neighbours[i]);
+            ids[i] = graph.IdAt(edges.Neighbour(i));
         }
 
         return ids;

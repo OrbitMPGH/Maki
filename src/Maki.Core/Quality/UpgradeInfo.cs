@@ -73,6 +73,9 @@ public sealed class QualitySnapshot
     /// <inheritdoc cref="StoredImageFormat"/>
     public long? ConversionSavedBytes { get; set; }
 
+    /// <summary>What the conversion plan answered for the file, when it had been checked (<c>ChapterFile.CheckedWith</c>).</summary>
+    public string? CheckedWith { get; set; }
+
     /// <summary>Puts the snapshot's format and conversion record back on a file whose bytes it describes again.</summary>
     public void RestoreFormatOnto(Entities.ChapterFile file, DateTime now)
     {
@@ -82,6 +85,12 @@ public sealed class QualitySnapshot
         {
             file.OriginalImageFormat = ImageFormat;
             file.ConversionSavedBytes = ConversionSavedBytes ?? 0;
+            file.ConversionCheckedAtUtc = now;
+        }
+
+        if (CheckedWith is not null)
+        {
+            file.CheckedWith = CheckedWith;
             file.ConversionCheckedAtUtc = now;
         }
     }

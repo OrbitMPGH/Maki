@@ -13,7 +13,7 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { IconArrowBackUp, IconLock, IconUpload } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MetadataField, SeriesDto } from '../../api/types'

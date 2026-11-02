@@ -26,6 +26,12 @@ interface InitializeInfo {
 }
 
 let initialize: Promise<InitializeInfo> | null = null
+let knownApiRoot: string | null = null
+
+/** The API root once the bootstrap has loaded, for a URL that has to be built inside a render. */
+export function apiRootNow(): string | null {
+  return knownApiRoot
+}
 
 /**
  * Pre-authentication bootstrap. Carries no credential: it used to return the instance API key to
@@ -39,7 +45,9 @@ export function getInitialize(): Promise<InitializeInfo> {
   const pending = (async () => {
     const res = await fetch('/initialize.json', { cache: 'no-cache' })
     if (!res.ok) throw new Error(t`Failed to initialize`)
-    return (await res.json()) as InitializeInfo
+    const info = (await res.json()) as InitializeInfo
+    knownApiRoot = info.apiRoot
+    return info
   })()
   initialize = pending
   pending.catch(() => {
@@ -67,13 +75,26 @@ export class ApiError extends Error {
   readonly code: string | null
   /** A delete the recycle bin refused, which the same request with `permanent=true` may carry out instead. */
   readonly permanentDeleteAvailable: boolean
+  /** The series a refusal is about (`error.series.archivedExists`), when the body names one. */
+  readonly seriesId: number | null
+  /** The whole JSON body, for a refusal that carries more than a message (a list of problems, say). */
+  readonly payload: unknown
 
-  constructor(status: number, message: string, code: string | null = null, permanentDeleteAvailable = false) {
+  constructor(
+    status: number,
+    message: string,
+    code: string | null = null,
+    permanentDeleteAvailable = false,
+    seriesId: number | null = null,
+    payload: unknown = null,
+  ) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
     this.permanentDeleteAvailable = permanentDeleteAvailable
+    this.seriesId = seriesId
+    this.payload = payload
   }
 }
 
@@ -172,6 +193,25 @@ export async function apiWithOrigin<T>(
   return { data: await readResponse<T>(res, generation), servedOffline: servedOffline(res) }
 }
 
+/**
+ * `api` for an endpoint that answers with bytes: the body as a Blob plus the response headers, for
+ * a caller that reads sizes off them. Errors come back the same way as from `api`.
+ */
+export async function apiBlob(
+  path: string,
+  options: RequestInit = {},
+): Promise<{ blob: Blob; headers: Headers }> {
+  const generation = sessionGeneration
+  const init = await getInitialize()
+  const res = await trackedFetch(`${init.apiRoot}${path}`, {
+    ...options,
+    credentials: 'same-origin',
+    headers: authHeaders(options.headers),
+  })
+  if (!res.ok) await readResponse<never>(res, generation)
+  return { blob: await res.blob(), headers: res.headers }
+}
+
 /** True when the service worker answered from the device (or queued a write) instead of the server. */
 export function servedOffline(res: Response): boolean {
   return res.headers.has(OFFLINE_HEADER) || res.headers.has(QUEUED_HEADER)
@@ -266,6 +306,8 @@ async function readResponse<T>(res: Response, generation: number): Promise<T> {
       errorMessage(body) ?? t`The server returned an error (${status}).`,
       code,
       offersPermanentDelete(body),
+      errorSeriesId(body),
+      parsedBody(body),
     )
   }
   // 204, and any 200 whose handler wrote no body, have nothing to parse.
@@ -304,6 +346,29 @@ function offersPermanentDelete(body: string): boolean {
     return (JSON.parse(body) as { permanentDeleteAvailable?: boolean }).permanentDeleteAvailable === true
   } catch {
     return false
+  }
+}
+
+/** The archived series an add or an approval ran into, so the caller can offer Restore. */
+export function archivedExistsSeriesId(error: unknown): number | null {
+  return error instanceof ApiError && error.code === 'error.series.archivedExists' ? error.seriesId : null
+}
+
+function errorSeriesId(body: string): number | null {
+  if (!body) return null
+  try {
+    const id = (JSON.parse(body) as { seriesId?: unknown }).seriesId
+    return typeof id === 'number' ? id : null
+  } catch {
+    return null
+  }
+}
+
+function parsedBody(body: string): unknown {
+  try {
+    return JSON.parse(body) as unknown
+  } catch {
+    return null
   }
 }
 

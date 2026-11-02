@@ -62,11 +62,14 @@ public class HiddenContentServiceTests : IDisposable
         Assert.Single(kept);
     }
 
-    [Fact]
-    public async Task The_never_show_list_still_filters_when_embeddings_are_switched_off()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task The_never_show_list_still_filters_when_embeddings_are_switched_off(bool indexLoaded)
     {
         // Turning embeddings off leaves the vectors on disk, so the index can still answer which
         // rows carry a hidden genre. If it did not, every hidden title would reappear on the rails.
+        // With the index unloaded the dump answers instead, and the index stays unloaded.
         using var dump = new DumpDbBuilder();
         dump.AddSeries(1, "Scary", rating: 80, genresJson: """["Horror"]""")
             .AddSeries(2, "Fine", rating: 80, genresJson: """["Comedy"]""");
@@ -79,17 +82,51 @@ public class HiddenContentServiceTests : IDisposable
         store.EnsureSchema();
         store.UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f]), (2L, "h", [0f, 1f, 0f, 0f])]);
         var dumpOptions = new MangaBakaDumpOptions(dump.Path, _dir);
-        var service = new HiddenContentService(
-            new FixedSettings("""{"terms":[{"kind":"genre","name":"Horror"}]}"""),
-            new VectorIndexCache(options, dumpOptions, NullLogger<VectorIndexCache>.Instance),
-            new CatalogueIndexCache(dumpOptions, NullLogger<CatalogueIndexCache>.Instance));
+        var vectors = new VectorIndexCache(options, dumpOptions, NullLogger<VectorIndexCache>.Instance);
+        if (indexLoaded)
+        {
+            Assert.NotNull(await vectors.GetAsync());
+        }
 
-        var hidden = await service.PredicateAsync();
+        var service = Service("""{"terms":[{"kind":"genre","name":"Horror"}]}""", dumpOptions, vectors);
+
+        var hidden = await service.PredicateAsync([1L, 2L]);
 
         Assert.NotNull(hidden);
         Assert.True(hidden(1));
         Assert.False(hidden(2));
+        Assert.Equal(indexLoaded, vectors.IsLoaded);
     }
+
+    [Fact]
+    public async Task Without_the_index_tags_match_by_name_path_and_weight()
+    {
+        using var dump = new DumpDbBuilder();
+        dump.AddSeries(1, "College", tagsV2Json: Tag(10, "College", "Locations > School > College", "incidental"))
+            .AddSeries(2, "Office", tagsV2Json: Tag(11, "Office", "Locations > Office", "recurrent"))
+            .AddSeries(3, "Gore light", tagsV2Json: Tag(12, "Gore", "Content > Gore", "incidental"))
+            .AddSeries(4, "Gore heavy", tagsV2Json: Tag(12, "Gore", "Content > Gore", "defining"));
+        var dumpOptions = new MangaBakaDumpOptions(dump.Path, _dir);
+        var service = Service(
+            """{"terms":[{"kind":"tag","name":"School","subtags":true},{"kind":"tag","name":"Gore","central":true}]}""",
+            dumpOptions,
+            new VectorIndexCache(
+                new EmbeddingOptions(_dir, Path.Combine(_dir, "none.db"), _dir, EmbeddingModelProfile.Base),
+                dumpOptions, NullLogger<VectorIndexCache>.Instance));
+
+        var hidden = await service.PredicateAsync([1L, 2L, 3L, 4L]);
+
+        Assert.NotNull(hidden);
+        Assert.Equal([1L, 4L], new long[] { 1, 2, 3, 4 }.Where(hidden));
+    }
+
+    private static string Tag(int id, string name, string path, string weight) =>
+        $$"""[{"id":{{id}},"name":"{{name}}","name_path":"{{path}}","weight":"{{weight}}"}]""";
+
+    private static HiddenContentService Service(string hidden, MangaBakaDumpOptions dump, VectorIndexCache vectors) =>
+        new(new FixedSettings(hidden), vectors,
+            new CatalogueIndexCache(dump, NullLogger<CatalogueIndexCache>.Instance),
+            new MangaBakaLocalStore(dump, NullLogger<MangaBakaLocalStore>.Instance));
 
     private sealed class FixedSettings(string hidden) : IUserSettings
     {

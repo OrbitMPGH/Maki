@@ -22,7 +22,8 @@ public class SystemController(
     ImageCacheRebuildStatus imageCacheStatus,
     ISchedulerFactory schedulerFactory,
     ICurrentUser currentUser,
-    IHostApplicationLifetime lifetime,
+    HostRestarter restarter,
+    ConfigFileProvider configFile,
     Maki.Api.Localization.ILocalizer localizer,
     ILogger<SystemController> logger) : ControllerBase
 {
@@ -74,7 +75,73 @@ public class SystemController(
     }
 
     [HttpGet("update")]
-    public IActionResult UpdateStatus() => Ok(updateCheck.GetStatus());
+    public IActionResult UpdateStatus() =>
+        Ok(updateCheck.GetStatus() with { UpdateReady = restarter.ReadyUpdateVersion() is not null });
+
+    /// <summary>Restarts into the update Maki.Desktop has downloaded. Desktop build only.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("update/apply")]
+    public IActionResult ApplyUpdate() =>
+        restarter.TryRestartForUpdate()
+            ? Accepted()
+            : this.Fail(localizer, "error.system.noUpdateReady");
+
+    /// <summary>How this instance runs and where it listens, for the network access setting.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("host")]
+    public IActionResult Host() => Ok(HostInfo());
+
+    /// <summary>
+    /// Switches between listening on this machine only and on every network. Written to config.json
+    /// and applied on the next start, because Kestrel binds once.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("host/network")]
+    public IActionResult SetNetworkAccess([FromBody] NetworkAccessRequest request)
+    {
+        // Inside a container, localhost is the container itself: nothing outside could reach Maki.
+        if (HostRuntime.Kind == HostRuntimeKind.Docker)
+            return this.Fail(localizer, "error.system.networkAccessDocker");
+
+        configFile.UpdateOnDisk(c => c.BindAddress = request.AllowNetwork ? "*" : "localhost");
+        return Ok(HostInfo());
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("restart")]
+    public IActionResult Restart()
+    {
+        if (!HostRuntime.IsSupervised)
+            return this.Fail(localizer, "error.system.restartUnsupervised");
+
+        restarter.Restart("an administrator asked for a restart");
+        return Accepted();
+    }
+
+    public record NetworkAccessRequest(bool AllowNetwork);
+
+    private object HostInfo()
+    {
+        var configured = configFile.ReadOnDisk().BindAddress;
+        return new
+        {
+            runtime = HostRuntime.Name(HostRuntime.Kind),
+            supervised = HostRuntime.IsSupervised,
+            port = configFile.Config.Port,
+            bindAddress = configFile.Config.BindAddress,
+            // Differs from bindAddress after a change that is waiting for a restart.
+            configuredBindAddress = configured,
+            networkAccess = IsNetworkWide(configFile.Config.BindAddress),
+            configuredNetworkAccess = IsNetworkWide(configured),
+        };
+    }
+
+    private static bool IsNetworkWide(string bindAddress)
+    {
+        var address = bindAddress.Trim();
+        return !address.Equals("localhost", StringComparison.OrdinalIgnoreCase)
+            && !(System.Net.IPAddress.TryParse(address, out var ip) && System.Net.IPAddress.IsLoopback(ip));
+    }
 
     /// <summary>
     /// Where the process's memory is, split into managed heap, native, and the kernel's own
@@ -214,8 +281,7 @@ public class SystemController(
             return this.Fail(localizer, "error.system.restoreFailed");
         }
 
-        ScheduleRestart();
-        return Accepted(new { message = localizer.Get("error.system.restoreStaged") });
+        return RestartForRestore();
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -243,19 +309,19 @@ public class SystemController(
             return this.Fail(localizer, "error.system.restoreFailed");
         }
 
-        ScheduleRestart();
-        return Accepted(new { message = localizer.Get("error.system.restoreStaged") });
+        return RestartForRestore();
     }
 
     /// <summary>Stops the app shortly after the response flushes so the staged restore is applied on
-    /// the next boot. Only auto-recovers under a supervisor (Docker restart policy, systemd).</summary>
-    private void ScheduleRestart()
+    /// the next boot. Without a supervisor it stays stopped, and the message says to start it again.</summary>
+    private IActionResult RestartForRestore()
     {
-        logger.LogWarning("Restore staged — stopping application so it restarts into the restored data");
-        _ = Task.Run(async () =>
+        restarter.Restart("a restore was staged");
+        return Accepted(new
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(500));
-            lifetime.StopApplication();
+            message = localizer.Get(HostRuntime.IsSupervised
+                ? "error.system.restoreStaged"
+                : "error.system.restoreStagedManualStart")
         });
     }
 }

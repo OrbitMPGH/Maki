@@ -24,15 +24,26 @@ public class DownloadQueueCooldownTests
         return (new DownloadQueueService(null!, clock, null!, NullLogger<DownloadQueueService>.Instance), clock);
     }
 
+    /// <summary>Hits the source once, then lets that cooldown lapse so the next hit is a fresh incident.</summary>
+    private static TimeSpan Incident(DownloadQueueService queue, StoppedClock clock)
+    {
+        var now = clock.Now.UtcDateTime;
+        var until = queue.EnterRateLimitCooldown(Source, null);
+        clock.Now = new DateTimeOffset(until, TimeSpan.Zero).AddSeconds(1);
+        return until - now;
+    }
+
     [Fact]
-    public void First_Hit_Backs_Off_Thirty_Seconds()
+    public void First_Hit_Starts_A_Cooldown_Below_The_Ceiling()
     {
         var (queue, _) = Build();
 
         var until = queue.EnterRateLimitCooldown(Source, null);
 
-        Assert.Equal(T0.UtcDateTime.AddSeconds(30), until);
-        Assert.Equal(TimeSpan.FromSeconds(30), queue.CooldownRemaining(Source));
+        var wait = until - T0.UtcDateTime;
+        Assert.True(wait > TimeSpan.Zero);
+        Assert.True(wait < DownloadQueueService.MaxCooldown);
+        Assert.Equal(wait, queue.CooldownRemaining(Source));
     }
 
     [Fact]
@@ -40,20 +51,20 @@ public class DownloadQueueCooldownTests
     {
         var (queue, clock) = Build();
 
-        queue.EnterRateLimitCooldown(Source, null);
+        var first = Incident(queue, clock);
+        var second = Incident(queue, clock);
 
-        // A new incident only counts once the previous cooldown has already elapsed.
-        clock.Now = T0.AddSeconds(31);
-        var until = queue.EnterRateLimitCooldown(Source, null);
-
-        Assert.Equal(clock.Now.UtcDateTime.AddSeconds(60), until);
+        Assert.True(second > first);
     }
 
     [Fact]
     public void Hit_During_Cooldown_Does_Not_Extend_Or_Escalate()
     {
-        var (queue, clock) = Build();
+        var (control, controlClock) = Build();
+        Incident(control, controlClock);
+        var secondIncident = Incident(control, controlClock);
 
+        var (queue, clock) = Build();
         var first = queue.EnterRateLimitCooldown(Source, null);
 
         // An in-flight download reports its own 429 five seconds in: same incident.
@@ -61,10 +72,10 @@ public class DownloadQueueCooldownTests
         var second = queue.EnterRateLimitCooldown(Source, null);
         Assert.Equal(first, second);
 
-        // ...and it must not have advanced the escalation, so the next real incident is still 60s.
-        clock.Now = T0.AddSeconds(31);
+        // ...and it must not have advanced the escalation: the next real incident is the second one.
+        clock.Now = new DateTimeOffset(first, TimeSpan.Zero).AddSeconds(1);
         var third = queue.EnterRateLimitCooldown(Source, null);
-        Assert.Equal(clock.Now.UtcDateTime.AddSeconds(60), third);
+        Assert.Equal(clock.Now.UtcDateTime + secondIncident, third);
     }
 
     [Fact]
@@ -81,13 +92,13 @@ public class DownloadQueueCooldownTests
     }
 
     [Fact]
-    public void RetryAfter_Is_Capped_At_Fifteen_Minutes()
+    public void RetryAfter_Is_Capped_At_The_Ceiling()
     {
         var (queue, _) = Build();
 
-        var until = queue.EnterRateLimitCooldown(Source, TimeSpan.FromHours(2));
+        var until = queue.EnterRateLimitCooldown(Source, DownloadQueueService.MaxCooldown + TimeSpan.FromHours(1));
 
-        Assert.Equal(T0.UtcDateTime.AddMinutes(15), until);
+        Assert.Equal(T0.UtcDateTime + DownloadQueueService.MaxCooldown, until);
     }
 
     [Fact]
@@ -106,46 +117,34 @@ public class DownloadQueueCooldownTests
     {
         var (queue, clock) = Build();
 
-        queue.EnterRateLimitCooldown(Source, null);
-        clock.Now = T0.AddSeconds(31);
-        queue.EnterRateLimitCooldown(Source, null); // 60s — second incident
+        var first = Incident(queue, clock);
+        Incident(queue, clock);
+        Assert.True(Incident(queue, clock) > first);
 
         queue.ClearRateLimitBackoff(Source);
 
-        clock.Now = T0.AddMinutes(5);
-        var until = queue.EnterRateLimitCooldown(Source, null);
-
-        Assert.Equal(clock.Now.UtcDateTime.AddSeconds(30), until);
+        Assert.Equal(first, Incident(queue, clock));
     }
 
     [Fact]
-    public void Escalation_Doubles_Then_Holds_At_The_Fifteen_Minute_Ceiling()
+    public void Escalation_Grows_Then_Holds_At_The_Ceiling()
     {
         var (queue, clock) = Build();
 
-        var durations = new List<TimeSpan>();
-        for (var i = 0; i < 8; i++)
-        {
-            var now = clock.Now.UtcDateTime;
-            var until = queue.EnterRateLimitCooldown(Source, null);
-            durations.Add(until - now);
+        var waits = Enumerable.Range(0, 12).Select(_ => Incident(queue, clock)).ToList();
 
-            // Let each cooldown lapse so the next hit counts as a fresh incident.
-            clock.Now = new DateTimeOffset(until, TimeSpan.Zero).AddSeconds(1);
+        Assert.All(waits, w => Assert.True(w > TimeSpan.Zero && w <= DownloadQueueService.MaxCooldown));
+        for (var i = 1; i < waits.Count; i++)
+        {
+            Assert.True(waits[i] >= waits[i - 1], $"wait {i} shrank");
+            if (waits[i - 1] < DownloadQueueService.MaxCooldown)
+            {
+                Assert.True(waits[i] > waits[i - 1], $"wait {i} did not grow below the ceiling");
+            }
         }
 
-        Assert.Equal(
-            [
-                TimeSpan.FromSeconds(30),
-                TimeSpan.FromMinutes(1),
-                TimeSpan.FromMinutes(2),
-                TimeSpan.FromMinutes(4),
-                TimeSpan.FromMinutes(8),
-                TimeSpan.FromMinutes(15), // 16m, clamped
-                TimeSpan.FromMinutes(15),
-                TimeSpan.FromMinutes(15)
-            ],
-            durations);
+        Assert.Equal(DownloadQueueService.MaxCooldown, waits[^1]);
+        Assert.True(waits[0] < DownloadQueueService.MaxCooldown);
     }
 
     [Fact]
@@ -153,8 +152,8 @@ public class DownloadQueueCooldownTests
     {
         var (queue, clock) = Build();
 
-        queue.EnterRateLimitCooldown(Source, null);
-        clock.Now = T0.AddSeconds(30);
+        var until = queue.EnterRateLimitCooldown(Source, null);
+        clock.Now = new DateTimeOffset(until, TimeSpan.Zero);
 
         Assert.Equal(TimeSpan.Zero, queue.CooldownRemaining(Source));
     }

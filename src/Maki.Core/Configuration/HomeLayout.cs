@@ -22,6 +22,12 @@ public static class HomeSections
     /// </summary>
     public const string Downloading = "downloading";
     public const string RecentlyAdded = "recent";
+
+    /// <summary>
+    /// A retired section key: series between two chapters, once a rail apart from the ones part-way
+    /// through one. Continue reading lists both now; the key is kept so
+    /// <see cref="HomeLayoutSpec.MigrateJumpBackIntoContinue"/> can read layouts that still hold it.
+    /// </summary>
     public const string JumpBackIn = "jumpback";
 
     /// <summary>Library series whose anime the reader finished, from the chapter after the anime ends.</summary>
@@ -38,20 +44,21 @@ public static class HomeSections
     /// </summary>
     public static readonly string[] All =
     [
-        ContinueReading, JumpBackIn, RecentlyAdded, Recommended, FromAnime, Following, Popular
+        ContinueReading, RecentlyAdded, Recommended, FromAnime, Following, Popular
     ];
 
     /// <summary>
     /// Earlier shipping orders, which <see cref="HomeLayoutSpec.MigrateShippingOrder"/> recognises.
-    /// Without <see cref="Glance"/>, which led the oldest: it has been folded into Continue reading by
-    /// the time the move runs.
+    /// Without <see cref="Glance"/>, which led the oldest, and <see cref="JumpBackIn"/>, which followed
+    /// Continue reading in each: both have been folded into Continue reading by the time the move runs.
+    /// The order before this one is the current order once Jump back in is folded away.
     /// </summary>
     internal static readonly string[][] ShippingOrderPredecessors =
     [
         // Before Home opened on its hero.
-        [Downloading, ContinueReading, JumpBackIn, FromAnime, RecentlyAdded, Following, Recommended, Popular],
+        [Downloading, ContinueReading, FromAnime, RecentlyAdded, Following, Recommended, Popular],
         // Hero first, with discovery shipping switched off.
-        [ContinueReading, JumpBackIn, FromAnime, RecentlyAdded, Downloading, Following, Recommended, Popular],
+        [ContinueReading, FromAnime, RecentlyAdded, Downloading, Following, Recommended, Popular],
     ];
 
     public static bool IsValid(string? key) => key is not null && All.Contains(key);
@@ -80,9 +87,6 @@ public static class HomeHeroOptions
 
     public static readonly IReadOnlyDictionary<string, bool> ContinueDefaults =
         new Dictionary<string, bool> { [Glance] = true, [NextUpBeside] = false };
-
-    public static readonly IReadOnlyDictionary<string, bool> JumpBackDefaults =
-        new Dictionary<string, bool> { [NextUpBeside] = false };
 }
 
 /// <summary>
@@ -129,15 +133,14 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Se
         new Dictionary<string, bool>
         {
             [HomeSections.ContinueReading] = true,
-            [HomeSections.JumpBackIn] = false,
         },
         new Dictionary<string, IReadOnlyList<string>>(),
         RailAnchor: null,
-        Upgrade: stored => MigrateShippingOrder(MigrateGlanceIntoContinue(MigrateGlancePanels(MigrateGlance(stored)))),
+        Upgrade: stored => MigrateShippingOrder(
+            MigrateJumpBackIntoContinue(MigrateGlanceIntoContinue(MigrateGlancePanels(MigrateGlance(stored))))),
         Options: new Dictionary<string, IReadOnlyDictionary<string, bool>>
         {
             [HomeSections.ContinueReading] = HomeHeroOptions.ContinueDefaults,
-            [HomeSections.JumpBackIn] = HomeHeroOptions.JumpBackDefaults,
         });
 
     /// <summary>Every known section, in shipping order, all on.</summary>
@@ -229,6 +232,36 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<PageSection>? Se
             .Select(s => s.Key == HomeSections.ContinueReading
                 ? s with { Options = WithOption(s.Options, HomeHeroOptions.Glance, glance.Enabled) }
                 : s)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Folds a stored Jump back in section into Continue reading, which lists both kinds of series
+    /// now, and drops it. Continue reading keeps its own slot and switches, unless only Jump back in
+    /// was on: then that was the reading section its owner had on Home, so the merged section is on
+    /// and takes Jump back in's slot, hero and Next up placement. The glance stays Continue's.
+    /// </summary>
+    public static IReadOnlyList<PageSection> MigrateJumpBackIntoContinue(IReadOnlyList<PageSection> stored)
+    {
+        var jumpBack = stored.FirstOrDefault(s => s.Key == HomeSections.JumpBackIn);
+        if (jumpBack is null)
+        {
+            return stored;
+        }
+
+        var cont = stored.FirstOrDefault(s => s.Key == HomeSections.ContinueReading);
+        if (cont is null || cont.Enabled || !jumpBack.Enabled)
+        {
+            return stored.Where(s => s.Key != HomeSections.JumpBackIn).ToList();
+        }
+
+        var options = jumpBack.Options is { } own && own.TryGetValue(HomeHeroOptions.NextUpBeside, out var beside)
+            ? WithOption(cont.Options, HomeHeroOptions.NextUpBeside, beside)
+            : cont.Options;
+        var merged = cont with { Enabled = true, Hero = jumpBack.Hero ?? false, Options = options };
+        return stored
+            .Where(s => s.Key != HomeSections.ContinueReading)
+            .Select(s => s.Key == HomeSections.JumpBackIn ? merged : s)
             .ToList();
     }
 

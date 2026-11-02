@@ -1,5 +1,6 @@
 using Maki.Api.Configuration;
 using Maki.Api.Services;
+using Maki.Api.Services.Upscaling;
 using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -10,12 +11,19 @@ namespace Maki.Api.Jobs;
 /// <summary>Daily cleanup: orphaned page caches, old finished queue rows, WAL checkpoint, SQLite pool.</summary>
 [DisallowConcurrentExecution]
 public class HousekeepingJob(
-    MakiDbContext db, AppPaths paths, UpgradeTrashService upgradeTrash, ILogger<HousekeepingJob> logger) : IJob
+    MakiDbContext db, AppPaths paths, UpgradeTrashService upgradeTrash, UpscaleCache upscaleCache,
+    ILogger<HousekeepingJob> logger) : IJob
 {
     /// <summary>Most in-app notifications kept per user, read or not. Well past what anyone scrolls.</summary>
     private const int InboxCap = 200;
 
     private static readonly string[] TmpPatterns = ["*.cbz", "*.cbz.partial", "*.cbz.converted", "*.cbz.converted.partial"];
+
+    /// <summary>
+    /// The converted copy a failed undo rollback left in tmp (<see cref="PageConversionUndoService.AsideExtension"/>)
+    /// may be the only one, and the next undo puts it back, so it waits a month rather than a day.
+    /// </summary>
+    internal static readonly TimeSpan AsideRetention = TimeSpan.FromDays(30);
 
     /// <summary>
     /// Failed rows that are not waiting on a retry. A failure stamps neither <c>CompletedAt</c> nor
@@ -29,9 +37,66 @@ public class HousekeepingJob(
     internal static IQueryable<DownloadQueueItem> StaleFailures(IQueryable<DownloadQueueItem> queue, DateTime now, DateTime cutoff) =>
         SettledFailures(queue, now).Where(q => (q.NextAttempt ?? q.CompletedAt ?? q.QueuedAt) < cutoff);
 
+    /// <summary>
+    /// Completed and cancelled rows last active before <paramref name="cutoff"/>. One still waiting for its
+    /// torrent to leave the client stays until <see cref="TorrentRemovalJob"/> settles it or gives up.
+    /// </summary>
+    internal static IQueryable<DownloadQueueItem> StaleSettled(IQueryable<DownloadQueueItem> queue, DateTime cutoff) =>
+        queue.Where(q => (q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled) &&
+                         (q.CompletedAt ?? q.QueuedAt) < cutoff &&
+                         q.ClientRemovalPendingAt == null);
+
     /// <summary>Settled failures from the last 30 days, which is what the downloads health check reports.</summary>
     internal static IQueryable<DownloadQueueItem> RecentFailures(IQueryable<DownloadQueueItem> queue, DateTime now, DateTime cutoff) =>
         SettledFailures(queue, now).Where(q => (q.NextAttempt ?? q.CompletedAt ?? q.QueuedAt) >= cutoff);
+
+    /// <summary>
+    /// Deletes the tmp leftovers older than a day (aside copies after <see cref="AsideRetention"/>) that no
+    /// live queue row names. False when cancelled.
+    /// </summary>
+    internal static bool SweepTmp(string tmpDir, IReadOnlySet<string> liveTmp, DateTime now, ILogger logger,
+        CancellationToken ct)
+    {
+        if (!Directory.Exists(tmpDir))
+        {
+            return true;
+        }
+
+        try
+        {
+            var files = TmpPatterns
+                .SelectMany(pattern => Directory.GetFiles(tmpDir, pattern).Select(file => (file, cutoff: now.AddDays(-1))))
+                .Concat(Directory.GetFiles(tmpDir, "*" + PageConversionUndoService.AsideExtension)
+                    .Select(file => (file, cutoff: now - AsideRetention)));
+            foreach (var (file, cutoff) in files)
+            {
+                if (ct.IsCancellationRequested)
+                {
+                    return false;
+                }
+
+                try
+                {
+                    if (File.GetLastWriteTimeUtc(file) < cutoff &&
+                        !liveTmp.Contains(Path.GetFileName(file).Split('.')[0]))
+                    {
+                        File.Delete(file);
+                    }
+                }
+                // One file still held open must not keep the rest of the folder from being swept.
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    logger.LogDebug(ex, "Could not delete {File}", file);
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogDebug(ex, "Could not clean {Dir}", tmpDir);
+        }
+
+        return true;
+    }
 
     public async Task Execute(IJobExecutionContext context)
     {
@@ -81,7 +146,6 @@ public class HousekeepingJob(
 
         // Packaged chapters, their converted copies, and the .partial files of both from a kill mid-write,
         // left in a library share's .maki/tmp by an item that was cleared or whose process died mid-import. Named after the queue row, so one still active is left alone.
-        var tmpCutoff = DateTime.UtcNow.AddDays(-1);
         var liveTmp = (await db.DownloadQueue
                 .Where(q => q.Status != QueueStatus.Completed &&
                             q.Status != QueueStatus.Failed &&
@@ -92,39 +156,9 @@ public class HousekeepingJob(
             .ToHashSet();
         foreach (var rootPath in await db.RootFolders.IgnoreQueryFilters().Select(r => r.Path).ToListAsync(ct))
         {
-            var tmpDir = Path.Combine(rootPath, ".maki", "tmp");
-            if (!Directory.Exists(tmpDir))
+            if (!SweepTmp(Path.Combine(rootPath, ".maki", "tmp"), liveTmp, DateTime.UtcNow, logger, ct))
             {
-                continue;
-            }
-
-            try
-            {
-                foreach (var file in TmpPatterns.SelectMany(pattern => Directory.GetFiles(tmpDir, pattern)))
-                {
-                    if (ct.IsCancellationRequested)
-                    {
-                        return;
-                    }
-
-                    try
-                    {
-                        if (File.GetLastWriteTimeUtc(file) < tmpCutoff &&
-                            !liveTmp.Contains(Path.GetFileName(file).Split('.')[0]))
-                        {
-                            File.Delete(file);
-                        }
-                    }
-                    // One file still held open must not keep the rest of the folder from being swept.
-                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                    {
-                        logger.LogDebug(ex, "Could not delete {File}", file);
-                    }
-                }
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                logger.LogDebug(ex, "Could not clean {Dir}", tmpDir);
+                return;
             }
         }
 
@@ -166,6 +200,21 @@ public class HousekeepingJob(
             }
         }
 
+        // Server upscales, under their own root. Same two kinds of garbage as the reader cache above,
+        // then the size cap.
+        if (Directory.Exists(upscaleCache.Root))
+        {
+            try
+            {
+                var sizes = await db.ChapterFiles.Select(f => new { f.Id, f.Size }).ToDictionaryAsync(f => f.Id, f => f.Size, ct);
+                await upscaleCache.PruneAsync(sizes, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogDebug(ex, "Could not clean the upscale cache");
+            }
+        }
+
         // Source-comparison samples and Discover previews. Each job clears its own folder when it
         // is superseded, so anything still here belongs to one somebody looked at and closed.
         foreach (var previewRoot in new[] { paths.SourcePreviewDir, paths.SeriesPreviewDir }.Where(Directory.Exists))
@@ -194,6 +243,25 @@ public class HousekeepingJob(
             }
         }
 
+        if (Directory.Exists(paths.ConversionPreviewDir))
+        {
+            var stale = DateTime.UtcNow.AddDays(-1);
+            foreach (var file in Directory.EnumerateFiles(paths.ConversionPreviewDir))
+            {
+                try
+                {
+                    if (File.GetLastWriteTimeUtc(file) < stale)
+                    {
+                        File.Delete(file);
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    logger.LogDebug(ex, "Could not delete {File}", file);
+                }
+            }
+        }
+
         try
         {
             var purged = await upgradeTrash.PurgeAsync(ct);
@@ -212,10 +280,7 @@ public class HousekeepingJob(
         // Settled queue rows whose last activity is older than 30 days.
         var now = DateTime.UtcNow;
         var cutoff = now.AddDays(-30);
-        await db.DownloadQueue
-            .Where(q => (q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled) &&
-                        (q.CompletedAt ?? q.QueuedAt) < cutoff)
-            .ExecuteDeleteAsync(ct);
+        await StaleSettled(db.DownloadQueue, cutoff).ExecuteDeleteAsync(ct);
 
         // Failed rows go too, or the downloads health check would stay yellow over a failure from months ago.
         await StaleFailures(db.DownloadQueue, now, cutoff).ExecuteDeleteAsync(ct);

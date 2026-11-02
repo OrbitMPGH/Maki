@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Alert, Button, Group, Modal, Select, Stack, Text, TextInput } from '@mantine/core'
 import { IconPlayerPause, IconPlayerPlay } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { usePauseQueue, useQueuePause, useResumeQueue, useSources } from '../api/hooks'
 import { formatDateTime, formatTime } from '../format'

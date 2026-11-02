@@ -292,7 +292,7 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
                   const share = biggestBytes > 0 ? s.bytes / biggestBytes : 0
                   return (
                     <li className="stats-row" key={s.seriesId}>
-                      <SeriesThumb url={s.coverUrl} alt={s.title} />
+                      <SeriesThumb url={s.coverUrl} alt={s.title} seriesId={s.seriesId} />
                       <div style={{ minWidth: 0 }}>
                         <div className="stats-row-title">
                           <SeriesLink id={s.seriesId} title={s.title} />

@@ -124,12 +124,6 @@ export function ProgressSection() {
     <SettingsSection
       id="progress"
       title={<Trans>Progress & achievements</Trans>}
-      description={
-        <Trans>
-          Levels, badges and streaks worked out from your reading history. All of it is derived, so
-          switching this off stores nothing and switching it back on brings everything back.
-        </Trans>
-      }
     >
 
       <Stack gap="md">
@@ -137,11 +131,6 @@ export function ProgressSection() {
           checked={settings.enabled}
           onChange={(e) => patch({ enabled: e.currentTarget.checked })}
           label={t`Track progress and achievements`}
-          description={
-            singleUser
-              ? t`Off hides the Home section, the all-time tab on Stats and unlock notifications.`
-              : t`Off hides the Home section, the all-time tab on Stats, unlock notifications, and removes you from the leaderboard.`
-          }
         />
 
         <Switch
@@ -158,13 +147,13 @@ export function ProgressSection() {
             onChange={(e) => patch({ showOnLeaderboard: e.currentTarget.checked })}
             disabled={!settings.enabled}
             label={t`Compare with other users on this instance`}
-            description={t`Shows your name, level, chapters read and streak to everyone who also opted in. Never anything about which series you read.`}
+            description={t`Never shows which series you read.`}
           />
         )}
 
         <Select
           label={t`Time zone`}
-          description={t`Decides when your reading day ends, which is what streaks and daily goals count against.`}
+          description={t`Decides when your reading day ends.`}
           data={[
             { value: UTC_ZONE, label: t`UTC` },
             ...(zone && zone !== UTC_ZONE ? [{ value: zone, label: t`${zone} (this browser)` }] : []),
@@ -181,10 +170,6 @@ export function ProgressSection() {
           <Text fw={500} size="sm">
             <Trans>Reading goals</Trans>
           </Text>
-          <Text size="xs" c="var(--ink-3)">
-            <Trans>Optional, and yours to set. Maki never adds one for you.</Trans>
-          </Text>
-
           {(summary?.goals ?? []).map((goal) => (
             <Group key={goal.id} justify="space-between" wrap="nowrap">
               <Text size="sm">

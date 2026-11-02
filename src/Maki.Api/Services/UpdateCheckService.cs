@@ -1,4 +1,5 @@
-﻿using Maki.Api.Localization;
+﻿using Maki.Api.Configuration;
+using Maki.Api.Localization;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Maki.Api.Hubs;
@@ -16,13 +17,19 @@ public record UpdateStatus(
     string? LatestVersion,
     string? ReleaseUrl,
     string? ReleaseNotes,
-    DateTimeOffset? CheckedAt);
+    DateTimeOffset? CheckedAt)
+{
+    /// <summary><c>docker</c>, <c>desktop</c> or <c>bare</c>; decides how the UI says to update.</summary>
+    public string Runtime { get; init; } = HostRuntime.Name(HostRuntime.Kind);
+
+    /// <summary>Maki.Desktop has the update downloaded, so a restart applies it.</summary>
+    public bool UpdateReady { get; init; }
+}
 
 /// <summary>
-/// Polls the GitHub Releases API for a newer tag than the running build. Both Docker and bare
-/// installs are notify-only today: GitHub releases here are tag + changelog only (see
-/// distribution/release.ps1), no per-OS binary is published for a self-updater to fetch and
-/// swap in, so this only ever raises a signal (banner + Notifications connection).
+/// Polls the GitHub Releases API for a newer tag than the running build and raises a signal
+/// (banner + Notifications connection). Docker and bare installs are notify-only. The desktop build
+/// is updated by Maki.Desktop, which downloads the release itself; see <see cref="HostRestarter"/>.
 /// </summary>
 public class UpdateCheckService(
     IHttpClientFactory httpClientFactory,
@@ -37,10 +44,7 @@ public class UpdateCheckService(
     public const string HttpClientName = "github-releases";
     private const string Repo = "OrbitMPGH/Maki";
 
-    /// <summary>Docker sets MAKI_RUNTIME=docker in the image; /.dockerenv is a fallback for
-    /// other container setups that don't.</summary>
-    public static readonly bool IsDocker =
-        Environment.GetEnvironmentVariable("MAKI_RUNTIME") == "docker" || File.Exists("/.dockerenv");
+    public static readonly bool IsDocker = HostRuntime.Kind == HostRuntimeKind.Docker;
 
     private UpdateStatus _lastStatus = new(
         VersionInfo.Version, VersionInfo.IsDevBuild, IsDocker, false, null, null, null, null);

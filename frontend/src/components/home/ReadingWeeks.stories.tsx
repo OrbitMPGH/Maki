@@ -31,7 +31,7 @@ type Story = StoryObj<typeof meta>
 /** In the Continue hero, which is where Home puts it: a right-hand column when wide, a row under the actions otherwise. */
 export const InTheHero: Story = {
   args: { hosted: true },
-  render: (args) => <ContinueHero items={continueReading} rail="continue" glance={<ReadingWeeks {...args} />} />,
+  render: (args) => <ContinueHero items={continueReading} glance={<ReadingWeeks {...args} />} />,
   play: async ({ canvas }) => {
     const glance = await canvas.findByRole('region', { name: 'Last 5 weeks' })
     await expect(within(glance).getByText('Read today to keep it going')).toBeVisible()
@@ -42,7 +42,7 @@ export const InTheHero: Story = {
 
 export const ReadToday: Story = {
   args: { days: history(true), hosted: true },
-  render: (args) => <ContinueHero items={continueReading} rail="continue" glance={<ReadingWeeks {...args} />} />,
+  render: (args) => <ContinueHero items={continueReading} glance={<ReadingWeeks {...args} />} />,
   play: async ({ canvas }) => {
     const glance = await canvas.findByRole('region', { name: 'Last 5 weeks' })
     await expect(within(glance).getByText('Today counts. Best: 31 days')).toBeVisible()

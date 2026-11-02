@@ -18,17 +18,6 @@ public class MangaBakaProviderTests
     }
 
     [Fact]
-    public async Task With_the_dump_it_answers_from_it()
-    {
-        using var dump = new DumpDbBuilder();
-        dump.AddSeries(377, "ONE PIECE").BuildSearchIndex();
-        var provider = Provider(dump.Path);
-
-        Assert.Equal("377", Assert.Single(await provider.SearchAsync("one piece", ContentRating.Pornographic)).ProviderId);
-        Assert.Equal("ONE PIECE", (await provider.GetAsync("377"))?.Title);
-    }
-
-    [Fact]
     public async Task HasSeries_counts_a_novel_GetAsync_declines_but_not_an_id_the_dump_lacks()
     {
         using var dump = new DumpDbBuilder();

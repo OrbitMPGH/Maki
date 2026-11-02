@@ -16,7 +16,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Maki.Api.Hubs;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Security.Claims;
@@ -99,7 +98,7 @@ public class AuthController(
 
     [HttpPost("login")]
     [AllowAnonymous]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     public async Task<IActionResult> Login(
         [FromBody] LoginRequest request, [FromServices] AuthRuntimeOptions authOptions, CancellationToken ct)
     {
@@ -198,7 +197,7 @@ public class AuthController(
     /// </summary>
     [HttpPost("2fa")]
     [AllowAnonymous]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     public async Task<IActionResult> TwoFactor([FromBody] TwoFactorRequest request, CancellationToken ct)
     {
         var code = request.Code?.Replace(" ", string.Empty).Replace("-", string.Empty);
@@ -308,7 +307,7 @@ public class AuthController(
     /// </summary>
     [HttpPost("setup")]
     [AllowAnonymous]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     public async Task<IActionResult> Setup(
         [FromBody] SetupRequest request, [FromServices] AuthRuntimeOptions authOptions, CancellationToken ct)
     {
@@ -391,7 +390,7 @@ public class AuthController(
     /// </summary>
     [HttpGet("oidc/challenge")]
     [AllowAnonymous]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     public async Task<IActionResult> OidcChallenge([FromQuery] string? returnUrl)
     {
         if (!oidc.Enabled)
@@ -442,7 +441,7 @@ public class AuthController(
     /// </summary>
     [HttpGet("oidc/complete")]
     [AllowAnonymous]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     public async Task<IActionResult> OidcCallback([FromQuery] string? returnUrl, CancellationToken ct)
     {
         if (!oidc.Enabled)
@@ -529,7 +528,7 @@ public class AuthController(
     /// </para>
     /// </summary>
     [HttpGet("oidc/link")]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     [CookieSessionOnly]
     public async Task<IActionResult> OidcLink()
     {
@@ -572,7 +571,7 @@ public class AuthController(
     /// login on any account would let a stolen session attach the thief's own provider account.
     /// </summary>
     [HttpPost("oidc/link")]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     [CookieSessionOnly]
     public async Task<IActionResult> OidcLinkConfirm([FromBody] ConfirmPasswordRequest request)
     {
@@ -608,7 +607,7 @@ public class AuthController(
     /// external cookie says signed in.
     /// </summary>
     [HttpGet("oidc/link-complete")]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     [CookieSessionOnly]
     public async Task<IActionResult> OidcLinkComplete(CancellationToken ct)
     {

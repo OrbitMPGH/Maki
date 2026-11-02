@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, waitFor, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api, failWith } from '../../../.storybook/mocks/api'
-import { oidcSettings, securitySettings } from '../../../.storybook/mocks/settings/data'
+import { hostDesktop, oidcSettings, securitySettings } from '../../../.storybook/mocks/settings/data'
 import { NetworkSection, OidcSection, SecuritySection, SignInPageSection } from './SecuritySection'
 
 const meta = {
@@ -95,6 +95,28 @@ export const NetworkEditShowsSave: Story = {
   },
 }
 
+export const NetworkDockerHasNoAccessSwitch: Story = {
+  render: () => <NetworkSection />,
+  play: async ({ canvas }) => {
+    await canvas.findByRole('switch', { name: /^Require HTTPS/ })
+    await expect(canvas.queryByRole('switch', { name: /^Allow other devices/ })).toBeNull()
+  },
+}
+
+export const NetworkDesktopAllowOtherDevices: Story = {
+  render: () => <NetworkSection />,
+  parameters: { msw: settingsMsw(http.get(api('/system/host'), () => HttpResponse.json(hostDesktop))) },
+  play: async ({ canvas, userEvent }) => {
+    const toggle = await canvas.findByRole('switch', { name: /^Allow other devices on your network/ })
+    await waitFor(() => expect(toggle).not.toBeChecked())
+    await userEvent.click(toggle)
+    await expect(await canvas.findByText('Unsaved')).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'Save' }))
+    await expect(await canvas.findByText('Network access changes after Maki restarts.')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Restart now' })).toBeVisible()
+  },
+}
+
 export const SignInPage: Story = {
   render: () => <SignInPageSection />,
   play: async ({ canvas }) => {
@@ -172,13 +194,26 @@ export const SingleSignOnIssuerChangeAsksFirst: Story = {
   },
 }
 
+const onOidcSave = fn()
+
 export const SingleSignOnSaveWithoutIssuerChange: Story = {
   render: () => <OidcSection />,
+  parameters: {
+    msw: settingsMsw(
+      http.put(api('/settings/oidc'), async ({ request }) => {
+        const body = await request.json()
+        onOidcSave(body)
+        return HttpResponse.json(body)
+      }),
+    ),
+  },
+  beforeEach: () => onOidcSave.mockClear(),
   play: async ({ canvas, userEvent }) => {
     const name = await canvas.findByRole('textbox', { name: 'Button label' })
     await waitFor(() => expect(name).toHaveValue('Authentik'))
     await userEvent.type(name, ' SSO')
     await userEvent.click(await canvas.findByRole('button', { name: 'Save' }))
     await expect(await within(document.body).findByText('Single sign-on saved. Restart Maki to apply it.')).toBeVisible()
+    await waitFor(() => expect(onOidcSave).toHaveBeenCalledWith({ ...oidcSettings, displayName: 'Authentik SSO' }))
   },
 }

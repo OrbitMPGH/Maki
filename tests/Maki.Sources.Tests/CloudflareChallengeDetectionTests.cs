@@ -1,3 +1,4 @@
+using Maki.Core.Sources;
 using Maki.Sources.Common;
 
 namespace Maki.Sources.Tests;
@@ -19,5 +20,13 @@ public class CloudflareChallengeDetectionTests
     public void The_interstitial_is_a_challenge(string title, string content)
     {
         Assert.True(CloudflareChallengeDetection.IsChallenge(title, content));
+    }
+
+    [Fact]
+    public async Task GetContentHtml_throws_on_any_shell_the_fetcher_recognises()
+    {
+        var fetcher = new FakeHtmlFetcher(new() { ["x"] = """<html><script>document.write("<scr"+"ipt>")</script></html>""" });
+
+        await Assert.ThrowsAsync<SourceErrorException>(() => fetcher.GetContentHtmlAsync("https://x.test/", CancellationToken.None));
     }
 }

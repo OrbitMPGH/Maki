@@ -52,6 +52,7 @@ export default function ShortcutSheet({ rtl, onClose }: { rtl: boolean; onClose:
         { keys: ['F'], label: t`Full screen` },
         { keys: ['T'], label: t`Page thumbnails` },
         { keys: ['B'], label: t`Bookmark this page` },
+        { keys: ['H'], label: t`Hold to compare` },
         { keys: [t`Esc`], label: t`Back to series` },
         { keys: ['?'], label: t`Show or hide this list` },
       ],

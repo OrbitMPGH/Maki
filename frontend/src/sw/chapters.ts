@@ -1,7 +1,7 @@
 import { cacheNames } from '../pwa/contract'
 import { isJson, isUnreachable, markOffline, matchIn, offlineResponse, store, tryFetch } from './net'
 import { apiPath, noteStatus, passThrough } from './data'
-import { currentUser } from './user'
+import { currentUser, userGeneration } from './user'
 
 const MANIFEST = /^reader\/chapter\/\d+$/
 const PAGE = /^reader\/chapter\/\d+\/page\/\d+$/
@@ -30,9 +30,10 @@ async function refreshSaved(cacheName: string, url: string, live: Response): Pro
 async function manifest(event: FetchEvent): Promise<Response> {
   const { request } = event
   const before = await currentUser()
+  const since = userGeneration()
   const res = await tryFetch(request)
   if (res && !isUnreachable(res)) {
-    noteStatus(res)
+    noteStatus(res, since)
     const userId = await currentUser()
     if (userId !== null && userId === before && res.status === 200 && isJson(res)) {
       event.waitUntil(store(cacheNames.data(userId), request.url, res.clone()))
@@ -60,9 +61,10 @@ async function page(event: FetchEvent): Promise<Response> {
 
 /** Thumbnails are never saved, but the full page they shrink usually is. */
 async function thumb(event: FetchEvent, url: URL): Promise<Response> {
+  const since = userGeneration()
   const res = await tryFetch(event.request)
   if (res && !isUnreachable(res)) {
-    noteStatus(res)
+    noteStatus(res, since)
     return res
   }
   const userId = await currentUser()

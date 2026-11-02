@@ -1,8 +1,10 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using AngleSharp.Html.Parser;
+using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.WeebCentral;
 
@@ -11,20 +13,19 @@ namespace Maki.Sources.WeebCentral;
 /// endpoints directly (search/data, full-chapter-list, chapter images).
 /// Series id is stored as "{ULID}/{slug}".
 /// </summary>
-public partial class WeebCentralSource(IHttpClientFactory httpClientFactory) : ISource
+public partial class WeebCentralSource(IHtmlFetcher fetcher) : ISource
 {
-    public const string HttpClientName = "source-weebcentral";
-
     private static readonly HtmlParser Parser = new();
 
     public string Name => "weebcentral";
     public string DisplayName => "Weeb Central";
     public string BaseUrl => "https://weebcentral.com";
-    public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
     public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa;
     public IReadOnlyList<string> CoverHosts => ["temp.compsci88.com"];
 
-    private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
+    private async Task<AngleSharp.Dom.IDocument> GetDocumentAsync(string path, CancellationToken ct) =>
+        await Parser.ParseDocumentAsync(await fetcher.GetContentHtmlAsync($"{BaseUrl}/{path}", ct), ct);
 
     // The site renders every numbered entry as "<word> <number>", and the word is picked per series:
     // "Chapter 12", "Episode 12", "Plot 49", "Mischief 225". Nothing else in the listing carries the
@@ -48,11 +49,10 @@ public partial class WeebCentralSource(IHttpClientFactory httpClientFactory) : I
 
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
-        var html = await Client.GetStringAsync(
+        var doc = await GetDocumentAsync(
             $"search/data?limit=32&offset=0&text={Uri.EscapeDataString(title)}" +
             "&sort=Best%20Match&order=Ascending&official=Any&display_mode=Full%20Display",
             ct);
-        var doc = await Parser.ParseDocumentAsync(html, ct);
 
         // Each result renders two anchors for the same series: a card wrapper
         // (image + badges) and a clean title link (class "link"). Index covers
@@ -100,8 +100,7 @@ public partial class WeebCentralSource(IHttpClientFactory httpClientFactory) : I
 
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
-        var html = await Client.GetStringAsync($"series/{sourceSeriesId}", ct);
-        var doc = await Parser.ParseDocumentAsync(html, ct);
+        var doc = await GetDocumentAsync($"series/{sourceSeriesId}", ct);
 
         var title = doc.QuerySelector("h1")?.TextContent.Trim() ?? sourceSeriesId;
         var description = doc.QuerySelector("li p.whitespace-pre-wrap, p.whitespace-pre-wrap")?.TextContent.Trim();
@@ -115,8 +114,7 @@ public partial class WeebCentralSource(IHttpClientFactory httpClientFactory) : I
     public async Task<IReadOnlyDictionary<string, string>?> GetExternalIdsAsync(
         string sourceSeriesId, CancellationToken ct = default)
     {
-        var html = await Client.GetStringAsync($"series/{sourceSeriesId}", ct);
-        var doc = await Parser.ParseDocumentAsync(html, ct);
+        var doc = await GetDocumentAsync($"series/{sourceSeriesId}", ct);
 
         // Read every outbound link on the page rather than the tracker row's own markup: the row is
         // styled with utility classes that change with the site's theme, while the hrefs it holds are
@@ -132,8 +130,7 @@ public partial class WeebCentralSource(IHttpClientFactory httpClientFactory) : I
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
         var ulid = sourceSeriesId.Split('/')[0];
-        var html = await Client.GetStringAsync($"series/{ulid}/full-chapter-list", ct);
-        var doc = await Parser.ParseDocumentAsync(html, ct);
+        var doc = await GetDocumentAsync($"series/{ulid}/full-chapter-list", ct);
 
         var chapters = new List<SourceChapter>();
         foreach (var link in doc.QuerySelectorAll("a[href*='/chapters/']"))
@@ -177,10 +174,9 @@ public partial class WeebCentralSource(IHttpClientFactory httpClientFactory) : I
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
-        var html = await Client.GetStringAsync(
+        var doc = await GetDocumentAsync(
             $"chapters/{chapter.SourceChapterId}/images?is_prev=False&current_page=1&reading_style=long_strip",
             ct);
-        var doc = await Parser.ParseDocumentAsync(html, ct);
 
         var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
         var pages = doc.QuerySelectorAll("img")

@@ -97,6 +97,7 @@ services:
       - /path/to/manga-library:/library
     ports:
       - "8990:8990"
+    mem_reservation: 512m
     restart: unless-stopped
 ```
 
@@ -114,6 +115,11 @@ URL under **Settings → Downloads → FlareSolverr** to `http://flaresolverr:81
 Suwayomi, set `http://suwayomi:4567` under **Settings → Integrations → Suwayomi**, hit **Test**,
 then **Manage sources** to turn on the ones you want.
 
+`mem_reservation` is a soft limit: when the host runs short of memory, the kernel takes Maki's file
+cache back first. Most dashboards count that cache as the container's memory, so without it Maki can
+look much bigger than it is. Don't set a hard `mem_limit` below 1.5 GB yet, since a scrape and a
+search running together can briefly need close to 1 GB.
+
 Offline reading and push notifications need HTTPS. See
 [Exposing Maki to the internet](docs/exposing-to-the-internet.md) for a reverse proxy setup.
 
@@ -126,6 +132,11 @@ library, history and tracker connections are already attached to that account.
 |---|---|---|
 | Docker (amd64, arm64) | Supported | `ghcr.io/orbitmpgh/maki:latest` |
 | Unraid | Supported | Search for Maki in the Apps tab on your Unraid server |
+| Windows 10 and 11 (x64), installer | Supported | `Maki-<version>-windows-x64-setup.exe` from [Releases](https://github.com/OrbitMPGH/Maki/releases), see [docs/windows.md](docs/windows.md) |
+| Windows 10 and 11 (x64), portable | Supported | `Maki-<version>-windows-x64-portable.zip` from [Releases](https://github.com/OrbitMPGH/Maki/releases) |
+| Linux x64 tarball | Community | `Maki-<version>-linux-x64.tar.gz` from [Releases](https://github.com/OrbitMPGH/Maki/releases), see [docs/linux.md](docs/linux.md) |
+| Linux arm64 tarball | Community, tested by CI only | `Maki-<version>-linux-arm64.tar.gz` from [Releases](https://github.com/OrbitMPGH/Maki/releases) |
+| macOS | Not available | Use Docker |
 | From source | Supported | .NET 10 and Node 24, see [docs/development.md](docs/development.md) |
 
 ## Sources
@@ -149,11 +160,11 @@ Notes on languages, FlareSolverr and mirror overrides are also in
 | GigaViewer sites | Official Japanese: Shonen Jump+, Comic Days, Sunday Webry, MAGCOMI, Tonari no Young Jump, Comic Zenon, Kurage Bunch (free episodes only) |
 | KadoComi (Comic Walker) | Official, Japanese |
 | MangaPill | |
-| Weeb Central | |
+| Weeb Central | Requires FlareSolverr |
 | MangaFire | Language filter, requires [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) |
 | TCB Scans | Domain override via `MAKI_SOURCE_TCBSCANS_BASEURL` |
 | Asura Scans | Manhwa/manhua |
-| Flame Comics | Manhwa/manhua |
+| Flame Comics | Manhwa/manhua, requires FlareSolverr |
 | TopManhua | Manhwa/manhua, requires FlareSolverr |
 | MangaKatana | |
 | MangaKakalot | Requires FlareSolverr |
@@ -191,6 +202,7 @@ Notes on languages, FlareSolverr and mirror overrides are also in
 | [KOReader](docs/koreader.md) | OPDS downloads and progress sync |
 | [Exposing Maki to the internet](docs/exposing-to-the-internet.md) | HTTPS, trusted proxies, two-factor |
 | [Single sign-on](docs/single-sign-on.md) | OpenID Connect setup and claim mapping |
+| [Access log and CrowdSec](docs/crowdsec.md) | Request log for ban tools, CrowdSec parser and scenarios |
 | [Backup and restore](docs/backup-restore.md) | Snapshots, migrations, restoring |
 | [Development](docs/development.md) | Building the image, running from source, architecture |
 
@@ -211,3 +223,5 @@ industry: buy official releases.
 ## License
 
 [GPL-3.0](LICENSE)
+
+The optional page-enhance models and shaders are separate files with their own licences, one of them non-commercial; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

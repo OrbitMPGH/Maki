@@ -42,10 +42,20 @@ export function SeriesLink({
  * `large` is the 44x62 variant the signals table uses, where the row is a list entry rather than a
  * one-line rank.
  */
-export function SeriesThumb({ url, alt, large }: { url: string | null; alt: string; large?: boolean }) {
+export function SeriesThumb({
+  url,
+  alt,
+  large,
+  seriesId,
+}: {
+  url: string | null
+  alt: string
+  large?: boolean
+  seriesId?: number | null
+}) {
   const className = large ? 'stats-thumb stats-thumb-lg' : 'stats-thumb'
   if (!url) {
     return <div className={`${className} stats-thumb-empty`} aria-hidden />
   }
-  return <img className={className} src={url} alt={alt} loading="lazy" />
+  return <img className={className} src={url} alt={alt} loading="lazy" data-series-cover={seriesId ?? undefined} />
 }

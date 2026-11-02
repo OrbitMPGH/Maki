@@ -186,7 +186,7 @@ public class RecommendationServiceTasteTests : IDisposable
         var weights = Assert.Single(recommender.Seen);
         Assert.False(weights!.ContainsKey(101));
         Assert.DoesNotContain(101L, recommender.SeenSeeds[0]);
-        Assert.Equal(0.25, Assert.Single(recommender.SeenAvoid)![101]);
+        Assert.Equal(RecommendationFeedbackPolicy.AvoidStrength(4), Assert.Single(recommender.SeenAvoid)![101]);
     }
 
     [Fact]
@@ -198,7 +198,7 @@ public class RecommendationServiceTasteTests : IDisposable
         var (service, recommender) = Service();
         await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
 
-        Assert.Equal(1.0, Assert.Single(recommender.Seen)![101]);
+        Assert.Equal(TasteWeights.Neutral, Assert.Single(recommender.Seen)![101]);
         // Nothing to avoid, so the service hands in null rather than an empty dictionary.
         Assert.Null(Assert.Single(recommender.SeenAvoid));
     }
@@ -368,6 +368,27 @@ public class RecommendationServiceTasteTests : IDisposable
         Assert.Equal([101L, 777L], recommender.SeenSeeds[0]);
         var weights = Assert.Single(recommender.Seen);
         Assert.Equal(RecommendationFeedbackPolicy.LikedWeight, weights![777]);
+    }
+
+    [Fact]
+    public async Task A_thumbs_up_is_never_recommended_back_under_chosen_seeds()
+    {
+        // The recent-activity rail passes its own seeds, so the liked title is not a seed there and
+        // the seed exclusion that keeps it out of the Recommended tab never applies.
+        SeedSeries(101);
+        using (var db = _db.NewContext())
+        {
+            db.RecommendationFeedback.Add(new RecommendationFeedback
+            {
+                UserId = 1, ProviderId = 77, Sentiment = RecommendationSentiment.Liked
+            });
+            db.SaveChanges();
+        }
+
+        var (service, _) = Service();
+        var result = await service.GetAsync(new RecommendationRequest(SeedIds: [101]), new TestCurrentUser(1));
+
+        Assert.Empty(result.Similar);
     }
 
     [Fact]

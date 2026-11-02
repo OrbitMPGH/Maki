@@ -9,6 +9,7 @@ using Maki.Core.Quality;
 using Maki.Core.Storage;
 using Maki.Core.Reading;
 using Maki.Core.Sources;
+using Maki.Core.Tests;
 using SharpCompress.Common;
 using SharpCompress.Writers;
 using Microsoft.EntityFrameworkCore;
@@ -219,6 +220,10 @@ public class TorrentImportServiceTests : IDisposable
         Assert.True(first.Applied);
         Assert.True(second.Applied);
         Assert.Equal(1, second.Imported);
+
+        // The second run found the file already at its name, so deleting the download is no longer known safe.
+        Assert.True(first.PlacedFresh);
+        Assert.False(second.PlacedFresh);
 
         using var db = _db.NewContext();
         var file = Assert.Single(db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
@@ -478,6 +483,41 @@ public class TorrentImportServiceTests : IDisposable
         Assert.False(outcome.Applied);
         Assert.Equal(TorrentImportService.SeriesChangedKey, outcome.ErrorKey);
         Assert.False(Directory.Exists(Path.Combine(_root, "Berserk")));
+    }
+
+    /// <summary>
+    /// An automatic import can register after the archive's in-flight check and then wait on the lock
+    /// the archive holds. Once it gets the lock it must see the archive and place nothing.
+    /// </summary>
+    [Fact]
+    public async Task A_series_archived_while_the_import_waited_for_its_lock_is_not_imported()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        SeedVolumeDownload(1, 2, 3);
+        var service = Service();
+        var plan = await service.PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        Task<TorrentImportOutcome> import;
+        using (await SeriesLocks.SeriesAsync(series.Id, CancellationToken.None))
+        {
+            import = service.ImportAsync(item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None, plan);
+            await Wait.UntilAsync(() => import.IsCompleted || SeriesLocks.SeriesUsers(series.Id) >= 2,
+                "the import never asked for the series lock");
+            Assert.False(import.IsCompleted);
+
+            using var db = _db.NewContext();
+            db.Series.Single(s => s.Id == series.Id).ArchivedAt = DateTime.UtcNow;
+            db.SaveChanges();
+        }
+
+        var outcome = await import;
+
+        Assert.False(outcome.Applied);
+        Assert.Equal(TorrentImportService.SeriesArchivedKey, outcome.ErrorKey);
+        Assert.Empty(Directory.GetFiles(Path.Combine(_root, "Berserk")));
+        using var check = _db.NewContext();
+        Assert.Empty(check.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
+        Assert.All(check.Chapters.Where(c => c.SeriesId == series.Id).ToList(), c => Assert.Null(c.ChapterFileId));
     }
 
     [Fact]
@@ -1086,14 +1126,9 @@ public class TorrentImportServiceTests : IDisposable
         Assert.Equal(UpgradeRevertError.None, error);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task A_superseded_file_that_cannot_move_keeps_its_row_and_gets_no_history()
     {
-        if (!OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
         var (series, item) = SeedLibrary();
         SeedVolumeDownload(1, 2, 3, 4, 5, 6);
         var locked = Path.Combine(_root, "Berserk", "Berserk Vol.1 Ch.3.cbz");
@@ -1191,10 +1226,7 @@ public class TorrentImportServiceTests : IDisposable
         var library = Path.Combine(_root, "Berserk", "Berserk Vol.1 Ch.1.cbz");
         var seeding = Path.Combine(_root, "seeding", "ch1.cbz");
         Directory.CreateDirectory(Path.GetDirectoryName(seeding)!);
-        if (!FileLinker.TryHardlink(library, seeding))
-        {
-            return;
-        }
+        Assert.True(FileLinker.TryHardlink(library, seeding), "this filesystem cannot hardlink");
 
         var bytes = File.ReadAllBytes(seeding);
 

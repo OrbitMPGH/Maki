@@ -27,7 +27,8 @@ public class NotificationsController(
         bool ChapterDownloaded, bool DownloadFailed, bool NewChapterAvailable,
         bool ImportCompleted, bool HealthIssue, bool UpdateAvailable,
         bool SeriesAdded = false, bool SeriesRemoved = false, bool RequestSubmitted = false,
-        bool RequestResolved = false, bool ManualMatchNeeded = false, bool SeriesStatusChanged = false);
+        bool RequestResolved = false, bool ManualMatchNeeded = false, bool SeriesStatusChanged = false,
+        bool SeriesArchived = false);
     public record NotificationDto(
         int Id, string Name, NotificationType Type, bool Enabled,
         Dictionary<string, string> Config, EventsDto Events, int[] TagIds,
@@ -313,6 +314,7 @@ public class NotificationsController(
         entity.OnRequestResolved = request.Events.RequestResolved;
         entity.OnManualMatchNeeded = request.Events.ManualMatchNeeded;
         entity.OnSeriesStatusChanged = request.Events.SeriesStatusChanged;
+        entity.OnSeriesArchived = request.Events.SeriesArchived;
 
         var tagIds = TagIds(request);
         foreach (var stale in entity.Tags.Where(t => !tagIds.Contains(t.TagId)).ToList())
@@ -358,7 +360,8 @@ public class NotificationsController(
             n.OnChapterDownloaded, n.OnDownloadFailed, n.OnNewChapterAvailable,
             n.OnImportCompleted, n.OnHealthIssue, n.OnUpdateAvailable,
             n.OnSeriesAdded, n.OnSeriesRemoved, n.OnRequestSubmitted,
-            n.OnRequestResolved, n.OnManualMatchNeeded, n.OnSeriesStatusChanged),
+            n.OnRequestResolved, n.OnManualMatchNeeded, n.OnSeriesStatusChanged,
+            n.OnSeriesArchived),
             n.Tags.Select(t => t.TagId).Order().ToArray(),
             n.LastAttemptAt, n.LastSuccessAt, n.LastError, n.ConsecutiveFailures);
     }

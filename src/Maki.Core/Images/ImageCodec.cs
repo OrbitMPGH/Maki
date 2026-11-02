@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Maki.Core.Images.Upscaling;
 using NetVips;
 using VipsImage = NetVips.Image;
 
@@ -52,6 +53,12 @@ public static class ImageCodec
         Cache.MaxMem = 0;
         Cache.MaxFiles = 0;
 
+        // libvips otherwise starts one worker per core for every pipeline, on top of the parallelism
+        // ImageWorkGate already allows, and each worker keeps its own buffers. On a 16-core host
+        // that is four gated decodes times sixteen threads of native heap that glibc never gives
+        // back. One cover or thumbnail on its own gets slower; throughput comes from the gate.
+        global::NetVips.NetVips.Concurrency = 1;
+
         global::NetVips.NetVips.BlockUntrusted = true;
         Operation.Block("VipsForeignLoad", true);
         foreach (var loader in AllowedLoaders)
@@ -60,16 +67,19 @@ public static class ImageCodec
         }
     }
 
+    /// <summary>Bytes libvips has allocated through its own tracker: pixel buffers, not every malloc it makes.</summary>
+    public static long TrackedMemoryBytes => Stats.Mem;
+
     /// <summary>Reads width, height and format from the header. Throws when the bytes are not an image a permitted loader accepts.</summary>
-    public static ImageHeader Identify(byte[] bytes)
+    public static ImageHeader Identify(byte[] bytes) => Identify(bytes.AsSpan());
+
+    /// <inheritdoc cref="Identify(byte[])"/>
+    public static ImageHeader Identify(ReadOnlySpan<byte> bytes)
     {
         if (TryBmp(bytes, out var bmp)) return bmp;
         using var image = VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
         return Header(image, bytes);
     }
-
-    /// <inheritdoc cref="Identify(byte[])"/>
-    public static ImageHeader Identify(ReadOnlySpan<byte> bytes) => Identify(bytes.ToArray());
 
     /// <inheritdoc cref="Identify(byte[])"/>
     public static ImageHeader IdentifyFile(string path)
@@ -90,6 +100,40 @@ public static class ImageCodec
         try
         {
             return Identify(bytes);
+        }
+        catch (VipsException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Whether a page is in colour, or null when it does not load. One band or a B_W header is grey
+    /// from the header alone. Three bands are checked on a small thumbnail, because scans are often
+    /// stored as RGB with equal channels: colour when more than 2% of it has an LCh chroma over 20,
+    /// which yellowed paper stays under.
+    /// </summary>
+    public static bool? IsColour(byte[] bytes)
+    {
+        try
+        {
+            using var header = VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
+            if (header.Bands < 3 || header.Interpretation is Enums.Interpretation.Bw or Enums.Interpretation.Grey16)
+            {
+                return false;
+            }
+
+            if ((long)header.Width * header.Height > Reading.ArchiveHealthAnalyzer.MaxPixels)
+            {
+                return null;
+            }
+
+            using var thumb = VipsImage.ThumbnailBuffer(bytes, 64);
+            using var rgb = thumb.HasAlpha() ? thumb.Flatten(background: [255, 255, 255]) : thumb.Copy();
+            using var lch = rgb.Colourspace(Enums.Interpretation.Lch);
+            using var chroma = lch[1];
+            using var colourful = chroma > 20;
+            return colourful.Avg() / 255 > 0.02;
         }
         catch (VipsException)
         {
@@ -132,7 +176,7 @@ public static class ImageCodec
     public static ImageFormat? DetectFormat(ReadOnlySpan<byte> bytes)
     {
         if (TryBmp(bytes, out _)) return ImageFormat.Bmp;
-        var loader = VipsImage.FindLoadBuffer(bytes.ToArray());
+        var loader = VipsImage.FindLoadBuffer(bytes);
         return loader is null ? null : FormatOf(loader, bytes);
     }
 
@@ -183,6 +227,12 @@ public static class ImageCodec
     }
 
     /// <summary>
+    /// About four times faster than libvips' default of 4 for pages roughly 3% larger at the same
+    /// quality, measured on JPEG and PNG chapters. AV1 at 4 put a library pass at hundreds of hours.
+    /// </summary>
+    public const int AvifEffort = 3;
+
+    /// <summary>
     /// Decodes a JPEG or PNG page and encodes it as <paramref name="target"/>, or returns null with
     /// the reason it was left as it is. Orientation is applied, CMYK is converted to sRGB and an ICC
     /// profile is carried over; everything else in the metadata is dropped. Throws
@@ -215,9 +265,84 @@ public static class ImageCodec
             PageEncoding.LosslessWebp => image.WebpsaveBuffer(lossless: true, effort: 4, keep: Enums.ForeignKeep.Icc),
             PageEncoding.Webp => image.WebpsaveBuffer(q: quality, effort: 4, smartSubsample: true, keep: Enums.ForeignKeep.Icc),
             PageEncoding.Avif => image.HeifsaveBuffer(q: quality, bitdepth: 8, compression: Enums.ForeignHeifCompression.Av1,
-                effort: 4, keep: Enums.ForeignKeep.Icc),
+                effort: AvifEffort, keep: Enums.ForeignKeep.Icc),
             _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)
         };
+    }
+
+    /// <summary>
+    /// Decodes a page for an upscale model, or returns a reason it cannot be: the bytes do not decode
+    /// cleanly (<see cref="UpscaleReasons.Unreadable"/>), more than 8 bits per channel, or over
+    /// <see cref="PageConversion.MaxEdge"/> or <see cref="Reading.ArchiveHealthAnalyzer.MaxPixels"/>.
+    /// Orientation is applied, CMYK and greyscale become sRGB, transparency lands on white, and the
+    /// result always has 3 bands.
+    /// </summary>
+    public static (Raster? Raster, string? SkipReason) DecodeForUpscale(byte[] source)
+    {
+        try
+        {
+            using var loaded = VipsImage.NewFromBuffer(source, failOn: Enums.FailOn.Error);
+            if (loaded.Format != Enums.BandFormat.Uchar)
+            {
+                return (null, UpscaleReasons.HighBitDepth);
+            }
+
+            if (Math.Max(loaded.Width, loaded.Height) > PageConversion.MaxEdge ||
+                (long)loaded.Width * loaded.Height > Reading.ArchiveHealthAnalyzer.MaxPixels)
+            {
+                return (null, UpscaleReasons.TooLarge);
+            }
+
+            using var rotated = loaded.Autorot();
+            using var flat = rotated.HasAlpha() ? rotated.Flatten(background: [255, 255, 255]) : rotated.Copy();
+            using var srgb = flat.Interpretation == Enums.Interpretation.Cmyk
+                ? flat.Colourspace(Enums.Interpretation.Srgb)
+                : flat.Copy();
+            using var rgb = srgb.Bands switch
+            {
+                1 => srgb.Bandjoin(srgb, srgb),
+                3 => srgb.Copy(),
+                _ => srgb.ExtractBand(0, n: 3)
+            };
+            using var bytes = rgb.Format == Enums.BandFormat.Uchar ? rgb.Copy() : rgb.Cast(Enums.BandFormat.Uchar);
+            return (Raster.Wrap(bytes.Width, bytes.Height, 3, bytes.WriteToMemory<byte>()), null);
+        }
+        catch (VipsException)
+        {
+            return (null, UpscaleReasons.Unreadable);
+        }
+    }
+
+    /// <summary>
+    /// Resizes interleaved 8-bit RGB by <paramref name="scale"/> with Lanczos3, for a 4× model whose
+    /// output the reader gets at 2×.
+    /// </summary>
+    public static (byte[] Rgb, int Width, int Height) ResizeRgb(byte[] rgb, int width, int height, double scale)
+    {
+        using var image = FromMemory(rgb, width, height, 3);
+        using var resized = image.Resize(scale, kernel: Enums.Kernel.Lanczos3);
+        return (resized.WriteToMemory<byte>(), resized.Width, resized.Height);
+    }
+
+    /// <summary>WebP's hard limit on either edge; an upscaled page past it is saved as JPEG.</summary>
+    public const int MaxWebpEdge = 16383;
+
+    /// <summary>
+    /// Encodes an upscaled page from interleaved 8-bit RGB: WebP q85, or JPEG q90 when either edge is
+    /// over <see cref="MaxWebpEdge"/>. A <paramref name="grey"/> page is saved with one band. The caller
+    /// decides that from the source page: models tint flat screentone, so the output can fail the test.
+    /// </summary>
+    public static UpscaledImage EncodeUpscaled(byte[] rgb, int width, int height, bool grey)
+    {
+        var pixels = grey ? UpscalePixels.ToSingleBand(rgb) : rgb;
+        var bands = grey ? 1 : 3;
+        using var raw = FromMemory(pixels, width, height, bands);
+        using var image = raw.Copy(interpretation: grey ? Enums.Interpretation.Bw : Enums.Interpretation.Srgb);
+        return Math.Max(width, height) > MaxWebpEdge
+            ? new UpscaledImage(image.JpegsaveBuffer(q: 90, subsampleMode: Enums.ForeignSubsample.On,
+                keep: Enums.ForeignKeep.None), "jpg", width, height, bands)
+            : new UpscaledImage(image.WebpsaveBuffer(q: 85, effort: 4, smartSubsample: !grey,
+                keep: Enums.ForeignKeep.None), "webp", width, height, bands);
     }
 
     internal static VipsImage Open(byte[] bytes) => VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
@@ -228,7 +353,7 @@ public static class ImageCodec
     internal static VipsImage FromMemory(byte[] pixels, int width, int height, int bands) =>
         VipsImage.NewFromMemory(pixels, width, height, bands, Enums.BandFormat.Uchar);
 
-    private static ImageHeader Header(VipsImage image, byte[]? bytes)
+    private static ImageHeader Header(VipsImage image, ReadOnlySpan<byte> bytes)
     {
         var loader = image.Contains("vips-loader") ? image.Get("vips-loader") as string : null;
         return new ImageHeader(image.Width, image.Height, loader is null ? null : FormatOf(loader, bytes));

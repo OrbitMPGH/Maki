@@ -72,17 +72,12 @@ public class LibraryPathsTests
     // platform separator between its arguments and never touches what's already inside them.
     // LibraryPaths.Resolve runs the join through Path.GetFullPath, which normalizes every separator
     // in the result to the platform's own; this is what the display path is built from now.
-    [Fact]
+    // The bug only exists on Windows: Path.Combine there always inserts '\', so a root path stored
+    // with '/' produces a mixed result. On Linux the platform separator is '/' already, so a root
+    // path typed with '/' was never mixed to begin with.
+    [WindowsFact]
     public void Resolve_normalizes_a_root_path_saved_with_the_wrong_separator_style()
     {
-        if (!OperatingSystem.IsWindows())
-        {
-            // The bug only exists on Windows: Path.Combine there always inserts '\', so a root
-            // path stored with '/' produces a mixed result. On Linux the platform separator is
-            // '/' already, so a root path typed with '/' was never mixed to begin with.
-            return;
-        }
-
         var result = LibraryPaths.Resolve("C:/library/manga", "My Series (2017)");
 
         Assert.Equal(@"C:\library\manga\My Series (2017)", result);
@@ -149,10 +144,7 @@ public class LibraryPathsTests
             Directory.CreateDirectory(Path.Combine(root, "Series"));
             File.WriteAllText(Path.Combine(outside, "ch1.cbz"), "external");
             File.WriteAllText(Path.Combine(root, "Series", "ch2.cbz"), "inside");
-            if (!TestLinks.TryLinkDirectory(link, outside))
-            {
-                return;
-            }
+            Assert.True(TestLinks.TryLinkDirectory(link, outside));
 
             var through = Path.Combine("Series", "linked", "ch1.cbz");
             Assert.NotNull(LibraryPaths.Resolve(root, through));
@@ -180,10 +172,7 @@ public class LibraryPathsTests
         try
         {
             Directory.CreateDirectory(Path.Combine(real, "Series"));
-            if (!TestLinks.TryLinkDirectory(root, real))
-            {
-                return;
-            }
+            Assert.True(TestLinks.TryLinkDirectory(root, real));
 
             var path = LibraryPaths.ResolveNoLinks(root, "Series");
             Assert.NotNull(path);
@@ -197,20 +186,20 @@ public class LibraryPathsTests
         }
     }
 
-    [Theory]
+    [Fact]
+    public void Resolve_never_returns_the_root_itself() => AssertNeverTheRoot(".");
+
+    // Only Windows trims trailing dots and spaces; elsewhere "..." is an ordinary name.
+    [WindowsTheory]
     [InlineData("...")]
     [InlineData("....")]
     [InlineData(". .")]
     [InlineData("... ")]
-    [InlineData(".")]
-    public void Resolve_never_returns_the_root_itself(string relative)
-    {
-        // Only Windows trims trailing dots and spaces; elsewhere "..." is an ordinary name.
-        if (!OperatingSystem.IsWindows() && relative != ".")
-        {
-            return;
-        }
+    public void Resolve_never_returns_the_root_for_a_name_Windows_trims_to_nothing(string relative) =>
+        AssertNeverTheRoot(relative);
 
+    private static void AssertNeverTheRoot(string relative)
+    {
         var root = Path.Combine(Path.GetTempPath(), "maki-root");
         Assert.Null(LibraryPaths.Resolve(root, relative));
         Assert.Null(LibraryPaths.Resolve(root + Path.DirectorySeparatorChar, relative));
@@ -227,10 +216,7 @@ public class LibraryPathsTests
             Directory.CreateDirectory(Path.Combine(root, "Series", "Volume 1"));
             File.WriteAllText(Path.Combine(outside, "ch1.cbz"), "external");
             Assert.False(LibraryPaths.ContainsLink(Path.Combine(root, "Series")));
-            if (!TestLinks.TryLinkDirectory(link, outside))
-            {
-                return;
-            }
+            Assert.True(TestLinks.TryLinkDirectory(link, outside));
 
             Assert.True(LibraryPaths.ContainsLink(Path.Combine(root, "Series")));
             Assert.Null(LibraryPaths.ResolveForDelete(root, Path.Combine("Series", "Volume 1", "linked", "ch1.cbz")));

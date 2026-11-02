@@ -403,6 +403,7 @@ public class UpgradeRevertService(MakiDbContext db, ReaderArchiveCache archives,
         }
 
         await db.SaveChangesAsync(CancellationToken.None);
+        HealthWorker.Wake();
         foreach (var (detail, file) in created)
         {
             await KoreaderDocumentIndexer.RestoreAsync(db, file.Id, detail.KoreaderDocuments, logger, CancellationToken.None);

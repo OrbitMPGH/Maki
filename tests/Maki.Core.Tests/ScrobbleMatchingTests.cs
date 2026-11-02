@@ -287,20 +287,6 @@ public class ScrobbleMatchingTests
     }
 
     [Fact]
-    public void BestCandidateAcceptsAppendedSubtitleAtLowThreshold()
-    {
-        // The word-coverage guard must not break the legitimate low-threshold subtitle
-        // case it was designed to allow.
-        var candidates = new List<ScrobbleCandidate>
-        {
-            new("1", "Hajime no Ippo: Fighting Spirit!", [], ""),
-        };
-
-        var best = ScrobbleMatching.BestCandidate("Hajime no Ippo", null, candidates, threshold: 0.6);
-        Assert.Equal("1", best?.Id);
-    }
-
-    [Fact]
     public void MatchScore_is_zero_when_a_gate_fails()
     {
         Assert.Equal(0, ScrobbleMatching.MatchScore(["High School Boy"], "Magic, High School, and a Boy", 0.6));

@@ -39,6 +39,7 @@ export type Permission =
   | 'UseTrackers'
   | 'UseOpds'
   | 'ImportLibrary'
+  | 'ArchiveSeries'
 
 export interface Me {
   id: number

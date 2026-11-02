@@ -159,6 +159,24 @@ public class ImportListServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task An_archived_series_counts_as_already_in_the_library()
+    {
+        var user = Adder();
+        _db.SeedSeries("Existing", configure: s =>
+        {
+            s.MangaBakaId = 101;
+            s.ArchivedAt = DateTime.UtcNow;
+        });
+        _tracker.Entries = [Entry("r1", mangaBaka: 101)];
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(0, result!.Added);
+        Assert.Equal(1, result.AlreadyPresent);
+        Assert.Single(LibraryIds());
+    }
+
+    [Fact]
     public async Task A_run_is_capped_and_a_full_run_ignores_the_cap()
     {
         var user = Adder(maxPerRun: 2);
@@ -509,6 +527,15 @@ public class ImportListServiceTests : IDisposable
         Assert.Equal(25, prefs.MaxPerRun);
     }
 
+    /// <summary>The detached run's last act is the inbox row, which it raises from its own thread.</summary>
+    private Task RunFinished() => Wait.UntilAsync(() =>
+    {
+        lock (_inbox.Raised)
+        {
+            return _inbox.Raised.Any(r => r.Type == Maki.Core.Inbox.InboxEventType.ImportListFinished);
+        }
+    }, "the background run never finished");
+
     [Fact]
     public async Task A_full_run_starts_in_the_background_and_holds_the_lock()
     {
@@ -526,12 +553,7 @@ public class ImportListServiceTests : IDisposable
         Assert.Equal(409, ((ObjectResult)partial).StatusCode);
 
         _tracker.Hold.SetResult();
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (!_inbox.Raised.Any(r => r.Type == Maki.Core.Inbox.InboxEventType.ImportListFinished))
-        {
-            Assert.True(DateTime.UtcNow < deadline, "the background run never finished");
-            await Task.Delay(20);
-        }
+        await RunFinished();
 
         Assert.Equal(new int?[] { 101 }, LibraryIds());
         var after = await Controller(user).Run(new ImportListsController.RunRequest(null), default);
@@ -554,12 +576,7 @@ public class ImportListServiceTests : IDisposable
 
         cts.Cancel();
         _tracker.Hold.SetResult();
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (!_inbox.Raised.Any(r => r.Type == Maki.Core.Inbox.InboxEventType.ImportListFinished))
-        {
-            Assert.True(DateTime.UtcNow < deadline, "the background run never finished");
-            await Task.Delay(20);
-        }
+        await RunFinished();
 
         Assert.Equal(new int?[] { 101 }, LibraryIds());
     }
@@ -571,12 +588,7 @@ public class ImportListServiceTests : IDisposable
         _tracker.Entries = [];
 
         Assert.IsType<AcceptedResult>(await Controller(user).Run(new ImportListsController.RunRequest(null), default));
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (!_inbox.Raised.Any(r => r.Type == Maki.Core.Inbox.InboxEventType.ImportListFinished))
-        {
-            Assert.True(DateTime.UtcNow < deadline, "the background run never finished");
-            await Task.Delay(20);
-        }
+        await RunFinished();
     }
 
     [Fact]

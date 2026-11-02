@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, waitFor, within } from 'storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { http } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import {
@@ -91,7 +91,14 @@ export const ReaderCohortHint: Story = {
   args: { item: catalogueItem(3) },
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
-    await expect(await within(dialog).findByText('Higher for readers like you')).toBeVisible()
+    const badge = await within(dialog).findByText('Higher for readers like you')
+    await expect(badge).toBeVisible()
+    await userEvent.hover(badge)
+    await expect(
+      await within(document.body).findByText(
+        '412 AniList readers with reading habits like yours scored this 0.7 higher than AniList readers overall.',
+      ),
+    ).toBeVisible()
   },
 }
 
@@ -111,12 +118,12 @@ export const WithRerollDice: Story = {
   },
 }
 
-export const WithoutFeedbackMenu: Story = {
+export const OpenedOutsideRecommendations: Story = {
   args: { feedbackContext: undefined },
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
-    await within(dialog).findByText('Synopsis')
-    await expect(within(dialog).queryByRole('button', { name: 'Thumbs up' })).toBeNull()
+    await expect(await within(dialog).findByRole('button', { name: 'Thumbs up' })).toBeVisible()
+    await expect(await within(dialog).findByRole('button', { name: 'Thumbs down' })).toBeVisible()
   },
 }
 

@@ -48,6 +48,9 @@ public enum InboxEventType
 
     /// <summary>A series' publication status changed, for example from ongoing to completed.</summary>
     SeriesStatusChanged = 23,
+
+    /// <summary>A repository's update of a custom source was applied without asking.</summary>
+    CustomSourceUpdated = 24,
 }
 
 /// <summary>
@@ -66,7 +69,8 @@ public static class InboxEventTypes
         InboxEventType.ImportFinished or
         InboxEventType.BackupFinished or
         InboxEventType.RequestSubmitted or
-        InboxEventType.UpgradeRestoreFailed;
+        InboxEventType.UpgradeRestoreFailed or
+        InboxEventType.CustomSourceUpdated;
 
     /// <summary>
     /// Events that report the instance failing rather than the series being interesting. A reader's

@@ -40,6 +40,8 @@ function toSeries(entry: CatalogueEntry): SeriesDto {
     tagIds: [],
     monitored: entry.id !== 11,
     monitorNewItems: 'All',
+    archivedAt: null,
+    archivedByUserId: null,
     rootFolderId: 1,
     folderName: entry.title,
     rootFolderPath: `/library/${entry.title}`,
@@ -62,6 +64,7 @@ function toSeries(entry: CatalogueEntry): SeriesDto {
     removedChapterCount: 0,
     readFileCleanup: 'Default',
     readFileCleanupActive: false,
+    pageConversion: 'Default',
     knownChapterCount: entry.chapters,
     queuedCount: queue.queued,
     downloadingCount: queue.downloading,
@@ -124,6 +127,14 @@ function reading(
   }
 }
 
+/** Between two chapters: the next one has not been opened yet, so `page` is 0. */
+export const notStarted: HomeReadingItem[] = [
+  reading(7, 13, 0, 21, 107, daysAgo(9)),
+  reading(4, 62, 0, 26, 2, daysAgo(15), { coverAccent: null }),
+  reading(2, 97, 0, 20, 1, daysAgo(21), { coverUrl: null }),
+]
+
+/** Most recently read first, part-way through a chapter or between two, as the server sends it. */
 export const continueReading: HomeReadingItem[] = [
   reading(1, 132, 11, 24, 11, minutesAgo(38)),
   reading(6, 151, 3, 19, 53, hoursAgo(6)),
@@ -131,12 +142,7 @@ export const continueReading: HomeReadingItem[] = [
   reading(3, 41, 0, 0, 20, daysAgo(1)),
   reading(9, 19, 14, 22, 4, daysAgo(2)),
   reading(11, 21, 7, 18, 37, daysAgo(4)),
-]
-
-export const jumpBackIn: HomeReadingItem[] = [
-  reading(7, 13, 0, 21, 107, daysAgo(9)),
-  reading(4, 62, 0, 26, 2, daysAgo(15), { coverAccent: null }),
-  reading(2, 97, 0, 20, 1, daysAgo(21), { coverUrl: null }),
+  ...notStarted,
 ]
 
 function recent(
@@ -379,8 +385,8 @@ export interface HomeUiOptions {
   off?: string[]
   /** Custom rail ids to add to the layout, appended in this order. */
   rails?: number[]
-  /** Overrides for the hero switch of the reading sections. */
-  hero?: { continue?: boolean; jumpback?: boolean }
+  /** Overrides for Continue reading's hero switch. */
+  hero?: { continue?: boolean }
   /** A different section order; unlisted keys keep their shipping order after these. */
   order?: string[]
   /** Overrides for the reading sections' own switches, e.g. `{ continue: { glance: false } }`. */
@@ -394,7 +400,7 @@ export function homeUi(options: HomeUiOptions = {}): UiSettings {
     ...keys.map((key) => ({
       key,
       enabled: !off.includes(key),
-      hero: key in HOME_HERO_DEFAULTS ? (hero[key as 'continue' | 'jumpback'] ?? HOME_HERO_DEFAULTS[key]) : null,
+      hero: key in HOME_HERO_DEFAULTS ? (hero[key as 'continue'] ?? HOME_HERO_DEFAULTS[key]) : null,
       panels: null,
       options: key in HOME_SECTION_OPTIONS ? { ...HOME_SECTION_OPTIONS[key], ...(switches[key] ?? {}) } : null,
     })),

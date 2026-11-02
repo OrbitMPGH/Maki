@@ -1,5 +1,6 @@
 using Maki.Api.Services;
 using Maki.Api.Hubs;
+using Maki.Core.Io;
 using Maki.Metadata.MangaBaka;
 using Quartz;
 
@@ -16,6 +17,7 @@ namespace Maki.Api.Jobs;
 [DisallowConcurrentExecution]
 public class MangaBakaDumpRefreshJob(
     MangaBakaDumpService dumpService,
+    MangaBakaDumpOptions dumpOptions,
     MangaBakaDumpStatus dumpStatus,
     EventBroadcaster events,
     ISchedulerFactory schedulerFactory,
@@ -46,6 +48,9 @@ public class MangaBakaDumpRefreshJob(
             if (installed || backfilled)
             {
                 build.MarkBuilt();
+                // Writing a 3.7 GB file, or indexing one, leaves its pages in the cache, and those
+                // count toward the container's memory until something else wants the RAM.
+                PageCache.DropAfterScan(dumpOptions.DatabasePath);
             }
 
             if (installed)

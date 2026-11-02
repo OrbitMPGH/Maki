@@ -164,9 +164,15 @@ public class ChapterFileDeletion(
     /// caller checks <see cref="RecycleBinService.SameVolume"/> first. Entries are saved before any
     /// file moves, and a row is removed only once its file is in the bin.
     /// </para>
+    /// <para>
+    /// <paramref name="automatic"/> is read file cleanup: its chapters are also marked
+    /// <see cref="Chapter.FileAutoRemoved"/> and stop being wanted, so the list shows them as cleaned up
+    /// and turning Wanted back on is how a user asks for the file again.
+    /// </para>
     /// </summary>
     public async Task<Result> DeleteAsync(
-        Series series, IReadOnlyList<ChapterFile> files, CancellationToken ct, RecycleReason? binReason = null)
+        Series series, IReadOnlyList<ChapterFile> files, CancellationToken ct, RecycleReason? binReason = null,
+        bool automatic = false)
     {
         if (files.Count == 0)
         {
@@ -197,6 +203,12 @@ public class ChapterFileDeletion(
             {
                 chapter.ChapterFileId = null;
                 chapter.FileRemovedAt = now;
+                chapter.FileAutoRemoved = automatic;
+                if (automatic)
+                {
+                    chapter.Wanted = false;
+                }
+
                 chaptersRemoved++;
             }
 

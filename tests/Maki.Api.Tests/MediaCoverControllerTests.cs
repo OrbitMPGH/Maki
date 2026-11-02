@@ -14,20 +14,16 @@ namespace Maki.Api.Tests;
 /// the instance one URL away from any account — including one granted a single root folder — and no
 /// other test would notice, because the leak is in what the controller *doesn't* do.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public class MediaCoverControllerTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly string _configDir;
-    private readonly string? _priorEnv;
     private readonly AppPaths _paths;
 
     public MediaCoverControllerTests()
     {
         _configDir = Path.Combine(Path.GetTempPath(), "maki-mediacover-tests", Guid.NewGuid().ToString("N"));
-        _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
-        _paths = new AppPaths();
+        _paths = new AppPaths(_configDir);
     }
 
     [Fact]
@@ -100,7 +96,6 @@ public class MediaCoverControllerTests : IDisposable
     public void Dispose()
     {
         _db.Dispose();
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
         try { Directory.Delete(_configDir, recursive: true); } catch (IOException) { }
     }
 }

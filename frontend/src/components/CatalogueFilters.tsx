@@ -20,6 +20,7 @@ import { CreditPicker } from './CreditPicker'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
 import { formatFixedDecimal } from '../format'
+import { MetaList } from './ui/MetaList'
 
 /** {@link BROWSE_SORTS} as `Select` data in the current language. */
 export function useBrowseSortOptions() {
@@ -377,7 +378,7 @@ export function CatalogueFilters({
       if (yearsSet) parts.push(`${yearMin}–${yearMax}`)
       if (minRating > 0) parts.push(t`Rated ${ratingLabel} or more`)
     }
-    if (parts.length > 0) return <span className="disclosure-summary-active">{parts.join(' · ')}</span>
+    if (parts.length > 0) return <MetaList inline className="disclosure-summary-active" items={parts} />
     return {
       terms: t`Require or exclude genres and tags`,
       series: t`Creators, type, status, content rating`,

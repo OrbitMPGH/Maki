@@ -280,12 +280,7 @@ public sealed class KavitaReadImportTests : IDisposable
         var service = BuildService(_db.ScopeFactory());
         Assert.True(service.Start());
 
-        for (var i = 0; i < 200 && service.State.Running; i++)
-        {
-            await Task.Delay(10);
-        }
-
-        Assert.False(service.State.Running);
+        await Wait.UntilAsync(() => !service.State.Running, "the import never finished");
         var result = service.State.Result;
         Assert.NotNull(result);
         Assert.Equal(0, result!.SeriesMatched);
@@ -295,7 +290,7 @@ public sealed class KavitaReadImportTests : IDisposable
     }
 
     [Fact]
-    public void Start_clears_the_previous_runs_result_and_finished_time()
+    public async Task Start_clears_the_previous_runs_result_and_finished_time()
     {
         var service = BuildService(_db.ScopeFactory());
         var staleResult = new KavitaReadImportService.ImportResult(1, 2, 0, 0, []);
@@ -307,6 +302,8 @@ public sealed class KavitaReadImportTests : IDisposable
 
         Assert.NotSame(staleResult, service.State.Result);
         Assert.NotEqual(staleFinishedAt, service.State.FinishedAt);
+        // The run it started must not outlive the test database.
+        await Wait.UntilAsync(() => !service.State.Running, "the import never finished");
     }
 
     private int Seed(params (decimal Number, bool Downloaded)[] chapters)

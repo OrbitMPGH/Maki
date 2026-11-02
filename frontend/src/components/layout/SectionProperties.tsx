@@ -78,7 +78,6 @@ export function SectionProperties({
             {def?.hero && (
               <Switch
                 label={t`Lead with a hero`}
-                description={t`Show the most recent series as a large card, with the rest in a tray of posters under it, instead of a plain row.`}
                 checked={section.hero ?? false}
                 onChange={(e) => onChange({ hero: e.currentTarget.checked })}
               />

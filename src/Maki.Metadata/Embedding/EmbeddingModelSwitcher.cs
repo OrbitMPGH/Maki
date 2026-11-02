@@ -43,6 +43,9 @@ public class EmbeddingModelSwitcher(
     /// <summary>True while a switch is downloading in the background.</summary>
     public bool Switching => _switching;
 
+    /// <summary>The most recent background switch, for tests to await instead of polling <see cref="Switching"/>.</summary>
+    internal Task Running { get; private set; } = Task.CompletedTask;
+
     /// <summary>
     /// Why the last switch didn't fully complete (e.g. no prebuilt index for that model), or null. A
     /// server message catalogue key, not display text; same reason as <see cref="ModelSwitchStart"/>.
@@ -86,7 +89,7 @@ public class EmbeddingModelSwitcher(
         _switching = true;
         _lastError = null;
         _lastErrorArgs = null;
-        _ = Task.Run(() => RunAsync(targetKind, target));
+        Running = Task.Run(() => RunAsync(targetKind, target));
         return new ModelSwitchStart(true, targetKind, "install.embeddingModel.switching");
     }
 

@@ -17,7 +17,7 @@ namespace Maki.Api.Tests;
 /// that already have a file: the row carries a forced <see cref="UpgradeInfo"/> so the processor
 /// replaces the file through the upgrade gate instead of overwriting it.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
+[Collection(OneRunPerProcessCollection.Name)]
 public class ChapterReplaceTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();

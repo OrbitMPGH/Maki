@@ -17,6 +17,8 @@ export const upToDate: UpdateStatusDto = {
   releaseUrl: null,
   releaseNotes: null,
   checkedAt: daysAgo(0),
+  runtime: 'docker',
+  updateReady: false,
 }
 
 export const updateAvailable: UpdateStatusDto = {

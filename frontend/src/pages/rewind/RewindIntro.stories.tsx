@@ -39,7 +39,7 @@ export const ArrowKeysMoveBetweenSlides: Story = {
     const body = within(canvasElement.ownerDocument.body)
     await body.findByText('Maki Rewind')
     await userEvent.keyboard('{ArrowRight}')
-    await waitFor(() => expect(body.getByText('You turned a lot of pages')).toBeVisible(), { timeout: 4000 })
+    await waitFor(() => expect(body.getByText('chapters read')).toBeVisible(), { timeout: 4000 })
     await userEvent.keyboard('{ArrowLeft}')
     await waitFor(() => expect(body.getByText('Maki Rewind')).toBeVisible(), { timeout: 4000 })
   },

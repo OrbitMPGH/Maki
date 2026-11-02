@@ -5,26 +5,18 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
 public class CoverVersionTests : IDisposable
 {
     private readonly string _configDir =
         Path.Combine(Path.GetTempPath(), "maki-cover-version-" + Guid.NewGuid().ToString("N"));
-    private readonly string? _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
     private readonly PngHttpFactory _http = new() { Width = 800, Height = 1200 };
     private readonly CoverService _covers;
 
-    public CoverVersionTests()
-    {
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
-        CoverVersionCache.Clear();
-        _covers = new CoverService(_http, new AppPaths(), new FakeAppSettings(), NullLogger<CoverService>.Instance);
-    }
+    public CoverVersionTests() =>
+        _covers = new CoverService(_http, new AppPaths(_configDir), new FakeAppSettings(), NullLogger<CoverService>.Instance);
 
     public void Dispose()
     {
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
-        CoverVersionCache.Clear();
         try
         {
             Directory.Delete(_configDir, recursive: true);
@@ -88,7 +80,7 @@ public class CoverVersionTests : IDisposable
     public async Task A_second_call_for_a_series_does_not_touch_the_file_again()
     {
         var path = (await _covers.DownloadCoverAsync(1, "https://cdn.test/a.png"))!;
-        CoverVersionCache.Clear();
+        CoverVersionCache.Remove(path);
         var first = Version(SeriesDto.CoverUrlFor(1, path));
 
         // Changing the file behind the cache's back is only visible if the second call stats it.

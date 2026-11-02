@@ -62,6 +62,12 @@ public readonly record struct CreditMatch(int NameId, int Distance, int WorkCoun
 /// Works are stored in popularity order, which is what a creator page wants by default and what
 /// makes capping a huge publisher's list principled rather than arbitrary.
 /// </para>
+///
+/// <para>
+/// The three spellings of every name live in <see cref="TextBlob"/>s and the key lookup is a binary
+/// search over the keys in sorted order, not a dictionary: three arrays of 111k short strings and a
+/// 111k-entry dictionary were most of this index's 33.5 MB.
+/// </para>
 /// </summary>
 public sealed class CreditIndex
 {
@@ -69,29 +75,32 @@ public sealed class CreditIndex
     private const int UnknownPopularity = int.MaxValue;
 
     public static readonly CreditIndex Empty = new(
-        [], [], [], [], [0], [], [], new Dictionary<string, int>());
+        TextBlob.Empty, TextBlob.Empty, TextBlob.Empty, [], [0], [], []);
 
-    private readonly string[] _names;
+    private readonly TextBlob _names;
 
     /// <summary>Display names folded once at build time, so autocomplete is a scan and not 129k re-folds per keystroke.</summary>
-    private readonly string[] _normalized;
+    private readonly TextBlob _normalized;
 
-    private readonly string[] _keys;
+    private readonly TextBlob _keys;
+
+    /// <summary>Name ids ordered by key, for <see cref="TryResolve"/>'s binary search.</summary>
+    private readonly int[] _keyOrder;
+
     private readonly CreditRole[] _roles;
 
     /// <summary>Concatenated work lists; name <c>i</c> owns <c>[_workOffsets[i], _workOffsets[i+1])</c>.</summary>
     private readonly int[] _workOffsets;
-    private readonly long[] _works;
+
+    /// <summary>MangaBaka ids, which are six figures and fit an int.</summary>
+    private readonly int[] _works;
 
     /// <summary>The role held on each entry of <see cref="_works"/>, so <c>artist:</c> can exclude writing credits.</summary>
     private readonly CreditRole[] _workRoles;
 
-    private readonly Dictionary<string, int> _byKey;
-
     private CreditIndex(
-        string[] names, string[] normalized, string[] keys, CreditRole[] roles,
-        int[] workOffsets, long[] works, CreditRole[] workRoles,
-        Dictionary<string, int> byKey)
+        TextBlob names, TextBlob normalized, TextBlob keys, CreditRole[] roles,
+        int[] workOffsets, int[] works, CreditRole[] workRoles)
     {
         _names = names;
         _normalized = normalized;
@@ -100,8 +109,15 @@ public sealed class CreditIndex
         _workOffsets = workOffsets;
         _works = works;
         _workRoles = workRoles;
-        _byKey = byKey;
         MaxSeriesId = works.Length == 0 ? 0 : works.Max();
+
+        _keyOrder = new int[keys.Count];
+        for (var i = 0; i < _keyOrder.Length; i++)
+        {
+            _keyOrder[i] = i;
+        }
+
+        Array.Sort(_keyOrder, (a, b) => keys[a].SequenceCompareTo(keys[b]));
     }
 
     /// <summary>
@@ -110,13 +126,13 @@ public sealed class CreditIndex
     /// </summary>
     public long MaxSeriesId { get; }
 
-    public int NameCount => _names.Length;
+    public int NameCount => _names.Count;
 
     public int PairCount => _works.Length;
 
-    public bool IsEmpty => _names.Length == 0;
+    public bool IsEmpty => _names.Count == 0;
 
-    public string NameAt(int nameId) => _names[nameId];
+    public string NameAt(int nameId) => new(_names[nameId]);
 
     public CreditRole RolesAt(int nameId) => _roles[nameId];
 
@@ -238,7 +254,7 @@ public sealed class CreditIndex
         }
 
         var workOffsets = new int[names.Count + 1];
-        var works = new long[merged];
+        var works = new int[merged];
         var workRoles = new CreditRole[merged];
 
         var cursor = 0;
@@ -264,7 +280,7 @@ public sealed class CreditIndex
 
             for (var i = cursor; i < end; i++)
             {
-                works[i] = packed[i].SeriesId;
+                works[i] = checked((int)packed[i].SeriesId);
                 workRoles[i] = packed[i].Role;
             }
 
@@ -287,7 +303,7 @@ public sealed class CreditIndex
         }
 
         return new CreditIndex(
-            [.. names], normalized, [.. keys], [.. roles], workOffsets, works, workRoles, byKey);
+            new TextBlob(names), new TextBlob(normalized), new TextBlob(keys), [.. roles], workOffsets, works, workRoles);
     }
 
     /// <summary>How many works this name holds in any of <paramref name="roles"/>.</summary>
@@ -319,7 +335,13 @@ public sealed class CreditIndex
         var to = _workOffsets[nameId + 1];
         if (roles == CreditRole.Any)
         {
-            return _works[from..to];
+            var all = new long[to - from];
+            for (var i = from; i < to; i++)
+            {
+                all[i - from] = _works[i];
+            }
+
+            return all;
         }
 
         var kept = new List<long>(to - from);
@@ -342,7 +364,7 @@ public sealed class CreditIndex
     {
         nameId = -1;
         var key = CatalogueText.RomanizationKey(name);
-        if (key.Length == 0 || !_byKey.TryGetValue(key, out var candidate))
+        if (key.Length == 0 || FindKey(key) is not { } candidate)
         {
             return false;
         }
@@ -354,6 +376,32 @@ public sealed class CreditIndex
 
         nameId = candidate;
         return true;
+    }
+
+    private int? FindKey(ReadOnlySpan<char> key)
+    {
+        var low = 0;
+        var high = _keyOrder.Length - 1;
+        while (low <= high)
+        {
+            var mid = low + ((high - low) >> 1);
+            var order = _keys[_keyOrder[mid]].SequenceCompareTo(key);
+            if (order == 0)
+            {
+                return _keyOrder[mid];
+            }
+
+            if (order < 0)
+            {
+                low = mid + 1;
+            }
+            else
+            {
+                high = mid - 1;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -384,9 +432,9 @@ public sealed class CreditIndex
         var bestDistance = maxDistance + 1;
         var bestWorks = -1;
 
-        for (var i = 0; i < _keys.Length; i++)
+        for (var i = 0; i < _keys.Count; i++)
         {
-            if ((_roles[i] & roles) == 0 || Math.Abs(_keys[i].Length - key.Length) > maxDistance)
+            if ((_roles[i] & roles) == 0 || Math.Abs(_keys.LengthAt(i) - key.Length) > maxDistance)
             {
                 continue;
             }
@@ -486,7 +534,8 @@ public sealed class CreditIndex
         }
 
         var hits = new List<(int NameId, int Rank, int Works)>();
-        for (var i = 0; i < _names.Length; i++)
+        var wordStart = ' ' + needle;
+        for (var i = 0; i < _names.Count; i++)
         {
             if ((_roles[i] & roles) == 0)
             {
@@ -501,7 +550,7 @@ public sealed class CreditIndex
             // beating Naoki Urasawa because it happened to match at the start of the string.
             int rank;
             if (normalized.StartsWith(needle, StringComparison.Ordinal) ||
-                normalized.Contains(' ' + needle, StringComparison.Ordinal))
+                normalized.Contains(wordStart, StringComparison.Ordinal))
             {
                 rank = 0;
             }

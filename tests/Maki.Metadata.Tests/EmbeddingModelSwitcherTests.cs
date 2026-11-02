@@ -164,12 +164,7 @@ public class EmbeddingModelSwitcherTests : IDisposable
 
     private static async Task Settled(EmbeddingModelSwitcher switcher)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(20);
-        while (switcher.Switching && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(20);
-        }
-
+        await switcher.Running.WaitAsync(TimeSpan.FromSeconds(20));
         Assert.False(switcher.Switching, "the switch did not finish");
     }
 

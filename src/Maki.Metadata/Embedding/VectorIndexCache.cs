@@ -1,3 +1,4 @@
+using System.Buffers;
 using Maki.Core.Io;
 using Maki.Core;
 using System.Globalization;
@@ -121,6 +122,9 @@ public sealed class VectorIndexCache(
     /// <summary>How long since anything read them. Meaningless while unloaded.</summary>
     public TimeSpan IdleFor => _idle.Idle;
 
+    /// <summary>Whether anything read them within <paramref name="window"/>, loaded now or not.</summary>
+    public bool UsedWithin(TimeSpan window) => _idle.UsedWithin(window);
+
     /// <summary>
     /// Drops the built index when nothing has read it for <paramref name="idleFor"/>, and reports
     /// whether it did.
@@ -136,7 +140,7 @@ public sealed class VectorIndexCache(
     ///
     /// <para>
     /// The original reasoning survives in the window rather than in an exemption: this one is
-    /// deliberately much longer than the graphs' (<c>MAKI_VECTOR_IDLE_MINUTES</c>, default 60),
+    /// deliberately longer than the graphs' (<c>MAKI_VECTOR_IDLE_MINUTES</c>, default 15),
     /// because the rebuild is about eight seconds of reading every vector BLOB and a person who
     /// searches once tends to search again. No lock, for the same reason as the other caches: the
     /// index is immutable and a reader holds its own reference.
@@ -373,7 +377,9 @@ public sealed class VectorIndexCache(
         var authorIdx = new int[total][];
         var artistIdx = new int[total][];
         var popularity = new int[total];
-        var tagBlobs = new byte[]?[total];
+        // Packed as rows arrive rather than kept as a byte[] per row; see PackedTags.
+        var tagBytes = new ArrayBufferWriter<byte>(Math.Max(1, total) * 40);
+        var tagOffsets = new int[total + 1];
         var contentRatingIdx = new byte[total];
         var startDays = new int[total];
 
@@ -456,7 +462,12 @@ public sealed class VectorIndexCache(
                 genreIdx[rows] = ParseNames(GetString(reader, 8), genreIds);
                 // Packed tag blobs ride along so the tag channel can score the whole catalogue
                 // instead of only re-ranking what the dense pass already found (~20 MB).
-                tagBlobs[rows] = reader.GetValue(9) as byte[];
+                if (reader.GetValue(9) is byte[] tags)
+                {
+                    tagBytes.Write(tags);
+                }
+
+                tagOffsets[rows + 1] = tagBytes.WrittenCount;
                 // One vocabulary for both roles, so a person who writes one series and draws
                 // another matches across them. Sentinel names ("Anthology" is the most common value
                 // in the whole column) are dropped here rather than at query time: a non-person is
@@ -494,7 +505,7 @@ public sealed class VectorIndexCache(
             Array.Resize(ref authorIdx, rows);
             Array.Resize(ref artistIdx, rows);
             Array.Resize(ref popularity, rows);
-            Array.Resize(ref tagBlobs, rows);
+            Array.Resize(ref tagOffsets, rows + 1);
             Array.Resize(ref contentRatingIdx, rows);
             Array.Resize(ref startDays, rows);
 
@@ -526,10 +537,10 @@ public sealed class VectorIndexCache(
             new VectorIndexColumns(
                 years, ratings, chapters, typeIdx, statusIdx,
                 JaggedInts.From(genreIdx), JaggedInts.From(authorIdx), JaggedInts.From(artistIdx),
-                popularity, tagBlobs,
+                popularity, new PackedTags(tagBytes.WrittenSpan.ToArray(), tagOffsets),
                 contentRatingIdx, [], startDays),
             new VectorIndexVocabularies(
-                typeIds, statusIds, genreIds, authorIds, tagVocabulary.Tags, contentRatingIds,
+                typeIds, statusIds, genreIds, NameMap.From(authorIds), tagVocabulary.Tags, contentRatingIds,
                 tagVocabulary.Subtrees),
             LoadTaste(ids),
             franchiseLoader: () => LoadFranchises(ids));
@@ -581,6 +592,12 @@ public sealed class VectorIndexCache(
             // which is exactly how the recommender behaved before this existed.
             logger.LogWarning(ex, "Could not build the franchise graph; collapse is off this build");
         }
+        finally
+        {
+            // A pass over the series table, a large share of the dump. Only covered before when the
+            // index load came from Discover, whose rail batches drop the file afterwards.
+            PageCache.DropAfterScan(dumpOptions.DatabasePath);
+        }
 
         return franchise;
     }
@@ -628,10 +645,21 @@ public sealed class VectorIndexCache(
                 rowById[ids[i]] = i;
             }
 
-            var data = new sbyte[(long)ids.Length * dimensions <= int.MaxValue
-                ? ids.Length * dimensions
+            // Sized for every artifact row, then trimmed to the rows this index holds. The artifact
+            // covers about 95k series and the index about 64k of them.
+            long artifactRows;
+            using (var count = conn.CreateCommand())
+            {
+                count.CommandText = "SELECT COUNT(*) FROM item_vectors";
+                artifactRows = Math.Min(ids.Length, Convert.ToInt64(count.ExecuteScalar(), CultureInfo.InvariantCulture));
+            }
+
+            var data = new sbyte[artifactRows * dimensions <= int.MaxValue
+                ? artifactRows * dimensions
                 : throw new InvalidOperationException("taste layer too large")];
-            var scales = new float[ids.Length];
+            var scales = new float[artifactRows];
+            var slots = new int[ids.Length];
+            Array.Fill(slots, -1);
             var covered = 0;
 
             using var cmd = conn.CreateCommand();
@@ -653,22 +681,28 @@ public sealed class VectorIndexCache(
                 }
 
                 var scale = (float)reader.GetDouble(1);
-                if (scale == 0)
+                if (scale == 0 || slots[row] >= 0 || covered >= artifactRows)
                 {
-                    // Scale 0 is this layer's "absent" marker, so a row can never store one.
+                    // Scale 0 was this layer's "absent" marker, so a row can never store one.
                     continue;
                 }
 
-                Buffer.BlockCopy(blob, 0, data, row * dimensions, dimensions);
-                scales[row] = scale;
-                covered++;
+                Buffer.BlockCopy(blob, 0, data, covered * dimensions, dimensions);
+                scales[covered] = scale;
+                slots[row] = covered++;
+            }
+
+            if (covered < artifactRows)
+            {
+                Array.Resize(ref data, covered * dimensions);
+                Array.Resize(ref scales, covered);
             }
 
             logger.LogInformation(
                 "Loaded behavioural vectors: {Covered} of {Rows} rows ({Percent:P0}), {Dim} dims",
                 covered, ids.Length, ids.Length == 0 ? 0 : (double)covered / ids.Length, dimensions);
 
-            return covered == 0 ? null : new TasteLayer(data, scales, dimensions, covered);
+            return covered == 0 ? null : new TasteLayer(slots, data, scales, dimensions);
         }
         catch (Exception ex)
         {

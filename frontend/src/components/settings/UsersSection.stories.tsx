@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, waitFor, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
@@ -75,7 +75,19 @@ export const SingleUserModeSwitchedOn: Story = {
   },
 }
 
+const onCreateUser = fn()
+
 export const AddUser: Story = {
+  parameters: {
+    msw: settingsMsw(
+      http.post(api('/users'), async ({ request }) => {
+        const body = (await request.json()) as object
+        onCreateUser(body)
+        return HttpResponse.json({ ...users[1], id: 9, ...body })
+      }),
+    ),
+  },
+  beforeEach: () => onCreateUser.mockClear(),
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Add user' }))
     const dialog = await dialogOf(canvasElement)
@@ -84,6 +96,9 @@ export const AddUser: Story = {
     await userEvent.type(await dialog.findByLabelText(/^Password/), 'a-long-enough-password')
     await userEvent.click(await dialog.findByRole('button', { name: 'Create' }))
     await waitFor(() => expect(within(canvasElement.ownerDocument.body).queryByRole('dialog')).toBeNull())
+    await waitFor(() =>
+      expect(onCreateUser).toHaveBeenCalledWith(expect.objectContaining({ username: 'sora', password: 'a-long-enough-password' })),
+    )
   },
 }
 

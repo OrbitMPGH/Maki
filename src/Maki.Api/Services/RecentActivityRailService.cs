@@ -47,20 +47,20 @@ public class RecentActivityRailService(
     /// have you been reading lately", and a seed set large enough to average out is the whole-library
     /// behaviour the Recommended tab already provides.
     /// </summary>
-    private const int SeedCount = 6;
+    internal const int SeedCount = 6;
 
     /// <summary>
     /// The rail's length. Matches <c>DiscoverService.RailSize</c> and, not coincidentally,
     /// <c>RecommendationService.PageSize</c> — page 0 of the pool fills the rail exactly.
     /// </summary>
-    private const int RailSize = 40;
+    internal const int RailSize = 40;
 
     /// <summary>
     /// How many direct relations (sequels, spin-offs) of the seeds may lead the rail. Capped because
     /// finishing one long-running series can produce a dozen of them, and a rail that is nothing but
     /// one franchise's side stories isn't discovery.
     /// </summary>
-    private const int MaxRelated = 6;
+    internal const int MaxRelated = 6;
 
     /// <summary>
     /// How many of those <see cref="MaxRelated"/> slots any one franchise may hold.
@@ -80,7 +80,7 @@ public class RecentActivityRailService(
     /// own <see cref="DiscoverRail.SeedIds"/> and gets the full relation list back.
     /// </para>
     /// </summary>
-    private const int MaxRelatedPerFranchise = 2;
+    internal const int MaxRelatedPerFranchise = 2;
 
     /// <returns>
     /// The rail, or null when there is nothing to build it from: an unauthenticated caller, nobody
@@ -245,6 +245,7 @@ public class RecentActivityRailService(
         // you read X" would put a title the user asked to leave no trace of on the front page.
         // ScrobbleOnly is kept — it already counts in Rewind and read history.
         var visible = await db.Series
+            .Active()
             .Where(s => candidates.Contains(s.Id)
                         && s.MangaBakaId != null
                         && s.Incognito != IncognitoMode.Full)

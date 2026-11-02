@@ -64,14 +64,14 @@ public class TasteAvoidanceService(
     /// invents an opinion and then appears to have acted on it, which the ranking has not.
     /// </para>
     /// </summary>
-    private const int MinSupport = 3;
+    internal const int MinSupport = 3;
 
     /// <summary>
     /// How much of the avoided set a facet has to cover. Half, so a label describes the set rather
     /// than a corner of it: a reader with ten dislikes and three harems among them has not told
     /// anybody they avoid harem.
     /// </summary>
-    private const double MinShare = 0.5;
+    internal const double MinShare = 0.5;
 
     /// <summary>
     /// How much more of the avoided set than of the reader's own shelf a facet has to cover.
@@ -83,7 +83,7 @@ public class TasteAvoidanceService(
     /// shares over their own population, which is the only way the subtraction means anything.
     /// </para>
     /// </summary>
-    private const double MinContrast = 0.3;
+    internal const double MinContrast = 0.3;
 
     private const int CacheSlots = 40;
     private static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(30);

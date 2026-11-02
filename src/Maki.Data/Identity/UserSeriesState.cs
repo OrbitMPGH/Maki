@@ -30,6 +30,34 @@ public class UserSeriesState : IUserOwned
     public int? Rating { get; set; }
 
     /// <summary>
+    /// A "so far" score on the same 1–10 scale, set while the reader is partway through. Not pushed
+    /// to trackers, and steers recommendations at reduced strength (<c>ProvisionalRatingPolicy</c>).
+    /// Cleared whenever <see cref="Rating"/> is set: the final rating wins, and two live scores
+    /// would leave the page showing one number while the recommender uses the other.
+    /// </summary>
+    public int? ProvisionalRating { get; set; }
+
+    public DateTime? ProvisionalRatedAt { get; set; }
+
+    /// <summary>
+    /// The highest chapter number read when <see cref="ProvisionalRating"/> was set, for the
+    /// "so far, at ch. 34" caption. Display only: confidence is worked out from read counts.
+    /// </summary>
+    public double? ProvisionalAtChapter { get; set; }
+
+    /// <summary>The checkpoint waiting to be answered, or <see cref="RatingCheckpoints.None"/>.</summary>
+    public RatingCheckpoints PendingRatingCheckpoint { get; set; }
+
+    /// <summary>Checkpoints already asked on this series, answered or dismissed.</summary>
+    public RatingCheckpoints RatingCheckpointsSeen { get; set; }
+
+    /// <summary>When a checkpoint was last armed on this series. Also what the one-per-day cap reads.</summary>
+    public DateTime? LastRatingCheckpointAt { get; set; }
+
+    /// <summary>Checkpoints dismissed in a row on this series; three stops asking. Any answer resets it.</summary>
+    public int RatingPromptDismissals { get; set; }
+
+    /// <summary>
     /// Per-series built-in-reader display override, as a <c>ReaderPrefsSpec</c> JSON blob; null means
     /// "use this user's global defaults". Opaque to the server apart from the one serializer in
     /// <c>ReaderPrefsSpec</c> — this is what lets a manhwa open vertical and left-to-right while
@@ -75,6 +103,12 @@ public class UserSeriesState : IUserOwned
     /// chapters up to it ticks them off and clears it.
     /// </summary>
     public double? AnimeWatchPendingTo { get; set; }
+
+    /// <summary>When this reader dismissed the series page's "finished, archive it?" hint.</summary>
+    public DateTime? ArchiveHintDismissedAt { get; set; }
+
+    /// <summary>When this reader dismissed the series page's "finished, rate it?" hint.</summary>
+    public DateTime? RateHintDismissedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }
 }

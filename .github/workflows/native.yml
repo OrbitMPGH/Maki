@@ -1,0 +1,225 @@
+name: Native builds
+
+on:
+  # Tags only, like docker.yml. A branch push is not a release and has no version to stamp.
+  push:
+    tags:
+      - 'v*'
+  # Escape hatch for rebuilding an existing tag (a flaky runner, a feed that needs re-uploading).
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build, for example v0.35.0
+        required: true
+        type: string
+      upload:
+        description: Upload the packages to that tag's release
+        required: true
+        type: boolean
+        default: true
+
+concurrency:
+  group: native-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Resolve version
+        id: release
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
+          elif [ "$REF_TYPE" = "tag" ]; then
+            TAG="$REF_NAME"
+          else
+            echo "::error::A release tag is required when this workflow is run manually."
+            exit 1
+          fi
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::Tag must look like vX.Y.Z or vX.Y.Z-<prerelease>: $TAG"
+            exit 1
+          fi
+          version="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if printf '%s' "$version" | grep -q -- '-'; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 3
+
+  windows:
+    name: Windows x64
+    needs: frontend
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.frontend.outputs.tag }}
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend-dist
+
+      - name: Install vpk
+        run: dotnet tool install -g vpk --version 1.2.161
+
+      # A release candidate's feed files are harmless: the tray reads releases through GithubSource
+      # with prereleases off. Only a stable release fetches the previous one to build a delta from,
+      # which works because this runs on the tag push, before this version's release exists.
+      - name: Build, self-test and pack
+        shell: pwsh
+        env:
+          STABLE: ${{ needs.frontend.outputs.prerelease == 'false' }}
+        run: |
+          ./distribution/native/build-windows.ps1 -Version '${{ needs.frontend.outputs.version }}' `
+            -FrontendDist frontend-dist -Pack -PreviousReleases:($env:STABLE -eq 'true')
+
+      - name: Name the downloads
+        shell: pwsh
+        run: |
+          $version = '${{ needs.frontend.outputs.version }}'
+          $out = 'out/native/win-x64'
+          $upload = New-Item -ItemType Directory -Force "$out/upload"
+          # The Inno Setup wizard is the download. Velopack's own Setup.exe is inside it.
+          if (Test-Path "$out/Maki-Setup.exe") {
+            Copy-Item "$out/Maki-Setup.exe" "$upload/Maki-$version-windows-x64-setup.exe"
+            Copy-Item "$out/releases/Maki.Desktop-win-Portable.zip" "$upload/Maki-$version-windows-x64-portable.zip"
+            # The feed and packages keep Velopack's own names: GithubSource looks for exactly these.
+            Get-ChildItem "$out/releases" -File |
+              Where-Object { $_.Name -like 'releases.win.json' -or $_.Name -like 'assets.win.json' -or $_.Name -like 'RELEASES*' -or ($_.Name -like '*.nupkg' -and $_.Name -like "*$version*") } |
+              Copy-Item -Destination $upload
+          } else {
+            Compress-Archive -Path "$out/app/*" -DestinationPath "$upload/Maki-$version-windows-x64-portable.zip"
+          }
+          Get-ChildItem $upload | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: out/native/win-x64/upload
+          retention-days: 7
+
+  linux:
+    name: Linux ${{ matrix.arch }}
+    needs: frontend
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          # GitHub's hosted arm64 runners are free for public repositories. They are what lets the
+          # arm64 tarball ship with a self-test behind it without anyone owning an ARM box.
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.frontend.outputs.tag }}
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend-dist
+
+      - name: Build and self-test
+        run: bash distribution/native/build-linux.sh '${{ needs.frontend.outputs.version }}' frontend-dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: out/native/linux-${{ matrix.arch }}/*.tar.gz
+          retention-days: 7
+
+  # One upload once every platform has built, so a release never carries half a set. release.ps1
+  # pushes the tag several confirmations before it creates the GitHub release, so this waits for
+  # the release to appear rather than racing it. If it never does, the packages stay on this run
+  # as artifacts and a manual run with upload on attaches them later.
+  publish:
+    name: Attach to the release
+    needs: [frontend, windows, linux]
+    if: github.event_name == 'push' || inputs.upload
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    permissions:
+      contents: write
+    steps:
+      # One folder per artifact, so frontend-dist can never end up attached to the release.
+      - uses: actions/download-artifact@v4
+        with:
+          path: packages
+
+      - name: Wait for the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.frontend.outputs.tag }}
+        run: |
+          for _ in $(seq 1 180); do
+            if gh release view "$TAG" > /dev/null 2>&1; then exit 0; fi
+            sleep 30
+          done
+          echo "::error::No GitHub release for $TAG after 90 minutes. Create it, then run this workflow by hand with upload on."
+          exit 1
+
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.frontend.outputs.tag }}
+        run: |
+          ls -la packages/windows-x64 packages/linux-x64 packages/linux-arm64
+          gh release upload "$TAG" packages/windows-x64/* packages/linux-x64/*.tar.gz packages/linux-arm64/*.tar.gz --clobber

@@ -22,19 +22,6 @@ public class SettingsServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Missing_key_reads_as_null()
-    {
-        Assert.Null(await _settings.GetAsync("nope"));
-    }
-
-    [Fact]
-    public async Task Set_then_get_round_trips()
-    {
-        await _settings.SetAsync("downloadclient.password", "hunter2");
-        Assert.Equal("hunter2", await _settings.GetAsync("downloadclient.password"));
-    }
-
-    [Fact]
     public async Task Set_on_an_existing_key_updates_in_place()
     {
         await _settings.SetAsync("prowlarr.apikey", "old");

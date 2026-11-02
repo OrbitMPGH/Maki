@@ -271,4 +271,11 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
     /// </summary>
     public virtual Task InboxNotification(int userId, object notification) =>
         hubContext.Clients.Group(EventsHub.UserGroup(userId)).SendAsync("inboxNotification", notification);
+
+    /// <summary>
+    /// A page this reader asked the server to upscale finished. <paramref name="state"/> is
+    /// <c>ready</c>, <c>failed</c> or <c>skipped</c>; chapter and page are the ones the reader asked with.
+    /// </summary>
+    public virtual Task PageEnhanced(int userId, int chapterId, int page, string model, string state) =>
+        hubContext.Clients.Group(EventsHub.UserGroup(userId)).SendAsync("pageEnhanced", new { chapterId, page, model, state });
 }

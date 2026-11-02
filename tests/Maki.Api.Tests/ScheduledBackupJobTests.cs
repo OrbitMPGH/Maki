@@ -10,11 +10,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
 public class ScheduledBackupJobTests : IDisposable
 {
     private readonly string _configDir;
-    private readonly string? _priorEnv;
     private readonly AppPaths _paths;
     private readonly MakiDbContext _db;
     private readonly FakeAppSettings _settings = new();
@@ -22,10 +20,8 @@ public class ScheduledBackupJobTests : IDisposable
     public ScheduledBackupJobTests()
     {
         _configDir = Path.Combine(Path.GetTempPath(), "maki-scheduled-backup-tests", Guid.NewGuid().ToString("N"));
-        _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
 
-        _paths = new AppPaths();
+        _paths = new AppPaths(_configDir);
         _db = new MakiDbContext(new DbContextOptionsBuilder<MakiDbContext>()
             .UseSqlite($"Data Source={_paths.DatabasePath}")
             .Options);
@@ -36,7 +32,6 @@ public class ScheduledBackupJobTests : IDisposable
     {
         _db.Dispose();
         SqliteConnection.ClearAllPools();
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
         try
         {
             Directory.Delete(_configDir, recursive: true);

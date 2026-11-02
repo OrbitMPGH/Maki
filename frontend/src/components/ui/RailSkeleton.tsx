@@ -5,26 +5,29 @@ import { Skeleton } from '@mantine/core'
  * gated section never renders nothing and pops in once data lands. `title` reproduces the heading
  * skeleton Discover always shows above its rails; Home's rails render their real `SectionHeader`
  * only once there is data, so they leave it off. `engine` matches the wider card the engine rail
- * (`EngineRailRow`) uses for its "why" line.
+ * (`EngineRailRow`) uses for its "why" line. `flush` drops the gap above it, for a rail placed under
+ * a heading of its own (the Next up tray in `ContinueHeroSkeleton`).
  */
 export function RailSkeleton({
   count = 12,
   engine = false,
   title = false,
   titleWidth = 190,
+  flush = false,
 }: {
   count?: number
   engine?: boolean
   title?: boolean
   titleWidth?: number
+  flush?: boolean
 }) {
   return (
     <div aria-hidden>
-      {title && <Skeleton h={18} w={titleWidth} mt="xl" mb="sm" />}
+      {title && <Skeleton h={18} w={titleWidth} mt={flush ? 0 : 'xl'} mb="sm" />}
       <div
         className="discover-rail"
         data-engine={engine || undefined}
-        style={title ? undefined : { marginTop: 'var(--mantine-spacing-xl)' }}
+        style={title || flush ? undefined : { marginTop: 'var(--mantine-spacing-xl)' }}
       >
         {Array.from({ length: count }, (_, i) => (
           <div key={i} className="discover-rail-item">

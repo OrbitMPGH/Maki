@@ -1,14 +1,17 @@
 using Maki.Metadata.MangaBaka;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Maki.Metadata.Tests;
 
 /// <summary>The idle timeout on catalogue and model downloads: a quiet socket fails, a slow one does not.</summary>
 public class StallTimeoutStreamTests
 {
-    private static readonly TimeSpan Stall = TimeSpan.FromMilliseconds(300);
+    private static readonly TimeSpan Stall = TimeSpan.FromSeconds(60);
 
-    /// <summary>Hands out one byte per read after <paramref name="delay"/>, or never when it is infinite.</summary>
-    private sealed class TrickleStream(int bytes, TimeSpan delay) : Stream
+    private readonly FakeTimeProvider _time = new();
+
+    /// <summary>Hands out one byte per read once <paramref name="wait"/> completes.</summary>
+    private sealed class TrickleStream(int bytes, Func<CancellationToken, Task> wait) : Stream
     {
         private int _left = bytes;
 
@@ -20,7 +23,7 @@ public class StallTimeoutStreamTests
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
         {
-            await Task.Delay(delay, ct);
+            await wait(ct);
             if (_left == 0)
             {
                 return 0;
@@ -38,13 +41,18 @@ public class StallTimeoutStreamTests
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 
+    private static Task Never(CancellationToken ct) => Task.Delay(Timeout.Infinite, ct);
+
     [Fact]
     public async Task A_slow_but_steady_body_is_read_to_the_end()
     {
-        // Sixteen reads at a tenth of a one second stall: 1.6 s in total, and each gap
-        // leaves 900 ms of headroom, since a 300 ms window still flaked on a contended CI runner.
-        var stall = TimeSpan.FromSeconds(1);
-        await using var stream = new StallTimeoutStream(new TrickleStream(15, stall / 10), stall);
+        // Every read takes most of a stall window, so the whole body spans many windows.
+        var slow = new TrickleStream(15, _ =>
+        {
+            _time.Advance(Stall * 0.9);
+            return Task.CompletedTask;
+        });
+        await using var stream = new StallTimeoutStream(slow, Stall, _time);
         using var output = new MemoryStream();
 
         await stream.CopyToAsync(output);
@@ -55,28 +63,34 @@ public class StallTimeoutStreamTests
     [Fact]
     public async Task A_body_that_stops_arriving_times_out()
     {
-        await using var stream = new StallTimeoutStream(new TrickleStream(5, Timeout.InfiniteTimeSpan), Stall);
+        await using var stream = new StallTimeoutStream(new TrickleStream(5, Never), Stall, _time);
 
-        await Assert.ThrowsAsync<TimeoutException>(() => stream.CopyToAsync(Stream.Null));
+        var copy = stream.CopyToAsync(Stream.Null);
+        _time.Advance(Stall);
+
+        await Assert.ThrowsAsync<TimeoutException>(() => copy);
     }
 
     [Fact]
     public async Task Time_spent_between_reads_does_not_count_as_a_stall()
     {
-        await using var stream = new StallTimeoutStream(new TrickleStream(2, TimeSpan.Zero), Stall);
+        await using var stream = new StallTimeoutStream(new TrickleStream(2, _ => Task.CompletedTask), Stall, _time);
         var buffer = new byte[1];
 
         Assert.Equal(1, await stream.ReadAsync(buffer));
-        await Task.Delay(Stall * 2);
+        _time.Advance(Stall * 2);
         Assert.Equal(1, await stream.ReadAsync(buffer));
     }
 
     [Fact]
     public async Task The_callers_own_cancellation_is_not_reported_as_a_stall()
     {
-        await using var stream = new StallTimeoutStream(new TrickleStream(5, Timeout.InfiniteTimeSpan), TimeSpan.FromMinutes(1));
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+        await using var stream = new StallTimeoutStream(new TrickleStream(5, Never), Stall, _time);
+        using var cts = new CancellationTokenSource();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => stream.ReadAsync(new byte[1], cts.Token).AsTask());
+        var read = stream.ReadAsync(new byte[1], cts.Token).AsTask();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => read);
     }
 }

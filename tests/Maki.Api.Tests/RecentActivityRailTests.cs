@@ -227,7 +227,8 @@ public class RecentActivityRailTests : IDisposable
     [Fact]
     public async Task Only_the_latest_few_series_seed_the_rail()
     {
-        for (var i = 0; i < 12; i++)
+        var read = RecentActivityRailService.SeedCount * 2;
+        for (var i = 0; i < read; i++)
         {
             SeedRead(100 + i, Now.AddDays(-i));
         }
@@ -235,12 +236,16 @@ public class RecentActivityRailTests : IDisposable
         var (rail, recommender) = Service();
         var result = await rail.GetAsync(new TestCurrentUser(1), refresh: false);
 
-        // The six most recent, which here are the six smallest ids. Six rather than a rounder
-        // number.
-        Assert.Equal([100, 101, 102, 103, 104, 105], recommender.Seen.Single().Order());
+        // The most recent ones, which here are the smallest ids.
+        Assert.Equal(
+            Enumerable.Range(100, RecentActivityRailService.SeedCount).Select(id => (long)id),
+            recommender.Seen.Single().Order());
         Assert.Equal("discover.rail.becauseYouRead", result!.Subtitle);
-        Assert.Equal(["Series 100", "Series 101", "Series 102"], result.SubtitleTitles);
-        Assert.Equal(3, result.SubtitleMore);
+        Assert.NotEmpty(result.SubtitleTitles);
+        Assert.Equal(
+            Enumerable.Range(100, result.SubtitleTitles.Count).Select(id => $"Series {id}"),
+            result.SubtitleTitles);
+        Assert.Equal(RecentActivityRailService.SeedCount, result.SubtitleTitles.Count + result.SubtitleMore);
     }
 
     [Fact]
@@ -313,11 +318,11 @@ public class RecentActivityRailTests : IDisposable
         var result = await rail.GetAsync(new TestCurrentUser(1), refresh: false);
 
         Assert.NotNull(result);
-        // A finished long-runner can have a dozen side stories; six of them may lead, the rest of
-        // the rail is the similarity picks.
-        Assert.Equal(6, result.Items.Count(i => i.RelationKind is not null));
-        Assert.Equal(40, result.Items.Count);
-        Assert.All(result.Items.Take(6), i => Assert.NotNull(i.RelationKind));
+        // A finished long-runner can have a dozen side stories; a capped number of them may lead,
+        // the rest of the rail is the similarity picks.
+        Assert.Equal(RecentActivityRailService.MaxRelated, result.Items.Count(i => i.RelationKind is not null));
+        Assert.Equal(RecentActivityRailService.RailSize, result.Items.Count);
+        Assert.All(result.Items.Take(RecentActivityRailService.MaxRelated), i => Assert.NotNull(i.RelationKind));
     }
 
     [Fact]
@@ -331,10 +336,10 @@ public class RecentActivityRailTests : IDisposable
         var result = await rail.GetAsync(new TestCurrentUser(1), refresh: false);
 
         Assert.NotNull(result);
-        Assert.Equal(2, result.Items.Count(i => i.RelationKind is not null));
-        Assert.All(result.Items.Skip(2), i => Assert.Null(i.RelationKind));
+        Assert.Equal(RecentActivityRailService.MaxRelatedPerFranchise, result.Items.Count(i => i.RelationKind is not null));
+        Assert.All(result.Items.Skip(RecentActivityRailService.MaxRelatedPerFranchise), i => Assert.Null(i.RelationKind));
         // The slots the surplus gave up go to the similarity picks, not to a shorter rail.
-        Assert.Equal(40, result.Items.Count);
+        Assert.Equal(RecentActivityRailService.RailSize, result.Items.Count);
     }
 
     [Fact]
@@ -355,7 +360,7 @@ public class RecentActivityRailTests : IDisposable
         var result = await rail.GetAsync(new TestCurrentUser(1), refresh: false);
 
         Assert.NotNull(result);
-        Assert.Equal(2, result.Items.Count(i => i.RelationKind is not null));
+        Assert.Equal(RecentActivityRailService.MaxRelatedPerFranchise, result.Items.Count(i => i.RelationKind is not null));
     }
 
     [Fact]

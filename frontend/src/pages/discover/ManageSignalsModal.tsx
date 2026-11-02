@@ -245,7 +245,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
               <Group gap={6} wrap="wrap">
                 {filters.map((item) => (
                   <Chip key={item.value} value={item.value} size="xs" variant="outline">
-                    {item.label} · {item.count}
+                    {item.label} ({item.count})
                   </Chip>
                 ))}
               </Group>
@@ -383,7 +383,7 @@ function AnimeSignalsPanel() {
         <Group gap={6} wrap="wrap">
           {roles.map((role) => (
             <Chip key={role.value} value={role.value} size="xs" variant="outline">
-              {role.label} · {role.count}
+              {role.label} ({role.count})
             </Chip>
           ))}
         </Group>

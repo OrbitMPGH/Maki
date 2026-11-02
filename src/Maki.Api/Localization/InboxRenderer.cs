@@ -133,14 +133,7 @@ public sealed class InboxRenderer(ILocalizer localizer)
             var into = new Dictionary<string, object?>(StringComparer.Ordinal);
             foreach (var property in doc.RootElement.EnumerateObject())
             {
-                into[property.Name] = property.Value.ValueKind switch
-                {
-                    JsonValueKind.Number => property.Value.TryGetInt64(out var l) ? l : property.Value.GetDouble(),
-                    JsonValueKind.True => true,
-                    JsonValueKind.False => false,
-                    JsonValueKind.Null => null,
-                    _ => property.Value.GetString(),
-                };
+                into[property.Name] = ParamValue(property.Value);
             }
 
             return into;
@@ -152,6 +145,21 @@ public sealed class InboxRenderer(ILocalizer localizer)
             return new Dictionary<string, object?>(StringComparer.Ordinal);
         }
     }
+
+    /// <summary>
+    /// One stored parameter as the formatter wants it. A full timestamp comes back as a
+    /// <see cref="DateTime"/>, since JSON stored it as text and ICU's <c>{x, date}</c> prints text
+    /// untouched. Only strings with a time part qualify, so a title like "2026" stays a string.
+    /// </summary>
+    public static object? ParamValue(JsonElement value) => value.ValueKind switch
+    {
+        JsonValueKind.Number => value.TryGetInt64(out var l) ? l : value.GetDouble(),
+        JsonValueKind.True => true,
+        JsonValueKind.False => false,
+        JsonValueKind.Null => null,
+        JsonValueKind.String when value.GetString() is { Length: >= 19 } s && s[10] == 'T' && value.TryGetDateTimeOffset(out var at) => at.UtcDateTime,
+        _ => value.GetString(),
+    };
 
     /// <summary>Serializes parameters for storage. Null when there are none, so the column stays empty.</summary>
     public static string? Serialize(IReadOnlyDictionary<string, object?>? args) =>

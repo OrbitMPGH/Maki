@@ -14,7 +14,8 @@ public enum NotificationEventType
     RequestSubmitted,
     RequestResolved,
     ManualMatchNeeded,
-    SeriesStatusChanged
+    SeriesStatusChanged,
+    SeriesArchived
 }
 
 public enum NotificationLevel

@@ -22,20 +22,16 @@ namespace Maki.Api.Tests;
 /// on-demand button), the poster download and the image-cache rebuild. Resetting it gives it back
 /// to the provider, including when the provider has nothing for it.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public class SeriesMetadataLockTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly string _configDir;
-    private readonly string? _priorEnv;
     private readonly AppPaths _paths;
 
     public SeriesMetadataLockTests()
     {
         _configDir = Path.Combine(Path.GetTempPath(), "maki-metadata-lock-tests", Guid.NewGuid().ToString("N"));
-        _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
-        _paths = new AppPaths();
+        _paths = new AppPaths(_configDir);
     }
 
     private static SeriesMetadata ProviderValues() => new()
@@ -439,7 +435,6 @@ public class SeriesMetadataLockTests : IDisposable
     public void Dispose()
     {
         _db.Dispose();
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
         try { Directory.Delete(_configDir, recursive: true); } catch (IOException) { }
     }
 }

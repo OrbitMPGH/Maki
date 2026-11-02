@@ -318,7 +318,7 @@ function DriftSection({ insights }: { insights: TasteInsights }) {
     <Card padding="md" radius="lg" withBorder>
       <Text c="var(--ink-3)" size="xs" mb="md">
         <Trans>How close each quarter sat to where you started.</Trans>{' '}
-        <Trans>Falling means you moved.</Trans>
+        <Trans>Lower bars mean your taste moved.</Trans>
       </Text>
       <BarChart
         h={180}

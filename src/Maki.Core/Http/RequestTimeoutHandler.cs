@@ -6,17 +6,17 @@ namespace Maki.Core.Http;
 /// which <see cref="HttpClient.Timeout"/> cannot tell apart. A timeout surfaces the way the client's
 /// own does: a <see cref="TaskCanceledException"/> wrapping a <see cref="TimeoutException"/>.
 /// </summary>
-public sealed class RequestTimeoutHandler(TimeSpan timeout) : DelegatingHandler
+public sealed class RequestTimeoutHandler(TimeSpan timeout, TimeProvider? time = null) : DelegatingHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        cts.CancelAfter(timeout);
+        using var timer = new CancellationTokenSource(timeout, time ?? TimeProvider.System);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timer.Token);
         try
         {
             return await base.SendAsync(request, cts.Token);
         }
-        catch (OperationCanceledException) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (timer.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
             throw new TaskCanceledException(
                 $"The request was canceled due to the configured timeout of {timeout.TotalSeconds:0} seconds elapsing.",

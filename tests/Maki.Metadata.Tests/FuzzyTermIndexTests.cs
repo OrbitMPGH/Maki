@@ -180,13 +180,17 @@ public class FuzzyTermIndexTests : IDisposable
         Assert.Empty(Build().Expand("berserck", FuzzyOptions.Default with { Enabled = false }));
     }
 
-    [Theory]
-    [InlineData(1, 0)]
-    [InlineData(2, 0)]
-    [InlineData(3, 1)]
-    [InlineData(5, 1)]
-    [InlineData(6, 2)]
-    [InlineData(12, 2)]
-    public void The_edit_budget_follows_the_length_ladder(int length, int expected) =>
-        Assert.Equal(expected, FuzzyOptions.Default.BudgetFor(length));
+    [Fact]
+    public void The_edit_budget_follows_the_length_ladder()
+    {
+        var options = FuzzyOptions.Default;
+        var budgets = Enumerable.Range(1, 30).Select(options.BudgetFor).ToList();
+
+        Assert.Equal(budgets.Order(), budgets);
+        Assert.Equal(0, options.BudgetFor(options.MinLengthForDistance1 - 1));
+        Assert.Equal(1, options.BudgetFor(options.MinLengthForDistance1));
+        Assert.Equal(1, options.BudgetFor(options.MinLengthForDistance2 - 1));
+        Assert.Equal(2, options.BudgetFor(options.MinLengthForDistance2));
+        Assert.Equal(2, options.BudgetFor(options.MinLengthForDistance2 + 20));
+    }
 }

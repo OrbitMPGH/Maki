@@ -19,16 +19,18 @@ public class SourceChapterListCacheTests
         public SourceCapabilities Capabilities => SourceCapabilities.None;
 
         public int ListCalls;
-        public TimeSpan Delay = TimeSpan.Zero;
+        /// <summary>Holds every listing open until completed, so the callers a test starts all overlap it.</summary>
+        public TaskCompletionSource Hold { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public bool Held;
         public Exception? Throws;
 
         public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
             string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
         {
             Interlocked.Increment(ref ListCalls);
-            if (Delay > TimeSpan.Zero)
+            if (Held)
             {
-                await Task.Delay(Delay, ct);
+                await Hold.Task.WaitAsync(ct);
             }
 
             if (Throws is not null)
@@ -59,6 +61,26 @@ public class SourceChapterListCacheTests
         new(time ?? TimeProvider.System, NullLogger<SourceChapterListCache>.Instance);
 
     [Fact]
+    public async Task Expired_listings_are_dropped_well_below_the_cap()
+    {
+        var clock = new StoppedClock(DateTimeOffset.UtcNow);
+        var source = new CountingSource();
+        var cache = NewCache(clock);
+        await cache.GetAsync(source, "series-1", "en");
+        await cache.GetAsync(source, "series-2", "en");
+
+        Assert.Equal(0, cache.DropExpired());
+
+        clock.Now += SourceChapterListCache.Ttl;
+        await cache.GetAsync(source, "series-3", "en");
+
+        // series-3's own fetch already swept the other two.
+        Assert.Equal(0, cache.DropExpired());
+        clock.Now += SourceChapterListCache.Ttl;
+        Assert.Equal(1, cache.DropExpired());
+    }
+
+    [Fact]
     public async Task Repeated_lookups_for_one_series_list_it_once()
     {
         var source = new CountingSource();
@@ -80,11 +102,12 @@ public class SourceChapterListCacheTests
     [Fact]
     public async Task Concurrent_lookups_for_one_series_share_a_single_listing()
     {
-        var source = new CountingSource { Delay = TimeSpan.FromMilliseconds(50) };
+        var source = new CountingSource { Held = true };
         var cache = NewCache();
 
-        var results = await Task.WhenAll(
-            Enumerable.Range(0, 25).Select(_ => cache.GetAsync(source, "series-1", "en")));
+        var calls = Enumerable.Range(0, 25).Select(_ => cache.GetAsync(source, "series-1", "en")).ToList();
+        source.Hold.SetResult();
+        var results = await Task.WhenAll(calls);
 
         Assert.Equal(1, source.ListCalls);
         Assert.All(results, r => Assert.Single(r));
@@ -150,12 +173,13 @@ public class SourceChapterListCacheTests
     {
         var source = new CountingSource
         {
-            Delay = TimeSpan.FromMilliseconds(200),
+            Held = true,
             Throws = new RateLimitException("429", TimeSpan.FromSeconds(30)),
         };
         var cache = NewCache();
 
         var calls = Enumerable.Range(0, 5).Select(_ => cache.GetAsync(source, "series-1", "en")).ToList();
+        source.Hold.SetResult();
         foreach (var call in calls)
         {
             await Assert.ThrowsAsync<RateLimitException>(() => call);
@@ -173,12 +197,13 @@ public class SourceChapterListCacheTests
     {
         var source = new CountingSource
         {
-            Delay = TimeSpan.FromMilliseconds(200),
+            Held = true,
             Throws = new TaskCanceledException("HttpClient.Timeout", new TimeoutException()),
         };
         var cache = NewCache();
 
         var calls = Enumerable.Range(0, 4).Select(_ => cache.GetAsync(source, "series-1", "en")).ToList();
+        source.Hold.SetResult();
 
         await Assert.ThrowsAsync<TaskCanceledException>(() => calls[0]);
         foreach (var call in calls.Skip(1))

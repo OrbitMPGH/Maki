@@ -29,8 +29,9 @@ public class Chapter
     /// Whether the user wants this chapter at all. Purely their intent: it decides what counts
     /// toward a series' chapter total and what is eligible to download, and nothing else.
     /// <para>
-    /// Only three things write it — <c>ChapterSyncService</c> stamps it once when a chapter is first
-    /// discovered (see <see cref="WantedUnder"/>), the user flips it, and the duplicate merge ORs it.
+    /// Only four things write it: <c>ChapterSyncService</c> stamps it once when a chapter is first
+    /// discovered (see <see cref="WantedUnder"/>), the user flips it, the duplicate merge ORs it, and
+    /// read file cleanup clears it on the chapters whose file it deleted (<see cref="FileAutoRemoved"/>).
     /// The download pipeline must never write it: <c>SmartDownloadJob</c> used to rewrite every flag
     /// on each top-up so only its current window stayed set, which silently undid the user's own
     /// choices and made a held-back series read "10 / 10" instead of "10 / 207".
@@ -50,6 +51,13 @@ public class Chapter
     /// </summary>
     public DateTime? FileRemovedAt { get; set; }
 
+    /// <summary>
+    /// The removal at <see cref="FileRemovedAt"/> was read file cleanup's, not a user's, so the chapter
+    /// list can say so. Only meaningful while <see cref="FileRemovedAt"/> is set; every writer of that
+    /// stamp writes this too.
+    /// </summary>
+    public bool FileAutoRemoved { get; set; }
+
     /// <summary>The per-source listings that currently support this chapter.</summary>
     [JsonIgnore]
     public List<ChapterSourceLink> SourceLinks { get; set; } = [];
@@ -63,6 +71,14 @@ public class Chapter
 
     /// <summary>The file was deleted on purpose and nothing has replaced it.</summary>
     public static bool IsRemoved(Chapter c) => c.ChapterFileId == null && c.FileRemovedAt != null;
+
+    /// <summary>
+    /// A whole volume standing in for its chapters: a volume file on disk with no chapter markers in
+    /// its pages, in a series no source lists chapters for (<c>ChapterFromFilesService</c>). No number
+    /// and not a one-shot, so source sync never matches it; the chapters a source lists later take its
+    /// file and its reads over.
+    /// </summary>
+    public static bool IsVolumeEntry(Chapter c) => c.Number is null && !c.IsOneShot && c.Volume is not null;
 
     /// <summary>A special is a decimal-numbered chapter (10.5 omake etc.); one-shots are not specials.</summary>
     public static bool IsSpecial(decimal? number) => number is { } n && n % 1 != 0;

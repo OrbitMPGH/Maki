@@ -5,20 +5,17 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
 public class CoverServiceLibraryCoverTests : IDisposable
 {
     private readonly string _configDir =
         Path.Combine(Path.GetTempPath(), "maki-library-cover-" + Guid.NewGuid().ToString("N"));
-    private readonly string? _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
     private readonly AppPaths _paths;
     private readonly CoverService _covers;
     private readonly string _seriesFolder;
 
     public CoverServiceLibraryCoverTests()
     {
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
-        _paths = new AppPaths();
+        _paths = new AppPaths(_configDir);
         _covers = new CoverService(null!, _paths,
             new FakeAppSettings().Set(SettingKeys.LibraryWriteCoverToFolder, "true"),
             NullLogger<CoverService>.Instance);
@@ -28,7 +25,6 @@ public class CoverServiceLibraryCoverTests : IDisposable
 
     public void Dispose()
     {
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
         try
         {
             Directory.Delete(_configDir, recursive: true);

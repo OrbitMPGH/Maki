@@ -318,10 +318,7 @@ public class ChapterControllerTests : IDisposable
 
         try
         {
-            if (!TestLinks.TryLinkDirectory(link, outside))
-            {
-                return;
-            }
+            Assert.True(TestLinks.TryLinkDirectory(link, outside));
 
             using (var db = _db.NewContext())
             {
@@ -364,7 +361,7 @@ public class ChapterControllerTests : IDisposable
         }
     }
 
-    [Fact]
+    [FileSymlinkFact]
     public async Task Delete_removes_a_chapter_file_symlink_and_its_row_but_not_the_target()
     {
         var (seriesId, chapterId) = SeedSeriesWithChapter();
@@ -376,10 +373,7 @@ public class ChapterControllerTests : IDisposable
 
         try
         {
-            if (!TestLinks.TryLinkFile(link, external))
-            {
-                return;
-            }
+            Assert.True(TestLinks.TryLinkFile(link, external));
 
             using (var seed = _db.NewContext())
             {

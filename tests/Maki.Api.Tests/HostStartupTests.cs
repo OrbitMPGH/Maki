@@ -52,6 +52,32 @@ public class HostStartupTests : IDisposable
         Assert.Equal(System.Net.HttpStatusCode.Forbidden, (await client.PostAsync("/api/v1/health/refresh", null)).StatusCode);
     }
     [Fact]
+    public async Task The_access_log_gets_a_line_per_request_and_the_main_log_none()
+    {
+        File.WriteAllText(Path.Combine(_configDir, "config.json"), "{ \"AccessLog\": true }");
+
+        using (var factory = new WebApplicationFactory<Program>())
+        using (var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false }))
+        {
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, (await client.GetAsync("/api/v1/health")).StatusCode);
+            Assert.Equal(System.Net.HttpStatusCode.NotFound, (await client.GetAsync("/api/v1/opds/not-a-token/series")).StatusCode);
+        }
+
+        var logs = Path.Combine(_configDir, "logs");
+        var access = string.Join('\n', Directory.GetFiles(logs, "access-*.log").Select(ReadShared));
+        Assert.Contains("\"GET /api/v1/health HTTP/1.1\" 401 ", access);
+        Assert.Contains("\"GET /api/v1/opds/redacted/series HTTP/1.1\" 404 ", access);
+        Assert.DoesNotContain("not-a-token", access);
+        Assert.DoesNotContain(Directory.GetFiles(logs, "maki-*.log").Select(ReadShared), main => main.Contains("not-a-token"));
+
+        static string ReadShared(string path)
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            return new StreamReader(stream).ReadToEnd();
+        }
+    }
+
+    [Fact]
     public async Task Metadata_settings_tell_anyone_signed_in_that_the_first_download_failed()
     {
         using var factory = new WebApplicationFactory<Program>();

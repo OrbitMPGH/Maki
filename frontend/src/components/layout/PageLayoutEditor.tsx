@@ -4,7 +4,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { Button, Group, Loader, Text, VisuallyHidden } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import {
   IconFilter,
   IconGripVertical,

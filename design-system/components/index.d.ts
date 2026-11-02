@@ -223,6 +223,15 @@ export declare function SurfaceFrame(props: ComponentPropsWithRef<'div'> & {
 /** A panel-table outline while rows load. */
 export declare function TableSkeleton(props: { columns: number; rows?: number }): JSX.Element
 
+/** Short facts in a row split by a hairline, not a centre dot. Falsy items are dropped. */
+export declare function MetaList(props: {
+  items: ReactNode[]
+  /** Spans instead of a list, for a parent that truncates or line-clamps. */
+  inline?: boolean
+  className?: string
+  style?: CSSProperties
+}): JSX.Element | null
+
 /**
  * A file name, path or id on one line. Too long for its column, it loses its middle, keeping the
  * start and the extension; the full value is in a tooltip and, with `copy`, behind a copy button.

@@ -69,7 +69,7 @@ export function ReleaseOutlookView({ outlook }: { outlook: ReleaseOutlookDto }) 
         {state === 'Expected' && range ? (
           <Trans>Likely {range}</Trans>
         ) : state === 'Late' && range ? (
-          <Trans>Running late. It was likely {range}.</Trans>
+          <Trans>Later than expected. We guessed {range}.</Trans>
         ) : state === 'Stalled' ? (
           <Trans>Quiet for longer than its usual rhythm, so there is no estimate.</Trans>
         ) : state === 'Irregular' ? (

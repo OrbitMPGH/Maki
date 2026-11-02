@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { Code, Group, MultiSelect, Select, Stack, Switch, Text, TextInput } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { useAuth } from '../../auth/AuthProvider'
 import { useKavitaUser, useSetKavitaUser, useUsers } from '../../api/auth'
@@ -58,10 +58,7 @@ export function ScrobbleSection() {
       id="scrobbling"
       title={<Trans>Trackers</Trans>}
       description={
-        <Trans>
-          Pushes reading progress and ratings to AniList, MyAnimeList, MangaBaka, Kitsu and
-          MangaUpdates. Connect and disconnect accounts, and review matches, on the Scrobble page.
-        </Trans>
+        <Trans>Connect accounts on the Scrobble page.</Trans>
       }
       dirty={dirty}
       saving={save.isPending}
@@ -116,9 +113,7 @@ export function ScrobbleSection() {
             <SettingsHelp>
               <Trans>
                 Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL{' '}
-                <Code style={{ overflowWrap: 'anywhere' }}>{origin}/api/v1/scrobble/oauth/mal</Code>. If
-                connecting ends in <Code>invalid_client</Code>, re-copy the Client ID (not the secret) and
-                check the App Type is set.
+                <Code style={{ overflowWrap: 'anywhere' }}>{origin}/api/v1/scrobble/oauth/mal</Code>
               </Trans>
             </SettingsHelp>
             <Group grow>
@@ -204,7 +199,6 @@ export function ScrobbleSection() {
           <SettingsNumberInput
             mt="xs"
             label={t`Sync interval (minutes)`}
-            description={t`How often progress and ratings are pushed, from both Kavita and the built-in reader.`}
             min={5}
             max={1440}
             value={form?.intervalMinutes ?? 30}
@@ -213,7 +207,7 @@ export function ScrobbleSection() {
         )}
         <Switch
           label={t`Add unread series as plan-to-read`}
-          description={t`Series in your library you haven't started are added to your lists as plan to read. Entries already on your lists are never changed.`}
+          description={t`Entries already on your lists are never changed.`}
           checked={form?.planToRead ?? false}
           onChange={(e) => {
             const checked = e.currentTarget.checked
@@ -258,11 +252,7 @@ function KavitaLibrariesField() {
       mt="md"
       maw={420}
       label={t`Scrobble reading from these libraries`}
-      description={
-        kavitaNotSetUp
-          ? t`Set up the Kavita connection above to pick libraries.`
-          : t`Leave empty to scrobble reading from every Kavita library. Reading in Maki's own reader is always scrobbled.`
-      }
+      description={kavitaNotSetUp ? t`Set up the Kavita connection above to pick libraries.` : undefined}
       placeholder={selectedLibraries.length === 0 ? t`All libraries` : undefined}
       data={libraryOptions}
       value={selectedLibraries}
@@ -286,7 +276,7 @@ export function KavitaCard() {
     <ConnectionSettingsCard
       name="kavita"
       title="Kavita"
-      description={t`Maki asks Kavita to scan a series after its files change, then pushes its poster, links and status. Covers you set in Kavita are kept. The API key is under User Settings, 3rd Party Clients in Kavita.`}
+      description={t`The API key is under User Settings, 3rd Party Clients in Kavita.`}
       fields={[
         { key: 'url', label: t`URL`, placeholder: 'http://localhost:5000' },
         { key: 'apiKey', label: t`API key`, secret: true },
@@ -321,11 +311,7 @@ function ImportListSettingsCard({ form }: { form?: ReturnType<typeof useImportLi
       id="import-lists"
       title={<Trans>Import lists</Trans>}
       description={
-        <Trans>
-          Pulls your tracker lists on a schedule and adds matching series to the library, or files
-          requests when you can't add series yourself. Connect trackers on the Scrobble page first.
-          Needs the local MangaBaka database.
-        </Trans>
+        <Trans>Adds series from your tracker lists. Connect trackers on the Scrobble page first.</Trans>
       }
       dirty={form?.dirty}
       saving={form?.saving}
@@ -390,7 +376,6 @@ function ImportListInstanceControls({ form: { data, form, set } }: { form: Retur
       />
       <SettingsNumberInput
         label={t`Sync interval (minutes)`}
-        description={t`How often every user's lists are checked.`}
         min={15}
         max={1440}
         value={form?.intervalMinutes ?? 15}
@@ -429,7 +414,7 @@ function KavitaOwnerField() {
       mt="md"
       maw={420}
       label={t`Attribute Kavita's reading to`}
-      description={t`Unset means the lowest-numbered admin, which suits a single-user instance. Only this account can import from Kavita or push reads back.`}
+      description={t`Only this account can import from Kavita or push reads back.`}
       placeholder={t`Lowest-numbered admin`}
       clearable
       data={options}

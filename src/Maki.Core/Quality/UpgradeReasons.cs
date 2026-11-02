@@ -45,6 +45,9 @@ public static class UpgradeReasons
     /// <summary>The file on disk is not an archive (a PDF), so a downloaded copy cannot take its place.</summary>
     public const string UnsupportedFile = "unsupported_file";
 
+    /// <summary>Read file cleanup is going to delete the file, so a better copy would be thrown away.</summary>
+    public const string RemovalScheduled = "removal_scheduled";
+
     /// <summary>
     /// The first <see cref="QualityScorer.IsUpgrade"/> guard a losing candidate trips, in the same
     /// order. Anything that is not about the candidate itself reads as <see cref="ScoreNotHigher"/>.

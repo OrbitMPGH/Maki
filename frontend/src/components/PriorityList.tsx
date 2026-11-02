@@ -1,6 +1,7 @@
 import { useRef, useState, type DragEvent, type ReactNode } from 'react'
-import { Divider, Group, Stack, Switch, Text } from '@mantine/core'
-import { IconGripVertical } from '@tabler/icons-react'
+import { ActionIcon, Divider, Group, Stack, Switch, Text } from '@mantine/core'
+import { IconChevronDown, IconChevronUp, IconGripVertical } from '@tabler/icons-react'
+import { useLingui } from '@lingui/react/macro'
 
 interface PriorityListProps {
   /** Ids in rank order, switched-off ones included. */
@@ -27,6 +28,7 @@ export function PriorityList({
   renderExtra,
   toggleLabel,
 }: PriorityListProps) {
+  const { t } = useLingui()
   // The real order only changes on drop. While dragging, rows are shifted purely
   // visually (transform) to open a gap; reordering the DOM mid-drag made rows
   // slide past the stationary cursor and re-trigger, causing a feedback loop.
@@ -55,6 +57,14 @@ export function PriorityList({
     setHoverIndex(null)
   }
 
+  // Dragging needs a mouse; these buttons are the keyboard and touch path to the same order.
+  function move(index: number, delta: number) {
+    const next = [...items]
+    const [moved] = next.splice(index, 1)
+    next.splice(index + delta, 0, moved)
+    onChange(next, disabled)
+  }
+
   function toggle(id: string, on: boolean) {
     onChange(items, on ? disabled.filter((n) => n !== id) : [...disabled, id])
   }
@@ -67,9 +77,11 @@ export function PriorityList({
           if (dragFromIndex < hoverIndex && i > dragFromIndex && i <= hoverIndex) shift = -1
           else if (dragFromIndex > hoverIndex && i >= hoverIndex && i < dragFromIndex) shift = 1
         }
+        const label = renderLabel(id)
         return (
           <div
             key={id}
+            className="priority-row"
             style={{
               position: 'relative',
               transform: shift ? `translateY(${shift * rowHeight}px)` : undefined,
@@ -115,19 +127,39 @@ export function PriorityList({
                   {i + 1}
                 </Text>
                 <Text size="sm" fw={500} c={disabled.includes(id) ? 'var(--ink-3)' : undefined}>
-                  {renderLabel(id)}
+                  {label}
                 </Text>
                 {renderExtra?.(id)}
               </Group>
-              <Switch
-                size="xs"
-                checked={!disabled.includes(id)}
-                onChange={(e) => toggle(id, e.currentTarget.checked)}
-                aria-label={toggleLabel(id)}
-                // The row is draggable; without this a drag started on the switch swallows the click.
-                onMouseDown={(e) => e.stopPropagation()}
-                draggable={false}
-              />
+              <Group gap={4} wrap="nowrap">
+                <span className="priority-moves">
+                  <ActionIcon
+                    variant="subtle" color="var(--neutral)" disabled={i === 0}
+                    aria-label={t`Move ${label} up`}
+                    onClick={() => move(i, -1)}
+                    draggable={false}
+                  >
+                    <IconChevronUp size={14} />
+                  </ActionIcon>
+                  <ActionIcon
+                    variant="subtle" color="var(--neutral)" disabled={i === items.length - 1}
+                    aria-label={t`Move ${label} down`}
+                    onClick={() => move(i, 1)}
+                    draggable={false}
+                  >
+                    <IconChevronDown size={14} />
+                  </ActionIcon>
+                </span>
+                <Switch
+                  size="xs"
+                  checked={!disabled.includes(id)}
+                  onChange={(e) => toggle(id, e.currentTarget.checked)}
+                  aria-label={toggleLabel(id)}
+                  // The row is draggable; without this a drag started on the switch swallows the click.
+                  onMouseDown={(e) => e.stopPropagation()}
+                  draggable={false}
+                />
+              </Group>
             </Group>
             {i < items.length - 1 && <Divider />}
           </div>

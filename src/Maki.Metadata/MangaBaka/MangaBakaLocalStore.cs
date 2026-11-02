@@ -4,7 +4,9 @@ using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
+using Maki.Core.Recommendations;
 using Maki.Metadata.Catalogue;
+using Maki.Metadata.Embedding;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
@@ -521,6 +523,80 @@ public class MangaBakaLocalStore(
         cmd.CommandText = "SELECT 1 FROM series WHERE id = $id";
         cmd.Parameters.AddWithValue("$id", id);
         return await cmd.ExecuteScalarAsync(ct) is not null;
+    }
+
+    /// <summary>
+    /// The highest id among the rows <see cref="Catalogue.CreditIndex"/> reads credits from, without
+    /// building it. Walks the primary key backwards, so it costs a handful of page reads.
+    /// </summary>
+    public virtual async Task<long?> GetHighestCreditedIdAsync(CancellationToken ct = default)
+    {
+        if (!await IsAvailableAsync(ct))
+        {
+            return null;
+        }
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT id FROM series
+            WHERE state = 'active' AND type != 'novel'
+              AND (COALESCE(authors, '[]') != '[]' OR COALESCE(artists, '[]') != '[]'
+                   OR COALESCE(publishers, '[]') != '[]')
+            ORDER BY id DESC
+            LIMIT 1
+            """;
+        return await cmd.ExecuteScalarAsync(ct) is long id ? id : null;
+    }
+
+    /// <summary>
+    /// Which of <paramref name="ids"/> carry a never-show term, judged on each row's own genres and
+    /// <c>tags_v2</c>. The stand-in for <see cref="VectorIndex.IsHidden"/> while the vector index is
+    /// not loaded, so a never-show list does not have to keep 110 MB in memory to filter a rail.
+    /// Terms match by name: a subtag term matches any tag with that name in its <c>name_path</c>, and
+    /// a central term only tags weighted <see cref="TagMath.Defining"/> or above.
+    /// </summary>
+    public virtual async Task<HashSet<long>> GetHiddenIdsAsync(
+        IReadOnlyCollection<long> ids, IReadOnlyList<CatalogueTerm> terms, CancellationToken ct = default)
+    {
+        var hidden = new HashSet<long>();
+        if (ids.Count == 0 || terms.Count == 0 || !await IsAvailableAsync(ct))
+        {
+            return hidden;
+        }
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"""
+            SELECT id, genres, tags_v2 FROM series
+            WHERE id IN ({string.Join(",", ids.Distinct().Take(MaxInlineIds).Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+            """;
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            var genres = ParseStringArray(GetString(reader, 1));
+            var tags = SeriesEmbeddingIndexer.ParseTags(GetString(reader, 2));
+            if (terms.Any(term => MatchesByName(term, genres, tags)))
+            {
+                hidden.Add(reader.GetInt64(0));
+            }
+        }
+
+        return hidden;
+    }
+
+    private static bool MatchesByName(
+        CatalogueTerm term, IReadOnlyList<string> genres, List<SeriesEmbeddingIndexer.ParsedTag> tags)
+    {
+        if (term.Kind == CatalogueRules.Genre)
+        {
+            return genres.Contains(term.Name, StringComparer.OrdinalIgnoreCase);
+        }
+
+        var minClass = term.Central ? TagMath.Defining : TagMath.Unweighted;
+        return tags.Any(t => t.Class >= minClass &&
+            (string.Equals(t.Name, term.Name, StringComparison.OrdinalIgnoreCase) ||
+             (term.Subtags && t.NamePath.Split(" > ").Contains(term.Name, StringComparer.OrdinalIgnoreCase))));
     }
 
     public virtual async Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default)
@@ -1228,9 +1304,10 @@ public class MangaBakaLocalStore(
     /// ordering. Reuses <see cref="MangaBakaRecommendation"/> so the same card/detail/add flow
     /// works — the relation and matched-genre/tag fields are left empty.
     /// </summary>
+    /// <param name="releasedSince">Leave out anything first published before this day, or undated.</param>
     public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetBrowseAsync(
         BrowseFeed feed, int limit, string? genre = null,
-        RecommendationFilters? filters = null, CancellationToken ct = default)
+        RecommendationFilters? filters = null, CancellationToken ct = default, DateOnly? releasedSince = null)
     {
         if (feed == BrowseFeed.GenreSpotlight && string.IsNullOrWhiteSpace(genre))
         {
@@ -1330,6 +1407,11 @@ public class MangaBakaLocalStore(
         using var cmd = conn.CreateCommand();
         // Optional user filters (year/status/type/rating/chapters/genre) from the expanded view.
         var filterClause = filters.BuildClause(cmd, "series");
+        if (releasedSince is { } since)
+        {
+            filterClause += " AND published_start_date >= $since";
+            cmd.Parameters.AddWithValue("$since", since.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        }
         // Over-fetch so title-dedupe still leaves `limit` rows even when filters thin the set.
         cmd.CommandText = $"""
             SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating, total_chapters, description,

@@ -18,7 +18,7 @@ export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Recent imports')).toBeVisible()
     await expect(await canvas.findByText(/but not every file could be put back/)).toBeVisible()
-    await expect(await canvas.findByText('Still finding sources. Undoing cancels that.')).toBeVisible()
+    await expect(await canvas.findByText('Maki is still looking for sources. Undoing stops the search.')).toBeVisible()
     await expect(await canvas.findByText('The series was removed since, nothing to undo.')).toBeVisible()
   },
 }

@@ -360,7 +360,7 @@ export const RequestInsteadOfAdd: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Request series' })).toBeVisible()
     await expect(
-      await canvas.findByText('Browse or search MangaBaka and ask an admin for a title. You can ask for a chapter range too.'),
+      await canvas.findByText('Ask an admin for a series or a chapter range.'),
     ).toBeVisible()
   },
 }

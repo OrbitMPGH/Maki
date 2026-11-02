@@ -19,8 +19,13 @@ export function lazyRoute<C extends ComponentType>(load: () => Promise<{ default
  */
 export const preloadingRoutes = () => preloading
 
-/** Fetches the route chunks one at a time while the browser is idle. Returns a cancel. */
+/**
+ * Fetches the route chunks one at a time while the browser is idle. Returns a cancel. Skipped when
+ * the browser asks to save data: those pages then open without their transition.
+ */
 export function preloadRoutes(): () => void {
+  const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+  if (connection?.saveData) return () => {}
   let cancelled = false
   // Safari has no requestIdleCallback.
   const idle = (run: () => void) =>

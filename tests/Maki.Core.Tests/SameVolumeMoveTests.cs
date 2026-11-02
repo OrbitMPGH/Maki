@@ -62,14 +62,12 @@ public sealed class SameVolumeMoveTests : IDisposable
     }
 
     [Fact]
-    public void Extended_prefixes_only_long_paths()
-    {
+    public void Extended_leaves_a_short_path_alone() =>
         Assert.Equal(@"C:\x.cbz", SameVolumeMove.Extended(@"C:\x.cbz"));
-        if (!OperatingSystem.IsWindows())
-        {
-            return;
-        }
 
+    [WindowsFact]
+    public void Extended_prefixes_a_long_path()
+    {
         var local = @"C:\" + new string('a', 250);
         Assert.Equal(@"\\?\" + local, SameVolumeMove.Extended(local));
         var unc = @"\\server\share\" + new string('a', 250);

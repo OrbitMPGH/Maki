@@ -71,16 +71,17 @@ public class DownloadQueuePinTests : IDisposable
         return (seriesId, chapter.Id, m["high"], m["low"], m["empty"]);
     }
 
+    /// <summary>The row once the enqueue's detached resolve has finished with it.</summary>
     private async Task<DownloadQueueItem> SettledRow(int id)
     {
-        for (var i = 0; i < 100; i++)
+        DownloadQueueItem? row = null;
+        await Wait.UntilAsync(() =>
         {
             using var db = _db.NewContext();
-            var row = db.DownloadQueue.Single(q => q.Id == id);
-            if (row.Status != QueueStatus.Resolving) return row;
-            await Task.Delay(20);
-        }
-        throw new TimeoutException();
+            row = db.DownloadQueue.Single(q => q.Id == id);
+            return row.Status != QueueStatus.Resolving;
+        }, "the resolve never settled the row");
+        return row!;
     }
 
     [Fact]

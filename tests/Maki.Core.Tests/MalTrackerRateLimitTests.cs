@@ -66,7 +66,9 @@ public class MalTrackerRateLimitTests
         public Task DeleteAsync(int userId, string service, CancellationToken ct = default) => Task.CompletedTask;
     }
 
-    private static MalTracker Build(RecordingHandler handler) => new(
+    private readonly List<TimeSpan> _waits = [];
+
+    private MalTracker Build(RecordingHandler handler) => new(
         new Factory(handler),
         new Settings(),
         new TokenStore(),
@@ -75,7 +77,14 @@ public class MalTrackerRateLimitTests
             "https://mal.test", "https://mal.test/oauth",
             "https://mangabaka.test",
             "https://kitsu.test/api/edge", "https://kitsu.test/api/oauth"),
-        NullLogger<MalTracker>.Instance);
+        NullLogger<MalTracker>.Instance)
+    {
+        Delay = (wait, _) =>
+        {
+            _waits.Add(wait);
+            return Task.CompletedTask;
+        },
+    };
 
     private const string MangaJson = """{"id":1,"title":"Test"}""";
 
@@ -104,14 +113,11 @@ public class MalTrackerRateLimitTests
             .Then(() => TooManyRequests(TimeSpan.FromMilliseconds(1)))
             .Then(HttpStatusCode.OK, MangaJson);
 
-        var started = DateTime.UtcNow;
         var result = await Build(handler).GetEntryAsync(userId: 1, remoteId: "1");
-        var elapsed = DateTime.UtcNow - started;
 
         Assert.Equal("Test", result.Title);
         Assert.Equal(2, handler.Requests.Count);
-        // Would sit through the old fixed 5s fallback if the actual Retry-After were ignored.
-        Assert.True(elapsed < TimeSpan.FromSeconds(2), $"took {elapsed}");
+        Assert.Equal(TimeSpan.FromMilliseconds(1), Assert.Single(_waits));
     }
 
     [Fact]
@@ -121,16 +127,12 @@ public class MalTrackerRateLimitTests
             .Then(() => TooManyRequests(null))
             .Then(HttpStatusCode.OK, MangaJson);
 
-        var started = DateTime.UtcNow;
         var result = await Build(handler).GetEntryAsync(userId: 1, remoteId: "1");
-        var elapsed = DateTime.UtcNow - started;
 
         Assert.Equal("Test", result.Title);
         Assert.Equal(2, handler.Requests.Count);
-        // The fixed fallback is 5s and the cap is 30s; well under the cap confirms the fallback path,
-        // not a coincidentally-short cap failure.
-        Assert.True(elapsed >= TimeSpan.FromSeconds(4.5), $"took {elapsed}");
-        Assert.True(elapsed < TimeSpan.FromSeconds(30), $"took {elapsed}");
+        var wait = Assert.Single(_waits);
+        Assert.InRange(wait, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30));
     }
 
     [Fact]
@@ -140,15 +142,13 @@ public class MalTrackerRateLimitTests
             .Then(() => TooManyRequestsAt(DateTimeOffset.UtcNow.AddSeconds(-30)))
             .Then(HttpStatusCode.OK, MangaJson);
 
-        var started = DateTime.UtcNow;
         var result = await Build(handler).GetEntryAsync(userId: 1, remoteId: "1");
-        var elapsed = DateTime.UtcNow - started;
 
         Assert.Equal("Test", result.Title);
         Assert.Equal(2, handler.Requests.Count);
         // A negative wait must clamp to zero. Unclamped, Task.Delay throws ArgumentOutOfRangeException
         // (or, at exactly -1ms, waits forever).
-        Assert.True(elapsed < TimeSpan.FromSeconds(2), $"took {elapsed}");
+        Assert.Equal(TimeSpan.Zero, Assert.Single(_waits));
     }
 
     [Fact]
@@ -160,5 +160,6 @@ public class MalTrackerRateLimitTests
 
         // No second attempt: retrying would mean sitting through the wait for nothing.
         Assert.Single(handler.Requests);
+        Assert.Empty(_waits);
     }
 }

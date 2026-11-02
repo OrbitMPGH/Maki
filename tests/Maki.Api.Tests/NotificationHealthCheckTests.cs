@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
+[Collection(OneRunPerProcessCollection.Name)]
 public class NotificationHealthCheckTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();
@@ -37,7 +37,7 @@ public class NotificationHealthCheckTests : IDisposable
     {
         using var db = _world.Db.NewContext();
         var services = new ServiceCollection().AddSingleton(_world.Queue).BuildServiceProvider();
-        var monitor = new HealthMonitor(db, null!, _world.Settings, new AppPaths(), _world.Registry, _world.Availability,
+        var monitor = new HealthMonitor(db, null!, _world.Settings, _world.Paths, _world.Registry, _world.Availability,
             services, new RecordingNotifications(), _world.Inbox, new KeyLocalizer(), new TestUserLocaleResolver(), null!);
         await monitor.RefreshAsync(CancellationToken.None);
     }

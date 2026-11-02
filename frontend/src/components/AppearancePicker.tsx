@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { UnstyledButton } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useLabel } from '../i18n-context'
+import { onRovingKeyDown } from '../lib/rovingFocus'
 import { useThemeChoice } from '../theme-context'
 
 /**
@@ -24,7 +25,7 @@ export function AppearancePicker({
         <span className="appearance-picker-label">
           <Trans>Background</Trans>
         </span>
-        <div className="setup-swatches" role="radiogroup" aria-label={t`Background`}>
+        <div className="setup-swatches" role="radiogroup" aria-label={t`Background`} onKeyDown={onRovingKeyDown}>
           {backgrounds.map((b) => {
             const active = b.id === background
             const hint = backgroundHints?.[b.id]
@@ -33,6 +34,7 @@ export function AppearancePicker({
                 key={b.id}
                 role="radio"
                 aria-checked={active}
+                tabIndex={active ? 0 : -1}
                 className="setup-swatch"
                 data-active={active || undefined}
                 onClick={() => setBackground(b.id)}
@@ -53,7 +55,7 @@ export function AppearancePicker({
         <span className="appearance-picker-label">
           <Trans>Accent</Trans>
         </span>
-        <div className="setup-swatches" role="radiogroup" aria-label={t`Accent`}>
+        <div className="setup-swatches" role="radiogroup" aria-label={t`Accent`} onKeyDown={onRovingKeyDown}>
           {accents.map((a) => {
             const active = a.id === accent
             return (
@@ -61,6 +63,7 @@ export function AppearancePicker({
                 key={a.id}
                 role="radio"
                 aria-checked={active}
+                tabIndex={active ? 0 : -1}
                 className="setup-swatch"
                 data-active={active || undefined}
                 onClick={() => setAccent(a.id)}

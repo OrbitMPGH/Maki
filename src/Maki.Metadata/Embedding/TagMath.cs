@@ -138,9 +138,9 @@ public static class TagMath
         return blob;
     }
 
-    public static IReadOnlyList<(int Id, byte Class)> Unpack(byte[]? blob)
+    public static IReadOnlyList<(int Id, byte Class)> Unpack(ReadOnlySpan<byte> blob)
     {
-        if (blob is null || blob.Length == 0 || blob.Length % EntrySize != 0)
+        if (blob.Length == 0 || blob.Length % EntrySize != 0)
         {
             return [];
         }
@@ -148,7 +148,7 @@ public static class TagMath
         var tags = new List<(int, byte)>(blob.Length / EntrySize);
         for (var i = 0; i < blob.Length; i += EntrySize)
         {
-            tags.Add((BinaryPrimitives.ReadInt32LittleEndian(blob.AsSpan(i)), blob[i + 4]));
+            tags.Add((BinaryPrimitives.ReadInt32LittleEndian(blob[i..]), blob[i + 4]));
         }
 
         return tags;
@@ -159,9 +159,9 @@ public static class TagMath
     /// tag filter: each selected tag name maps to a group of vocab ids (casing variants),
     /// and a candidate must carry all selected tags. Null/empty blob matches nothing.
     /// </summary>
-    public static bool ContainsAll(byte[]? blob, IReadOnlyList<int[]> idGroups)
+    public static bool ContainsAll(ReadOnlySpan<byte> blob, IReadOnlyList<int[]> idGroups)
     {
-        if (blob is null || blob.Length == 0 || blob.Length % EntrySize != 0)
+        if (blob.Length == 0 || blob.Length % EntrySize != 0)
         {
             return false;
         }
@@ -171,7 +171,7 @@ public static class TagMath
             var found = false;
             for (var i = 0; i + EntrySize <= blob.Length && !found; i += EntrySize)
             {
-                var id = BinaryPrimitives.ReadInt32LittleEndian(blob.AsSpan(i));
+                var id = BinaryPrimitives.ReadInt32LittleEndian(blob[i..]);
                 for (var g = 0; g < group.Length; g++)
                 {
                     if (group[g] == id)
@@ -195,9 +195,9 @@ public static class TagMath
     /// True when the packed blob carries any of <paramref name="sortedIds"/> at
     /// <paramref name="minClass"/> or above. The ids must be sorted; a subtree can run to hundreds.
     /// </summary>
-    public static bool ContainsAny(byte[]? blob, int[] sortedIds, byte minClass)
+    public static bool ContainsAny(ReadOnlySpan<byte> blob, int[] sortedIds, byte minClass)
     {
-        if (blob is null || blob.Length % EntrySize != 0)
+        if (blob.Length % EntrySize != 0)
         {
             return false;
         }
@@ -205,7 +205,7 @@ public static class TagMath
         for (var i = 0; i + EntrySize <= blob.Length; i += EntrySize)
         {
             if (blob[i + 4] >= minClass &&
-                Array.BinarySearch(sortedIds, BinaryPrimitives.ReadInt32LittleEndian(blob.AsSpan(i))) >= 0)
+                Array.BinarySearch(sortedIds, BinaryPrimitives.ReadInt32LittleEndian(blob[i..])) >= 0)
             {
                 return true;
             }
@@ -623,11 +623,11 @@ public static class TagMath
     /// its share of the dot product (unsorted) so the UI can rank matches by contribution.
     /// </summary>
     public static double Score(
-        byte[]? candidateBlob, Profile profile, Func<int, double> idf,
+        ReadOnlySpan<byte> candidateBlob, Profile profile, Func<int, double> idf,
         List<(int Id, double Contribution)>? matched = null, double candidateNormPower = 1.0,
         Func<int, double>? categoryWeight = null, TagTree? tree = null)
     {
-        if (candidateBlob is null || candidateBlob.Length % EntrySize != 0 || profile.IsEmpty)
+        if (candidateBlob.Length % EntrySize != 0 || profile.IsEmpty)
         {
             return 0;
         }
@@ -642,7 +642,7 @@ public static class TagMath
         var candNormSq = 0.0;
         for (var i = 0; i + EntrySize <= candidateBlob.Length; i += EntrySize)
         {
-            var id = BinaryPrimitives.ReadInt32LittleEndian(candidateBlob.AsSpan(i));
+            var id = BinaryPrimitives.ReadInt32LittleEndian(candidateBlob[i..]);
             // Applied to both sides, so this stays a cosine in a consistently reweighted space. On
             // the profile alone it would tilt the numerator while leaving candidate norms in the old
             // space, which is the asymmetry that made profile sharpening reward sparse candidates.
@@ -688,14 +688,14 @@ public static class TagMath
     /// </para>
     /// </summary>
     private static double ScoreExpanded(
-        byte[] candidateBlob, Profile profile, Func<int, double> idf,
+        ReadOnlySpan<byte> candidateBlob, Profile profile, Func<int, double> idf,
         List<(int Id, double Contribution)>? matched, double candidateNormPower,
         Func<int, double>? categoryWeight, TagTree tree)
     {
         var expanded = new Dictionary<int, double>((candidateBlob.Length / EntrySize) * 4);
         for (var i = 0; i + EntrySize <= candidateBlob.Length; i += EntrySize)
         {
-            var id = BinaryPrimitives.ReadInt32LittleEndian(candidateBlob.AsSpan(i));
+            var id = BinaryPrimitives.ReadInt32LittleEndian(candidateBlob[i..]);
             var mass = ClassWeight(candidateBlob[i + 4]);
             var category = categoryWeight?.Invoke(id) ?? 1.0;
             expanded[id] = expanded.GetValueOrDefault(id) + (mass * idf(id) * category);

@@ -4,7 +4,6 @@ import { Box, Button, Group, Title, VisuallyHidden } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import {
-  IconBook,
   IconBookmarks,
   IconDeviceTv,
   IconFlame,
@@ -34,11 +33,11 @@ import {
   isRailKey,
   railIdOf,
   type HomeLayoutKey,
-  type HomeReadingItem,
   type HomeSection,
   type HomeSectionKey,
   type RecommendationItem,
 } from '../api/hooks'
+import { activeSeries } from '../lib/series'
 import { useCustomRails } from '../api/customRails'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
 import { PageLayoutEditor, PageLayoutEditorLoading } from '../components/layout/PageLayoutEditor'
@@ -48,9 +47,8 @@ import { HOME_LAYOUT_CONFIG, HOME_SECTION_DEFS } from '../components/home/homeSe
 import { useReadTracking } from '../api/reader'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { FollowingRail } from '../components/discover/FollowingRail'
-import { ContinueHero, type HeroQueue } from '../components/home/ContinueHero'
+import { ContinueHero, ContinueHeroSkeleton, type HeroQueue } from '../components/home/ContinueHero'
 import { ContinueRail } from '../components/home/ContinueRail'
-import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
 import { DiscoverZone, type HomeSeparation } from '../components/home/HomeZones'
 import { OfflineHome } from '../components/home/OfflineHome'
 import { AnimeResumeExpandModal, AnimeResumeRail } from '../components/home/AnimeResumeRail'
@@ -83,7 +81,7 @@ function FindMore() {
 }
 
 /** Sections that only ever show series already in the library. Everything else draws on the catalogue. */
-const LIBRARY_SECTIONS: HomeSectionKey[] = ['continue', 'jumpback', 'recent']
+const LIBRARY_SECTIONS: HomeSectionKey[] = ['continue', 'recent']
 
 export default function HomePage({ separation = 'none' }: { separation?: HomeSeparation }) {
   const { t } = useLingui()
@@ -107,7 +105,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   // settings load stops the Discover tab flickering in and out. Here it would fire two requests
   // that 400 on an install with no local MangaBaka database, and both surface as error toasts.
   const discoverAvailable = Boolean(metadata?.dumpPresent)
-  const hasLibrary = (series?.length ?? 0) > 0
+  const hasLibrary = activeSeries(series ?? []).length > 0
 
   const { data: homeRails, isError: railsFailed } = useCustomRails('home')
 
@@ -133,7 +131,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   // The glance is Continue reading's own switch, so it costs no request while that section is off.
   const glanceOn = on('continue') && optionOn('continue', 'glance')
 
-  const needsReading = on('continue') || on('jumpback')
+  const needsReading = on('continue')
   const needsDiscover = discoverAvailable && hasLibrary
 
   const {
@@ -168,7 +166,6 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   }, [connectivity, refetchSeries])
 
   const continueReading = reading?.continueReading ?? []
-  const jumpBackIn = reading?.jumpBackIn ?? []
 
   const popular = rails?.find((r) => r.key === 'popular')?.items ?? []
   const youMightLike = recommendations.data?.pages[0]?.similar?.slice(0, RAIL_SIZE) ?? []
@@ -276,7 +273,8 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
         {homeTitle}
-        <RailSkeleton title />
+        {/* Home ships opening on the Continue reading hero, so that is the likeliest first shape. */}
+        <ContinueHeroSkeleton />
         <RailSkeleton title />
       </SurfaceFrame>
     )
@@ -300,7 +298,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   // yields null and takes up no space, exactly as when it is switched off.
   const sections: Record<HomeSectionKey, React.ReactNode> = {
     continue: readingLoading ? (
-      <RailSkeleton />
+      heroOn('continue') ? <ContinueHeroSkeleton queue={queueOf('continue')} /> : <RailSkeleton />
     ) : readingFailed ? (
       <ReadingErrorPrompt onRetry={() => void refetchReading()} />
     ) : continueReading.length > 0 ? (
@@ -310,20 +308,16 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
         {!heroOn('continue') && (
           <SectionHeader icon={IconPlayerPlay} title={t`Continue reading`} count={continueReading.length} />
         )}
-        <ReadingSection
-          items={continueReading}
-          rail="continue"
-          hero={heroOn('continue')}
-          glance={heroOn('continue') ? glanceNode : undefined}
-          queue={queueOf('continue')}
-        />
+        {heroOn('continue') ? (
+          <ContinueHero items={continueReading} glance={glanceNode} queue={queueOf('continue')} />
+        ) : (
+          <ContinueRail items={continueReading} />
+        )}
       </>
     ) : (
       <>
         {glanceNode}
-        {/* Only nudge when there is genuinely nothing to resume *and* nothing to jump back into,
-            otherwise a user mid-way through their library gets told to start reading. */}
-        {jumpBackIn.length === 0 && <StartReadingPrompt tracking={readTracking} />}
+        <StartReadingPrompt tracking={readTracking} />
       </>
     ),
 
@@ -334,26 +328,6 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
         <>
           <SectionHeader icon={IconBookmarks} title={t`Recently added`} count={recent.length} />
           <RecentlyAddedRail items={recent} />
-        </>
-      )
-    ),
-
-    jumpback: readingLoading ? (
-      <RailSkeleton />
-    ) : readingFailed ? (
-      on('continue') ? null : <ReadingErrorPrompt onRetry={() => void refetchReading()} />
-    ) : (
-      jumpBackIn.length > 0 && (
-        <>
-          {!heroOn('jumpback') && (
-            <SectionHeader icon={IconBook} title={t`Jump back in`} count={jumpBackIn.length} />
-          )}
-          <ReadingSection
-            items={jumpBackIn}
-            rail="jumpback"
-            hero={heroOn('jumpback')}
-            queue={queueOf('jumpback')}
-          />
         </>
       )
     ),
@@ -501,28 +475,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   )
 }
 
-/** A reading list as a hero with a Next up strip under it, or as a plain rail. */
-function ReadingSection({
-  items,
-  rail,
-  hero,
-  glance,
-  queue,
-}: {
-  items: HomeReadingItem[]
-  rail: ReadingRailKind
-  hero: boolean
-  glance?: React.ReactNode
-  queue: HeroQueue
-}) {
-  return hero ? (
-    <ContinueHero items={items} rail={rail} glance={glance} queue={queue} />
-  ) : (
-    <ContinueRail items={items} rail={rail} />
-  )
-}
-
-/** Shown in place of the reading rails when `/home/reading` itself failed, rather than the start-reading nudge. */
+/** Shown in place of the reading list when `/home/reading` itself failed, rather than the start-reading nudge. */
 function ReadingErrorPrompt({ onRetry }: { onRetry: () => void }) {
   const { t } = useLingui()
   return (

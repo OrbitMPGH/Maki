@@ -1,6 +1,6 @@
 import { useMemo, useState, type CSSProperties } from 'react'
 import { TagsInput, Title } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { useCreateTag, useSetSeriesTags, useTags } from '../api/hooks'
 import { Trans, useLingui } from '@lingui/react/macro'
 

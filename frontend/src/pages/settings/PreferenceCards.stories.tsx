@@ -51,7 +51,7 @@ export const Language: Story = {
   render: () => <LanguageSection />,
   play: async ({ canvas }) => {
     await expect(await canvas.findByLabelText('Interface language')).toBeInTheDocument()
-    await expect(await canvas.findByText(/Showing /)).toBeVisible()
+    await expect(await canvas.findByText(/machine-made/)).toBeVisible()
   },
 }
 

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
+[Collection(OneRunPerProcessCollection.Name)]
 public class UpgradeScanServiceTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();
@@ -138,6 +138,34 @@ public class UpgradeScanServiceTests : IDisposable
         Assert.Equal(1, result.Skipped[reason]);
         Assert.Empty(_world.Http.Requested);
         Assert.Empty(Queue());
+    }
+
+    [Fact]
+    public async Task A_chapter_read_file_cleanup_is_going_to_delete_takes_no_upgrade()
+    {
+        _world.Seed(series: s => s.ReadFileCleanup = ReadFileCleanup.On);
+        var (due, _) = _world.Chapter(1);
+        var (kept, _) = _world.Chapter(2);
+        using (var db = _world.Db.NewContext())
+        {
+            foreach (var (chapterId, daysAgo) in new[] { (due, 2), (kept, 1) })
+            {
+                var at = DateTime.UtcNow.AddDays(-daysAgo);
+                db.ChapterProgress.Add(new ChapterProgress
+                {
+                    UserId = 1, SeriesId = _world.SeriesId, ChapterId = chapterId, Completed = true,
+                    StartedAt = at, UpdatedAt = at, CompletedAt = at,
+                });
+            }
+
+            db.SaveChanges();
+        }
+
+        var result = await ScanAsync();
+
+        // Keep-last holds chapter 2 back from cleanup, so only chapter 1 is on course to be deleted.
+        Assert.Equal(1, result.Skipped[UpgradeReasons.RemovalScheduled]);
+        Assert.Equal(kept, Assert.Single(Queue()).ChapterId);
     }
 
     [Fact]

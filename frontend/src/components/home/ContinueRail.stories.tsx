@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor } from 'storybook/test'
-import { continueReading, jumpBackIn } from '../../../.storybook/mocks/home'
+import { continueReading, notStarted } from '../../../.storybook/mocks/home'
 import { ContinueRail } from './ContinueRail'
 
 const meta = {
   component: ContinueRail,
   tags: ['ai-generated'],
-  args: { items: continueReading, rail: 'continue' },
+  args: { items: continueReading },
   parameters: { layout: 'padded' },
 } satisfies Meta<typeof ContinueRail>
 
@@ -19,6 +19,6 @@ export const Continue: Story = {
   },
 }
 
-export const JumpBackIn: Story = {
-  args: { items: jumpBackIn, rail: 'jumpback' },
+export const BetweenChapters: Story = {
+  args: { items: notStarted },
 }

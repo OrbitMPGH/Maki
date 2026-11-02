@@ -135,6 +135,35 @@ public class QBittorrentClient : ITorrentClient
         }
     }
 
+    public Task<TorrentRemoval> RemoveAsync(
+        TorrentClientSettings settings, string hash, bool deleteData, CancellationToken ct = default) =>
+        GuardAsync(async () =>
+        {
+            await EnsureLoginAsync(settings, force: false, ct);
+
+            // torrents/delete answers 200 for a hash it does not have, so presence is checked first.
+            var existing = await FindTorrentAsync(settings, hash, ct);
+            if (existing is null)
+            {
+                return TorrentRemoval.Absent;
+            }
+
+            if (!string.Equals(existing.Category ?? string.Empty, settings.Label, StringComparison.Ordinal))
+            {
+                return TorrentRemoval.HeldOutsideLabel;
+            }
+
+            var fields = new Dictionary<string, string>
+            {
+                ["hashes"] = hash,
+                ["deleteFiles"] = deleteData ? "true" : "false",
+            };
+            using var response = await SendAuthenticatedAsync(
+                settings, HttpMethod.Post, "torrents/delete", () => new FormUrlEncodedContent(fields), ct);
+            response.EnsureSuccessStatusCode();
+            return TorrentRemoval.Removed;
+        }, ct);
+
     private async Task<QbtTorrent?> FindTorrentAsync(TorrentClientSettings settings, string infoHash, CancellationToken ct)
     {
         using var response = await SendAuthenticatedAsync(
@@ -160,11 +189,13 @@ public class QBittorrentClient : ITorrentClient
     {
         var errored = t.State is "error" or "missingFiles";
         var checking = t.State.StartsWith("checking", StringComparison.Ordinal);
+        // Relocating out of a temp folder reports progress 1 with the files half moved.
+        var moving = t.State == "moving";
         return new ClientTorrent(
             t.Hash.ToLowerInvariant(),
             t.Name,
             t.Progress,
-            t.Progress >= 1.0 && !errored && !checking,
+            t.Progress >= 1.0 && !errored && !checking && !moving,
             t.ContentPath,
             DateTimeOffset.FromUnixTimeSeconds(t.AddedOn),
             errored,

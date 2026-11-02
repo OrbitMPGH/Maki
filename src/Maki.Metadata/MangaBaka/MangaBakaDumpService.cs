@@ -641,7 +641,7 @@ public class MangaBakaDumpService(
 /// headers, so a connection that goes quiet mid-body would otherwise block the copy forever, and
 /// with it <c>ArtifactBuildGate</c> and every job queued behind it.
 /// </summary>
-internal sealed class StallTimeoutStream(Stream inner, TimeSpan? stall = null) : Stream
+internal sealed class StallTimeoutStream(Stream inner, TimeSpan? stall = null, TimeProvider? time = null) : Stream
 {
     public static readonly TimeSpan DefaultStall = TimeSpan.FromSeconds(60);
 
@@ -660,25 +660,28 @@ internal sealed class StallTimeoutStream(Stream inner, TimeSpan? stall = null) :
 
     public override int Read(byte[] buffer, int offset, int count) => inner.Read(buffer, offset, count);
 
+    private CancellationTokenSource? _timer;
     private CancellationTokenSource? _quiet;
     private CancellationToken _linkedTo;
 
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
     {
-        // One linked source per stream, its timer armed for each read and disarmed after, rather
-        // than a new one per read. Rebuilt only for a different token, or once its timer has fired.
-        if (_quiet is null || ct != _linkedTo || _quiet.IsCancellationRequested)
+        // One timer per stream, armed for each read and disarmed after, rather than a new one per
+        // read. Rebuilt only for a different token, or once it has fired.
+        if (_timer is null || _quiet is null || ct != _linkedTo || _quiet.IsCancellationRequested)
         {
             _quiet?.Dispose();
-            _quiet = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            _timer?.Dispose();
+            _timer = new CancellationTokenSource(Timeout.InfiniteTimeSpan, time ?? TimeProvider.System);
+            _quiet = CancellationTokenSource.CreateLinkedTokenSource(ct, _timer.Token);
             _linkedTo = ct;
         }
 
-        _quiet.CancelAfter(_stall);
+        _timer.CancelAfter(_stall);
         try
         {
             var read = await inner.ReadAsync(buffer, _quiet.Token);
-            _quiet.CancelAfter(Timeout.InfiniteTimeSpan);
+            _timer.CancelAfter(Timeout.InfiniteTimeSpan);
             return read;
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
@@ -703,6 +706,7 @@ internal sealed class StallTimeoutStream(Stream inner, TimeSpan? stall = null) :
         if (disposing)
         {
             _quiet?.Dispose();
+            _timer?.Dispose();
             inner.Dispose();
         }
 

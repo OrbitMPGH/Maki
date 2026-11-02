@@ -545,7 +545,7 @@ public class ImportListService(
 
         return result.Error switch
         {
-            SeriesCreationError.AlreadyInLibrary => Outcome.Present,
+            SeriesCreationError.AlreadyInLibrary or SeriesCreationError.ArchivedInLibrary => Outcome.Present,
             SeriesCreationError.MetadataNotFound => Outcome.Unmatched,
             SeriesCreationError.OperationResultGone => Outcome.Removed,
             _ => Outcome.Failed,

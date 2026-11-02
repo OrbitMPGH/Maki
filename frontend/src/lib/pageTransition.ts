@@ -17,7 +17,8 @@ import { pageScroller } from './pageScroll'
  * Opening a series from a cover grows that cover into the series page's poster, and going back
  * shrinks the poster into the same cover if it is on screen. The pairing is found in the DOM (the
  * clicked link's image, the visible link to that series) rather than wired into each card, and the
- * flight is a copy of the cover laid out in the page itself (see flyCover).
+ * flight is a copy of the cover laid out in the page itself (see flyCover). A cover that is not a
+ * link to its series takes `data-series-cover={id}` to join in.
  *
  * Only a change of path animates. Filters, tabs and modals ride on search and state, and those
  * stay instant. Both the fade and the flying cover can be switched off per device under Settings >
@@ -37,17 +38,21 @@ const disabled = () => !motionEnabled('pageTransitions') || prefersReducedMotion
 // The reader pages between chapters with its own motion, and a fade on top of it reads as lag.
 const isReader = (path: string) => path.startsWith('/read/')
 
+// Safari, and every iOS browser, which all run on WebKit. Its view transitions paint the page while it
+// should be held, barely draw the flying cover under the cross-fade, then replay the flight once the
+// transition ends (issue #150). There pages take the path for browsers without the API.
+const skipViewTransitions = navigator.vendor === 'Apple Computer, Inc.'
+
 const seriesId = (path: string) => /^\/series\/(\d+)\/?$/.exec(path)?.[1] ?? null
 
 let shownPath = appHistory.location.pathname
 let settle: (() => void) | null = null
 
-let lastClick: { link: HTMLAnchorElement; at: number } | null = null
+let lastClick: { target: Element; at: number } | null = null
 document.addEventListener(
   'click',
   (e) => {
-    const link = (e.target as Element | null)?.closest?.('a[href]')
-    lastClick = link instanceof HTMLAnchorElement ? { link, at: performance.now() } : null
+    lastClick = e.target instanceof Element ? { target: e.target, at: performance.now() } : null
   },
   true,
 )
@@ -61,8 +66,8 @@ function onScreen(el: Element): boolean {
  * The box a cover inside `link` occupies: the nearest clipping ancestor with rounded corners, which
  * is the card's visible shape rather than its image, whose hover zoom overflows it.
  */
-function coverIn(link: HTMLAnchorElement): HTMLElement | null {
-  const img = link.querySelector('img')
+function coverIn(link: HTMLElement): HTMLElement | null {
+  const img = link instanceof HTMLImageElement ? link : link.querySelector('img')
   if (!img) return null
   let fallback: HTMLElement | null = null
   for (let el: HTMLElement | null = img.parentElement; el && link.contains(el); el = el.parentElement) {
@@ -74,25 +79,46 @@ function coverIn(link: HTMLAnchorElement): HTMLElement | null {
   return fallback ?? img
 }
 
-function linkedCover(id: string): HTMLElement | null {
-  for (const link of document.querySelectorAll<HTMLAnchorElement>(`a[href="/series/${id}"]`)) {
-    const cover = coverIn(link)
+const linkPath = (el: Element) => (el instanceof HTMLAnchorElement ? new URL(el.href).pathname : '')
+
+/**
+ * Links to the series page (search and hash aside), plus covers marked `data-series-cover` for the
+ * places whose cover is not one: a thumbnail beside a title link, a cover that opens the reader.
+ */
+function coversFor(id: string, within: ParentNode): HTMLElement[] {
+  const els = within.querySelectorAll<HTMLElement>(`a[href^="/series/${id}"], [data-series-cover="${id}"]`)
+  return [...els].filter((el) => el.dataset.seriesCover === id || seriesId(linkPath(el)) === id)
+}
+
+function visibleCover(els: HTMLElement[]): HTMLElement | null {
+  for (const el of els) {
+    const cover = coverIn(el)
     if (cover && onScreen(cover)) return cover
   }
   return null
 }
+
+const linkedCover = (id: string) => visibleCover(coversFor(id, document))
 
 function heroPoster(): HTMLImageElement | null {
   const img = document.querySelector<HTMLImageElement>('img.series-hero-poster')
   return img && onScreen(img) ? img : null
 }
 
-/** The cover to grow from when leaving for `/series/id`: the one just clicked, if it has one. */
+/**
+ * The cover to grow from when leaving for `/series/id`: the one just clicked, or the cover for that
+ * series nearest the click, which covers a title link beside its thumbnail, an "Open series" button
+ * or menu item, and rows that navigate from script.
+ */
 function clickedCover(id: string): HTMLElement | null {
   if (!lastClick || performance.now() - lastClick.at > 1000) return null
-  if (seriesId(new URL(lastClick.link.href).pathname) !== id) return null
-  const cover = coverIn(lastClick.link)
-  return cover && onScreen(cover) ? cover : null
+  const link = lastClick.target.closest('a[href]')
+  if (link && seriesId(linkPath(link)) !== id) return null
+  for (let el = lastClick.target.parentElement; el; el = el.parentElement) {
+    const cover = visibleCover(coversFor(id, el))
+    if (cover) return cover
+  }
+  return null
 }
 
 // No animation frame runs while the update callback is pending, so waits inside it use timers.
@@ -129,16 +155,20 @@ function unsettleLayout(token: number) {
   if (token === settling) delete document.documentElement.dataset.pageSettling
 }
 
-/** The new page drifts up into place while it fades in. Without the API it fades in alone. */
-function rise(fade: boolean) {
+/**
+ * The new page drifts up into place while it fades in. Without the API it fades in alone. A flying
+ * cover measures where it lands at the start, so beside one the page only fades.
+ */
+function rise(fade: boolean, drift = true) {
   const main = document.getElementById('main')
   if (!main) return
-  main.animate(
-    fade
-      ? [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }]
-      : [{ transform: 'translateY(6px)' }, { transform: 'none' }],
-    { duration: 250 * motionPace(), easing: EASE },
-  )
+  const from: Keyframe = drift ? { transform: 'translateY(6px)' } : {}
+  const to: Keyframe = drift ? { transform: 'none' } : {}
+  if (fade) {
+    from.opacity = 0
+    to.opacity = 1
+  }
+  main.animate([from, to], { duration: 250 * motionPace(), easing: EASE })
 }
 
 /**
@@ -216,6 +246,52 @@ function flyCover(
   }
 }
 
+/**
+ * Without a view transition the old page is gone the moment the route changes, so a copy of the cover
+ * stays where it was until the new page has somewhere for it to fly. Returns its removal.
+ */
+function holdCover(cover: HTMLElement, at: DOMRect): (fade: boolean) => void {
+  const img = cover instanceof HTMLImageElement ? cover : cover.querySelector('img')
+  const src = img?.currentSrc || img?.src
+  if (!src) return () => {}
+  const held = document.createElement('img')
+  held.className = 'cover-ghost'
+  held.src = src
+  held.alt = ''
+  Object.assign(held.style, {
+    position: 'fixed',
+    left: `${at.left}px`,
+    top: `${at.top}px`,
+    width: `${at.width}px`,
+    height: `${at.height}px`,
+    borderRadius: getComputedStyle(cover).borderTopLeftRadius,
+  })
+  document.body.append(held)
+  return (fade) => {
+    if (!fade) return held.remove()
+    held.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140 * motionPace(), easing: 'ease-out' }).finished.finally(() => held.remove())
+  }
+}
+
+/**
+ * The flight without a view transition, once the new page has committed: the page fades in (rise)
+ * while the cover flies from where it was to its place on the new page.
+ */
+async function flyIn(from: DOMRect, opening: string | null, leaving: string | null, release: (fade: boolean) => void) {
+  const settled = settleLayout()
+  // ScrollMemory's restore runs in the commit's passive effects, and the landing spot depends on it.
+  await tick()
+  const incoming = opening ? await posterReady(performance.now() + COMMIT_TIMEOUT_MS) : leaving ? linkedCover(leaving) : null
+  const flight = incoming && flyCover(from, incoming)
+  if (flight) {
+    await Promise.race([flight.decoded, tick(100)])
+    // The flight's copy starts on the same spot, so the held one can go in the same frame.
+    release(false)
+    flight.start()
+  } else release(true)
+  requestAnimationFrame(() => requestAnimationFrame(() => unsettleLayout(settled)))
+}
+
 const listen = appHistory.listen
 appHistory.listen = (listener) =>
   listen((update) => {
@@ -226,24 +302,27 @@ appHistory.listen = (listener) =>
       listener(update)
       return
     }
-    if (!document.startViewTransition) {
+    const opening = seriesId(to)
+    const leaving = seriesId(from)
+    const morph = motionEnabled('coverMorph')
+    const outgoing = !morph ? null : opening ? clickedCover(opening) : leaving ? heroPoster() : null
+    const fromRect = outgoing?.getBoundingClientRect()
+
+    if (!document.startViewTransition || skipViewTransitions) {
+      const release = outgoing && fromRect ? holdCover(outgoing, fromRect) : null
       listener(update)
       settle = () => {
         settle = null
-        rise(true)
+        rise(true, !release)
+        if (fromRect && release) void flyIn(fromRect, opening, leaving, release)
       }
       return
     }
 
-    const opening = seriesId(to)
-    const leaving = seriesId(from)
     // The cross-fade's length lives in theme.css, keyed off this.
     const root = document.documentElement
     if (motionEnabled('fastMotion')) root.dataset.motion = 'fast'
     else delete root.dataset.motion
-    const morph = motionEnabled('coverMorph')
-    const outgoing = !morph ? null : opening ? clickedCover(opening) : leaving ? heroPoster() : null
-    const fromRect = outgoing?.getBoundingClientRect()
     let flight: ReturnType<typeof flyCover> = null
     let settled = 0
     // Set once the browser skips the transition: a hidden tab, or another navigation cutting in. The

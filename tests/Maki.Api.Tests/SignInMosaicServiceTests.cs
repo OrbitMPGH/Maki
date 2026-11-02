@@ -15,12 +15,10 @@ namespace Maki.Api.Tests;
 /// The sign-in page's cover mosaic is the one anonymous view of the library, so what it draws is
 /// pinned here: nothing while the setting is off, only Safe-rated series, and a blurred image.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public class SignInMosaicServiceTests : IDisposable
 {
     private readonly string _configDir =
         Path.Combine(Path.GetTempPath(), "maki-signin-mosaic-" + Guid.NewGuid().ToString("N"));
-    private readonly string? _priorEnv = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
     private readonly TestDb _db = new();
     private readonly FakeAppSettings _settings = new();
     private readonly CoverService _covers;
@@ -29,8 +27,7 @@ public class SignInMosaicServiceTests : IDisposable
 
     public SignInMosaicServiceTests()
     {
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
-        var paths = new AppPaths();
+        var paths = new AppPaths(_configDir);
         _covers = new CoverService(null!, paths, _settings, NullLogger<CoverService>.Instance);
         var services = new ServiceCollection();
         services.AddScoped(_ => _db.NewContext());
@@ -41,7 +38,6 @@ public class SignInMosaicServiceTests : IDisposable
     public void Dispose()
     {
         _db.Dispose();
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
         try
         {
             Directory.Delete(_configDir, recursive: true);

@@ -25,6 +25,7 @@ import { formatBytes } from '../format'
 import { errorText } from '../api/errorText'
 import { PendingLabel } from './ui/PendingLabel'
 import { AllNone, useRangeText } from './ChapterMapParts'
+import { MetaList } from './ui/MetaList'
 
 type Mode = Exclude<ImportDecision, 'Reject'>
 type CellState = 'moves' | 'readable' | 'keepsFile' | 'leftOut' | 'unchanged' | 'missing'
@@ -253,7 +254,7 @@ function ReviewBody({
           {plan.seriesTitle}
         </Text>
         <Text size="xs" c="var(--ink-4)" truncate title={plan.releaseName}>
-          {plan.releaseName} · <span className="tnum">{totalSize}</span>
+          <MetaList inline items={[plan.releaseName, <span key="size" className="tnum">{totalSize}</span>]} />
         </Text>
       </div>
 

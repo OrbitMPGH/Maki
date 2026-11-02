@@ -116,10 +116,7 @@ public class FileLinkerTests : IDisposable
         // The bytes behind the other link (the still-seeding torrent) must not change.
         var source = Write("seeding.cbz", "original");
         var target = Path.Combine(_dir, "library.cbz");
-        if (FileLinker.Place(source, target, preferHardlink: true) != FilePlacement.Hardlinked)
-        {
-            return;
-        }
+        Assert.Equal(FilePlacement.Hardlinked, FileLinker.Place(source, target, preferHardlink: true));
 
         var partial = target + ".partial";
         File.WriteAllText(partial, "standardized");

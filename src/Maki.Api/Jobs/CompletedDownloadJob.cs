@@ -40,10 +40,17 @@ public class CompletedDownloadJob(
     InboxService inbox,
     IMessageCatalog localizer,
     IUserLocaleResolver locales,
-    ILogger<CompletedDownloadJob> logger) : IJob
+    ILogger<CompletedDownloadJob> logger,
+    TorrentPollState? pollState = null) : IJob
 {
     /// <summary>How long a torrent whose hash is known may be missing from the client before its row fails.</summary>
     internal static readonly TimeSpan MissingTorrentGrace = TimeSpan.FromHours(6);
+
+    /// <summary>
+    /// How much earlier than the grab a torrent's add time may be and still count as the grab's own. The row is
+    /// written right after the add, so this only has to cover clock drift between the client and Maki.
+    /// </summary>
+    internal static readonly TimeSpan AddedBeforeGrabMargin = TimeSpan.FromMinutes(10);
 
     internal const string ClientErrorKey = "error.download.torrentClientError";
 
@@ -63,7 +70,12 @@ public class CompletedDownloadJob(
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
+        if (pollState?.CanSkip == true)
+        {
+            return;
+        }
 
+        var generation = pollState?.Generation ?? 0;
         var pending = await db.DownloadQueue
             .Where(q => q.Protocol == AcquisitionProtocol.Torrent &&
                         q.Status != QueueStatus.Completed &&
@@ -74,6 +86,7 @@ public class CompletedDownloadJob(
 
         if (pending.Count == 0)
         {
+            pollState?.MarkIdle(generation);
             return;
         }
 
@@ -183,6 +196,30 @@ public class CompletedDownloadJob(
 
             if (torrent is null)
             {
+                // Seen finished, then gone from the client before it was imported: removed there, or
+                // a Failed row the user retried after the client let it go. The files are still where
+                // the client left them.
+                if (item.Status != QueueStatus.AwaitingImport && StoredContentPath(info, pathMap) is { } stored)
+                {
+                    MissingSince.TryRemove(item.Id, out _);
+                    var statusBefore = item.Status;
+                    if (!await TryImportAsync(item, stored, ct))
+                    {
+                        continue;
+                    }
+
+                    if (item.Status != statusBefore)
+                    {
+                        await BroadcastAsync(item);
+                        if (item.Status is QueueStatus.Failed or QueueStatus.AwaitingImport)
+                        {
+                            announcements.Add((item, item.Status == QueueStatus.AwaitingImport));
+                        }
+                    }
+
+                    continue;
+                }
+
                 // Grabbed via .torrent URL and not yet visible, or removed by the user.
                 if (DateTime.UtcNow - item.QueuedAt > TimeSpan.FromHours(2) && info.TorrentHash is null)
                 {
@@ -257,34 +294,38 @@ public class CompletedDownloadJob(
                 HoldersOf(holders, torrent.Hash).Add(new TorrentHolder(item.SeriesId, item.Series?.Title, item.Status));
             }
 
+            // Compared on every poll: a client with a temp folder moves the content when it finishes,
+            // and a user can move a torrent's storage by hand. Never recorded mid-download, when the
+            // files may be preallocated and half written.
+            if (torrent.IsComplete && info.ContentPath != torrent.ContentPath)
+            {
+                info = info with { ContentPath = torrent.ContentPath };
+                item.ReleaseInfoJson = JsonSerializer.Serialize(info);
+            }
+
+            // A duplicate add the client accepted, or a torrent claimed by name, was in the client before this
+            // grab: Transmission and Deluge even put Maki's label on it. Removal must never reach it.
+            if (info.AddedBeforeGrab is null)
+            {
+                info = info with
+                {
+                    AddedBeforeGrab = torrent.AddedAt < new DateTimeOffset(
+                        DateTime.SpecifyKind(item.QueuedAt, DateTimeKind.Utc)) - AddedBeforeGrabMargin,
+                };
+                item.ReleaseInfoJson = JsonSerializer.Serialize(info);
+            }
+
             var previousPagesDone = item.PagesDone;
             var previousStatus = item.Status;
             item.PagesTotal = 100;
             item.PagesDone = (int)(torrent.Progress * 100);
 
-            if (torrent.IsComplete && item.Status != QueueStatus.AwaitingImport)
+            // The client reports the path as it sees it; rewrite it to how Maki does
+            // when the two run under different mounts (e.g. the client in Docker).
+            if (torrent.IsComplete && item.Status != QueueStatus.AwaitingImport &&
+                !await TryImportAsync(item, PathRemapper.Map(torrent.ContentPath, pathMap.From, pathMap.To), ct))
             {
-                try
-                {
-                    await ImportAsync(item, torrent, pathMap, ct);
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    // One unimportable download must not take the pass with it. Everything above
-                    // this (progress, claimed hashes, the other items' statuses) is only written
-                    // by the single SaveChangesAsync below, so letting this escape would discard
-                    // the whole poll and then do it again every fifteen seconds, for as long as
-                    // the offending torrent sits in the queue.
-                    logger.LogError(ex, "Could not import torrent '{Title}'", item.Title);
-                    item.Status = QueueStatus.Failed;
-                    item.SetRawError(ex.Message);
-                }
-
-                // Its series was deleted mid-import and the row cascaded away with it.
-                if (db.Entry(item).State == EntityState.Detached)
-                {
-                    continue;
-                }
+                continue;
             }
 
             // Only on a real change. A finished torrent stays finished, so keying this on
@@ -549,13 +590,50 @@ public class CompletedDownloadJob(
             .Where(t => t.Length > 0)
             .ToHashSet();
 
+    /// <summary>
+    /// Imports the download unattended, or parks it. False when the row is gone: its series was
+    /// deleted mid-import and the row cascaded away with it.
+    /// </summary>
+    private async Task<bool> TryImportAsync(DownloadQueueItem item, string? contentPath, CancellationToken ct)
+    {
+        try
+        {
+            await ImportAsync(item, contentPath, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // One unimportable download must not take the pass with it. Everything above
+            // this (progress, claimed hashes, the other items' statuses) is only written
+            // by the single SaveChangesAsync below, so letting this escape would discard
+            // the whole poll and then do it again every fifteen seconds, for as long as
+            // the offending torrent sits in the queue.
+            logger.LogError(ex, "Could not import torrent '{Title}'", item.Title);
+            item.Status = QueueStatus.Failed;
+            item.SetRawError(ex.Message);
+        }
+
+        return db.Entry(item).State != EntityState.Detached;
+    }
+
+    /// <summary>The path the client reported once the download finished, mapped, while it is still on disk.</summary>
+    private static string? StoredContentPath(ReleaseInfo info, (string? From, string? To) pathMap)
+    {
+        if (info.ContentPath is null)
+        {
+            return null;
+        }
+
+        var mapped = PathRemapper.Map(info.ContentPath, pathMap.From, pathMap.To);
+        return Directory.Exists(mapped) || File.Exists(mapped) ? mapped : null;
+    }
+
     private async Task ImportAsync(
-        DownloadQueueItem item, ClientTorrent torrent, (string? From, string? To) pathMap, CancellationToken ct)
+        DownloadQueueItem item, string? contentPath, CancellationToken ct)
     {
         TorrentImportService.BeginAutomaticImport(item.Id);
         try
         {
-            await ImportRegisteredAsync(item, torrent, pathMap, ct);
+            await ImportRegisteredAsync(item, contentPath, ct);
         }
         finally
         {
@@ -563,15 +641,9 @@ public class CompletedDownloadJob(
         }
     }
 
-    private async Task ImportRegisteredAsync(
-        DownloadQueueItem item, ClientTorrent torrent, (string? From, string? To) pathMap, CancellationToken ct)
+    private async Task ImportRegisteredAsync(DownloadQueueItem item, string? contentPath, CancellationToken ct)
     {
         var series = item.Series!;
-
-        // The client reports the path as it sees it; rewrite it to how Maki does
-        // when the two run under different mounts (e.g. the client in Docker).
-        var contentPath = PathRemapper.Map(torrent.ContentPath, pathMap.From, pathMap.To);
-
         var plan = await importer.PlanAsync(item, series, contentPath, ct);
         if (plan.ErrorKey is not null)
         {
@@ -623,6 +695,13 @@ public class CompletedDownloadJob(
             return;
         }
 
+        if (outcome.ErrorKey == TorrentImportService.SeriesArchivedKey)
+        {
+            // The archive already cancelled this row. Cancelled is not announced and blames no release.
+            item.Status = QueueStatus.Cancelled;
+            return;
+        }
+
         if (!outcome.Applied)
         {
             item.Status = QueueStatus.Failed;
@@ -634,6 +713,7 @@ public class CompletedDownloadJob(
         item.Status = QueueStatus.Completed;
         item.CompletedAt = DateTime.UtcNow;
         item.PagesDone = item.PagesTotal;
+        await importer.MarkForClientRemovalAsync(item, outcome, settledByUser: false, ct);
 
         // Torrent files keep their release name until this runs; save now so the rename's
         // active-download check (which re-queries the row) sees this item as Completed rather

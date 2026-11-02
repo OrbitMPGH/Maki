@@ -199,6 +199,32 @@ export const SavingOffline: Story = {
 
 export const FileScheduledForDeletion: Story = {
   args: { chapter: { ...byNumber(1), fileDeleteDueAt: hoursAgo(-48) }, progress: progress.get(byNumber(1).id) },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('Removed in 2 days')).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole('button', { name: /More actions/ }))
+    await waitFor(() => expect(document.body).toHaveTextContent('Delete file'))
+    await expect(document.body).not.toHaveTextContent('Upgrade now')
+  },
+}
+
+export const FileAutoRemoved: Story = {
+  args: {
+    chapter: {
+      ...byNumber(1),
+      wanted: false,
+      hasFile: false,
+      filePath: null,
+      fileSourceName: null,
+      fileQuality: null,
+      fileRemovedAt: hoursAgo(30),
+      fileAutoRemoved: true,
+    },
+    progress: progress.get(byNumber(1).id),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Auto-removed')).toBeInTheDocument()
+    await expect(canvas.getByRole('switch', { name: /Want/ })).not.toBeChecked()
+  },
 }
 
 export const SelectModeSelected: Story = {

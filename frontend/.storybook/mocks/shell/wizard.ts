@@ -15,6 +15,7 @@ import type {
 import type { RootFolder } from '../../../src/api/types'
 import { api, daysAgo } from '../api'
 import { uiSettings } from '../shared'
+import { browseFoldersHandler } from '../settings/folders'
 
 export const idleDump: DumpProgress = {
   running: false,
@@ -154,6 +155,7 @@ export function wizardHandlers(options: WizardOptions = {}): HttpHandler[] {
     http.get(api('/settings/ui'), () => HttpResponse.json(ui)),
     http.put(api('/settings/ui'), async ({ request }) => HttpResponse.json(await request.json())),
 
+    browseFoldersHandler,
     http.get(api('/rootfolder'), () => HttpResponse.json(folders)),
     http.post(api('/rootfolder'), async ({ request }) => {
       const { path } = (await request.json()) as { path: string }

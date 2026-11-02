@@ -127,7 +127,8 @@ public class HttpRequestLogPolicyTests
     [Fact]
     public void A_slow_request_is_a_warning_even_when_it_succeeded()
     {
-        Assert.Equal(LogEventLevel.Warning, Level("GET", "/api/v1/series", elapsedMs: 2500));
+        Assert.Equal(LogEventLevel.Warning, Level("GET", "/api/v1/series", elapsedMs: Options.SlowRequestMs));
+        Assert.Equal(LogEventLevel.Debug, Level("GET", "/api/v1/series", elapsedMs: Options.SlowRequestMs - 1));
     }
 
     [Fact]
@@ -135,7 +136,7 @@ public class HttpRequestLogPolicyTests
     {
         // The slow tier is checked before the read/write split precisely so this cannot be demoted:
         // a cover taking two seconds is the symptom worth seeing.
-        Assert.Equal(LogEventLevel.Warning, Level("GET", "/api/v1/mediacover/1/cover.jpg", elapsedMs: 2500));
+        Assert.Equal(LogEventLevel.Warning, Level("GET", "/api/v1/mediacover/1/cover.jpg", elapsedMs: Options.SlowRequestMs));
     }
 
     [Fact]
@@ -159,7 +160,7 @@ public class HttpRequestLogPolicyTests
 
         Assert.Equal(LogEventLevel.Error, Level("GET", "/api/v1/series", status: 500, options: off));
         Assert.Equal(LogEventLevel.Warning, Level("POST", "/api/v1/series", status: 409, options: off));
-        Assert.Equal(LogEventLevel.Warning, Level("GET", "/api/v1/series", elapsedMs: 2500, options: off));
+        Assert.Equal(LogEventLevel.Warning, Level("GET", "/api/v1/series", elapsedMs: Options.SlowRequestMs, options: off));
         Assert.Equal(LogEventLevel.Verbose, Level("POST", "/api/v1/series", options: off));
         Assert.Equal(LogEventLevel.Verbose, Level("GET", "/api/v1/series", options: off));
     }

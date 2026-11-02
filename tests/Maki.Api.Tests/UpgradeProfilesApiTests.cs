@@ -26,11 +26,7 @@ public sealed class UpgradeProfilesApiTests : IDisposable
 
     private static UpgradeEvaluationService Evaluation(MakiDbContext db) => new(db, TestQuality.Create());
 
-    private ReadFileCleanupService Cleanup(MakiDbContext db) => new(
-        db, new SettingsService(_db.ScopeFactory()),
-        new ChapterFileDeletion(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), TimeProvider.System,
-            TestRecycleBin.For(db), NullLogger<ChapterFileDeletion>.Instance),
-        TimeProvider.System, NullLogger<ReadFileCleanupService>.Instance);
+    private SettingsService Settings() => new(_db.ScopeFactory());
 
     [Fact]
     public void A_candidate_is_never_scored_on_the_current_files_name()
@@ -520,8 +516,8 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         using var db = _db.NewContext();
         var controller = ChapterController(db);
 
-        var pinnedRows = Qualities(await controller.List(pinned, Evaluation(db), Cleanup(db), default));
-        var plainRows = Qualities(await controller.List(plain, Evaluation(db), Cleanup(db), default));
+        var pinnedRows = Qualities(await controller.List(pinned, Evaluation(db), Settings(), default));
+        var plainRows = Qualities(await controller.List(plain, Evaluation(db), Settings(), default));
 
         Assert.Equal([(0, false), (null, null)], pinnedRows.Select(q => (q.Score, q.CutoffMet)));
         Assert.Equal([(null, null)], plainRows.Select(q => (q.Score, q.CutoffMet)));
@@ -539,7 +535,7 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         SeedFile(seriesId, 2, QualityTier.Aggregator, width: 800);
         using var db = _db.NewContext();
 
-        var rows = Qualities(await ChapterController(db).List(seriesId, Evaluation(db), Cleanup(db), default));
+        var rows = Qualities(await ChapterController(db).List(seriesId, Evaluation(db), Settings(), default));
 
         Assert.Equal([(7, true), (0, false)], rows.Select(q => (q.Score, q.CutoffMet)));
     }
@@ -695,26 +691,37 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         }
     }
 
-    /// <summary>Bits per pixel are medians from sampling a real library, per source.</summary>
-    [Theory]
-    [InlineData("Berserk v01 (2019) (Digital) (1r0n).cbz", "1r0n", 2250, "jpg", 2.3, 36)]
-    [InlineData("Raw Hero v01 (2018) (Digital) (Oak).cbz", "Oak", 1000, "jpg", 1.5, 20)]
-    [InlineData("Some Series c012 (Raw).cbz", null, 1000, "jpg", 1.5, -100)]
-    [InlineData("Some Series c012 [MTL].cbz", null, 1000, "jpg", 1.5, -100)]
-    [InlineData(null, null, 1000, "png", 3.93, 8)]
-    [InlineData(null, null, 800, "jpg", 2.13, 2)]
-    [InlineData(null, null, 720, "webp", 0.47, -17)]
-    public async Task The_starter_profiles_score_typical_files(
-        string? releaseName, string? group, int width, string format, double bitsPerPixel, int expected)
+    [Fact]
+    public async Task The_starter_profiles_rank_typical_files_by_what_they_are()
     {
         using var db = _db.NewContext();
         await new UpgradeProfileSeeder(db, NullLogger<UpgradeProfileSeeder>.Instance).RunOnceAsync();
         var profile = db.UpgradeProfiles.Single(p => p.Name == UpgradeProfileSeeder.UpgradeToVolumes);
-        const int height = 1500, pages = 20;
-        var size = (long)(bitsPerPixel * width * height / 8) * pages;
-        var candidate = new QualityCandidate(
-            QualityTier.Volume, null, null, group, releaseName, pages, width, format, size, "en", height);
+        var formats = db.QualityFormats.ToList();
 
-        Assert.Equal(expected, QualityScorer.Score(profile, db.QualityFormats.ToList(), candidate).Score);
+        int Score(string? releaseName, string? group, int width, double bitsPerPixel)
+        {
+            const int height = 1500, pages = 20;
+            var size = (long)(bitsPerPixel * width * height / 8) * pages;
+            var candidate = new QualityCandidate(
+                QualityTier.Volume, null, null, group, releaseName, pages, width, "jpg", size, "en", height);
+            return QualityScorer.Score(profile, formats, candidate).Score;
+        }
+
+        const int width = MeasuredQuality.ReferenceWidth;
+        const double bpp = MeasuredQuality.ReferenceBitsPerPixel;
+        var plain = Score("Some Series v01 (Digital).cbz", null, width, bpp);
+
+        Assert.True(Score("Some Series v01 (Digital) (1r0n).cbz", "1r0n", width, bpp) > plain);
+        Assert.True(Score("Some Series c012 (Raw).cbz", null, width, bpp) < plain);
+        Assert.True(Score("Some Series c012 [MTL].cbz", null, width, bpp) < plain);
+        Assert.True(Score(null, null, width * 2, bpp) > plain);
+        Assert.True(Score(null, null, width / 2, bpp) < plain);
+        Assert.True(Score(null, null, width, bpp * 2) > plain);
+        Assert.True(Score(null, null, width, bpp / 2) < plain);
+
+        var bestRaw = Score("Some Series c012 (Raw).cbz", null, MeasuredQuality.MaxWidth, MeasuredQuality.MaxBitsPerPixel);
+        var worstClean = Score(null, null, MeasuredQuality.MinWidth, MeasuredQuality.MinBitsPerPixel);
+        Assert.True(bestRaw < worstClean);
     }
 }

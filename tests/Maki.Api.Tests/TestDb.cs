@@ -40,6 +40,23 @@ internal sealed class TestDb : IDisposable
         SeedUser("owner", MakiPermission.None);
     }
 
+    private static long _blocks;
+
+    /// <summary>
+    /// Numbers this fixture's series from a block of ids no other fixture uses. SeriesLocks is
+    /// process-wide and keyed by series id, and every fixture otherwise starts at 1, so a test that
+    /// holds the folder-name lock while waiting on a series lock can deadlock with another class
+    /// that holds "the same" series lock while waiting on the folder-name lock.
+    /// </summary>
+    public TestDb WithDistinctSeriesIds()
+    {
+        using var seq = _connection.CreateCommand();
+        seq.CommandText = "INSERT INTO sqlite_sequence (name, seq) VALUES ('Series', $base)";
+        seq.Parameters.AddWithValue("$base", Interlocked.Increment(ref _blocks) * 1_000_000L);
+        seq.ExecuteNonQuery();
+        return this;
+    }
+
     /// <summary>The options behind every context here, for a test that needs its own scope.</summary>
     public DbContextOptions<MakiDbContext> Options => _options;
 

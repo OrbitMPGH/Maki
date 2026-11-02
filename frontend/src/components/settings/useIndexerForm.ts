@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useState } from 'react'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { t as now } from '@lingui/core/macro'
 import {
   useIndexerSettings,

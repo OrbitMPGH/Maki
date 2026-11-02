@@ -11,7 +11,6 @@ namespace Maki.Api.Tests;
 /// Runs <see cref="DownloadOrigin.Upgrade"/> items through the real processor against a file on disk.
 /// The existing file is 4 pages from "agg" at 80px; the profile's width format sits at 150px.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public class ChapterDownloadProcessorUpgradeTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();

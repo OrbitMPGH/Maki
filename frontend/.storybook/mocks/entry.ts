@@ -36,6 +36,10 @@ const readerHandlers: HttpHandler[] = [
     return manifest ? HttpResponse.json(manifest) : failWith(404, 'This chapter has no readable file.', 'error.reader.noFile')
   }),
   http.put(api('/reader/chapter/:id/progress'), () => new HttpResponse(null, { status: 204 })),
+  http.get(api('/series/:id/rating-checkpoint'), () => HttpResponse.json({ checkpoint: null, provisionalRating: null })),
+  http.post(api('/series/:id/rating-checkpoint/dismiss'), () => new HttpResponse(null, { status: 204 })),
+  http.put(api('/series/:id/rating/provisional'), async ({ request }) =>
+    HttpResponse.json({ rating: null, provisionalRating: ((await request.json()) as { rating: number | null }).rating })),
   http.get(api('/reader/chapter/:id/bookmarks'), ({ params }) =>
     HttpResponse.json([
       { id: 1, chapterId: Number(params.id), pageIndex: 3, createdAt: hoursAgo(5) },
@@ -45,6 +49,10 @@ const readerHandlers: HttpHandler[] = [
   http.put(api('/reader/chapter/:id/bookmark/:page'), () => HttpResponse.json({ bookmarked: true })),
   http.post(api('/reader/chapter/:id/read'), () => new HttpResponse(null, { status: 204 })),
   http.post(api('/reader/chapter/:id/unread'), () => new HttpResponse(null, { status: 204 })),
+  http.post(api('/reader/chapter/:id/enhance'), async ({ request }) => {
+    const { pages } = (await request.json()) as { pages: number[] }
+    return HttpResponse.json({ pages: pages.map((page) => ({ page, state: 'queued' })) })
+  }),
   http.get(api('/reader/used'), () => HttpResponse.json({ used: true, kavita: false })),
   http.get(api('/readingprofiles'), () => HttpResponse.json(readingProfiles)),
   http.put(api('/readingprofiles/:id'), async ({ request, params }) => {

@@ -14,14 +14,6 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Awake: Story = { args: { mood: 'awake' } }
-
-export const Asleep: Story = { args: { mood: 'asleep' } }
-
-export const Asking: Story = { args: { mood: 'asking' } }
-
-export const Pleased: Story = { args: { mood: 'pleased' } }
-
 export const AllMoods: Story = {
   render: (args) => (
     <div style={{ display: 'flex', gap: 32 }}>

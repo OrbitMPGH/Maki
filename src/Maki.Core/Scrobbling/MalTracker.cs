@@ -40,6 +40,9 @@ public class MalTracker(
         [ScrobbleStatus.PlanToRead] = "plan_to_read",
     };
 
+    /// <summary>Every wait the tracker makes goes through here, so tests can skip the sleeping.</summary>
+    internal Func<TimeSpan, CancellationToken, Task> Delay { get; init; } = Task.Delay;
+
     public async Task<bool> ConfiguredAsync(CancellationToken ct = default) =>
         (await ClientIdAsync(ct)).Length > 0 && (await ClientSecretAsync(ct)).Length > 0;
 
@@ -182,6 +185,12 @@ public class MalTracker(
             using var _ = response;
             if (!response.IsSuccessStatusCode)
             {
+                // A 429 or 5xx says nothing about the refresh token, so only a refusal drops it.
+                if (response.StatusCode is not (HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized))
+                {
+                    throw new TrackerException($"MAL token refresh failed ({(int)response.StatusCode})");
+                }
+
                 // Only the token that was actually rejected is dropped; one stored since (an OAuth
                 // reconnect mid-refresh) is still good.
                 if ((await tokens.GetAsync(userId, Name, ct))?.RefreshToken == sent)
@@ -229,7 +238,7 @@ public class MalTracker(
             {
                 if (attempt == 0)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(2), ct);
+                    await Delay(TimeSpan.FromSeconds(2), ct);
                     continue;
                 }
 
@@ -254,7 +263,7 @@ public class MalTracker(
                             $"MAL API {method} {path} rate limited: Retry-After {retryAfter.TotalSeconds:F0}s exceeds the 30s cap");
                     }
 
-                    await Task.Delay(retryAfter < TimeSpan.Zero ? TimeSpan.Zero : retryAfter, ct);
+                    await Delay(retryAfter < TimeSpan.Zero ? TimeSpan.Zero : retryAfter, ct);
                     continue;
                 }
 
@@ -601,7 +610,7 @@ public class MalTracker(
                 {
                     waited429 = true;
                     var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10);
-                    await Task.Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
+                    await Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
                     continue;
                 }
 

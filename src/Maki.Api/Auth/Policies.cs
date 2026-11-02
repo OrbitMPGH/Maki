@@ -27,6 +27,7 @@ public static class Policies
     public const string UseTrackers = nameof(MakiPermission.UseTrackers);
     public const string UseOpds = nameof(MakiPermission.UseOpds);
     public const string ImportLibrary = nameof(MakiPermission.ImportLibrary);
+    public const string ArchiveSeries = nameof(MakiPermission.ArchiveSeries);
 
     /// <summary>Registers one policy per permission, plus the fallback "any signed-in user".</summary>
     public static void AddMakiPolicies(this AuthorizationOptions options)

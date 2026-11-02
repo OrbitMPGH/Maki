@@ -43,7 +43,7 @@ export function RecommenderDials({
           label={(v) => (v === 0 ? t`balanced` : v > 0 ? t`obscure` : t`popular`)}
           marks={[
             { value: -1, label: t`popular` },
-            { value: 0, label: '·' },
+            { value: 0 },
             { value: 1, label: t`gems` },
           ]}
           color={obscurity >= 0 ? 'grape' : 'var(--info)'}
@@ -67,7 +67,7 @@ export function RecommenderDials({
           label={(v) => (v === 0 ? t`closest` : formatFixedDecimal(v, 1))}
           marks={[
             { value: 0, label: t`closest` },
-            { value: 0.5, label: '·' },
+            { value: 0.5 },
             { value: 1, label: t`varied` },
           ]}
           color="var(--ok)"

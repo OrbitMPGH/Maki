@@ -49,15 +49,25 @@ export function useFollowToggle(credit: CatalogueCredit | null) {
 
 export const FOLLOWING_RAIL_KEY = 'following'
 export const FOLLOWING_RAIL_SIZE = 40
+/** How far back a release still counts as new. Older work is the back catalogue the creator page lists. */
+export const FOLLOWING_RAIL_MONTHS = 12
 
 /**
- * The follow rail as a catalogue browse: every followed creator's work, newest release first, minus
- * what the reader already owns. Null when they follow nobody.
+ * The follow rail as a catalogue browse: followed creators' releases from the last
+ * {@link FOLLOWING_RAIL_MONTHS} months, newest first, minus anything the reader already owns or has
+ * given an opinion on. Null when they follow nobody.
  */
 export function followingFeedRequest(
   creators: CatalogueCredit[] | null | undefined,
   limit = FOLLOWING_RAIL_SIZE,
 ): DiscoverFeedRequest | null {
   if (!creators?.length) return null
-  return { feed: 'Popular', filters: { credits: creators }, sort: 'newest', excludeOwned: true, limit }
+  return {
+    feed: 'Popular',
+    filters: { credits: creators },
+    sort: 'newest',
+    excludeInteracted: true,
+    releasedWithinMonths: FOLLOWING_RAIL_MONTHS,
+    limit,
+  }
 }

@@ -12,6 +12,9 @@ export const IMPORT_SKIP_REASONS: Record<string, MessageDescriptor> = {
   leftBehind: msg`stays in the folder, the series folder already has a file with this name`,
 }
 
+/** What a scanned folder is to the library (`Maki.Api.Services.ImportCandidateKind`). */
+export type ImportCandidateKind = 'new' | 'inLibrary' | 'restore'
+
 export interface ImportRequestItem {
   folderName: string
   metadataProviderId: string
@@ -51,6 +54,7 @@ export interface ImportPlan {
   files: ImportPlanFile[] | null
   skipped: { name: string; reason: string }[] | null
   writesCover: boolean
+  kind: ImportCandidateKind
 }
 
 /** Must not exceed LibraryImportController.MaxItemsPerRequest. */

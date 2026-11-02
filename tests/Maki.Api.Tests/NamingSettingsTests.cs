@@ -135,8 +135,13 @@ public class NamingSettingsTests : IDisposable
         var preview = Assert.IsType<SettingsController.NamingPreviewResponse>(
             Assert.IsType<OkObjectResult>(result).Value);
 
-        Assert.Equal("The Series Title's! (2010)", preview.SeriesFolder);
-        Assert.Equal("The Series Title's! 024.cbz", preview.ChapterFile);
+        var sample = NamingDefaults.SampleContext();
+        Assert.Equal(NamingFormatter.Format("{Series Title} ({Series Year})", sample), preview.SeriesFolder);
+        Assert.Equal(
+            NamingFormatter.Format("{Series Title} {Chapter Number:000}", sample) + NamingDefaults.ChapterExtension,
+            preview.ChapterFile);
+        Assert.DoesNotContain("{", preview.SeriesFolder);
+        Assert.DoesNotContain("{", preview.ChapterFile);
         Assert.Empty(preview.SeriesFolderErrors);
         Assert.Empty(preview.ChapterErrors);
     }
@@ -163,7 +168,7 @@ public class NamingSettingsTests : IDisposable
 
         Assert.Equal(NamingTokens.All.Count, tokens.Count);
         Assert.All(tokens, t => Assert.False(string.IsNullOrWhiteSpace(t.Description)));
-        Assert.Contains(tokens, t => t is { Token: "{Series Title}", Example: "The Series Title's!" });
+        Assert.Contains(tokens, t => t.Token == "{Series Title}" && t.Example == NamingDefaults.SampleContext().Series.Title);
         Assert.Contains(tokens, t => t.Category == NamingTokenCategory.SeriesId);
     }
 

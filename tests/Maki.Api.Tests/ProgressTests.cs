@@ -319,7 +319,8 @@ public sealed class ProgressTests : IDisposable
     {
         // Somebody who first switches this on years in has genuinely passed the lower rungs, and a
         // grid showing Diamond with Bronze still locked would be nonsense.
-        SeedRead(null, 3000, Now);
+        var thresholds = AchievementCatalog.Find("reader")!.Tiers;
+        SeedRead(null, (int)thresholds[^2], Now);
 
         using var db = _db.NewContext();
         await Achievements(db).EvaluateAsync(UserId);
@@ -330,13 +331,13 @@ public sealed class ProgressTests : IDisposable
             .OrderBy(t => t)
             .ToList();
 
-        Assert.Equal([1, 2, 3, 4, 5], tiers);
+        Assert.Equal(Enumerable.Range(1, thresholds.Count - 1), tiers);
     }
 
     [Fact]
     public async Task AnUnlockSurvivesTheMetricFallingBackBelowIt()
     {
-        SeedRead(null, 60, Now);
+        SeedRead(null, (int)AchievementCatalog.Find("reader")!.Tiers[1], Now);
         using (var db = _db.NewContext())
         {
             await Achievements(db).EvaluateAsync(UserId);
@@ -639,7 +640,8 @@ public sealed class ProgressTests : IDisposable
             new() { UserId = UserId, Key = "librarian", Tier = 2, UnlockedAt = unlockedAt },
         };
 
-        var (tier, at) = ProgressController.DisplayedTier(librarian, new UserMetrics { LibrarySeries = 3 }, held);
+        var (tier, at) = ProgressController.DisplayedTier(
+            librarian, new UserMetrics { LibrarySeries = librarian.Tiers[0] - 1 }, held);
 
         Assert.Equal(2, tier);
         Assert.Equal(unlockedAt, at);
@@ -650,7 +652,8 @@ public sealed class ProgressTests : IDisposable
     {
         var librarian = AchievementCatalog.Find("librarian")!;
 
-        var (tier, at) = ProgressController.DisplayedTier(librarian, new UserMetrics { LibrarySeries = 50 }, []);
+        var (tier, at) = ProgressController.DisplayedTier(
+            librarian, new UserMetrics { LibrarySeries = librarian.Tiers[1] }, []);
 
         Assert.Equal(2, tier);
         Assert.Null(at);

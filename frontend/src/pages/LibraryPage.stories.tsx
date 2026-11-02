@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent as userEventApi, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
-import { libraryHandlers, seedLibraryPrefs } from '../../.storybook/mocks/library'
+import { archivedLibraryHandlers, libraryHandlers, seedLibraryPrefs } from '../../.storybook/mocks/library'
 import { getConnectivity, onConnectivityChange, setConnectivity } from '../lib/connectivity'
 import LibraryPage from './LibraryPage'
 
@@ -47,6 +47,49 @@ export const Grid: Story = {
   },
 }
 
+/** The Archived view: three archived cards, one with files removed and one with chapters read past. */
+export const ArchivedView: Story = {
+  args: { scope: 'archived' },
+  parameters: { router: { path: '/library/archived', initialEntries: ['/library/archived'] }, msw: archivedLibraryHandlers },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('link', { name: /The Ninth Kitchen/ })).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: /Paper Moon Detective/ })).toBeVisible()
+    await expect(canvas.queryByRole('link', { name: /Lanterns Over Kasumi/ })).toBeNull()
+    await waitFor(() => expect(canvas.getAllByText(/^Archived \w+ \d+, \d{4}$/)).toHaveLength(3))
+    await expect(await canvas.findByText('Files removed', { selector: '.mantine-Badge-label' })).toBeVisible()
+    await expect(await canvas.findByText('2 skipped')).toBeVisible()
+  },
+}
+
+export const ArchivedViewList: Story = {
+  args: { scope: 'archived' },
+  parameters: { router: { path: '/library/archived', initialEntries: ['/library/archived'] }, msw: archivedLibraryHandlers },
+  beforeEach: () => seedLibraryPrefs({ view: 'list' }),
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(canvasElement.querySelectorAll('.series-row')).toHaveLength(3))
+  },
+}
+
+export const ArchivedRestoreAsksAboutFiles: Story = {
+  args: { scope: 'archived' },
+  parameters: { router: { path: '/library/archived', initialEntries: ['/library/archived'] }, msw: archivedLibraryHandlers },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('link', { name: /Under the Willow Gate/ })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Actions for Under the Willow Gate' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Restore to library' }))
+    const dialog = await body(canvasElement).findByRole('dialog')
+    await expect(await within(dialog).findByText('Download the 75 removed chapters again?')).toBeVisible()
+  },
+}
+
+export const NothingArchived: Story = {
+  args: { scope: 'archived' },
+  parameters: { router: { path: '/library/archived', initialEntries: ['/library/archived'] } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Nothing archived')).toBeVisible()
+  },
+}
+
 // Every API response flips connectivity back to online, so the offline story pins it while mounted.
 function ForceOffline({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -79,20 +122,17 @@ export const ListView: Story = {
   },
 }
 
-export const CompactGrid: Story = {
-  beforeEach: () => seedLibraryPrefs({ density: 'compact' }),
-}
+export const DensityChoiceIsKept: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })
+    await userEvent.click(await canvas.findByRole('button', { name: 'More options' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Compact' }))
+    await waitFor(() => expect(localStorage.getItem('library-density')).toBe('compact'))
 
-export const ComfortableGrid: Story = {
-  beforeEach: () => seedLibraryPrefs({ density: 'comfortable' }),
-}
-
-export const CompactList: Story = {
-  beforeEach: () => seedLibraryPrefs({ view: 'list', density: 'compact' }),
-}
-
-export const ComfortableList: Story = {
-  beforeEach: () => seedLibraryPrefs({ view: 'list', density: 'comfortable' }),
+    await userEvent.click(await canvas.findByRole('button', { name: 'More options' }))
+    const compact = await body(canvasElement).findByRole('menuitem', { name: 'Compact' })
+    await waitFor(() => expect(compact).toHaveAttribute('aria-current', 'true'))
+  },
 }
 
 export const Loading: Story = {

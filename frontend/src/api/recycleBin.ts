@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError } from './client'
 
-export type RecycleReason = 'deleteFile' | 'removeChapter' | 'seriesDelete'
+export type RecycleReason = 'deleteFile' | 'removeChapter' | 'seriesDelete' | 'seriesArchive'
 
 export interface RecycleBinEntry {
   id: number

@@ -26,7 +26,7 @@ public class CoverService(
     public void DeleteCover(int seriesId)
     {
         var dir = Path.GetDirectoryName(CoverPathFor(seriesId))!;
-        CoverVersionCache.Remove(seriesId);
+        CoverVersionCache.Remove(CoverPathFor(seriesId));
         try
         {
             if (Directory.Exists(dir))
@@ -66,7 +66,8 @@ public class CoverService(
             using var buffer = new MemoryStream();
             await stream.CopyToAsync(buffer, ct);
             var bytes = buffer.ToArray();
-            return await ImageWorkGate.RunAsync(() => Task.FromResult(SavePoster(seriesId, bytes)), ct);
+            return await ImageWorkGate.RunAsync(
+                () => Task.FromResult(SavePoster(seriesId, bytes)), ImageWorkGate.Weigh(bytes), ct);
         }
         catch (Exception ex)
         {
@@ -108,7 +109,7 @@ public class CoverService(
             else
             {
                 File.Move(temp, target, overwrite: true);
-                CoverVersionCache.Set(seriesId, File.GetLastWriteTimeUtc(target).Ticks);
+                CoverVersionCache.Set(target, File.GetLastWriteTimeUtc(target).Ticks);
             }
         }
         catch

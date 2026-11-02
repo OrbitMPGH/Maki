@@ -41,6 +41,7 @@ const ALL_PERMISSIONS: Me['permissionNames'] = [
   'UseTrackers',
   'UseOpds',
   'ImportLibrary',
+  'ArchiveSeries',
 ]
 
 export const adminMe: Me = {

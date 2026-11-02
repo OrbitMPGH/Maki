@@ -16,6 +16,10 @@ namespace Maki.Api.Services;
 /// with no progress there at all doesn't hold anything back, and a series nobody has read has
 /// nothing to clean. A volume file goes only when every chapter on it qualifies.
 /// </para>
+/// <para>
+/// A chapter on course for deletion takes no upgrades (<see cref="PendingAsync"/>), and one it
+/// deleted stops being wanted, so the switch is how a user asks for the file back.
+/// </para>
 /// </summary>
 public class ReadFileCleanupService(
     MakiDbContext db,
@@ -29,7 +33,9 @@ public class ReadFileCleanupService(
 
     public sealed record Options(bool Enabled, int Days, bool KeepLast);
 
-    public async Task<Options> OptionsAsync(CancellationToken ct) => new(
+    public Task<Options> OptionsAsync(CancellationToken ct) => OptionsAsync(settings, ct);
+
+    public static async Task<Options> OptionsAsync(IAppSettings settings, CancellationToken ct) => new(
         await settings.GetAsync(SettingKeys.ReadFileCleanupEnabled, ct) == "true",
         int.TryParse(await settings.GetAsync(SettingKeys.ReadFileCleanupDays, ct), NumberStyles.Integer,
             CultureInfo.InvariantCulture, out var days) && days is >= 1 and <= MaxDays
@@ -41,14 +47,35 @@ public class ReadFileCleanupService(
         mode == ReadFileCleanup.On || (mode == ReadFileCleanup.Default && options.Enabled);
 
     /// <summary>
-    /// Every chapter of <paramref name="seriesId"/> whose file is on course to be deleted, with when.
-    /// Query filters are off: the plan has to see every reader's progress, not the caller's.
+    /// The schedule of <paramref name="seriesId"/> when cleanup applies to it, else empty: what the
+    /// chapter list warns about and what the upgrade paths leave alone.
     /// </summary>
-    public async Task<Dictionary<int, DateTime>> ScheduleAsync(int seriesId, Options options, CancellationToken ct)
+    public static async Task<Dictionary<int, DateTime>> PendingAsync(
+        MakiDbContext db, IAppSettings settings, int seriesId, CancellationToken ct)
+    {
+        var options = await OptionsAsync(settings, ct);
+        var mode = await db.Series.IgnoreQueryFilters()
+            .Where(s => s.Id == seriesId)
+            .Select(s => s.ReadFileCleanup)
+            .FirstOrDefaultAsync(ct);
+        return AppliesTo(mode, options) ? await ScheduleAsync(db, seriesId, options, ct) : [];
+    }
+
+    public Task<Dictionary<int, DateTime>> ScheduleAsync(int seriesId, Options options, CancellationToken ct) =>
+        ScheduleAsync(db, seriesId, options, ct);
+
+    /// <summary>
+    /// Every chapter of <paramref name="seriesId"/> whose file is on course to be deleted, with when.
+    /// Query filters are off: the plan has to see every reader's progress, not the caller's. The days
+    /// count from the last read or from when the file arrived, whichever is later, so a chapter
+    /// downloaded again after being read is not deleted on the next pass.
+    /// </summary>
+    public static async Task<Dictionary<int, DateTime>> ScheduleAsync(
+        MakiDbContext db, int seriesId, Options options, CancellationToken ct)
     {
         var chapters = await db.Chapters.IgnoreQueryFilters().AsNoTracking()
             .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
-            .Select(c => new { c.Id, FileId = c.ChapterFileId!.Value })
+            .Select(c => new { c.Id, FileId = c.ChapterFileId!.Value, FileAdded = c.ChapterFile!.DateAdded })
             .ToListAsync(ct);
         if (chapters.Count == 0)
         {
@@ -112,7 +139,8 @@ public class ReadFileCleanupService(
                     break;
                 }
 
-                var at = finishes.Max(p => p.LastRead).AddDays(options.Days);
+                var lastRead = finishes.Max(p => p.LastRead);
+                var at = (chapter.FileAdded > lastRead ? chapter.FileAdded : lastRead).AddDays(options.Days);
                 fileDue = fileDue is { } sofar && sofar > at ? sofar : at;
             }
 
@@ -133,6 +161,7 @@ public class ReadFileCleanupService(
     {
         var options = await OptionsAsync(ct);
         var seriesIds = await db.Series.IgnoreQueryFilters()
+            .Active()
             .Where(s => s.ReadFileCleanup == ReadFileCleanup.On ||
                         (options.Enabled && s.ReadFileCleanup == ReadFileCleanup.Default))
             .Select(s => s.Id)
@@ -183,7 +212,7 @@ public class ReadFileCleanupService(
             .Where(f => db.Chapters.Any(c => c.ChapterFileId == f.Id && dueChapters.Contains(c.Id)))
             .ToListAsync(ct);
 
-        var result = await deletion.DeleteAsync(series, files, ct);
+        var result = await deletion.DeleteAsync(series, files, ct, automatic: true);
         logger.LogInformation(
             "Read file cleanup for {Title}: deleted {Deleted} files, kept {Kept} another series still uses, {Failed} failed, {Chapters} chapters marked removed",
             series.Title, result.Deleted, result.Kept, result.Failed, result.ChaptersRemoved);

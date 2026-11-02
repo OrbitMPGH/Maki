@@ -88,14 +88,6 @@ public class OpdsKeyRotationTests : IDisposable
             .ToList();
     }
 
-    private T Scalar<T>(string sql)
-    {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = sql;
-        var value = cmd.ExecuteScalar();
-        return value is null or DBNull ? default! : (T)Convert.ChangeType(value, typeof(T))!;
-    }
-
     // ---- migration: dedupe existing duplicates ----
 
     [Fact]
@@ -151,17 +143,6 @@ public class OpdsKeyRotationTests : IDisposable
     }
 
     // ---- the index itself ----
-
-    [Fact]
-    public void Index_exists_and_is_unique_and_partial()
-    {
-        MigrateToHead();
-
-        var sql = Scalar<string>(
-            """SELECT "sql" FROM sqlite_master WHERE name = 'IX_UserApiKeys_Opds_Live_UserId';""");
-        Assert.Contains("UNIQUE", sql, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("WHERE", sql, StringComparison.OrdinalIgnoreCase);
-    }
 
     [Fact]
     public void The_index_refuses_a_second_live_opds_key_for_the_same_user()

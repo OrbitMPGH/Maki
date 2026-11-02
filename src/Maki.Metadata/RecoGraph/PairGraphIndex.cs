@@ -24,10 +24,16 @@ namespace Maki.Metadata.RecoGraph;
 /// <para>
 /// Stored as CSR (compressed sparse row): sorted ids, an offset per node, and one flat neighbour
 /// array. Both directions of every pair are materialized, so a lookup is a single contiguous slice
-/// with no search. At ~100k pairs that is about 2.5 MB of arrays and at the co-read graph's 1.18M
-/// pairs about 19 MB, which is why these load whole rather than being <c>ATTACH</c>ed and queried
-/// per request the way the dump is — the lookup sits on the recommendation hot path and runs once
-/// per seed.
+/// with no search. These load whole rather than being <c>ATTACH</c>ed and queried per request the
+/// way the dump is: the lookup sits on the recommendation hot path and runs once per seed.
+/// </para>
+///
+/// <para>
+/// Neighbours are <see cref="ushort"/> node indices while the graph has at most 65,536 nodes (both
+/// shipped graphs are under 50k), and weights are <see cref="Half"/>. Co-read strengths sit between
+/// 0.0004 and 0.17 and votes below 6,100, all well inside Half's normal range, so each weight moves
+/// by at most 0.05%. At the co-read graph's two million pairs that is 16 MB instead of 32, and the
+/// node lookup is a binary search over the sorted ids rather than a 50k-entry dictionary.
 /// </para>
 ///
 /// <para>
@@ -43,39 +49,38 @@ public sealed class PairGraphIndex
 {
     private readonly long[] _ids;
     private readonly int[] _offsets;
-    private readonly int[] _neighbours;
-    private readonly float[] _weights;
-    private readonly Dictionary<long, int> _nodeById;
+    private readonly ushort[]? _narrow;
+    private readonly int[]? _wide;
+    private readonly Half[] _weights;
     private readonly DateTime? _generatedAt;
 
     internal PairGraphIndex(
-        long[] ids, int[] offsets, int[] neighbours, float[] weights, DateTime? generatedAt)
+        long[] ids, int[] offsets, ushort[]? narrow, int[]? wide, Half[] weights, DateTime? generatedAt)
     {
         _ids = ids;
         _offsets = offsets;
-        _neighbours = neighbours;
+        _narrow = narrow;
+        _wide = wide;
         _weights = weights;
         _generatedAt = generatedAt;
-
-        _nodeById = new Dictionary<long, int>(ids.Length);
-        for (var i = 0; i < ids.Length; i++)
-        {
-            _nodeById[ids[i]] = i;
-        }
     }
 
     /// <summary>Series that carry at least one edge.</summary>
     public int Count => _ids.Length;
 
     /// <summary>Directed entries, i.e. twice the number of unordered pairs.</summary>
-    public int EdgeCount => _neighbours.Length;
+    public int EdgeCount => _weights.Length;
 
     /// <summary>When the artifact was generated, if it says. Null for a file with no meta table.</summary>
     public DateTime? GeneratedAt => _generatedAt;
 
     public long IdAt(int node) => _ids[node];
 
-    public bool TryGetNode(long id, out int node) => _nodeById.TryGetValue(id, out node);
+    public bool TryGetNode(long id, out int node)
+    {
+        node = Array.BinarySearch(_ids, id);
+        return node >= 0;
+    }
 
     /// <summary>
     /// How many series this one is paired with. The denominator of the co-recommendation graph's
@@ -85,13 +90,10 @@ public sealed class PairGraphIndex
     /// </summary>
     public int DegreeAt(int node) => _offsets[node + 1] - _offsets[node];
 
-    /// <summary>Node indices this one is paired with. Parallel to <see cref="WeightsAt"/>.</summary>
-    public ReadOnlySpan<int> NeighboursAt(int node) =>
-        _neighbours.AsSpan(_offsets[node], _offsets[node + 1] - _offsets[node]);
-
     /// <summary>
-    /// Evidence backing each neighbour, in whatever unit the artifact stores: raw votes for the
-    /// co-recommendation graph, co-occurrence strength for the co-read one.
+    /// The pairs this node is in: node index and weight of each neighbour. The weight is the evidence
+    /// in whatever unit the artifact stores: raw votes for the co-recommendation graph,
+    /// co-occurrence strength for the co-read one.
     ///
     /// <para>
     /// Kept <b>raw</b> rather than pre-compressed to <c>log1p</c>: the per-graph minimum
@@ -101,6 +103,27 @@ public sealed class PairGraphIndex
     /// next to baking the tuning into the index.
     /// </para>
     /// </summary>
-    public ReadOnlySpan<float> WeightsAt(int node) =>
-        _weights.AsSpan(_offsets[node], _offsets[node + 1] - _offsets[node]);
+    public Edges EdgesAt(int node)
+    {
+        var start = _offsets[node];
+        var length = _offsets[node + 1] - start;
+        return new Edges(
+            _narrow is null ? default : _narrow.AsSpan(start, length),
+            _wide is null ? default : _wide.AsSpan(start, length),
+            _weights.AsSpan(start, length));
+    }
+
+    /// <summary>One node's slice of the adjacency, whichever width its neighbour indices are stored at.</summary>
+    public readonly ref struct Edges(ReadOnlySpan<ushort> narrow, ReadOnlySpan<int> wide, ReadOnlySpan<Half> weights)
+    {
+        private readonly ReadOnlySpan<ushort> _narrow = narrow;
+        private readonly ReadOnlySpan<int> _wide = wide;
+        private readonly ReadOnlySpan<Half> _weights = weights;
+
+        public int Length => _weights.Length;
+
+        public int Neighbour(int i) => _wide.IsEmpty ? _narrow[i] : _wide[i];
+
+        public float Weight(int i) => (float)_weights[i];
+    }
 }

@@ -52,6 +52,7 @@ public class KoreaderSyncController(
         if (resolved is not null)
         {
             db.Scope.SetUser(resolved.UserId, resolved.AllRootFolders);
+            HttpContext.Items[typeof(OpdsAccess)] = resolved;
             return resolved;
         }
 

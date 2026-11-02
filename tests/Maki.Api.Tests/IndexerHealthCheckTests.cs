@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
+[Collection(OneRunPerProcessCollection.Name)]
 public sealed class IndexerHealthCheckTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();
@@ -23,7 +23,7 @@ public sealed class IndexerHealthCheckTests : IDisposable
             .AddSingleton(_world.Queue)
             .AddSingleton(TestIndexers.Registry(new StubHttpClientFactory("""<caps><server title="x" /></caps>""")))
             .BuildServiceProvider();
-        var monitor = new HealthMonitor(db, null!, _world.Settings, new AppPaths(), _world.Registry,
+        var monitor = new HealthMonitor(db, null!, _world.Settings, _world.Paths, _world.Registry,
             _world.Availability, services, new RecordingNotifications(), _world.Inbox,
             new TestLocalizer(), new TestUserLocaleResolver(), null!);
         await monitor.RefreshAsync(CancellationToken.None);

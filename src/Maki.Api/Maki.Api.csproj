@@ -50,8 +50,10 @@
     Memory footprint. The Web SDK defaults to Server GC, which spins up one heap per logical CPU
     and holds freed segments aggressively — on a multi-core host that alone parks a self-hosted,
     low-traffic app like this well above 500 MB of RSS. Workstation GC (single heap) plus
-    concurrent collection, returning free memory to the OS, and a moderate ConserveMemory setting
+    concurrent collection, returning free memory to the OS, and a high ConserveMemory setting
     (compact more, trade a little CPU) keep steady state in the 200–300 MB target range.
+    ConserveMemory was 5 until a container measurement at 9 held 39 MB less after a collect and
+    spent a second less CPU on the warm-up, not more.
   -->
   <PropertyGroup>
     <ServerGarbageCollection>false</ServerGarbageCollection>
@@ -60,7 +62,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="5" Trim="false" />
+    <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="9" Trim="false" />
   </ItemGroup>
 
   <!--

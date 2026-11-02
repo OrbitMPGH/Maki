@@ -1,5 +1,5 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { SeriesDto } from '../../src/api/types'
+import type { ArchivePreview, SeriesDto } from '../../src/api/types'
 import type { ChapterShape } from './series/fixtures'
 import {
   chaptersFor,
@@ -17,11 +17,13 @@ import {
   rootFolders,
   scanStatusDone,
   scrobble,
+  seriesConversionNone,
   seriesDto,
   similarItems,
   sourceInfos,
   sourceOrderFor,
   tags,
+  undoRestored,
   upgradeProfiles,
 } from './series/fixtures'
 import { api, failWith, hoursAgo } from './api'
@@ -53,10 +55,24 @@ const shapeOf = (id: number): ChapterShape => scenarios[id]?.shape ?? {}
 
 export const seriesFor = (id: number) => seriesDto(id, scenarios[id]?.overrides)
 
+/** Series 1 as an archived series: unmonitored, files still on disk, archived by the signed-in admin. */
+export const archivedSeriesDto = (id = 1) =>
+  seriesDto(id, { ...scenarios[id]?.overrides, monitored: false, archivedAt: hoursAgo(24 * 12), archivedByUserId: 1 })
+
+/** A completed series every reader has finished, so the page offers to archive it. */
+export const hintedSeriesDto = (id = 2) => ({ ...seriesFor(id), archiveHintEligible: true, finished: true })
+
 const notFound = () => failWith(404, 'Series not found', 'error.series.notFound')
+
+/** What the archive and restore dialogs fetch when they open; nothing removed and nobody else reading by default. */
+export const archivePreview = (preview: Partial<ArchivePreview> = {}): HttpHandler =>
+  http.get(api('/series/:id/archive-preview'), () =>
+    HttpResponse.json({ freeableBytes: 2_400_000_000, otherActiveReaders: 0, redownloadableChapters: 0, ...preview } satisfies ArchivePreview),
+  )
 
 /** What every write on the series page answers, so a play function can click through without a 501. */
 const seriesMutations: HttpHandler[] = [
+  archivePreview(),
   http.post(api('/series/:id/refresh'), () => HttpResponse.json({ newChapters: 3 })),
   http.post(api('/series/:id/refreshmetadata'), ({ params }) => HttpResponse.json(seriesFor(idOf(params)))),
   http.post(api('/series/:id/rescan'), () => HttpResponse.json({ newFiles: 2, relinked: 1, removed: 0, unrecognized: 1 })),
@@ -64,6 +80,16 @@ const seriesMutations: HttpHandler[] = [
   http.delete(api('/series/:id'), () => noContent()),
   http.post(api('/series/:id/monitormode'), async ({ request }) => HttpResponse.json({ mode: (await bodyOf(request)).mode })),
   http.post(api('/series/:id/readcleanup'), async ({ request }) => HttpResponse.json({ readFileCleanup: (await bodyOf(request)).mode })),
+  http.post(api('/series/:id/pageconversion'), async ({ request }) =>
+    HttpResponse.json({ pageConversion: (await bodyOf(request)).mode }),
+  ),
+  http.post(api('/series/:id/pageconversion/undo'), async ({ request }) => {
+    const { convertAgain } = (await bodyOf(request)) as { convertAgain?: boolean }
+    return HttpResponse.json({
+      ...undoRestored,
+      reasons: convertAgain ? [`${undoRestored.restored} files are queued for conversion.`] : [],
+    })
+  }),
   http.post(api('/series/:id/upgradeprofile'), async ({ request }) =>
     HttpResponse.json({ upgradeProfileId: (await bodyOf(request)).upgradeProfileId ?? null }),
   ),
@@ -72,6 +98,11 @@ const seriesMutations: HttpHandler[] = [
     HttpResponse.json({ notificationMode: (await bodyOf(request)).mode }),
   ),
   http.put(api('/series/:id/rating'), async ({ request }) => HttpResponse.json({ rating: (await bodyOf(request)).rating ?? null })),
+  http.put(api('/series/:id/rating/provisional'), async ({ request }) =>
+    HttpResponse.json({ rating: null, provisionalRating: (await bodyOf(request)).rating ?? null })),
+  http.post(api('/series/:id/rating/finalize'), () => HttpResponse.json({ rating: 7, provisionalRating: null })),
+  http.post(api('/series/:id/rating-checkpoint/dismiss'), () => new HttpResponse(null, { status: 204 })),
+  http.get(api('/series/:id/rating-history'), () => HttpResponse.json([])),
   http.put(api('/series/:id/tags'), async ({ request }) => HttpResponse.json({ tagIds: (await bodyOf(request)).tagIds ?? [] })),
   http.post(api('/series/:id/searchmissing'), () => HttpResponse.json({ queued: 6 })),
   http.post(api('/series/:id/download/next'), async ({ request }) =>
@@ -80,6 +111,25 @@ const seriesMutations: HttpHandler[] = [
   http.delete(api('/series/:id/files'), async ({ request }) =>
     HttpResponse.json({ deleted: ((await request.json().catch(() => [])) as string[]).length, failed: 0 }),
   ),
+  http.post(api('/series/:id/archive'), () => HttpResponse.json({ deleted: 0, failed: 0 })),
+  http.post(api('/series/:id/archive-hint/dismiss'), () => noContent()),
+  http.post(api('/series/archive/bulk'), async ({ request }) => {
+    const ids = ((await bodyOf(request)).seriesIds as number[] | undefined) ?? []
+    return HttpResponse.json({
+      results: ids.map((seriesId) => ({
+        seriesId,
+        ok: true,
+        notFound: false,
+        code: null,
+        error: null,
+        permanentDeleteAvailable: false,
+        deleted: 0,
+        failed: 0,
+      })),
+    })
+  }),
+  http.post(api('/series/:id/archive/removefiles'), () => HttpResponse.json({ deleted: 96, failed: 0 })),
+  http.post(api('/series/:id/restore'), () => HttpResponse.json({ queued: 0, queueError: null })),
   http.put(api('/chapter/:id/wanted'), () => noContent()),
   http.put(api('/chapter/wanted'), async ({ request }) =>
     HttpResponse.json({ updated: ((await bodyOf(request)).chapterIds as number[] | undefined)?.length ?? 0 }),
@@ -185,6 +235,7 @@ export const seriesHandlers: HttpHandler[] = [
     const id = idOf(params)
     return known(id) ? HttpResponse.json(filesFor(id, chaptersFor(id, shapeOf(id)))) : notFound()
   }),
+  http.get(api('/series/:id/pageconversion/history'), () => HttpResponse.json(seriesConversionNone)),
   http.get(api('/series/:id/related'), ({ params }) => HttpResponse.json(relatedItems(idOf(params)))),
   http.get(api('/series/:id/similar'), ({ params }) => HttpResponse.json(similarItems(idOf(params)))),
   http.get(api('/series/:id/scrobble'), () => HttpResponse.json(scrobble)),

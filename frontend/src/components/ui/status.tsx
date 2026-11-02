@@ -17,7 +17,9 @@ import {
   IconLinkOff,
   IconLoader2,
   IconPackage,
+  IconPlayerPause,
   IconPlayerPlay,
+  IconX,
   type Icon,
 } from '@tabler/icons-react'
 import { msg } from '@lingui/core/macro'
@@ -121,6 +123,18 @@ export function seriesStatusVisual(status: string): StatusVisual {
     default:
       return { color: 'gray', label: status || msg`Unknown`, Icon: IconHourglass }
   }
+}
+
+/** Glyphs for the small status discs on posters; anything else falls back to `seriesStatusVisual`'s icon. */
+const STATUS_GLYPH: Record<string, Icon> = {
+  Ongoing: IconPlayerPlay,
+  Completed: IconCheck,
+  Hiatus: IconPlayerPause,
+  Cancelled: IconX,
+}
+
+export function seriesStatusGlyph(status: string): Icon {
+  return STATUS_GLYPH[status] ?? seriesStatusVisual(status).Icon
 }
 
 /** Content rating (from metadata), least to most explicit. Null when unrefreshed. */

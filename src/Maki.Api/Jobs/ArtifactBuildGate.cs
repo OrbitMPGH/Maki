@@ -1,4 +1,5 @@
 using System.Runtime;
+using Maki.Core.Io;
 
 namespace Maki.Api.Jobs;
 
@@ -68,14 +69,15 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
     /// arrays. The large object heap is not compacted by default, so what it leaves behind is holes
     /// the process keeps: measured six minutes into a start on a NAS, 84 MB of the 245 MB managed
     /// heap was fragmentation, on top of 157 MB of large objects. Nothing would have compacted that
-    /// until the next idle unload, an hour later at the earliest.
+    /// until the next idle unload, then an hour later at the earliest.
     /// </para>
     ///
     /// <para>
     /// A forced blocking compaction is normally the wrong tool. It is the right one at exactly this
     /// point: the build that just finished is the expensive thing, the queue behind it is empty, and
-    /// the alternative is carrying its holes for an hour. Skipped when another build is waiting -
-    /// it would only have to be done again, and the pending flag carries to whichever build is last.
+    /// the alternative is carrying its holes until the next unload. Skipped when another build is
+    /// waiting - it would only have to be done again, and the pending flag carries to whichever
+    /// build is last.
     /// </para>
     /// </summary>
     private void Release()
@@ -84,6 +86,7 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
         {
             GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
             GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+            NativeHeap.Trim();
             Interlocked.Increment(ref _collections);
         }
 

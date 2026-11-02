@@ -11,25 +11,21 @@ namespace Maki.Api.Tests;
 /// A volume import moves the user's originals into <c>.maki-trash/&lt;SeriesId&gt;</c>, so deleting the
 /// series but keeping its files must leave that folder alone.
 /// </summary>
-[Collection(ConfigDirCollection.Name)]
 public class SeriesDeleteTrashTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly string _configDir = Path.Combine(Path.GetTempPath(), "maki-delete-trash-" + Guid.NewGuid().ToString("N"));
     private readonly string _root;
-    private readonly string? _previousConfigDir = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
 
     public SeriesDeleteTrashTests()
     {
         _root = Path.Combine(_configDir, "library");
         Directory.CreateDirectory(_root);
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
     }
 
     public void Dispose()
     {
         _db.Dispose();
-        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _previousConfigDir);
         try
         {
             Directory.Delete(_configDir, recursive: true);
@@ -43,7 +39,7 @@ public class SeriesDeleteTrashTests : IDisposable
     private SeriesController Controller(Maki.Data.MakiDbContext db) => new(
         localizer: new TestLocalizer(),
         db: db,
-        coverService: new CoverService(null!, new AppPaths(), new FakeAppSettings(), NullLogger<CoverService>.Instance),
+        coverService: new CoverService(null!, new AppPaths(_configDir), new FakeAppSettings(), NullLogger<CoverService>.Instance),
         chapterSyncService: null!,
         cbzLinkService: null!,
         relinkPlanner: null!,

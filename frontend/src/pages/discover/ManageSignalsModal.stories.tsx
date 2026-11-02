@@ -21,7 +21,7 @@ const body = (el: HTMLElement) => within(el.ownerDocument.body)
 export const Titles: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await body(canvasElement).findByRole('dialog')
-    await expect(await within(dialog).findByText(/All · \d+/)).toBeVisible()
+    await expect(await within(dialog).findByText(/All \(\d+\)/)).toBeVisible()
     await expect(await within(dialog).findByText('Lanterns Over Kasumi')).toBeVisible()
   },
 }
@@ -29,7 +29,7 @@ export const Titles: Story = {
 export const FilteredToHidden: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await body(canvasElement).findByRole('dialog')
-    await userEvent.click(await within(dialog).findByText(/^Hidden · /))
+    await userEvent.click(await within(dialog).findByText(/^Hidden \(/))
     await expect(await within(dialog).findByText(/Showing \d+ of \d+/)).toBeVisible()
   },
 }

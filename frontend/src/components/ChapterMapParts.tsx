@@ -17,13 +17,10 @@ export function useRangeText(labels: string[]): string {
 
 export function AllNone({ onAll, onNone }: { onAll: () => void; onNone: () => void }) {
   return (
-    <Group gap={2}>
+    <Group gap={4}>
       <Button size="compact-xs" variant="subtle" onClick={onAll}>
         <Trans>All</Trans>
       </Button>
-      <Text size="xs" c="var(--ink-4)">
-        ·
-      </Text>
       <Button size="compact-xs" variant="subtle" onClick={onNone}>
         <Trans>None</Trans>
       </Button>

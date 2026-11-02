@@ -152,10 +152,10 @@ public sealed class StatsStandingServiceTests : IDisposable
     // ---- midway ----
 
     [Fact]
-    public async Task Midway_stops_at_sixty_days_without_reading()
+    public async Task Midway_stops_once_a_series_counts_as_dropped()
     {
-        Seed(SeedSeries("Recent"), downloaded: 10, read: 3, at: Now.AddDays(-59));
-        Seed(SeedSeries("Stale"), downloaded: 10, read: 3, at: Now.AddDays(-61));
+        Seed(SeedSeries("Recent"), downloaded: 10, read: 3, at: Now - ActivityStatsService.DroppedAfter + TimeSpan.FromDays(1));
+        Seed(SeedSeries("Stale"), downloaded: 10, read: 3, at: Now - ActivityStatsService.DroppedAfter - TimeSpan.FromDays(1));
 
         var standing = await StandingAsync();
 
@@ -174,7 +174,7 @@ public sealed class StatsStandingServiceTests : IDisposable
 
         // Read long ago, then a watched tick and an import yesterday: not being read now.
         var stale = SeedSeries("Stale read");
-        Seed(stale, downloaded: 10, read: 2, at: Now.AddDays(-90));
+        Seed(stale, downloaded: 10, read: 2, at: Now - ActivityStatsService.DroppedAfter * 1.5);
         using (var db = _db.NewContext())
         {
             var chapters = db.Chapters.Where(c => c.SeriesId == stale).OrderBy(c => c.Number).Skip(2).Take(2).ToList();

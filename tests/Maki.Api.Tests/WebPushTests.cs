@@ -162,7 +162,10 @@ public sealed class WebPushTests : IDisposable
 
         var result = Assert.IsType<OkObjectResult>(await Controller(_alice, service).Test(default));
 
-        Assert.Equal("{ sent = 1, failed = 0, error =  }", result.Value!.ToString());
+        var body = System.Text.Json.JsonSerializer.SerializeToElement(result.Value);
+        Assert.Equal(1, body.GetProperty("sent").GetInt32());
+        Assert.Equal(0, body.GetProperty("failed").GetInt32());
+        Assert.True(string.IsNullOrEmpty(body.GetProperty("error").GetString()));
         Assert.Equal(Endpoint, Assert.Single(service.Requests).RequestUri!.ToString());
     }
 

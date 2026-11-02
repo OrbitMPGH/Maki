@@ -143,6 +143,7 @@ RUN NODE_ARCH="$([ "$(uname -m)" = "aarch64" ] && echo linux-arm64 || echo linux
 COPY distribution/docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 COPY --from=trimmed-publish /app ./
+COPY THIRD_PARTY_NOTICES.md ./
 COPY --from=frontend /src/frontend/dist ./wwwroot/
 
 # The runtime maps JIT-generated code twice, so a page is never both writable and executable: the
@@ -163,6 +164,16 @@ ENV DOTNET_EnableWriteXorExecute=0
 # on every query). Two arenas cost some contention when many threads allocate natively at once and
 # stop the count scaling with a machine Maki has no other reason to care about the size of.
 ENV MALLOC_ARENA_MAX=2
+
+# glibc raises its mmap threshold every time a large mapped block is freed, up to 32 MB, so after
+# the first ONNX model parse or libvips decode every big buffer lands in an arena instead of its own
+# mapping, and arenas only shrink from the top. That freed-but-kept heap was 100 to 165 MB of what
+# a container still held ten minutes after search and Discover had unloaded. Fixing both thresholds
+# at 128 KB sends large allocations to mmap, which free unmaps at once: 411 and 428 MB after unload
+# against 547 to 694 MB without, with no CPU difference in the warm-up. The mmap threshold is the
+# part that matters; a trim threshold alone saved 26 MB.
+ENV MALLOC_MMAP_THRESHOLD_=131072
+ENV MALLOC_TRIM_THRESHOLD_=131072
 
 ENV MAKI_CONFIG_DIR=/config
 ENV MAKI_RUNTIME=docker

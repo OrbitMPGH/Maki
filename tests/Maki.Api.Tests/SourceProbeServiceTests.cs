@@ -5,7 +5,6 @@ using Maki.Core.Sources;
 
 namespace Maki.Api.Tests;
 
-[Collection(ConfigDirCollection.Name)]
 public class SourceProbeServiceTests : IDisposable
 {
     private readonly UpgradeWorld _world = new();
@@ -32,15 +31,40 @@ public class SourceProbeServiceTests : IDisposable
         Assert.Equal(6, result.SampledPages);
         Assert.True(result.SampleBytes > 0);
         var indexes = _world.Http.Requested.Select(PageIndex).Order().ToList();
-        Assert.Equal([1, 5, 8, 11, 15, 18], indexes);
+        Assert.Equal(6, indexes.Count);
+        AssertSpreadAcrossChapter(indexes, 20);
     }
 
     [Fact]
     public void Sample_indexes_take_every_page_of_a_short_chapter()
     {
         Assert.Equal([0, 1, 2], SourceProbeService.SampleIndexes(3, 6));
-        Assert.Equal(6, SourceProbeService.SampleIndexes(200, 6).Distinct().Count());
-        Assert.True(SourceProbeService.SampleIndexes(200, 6)[^1] > 150);
+        Assert.Equal([0, 1, 2, 3, 4, 5], SourceProbeService.SampleIndexes(6, 6));
+    }
+
+    [Theory]
+    [InlineData(7, 6)]
+    [InlineData(20, 6)]
+    [InlineData(200, 6)]
+    [InlineData(31, 4)]
+    public void Sample_indexes_take_one_page_from_each_equal_slice_of_a_long_chapter(int pageCount, int sampleCount)
+    {
+        var indexes = SourceProbeService.SampleIndexes(pageCount, sampleCount);
+
+        Assert.Equal(sampleCount, indexes.Count);
+        AssertSpreadAcrossChapter(indexes, pageCount);
+    }
+
+    private static void AssertSpreadAcrossChapter(IReadOnlyList<int> indexes, int pageCount)
+    {
+        Assert.Equal(indexes.Count, indexes.Distinct().Count());
+        Assert.Equal(indexes.Order(), indexes);
+        for (var slice = 0; slice < indexes.Count; slice++)
+        {
+            var first = (long)slice * pageCount / indexes.Count;
+            var last = ((long)(slice + 1) * pageCount - 1) / indexes.Count;
+            Assert.InRange((long)indexes[slice], first, last);
+        }
     }
 
     [Fact]
@@ -93,9 +117,9 @@ public class SourceProbeServiceTests : IDisposable
         AssertNoScratchLeft();
     }
 
-    private static void AssertNoScratchLeft()
+    private void AssertNoScratchLeft()
     {
-        var probeRoot = Path.Combine(new AppPaths().DownloadCacheDir, "probe");
+        var probeRoot = Path.Combine(_world.Paths.DownloadCacheDir, "probe");
         Assert.True(!Directory.Exists(probeRoot) || !Directory.EnumerateFileSystemEntries(probeRoot).Any());
     }
 }

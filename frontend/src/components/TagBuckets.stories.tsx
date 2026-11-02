@@ -59,7 +59,7 @@ export const SpoilerTooltip: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.hover(await canvas.findByText('Unreliable Memory'))
     const tip = await within(canvasElement.ownerDocument.body).findByText(
-      'Spoiler · The narrator has been wrong about the first winter.',
+      'Spoiler: The narrator has been wrong about the first winter.',
     )
     await waitFor(() => expect(tip).toBeVisible())
   },

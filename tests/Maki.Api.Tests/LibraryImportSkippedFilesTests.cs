@@ -30,7 +30,7 @@ public class LibraryImportSkippedFilesTests : IDisposable
 
     private LibraryImportService Service(Maki.Data.MakiDbContext db) => new(
         db, [], null!, null!, new SourceMatchQueue(), null!, null!, null!, null!, null!, new TestLocalizer(),
-        new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
+        new TestCurrentUser(1), null!, NullLogger<LibraryImportService>.Instance);
 
     private string WriteZip(string name)
     {

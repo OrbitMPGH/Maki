@@ -34,6 +34,27 @@
   root.dataset.ground = ground
   root.dataset.accent = accents.indexOf(accent) < 0 ? 'blush' : accent
   root.dataset.theme = light ? 'light' : 'dark'
+  // Mantine sets this on mount; set now, native scrollbars and controls paint light on a dark ground
+  // until then.
+  root.setAttribute('data-mantine-color-scheme', light ? 'light' : 'dark')
+  // Each accent's --brand in theme.css, which the tinted, cover and paper grounds mix into --app-bg.
+  var brands = { indigo: '#6d7dff', blush: '#ee7fa4', rose: '#f52069', emerald: '#1bc97a', amber: '#f0ad14', vermilion: '#ef5634', teal: '#17ab9d', plum: '#b84cbc' }
+  var lightBrands = { blush: '#c4476e', teal: '#0b766d' }
+  var brand = (light && lightBrands[root.dataset.accent]) || brands[root.dataset.accent]
+  // color-mix(in srgb, base share%, brand), so the status bar matches the page from the first frame.
+  function mix(base, share) {
+    var out = '#'
+    for (var i = 1; i < 7; i += 2) {
+      var v = Math.round(parseInt(base.substr(i, 2), 16) * share + parseInt(brand.substr(i, 2), 16) * (1 - share))
+      out += (v < 16 ? '0' : '') + v.toString(16)
+    }
+    return out
+  }
+  var bar = grounds[known ? background : 'tinted']
+  if (background === 'paper') bar = mix('#efe9dd', 0.96)
+  else if (light) bar = '#f3f4fa'
+  else if (ground === 'tinted') bar = mix('#0b0b0b', 0.96)
+  else if (ground === 'cover') bar = mix('#0b0b0b', 0.93)
   var meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.setAttribute('content', background === 'paper' ? '#efe9dd' : light ? '#f3f4fa' : grounds[known ? background : 'tinted'])
+  if (meta) meta.setAttribute('content', bar)
 })()

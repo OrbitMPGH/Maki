@@ -3,6 +3,7 @@ import { Button, Group, SimpleGrid, Text } from '@mantine/core'
 import { IconChevronRight } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { DiscoverRail, RecommendationItem } from '../../api/hooks'
+import { onRovingKeyDown } from '../../lib/rovingFocus'
 import { RecommendationCard } from '../ui/DiscoverRail'
 
 /**
@@ -40,13 +41,14 @@ export function DiscoverCatalogue({
 
   return (
     <>
-      <div className="series-tabs sub-tabs" role="tablist" aria-label={t`Catalogue feeds`}>
+      <div className="series-tabs sub-tabs" role="tablist" aria-label={t`Catalogue feeds`} onKeyDown={onRovingKeyDown}>
         {rails.map((rail) => (
           <button
             key={rail.key}
             type="button"
             role="tab"
             aria-selected={rail.key === active.key}
+            tabIndex={rail.key === active.key ? 0 : -1}
             data-active={rail.key === active.key || undefined}
             className="series-tab"
             onClick={() => setActiveKey(rail.key)}

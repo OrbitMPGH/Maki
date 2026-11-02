@@ -8,4 +8,5 @@ frontend/dist/
 .github/
 .claude/
 *.md
+!THIRD_PARTY_NOTICES.md
 .release-test/

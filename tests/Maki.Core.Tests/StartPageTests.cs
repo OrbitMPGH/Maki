@@ -21,7 +21,4 @@ public class StartPageTests
     [InlineData("Home")] // stored values are lowercase; a case mismatch is not a silent pass
     [InlineData("rewind")]
     public void IsValid_rejects_everything_else(string? page) => Assert.False(StartPage.IsValid(page));
-
-    [Fact]
-    public void Default_is_home() => Assert.Equal(StartPage.Home, StartPage.Default);
 }

@@ -31,9 +31,10 @@ export function TrackerSyncControls({
   const ratings = connection?.syncRatings ?? true
   const animeList = connection?.animeList ?? false
   const anime = connection?.animeSignals ?? true
+  const soFar = connection?.syncSoFar ?? false
   const connected = connection?.connected ?? false
 
-  const setPref = (patch: { reading?: boolean; ratings?: boolean; anime?: boolean }) =>
+  const setPref = (patch: { reading?: boolean; ratings?: boolean; anime?: boolean; soFar?: boolean }) =>
     prefs.mutate({
       service,
       reading: patch.reading ?? reading,
@@ -41,6 +42,7 @@ export function TrackerSyncControls({
       // Only for trackers that have an anime list. Sending it for the rest would write a setting
       // nothing reads, and the request is the same shape for every block otherwise.
       anime: animeList ? patch.anime ?? anime : undefined,
+      soFar: patch.soFar,
     })
 
   return (
@@ -59,6 +61,13 @@ export function TrackerSyncControls({
           checked={ratings}
           disabled={prefs.isPending || !connection}
           onChange={(e) => setPref({ ratings: e.currentTarget.checked })}
+        />
+        <Switch
+          size="xs"
+          label={t`Also sync "so far" ratings`}
+          checked={ratings && soFar}
+          disabled={prefs.isPending || !connection || !ratings}
+          onChange={(e) => setPref({ soFar: e.currentTarget.checked })}
         />
         {animeList && (
           <Switch

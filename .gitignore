@@ -58,3 +58,7 @@ skills-lock.json
 # README image captures (scripts/readme-images)
 scripts/readme-images/raw/
 .screenshots/
+
+# Native build output (distribution/native/)
+/out/
+.shots-tmp/

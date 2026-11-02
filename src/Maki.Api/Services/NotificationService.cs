@@ -203,6 +203,7 @@ public class NotificationService(
         NotificationEventType.RequestResolved => c.OnRequestResolved,
         NotificationEventType.ManualMatchNeeded => c.OnManualMatchNeeded,
         NotificationEventType.SeriesStatusChanged => c.OnSeriesStatusChanged,
+        NotificationEventType.SeriesArchived => c.OnSeriesArchived,
         NotificationEventType.Test => true,
         _ => false
     };

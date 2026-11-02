@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, waitFor } from 'storybook/test'
 import { chapters, makeManifest } from '../../../.storybook/mocks/entry/fixtures'
 import ChapterEnd from './ChapterEnd'
+import { RatingCheckpointPrompt } from '../../components/series/RatingCheckpointPrompt'
 
 const meta = {
   component: ChapterEnd,
@@ -36,6 +37,16 @@ export const NextChapterAvailable: Story = {
     await expect(args.onNext).toHaveBeenCalledOnce()
     await userEvent.click(await canvas.findByRole('button', { name: 'Stay here' }))
     await expect(args.onStay).toHaveBeenCalledOnce()
+  },
+}
+
+export const CaughtUpRatingPrompt: Story = {
+  args: {
+    ratingPrompt: <RatingCheckpointPrompt checkpoint="caughtUp" soFar={7} onRate={fn()} onDismiss={fn()} />,
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("You're caught up. How is it so far?")).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Still a 7' })).toBeVisible()
   },
 }
 
