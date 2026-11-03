@@ -29,11 +29,37 @@ namespace Maki.Api.Jobs;
 public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
 {
     private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly Lock _sync = new();
+    private TaskCompletionSource _idle = Completed();
     private int _waiting;
     private int _built;
     private int _collections;
 
     internal int Collections => Volatile.Read(ref _collections);
+
+    /// <summary>
+    /// Completes once no artifact build holds the gate. Page conversion and health verifies wait on
+    /// it between files, so a dump install (a whole-file write plus index pass) never stacks with an
+    /// encoder or a verify. They are not artifact builds themselves: holding the gate for a whole
+    /// conversion pass would stall every build behind it for hours.
+    /// </summary>
+    public Task WaitUntilIdleAsync(CancellationToken ct)
+    {
+        Task idle;
+        lock (_sync)
+        {
+            idle = _idle.Task;
+        }
+
+        return idle.WaitAsync(ct);
+    }
+
+    private static TaskCompletionSource Completed()
+    {
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        done.SetResult();
+        return done;
+    }
 
     /// <summary>
     /// Waits for the other builds to finish. Dispose the result to let the next one in; a
@@ -54,6 +80,14 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
             finally
             {
                 Interlocked.Decrement(ref _waiting);
+            }
+        }
+
+        lock (_sync)
+        {
+            if (_idle.Task.IsCompleted)
+            {
+                _idle = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             }
         }
 
@@ -89,6 +123,14 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
             GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
             NativeHeap.Trim();
             Interlocked.Increment(ref _collections);
+        }
+
+        if (Volatile.Read(ref _waiting) == 0)
+        {
+            lock (_sync)
+            {
+                _idle.TrySetResult();
+            }
         }
 
         _gate.Release();

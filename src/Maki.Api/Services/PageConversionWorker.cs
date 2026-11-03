@@ -53,7 +53,8 @@ public sealed record PageConversionPassTotals(
 /// </list>
 /// </summary>
 public class PageConversionWorker(
-    IServiceScopeFactory scopes, IAppSettings settings, ILogger<PageConversionWorker> logger) : BackgroundService
+    IServiceScopeFactory scopes, IAppSettings settings, ILogger<PageConversionWorker> logger,
+    Maki.Api.Jobs.ArtifactBuildGate? buildGate = null) : BackgroundService
 {
     /// <summary>Kept free on the library volume, on top of the file being converted.</summary>
     public const long DiskReserveBytes = 1L << 30;
@@ -317,6 +318,7 @@ public class PageConversionWorker(
                     FileConversion result;
                     try
                     {
+                        if (buildGate is not null) await buildGate.WaitUntilIdleAsync(ct);
                         using var fileScope = scopes.CreateScope();
                         result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
                             .ConvertAsync(file.Id, plan, cache, ct);
@@ -437,6 +439,7 @@ public class PageConversionWorker(
                 FileConversion result;
                 try
                 {
+                    if (buildGate is not null) await buildGate.WaitUntilIdleAsync(ct);
                     using var fileScope = scopes.CreateScope();
                     result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
                         .ConvertAsync(file.Id, plan, cache, ct, queued: true);

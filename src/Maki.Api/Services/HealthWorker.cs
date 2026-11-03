@@ -10,7 +10,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
-public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> logger) : BackgroundService
+public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> logger,
+    Maki.Api.Jobs.ArtifactBuildGate? buildGate = null) : BackgroundService
 {
     internal static readonly TimeSpan BusyInterval = TimeSpan.FromSeconds(15);
 
@@ -161,6 +162,7 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                 var scan = await db.HealthScans.Where(s => s.Status == "pending" || s.Status == "running").OrderBy(s => s.Id).FirstOrDefaultAsync(stoppingToken);
                 if (scan != null)
                 {
+                    if (scan.Verify && buildGate is not null) await buildGate.WaitUntilIdleAsync(stoppingToken);
                     var before = await db.HealthFindings.MaxAsync(f => (int?)f.Id, stoppingToken) ?? 0;
                     using var scanCancellation = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
                     HealthScanService.Running[scan.Id] = scanCancellation;
