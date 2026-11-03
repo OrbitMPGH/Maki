@@ -31,7 +31,29 @@ public class UpscaleTilingTests
 
         Assert.All(covered, c => Assert.Equal(1, c));
         Assert.Equal(3 * 4, tiles.Count);
-        Assert.Equal(new UpscaleTile(768, 1152, 132, 148, 16, 164, 180), tiles[^1]);
+        Assert.Equal(new UpscaleTile(600, 975, 300, 325, 16, 332, 357), tiles[^1]);
+    }
+
+    [Theory]
+    [InlineData(1672, 2400, 4)]
+    [InlineData(1672, 2400, 1)]
+    [InlineData(720, 16000, 4)]
+    [InlineData(385, 769, 1)]
+    public void A_page_splits_into_as_many_tiles_as_fixed_tiling_with_equal_spans_and_one_shape(int width, int height, int multiple)
+    {
+        var tiles = UpscaleTiling.Plan(width, height, multiple);
+
+        var columns = tiles.Select(t => (t.X, t.Width)).Distinct().ToList();
+        var rows = tiles.Select(t => (t.Y, t.Height)).Distinct().ToList();
+        Assert.Equal((width + 383) / 384, columns.Count);
+        Assert.Equal((height + 383) / 384, rows.Count);
+        Assert.Equal(width, columns.Sum(c => c.Width));
+        Assert.Equal(height, rows.Sum(r => r.Height));
+        Assert.True(columns.Max(c => c.Width) - columns.Min(c => c.Width) <= 1);
+        Assert.True(rows.Max(r => r.Height) - rows.Min(r => r.Height) <= 1);
+        var shape = Assert.Single(tiles.Select(t => (t.ContextWidth, t.ContextHeight)).Distinct());
+        Assert.Equal((0, 0), (shape.ContextWidth % multiple, shape.ContextHeight % multiple));
+        Assert.All(tiles, t => Assert.True(t.ContextWidth >= t.Width + 32 && t.ContextHeight >= t.Height + 32));
     }
 
     [Theory]
