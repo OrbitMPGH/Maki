@@ -71,6 +71,9 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     /// </summary>
     private const int RecentFileScan = 1500;
 
+    /// <summary>The smallest later chunk of <see cref="RecentlyAdded"/>, so a nearly full rail is not finished one series at a time.</summary>
+    private const int MinRecentChunk = 10;
+
     /// <summary>
     /// Files of one series count as one batch while each arrived within this long of the next.
     /// A backlog download lands minutes apart; weekly or daily releases fall outside it.
@@ -362,10 +365,16 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
             .ToDictionaryAsync(s => s.Id, ct);
 
         // Resolved a chunk at a time, like Reading: series with nothing new left to read drop out,
-        // so later candidates are only looked at while the rail is still short.
+        // so later candidates are only looked at while the rail is still short. The first chunk is
+        // the rail itself, since most candidates have something unread; each later one covers twice
+        // the cards still missing.
         var items = new List<HomeRecentSeriesItem>();
-        foreach (var chunk in candidates.Chunk(limit * 2))
+        var start = 0;
+        var chunkSize = limit;
+        while (start < candidates.Count && items.Count < limit)
         {
+            var chunk = candidates.GetRange(start, Math.Min(chunkSize, candidates.Count - start));
+            start += chunk.Count;
             var next = await continueReading.NextForAsync(chunk.Select(c => c.SeriesId).ToList(), ct);
             var batchFileIds = chunk.SelectMany(c => c.Batch).ToList();
             var chaptersByFile = (await db.Chapters
@@ -410,10 +419,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
                 }
             }
 
-            if (items.Count == limit)
-            {
-                break;
-            }
+            chunkSize = Math.Max(2 * (limit - items.Count), MinRecentChunk);
         }
 
         return Ok(items);

@@ -13,6 +13,7 @@ const COVER_CAP = 3000
 const READ_ALLOWLIST: RegExp[] = [
   /^auth\/me$/,
   /^series$/,
+  /^series\/lookup$/,
   /^series\/\d+$/,
   /^series\/\d+\/files\/summary$/,
   /^chapter$/,

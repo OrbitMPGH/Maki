@@ -27,7 +27,7 @@ import {
   useReadingHeatmap,
   useRecommendations,
   useRootFolders,
-  useSeries,
+  useHasLibrary,
   useSeriesIdLookup,
   useUiSettings,
   isRailKey,
@@ -37,7 +37,6 @@ import {
   type HomeSectionKey,
   type RecommendationItem,
 } from '../api/hooks'
-import { activeSeries } from '../lib/series'
 import { useCustomRails } from '../api/customRails'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
 import { PageLayoutEditor, PageLayoutEditorLoading } from '../components/layout/PageLayoutEditor'
@@ -87,12 +86,12 @@ const LIBRARY_SECTIONS: HomeSectionKey[] = ['continue', 'recent']
 export default function HomePage({ separation = 'none' }: { separation?: HomeSeparation }) {
   const { t } = useLingui()
   const {
-    data: series,
+    data: libraryKnown,
     error: seriesError,
     isLoading: seriesLoading,
     isError: seriesFailed,
     refetch: refetchSeries,
-  } = useSeries()
+  } = useHasLibrary()
   const connectivity = useConnectivity()
   const { records: offlineRecords } = useOfflineChapters()
   const { data: metadata } = useMetadataSettings()
@@ -106,7 +105,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   // settings load stops the Discover tab flickering in and out. Here it would fire two requests
   // that 400 on an install with no local MangaBaka database, and both surface as error toasts.
   const discoverAvailable = Boolean(metadata?.dumpPresent)
-  const hasLibrary = activeSeries(series ?? []).length > 0
+  const hasLibrary = libraryKnown ?? false
 
   const { data: homeRails, isError: railsFailed } = useCustomRails('home')
 
@@ -226,7 +225,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   }
 
   // A refetch that failed while the list is still in memory is not a failure to load: draw from it.
-  const libraryMissing = !seriesLoading && seriesFailed && !series
+  const libraryMissing = !seriesLoading && seriesFailed && libraryKnown === undefined
 
   if (libraryMissing && (isOfflineUnavailable(seriesError) || connectivity === 'offline')) {
     return (

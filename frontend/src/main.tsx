@@ -103,6 +103,10 @@ const queryClient = new QueryClient({
       // the page's own state. Timeouts and rate limits are the 4xx worth another go.
       retry: (failureCount, error) => failureCount < 1 && !isFinalClientError(error),
       refetchOnWindowFocus: false,
+      // Several components on one page often read the same key, and a quick back-navigation used to
+      // refetch everything on the page. Mutations and live events invalidate what they change, and
+      // invalidation ignores staleTime; a query that must refetch on every mount says so itself.
+      staleTime: 15_000,
       ...(withWorker && { networkMode: 'offlineFirst' as const }),
     },
     mutations: withWorker ? { networkMode: 'always' } : {},

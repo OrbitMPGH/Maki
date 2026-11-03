@@ -11,6 +11,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { ApiError, api, getInitialize, xsrfHeader } from './client'
 import { useSaveSettingsRecord } from './settingsRecord'
 import { useAuth } from '../auth/AuthProvider'
+import { useHubConnected } from './signalr'
 import type { AnimeResume } from './animeResume'
 import { affectedKeys } from './recommendationFeedback'
 import type { RequestSummaryDto, SourceReliabilityDto } from './stats'
@@ -124,33 +125,7 @@ export function useLibraryStats(): LibraryStats {
   }, [series])
 }
 
-/** Maps a catalogue (MangaBaka) item to the library series id that owns it, or null. */
-export function useSeriesIdLookup() {
-  const { data: library } = useSeries()
-  const seriesIdByMangaBaka = useMemo(() => {
-    const map = new Map<number, number>()
-    for (const s of library ?? []) {
-      if (s.mangaBakaId != null) map.set(s.mangaBakaId, s.id)
-    }
-    return map
-  }, [library])
-  return (item: RecommendationItem) =>
-    seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
-}
-
-/** Maps a MangaBaka id to the poster of the library series that owns it, or null. */
-export function useLibraryCoverLookup() {
-  const { data: library } = useSeries()
-  const coverByMangaBaka = useMemo(() => {
-    const map = new Map<number, string>()
-    for (const s of library ?? []) {
-      if (s.mangaBakaId != null && s.coverUrl) map.set(s.mangaBakaId, s.coverUrl)
-    }
-    return map
-  }, [library])
-  return (mangaBakaId: string | null | undefined) =>
-    mangaBakaId ? coverByMangaBaka.get(Number(mangaBakaId)) ?? null : null
-}
+export { useHasLibrary, useLibraryCoverLookup, useSeriesIdLookup } from './seriesLookup'
 
 // When each series was first seen waiting on its match or link, for the polling backoff below.
 const pendingSince = new Map<number, number>()
@@ -2290,12 +2265,17 @@ export function useSeriesQueue(seriesId: number) {
   })
 }
 
-/** Per-status counts for the shell badge, so it doesn't poll a whole queue page. */
+/**
+ * Per-status counts for the shell badge, so it doesn't poll a whole queue page. Admins get every
+ * queue change over the socket, which refetches this, so they only poll while it is down.
+ */
 export function useQueueSummary() {
+  const pushed = useAuth().can('Admin')
+  const connected = useHubConnected()
   return useQuery({
     queryKey: ['queue-summary'],
     queryFn: () => api<QueueSummaryDto>('/queue/summary'),
-    refetchInterval: 10_000,
+    refetchInterval: !pushed ? 10_000 : connected ? false : 60_000,
   })
 }
 
@@ -2410,12 +2390,17 @@ export function useRemoveFailedQueue() {
   })
 }
 
-/** Pushed by `queuePauseChanged` (see `signalr.ts`), so the poll is only the fallback for a missed event. */
+/**
+ * Pushed by `queuePauseChanged` (see `signalr.ts`) to everyone who may pause, so they only poll
+ * while the socket is down; a reconnect refetches it.
+ */
 export function useQueuePause() {
+  const pushed = useAuth().can('ManageDownloadQueue')
+  const connected = useHubConnected()
   return useQuery({
     queryKey: ['queue-pause'],
     queryFn: ({ signal }) => api<QueuePauseDto>('/queue/pause', { signal }),
-    refetchInterval: 30_000,
+    refetchInterval: !pushed ? 30_000 : connected ? false : 60_000,
   })
 }
 
@@ -4082,6 +4067,8 @@ export function useSourcePriority(enabled = true) {
     queryKey: ['settings', 'sources', 'priority'],
     queryFn: () => api<SourcePrioritySettings>('/settings/sources/priority'),
     enabled,
+    // Changes only through its own save, which writes the cache.
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -4163,6 +4150,9 @@ export function useRootFolders() {
     queryKey: ['rootfolders'],
     queryFn: () => api<RootFolder[]>('/rootfolder'),
     enabled: can('AddSeries'),
+    // Mounted by some twenty components, often several per page. Edits invalidate it; only the
+    // free space and the reachable flag move on their own, and a couple of minutes is fine for those.
+    staleTime: 2 * 60 * 1000,
   })
 }
 

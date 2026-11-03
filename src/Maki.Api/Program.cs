@@ -1525,8 +1525,10 @@ try
                 handlerBuilder.Services.GetRequiredService<OutboundHttpLoggingHandler>())));
 
     // Images, archives and the SignalR event stream are not in the default MIME list, so they pass
-    // through untouched. Fastest because most of it is JSON built per request, where CPU matters more
-    // than the last few percent of size.
+    // through untouched. MVC writes JSON in flushes of about 4 KB, and Brotli at Fastest (quality 1)
+    // compresses each flushed block on its own, which left large lists at about half their size.
+    // Optimal (quality 4) keeps the window across flushes: /series went 242 to 113 KB for about the
+    // same CPU. Gzip keeps its window across flushes at any level, so it stays at Fastest.
     builder.Services.AddResponseCompression(o =>
     {
         o.EnableForHttps = true;
@@ -1534,7 +1536,7 @@ try
         o.Providers.Add<GzipCompressionProvider>();
         o.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["application/atom+xml"]);
     });
-    builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+    builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Optimal);
     builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
 
     var app = builder.Build();

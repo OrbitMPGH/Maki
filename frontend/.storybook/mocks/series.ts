@@ -27,7 +27,7 @@ import {
   upgradeProfiles,
 } from './series/fixtures'
 import { api, failWith, hoursAgo } from './api'
-import { catalogue } from './shared'
+import { catalogue, seriesLookupHandler } from './shared'
 import { outlookFor } from './operations/upcoming'
 
 export * from './series/fixtures'
@@ -315,4 +315,4 @@ export const seriesPageHandlers: HttpHandler[] = [
 ]
 
 /** `parameters.msw` for a series page story: its variants first, then the shared page endpoints. */
-export const seriesMsw = (...variants: HttpHandler[]): HttpHandler[] => [...variants, ...seriesPageHandlers]
+export const seriesMsw = (...variants: HttpHandler[]): HttpHandler[] => [seriesLookupHandler, ...variants, ...seriesPageHandlers]
