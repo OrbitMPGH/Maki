@@ -518,6 +518,20 @@ public class EmbeddingStore(EmbeddingOptions options)
     }
 
     /// <summary>
+    /// Rebuilds the file so pages left half empty by rows rewritten smaller are given back. A model
+    /// change that narrows the vectors otherwise keeps the old file size: 768 to 256 dims left
+    /// 157 MB on disk for 57 MB of rows.
+    /// </summary>
+    public void Compact()
+    {
+        using var conn = OpenWritable();
+        using var vacuum = conn.CreateCommand();
+        vacuum.CommandText = "VACUUM";
+        vacuum.CommandTimeout = 1800;
+        vacuum.ExecuteNonQuery();
+    }
+
+    /// <summary>
     /// Stamps a database that is not open through a store yet, such as a downloaded artifact before
     /// it is swapped in.
     /// </summary>
