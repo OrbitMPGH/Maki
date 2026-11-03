@@ -14,7 +14,7 @@ import { ReadingCardMenu } from './ReadingCardMenu'
  * series page, whereas these link straight into the reader and carry a chapter label rather than
  * download counts. It reuses that card's CSS classes, so the two match without new layout rules.
  */
-export function ReadingRail({ items }: { items: HomeReadingItem[] }) {
+export const ReadingRail = memo(function ReadingRail({ items }: { items: HomeReadingItem[] }) {
   return (
     <Rail>
       {items.map((item) => (
@@ -29,7 +29,7 @@ export function ReadingRail({ items }: { items: HomeReadingItem[] }) {
       ))}
     </Rail>
   )
-}
+})
 
 /**
  * One poster that opens the reader. `note` replaces the "# new" count in the corner of the meta row.

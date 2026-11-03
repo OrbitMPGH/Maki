@@ -14,6 +14,7 @@ import '@fontsource-variable/bricolage-grotesque/opsz.css'
 import './theme.css'
 // Before App: decides whether the window or the shell's <main> scrolls.
 import './lib/pageScroll'
+import './lib/pageScrolling'
 import './lib/coverFallback'
 import { appHistory, PageTransitionCommit } from './lib/pageTransition'
 import { preloadingRoutes } from './lib/routePreload'

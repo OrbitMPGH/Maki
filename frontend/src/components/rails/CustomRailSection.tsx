@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
 import {
@@ -11,7 +11,6 @@ import {
   Skeleton,
   Text,
 } from '@mantine/core'
-import { useIntersection } from '@mantine/hooks'
 import {
   IconCopy,
   IconDots,
@@ -75,11 +74,22 @@ export function CustomRailSection({
     () => ({ savedFrom: `rail:${rail.id}`, savedFromDetail: rail.name }),
     [rail.id, rail.name],
   )
-  const { ref, entry } = useIntersection({ rootMargin: '600px' })
+  // Observed only until the rail first nears the viewport; a live observer re-rendered the whole
+  // rail each time it crossed the margin on the way past.
+  const ref = useRef<HTMLDivElement>(null)
   const [seen, setSeen] = useState(false)
   useEffect(() => {
-    if (entry?.isIntersecting) setSeen(true)
-  }, [entry?.isIntersecting])
+    const el = ref.current
+    if (seen || !el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setSeen(true)
+      },
+      { rootMargin: '600px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [seen])
 
   const { data, isLoading, isError, refetch } = useCustomRailItems(rail.id, limit, seen)
   const [editing, setEditing] = useState<{ rail?: CustomRail; draft?: CustomRailDraft } | null>(null)

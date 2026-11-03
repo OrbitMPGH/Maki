@@ -887,6 +887,11 @@ html[data-scroll='inner'] .mantine-AppShell-main::before {
 html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   height: var(--app-shell-header-offset, 0rem);
 }
+/* Set for a moment while the page scrolls under a mouse (lib/pageScrolling.ts). On the children, not
+   <main> itself, which is the scroller in the inner mode and must keep taking the wheel. */
+#main[data-scrolling] > * {
+  pointer-events: none;
+}
 .app-navbar {
   padding: 16px 12px max(12px, env(safe-area-inset-bottom, 0px));
   padding-inline-start: max(12px, env(safe-area-inset-left, 0px));
