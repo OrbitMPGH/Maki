@@ -60,7 +60,8 @@ public class PageConversionEstimateService(
 
     private sealed record Pick(PageConversionPlanService.ScopeFile File, PageConversionSettings Settings);
 
-    private sealed record PageTime(double Ms, double Megapixels);
+    /// <param name="InFlight">How many pages like it the pass encodes at once.</param>
+    private sealed record PageTime(double Ms, double Megapixels, int InFlight);
 
     private sealed record FileSample(long Size, bool Hardlinked, double Ratio, IReadOnlyList<PageTime> Pages, long PageBytes);
 
@@ -392,7 +393,8 @@ public class PageConversionEstimateService(
             kept += size;
             if (ImageCodec.TryIdentify(bytes) is { Width: > 0, Height: > 0 } header)
             {
-                times.Add(new PageTime(ms, (double)header.Width * header.Height / 1_000_000));
+                times.Add(new PageTime(ms, (double)header.Width * header.Height / 1_000_000,
+                    ImageWorkGate.ConversionsInFlight(ArchivePageConverter.IsAvif(bytes, extension, pick.Settings))));
             }
         }
 
@@ -463,7 +465,7 @@ public class PageConversionEstimateService(
     /// <summary>
     /// Measured files count their pages times the median page; unmeasured ones are extrapolated by
     /// bytes. Hardlinked files are never encoded, so their share is left out. Samples are timed one
-    /// page at a time, and the pass encodes as many pages at once as the conversion limit allows.
+    /// page at a time, and the pass encodes as many pages like each at once as the gate allows.
     /// </summary>
     private static double Seconds(Group group, double hardShare, List<PageTime> pages, double p)
     {
@@ -487,13 +489,13 @@ public class PageConversionEstimateService(
             megapixels += unmeasuredBytes * perByte;
         }
 
-        var rates = pages.Where(x => x.Megapixels > 0).Select(x => x.Ms / x.Megapixels).Order().ToList();
+        var rates = pages.Where(x => x.Megapixels > 0).Select(x => x.Ms / x.Megapixels / x.InFlight).Order().ToList();
         if (rates.Count == 0)
         {
             return 0;
         }
 
         var rate = rates[(int)Math.Clamp(Math.Round(p * (rates.Count - 1)), 0, rates.Count - 1)];
-        return megapixels * (1 - hardShare) * rate / 1000 / ImageWorkGate.ConversionLimit;
+        return megapixels * (1 - hardShare) * rate / 1000;
     }
 }

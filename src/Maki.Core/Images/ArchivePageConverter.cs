@@ -118,9 +118,9 @@ public static class ArchivePageConverter
                     await stream.WriteAsync(bytes, ct);
                 }
 
-                // Pages encode ahead of the writer, as many at once as the conversion limit allows, and are
-                // written in the source order. AV1 is the slow part, and one page at a time left
-                // all but one core idle.
+                // Pages encode ahead of the writer, as many at once as the conversion limit allows (half as
+                // many AVIF pages, each on two threads), and are written in the source order. AV1 is the
+                // slow part, and one page at a time left all but one core idle.
                 foreach (var entry in source.Entries)
                 {
                     ct.ThrowIfCancellationRequested();
@@ -138,7 +138,7 @@ public static class ArchivePageConverter
                         var extension = Path.GetExtension(entry.FullName);
                         page = Task.Run(() => ImageWorkGate.RunConversionAsync(
                             () => PageConversion.Convert(bytes, extension, settings),
-                            ImageWorkGate.Weigh(bytes), encodes.Token), encodes.Token);
+                            ImageWorkGate.Weigh(bytes), IsAvif(bytes, extension, settings), encodes.Token), encodes.Token);
                     }
 
                     pending.Enqueue(new Pending(entry, bytes, page));
@@ -225,7 +225,8 @@ public static class ArchivePageConverter
             foreach (var (bytes, extension) in picked)
             {
                 var page = await ImageWorkGate.RunConversionAsync(
-                    () => PageConversion.Convert(bytes, extension, settings), ImageWorkGate.Weigh(bytes), ct);
+                    () => PageConversion.Convert(bytes, extension, settings), ImageWorkGate.Weigh(bytes),
+                    IsAvif(bytes, extension, settings), ct);
                 if (page.Converted)
                 {
                     return true;
@@ -302,6 +303,9 @@ public static class ArchivePageConverter
 
         return picked;
     }
+
+    public static bool IsAvif(byte[] bytes, string extension, PageConversionSettings settings) =>
+        PageConversion.EncodingFor(bytes, extension, settings) == PageEncoding.Avif;
 
     private static string? ExtensionFormat(string name) => Path.GetExtension(name).ToLowerInvariant() switch
     {

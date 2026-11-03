@@ -52,7 +52,18 @@ public static class ImageWorkGate
     /// </summary>
     private static readonly WeightedGate Conversions = new(Parallelism);
 
+    /// <summary>
+    /// An AVIF encode runs on <see cref="ImageCodec.EncoderThreads"/> threads, so AVIF pages also take
+    /// one of half the limit, rounded up. WebP is single-threaded and keeps one page per permit.
+    /// </summary>
+    private static readonly WeightedGate AvifConversions = new(AvifLimit(Parallelism));
+
     private static int _conversionLimit = Parallelism;
+
+    private static int AvifLimit(int limit) => (limit + 1) / 2;
+
+    /// <summary>How many encodes of one kind run at once at the current limit.</summary>
+    public static int ConversionsInFlight(bool avif) => avif ? AvifLimit(ConversionLimit) : ConversionLimit;
 
     /// <summary>The highest conversion limit an admin can set.</summary>
     public static int MaxConversionLimit => Math.Max(Environment.ProcessorCount, 1);
@@ -66,20 +77,33 @@ public static class ImageWorkGate
         var next = Math.Clamp(limit ?? Parallelism, 1, MaxConversionLimit);
         var previous = Interlocked.Exchange(ref _conversionLimit, next);
         Conversions.Resize(next - previous);
+        AvifConversions.Resize(AvifLimit(next) - AvifLimit(previous));
     }
 
-    /// <summary>A page conversion encode: one of <see cref="ConversionLimit"/>, plus its pixel weight.</summary>
-    public static async Task<T> RunConversionAsync<T>(Func<T> work, int megapixels, CancellationToken ct)
+    /// <summary>
+    /// A page conversion encode: one of <see cref="ConversionLimit"/>, for <paramref name="avif"/> also one
+    /// of <see cref="ConversionsInFlight"/>, plus its pixel weight.
+    /// </summary>
+    public static async Task<T> RunConversionAsync<T>(Func<T> work, int megapixels, bool avif, CancellationToken ct)
     {
         megapixels = Math.Clamp(megapixels, 1, BudgetMegapixels);
-        await Conversions.WaitAsync(1, ct);
+        var taken = new List<(WeightedGate Gate, int Weight)>(3);
         try
         {
+            if (avif)
+            {
+                await AvifConversions.WaitAsync(1, ct);
+                taken.Add((AvifConversions, 1));
+            }
+
+            await Conversions.WaitAsync(1, ct);
+            taken.Add((Conversions, 1));
             await Pixels.WaitAsync(megapixels, ct);
+            taken.Add((Pixels, megapixels));
         }
         catch
         {
-            Conversions.Release(1);
+            ReleaseAll(taken);
             throw;
         }
 
@@ -90,9 +114,16 @@ public static class ImageWorkGate
         }
         finally
         {
-            Conversions.Release(1);
-            Pixels.Release(megapixels);
+            ReleaseAll(taken);
             Left();
+        }
+    }
+
+    private static void ReleaseAll(List<(WeightedGate Gate, int Weight)> taken)
+    {
+        foreach (var (gate, weight) in taken)
+        {
+            gate.Release(weight);
         }
     }
 

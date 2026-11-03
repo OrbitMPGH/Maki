@@ -56,8 +56,10 @@ public static class ImageCodec
         // libvips otherwise starts one worker per core for every pipeline, on top of the parallelism
         // ImageWorkGate already allows, and each worker keeps its own buffers. On a 16-core host
         // that is four gated decodes times sixteen threads of native heap that glibc never gives
-        // back. One cover or thumbnail on its own gets slower; throughput comes from the gate.
-        global::NetVips.NetVips.Concurrency = 1;
+        // back. Two rather than one because libaom splits an AVIF encode across them for about the
+        // memory of one thread (a 14 MP page: 672 MB at one, 689 MB at four, 3.4x faster at four), so
+        // the gate runs half as many AVIF pages at once instead. A process global: never set per call.
+        global::NetVips.NetVips.Concurrency = EncoderThreads;
 
         global::NetVips.NetVips.BlockUntrusted = true;
         Operation.Block("VipsForeignLoad", true);
@@ -66,6 +68,9 @@ public static class ImageCodec
             Operation.Block(loader, false);
         }
     }
+
+    /// <summary>The libvips worker threads of one pipeline, which an AVIF encode uses in full.</summary>
+    public const int EncoderThreads = 2;
 
     /// <summary>Bytes libvips has allocated through its own tracker: pixel buffers, not every malloc it makes.</summary>
     public static long TrackedMemoryBytes => Stats.Mem;
