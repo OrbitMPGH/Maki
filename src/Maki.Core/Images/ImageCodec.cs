@@ -128,17 +128,40 @@ public static class ImageCodec
                 return null;
             }
 
-            using var thumb = VipsImage.ThumbnailBuffer(bytes, 64);
-            using var rgb = thumb.HasAlpha() ? thumb.Flatten(background: [255, 255, 255]) : thumb.Copy();
-            using var lch = rgb.Colourspace(Enums.Interpretation.Lch);
-            using var chroma = lch[1];
-            using var colourful = chroma > 20;
-            return colourful.Avg() / 255 > 0.02;
+            using var thumb = VipsImage.ThumbnailBuffer(bytes, ColourThumbWidth);
+            return Colourful(thumb);
         }
         catch (VipsException)
         {
             return null;
         }
+    }
+
+    private const int ColourThumbWidth = 64;
+
+    private static bool Colourful(VipsImage thumb)
+    {
+        using var rgb = thumb.HasAlpha() ? thumb.Flatten(background: [255, 255, 255]) : thumb.Copy();
+        using var lch = rgb.Colourspace(Enums.Interpretation.Lch);
+        using var chroma = lch[1];
+        using var colourful = chroma > 20;
+        return colourful.Avg() / 255 > 0.02;
+    }
+
+    /// <summary>
+    /// Sharp YUV only helps chroma edges. On a grey page, most of a manga library and often stored as
+    /// RGB, it doubles a WebP encode's time and memory for the same bytes. The check thumbnails the
+    /// page already loaded for the encode, so the page is decoded once.
+    /// </summary>
+    internal static bool SharpYuvHelps(VipsImage image)
+    {
+        if (image.Bands < 3 || image.Interpretation is Enums.Interpretation.Bw or Enums.Interpretation.Grey16)
+        {
+            return false;
+        }
+
+        using var thumb = image.ThumbnailImage(ColourThumbWidth);
+        return Colourful(thumb);
     }
 
     private const int BmpHeaderBytes = 26;
@@ -263,7 +286,7 @@ public static class ImageCodec
         return target switch
         {
             PageEncoding.LosslessWebp => image.WebpsaveBuffer(lossless: true, effort: 4, keep: Enums.ForeignKeep.Icc),
-            PageEncoding.Webp => image.WebpsaveBuffer(q: quality, effort: 4, smartSubsample: true, keep: Enums.ForeignKeep.Icc),
+            PageEncoding.Webp => image.WebpsaveBuffer(q: quality, effort: 4, smartSubsample: SharpYuvHelps(image), keep: Enums.ForeignKeep.Icc),
             PageEncoding.Avif => image.HeifsaveBuffer(q: quality, bitdepth: 8, compression: Enums.ForeignHeifCompression.Av1,
                 effort: AvifEffort, keep: Enums.ForeignKeep.Icc),
             _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)

@@ -39,6 +39,27 @@ public class ImageCodecTests : IDisposable
     }
 
     [Fact]
+    public void Lossy_webp_keeps_sharp_yuv_only_for_colour_pages()
+    {
+        static bool Sharp(byte[] bytes)
+        {
+            using var image = NetVips.Image.NewFromBuffer(bytes);
+            return ImageCodec.SharpYuvHelps(image);
+        }
+
+        using var oneBand = NetVips.Image.Black(400, 600) + 128;
+        Assert.False(Sharp(ArchivePageConverterTests.Scan(400, 600, 1).EncodeJpeg(90)));
+        Assert.False(Sharp(ArchivePageConverterTests.LineArt(400, 600, 2).EncodePng()));
+        Assert.False(Sharp(oneBand.Cast(NetVips.Enums.BandFormat.Uchar).PngsaveBuffer()));
+        Assert.True(Sharp(Gradient(400, 600).EncodeJpeg(90)));
+
+        var colour = Gradient(400, 600).EncodeJpeg(95);
+        using var decoded = NetVips.Image.NewFromBuffer(colour);
+        var expected = decoded.WebpsaveBuffer(q: 80, effort: 4, smartSubsample: true, keep: NetVips.Enums.ForeignKeep.Icc);
+        Assert.Equal(expected, ImageCodec.EncodePage(colour, PageEncoding.Webp, 80, out _));
+    }
+
+    [Fact]
     public void Identify_reads_the_header_and_names_the_format()
     {
         Assert.Equal(new ImageHeader(40, 30, ImageFormat.Webp), ImageCodec.Identify(Gradient(40, 30).EncodeWebp(80)));
