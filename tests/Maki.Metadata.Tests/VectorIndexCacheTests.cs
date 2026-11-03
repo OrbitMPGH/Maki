@@ -229,6 +229,9 @@ public class VectorIndexCacheTests : IDisposable
         var cache = Cache(dimensions: 4);
 
         var first = await cache.GetAsync();
+        // A fresh build is swapped for its memory-mapped twin once the background snapshot save lands.
+        await cache.SnapshotSavedForTest;
+        first = await cache.GetAsync();
         Assert.Equal(1, first!.Count);
         Assert.Same(first, await cache.GetAsync()); // cached instance, not rebuilt
 
@@ -455,6 +458,9 @@ public class VectorIndexCacheTests : IDisposable
         Assert.NotSame(first, second);
         Assert.True(second!.TryGetRow(1, out row));
         Assert.Equal(20.0, second.RatingAt(row), 1);
+        // A fresh build is swapped for its memory-mapped twin once the background snapshot save lands.
+        await cache.SnapshotSavedForTest;
+        second = await cache.GetAsync();
         Assert.Same(second, await cache.GetAsync());
     }
 
