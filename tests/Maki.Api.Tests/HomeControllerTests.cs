@@ -467,6 +467,30 @@ public class HomeControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task RecentlyAdded_fills_the_rail_past_fully_read_series()
+    {
+        // The first chunk is as long as the rail; the read ones in it send the rest to a later chunk.
+        var unread = new List<int>();
+        for (var i = 0; i < 6; i++)
+        {
+            var seriesId = _db.SeedSeries($"Series {i}");
+            var chapterId = SeedChapter(seriesId, 1, addedAt: Base.AddDays(-i));
+            if (i < 3)
+            {
+                SeedProgress(seriesId, chapterId, pageIndex: 0, completed: true, updatedAt: Base);
+            }
+            else
+            {
+                unread.Add(seriesId);
+            }
+        }
+
+        var items = Recent(await Controller().RecentlyAdded(limit: 3, ct: CancellationToken.None));
+
+        Assert.Equal(unread, items.Select(i => i.SeriesId));
+    }
+
+    [Fact]
     public async Task RecentlyAdded_counts_only_the_latest_batch()
     {
         // Weekly releases: each arrived on its own, so only the newest is new.
