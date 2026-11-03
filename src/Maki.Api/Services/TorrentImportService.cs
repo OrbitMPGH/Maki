@@ -491,6 +491,7 @@ public class TorrentImportService(
                     // Deliberately every exception: reading somebody else's archive is the part of
                     // an import most likely to throw something unforeseen, and a named file in the
                     // outcome beats an unhandled failure inside the completed-download job.
+                    if (ex is IOException or UnauthorizedAccessException) HealthWriteProbe.Shared.Expire();
                     return new TorrentImportOutcome(
                         false, ex.Message, 0, 0, 0, 0, skipped, [], "error.torrentImport.copyFailed",
                         new { file = source.Name });
