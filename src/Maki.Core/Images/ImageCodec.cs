@@ -313,9 +313,16 @@ public static class ImageCodec
     }
 
     /// <summary>
+    /// The largest source page the server upscaler takes. Its memory grows with the page, to about
+    /// 2 GB at the encode stage for a 40 MP source. Bigger pages are skipped and the reader's browser
+    /// fallback covers them.
+    /// </summary>
+    public const long MaxUpscalePixels = 16_000_000;
+
+    /// <summary>
     /// Decodes a page for an upscale model, or returns a reason it cannot be: the bytes do not decode
     /// cleanly (<see cref="UpscaleReasons.Unreadable"/>), more than 8 bits per channel, or over
-    /// <see cref="PageConversion.MaxEdge"/> or <see cref="Reading.ArchiveHealthAnalyzer.MaxPixels"/>.
+    /// <see cref="PageConversion.MaxEdge"/> or <see cref="MaxUpscalePixels"/>.
     /// Orientation is applied, CMYK and greyscale become sRGB, transparency lands on white, and the
     /// result always has 3 bands.
     /// </summary>
@@ -330,7 +337,7 @@ public static class ImageCodec
             }
 
             if (Math.Max(loaded.Width, loaded.Height) > PageConversion.MaxEdge ||
-                (long)loaded.Width * loaded.Height > Reading.ArchiveHealthAnalyzer.MaxPixels)
+                (long)loaded.Width * loaded.Height > MaxUpscalePixels)
             {
                 return (null, UpscaleReasons.TooLarge);
             }
@@ -366,6 +373,32 @@ public static class ImageCodec
         return (resized.WriteToMemory<byte>(), resized.Width, resized.Height);
     }
 
+    /// <summary>
+    /// <see cref="ResizeRgb(byte[], int, int, double)"/> into <paramref name="into"/>, which must hold the
+    /// result. Only the first <c>width * height * 3</c> bytes of <paramref name="rgb"/> are read.
+    /// </summary>
+    public static (int Width, int Height) ResizeRgb(byte[] rgb, int width, int height, double scale, byte[] into)
+    {
+        using var image = FromMemory(rgb, width, height, 3);
+        using var resized = image.Resize(scale, kernel: Enums.Kernel.Lanczos3);
+        var pixels = resized.WriteToMemory(out var size);
+        try
+        {
+            if (size > (ulong)into.Length)
+            {
+                throw new ArgumentException("The buffer is smaller than the resized image.", nameof(into));
+            }
+
+            System.Runtime.InteropServices.Marshal.Copy(pixels, into, 0, (int)size);
+        }
+        finally
+        {
+            global::NetVips.NetVips.Free(pixels);
+        }
+
+        return (resized.Width, resized.Height);
+    }
+
     /// <summary>WebP's hard limit on either edge; an upscaled page past it is saved as JPEG.</summary>
     public const int MaxWebpEdge = 16383;
 
@@ -373,17 +406,26 @@ public static class ImageCodec
     /// Encodes an upscaled page from interleaved 8-bit RGB: WebP q85, or JPEG q90 when either edge is
     /// over <see cref="MaxWebpEdge"/>. A <paramref name="grey"/> page is saved with one band. The caller
     /// decides that from the source page: models tint flat screentone, so the output can fail the test.
+    /// Sharp YUV stays off: the chroma comes from a Lanczos-resized source, and it doubled the encode
+    /// time and native peak for no smaller file. Grey pages use effort 2, under half the time of 4
+    /// for a file about 5 to 25% larger.
     /// </summary>
-    public static UpscaledImage EncodeUpscaled(byte[] rgb, int width, int height, bool grey)
+    public static UpscaledImage EncodeUpscaled(byte[] rgb, int width, int height, bool grey) =>
+        grey ? EncodeUpscaledGrey(UpscalePixels.ToSingleBand(rgb), width, height) : EncodeBands(rgb, width, height, 3);
+
+    /// <summary>Encodes an upscaled grey page from one 8-bit band per pixel, as <see cref="EncodeUpscaled(byte[], int, int, bool)"/>.</summary>
+    public static UpscaledImage EncodeUpscaledGrey(byte[] band, int width, int height) =>
+        EncodeBands(band, width, height, 1);
+
+    private static UpscaledImage EncodeBands(byte[] pixels, int width, int height, int bands)
     {
-        var pixels = grey ? UpscalePixels.ToSingleBand(rgb) : rgb;
-        var bands = grey ? 1 : 3;
+        var grey = bands == 1;
         using var raw = FromMemory(pixels, width, height, bands);
         using var image = raw.Copy(interpretation: grey ? Enums.Interpretation.Bw : Enums.Interpretation.Srgb);
         return Math.Max(width, height) > MaxWebpEdge
             ? new UpscaledImage(image.JpegsaveBuffer(q: 90, subsampleMode: Enums.ForeignSubsample.On,
                 keep: Enums.ForeignKeep.None), "jpg", width, height, bands)
-            : new UpscaledImage(image.WebpsaveBuffer(q: 85, effort: 4, smartSubsample: !grey,
+            : new UpscaledImage(image.WebpsaveBuffer(q: 85, effort: grey ? 2 : 4, smartSubsample: false,
                 keep: Enums.ForeignKeep.None), "webp", width, height, bands);
     }
 
