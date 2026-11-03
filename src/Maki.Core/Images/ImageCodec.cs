@@ -331,6 +331,32 @@ public static class ImageCodec
         return (resized.WriteToMemory<byte>(), resized.Width, resized.Height);
     }
 
+    /// <summary>
+    /// <see cref="ResizeRgb(byte[], int, int, double)"/> into <paramref name="into"/>, which must hold the
+    /// result. Only the first <c>width * height * 3</c> bytes of <paramref name="rgb"/> are read.
+    /// </summary>
+    public static (int Width, int Height) ResizeRgb(byte[] rgb, int width, int height, double scale, byte[] into)
+    {
+        using var image = FromMemory(rgb, width, height, 3);
+        using var resized = image.Resize(scale, kernel: Enums.Kernel.Lanczos3);
+        var pixels = resized.WriteToMemory(out var size);
+        try
+        {
+            if (size > (ulong)into.Length)
+            {
+                throw new ArgumentException("The buffer is smaller than the resized image.", nameof(into));
+            }
+
+            System.Runtime.InteropServices.Marshal.Copy(pixels, into, 0, (int)size);
+        }
+        finally
+        {
+            global::NetVips.NetVips.Free(pixels);
+        }
+
+        return (resized.Width, resized.Height);
+    }
+
     /// <summary>WebP's hard limit on either edge; an upscaled page past it is saved as JPEG.</summary>
     public const int MaxWebpEdge = 16383;
 
