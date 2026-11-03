@@ -43,6 +43,17 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
     /// encoder or a verify. They are not artifact builds themselves: holding the gate for a whole
     /// conversion pass would stall every build behind it for hours.
     /// </summary>
+    public bool IsIdle
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _idle.Task.IsCompleted;
+            }
+        }
+    }
+
     public Task WaitUntilIdleAsync(CancellationToken ct)
     {
         Task idle;

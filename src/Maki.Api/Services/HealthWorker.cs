@@ -160,9 +160,12 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     await AdvanceBaselineAsync(db, settings, baseline, DateTime.UtcNow, stoppingToken);
                 }
                 var scan = await db.HealthScans.Where(s => s.Status == "pending" || s.Status == "running").OrderBy(s => s.Id).FirstOrDefaultAsync(stoppingToken);
+                // A verify reads every byte; while an artifact build runs it waits for a later pass
+                // (15 s while a scan is queued) rather than holding this one, so a cancel still lands.
+                var deferred = scan is { Verify: true } && buildGate is { IsIdle: false };
+                if (deferred) scan = null;
                 if (scan != null)
                 {
-                    if (scan.Verify && buildGate is not null) await buildGate.WaitUntilIdleAsync(stoppingToken);
                     var before = await db.HealthFindings.MaxAsync(f => (int?)f.Id, stoppingToken) ?? 0;
                     using var scanCancellation = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
                     HealthScanService.Running[scan.Id] = scanCancellation;
@@ -192,7 +195,7 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     }
                 }
                 var downloading = await db.HealthOperations.Where(o => o.Kind == "repair" && o.Status == "downloading").ToListAsync(stoppingToken);
-                busy = scan != null || arrivals || downloading.Count > 0;
+                busy = scan != null || deferred || arrivals || downloading.Count > 0;
                 foreach (var op in downloading)
                 {
                     var items = await db.DownloadQueue.Where(q => q.HealthOperationId == op.Id).ToListAsync(stoppingToken);

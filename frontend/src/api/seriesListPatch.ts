@@ -17,6 +17,9 @@ const FULL_EVERY_MS = 30_000
  */
 export function createSeriesListRefresher(queryClient: QueryClient) {
   const pending = new Set<number>()
+  // Patch number that last wrote each series, so a slower older response never overwrites a newer one.
+  const written = new Map<number, number>()
+  let seq = 0
   return {
     mark(seriesId: number) {
       pending.add(seriesId)
@@ -31,12 +34,12 @@ export function createSeriesListRefresher(queryClient: QueryClient) {
       if (lookup && ids.some((id) => !lookup.some((row) => row.id === id))) {
         void queryClient.invalidateQueries({ queryKey: SERIES_LOOKUP_KEY })
       }
-      void patchList(queryClient, ids)
+      void patchList(queryClient, ids, ++seq, written)
     },
   }
 }
 
-async function patchList(queryClient: QueryClient, ids: number[]) {
+async function patchList(queryClient: QueryClient, ids: number[], mine: number, written: Map<number, number>) {
   const query = queryClient.getQueryCache().find<SeriesDto[]>({ queryKey: LIST_KEY, exact: true })
   const refetchAll = () => void queryClient.invalidateQueries({ queryKey: LIST_KEY, exact: true })
   if (
@@ -50,6 +53,7 @@ async function patchList(queryClient: QueryClient, ids: number[]) {
     return
   }
 
+  const startedFrom = query.state.dataUpdatedAt
   let rows: SeriesDto[]
   try {
     rows = await api<SeriesDto[]>(`/series/summary?${ids.map((id) => `ids=${id}`).join('&')}`)
@@ -57,9 +61,18 @@ async function patchList(queryClient: QueryClient, ids: number[]) {
     refetchAll()
     return
   }
+  // A full fetch that landed or started meanwhile may predate these rows or postdate them; refetch
+  // rather than guess which.
+  const now = queryClient.getQueryState(LIST_KEY)
+  if (now?.dataUpdatedAt !== startedFrom || now.fetchStatus === 'fetching') {
+    refetchAll()
+    return
+  }
+  const ours = ids.filter((id) => (written.get(id) ?? 0) < mine)
+  for (const id of ours) written.set(id, mine)
   // Keeps the time of the last full fetch, which is what FULL_EVERY_MS and staleTime measure from.
-  queryClient.setQueryData<SeriesDto[]>(LIST_KEY, (list) => list && mergeRows(list, ids, rows), {
-    updatedAt: query.state.dataUpdatedAt,
+  queryClient.setQueryData<SeriesDto[]>(LIST_KEY, (list) => list && mergeRows(list, ours, rows.filter((row) => ours.includes(row.id))), {
+    updatedAt: startedFrom,
   })
 }
 

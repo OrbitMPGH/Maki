@@ -292,11 +292,31 @@ public sealed class ChapterSyncPartialListingTests : IDisposable
 
         using var db = _db.NewContext();
         var chapter = db.Chapters.Single(c => c.SeriesId == seriesId && c.Number == 9);
-        var resolver = Sources.Resolver(new SourceRegistry([source]));
+        var resolver = Sources.Resolver(new SourceRegistry([source]), listingSchedule: _schedule);
 
         var resolved = await resolver.ResolveAsync(db, chapter, null, CancellationToken.None);
 
         Assert.Equal("id-9", resolved.SourceChapterId);
         Assert.Equal(fullCalls, source.FullCalls);
+    }
+
+    /// <summary>
+    /// The processor's 404 path never lists again, so a stored id is only trusted while the mapping
+    /// had a whole walk recently; after a restart (or on a mapping nothing syncs) the list is walked.
+    /// </summary>
+    [Fact]
+    public async Task The_resolver_walks_the_list_when_the_mapping_had_no_recent_whole_walk()
+    {
+        var seriesId = SeedSeries();
+        var source = await SyncedSourceAsync(seriesId);
+        var fullCalls = source.FullCalls;
+
+        using var db = _db.NewContext();
+        var chapter = db.Chapters.First(c => c.SeriesId == seriesId && c.Number != null);
+        var resolver = Sources.Resolver(new SourceRegistry([source]), listingSchedule: new ChapterListingSchedule(_clock));
+
+        await resolver.ResolveAsync(db, chapter, null, CancellationToken.None);
+
+        Assert.Equal(fullCalls + 1, source.FullCalls);
     }
 }

@@ -21,6 +21,8 @@ public sealed class KavitaLiveCoverage(TimeProvider time)
 
     private readonly object _lock = new();
     private readonly HashSet<int> _dirty = [];
+    // The dirty set a pass took, until that pass completes; a pass that throws hands it to the next.
+    private HashSet<int>? _unfinished;
     private readonly Dictionary<int, Cached> _volumes = [];
     private long _epoch;
     private bool _connected;
@@ -69,6 +71,12 @@ public sealed class KavitaLiveCoverage(TimeProvider time)
             var full = !_connected || _sweptEpoch != _epoch || now < _sweptAt || now - _sweptAt >= FullSweepEvery;
             var dirty = _dirty.ToHashSet();
             _dirty.Clear();
+            if (_unfinished is not null)
+            {
+                dirty.UnionWith(_unfinished);
+            }
+
+            _unfinished = dirty;
             if (full)
             {
                 _volumes.Clear();
@@ -137,14 +145,14 @@ public sealed class KavitaLiveCoverage(TimeProvider time)
         /// <summary>The pass went through every series. A full sweep then covers this connection.</summary>
         public void Complete()
         {
-            if (!Full)
-            {
-                return;
-            }
-
             lock (_owner._lock)
             {
-                if (_owner._connected && _owner._epoch == _epoch)
+                if (ReferenceEquals(_owner._unfinished, _dirty))
+                {
+                    _owner._unfinished = null;
+                }
+
+                if (Full && _owner._connected && _owner._epoch == _epoch)
                 {
                     _owner._sweptEpoch = _epoch;
                     _owner._sweptAt = _startedAt;

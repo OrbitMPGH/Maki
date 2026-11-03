@@ -97,7 +97,12 @@ async function cover(event: FetchEvent): Promise<Response> {
   if (cached) return cached
   const since = userGeneration()
   const res = await tryFetch(request)
-  if (!res || isUnreachable(res)) return offlineResponse()
+  if (!res || isUnreachable(res)) {
+    // An img with a srcset never falls back to src, and offline saves only warm cover.jpg.
+    const full = request.url.replace('/cover-sm.jpg', '/cover.jpg')
+    const fallback = full !== request.url ? await matchIn(cacheNames.covers(userId), full) : undefined
+    return fallback ?? offlineResponse()
+  }
   noteStatus(res, since)
   if (res.status === 200 && isImage(res)) {
     event.waitUntil(store(cacheNames.covers(userId), request.url, res.clone(), COVER_CAP))

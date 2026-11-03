@@ -172,4 +172,23 @@ public class KavitaLiveCoverageTests
 
         Assert.True(coverage.Begin().Full);
     }
+
+    [Fact]
+    public void A_partial_pass_that_does_not_finish_hands_its_dirty_series_to_the_next_pass()
+    {
+        var series = Series(1);
+        var coverage = SweptCoverage(series);
+        coverage.Saw(series.Id);
+
+        var broken = coverage.Begin();
+        Assert.False(broken.Full);
+        Assert.Null(broken.Reuse(series));
+
+        var next = coverage.Begin();
+        Assert.False(next.Full);
+        Assert.Null(next.Reuse(series));
+        next.Complete();
+
+        Assert.NotNull(coverage.Begin().Reuse(series));
+    }
 }

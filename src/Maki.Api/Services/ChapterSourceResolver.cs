@@ -34,7 +34,8 @@ public class ChapterSourceResolver(
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,
     SourceChapterListCache chapterLists,
-    SourceOrderService sourceOrder)
+    SourceOrderService sourceOrder,
+    ChapterListingSchedule? listingSchedule = null)
 {
     /// <summary>Best first under the series' <see cref="SourceOrderMode"/>. See <see cref="SourceOrderService"/>.</summary>
     public async Task<IReadOnlyList<SourceMapping>> OrderAsync(
@@ -160,15 +161,16 @@ public class ChapterSourceResolver(
     /// </para>
     /// <para>
     /// A newest-first source's monitored sync lists only its newest pages and caches nothing, so with
-    /// no fresh whole listing cached the link that sync wrote is used before walking the whole list.
-    /// A stale id there 404s, and the processor's fallback takes it from that.
+    /// no fresh whole listing cached the stored link is used before walking the whole list, but only
+    /// while the mapping had a whole walk within <see cref="ChapterListingSchedule.FullEvery"/>. An
+    /// older link may name a re-uploaded id, and the processor's 404 path never lists again.
     /// </para>
     /// </summary>
     private async Task<string?> ResolveSourceChapterIdAsync(
         MakiDbContext db, ISource source, SourceMapping mapping, Chapter chapter, CancellationToken ct,
         bool requireExactMatch = false)
     {
-        if (source is INewestFirstChapterSource)
+        if (source is INewestFirstChapterSource && listingSchedule is not null && !listingSchedule.FullDue(mapping.Id))
         {
             if (chapterLists.TryGetFresh(source, mapping.SourceSeriesId, mapping.LanguageFilter) is { } fresh &&
                 Match(fresh, chapter, requireExactMatch) is { } listed)
