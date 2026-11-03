@@ -9,6 +9,7 @@ import { operationsHandlers } from './operations'
 import { insightsHandlers } from './insights'
 import { shellHandlers } from './shell'
 import { entryHandlers } from './entry'
+import { notesHandlers } from './notes'
 
 /**
  * Requests no handler answered, collected so preview.tsx can fail the story: a page that silently
@@ -40,5 +41,6 @@ export const defaultHandlers: HttpHandler[] = [
   ...insightsHandlers,
   ...shellHandlers,
   ...entryHandlers,
+  ...notesHandlers,
   ...catchAll,
 ]

@@ -54,6 +54,8 @@ export const settingsHandlers: HttpHandler[] = [
     return HttpResponse.json({ singleUser, available: true })
   }),
   putEcho('/settings/signin'),
+  http.get(api('/settings/loginnames'), () => HttpResponse.json({ visible: false })),
+  putEcho('/settings/loginnames'),
   http.get(api('/settings/oidc'), () => HttpResponse.json(d.oidcSettings)),
   putEcho('/settings/oidc'),
 

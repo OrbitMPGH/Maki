@@ -3,6 +3,7 @@ import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
 import { animeResume, providerDetail, seriesDto, seriesMsw, torrentProposal } from '../../.storybook/mocks/series'
+import { noteCounts, readerNotes } from '../../.storybook/mocks/notes'
 import SeriesDetailPage from './SeriesDetailPage'
 import { monoText } from '../../.storybook/monoText'
 
@@ -71,6 +72,38 @@ export const SelectModeBulkBar: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Select' }))
     await expect(await canvas.findByText(/selected/i)).toBeVisible()
+  },
+}
+
+const withNoteCounts = seriesMsw(
+  http.get(api('/series/:id/notes/counts'), () => HttpResponse.json(noteCounts)),
+  http.get(api('/chapters/:id/notes'), () => HttpResponse.json(readerNotes)),
+)
+
+export const ChapterNotes: Story = {
+  parameters: { ...at(1, '?tab=chapters'), msw: withNoteCounts },
+  play: async ({ canvas, userEvent, canvasElement }) => {
+    const name = /^Notes on .*Ch\.2: 1 yours, 2 shared$/
+    // Hovering mounts the tooltip, which replaces the button; click the one that stays.
+    await userEvent.hover(await canvas.findByRole('button', { name }))
+    await userEvent.click(await canvas.findByRole('button', { name }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('dialog', { name: /^Notes, .*Ch\.2$/ })).toBeVisible()
+    // Chapter 2 is read, so other people's shared notes show without folding.
+    await expect(await body.findByText(/Best fight so far/)).toBeVisible()
+    await expect(body.queryByText('Tap to show')).toBeNull()
+  },
+}
+
+export const RemoveChaptersWarnsAboutNotes: Story = {
+  parameters: { ...at(1, '?tab=chapters'), msw: withNoteCounts },
+  play: async ({ canvas, userEvent, canvasElement }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Select' }))
+    const row = (await canvas.findByRole('button', { name: /^Notes on .*Ch\.3: 0 yours, 1 shared$/ })).closest('tr')!
+    await userEvent.click(within(row).getAllByText(/Ch\.\s?3$/)[0])
+    await userEvent.click(await canvas.findByRole('button', { name: 'Remove chapters' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByText('1 note on the selected chapters will be deleted.')).toBeVisible()
   },
 }
 

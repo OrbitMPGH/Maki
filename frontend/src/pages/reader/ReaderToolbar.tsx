@@ -22,26 +22,21 @@ import {
   IconLayoutGrid,
   IconMaximize,
   IconMinimize,
+  IconNote,
   IconSettings,
   IconZoomIn,
   IconZoomOut,
   IconZoomReset,
 } from '@tabler/icons-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
 import { wakeLockSupported } from '../../lib/wakeLock'
+import { OVERLAY_Z } from './overlay'
 import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
-
-/**
- * The reader renders above Mantine's popover layer, so anything that portals to <body> has to
- * be lifted past it explicitly, otherwise it paints underneath the page and looks like the
- * control simply doesn't work.
- */
-const OVERLAY_Z = 500
 
 export default function ReaderToolbar({
   manifest,
@@ -71,6 +66,9 @@ export default function ReaderToolbar({
   bookmarked,
   bookmarkDisabled,
   onToggleBookmark,
+  noteCount,
+  notesOpen,
+  onToggleNotes,
   stripOpen,
   onToggleStrip,
   visible,
@@ -109,6 +107,10 @@ export default function ReaderToolbar({
   /** Offline: a toggle cannot be queued and replayed safely. */
   bookmarkDisabled: boolean
   onToggleBookmark: () => void
+  /** Visible notes on this chapter, from the manifest. */
+  noteCount: number
+  notesOpen: boolean
+  onToggleNotes: () => void
   stripOpen: boolean
   onToggleStrip: () => void
   visible: boolean
@@ -199,6 +201,12 @@ export default function ReaderToolbar({
     ? t`${chaptersRead} of ${seriesChapterCount} downloaded chapters read, ${seriesWantedCount} in the series`
     : t`${chaptersRead} of ${seriesChapterCount} downloaded chapters read`
 
+  // A dot on the track for every page that carries a note. Mirrored like the thumb in right-to-left.
+  const notedMarks = useMemo(
+    () => (manifest.notedPages ?? []).map((index) => ({ value: rtl ? manifest.pageCount - index : index + 1 })),
+    [manifest.notedPages, manifest.pageCount, rtl],
+  )
+
   // Clicks on the bars must not fall through to the page-turn zones behind them.
   const stop = (event: React.MouseEvent) => event.stopPropagation()
 
@@ -270,6 +278,25 @@ export default function ReaderToolbar({
               <IconEyeOff size={18} opacity={0.7} />
             </Tooltip>
           )}
+          <Tooltip label={t`Notes`} withArrow zIndex={OVERLAY_Z}>
+            <ActionIcon
+              variant={notesOpen ? 'light' : 'subtle'}
+              color="gray"
+              w="auto"
+              miw={28}
+              px={noteCount > 0 ? 6 : 0}
+              onClick={onToggleNotes}
+              aria-label={noteCount > 0 ? t`Notes (${noteCount})` : t`Notes`}
+              aria-expanded={notesOpen}
+            >
+              <IconNote size={18} />
+              {noteCount > 0 && (
+                <span className="tnum" style={{ marginInlineStart: 4, fontSize: 12 }}>
+                  {noteCount}
+                </span>
+              )}
+            </ActionIcon>
+          </Tooltip>
           <Tooltip
             label={
               bookmarkDisabled
@@ -335,6 +362,7 @@ export default function ReaderToolbar({
             }}
             label={(value) => `${rtl ? manifest.pageCount - value + 1 : value} / ${manifest.pageCount}`}
             inverted={rtl}
+            marks={notedMarks}
             style={{ flex: 1 }}
           />
 

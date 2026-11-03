@@ -24,11 +24,14 @@ import {
   IconLock,
   IconLockOpen,
   IconMinus,
+  IconNote,
   IconPhotoSearch,
   IconSparkles,
   IconTrash,
   IconTrashX,
+  IconUsers,
 } from '@tabler/icons-react'
+import type { NoteCountDto } from '../../api/notes'
 import { queueErrorMessage } from '../../api/queue'
 import type { ChapterProgressDto, ChapterReadState } from '../../api/reader'
 import type { ChapterDto, QueueItemDto } from '../../api/types'
@@ -57,6 +60,7 @@ export type ChapterRowActions = {
   deleteFile: (id: number) => void
   saveOffline: (id: number) => void
   removeOffline: (id: number) => void
+  openNotes: (id: number) => void
   toggleSpanFold: (key: string) => void
   setMarkerRef: (key: string, el: HTMLElement | null) => void
 }
@@ -71,6 +75,8 @@ export type ChapterSpanRowActions = {
 type ChapterRowProps = {
   chapter: ChapterDto
   progress: ChapterProgressDto | undefined
+  /** Notes on this chapter; absent when it has none or the counts are unavailable. */
+  noteCounts?: NoteCountDto
   queueItem: QueueItemDto | undefined
   selectMode: boolean
   selected: boolean
@@ -102,6 +108,7 @@ type ChapterRowProps = {
 export const ChapterRow = memo(function ChapterRow({
   chapter: c,
   progress: rowProgress,
+  noteCounts,
   queueItem,
   selectMode,
   selected: isSelected,
@@ -408,6 +415,33 @@ export const ChapterRow = memo(function ChapterRow({
         </Table.Td>
         <Table.Td onClick={(e) => e.stopPropagation()}>
           <LightGroup gap={2} wrap="nowrap" justify="flex-end">
+            {noteCounts && (noteCounts.mine > 0 || noteCounts.shared > 0) && (() => {
+              const { mine, shared } = noteCounts
+              const label = t`Notes on ${chapterLbl}: ${mine} yours, ${shared} shared`
+              return (
+                  <HoverTooltip label={label} withArrow>
+                    <button
+                        type="button"
+                        className="chapter-notes-button"
+                        aria-label={label}
+                        onClick={() => actions.openNotes(c.id)}
+                    >
+                      {mine > 0 && (
+                          <span className="chapter-notes-count" data-kind="mine">
+                            <IconNote size={15} />
+                            {mine}
+                          </span>
+                      )}
+                      {shared > 0 && (
+                          <span className="chapter-notes-count" data-kind="shared">
+                            <IconUsers size={15} />
+                            {shared}
+                          </span>
+                      )}
+                    </button>
+                  </HoverTooltip>
+              )
+            })()}
             {/* Marking read needs the file for its page count, so a removed chapter can only be un-read. */}
             {(c.hasFile || (c.fileRemovedAt && read)) && (
                 <HoverTooltip label={read ? t`Mark unread` : t`Mark read`} withArrow>

@@ -1,9 +1,13 @@
 import { Button, Group } from '@mantine/core'
-import { IconArrowLeft, IconArrowRight } from '@tabler/icons-react'
+import { IconArrowLeft, IconArrowRight, IconNote } from '@tabler/icons-react'
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Plural, Trans } from '@lingui/react/macro'
 import type { ReaderManifest } from '../../api/reader'
+import { useChapterNotes } from '../../api/notes'
+import NoteBody from '../../components/notes/NoteBody'
+import { useAuthorLabel } from '../../components/notes/useAuthorLabel'
+import { formatDateTime } from '../../format'
 
 /**
  * Chapter numbers the jump to the next chapter passes over. Only whole chapters count: 19.5 to 20
@@ -16,6 +20,61 @@ function skipped(current: number | null, next: number | null): [number, number] 
   return to >= from ? [from, to] : null
 }
 
+/** The newest two shared notes, or a way to leave the first one. Nothing while the list is unavailable. */
+function ChapterEndNotes({ chapterId, onOpenNotes }: { chapterId: number; onOpenNotes: () => void }) {
+  const { data } = useChapterNotes(chapterId)
+  const authorLabel = useAuthorLabel()
+  if (!data) return null
+  const shared = data.filter((n) => n.visibility === 'shared' && n.deleted === null)
+  const count = shared.length
+  const newest = shared.slice(-2).reverse()
+  return (
+    <div className="reader-end-notes">
+      {count > 0 ? (
+        <>
+          <span className="reader-end-eyebrow">
+            <Trans>Notes</Trans>
+          </span>
+          {newest.map((note) => {
+            const who = authorLabel(note)
+            return (
+              <div key={note.id} className="reader-end-note-item">
+                <span className="reader-end-note-head">
+                  {who} <time dateTime={note.createdAt}>{formatDateTime(note.createdAt)}</time>
+                </span>
+                <div className="reader-end-note-text">
+                  <NoteBody text={note.body} />
+                </div>
+              </div>
+            )
+          })}
+          <Button
+            variant="subtle"
+            color="gray"
+            size="compact-sm"
+            className="reader-end-quiet"
+            leftSection={<IconNote size={16} />}
+            onClick={onOpenNotes}
+          >
+            <Plural value={count} one="See all # note" other="See all # notes" />
+          </Button>
+        </>
+      ) : (
+        <Button
+          variant="subtle"
+          color="gray"
+          size="compact-sm"
+          className="reader-end-quiet"
+          leftSection={<IconNote size={16} />}
+          onClick={onOpenNotes}
+        >
+          <Trans>Add a note</Trans>
+        </Button>
+      )}
+    </div>
+  )
+}
+
 /**
  * Shown when a page turn runs off the last page and auto-advance is off, or there is nothing to
  * advance to. Names what comes next, so the second press is a choice made knowing where it goes.
@@ -26,12 +85,14 @@ export default function ChapterEnd({
   rtl,
   onNext,
   onStay,
+  onOpenNotes,
 }: {
   manifest: ReaderManifest
   readingCounted: boolean
   rtl: boolean
   onNext: () => void
   onStay: () => void
+  onOpenNotes: () => void
 }) {
   const { label: chapterLabel, seriesChapterCount, nextChapterLabel } = manifest
   const readCount = Math.min(seriesChapterCount, manifest.seriesReadCount + (readingCounted ? 1 : 0))
@@ -149,6 +210,8 @@ export default function ChapterEnd({
             </Group>
           </div>
         )}
+
+        <ChapterEndNotes chapterId={manifest.chapterId} onOpenNotes={onOpenNotes} />
       </div>
     </div>
   )

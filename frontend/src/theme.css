@@ -11288,3 +11288,211 @@ tr:hover .mono-value-copy {
   font-size: var(--type-micro);
   color: var(--ink-4);
 }
+
+/* --- Chapter notes -------------------------------------------------------- */
+/* Page markers live on the thumbnails and the slider, never on the page art itself. */
+.reader-strip-item[data-noted='true']::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 1;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.6);
+}
+.reader-slider .mantine-Slider-mark {
+  width: 5px;
+  height: 5px;
+  margin-top: -9px;
+  border: 0;
+  background: var(--brand);
+}
+
+.notes-drawer {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.notes-drawer .mantine-Drawer-header {
+  flex: 0 0 auto;
+}
+.notes-drawer-title {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notes-drawer-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+}
+.notes-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  padding: 0 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  outline: none;
+}
+.notes-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.notes-empty {
+  padding-block: 12px;
+}
+.notes-compose {
+  flex: 0 0 auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.note-thread {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+.note-thread[data-highlight] {
+  border-color: var(--brand);
+}
+.note-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.note-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-inline-start: 6px;
+  padding-inline-start: 12px;
+  border-inline-start: 2px solid var(--border);
+}
+.note-author {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.note-page-chip {
+  cursor: pointer;
+}
+.note-actions {
+  margin-inline-start: -6px;
+}
+.note-body {
+  font-size: var(--type-body);
+  line-height: 1.45;
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.note-body a {
+  color: var(--brand-fg);
+  text-decoration: underline;
+}
+.note-spoiler {
+  border-radius: var(--radius-2xs);
+}
+.note-spoiler:not([data-revealed]) {
+  cursor: pointer;
+  background: var(--surface-hover);
+}
+.note-spoiler:not([data-revealed]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+.note-spoiler-content {
+  filter: blur(5px);
+  user-select: none;
+  pointer-events: none;
+}
+.note-fold {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--type-meta);
+  text-align: start;
+  cursor: pointer;
+}
+.note-fold-action {
+  flex: none;
+  color: var(--brand-fg);
+}
+.chapter-notes-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--type-micro);
+  font-variant-numeric: tabular-nums;
+}
+.reader-end-notes {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.reader-end-note-item {
+  display: grid;
+  gap: 2px;
+  max-width: 52ch;
+  color: rgba(255, 255, 255, 0.82);
+}
+.reader-end-note-head {
+  font-size: var(--type-micro);
+  color: rgba(255, 255, 255, 0.5);
+}
+.reader-end-note-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+.reader-end-notes .note-body {
+  color: inherit;
+}
+.reader-end-notes .note-body a {
+  color: #fff;
+}
+.reader-end-notes .note-spoiler:not([data-revealed]) {
+  background: rgba(255, 255, 255, 0.14);
+}
+.chapter-notes-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+.chapter-notes-button:hover {
+  background: var(--surface-hover);
+}
+.chapter-notes-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+.chapter-notes-count[data-kind='mine'] {
+  color: var(--brand-fg);
+}
+.chapter-notes-count[data-kind='shared'] {
+  color: var(--info);
+}

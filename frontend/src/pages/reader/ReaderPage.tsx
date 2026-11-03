@@ -1,7 +1,7 @@
 import { Button, Center, Group, Stack, Text, VisuallyHidden } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { IconCloudOff } from '@tabler/icons-react'
 import { api, ApiError, isOfflineUnavailable } from '../../api/client'
 import { Trans } from '@lingui/react/macro'
@@ -15,6 +15,8 @@ import {
   useToggleBookmark,
   type ReaderManifest,
 } from '../../api/reader'
+import NotesPanel from '../../components/notes/NotesPanel'
+import { usePhoneSheet } from '../../components/notes/phone'
 import ChapterBanner from './ChapterBanner'
 import ChapterEnd from './ChapterEnd'
 import ShortcutSheet from './ShortcutSheet'
@@ -22,6 +24,7 @@ import ContinuousView from './ContinuousView'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
 import ReaderToolbar from './ReaderToolbar'
+import { OVERLAY_Z } from './overlay'
 import { probeWebtoon } from './pageShape'
 import { toneFilter, useReaderPrefs, type ReaderPrefs } from './prefs'
 import { usePageUrls, usePreload, useWarmChapter } from './usePageUrls'
@@ -138,6 +141,12 @@ export default function ReaderPage() {
   // the completion back out of a write that has not gone out yet.
   const [finishedFor, setFinishedFor] = useState<number | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [notesOpen, setNotesOpen] = useState(false)
+  // The thread an inbox link points at, tied to its chapter so paging on cannot carry it along.
+  const [notesThread, setNotesThread] = useState<{ chapterId: number; rootId: number } | null>(null)
+  const phoneSheet = usePhoneSheet()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const notesParam = searchParams.get('notes')
 
   const pageCount = manifest?.pageCount ?? 0
   const urls = usePageUrls(chapterId, pageCount, manifest?.pageVersion)
@@ -250,7 +259,8 @@ export default function ReaderPage() {
   )
   // Lives here rather than inside the progress hook so a chapter change can hand its banked
   // seconds to the same flush that writes the position out.
-  const clock = useReadingClock(tracking)
+  // On a phone the notes sheet covers the page, so nothing is being read while it is up.
+  const clock = useReadingClock(tracking, notesOpen && phoneSheet)
   const { settle: settleProgress } = useReaderProgress(
     manifest?.chapterId,
     manifest?.seriesId,
@@ -321,6 +331,40 @@ export default function ReaderPage() {
     if (changingChapterRef.current) lastTransitionRef.current = Date.now()
     changingChapterRef.current = false
   }, [manifest, isFetching, isError, resumedFor, queued, seekToPage])
+
+  // An inbox link names a thread. It is read once and then dropped from the address, or paging to
+  // the next chapter (this component stays mounted) would open the panel again.
+  useEffect(() => {
+    if (notesParam === null) return
+    const rootId = Number(notesParam)
+    if (Number.isInteger(rootId) && rootId > 0) {
+      setNotesThread({ chapterId, rootId })
+      setNotesOpen(true)
+    }
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        next.delete('notes')
+        return next
+      },
+      { replace: true },
+    )
+  }, [notesParam, chapterId, setSearchParams])
+
+  // Captured so it runs before the reader's own Escape, which leaves for the series page.
+  useEffect(() => {
+    if (!notesOpen) return
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      setNotesOpen(false)
+      setNotesThread(null)
+    }
+    window.addEventListener('keydown', onEscape, true)
+    return () => window.removeEventListener('keydown', onEscape, true)
+  }, [notesOpen])
+
+  const notedPageSet = useMemo(() => new Set(manifest?.notedPages ?? []), [manifest?.notedPages])
 
   // Own the viewport: no page scrolling behind the reader, and always-dark chrome.
   useEffect(() => {
@@ -500,6 +544,8 @@ export default function ReaderPage() {
     if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
     const target = event.target as HTMLElement | null
     if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+    // Keys inside the notes panel belong to the panel, not to the page behind it.
+    if (target?.closest('.notes-drawer')) return
     // Space on a control reached by keyboard presses that control, it does not turn the page.
     if (
       event.key === ' ' &&
@@ -772,6 +818,12 @@ export default function ReaderPage() {
         bookmarked={bookmarked}
         bookmarkDisabled={bookmarkOffline}
         onToggleBookmark={() => toggleBookmark.mutate(page)}
+        noteCount={manifest.noteCount ?? 0}
+        notesOpen={notesOpen}
+        onToggleNotes={() => {
+          setNotesThread(null)
+          setNotesOpen((open) => !open)
+        }}
         stripOpen={stripOpen}
         onToggleStrip={() => setStripOpen((open) => !open)}
         visible={chrome}
@@ -787,6 +839,7 @@ export default function ReaderPage() {
           rtl={prefs.direction === 'rtl'}
           onNext={() => void goToChapter(manifest.nextChapterId, true)}
           onStay={() => setAtEnd(false)}
+          onOpenNotes={() => setNotesOpen(true)}
         />
       ) : (
         <div
@@ -855,6 +908,7 @@ export default function ReaderPage() {
             urls={thumbs}
             page={page}
             bookmarks={bookmarkedPages}
+            notedPages={notedPageSet}
             onSelect={seekToPage}
             rtl={prefs.direction === 'rtl'}
           />
@@ -875,6 +929,29 @@ export default function ReaderPage() {
       {shortcutsOpen && (
         <ShortcutSheet rtl={prefs.direction === 'rtl'} onClose={() => setShortcutsOpen(false)} />
       )}
+
+      <NotesPanel
+        key={manifest.chapterId}
+        opened={notesOpen}
+        onClose={() => {
+          setNotesOpen(false)
+          setNotesThread(null)
+        }}
+        chapterId={manifest.chapterId}
+        seriesId={manifest.seriesId}
+        chapterLabel={manifest.label}
+        inReader
+        page={atEnd ? null : page}
+        pinPage={atEnd ? null : page}
+        pageCount={manifest.pageCount}
+        initialThreadId={notesThread?.chapterId === manifest.chapterId ? notesThread.rootId : null}
+        onGoToPage={(target) => {
+          setAtEnd(false)
+          seekToPage(target)
+          if (phoneSheet) setNotesOpen(false)
+        }}
+        zIndex={OVERLAY_Z}
+      />
 
       {prefs.showPageNumber && !chrome && !atEnd && (
         <div className="reader-page-badge">

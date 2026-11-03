@@ -859,6 +859,10 @@ msgstr "{count, plural, one {Bildirimler, # okunmamış} other {Bildirimler, # o
 msgid "{count, plural, one {Saving # chapter for offline} other {Saving # chapters for offline}}"
 msgstr "{count, plural, one {# bölüm çevrimdışı için kaydediliyor} other {# bölüm çevrimdışı için kaydediliyor}}"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{count, plural, one {See all # note} other {See all # notes}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
@@ -1828,6 +1832,10 @@ msgstr "{totalCount} öğeden {selectedCount} tanesi seçildi"
 msgid "{selectedCount} selected"
 msgstr "{selectedCount} seçildi"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{selectedNoteCount, plural, one {# note on the selected chapters will be deleted.} other {# notes on the selected chapters will be deleted.}}"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{seriesAdded, plural, one {series added} other {series added}}"
@@ -2335,6 +2343,10 @@ msgstr "{weekday} {hourLabel}: {minutes} dk"
 #, fuzzy
 msgid "{weight} total"
 msgstr "toplam {weight}"
+
+#: src/components/notes/NoteThread.tsx
+msgid "{who}, {when}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -2897,6 +2909,10 @@ msgstr "Ekle"
 msgid "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
 msgstr "Bunları ayırt etmek için Ayarlar'daki bölüm biçimine {chapterLanguageToken} ekleyin."
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Add a note"
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
@@ -2933,6 +2949,10 @@ msgstr "Bağlantı ekle"
 #, fuzzy
 msgid "Add folder"
 msgstr "Klasör ekle"
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Add note"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -3432,6 +3452,10 @@ msgstr "İzlediğiniz animeler"
 #, fuzzy
 msgid "Announced by the source"
 msgstr "Kaynak tarafından duyuruldu"
+
+#: src/components/notes/useAuthorLabel.ts
+msgid "Another reader"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4206,6 +4230,8 @@ msgstr "Kaydedilmiş bilgilerle oturum açılamıyor."
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/notes/NoteComposer.tsx
+#: src/components/notes/NoteThread.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/QueueActions.tsx
 #: src/components/QueuePause.tsx
@@ -5608,6 +5634,10 @@ msgstr "Kavita kitaplıkları yüklenemedi: {kavitaLibrariesErrorMessage}"
 msgid "Could not load library stats"
 msgstr "Kitaplık istatistikleri yüklenemedi"
 
+#: src/components/notes/NotesPanel.tsx
+msgid "Could not load the notes."
+msgstr ""
+
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Could not load this chapter."
@@ -6123,6 +6153,7 @@ msgstr "Varsayılan kaynak sıralaması güncellendi"
 msgid "Defining"
 msgstr "Belirleyici"
 
+#: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/rails/DeleteRailDialog.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -6266,6 +6297,10 @@ msgstr "Bunları sil, {emptiedSize} alan aç"
 msgid "Delete this file permanently?"
 msgstr "Bu dosya kalıcı olarak silinsin mi?"
 
+#: src/components/notes/NoteThread.tsx
+msgid "Delete this note?"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Delete this request?"
@@ -6291,6 +6326,10 @@ msgstr "Silindi"
 #, fuzzy
 msgid "Deleted \"{name}\""
 msgstr "\"{name}\" silindi"
+
+#: src/components/notes/useAuthorLabel.ts
+msgid "Deleted account"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -6849,6 +6888,7 @@ msgstr "Kitaplığın kendisi tarafından kazanılır, bu yüzden bu kurulumdaki
 msgid "Ecchi"
 msgstr "Ecchi"
 
+#: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
 #: src/components/settings/UsersSection.tsx
@@ -6914,6 +6954,10 @@ msgstr "İsteği düzenle"
 #, fuzzy
 msgid "Edit request for {title}"
 msgstr "{title} için isteği düzenle"
+
+#: src/components/notes/NoteThread.tsx
+msgid "edited"
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -7214,6 +7258,10 @@ msgstr "herkes"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Everyone has read this chapter, so read file cleanup deletes the file around {dueOn}. It gets no upgrades until then."
+msgstr ""
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Everyone who can see this series"
 msgstr ""
 
 #: src/components/TagBrowserModal.tsx
@@ -8157,15 +8205,24 @@ msgstr "Serinize bir kalite profili verin; Maki ona uymayan dosyaları değişti
 msgid "Go to library"
 msgstr "Kitaplığa git"
 
+#: src/components/notes/NoteThread.tsx
 #: src/pages/reader/PageStrip.tsx
 #, fuzzy
 msgid "Go to page {pageNumber}"
 msgstr "Sayfa {pageNumber}'e git"
 
 #: src/pages/reader/PageStrip.tsx
+msgid "Go to page {pageNumber} (bookmarked, has notes)"
+msgstr ""
+
+#: src/pages/reader/PageStrip.tsx
 #, fuzzy
 msgid "Go to page {pageNumber} (bookmarked)"
 msgstr "Sayfa {pageNumber}'e git (yer imli)"
+
+#: src/pages/reader/PageStrip.tsx
+msgid "Go to page {pageNumber} (has notes)"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -10874,11 +10931,13 @@ msgstr "Taşı"
 msgid "Move {label}"
 msgstr "{label} öğesini taşı"
 
+#: src/components/PriorityList.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Move {label} down"
 msgstr "{label} etiketini aşağı taşı"
 
+#: src/components/PriorityList.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Move {label} up"
@@ -11585,6 +11644,14 @@ msgstr "Meta veri eşleşmesi bulunamadı."
 msgid "No more chapters"
 msgstr "Başka bölüm yok"
 
+#: src/components/notes/NotesPanel.tsx
+msgid "No notes on this chapter yet."
+msgstr ""
+
+#: src/components/notes/NotesPanel.tsx
+msgid "No notes on this page."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "No notification connections yet."
@@ -12156,6 +12223,32 @@ msgstr "Henüz senkronize edilmedi"
 #, fuzzy
 msgid "Note (optional)"
 msgstr "Not (isteğe bağlı)"
+
+#: src/components/notes/NoteThread.tsx
+msgid "Note deleted"
+msgstr ""
+
+#: src/api/inbox.ts
+#: src/pages/reader/ChapterEnd.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Notes"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Notes ({noteCount})"
+msgstr ""
+
+#: src/components/notes/NotesPanel.tsx
+msgid "Notes need a connection"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Notes on {chapterLbl}: {mine} yours, {shared} shared"
+msgstr ""
+
+#: src/components/notes/NotesPanel.tsx
+msgid "Notes, {chapterLabel}"
+msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -12801,6 +12894,10 @@ msgstr "Yalnızca ana konuysa"
 msgid "Only while you're partway through the series and haven't marked it finished."
 msgstr "Yalnızca seriyi yarıda bıraktığınız ve bitmiş olarak işaretlemediğiniz sürece."
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Only you"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Only you can see this."
@@ -12998,6 +13095,14 @@ msgstr "Sizin için diğer seçimler"
 msgid "Other sessions signed out"
 msgstr "Diğer oturumlar kapatıldı"
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Others will see you as \"Another reader\" until an admin gives your account a display name."
+msgstr ""
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Others will see your login name, {loginName}."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Overrides the default channel of the webhook."
@@ -13033,6 +13138,10 @@ msgstr "Sayfa"
 #, fuzzy
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "Sayfa {pageIndex}/{pageCount}"
+
+#: src/components/notes/NoteThread.tsx
+msgid "Page {pageNumber}"
+msgstr ""
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
@@ -13389,6 +13498,10 @@ msgstr "Tüm kitaplığınıza göre öneri sisteminden seçilenler."
 msgid "Pin one to a series from its Quality profile menu."
 msgstr ""
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Pin to page {pageNumber}"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Plain title search. Matches from just two characters."
@@ -13584,6 +13697,11 @@ msgstr "Öncelik"
 #, fuzzy
 msgid "Priority for {sourceName}"
 msgstr "{sourceName} için öncelik"
+
+#: src/components/notes/NoteComposer.tsx
+#: src/components/notes/NoteThread.tsx
+msgid "Private"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14152,6 +14270,10 @@ msgstr "Sizin gibi okuyucular bunu da önerdi"
 #, fuzzy
 msgid "Readers who finished {finished} also finished this"
 msgstr "{finished} serisini bitirenler bunu da bitirdi"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Readers without a display name appear under their login name on shared notes, the leaderboard and edit history, instead of \"Another reader\". Anyone who can sign in then sees every username."
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
@@ -14812,6 +14934,10 @@ msgstr "Kaldırıldı"
 msgid "Removed {seriesTitle}. It comes back when you read it again."
 msgstr "{seriesTitle} kaldırıldı. Yeniden okuduğunuzda tekrar görünür."
 
+#: src/components/notes/NoteThread.tsx
+msgid "Removed by an admin"
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Removed chapter"
@@ -14953,6 +15079,15 @@ msgstr "Değiştirme"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Replaces downloaded files with better releases for each series' quality profile."
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Replies to your notes"
+msgstr ""
+
+#: src/components/notes/NoteComposer.tsx
+#: src/components/notes/NoteThread.tsx
+msgid "Reply"
 msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
@@ -15593,6 +15728,7 @@ msgid "Samples a few pages from every linked source."
 msgstr ""
 
 #: src/components/DiscoverPresets.tsx
+#: src/components/notes/NoteThread.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -16693,6 +16829,11 @@ msgstr "Okunan bölümlerin payı eksi kitaplıktaki payı. Sağa kayması, sahi
 msgid "Share of the series you've read."
 msgstr "Okuduğunuz serilerin payı."
 
+#: src/components/notes/NoteComposer.tsx
+#: src/components/notes/NoteThread.tsx
+msgid "Shared"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Shares a file with another chapter"
@@ -16745,6 +16886,11 @@ msgstr "Daha az göster"
 #, fuzzy
 msgid "Show less"
 msgstr "Daha az göster"
+
+#: src/components/settings/UsersSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Show login names to everyone"
+msgstr ""
 
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
@@ -16802,6 +16948,10 @@ msgstr "Kaynak metnini göster"
 #, fuzzy
 msgid "Show the Home page"
 msgstr "Ana Sayfa'yı göster"
+
+#: src/components/notes/NotesPanel.tsx
+msgid "Show the whole chapter"
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -17131,6 +17281,10 @@ msgstr "Bazı kaynaklarda arama yapılamadı"
 msgid "Somebody filed a request"
 msgstr "Biri istek gönderdi"
 
+#: src/api/inbox.ts
+msgid "Someone replied in a thread you wrote or joined."
+msgstr ""
+
 #: src/components/RouteErrorBoundary.tsx
 #, fuzzy
 msgid "Something went wrong while drawing it. Reloading usually clears it; if it keeps happening, the log has the details."
@@ -17304,6 +17458,10 @@ msgstr "Spoiler - göstermek için üzerine gelin"
 #, fuzzy
 msgid "Spoiler · {description}"
 msgstr "Spoiler · {description}"
+
+#: src/components/notes/NoteBody.tsx
+msgid "Spoiler, press to reveal"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -17734,6 +17892,10 @@ msgstr "Hariç tutulacak etiketler"
 #, fuzzy
 msgid "Tags to include"
 msgstr "Eklenecek etiketler"
+
+#: src/components/notes/NoteThread.tsx
+msgid "Tap to show"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -18492,6 +18654,10 @@ msgstr "bu ay"
 msgid "This month"
 msgstr "Bu ay"
 
+#: src/components/notes/NotesPanel.tsx
+msgid "This page"
+msgstr ""
+
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -18567,6 +18733,10 @@ msgstr "Bu serinin kalite profili yok"
 #, fuzzy
 msgid "This series is already in the library, but you can't see it, so it can't be changed here."
 msgstr "Bu seri zaten kitaplıkta, ama onu göremiyorsunuz; bu yüzden burada değiştirilemez."
+
+#: src/components/notes/NoteComposer.tsx
+msgid "This series is incognito. A shared note tells everyone you read this chapter."
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -19017,6 +19187,7 @@ msgstr "Daha kısa veya alternatif bir sorgu deneyin."
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
 #: src/components/MetadataDumpProgress.tsx
+#: src/components/notes/NotesPanel.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
@@ -19723,6 +19894,11 @@ msgstr "Kullanıcı adı"
 msgid "Username claim"
 msgstr "Kullanıcı adı hak talebi"
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "username, login name, display name, another reader, privacy, names"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -20253,6 +20429,10 @@ msgstr "Maki'nin hangi dilleri arayacağını ve hangi bölümleri olduğu gibi 
 msgid "Which new chapters get fetched as they land"
 msgstr "Yayınlandıkça hangi yeni bölümler alınır"
 
+#: src/components/notes/NotesPanel.tsx
+msgid "Which notes to show"
+msgstr ""
+
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
 msgid "Which series notify me"
@@ -20272,10 +20452,18 @@ msgstr "Okurken"
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "Okurken yalnızca, seriyi yarıda bıraktığınız sürece yeni bölümler hakkında bilgi verir."
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Who can see this note"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Whole"
 msgstr "Tamamı"
+
+#: src/components/notes/NotesPanel.tsx
+msgid "Whole chapter"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -20347,6 +20535,18 @@ msgstr "bir daha önerilmeyecek"
 msgid "Won't suggest resuming from this anime again."
 msgstr "Bu animeden devam etmeni bir daha önermeyecek."
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Write a note"
+msgstr ""
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Write a note. Wrap spoilers in ||double bars||."
+msgstr ""
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Write a reply"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -20392,6 +20592,7 @@ msgstr "Dün"
 msgid "you"
 msgstr "siz"
 
+#: src/components/notes/useAuthorLabel.ts
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "You"

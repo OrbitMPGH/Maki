@@ -42,6 +42,10 @@ export interface ReaderManifest {
   autoProfileId: number | null
   /** Identifies the file behind the pages; page URLs carry it so they can be cached until a re-download. */
   pageVersion: string
+  /** Visible notes on the chapter, tombstones left out. */
+  noteCount: number
+  /** Zero based pages with at least one visible note, sorted. */
+  notedPages: number[]
 }
 
 /** Which layer answered "what does this series look like". Mirrors `ReaderPrefsSource`. */

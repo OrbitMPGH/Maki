@@ -25,6 +25,7 @@ const actions: ChapterRowActions = {
   deleteFile: fn(),
   saveOffline: fn(),
   removeOffline: fn(),
+  openNotes: fn(),
   toggleSpanFold: fn(),
   setMarkerRef: fn(),
 }
@@ -110,6 +111,17 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+export const WithNotes: Story = {
+  args: { noteCounts: { chapterId: byNumber(5).id, mine: 2, shared: 3, total: 4 } },
+  play: async ({ args, canvas, userEvent }) => {
+    const name = /^Notes on .*Ch\.5: 2 yours, 3 shared$/
+    // Hovering mounts the tooltip, which replaces the button; click the one that stays.
+    await userEvent.hover(await canvas.findByRole('button', { name }))
+    await userEvent.click(await canvas.findByRole('button', { name }))
+    await waitFor(() => expect(args.actions.openNotes).toHaveBeenCalledWith(byNumber(5).id))
+  },
+}
 
 export const Downloaded: Story = {
   play: async ({ canvas }) => {
