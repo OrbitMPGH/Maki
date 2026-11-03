@@ -28,6 +28,7 @@ User-facing summary in `docs/features.md`. Two tiers share one reader setting: `
 - WebP cannot exceed 16383 px per side, and tall 2x webtoon slices do. `ImageCodec.EncodeUpscaled` switches to JPEG q90 past that. Below it: WebP q85, effort 4 for colour and 2 for grey, sharp YUV off (it doubled colour encode time and native peak for no smaller file). WebP also has no greyscale mode: a grey page is encoded from one band but decodes as three equal bands. JPEG writes a true one-band file.
 - The server tier takes sources up to `ImageCodec.MaxUpscalePixels` (16 MP), checked in `DecodeForUpscale` from the header. Bigger pages are `Skipped`/`tooLarge` and the browser fallback covers them. Peak memory scales with source pixels, so this, not `ArchiveHealthAnalyzer.MaxPixels` (40 MP), bounds the worker and `POST upscaling/benchmark` alike.
 - The cache root `cache/upscale/` is separate from `cache/reader/`. `HousekeepingJob.PruneReaderCacheDir` deletes names it does not recognise, so never put upscale files in the reader cache and never change that method.
+- `GET .../page/{n}/enhanced` calls `PageCache.DropAfterScan` on the served file in `Response.OnCompleted`: the browser keeps it as immutable, so its pages would only sit in the container's page cache. Never drop on write, the warm fetch comes seconds later.
 - `UpscaleCache` keeps its own access-time index. Filesystem atime is useless (NTFS, `relatime`). A delete can fail on Windows while a file streams; the entry is kept and retried on the next write.
 
 ## Models and tiling
