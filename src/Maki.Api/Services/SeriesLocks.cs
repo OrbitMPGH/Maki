@@ -29,6 +29,9 @@ public static class SeriesLocks
     public static Task<IDisposable> ProviderIdAsync(int mangaBakaId, CancellationToken ct) =>
         ProviderIds.AcquireAsync(mangaBakaId, ct);
 
+    /// <summary>The holder of a provider-id lock plus everyone waiting for it, for tests.</summary>
+    internal static int ProviderIdUsers(int mangaBakaId) => ProviderIds.Users(mangaBakaId);
+
     /// <summary>
     /// Process-wide, held from reading which folder names are taken through saving the series that
     /// claims one. Two different works can standardize to the same name, and the provider-id lock

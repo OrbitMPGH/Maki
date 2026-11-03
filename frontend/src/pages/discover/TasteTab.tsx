@@ -25,9 +25,9 @@ import {
   IconLock,
   IconPencil,
   IconRoute,
-  IconSparkles,
+  IconLightning,
   IconTags,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -49,7 +49,8 @@ import {
   useTasteProfile,
 } from '../../api/hooks'
 import { DiscoverDetailModal } from '../../components/discover/DiscoverDetailModal'
-import { DiscoverRailRow } from '../../components/ui/DiscoverRail'
+import { DiscoverRailRow, type OpenItem } from '../../components/ui/DiscoverRail'
+import { sectionSource } from '../../api/shortlist'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesLink, SeriesThumb } from '../stats/SeriesLink'
@@ -118,7 +119,7 @@ function TasteSkeleton() {
           <div className="discover-rail">
             {Array.from({ length: 8 }, (_, j) => (
               <div key={j} className="discover-rail-item">
-                <Skeleton radius="lg" style={{ aspectRatio: '2 / 3' }} />
+                <Skeleton radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
               </div>
             ))}
           </div>
@@ -134,7 +135,7 @@ function GroupCard({
   seriesIdFor,
 }: {
   group: TasteGroup
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
   seriesIdFor: (item: RecommendationItem) => number | null
 }) {
   const { t } = useLingui()
@@ -179,7 +180,7 @@ function GroupCard({
           <Text size="xs" fw={600} mb={4}>
             <Trans>More of this</Trans>
           </Text>
-          <DiscoverRailRow items={group.picks} seriesIdFor={seriesIdFor} onOpen={onOpen} />
+          <DiscoverRailRow items={group.picks} seriesIdFor={seriesIdFor} onOpen={onOpen} savedFrom={sectionSource('taste')} />
         </>
       )}
     </Panel>
@@ -292,7 +293,7 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
           format={(item) => formatReadingTime(item.measure)}
         />
         <BehaviourList
-          icon={IconSparkles}
+          icon={IconLightning}
           title={t`You tear through`}
           items={behaviour.devoured}
           emptyText={t`Not enough timed chapters yet.`}
@@ -318,7 +319,7 @@ function DriftSection({ insights }: { insights: TasteInsights }) {
     <Card padding="md" radius="lg" withBorder>
       <Text c="var(--ink-3)" size="xs" mb="md">
         <Trans>How close each quarter sat to where you started.</Trans>{' '}
-        <Trans>Falling means you moved.</Trans>
+        <Trans>Lower bars mean your taste moved.</Trans>
       </Text>
       <BarChart
         h={180}
@@ -742,7 +743,7 @@ export function TasteTab() {
       )}
 
       <Group gap="xs" mt="xs">
-        <IconLock size={14} style={{ color: 'var(--ink-3)' }} />
+        <IconLock size={16} style={{ color: 'var(--ink-3)' }} />
         <Text c="var(--ink-3)" size="xs">
           <Trans>Only you can see this.</Trans>{' '}
           <Trans>Reading history stays visible when a source is excluded from recommendations.</Trans>
@@ -755,6 +756,7 @@ export function TasteTab() {
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
+        savedFrom={sectionSource('taste')}
       />
     </Stack>
   )

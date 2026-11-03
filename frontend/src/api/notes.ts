@@ -62,7 +62,7 @@ function syncManifest(queryClient: QueryClient, chapterId: number, notes: NoteDt
     if (!old) return old
     const same =
       old.noteCount === noteCount &&
-      old.notedPages.length === notedPages.length &&
+      old.notedPages?.length === notedPages.length &&
       old.notedPages.every((p, i) => p === notedPages[i])
     return same ? old : { ...old, noteCount, notedPages }
   })

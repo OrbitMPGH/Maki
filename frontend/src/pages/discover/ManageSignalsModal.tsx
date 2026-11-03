@@ -1,12 +1,13 @@
 import { errorText } from '../../api/errorText'
 import { useEffect, useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
+import { fuzzyFilter, titleIndex } from '../../lib/fuzzySearch'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon, Alert, Badge, Button, Chip, Group, Modal, Select, Stack, Tabs, Text,
   TextInput,
 } from '@mantine/core'
-import { IconSearch, IconX } from '@tabler/icons-react'
+import { IconSearch, IconX } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -141,10 +142,9 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
     added: rows.filter((row) => row.addedByYou).length,
   }), [rows])
 
+  const rowTitles = useMemo(() => titleIndex(rows, (row) => [row.title]), [rows])
   const visible = useMemo(() => {
-    const needle = search.trim().toLowerCase()
-    return rows.filter((row) => {
-      if (needle && !row.title.toLowerCase().includes(needle)) return false
+    const filtered = rows.filter((row) => {
       switch (filter) {
         case 'rated': return row.rating !== null
         case 'thumbs': return !!row.state && row.state.sentiment !== 'none'
@@ -155,7 +155,8 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
         default: return true
       }
     })
-  }, [rows, search, filter])
+    return fuzzyFilter(filtered, search, rowTitles)
+  }, [rows, rowTitles, search, filter])
 
   async function run(id: number, work: () => Promise<unknown>) {
     setActionError('')
@@ -245,7 +246,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
               <Group gap={6} wrap="wrap">
                 {filters.map((item) => (
                   <Chip key={item.value} value={item.value} size="xs" variant="outline">
-                    {item.label} · {item.count}
+                    {item.label} ({item.count})
                   </Chip>
                 ))}
               </Group>
@@ -318,15 +319,14 @@ function AnimeSignalsPanel() {
     setWasSyncing(data.syncing)
   }, [data, wasSyncing, queryClient])
 
+  const entryTitles = useMemo(
+    () => titleIndex(data?.entries ?? [], (entry) => [entry.title, entry.mangaTitle]),
+    [data?.entries],
+  )
   const filtered = useMemo(() => {
-    const needle = search.trim().toLowerCase()
-    return (data?.entries ?? []).filter((entry) => {
-      if (roleFilter !== 'all' && entry.role !== roleFilter) return false
-      if (!needle) return true
-      return entry.title.toLowerCase().includes(needle) ||
-        (entry.mangaTitle?.toLowerCase().includes(needle) ?? false)
-    })
-  }, [data?.entries, search, roleFilter])
+    const inRole = (data?.entries ?? []).filter((entry) => roleFilter === 'all' || entry.role === roleFilter)
+    return fuzzyFilter(inRole, search, entryTitles)
+  }, [data?.entries, entryTitles, search, roleFilter])
   const shown = filtered.length
   const total = data?.entries.length ?? 0
 
@@ -383,7 +383,7 @@ function AnimeSignalsPanel() {
         <Group gap={6} wrap="wrap">
           {roles.map((role) => (
             <Chip key={role.value} value={role.value} size="xs" variant="outline">
-              {role.label} · {role.count}
+              {role.label} ({role.count})
             </Chip>
           ))}
         </Group>

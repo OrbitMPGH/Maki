@@ -115,7 +115,7 @@ public class LibraryImportUndoTests : IDisposable
         new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()),
         _settings, new NamingService(_settings), new StatsEventService(db),
         new SeriesIdentityService(db, NullLogger<SeriesIdentityService>.Instance), new TestLocalizer(),
-        new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
+        new TestCurrentUser(1), null!, NullLogger<LibraryImportService>.Instance);
 
     private LibraryImportUndoService UndoService(MakiDbContext db, ICurrentUser? user = null) => new(
         db, _queue, new CoverService(null!, new AppPaths(_configDir), _settings, NullLogger<CoverService>.Instance),

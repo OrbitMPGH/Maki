@@ -106,6 +106,7 @@ public class InboxRetentionTests : IDisposable
         using var db = _db.NewContext();
         var job = new HousekeepingJob(db, _paths,
             new Maki.Api.Services.UpgradeTrashService(db, new FakeAppSettings(), NullLogger<Maki.Api.Services.UpgradeTrashService>.Instance),
+            new Maki.Api.Services.Upscaling.UpscaleCache(_paths, new FakeAppSettings(), NullLogger<Maki.Api.Services.Upscaling.UpscaleCache>.Instance),
             NullLogger<HousekeepingJob>.Instance);
         await job.Execute(new NoopJobContext());
     }

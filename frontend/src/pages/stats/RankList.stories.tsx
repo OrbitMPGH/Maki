@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect } from 'storybook/test'
-import { IconBook2, IconClock, IconHourglassLow } from '@tabler/icons-react'
+import { IconBook2, IconClock, IconHourglassLow } from '../../lib/icons'
 import { cover } from '../../../.storybook/mocks/api'
 import { seriesById } from '../../../.storybook/mocks/shared'
 import { RankList } from './RankList'

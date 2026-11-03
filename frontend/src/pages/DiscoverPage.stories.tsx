@@ -12,6 +12,7 @@ import {
   tasteProfileEmpty,
   readingBehaviourEmpty,
 } from '../../.storybook/mocks/discover'
+import { shortlistEntries, shortlistMock } from '../../.storybook/mocks/shortlist'
 import DiscoverPage from './DiscoverPage'
 
 const route = (initial: string) => ({ path: '/discover/:tab?', initialEntries: [initial] })
@@ -203,6 +204,17 @@ export const YourTaste: Story = {
   parameters: { router: route('/discover/taste') },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('How you read', {}, { timeout: 8000 })).toBeVisible()
+  },
+}
+
+const shortlistTab = shortlistMock(shortlistEntries)
+
+export const Shortlist: Story = {
+  beforeEach: () => shortlistTab.reset(),
+  parameters: { router: route('/discover/shortlist'), msw: discoverPage(...shortlistTab.handlers) },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('heading', { name: 'Changed since you saved them' })).toBeVisible()
+    await expect(await canvas.findByRole('tab', { name: /^Shortlist/ })).toHaveAttribute('aria-selected', 'true')
   },
 }
 

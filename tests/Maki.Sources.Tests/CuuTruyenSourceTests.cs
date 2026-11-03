@@ -157,11 +157,11 @@ public class CuuTruyenSourceTests
 
         Assert.NotEmpty(pages.Pages);
         var first = pages.Pages[0];
-        Assert.NotNull(first.Data);
+        Assert.NotNull(first.Fetch);
         Assert.Equal("Referer", first.Headers!.Keys.Single());
 
         var source = Raster.Decode(FakeHttpClientFactory.BinaryFixture("cuutruyen-page.bin"));
-        var result = Raster.Decode(first.Data!);
+        var result = Raster.Decode(await first.Fetch!(CancellationToken.None));
         Assert.Equal(2048, result.Width);
         Assert.Equal(1152, result.Height);
         AssertStripMoved(source, result, sourceY: 0, destinationY: 300, height: 150);
@@ -186,6 +186,7 @@ public class CuuTruyenSourceTests
 
         var only = Assert.Single(pages.Pages);
         Assert.Null(only.Data);
+        Assert.Null(only.Fetch);
         Assert.Equal("https://storage-bravo.cuutruyen.net/file/x.jpg", only.Url);
     }
 

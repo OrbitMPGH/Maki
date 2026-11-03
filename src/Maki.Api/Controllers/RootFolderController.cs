@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Localization;
+using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Core.Storage;
@@ -54,6 +55,69 @@ public class RootFolderController(
         return Ok(ToDto(folder));
     }
 
+    /// <summary>
+    /// The subfolders of <paramref name="path"/>, for the folder picker. No path lists the drives on
+    /// Windows and <c>/</c> elsewhere. A parent of <c>""</c> means "back to the drive list".
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("browse")]
+    public IActionResult Browse([FromQuery] string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                var drives = DriveInfo.GetDrives()
+                    .Where(d => d.IsReady)
+                    .Select(d => new FolderEntry(d.Name.TrimEnd('\\'), d.RootDirectory.FullName))
+                    .ToList();
+                return Ok(new FolderListing("", null, drives));
+            }
+
+            path = "/";
+        }
+
+        string full;
+        try
+        {
+            full = Path.GetFullPath(path);
+        }
+        catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return this.Fail(localizer, "error.rootFolder.doesNotExist", new { path });
+        }
+
+        if (!Directory.Exists(full))
+        {
+            return this.Fail(localizer, "error.rootFolder.doesNotExist", new { path });
+        }
+
+        List<FolderEntry> entries;
+        try
+        {
+            entries = new DirectoryInfo(full)
+                .EnumerateDirectories("*", new EnumerationOptions
+                {
+                    IgnoreInaccessible = true,
+                    AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
+                })
+                .Select(d => new FolderEntry(d.Name, d.FullName))
+                .OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return this.Fail(localizer, "error.rootFolder.notReadable", new { path = full });
+        }
+
+        var parent = Directory.GetParent(full)?.FullName ?? (OperatingSystem.IsWindows() ? "" : null);
+        return Ok(new FolderListing(full, parent, entries));
+    }
+
+    public record FolderEntry(string Name, string Path);
+
+    public record FolderListing(string Path, string? Parent, List<FolderEntry> Folders);
+
     [Authorize(Policy = Policies.Admin)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
@@ -66,9 +130,15 @@ public class RootFolderController(
 
         // Past the library scope: an admin granted only some folders must still be refused for one
         // whose series they cannot see, not hit the foreign key.
-        if (await db.Series.IgnoreQueryFilters().AnyAsync(s => s.RootFolderId == id, ct))
+        var users = db.Series.IgnoreQueryFilters().Where(s => s.RootFolderId == id);
+        if (await users.Active().AnyAsync(ct))
         {
             return this.Conflict(localizer, "error.rootFolder.inUse");
+        }
+
+        if (await users.CountAsync(ct) is > 0 and var archived)
+        {
+            return this.Conflict(localizer, "error.rootFolder.inUseArchived", new { count = archived });
         }
 
         // The grants cascade away, but a cached snapshot still lists this id until it is evicted.
@@ -76,8 +146,30 @@ public class RootFolderController(
             .Where(g => g.RootFolderId == id)
             .Select(g => g.UserId)
             .ToListAsync(ct);
-        db.RootFolders.Remove(folder);
-        await db.SaveChangesAsync(ct);
+        // Health rows, operations and scans have no foreign key to this table. An operation mid
+        // apply or delete is left for startup recovery; one waiting on a download never gets it,
+        // since the series and so its queue rows are gone.
+        await HealthOperationService.MutationGate.WaitAsync(ct);
+        try
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            var files = db.HealthFiles.Where(f => f.RootFolderId == id);
+            await db.HealthOperations
+                .Where(o => o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled"
+                    && o.Status != "applying" && o.Status != "deleting" && files.Any(f => f.Id == o.FileId))
+                .ExecuteUpdateAsync(u => u.SetProperty(o => o.Status, "cancelled").SetProperty(o => o.FinishedAt, DateTime.UtcNow), ct);
+            await db.HealthScans.Where(s => s.RootFolderId == id && (s.Status == "pending" || s.Status == "running"))
+                .ExecuteUpdateAsync(u => u.SetProperty(s => s.Status, "cancelled"), ct);
+            await HealthInventory.RetireAsync(db, files, ct);
+            db.RootFolders.Remove(folder);
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }
+        finally
+        {
+            HealthOperationService.MutationGate.Release();
+        }
+
         foreach (var userId in grantees)
         {
             snapshots.Evict(userId);

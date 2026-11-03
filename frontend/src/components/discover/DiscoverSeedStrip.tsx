@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useSeries } from '../../api/hooks'
+import { activeSeries } from '../../lib/series'
 import { formatNumber } from '../../format'
 
 /**
@@ -28,7 +29,7 @@ export function DiscoverSeedStrip({ seedIds, label }: { seedIds: number[]; label
   const seeds = useMemo(() => {
     if (!library) return []
     const byMangaBaka = new Map(
-      library.filter((s) => s.mangaBakaId != null).map((s) => [s.mangaBakaId as number, s]),
+      activeSeries(library).filter((s) => s.mangaBakaId != null).map((s) => [s.mangaBakaId as number, s]),
     )
     return seedIds.map((id) => byMangaBaka.get(id)).filter((s): s is NonNullable<typeof s> => s != null)
   }, [library, seedIds])

@@ -32,7 +32,8 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
 
     public string BaseUrl => BaseUrlConst;
     public SourceCapabilities Capabilities =>
-        SourceCapabilities.NeedsFlareSolverr | SourceCapabilities.SupportsLanguageFilter;
+        SourceCapabilities.NeedsFlareSolverr | SourceCapabilities.SupportsLanguageFilter
+        | SourceCapabilities.NeedsBrowser;
     public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa | SourceContent.Manhua;
     public IReadOnlyList<string> CoverHosts => ["static.mfcdn.nl"];
     // LanguageLabels (MangaFireBrowser) only confirms en/ja/es-la/pt-br in the wild, but the "Lang"

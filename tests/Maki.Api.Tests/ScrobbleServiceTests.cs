@@ -113,6 +113,30 @@ public class ScrobbleServiceTests
     }
 
     [Fact]
+    public async Task NativePassAsync_PushesVolumeProgressForASeriesReadOnlyByVolume()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var series = db.SeedSeries("Volumes only", configure: s => s.MangaBakaId = 300);
+        using (var seed = db.NewContext())
+        {
+            seed.ReadingStates.Add(new ReadingState
+            {
+                UserId = user, SeriesId = series, Title = "Volumes only",
+                MaxChapter = 0, MaxVolume = 3, LastProgressAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+            });
+            seed.SaveChanges();
+        }
+
+        var tracker = new FakeScrobbleTracker();
+
+        await BuildService(db, new FakeUserSettingsStore(db))
+            .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        Assert.Contains(tracker.Pushes, p => p.RemoteId == "300" && p.Volume == 3 && p.Status == ScrobbleStatus.Reading);
+    }
+
+    [Fact]
     public async Task NativePassAsync_PushesToMangaUpdatesFromTheSeriesSlug()
     {
         using var db = new TestDb();
@@ -571,6 +595,83 @@ public class ScrobbleServiceTests
         await poller;
 
         Assert.Empty(pollFailures);
+    }
+
+    private static (ScrobbleService Service, FakeUserSettingsStore Settings, List<string> Writes) MangaBakaHarness(TestDb db)
+    {
+        var writes = new List<string>();
+        var handler = new FakeHttpMessageHandler((request, _) =>
+        {
+            if (request.Method != HttpMethod.Get)
+            {
+                lock (writes)
+                {
+                    writes.Add(request.RequestUri!.AbsolutePath);
+                }
+            }
+
+            return Task.FromResult(JsonResponse("{\"status\":200,\"data\":{}}"));
+        });
+        var settings = new FakeUserSettingsStore(db);
+        var mangaBaka = new MangaBakaTracker(
+            new FakeHttpClientFactory(new HttpClient(handler)), settings, new FakeScrobbleTokenStore(),
+            new ScrobbleTrackerOptions(), NullLogger<MangaBakaTracker>.Instance);
+        return (BuildService(db, settings, mangaBaka), settings, writes);
+    }
+
+    [Fact]
+    public async Task SoFarAsk_names_a_signed_in_rating_tracker_until_it_is_answered()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var (service, settings, _) = MangaBakaHarness(db);
+
+        using (var scoped = db.NewContext(user))
+        {
+            Assert.Empty(await service.SoFarAskAsync(scoped, user));
+        }
+
+        await settings.SetAsync(user, SettingKeys.ScrobbleMangaBakaToken, "test-pat");
+        using (var scoped = db.NewContext(user))
+        {
+            Assert.Equal(["mangabaka"], (await service.SoFarAskAsync(scoped, user)).Select(t => t.Service));
+        }
+
+        await settings.SetAsync(user, SettingKeys.ScrobbleSoFarKey("mangabaka"), "false");
+        using (var scoped = db.NewContext(user))
+        {
+            Assert.Empty(await service.SoFarAskAsync(scoped, user));
+        }
+    }
+
+    [Fact]
+    public async Task SoFarAsk_skips_a_tracker_with_rating_sync_off()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var (service, settings, _) = MangaBakaHarness(db);
+        await settings.SetAsync(user, SettingKeys.ScrobbleMangaBakaToken, "test-pat");
+        await settings.SetAsync(user, SettingKeys.ScrobbleRatingsKey("mangabaka"), "false");
+
+        using var scoped = db.NewContext(user);
+        Assert.Empty(await service.SoFarAskAsync(scoped, user));
+    }
+
+    [Fact]
+    public async Task A_so_far_score_reaches_only_trackers_with_the_switch_on()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var (service, settings, writes) = MangaBakaHarness(db);
+        await settings.SetAsync(user, SettingKeys.ScrobbleMangaBakaToken, "test-pat");
+        var series = new Series { Id = 1, Title = "Vinland Saga", MangaBakaId = 9100 };
+
+        Assert.Empty(await service.PushRatingAsync(user, series, 7, soFar: true));
+        Assert.Empty(writes);
+
+        await settings.SetAsync(user, SettingKeys.ScrobbleSoFarKey("mangabaka"), "true");
+        Assert.Single(await service.PushRatingAsync(user, series, 7, soFar: true));
+        Assert.NotEmpty(writes);
     }
 
     private static HttpResponseMessage JsonResponse(string json) => new(HttpStatusCode.OK)

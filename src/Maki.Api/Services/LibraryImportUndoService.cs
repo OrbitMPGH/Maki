@@ -310,6 +310,8 @@ public class LibraryImportUndoService(
 
                 if (operations.PreviousRootFolderId is { } previousRoot)
                 {
+                    if (tracked.RootFolderId != previousRoot)
+                        await HealthInventory.MoveSeriesAsync(db, series.Id, previousRoot, [], ct);
                     tracked.RootFolderId = previousRoot;
                 }
             }

@@ -30,16 +30,10 @@ public class RateLimitingHandler(RateLimiter limiter) : DelegatingHandler
         return await base.SendAsync(request, cancellationToken);
     }
 
-    public static RateLimiter TokenBucket(int tokensPerPeriod, TimeSpan period, int burst = 0)
-    {
-        return new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
-        {
-            TokenLimit = Math.Max(burst, tokensPerPeriod),
-            TokensPerPeriod = tokensPerPeriod,
-            ReplenishmentPeriod = period,
-            QueueLimit = int.MaxValue,
-            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-            AutoReplenishment = true
-        });
-    }
+    /// <summary>
+    /// <paramref name="tokensPerPeriod"/> requests per <paramref name="period"/>, with bursts of up to
+    /// <paramref name="burst"/>. A <see cref="LazyTokenBucket"/>: no timer while the source is unused.
+    /// </summary>
+    public static RateLimiter TokenBucket(int tokensPerPeriod, TimeSpan period, int burst = 0) =>
+        new LazyTokenBucket(tokensPerPeriod, period, Math.Max(burst, tokensPerPeriod));
 }

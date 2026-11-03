@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { Badge, Box, Button, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconArrowRight, IconPlus, IconStar } from '@tabler/icons-react'
+import { IconArrowRight, IconPlus, IconStar } from '../../lib/icons'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -16,9 +16,11 @@ import {
   statusToken,
 } from '../ui/status'
 import { relationPhrase } from '../ui/DiscoverRail'
+import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
 import { useLabel } from '../../i18n-context'
 import { formatFixedDecimal } from '../../format'
 import { onRovingKeyDown } from '../../lib/rovingFocus'
+import { MetaList } from '../ui/MetaList'
 
 /** How long one pick holds the band before the next takes it. */
 const ROTATE_MS = 5000
@@ -143,6 +145,7 @@ export function DiscoverHero({
   const item = picks[active] as RecommendationItem | undefined
   const { data: detail } = useRecommendationDetail(item?.providerId ?? null)
   const titleRef = useTitleFit(item?.title)
+  const ownedArchived = useIsArchivedSeries(item ? seriesIdFor?.(item) : null)
 
   const choose = useCallback((n: number) => {
     setAutoRotate(false)
@@ -342,7 +345,22 @@ export function DiscoverHero({
               <Group gap="xs" className="discover-hero-actions">
                 {/* Adding needs a root folder, the caller's permissions and the request path for
                     non-admins, all of which `DiscoverLibraryRail` handles inside the detail card. */}
-                {ownedSeriesId != null ? (
+                {ownedSeriesId != null && ownedArchived ? (
+                  <>
+                    <Badge color="gray" variant="light" size="lg">
+                      <Trans context="series">Archived</Trans>
+                    </Badge>
+                    <RestoreArchivedButton seriesId={ownedSeriesId} aria-label={t({ message: `Restore ${title}`, context: 'series' })} />
+                    <Button
+                      variant="default"
+                      rightSection={<IconArrowRight size={16} />}
+                      onClick={() => navigate(`/series/${ownedSeriesId}`)}
+                      aria-label={t`View series: ${title}`}
+                    >
+                      <Trans>View series</Trans>
+                    </Button>
+                  </>
+                ) : ownedSeriesId != null ? (
                   <Button
                     color="var(--ok)"
                     variant="light"
@@ -425,7 +443,7 @@ export function DiscoverHero({
                         )}
                       </span>
                       {matches.length > 0 && (
-                        <span className="discover-hero-strip-match">{matches.join(' · ')}</span>
+                        <span className="discover-hero-strip-match"><MetaList inline items={matches} /></span>
                       )}
                     </span>
                     {n === active && canAutoRotate && !halted && (

@@ -298,8 +298,43 @@ internal sealed class FakeTorrentClient : ITorrentClient
         return Task.CompletedTask;
     }
 
+    /// <summary>Thrown by <see cref="ListAsync"/> when set, as a client that is down would.</summary>
+    public Exception? ListFailure { get; set; }
+
     public Task<IReadOnlyList<ClientTorrent>> ListAsync(TorrentClientSettings settings, CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<ClientTorrent>>(Torrents.ToList());
+        ListFailure is { } failure
+            ? Task.FromException<IReadOnlyList<ClientTorrent>>(failure)
+            : Task.FromResult<IReadOnlyList<ClientTorrent>>(Torrents.ToList());
+
+    public List<(string Hash, bool DeleteData)> Removed { get; } = [];
+
+    /// <summary>Thrown by <see cref="RemoveAsync"/> when set, as a client that is down would.</summary>
+    public Exception? RemoveFailure { get; set; }
+
+    /// <summary>Hashes the user moved to another category: <see cref="RemoveAsync"/> leaves them alone.</summary>
+    public HashSet<string> OutsideLabel { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public Task<TorrentRemoval> RemoveAsync(
+        TorrentClientSettings settings, string hash, bool deleteData, CancellationToken ct = default)
+    {
+        if (RemoveFailure is { } failure)
+        {
+            return Task.FromException<TorrentRemoval>(failure);
+        }
+
+        if (OutsideLabel.Contains(hash))
+        {
+            return Task.FromResult(TorrentRemoval.HeldOutsideLabel);
+        }
+
+        if (Torrents.RemoveAll(t => t.Hash.Equals(hash, StringComparison.OrdinalIgnoreCase)) == 0)
+        {
+            return Task.FromResult(TorrentRemoval.Absent);
+        }
+
+        Removed.Add((hash, deleteData));
+        return Task.FromResult(TorrentRemoval.Removed);
+    }
 
     public TorrentClientRegistry Registry() => new([this]);
 }

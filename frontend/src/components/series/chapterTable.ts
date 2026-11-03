@@ -1,6 +1,7 @@
 import { t as staticT } from '@lingui/core/macro'
 import type { ChapterProgressDto } from '../../api/reader'
-import type { ChapterDto } from '../../api/types'
+import type { SourceInfo } from '../../api/hooks'
+import type { ChapterDto, SourceMappingDto } from '../../api/types'
 
 export function chapterLabel(c: ChapterDto): string {
   // A volume entry: a volume file on disk standing in for chapters no source lists.
@@ -43,6 +44,83 @@ export function readStateOf(p: ChapterProgressDto | undefined): ReadState {
     external: p.external,
     watched: p.watched,
   }
+}
+
+/**
+ * The chapter languages a series' enabled mappings ask their sources for, lower-cased. Null when
+ * nothing narrows it down (no mapping, or a source that files chapters under whatever it lists),
+ * which `isSkipped` reads as every language.
+ */
+export function readLanguagesOf(
+  mappings: readonly SourceMappingDto[] | undefined,
+  sources: readonly SourceInfo[] | undefined,
+): ReadonlySet<string> | null {
+  const languages = new Set<string>()
+  for (const m of mappings ?? []) {
+    if (!m.enabled) continue
+    const codes = (m.languageFilter ?? '').split(',').map((code) => code.trim().toLowerCase()).filter(Boolean)
+    if (codes.length > 0) {
+      codes.forEach((code) => languages.add(code))
+    } else if (sources?.find((source) => source.name === m.sourceName)?.supportsLanguageFilter) {
+      languages.add('en')
+    } else {
+      return null
+    }
+  }
+  return languages.size > 0 ? languages : null
+}
+
+/**
+ * What `isSkipped` needs from the finished chapters: the highest finished number per language
+ * (lower-cased code), and every finished number in any language.
+ */
+export type FinishedHighWater = {
+  byLanguage: ReadonlyMap<string, number>
+  numbers: ReadonlySet<number>
+}
+
+export function finishedHighWater(
+  chapters: readonly ChapterDto[],
+  progress: ReadonlyMap<number, ChapterProgressDto>,
+): FinishedHighWater {
+  const byLanguage = new Map<string, number>()
+  const numbers = new Set<number>()
+  for (const c of chapters) {
+    if (c.isOneShot || c.number === null || !readStateOf(progress.get(c.id)).read) continue
+    const language = c.language.toLowerCase()
+    numbers.add(c.number)
+    if (c.number > (byLanguage.get(language) ?? -Infinity)) byLanguage.set(language, c.number)
+  }
+  return { byLanguage, numbers }
+}
+
+/**
+ * A chapter the reader walked past: numbered, wanted, unfinished, in a language they read, while a
+ * higher-numbered chapter in that same language is finished. Volume entries and one-shots have no
+ * number to be passed, and a chapter whose number was finished in another language was read, not
+ * skipped. `readLanguages` of null means any language reads.
+ */
+export function isSkipped(
+  chapter: ChapterDto,
+  highWater: FinishedHighWater,
+  progress: ReadonlyMap<number, ChapterProgressDto>,
+  readLanguages: ReadonlySet<string> | null,
+): boolean {
+  if (chapter.isOneShot || chapter.number === null || !chapter.wanted) return false
+  const language = chapter.language.toLowerCase()
+  if (readLanguages !== null && !readLanguages.has(language)) return false
+  if (readStateOf(progress.get(chapter.id)).read) return false
+  if (highWater.numbers.has(chapter.number)) return false
+  return chapter.number < (highWater.byLanguage.get(language) ?? -Infinity)
+}
+
+export function countSkipped(
+  chapters: readonly ChapterDto[],
+  progress: ReadonlyMap<number, ChapterProgressDto>,
+  readLanguages: ReadonlySet<string> | null,
+): number {
+  const highWater = finishedHighWater(chapters, progress)
+  return chapters.filter((c) => isSkipped(c, highWater, progress, readLanguages)).length
 }
 
 export type FileOrigin = { label: string; scraped: boolean; hint: string }

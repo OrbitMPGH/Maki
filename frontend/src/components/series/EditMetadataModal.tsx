@@ -13,8 +13,8 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
-import { IconArrowBackUp, IconLock, IconUpload } from '@tabler/icons-react'
+import { notifications } from '../../lib/toast'
+import { IconArrowBackUp, IconLock, IconUpload } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MetadataField, SeriesDto } from '../../api/types'
 import {
@@ -151,7 +151,7 @@ export function EditMetadataModal({
       <Button
         variant="subtle"
         size="compact-xs"
-        leftSection={<IconArrowBackUp size={14} />}
+        leftSection={<IconArrowBackUp size={16} />}
         loading={reset.isPending && reset.variables?.fields[0] === field}
         disabled={reset.isPending}
         onClick={() => resetField(field)}
@@ -210,7 +210,7 @@ export function EditMetadataModal({
                 )}
               >
                 {(props) => (
-                  <Button {...props} variant="default" size="xs" leftSection={<IconUpload size={14} />} loading={upload.isPending}>
+                  <Button {...props} variant="default" size="xs" leftSection={<IconUpload size={16} />} loading={upload.isPending}>
                     <Trans>Upload image</Trans>
                   </Button>
                 )}
@@ -315,7 +315,6 @@ export function MetadataLock({ size = 14 }: { size?: number }) {
     <Tooltip label={t`Set by hand. Metadata refreshes leave it alone.`} withArrow>
       <IconLock
         size={size}
-        stroke={1.8}
         aria-label={t`Set by hand`}
         style={{ color: 'var(--ink-4)', flexShrink: 0, verticalAlign: 'middle' }}
       />

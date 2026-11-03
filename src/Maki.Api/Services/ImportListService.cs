@@ -16,13 +16,15 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 public record ImportListRunResult(
-    int Added, int Requested, int Skipped, int AlreadyPresent, int Errors, bool DumpUnavailable = false)
+    int Added, int Requested, int Skipped, int AlreadyPresent, int Errors, bool DumpUnavailable = false,
+    int Shortlisted = 0, bool ShortlistFull = false)
 {
     public static readonly ImportListRunResult Empty = new(0, 0, 0, 0, 0);
 
     public static ImportListRunResult operator +(ImportListRunResult a, ImportListRunResult b) => new(
         a.Added + b.Added, a.Requested + b.Requested, a.Skipped + b.Skipped,
-        a.AlreadyPresent + b.AlreadyPresent, a.Errors + b.Errors, a.DumpUnavailable || b.DumpUnavailable);
+        a.AlreadyPresent + b.AlreadyPresent, a.Errors + b.Errors, a.DumpUnavailable || b.DumpUnavailable,
+        a.Shortlisted + b.Shortlisted, a.ShortlistFull || b.ShortlistFull);
 }
 
 /// <summary>
@@ -215,7 +217,8 @@ public class ImportListService(
         });
     }
 
-    private sealed record UserInfo(int Id, string UserName, MakiPermission Permissions, bool AllRootFolders);
+    private sealed record UserInfo(
+        int Id, string UserName, MakiPermission Permissions, bool AllRootFolders, string MaxContentRating);
 
     private async Task<ImportListRunResult> RunUserInnerAsync(
         int userId, string? service, bool full, bool notify, RunState state, CancellationToken ct)
@@ -226,7 +229,8 @@ public class ImportListService(
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
             user = await db.Users.AsNoTracking()
                 .Where(u => u.Id == userId && !u.Disabled)
-                .Select(u => new UserInfo(u.Id, u.UserName ?? string.Empty, u.Permissions, u.AllRootFolders))
+                .Select(u => new UserInfo(u.Id, u.UserName ?? string.Empty, u.Permissions, u.AllRootFolders,
+                    u.MaxContentRating))
                 .FirstOrDefaultAsync(ct);
         }
 
@@ -256,10 +260,10 @@ public class ImportListService(
 
             await userSettings.SetAsync(userId, SettingKeys.ImportListLastRunKey(tracker.Name),
                 new ImportListLastRun(DateTime.UtcNow, result.Added, result.Requested, result.Skipped, result.Errors,
-                    result.DumpUnavailable).Serialize(),
+                    result.DumpUnavailable, result.Shortlisted, result.ShortlistFull).Serialize(),
                 CancellationToken.None);
 
-            if (notify || result.Added + result.Requested > 0 || result.Errors > 0)
+            if (notify || result.Added + result.Requested + result.Shortlisted > 0 || result.Errors > 0)
             {
                 inbox.Raise(InboxEventType.ImportListFinished, new InboxMessage(
                         Key: "inbox.importList.finished",
@@ -268,6 +272,7 @@ public class ImportListService(
                             tracker = tracker.Label,
                             added = result.Added,
                             requested = result.Requested,
+                            shortlisted = result.Shortlisted,
                             skipped = result.Skipped,
                             errors = result.Errors,
                         }),
@@ -288,6 +293,9 @@ public class ImportListService(
         public List<RemoteListEntry> Duplicates { get; } = [];
 
         public IEnumerable<RemoteListEntry> All => [Entry, .. Duplicates];
+
+        /// <summary>Reading or Completed on any duplicate beats Plan to read.</summary>
+        public bool PlanToReadOnly => All.All(e => e.Status == ScrobbleStatus.PlanToRead);
     }
 
     private async Task<ImportListRunResult> RunTrackerAsync(
@@ -304,7 +312,8 @@ public class ImportListService(
             .DistinctBy(e => e.RemoteId)
             .ToList();
 
-        int added = 0, requested = 0, skipped = 0, present = 0, errors = 0;
+        int added = 0, requested = 0, skipped = 0, present = 0, errors = 0, shortlisted = 0;
+        var shortlistFull = false;
 
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -324,9 +333,10 @@ public class ImportListService(
         var fresh = new List<RemoteListEntry>();
         foreach (var entry in entries)
         {
-            if (handled.TryGetValue(entry.RemoteId, out var reason))
+            if (handled.TryGetValue(entry.RemoteId, out var reason) &&
+                !(reason == ImportListSkipReason.Shortlisted && entry.Status != ScrobbleStatus.PlanToRead))
             {
-                if (reason == ImportListSkipReason.Added) present++;
+                if (reason is ImportListSkipReason.Added or ImportListSkipReason.Shortlisted) present++;
                 else skipped++;
                 continue;
             }
@@ -416,13 +426,76 @@ public class ImportListService(
             candidates.RemoveAll(c => drop.Contains(c.MangaBakaId));
         }
 
+        // Before the batch cap and the early returns below, so an account with no root folder still
+        // gets its Plan to read entries on the shortlist.
+        var planToRead = candidates.Where(c => c.PlanToReadOnly).ToList();
+        candidates.RemoveAll(c => c.PlanToReadOnly);
+        var allowedRatings = ContentRating.Allowed(user.MaxContentRating);
+        Dictionary<int, int>? mergedKeys = null;
+        if (planToRead.Count > 0)
+        {
+            using var keysScope = scopeFactory.CreateScope();
+            mergedKeys = await keysScope.ServiceProvider.GetRequiredService<ShortlistService>()
+                .MergedKeysAsync(user.Id, ct);
+        }
+
+        foreach (var candidate in planToRead)
+        {
+            try
+            {
+                using var shortlistScope = scopeFactory.CreateScope();
+                var result = await shortlistScope.ServiceProvider.GetRequiredService<ShortlistService>().InsertAsync(
+                    user.Id, allowedRatings, candidate.MangaBakaId, ShortlistService.FromImportList, tracker.Label,
+                    mergedKeys: mergedKeys, ct: ct);
+
+                switch (result.Outcome)
+                {
+                    case ShortlistInsertOutcome.Inserted or ShortlistInsertOutcome.Existing:
+                        var recorded = await RecordAsync(user.Id, tracker.Name, candidate.All,
+                            ImportListSkipReason.Shortlisted, candidate.MangaBakaId, ct);
+                        if (result.Outcome == ShortlistInsertOutcome.Inserted)
+                        {
+                            shortlisted++;
+                            present += recorded - 1;
+                        }
+                        else
+                        {
+                            present += recorded;
+                        }
+
+                        break;
+                    case ShortlistInsertOutcome.InLibrary:
+                        present += await RecordAsync(user.Id, tracker.Name, candidate.All,
+                            ImportListSkipReason.Added, candidate.MangaBakaId, ct);
+                        break;
+                    case ShortlistInsertOutcome.NotInCatalogue:
+                        var notInDump = !await store.HasSeriesAsync(candidate.MangaBakaId, ct);
+                        skipped += await RecordAsync(user.Id, tracker.Name, candidate.All,
+                            ImportListSkipReason.Unmatched, notInDump ? candidate.MangaBakaId : null, ct);
+                        break;
+                }
+
+                if (result.Outcome == ShortlistInsertOutcome.Full)
+                {
+                    shortlistFull = true;
+                    break;
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+            {
+                logger.LogWarning(ex, "Import list {Service} could not shortlist {Title} ({RemoteId}) for user {UserId}",
+                    tracker.Name, candidate.Entry.Title, candidate.Entry.RemoteId, user.Id);
+                errors++;
+            }
+        }
+
         // A full run lifts the cap only for adds. Requests stay capped, so "sync everything" cannot
         // drop hundreds of them on the admins at once.
         var canAdd = user.Permissions.Grants(MakiPermission.AddSeries);
         var batch = full && canAdd ? candidates : candidates.Take(prefs.MaxPerRun).ToList();
         if (batch.Count == 0)
         {
-            return new(added, requested, skipped, present, errors);
+            return new(added, requested, skipped, present, errors, Shortlisted: shortlisted, ShortlistFull: shortlistFull);
         }
 
         var rootFolderId = canAdd ? await RootFolderForAsync(db, user, prefs.RootFolderId, ct) : null;
@@ -431,7 +504,8 @@ public class ImportListService(
             logger.LogWarning(
                 "Import list {Service} for user {UserId}: no root folder available, nothing added",
                 tracker.Name, user.Id);
-            return new(added, requested, skipped, present, errors + 1);
+            return new(added, requested, skipped, present, errors + 1,
+                Shortlisted: shortlisted, ShortlistFull: shortlistFull);
         }
 
         var note = canAdd
@@ -482,7 +556,7 @@ public class ImportListService(
             }
         }
 
-        return new(added, requested, skipped, present, errors);
+        return new(added, requested, skipped, present, errors, Shortlisted: shortlisted, ShortlistFull: shortlistFull);
 
         async Task ResolveAsync(MangaBakaLocalStore.ExternalSource source, Func<RemoteListEntry, long?> key)
         {
@@ -545,7 +619,7 @@ public class ImportListService(
 
         return result.Error switch
         {
-            SeriesCreationError.AlreadyInLibrary => Outcome.Present,
+            SeriesCreationError.AlreadyInLibrary or SeriesCreationError.ArchivedInLibrary => Outcome.Present,
             SeriesCreationError.MetadataNotFound => Outcome.Unmatched,
             SeriesCreationError.OperationResultGone => Outcome.Removed,
             _ => Outcome.Failed,

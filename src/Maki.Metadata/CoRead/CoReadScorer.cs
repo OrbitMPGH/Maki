@@ -95,17 +95,17 @@ public static class CoReadScorer
                 continue;
             }
 
-            var neighbours = graph.NeighboursAt(seedNode);
-            var strengths = graph.WeightsAt(seedNode);
+            var edges = graph.EdgesAt(seedNode);
 
-            for (var i = 0; i < neighbours.Length; i++)
+            for (var i = 0; i < edges.Length; i++)
             {
-                if (strengths[i] < tuning.MinStrength)
+                var strength = edges.Weight(i);
+                if (strength < tuning.MinStrength)
                 {
                     continue;
                 }
 
-                var id = graph.IdAt(neighbours[i]);
+                var id = graph.IdAt(edges.Neighbour(i));
 
                 // A seed being read alongside another seed is not something the user can act on.
                 if (seeds.Contains(id))
@@ -113,7 +113,7 @@ public static class CoReadScorer
                     continue;
                 }
 
-                var contribution = seedWeight * strengths[i];
+                var contribution = seedWeight * strength;
                 scores[id] = scores.GetValueOrDefault(id) + contribution;
 
                 if (strongest is not null && contribution > strongest.GetValueOrDefault(id))

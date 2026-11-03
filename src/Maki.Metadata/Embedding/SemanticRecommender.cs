@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Entities;
@@ -230,7 +229,7 @@ public class SemanticRecommender(
         }
 
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT MAX(popularity_global_current) FROM dump.series";
+        cmd.CommandText = $"SELECT MAX(popularity_global_current) FROM dump.{MangaBakaDumpService.BrowseSource(conn, "dump")}";
         cmd.CommandTimeout = 600;
         _maxPopularity = await cmd.ExecuteScalarAsync(ct) is long l && l > 0 ? l : 300000;
         return _maxPopularity;
@@ -245,7 +244,7 @@ public class SemanticRecommender(
         }
 
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT COUNT(*) FROM dump.series WHERE state = 'active'";
+        cmd.CommandText = $"SELECT COUNT(*) FROM dump.{MangaBakaDumpService.BrowseSource(conn, "dump")} WHERE state = 'active'";
         cmd.CommandTimeout = 600;
         _activeCount = await cmd.ExecuteScalarAsync(ct) is long l && l > 0 ? l : 300000;
         return _activeCount;
@@ -313,6 +312,11 @@ public class SemanticRecommender(
         diversity = Math.Clamp(diversity, 0, 1);
         store.EnsureSchema(); // older DBs predate the tag tables the index build joins
         DropStatsIfDumpChanged();
+
+        // The graphs live in their own files, so after an idle unload they load alongside the
+        // vector index instead of after it. The awaits further down join these same loads.
+        Observe(coGraph && graphTuning.Weight > 0 ? graphCache.GetAsync(ct) : null);
+        Observe(coRead && coReadTuning.Weight > 0 ? coReadCache.GetAsync(ct) : null);
 
         var index = await cache.GetAsync(ct);
         if (index is null || index.Count == 0)
@@ -1095,19 +1099,19 @@ public class SemanticRecommender(
             var text = new float[queries][];
             for (var q = 0; q < queries; q++)
             {
-                text[q] = ArrayPool<float>.Shared.Rent(rows);
+                text[q] = ScanPools.Floats.Rent(rows);
             }
 
             var taste = new float[tasteQueries][];
             for (var q = 0; q < tasteQueries; q++)
             {
-                taste[q] = ArrayPool<float>.Shared.Rent(rows);
+                taste[q] = ScanPools.Floats.Rent(rows);
             }
 
             var avoid = new float[avoidQueries][];
             for (var q = 0; q < avoidQueries; q++)
             {
-                avoid[q] = ArrayPool<float>.Shared.Rent(rows);
+                avoid[q] = ScanPools.Floats.Rent(rows);
             }
 
             return new ScanBuffers(text, taste, avoid, rows);
@@ -1127,17 +1131,17 @@ public class SemanticRecommender(
             _returned = true;
             foreach (var channel in Text)
             {
-                ArrayPool<float>.Shared.Return(channel);
+                ScanPools.Floats.Return(channel);
             }
 
             foreach (var channel in Taste)
             {
-                ArrayPool<float>.Shared.Return(channel);
+                ScanPools.Floats.Return(channel);
             }
 
             foreach (var channel in Avoid)
             {
-                ArrayPool<float>.Shared.Return(channel);
+                ScanPools.Floats.Return(channel);
             }
         }
     }
@@ -1756,7 +1760,7 @@ public class SemanticRecommender(
     internal static List<int> FuseByRank(float[][] cosines, int rowCount, int poolPerQuery)
     {
         var channel0 = cosines[0];
-        var survivors = ArrayPool<int>.Shared.Rent(rowCount);
+        var survivors = ScanPools.Ints.Rent(rowCount);
         try
         {
             var count = 0;
@@ -1789,7 +1793,7 @@ public class SemanticRecommender(
         }
         finally
         {
-            ArrayPool<int>.Shared.Return(survivors);
+            ScanPools.Ints.Return(survivors);
         }
     }
 
@@ -1836,6 +1840,13 @@ public class SemanticRecommender(
             return byCosine != 0 ? byCosine : y.Row.CompareTo(x.Row);
         }
     }
+
+    /// <summary>
+    /// Keeps a load started only to warm its cache from surfacing as an unobserved exception when
+    /// the call returns before awaiting it. A failure still reaches whoever awaits the load.
+    /// </summary>
+    private static void Observe(Task? load) =>
+        load?.ContinueWith(static t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
 
     /// <summary>
     /// Co-recommendation score per index row, from the graph artifact. Empty when there is no
@@ -2312,10 +2323,10 @@ public class SemanticRecommender(
             cmd.Parameters.AddWithValue(name, title);
         }
 
-        // state = 'active' matches ix_title_nocase's WHERE clause so the planner can use it; without
+        // state = 'active' matches mb_title_nocase's WHERE clause so the planner can use it; without
         // that the predicate is a full table scan (see the index's remarks for what that costs).
         cmd.CommandText =
-            "SELECT id, title FROM dump.series " +
+            $"SELECT id, title FROM dump.{MangaBakaDumpService.BrowseSource(conn, "dump")} " +
             $"WHERE state = 'active' AND title COLLATE NOCASE IN ({string.Join(",", names)})";
         using var reader = await cmd.ExecuteReaderAsync(ct);
         while (await reader.ReadAsync(ct))

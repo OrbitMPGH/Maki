@@ -291,6 +291,60 @@ public class TransmissionClientTests
         Assert.Equal(TorrentClientFailure.Rejected, ex.Failure);
     }
 
+    private static Func<string, JsonObject, JsonObject?> Holding(params JsonObject[] torrents) => (method, _) =>
+        method == "torrent-get" ? new JsonObject { ["torrents"] = new JsonArray(torrents) } : null;
+
+    private static JsonObject Labelled(params string[] labels) =>
+        new() { ["hashString"] = "abc", ["labels"] = new JsonArray(labels.Select(l => (JsonNode)l).ToArray()) };
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Removing_a_labelled_torrent_sends_torrent_remove_with_the_data_flag(bool deleteData)
+    {
+        var handler = new RpcHandler(17, Holding(Labelled("maki")));
+
+        var removal = await new TransmissionClient(handler).RemoveAsync(Settings, "abc", deleteData);
+
+        Assert.Equal(TorrentRemoval.Removed, removal);
+        var remove = Assert.Single(handler.Requests, r => r.Method == "torrent-remove");
+        Assert.Equal("abc", remove.Arguments["ids"]![0]!.GetValue<string>());
+        Assert.Equal(deleteData, remove.Arguments["delete-local-data"]!.GetValue<bool>());
+    }
+
+    [Fact]
+    public async Task A_torrent_transmission_does_not_have_is_absent_and_nothing_is_removed()
+    {
+        var handler = new RpcHandler(17, Holding());
+
+        var removal = await new TransmissionClient(handler).RemoveAsync(Settings, "abc", deleteData: true);
+
+        Assert.Equal(TorrentRemoval.Absent, removal);
+        Assert.DoesNotContain(handler.Requests, r => r.Method == "torrent-remove");
+    }
+
+    [Fact]
+    public async Task A_torrent_without_makis_label_is_left_alone()
+    {
+        var handler = new RpcHandler(17, Holding(Labelled("keep-seeding")));
+
+        var removal = await new TransmissionClient(handler).RemoveAsync(Settings, "abc", deleteData: true);
+
+        Assert.Equal(TorrentRemoval.HeldOutsideLabel, removal);
+        Assert.DoesNotContain(handler.Requests, r => r.Method == "torrent-remove");
+    }
+
+    [Fact]
+    public async Task A_daemon_without_labels_removes_any_torrent_with_the_hash()
+    {
+        var handler = new RpcHandler(15, Holding(new JsonObject { ["hashString"] = "ABC" }));
+
+        var removal = await new TransmissionClient(handler).RemoveAsync(Settings, "abc", deleteData: false);
+
+        Assert.Equal(TorrentRemoval.Removed, removal);
+        Assert.Single(handler.Requests, r => r.Method == "torrent-remove");
+    }
+
     private sealed class StatusHandler(HttpStatusCode status, string body) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) =>

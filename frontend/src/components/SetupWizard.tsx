@@ -24,7 +24,7 @@ import {
   IconFolder,
   IconFolderPlus,
   IconTrash,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { useNavigate } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -58,6 +58,7 @@ import { useLanguageChoice } from '../i18n-context'
 import { AppearancePicker } from './AppearancePicker'
 import { ConnectionForm, type ConnectionFields } from './ConnectionSettingsCard'
 import { useDownloadClientFields } from './settings/downloadClientFields'
+import { FolderBrowserModal } from './settings/FolderBrowserModal'
 import { IndexerForm } from './settings/IndexerForm'
 import { ContentRatingCards } from './ContentRatingCards'
 import { IconBrandMark } from './IconBrandMark'
@@ -160,6 +161,7 @@ function useLibraryPatch() {
 function LibraryStep() {
   const { t } = useLingui()
   const [newPath, setNewPath] = useState('')
+  const [browsing, setBrowsing] = useState(false)
   const { data: rootFolders } = useRootFolders()
   const addFolder = useAddRootFolder()
   const deleteFolder = useDeleteRootFolder()
@@ -207,7 +209,7 @@ function LibraryStep() {
               </div>
             )
           })}
-          <Group gap="xs" wrap="nowrap">
+          <Group gap="xs">
             <TextInput
               aria-label={t`Folder path`}
               placeholder={t`C:\\Manga or /library`}
@@ -215,14 +217,24 @@ function LibraryStep() {
               value={newPath}
               onChange={(e) => setNewPath(e.currentTarget.value)}
               onKeyDown={(e) => e.key === 'Enter' && add()}
-              style={{ flex: 1 }}
+              style={{ flex: '1 1 16rem' }}
             />
+            <Button variant="default" onClick={() => setBrowsing(true)}>
+              <Trans>Browse</Trans>
+            </Button>
             <Button onClick={add} loading={addFolder.isPending} disabled={!newPath.trim()}>
               <Trans>Add folder</Trans>
             </Button>
           </Group>
         </Stack>
       </SettingRow>
+
+      <FolderBrowserModal
+        opened={browsing}
+        onClose={() => setBrowsing(false)}
+        onSelect={setNewPath}
+        initialPath={newPath}
+      />
 
       <ConfirmDialog
         opened={deleting !== null}
@@ -555,7 +567,7 @@ function SummaryLine({ tone, children, action }: { tone: Tone; children: ReactNo
   return (
     <div className="setup-summary-line" data-tone={tone}>
       <span className="setup-summary-icon">
-        {tone === 'warn' ? <IconAlertTriangle size={14} /> : <IconCheck size={14} />}
+        {tone === 'warn' ? <IconAlertTriangle size={16} /> : <IconCheck size={16} />}
       </span>
       <Text className="setup-summary-text">{children}</Text>
       {action}
@@ -803,7 +815,7 @@ function GuideRail({
                   aria-current={current ? 'step' : undefined}
                   onClick={() => onSelect(i)}
                 >
-                  <span className="setup-step-index">{done ? <IconCheck size={13} stroke={2.6} /> : i + 1}</span>
+                  <span className="setup-step-index">{done ? <IconCheck size={13} /> : i + 1}</span>
                   <span className="setup-step-text">
                     <span className="setup-step-label">{step.label}</span>
                     {step.hint && (

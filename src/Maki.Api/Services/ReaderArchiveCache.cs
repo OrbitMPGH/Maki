@@ -34,6 +34,12 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
     private const int Capacity = 256;
 
     /// <summary>
+    /// How long a page list with no pages is kept. Usually a share hiccup or a file held open by a
+    /// scanner rather than a broken archive, so it is read again soon instead of until eviction.
+    /// </summary>
+    internal static readonly TimeSpan EmptyEntryLifetime = TimeSpan.FromSeconds(30);
+
+    /// <summary>
     /// Page names in reading order plus, in that same order, the zero-based page index at
     /// which each embedded chapter marker first appears.
     /// </summary>
@@ -41,7 +47,7 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
         IReadOnlyList<string> Pages,
         IReadOnlyList<(decimal Chapter, int PageIndex)> Boundaries);
 
-    private sealed record Entry(long Size, string Path, ArchiveInfo Info)
+    private sealed record Entry(long Size, string Path, ArchiveInfo Info, long StoredAt)
     {
         /// <summary>Monotonic tick of the last read, for the eviction sweep.</summary>
         public long LastUsed { get; set; }
@@ -50,6 +56,7 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
     private readonly ConcurrentDictionary<int, Entry> _cache = new();
     private readonly ConcurrentDictionary<(int Id, long Size), Task<ArchiveInfo>> _loading = new();
     private readonly ReaderArchiveHandles _handles = new(time);
+    private readonly ConcurrentDictionary<string, long> _lastRead = new(StringComparer.Ordinal);
     private long _clock;
     private long _invalidations;
     private int _loads;
@@ -84,7 +91,10 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
                 info = await LoadAsync(absolutePath);
                 if (Interlocked.Read(ref _invalidations) == generation)
                 {
-                    _cache[chapterFileId] = new Entry(size, absolutePath, info) { LastUsed = Interlocked.Increment(ref _clock) };
+                    _cache[chapterFileId] = new Entry(size, absolutePath, info, Clock.GetTimestamp())
+                    {
+                        LastUsed = Interlocked.Increment(ref _clock)
+                    };
                     Trim();
                 }
             }
@@ -110,12 +120,40 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
     /// </summary>
     public async Task<Stream?> OpenPageAsync(string absolutePath, string entryName, CancellationToken ct)
     {
+        MarkRead(absolutePath);
         if (ComicFile.IsPdf(absolutePath))
         {
             return await CbzReader.OpenPageAsync(absolutePath, entryName, ct);
         }
 
         return await _handles.ReadPageAsync(absolutePath, entryName, ct);
+    }
+
+    /// <summary>
+    /// Whether any reader (the web reader, OPDS, Komga, the upscale queue) was served a page of the file
+    /// within <paramref name="window"/>. Page requests are the only reading signal every client sends.
+    /// </summary>
+    public bool ReadWithin(string absolutePath, TimeSpan window) =>
+        _lastRead.TryGetValue(Path.GetFullPath(absolutePath), out var at) && Clock.GetElapsedTime(at) < window;
+
+    private const int MaxReadMarks = 512;
+    private static readonly TimeSpan ReadMarkLifetime = TimeSpan.FromHours(1);
+
+    private void MarkRead(string absolutePath)
+    {
+        _lastRead[Path.GetFullPath(absolutePath)] = Clock.GetTimestamp();
+        if (_lastRead.Count <= MaxReadMarks)
+        {
+            return;
+        }
+
+        foreach (var (path, at) in _lastRead)
+        {
+            if (Clock.GetElapsedTime(at) > ReadMarkLifetime)
+            {
+                _lastRead.TryRemove(new KeyValuePair<string, long>(path, at));
+            }
+        }
     }
 
     /// <summary>
@@ -139,7 +177,8 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
 
     private bool TryGetCached(int chapterFileId, long size, out ArchiveInfo info)
     {
-        if (_cache.TryGetValue(chapterFileId, out var cached) && cached.Size == size)
+        if (_cache.TryGetValue(chapterFileId, out var cached) && cached.Size == size &&
+            (cached.Info.Pages.Count > 0 || Clock.GetElapsedTime(cached.StoredAt) < EmptyEntryLifetime))
         {
             cached.LastUsed = Interlocked.Increment(ref _clock);
             info = cached.Info;
@@ -149,6 +188,8 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
         info = null!;
         return false;
     }
+
+    private TimeProvider Clock => time ?? TimeProvider.System;
 
     private async Task<ArchiveInfo> LoadAsync(string absolutePath)
     {

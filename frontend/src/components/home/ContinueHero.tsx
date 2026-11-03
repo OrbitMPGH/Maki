@@ -1,7 +1,7 @@
 import { memo, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Skeleton } from '@mantine/core'
-import { IconPlayerPlay, IconPlayerTrackNext } from '@tabler/icons-react'
+import { IconPlayerPlay, IconPlayerTrackNext } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HomeReadingItem } from '../../api/hooks'
@@ -137,20 +137,19 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
         </Link>
 
         <div className="continue-hero-copy">
-          <div className="continue-hero-eyebrow">
-            <span>
-              <Trans>Continue reading</Trans>
-            </span>
-            {lastRead && (
-              <span className="continue-hero-eyebrow-when">
-                <Trans>Last read {lastRead}</Trans>
-              </span>
-            )}
+          <div className="continue-hero-label">
+            {started ? <Trans>Continue reading</Trans> : <Trans>New chapter</Trans>}
           </div>
 
           <h2 className="continue-hero-title">
             <Link to={`/series/${item.seriesId}`}>{seriesTitle}</Link>
           </h2>
+
+          {lastRead && (
+            <div className="continue-hero-when">
+              <Trans>Last read {lastRead}</Trans>
+            </div>
+          )}
 
           <div className="continue-hero-chapter tnum">
             <span>{chapterLabel}</span>

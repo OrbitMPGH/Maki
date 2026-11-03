@@ -1,4 +1,5 @@
-﻿using Maki.Api.Localization;
+﻿using Maki.Api.Configuration;
+using Maki.Api.Localization;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Maki.Api.Hubs;
@@ -16,13 +17,19 @@ public record UpdateStatus(
     string? LatestVersion,
     string? ReleaseUrl,
     string? ReleaseNotes,
-    DateTimeOffset? CheckedAt);
+    DateTimeOffset? CheckedAt)
+{
+    /// <summary><c>docker</c>, <c>desktop</c> or <c>bare</c>; decides how the UI says to update.</summary>
+    public string Runtime { get; init; } = HostRuntime.Name(HostRuntime.Kind);
+
+    /// <summary>Maki.Desktop has the update downloaded, so a restart applies it.</summary>
+    public bool UpdateReady { get; init; }
+}
 
 /// <summary>
-/// Polls the GitHub Releases API for a newer tag than the running build. Both Docker and bare
-/// installs are notify-only today: GitHub releases here are tag + changelog only (see
-/// distribution/release.ps1), no per-OS binary is published for a self-updater to fetch and
-/// swap in, so this only ever raises a signal (banner + Notifications connection).
+/// Polls the GitHub Releases API for a newer tag than the running build and raises a signal
+/// (banner + Notifications connection). Docker and bare installs are notify-only. The desktop build
+/// is updated by Maki.Desktop, which downloads the release itself; see <see cref="HostRestarter"/>.
 /// </summary>
 public class UpdateCheckService(
     IHttpClientFactory httpClientFactory,
@@ -35,12 +42,10 @@ public class UpdateCheckService(
     ILogger<UpdateCheckService> logger)
 {
     public const string HttpClientName = "github-releases";
+    public const string ReleasePageClientName = "github-release-page";
     private const string Repo = "OrbitMPGH/Maki";
 
-    /// <summary>Docker sets MAKI_RUNTIME=docker in the image; /.dockerenv is a fallback for
-    /// other container setups that don't.</summary>
-    public static readonly bool IsDocker =
-        Environment.GetEnvironmentVariable("MAKI_RUNTIME") == "docker" || File.Exists("/.dockerenv");
+    public static readonly bool IsDocker = HostRuntime.Kind == HostRuntimeKind.Docker;
 
     private UpdateStatus _lastStatus = new(
         VersionInfo.Version, VersionInfo.IsDevBuild, IsDocker, false, null, null, null, null);
@@ -48,8 +53,11 @@ public class UpdateCheckService(
     /// <summary>Cached result of the last check — instant, no network call.</summary>
     public UpdateStatus GetStatus() => _lastStatus;
 
-    /// <summary>Checks GitHub for a newer release; notifies (once per version) if one is found.</summary>
-    public async Task<UpdateStatus> CheckAsync(CancellationToken ct = default)
+    /// <summary>
+    /// Checks GitHub for a newer release; notifies (once per version) if one is found. Null when
+    /// GitHub could not be asked, so a caller never reads a failed check as "up to date".
+    /// </summary>
+    public async Task<UpdateStatus?> CheckAsync(CancellationToken ct = default)
     {
         if (VersionInfo.IsDevBuild)
         {
@@ -58,29 +66,24 @@ public class UpdateCheckService(
             return _lastStatus;
         }
 
-        GitHubRelease? release;
-        try
-        {
-            var client = httpClientFactory.CreateClient(HttpClientName);
-            release = await client.GetFromJsonAsync<GitHubRelease>($"repos/{Repo}/releases/latest", ct);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
-        {
-            logger.LogWarning(ex, "Update check failed");
-            return _lastStatus;
-        }
-
+        var release = await LatestFromApiAsync(ct) ?? await LatestFromReleasePageAsync(ct);
         if (release?.TagName is null)
         {
-            return _lastStatus;
+            return null;
         }
 
         var latestVersion = release.TagName.TrimStart('v', 'V');
         var isNewer = IsNewer(latestVersion, VersionInfo.Version);
 
+        // The release page fallback carries no notes; keep the ones an earlier check fetched.
+        var notes = release.Body
+            ?? (string.Equals(_lastStatus.LatestVersion, latestVersion, StringComparison.OrdinalIgnoreCase)
+                ? _lastStatus.ReleaseNotes
+                : null);
+
         _lastStatus = new UpdateStatus(
             VersionInfo.Version, false, IsDocker, isNewer,
-            latestVersion, release.HtmlUrl, release.Body, DateTimeOffset.UtcNow);
+            latestVersion, release.HtmlUrl, notes, DateTimeOffset.UtcNow);
 
         if (isNewer)
         {
@@ -113,6 +116,67 @@ public class UpdateCheckService(
         }
 
         return _lastStatus;
+    }
+
+    private async Task<GitHubRelease?> LatestFromApiAsync(CancellationToken ct)
+    {
+        try
+        {
+            var client = httpClientFactory.CreateClient(HttpClientName);
+            return await client.GetFromJsonAsync<GitHubRelease>($"repos/{Repo}/releases/latest", ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Update check failed against the GitHub API, trying the release page");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// The unauthenticated API allows 60 requests an hour per public IP, shared with everything else
+    /// on that network. The release page's redirect to the latest tag is not counted against it.
+    /// </summary>
+    private async Task<GitHubRelease?> LatestFromReleasePageAsync(CancellationToken ct)
+    {
+        try
+        {
+            var client = httpClientFactory.CreateClient(ReleasePageClientName);
+            using var request = new HttpRequestMessage(HttpMethod.Head, $"{Repo}/releases/latest");
+            using var response = await client.SendAsync(request, ct);
+            var tag = TagFromReleaseLocation(response.Headers.Location);
+            if (tag is null)
+            {
+                logger.LogWarning("Update check failed: the release page answered {Status} without a release tag",
+                    (int)response.StatusCode);
+                return null;
+            }
+
+            return new GitHubRelease(tag, $"https://github.com/{Repo}/releases/tag/{Uri.EscapeDataString(tag)}", null);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Update check failed");
+            return null;
+        }
+    }
+
+    internal static string? TagFromReleaseLocation(Uri? location)
+    {
+        const string marker = "/releases/tag/";
+        if (location is null)
+        {
+            return null;
+        }
+
+        var path = location.IsAbsoluteUri ? location.AbsolutePath : location.OriginalString.Split('?', '#')[0];
+        var at = path.IndexOf(marker, StringComparison.Ordinal);
+        if (at < 0)
+        {
+            return null;
+        }
+
+        var tag = Uri.UnescapeDataString(path[(at + marker.Length)..].TrimEnd('/'));
+        return tag.Length == 0 || tag.Contains('/') ? null : tag;
     }
 
     /// <summary>Tags/versions here are plain "X.Y.Z" (see distribution/release.ps1) — strip any

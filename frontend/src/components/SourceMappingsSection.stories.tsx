@@ -3,6 +3,7 @@ import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, hoursAgo } from '../../.storybook/mocks/api'
 import { mappingsFor, seriesMsw, sourceOrderFor } from '../../.storybook/mocks/series'
+import { settingsHandlers } from '../../.storybook/mocks/settings'
 import type { ScoutSnapshot, SourceOrderDto } from '../api/upgrades'
 import { SourceMappingsSection } from './SourceMappingsSection'
 
@@ -139,6 +140,29 @@ export const LinkSourceSearch: Story = {
     // Opens seeded with the series title, so the first search runs without typing.
     await expect(await within(dialog).findByText('Lanterns Over Kasumi: Side Stories')).toBeVisible()
     await waitFor(() => expect(within(dialog).getAllByRole('link', { name: 'Open source page' })).toHaveLength(2))
+  },
+}
+
+/** A pasted address no source knows: an admin is offered to set the site up right here. */
+export const PastedUrlNoSourceKnows: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/search/resolvesource'), () =>
+        failWith(404, 'No source recognizes that URL.', 'error.search.noSourceRecognizesUrl')),
+      ...settingsHandlers,
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    const open = await canvas.findByRole('button', { name: /link source/i })
+    await waitFor(() => expect(open).toBeEnabled())
+    await userEvent.click(open)
+    const dialog = await body.findByRole('dialog', { name: 'Link a source' })
+    const field = within(dialog).getByRole('textbox', { name: 'Search or paste a series URL' })
+    await userEvent.clear(field)
+    await userEvent.type(field, 'https://quietpen.example/series/blue/')
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Set up this site as a source' }))
+    await expect(await body.findByRole('textbox', { name: 'Series page' })).toHaveValue('https://quietpen.example/series/blue/')
   },
 }
 

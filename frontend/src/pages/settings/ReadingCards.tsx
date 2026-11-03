@@ -16,8 +16,8 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core'
-import { IconCopy, IconRefresh } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { IconCopy, IconRefresh } from '../../lib/icons'
+import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { useAuth } from '../../auth/AuthProvider'
 import { useOpdsSettings, useRotateOpdsToken, useSaveOpdsSettings } from '../../api/hooks'
@@ -273,7 +273,7 @@ export function OpdsSection() {
                   size="compact-xs"
                   variant="light"
                   color="var(--danger)"
-                  leftSection={<IconRefresh size={14} />}
+                  leftSection={<IconRefresh size={16} />}
                   onClick={() => setRotateModalOpen(true)}
                 >
                   <Trans>Regenerate</Trans>

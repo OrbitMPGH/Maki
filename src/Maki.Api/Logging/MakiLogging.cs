@@ -94,6 +94,24 @@ public static class MakiLogging
         };
     }
 
+    /// <summary>
+    /// The access log's own logger: one file, no console, no level floors and no enrichment, because
+    /// every line is already finished text in a format other tools parse (see
+    /// <see cref="AccessLogLine"/>). Kept apart from <c>Log.Logger</c> so turning it on never adds a
+    /// line per request to the main log. Rolls and retains like the main log.
+    /// </summary>
+    public static Logger BuildAccessLog(AppPaths paths, LoggingOptions options) =>
+        new LoggerConfiguration()
+            .MinimumLevel.Information()
+            .WriteTo.File(
+                Path.Combine(paths.LogDir, "access-.log"),
+                outputTemplate: "{Message:l}{NewLine}",
+                rollingInterval: RollingInterval.Day,
+                fileSizeLimitBytes: options.FileSizeMb * 1024L * 1024L,
+                rollOnFileSizeLimit: true,
+                retainedFileCountLimit: options.RetainedFiles)
+            .CreateLogger();
+
     private static Logger Build(AppPaths paths, LoggingOptions options)
     {
         return new LoggerConfiguration()

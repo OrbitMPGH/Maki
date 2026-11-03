@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ActionIcon, Anchor, Button, Group, Modal, Stack, Text } from '@mantine/core'
-import { IconBell, IconChevronRight, IconSettings, IconX } from '@tabler/icons-react'
+import { IconBell, IconChevronRight, IconSettings, IconX } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useDiscoverFeed, type CatalogueCredit, type DiscoverRail, type RecommendationItem } from '../../api/hooks'
 import {
   FOLLOWING_RAIL_KEY,
+  FOLLOWING_RAIL_MONTHS,
   followingFeedRequest,
   sameCredit,
   useFollowedCreators,
   useSaveFollowedCreators,
 } from '../../api/following'
 import { CREDIT_ROLE_LABELS } from '../CreditPicker'
-import { DiscoverRailRow } from '../ui/DiscoverRail'
+import { DiscoverRailRow, type OpenItem } from '../ui/DiscoverRail'
+import { sectionSource } from '../../api/shortlist'
 import { RailSkeleton } from '../ui/RailSkeleton'
 import { SectionHeader } from '../ui/SectionHeader'
 import { useLabel } from '../../i18n-context'
@@ -22,7 +24,8 @@ export function creatorHref(c: CatalogueCredit) {
 }
 
 /**
- * The newest catalogue titles credited to anyone the reader follows, owned series left out. Renders
+ * The last year's catalogue titles credited to anyone the reader follows, minus what they own or have
+ * liked, disliked, hidden or marked seen. Renders
  * nothing for somebody who follows nobody: the follow button on a creator page is how it starts.
  */
 export function FollowingRail({
@@ -35,7 +38,7 @@ export function FollowingRail({
   enabled: boolean
   limit: number
   seriesIdFor: (item: RecommendationItem) => number | null
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
   /** Opens the rail's expanded view, with its creators loaded as the filter. */
   onShowMore: (rail: DiscoverRail) => void
 }) {
@@ -59,7 +62,8 @@ export function FollowingRail({
     items: items ?? [],
     filters: { credits: creators },
     sort: 'newest',
-    excludeOwned: true,
+    excludeInteracted: true,
+    releasedWithinMonths: FOLLOWING_RAIL_MONTHS,
   }
 
   return (
@@ -73,7 +77,7 @@ export function FollowingRail({
             <Button
               variant="subtle"
               size="xs"
-              leftSection={<IconSettings size={14} />}
+              leftSection={<IconSettings size={16} />}
               onClick={() => setManaging(true)}
             >
               <Trans>Manage</Trans>
@@ -81,7 +85,7 @@ export function FollowingRail({
             <Button
               variant="subtle"
               size="xs"
-              rightSection={<IconChevronRight size={14} />}
+              rightSection={<IconChevronRight size={16} />}
               onClick={() => onShowMore(expanded)}
             >
               <Trans>Show more</Trans>
@@ -90,10 +94,10 @@ export function FollowingRail({
         }
       />
       {items && items.length > 0 ? (
-        <DiscoverRailRow items={items} seriesIdFor={seriesIdFor} onOpen={onOpen} />
+        <DiscoverRailRow items={items} seriesIdFor={seriesIdFor} onOpen={onOpen} savedFrom={sectionSource('following')} />
       ) : (
         <Text c="var(--ink-3)" size="sm">
-          <Trans>Everything they have in the catalogue is already in your library.</Trans>
+          <Trans>Nothing new from them in the last {FOLLOWING_RAIL_MONTHS} months that you have not seen already.</Trans>
         </Text>
       )}
       <FollowingManager opened={managing} creators={creators} onClose={() => setManaging(false)} />

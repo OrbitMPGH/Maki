@@ -47,6 +47,17 @@ var dumpPath = Environment.GetEnvironmentVariable("MAKI_EVAL_DUMP")
 
 var candidateName = args.Length > 0 ? args[0].Trim().ToLowerInvariant() : "base";
 
+// `<candidate>@N` scores the same model with every vector cut to its first N dimensions and
+// renormalized, which is how a Matryoshka-trained model (arctic-embed v1.5) is meant to be shrunk.
+// The passage cache is shared with the full-width run, so a truncation costs no re-embed.
+var modelName = candidateName;
+var at = candidateName.IndexOf('@');
+if (at > 0)
+{
+    Truncation.To = int.Parse(candidateName[(at + 1)..], CultureInfo.InvariantCulture);
+    modelName = candidateName[..at];
+}
+
 // `pairs` swaps to the hand-labelled set (see QueryPairs) over the whole recommendable catalogue,
 // because those twelve targets are famous series that an arbitrary 10k slice would simply not
 // contain - and a target missing from the pool scores zero for every model equally, which looks
@@ -89,9 +100,15 @@ var queryCount = args.Length > (namedMode ? 3 : 2)
     ? int.Parse(args[namedMode ? 3 : 2], CultureInfo.InvariantCulture)
     : 1000;
 
-if (!Candidates.All.TryGetValue(candidateName, out var profile))
+if (!Candidates.All.TryGetValue(modelName, out var profile))
 {
-    Console.WriteLine($"unknown candidate '{candidateName}'. Known: {string.Join(", ", Candidates.All.Keys)}");
+    Console.WriteLine($"unknown candidate '{modelName}'. Known: {string.Join(", ", Candidates.All.Keys)}");
+    return 2;
+}
+
+if (Truncation.To > 0 && (Truncation.To > profile.Dimensions || dualMode || pairsMode))
+{
+    Console.WriteLine($"error: cannot truncate {profile.Dimensions} dims to {Truncation.To}{(dualMode || pairsMode ? " in this mode" : "")}.");
     return 2;
 }
 
@@ -111,7 +128,7 @@ var options = new EmbeddingOptions(Path.Combine(workDir, "models"), Path.Combine
     Enabled = true,
 };
 
-Console.WriteLine($"candidate : {candidateName} ({profile.Version}, {profile.Dimensions} dims)");
+Console.WriteLine($"candidate : {candidateName} ({profile.Version}, {profile.Dimensions} dims{(Truncation.To > 0 ? $", scored at {Truncation.To}" : "")})");
 Console.WriteLine($"runtime   : {options.Precision} on {options.Provider}, batch {options.BatchSize}");
 Console.WriteLine($"pool      : {poolSize} series, {queryCount} queries");
 Console.WriteLine();
@@ -206,7 +223,7 @@ Directory.CreateDirectory(resultsDir);
 //       before and after. See TextEmbedderEncodingTests.
 const int CacheVersion = 3;
 var vectorCache = Path.Combine(
-    resultsDir, $"vec{CacheVersion}-{candidateName}-{pool.Count}x{profile.Dimensions}.bin");
+    resultsDir, $"vec{CacheVersion}-{modelName}-{pool.Count}x{profile.Dimensions}.bin");
 float[][] passages;
 if (File.Exists(vectorCache))
 {
@@ -318,7 +335,7 @@ if (dualMode)
 
     float[][] LoadOrEmbed(string kind, IReadOnlyList<string> texts)
     {
-        var path = Path.Combine(resultsDir, $"vec{CacheVersion}-{candidateName}-{kind}-{pool.Count}x{profile.Dimensions}.bin");
+        var path = Path.Combine(resultsDir, $"vec{CacheVersion}-{modelName}-{kind}-{pool.Count}x{profile.Dimensions}.bin");
         if (File.Exists(path))
         {
             Console.WriteLine($"  reused cached {kind} vectors ({Path.GetFileName(path)})");
@@ -677,6 +694,8 @@ static (double Mrr, double StdErr, double R1, double R10, double R20, double[] P
     // and another is broad.
     const int Depth = 20;
 
+    queries = Truncation.Apply(queries);
+    passages = Truncation.Apply(passages);
     var reciprocalRanks = new double[queries.Length];
 
     // Parallel over queries, each with its own scratch buffer: at 2000 queries against a 10k pool
@@ -852,9 +871,11 @@ file static class EvalQueries
             }
 
             var parts = raw.Split('\t');
-            if (parts.Length != 3)
+            // A fourth column holds filters for eval-search.cs. The dense channel alone cannot apply
+            // them, so a filtered row is scored unfiltered, the same way for every candidate.
+            if (parts.Length is not (3 or 4))
             {
-                throw new InvalidOperationException($"Malformed line in {Path.GetFileName(path)} (want 3 tab-separated fields): {raw}");
+                throw new InvalidOperationException($"Malformed line in {Path.GetFileName(path)} (want 3 or 4 tab-separated fields): {raw}");
             }
 
             items.Add(new Item(parts[0].Trim(), parts[1].Trim(), parts[2].Trim()));
@@ -1028,9 +1049,48 @@ file static class Candidates
             VocabUrl: "https://huggingface.co/Snowflake/snowflake-arctic-embed-m/resolve/main/vocab.txt",
             PrebuiltTag: "unpublished"),
 
+        // The shipped model's successor: same architecture, size and query prefix, but trained with
+        // Matryoshka loss so its first 256 dimensions stand on their own. Score it as
+        // `arctic-m15@256` to measure the truncated form. Snowflake's own export pools (CLS) and
+        // normalizes inside the graph and takes no token_type_ids, unlike v1's.
+        ["arctic-m15"] = new(
+            Kind: "arctic-m15",
+            FolderName: "snowflake-arctic-embed-m-v1.5",
+            Dimensions: 768,
+            Version: "snowflake-arctic-embed-m-v1.5-eval",
+            ModelUrl: "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v1.5/resolve/main/onnx/model_quantized.onnx",
+            VocabUrl: "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v1.5/resolve/main/vocab.txt",
+            PrebuiltTag: "unpublished")
+        {
+            Pooling = EmbeddingPooling.Pooled,
+        },
+
+        // Not a successor to arctic-m despite the name: a GTE-multilingual encoder (305M, RoPE,
+        // 250k XLM-R vocabulary) that pools and normalizes inside the graph. Matryoshka-trained to
+        // 256 like v1.5, and the only candidate here that can match a non-English query to an
+        // English description. Its repo ships only tokenizer.json, so the vocab is xlm-roberta's
+        // SentencePiece model with the fairseq id shift; ids verified against the HF tokenizer.
+        ["arctic-m2"] = new(
+            Kind: "arctic-m2",
+            FolderName: "snowflake-arctic-embed-m-v2.0",
+            Dimensions: 768,
+            Version: "snowflake-arctic-embed-m-v2.0-eval",
+            ModelUrl: "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0/resolve/main/onnx/model_quantized.onnx",
+            VocabUrl: "https://huggingface.co/FacebookAI/xlm-roberta-base/resolve/main/sentencepiece.bpe.model",
+            PrebuiltTag: "unpublished")
+        {
+            Pooling = EmbeddingPooling.Pooled,
+            TokenizerKind = EmbeddingTokenizer.SentencePiece,
+            FairseqTokenIds = true,
+            BeginOfSequenceToken = 0,
+            EndOfSequenceToken = 2,
+            QueryPrefix = "query: ",
+            PassagePrefix = "",
+        },
+
         // A decoder embedder, and the reason EmbeddingPooling.LastToken and DecoderGraph exist.
         // Reference only, not a shipping candidate: 600M parameters is ~600 MB resident on a user's
-        // CPU for every search, against 240 MB for the current default. Its 8B sibling has no ONNX
+        // CPU for every search, against 140 MB for the current default. Its 8B sibling has no ONNX
         // export at all and would be ~8 GB, which is why that one could not be scored even in
         // principle. The instruction prefix is the format Qwen documents for retrieval; passages
         // deliberately get none, which is the asymmetry the model was trained with.
@@ -1117,6 +1177,37 @@ file static class Candidates
             PassagePrefix = "",
         },
     };
+}
+
+file static class Truncation
+{
+    public static int To;
+
+    public static float[][] Apply(float[][] vectors)
+    {
+        if (To <= 0 || vectors.Length == 0 || vectors[0].Length <= To)
+        {
+            return vectors;
+        }
+
+        var result = new float[vectors.Length][];
+        for (var i = 0; i < vectors.Length; i++)
+        {
+            var cut = vectors[i].AsSpan(0, To).ToArray();
+            var norm = MathF.Sqrt(cut.Sum(v => v * v));
+            if (norm > 0)
+            {
+                for (var d = 0; d < cut.Length; d++)
+                {
+                    cut[d] /= norm;
+                }
+            }
+
+            result[i] = cut;
+        }
+
+        return result;
+    }
 }
 
 file sealed class Factory : IHttpClientFactory

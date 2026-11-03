@@ -283,9 +283,8 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
                 continue;
             }
 
-            var bytes = await FetchBytesAsync(url, headers, ct);
-            var unscrambled = await UnscrambleAsync(bytes, drmData, ct);
-            pages.Add(new PageRequest(url, headers, Data: unscrambled));
+            pages.Add(new PageRequest(url, headers, Fetch: async token =>
+                await UnscrambleAsync(await FetchBytesAsync(url, headers, token), drmData, token)));
         }
 
         return new ChapterPages(pages);
@@ -364,7 +363,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
             }
 
             return Task.FromResult(Encode(destination, ImageCodec.DetectFormat(imageBytes), imageBytes));
-        }, ct);
+        }, 2 * ImageWorkGate.Weigh(imageBytes), ct);
     }
 
     private const int ReencodeQuality = 90;

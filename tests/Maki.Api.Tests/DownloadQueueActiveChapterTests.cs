@@ -160,6 +160,48 @@ public class DownloadQueueActiveChapterTests : IDisposable
         Assert.Single(check.DownloadQueue.Where(q => q.ActiveChapterId == chapterId));
     }
 
+    [Theory]
+    [InlineData(1, false)]
+    [InlineData(-1, true)]
+    public async Task Requeueing_failures_leaves_a_row_whose_chapter_got_a_file_after_it_was_queued(
+        int fileAddedHoursAfterRow, bool requeued)
+    {
+        var (seriesId, chapterId) = SeedChapter();
+        var id = SeedRow(seriesId, chapterId, QueueStatus.Failed);
+        using (var db = _db.NewContext())
+        {
+            var file = new ChapterFile
+            {
+                SeriesId = seriesId, RelativePath = "s/c1.cbz", SourceName = "fake",
+                DateAdded = T0.UtcDateTime.AddHours(fileAddedHoursAfterRow)
+            };
+            db.ChapterFiles.Add(file);
+            db.SaveChanges();
+            db.Chapters.Single(c => c.Id == chapterId).ChapterFileId = file.Id;
+            db.SaveChanges();
+        }
+
+        Assert.Equal(requeued ? 1 : 0, await Queue().RequeueEligibleFailuresAsync(5));
+        using var check = _db.NewContext();
+        Assert.Equal(requeued ? QueueStatus.Queued : QueueStatus.Failed, check.DownloadQueue.Single(q => q.Id == id).Status);
+    }
+
+    [Fact]
+    public async Task Requeueing_failures_leaves_a_row_whose_chapter_was_removed_after_it_was_queued()
+    {
+        var (seriesId, chapterId) = SeedChapter();
+        SeedRow(seriesId, chapterId, QueueStatus.Failed);
+        using (var db = _db.NewContext())
+        {
+            var chapter = db.Chapters.Single(c => c.Id == chapterId);
+            chapter.FileRemovedAt = T0.UtcDateTime.AddHours(1);
+            chapter.Wanted = false;
+            db.SaveChanges();
+        }
+
+        Assert.Equal(0, await Queue().RequeueEligibleFailuresAsync(5));
+    }
+
     [Fact]
     public void Migration_applies_to_a_fresh_database_and_cancels_duplicate_active_rows()
     {
@@ -216,8 +258,8 @@ public class DownloadQueueActiveChapterTests : IDisposable
                 other.CommandText =
                     $"""
                      INSERT INTO "DownloadQueue" ("SeriesId", "ChapterId", "Protocol", "Status", "PagesTotal",
-                         "PagesDone", "RetryCount", "QueuedAt", "SortOrder", "Origin")
-                     VALUES ({seriesId}, {chapterId}, 0, {(int)QueueStatus.Queued}, 0, 0, 0, '2026-01-01 00:00:00', 0, 0)
+                         "PagesDone", "RetryCount", "QueuedAt", "SortOrder", "Origin", "ClientRemovalDeleteData")
+                     VALUES ({seriesId}, {chapterId}, 0, {(int)QueueStatus.Queued}, 0, 0, 0, '2026-01-01 00:00:00', 0, 0, 0)
                      """;
                 await other.ExecuteNonQueryAsync(cancellationToken);
             }

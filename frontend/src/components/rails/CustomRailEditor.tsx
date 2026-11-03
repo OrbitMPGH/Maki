@@ -16,7 +16,7 @@ import {
   TextInput,
 } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { useMetadataSettings, type RecommendationSeed } from '../../api/hooks'
 import {
   RAIL_SORTS,

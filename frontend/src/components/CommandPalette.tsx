@@ -1,7 +1,8 @@
 import { Center, Group, Loader, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
 import { useDisclosure, useHotkeys, useOs } from '@mantine/hooks'
-import { IconAdjustments, IconBooks, IconPlus, IconSearch, IconSend } from '@tabler/icons-react'
+import { IconAdjustments, IconArchive, IconBooks, IconPlus, IconSearch, IconSend } from '../lib/icons'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
 import { useNavigate } from 'react-router-dom'
 import { useSeries } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
@@ -53,7 +54,7 @@ export function CommandPaletteTrigger({
       onClick={onOpen}
       aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'}
     >
-      <IconSearch size={16} stroke={1.8} />
+      <IconSearch size={16} />
       <span className="command-palette-trigger-label">
         <Trans>Search</Trans>
       </span>
@@ -100,6 +101,16 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
     }
   }, [opened])
 
+  // Typing the displayed name has to find the series even when a language preference has moved it
+  // off the canonical title, and typing the canonical name still has to.
+  const seriesTitles = useMemo(
+    () =>
+      titleIndex(series ?? [], (s) => [
+        s.title, s.displayTitle, s.sortTitle, s.originalTitle, ...s.altTitles.map((t) => t.title),
+      ]),
+    [series],
+  )
+
   const results = useMemo<Result[]>(() => {
     const q = query.trim().toLowerCase()
 
@@ -125,6 +136,22 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
         path: item.path,
       }))
 
+    // Not a sidebar page, so it only turns up when searched for, and only for whoever has the library.
+    const archivedLabel = _(msg({ message: 'Archived', context: 'series' }))
+    const archivedNav =
+      q && navItems.some((item) => item.path === '/library') && archivedLabel.toLowerCase().includes(q)
+        ? [
+            {
+              kind: 'nav' as const,
+              key: 'nav-/library/archived',
+              label: archivedLabel,
+              sub: _(msg`Page`),
+              icon: IconArchive,
+              path: '/library/archived',
+            },
+          ]
+        : []
+
     // Individual settings, not just the Settings page: a card is only reachable now if you know
     // which tab it sits under, and searching is the answer to that. Filtered by what the caller may
     // actually see, so a non-admin is never sent to a tab that doesn't exist for them.
@@ -141,23 +168,13 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
       : []
 
     const seriesMatches = q
-      ? (series ?? [])
-          .filter(
-            (s) =>
-              s.title.toLowerCase().includes(q) ||
-              // Typing the displayed name has to find the series even when a language preference
-              // has moved it off the canonical title, and typing the canonical name still has to.
-              s.displayTitle.toLowerCase().includes(q) ||
-              s.sortTitle.toLowerCase().includes(q) ||
-              s.originalTitle?.toLowerCase().includes(q) ||
-              s.altTitles.some((t) => t.title.toLowerCase().includes(q)),
-          )
+      ? fuzzyFilter(series ?? [], q, seriesTitles)
           .slice(0, MAX_SERIES_RESULTS)
           .map((s) => ({
             kind: 'series' as const,
             key: `series-${s.id}`,
             label: s.displayTitle,
-            sub: renderLabel(seriesStatusVisual(s.status).label),
+            sub: s.archivedAt != null ? archivedLabel : renderLabel(seriesStatusVisual(s.status).label),
             coverUrl: s.coverUrl,
             path: `/series/${s.id}`,
           }))
@@ -179,8 +196,8 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
         ]
       : []
 
-    return [...navMatches, ...settingMatches, ...seriesMatches, ...searchFallback]
-  }, [query, navItems, series, visibleSettings, canAdd, renderLabel, _, i18n.locale])
+    return [...navMatches, ...archivedNav, ...settingMatches, ...seriesMatches, ...searchFallback]
+  }, [query, navItems, series, seriesTitles, visibleSettings, canAdd, renderLabel, _, i18n.locale])
 
   useEffect(() => {
     setSelected(0)
@@ -285,14 +302,14 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
                   style={{ cursor: 'pointer', borderRadius: 'var(--radius-thumb)' }}
                 >
                   {r.kind === 'nav' ? (
-                    <r.icon size={18} stroke={1.7} />
+                    <r.icon size={18} />
                   ) : r.kind === 'setting' ? (
-                    <IconAdjustments size={18} stroke={1.7} />
+                    <IconAdjustments size={18} />
                   ) : r.kind === 'search' ? (
                     canAdd ? (
-                      <IconPlus size={18} stroke={1.7} />
+                      <IconPlus size={18} />
                     ) : (
-                      <IconSend size={18} stroke={1.7} />
+                      <IconSend size={18} />
                     )
                   ) : r.coverUrl ? (
                     <img
@@ -303,7 +320,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
                       style={{ objectFit: 'cover', borderRadius: 'var(--mantine-radius-xs)', flexShrink: 0 }}
                     />
                   ) : (
-                    <IconBooks size={18} stroke={1.7} />
+                    <IconBooks size={18} />
                   )}
                   <Stack gap={0} style={{ minWidth: 0 }}>
                     <Text size="sm" fw={600} truncate>

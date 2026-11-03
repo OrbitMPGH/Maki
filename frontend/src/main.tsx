@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Notifications, notifications } from '@mantine/notifications'
+import { Notifications } from '@mantine/notifications'
+import { notifications } from './lib/toast'
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { unstable_HistoryRouter as HistoryRouter } from 'react-router-dom'
 import '@mantine/core/styles.css'

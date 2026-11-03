@@ -1,4 +1,5 @@
 ﻿using Maki.Api.Localization;
+using System.Collections.Concurrent;
 using System.Text.Json;
 using Maki.Core.Entities;
 using Maki.Data;
@@ -8,9 +9,14 @@ using Quartz.Listener;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
 namespace Maki.Api.Services;
-public class HealthJobListener(IServiceScopeFactory scopes, ILogger<HealthJobListener> logger) : JobListenerSupport
+public class HealthJobListener(
+    IServiceScopeFactory scopes, ILogger<HealthJobListener> logger, TimeProvider? time = null) : JobListenerSupport
 {
     private static readonly TimeSpan RestampAfter = TimeSpan.FromMinutes(5);
+
+    // What each job's row was last seen to hold, so a run that changes nothing returns before it
+    // opens a scope and reads the row: about eight reads a minute on an idle instance.
+    private readonly ConcurrentDictionary<string, (string Status, DateTime CheckedAt)> _seen = new();
 
     public override string Name => "health-job-history";
     public override async Task JobWasExecuted(IJobExecutionContext context, JobExecutionException? jobException, CancellationToken cancellationToken = default)
@@ -19,16 +25,21 @@ public class HealthJobListener(IServiceScopeFactory scopes, ILogger<HealthJobLis
         {
             if (JobOutcome.WasInterrupted(context)) return;
             var failed = JobOutcome.Failed(context, jobException);
+            var id = $"job:{context.JobDetail.Key}";
+            var status = failed ? "error" : "healthy";
+            var now = (time ?? TimeProvider.System).GetUtcNow().UtcDateTime;
+            if (_seen.TryGetValue(id, out var seen) && seen.Status == status && now - seen.CheckedAt < RestampAfter) return;
             using var scope = scopes.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
-            var id = $"job:{context.JobDetail.Key}";
             var row = await db.HealthChecks.FindAsync([id], cancellationToken);
             if (row == null) { row = new HealthCheckRecord { Id = id, Category = "job" }; db.HealthChecks.Add(row); }
-            var status = failed ? "error" : "healthy";
             var previous = row.Status;
-            var now = DateTime.UtcNow;
             // The 15 second poll would otherwise commit a write per run to restamp the same row.
-            if (previous == status && now - row.CheckedAt < RestampAfter) return;
+            if (previous == status && now - row.CheckedAt < RestampAfter)
+            {
+                _seen[id] = (status, row.CheckedAt);
+                return;
+            }
             var notify = HealthTransitions.Observe(row, status, false, now);
             row.MessageKey = failed ? "health.check.jobFailed" : "health.check.jobSucceeded";
             row.ParamsJson = JsonSerializer.Serialize(new { job = context.JobDetail.Key.ToString() });
@@ -42,6 +53,7 @@ public class HealthJobListener(IServiceScopeFactory scopes, ILogger<HealthJobLis
                     ParamsJson = row.ParamsJson,
                 });
             await db.SaveChangesAsync(cancellationToken);
+            _seen[id] = (status, row.CheckedAt);
             if (notify)
             {
                 var job = context.JobDetail.Key.ToString();

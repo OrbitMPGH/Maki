@@ -19,10 +19,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-public sealed class PageConversionTests : IDisposable
+public sealed partial class PageConversionTests : IDisposable
 {
     private readonly UpgradeWorld _world = new UpgradeWorld().Seed();
-    private static readonly PageConversionSettings Webp = new(PageConversionFormat.Webp, 80);
+    private static readonly PageConversionSettings Webp = new(PageConversionFormat.Webp, PageConversionStop.Balanced, false);
 
     public void Dispose() => _world.Dispose();
 
@@ -76,11 +76,11 @@ public sealed class PageConversionTests : IDisposable
     private PageConversionService Service(MakiDbContext db, Func<string, string, bool>? hardlink = null,
         Action<string, string>? moveOver = null,
         Func<string, string, PageConversionSettings, CancellationToken, Task<ArchiveConversionResult>>? converter = null,
-        Func<string, long?>? freeSpace = null, bool? copiesSource = null) =>
-        new(db, _world.Archives,
+        Func<string, long?>? freeSpace = null, bool? copiesSource = null, ReaderArchiveCache? archives = null) =>
+        new(db, archives ?? _world.Archives,
             new KavitaScanService(new KavitaClient(new StubHttpClientFactory("{}")), _world.Settings, _world.Db.ScopeFactory(),
                 NullLogger<KavitaScanService>.Instance),
-            NullLogger<PageConversionService>.Instance)
+            _world.Settings, NullLogger<PageConversionService>.Instance)
         {
             Hardlink = hardlink ?? FileLinker.TryHardlink,
             MoveOver = moveOver ?? ((from, to) => File.Move(from, to, overwrite: true)),
@@ -228,8 +228,8 @@ public sealed class PageConversionTests : IDisposable
 
         using (var db = _world.Db.NewContext())
         {
-            var result = await Service(db).ConvertAsync(fileId, new PageConversionSettings(PageConversionFormat.Webp, 100),
-                CancellationToken.None);
+            var result = await Service(db).ConvertAsync(fileId,
+                new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.High, false), CancellationToken.None);
             Assert.Equal((FileConversionStatus.Unchanged, ArchiveConversionOutcome.NotSmaller), (result.Status, result.Outcome));
         }
 
@@ -260,7 +260,7 @@ public sealed class PageConversionTests : IDisposable
     }
 
     [Fact]
-    public async Task A_new_download_is_converted_and_recorded_as_the_jpeg_the_source_served()
+    public async Task A_new_download_is_placed_as_downloaded_and_the_queue_converts_it_without_keeping_the_original()
     {
         EnableConversion();
         Directory.CreateDirectory(_world.Library);
@@ -283,20 +283,36 @@ public sealed class PageConversionTests : IDisposable
 
         await _world.ProcessAsync(itemId);
 
+        int fileId;
+        using (var placed = _world.Db.NewContext())
+        {
+            Assert.Equal(QueueStatus.Completed, placed.DownloadQueue.Single(q => q.Id == itemId).Status);
+            var file = placed.Chapters.Include(c => c.ChapterFile).Single(c => c.Id == chapterId).ChapterFile!;
+            fileId = file.Id;
+            Assert.Equal(("jpg", (string?)null), (file.ImageFormat, file.OriginalImageFormat));
+            Assert.NotNull(file.ConversionQueuedAtUtc);
+            Assert.Null(file.ConversionCheckedAtUtc);
+            Assert.Equal(1, await PageConversionWorker.QueuedQuery(placed).CountAsync());
+            Assert.Equal(0, await PageConversionWorker.PendingQuery(placed).CountAsync());
+        }
+
+        Assert.Equal(1, await QueueWorker().RunQueueAsync(CancellationToken.None));
+
         using var check = _world.Db.NewContext();
-        Assert.Equal(QueueStatus.Completed, check.DownloadQueue.Single(q => q.Id == itemId).Status);
-        var file = check.Chapters.Include(c => c.ChapterFile).Single(c => c.Id == chapterId).ChapterFile!;
-        Assert.Equal(("jpg", "webp"), (file.OriginalImageFormat, file.ImageFormat));
-        Assert.True(file.ConversionSavedBytes > 0);
-        Assert.Equal(new FileInfo(Path.Combine(_world.Library, file.RelativePath)).Length, file.Size);
+        var converted = check.ChapterFiles.Single(f => f.Id == fileId);
+        Assert.Equal(("jpg", "webp"), (converted.OriginalImageFormat, converted.ImageFormat));
+        Assert.Equal("webp:high", converted.CheckedWith);
+        Assert.Null(converted.ConversionQueuedAtUtc);
+        Assert.True(converted.ConversionSavedBytes > 0);
+        Assert.Equal(new FileInfo(Path.Combine(_world.Library, converted.RelativePath)).Length, converted.Size);
         var sample = check.SourceQualitySamples.Single(s => s.ChapterId == chapterId);
-        Assert.Equal(("jpg", file.QualitySize), (sample.ImageFormat, sample.SizeBytes));
+        Assert.Equal(("jpg", converted.QualitySize), (sample.ImageFormat, sample.SizeBytes));
         Assert.Empty(TrashedOriginals());
-        Assert.False(File.Exists(Path.Combine(_world.Library, ".maki", "tmp", $"{itemId}.cbz.converted")));
+        Assert.Empty(check.PageConversionHistory);
     }
 
     [Fact]
-    public async Task An_upgrade_is_judged_on_the_pages_as_downloaded_and_stored_converted()
+    public async Task An_upgrade_is_placed_as_downloaded_and_queued_for_conversion()
     {
         EnableConversion();
         var (chapterId, fileId) = _world.Chapter(1, onDisk: true);
@@ -307,15 +323,186 @@ public sealed class PageConversionTests : IDisposable
 
         await _world.ProcessAsync(itemId);
 
-        using var check = _world.Db.NewContext();
-        Assert.Equal(QueueStatus.Completed, check.DownloadQueue.Single(q => q.Id == itemId).Status);
-        var file = check.ChapterFiles.Single(f => f.Id == fileId);
-        Assert.Equal(("jpg", "webp"), (file.OriginalImageFormat, file.ImageFormat));
-        var history = check.UpgradeHistory.Single();
-        var after = QualitySnapshot.Parse(history.AfterJson)!;
-        Assert.Equal(("jpg", file.QualitySize), (after.ImageFormat, after.SizeBytes));
-        using var zip = ZipFile.OpenRead(Path.Combine(_world.Library, file.RelativePath));
+        using (var placed = _world.Db.NewContext())
+        {
+            Assert.Equal(QueueStatus.Completed, placed.DownloadQueue.Single(q => q.Id == itemId).Status);
+            var file = placed.ChapterFiles.Single(f => f.Id == fileId);
+            Assert.Equal("jpg", file.ImageFormat);
+            Assert.NotNull(file.ConversionQueuedAtUtc);
+            var after = QualitySnapshot.Parse(placed.UpgradeHistory.Single().AfterJson)!;
+            Assert.Equal(("jpg", file.Size), (after.ImageFormat, after.SizeBytes));
+        }
+
+        await QueueWorker().RunQueueAsync(CancellationToken.None);
+
+        var row = Row(fileId.Value);
+        Assert.Equal(("jpg", "webp"), (row.OriginalImageFormat, row.ImageFormat));
+        using var zip = ZipFile.OpenRead(Path.Combine(_world.Library, row.RelativePath));
         Assert.All(Maki.Core.Reading.CbzReader.PageNames(zip), n => Assert.EndsWith(".webp", n));
+    }
+
+    [Fact]
+    public async Task A_download_with_conversion_off_is_not_queued()
+    {
+        var (chapterId, fileId) = _world.Chapter(1, onDisk: true);
+        var jpegs = Enumerable.Range(0, 20).Select(i => ScanJpeg(1500, 2250, i, quality: 92)).ToList();
+        _world.OfficialPages = c => new ChapterPages(
+            [.. jpegs.Select((bytes, i) => new PageRequest($"https://official.test/{c.SourceChapterId}/{i}.jpg", Data: bytes))]);
+
+        await _world.ProcessAsync(_world.QueueUpgrade(chapterId, fileId!.Value));
+
+        Assert.Equal("jpg", Row(fileId.Value).ImageFormat);
+        Assert.Null(Row(fileId.Value).ConversionQueuedAtUtc);
+    }
+
+    /// <summary>A queued file, as a download leaves it, or without a source chapter id as a torrent import does.</summary>
+    private (int ChapterId, int FileId, string Path) QueuedChapter(decimal number, bool torrent = false)
+    {
+        var (chapterId, fileId, path) = JpegChapter(number);
+        using var db = _world.Db.NewContext();
+        var file = db.ChapterFiles.Single(f => f.Id == fileId);
+        file.ConversionQueuedAtUtc = DateTime.UtcNow;
+        if (torrent)
+        {
+            file.SourceChapterId = null;
+        }
+
+        db.SaveChanges();
+        return (chapterId, fileId, path);
+    }
+
+    private PageConversionWorker QueueWorker(Func<MakiDbContext, PageConversionService>? service = null)
+    {
+        var services = new ServiceCollection();
+        services.AddScoped(_ => _world.Db.NewContext());
+        services.AddScoped(sp => (service ?? (db => Service(db)))(sp.GetRequiredService<MakiDbContext>()));
+        return new PageConversionWorker(services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(),
+            new SettingsService(_world.Db.ScopeFactory()), NullLogger<PageConversionWorker>.Instance)
+        {
+            DelayBetweenFiles = TimeSpan.Zero,
+            BusyRetry = TimeSpan.Zero,
+            FailedRetry = TimeSpan.Zero
+        };
+    }
+
+    [Fact]
+    public async Task The_queue_runs_without_a_pass_and_leaves_the_rest_of_the_library_to_one()
+    {
+        EnableConversion();
+        var (_, queued, _) = QueuedChapter(1);
+        var (_, library, _) = JpegChapter(2);
+        var worker = QueueWorker();
+
+        Assert.Equal(PageConversionPassState.Idle, await worker.StateAsync(CancellationToken.None));
+        Assert.Equal(1, await worker.RunQueueAsync(CancellationToken.None));
+
+        Assert.Equal("webp", Row(queued).ImageFormat);
+        Assert.Null(Row(library).ConversionCheckedAtUtc);
+        using var db = _world.Db.NewContext();
+        Assert.Equal([library], await PageConversionWorker.PendingQuery(db).Select(f => f.Id).ToListAsync());
+    }
+
+    [Fact]
+    public async Task The_queue_waits_while_conversion_is_off_and_keeps_the_files_queued()
+    {
+        var (_, fileId, _) = QueuedChapter(1);
+
+        Assert.Equal(0, await QueueWorker().RunQueueAsync(CancellationToken.None));
+
+        Assert.NotNull(Row(fileId).ConversionQueuedAtUtc);
+        Assert.Null(Row(fileId).ConversionCheckedAtUtc);
+    }
+
+    [Fact]
+    public async Task A_queued_torrent_import_keeps_its_original_in_the_trash()
+    {
+        EnableConversion();
+        var (_, fileId, path) = QueuedChapter(1, torrent: true);
+        var hash = Hash(path);
+
+        await QueueWorker().RunQueueAsync(CancellationToken.None);
+
+        Assert.Equal("webp", Row(fileId).ImageFormat);
+        Assert.Equal(hash, Hash(Assert.Single(TrashedOriginals())));
+        using var db = _world.Db.NewContext();
+        Assert.Equal(fileId, db.PageConversionHistory.Single().ChapterFileId);
+    }
+
+    private sealed class ManualClock : TimeProvider
+    {
+        public long Ticks { get; set; } = TimeSpan.TicksPerDay;
+        public override long TimestampFrequency => TimeSpan.TicksPerSecond;
+        public override long GetTimestamp() => Ticks;
+    }
+
+    [Fact]
+    public async Task A_queued_file_being_read_waits_until_the_reader_has_been_quiet()
+    {
+        EnableConversion();
+        var (_, fileId, path) = QueuedChapter(1);
+        var clock = new ManualClock();
+        var archives = new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance, clock);
+        await using (await archives.OpenPageAsync(path, "001.jpg", CancellationToken.None))
+        {
+        }
+
+        var worker = QueueWorker(db => Service(db, archives: archives));
+        Assert.Equal(0, await worker.RunQueueAsync(CancellationToken.None));
+        Assert.Equal("jpg", Row(fileId).ImageFormat);
+        Assert.NotNull(Row(fileId).ConversionQueuedAtUtc);
+
+        clock.Ticks += PageConversionService.ReadingQuiet.Ticks + TimeSpan.TicksPerSecond;
+        Assert.Equal(1, await worker.RunQueueAsync(CancellationToken.None));
+        Assert.Equal("webp", Row(fileId).ImageFormat);
+    }
+
+    [Fact]
+    public async Task A_queued_file_waits_only_for_a_download_of_its_own_chapters()
+    {
+        EnableConversion();
+        var (_, queued, _) = QueuedChapter(1);
+        var (otherChapter, _) = _world.Chapter(2, withFile: false);
+        Downloading(otherChapter);
+
+        Assert.Equal(1, await QueueWorker().RunQueueAsync(CancellationToken.None));
+        Assert.Equal("webp", Row(queued).ImageFormat);
+
+        var (ownChapter, blocked, _) = QueuedChapter(3);
+        Downloading(ownChapter);
+
+        Assert.Equal(0, await QueueWorker().RunQueueAsync(CancellationToken.None));
+        Assert.NotNull(Row(blocked).ConversionQueuedAtUtc);
+    }
+
+    private void Downloading(int chapterId)
+    {
+        using var db = _world.Db.NewContext();
+        db.DownloadQueue.Add(new DownloadQueueItem
+        {
+            SeriesId = _world.SeriesId, ChapterId = chapterId, Status = QueueStatus.Downloading,
+            QueuedAt = DateTime.UtcNow, SourceMappingId = _world.AggMappingId
+        });
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task A_queued_file_that_keeps_failing_is_left_for_the_pass()
+    {
+        EnableConversion();
+        var (_, fileId, _) = QueuedChapter(1);
+        var worker = QueueWorker(db => Service(db,
+            converter: (_, _, _, _) => throw new IOException("the share went away")));
+
+        for (var attempt = 1; attempt < PageConversionWorker.MaxQueueAttempts; attempt++)
+        {
+            Assert.Equal(0, await worker.RunQueueAsync(CancellationToken.None));
+            Assert.NotNull(Row(fileId).ConversionQueuedAtUtc);
+        }
+
+        Assert.Equal(1, await worker.RunQueueAsync(CancellationToken.None));
+        Assert.Null(Row(fileId).ConversionQueuedAtUtc);
+        using var db = _world.Db.NewContext();
+        Assert.Equal([fileId], await PageConversionWorker.PendingQuery(db).Select(f => f.Id).ToListAsync());
     }
 
     [Fact]
@@ -361,10 +548,12 @@ public sealed class PageConversionTests : IDisposable
         Assert.Equal(PageConversionPassState.Paused, (await worker.SnapshotAsync(CancellationToken.None)).State);
     }
 
-    private PageConversionController Controller(MakiDbContext db) => new(db, new SettingsService(_world.Db.ScopeFactory()),
-        new PageConversionWorker(_world.Db.ScopeFactory(), new SettingsService(_world.Db.ScopeFactory()),
+    private PageConversionController Controller(MakiDbContext db, PageConversionWorker? worker = null) => new(db,
+        new SettingsService(_world.Db.ScopeFactory()),
+        worker ?? new PageConversionWorker(_world.Db.ScopeFactory(), new SettingsService(_world.Db.ScopeFactory()),
             NullLogger<PageConversionWorker>.Instance),
-        new TestLocalizer());
+        new PageConversionPreviewService(db, _world.Paths, NullLogger<PageConversionPreviewService>.Instance),
+        new PageConversionPlanService(db), new TestLocalizer());
 
     [Fact]
     public async Task Changing_the_format_puts_files_left_as_they_were_back_in_line_but_not_converted_ones()
@@ -382,9 +571,9 @@ public sealed class PageConversionTests : IDisposable
 
         using (var db = _world.Db.NewContext())
         {
-            var result = await Controller(db).Save(new PageConversionController.SettingsDto("avif", 80, 60), CancellationToken.None);
+            var result = await Controller(db).Save(new PageConversionController.SettingsDto("avif", "high", false), CancellationToken.None);
             var status = Assert.IsType<PageConversionController.StatusDto>(Assert.IsType<OkObjectResult>(result).Value);
-            Assert.Equal(new PageConversionController.SettingsDto("avif", 80, 60), status.Settings);
+            Assert.Equal(new PageConversionController.SettingsDto("avif", "high", false), status.Settings);
             Assert.Equal(1, status.Library.ConvertedFiles);
         }
 
@@ -399,10 +588,103 @@ public sealed class PageConversionTests : IDisposable
         var controller = Controller(db);
 
         Assert.IsType<BadRequestObjectResult>(
-            await controller.Save(new PageConversionController.SettingsDto("jxl", 80, 55), CancellationToken.None));
+            await controller.Save(new PageConversionController.SettingsDto("jxl", "high", false), CancellationToken.None));
         Assert.IsType<BadRequestObjectResult>(
-            await controller.Save(new PageConversionController.SettingsDto("webp", 0, 55), CancellationToken.None));
+            await controller.Save(new PageConversionController.SettingsDto("webp", "best", false), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(
+            await controller.Save(new PageConversionController.SettingsDto("webp", null!, false), CancellationToken.None));
         Assert.IsType<ConflictObjectResult>(await controller.Start(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task The_parallel_limit_round_trips_and_reaches_the_gate_at_once()
+    {
+        using var db = _world.Db.NewContext();
+        var controller = Controller(db);
+        try
+        {
+            var saved = Saved(await controller.SaveParallel(new PageConversionController.ParallelRequest(1), CancellationToken.None));
+            Assert.Equal(new PageConversionController.ParallelDto(1, ImageWorkGate.Parallelism, ImageWorkGate.MaxConversionLimit),
+                saved.Parallel);
+            Assert.Equal(1, ImageWorkGate.ConversionLimit);
+
+            Assert.IsType<BadRequestObjectResult>(
+                await controller.SaveParallel(new PageConversionController.ParallelRequest(0), CancellationToken.None));
+            Assert.IsType<BadRequestObjectResult>(await controller.SaveParallel(
+                new PageConversionController.ParallelRequest(ImageWorkGate.MaxConversionLimit + 1), CancellationToken.None));
+            Assert.Equal(1, Saved(await controller.Status(CancellationToken.None)).Parallel.Limit);
+
+            saved = Saved(await controller.SaveParallel(new PageConversionController.ParallelRequest(null), CancellationToken.None));
+            Assert.Null(saved.Parallel.Limit);
+            Assert.Equal(ImageWorkGate.Parallelism, ImageWorkGate.ConversionLimit);
+        }
+        finally
+        {
+            ImageWorkGate.SetConversionLimit(null);
+        }
+    }
+
+    private PageConversionController.StatusDto Saved(IActionResult result) =>
+        Assert.IsType<PageConversionController.StatusDto>(Assert.IsType<OkObjectResult>(result).Value);
+
+    [Fact]
+    public async Task Settings_read_as_off_at_high_until_saved_and_round_trip_their_stop()
+    {
+        using var db = _world.Db.NewContext();
+        var controller = Controller(db);
+
+        var initial = Assert.IsType<PageConversionController.StatusDto>(Assert.IsType<OkObjectResult>(await controller.Status(CancellationToken.None)).Value);
+        Assert.Equal(new PageConversionController.SettingsDto(null, "high", false), initial.Settings);
+
+        var saved = Saved(await controller.Save(new PageConversionController.SettingsDto("webp", "compact", true), CancellationToken.None));
+        Assert.Equal(new PageConversionController.SettingsDto("webp", "compact", true), saved.Settings);
+        Assert.Equal(new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.Compact, true),
+            await PageConversionOptions.LoadAsync(db, CancellationToken.None));
+
+        var off = Saved(await controller.Save(new PageConversionController.SettingsDto(null, "balanced", false), CancellationToken.None));
+        Assert.Equal(new PageConversionController.SettingsDto(null, "balanced", false), off.Settings);
+        Assert.Null(await PageConversionOptions.LoadAsync(db, CancellationToken.None));
+        Assert.Null(await _world.Db.NewContext().AppConfig.SingleOrDefaultAsync(c => c.Key == SettingKeys.PageConversionPngLossless));
+    }
+
+    [Fact]
+    public async Task A_new_stop_puts_unconverted_files_back_in_line_and_the_same_settings_do_not()
+    {
+        var (_, untouched, _) = JpegChapter(1);
+        void Check()
+        {
+            using var db = _world.Db.NewContext();
+            db.ChapterFiles.Single(f => f.Id == untouched).ConversionCheckedAtUtc = DateTime.UtcNow;
+            db.SaveChanges();
+        }
+
+        using (var db = _world.Db.NewContext())
+        {
+            await Controller(db).Save(new PageConversionController.SettingsDto("webp", "high", false), CancellationToken.None);
+        }
+
+        Check();
+        using (var db = _world.Db.NewContext())
+        {
+            await Controller(db).Save(new PageConversionController.SettingsDto("webp", "high", false), CancellationToken.None);
+        }
+
+        Assert.NotNull(Row(untouched).ConversionCheckedAtUtc);
+
+        using (var db = _world.Db.NewContext())
+        {
+            await Controller(db).Save(new PageConversionController.SettingsDto("webp", "balanced", false), CancellationToken.None);
+        }
+
+        Assert.Null(Row(untouched).ConversionCheckedAtUtc);
+
+        Check();
+        using (var db = _world.Db.NewContext())
+        {
+            await Controller(db).Save(new PageConversionController.SettingsDto("webp", "balanced", true), CancellationToken.None);
+        }
+
+        Assert.Null(Row(untouched).ConversionCheckedAtUtc);
     }
 
     [Fact]
@@ -539,7 +821,7 @@ public sealed class PageConversionTests : IDisposable
         var first = JpegChapter(1);
         var second = JpegChapter(2);
         var probes = 0;
-        var verdicts = new Dictionary<string, bool>();
+        var cache = new PageConversionPassCache();
 
         foreach (var fileId in new[] { first.FileId, second.FileId })
         {
@@ -553,11 +835,11 @@ public sealed class PageConversionTests : IDisposable
 
                 return FileLinker.TryHardlink(source, target);
             });
-            Assert.Equal(FileConversionStatus.Converted, (await service.ConvertAsync(fileId, Webp, verdicts, CancellationToken.None)).Status);
+            Assert.Equal(FileConversionStatus.Converted, (await service.ConvertAsync(fileId, Webp, cache, CancellationToken.None)).Status);
         }
 
         Assert.Equal(1, probes);
-        Assert.Single(verdicts);
+        Assert.Single(cache.Hardlinks);
     }
 
     [WindowsFact]

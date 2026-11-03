@@ -51,6 +51,9 @@ public enum MakiPermission
 
     /// <summary>Scan a root folder for unmanaged series and adopt them.</summary>
     ImportLibrary = 1 << 11,
+
+    /// <summary>Archive a finished series out of the active library, and restore it.</summary>
+    ArchiveSeries = 1 << 12,
 }
 
 public static class MakiPermissions

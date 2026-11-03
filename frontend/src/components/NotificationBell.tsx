@@ -11,7 +11,7 @@ import {
   UnstyledButton,
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { IconAlertTriangle, IconBell, IconBellOff, IconCircleCheck } from '@tabler/icons-react'
+import { IconAlertTriangle, IconBell, IconBellOff, IconCircleCheck } from '../lib/icons'
 import { useNavigate } from 'react-router-dom'
 import {
   useInbox,
@@ -177,10 +177,10 @@ function NotificationRow({
 }
 
 export function LevelIcon({ level }: { level: InboxItem['level'] }) {
-  if (level === 'error') return <IconAlertTriangle size={15} color="var(--danger)" />
-  if (level === 'warning') return <IconAlertTriangle size={15} color="var(--warn)" />
+  if (level === 'error') return <IconAlertTriangle size={16} color="var(--danger)" />
+  if (level === 'warning') return <IconAlertTriangle size={16} color="var(--warn)" />
   // Neutral, not the accent: under a red-leaning accent a brand-coloured tick reads as an error.
-  return <IconCircleCheck size={15} color="var(--ink-3)" />
+  return <IconCircleCheck size={16} color="var(--ink-3)" />
 }
 
 /**

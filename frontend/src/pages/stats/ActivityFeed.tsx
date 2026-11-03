@@ -6,7 +6,7 @@ import {
   IconPlus,
   IconTrash,
   type Icon,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -16,6 +16,7 @@ import { Panel } from '../../components/ui/Panel'
 import { formatDate } from '../../format'
 import { useLabel } from '../../i18n-context'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
+import { MetaList } from '../../components/ui/MetaList'
 
 const PAGE = 20
 
@@ -171,7 +172,7 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
                 variant="light"
                 style={{ color: kind.color, background: `color-mix(in srgb, ${kind.color} 14%, transparent)` }}
               >
-                <KindIcon size={15} />
+                <KindIcon size={16} />
               </ThemeIcon>
               <SeriesThumb url={e.coverUrl} alt={e.title} seriesId={e.seriesId} />
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -186,9 +187,8 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
                     }
                   />
                 </Text>
-                <Text size="xs" c="var(--ink-3)">
-                  {renderLabel(kind.label)}
-                  {e.note ? ` · ${e.note}` : ''}
+                <Text component="div" size="xs" c="var(--ink-3)">
+                  <MetaList items={[renderLabel(kind.label), e.note]} />
                 </Text>
               </div>
               <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>

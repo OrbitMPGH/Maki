@@ -1,20 +1,26 @@
-import { memo } from 'react'
+import { memo, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   IconAffiliate,
+  IconBookmark,
+  IconBookmarkFilled,
   IconCheck,
   IconFeather,
   IconHeartFilled,
   IconPlus,
-  IconSparkles,
+  IconIntersect,
   IconStar,
   IconStarFilled,
   IconUsers,
-} from '@tabler/icons-react'
-import type { Icon } from '@tabler/icons-react'
+} from '../../lib/icons'
+import type { Icon } from '../../lib/icons'
 import { useLibraryCoverLookup, type RecommendationItem } from '../../api/hooks'
 import { formatFixedDecimal } from '../../format'
 import { Rail } from './Rail'
+import { seriesStatusGlyph, seriesStatusVisual, statusColor, statusOnColor } from './status'
+import { useLabel } from '../../i18n-context'
+import type { ShortlistSource } from '../../api/shortlist'
+import { useShortlistToggle } from '../discover/shortlistActions'
 import { t as now } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 
@@ -71,10 +77,11 @@ function reasonFor(item: RecommendationItem): string {
   if (item.becauseOfTitle) {
     const { becauseOfTitle } = item
     const feel = now`Feels like ${becauseOfTitle}`
-    return parts.length > 0 ? `${feel} · ${parts.join(' · ')}` : feel
+    const feelReasons = parts.join(', ')
+    return parts.length > 0 ? now`${feel}, ${feelReasons}` : feel
   }
   if (parts.length > 0) {
-    const reasonList = parts.join(' · ')
+    const reasonList = parts.join(', ')
     return now`Because: ${reasonList}`
   }
   return now`Similar feel`
@@ -93,13 +100,62 @@ function RatingChip({ rating }: { rating: number }) {
   )
 }
 
-/** "2017, Completed" on the left, "103 ch" on the right. */
-function DiscoverSub({ item }: { item: RecommendationItem }) {
+/** The opener learns where a card sits alongside the item, so the modal saves it with the right provenance. */
+export type OpenItem = (item: RecommendationItem, source?: ShortlistSource) => void
+
+function openWith(onOpen: OpenItem, item: RecommendationItem, savedFrom?: ShortlistSource) {
+  if (savedFrom) onOpen(item, savedFrom)
+  else onOpen(item)
+}
+
+function cardLabel(title: string, owned: boolean, saved: boolean): string {
+  if (owned) return now`View ${title}`
+  return saved ? now`View ${title}, on your shortlist` : now`View and add ${title}`
+}
+
+/**
+ * The poster's save control. A real button that comes after `.discover-card-action` in the DOM, so
+ * it is the card's second keyboard stop, and stacks above that overlay with `z-index`. It is only
+ * drawn under hover or focus on a device that hovers; a touch screen saves from the modal.
+ */
+function CardSaveButton({ title, saved, onToggle }: { title: string; saved: boolean; onToggle: () => void }) {
   const { t } = useLingui()
+  return (
+    <button
+      type="button"
+      className="discover-card-save"
+      aria-pressed={saved}
+      aria-label={saved ? t`Remove ${title} from your shortlist` : t`Shortlist ${title}`}
+      data-tip={saved ? t`Remove from shortlist` : t`Shortlist`}
+      onClick={onToggle}
+    >
+      {saved ? <IconBookmarkFilled size={16} /> : <IconBookmark size={16} />}
+    </button>
+  )
+}
+
+/** Status disc and word, then the year, on the left; "103 ch." on the right. The year drops out
+ *  first on a narrow card, so the status always survives. */
+function DiscoverSub({ item }: { item: RecommendationItem }) {
+  const label = useLabel()
   const { year, status, totalChapters } = item
+  const visual = seriesStatusVisual(status)
+  const Glyph = seriesStatusGlyph(status)
   return (
     <div className="discover-sub">
-      <span className="discover-sub-status">{year ? t`${year}, ${status}` : status}</span>
+      <span className="discover-sub-status">
+        <span className="discover-sub-state">
+          <span
+            className="discover-sub-disc"
+            style={{ '--tone': statusColor(visual.color), '--tone-on': statusOnColor(visual.color) } as CSSProperties}
+            aria-hidden
+          >
+            <Glyph size={10} />
+          </span>
+          <span className="discover-sub-word">{label(visual.label)}</span>
+        </span>
+        {year ? <span className="discover-sub-year">{year}</span> : null}
+      </span>
       {totalChapters ? (
         <span className="discover-sub-chapters">
           <Trans>{totalChapters} ch.</Trans>
@@ -125,29 +181,35 @@ export const RecommendationCard = memo(function RecommendationCard({
   inLibrarySeriesId,
   onOpen,
   reasonOverride,
+  savedFrom,
 }: {
   item: RecommendationItem
   /** Library series id if already owned (shows a persistent "in library" check); null otherwise. */
   inLibrarySeriesId: number | null
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
   /** Overrides the reason line: a string replaces it, `null` hides it. Omit for the default. */
   reasonOverride?: string | null
+  /** Where this card is shown, kept with the title when it is shortlisted. Keep it referentially stable. */
+  savedFrom?: ShortlistSource
 }) {
   const { t } = useLingui()
   const owned = inLibrarySeriesId != null
   const reason = reasonOverride !== undefined ? reasonOverride : reasonFor(item)
   const { title } = item
+  const { saved, usable, toggle } = useShortlistToggle(item.providerId, title, savedFrom)
 
   return (
     <div className="cover-card discover-card">
-      {/* One native control owns the whole poster. The corner glyphs are status/intent cues, not
-          duplicate actions, so a card contributes one predictable stop to keyboard navigation. */}
+      {/* One native control owns the poster; the corner glyphs are status/intent cues, not
+          duplicate actions. The one exception is the save button after it, so an unowned card is
+          two keyboard stops: open, then shortlist. */}
       <button
         type="button"
         className="discover-card-action"
-        aria-label={owned ? t`View ${title}` : t`View and add ${title}`}
-        onClick={() => onOpen(item)}
+        aria-label={cardLabel(title, owned, saved)}
+        onClick={() => openWith(onOpen, item, savedFrom)}
       />
+      {!owned && usable && <CardSaveButton title={title} saved={saved} onToggle={toggle} />}
       <div className="cover-poster">
         {/* Use the 334x500 proxy variant as the card baseline: the 167x250 version looks soft on
             the wider default and comfortable cards. Keep the raw ~460x690 art for the detail card
@@ -165,12 +227,15 @@ export const RecommendationCard = memo(function RecommendationCard({
         )}
         <div className="cover-scrim" />
 
-        {/* Owned: the check holds the poster, and the rating, there to help pick, steps aside. */}
-        {item.rating != null && !owned && <RatingChip rating={item.rating} />}
+        {item.rating != null && <RatingChip rating={item.rating} />}
 
         {owned ? (
           <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
-            <IconCheck size={14} stroke={2.2} />
+            <IconCheck size={16} />
+          </span>
+        ) : saved ? (
+          <span className="discover-corner" data-saved="true" data-tip={t`On your shortlist`} aria-hidden="true">
+            <IconBookmarkFilled size={16} />
           </span>
         ) : (
           <span
@@ -179,7 +244,7 @@ export const RecommendationCard = memo(function RecommendationCard({
             data-tip={t`View and add`}
             aria-hidden="true"
           >
-            <IconPlus size={16} stroke={2} />
+            <IconPlus size={16} />
           </span>
         )}
 
@@ -208,33 +273,34 @@ export const RecommendationRow = memo(function RecommendationRow({
   density,
   onOpen,
   reasonOverride,
+  savedFrom,
 }: {
   item: RecommendationItem
   inLibrarySeriesId: number | null
   density: 'compact' | 'default' | 'comfortable'
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
   reasonOverride?: string | null
+  savedFrom?: ShortlistSource
 }) {
   const navigate = useNavigate()
   const { t } = useLingui()
+  const label = useLabel()
   const owned = inLibrarySeriesId != null
   const reason = reasonOverride !== undefined ? reasonOverride : reasonFor(item)
   const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
-  const { totalChapters } = item
+  const { totalChapters, title } = item
+  const { saved, usable, toggle } = useShortlistToggle(item.providerId, title, savedFrom)
 
+  // Same shape as the card: one button covers the row and opens it, and the save button is a
+  // sibling stacked above it, so no control sits inside another.
   return (
-    <div
-      className={`series-row ${density}`}
-      role="button"
-      tabIndex={0}
-      onClick={() => (owned ? navigate(`/series/${inLibrarySeriesId}`) : onOpen(item))}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          owned ? navigate(`/series/${inLibrarySeriesId}`) : onOpen(item)
-        }
-      }}
-    >
+    <div className={`series-row discover-row ${density}`}>
+      <button
+        type="button"
+        className="discover-row-action"
+        aria-label={cardLabel(title, owned, saved)}
+        onClick={() => (owned ? navigate(`/series/${inLibrarySeriesId}`) : openWith(onOpen, item, savedFrom))}
+      />
       <div className="row-cover" data-series-cover={inLibrarySeriesId ?? undefined} style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}>
         {posterUrl(item) ? (
           <img
@@ -255,7 +321,7 @@ export const RecommendationRow = memo(function RecommendationRow({
           </span>
           {item.year && <span className="row-year">{item.year}</span>}
           <span className="cover-badge" style={{ flexShrink: 0 }}>
-            {item.status}
+            {label(seriesStatusVisual(item.status).label)}
           </span>
           {owned && (
             <span className="cover-badge cover-badge-circle" data-tip={t`In library`} style={{ flexShrink: 0 }}>
@@ -280,6 +346,19 @@ export const RecommendationRow = memo(function RecommendationRow({
           )}
         </div>
       </div>
+
+      {!owned && usable && (
+        <button
+          type="button"
+          className="row-shortlist"
+          aria-pressed={saved}
+          aria-label={saved ? t`Remove ${title} from your shortlist` : t`Shortlist ${title}`}
+          data-tip={saved ? t`Remove from shortlist` : t`Shortlist`}
+          onClick={toggle}
+        >
+          {saved ? <IconBookmarkFilled size={16} /> : <IconBookmark size={16} />}
+        </button>
+      )}
     </div>
   )
 })
@@ -335,7 +414,7 @@ function engineWhy(item: RecommendationItem): EngineWhy {
   if (item.becauseOfTitle) {
     const { becauseOfTitle } = item
     return {
-      Glyph: IconSparkles,
+      Glyph: IconIntersect,
       text: now`Feels like ${becauseOfTitle}`,
       seed: {
         label: now`Feels like`,
@@ -365,7 +444,7 @@ function engineWhy(item: RecommendationItem): EngineWhy {
   if (item.coRead) return { Glyph: IconUsers, text: coReadPhrase(item) }
   if (item.coRecommended) return { Glyph: IconUsers, text: now`Readers like you also recommended this` }
   if (item.tasteMatch) return { Glyph: IconHeartFilled, text: now`Close to your taste` }
-  return { Glyph: IconSparkles, text: now`Similar feel` }
+  return { Glyph: IconIntersect, text: now`Similar feel` }
 }
 
 /**
@@ -391,17 +470,20 @@ export const EngineCard = memo(function EngineCard({
   inLibrarySeriesId,
   onOpen,
   seedCoverUrl,
+  savedFrom,
 }: {
   item: RecommendationItem
   inLibrarySeriesId: number | null
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
   /** Cover of the library series the reason names. It stays recognisable when a long title is cut off. */
   seedCoverUrl?: string | null
+  savedFrom?: ShortlistSource
 }) {
   const { t } = useLingui()
   const owned = inLibrarySeriesId != null
   const { Glyph, text, seed } = engineWhy(item)
   const { title } = item
+  const { saved, usable, toggle } = useShortlistToggle(item.providerId, title, savedFrom)
   // Tags before genres: "Time Loop" says what a pick is, "Action" says what a third of the
   // catalogue is. Two, because three at this width truncate to "Cl…", "Stud…", "High…".
   // matchedTags is filtered against this series' spoiler flags by both recommendation paths.
@@ -413,9 +495,10 @@ export const EngineCard = memo(function EngineCard({
       <button
         type="button"
         className="discover-card-action"
-        aria-label={owned ? t`View ${title}` : t`View and add ${title}`}
-        onClick={() => onOpen(item)}
+        aria-label={cardLabel(title, owned, saved)}
+        onClick={() => openWith(onOpen, item, savedFrom)}
       />
+      {!owned && usable && <CardSaveButton title={title} saved={saved} onToggle={toggle} />}
       <div className="cover-poster">
         {posterUrl(item) ? (
           <img
@@ -429,15 +512,19 @@ export const EngineCard = memo(function EngineCard({
         )}
         <div className="cover-scrim" />
 
-        {item.rating != null && !owned && <RatingChip rating={item.rating} />}
+        {item.rating != null && <RatingChip rating={item.rating} />}
 
         {owned ? (
           <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
-            <IconCheck size={14} stroke={2.2} />
+            <IconCheck size={16} />
+          </span>
+        ) : saved ? (
+          <span className="discover-corner" data-saved="true" data-tip={t`On your shortlist`} aria-hidden="true">
+            <IconBookmarkFilled size={16} />
           </span>
         ) : (
           <span className="discover-corner" data-add="true" data-tip={t`View and add`} aria-hidden="true">
-            <IconPlus size={16} stroke={2} />
+            <IconPlus size={16} />
           </span>
         )}
 
@@ -496,10 +583,12 @@ export function EngineRailRow({
   items,
   seriesIdFor,
   onOpen,
+  savedFrom,
 }: {
   items: RecommendationItem[]
   seriesIdFor: (item: RecommendationItem) => number | null
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
+  savedFrom?: ShortlistSource
 }) {
   const seedCover = useSeedCover()
   return (
@@ -511,6 +600,7 @@ export function EngineRailRow({
             inLibrarySeriesId={seriesIdFor(item)}
             onOpen={onOpen}
             seedCoverUrl={seedCover(item)}
+            savedFrom={savedFrom}
           />
         </div>
       ))}
@@ -524,10 +614,12 @@ export function DiscoverRailRow({
   seriesIdFor,
   onOpen,
   showReason = false,
+  savedFrom,
 }: {
   items: RecommendationItem[]
   seriesIdFor: (item: RecommendationItem) => number | null
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
+  savedFrom?: ShortlistSource
   /**
    * Rails hide the reason line by default: a catalogue rail is a row of covers you skim, and every
    * card carrying "Because: Action, Drama" is noise where the rail's own heading already said why
@@ -545,6 +637,7 @@ export function DiscoverRailRow({
             inLibrarySeriesId={seriesIdFor(item)}
             onOpen={onOpen}
             reasonOverride={showReason ? undefined : null}
+            savedFrom={savedFrom}
           />
         </div>
       ))}

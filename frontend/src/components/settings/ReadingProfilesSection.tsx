@@ -13,8 +13,8 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
-import { IconChevronDown, IconChevronUp, IconPlus, IconTrash } from '@tabler/icons-react'
+import { notifications } from '../../lib/toast'
+import { IconChevronDown, IconChevronUp, IconPlus, IconTrash } from '../../lib/icons'
 import {
   SERIES_TYPES,
   SERIES_TYPE_LABELS,
@@ -35,6 +35,15 @@ import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SettingsNumberInput } from './SettingsNumberInput'
 import { useReportUnsaved } from './SaveButton'
+import {
+  ENHANCE_FALLBACKS,
+  ENHANCE_PROGRESS_STYLES,
+  ENHANCE_LEVELS,
+  ENHANCE_METHODS,
+  ENHANCE_SKIP_TIERS,
+  enhanceMethodInfo,
+  isServerMethod,
+} from '../../pages/reader/enhanceMethods'
 
 const MODE_LABELS: Record<ReaderPrefs['mode'], MessageDescriptor> = {
   paged: msg`Single page`,
@@ -56,7 +65,19 @@ const FIT_LABELS: Record<ReaderPrefs['fit'], MessageDescriptor> = {
 
 /** `renderLabel` comes from the caller's own `useLabel()` so this stays a plain function, not a hook. */
 function summarize(prefs: ReaderPrefs, renderLabel: (label: MessageDescriptor) => string): string {
-  return `${renderLabel(MODE_LABELS[prefs.mode])}, ${renderLabel(DIRECTION_LABELS[prefs.direction])}, ${renderLabel(FIT_LABELS[prefs.fit])}`
+  const parts = [
+    renderLabel(MODE_LABELS[prefs.mode]),
+    renderLabel(DIRECTION_LABELS[prefs.direction]),
+    renderLabel(FIT_LABELS[prefs.fit]),
+  ]
+  if (prefs.enhance !== 'off') {
+    const method = enhanceMethodInfo(prefs.enhanceMethod)
+    const levelInfo = ENHANCE_LEVELS.find((l) => l.value === prefs.enhance)
+    const level = levelInfo ? renderLabel(levelInfo.label) : prefs.enhance
+    const methodLabel = method ? renderLabel(method.label) : prefs.enhanceMethod
+    parts.push(now`enhance ${level}, ${methodLabel}`)
+  }
+  return parts.join(', ')
 }
 
 /**
@@ -85,7 +106,7 @@ export function ReadingProfilesSection() {
         <Button
           size="xs"
           variant="light"
-          leftSection={<IconPlus size={14} />}
+          leftSection={<IconPlus size={16} />}
           onClick={() => setCreating((open) => !open)}
         >
           <Trans>New profile</Trans>
@@ -296,6 +317,7 @@ function ProfileEditor({
   const [types, setTypes] = useState<string[]>(initial.seriesTypes)
   const [prefs, setPrefs] = useState<ReaderPrefs>(initial.prefs)
   const set = (patch: Partial<ReaderPrefs>) => setPrefs((current) => ({ ...current, ...patch }))
+  const methodInfo = enhanceMethodInfo(prefs.enhanceMethod)
   useReportUnsaved(
     JSON.stringify({ name, types, prefs }) !==
       JSON.stringify({ name: initial.name, types: initial.seriesTypes, prefs: initial.prefs }),
@@ -442,6 +464,61 @@ function ProfileEditor({
           ]}
         />
       </Group>
+
+      <Group grow align="flex-start">
+        <Select
+          label={t`Enhance`}
+          description={t`Sharpen soft pages. Auto does it only when a page is shown larger than its source or looks blurry.`}
+          allowDeselect={false}
+          value={prefs.enhance}
+          onChange={(value) => value && set({ enhance: value as ReaderPrefs['enhance'] })}
+          data={ENHANCE_LEVELS.map((level) => ({ value: level.value, label: renderLabel(level.label) }))}
+        />
+        {prefs.enhance !== 'off' && (
+          <Select
+            label={t`Method`}
+            description={
+              isServerMethod(prefs.enhanceMethod)
+                ? t`Server methods apply only when the admin has enabled them; otherwise the fallback is used.`
+                : methodInfo && renderLabel(methodInfo.hint)
+            }
+            allowDeselect={false}
+            value={prefs.enhanceMethod}
+            onChange={(value) => value && set({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })}
+            data={ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label) }))}
+          />
+        )}
+      </Group>
+      {prefs.enhance !== 'off' && (
+        <MultiSelect
+          label={t`Don't enhance`}
+          description={t`Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already.`}
+          placeholder={t`Every quality is enhanced`}
+          value={prefs.enhanceSkipTiers}
+          onChange={(value) => set({ enhanceSkipTiers: value as ReaderPrefs['enhanceSkipTiers'] })}
+          data={ENHANCE_SKIP_TIERS.map((tier) => ({ value: tier.value, label: renderLabel(tier.label) }))}
+        />
+      )}
+      {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
+        <Select
+          label={t`Fallback`}
+          description={t`Shown on this device until the server's page is ready, and whenever the server can't be used.`}
+          allowDeselect={false}
+          value={prefs.enhanceFallback}
+          onChange={(value) => value && set({ enhanceFallback: value as ReaderPrefs['enhanceFallback'] })}
+          data={ENHANCE_FALLBACKS.map((f) => ({ value: f.value, label: renderLabel(f.label) }))}
+        />
+      )}
+      {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
+        <Select
+          label={t`Upscale progress`}
+          description={t`How a page waiting for the server shows it while the reader's bars are hidden.`}
+          allowDeselect={false}
+          value={prefs.enhanceProgress}
+          onChange={(value) => value && set({ enhanceProgress: value as ReaderPrefs['enhanceProgress'] })}
+          data={ENHANCE_PROGRESS_STYLES.map((style) => ({ value: style.value, label: renderLabel(style.label) }))}
+        />
+      )}
 
       <Switch
         size="sm"

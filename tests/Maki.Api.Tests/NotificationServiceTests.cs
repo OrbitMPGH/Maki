@@ -260,6 +260,7 @@ public class NotificationServiceTests : IDisposable
         NotificationEventType.RequestResolved,
         NotificationEventType.ManualMatchNeeded,
         NotificationEventType.SeriesStatusChanged,
+        NotificationEventType.SeriesArchived,
     ];
 
     public static TheoryData<NotificationEventType> NewEvents => new(NewEventTypes);
@@ -277,6 +278,7 @@ public class NotificationServiceTests : IDisposable
             OnRequestResolved = on == NotificationEventType.RequestResolved,
             OnManualMatchNeeded = on == NotificationEventType.ManualMatchNeeded,
             OnSeriesStatusChanged = on == NotificationEventType.SeriesStatusChanged,
+            OnSeriesArchived = on == NotificationEventType.SeriesArchived,
         };
         Seed([.. NewEventTypes.Select(e => Connection(e.ToString(), e))]);
         var provider = new RecordingProvider(NotificationType.Discord);

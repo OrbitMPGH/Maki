@@ -39,10 +39,6 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
     /// <summary>Covers on static.tnlycdn.com, page images on data.tnlycdn.com.</summary>
     public IReadOnlyList<string> CoverHosts => ["tnlycdn.com"];
 
-    [GeneratedRegex(@"^(\d+)\s+(minute|minutes|hour|hours|day|days|week|weeks|month|months|year|years)\s+ago$",
-        RegexOptions.IgnoreCase)]
-    private static partial Regex RelativeDatePattern();
-
     public string? ResolveSeriesIdFromUrl(Uri url)
     {
         var tail = SourceUrl.PathTail(url, BaseUrl, "/serie/") ?? SourceUrl.PathTail(url, BaseUrl, "/webtoon/");
@@ -248,25 +244,7 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
             return absolute;
         }
 
-        var match = RelativeDatePattern().Match(text);
-        if (!match.Success)
-        {
-            return null;
-        }
-
-        var amount = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
-        TimeSpan? delta = match.Groups[2].Value.ToLowerInvariant() switch
-        {
-            "minute" or "minutes" => TimeSpan.FromMinutes(amount),
-            "hour" or "hours" => TimeSpan.FromHours(amount),
-            "day" or "days" => TimeSpan.FromDays(amount),
-            "week" or "weeks" => TimeSpan.FromDays(amount * 7),
-            "month" or "months" => TimeSpan.FromDays(amount * 30),
-            "year" or "years" => TimeSpan.FromDays(amount * 365),
-            _ => null
-        };
-
-        return delta is null ? null : DateTime.UtcNow - delta.Value;
+        return RelativeDate.Parse(text);
     }
 
     // ── Page images ───────────────────────────────────────────────────

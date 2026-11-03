@@ -19,15 +19,14 @@ import {
   IconLibrary,
   IconPencil,
   IconPlus,
-  IconSparkles,
+  IconCompass,
   IconTrash,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import {
   useSeries,
   useSeriesIdLookup,
   type DiscoverRail,
   type RecommendationApplyState,
-  type RecommendationItem,
 } from '../../api/hooks'
 import {
   customRailAsDiscoverRail,
@@ -38,8 +37,10 @@ import {
 import { useReadTracking } from '../../api/reader'
 import type { SeriesDto } from '../../api/types'
 import { filtersFromSpec } from '../CatalogueFilters'
+import { activeSeries } from '../../lib/series'
 import { CoverCard } from '../ui/CoverCard'
-import { DiscoverRailRow, EngineRailRow } from '../ui/DiscoverRail'
+import { DiscoverRailRow, EngineRailRow, type OpenItem } from '../ui/DiscoverRail'
+import type { ShortlistSource } from '../../api/shortlist'
 import { EmptyState } from '../ui/EmptyState'
 import { Rail } from '../ui/Rail'
 import { SectionHeader } from '../ui/SectionHeader'
@@ -47,7 +48,7 @@ import { useDensityPref } from '../ui/viewPrefs'
 import { CustomRailEditor, type CustomRailDraft } from './CustomRailEditor'
 import { DeleteRailDialog } from './DeleteRailDialog'
 
-const ICONS = { library: IconLibrary, recommendations: IconSparkles, catalogue: IconFilter }
+const ICONS = { library: IconLibrary, recommendations: IconCompass, catalogue: IconFilter }
 
 /**
  * One custom rail, fetched once it nears the viewport: every rail on a page is its own query, and a
@@ -64,12 +65,16 @@ export function CustomRailSection({
 }: {
   rail: CustomRail
   limit: number
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
   onShowMoreCatalogue?: (rail: DiscoverRail) => void
 }) {
   const { t } = useLingui()
   const navigate = useNavigate()
   const seriesIdFor = useSeriesIdLookup()
+  const savedFrom = useMemo<ShortlistSource>(
+    () => ({ savedFrom: `rail:${rail.id}`, savedFromDetail: rail.name }),
+    [rail.id, rail.name],
+  )
   const { ref, entry } = useIntersection({ rootMargin: '600px' })
   const [seen, setSeen] = useState(false)
   useEffect(() => {
@@ -130,21 +135,21 @@ export function CustomRailSection({
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item leftSection={<IconPencil size={14} />} onClick={() => setEditing({ rail })}>
+                <Menu.Item leftSection={<IconPencil size={16} />} onClick={() => setEditing({ rail })}>
                   <Trans>Edit</Trans>
                 </Menu.Item>
-                <Menu.Item leftSection={<IconCopy size={14} />} onClick={() => duplicate(rail.placement)}>
+                <Menu.Item leftSection={<IconCopy size={16} />} onClick={() => duplicate(rail.placement)}>
                   <Trans>Duplicate</Trans>
                 </Menu.Item>
                 {canDuplicateAcross && (
-                  <Menu.Item leftSection={<IconCopy size={14} />} onClick={() => duplicate(otherPlacement)}>
+                  <Menu.Item leftSection={<IconCopy size={16} />} onClick={() => duplicate(otherPlacement)}>
                     {otherPlacement === 'home' ? <Trans>Copy to Home</Trans> : <Trans>Copy to Discover</Trans>}
                   </Menu.Item>
                 )}
                 <Menu.Divider />
                 <Menu.Item
                   color="var(--danger)"
-                  leftSection={<IconTrash size={14} />}
+                  leftSection={<IconTrash size={16} />}
                   onClick={() => setConfirmDelete(true)}
                 >
                   <Trans>Delete</Trans>
@@ -176,9 +181,9 @@ export function CustomRailSection({
       ) : source === 'library' ? (
         <LibraryRailRow ids={data.seriesIds} />
       ) : source === 'recommendations' ? (
-        <EngineRailRow items={data.items} seriesIdFor={seriesIdFor} onOpen={onOpen} />
+        <EngineRailRow items={data.items} seriesIdFor={seriesIdFor} onOpen={onOpen} savedFrom={savedFrom} />
       ) : (
-        <DiscoverRailRow items={data.items} seriesIdFor={seriesIdFor} onOpen={onOpen} />
+        <DiscoverRailRow items={data.items} seriesIdFor={seriesIdFor} onOpen={onOpen} savedFrom={savedFrom} />
       )}
 
       {editing && <CustomRailEditor {...editing} onClose={() => setEditing(null)} />}
@@ -198,7 +203,7 @@ function RailPlaceholder({ engine }: { engine: boolean }) {
     <div className="discover-rail" data-engine={engine || undefined} aria-hidden>
       {Array.from({ length: 8 }, (_, i) => (
         <div key={i} className="discover-rail-item">
-          <Skeleton radius="lg" style={{ aspectRatio: '2 / 3' }} />
+          <Skeleton radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
         </div>
       ))}
     </div>
@@ -207,7 +212,7 @@ function RailPlaceholder({ engine }: { engine: boolean }) {
 
 function useSeriesById() {
   const { data: series } = useSeries()
-  return useMemo(() => new Map((series ?? []).map((s) => [s.id, s])), [series])
+  return useMemo(() => new Map(activeSeries(series ?? []).map((s) => [s.id, s])), [series])
 }
 
 const noop = () => {}
@@ -247,7 +252,7 @@ function LibraryRailModal({ rail, onClose }: { rail: CustomRail; onClose: () => 
       ) : !data || isLoading ? (
         <SimpleGrid cols={cols} spacing="md">
           {Array.from({ length: 12 }, (_, i) => (
-            <Skeleton key={i} radius="lg" style={{ aspectRatio: '2 / 3' }} />
+            <Skeleton key={i} radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
           ))}
         </SimpleGrid>
       ) : (
@@ -278,7 +283,7 @@ export function AddRailButton({
   }
   return (
     <>
-      <Button variant="subtle" size="xs" leftSection={<IconPlus size={14} />} onClick={() => setOpen(true)}>
+      <Button variant="subtle" size="xs" leftSection={<IconPlus size={16} />} onClick={() => setOpen(true)}>
         {label ?? <Trans>Add a rail</Trans>}
       </Button>
       {open && <CustomRailEditor draft={draft} onSaved={onCreated} onClose={() => setOpen(false)} />}

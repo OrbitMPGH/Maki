@@ -1,4 +1,5 @@
 import { errorText } from '../api/errorText'
+import { archivedExistsSeriesId } from '../api/client'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -17,15 +18,16 @@ import {
   Text,
   Textarea,
   Tooltip,
+  Divider,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import {
   IconCheck,
   IconExternalLink,
   IconPencil,
   IconTrash,
   IconX,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now, plural, msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -42,6 +44,7 @@ import {
   type SeriesRequest,
 } from '../api/requests'
 import { useAuth } from '../auth/AuthProvider'
+import { RestoreArchivedButton } from '../components/discover/ArchivedRestore'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -123,6 +126,7 @@ export default function RequestsPage() {
   }
 
   const openApprove = (request: SeriesRequest) => {
+    approve.reset()
     setApproving(request)
     setApproveNote('')
     setRootFolderId(rootFolders && rootFolders.length > 0 ? String(rootFolders[0].id) : null)
@@ -130,6 +134,10 @@ export default function RequestsPage() {
 
   // A new-series request has to land somewhere; a chapter request already has its series.
   const needsRootFolder = approving?.kind === 'NewSeries' && approving.seriesId == null
+
+  // The modal offers Restore for this one, so the page-level alert would only repeat it.
+  const archivedSeriesId = archivedExistsSeriesId(approve.error)
+  const shownApproveError = approve.isError && archivedSeriesId == null ? approve.error : null
 
   const submitApprove = () => {
     if (!approving) return
@@ -207,9 +215,9 @@ export default function RequestsPage() {
         </Tabs.List>
       </Tabs>
 
-      {(approve.isError || reject.isError || remove.isError || edit.isError) && (
+      {(shownApproveError || reject.isError || remove.isError || edit.isError) && (
         <Alert color="var(--danger)" variant="light" mb="md">
-          {errorText(approve.error ?? reject.error ?? remove.error ?? edit.error)}
+          {errorText(shownApproveError ?? reject.error ?? remove.error ?? edit.error)}
         </Alert>
       )}
 
@@ -273,9 +281,7 @@ export default function RequestsPage() {
                       <Text size="sm" c={r.editedAt ? undefined : 'var(--ink-3)'} fw={r.editedAt ? 600 : undefined}>
                         {chapterRangeLabel(r.chapterStart, r.chapterEnd)}
                       </Text>
-                      <Text size="sm" c="var(--ink-3)">
-                        ·
-                      </Text>
+                      <Divider orientation="vertical" />
                       <Text size="sm" c="var(--ink-3)">
                         {r.requestedBy}, {formatDate(r.created)}
                       </Text>
@@ -319,7 +325,7 @@ export default function RequestsPage() {
                             <Plural value={r.queuedCount} one="queued # chapter" other="queued # chapters" />
                           </>
                         )}
-                        {r.resolutionNote ? ` · ${r.resolutionNote}` : ''}
+                        {r.resolutionNote ? `. ${r.resolutionNote}` : ''}
                       </Text>
                     )}
                   </div>
@@ -354,7 +360,7 @@ export default function RequestsPage() {
                           size="xs"
                           variant="light"
                           color="var(--ok)"
-                          leftSection={<IconCheck size={15} />}
+                          leftSection={<IconCheck size={16} />}
                           onClick={() => openApprove(r)}
                         >
                           <Trans>Approve</Trans>
@@ -363,7 +369,7 @@ export default function RequestsPage() {
                           size="xs"
                           variant="subtle"
                           color="var(--danger)"
-                          leftSection={<IconX size={15} />}
+                          leftSection={<IconX size={16} />}
                           onClick={() => {
                             setRejecting(r)
                             setRejectNote('')
@@ -408,6 +414,15 @@ export default function RequestsPage() {
               value={rootFolderId}
               onChange={setRootFolderId}
             />
+          )}
+
+          {archivedSeriesId != null && (
+            <Alert color="var(--warn)" variant="light">
+              <Stack gap="xs" align="flex-start">
+                <Text size="sm">{errorText(approve.error)}</Text>
+                <RestoreArchivedButton seriesId={archivedSeriesId} size="xs" onRestored={() => approve.reset()} />
+              </Stack>
+            </Alert>
           )}
 
           <Textarea

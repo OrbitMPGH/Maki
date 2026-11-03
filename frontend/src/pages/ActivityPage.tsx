@@ -28,12 +28,12 @@ import {
   IconPackage,
   IconRefresh,
   IconSearch,
-  IconSparkles,
+  IconCircleArrowUp,
   IconTarget,
   IconX,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { Link, useSearchParams } from 'react-router-dom'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -89,6 +89,7 @@ import { useSourceLabel } from '../sourceLabels'
 import { formatBytes, formatCalendarDate, formatDateTime, formatTime } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { UpcomingView } from '../components/releases/UpcomingView'
+import { MetaList } from '../components/ui/MetaList'
 
 const HISTORY_PAGE_SIZE = 25
 const UPGRADES_PAGE_SIZE = 25
@@ -890,7 +891,7 @@ export default function ActivityPage() {
           ) : (
             <Stack gap="xl">
               <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
-                <Text size="sm" c="var(--ink-3)">
+                <Text component="div" size="sm" c="var(--ink-3)">
                   {(() => {
                     // The daily job is the only thing that writes `lastScanDate`; a per-series scan
                     // from this same button doesn't touch it, so the label says which one this is.
@@ -904,19 +905,21 @@ export default function ActivityPage() {
                       ? formatCalendarDate(upgradesSummary.lastVolumeSearchDate)
                       : t`never`
                     return (
-                      <>
-                        <Trans>Last library scan: {lastScanText}</Trans>
-                        {' · '}
-                        <Trans>Last volume search: {lastVolumeSearchText}</Trans>
-                        {' · '}
-                        <Trans>Trash: {trashSize} across {trashFilesText}</Trans>
-                        {retentionDays != null && (
-                          <>
-                            {', '}
-                            <Plural value={retentionDays} one="kept # day" other="kept # days" />
-                          </>
-                        )}
-                      </>
+                      <MetaList
+                        items={[
+                          <Trans key="scan">Last library scan: {lastScanText}</Trans>,
+                          <Trans key="volume">Last volume search: {lastVolumeSearchText}</Trans>,
+                          <span key="trash">
+                            <Trans>Trash: {trashSize} across {trashFilesText}</Trans>
+                            {retentionDays != null && (
+                              <>
+                                {', '}
+                                <Plural value={retentionDays} one="kept # day" other="kept # days" />
+                              </>
+                            )}
+                          </span>,
+                        ]}
+                      />
                     )
                   })()}
                 </Text>
@@ -925,7 +928,7 @@ export default function ActivityPage() {
                     <Button
                       size="xs"
                       variant="default"
-                      leftSection={<IconSearch size={14} />}
+                      leftSection={<IconSearch size={16} />}
                       loading={runVolumeSearch.isPending}
                       disabled={upgradesSummary.scanRunning}
                       onClick={runUpgradeVolumeSearch}
@@ -935,7 +938,7 @@ export default function ActivityPage() {
                     <Button
                       size="xs"
                       variant="default"
-                      leftSection={<IconRefresh size={14} />}
+                      leftSection={<IconRefresh size={16} />}
                       loading={runScan.isPending}
                       disabled={upgradesSummary.scanRunning}
                       onClick={runUpgradeScan}
@@ -966,7 +969,7 @@ export default function ActivityPage() {
 
               {!upgradesQuiet && (
               <Stack gap="sm">
-                <SectionHeader icon={IconSparkles} title={t`Recent upgrades`} count={upgradeHistory?.total} />
+                <SectionHeader icon={IconCircleArrowUp} title={t`Recent upgrades`} count={upgradeHistory?.total} />
                 {!upgradeHistory ? (
                   upgradeHistoryQuery.isError ? (
                     <LoadFailed query={upgradeHistoryQuery} />
@@ -1072,7 +1075,7 @@ export default function ActivityPage() {
                                           aria-label={expanded ? t`Hide replaced files` : t`Show replaced files`}
                                           aria-expanded={expanded}
                                         >
-                                          {expanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+                                          {expanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                                         </ActionIcon>
                                       </Group>
                                     </Table.Td>
@@ -1115,9 +1118,10 @@ export default function ActivityPage() {
                                       <Table.Tr key={row.id}>
                                         <Table.Td colSpan={2} className="series-cell-indent">
                                           <Text size="xs" c="var(--ink-3)" className="tnum">
-                                            {chapterRowLabel(row)}
-                                            {' · '}
-                                            {snapshotLabel(renderLabel, sourceLabel, row.before)}
+                                            <MetaList
+                                              inline
+                                              items={[chapterRowLabel(row), snapshotLabel(renderLabel, sourceLabel, row.before)]}
+                                            />
                                           </Text>
                                         </Table.Td>
                                         <Table.Td data-priority="low" />

@@ -1,5 +1,5 @@
 import { Button, Group, NumberInput, Stack, Text, Textarea } from '@mantine/core'
-import { IconSend } from '@tabler/icons-react'
+import { IconSend } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { FormEvent } from 'react'
 

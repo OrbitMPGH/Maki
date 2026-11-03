@@ -36,14 +36,13 @@ import {
   IconLibrary,
   IconPlus,
   IconRefresh,
-  IconSparkles,
   IconUsers,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { useIsFetching } from '@tanstack/react-query'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import {
   allowedContentRatings,
   CONTENT_RATING_LABELS,
@@ -105,6 +104,7 @@ import {
   useSeedCover,
   RecommendationCard,
   RecommendationRow,
+  type OpenItem,
 } from '../components/ui/DiscoverRail'
 import { type CatalogueSeed, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { FilterMatchCount, TermFilters, useRuleChips, useTermFilters } from '../components/CatalogueRules'
@@ -116,6 +116,8 @@ import { reconcileLayout } from '../components/layout/pageLayout'
 import { DISCOVER_LAYOUT_CONFIG, DISCOVER_SECTION_DEFS } from '../components/discover/discoverSectionDefs'
 import { CUSTOM_RAIL_PREFIX, customRailAsDiscoverRail, useCustomRails } from '../api/customRails'
 import { FOLLOWING_RAIL_KEY } from '../api/following'
+import { OTHER_SOURCE, railSource, sectionSource, useShortlistCount, type ShortlistSource } from '../api/shortlist'
+import { CountIndicator } from '../components/ui/CountIndicator'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
@@ -162,6 +164,7 @@ const MEM = 'discover-recommended'
 
 // Pulls in the charting library, which the Browse tab never needs.
 const TasteTab = lazy(() => import('./discover/TasteTab').then((m) => ({ default: m.TasteTab })))
+const ShortlistTab = lazy(() => import('./discover/ShortlistTab').then((m) => ({ default: m.ShortlistTab })))
 
 /** Whether a saved default constrains anything. An empty spec is how "no default" reads back. */
 function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
@@ -768,7 +771,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
                 <Button
                   variant="subtle"
                   size="xs"
-                  leftSection={<IconDeviceFloppy size={14} />}
+                  leftSection={<IconDeviceFloppy size={16} />}
                   loading={saveDefaults.isPending}
                   // Nothing set and nothing stored: there is neither a default to save nor one to clear.
                   disabled={!isCustomized && !hasAnyDefault(savedDefaults)}
@@ -833,7 +836,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
       {similar.length > 0 && (
         <>
           <SectionHeader
-            icon={IconSparkles}
+            icon={IconCompass}
             title={seedIds.length > 0 ? t`Feels like your seeds` : t`Because of what you collect`}
             count={similar.length}
           />
@@ -937,7 +940,7 @@ function FeedExpandModal({
 }: {
   rail: DiscoverRail | null
   seriesIdFor: (item: RecommendationItem) => number | null
-  onOpenItem: (item: RecommendationItem) => void
+  onOpenItem: OpenItem
   onClose: () => void
 }) {
   const { t } = useLingui()
@@ -950,6 +953,12 @@ function FeedExpandModal({
   // instead, since the filter is the whole point of the rail, and so does the follow rail, whose
   // filter is the people followed.
   const railKey = rail?.key
+  const railTitle = rail?.title
+  const railGenre = rail?.genre ?? null
+  const expandSource = useMemo(
+    () => (railKey ? railSource({ key: railKey, title: railTitle ?? '', genre: railGenre }) : OTHER_SOURCE),
+    [railKey, railTitle, railGenre],
+  )
   const presetFilters =
     railKey?.startsWith(CUSTOM_RAIL_PREFIX) || railKey === FOLLOWING_RAIL_KEY ? rail?.filters : null
   const resetAll = catalogue.reset
@@ -985,6 +994,8 @@ function FeedExpandModal({
           limit: 120,
           sort: rail.sort,
           excludeOwned: rail.excludeOwned,
+          excludeInteracted: rail.excludeInteracted,
+          releasedWithinMonths: rail.releasedWithinMonths,
         }
       : null
   const feedQuery = useDiscoverFeed(feedRequest)
@@ -1043,7 +1054,7 @@ function FeedExpandModal({
       title={
         <Group gap="xs">
           <ThemeIcon variant="light" color="brand" size="md" radius="md">
-            <IconSparkles size={16} />
+            <IconCompass size={16} />
           </ThemeIcon>
           <Text
             span
@@ -1114,6 +1125,7 @@ function FeedExpandModal({
                 item={item}
                 inLibrarySeriesId={seriesIdFor(item)}
                 onOpen={onOpenItem}
+                savedFrom={expandSource}
                 // A browse rail's cards all share one reason ("popular"), so the line is noise.
                 // On the personalised rail it says which seed drove the pick, which is the point.
                 reasonOverride={personalised ? undefined : null}
@@ -1240,6 +1252,11 @@ function DiscoverBrowseTab({
   const { data: rootFolders } = useRootFolders()
   const navigate = useNavigate()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
+  const [detailSource, setDetailSource] = useState<ShortlistSource>(OTHER_SOURCE)
+  const openDetail = useCallback<OpenItem>((item, source) => {
+    setDetailItem(item)
+    setDetailSource(source ?? OTHER_SOURCE)
+  }, [])
   const [expandedRail, setExpandedRail] = useState<DiscoverRail | null>(null)
   const seriesIdFor = useSeriesIdLookup()
 
@@ -1350,7 +1367,7 @@ function DiscoverBrowseTab({
         <Button
           size="xs"
           variant="default"
-          leftSection={<IconRefresh size={14} />}
+          leftSection={<IconRefresh size={16} />}
           loading={isFetching}
           onClick={onRefresh}
         >
@@ -1363,7 +1380,7 @@ function DiscoverBrowseTab({
   const sections: Record<DiscoverSectionKey, React.ReactNode> = {
     hero:
       heroItems.length > 0 ? (
-        <DiscoverHero items={heroItems} onOpen={setDetailItem} onRecommend={recommendFrom} seriesIdFor={seriesIdFor} />
+        <DiscoverHero items={heroItems} onOpen={(item) => openDetail(item, sectionSource('hero'))} onRecommend={recommendFrom} seriesIdFor={seriesIdFor} />
       ) : (isFetching && !rails) || (recentFetching && recentRail === undefined) ? (
         <DiscoverHeroSkeleton />
       ) : null,
@@ -1398,7 +1415,7 @@ function DiscoverBrowseTab({
             </Text>
           )
         )}
-        <EngineRailRow items={recentRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+        <EngineRailRow items={recentRail.items} seriesIdFor={seriesIdFor} onOpen={openDetail} savedFrom={sectionSource('recent')} />
       </div>
     ) : recentFetching ? (
       <RailSkeleton engine title />
@@ -1409,7 +1426,7 @@ function DiscoverBrowseTab({
         enabled={on('following')}
         limit={40}
         seriesIdFor={seriesIdFor}
-        onOpen={setDetailItem}
+        onOpen={openDetail}
         onShowMore={setExpandedRail}
       />
     ),
@@ -1438,7 +1455,7 @@ function DiscoverBrowseTab({
             ) : (
               <Text c="var(--ink-3)" size="sm" mb="sm">{railSubtitle(rail)}</Text>
             )}
-            <EngineRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+            <EngineRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={openDetail} savedFrom={sectionSource('sideinterests')} />
           </div>
         ))}
         {!sideInterests && sideInterestsFetching ? <RailSkeleton engine title /> : null}
@@ -1470,7 +1487,7 @@ function DiscoverBrowseTab({
         {/* Not an engine rail, despite being personalised: cohort items hydrate straight from the
             MangaBaka dump, so they carry no `coRead`/`matchedTags`/`becauseOfTitle` and every
             card's footer would read "Similar feel". The heading is the only grounds there is. */}
-        <DiscoverRailRow items={cohortRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+        <DiscoverRailRow items={cohortRail.items} seriesIdFor={seriesIdFor} onOpen={openDetail} savedFrom={sectionSource('cohort')} />
       </div>
     ) : cohortFetching ? (
       <RailSkeleton title />
@@ -1499,7 +1516,7 @@ function DiscoverBrowseTab({
             {/* Ranks are the point of a trending row, so the row is numbered. The counter lives on a
                 Discover-only wrapper: `.discover-rail-item` is shared with five other surfaces. */}
             <div className="discover-ranked">
-              <DiscoverRailRow items={trendingRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+              <DiscoverRailRow items={trendingRail.items} seriesIdFor={seriesIdFor} onOpen={openDetail} savedFrom={sectionSource('trending')} />
             </div>
           </div>
         ) : isFetching && !rails ? (
@@ -1517,7 +1534,7 @@ function DiscoverBrowseTab({
             <Button
               variant="subtle"
               size="xs"
-              leftSection={<IconAdjustmentsHorizontal size={14} />}
+              leftSection={<IconAdjustmentsHorizontal size={16} />}
               onClick={() =>
                 navigate('/add', {
                   state: { catalogueSeed: { sort: 'popular', filters: {}, openFilters: true } satisfies CatalogueSeed },
@@ -1541,7 +1558,7 @@ function DiscoverBrowseTab({
               rails={catalogueRails}
               cols={density.cols}
               seriesIdFor={seriesIdFor}
-              onOpen={setDetailItem}
+              onOpen={openDetail}
               onShowMore={showMore}
             />
           ) : (
@@ -1568,7 +1585,7 @@ function DiscoverBrowseTab({
     if (!isRailKey(key)) return sections[key as DiscoverSectionKey]
     const rail = discoverRails?.find((r) => r.id === railIdOf(key))
     return rail ? (
-      <CustomRailSection rail={rail} limit={40} onOpen={setDetailItem} onShowMoreCatalogue={setExpandedRail} />
+      <CustomRailSection rail={rail} limit={40} onOpen={openDetail} onShowMoreCatalogue={setExpandedRail} />
     ) : null
   }
 
@@ -1586,7 +1603,7 @@ function DiscoverBrowseTab({
         <FeedExpandModal
           rail={expandedRail}
           seriesIdFor={seriesIdFor}
-          onOpenItem={setDetailItem}
+          onOpenItem={openDetail}
           onClose={() => setExpandedRail(null)}
         />
       )}
@@ -1597,6 +1614,7 @@ function DiscoverBrowseTab({
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
+        savedFrom={detailSource}
       />
     </div>
   )
@@ -1604,11 +1622,12 @@ function DiscoverBrowseTab({
   return body
 }
 
-type DiscoverTab = 'browse' | 'recommended' | 'taste'
+type DiscoverTab = 'browse' | 'recommended' | 'taste' | 'shortlist'
 const TAB_PATHS: Record<DiscoverTab, string> = {
   browse: '/discover',
   recommended: '/discover/recommended',
   taste: '/discover/taste',
+  shortlist: '/discover/shortlist',
 }
 
 /**
@@ -1624,7 +1643,10 @@ export default function DiscoverPage() {
       ? 'recommended'
       : tab === 'taste'
         ? 'taste'
-        : 'browse'
+        : tab === 'shortlist'
+          ? 'shortlist'
+          : 'browse'
+  const { data: shortlistCount } = useShortlistCount()
 
   // The rails are cached for an hour on both sides, so the only way back to a fresh catalogue is
   // this. It lives up here rather than in the tab so it can sit in the page header. The spinner
@@ -1673,7 +1695,7 @@ export default function DiscoverPage() {
                 <Menu.Dropdown>
                   {active === 'browse' && (
                     <>
-                      <Menu.Item leftSection={<IconLayoutDashboard size={14} />} onClick={enterEditing}>
+                      <Menu.Item leftSection={<IconLayoutDashboard size={16} />} onClick={enterEditing}>
                         <Trans>Edit layout</Trans>
                       </Menu.Item>
                       <Menu.Divider />
@@ -1704,6 +1726,11 @@ export default function DiscoverPage() {
           <Tabs.Tab value="taste" disabled={editing}>
             <Trans>Your Taste</Trans>
           </Tabs.Tab>
+          <Tabs.Tab value="shortlist" disabled={editing}>
+            <CountIndicator count={shortlistCount ?? 0} inline position="middle-end" offset={-14} withBorder={false}>
+              <Trans>Shortlist</Trans>
+            </CountIndicator>
+          </Tabs.Tab>
         </Tabs.List>
       </Tabs>
 
@@ -1712,6 +1739,10 @@ export default function DiscoverPage() {
       ) : active === 'taste' ? (
         <Suspense fallback={<Loader />}>
           <TasteTab />
+        </Suspense>
+      ) : active === 'shortlist' ? (
+        <Suspense fallback={<Loader />}>
+          <ShortlistTab />
         </Suspense>
       ) : (
         <DiscoverBrowseTab

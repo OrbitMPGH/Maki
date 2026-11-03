@@ -1,5 +1,5 @@
 import type { MessageDescriptor } from '@lingui/core'
-import type { Icon } from '@tabler/icons-react'
+import type { Icon } from '../../lib/icons'
 import { isRailKey, railIdOf, type PageSection, type RailKey } from '../../api/hooks'
 
 /** One of a section's own switches, as the layout editor draws it. */

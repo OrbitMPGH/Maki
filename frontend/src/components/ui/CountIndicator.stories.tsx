@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { ActionIcon } from '@mantine/core'
-import { IconBell } from '@tabler/icons-react'
+import { IconBell } from '../../lib/icons'
 import { expect } from 'storybook/test'
 import { CountIndicator } from './CountIndicator'
 

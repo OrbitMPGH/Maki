@@ -67,7 +67,7 @@ public class LibraryImportDeferredLinkTests : IDisposable
         new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()),
         _settings, new NamingService(_settings), new StatsEventService(db),
         new SeriesIdentityService(db, NullLogger<SeriesIdentityService>.Instance), new TestLocalizer(),
-        new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
+        new TestCurrentUser(1), null!, NullLogger<LibraryImportService>.Instance);
 
     private SourceMatchWorkerHostedService Worker()
     {

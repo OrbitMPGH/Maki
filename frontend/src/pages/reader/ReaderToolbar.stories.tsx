@@ -90,7 +90,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await expect(await canvas.findByText('Lanterns Over Kasumi')).toBeVisible()
-    await expect(await canvas.findByText('131/142 chapters read · 150 in series')).toBeVisible()
+    await expect(await canvas.findByText('131/142 chapters read, 150 in series')).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Toggle bookmark' }))
     await expect(args.onToggleBookmark).toHaveBeenCalledOnce()
     await userEvent.click(await canvas.findByRole('button', { name: 'Keyboard shortcuts' }))
@@ -102,53 +102,13 @@ export const SettingsOpen: Story = {
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
     const body = within(canvasElement.ownerDocument.body)
-    await expect(await body.findByText('Reading profile')).toBeVisible()
+    await expect(await body.findByRole('radiogroup', { name: 'Layout' })).toBeVisible()
     await userEvent.click(await body.findByText('Continuous'))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ mode: 'vertical' }))
-    await userEvent.click(await body.findByLabelText('Incognito (don\'t record this session)'))
+    await userEvent.click(body.getByRole('button', { name: 'Incognito' }))
     await waitFor(() => expect(args.onIncognito).toHaveBeenCalledWith(true))
     // The toggle stays on after the click because the harness holds the state.
-    await waitFor(() => expect(body.getByLabelText('Incognito (don\'t record this session)')).toBeChecked())
-  },
-}
-
-export const ProfileDropdown: Story = {
-  // The profile Select portals its options outside the settings popover, so pressing one counts as an
-  // outside click; the popover's exit transition is what keeps the option mounted long enough to fire.
-  parameters: { realMotion: true },
-  play: async ({ args, canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
-    const body = within(canvasElement.ownerDocument.body)
-    await userEvent.click(await body.findByLabelText('Reading profile', { selector: 'input' }))
-    await userEvent.click(await body.findByRole('option', { name: 'Night reading' }))
-    await waitFor(() => expect(args.onSelection).toHaveBeenCalledWith(3))
-  },
-}
-
-export const SeriesOverride: Story = {
-  args: { selection: 'series', source: 'Series' },
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
-    const body = within(canvasElement.ownerDocument.body)
-    await expect(await body.findByText('Changes apply to this series only.')).toBeInTheDocument()
-  },
-}
-
-export const GlobalDefaults: Story = {
-  args: { selection: 'auto', source: 'Global', autoProfileId: null },
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
-    const body = within(canvasElement.ownerDocument.body)
-    await expect(await body.findByText('Changes apply to your reader defaults.')).toBeInTheDocument()
-  },
-}
-
-export const OriginalFitShowsScale: Story = {
-  args: { prefs: { ...mangaPrefs, fit: 'original', scale: 150 } },
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
-    const body = within(canvasElement.ownerDocument.body)
-    await expect(await body.findByText('Scale (150%)')).toBeInTheDocument()
+    await waitFor(() => expect(body.getByRole('button', { name: 'Incognito' })).toHaveAttribute('aria-pressed', 'true'))
   },
 }
 

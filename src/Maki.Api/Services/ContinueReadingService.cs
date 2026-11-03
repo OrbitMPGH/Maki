@@ -10,7 +10,8 @@ namespace Maki.Api.Services;
 /// <param name="ChapterId">The next downloaded chapter that has not been read.</param>
 /// <param name="Label">Rendered server-side — see <see cref="ChapterLabel"/> for why.</param>
 /// <param name="UnreadChapters">Downloaded chapters in the series still unread, this one included.</param>
-public record NextChapter(int ChapterId, string Label, int UnreadChapters);
+/// <param name="UnreadChapterIds">Those same chapters, by id.</param>
+public record NextChapter(int ChapterId, string Label, int UnreadChapters, IReadOnlySet<int> UnreadChapterIds);
 
 /// <summary>
 /// Resolves "what do I read next" for a <em>set</em> of series in a fixed number of queries.
@@ -142,7 +143,8 @@ public class ContinueReadingService(MakiDbContext db)
             result[group.Key] = new NextChapter(
                 next.Id,
                 ChapterLabel.For(next.Number, next.Volume, next.Title, next.IsOneShot),
-                unread.Count);
+                unread.Count,
+                unread.Select(c => c.Id).ToHashSet());
         }
 
         return result;

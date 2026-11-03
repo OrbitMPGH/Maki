@@ -1,16 +1,4 @@
-import {
-  ActionIcon,
-  Group,
-  Popover,
-  Progress,
-  SegmentedControl,
-  Select,
-  Slider,
-  Stack,
-  Switch,
-  Text,
-  Tooltip,
-} from '@mantine/core'
+import { ActionIcon, Group, Progress, Text, Tooltip } from '@mantine/core'
 import {
   IconArrowLeft,
   IconBookmark,
@@ -23,20 +11,23 @@ import {
   IconMaximize,
   IconMinimize,
   IconNote,
-  IconSettings,
+  IconSquareHalf,
   IconZoomIn,
   IconZoomOut,
   IconZoomReset,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
-import { wakeLockSupported } from '../../lib/wakeLock'
-import { OVERLAY_Z } from './overlay'
-import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
+import type { PrefsSelection, ReaderPrefs } from './prefs'
+import { setCompareHeld, useCompareHeld } from './compareHold'
+import { useEnhanceEngine } from './enhanceRuntime'
+import PageScrubber from './PageScrubber'
+import ReaderSettings, { OVERLAY_Z } from './ReaderSettings'
+import { isPendingPhase, useEnhancePhaseLabel, type EnhancePhase } from './ServerEnhanceStatus'
 
 export default function ReaderToolbar({
   manifest,
@@ -75,6 +66,12 @@ export default function ReaderToolbar({
   onHold,
   onReveal,
   onShortcuts,
+  serverEnhancing = false,
+  enhancedPages,
+  upscalingPages,
+  enhancePhase = null,
+  thumbs = [],
+  shownTo,
 }: {
   manifest: ReaderManifest
   page: number
@@ -119,34 +116,39 @@ export default function ReaderToolbar({
   /** Brings the chrome up; called when a keyboard user tabs onto a control while it is hidden. */
   onReveal: () => void
   onShortcuts: () => void
+  /** A server method is in use, so pages can show the server's upscale even without the browser engine. */
+  serverEnhancing?: boolean
+  /** Pages the server has upscaled; the ones ahead are marked on the slider like a video's buffer. */
+  enhancedPages?: ReadonlySet<number>
+  /** Pages the server is upscaling right now, pulsing on the slider. */
+  upscalingPages?: ReadonlySet<number>
+  /** Where the server upscale of the pages on screen stands, shown on the compare button. */
+  enhancePhase?: EnhancePhase | null
+  /** Thumbnail URL per page, shown above the slider under the pointer. */
+  thumbs?: string[]
+  /** The last page on screen, past `page` when a spread shows two. */
+  shownTo?: number
 }) {
   const { t } = useLingui()
-  const { scale } = prefs
 
   // The slider and the chapter chevrons mirror in RTL: the left chevron goes to the next chapter,
   // so each chevron's disabled state follows the chapter it actually opens.
   const rtl = prefs.direction === 'rtl'
   const [settingsOpen, setSettingsOpen] = useState(false)
-  // The thumb follows the pointer through this, and the page only moves once it is released.
-  const [scrub, setScrub] = useState<number | null>(null)
-  // A cancelled touch drag never fires onChangeEnd, so any page move also drops a stuck scrub.
-  useEffect(() => {
-    setScrub(null)
-  }, [page])
 
-  // "Auto" names the profile the series' type resolves to, so choosing it says what it will do.
-  const autoProfile = profiles.find((p) => p.id === autoProfileId)
-  const autoProfileName = autoProfile?.name
-  const autoLabel = autoProfile ? t`Auto (${autoProfileName})` : t`Auto (my defaults)`
-
-  const inForce = profiles.find((p) => p.id === selection) ?? (selection === 'auto' ? autoProfile : undefined)
-  const inForceName = inForce?.name
-  const editsAffect =
-    source === 'Series'
-      ? t`Changes apply to this series only.`
-      : source === 'Profile' && inForce
-        ? t`Changes retune "${inForceName}", so every series using it.`
-        : t`Changes apply to your reader defaults.`
+  const enhanceOn = prefs.enhance !== 'off'
+  const engineStatus = useEnhanceEngine(enhanceOn).status
+  const compareHeld = useCompareHeld()
+  const phaseLabel = useEnhancePhaseLabel()
+  const phaseShort = enhancePhase
+    ? {
+        queued: t`Waiting`,
+        working: t`Upscaling`,
+        loading: t`Loading`,
+        done: t`Upscaled`,
+        failed: t`Not upscaled`,
+      }[enhancePhase]
+    : null
 
   // Shared between the tooltip and the icon button's own aria-label, which say the same thing.
   const backChapterLabel = rtl ? t`Next chapter` : t`Previous chapter`
@@ -172,21 +174,6 @@ export default function ReaderToolbar({
     },
   }
 
-  // Escape closes the settings first. Mantine only closes on Escape when focus is inside the
-  // dropdown, and focus is usually still on the gear, so the reader's own Escape (leave the reader)
-  // would win. Captured on the window so it runs before the reader's listener, which skips a key
-  // that is already handled.
-  useEffect(() => {
-    if (!settingsOpen) return
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.preventDefault()
-      setSettingsOpen(false)
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [settingsOpen])
-
   // How much of the series is left, on the same footing as the series page: downloaded chapters as
   // the denominator, completed ones as the numerator.
   const chaptersRead = Math.min(
@@ -201,11 +188,7 @@ export default function ReaderToolbar({
     ? t`${chaptersRead} of ${seriesChapterCount} downloaded chapters read, ${seriesWantedCount} in the series`
     : t`${chaptersRead} of ${seriesChapterCount} downloaded chapters read`
 
-  // A dot on the track for every page that carries a note. Mirrored like the thumb in right-to-left.
-  const notedMarks = useMemo(
-    () => (manifest.notedPages ?? []).map((index) => ({ value: rtl ? manifest.pageCount - index : index + 1 })),
-    [manifest.notedPages, manifest.pageCount, rtl],
-  )
+  const notedPages = useMemo(() => new Set(manifest.notedPages ?? []), [manifest.notedPages])
 
   // Clicks on the bars must not fall through to the page-turn zones behind them.
   const stop = (event: React.MouseEvent) => event.stopPropagation()
@@ -263,7 +246,7 @@ export default function ReaderToolbar({
                       )}
                       {moreInSeries && (
                         <>
-                          {' · '}
+                          {', '}
                           <Plural value={seriesWantedCount} one="# in series" other="# in series" />
                         </>
                       )}
@@ -273,6 +256,60 @@ export default function ReaderToolbar({
               )}
             </Group>
           </div>
+          {enhanceOn && (serverEnhancing || (engineStatus !== 'unsupported' && engineStatus !== 'broken')) && (
+            <Group gap={6} wrap="nowrap" className="reader-compare" data-phase={enhancePhase ?? undefined}>
+              {phaseShort && (
+                <Text visibleFrom="sm" fz="xs" c="var(--ink-3)" className="reader-compare-phase" aria-hidden>
+                  {phaseShort}
+                </Text>
+              )}
+              <Tooltip
+                label={
+                  enhancePhase ? (
+                    <>
+                      <div>{phaseLabel(enhancePhase)}</div>
+                      <div>{t`Hold to compare with the original (H)`}</div>
+                    </>
+                  ) : (
+                    t`Hold to compare with the original (H)`
+                  )
+                }
+                withArrow
+                zIndex={OVERLAY_Z}
+              >
+                <ActionIcon
+                  className="reader-compare-button"
+                  data-busy={isPendingPhase(enhancePhase) || undefined}
+                  variant={compareHeld ? 'light' : 'subtle'}
+                  color="gray"
+                  aria-label={t`Hold to compare`}
+                  aria-pressed={compareHeld}
+                  style={{ touchAction: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
+                  onPointerDown={(event) => {
+                    event.currentTarget.setPointerCapture?.(event.pointerId)
+                    setCompareHeld(true)
+                  }}
+                  onPointerUp={() => setCompareHeld(false)}
+                  onPointerCancel={() => setCompareHeld(false)}
+                  onLostPointerCapture={() => setCompareHeld(false)}
+                  onPointerLeave={() => setCompareHeld(false)}
+                  onKeyDown={(event) => {
+                    if ((event.key === ' ' || event.key === 'Enter') && !event.repeat) {
+                      event.preventDefault()
+                      setCompareHeld(true)
+                    }
+                  }}
+                  onKeyUp={(event) => {
+                    if (event.key === ' ' || event.key === 'Enter') setCompareHeld(false)
+                  }}
+                  onBlur={() => setCompareHeld(false)}
+                  onContextMenu={(event) => event.preventDefault()}
+                >
+                  <IconSquareHalf size={18} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          )}
           {incognito && (
             <Tooltip label={t`Incognito, this session isn't being recorded`} withArrow zIndex={OVERLAY_Z}>
               <IconEyeOff size={18} opacity={0.7} />
@@ -342,28 +379,16 @@ export default function ReaderToolbar({
             </ActionIcon>
           </Tooltip>
 
-          {/*
-            Right-to-left reading puts page 1 at the right end of the track. That has to be done
-            by inverting the value, not with CSS `direction`: Mantine positions the thumb with an
-            inline `left: %`, so a flipped container moves the fill but leaves the thumb sliding
-            the wrong way. `inverted` then moves the filled portion to the right of the thumb, so
-            it still grows from where you started reading rather than from the far end.
-          */}
-          <Slider
-            thumbLabel={t`Page`}
-            className="reader-slider"
-            min={1}
-            max={Math.max(1, manifest.pageCount)}
-            value={scrub ?? (rtl ? manifest.pageCount - page : page + 1)}
-            onChange={setScrub}
-            onChangeEnd={(value) => {
-              setScrub(null)
-              onSeek(rtl ? manifest.pageCount - value : value - 1)
-            }}
-            label={(value) => `${rtl ? manifest.pageCount - value + 1 : value} / ${manifest.pageCount}`}
-            inverted={rtl}
-            marks={notedMarks}
-            style={{ flex: 1 }}
+          <PageScrubber
+            count={manifest.pageCount}
+            page={page}
+            shownTo={shownTo ?? page}
+            rtl={rtl}
+            onSeek={onSeek}
+            enhanced={enhancedPages}
+            upscaling={upscalingPages}
+            noted={notedPages}
+            thumbs={thumbs}
           />
 
           {/* Dropped on a phone: seven controls plus this counter leave the slider about 100px of
@@ -401,248 +426,22 @@ export default function ReaderToolbar({
             </ActionIcon>
           </Tooltip>
 
-          <Popover
-            width={280}
-            position="top-end"
-            withArrow
-            shadow="md"
-            zIndex={OVERLAY_Z}
+          <ReaderSettings
             opened={settingsOpen}
-            onChange={setSettingsOpen}
-          >
-            <Popover.Target>
-              <ActionIcon
-                variant={settingsOpen ? 'light' : 'subtle'}
-                color="gray"
-                onClick={() => setSettingsOpen((open) => !open)}
-                aria-label={t`Reader settings`}
-              >
-                <IconSettings size={18} />
-              </ActionIcon>
-            </Popover.Target>
-            {/* Taller than a landscape phone or a short window: it scrolls rather than running off the top. */}
-            <Popover.Dropdown style={{ maxHeight: 'calc(100dvh - 72px)', overflowY: 'auto' }}>
-              <Stack gap="sm">
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Layout</Trans>
-                  </Text>
-                  <SegmentedControl
-                    aria-label={t`Layout`}
-                    fullWidth
-                    size="xs"
-                    value={prefs.mode}
-                    onChange={(value) => onPrefs({ mode: value as ReaderPrefs['mode'] })}
-                    data={[
-                      { label: t`Single`, value: 'paged' },
-                      { label: t`Double`, value: 'double' },
-                      { label: t`Continuous`, value: 'vertical' },
-                    ]}
-                  />
-                  {autoLayout && (
-                    <Text fz="xs" c="var(--ink-3)" mt={4}>
-                      <Trans>Continuous, because this chapter's pages are very tall.</Trans>
-                    </Text>
-                  )}
-                </div>
-                {prefs.mode === 'paged' && (
-                  <div>
-                    <Text fz="xs" c="var(--ink-3)" mb={4}>
-                      <Trans>Wide pages</Trans>
-                    </Text>
-                    <SegmentedControl
-                      aria-label={t`Wide pages`}
-                      fullWidth
-                      size="xs"
-                      value={prefs.splitWide}
-                      onChange={(value) => onPrefs({ splitWide: value as ReaderPrefs['splitWide'] })}
-                      data={[
-                        { label: t`Whole`, value: 'off' },
-                        { label: t`Split`, value: 'split' },
-                        { label: t`Rotate`, value: 'rotate' },
-                      ]}
-                    />
-                  </div>
-                )}
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Direction</Trans>
-                  </Text>
-                  <SegmentedControl
-                    aria-label={t`Direction`}
-                    fullWidth
-                    size="xs"
-                    value={prefs.direction}
-                    onChange={(value) => onPrefs({ direction: value as ReaderPrefs['direction'] })}
-                    data={[
-                      { label: t`Left to right`, value: 'ltr' },
-                      { label: t`Right to left`, value: 'rtl' },
-                    ]}
-                  />
-                </div>
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Fit</Trans>
-                  </Text>
-                  <SegmentedControl
-                    aria-label={t`Fit`}
-                    fullWidth
-                    size="xs"
-                    value={prefs.fit}
-                    onChange={(value) => onPrefs({ fit: value as ReaderPrefs['fit'] })}
-                    data={[
-                      { label: t`Width`, value: 'width' },
-                      { label: t`Height`, value: 'height' },
-                      { label: t`Screen`, value: 'screen' },
-                      { label: '1:1', value: 'original' },
-                    ]}
-                  />
-                </div>
-                {prefs.fit === 'original' && (
-                  <div>
-                    <Text fz="xs" c="var(--ink-3)" mb={4}>
-                      <Trans>Scale ({scale}%)</Trans>
-                    </Text>
-                    <Slider
-                      thumbLabel={t`Scale`}
-                      size="xs"
-                      min={25}
-                      max={400}
-                      step={5}
-                      value={prefs.scale}
-                      onChange={(value) => onPrefs({ scale: value })}
-                    />
-                  </div>
-                )}
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Background</Trans>
-                  </Text>
-                  <SegmentedControl
-                    aria-label={t`Background`}
-                    fullWidth
-                    size="xs"
-                    value={prefs.background === BACKGROUNDS.oled ? 'oled' : 'dark'}
-                    onChange={(value) =>
-                      onPrefs({ background: value === 'oled' ? BACKGROUNDS.oled : BACKGROUNDS.dark })
-                    }
-                    data={[
-                      { label: t`Dark`, value: 'dark' },
-                      { label: t`OLED black`, value: 'oled' },
-                    ]}
-                  />
-                </div>
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Dim ({prefs.dim}%)</Trans>
-                  </Text>
-                  <Slider
-                    thumbLabel={t`Dim`}
-                    size="xs"
-                    min={0}
-                    max={80}
-                    step={5}
-                    label={null}
-                    value={prefs.dim}
-                    onChange={(value) => onPrefs({ dim: value })}
-                  />
-                </div>
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Colour filter</Trans>
-                  </Text>
-                  <SegmentedControl
-                    aria-label={t`Colour filter`}
-                    fullWidth
-                    size="xs"
-                    value={prefs.filter}
-                    onChange={(value) => onPrefs({ filter: value as ReaderPrefs['filter'] })}
-                    data={[
-                      { label: t`None`, value: 'none' },
-                      { label: t`Gray`, value: 'grayscale' },
-                      { label: t`Sepia`, value: 'sepia' },
-                      { label: t`Invert`, value: 'invert' },
-                    ]}
-                  />
-                </div>
-                <Switch
-                  size="xs"
-                  label={t`Crop borders`}
-                  checked={prefs.cropBorders}
-                  onChange={(event) => onPrefs({ cropBorders: event.currentTarget.checked })}
-                />
-                <Switch
-                  size="xs"
-                  label={t`Scroll webtoon chapters`}
-                  checked={prefs.autoWebtoon}
-                  onChange={(event) => onPrefs({ autoWebtoon: event.currentTarget.checked })}
-                />
-                <Switch
-                  size="xs"
-                  label={t`Tap zones`}
-                  checked={prefs.tapZones}
-                  onChange={(event) => onPrefs({ tapZones: event.currentTarget.checked })}
-                />
-                <Switch
-                  size="xs"
-                  label={t`Show page number`}
-                  checked={prefs.showPageNumber}
-                  onChange={(event) => onPrefs({ showPageNumber: event.currentTarget.checked })}
-                />
-                <Switch
-                  size="xs"
-                  label={t`Flash chapter name on chapter change`}
-                  checked={prefs.chapterBanner}
-                  onChange={(event) => onPrefs({ chapterBanner: event.currentTarget.checked })}
-                />
-                <Switch
-                  size="xs"
-                  label={t`Auto-advance to next chapter`}
-                  checked={prefs.autoNextChapter}
-                  onChange={(event) => onPrefs({ autoNextChapter: event.currentTarget.checked })}
-                />
-                {wakeLockSupported() && (
-                  <Switch
-                    size="xs"
-                    label={t`Keep the screen awake`}
-                    checked={prefs.keepAwake}
-                    onChange={(event) => onPrefs({ keepAwake: event.currentTarget.checked })}
-                  />
-                )}
-                <Switch
-                  size="xs"
-                  label={t`Incognito (don't record this session)`}
-                  checked={incognito}
-                  onChange={(event) => onIncognito(event.currentTarget.checked)}
-                />
-
-                <div>
-                  <Text fz="xs" c="var(--ink-3)" mb={4}>
-                    <Trans>Reading profile</Trans>
-                  </Text>
-                  <Select
-                    aria-label={t`Reading profile`}
-                    size="xs"
-                    comboboxProps={{ zIndex: OVERLAY_Z + 1 }}
-                    allowDeselect={false}
-                    value={String(selection)}
-                    onChange={(value) => {
-                      if (!value) return
-                      onSelection(value === 'auto' || value === 'series' ? value : Number(value))
-                    }}
-                    data={[
-                      { label: autoLabel, value: 'auto' },
-                      ...profiles.map((p) => ({ label: p.name, value: String(p.id) })),
-                      { label: t`Just this series`, value: 'series' },
-                    ]}
-                  />
-                  <Text fz="xs" c="var(--ink-3)" mt={4}>
-                    {editsAffect}
-                  </Text>
-                </div>
-              </Stack>
-            </Popover.Dropdown>
-          </Popover>
+            onOpenedChange={setSettingsOpen}
+            manifest={manifest}
+            prefs={prefs}
+            onPrefs={onPrefs}
+            autoLayout={autoLayout}
+            selection={selection}
+            onSelection={onSelection}
+            source={source}
+            autoProfileId={autoProfileId}
+            profiles={profiles}
+            incognito={incognito}
+            onIncognito={onIncognito}
+            previewSrc={thumbs[page]}
+          />
 
           {/* No keyboard on a touch screen, so nothing for this to list there. */}
           <Tooltip label={t`Keyboard shortcuts (?)`} withArrow zIndex={OVERLAY_Z}>

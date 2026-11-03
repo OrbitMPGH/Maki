@@ -138,6 +138,28 @@ public class DownloadQueueItem
     public string? UpgradeInfoJson { get; set; }
 
     /// <summary>
+    /// Set when a torrent was imported while <c>downloadclient.removecompleted</c> asked for it to leave
+    /// the client, cleared once <c>TorrentRemovalJob</c> has settled it. The three columns after it are
+    /// decided at the same moment and never re-read from settings, so changing the setting or the client
+    /// later does not reach back to rows already imported.
+    /// </summary>
+    public DateTime? ClientRemovalPendingAt { get; set; }
+
+    /// <summary>The <c>downloadclient.removecompleted</c> value the row was imported under.</summary>
+    public string? ClientRemovalMode { get; set; }
+
+    /// <summary>
+    /// Whether the removal also deletes the downloaded files: the setting, and only when this import
+    /// placed every library file itself (hardlinked or copied) and adopted none that was already there.
+    /// </summary>
+    public bool ClientRemovalDeleteData { get; set; }
+
+    /// <summary>Kind, URL and label of the client the torrent was imported from; a different client gets no removal.</summary>
+    public string? ClientRemovalClient { get; set; }
+
+    public DateTime? ClientRemovedAt { get; set; }
+
+    /// <summary>
     /// Record why this item stopped, as a catalogue key plus the values its placeholders need.
     /// <para>
     /// <paramref name="args"/> is an anonymous object: <c>SetError("error.download.rateLimited",

@@ -20,7 +20,7 @@ import {
   IconStar,
   IconTrendingDown,
   IconTrendingUp,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import {
@@ -48,6 +48,8 @@ import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
 import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
 import { PreviewChapterButton } from './PreviewChapterButton'
+import { ShortlistButton, ShortlistNote } from './ShortlistButton'
+import { useIsShortlisted, type ShortlistSource } from '../../api/shortlist'
 import { SeriesPreviewReader } from './SeriesPreviewReader'
 import { DiscoverTags } from './DiscoverTags'
 import { DiceIcon } from '../LuckyButton'
@@ -55,6 +57,7 @@ import { prefersReducedMotion, useDiceTumble } from '../../lib/lucky'
 import { cleanSynopsis } from '../../lib/synopsis'
 import { useLabel } from '../../i18n-context'
 import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
+import { MetaList } from '../ui/MetaList'
 
 export function DiscoverDetailModal({
   item,
@@ -63,6 +66,7 @@ export function DiscoverDetailModal({
   onClose,
   feedbackContext,
   onReroll,
+  savedFrom,
 }: {
   /** The card that was clicked; null closes the modal. Used for an instant header while detail loads. */
   item: RecommendationItem | null
@@ -70,10 +74,14 @@ export function DiscoverDetailModal({
   inLibrarySeriesId: number | null | undefined
   rootFolders: RootFolder[] | undefined
   onClose: () => void
+  /** Set by recommendation surfaces, so an add from here is recorded as a recommended pick. */
   feedbackContext?: { surface: string }
   /** Shows a dice beside the close button that swaps in another random pick. */
   onReroll?: () => void
+  /** Where the card was opened from, kept with the title when it is shortlisted. Saves as "other" without it. */
+  savedFrom?: ShortlistSource
 }) {
+  const shortlisted = useIsShortlisted(item?.providerId ?? '')
   const { data: detail, isLoading, isError, refetch } = useRecommendationDetail(item?.providerId ?? null, true)
   const { scope: diceScope, tumble } = useDiceTumble()
   const rerolling = useRef(false)
@@ -140,8 +148,9 @@ export function DiscoverDetailModal({
   // otherwise extract as an unlabelled {0}.
   const readerHint = detail?.readerHint ?? null
   const readerHintReaders = readerHint?.readers ?? 0
-  const readerHintScoreDisplay = readerHint ? formatFixedDecimal(readerHint.score / 10, 1) : null
-  const readerHintBaselineDisplay = readerHint ? formatFixedDecimal(readerHint.baseline / 10, 1) : null
+  // A gap, never two absolute scores: the baseline is the AniList sample's mean, not the MangaBaka
+  // aggregate in the star, so printing it read as the card contradicting itself.
+  const readerHintGap = readerHint ? formatFixedDecimal(Math.abs(readerHint.score - readerHint.baseline) / 10, 1) : null
   const readerHintHigher = readerHint ? readerHint.score > readerHint.baseline : false
 
   return (
@@ -234,8 +243,8 @@ export function DiscoverDetailModal({
                     </Title>
 
                     {(detail?.nativeTitle || detail?.romanizedTitle) && (
-                      <Text size="sm" pt="xs" c="var(--ink-3)">
-                        {[detail?.romanizedTitle, detail?.nativeTitle].filter(Boolean).join(' · ')}
+                      <Text component="div" size="sm" pt="xs" c="var(--ink-3)">
+                        <MetaList items={[detail?.romanizedTitle, detail?.nativeTitle]} />
                       </Text>
                     )}
                     {altTitles.length > 0 && (
@@ -323,10 +332,17 @@ export function DiscoverDetailModal({
                             multiline
                             w={260}
                             zIndex={1001}
-                            label={plural(readerHintReaders, {
-                              one: `${readerHintScoreDisplay} from # reader with reading habits like yours, against ${readerHintBaselineDisplay} from readers overall.`,
-                              other: `${readerHintScoreDisplay} from # readers with reading habits like yours, against ${readerHintBaselineDisplay} from readers overall.`,
-                            })}
+                            label={
+                              readerHintHigher
+                                ? plural(readerHintReaders, {
+                                    one: `# AniList reader with reading habits like yours scored this ${readerHintGap} higher than AniList readers overall.`,
+                                    other: `# AniList readers with reading habits like yours scored this ${readerHintGap} higher than AniList readers overall.`,
+                                  })
+                                : plural(readerHintReaders, {
+                                    one: `# AniList reader with reading habits like yours scored this ${readerHintGap} lower than AniList readers overall.`,
+                                    other: `# AniList readers with reading habits like yours scored this ${readerHintGap} lower than AniList readers overall.`,
+                                  })
+                            }
                           >
                             <Badge
                               size="sm"
@@ -370,8 +386,8 @@ export function DiscoverDetailModal({
                     )}
 
                     {facts.length > 0 && (
-                        <Text size="sm" c="var(--ink-4)" mt={9}>
-                          {facts.join(' · ')}
+                        <Text component="div" size="sm" c="var(--ink-4)" mt={9}>
+                          <MetaList items={facts} />
                         </Text>
                     )}
 
@@ -401,16 +417,25 @@ export function DiscoverDetailModal({
                     addedFrom={feedbackContext ? 'recommendation' : 'library'}
                   />
                   {inLibrarySeriesId == null && (
-                    <PreviewChapterButton
-                      key={`preview-${item.providerId}`}
-                      providerId={item.providerId}
-                      title={title}
-                      onRead={() => setPreviewFor(item.providerId)}
-                    />
+                    <>
+                      <div className="discover-modal-actions">
+                        <PreviewChapterButton
+                          key={`preview-${item.providerId}`}
+                          providerId={item.providerId}
+                          title={title}
+                          onRead={() => setPreviewFor(item.providerId)}
+                        />
+                        <ShortlistButton
+                          key={`shortlist-${item.providerId}`}
+                          providerId={item.providerId}
+                          title={title}
+                          source={savedFrom}
+                        />
+                      </div>
+                      {shortlisted && <ShortlistNote key={`note-${item.providerId}`} providerId={item.providerId} />}
+                    </>
                   )}
-                  {feedbackContext && (
-                    <RecommendationFeedbackMenu providerId={item.providerId} />
-                  )}
+                  <RecommendationFeedbackMenu providerId={item.providerId} />
                 </Stack>
               </div>
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Drawer, Group, SegmentedControl, Skeleton, Stack, Text } from '@mantine/core'
-import { IconCloudOff } from '@tabler/icons-react'
+import { IconCloudOff } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { errorText } from '../../api/errorText'
 import { isOfflineUnavailable } from '../../api/client'
@@ -183,7 +183,7 @@ function PanelBody({
       <div className="notes-list">
         {unavailable && notes.data === undefined ? (
           <Group gap={8} wrap="nowrap" className="notes-empty">
-            <IconCloudOff size={18} stroke={1.75} color="var(--warn)" aria-hidden />
+            <IconCloudOff size={18} color="var(--warn)" aria-hidden />
             <Text c="var(--ink-2)" fw={600}>
               <Trans>Notes need a connection</Trans>
             </Text>

@@ -25,7 +25,6 @@ using Maki.Metadata.ReaderCohorts;
 using Maki.Metadata.RecoGraph;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using Quartz;
 
 namespace Maki.Api.Controllers;
@@ -82,7 +81,8 @@ public class SettingsController(
     ILogger<SettingsController> logger,
     AccountSecurityAlerts? alerts = null,
     IScrobbleTokenStore? scrobbleTokens = null,
-    MangaUpdatesTracker? mangaUpdates = null) : ControllerBase
+    MangaUpdatesTracker? mangaUpdates = null,
+    KitsuTracker? kitsu = null) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
     public record IndexerConnection(string? Backend, string? Url, string? ApiKey);
@@ -161,11 +161,15 @@ public class SettingsController(
     /// </param>
     /// <param name="ScoutOnMatch">See <see cref="SettingKeys.SourcesScoutOnMatch"/>. Null on a write leaves it alone.</param>
     /// <param name="AdaptiveRefresh">See <see cref="SettingKeys.MonitoringAdaptiveRefresh"/>. Null on a write leaves it alone.</param>
+    /// <param name="RemoveCompleted">
+    /// See <see cref="SettingKeys.DownloadClientRemoveCompleted"/>: <c>never</c> or <c>afterimport</c>. Null on a write leaves it alone.
+    /// </param>
+    /// <param name="RemoveData">See <see cref="SettingKeys.DownloadClientRemoveData"/>. Null on a write leaves it alone.</param>
     public record DownloadSettings(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
         bool UseHardlinks = true, int? BulkHoldThreshold = null, string? SourceOrder = null, bool? ScoutOnMatch = null,
-        bool? AdaptiveRefresh = null);
+        bool? AdaptiveRefresh = null, string? RemoveCompleted = null, bool? RemoveData = null);
     /// <param name="Enabled">Turns the daily upgrade scan on.</param>
     /// <param name="DefaultProfileId">The upgrade profile a series without its own pin uses, or null for none.</param>
     /// <param name="MaxPerDay">0 means no cap.</param>
@@ -469,7 +473,7 @@ public class SettingsController(
     /// </summary>
     [Authorize(Policy = Policies.UseOpds)]
     [CookieSessionOnly]
-    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [LoginRateLimit]
     [HttpPost("opds/token")]
     public async Task<IActionResult> RotateOpdsToken(
         [FromBody] Maki.Api.Dtos.ConfirmPasswordRequest? request,
@@ -699,6 +703,28 @@ public class SettingsController(
     {
         await userSettings.SetAsync(SettingKeys.UiLanguageAnnouncement, "seen", ct);
         return NoContent();
+    }
+
+    /// <param name="Volumes">Also ask at the end of each volume. Off unless set.</param>
+    public record RatingPromptsSettings(bool Enabled, bool Volumes = false);
+
+    /// <summary>Whether the caller is asked "how is it so far?" while reading. Theirs alone; unset = on.</summary>
+    [HttpGet("rating-prompts")]
+    public async Task<IActionResult> GetRatingPrompts(CancellationToken ct)
+    {
+        var rows = await userSettings.GetManyAsync([SettingKeys.RatingPrompts, SettingKeys.RatingPromptsVolumes], ct);
+        return Ok(new RatingPromptsSettings(
+            rows.GetValueOrDefault(SettingKeys.RatingPrompts) != "off",
+            rows.GetValueOrDefault(SettingKeys.RatingPromptsVolumes) == "on"));
+    }
+
+    [HttpPut("rating-prompts")]
+    public async Task<IActionResult> SetRatingPrompts([FromBody] RatingPromptsSettings request, CancellationToken ct)
+    {
+        // Each default is the absence of a row, so going back to it deletes the row.
+        await userSettings.SetAsync(SettingKeys.RatingPrompts, request.Enabled ? "" : "off", ct);
+        await userSettings.SetAsync(SettingKeys.RatingPromptsVolumes, request.Volumes ? "on" : "", ct);
+        return Ok(request);
     }
 
     /// <summary>Marks the appearance notice as shown. Idempotent, and only ever for the caller.</summary>
@@ -1005,7 +1031,15 @@ public class SettingsController(
         await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
         await SourceOrderNameAsync(ct),
         await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true",
-        await AdaptiveRefreshAsync(ct)));
+        await AdaptiveRefreshAsync(ct),
+        await RemoveCompletedAsync(ct),
+        await RemoveDataAsync(ct)));
+
+    private async Task<string> RemoveCompletedAsync(CancellationToken ct) =>
+        TorrentRemovalModes.Parse(await settings.GetAsync(SettingKeys.DownloadClientRemoveCompleted, ct)) ?? TorrentRemovalModes.Never;
+
+    private async Task<bool> RemoveDataAsync(CancellationToken ct) =>
+        await settings.GetAsync(SettingKeys.DownloadClientRemoveData, ct) != "false";
 
     private async Task<bool> AdaptiveRefreshAsync(CancellationToken ct) =>
         await settings.GetAsync(SettingKeys.MonitoringAdaptiveRefresh, ct) != "false";
@@ -1015,7 +1049,8 @@ public class SettingsController(
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("download")]
-    public async Task<IActionResult> SetDownload([FromBody] DownloadSettings request, CancellationToken ct)
+    public async Task<IActionResult> SetDownload(
+        [FromBody] DownloadSettings request, [FromServices] DownloadQueueService queue, CancellationToken ct)
     {
         if (request.ConcurrentChapters is < 1 or > 8)
         {
@@ -1056,6 +1091,12 @@ public class SettingsController(
             return this.Fail(localizer, "error.sourceMapping.unknownOrderMode", new { mode = request.SourceOrder });
         }
 
+        var removeCompleted = TorrentRemovalModes.Parse(request.RemoveCompleted);
+        if (request.RemoveCompleted is not null && removeCompleted is null)
+        {
+            return this.Fail(localizer, "error.settings.torrentRemovalModeInvalid", new { mode = request.RemoveCompleted });
+        }
+
         await settings.SetAsync(
             SettingKeys.DownloadConcurrentChapters,
             request.ConcurrentChapters.ToString(CultureInfo.InvariantCulture),
@@ -1072,6 +1113,7 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.DownloadItemTimeoutMinutes,
             request.ItemTimeoutMinutes.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.DownloadUseHardlinks, request.UseHardlinks ? "true" : "false", ct);
+        queue.WakePoll();
         if (request.BulkHoldThreshold is { } bulkHold)
         {
             await settings.SetAsync(SettingKeys.MonitoringBulkHoldThreshold,
@@ -1088,6 +1130,16 @@ public class SettingsController(
             await settings.SetAsync(SettingKeys.SourcesScoutOnMatch, scoutOnMatch ? "true" : "false", ct);
         }
 
+        if (request.RemoveCompleted is not null)
+        {
+            await settings.SetAsync(SettingKeys.DownloadClientRemoveCompleted, removeCompleted, ct);
+        }
+
+        if (request.RemoveData is { } removeData)
+        {
+            await settings.SetAsync(SettingKeys.DownloadClientRemoveData, removeData ? "true" : "false", ct);
+        }
+
         if (request.AdaptiveRefresh is { } adaptive && adaptive != await AdaptiveRefreshAsync(ct))
         {
             await settings.SetAsync(SettingKeys.MonitoringAdaptiveRefresh, adaptive ? "true" : "false", ct);
@@ -1101,7 +1153,9 @@ public class SettingsController(
             BulkHoldThreshold = await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
             SourceOrder = await SourceOrderNameAsync(ct),
             ScoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true",
-            AdaptiveRefresh = await AdaptiveRefreshAsync(ct)
+            AdaptiveRefresh = await AdaptiveRefreshAsync(ct),
+            RemoveCompleted = await RemoveCompletedAsync(ct),
+            RemoveData = await RemoveDataAsync(ct)
         });
     }
 
@@ -1912,7 +1966,10 @@ public class SettingsController(
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPost("updates/check")]
-    public async Task<IActionResult> CheckForUpdatesNow(CancellationToken ct) => Ok(await updateCheck.CheckAsync(ct));
+    public async Task<IActionResult> CheckForUpdatesNow(CancellationToken ct) =>
+        await updateCheck.CheckAsync(ct) is { } status
+            ? Ok(status)
+            : this.BadGateway(localizer, "error.updates.checkFailed");
 
     public record RecommendationIndexResponse(
         bool ModelPresent, bool DumpPresent, int VectorCount, int? RecommendableTotal,
@@ -2413,14 +2470,7 @@ public class SettingsController(
             await userSettings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
         }
 
-        await userSettings.SetAsync(SettingKeys.ScrobbleKitsuEmail, request.KitsuEmail, ct);
-        // Null means "leave it" for the token and the password: GET never returns either, so a client
-        // that did not touch the field sends nothing back.
-        if (request.KitsuPassword is not null)
-        {
-            await userSettings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
-        }
-
+        await SaveKitsuCredentialsAsync(request, ct);
         await SaveMangaUpdatesCredentialsAsync(request, ct);
 
         await userSettings.SetAsync(
@@ -2446,6 +2496,36 @@ public class SettingsController(
 
         await settings.SetAsync(SettingKeys.ScrobbleLibraryIds, request.LibraryIds, ct);
         return await GetScrobble(ct);
+    }
+
+    /// <summary>
+    /// The email is always written. Null leaves the password as it is: GET never returns it, so a
+    /// client that did not touch the field sends nothing back. A real change of either drops the
+    /// stored token and the tracker's in-memory state for this user, since both belong to the old account.
+    /// </summary>
+    private async Task SaveKitsuCredentialsAsync(ScrobbleSettings request, CancellationToken ct)
+    {
+        var stored = await userSettings.GetManyAsync(
+            [SettingKeys.ScrobbleKitsuEmail, SettingKeys.ScrobbleKitsuPassword], ct);
+        var changed = (request.KitsuEmail?.Trim() ?? "") !=
+                      (stored.GetValueOrDefault(SettingKeys.ScrobbleKitsuEmail, "").Trim());
+        await userSettings.SetAsync(SettingKeys.ScrobbleKitsuEmail, request.KitsuEmail, ct);
+
+        if (request.KitsuPassword is not null)
+        {
+            changed |= request.KitsuPassword != stored.GetValueOrDefault(SettingKeys.ScrobbleKitsuPassword, "");
+            await userSettings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
+        }
+
+        if (changed)
+        {
+            if (scrobbleTokens is not null)
+            {
+                await scrobbleTokens.DeleteAsync(currentUser.UserId, "kitsu", ct);
+            }
+
+            kitsu?.Forget(currentUser.UserId);
+        }
     }
 
     /// <summary>

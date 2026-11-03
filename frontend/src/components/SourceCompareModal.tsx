@@ -25,8 +25,8 @@ import {
   IconPhotoCheck,
   IconRefresh,
   IconX,
-} from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+} from '../lib/icons'
+import { notifications } from '../lib/toast'
 import {
   useChapters,
   useDownloadChapterFrom,
@@ -47,17 +47,18 @@ import { QUALITY_TIER_COLOR, QUALITY_TIER_LABELS, upgradeReasonLabel } from '../
 import type { QualityTierName } from '../api/upgrades'
 import { formatBytes } from '../format'
 import { useLabel } from '../i18n-context'
+import { MetaList } from './ui/MetaList'
 
 const COLUMN_WIDTH = 300
 
-/** "Aggregator · 969px", or just the tier when no page width could be measured for this column. */
+/** "Aggregator, 969px", or just the tier when no page width could be measured for this column. */
 function tierWidthLabel(
   renderLabel: (m: MessageDescriptor) => string,
   tier: QualityTierName,
   width: number | null,
 ): string {
   const tierLabel = renderLabel(QUALITY_TIER_LABELS[tier])
-  return width != null ? now`${tierLabel} · ${width}px` : tierLabel
+  return width != null ? now`${tierLabel}, ${width}px` : tierLabel
 }
 
 /** "Current: Aggregator 969px, score 0" for the pick-mode header, from whichever parts are known. */
@@ -563,7 +564,7 @@ export function SourceCompareModal({
                       style={{ cursor: pick ? undefined : 'grab' }}
                     >
                       <Group gap={6} wrap="nowrap" mb="xs">
-                        {!pick && <IconGripVertical size={14} style={{ opacity: 0.5 }} />}
+                        {!pick && <IconGripVertical size={16} style={{ opacity: 0.5 }} />}
                         <Badge size="sm" variant="filled">
                           #{i + 1}
                         </Badge>
@@ -685,8 +686,10 @@ export function SourceCompareModal({
                                   onClick={() => setZoom({ panel: i, page: pageIndex })}
                                 />
                                 <Text fz="var(--type-micro)" c="var(--ink-3)" ta="center" mt={2}>
-                                  {page.width ? `${page.width}×${page.height} · ` : ''}
-                                  {formatBytes(page.bytes)}
+                                  <MetaList
+                                    inline
+                                    items={[page.width ? `${page.width}×${page.height}` : null, formatBytes(page.bytes)]}
+                                  />
                                 </Text>
                               </Box>
                             ) : (
@@ -744,7 +747,7 @@ export function SourceCompareModal({
                   <Button
                     size="xs"
                     variant="light"
-                    leftSection={<IconRefresh size={14} />}
+                    leftSection={<IconRefresh size={16} />}
                     loading={redownload.isPending}
                     onClick={runRedownload}
                   >
@@ -828,11 +831,16 @@ export function SourceCompareModal({
                 </ActionIcon>
               </Group>
               <Text size="xs" c="var(--ink-3)">
-                <Trans>
-                  Row {zoomRowNumber} of {zoomTotalPages}
-                </Trans>
-                {zoomPage.width ? ` · ${zoomPage.width}×${zoomPage.height}` : ''} ·{' '}
-                {formatBytes(zoomPage.bytes)}
+                <MetaList
+                  inline
+                  items={[
+                    <Trans key="row">
+                      Row {zoomRowNumber} of {zoomTotalPages}
+                    </Trans>,
+                    zoomPage.width ? `${zoomPage.width}×${zoomPage.height}` : null,
+                    formatBytes(zoomPage.bytes),
+                  ]}
+                />
               </Text>
               <ActionIcon
                 variant="subtle"
@@ -853,7 +861,14 @@ export function SourceCompareModal({
             </Box>
 
             <Text size="xs" c="var(--ink-3)" ta="center" px="sm" py={6}>
-              <Trans>← → swap source</Trans> · <Trans>↑ ↓ change page</Trans> · <Trans>Esc closes</Trans>
+              <MetaList
+                inline
+                items={[
+                  <Trans key="swap">← → swap source</Trans>,
+                  <Trans key="page">↑ ↓ change page</Trans>,
+                  <Trans key="esc">Esc closes</Trans>,
+                ]}
+              />
             </Text>
           </Stack>
         )}

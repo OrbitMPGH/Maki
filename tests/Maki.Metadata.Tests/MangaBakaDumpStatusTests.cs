@@ -89,10 +89,51 @@ public class MangaBakaDumpStatusTests
         status.ReportDownloaded(200);
         Assert.Null(status.Snapshot().EstimatedSecondsRemaining);
 
-        // The index build that follows has no measurable unit of work, so carrying the download's
-        // countdown into it would show a timer that hit zero and stopped.
-        status.SetPhase("indexing");
+        status.SetPhase("installing");
         Assert.Null(status.Snapshot().EstimatedSecondsRemaining);
+    }
+
+    [Fact]
+    public void Indexing_reportsItsShareAndNeverMovesBack()
+    {
+        var status = NewStatus();
+        status.Begin();
+        status.BeginDownload(1000);
+        Assert.Null(status.Snapshot().IndexProgress);
+
+        status.BeginIndexing();
+        Assert.Equal("indexing", status.Snapshot().Phase);
+        Assert.Equal(0, status.Snapshot().IndexProgress);
+
+        status.ReportIndexed(0.4);
+        status.ReportIndexed(0.3);
+        Assert.Equal(0.4, status.Snapshot().IndexProgress);
+
+        status.SetPhase("installing");
+        Assert.Null(status.Snapshot().IndexProgress);
+    }
+
+    [Fact]
+    public void Indexing_eta_extrapolatesTheElapsedTime_onceThereIsEnoughToGoOn()
+    {
+        var status = NewStatus();
+        status.Begin();
+        status.BeginDownload(1000);
+        Advance(1);
+        status.ReportDownloaded(1000);
+
+        // The download's countdown must not carry into the build.
+        status.BeginIndexing();
+        Assert.Null(status.Snapshot().EstimatedSecondsRemaining);
+
+        // Too early to extrapolate from, however far along.
+        Advance(1);
+        status.ReportIndexed(0.25);
+        Assert.Null(status.Snapshot().EstimatedSecondsRemaining);
+
+        // A quarter done after 10 s leaves three quarters, 30 s.
+        Advance(9);
+        Assert.Equal(30, status.Snapshot().EstimatedSecondsRemaining);
     }
 
     [Fact]

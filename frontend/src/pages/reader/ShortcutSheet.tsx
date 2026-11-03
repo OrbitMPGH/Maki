@@ -1,5 +1,5 @@
 import { ActionIcon, FocusTrap } from '@mantine/core'
-import { IconX } from '@tabler/icons-react'
+import { IconX } from '../../lib/icons'
 import { useEffect } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 
@@ -52,6 +52,7 @@ export default function ShortcutSheet({ rtl, onClose }: { rtl: boolean; onClose:
         { keys: ['F'], label: t`Full screen` },
         { keys: ['T'], label: t`Page thumbnails` },
         { keys: ['B'], label: t`Bookmark this page` },
+        { keys: ['H'], label: t`Hold to compare` },
         { keys: [t`Esc`], label: t`Back to series` },
         { keys: ['?'], label: t`Show or hide this list` },
       ],

@@ -28,25 +28,106 @@ public enum PageSkip
     Animated,
     HighBitDepth,
     TooLarge,
-    NotSmaller
+    NotSmaller,
+
+    /// <summary>A JPEG under <see cref="PageConversionStop.Lossless"/>: re-encoding it can only lose detail.</summary>
+    Lossless
 }
 
-public readonly record struct PageConversionSettings(PageConversionFormat Format, int Quality)
+/// <summary>
+/// The quality steps, each calibrated per format against a SSIMULACRA2 target: Smallest about 72,
+/// Compact 79, Balanced 84, High 91 (visually lossless). Lossless keeps every pixel.
+/// </summary>
+public enum PageConversionStop
 {
-    public const int DefaultWebpQuality = 80;
-    public const int DefaultAvifQuality = 55;
+    Smallest,
+    Compact,
+    Balanced,
+    High,
+    Lossless
+}
 
-    public static int DefaultQuality(PageConversionFormat format) =>
-        format == PageConversionFormat.Avif ? DefaultAvifQuality : DefaultWebpQuality;
+/// <param name="PngLossless">PNG pages go to lossless WebP whatever the stop.</param>
+public sealed record PageConversionSettings(PageConversionFormat Format, PageConversionStop Stop, bool PngLossless)
+{
+    public static PageConversionStop DefaultStop => PageConversionStop.High;
 
-    public string Extension => Format == PageConversionFormat.Avif ? ".avif" : ".webp";
+    private static readonly PageConversionStop[] LossyStops =
+        [PageConversionStop.Smallest, PageConversionStop.Compact, PageConversionStop.Balanced, PageConversionStop.High];
 
-    public static string Name(PageConversionFormat format) => format == PageConversionFormat.Avif ? "avif" : "webp";
+    /// <summary>The encoder quality a lossy stop stands for. Lossless has none.</summary>
+    public static int Quality(PageConversionFormat format, PageConversionStop stop) => (format, stop) switch
+    {
+        (PageConversionFormat.Webp, PageConversionStop.Smallest) => 50,
+        (PageConversionFormat.Webp, PageConversionStop.Compact) => 70,
+        (PageConversionFormat.Webp, PageConversionStop.Balanced) => 80,
+        (PageConversionFormat.Webp, PageConversionStop.High) => 90,
+        (PageConversionFormat.Avif, PageConversionStop.Smallest) => 50,
+        (PageConversionFormat.Avif, PageConversionStop.Compact) => 60,
+        (PageConversionFormat.Avif, PageConversionStop.Balanced) => 65,
+        (PageConversionFormat.Avif, PageConversionStop.High) => 80,
+        _ => throw new ArgumentOutOfRangeException(nameof(stop), stop, null)
+    };
 
-    public static PageConversionFormat? Parse(string? value) => value?.Trim().ToLowerInvariant() switch
+    /// <summary>The lossy stop closest to a 1 to 100 quality; a tie goes to the higher-quality stop.</summary>
+    public static PageConversionStop NearestStop(PageConversionFormat format, int quality)
+    {
+        var nearest = LossyStops[0];
+        foreach (var stop in LossyStops)
+        {
+            if (Math.Abs(Quality(format, stop) - quality) <= Math.Abs(Quality(format, nearest) - quality))
+            {
+                nearest = stop;
+            }
+        }
+
+        return nearest;
+    }
+
+    /// <summary>"webp:high", "avif:balanced+png" or "lossless".</summary>
+    public string Name() => Stop == PageConversionStop.Lossless
+        ? StopName(Stop)
+        : $"{FormatName(Format)}:{StopName(Stop)}{(PngLossless ? "+png" : "")}";
+
+    public static PageConversionSettings? Parse(string? name)
+    {
+        var value = name?.Trim().ToLowerInvariant();
+        if (value == StopName(PageConversionStop.Lossless))
+        {
+            return new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.Lossless, false);
+        }
+
+        if (value is null)
+        {
+            return null;
+        }
+
+        var png = value.EndsWith("+png", StringComparison.Ordinal);
+        var parts = (png ? value[..^4] : value).Split(':');
+        return parts.Length == 2 && ParseFormat(parts[0]) is { } format && ParseStop(parts[1]) is { } stop &&
+               stop != PageConversionStop.Lossless
+            ? new PageConversionSettings(format, stop, png)
+            : null;
+    }
+
+    public static string FormatName(PageConversionFormat format) => format == PageConversionFormat.Avif ? "avif" : "webp";
+
+    public static PageConversionFormat? ParseFormat(string? value) => value?.Trim().ToLowerInvariant() switch
     {
         "webp" => PageConversionFormat.Webp,
         "avif" => PageConversionFormat.Avif,
+        _ => null
+    };
+
+    public static string StopName(PageConversionStop stop) => stop.ToString().ToLowerInvariant();
+
+    public static PageConversionStop? ParseStop(string? value) => value?.Trim().ToLowerInvariant() switch
+    {
+        "smallest" => PageConversionStop.Smallest,
+        "compact" => PageConversionStop.Compact,
+        "balanced" => PageConversionStop.Balanced,
+        "high" => PageConversionStop.High,
+        "lossless" => PageConversionStop.Lossless,
         _ => null
     };
 }
@@ -54,8 +135,9 @@ public readonly record struct PageConversionSettings(PageConversionFormat Format
 /// <summary>
 /// The per-page rules. Only JPEG and PNG are converted: WebP and AVIF pages are already compact and a
 /// second lossy pass only loses detail, GIF and APNG may be animated, and BMP has no decoder here.
-/// A PNG goes to lossless WebP whatever the chosen format, because PNG pages are line art and screen
-/// tones where lossy codecs smear the edges, and lossless AVIF is usually larger than the PNG.
+/// At <see cref="PageConversionStop.Lossless"/> a JPEG is kept and a PNG goes to lossless WebP
+/// (lossless AVIF is usually larger than the PNG). At a lossy stop both are encoded in the chosen
+/// format, unless <see cref="PageConversionSettings.PngLossless"/> keeps PNG pages lossless.
 /// </summary>
 public static class PageConversion
 {
@@ -89,6 +171,11 @@ public static class PageConversion
             return new Page(bytes, extension, format, PageSkip.AlreadyCompact);
         }
 
+        if (format == "jpg" && settings.Stop == PageConversionStop.Lossless)
+        {
+            return new Page(bytes, extension, format, PageSkip.Lossless);
+        }
+
         if (bytes.Length < MinPageBytes)
         {
             return new Page(bytes, extension, format, PageSkip.TooSmall);
@@ -99,10 +186,12 @@ public static class PageConversion
             return new Page(bytes, extension, format, PageSkip.Animated);
         }
 
-        var encoding = format == "png"
+        var lossless = settings.Stop == PageConversionStop.Lossless;
+        var encoding = format == "png" && (lossless || settings.PngLossless)
             ? PageEncoding.LosslessWebp
             : settings.Format == PageConversionFormat.Avif ? PageEncoding.Avif : PageEncoding.Webp;
-        var encoded = ImageCodec.EncodePage(bytes, encoding, settings.Quality, out var skipped);
+        var quality = encoding == PageEncoding.LosslessWebp ? 100 : PageConversionSettings.Quality(settings.Format, settings.Stop);
+        var encoded = ImageCodec.EncodePage(bytes, encoding, quality, out var skipped);
         if (encoded is null)
         {
             return new Page(bytes, extension, format, skipped);

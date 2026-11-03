@@ -14,6 +14,7 @@ import { useAnimeSignals, useSetAnimeSignalsEnabled, useSetAnimeSignalsStrength 
 import { useMutateSignalOverride, useSignalOverrides } from '../../api/recommendationFeedback'
 import { formatDateTime, formatDecimal, formatFixedDecimal } from '../../format'
 import { SeriesThumb } from '../stats/SeriesLink'
+import { MetaList } from '../../components/ui/MetaList'
 
 export type RoleFilter = AnimeSignalRole | 'all'
 
@@ -36,25 +37,25 @@ export function AnimeSignalsStatusLine({ data }: { data: AnimeSignalsData }) {
   const synced = data.lastSyncAtUtc ? formatDateTime(data.lastSyncAtUtc) : ''
 
   return (
-    <>
-      {data.lastSyncAtUtc ? t`Last synced ${synced}` : t`Not synced yet`}
-      {data.counts && (() => {
-        const matched = data.counts.matched
-        const total = data.counts.total
-        const positive = data.counts.positive
-        const avoided = data.counts.avoided
-        const superseded = data.counts.superseded
-        return (
-          <>
-            {' · '}
-            <Trans>
+    <MetaList
+      inline
+      items={[
+        data.lastSyncAtUtc ? t`Last synced ${synced}` : t`Not synced yet`,
+        data.counts && (() => {
+          const matched = data.counts.matched
+          const total = data.counts.total
+          const positive = data.counts.positive
+          const avoided = data.counts.avoided
+          const superseded = data.counts.superseded
+          return (
+            <Trans key="counts">
               {matched} of {total} matched, {positive} positive,{' '}
               {avoided} avoided, {superseded} already yours
             </Trans>
-          </>
-        )
-      })()}
-    </>
+          )
+        })(),
+      ]}
+    />
   )
 }
 

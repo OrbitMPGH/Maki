@@ -1,3 +1,5 @@
+using Maki.Core.Http;
+using Maki.Core.Sources;
 using Microsoft.Playwright;
 
 namespace Maki.Sources.Common;
@@ -53,4 +55,19 @@ public static class CloudflareChallengeDetection
         || content.Contains("cf-challenge", StringComparison.OrdinalIgnoreCase)
         || content.Contains("cf-chl", StringComparison.OrdinalIgnoreCase)
         || content.Contains("__cf_chl", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Fetches a page and throws if it is still a challenge shell (FlareSolverr failed to clear it),
+    /// so the parser never reads one as an empty search or chapter list.
+    /// </summary>
+    public static async Task<string> GetContentHtmlAsync(this IHtmlFetcher fetcher, string url, CancellationToken ct)
+    {
+        var html = await fetcher.GetHtmlAsync(url, ct);
+        if (ChallengeAwareFetcher.LooksLikeChallenge(html))
+        {
+            throw new SourceErrorException($"{url} answered with a Cloudflare challenge page instead of content");
+        }
+
+        return html;
+    }
 }

@@ -4,11 +4,22 @@ using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
+using Maki.Core.Recommendations;
 using Maki.Metadata.Catalogue;
+using Maki.Metadata.Embedding;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
 namespace Maki.Metadata.MangaBaka;
+
+/// <summary>
+/// One shortlist entry's dump answer: the canonical work its stored id resolves to, that row's
+/// <c>state</c> (null when the chain ends on no row), and its card when the row is active, not a
+/// novel and within the caller's ceiling. <see cref="Type"/> and <see cref="HasAnime"/> describe the
+/// canonical row and are only set with the card.
+/// </summary>
+public sealed record MangaBakaShortlistRow(
+    long CanonicalId, string? State, MangaBakaRecommendation? Item, string? Type = null, bool HasAnime = false);
 
 /// <summary>What a title search found, and the spelling it had to fall back on to find it.</summary>
 /// <param name="CorrectedQuery">
@@ -521,6 +532,80 @@ public class MangaBakaLocalStore(
         cmd.CommandText = "SELECT 1 FROM series WHERE id = $id";
         cmd.Parameters.AddWithValue("$id", id);
         return await cmd.ExecuteScalarAsync(ct) is not null;
+    }
+
+    /// <summary>
+    /// The highest id among the rows <see cref="Catalogue.CreditIndex"/> reads credits from, without
+    /// building it. Walks the primary key backwards, so it costs a handful of page reads.
+    /// </summary>
+    public virtual async Task<long?> GetHighestCreditedIdAsync(CancellationToken ct = default)
+    {
+        if (!await IsAvailableAsync(ct))
+        {
+            return null;
+        }
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT id FROM series
+            WHERE state = 'active' AND type != 'novel'
+              AND (COALESCE(authors, '[]') != '[]' OR COALESCE(artists, '[]') != '[]'
+                   OR COALESCE(publishers, '[]') != '[]')
+            ORDER BY id DESC
+            LIMIT 1
+            """;
+        return await cmd.ExecuteScalarAsync(ct) is long id ? id : null;
+    }
+
+    /// <summary>
+    /// Which of <paramref name="ids"/> carry a never-show term, judged on each row's own genres and
+    /// <c>tags_v2</c>. The stand-in for <see cref="VectorIndex.IsHidden"/> while the vector index is
+    /// not loaded, so a never-show list does not have to keep 110 MB in memory to filter a rail.
+    /// Terms match by name: a subtag term matches any tag with that name in its <c>name_path</c>, and
+    /// a central term only tags weighted <see cref="TagMath.Defining"/> or above.
+    /// </summary>
+    public virtual async Task<HashSet<long>> GetHiddenIdsAsync(
+        IReadOnlyCollection<long> ids, IReadOnlyList<CatalogueTerm> terms, CancellationToken ct = default)
+    {
+        var hidden = new HashSet<long>();
+        if (ids.Count == 0 || terms.Count == 0 || !await IsAvailableAsync(ct))
+        {
+            return hidden;
+        }
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"""
+            SELECT id, genres, tags_v2 FROM series
+            WHERE id IN ({string.Join(",", ids.Distinct().Take(MaxInlineIds).Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+            """;
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            var genres = ParseStringArray(GetString(reader, 1));
+            var tags = SeriesEmbeddingIndexer.ParseTags(GetString(reader, 2));
+            if (terms.Any(term => MatchesByName(term, genres, tags)))
+            {
+                hidden.Add(reader.GetInt64(0));
+            }
+        }
+
+        return hidden;
+    }
+
+    private static bool MatchesByName(
+        CatalogueTerm term, IReadOnlyList<string> genres, List<SeriesEmbeddingIndexer.ParsedTag> tags)
+    {
+        if (term.Kind == CatalogueRules.Genre)
+        {
+            return genres.Contains(term.Name, StringComparer.OrdinalIgnoreCase);
+        }
+
+        var minClass = term.Central ? TagMath.Defining : TagMath.Unweighted;
+        return tags.Any(t => t.Class >= minClass &&
+            (string.Equals(t.Name, term.Name, StringComparison.OrdinalIgnoreCase) ||
+             (term.Subtags && t.NamePath.Split(" > ").Contains(term.Name, StringComparer.OrdinalIgnoreCase))));
     }
 
     public virtual async Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default)
@@ -1118,6 +1203,149 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>
+    /// What a shortlist needs for each stored id: the canonical work it now is and that work's card.
+    /// <para>
+    /// Two steps. Canonical ids are resolved with no ceiling (<see cref="ResolveChainsAsync"/>),
+    /// because a merged pointer row usually carries no rating of its own and a ceiling there would
+    /// drop every merged entry. Only then are the canonical rows hydrated, under the ceiling, in the
+    /// same shape as <see cref="GetByIdsAsync"/>, so a null rating is hidden under any ceiling.
+    /// </para>
+    /// <para>
+    /// An id whose chain ends on no row, a removed row or a novel comes back with a null
+    /// <see cref="MangaBakaShortlistRow.Item"/>. An id whose canonical row is active but above the
+    /// ceiling is left out of the result entirely. A null ceiling hydrates everything. Empty when
+    /// no dump is installed.
+    /// </para>
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<long, MangaBakaShortlistRow>> GetShortlistRowsAsync(
+        IReadOnlyCollection<long> ids, IReadOnlyList<string>? contentRatings, CancellationToken ct = default)
+    {
+        var result = new Dictionary<long, MangaBakaShortlistRow>();
+        var wanted = ids.Where(id => id > 0).Distinct().Take(MaxInlineIds).ToList();
+        if (wanted.Count == 0 || !await IsAvailableAsync(ct))
+        {
+            return result;
+        }
+
+        using var conn = Open();
+        var chains = await ResolveChainsAsync(conn, wanted, ct);
+        var canonicalIds = chains.Values
+            .Where(r => r.State == "active" && r.Type != "novel")
+            .Select(r => r.Canonical).Distinct().ToList();
+        var items = canonicalIds.Count == 0
+            ? new Dictionary<long, MangaBakaRecommendation>()
+            : (await GetByIdsAsync(canonicalIds, contentRatings ?? ContentRating.All, ct))
+                .ToDictionary(r => long.Parse(r.ProviderId, CultureInfo.InvariantCulture));
+
+        var withAnime = new HashSet<long>();
+        if (items.Count > 0)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"""
+                SELECT id FROM series
+                WHERE id IN ({string.Join(",", items.Keys.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+                  AND (anime_start IS NOT NULL OR anime_end IS NOT NULL)
+                """;
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                withAnime.Add(reader.GetInt64(0));
+            }
+        }
+
+        foreach (var id in wanted)
+        {
+            if (!chains.TryGetValue(id, out var row))
+            {
+                result[id] = new MangaBakaShortlistRow(id, null, null);
+            }
+            else if (row.State != "active" || row.Type == "novel")
+            {
+                result[id] = new MangaBakaShortlistRow(row.Canonical, row.State, null);
+            }
+            else if (items.TryGetValue(row.Canonical, out var item))
+            {
+                result[id] = new MangaBakaShortlistRow(
+                    row.Canonical, row.State, item, row.Type, withAnime.Contains(row.Canonical));
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// The canonical id for each of <paramref name="ids"/>, following <c>merged_with</c> up to five
+    /// hops with no ceiling and no hydration, for callers that only need to know which work an id is
+    /// now. An id whose chain ends on no row is absent. Empty when no dump is installed.
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<long, long>> ResolveCanonicalIdsAsync(
+        IReadOnlyCollection<long> ids, CancellationToken ct = default)
+    {
+        var wanted = ids.Where(id => id > 0).Distinct().ToList();
+        if (wanted.Count == 0 || !await IsAvailableAsync(ct))
+        {
+            return new Dictionary<long, long>();
+        }
+
+        using var conn = Open();
+        return (await ResolveChainsAsync(conn, wanted, ct)).ToDictionary(x => x.Key, x => x.Value.Canonical);
+    }
+
+    /// <summary>Where each id's <c>merged_with</c> chain ends: that row's id, state and type. Chunked by <see cref="MaxInlineIds"/>.</summary>
+    private static async Task<Dictionary<long, (long Canonical, string? State, string? Type)>> ResolveChainsAsync(
+        SqliteConnection conn, IReadOnlyList<long> ids, CancellationToken ct)
+    {
+        var rows = new Dictionary<long, (string? State, string? MergedWith, string? Type)>();
+        var pending = ids.ToList();
+        for (var hop = 0; hop <= 5 && pending.Count > 0; hop++)
+        {
+            var next = new List<long>();
+            foreach (var chunk in pending.Chunk(MaxInlineIds))
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = $"""
+                    SELECT id, state, merged_with, type FROM series
+                    WHERE id IN ({string.Join(",", chunk.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+                    """;
+                using var reader = await cmd.ExecuteReaderAsync(ct);
+                while (await reader.ReadAsync(ct))
+                {
+                    var row = (State: GetString(reader, 1), MergedWith: GetString(reader, 2), Type: GetString(reader, 3));
+                    rows[reader.GetInt64(0)] = row;
+                    if (row.State == "merged" &&
+                        long.TryParse(row.MergedWith, NumberStyles.Integer, CultureInfo.InvariantCulture, out var target) &&
+                        !rows.ContainsKey(target))
+                    {
+                        next.Add(target);
+                    }
+                }
+            }
+
+            pending = next.Distinct().ToList();
+        }
+
+        var result = new Dictionary<long, (long Canonical, string? State, string? Type)>(ids.Count);
+        foreach (var id in ids)
+        {
+            var current = id;
+            for (var hop = 0; hop <= 5 && rows.TryGetValue(current, out var row); hop++)
+            {
+                if (row.State == "merged" &&
+                    long.TryParse(row.MergedWith, NumberStyles.Integer, CultureInfo.InvariantCulture, out var target))
+                {
+                    current = target;
+                    continue;
+                }
+
+                result[id] = (current, row.State, row.Type);
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// The aggregate score (0–100) for each of <paramref name="ids"/> that has one. Ids the dump
     /// lacks, or holds unscored, are absent from the result.
     /// </summary>
@@ -1228,9 +1456,10 @@ public class MangaBakaLocalStore(
     /// ordering. Reuses <see cref="MangaBakaRecommendation"/> so the same card/detail/add flow
     /// works — the relation and matched-genre/tag fields are left empty.
     /// </summary>
+    /// <param name="releasedSince">Leave out anything first published before this day, or undated.</param>
     public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetBrowseAsync(
         BrowseFeed feed, int limit, string? genre = null,
-        RecommendationFilters? filters = null, CancellationToken ct = default)
+        RecommendationFilters? filters = null, CancellationToken ct = default, DateOnly? releasedSince = null)
     {
         if (feed == BrowseFeed.GenreSpotlight && string.IsNullOrWhiteSpace(genre))
         {
@@ -1327,52 +1556,90 @@ public class MangaBakaLocalStore(
         };
 
         using var conn = Open();
-        using var cmd = conn.CreateCommand();
-        // Optional user filters (year/status/type/rating/chapters/genre) from the expanded view.
-        var filterClause = filters.BuildClause(cmd, "series");
-        // Over-fetch so title-dedupe still leaves `limit` rows even when filters thin the set.
-        cmd.CommandText = $"""
-            SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating, total_chapters, description,
-                   cover_x250_x1, cover_x250_x2
-            FROM series
-            WHERE {where}{filterClause}
-            ORDER BY {orderBy}
-            LIMIT $take
-            """;
-        cmd.Parameters.AddWithValue("$take", limit * 5);
-        if (feed == BrowseFeed.New)
+
+        // The ids come from the browse table (or series, before the job has backfilled it) in rail
+        // order; the card columns are then read from series by id. Over-fetch so title-dedupe still
+        // leaves `limit` rows even when filters thin the set.
+        var source = MangaBakaDumpService.BrowseSource(conn);
+        var ids = new List<long>();
+        using (var cmd = conn.CreateCommand())
         {
-            cmd.Parameters.AddWithValue("$today", DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            // Optional user filters (year/status/type/rating/chapters/genre) from the expanded view.
+            var filterClause = filters.BuildClause(cmd, source);
+            if (releasedSince is { } since)
+            {
+                filterClause += " AND published_start_date >= $since";
+                cmd.Parameters.AddWithValue("$since", since.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            }
+
+            cmd.CommandText = $"""
+                SELECT id FROM {source}
+                WHERE {where}{filterClause}
+                ORDER BY {orderBy}
+                LIMIT $take
+                """;
+            cmd.Parameters.AddWithValue("$take", limit * 5);
+            if (feed == BrowseFeed.New)
+            {
+                cmd.Parameters.AddWithValue("$today", DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            }
+            else if (feed == BrowseFeed.GenreSpotlight)
+            {
+                cmd.Parameters.AddWithValue("$genre", $"%\"{genre}\"%");
+            }
+
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                ids.Add(reader.GetInt64(0));
+            }
         }
-        else if (feed == BrowseFeed.GenreSpotlight)
+
+        if (ids.Count == 0)
         {
-            cmd.Parameters.AddWithValue("$genre", $"%\"{genre}\"%");
+            return [];
+        }
+
+        var cards = new Dictionary<long, MangaBakaRecommendation>(ids.Count);
+        using (var hydrate = conn.CreateCommand())
+        {
+            hydrate.CommandText = $"""
+                SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating, total_chapters, description,
+                       cover_x250_x1, cover_x250_x2
+                FROM series
+                WHERE id IN (SELECT value FROM json_each($ids))
+                """;
+            hydrate.Parameters.AddWithValue("$ids", System.Text.Json.JsonSerializer.Serialize(ids));
+            using var reader = await hydrate.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                var id = reader.GetInt64(0);
+                cards[id] = new MangaBakaRecommendation(
+                    id.ToString(CultureInfo.InvariantCulture),
+                    GetString(reader, 1) ?? string.Empty,
+                    GetString(reader, 2),
+                    GetInt(reader, 3),
+                    GetString(reader, 7),
+                    MangaBakaProvider.MapStatus(GetString(reader, 4)),
+                    reader.IsDBNull(5) ? null : reader.GetDouble(5),
+                    ParseCount(GetString(reader, 6)),
+                    [], [], false,
+                    null, null,
+                    ThumbUrl: GetString(reader, 8),
+                    ThumbUrlHiDpi: GetString(reader, 9));
+            }
         }
 
         var results = new List<MangaBakaRecommendation>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        using var reader = await cmd.ExecuteReaderAsync(ct);
-        while (await reader.ReadAsync(ct))
+        foreach (var id in ids)
         {
-            var title = GetString(reader, 1) ?? string.Empty;
-            if (!seen.Add(title.Trim()))
+            if (!cards.TryGetValue(id, out var card) || !seen.Add(card.Title.Trim()))
             {
                 continue; // first sighting is best per the ORDER BY; skip later duplicates
             }
 
-            results.Add(new MangaBakaRecommendation(
-                reader.GetInt64(0).ToString(CultureInfo.InvariantCulture),
-                title,
-                GetString(reader, 2),
-                GetInt(reader, 3),
-                GetString(reader, 7),
-                MangaBakaProvider.MapStatus(GetString(reader, 4)),
-                reader.IsDBNull(5) ? null : reader.GetDouble(5),
-                ParseCount(GetString(reader, 6)),
-                [], [], false,
-                null, null,
-                ThumbUrl: GetString(reader, 8),
-                ThumbUrlHiDpi: GetString(reader, 9)));
+            results.Add(card);
             if (results.Count >= limit)
             {
                 break;
@@ -1761,7 +2028,7 @@ public class MangaBakaLocalStore(
     /// External manga id -> canonical MangaBaka id, for the ids that resolve.
     /// <para>
     /// Chunked <c>IN (...)</c> rather than a temp table or a join, because queries open the dump
-    /// read-only. Each column has a partial index (<c>ix_ext_*</c>), built by
+    /// read-only. Each column has a partial index (<c>mb_ext_*</c> on the browse table), built by
     /// <see cref="MangaBakaDumpService"/> on the staged file at install and backfilled on the live
     /// one at startup, so a chunk is an index lookup rather than a scan.
     /// </para>
@@ -1789,6 +2056,7 @@ public class MangaBakaLocalStore(
         var pending = new List<(long External, long SeriesId)>();
 
         using var conn = Open();
+        var table = MangaBakaDumpService.BrowseSource(conn);
         const int chunkSize = 500;
         for (var offset = 0; offset < wanted.Count; offset += chunkSize)
         {
@@ -1796,7 +2064,7 @@ public class MangaBakaLocalStore(
             using var cmd = conn.CreateCommand();
             cmd.CommandText = $"""
                 SELECT {column}, id, state, merged_with, type
-                FROM series
+                FROM {table}
                 WHERE {column} IN ({string.Join(",", chunk.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
                 """;
             cmd.CommandTimeout = 600;
@@ -1842,7 +2110,7 @@ public class MangaBakaLocalStore(
     /// MangaUpdates slug -> canonical MangaBaka id. <c>source_manga_updates_id</c> is text, so this is a
     /// separate parameterized lookup rather than another column in the numeric one. Slugs are lowercase
     /// base36 and the dump is lowercase apart from a couple of stray rows, so both sides are compared
-    /// lowercased, through the expression index <c>ix_ext_mangaupdates</c>. The <c>IS NOT NULL</c> term
+    /// lowercased, through the expression index <c>mb_ext_mangaupdates</c>. The <c>IS NOT NULL</c> term
     /// is what lets SQLite prove the partial index applies. Keys of the result are lowercase.
     /// </summary>
     public virtual async Task<IReadOnlyDictionary<string, long>> GetIdsByMangaUpdatesIdsAsync(
@@ -1862,6 +2130,7 @@ public class MangaBakaLocalStore(
         var pending = new List<(string External, long SeriesId)>();
 
         using var conn = Open();
+        var source = MangaBakaDumpService.BrowseSource(conn);
         const int chunkSize = 500;
         for (var offset = 0; offset < wanted.Count; offset += chunkSize)
         {
@@ -1876,7 +2145,7 @@ public class MangaBakaLocalStore(
 
             cmd.CommandText = $"""
                 SELECT lower(source_manga_updates_id), id, state, merged_with, type
-                FROM series
+                FROM {source}
                 WHERE source_manga_updates_id IS NOT NULL
                   AND lower(source_manga_updates_id) IN ({string.Join(",", names)})
                 """;

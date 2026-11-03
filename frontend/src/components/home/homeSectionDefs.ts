@@ -5,8 +5,8 @@ import {
   IconDeviceTv,
   IconFlame,
   IconPlayerPlay,
-  IconSparkles,
-} from '@tabler/icons-react'
+  IconCompass,
+} from '../../lib/icons'
 import {
   HOME_HERO_DEFAULTS,
   HOME_SECTIONS,
@@ -55,7 +55,7 @@ export const HOME_SECTION_DEFS: SectionRegistry = {
     description: msg`The newest titles from the creators and studios you follow. Empty until you follow someone.`,
   },
   recommended: {
-    icon: IconSparkles,
+    icon: IconCompass,
     label: HOME_SECTION_LABELS.recommended,
     description: msg`Picks from the recommender, based on your whole library.`,
   },

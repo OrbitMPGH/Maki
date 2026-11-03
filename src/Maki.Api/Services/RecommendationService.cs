@@ -176,6 +176,10 @@ public class RecommendationService(
             db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
             snapshot = await seedWeights.SnapshotAsync(db, scope, ct);
             suppressed = await RecommendationFeedbackService.SuppressedAsync(db, scope.UserId, ct);
+            // A liked title is a seed on the automatic path, and seeds are never picks. Callers that
+            // choose their own seeds (recent activity, side interests, custom rails) would otherwise
+            // recommend it straight back.
+            suppressed.UnionWith(await RecommendationFeedbackService.LikedAsync(db, scope.UserId, ct));
             feedbackRevision = (await RecommendationFeedbackService.VersionsAsync(db, scope.UserId, ct))
                 .FeedbackRevision;
             var now = DateTime.UtcNow;

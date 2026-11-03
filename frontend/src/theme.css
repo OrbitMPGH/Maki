@@ -127,8 +127,9 @@
     0 22px 48px -20px rgba(0, 0, 0, 0.9);
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-cover: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 22px -12px rgba(0, 0, 0, 0.85);
-  --shadow-cover-hover: 0 2px 4px rgba(0, 0, 0, 0.4), 0 20px 34px -14px rgba(0, 0, 0, 0.9);
+  /* One tight layer: a few hundred posters each casting a wide blur made scrolling and hover slow. */
+  --shadow-cover: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-cover-hover: 0 4px 8px -4px rgba(0, 0, 0, 0.6);
   --cover-rim: rgba(255, 255, 255, 0.09);
   --cover-rim-hover: rgba(255, 255, 255, 0.18);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -401,8 +402,8 @@
   --tier-5: #5b4bab;
   --tier-6: #a83660;
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
-  --shadow-cover: 0 1px 2px rgba(20, 24, 40, 0.14), 0 10px 22px -12px rgba(20, 24, 40, 0.4);
-  --shadow-cover-hover: 0 2px 4px rgba(20, 24, 40, 0.12), 0 20px 34px -14px rgba(20, 24, 40, 0.45);
+  --shadow-cover: 0 1px 2px rgba(20, 24, 40, 0.14);
+  --shadow-cover-hover: 0 4px 8px -4px rgba(20, 24, 40, 0.25);
   --cover-rim: rgba(20, 24, 40, 0.1);
   --cover-rim-hover: rgba(20, 24, 40, 0.18);
   --surface-raised: #ffffff;
@@ -437,8 +438,8 @@
   --shadow-card: 0 1px 0 rgba(70, 52, 30, 0.08);
   --shadow-raised: 0 0 0 1px rgba(70, 52, 30, 0.06), 0 1px 0 rgba(70, 52, 30, 0.1);
   --shadow-object: 0 0 0 1px rgba(70, 52, 30, 0.1), 0 2px 0 rgba(70, 52, 30, 0.07);
-  --shadow-cover: 0 1px 0 rgba(70, 52, 30, 0.18), 0 8px 16px -12px rgba(70, 52, 30, 0.45);
-  --shadow-cover-hover: 0 2px 0 rgba(70, 52, 30, 0.16), 0 14px 24px -14px rgba(70, 52, 30, 0.5);
+  --shadow-cover: 0 1px 0 rgba(70, 52, 30, 0.18);
+  --shadow-cover-hover: 0 2px 0 rgba(70, 52, 30, 0.22);
   --cover-rim: rgba(70, 52, 30, 0.16);
   --cover-rim-hover: rgba(70, 52, 30, 0.26);
   /* The stock is darker than Light's ground, which pulls these just under 4.5:1. */
@@ -633,6 +634,65 @@ body {
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
+}
+
+/* --- Meta lists ------------------------------------------------------------ */
+/* Short facts in a row, split by a hairline rather than a centre dot (MetaList). Inherits size and
+   colour from where it sits. A hairline never appears inside a title the way a comma can. */
+.meta-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 2px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.meta-list > li {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.meta-list > * + *::before {
+  content: '';
+  flex-shrink: 0;
+  width: 1px;
+  height: 0.9em;
+  margin-inline: 0.6em;
+  background: currentColor;
+  opacity: 0.35;
+}
+/* Inline, for a parent that truncates or line-clamps: a flex row would break both. */
+.meta-list-inline,
+.meta-list-inline > * {
+  display: inline;
+}
+.meta-list-inline > * + *::before {
+  display: inline-block;
+  vertical-align: -0.1em;
+}
+
+/* --- Toasts ---------------------------------------------------------------- */
+/* lib/toast gives every toast an icon in its tone, which also turns off Mantine's coloured bar down
+   the left edge. The tone tints the surface and border instead of filling a disc behind the icon. */
+.mantine-Notification-root {
+  padding-inline-start: 14px;
+  border: 1px solid color-mix(in srgb, var(--notification-color) 32%, var(--border));
+  background: color-mix(in srgb, var(--notification-color) 8%, var(--surface-2));
+}
+.mantine-Notification-root::before {
+  display: none;
+}
+.mantine-Notification-icon {
+  width: auto;
+  height: auto;
+  margin-inline-end: 12px;
+  background: transparent;
+  color: var(--notification-color);
+}
+.mantine-Notification-loader {
+  margin-inline-end: 12px;
 }
 
 /* --- Pending buttons ----------------------------------------------------- */
@@ -1411,14 +1471,24 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   margin: -6px -8px var(--mantine-spacing-md);
   padding: 6px 8px;
 }
+/* Sentence case, so a rule after the label does the work the capitals did: it marks where each
+   section starts. */
 .nav-section-label {
-  font-size: var(--type-micro);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--type-meta);
   font-weight: var(--fw-bold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   line-height: 16px;
-  color: var(--ink-4);
+  color: var(--ink-3);
   padding: 0 10px;
+}
+.nav-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.25;
 }
 .nav-count {
   min-width: 18px;
@@ -1522,7 +1592,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   container-type: inline-size;
   transition:
     transform var(--dur-medium) var(--ease),
-    box-shadow var(--dur-medium) var(--ease),
     border-color var(--dur-medium) var(--ease);
 }
 .cover-card:hover {
@@ -1664,11 +1733,11 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     transition: opacity var(--dur-base) var(--ease);
   }
   .cover-card:hover .cover-corner-right > .cover-badge-circle,
-  .cover-card:focus-within .cover-corner-right > .cover-badge-circle {
+  .cover-card:has(:focus-visible) .cover-corner-right > .cover-badge-circle {
     opacity: 0.9;
   }
   .cover-card:hover .cover-corner-right > .cover-badge-circle[data-dim],
-  .cover-card:focus-within .cover-corner-right > .cover-badge-circle[data-dim] {
+  .cover-card:has(:focus-visible) .cover-corner-right > .cover-badge-circle[data-dim] {
     opacity: 0.7;
   }
 }
@@ -1890,11 +1959,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: rgba(255, 255, 255, 0.7);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
-/* The count pill keeps its width; the text beside it gives way first. */
+/* The count pill keeps its width; the text beside it gives way first. Onest's descenders hang below
+   a line-height of 1, so the padding widens the overflow clip and the margin gives the space back. */
 .cover-row > :first-child {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding-block: 0.2em;
+  margin-block: -0.2em;
 }
 /* A lone line ("Anime ends at ch. 120") has no pill to make room for, so it wraps instead of clipping. */
 .cover-row > :only-child {
@@ -1919,6 +1991,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   flex-shrink: 0;
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);
+  /* The row's shadow is for white text over art; on a light accent's dark text it reads as a smear. */
+  text-shadow: none;
 }
 /* Home rails already carry a brand chapter pill, so the count stays neutral to keep one accent per card. */
 .cover-new-quiet {
@@ -2664,7 +2738,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 .next-up-meta {
   display: flex;
-  gap: 6px;
+  align-items: center;
   overflow: hidden;
   color: var(--ink-3);
   font-size: var(--type-badge);
@@ -2672,8 +2746,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   white-space: nowrap;
 }
 .next-up-meta > * + *::before {
-  content: '·';
-  margin-right: 6px;
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 0.9em;
+  margin-inline: 6px;
+  vertical-align: -0.1em;
+  background: currentColor;
+  opacity: 0.35;
 }
 .next-up-progress {
   display: flex;
@@ -2870,13 +2950,137 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   }
 }
 .discover-card:hover .discover-corner[data-add='true'],
-.discover-card:focus-within .discover-corner[data-add='true'] {
+.discover-card:has(:focus-visible) .discover-corner[data-add='true'] {
   opacity: 1;
 }
 @media (hover: none), (pointer: coarse) {
   .discover-corner[data-add='true'] {
     opacity: 1;
   }
+}
+/* On the shortlist: the plus becomes the filled bookmark and stays, since it is a fact about the title. */
+.discover-corner[data-saved='true'] {
+  color: var(--brand-on);
+  background: var(--brand);
+}
+/* The one real control besides the poster button. It follows `.discover-card-action` in the DOM and
+   sits above that overlay, or the overlay would swallow the click. Drawn only where a pointer can
+   hover; a touch screen saves from the detail modal, where the button is large. Focus shows it too,
+   so it is reachable by keyboard everywhere else. */
+.discover-card-save {
+  position: absolute;
+  top: 8px;
+  right: 36px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #fff;
+  background: color-mix(in srgb, black 55%, transparent);
+  box-shadow: 0 2px 6px color-mix(in srgb, black 35%, transparent);
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
+}
+.discover-card-save:hover {
+  background: color-mix(in srgb, black 80%, transparent);
+}
+/* Saved: the corner badge already shows the bookmark, so the button sits on top of it instead of
+   beside it, turning the badge into the remove control on hover. */
+.discover-card-save[aria-pressed='true'] {
+  right: 8px;
+  color: var(--brand-on);
+  background: var(--brand);
+}
+.discover-card-save:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .discover-card:hover .discover-card-save,
+  .discover-card:has(:focus-visible) .discover-card-save {
+    opacity: 1;
+  }
+}
+@media (hover: none), (pointer: coarse) {
+  .discover-card-save {
+    display: none;
+  }
+}
+.row-shortlist {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-chip);
+  cursor: pointer;
+  color: var(--ink-3);
+  background: transparent;
+  transition: color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
+}
+.row-shortlist:hover {
+  color: var(--ink-hi);
+  background: var(--surface-2);
+}
+.row-shortlist[aria-pressed='true'] {
+  color: var(--brand);
+}
+.row-shortlist:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+/* The catalogue list row: like `.discover-card-action`, one button covers the row and the save
+   button is a sibling above it. */
+.discover-row-action {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  cursor: pointer;
+  background: transparent;
+}
+.discover-row-action:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.discover-row .row-shortlist {
+  position: relative;
+  z-index: 2;
+}
+/* Preview and Shortlist side by side under the add panel. The preview button's longer labels wrap
+   instead of truncating in the half column. */
+.discover-modal-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mantine-spacing-xs);
+  align-items: start;
+}
+.discover-modal-actions .preview-chapter-button,
+.discover-modal-actions .shortlist-button {
+  padding-inline: 8px;
+  font-size: var(--type-meta);
+}
+.discover-modal-actions .preview-chapter-button {
+  height: auto;
+  min-height: var(--button-height);
+  padding-block: 6px;
+}
+.discover-modal-actions .preview-chapter-button .mantine-Button-label {
+  white-space: normal;
+  text-align: center;
 }
 /* MangaBaka's 0-100 score, shown out of 10, top-left. */
 .discover-rating {
@@ -2893,13 +3097,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: rgba(6, 7, 11, 0.62);
 }
 .discover-meta {
+  container: discover-meta / inline-size;
   position: absolute;
   left: 10px;
   right: 10px;
   bottom: 9px;
   z-index: 1;
 }
-/* "2017, Completed" on the left, the chapter count right-aligned. The left side ellipsizes. */
+/* Status disc, word and year on the left, the chapter count right-aligned. */
 .discover-sub {
   display: flex;
   align-items: center;
@@ -2915,11 +3120,66 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: rgba(255, 255, 255, 0.7);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
+/* Wraps inside a one-line box, so a year with no room drops out whole instead of ellipsizing. */
 .discover-sub-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 5px;
+  min-width: 0;
+  height: 16px;
+  overflow: hidden;
+}
+.discover-sub-state {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.discover-sub-disc {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--tone);
+  color: var(--tone-on, #fff);
+  box-shadow: 0 0 0 1px rgba(6, 7, 11, 0.45);
+}
+.discover-sub-word {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-transform: capitalize;
+  line-height: 16px;
+}
+.discover-sub-year {
+  line-height: 16px;
+  color: rgba(255, 255, 255, 0.55);
+}
+.discover-sub-year::before {
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 0.9em;
+  margin-inline: 1px 6px;
+  vertical-align: -0.1em;
+  background: currentColor;
+  opacity: 0.5;
+}
+/* A rail-width card has no room for "Completed" beside the chapter count, so it reads like a
+   library cover: the disc alone, the word kept for screen readers. */
+@container discover-meta (width < 150px) {
+  .discover-sub-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .discover-sub-year::before {
+    content: none;
+  }
 }
 .discover-sub-chapters {
   flex: none;
@@ -3362,9 +3622,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   white-space: nowrap;
 }
 .discover-hero-strip-meta > * + *::before {
-  content: '·';
-  margin-right: 6px;
-  color: var(--ink-3);
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 0.9em;
+  margin-inline-end: 6px;
+  vertical-align: -0.1em;
+  background: currentColor;
+  opacity: 0.35;
 }
 .discover-hero-strip-rating {
   display: inline-flex;
@@ -4285,6 +4550,38 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--warn);
 }
 
+.folder-browser-list {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+}
+.folder-browser-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  color: var(--ink-2);
+}
+.folder-browser-row + .folder-browser-row {
+  border-top: 1px solid var(--border);
+}
+.folder-browser-row svg {
+  flex-shrink: 0;
+  color: var(--brand-fg, var(--brand));
+}
+.folder-browser-row:hover:not(:disabled),
+.folder-browser-row:focus-visible {
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  color: var(--ink-hi);
+}
+.folder-browser-row:disabled {
+  opacity: 0.6;
+}
+.folder-browser-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .setup-choice {
   padding: 12px 14px;
   border: 1px solid var(--border);
@@ -4857,7 +5154,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
    the synopsis wrapping early for no reason. */
 .detail-split {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(min-content, 3fr);
+  /* A `min-content` floor here let one unbroken string in a review widen the aside over the synopsis. */
+  grid-template-columns: minmax(0, 5fr) minmax(0, 3fr);
   gap: var(--mantine-spacing-lg);
   align-items: start;
 }
@@ -5281,7 +5579,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   height: 14px;
   margin-left: 2px;
   background: currentColor;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 6l6 6l-6 6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='m184.49 136.49l-80 80a12 12 0 0 1-17-17L159 128L87.51 56.49a12 12 0 1 1 17-17l80 80a12 12 0 0 1-.02 17'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 /* The slot `Rail` portals its prev/next buttons into. Empty for a rail that fits, or a header with
@@ -6981,6 +7279,15 @@ body.column-resizing * {
   font-size: 1.05rem;
   opacity: 0.8;
 }
+/* Under the figure, finishing its sentence at reading weight, so the figure stays the loudest thing
+   on the slide. */
+.rewind-caption {
+  margin-top: 4px;
+  font-size: 1.2rem;
+  font-weight: var(--fw-medium);
+  opacity: 0.85;
+  text-wrap: balance;
+}
 .rewind-big-number {
   font-size: clamp(3.5rem, 12vw, 6.5rem);
   font-weight: var(--fw-heavy);
@@ -7205,6 +7512,8 @@ body.reader-open {
 }
 
 .reader-continuous {
+  /* The containing block for enhanced pages drawn over their images. */
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: safe center;
@@ -7295,8 +7604,275 @@ body.reader-open {
   user-select: none;
   -webkit-user-drag: none;
 }
+/* Enhance output (EnhancedPage). In a RegionPage it fills the region's frame; in the continuous
+   strip it is placed over its page image, which stays in the flow and keeps the strip's layout. */
+.reader-enhanced {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  user-select: none;
+}
+.reader-enhanced-overlay {
+  inset: auto;
+}
 
+/* The page scrubber (PageScrubber): one segment per page, lit up to the page on screen, which
+   carries a light thumb. Upscaled pages ahead show lighter, like a video's buffer. The padding is the hit
+   area; the track itself stays thin. */
+.reader-scrub {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 10px 0;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+.reader-scrub-track {
+  --gap: 0px;
+  position: relative;
+  display: flex;
+  gap: var(--gap);
+  height: 6px;
+  border-radius: var(--radius-pill);
+}
+.reader-scrub-track[data-rtl] {
+  flex-direction: row-reverse;
+}
+.reader-scrub[data-gaps] .reader-scrub-track {
+  --gap: 2px;
+}
+.reader-scrub:focus-visible .reader-scrub-track {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 5px;
+}
+.reader-scrub-segment {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.16);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.reader-scrub[data-gaps] .reader-scrub-segment {
+  border-radius: 2px;
+}
+.reader-scrub-segment:first-child {
+  border-start-start-radius: var(--radius-pill);
+  border-end-start-radius: var(--radius-pill);
+}
+.reader-scrub-segment:last-child {
+  border-start-end-radius: var(--radius-pill);
+  border-end-end-radius: var(--radius-pill);
+}
+.reader-scrub-segment[data-ready] {
+  background: rgba(255, 255, 255, 0.38);
+}
+.reader-scrub-segment[data-upscaling] {
+  animation: reader-scrub-upscaling 1.2s var(--ease) infinite alternate;
+}
+@keyframes reader-scrub-upscaling {
+  to {
+    background: rgba(255, 255, 255, 0.38);
+  }
+}
+.reader-scrub-segment[data-lit] {
+  background: var(--mantine-primary-color-filled);
+}
+.reader-scrub-segment[data-hover]:not([data-lit]) {
+  background: rgba(255, 255, 255, 0.6);
+}
+.reader-scrub-segment[data-hover][data-lit] {
+  background: color-mix(in srgb, var(--mantine-primary-color-filled) 70%, #fff);
+}
+/* A page with a note gets a dot above its segment, inside the scrubber's top padding. */
+.reader-scrub-segment[data-noted] {
+  position: relative;
+}
+.reader-scrub-segment[data-noted]::after {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--brand);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+/* Covers the page(s) on screen. With a gap, segment i starts at i * (track + gap) / count. The
+   minimum width keeps it findable in a long chapter whose segments are a pixel or two wide. */
+.reader-scrub-thumb {
+  position: absolute;
+  top: 50%;
+  left: calc((100% + var(--gap)) * var(--from) / var(--count));
+  width: max(6px, calc((100% + var(--gap)) * var(--span) / var(--count) - var(--gap)));
+  height: 16px;
+  transform: translateY(-50%);
+  border-radius: 3px;
+  background: #fff;
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 1px 6px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  transition:
+    left var(--dur-fast) var(--ease),
+    width var(--dur-fast) var(--ease);
+}
+/* Page thumbnail above the segment under the pointer. */
+.reader-scrub-preview {
+  position: fixed;
+  z-index: 1;
+  transform: translate(-50%, calc(-100% - 14px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #0a0a0b;
+  color: #fff;
+  font-size: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.reader-scrub-preview img {
+  display: block;
+  width: 120px;
+  height: 172px;
+  object-fit: contain;
+  border-radius: calc(var(--mantine-radius-md) - 2px);
+  background: #000;
+}
+
+/* The reader's floating card, shared by the chapter banner and the next-chapter meter. Centred
+   with auto margins rather than left: 50%, which would cap its width at half the screen. */
+.reader-card {
+  inset-inline: 16px;
+  z-index: var(--reader-overlay-z-index);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  max-width: min(560px, calc(100% - 32px));
+  margin-inline: auto;
+  padding: 10px 16px 10px 10px;
+  border-radius: var(--radius-hero);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 10, 11, 0.88);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.8);
+  color: #fff;
+  pointer-events: none;
+}
+.reader-card:not(:has(> .reader-card-cover, > .reader-ring)) {
+  padding-inline-start: 14px;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .reader-card {
+    background: #0a0a0b;
+  }
+}
+.reader-card-cover {
+  width: 40px;
+  aspect-ratio: 2 / 3;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 5px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+.reader-card-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.reader-card-eyebrow {
+  overflow: hidden;
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+  color: var(--brand-fg-on-art);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.reader-card-title {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 1.1875rem;
+  font-weight: var(--fw-bold);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.reader-card-title[data-wrap] {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.reader-card-meta {
+  font-size: var(--type-micro);
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Bottom-of-strip meter (NextChapterHint). The ring is the toolbar's upscale ring at a larger
+   size; on touch a full ring turns solid and waits for the finger to lift. */
 .reader-next-chapter-hint {
+  position: fixed;
+  bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  animation: reader-enhance-status-in var(--dur-medium) var(--ease);
+}
+.reader-ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.reader-ring-svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+  fill: none;
+  stroke-width: 2.5;
+}
+.reader-ring-track {
+  stroke: rgba(255, 255, 255, 0.14);
+}
+.reader-ring-fill {
+  stroke: var(--brand);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 60ms linear;
+}
+.reader-next-chapter-hint[data-state='ready'] .reader-ring {
+  background: var(--brand);
+  color: var(--brand-on);
+}
+.reader-next-chapter-hint[data-state='ready'] .reader-ring-svg {
+  display: none;
+}
+.reader-next-chapter-hint[data-state='end'] .reader-ring {
+  color: rgba(255, 255, 255, 0.4);
+}
+.reader-next-chapter-hint[data-state='end'] .reader-card-title {
+  color: rgba(255, 255, 255, 0.72);
+}
+/* The meter and the upscale pill share the bottom slot; a pull in progress wins it. */
+.reader-root:has(.reader-next-chapter-hint) .reader-enhance-status {
+  visibility: hidden;
+}
+
+/* Server enhance progress (ServerEnhanceStatus): a pill with a sweep while the page waits or
+   runs and a fill once it is loading. */
+.reader-enhance-status {
   position: fixed;
   left: 50%;
   bottom: calc(32px + env(safe-area-inset-bottom, 0px));
@@ -7313,23 +7889,172 @@ body.reader-open {
   color: #fff;
   font-size: var(--type-meta);
   pointer-events: none;
+  animation: reader-enhance-status-in var(--dur-medium) var(--ease);
 }
-/* Last chapter: same prompt, but the track stays empty since it can't fill. */
-.reader-next-chapter-hint.is-end {
-  color: rgba(255, 255, 255, 0.72);
-}
-.reader-next-chapter-bar {
+.reader-enhance-status-bar {
   width: 160px;
   height: 4px;
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.18);
   overflow: hidden;
 }
-.reader-next-chapter-fill {
+.reader-enhance-status-method {
+  margin-right: 8px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.reader-enhance-status-fill {
+  width: 100%;
   height: 100%;
-  background: var(--brand);
   border-radius: var(--radius-pill);
-  transition: width 60ms linear;
+  background: var(--brand);
+  transition: width var(--dur-slow) var(--ease);
+}
+.reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill,
+.reader-enhance-status[data-phase='working'] .reader-enhance-status-fill {
+  width: 35%;
+  animation: reader-enhance-sweep 1.4s var(--ease) infinite;
+}
+.reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill {
+  opacity: 0.45;
+  animation-duration: 2.4s;
+}
+.reader-enhance-status[data-phase='loading'] .reader-enhance-status-fill {
+  width: 85%;
+}
+.reader-enhance-status[data-phase='failed'] {
+  color: rgba(255, 255, 255, 0.72);
+}
+@keyframes reader-enhance-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(290%);
+  }
+}
+
+/* The quiet form (ServerEnhanceStatus, `line`): a hairline on the screen's bottom edge, sweeping in
+   reading direction while the page waits or runs, filling once it loads. */
+.reader-enhance-line {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--reader-overlay-z-index);
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  animation: reader-enhance-status-in var(--dur-medium) var(--ease);
+}
+.reader-enhance-line[data-rtl] {
+  transform: scaleX(-1);
+}
+.reader-enhance-line-fill {
+  height: 100%;
+  width: 100%;
+  background: var(--brand);
+  transition: width var(--dur-slow) var(--ease);
+}
+.reader-enhance-line[data-phase='queued'] .reader-enhance-line-fill,
+.reader-enhance-line[data-phase='working'] .reader-enhance-line-fill {
+  width: 25%;
+  animation: reader-enhance-line-sweep 1.8s var(--ease) infinite;
+}
+.reader-enhance-line[data-phase='queued'] .reader-enhance-line-fill {
+  opacity: 0.4;
+  animation-duration: 3s;
+}
+.reader-enhance-line[data-phase='loading'] .reader-enhance-line-fill {
+  width: 85%;
+}
+.reader-enhance-line[data-phase='done'] {
+  animation: reader-enhance-line-out 1.2s var(--ease) forwards;
+}
+.reader-enhance-line[data-phase='failed'] .reader-enhance-line-fill {
+  background: var(--danger);
+  opacity: 0.7;
+}
+.reader-enhance-line[data-phase='failed'] {
+  animation: reader-enhance-line-out 2.5s var(--ease) forwards;
+}
+@keyframes reader-enhance-line-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(400%);
+  }
+}
+@keyframes reader-enhance-line-out {
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* The same state on the toolbar's compare button while the bars are up. */
+.reader-compare-button {
+  position: relative;
+  overflow: visible;
+}
+.reader-compare-button::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  pointer-events: none;
+  transition: border-color var(--dur-base) var(--ease);
+}
+.reader-compare-button[data-busy]::after {
+  border-color: rgba(255, 255, 255, 0.12);
+  border-top-color: var(--brand);
+  animation: reader-enhance-spin 1s linear infinite;
+}
+.reader-compare[data-phase='queued'] .reader-compare-button::after {
+  border-top-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  animation-duration: 2s;
+}
+.reader-compare[data-phase='done'] .reader-compare-button::after {
+  border-color: var(--brand);
+}
+.reader-compare[data-phase='failed'] .reader-compare-button::after {
+  border-color: color-mix(in srgb, var(--danger) 70%, transparent);
+}
+.reader-compare[data-phase='failed'] .reader-compare-phase {
+  color: var(--danger);
+}
+.reader-compare-phase {
+  white-space: nowrap;
+}
+@keyframes reader-enhance-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes reader-enhance-status-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill,
+  .reader-enhance-status[data-phase='working'] .reader-enhance-status-fill,
+  .reader-enhance-line[data-phase='queued'] .reader-enhance-line-fill,
+  .reader-enhance-line[data-phase='working'] .reader-enhance-line-fill {
+    width: 100%;
+    animation: none;
+  }
+  .reader-compare-button[data-busy]::after {
+    animation: none;
+    border-color: var(--brand);
+  }
+  .reader-scrub-segment[data-upscaling] {
+    animation: none;
+    background: rgba(255, 255, 255, 0.26);
+  }
 }
 
 /* Auto-hiding chrome. Pointer events are dropped when hidden so the bars never eat a tap
@@ -7368,6 +8093,334 @@ body.reader-open {
 }
 .reader-bar .mantine-Text-root {
   color: #fff;
+}
+
+/* Reader settings popover (portalled, so not under .reader-bar). */
+.reader-settings-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.reader-settings-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.reader-settings-tile {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 8px 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+.reader-settings-tile:hover {
+  background: var(--surface-hover);
+}
+.reader-settings-tile[data-checked] {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand-fg);
+}
+.reader-settings-tile:has(input:focus-visible),
+.reader-settings-swatch:has(input:focus-visible) {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.reader-settings-glyph-page {
+  fill: currentColor;
+  fill-opacity: 0.22;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.reader-settings-pair {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.reader-settings-fit {
+  display: block;
+  line-height: 0;
+}
+.reader-settings-swatches {
+  display: flex;
+  gap: 8px;
+}
+.reader-settings-swatch {
+  position: relative;
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  outline: 2px solid var(--border);
+  outline-offset: 2px;
+  cursor: pointer;
+}
+.reader-settings-swatch[data-checked] {
+  outline-color: var(--brand);
+}
+/* The page on screen when there is one, otherwise paper and ink so every filter still reads. */
+.reader-settings-swatch-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f3ede2 0 55%, #e7a9bd 55% 75%, #2b2b2e 75%);
+  background-size: 260%;
+  background-position: 40% 30%;
+}
+.reader-settings-rows {
+  margin-inline: -6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.reader-settings-row,
+.reader-settings-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.reader-settings-row {
+  padding: 9px 10px;
+  border-radius: var(--radius-control);
+}
+.reader-settings-row:hover {
+  background: var(--surface-hover);
+}
+.reader-settings-row-icon {
+  flex-shrink: 0;
+  color: var(--brand);
+}
+.reader-settings-chip {
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  color: var(--brand-fg);
+}
+.reader-settings-chip:hover,
+.reader-settings-chip[data-expanded] {
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+.reader-settings-chip-caret {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  transition: transform var(--dur-base) var(--ease);
+}
+.reader-settings-chip[data-expanded] .reader-settings-chip-caret {
+  transform: rotate(180deg);
+}
+.reader-settings-switch {
+  justify-content: space-between;
+  gap: 12px;
+}
+.reader-settings .reader-settings-hint {
+  color: var(--ink-3);
+  line-height: 1.45;
+}
+.reader-settings-filled::placeholder {
+  color: transparent;
+}
+.reader-settings .reader-settings-pill {
+  height: 32px;
+}
+.reader-settings-scope strong {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+/* The swatches stay 24px to look at but take a 32px tap. */
+.reader-settings-swatch::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+}
+.reader-settings-profiles [role='menuitemradio'][data-checked],
+.series-actions .mantine-Menu-item[role='menuitemradio'][data-checked] {
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand-fg);
+  font-weight: 600;
+}
+.reader-settings-profiles [role='menuitemradio'][data-checked]:hover,
+.series-actions .mantine-Menu-item[role='menuitemradio'][data-checked]:hover {
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+/* Back header of a drill-down page, shared by the reader settings and the series actions menu. */
+.drill-back {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 650;
+  text-align: start;
+}
+.drill-back-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  transition: background var(--dur-fast) var(--ease);
+}
+.drill-back:hover .drill-back-icon,
+.drill-back:focus-visible .drill-back-icon {
+  background: var(--surface-hover);
+}
+.reader-settings-back {
+  width: calc(100% + 12px);
+  min-height: 36px;
+  margin: -4px -6px 8px;
+  padding: 4px 6px;
+  border-radius: var(--radius-control);
+}
+
+/* The series page's "More actions" menu, drawn like the reader settings panel above. */
+.series-actions {
+  padding: 6px;
+}
+.series-actions .mantine-Menu-item {
+  padding: 9px 10px;
+  border-radius: var(--radius-control);
+}
+.series-actions .mantine-Menu-item:not(.series-actions-danger, .drill-back) .mantine-Menu-itemSection[data-position='left'] {
+  color: var(--brand);
+}
+.series-actions .mantine-Menu-label {
+  padding: 2px 10px 6px;
+  color: var(--ink-3);
+  font-weight: 400;
+  line-height: 1.4;
+}
+.series-actions .mantine-Menu-divider {
+  margin: 4px -6px;
+  border-color: var(--border);
+}
+.series-actions .drill-back {
+  margin-bottom: 4px;
+  padding: 5px 10px 5px 5px;
+}
+.series-actions .drill-back:hover {
+  background: transparent;
+}
+.series-actions-option-hint {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-3);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 400;
+  line-height: 1.4;
+}
+.series-actions .mantine-Menu-item[role='menuitemradio'] .mantine-Menu-itemIndicator {
+  align-self: flex-start;
+  margin-top: 7px;
+}
+.series-actions [data-checked] .series-actions-option-hint {
+  color: inherit;
+  opacity: 0.8;
+}
+.series-actions-field {
+  padding: 8px 10px 10px;
+}
+.series-actions-field-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: var(--mantine-font-size-sm);
+}
+.series-actions-field-title svg {
+  flex-shrink: 0;
+  color: var(--brand);
+}
+.series-actions-field[data-disabled] .series-actions-field-title {
+  opacity: 0.6;
+}
+.series-actions-field-help {
+  margin-top: 6px;
+  color: var(--ink-3);
+  font-size: var(--mantine-font-size-xs);
+  line-height: 1.45;
+}
+/* Matches Mantine's xs SegmentedControl, which the reader settings use. */
+.series-actions-segments {
+  display: flex;
+  padding: 4px;
+  border-radius: var(--mantine-radius-default);
+  background-color: var(--mantine-color-dark-8);
+}
+[data-mantine-color-scheme='light'] .series-actions-segments {
+  background-color: var(--mantine-color-gray-1);
+}
+.series-actions-segment {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 28px;
+  padding: 2px 6px;
+  border-radius: calc(var(--mantine-radius-default) - 4px);
+  color: var(--mantine-color-dark-1);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 500;
+  /* Short names, but a translation can still run long: wrap rather than spill out. */
+  line-height: 1.2;
+  text-align: center;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+[data-mantine-color-scheme='light'] .series-actions-segment {
+  color: var(--mantine-color-gray-7);
+}
+.series-actions-segment:not(:disabled, [data-checked]):hover {
+  color: var(--mantine-color-text);
+}
+.series-actions-segment[data-checked] {
+  background-color: var(--mantine-color-dark-5);
+  color: var(--mantine-color-white);
+}
+[data-mantine-color-scheme='light'] .series-actions-segment[data-checked] {
+  background-color: var(--mantine-color-white);
+  color: var(--mantine-color-black);
+}
+.series-actions-segment:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.series-actions-segment:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+.series-actions-reason {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 2px 0 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  background: var(--surface-hover);
+  color: var(--ink-2);
+  font-size: var(--mantine-font-size-xs);
+  line-height: 1.4;
+}
+.series-actions-reason svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--ink-3);
 }
 
 /* Thumbnail rail. Sits above the bottom bar and hides with the rest of the chrome. */
@@ -7435,39 +8488,14 @@ body.reader-open {
   background: rgba(0, 0, 0, 0.65);
 }
 
-/* Chapter-change flash. Sits above the top bar's height so it doesn't collide with the chrome
-   when that happens to be up, and never takes a pointer event: a tap through it is a page turn. */
+/* Chapter-change flash (a .reader-card). Sits below the top bar, safe area included, so it doesn't
+   collide with the chrome when that happens to be up. It never takes a pointer event: a tap
+   through it is a page turn. */
 .reader-chapter-banner {
   position: absolute;
-  top: 72px;
-  left: 50%;
+  top: calc(56px + var(--safe-top) + 12px);
   z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  max-width: min(560px, 86vw);
-  padding: 10px 20px;
-  border-radius: var(--radius-hero);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #0a0a0b;
-  text-align: center;
-  pointer-events: none;
   animation: reader-chapter-banner 2400ms var(--ease) both;
-}
-.reader-chapter-banner-series {
-  font-size: var(--type-meta);
-  color: rgba(255, 255, 255, 0.6);
-}
-.reader-chapter-banner-label {
-  font-size: var(--type-section);
-  font-weight: var(--fw-semibold);
-  color: #fff;
-}
-.reader-chapter-banner-pages {
-  font-size: var(--type-micro);
-  font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.55);
 }
 
 /* End of chapter. The cover, blurred far past recognition, is the only colour on the screen: the
@@ -7605,19 +8633,19 @@ body.reader-open {
 @keyframes reader-chapter-banner {
   0% {
     opacity: 0;
-    transform: translate(-50%, -10px);
+    transform: translateY(-10px);
   }
   10% {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: none;
   }
   78% {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: none;
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -6px);
+    transform: translateY(-6px);
   }
 }
 
@@ -7741,7 +8769,7 @@ body.reader-open {
   .reader-chapter-banner {
     animation: none !important;
     opacity: 1;
-    transform: translateX(-50%);
+    transform: none;
   }
 }
 
@@ -8017,6 +9045,132 @@ body.reader-open {
    striped table reads as a nested table. */
 .panel-table tbody tr[data-selected] > td {
   background: color-mix(in srgb, var(--brand) 10%, transparent);
+}
+
+/* Identical copies: which one stays is read first, by the role label leading each row, and the
+   path second. The open file is the shaded row so "this one" never needs a second look. */
+.health-copies {
+  display: grid;
+  gap: var(--mantine-spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.health-copy {
+  display: grid;
+  gap: 4px;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+}
+.health-copy[data-this] {
+  background: var(--surface-2);
+}
+.health-copy-head {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+}
+.health-copy-role {
+  font-size: var(--type-meta);
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  color: var(--ink-2);
+  background: color-mix(in srgb, var(--neutral) 16%, transparent);
+}
+.health-copy-role[data-role='keep'] {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+}
+.health-copy-role[data-role='spare'] {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+}
+.health-copy-actions {
+  margin-top: var(--mantine-spacing-md);
+}
+/* The inline confirmation sits where the button was, so the eye does not have to travel to a dialog. */
+.health-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm);
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+}
+.health-confirm[data-tone='neutral'] {
+  border-color: var(--hairline);
+  background: var(--surface-2);
+}
+/* A filter's answers above the table, one row per thing to do, the action on the right. */
+.health-summary {
+  display: grid;
+  padding-block: 0;
+}
+.health-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm);
+  padding-block: var(--mantine-spacing-xs);
+}
+.health-summary-row + .health-summary-row {
+  border-top: 1px solid var(--hairline);
+}
+.health-summary-row[data-active] {
+  box-shadow: inset 3px 0 0 var(--brand);
+  padding-inline-start: var(--mantine-spacing-sm);
+}
+.health-summary-label {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+/* What a list row learned beyond its own findings: where a missing file went, what an unlinked one needs. */
+.health-row-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 4px;
+}
+.health-row-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mantine-font-family-monospace);
+}
+/* The other copies of a grouped Files row, under the kept one's path. */
+.health-copy-list {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.health-copy-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.health-copy-list .health-copy-role {
+  flex-shrink: 0;
+  padding: 0 6px;
+}
+.health-copy-link {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mantine-font-family-monospace);
 }
 
 /* Two archives, same rows, so "which of these is the better copy" is read down a column instead of
@@ -8599,6 +9753,89 @@ tr:hover .mono-value-copy {
   }
 }
 
+/* Import preview: one line per folder, files only once a folder is opened. */
+.import-plan-figures {
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  margin-bottom: 0;
+}
+.import-plan-figures .figure-strip-item {
+  padding: 0.55rem 0.85rem;
+}
+.import-plan-folders {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+.import-plan-folder + .import-plan-folder {
+  border-top: 1px solid var(--border);
+}
+.import-plan-folder-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-surface);
+  color: var(--ink-hi);
+}
+button.import-plan-folder-head:hover {
+  background: var(--surface-2);
+}
+.import-plan-folder-head:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.import-plan-folder-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.import-plan-folder-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.import-plan-arrow {
+  flex-shrink: 0;
+  color: var(--ink-3);
+}
+.import-plan-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ink-3);
+  transition: transform var(--dur-medium) var(--ease);
+}
+.import-plan-folder[data-open] .import-plan-chevron {
+  transform: rotate(180deg);
+}
+.import-plan-folder-body {
+  padding: 2px 12px 14px;
+}
+.import-plan-files {
+  display: grid;
+  border-top: 1px solid var(--border);
+}
+.import-plan-file {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 4.5rem;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+.import-plan-file-name {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.import-plan-file-link {
+  white-space: nowrap;
+}
+.import-plan-file-size {
+  text-align: right;
+}
+
 /* --- Operational page chrome (ported from redesignv2) --- */
 
 .health-filter-rail {
@@ -9132,11 +10369,9 @@ tr:hover .mono-value-copy {
   position: sticky;
   top: var(--app-shell-header-offset, 0px);
   z-index: 20;
-  border-left: 2px solid var(--brand);
-  border-right: 0;
-  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+  border-color: color-mix(in srgb, var(--brand) 30%, var(--border));
   background:
-    linear-gradient(color-mix(in srgb, var(--surface-2) 72%, transparent), color-mix(in srgb, var(--surface-2) 72%, transparent)),
+    linear-gradient(color-mix(in srgb, var(--brand) 9%, var(--surface-2)), color-mix(in srgb, var(--brand) 9%, var(--surface-2))),
     var(--app-bg);
   box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
 }
@@ -9152,12 +10387,11 @@ tr:hover .mono-value-copy {
     flex-shrink: 0;
   }
 }
+/* A full border and fill in the tone, with the leading icon in it; no stripe down the left. */
 [data-mantine-color-scheme] .series-detail-chapter-hint,
 [data-mantine-color-scheme] .series-files-hint {
-  border-left: 2px solid var(--warn);
-  border-right: 0;
-  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
-  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 35%, var(--border));
+  background: color-mix(in srgb, var(--warn) 7%, var(--surface-2));
 }
 .series-detail-chapter-table {
   overflow: hidden;
@@ -9274,10 +10508,9 @@ tr:hover .mono-value-copy {
   border-color: var(--ink-4);
 }
 .relink-outcome {
-  border: 1px solid var(--border);
-  border-left: 2px solid var(--brand);
-  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
-  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--border));
+  border-radius: var(--radius-surface);
+  background: color-mix(in srgb, var(--brand) 7%, var(--surface-2));
 }
 .relink-cell.is-held {
   background: transparent;
@@ -9454,7 +10687,6 @@ tr:hover .mono-value-copy {
   align-items: end;
   column-gap: clamp(18px, 2.4vw, 30px);
   padding: clamp(20px, 2.6vw, 36px);
-  animation: continue-hero-in 0.4s var(--ease) both;
 }
 /* The glance has two homes (`ContinueHero` renders it in both and one is always `display: none`):
    in the hero as a column on its right when wide, or as a row under the actions on a phone, and
@@ -9466,16 +10698,6 @@ tr:hover .mono-value-copy {
 }
 .continue-glance-below {
   margin-top: var(--mantine-spacing-md);
-}
-@keyframes continue-hero-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
 }
 .continue-hero-poster {
   position: relative;
@@ -9528,30 +10750,18 @@ tr:hover .mono-value-copy {
 :root[data-theme='light'] .continue-hero.has-accent {
   --tile-accent-fg: color-mix(in oklab, var(--series-accent) 82%, black);
 }
-.continue-hero-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-bottom: 10px;
+/* Says which of the two cards this is: part-way through a chapter, or the next one not started. */
+.continue-hero-label {
+  margin-bottom: 8px;
   color: var(--brand-fg);
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
 }
-.continue-hero-eyebrow::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--brand);
-}
-.continue-hero-eyebrow-when {
+.continue-hero-when {
+  margin: 8px 0 2px;
   color: var(--ink-3);
+  font-size: var(--type-meta);
   font-weight: var(--fw-medium);
-}
-.continue-hero-eyebrow-when::before {
-  content: '·';
-  margin-right: 9px;
-  color: var(--ink-4);
 }
 .continue-hero-title {
   display: -webkit-box;
@@ -9675,7 +10885,7 @@ tr:hover .mono-value-copy {
     grid-row: 1 / span 6;
     align-self: start;
   }
-  .continue-hero-eyebrow-when {
+  .continue-hero-when {
     display: none;
   }
   .continue-hero-copy {
@@ -11086,6 +12296,10 @@ tr:hover .mono-value-copy {
   background: var(--watched-soft);
   color: var(--watched);
 }
+.source-provider[data-provider='custom'] {
+  background: var(--info-soft);
+  color: var(--info);
+}
 .source-tags {
   display: flex;
   flex-wrap: wrap;
@@ -11289,6 +12503,331 @@ tr:hover .mono-value-copy {
   color: var(--ink-4);
 }
 
+/* --- Page conversion wizard --- */
+.pc-compare {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface-2);
+}
+.pc-compare[data-loupe] .pc-compare-viewport {
+  cursor: crosshair;
+}
+.pc-compare-viewport {
+  height: clamp(320px, 62vh, 620px);
+  overflow: auto;
+}
+.pc-compare-content {
+  position: relative;
+  margin-inline: auto;
+}
+.pc-compare-content img {
+  display: block;
+  max-width: none;
+}
+.pc-compare-layer {
+  position: absolute;
+  inset: 0 auto auto 0;
+}
+.pc-compare-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  margin-left: -14px;
+  display: grid;
+  place-items: center;
+  cursor: ew-resize;
+  touch-action: none;
+}
+.pc-compare-divider::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--brand);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--app-bg) 70%, transparent);
+}
+.pc-compare-divider:focus-visible {
+  outline: none;
+}
+.pc-compare-divider:focus-visible .pc-compare-handle {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 40%, transparent);
+}
+.pc-compare-handle {
+  position: relative;
+  width: 18px;
+  height: 36px;
+  border: 2px solid var(--brand);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.pc-compare-tag {
+  position: absolute;
+  top: 8px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-strong);
+  color: var(--ink-2);
+  pointer-events: none;
+}
+.pc-compare-tag[data-side='left'] {
+  left: 8px;
+}
+.pc-compare-tag[data-side='right'] {
+  right: 22px;
+}
+.pc-compare-lens {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  width: 176px;
+  height: 176px;
+  border: 2px solid var(--brand);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+  box-shadow: var(--shadow-object);
+  pointer-events: none;
+}
+.pc-compare-busy {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-left: -14px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  pointer-events: none;
+}
+.pc-pick-list {
+  max-height: 320px;
+  overflow: auto;
+}
+
+/* --- Discover shortlist ------------------------------------------------- */
+.shortlist-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.shortlist-chip-count {
+  margin-inline-start: 4px;
+  color: var(--ink-4);
+}
+.shortlist-row {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 146px;
+  container-type: inline-size;
+}
+.shortlist-row[data-changed] {
+  border-color: color-mix(in srgb, var(--brand) 38%, var(--border));
+}
+.shortlist-cover {
+  position: relative;
+  display: block;
+  width: 76px;
+  height: 114px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--cover-rim);
+  border-radius: var(--radius-cover);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-cover);
+}
+button.shortlist-cover {
+  cursor: pointer;
+}
+.shortlist-cover:focus-visible,
+.shortlist-title:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.shortlist-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.shortlist-cover .cover-placeholder {
+  padding: 6px;
+  font-size: var(--type-badge);
+}
+.shortlist-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.shortlist-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  max-width: 100%;
+}
+.shortlist-title {
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: start;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-section);
+  font-weight: var(--fw-bold);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+button.shortlist-title {
+  cursor: pointer;
+}
+button.shortlist-title:hover {
+  text-decoration: underline;
+}
+.shortlist-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--ink-2);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.shortlist-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: var(--radius-chip);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.shortlist-pill[data-quiet] {
+  color: var(--ink-3);
+  border: 1px solid var(--border-strong);
+}
+.shortlist-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 62ch;
+  padding-inline-start: 10px;
+  border-inline-start: 2px solid var(--border-strong);
+}
+.shortlist-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 200px;
+}
+.shortlist-actions .preview-chapter-button {
+  height: auto;
+  min-height: var(--button-height);
+  padding-block: 6px;
+}
+.shortlist-actions .preview-chapter-button .mantine-Button-label {
+  white-space: normal;
+  text-align: center;
+}
+/* A wide row has room for the actions on one line. 75rem leaves the text column its 62ch note plus
+   the cover even with a long translated label; narrower rows fall back to the stack above. */
+@container (min-width: 75rem) {
+  .shortlist-actions {
+    flex-direction: row;
+    align-items: center;
+    align-self: center;
+    width: auto;
+  }
+  .shortlist-actions .preview-chapter-button .mantine-Button-label {
+    white-space: nowrap;
+  }
+}
+@media (max-width: 40rem) {
+  .shortlist-row {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+  .shortlist-actions {
+    grid-column: 1 / -1;
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .shortlist-actions > * {
+    flex: 1 1 auto;
+  }
+}
+.shortlist-waited {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-card);
+}
+.shortlist-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 0 24px;
+}
+.shortlist-empty-disc {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+}
+.shortlist-empty-compare {
+  width: min(560px, 100%);
+  margin-top: 16px;
+}
+.shortlist-compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--type-meta);
+}
+.shortlist-compare th,
+.shortlist-compare td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--hairline);
+  text-align: start;
+}
+.shortlist-compare thead th {
+  color: var(--ink-3);
+  font-weight: var(--fw-semibold);
+}
+.shortlist-compare tbody th {
+  color: var(--ink-2);
+  font-weight: var(--fw-regular);
+}
+.shortlist-compare tbody tr:last-child > * {
+  border-bottom: 0;
+}
 /* --- Chapter notes -------------------------------------------------------- */
 /* Page markers live on the thumbnails and the slider, never on the page art itself. */
 .reader-strip-item[data-noted='true']::before {
@@ -11302,13 +12841,6 @@ tr:hover .mono-value-copy {
   border-radius: var(--radius-pill);
   background: var(--brand);
   box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.6);
-}
-.reader-slider .mantine-Slider-mark {
-  width: 5px;
-  height: 5px;
-  margin-top: -9px;
-  border: 0;
-  background: var(--brand);
 }
 
 .notes-drawer {

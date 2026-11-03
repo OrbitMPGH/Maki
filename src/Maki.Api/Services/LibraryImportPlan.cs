@@ -30,6 +30,19 @@ public static class ImportFileAction
     public const string UseExisting = "useExisting";
 }
 
+/// <summary>What a scanned folder is to the library. Wire values, append-only; the client words them.</summary>
+public static class ImportCandidateKind
+{
+    /// <summary>No series in the library owns the folder yet.</summary>
+    public const string New = "new";
+
+    /// <summary>The folder of a series in the library with no files yet; importing links into it.</summary>
+    public const string InLibrary = "inLibrary";
+
+    /// <summary>The folder of an archived series with no files; importing restores it first.</summary>
+    public const string Restore = "restore";
+}
+
 /// <summary>What happens to the scanned folder itself.</summary>
 public static class ImportFolderAction
 {
@@ -93,6 +106,7 @@ public record LibraryImportPlanFile(
 /// </param>
 /// <param name="Skipped">Comics the import leaves out, with an <see cref="ImportSkipReason"/>.</param>
 /// <param name="WritesCover">A cover.jpg is written into the folder.</param>
+/// <param name="Kind">One of <see cref="ImportCandidateKind"/>.</param>
 public record LibraryImportPlan(
     string FolderName,
     string? Error,
@@ -104,7 +118,8 @@ public record LibraryImportPlan(
     bool LinkDeferred = true,
     IReadOnlyList<LibraryImportPlanFile>? Files = null,
     IReadOnlyList<ImportSkippedFile>? Skipped = null,
-    bool WritesCover = false);
+    bool WritesCover = false,
+    string Kind = ImportCandidateKind.New);
 
 /// <param name="Name">The CBZ Maki wrote, relative to the folder the files ended up in.</param>
 /// <param name="Source">The original it was built from, relative to the same folder.</param>

@@ -2,9 +2,13 @@ import { http, HttpResponse } from 'msw'
 import type { ImageCacheInfo } from '../../../src/api/hooks'
 import type {
   Analysis,
+  DuplicateCopy,
   FileDetail,
   HealthCheck,
   HealthFile,
+  HealthFilesPage,
+  MissingSummary,
+  UnlinkedSummary,
   HealthFinding,
   HealthOperation,
   HealthOptions,
@@ -158,6 +162,11 @@ export const fileDetails: Record<number, FileDetail> = {
       { id: 2, sourceName: 'Comick', priority: 2 },
     ],
     match: null,
+    copies: [],
+    relinkTo: null,
+    moved: null,
+    recordSize: null,
+    recordPages: null,
   },
   2: {
     file: healthFiles[1],
@@ -176,6 +185,11 @@ export const fileDetails: Record<number, FileDetail> = {
       chapters: [{ id: 1304, number: 4, title: 'Low Tide', hasFile: false }],
       counterparts: [],
     },
+    copies: [],
+    relinkTo: null,
+    moved: null,
+    recordSize: null,
+    recordPages: null,
   },
   3: {
     file: healthFiles[2],
@@ -206,6 +220,11 @@ export const fileDetails: Record<number, FileDetail> = {
         },
       ],
     },
+    copies: [],
+    relinkTo: null,
+    moved: null,
+    recordSize: null,
+    recordPages: null,
   },
   4: {
     file: healthFiles[3],
@@ -217,7 +236,228 @@ export const fileDetails: Record<number, FileDetail> = {
     ],
     mappings: [{ id: 4, sourceName: 'MangaDex', priority: 1 }],
     match: null,
+    copies: [],
+    relinkTo: null,
+    moved: null,
+    recordSize: null,
+    recordPages: null,
   },
+}
+
+/** Volume 10 twice over: the copy chapters 77 to 85 read from, and a byte-identical spare beside it. */
+const volumeHash = 'c0ffee5d1e7a20b49e8f3d6a71b2c4d5'
+const volumeSize = 212_400_000
+const keptVolume = file(7, 'Ashen Crown Regression/Ashen Crown Regression v10.cbz', {
+  seriesId: 9,
+  size: volumeSize,
+  contentHash: volumeHash,
+  findings: [finding(108, 7, 'duplicate', 'warning', 'Byte-identical archives exist in the library')],
+})
+const spareVolume = file(8, 'Ashen Crown Regression/Ashen Crown Regression - Volume 10 (Digital).cbz', {
+  seriesId: undefined,
+  chapterFileId: undefined,
+  size: volumeSize,
+  contentHash: volumeHash,
+  findings: [
+    finding(109, 8, 'duplicate', 'warning', 'Byte-identical archives exist in the library'),
+    finding(110, 8, 'unlinked', 'warning', 'This archive backs no chapter'),
+  ],
+})
+const volumeChapters = Array.from({ length: 9 }, (_, i) => ({ id: 7700 + i, number: 77 + i }))
+const volumeCopies: DuplicateCopy[] = [
+  { id: 7, version: 'fv7', relativePath: keptVolume.relativePath, size: volumeSize, kept: true, spare: false, missing: false, rootPath: '/library/manga', chapters: volumeChapters },
+  { id: 8, version: 'fv8', relativePath: spareVolume.relativePath, size: volumeSize, kept: false, spare: true, missing: false, rootPath: '/library/manga', chapters: [] },
+]
+
+/** The copy that backs the chapters: delete the spare, or hand the chapters to it and delete this one. */
+export const keptDuplicateDetail: FileDetail = {
+  file: keptVolume,
+  analysis: analysis('complete', true, 184),
+  findings: keptVolume.findings,
+  chapters: volumeChapters.map((c) => ({ ...c, wanted: true })),
+  mappings: [{ id: 5, sourceName: 'MangaDex', priority: 1 }],
+  match: null,
+  copies: volumeCopies,
+  relinkTo: { id: 8, relativePath: spareVolume.relativePath },
+  moved: null,
+  recordSize: volumeSize,
+  recordPages: 184,
+}
+
+/** The spare itself, opened from its own row: unlinked too, but its only rival is its own twin. */
+export const spareDuplicateDetail: FileDetail = {
+  file: spareVolume,
+  analysis: analysis('complete', true, 184),
+  findings: spareVolume.findings,
+  chapters: [],
+  mappings: [],
+  match: {
+    recognized: true,
+    labelKind: 'volume',
+    number: 10,
+    seriesId: 9,
+    seriesTitle: 'Ashen Crown Regression',
+    chapters: volumeChapters.map((c) => ({ ...c, hasFile: true })),
+    counterparts: [
+      {
+        chapterFileId: 3007,
+        relativePath: keptVolume.relativePath,
+        size: volumeSize,
+        sourceName: 'Nyaa',
+        healthFileId: 7,
+        version: 'fv7',
+        status: 'complete',
+        pages: 184,
+        pixelHeight: 257_600,
+        contentHash: volumeHash,
+        chapterIds: volumeChapters.map((c) => c.id),
+      },
+    ],
+  },
+  copies: volumeCopies,
+  relinkTo: null,
+  moved: null,
+  recordSize: null,
+  recordPages: null,
+}
+
+/** What the Duplicate filter serves: one row per set, the kept copy leading, and the spares for the cleanup bar. */
+export const duplicateFilesPage: HealthFilesPage = {
+  items: [{ ...keptVolume, copies: volumeCopies.map(({ id, version, relativePath, kept, spare, missing }) => ({ id, version, relativePath, kept, spare, missing, findings: id === 7 ? keptVolume.findings : spareVolume.findings })) }],
+  total: 1,
+  spares: { total: 1, items: [{ id: 8, version: 'fv8', relativePath: spareVolume.relativePath }] },
+}
+
+/** The Ninth Kitchen's folder renamed outside Maki: chapter 61 is gone from its old path and sits at the new one. */
+export const missingMovedDetail: FileDetail = {
+  ...fileDetails[4],
+  moved: {
+    targetId: 12,
+    targetVersion: 'fv12',
+    targetPath: 'The Ninth Kitchen (2021)/The Ninth Kitchen - Ch.61.cbz',
+    targetSize: 30_400_000,
+    targetPages: 22,
+    evidence: 'samePages',
+  },
+}
+
+/** Only the name matches, so the relink asks for a look first. */
+export const missingWeakDetail: FileDetail = {
+  ...missingMovedDetail,
+  moved: { ...missingMovedDetail.moved!, targetPath: 'Unsorted/The Ninth Kitchen - Ch.61.cbz', evidence: 'nameOnly' },
+}
+
+/** A damaged archive only indexed so far: "Get a new copy" reads it in full first. */
+export const damagedIndexedDetail: FileDetail = {
+  ...fileDetails[1],
+  analysis: analysis('corrupt', false, 22, {
+    problems: [{ kind: 'corrupt', severity: 'error', message: 'Archive structure or entry data is corrupt' }],
+  }),
+}
+
+const resizedFile = file(10, 'Snowfield Letters/Snowfield Letters - Ch.9.cbz', {
+  seriesId: 12,
+  size: 18_204_310,
+  findings: [finding(111, 10, 'sizeMismatch', 'warning', 'Stored size differs from the file on disk')],
+})
+
+/** A tagger rewrote ComicInfo.xml, so the record's size is a few hundred bytes off. */
+export const sizeMismatchDetail: FileDetail = {
+  file: resizedFile,
+  analysis: analysis('complete', true, 24),
+  findings: resizedFile.findings,
+  chapters: [{ id: 1209, number: 9, title: 'Thaw', wanted: true }],
+  mappings: [{ id: 6, sourceName: 'MangaDex', priority: 1 }],
+  match: null,
+  copies: [],
+  relinkTo: null,
+  moved: null,
+  recordSize: 18_203_980,
+  recordPages: 24,
+}
+
+const unreadableFile = file(11, 'Iron Petal Academy/Iron Petal Academy - Ch.3.cbz', {
+  seriesId: 14,
+  status: 'partial',
+  findings: [finding(112, 11, 'unreadable', 'warning', 'File cannot be accessed')],
+})
+
+export const unreadableDetail: FileDetail = {
+  file: unreadableFile,
+  analysis: analysis('partial', false, 0),
+  findings: unreadableFile.findings,
+  chapters: [{ id: 1403, number: 3, wanted: true }],
+  mappings: [{ id: 7, sourceName: 'MangaDex', priority: 1 }],
+  match: null,
+  copies: [],
+  relinkTo: null,
+  moved: null,
+  recordSize: 21_000_000,
+  recordPages: 20,
+}
+
+/** What the Missing filter serves: one file found again, and one folder gone entirely. */
+const missingRows = [
+  healthFiles[3],
+  file(13, 'Lanterns Over Kasumi/Lanterns Over Kasumi - Ch.12.cbz', {
+    size: -1,
+    status: 'failed',
+    findings: [finding(113, 13, 'missing', 'error', 'File is missing')],
+  }),
+  file(14, 'Lanterns Over Kasumi/Lanterns Over Kasumi - Ch.13.cbz', {
+    size: -1,
+    status: 'failed',
+    findings: [finding(114, 14, 'missing', 'error', 'File is missing')],
+  }),
+]
+const missingMoves: MissingSummary = {
+  total: 1,
+  weak: 0,
+  items: [
+    {
+      fileId: 4,
+      version: 'fv4',
+      relativePath: healthFiles[3].relativePath,
+      targetId: 12,
+      targetVersion: 'fv12',
+      targetPath: 'The Ninth Kitchen (2021)/The Ninth Kitchen - Ch.61.cbz',
+      evidence: 'samePages',
+    },
+  ],
+  rows: { '4': { targetPath: 'The Ninth Kitchen (2021)/The Ninth Kitchen - Ch.61.cbz', evidence: 'samePages' } },
+  gone: [
+    {
+      folder: 'Lanterns Over Kasumi',
+      count: 2,
+      items: missingRows.slice(1).map(({ id, version, relativePath }) => ({ id, version, relativePath })),
+    },
+  ],
+}
+export const missingFilesPage: HealthFilesPage = { items: missingRows, total: missingRows.length, moves: missingMoves }
+
+/** What the Unlinked filter serves: every file sorted into what it needs. */
+const unlinkedRows: HealthFile[] = [
+  { ...healthFiles[1], detail: { case: 'import' } },
+  { ...healthFiles[2], detail: { case: 'rival' } },
+  file(15, 'Loose Scans/Loose Scans 001.cbz', {
+    seriesId: undefined,
+    chapterFileId: undefined,
+    findings: [finding(115, 15, 'unlinked', 'warning', 'Archive is not linked to any chapter')],
+    detail: { case: 'outside', folder: 'Loose Scans' },
+  }),
+]
+const unlinkedCases: UnlinkedSummary = {
+  counts: [
+    { case: 'import', count: 1 },
+    { case: 'rival', count: 1 },
+    { case: 'outside', count: 1 },
+  ],
+  outside: [{ folder: 'Loose Scans', count: 1 }],
+  importable: { total: 1, items: [{ id: 2, version: 'fv2', relativePath: healthFiles[1].relativePath }] },
+}
+export const unlinkedFilesPage = (only: string | null): HealthFilesPage => {
+  const items = unlinkedRows.filter((f) => !only || f.detail?.case === only)
+  return { items, total: items.length, cases: unlinkedCases }
 }
 
 export const unlinkedNoSeries: FileDetail = {
@@ -312,6 +552,7 @@ export const operationDetails: Record<number, OperationDetail> = {
     ],
     requiresReset: true,
     retryable: false,
+    relinkTo: null,
   },
   2: {
     operation: operations[1],
@@ -320,6 +561,7 @@ export const operationDetails: Record<number, OperationDetail> = {
     candidates: [],
     requiresReset: false,
     retryable: false,
+    relinkTo: null,
   },
   3: {
     operation: operations[2],
@@ -328,8 +570,20 @@ export const operationDetails: Record<number, OperationDetail> = {
     candidates: [],
     requiresReset: false,
     retryable: false,
+    relinkTo: null,
   },
 }
+/** Deleting the copy that backs chapters, with an identical copy beside it to take them over. */
+export const relinkDeleteDetail: OperationDetail = {
+  operation: operation(6, 7, 'delete', 'review', { relativePath: keptVolume.relativePath, seriesId: 9, seriesTitle: 'Ashen Crown Regression' }),
+  file: keptVolume,
+  chapters: volumeChapters.map((c) => ({ ...c, wanted: true })),
+  relinkTo: { id: 8, relativePath: spareVolume.relativePath },
+  candidates: [],
+  requiresReset: false,
+  retryable: false,
+}
+
 export const healthyDeleteDetail: OperationDetail = {
   operation: operations[1],
   file: healthFiles[0],
@@ -337,6 +591,7 @@ export const healthyDeleteDetail: OperationDetail = {
   candidates: [],
   requiresReset: false,
   retryable: false,
+  relinkTo: null,
 }
 
 export const historyEntries = [
@@ -405,6 +660,9 @@ export const healthHandlers = [
     const search = (params.get('search') ?? '').toLowerCase()
     const state = params.get('state')
     const kind = params.get('kind')
+    if (kind === 'duplicate') return HttpResponse.json(duplicateFilesPage)
+    if (kind === 'missing') return HttpResponse.json(missingFilesPage)
+    if (kind === 'unlinked') return HttpResponse.json(unlinkedFilesPage(params.get('case')))
     const items = healthFiles.filter(
       (f) =>
         f.relativePath.toLowerCase().includes(search) &&
@@ -440,9 +698,27 @@ export const healthHandlers = [
   http.post(api('/health/checks/acknowledge/bulk'), () => HttpResponse.json(operations[0])),
   http.post(api('/health/findings/review'), () => HttpResponse.json(operations[0])),
   http.put(api('/health/findings/:id'), () => HttpResponse.json(operations[0])),
-  http.post(api('/health/imports'), () => HttpResponse.json(operations[0])),
   http.post(api('/health/repairs'), () => HttpResponse.json(operations[0])),
   http.post(api('/health/deletions/preview'), () => HttpResponse.json(operations[1])),
+  http.post(api('/health/deletions'), () => HttpResponse.json(operations[3])),
+  http.post(api('/health/moves'), () => HttpResponse.json({ relinked: 1 })),
+  http.post(api('/health/moves/bulk'), async ({ request }) => {
+    const body = (await request.json()) as { items: unknown[] }
+    return HttpResponse.json({ relinked: body.items.length, failures: [] })
+  }),
+  http.post(api('/health/repairs/auto'), () => HttpResponse.json({ state: 'requested', operation: operations[0] })),
+  http.post(api('/health/repairs/bulk'), async ({ request }) => {
+    const body = (await request.json()) as { files: unknown[] }
+    return HttpResponse.json({ requested: body.files.length, verifying: 0, failures: [] })
+  }),
+  http.post(api('/health/records/refresh'), async ({ request }) => {
+    const body = (await request.json()) as { fileIds: unknown[] }
+    return HttpResponse.json({ updated: body.fileIds.length })
+  }),
+  http.post(api('/health/imports'), async ({ request }) => {
+    const body = (await request.json()) as { fileIds: unknown[] }
+    return HttpResponse.json({ files: body.fileIds.length, series: 1, linked: body.fileIds.length, unrecognized: 0, orphans: 0 })
+  }),
   http.post(api('/health/deletions/bulk'), async ({ request }) => {
     const body = (await request.json()) as { files: { fileId: number }[] }
     return HttpResponse.json({

@@ -1,5 +1,6 @@
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
+using Maki.Core.Paths;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -98,6 +99,75 @@ public class HealthMatchService(MakiDbContext db)
         return new UnlinkedMatch(parsed.IsRecognized, labelKind, number, volumeEnd, owner.Id, owner.Title,
             matched.Select(c => new MatchChapter(c.Id, c.Number, c.Title, c.ChapterFileId != null)).ToList(),
             counterparts);
+    }
+
+    /// <summary>What to do about an unlinked archive, decided the way <see cref="MatchAsync"/> decides it.</summary>
+    public static class Cases
+    {
+        /// <summary>A missing file's record most likely belongs here; the Missing filter relinks it.</summary>
+        public const string Moved = "moved";
+        /// <summary>Byte for byte another inventoried file; the Duplicate filter handles it.</summary>
+        public const string Identical = "identical";
+        /// <summary>Not inside any series folder, so nothing to import it into.</summary>
+        public const string Outside = "outside";
+        public const string Unrecognized = "unrecognized";
+        /// <summary>Names a chapter or volume the series does not have yet.</summary>
+        public const string NoChapter = "noChapter";
+        /// <summary>A chapter it names already has a different file; needs a comparison.</summary>
+        public const string Rival = "rival";
+        /// <summary>Nothing holds what it names: importing links it, nothing to compare.</summary>
+        public const string Import = "import";
+    }
+
+    public sealed record Classified(int Id, string Version, string RelativePath, string Case, string? Folder);
+
+    /// <summary>
+    /// <see cref="MatchAsync"/>'s answer for many files at once, in a handful of queries, so a list can
+    /// count every case across the filter instead of one page of it.
+    /// </summary>
+    public async Task<List<Classified>> ClassifyAsync(IQueryable<HealthFile> unlinked, CancellationToken ct)
+    {
+        var files = await unlinked.AsNoTracking().Where(f => f.ChapterFileId == null)
+            .Select(f => new { f.Id, f.Version, f.RootFolderId, f.RelativePath, f.ContentHash }).ToListAsync(ct);
+        if (files.Count == 0) return [];
+        var rootIds = files.Select(f => f.RootFolderId).Distinct().ToList();
+        var series = await db.Series.AsNoTracking().Where(s => rootIds.Contains(s.RootFolderId))
+            .Select(s => new { s.Id, s.RootFolderId, s.FolderName }).ToListAsync(ct);
+        int? OwnerOf(int rootId, string path) => series
+            .Where(s => s.RootFolderId == rootId && Contains(s.FolderName, path))
+            .OrderByDescending(s => s.FolderName.Length).Select(s => (int?)s.Id).FirstOrDefault();
+        var owners = files.ToDictionary(f => f.Id, f => OwnerOf(f.RootFolderId, f.RelativePath));
+        var ownerIds = owners.Values.Where(o => o != null).Select(o => o!.Value).Distinct().ToList();
+        var chapters = (await db.Chapters.AsNoTracking().Where(c => ownerIds.Contains(c.SeriesId))
+                .Select(c => new { c.SeriesId, c.Number, c.Volume, c.ChapterFileId }).ToListAsync(ct))
+            .ToLookup(c => c.SeriesId);
+        var hashes = files.Where(f => f.ContentHash != null).Select(f => f.ContentHash!).Distinct().ToList();
+        var twinned = (await db.HealthFiles.AsNoTracking().Where(f => !f.Removed && f.ContentHash != null && hashes.Contains(f.ContentHash))
+                .GroupBy(f => f.ContentHash!).Where(g => g.Count() > 1).Select(g => g.Key).ToListAsync(ct))
+            .ToHashSet();
+        var missingIds = await db.HealthFiles.AsNoTracking()
+            .Where(f => !f.Removed && f.Size < 0 && f.ChapterFileId != null && rootIds.Contains(f.RootFolderId))
+            .Select(f => f.Id).ToListAsync(ct);
+        var movedTargets = (await HealthMovedFiles.FindAsync(db, missingIds, ct)).Values.Select(m => m.TargetId).ToHashSet();
+
+        return files.Select(f =>
+        {
+            var owner = owners[f.Id];
+            var parsed = ReleaseNameParser.ParseFileName(f.RelativePath);
+            string kind;
+            if (movedTargets.Contains(f.Id)) kind = Cases.Moved;
+            else if (f.ContentHash != null && twinned.Contains(f.ContentHash)) kind = Cases.Identical;
+            else if (owner == null) kind = Cases.Outside;
+            else if (!parsed.IsRecognized) kind = Cases.Unrecognized;
+            else
+            {
+                var matched = chapters[owner.Value].Where(c => parsed.IsChapter
+                    ? c.Number == parsed.Number
+                    : parsed.IsVolume && c.Volume != null && c.Volume >= parsed.Volume && c.Volume <= (parsed.VolumeEnd ?? parsed.Volume)).ToList();
+                kind = matched.Count == 0 ? Cases.NoChapter : matched.Any(c => c.ChapterFileId != null) ? Cases.Rival : Cases.Import;
+            }
+            return new Classified(f.Id, f.Version, f.RelativePath, kind, kind == Cases.Outside ? LibraryPaths.TopFolder(f.RelativePath) : null);
+        }).ToList();
     }
 
     internal static bool Contains(string folderName, string relativePath) =>

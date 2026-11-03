@@ -9,8 +9,8 @@ import {
   Table,
   Text,
 } from '@mantine/core'
-import { IconAlertTriangle, IconArrowRight } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { IconAlertTriangle, IconArrowRight } from '../lib/icons'
+import { notifications } from '../lib/toast'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { useRenameSeries, useSeriesRenamePreview } from '../api/hooks'
@@ -81,7 +81,7 @@ export function RenameSeriesModal({
             </Text>
             <Group gap="xs" wrap="nowrap">
               <Code>{plan.folderFrom}</Code>
-              <IconArrowRight size={14} />
+              <IconArrowRight size={16} />
               <Code>{plan.folderTo}</Code>
             </Group>
           </div>
@@ -98,7 +98,7 @@ export function RenameSeriesModal({
                   <Table.Tr key={file.chapterFileId}>
                     <Table.Td>{file.from}</Table.Td>
                     <Table.Td w={20}>
-                      <IconArrowRight size={14} />
+                      <IconArrowRight size={16} />
                     </Table.Td>
                     <Table.Td>{file.to}</Table.Td>
                   </Table.Tr>

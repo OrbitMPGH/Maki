@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Entities;
@@ -308,6 +309,55 @@ public sealed class SeriesFilesControllerTests : IDisposable
         Assert.True(File.Exists(Path.Combine(to, "Old Berserk", "Berserk Ch.2.cbz")));
         using var check = _db.NewContext();
         Assert.Equal(toId, check.Series.Single(s => s.Id == seriesId).RootFolderId);
+    }
+
+    /// <summary>
+    /// The inventory is keyed by root and path with no foreign key, so a move has to carry the
+    /// series' rows itself. Left behind, the next scan creates fresh rows under the new root and
+    /// flags each moved file as a duplicate of its own old row.
+    /// </summary>
+    [Fact]
+    public async Task Move_carries_the_health_rows_so_a_following_scan_raises_no_duplicate()
+    {
+        var (seriesId, fromId, toId, from, to) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        Directory.CreateDirectory(to);
+        using (var seed = _db.NewContext())
+        {
+            foreach (var chapterFile in seed.ChapterFiles.Where(f => f.SeriesId == seriesId).ToList())
+            {
+                var path = Path.Combine(from, chapterFile.RelativePath);
+                File.Delete(path);
+                using (var zip = ZipFile.Open(path, ZipArchiveMode.Create))
+                {
+                    using var entry = zip.CreateEntry("ComicInfo.xml").Open();
+                    entry.Write(System.Text.Encoding.UTF8.GetBytes($"<ComicInfo><Title>{chapterFile.Id}</Title></ComicInfo>"));
+                }
+
+                chapterFile.Size = new FileInfo(path).Length;
+                var row = new HealthFile { RootFolderId = fromId, SeriesId = seriesId, ChapterFileId = chapterFile.Id, RelativePath = chapterFile.RelativePath };
+                seed.HealthFiles.Add(row);
+                seed.SaveChanges();
+                await new HealthScanService(seed).AnalyzeAsync(row, from, true, CancellationToken.None, 0, verify: true);
+            }
+        }
+
+        using var db = _db.NewContext(userId: 1);
+        var result = await Controller(db).Move(seriesId, new SeriesController.MoveSeriesRequest(toId), CancellationToken.None);
+        Assert.IsType<OkObjectResult>(result);
+
+        using (var check = _db.NewContext())
+        {
+            Assert.Equal([toId, toId], check.HealthFiles.Select(f => f.RootFolderId).ToList());
+            var scan = new HealthScan { Verify = true };
+            check.HealthScans.Add(scan);
+            check.SaveChanges();
+            await new HealthScanService(check).RunAsync(scan, CancellationToken.None);
+        }
+
+        using var after = _db.NewContext();
+        Assert.Equal(2, after.HealthFiles.Count(f => !f.Removed && f.RootFolderId == toId));
+        Assert.DoesNotContain(after.HealthFiles, f => f.RootFolderId == fromId && f.SeriesId == seriesId);
+        Assert.DoesNotContain(after.HealthFindings, f => f.Kind == "duplicate" && f.State == "open");
     }
 
     [Fact]

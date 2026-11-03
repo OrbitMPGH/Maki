@@ -3,7 +3,7 @@ import { insertCapturedProgress } from '../pwa/db'
 import { randomUUID } from '../lib/uuid'
 import { isUnreachable, matchIn, tryFetch } from './net'
 import { apiPath, noteStatus } from './data'
-import { currentUser } from './user'
+import { currentUser, userGeneration } from './user'
 
 const PROGRESS = /^reader\/chapter\/(\d+)\/progress$/
 
@@ -46,16 +46,17 @@ function broadcast(message: WorkerToPage): void {
  */
 export async function captureProgress(event: FetchEvent, url: URL, chapterId: number): Promise<Response> {
   // The page's replay of a queued row keeps that row itself when this fails.
+  const since = userGeneration()
   if (event.request.headers.get(REPLAY_HEADER) === '1') {
     const res = await fetch(event.request)
-    noteStatus(res)
+    noteStatus(res, since)
     return res
   }
   // Read before the attempt, which consumes the body.
   const text = await event.request.clone().text()
   const res = await tryFetch(event.request)
   if (res && !isUnreachable(res)) {
-    noteStatus(res)
+    noteStatus(res, since)
     return res
   }
   const userId = await currentUser()

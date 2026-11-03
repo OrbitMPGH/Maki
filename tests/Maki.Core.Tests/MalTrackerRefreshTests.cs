@@ -129,4 +129,42 @@ public class MalTrackerRefreshTests
         Assert.Equal("fresh1", store.Current!.AccessToken);
         Assert.Equal("refresh1", store.Current.RefreshToken);
     }
+
+    private sealed class StatusHandler(HttpStatusCode tokenStatus) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) =>
+            Task.FromResult(new HttpResponseMessage(
+                request.RequestUri!.AbsolutePath.EndsWith("/token", StringComparison.Ordinal) ? tokenStatus : HttpStatusCode.OK)
+            {
+                Content = new StringContent("""{"id":1,"title":"Test"}""", System.Text.Encoding.UTF8, "application/json"),
+            });
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.ServiceUnavailable, 91_002, true)]
+    [InlineData(HttpStatusCode.TooManyRequests, 91_003, true)]
+    [InlineData(HttpStatusCode.BadRequest, 91_004, false)]
+    public async Task A_failed_refresh_drops_the_token_only_when_the_refresh_token_is_refused(
+        HttpStatusCode status, int userId, bool kept)
+    {
+        var store = new TokenStore(new ScrobbleToken
+        {
+            UserId = userId,
+            Service = "mal",
+            AccessToken = "stale",
+            RefreshToken = "refresh0",
+            ExpiresAt = DateTime.UtcNow.AddMinutes(5),
+        });
+        var tracker = new MalTracker(new Factory(new StatusHandler(status)), new Settings(), store,
+            new ScrobbleTrackerOptions(
+                "https://anilist.test/graphql", "https://anilist.test/oauth",
+                "https://mal.test", "https://mal.test/oauth",
+                "https://mangabaka.test",
+                "https://kitsu.test/api/edge", "https://kitsu.test/api/oauth"),
+            NullLogger<MalTracker>.Instance);
+
+        await Assert.ThrowsAnyAsync<TrackerException>(() => tracker.GetEntryAsync(userId, "1"));
+
+        Assert.Equal(kept, store.Current is not null);
+    }
 }

@@ -113,6 +113,35 @@ public sealed class OpdsCatalogTests : IDisposable
     }
 
     [Fact]
+    public async Task ChapterEntryPointsBothImageLinksAtItsOwnThumbnail()
+    {
+        // Reading apps draw a chapter grid from the entry's image links. The series cover there
+        // made every chapter look the same, and page/0 would record a read on every grid draw.
+        var (seriesId, chapters) = SeedSeriesWithChapters("Pictured", "p.cbz", ["001.jpg", "002.jpg"], [1m]);
+
+        var feed = await Catalog().ChaptersFeedAsync(Ctx, seriesId, 0, CancellationToken.None);
+        var entry = Assert.Single(feed!.Entries);
+
+        var image = entry.Links!.Single(l => l.Rel == OpdsXml.ImageRel).Href;
+        Assert.StartsWith($"{Ctx.Base}/chapter/{chapters[0]}/thumbnail?v=", image);
+        Assert.Equal(image, entry.Links!.Single(l => l.Rel == OpdsXml.ThumbnailRel).Href);
+        Assert.DoesNotContain(entry.Links!, l => l.Href.Contains("/page/0", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task AnArchivedSeriesHasNoChaptersFeed()
+    {
+        var (seriesId, _) = SeedSeriesWithChapters("Shelved", "shelved.cbz", ["001.jpg"], [1m]);
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == seriesId).ArchivedAt = DateTime.UtcNow;
+            db.SaveChanges();
+        }
+
+        Assert.Null(await Catalog().ChaptersFeedAsync(Ctx, seriesId, 0, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task PseCountIsTheChaptersSliceNotTheWholeVolume()
     {
         // One archive backing three chapters: a reader told the volume's page count would page

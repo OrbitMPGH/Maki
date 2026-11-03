@@ -36,7 +36,8 @@
   Wide pages in single-page mode can be shown whole, split into two halves in reading order, or
   rotated. **Crop borders** (shortcut C) trims plain white or black margins. Chapters with very
   tall pages open in continuous mode on their own, and on touch you pull past the end of a
-  chapter to open the next one.
+  chapter to open the next one. The page bar has one segment per page, lit up to the page
+  on screen; hovering a segment shows that page's thumbnail, and clicking or dragging jumps to it.
 - **Reading profiles.** Per-user defaults for page fit, direction, and mode by series type, with
   per-series overrides on top.
 - **Home.** Opens on one large card for the series you read last, with the rest of **Continue
@@ -69,6 +70,53 @@
   you're reading. Library and series pages you have visited still open offline, and progress read
   offline syncs when the connection returns. Push notifications can announce new chapters. See
   [Offline reading](offline-reading.md).
+
+## Enhance
+
+Enhance sharpens soft, low-resolution pages in the built-in reader, which helps most on a large
+screen. It is off until a reader turns it on. Library files are never modified.
+
+- **Two tiers, one setting.** Browser methods (**Light**, **Balanced**, **Strong**) run Anime4K
+  shaders on the reader's own device. They are always available and need WebGL2. Server methods
+  (**Sharp**, **Crisp line art**) run ONNX models on the Maki server and appear in the Method list
+  once an admin has enabled them. Sharp is IllustrationJaNai SPAN-S and Crisp line art is
+  Real-ESRGAN animevideov3 (it flattens screentone). A greyscale page stays greyscale whichever
+  method draws it.
+- **Turning it on.** In the reader toolbar's settings popover, set **Enhance** to Off, Auto or
+  Always and pick a **Method**. The same two fields are in reading profiles and in per-series
+  overrides, so they follow the usual order: series override, pinned profile, type profile, your
+  default. **Auto** enhances a page when it is shown at least 1.2 times larger than its
+  source, so a small window stays plain and a large monitor does not. It also enhances a page that
+  looks blurry at any size: the reader scores each page's sharpness once, on a grid of small tiles
+  at the page's own resolution, and a soft scan or an upscaled aggregator copy gets enhanced while
+  clean screentone does not.
+- **Skipping by quality.** **Don't enhance** lists quality tiers whose chapters are always shown as
+  they are, whatever Enhance says. It starts with Volume, since a digital volume is already clean.
+- **Hold to compare.** Hold **H** or the toolbar's compare button to see the original page, and
+  let go to return to the enhanced one.
+- **Server progress.** While a server method is still working on the page on screen, the fallback
+  shows and a thin line runs along the bottom edge of the screen. **Upscale progress** in the
+  Enhance settings swaps the line for a labelled pill (Detailed) or hides it (Hidden). With the
+  bars up, the compare button spins and says whether the page is waiting, upscaling or loading,
+  whatever that setting says. The page bar marks the pages ahead that are already upscaled in
+  light grey, like the buffered part of a video, and pulses the ones being upscaled.
+- **Working ahead.** Paged mode enhances the pages in the preload window. Continuous mode sizes its
+  range by pixels instead of pages, so a chapter of many short slices is enhanced well down the
+  strip and one of a few very tall slices only a page or two ahead, within what the device can hold.
+- **Fallbacks.** A server method shows a browser method on this device while its page is not ready,
+  **Balanced** unless you pick **Light**, **Strong** or **None** (the plain page) under "While the
+  server works" in the reader settings, or "Fallback" in a reading profile. It stays on for good
+  when the reader is offline, the admin tier is off or the model is not downloaded. A device
+  without WebGL2 shows plain pages and the browser methods read "Not supported on this device".
+- **Server upscaling (admins).** Settings, Library, **Server upscaling** has the on switch, the
+  list of models readers may use, **Threads**, the cache cap (1 GB by default), **Clear cache**
+  and **Test speed**, which times one built-in sample page. Models are not bundled. Maki downloads
+  each one on first use from a Maki GitHub release and checks its SHA-256. Some are licensed for
+  non-commercial use only; the per-model licences are in
+  [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). A page takes seconds of server CPU, a
+  few times longer on a NAS, so the queue is capped per reader and shared fairly between readers.
+- **Privacy.** Nothing leaves your server or your device. Upscaled pages are a disposable cache
+  under the config folder, oldest-used dropped first, and they can be cleared at any time.
 
 ## Discover
 
@@ -125,11 +173,14 @@
   look for one.
 - **Page conversion.** Off by default (Settings, Library, Page conversion). Pick WebP or AVIF and
   a quality, and new downloads are stored with their JPEG pages in that format and their PNG pages
-  as lossless WebP. A pausable library pass converts the files already on disk, one at a time, and
-  shows what it saved. A page or file that would not come out at least 5% smaller is kept as it
+  as lossless WebP. A download is placed as it arrived and converted afterwards by a background
+  queue, so downloading never waits on an encode; torrent imports join the same queue. A chapter
+  someone is reading is swapped once nobody has asked for one of its pages for ten minutes. A
+  pausable library pass converts the files already on disk, one at a time, and shows what it saved. Several pages of a file are encoded at once; the card sets how many (by
+  default half the cores, at most 4). A page or file that would not come out at least 5% smaller is kept as it
   was, and so are WebP and AVIF pages, animations, pages under 16 KB and pages over 16,383 pixels
-  on a side. Files hardlinked to a torrent client's copy are skipped. Originals wait in the upgrade
-  trash (`.maki-trash/<series id>/conv-*`) for the trash retention period, and the pass pauses
+  on a side. Files hardlinked to a torrent client's copy are skipped. A downloaded chapter keeps no
+  original, since the source still has it; other originals wait in the upgrade trash (`.maki-trash/<series id>/conv-*`) for the trash retention period, and the pass pauses
   itself rather than leave less than 1 GB free. WebP opens in every reader Maki works with
   (browsers, Kavita, Komga, KOReader, Mihon, Panels); AVIF does not open in KOReader or on iOS
   before 16. JPEG XL is not offered: the image library Maki bundles cannot write it, and Kavita

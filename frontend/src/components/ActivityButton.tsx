@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { ActionIcon, Box, Button, Group, Popover, Progress, ScrollArea, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { IconDownload } from '@tabler/icons-react'
+import { IconDownload } from '../lib/icons'
 import { Link, useNavigate } from 'react-router-dom'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -12,6 +12,7 @@ import { useLabel } from '../i18n-context'
 import { useSourceLabel } from '../sourceLabels'
 import { CountIndicator } from './ui/CountIndicator'
 import { isQueueActive, needsImportReview, queueStatusVisual } from './ui/status'
+import { MetaList } from './ui/MetaList'
 
 const WORKING = new Set(['FetchingPages', 'Downloading', 'Validating', 'Packaging', 'Importing'])
 const MAX_ROWS = 8
@@ -194,7 +195,7 @@ function ActivityRow({
             {item.seriesTitle}
           </Text>
           <Text size="xs" c="var(--ink-3)" lineClamp={1}>
-            {source ? `${queueItemLabel(item)} · ${source}` : queueItemLabel(item)}
+            <MetaList inline items={[queueItemLabel(item), source]} />
           </Text>
           {working && item.pagesTotal > 0 ? (
             <Group gap="xs" wrap="nowrap">

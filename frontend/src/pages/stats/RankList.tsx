@@ -1,5 +1,5 @@
 import { Group, Stack, Text } from '@mantine/core'
-import type { Icon } from '@tabler/icons-react'
+import type { Icon } from '../../lib/icons'
 import { Panel } from '../../components/ui/Panel'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
 

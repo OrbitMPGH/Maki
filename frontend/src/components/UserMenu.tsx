@@ -1,5 +1,5 @@
 import { Avatar, Badge, Menu, Text, UnstyledButton } from '@mantine/core'
-import { IconLogout, IconSelector, IconSettings, IconShieldLock } from '@tabler/icons-react'
+import { IconLogout, IconSelector, IconSettings, IconShieldLock } from '../lib/icons'
 import { useNavigate } from 'react-router-dom'
 import { Trans } from '@lingui/react/macro'
 import { useLogout } from '../api/auth'
@@ -45,7 +45,7 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
               </span>
             )}
           </span>
-          <IconSelector size={16} stroke={1.7} className="nav-user-chevron" />
+          <IconSelector size={16} className="nav-user-chevron" />
         </UnstyledButton>
       </Menu.Target>
       <Menu.Dropdown>

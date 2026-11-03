@@ -12,14 +12,14 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import {
   IconBookmark,
   IconDeviceFloppy,
   IconEyeOff,
   IconLayoutRows,
   IconTrash,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import {
   useCreateDiscoverPreset,
   useDeleteDiscoverPreset,
@@ -100,7 +100,7 @@ export function PresetMenu({
     <>
       <Menu position="bottom-start" withinPortal shadow="md" width={280}>
         <Menu.Target>
-          <Button size="xs" variant="default" leftSection={<IconBookmark size={14} />}>
+          <Button size="xs" variant="default" leftSection={<IconBookmark size={16} />}>
             <Trans>Saved filters</Trans>
           </Button>
         </Menu.Target>
@@ -123,16 +123,16 @@ export function PresetMenu({
                 aria-label={t`Delete saved filter`}
                 onClick={() => removePreset(preset)}
               >
-                <IconTrash size={14} />
+                <IconTrash size={16} />
               </ActionIcon>
             </Group>
           ))}
           <Menu.Divider />
-          <Menu.Item leftSection={<IconDeviceFloppy size={14} />} onClick={() => setSaveOpen(true)}>
+          <Menu.Item leftSection={<IconDeviceFloppy size={16} />} onClick={() => setSaveOpen(true)}>
             <Trans>Save these filters…</Trans>
           </Menu.Item>
           <Menu.Item
-            leftSection={<IconLayoutRows size={14} />}
+            leftSection={<IconLayoutRows size={16} />}
             onClick={() => setRailSpec(railDraft ? railDraft() : { source: 'catalogue', filters: current() })}
           >
             <Trans>Save as a rail…</Trans>
@@ -224,7 +224,7 @@ export function HiddenContentButton() {
         size="xs"
         variant="subtle"
         color="var(--neutral)"
-        leftSection={<IconEyeOff size={14} />}
+        leftSection={<IconEyeOff size={16} />}
         onClick={() => setOpen(true)}
       >
         {count > 0 ? <Trans>Hidden everywhere ({count})</Trans> : <Trans>Hidden everywhere</Trans>}

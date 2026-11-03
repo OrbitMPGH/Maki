@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Runtime;
+using Maki.Core.Images;
+using Maki.Core.Io;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.Embedding;
@@ -46,6 +48,7 @@ public sealed class MemoryDiagnostics(
     public object Snapshot(bool collect)
     {
         long? beforeCollect = null;
+        NativeHeapInfo? beforeTrim = null;
         if (collect)
         {
             beforeCollect = GC.GetTotalMemory(false);
@@ -53,6 +56,9 @@ public sealed class MemoryDiagnostics(
             GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
             GC.WaitForPendingFinalizers();
             GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+            // Finalizers free native buffers too, so the trim comes after them.
+            beforeTrim = NativeHeap.Read();
+            NativeHeap.Trim();
         }
 
         var info = GC.GetGCMemoryInfo();
@@ -82,6 +88,15 @@ public sealed class MemoryDiagnostics(
                 nativeApproxBytes = Math.Max(0, process.WorkingSet64 - info.TotalCommittedBytes)
             },
             linux = ReadLinux(),
+            // glibc's view of the native heap. freeBytes is memory released but still mapped, which
+            // is what a trim hands back; beforeTrim is only filled by a collect.
+            nativeHeap = new
+            {
+                current = NativeHeap.Read(),
+                beforeTrim,
+                trims = NativeHeap.Trims,
+                vipsTrackedBytes = ImageCodec.TrackedMemoryBytes
+            },
             artifacts = new object[]
             {
                 Artifact("catalogue-indexes", catalogue.IsLoaded, catalogue.IdleFor),

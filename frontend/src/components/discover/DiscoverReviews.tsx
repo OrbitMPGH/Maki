@@ -1,5 +1,5 @@
 import { Anchor, Badge, Group, Loader, Paper, Spoiler, Stack, Text, Title } from '@mantine/core'
-import { IconExternalLink, IconStar } from '@tabler/icons-react'
+import { IconExternalLink, IconStar } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useMangaReviews, type MangaReview } from '../../api/hooks'
 import { ratingBandVisual } from '../ui/status'
@@ -107,7 +107,7 @@ export function ReviewList({
               hideLabel={t`Show less`}
               attributes={{ content: { 'aria-label': reviewLabel(review.author) } }}
             >
-              <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
+              <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-line', overflowWrap: 'anywhere', lineHeight: 1.6 }}>
                 {review.text}
               </Text>
             </Spoiler>

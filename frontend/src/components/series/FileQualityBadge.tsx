@@ -1,5 +1,5 @@
 import { Stack, Text } from '@mantine/core'
-import { IconLock } from '@tabler/icons-react'
+import { IconLock } from '../../lib/icons'
 import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -54,7 +54,7 @@ export function FileQualityBadge({
       ? t`${medianWidth}px`
       : tierLabel
     : medianWidth != null
-      ? t`${tierLabel} · ${medianWidth}px`
+      ? t`${tierLabel}, ${medianWidth}px`
       : tierLabel
   const formatLabel = imageFormat ? renderLabel(FORMAT_LABEL[imageFormat] ?? imageFormat.toUpperCase()) : null
 

@@ -151,6 +151,7 @@ public class RecycleBinController(
     {
         RecycleReason.RemoveChapter => "removeChapter",
         RecycleReason.SeriesDelete => "seriesDelete",
+        RecycleReason.SeriesArchive => "seriesArchive",
         _ => "deleteFile"
     };
 }

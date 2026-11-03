@@ -7,11 +7,19 @@ import {
   errorChecks,
   groupedChecks,
   groupOperations,
+  damagedIndexedDetail,
   groupRows,
+  keptDuplicateDetail,
   manyFailedDeletions,
+  missingMovedDetail,
+  missingWeakDetail,
   overview,
+  relinkDeleteDetail,
+  sizeMismatchDetail,
+  spareDuplicateDetail,
   runningScan,
   unlinkedNoSeries,
+  unreadableDetail,
   unlinkedUnrecognized,
   verifyScan,
   warningChecks,
@@ -209,6 +217,12 @@ export const ReviewDamagedArchive: Story = {
     await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[0])
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Review archive' })
+    await expect(await within(dialog).findByText('Archive is damaged')).toBeVisible()
+    await waitFor(async () => expect((await within(dialog).findAllByText('Page 12 failed its CRC check'))[0]).toBeVisible())
+    const fetch = await within(dialog).findByRole('button', { name: 'Get a new copy' })
+    await waitFor(() => expect(fetch).toBeEnabled())
+    await expect(within(dialog).queryByRole('button', { name: 'Download candidate for review' })).toBeNull()
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Other actions' }))
     await waitFor(async () => expect(await within(dialog).findByText('Request replacement', { selector: 'h3' })).toBeVisible())
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Download candidate for review' })).toBeEnabled())
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Review permanent deletion' })).toBeVisible())
@@ -238,13 +252,236 @@ export const ReviewDuplicateAgainstLinkedFile: Story = {
   },
 }
 
+const filterBy = async (
+  canvas: { findByRole: (role: string, options: { name: string }) => Promise<HTMLElement> },
+  body: ReturnType<typeof within>,
+  click: (el: HTMLElement) => Promise<void>,
+  finding: string,
+) => {
+  await click(await canvas.findByRole('combobox', { name: 'Filter by finding' }))
+  await click(await body.findByRole('option', { name: finding }))
+}
+const filterDuplicates = (
+  canvas: Parameters<typeof filterBy>[0],
+  body: ReturnType<typeof within>,
+  click: (el: HTMLElement) => Promise<void>,
+) => filterBy(canvas, body, click, 'Duplicate')
+
+/** The Missing filter: a file found at a new path relinks in one click, a vanished folder clears or downloads as a group. */
+export const FilesMissingFilter: Story = {
+  parameters: tab('files'),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await filterBy(canvas, body, (el) => userEvent.click(el), 'Missing')
+    await expect(await canvas.findByText('1 file found at a new path')).toBeVisible()
+    await expect(await canvas.findByText('The Ninth Kitchen (2021)/The Ninth Kitchen - Ch.61.cbz')).toBeVisible()
+    await expect(await canvas.findByText('2 files gone, nowhere else in the library')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Relink it' }))
+    await expect(await body.findByText('Relinked 1 file')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Clear records' }))
+    await expect(await body.findByRole('dialog', { name: 'Delete 2 archives?' })).toBeVisible()
+  },
+}
+
+/** The Unlinked filter sorted by what each file needs; the ready ones import in one click. */
+export const FilesUnlinkedCases: Story = {
+  parameters: tab('files'),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await filterBy(canvas, body, (el) => userEvent.click(el), 'Not linked')
+    await expect(await canvas.findByText(/Nothing holds these chapters yet/)).toBeVisible()
+    await expect(await canvas.findByText(/No series owns the folder these sit in/)).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Import it' }))
+    await expect(await body.findByText('Imported 1 archive')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Show only: Chapter already has a file' }))
+    await waitFor(() => expect(canvas.queryByText(monoText('Starlit Ferry/Starlit Ferry - Ch.4.cbz'))).toBeNull())
+    await expect(await canvas.findByText(monoText('Clockwork Tea House/Clockwork Tea House - Ch.18.cbz'))).toBeVisible()
+  },
+}
+
+/** A selection with damaged files offers new copies for them, and only them. */
+export const BulkGetNewCopies: Story = {
+  parameters: tab('files'),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('checkbox', { name: 'Select every file on this page' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Get a new copy' }))
+    await expect(await within(canvasElement.ownerDocument.body).findByText('Requested 1 replacement')).toBeVisible()
+  },
+}
+
+/** The Duplicate filter: one row per set of copies, the kept one leading, and a bar to delete every spare. */
+export const FilesDuplicateGroups: Story = {
+  parameters: { ...tab('files'), msw: [fileDetail(keptDuplicateDetail)] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await filterDuplicates(canvas, body, (el) => userEvent.click(el))
+    await expect(await canvas.findByText(monoText('Ashen Crown Regression/Ashen Crown Regression v10.cbz'))).toBeVisible()
+    await expect(
+      await canvas.findByRole('button', { name: 'Review Ashen Crown Regression/Ashen Crown Regression - Volume 10 (Digital).cbz' }),
+    ).toBeVisible()
+    await expect(await canvas.findByText(/1 spare copy is identical to a file that stays/)).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Delete the spare copy' }))
+    const dialog = await body.findByRole('dialog', { name: 'Delete 1 spare copy?' })
+    await expect(within(dialog).queryByRole('checkbox')).not.toBeInTheDocument()
+    const confirm = await within(dialog).findByRole('button', { name: 'Delete spare copy' })
+    await waitFor(() => expect(confirm).toBeEnabled())
+  },
+}
+
+/** Selecting a set selects every copy, but delete only ever offers the spares. */
+export const FilesDuplicateSelection: Story = {
+  parameters: tab('files'),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await filterDuplicates(canvas, body, (el) => userEvent.click(el))
+    await userEvent.click(
+      await canvas.findByRole('checkbox', { name: 'Select every copy of Ashen Crown Regression/Ashen Crown Regression v10.cbz' }),
+    )
+    await expect(await canvas.findByText('2 selected')).toBeVisible()
+    const remove = await canvas.findByRole('button', { name: 'Delete 1 spare copy' })
+    await waitFor(() => expect(remove).toBeEnabled())
+  },
+}
+
+/** Opened from the kept copy: the spare goes in two clicks, and the bigger actions wait behind a toggle. */
+export const ReviewKeptDuplicate: Story = {
+  parameters: { ...tab('files'), msw: [fileDetail(keptDuplicateDetail)] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[0])
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog', { name: 'Review archive' })
+    await expect(await within(dialog).findByText('Identical copies')).toBeVisible()
+    await expect(await within(dialog).findByText(/One other file is byte for byte the same as this one/)).toBeVisible()
+    await expect(await within(dialog).findByText('Chapters read from it: Ch. 77–85')).toBeVisible()
+    await expect(within(dialog).queryByRole('button', { name: 'Download candidate for review' })).not.toBeInTheDocument()
+
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Delete the spare copy' }))
+    await expect(await within(dialog).findByText(/Delete the spare copy from disk\? This file stays/)).toBeVisible()
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Delete' }))
+    await waitFor(() => expect(within(dialog).queryByText(/Delete the spare copy from disk/)).not.toBeInTheDocument())
+
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Other actions' }))
+    await expect(await within(dialog).findByRole('button', { name: 'Download candidate for review' })).toBeVisible()
+  },
+}
+
+/** Deleting the kept copy is offered only because an identical copy in the same folder takes its chapters. */
+export const ReviewKeptDuplicateDeleteInstead: Story = {
+  parameters: { ...tab('files'), msw: [fileDetail(keptDuplicateDetail)] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[0])
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog', { name: 'Review archive' })
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Keep the other copy and delete this one instead' }))
+    await expect(await within(dialog).findByText(/Ch\. 77–85 then read from Ashen Crown Regression\/Ashen Crown Regression - Volume 10/)).toBeVisible()
+  },
+}
+
+/** Opened from the spare: its only rival is its own twin, so the unlinked comparison is not repeated. */
+export const ReviewSpareDuplicate: Story = {
+  parameters: { ...tab('files'), msw: [fileDetail(spareDuplicateDetail)] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[0])
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog', { name: 'Review archive' })
+    await expect(await within(dialog).findByText(/This file is byte for byte the same as the copy marked Keep/)).toBeVisible()
+    await expect(within(dialog).queryByText('Not linked to any chapter')).not.toBeInTheDocument()
+    await expect(await within(dialog).findByRole('button', { name: 'Delete this copy' })).toBeVisible()
+  },
+}
+
 export const ReviewMissingArchive: Story = {
   parameters: tab('files'),
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[3])
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Review archive' })
+    await expect(await within(dialog).findByText('File is gone from disk')).toBeVisible()
+    await expect(await within(dialog).findByRole('button', { name: 'Download it again' })).toBeVisible()
+    await expect(within(dialog).queryByRole('button', { name: 'Relink to this file' })).toBeNull()
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Other actions' }))
     await waitFor(async () => expect(await within(dialog).findByRole('button', { name: 'Review record removal' })).toBeVisible())
+  },
+}
+
+/** Clearing says what happens to the chapters before it does it, without a second dialog. */
+export const ReviewMissingClearRecord: Story = {
+  parameters: tab('files'),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[3])
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog', { name: 'Review archive' })
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Clear the record' }))
+    await expect(await within(dialog).findByText(/still wanted, so automation may download them again/)).toBeVisible()
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Clear the record' }))
+    await waitFor(() => expect(body.queryByRole('dialog', { name: 'Review archive' })).toBeNull())
+  },
+}
+
+/** The folder was renamed: the same chapter sits at a new path, and one click points the record there. */
+export const ReviewMissingFoundElsewhere: Story = {
+  parameters: { ...tab('files'), msw: [fileDetail(missingMovedDetail)] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[3])
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog', { name: 'Review archive' })
+    await expect(await within(dialog).findByText('Same pages; only the metadata changed')).toBeVisible()
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Relink to this file' }))
+    await waitFor(() => expect(body.queryByRole('dialog', { name: 'Review archive' })).toBeNull())
+  },
+}
+
+/** A match on the name alone asks for a look before it relinks. */
+export const ReviewMissingNameOnly: Story = {
+  parameters: { ...tab('files'), msw: [fileDetail(missingWeakDetail)] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[3])
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog', { name: 'Review archive' })
+    await expect(await within(dialog).findByText('Possible match')).toBeVisible()
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Relink to this file' }))
+    await expect(await within(dialog).findByText(/Only the name matches, so open the file/)).toBeVisible()
+    await expect(await within(dialog).findByRole('button', { name: 'Relink' })).toBeVisible()
+  },
+}
+
+/** Indexed only: the panel says it reads the file in full before downloading anything. */
+export const ReviewDamagedIndexedOnly: Story = {
+  parameters: { ...tab('files'), msw: [fileDetail(damagedIndexedDetail)] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[0])
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog', { name: 'Review archive' })
+    await expect(await within(dialog).findByText(/has only been indexed. It is read in full first/)).toBeVisible()
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Get a new copy' }))
+    await expect(await body.findByRole('dialog', { name: 'Review operation' })).toBeVisible()
+  },
+}
+
+/** Changed outside Maki: the fix is the record, not the file. */
+export const ReviewSizeMismatch: Story = {
+  parameters: { ...tab('files'), msw: [fileDetail(sizeMismatchDetail)] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[0])
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog', { name: 'Review archive' })
+    await expect(await within(dialog).findByText('File changed outside Maki')).toBeVisible()
+    await expect(within(dialog).queryByRole('button', { name: 'Download candidate for review' })).toBeNull()
+    const update = await within(dialog).findByRole('button', { name: 'Update the record' })
+    await userEvent.click(update)
+    await waitFor(() => expect(update).toBeEnabled())
+  },
+}
+
+export const ReviewUnreadable: Story = {
+  parameters: { ...tab('files'), msw: [fileDetail(unreadableDetail)] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[0])
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog', { name: 'Review archive' })
+    await expect(await within(dialog).findByText('Maki cannot open this file')).toBeVisible()
+    await expect(await within(dialog).findByText(/the drive or share it is on is mounted/)).toBeVisible()
+    await waitFor(async () => expect((await within(dialog).findAllByRole('button', { name: 'Rescan' }))[0]).toBeVisible())
   },
 }
 
@@ -339,6 +576,21 @@ export const ReviewDeletion: Story = {
     const dialog = await body.findByRole('dialog', { name: 'Review operation' })
     await waitFor(async () => expect(await within(dialog).findByText(/already gone from disk/)).toBeVisible())
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Cancel operation' })).toBeVisible())
+  },
+}
+
+/** A deletion whose chapters move to an identical copy says so, instead of warning they lose their file. */
+export const ReviewDeletionWithRelink: Story = {
+  parameters: {
+    ...tab('repairs'),
+    msw: [http.get(api('/health/operations/:id'), () => HttpResponse.json(relinkDeleteDetail))],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' })).at(-2)!)
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog', { name: 'Review operation' })
+    await expect(await within(dialog).findByText(/Ch\. 77–85 then read from the identical copy at/)).toBeVisible()
+    await expect(within(dialog).queryByText(/Wanted chapters may be downloaded again/)).not.toBeInTheDocument()
   },
 }
 

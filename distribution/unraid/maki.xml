@@ -16,7 +16,7 @@ After starting the container, open the WebUI, go to Settings, and add your /libr
   <WebUI>http://[IP]:[PORT:8990]/</WebUI>
   <TemplateURL/>
   <Icon>https://raw.githubusercontent.com/OrbitMPGH/Maki/main/frontend/public/favicon.png</Icon>
-  <ExtraParams/>
+  <ExtraParams>--memory-reservation=512m</ExtraParams>
   <PostArgs/>
   <CPUset/>
   <DateInstalled/>

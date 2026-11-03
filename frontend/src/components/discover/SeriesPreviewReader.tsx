@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActionIcon, Button, Center, Group, Portal, SegmentedControl, Stack, Text } from '@mantine/core'
-import { IconArrowLeft, IconX } from '@tabler/icons-react'
+import { IconArrowLeft, IconX } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { previewPageUrl, useSeriesPreview } from '../../api/preview'
@@ -161,7 +161,7 @@ export function SeriesPreviewReader({
   const readyPages = readyCount
 
   const chapterName = chapterLabel ? t`Chapter ${chapterLabel}` : t`First chapter`
-  const label = `${title} · ${chapterName}`
+  const label = `${title}: ${chapterName}`
 
   let body: React.ReactNode
   if (failure) {
@@ -291,7 +291,7 @@ export function SeriesPreviewReader({
               <Text fz="xs" c="var(--ink-3)" truncate>
                 {source ? (
                   <Trans>
-                    Preview · {chapterName} · via {source}
+                    Preview of {chapterName} from {source}
                   </Trans>
                 ) : (
                   <Trans>Preview</Trans>

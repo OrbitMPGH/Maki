@@ -268,7 +268,7 @@ function UpcomingLine({ item, late = false }: { item: UpcomingSeriesDto; late?: 
         )}
         {range && (
           <Text size="sm" c={late ? 'var(--warn)' : undefined}>
-            {late ? <Trans>Running late. It was likely {range}.</Trans> : <Trans>Likely {range}</Trans>}
+            {late ? <Trans>Later than expected. We guessed {range}.</Trans> : <Trans>Likely {range}</Trans>}
           </Text>
         )}
         {range && (

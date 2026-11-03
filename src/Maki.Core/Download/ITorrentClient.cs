@@ -78,6 +78,16 @@ public enum TorrentClientFailure
     HeldOutsideLabel,
 }
 
+/// <summary>What <see cref="ITorrentClient.RemoveAsync"/> did.</summary>
+public enum TorrentRemoval
+{
+    Removed,
+    /// <summary>The client does not have the torrent; something else removed it first.</summary>
+    Absent,
+    /// <summary>The client has it outside Maki's category or label, where the user put it, so it was left alone.</summary>
+    HeldOutsideLabel,
+}
+
 /// <summary>A refusal Maki can name; the message is English for logs only.</summary>
 public sealed class TorrentClientException(TorrentClientFailure failure, string message, Exception? inner = null)
     : InvalidOperationException(message, inner)
@@ -122,6 +132,15 @@ public interface ITorrentClient
     /// its own guards.
     /// </summary>
     Task<IReadOnlyList<ClientTorrent>> ListAsync(TorrentClientSettings settings, CancellationToken ct = default);
+
+    /// <summary>
+    /// Removes one of Maki's torrents, and its downloaded files when <paramref name="deleteData"/> is set.
+    /// The torrent is looked up first: one the client does not have is <see cref="TorrentRemoval.Absent"/>,
+    /// and one under another category or label is left alone, since the user moved it there. A client that
+    /// cannot label has no way to tell, so any torrent with the hash is removed.
+    /// </summary>
+    Task<TorrentRemoval> RemoveAsync(
+        TorrentClientSettings settings, string hash, bool deleteData, CancellationToken ct = default);
 }
 
 /// <summary>The one place that reads the stored download client settings and applies their defaults.</summary>
@@ -137,6 +156,28 @@ public static class DownloadClientSettingsStore
 
     public static string LabelOrDefault(string? label) =>
         string.IsNullOrWhiteSpace(label) ? TorrentClientSettings.DefaultLabel : label;
+
+    /// <summary>
+    /// Which client a torrent belongs to, for telling later whether it is still the configured one. Kind,
+    /// URL and label; never the credentials, which change without the client changing.
+    /// </summary>
+    public static string Fingerprint(TorrentClientSettings settings) =>
+        $"{settings.Kind.Key()}|{settings.Url.Trim().TrimEnd('/').ToLowerInvariant()}|{settings.Label}";
+}
+
+/// <summary>The values of <see cref="SettingKeys.DownloadClientRemoveCompleted"/>.</summary>
+public static class TorrentRemovalModes
+{
+    public const string Never = "never";
+    public const string AfterImport = "afterimport";
+
+    /// <summary>Unset reads as <see cref="Never"/>; null for anything else, which a write refuses.</summary>
+    public static string? Parse(string? value) => value?.Trim().ToLowerInvariant() switch
+    {
+        null or "" or Never => Never,
+        AfterImport => AfterImport,
+        _ => null,
+    };
 }
 
 /// <summary>Resolves the configured kind to its driver. One instance per kind is registered in DI.</summary>

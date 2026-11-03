@@ -1,0 +1,20 @@
+---
+title: Maki documentation
+description: Add a series once and Maki keeps it complete. Docs for the self-hosted manga manager with a reader built in.
+---
+
+import { CardGrid, LinkButton, LinkCard } from '@astrojs/starlight/components';
+
+Add a series once and Maki keeps it complete. Install it, connect your reading apps, and see how the pieces work.
+
+<LinkButton href="/Maki/installation/docker-compose/" icon="right-arrow">Install with Docker</LinkButton>
+<LinkButton href="/Maki/introduction/what-is-maki/" variant="minimal">What is Maki</LinkButton>
+
+<CardGrid>
+  <LinkCard title="Introduction" description="What Maki is, how a chapter gets from a site to your reader." href="/Maki/introduction/what-is-maki/" />
+  <LinkCard title="Features" description="One page per area: the reader, other apps, trackers, downloads, Discover, Page enhance, stats and administration." href="/Maki/features/" />
+  <LinkCard title="Installation" description="Docker Compose, Unraid, HTTPS behind a reverse proxy and single sign-on." href="/Maki/installation/docker-compose/" />
+  <LinkCard title="Guides" description="Add a series, read in Maki or in KOReader, Panels, Chunky and Mihon, choose sources, understand recommendations, back up." href="/Maki/guides/getting-started/add-your-first-series/" />
+  <LinkCard title="Contribution" description="Run Maki from source, find your way around the code, and help translate it." href="/Maki/contribution/development/" />
+  <LinkCard title="Q&A" description="Short answers to the questions that come up most." href="/Maki/qa/faq/" />
+</CardGrid>

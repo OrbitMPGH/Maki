@@ -123,6 +123,32 @@ public class TransmissionClient : ITorrentClient
         return list;
     }
 
+    public async Task<TorrentRemoval> RemoveAsync(
+        TorrentClientSettings settings, string hash, bool deleteData, CancellationToken ct = default)
+    {
+        var session = await EnsureAsync(settings, ct);
+
+        // torrent-remove answers success for a hash it does not have, so presence is checked first.
+        var args = new Dictionary<string, object?> { ["ids"] = new[] { hash }, ["fields"] = new[] { "hashString", "labels" } };
+        var result = await CallAsync(settings, session, "torrent-get", args, TorrentClientFailure.Unreachable, ct);
+        var torrent = result.TryGetProperty("torrents", out var torrents) && torrents.ValueKind == JsonValueKind.Array
+            ? torrents.EnumerateArray().FirstOrDefault(t => ReadString(t, "hashString").Equals(hash, StringComparison.OrdinalIgnoreCase))
+            : default;
+        if (torrent.ValueKind != JsonValueKind.Object)
+        {
+            return TorrentRemoval.Absent;
+        }
+
+        if (UsesLabels(settings, session) && !HasLabel(torrent, "labels", settings.Label))
+        {
+            return TorrentRemoval.HeldOutsideLabel;
+        }
+
+        var remove = new Dictionary<string, object?> { ["ids"] = new[] { hash }, ["delete-local-data"] = deleteData };
+        await CallAsync(settings, session, "torrent-remove", remove, TorrentClientFailure.Rejected, ct);
+        return TorrentRemoval.Removed;
+    }
+
     private async Task<string?> AddCoreAsync(
         TorrentClientSettings settings, Session session, Dictionary<string, object?> args, CancellationToken ct)
     {

@@ -115,7 +115,12 @@ public class SeriesController(
         var refreshed = await UserStateForAsync(id, ct);
         return Ok(SeriesDto.FromEntity(
             series, rating: refreshed.Rating, notificationMode: refreshed.NotificationMode,
-            titleLanguage: await TitleLanguageAsync(ct)));
+            titleLanguage: await TitleLanguageAsync(ct)) with
+        {
+            ProvisionalRating = refreshed.ProvisionalRating,
+            ProvisionalAtChapter = refreshed.ProvisionalAtChapter,
+            Finished = refreshed.Finished,
+        });
     }
 
     /// <summary>Re-standardizes the ComicInfo.xml inside every CBZ the series owns.</summary>
@@ -170,11 +175,20 @@ public class SeriesController(
     /// </summary>
     private async Task<IActionResult> QueueNextWantedAsync(int id, int count, CancellationToken ct)
     {
-        var title = await db.Series.Where(s => s.Id == id).Select(s => s.Title).FirstOrDefaultAsync(ct);
-        if (title is null)
+        var series = await db.Series.Where(s => s.Id == id)
+            .Select(s => new { s.Title, s.ArchivedAt })
+            .FirstOrDefaultAsync(ct);
+        if (series is null)
         {
             return NotFound();
         }
+
+        if (series.ArchivedAt is not null)
+        {
+            return this.Conflict(localizer, "error.series.archived");
+        }
+
+        var title = series.Title;
 
         var chapters = await db.Chapters.Where(c => c.SeriesId == id).ToListAsync(ct);
         return await QueueChaptersAsync(id, title, Chapter.NextWanted(chapters, count), ct);
@@ -200,9 +214,15 @@ public class SeriesController(
     [HttpPost("{id:int}/refresh")]
     public async Task<IActionResult> Refresh(int id, CancellationToken ct)
     {
-        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        var series = await db.Series.Where(s => s.Id == id).Select(s => new { s.ArchivedAt }).FirstOrDefaultAsync(ct);
+        if (series is null)
         {
             return NotFound();
+        }
+
+        if (series.ArchivedAt is not null)
+        {
+            return this.Conflict(localizer, "error.series.archived");
         }
 
         var newChapters = await chapterSyncService.SyncSeriesAsync(id, ct);
@@ -230,14 +250,18 @@ public class SeriesController(
             return this.Fail(localizer, "error.series.noRootFolder");
         }
 
-        try
+        // An archived series does not talk to its sources; relinking what is on disk still works.
+        if (series.ArchivedAt is null)
         {
-            await chapterSyncService.SyncSeriesAsync(id, ct);
-        }
-        catch (Exception ex)
-        {
-            // A dead source shouldn't block relinking files already on disk.
-            logger.LogWarning(ex, "Chapter sync failed during rescan of series {Id}", id);
+            try
+            {
+                await chapterSyncService.SyncSeriesAsync(id, ct);
+            }
+            catch (Exception ex)
+            {
+                // A dead source shouldn't block relinking files already on disk.
+                logger.LogWarning(ex, "Chapter sync failed during rescan of series {Id}", id);
+            }
         }
 
         var result = await cbzLinkService.RescanSeriesAsync(series, ct);
@@ -353,8 +377,12 @@ public class SeriesController(
         // mode with no per-series lookup. Unfiltered on Rating now that a row can exist for the
         // mode alone: filtering on it would report every muted-but-unrated series as Default.
         var userStates = await db.UserSeriesStates
-            .Select(x => new { x.SeriesId, x.Rating, x.NotificationMode })
+            .Select(x => new { x.SeriesId, x.Rating, x.ProvisionalRating, x.ProvisionalAtChapter, x.NotificationMode })
             .ToDictionaryAsync(x => x.SeriesId, x => x, ct);
+        var finishedIds = (await db.ReadingStates
+            .Where(r => r.Finished)
+            .Select(r => r.SeriesId)
+            .ToListAsync(ct)).ToHashSet();
 
         // Which sources each series is linked to, and which of those actually run. Two flat reads
         // grouped in memory rather than Include(s => s.SourceMappings) on the materialized list
@@ -415,6 +443,9 @@ public class SeriesController(
                 titleLanguage: titleLanguage) with
             {
                 RemovedChapterCount = counts?.Removed ?? 0,
+                ProvisionalRating = userState?.ProvisionalRating,
+                ProvisionalAtChapter = userState?.ProvisionalAtChapter,
+                Finished = finishedIds.Contains(s.Id),
                 Sources = [.. mappings.Select(m => m.SourceName).Distinct().Order()],
                 EnabledSources =
                 [
@@ -509,15 +540,17 @@ public class SeriesController(
     /// the entity any more, so leaving them out returns the defaults and blanks the star rating and
     /// the notification picker in the client's cache.
     /// </summary>
-    private async Task<(int? Rating, SeriesNotificationMode NotificationMode)> UserStateForAsync(
-        int seriesId, CancellationToken ct)
+    private async Task<(int? Rating, SeriesNotificationMode NotificationMode, int? ProvisionalRating,
+        double? ProvisionalAtChapter, bool Finished)> UserStateForAsync(int seriesId, CancellationToken ct)
     {
         var state = await db.UserSeriesStates
             .Where(x => x.SeriesId == seriesId)
-            .Select(x => new { x.Rating, x.NotificationMode })
+            .Select(x => new { x.Rating, x.NotificationMode, x.ProvisionalRating, x.ProvisionalAtChapter })
             .FirstOrDefaultAsync(ct);
+        var finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == seriesId && r.Finished, ct);
 
-        return (state?.Rating, state?.NotificationMode ?? SeriesNotificationMode.Default);
+        return (state?.Rating, state?.NotificationMode ?? SeriesNotificationMode.Default,
+            state?.ProvisionalRating, state?.ProvisionalAtChapter, finished);
     }
 
     /// <summary>
@@ -944,7 +977,7 @@ public class SeriesController(
         var suppressed = await recommendationFeedback.SuppressedAsync(currentUser.UserId, ct);
         return Ok(HiddenContentService.Without(
             related.Where(r => !long.TryParse(r.ProviderId, out var providerId) || !suppressed.Contains(providerId)).ToList(),
-            await hidden.PredicateAsync(ct)));
+            await hidden.PredicateAsync(related, ct)));
     }
 
     /// <summary>
@@ -988,7 +1021,7 @@ public class SeriesController(
             .ToListAsync(ct);
         var ownedSet = new HashSet<long>(owned);
         var suppressed = await recommendationFeedback.SuppressedAsync(currentUser.UserId, ct);
-        var visible = HiddenContentService.Without(pool, await hidden.PredicateAsync(ct));
+        var visible = HiddenContentService.Without(pool, await hidden.PredicateAsync(pool, ct));
         return Ok(visible
             .Where(r => !long.TryParse(r.ProviderId, out var providerId) ||
                 !ownedSet.Contains(providerId) && !suppressed.Contains(providerId))
@@ -1023,8 +1056,13 @@ public class SeriesController(
 
         var userState = await db.UserSeriesStates
             .Where(x => x.SeriesId == id)
-            .Select(x => new { x.Rating, x.NotificationMode, x.ReaderPrefsJson, x.ReadingProfileId })
+            .Select(x => new
+            {
+                x.Rating, x.ProvisionalRating, x.ProvisionalAtChapter, x.NotificationMode, x.ReaderPrefsJson,
+                x.ReadingProfileId, x.PendingRatingCheckpoint,
+            })
             .FirstOrDefaultAsync(ct);
+        var finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == id && r.Finished, ct);
         var readerPrefs = await readingProfiles.ResolveForAsync(
             series.Type, userState?.ReaderPrefsJson, userState?.ReadingProfileId, ct);
         // A profile or series override is an explicit reading-style choice. With only the global
@@ -1050,8 +1088,17 @@ public class SeriesController(
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
             RemovedChapterCount = counts?.Removed ?? 0,
+            ProvisionalRating = userState?.ProvisionalRating,
+            ProvisionalAtChapter = userState?.ProvisionalAtChapter,
+            Finished = finished,
+            RatingCheckpoint = userState?.Rating is null && !finished
+                ? RatingCheckpointService.WireName(userState?.PendingRatingCheckpoint ?? default)
+                : null,
             ReadFileCleanupActive = ReadFileCleanupService.AppliesTo(series.ReadFileCleanup, await readFileCleanup.OptionsAsync(ct)),
             PendingProposalId = pendingProposalId,
+            ArchiveHintEligible = currentUser.Has(MakiPermission.ArchiveSeries) &&
+                                  await SeriesArchiveService.FinishedHintAsync(db, series, ct),
+            RateHintEligible = await RateHintAsync(db, id, ct),
             ReadTimeEstimate = estimate is null
                 ? null
                 : new ReadingTimeEstimateDto(
@@ -1094,6 +1141,13 @@ public class SeriesController(
 
         if (result.Series is null)
         {
+            // Only when the caller can open that series: otherwise it is the plain "already exists".
+            if (result.Error is SeriesCreationError.ArchivedInLibrary && result.ExistingSeriesId is int archivedId
+                && await db.Series.AnyAsync(s => s.Id == archivedId, ct))
+            {
+                return this.ArchivedExists(localizer, archivedId);
+            }
+
             return result.Error switch
             {
                 SeriesCreationError.RootFolderNotFound => this.Fail(localizer, "error.series.rootFolderNotFound"),
@@ -1213,6 +1267,129 @@ public class SeriesController(
         return NoContent();
     }
 
+    public record ArchiveSeriesRequest(bool RemoveFiles = false, bool Permanent = false);
+
+    public record BulkArchiveSeriesRequest(List<int>? SeriesIds, bool RemoveFiles = false, bool Permanent = false);
+
+    public record RemoveArchivedFilesRequest(bool Permanent = false);
+
+    public record RestoreSeriesRequest(bool RedownloadRemoved = false);
+
+    /// <summary>
+    /// The figures the archive and restore dialogs show. Its own endpoint because the size stats every
+    /// chapter file, which the series GET (polled while a source match runs) should not do.
+    /// </summary>
+    [Authorize(Policy = Policies.ArchiveSeries)]
+    [HttpGet("{id:int}/archive-preview")]
+    public async Task<IActionResult> ArchivePreview(int id, CancellationToken ct)
+    {
+        var series = await db.Series.AsNoTracking().Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(new ArchivePreviewDto(
+            FreeableBytes: await SeriesArchiveService.FreeableBytesAsync(db, series, ct),
+            OtherActiveReaders: await SeriesArchiveService.OtherActiveReadersAsync(
+                db, id, currentUser.UserId, DateTime.UtcNow, ct),
+            RedownloadableChapters: await SeriesArchiveService.RedownloadableChaptersAsync(db, id, ct)));
+    }
+
+    public sealed record ArchivePreviewDto(long FreeableBytes, int OtherActiveReaders, int RedownloadableChapters);
+
+    /// <summary>
+    /// Moves a series out of the library: it stops talking to sources and the queue and keeps every
+    /// row. Removing the files as well also needs <see cref="MakiPermission.DeleteSeries"/>.
+    /// </summary>
+    [Authorize(Policy = Policies.ArchiveSeries)]
+    [HttpPost("{id:int}/archive")]
+    public async Task<IActionResult> Archive(
+        int id, [FromBody] ArchiveSeriesRequest request, [FromServices] SeriesArchiveService archive, CancellationToken ct)
+    {
+        if (request.RemoveFiles && !currentUser.Permissions.Grants(MakiPermission.DeleteSeries))
+        {
+            return Forbid();
+        }
+
+        var result = await archive.ArchiveAsync(id, request.RemoveFiles, request.Permanent, ct);
+        return ArchiveResponse(result, () => Ok(new { deleted = result.FilesDeleted, failed = result.FilesFailed }));
+    }
+
+    /// <summary>
+    /// <see cref="Archive"/> for each id. Always 200: each id carries its own outcome, and a refused
+    /// one does not stop the rest.
+    /// </summary>
+    [Authorize(Policy = Policies.ArchiveSeries)]
+    [HttpPost("archive/bulk")]
+    public async Task<IActionResult> ArchiveBulk(
+        [FromBody] BulkArchiveSeriesRequest request, [FromServices] SeriesArchiveService archive, CancellationToken ct)
+    {
+        if (request.RemoveFiles && !currentUser.Permissions.Grants(MakiPermission.DeleteSeries))
+        {
+            return Forbid();
+        }
+
+        var results = await archive.ArchiveManyAsync(request.SeriesIds ?? [], request.RemoveFiles, request.Permanent, ct);
+        return Ok(new
+        {
+            results = results.Select(r => new
+            {
+                seriesId = r.SeriesId,
+                ok = r.Result.Succeeded,
+                notFound = r.Result.Status == SeriesArchiveStatus.NotFound,
+                code = r.Result.ErrorKey,
+                error = r.Result.ErrorKey is { } key ? localizer.Get(key, null) : null,
+                permanentDeleteAvailable = r.Result.Status == SeriesArchiveStatus.BinRefused,
+                deleted = r.Result.FilesDeleted,
+                failed = r.Result.FilesFailed,
+            }),
+        });
+    }
+
+    /// <summary>Removes the files of a series archived with its files kept.</summary>
+    [Authorize(Policy = Policies.DeleteSeries)]
+    [HttpPost("{id:int}/archive/removefiles")]
+    public async Task<IActionResult> RemoveArchivedFiles(
+        int id, [FromBody] RemoveArchivedFilesRequest request, [FromServices] SeriesArchiveService archive,
+        CancellationToken ct)
+    {
+        var result = await archive.RemoveFilesAsync(id, request.Permanent, ct);
+        return ArchiveResponse(result, () => Ok(new { deleted = result.FilesDeleted, failed = result.FilesFailed }));
+    }
+
+    /// <summary>
+    /// Puts an archived series back in the library with its old monitoring mode and refreshes it in
+    /// the background. Downloading the removed chapters again also needs
+    /// <see cref="MakiPermission.DownloadChapters"/>.
+    /// </summary>
+    [Authorize(Policy = Policies.ArchiveSeries)]
+    [HttpPost("{id:int}/restore")]
+    public async Task<IActionResult> Restore(
+        int id, [FromBody] RestoreSeriesRequest request, [FromServices] SeriesArchiveService archive, CancellationToken ct)
+    {
+        if (request.RedownloadRemoved && !currentUser.Permissions.Grants(MakiPermission.DownloadChapters))
+        {
+            return Forbid();
+        }
+
+        var result = await archive.RestoreAsync(id, request.RedownloadRemoved, ct);
+        return ArchiveResponse(result, () => Ok(new
+        {
+            queued = result.Queued,
+            queueError = result.QueueError is { } key ? localizer.Get(key, null) : null,
+        }));
+    }
+
+    private IActionResult ArchiveResponse(SeriesArchiveResult result, Func<IActionResult> ok) => result.Status switch
+    {
+        SeriesArchiveStatus.Ok => ok(),
+        SeriesArchiveStatus.NotFound => NotFound(),
+        SeriesArchiveStatus.Conflict => this.Conflict(localizer, result.ErrorKey!),
+        SeriesArchiveStatus.BinRefused => this.BinRefused(localizer, result.ErrorKey!),
+        _ => this.Fail(localizer, result.ErrorKey!),
+    };
+
     /// <param name="Folder">The series' own folder, when it resolves without passing a link.</param>
     /// <param name="RemoveFolderWhole">Bin everything in <paramref name="Folder"/>, then prune it.</param>
     /// <param name="Files">Single files to bin, for folders the series does not own outright.</param>
@@ -1232,23 +1409,9 @@ public class SeriesController(
             logger.LogWarning("Leaving {Folder} on disk: it is or sits under a symbolic link or junction", linked);
         }
 
-        // Older data can give two series one folder. A recursive delete of it would take the other
-        // series' files too, so then only the files this series tracks go. Case is ignored on every
-        // host, since a case-insensitive share under Docker holds "One Piece" and "one piece" as one.
-        var shared = (await SeriesCreationService.SeriesFoldersInRootAsync(db, series.RootFolderId, series.Id, ct))
-            .Contains(series.FolderName);
-        if (!shared)
-        {
-            var pattern = series.FolderName.Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_") + "%";
-            shared = (await db.ChapterFiles
-                    .Where(f => f.SeriesId != series.Id &&
-                                db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == series.RootFolderId) &&
-                                EF.Functions.Like(f.RelativePath, pattern, @"\"))
-                    .Select(f => f.RelativePath)
-                    .ToListAsync(ct))
-                .Any(p => LibraryPaths.FolderComparer.Equals(LibraryPaths.TopFolder(p), series.FolderName));
-        }
-
+        // A recursive delete of a folder two series share would take the other series' files too,
+        // so then only the files this series tracks go.
+        var shared = await SeriesFolders.SharedAsync(db, series, ct);
         if (shared)
         {
             logger.LogWarning("Folder {Folder} is shared with another series; deleting only the files series {SeriesId} tracks",
@@ -1390,13 +1553,7 @@ public class SeriesController(
 
         foreach (var dir in plan.PruneIfEmpty)
         {
-            Attempt(dir, () =>
-            {
-                if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any())
-                {
-                    Directory.Delete(dir, recursive: false);
-                }
-            });
+            Attempt(dir, () => SeriesFolders.RemoveIfEmpty(dir));
         }
 
         if (plan.Trash is { } trash && Directory.Exists(trash))
@@ -1411,28 +1568,11 @@ public class SeriesController(
     /// </summary>
     private void PruneSeriesFolder(SeriesDiskPlan plan, string folder, int seriesId)
     {
-        foreach (var dir in LibraryPaths.EnumerateDirectoriesNoLinks(folder).OrderByDescending(d => d.Length).ToList())
-        {
-            if (!Directory.EnumerateFileSystemEntries(dir).Any())
-            {
-                Directory.Delete(dir, recursive: false);
-            }
-        }
-
-        var left = Directory.EnumerateFileSystemEntries(folder).ToList();
-        if (left.Any(p => !IsMakiCover(plan, p) || Directory.Exists(p)))
+        if (SeriesFolders.PruneTree(folder, plan.MakiCover) is var left and > 0)
         {
             logger.LogWarning("Kept {Folder} for removed series {SeriesId}: {Count} entries are still in it",
-                folder, seriesId, left.Count);
-            return;
+                folder, seriesId, left);
         }
-
-        foreach (var cover in left)
-        {
-            System.IO.File.Delete(cover);
-        }
-
-        Directory.Delete(folder, recursive: false);
     }
 
     /// <param name="MoveFiles">
@@ -1681,16 +1821,23 @@ public class SeriesController(
             }
 
             series.RootFolderId = destination.Id;
+            var healthRows = new List<object>();
             try
             {
                 // Cancellation must not be observed here: every file has already moved, so a
                 // cancelled save would leave the DB pointing at the old root while the files sit
                 // in the new one. CancellationToken.None keeps this write unconditional.
+                await HealthInventory.MoveSeriesAsync(db, id, destination.Id, healthRows, CancellationToken.None);
                 await db.SaveChangesAsync(CancellationToken.None);
             }
             catch (Exception ex)
             {
                 series.RootFolderId = oldRootFolderId;
+                foreach (var row in healthRows)
+                {
+                    db.Entry(row).State = EntityState.Detached;
+                }
+
                 logger.LogError(ex, "Could not save the series move for {Title} to {Destination}", series.Title, destination.Path);
                 RollbackMoves();
 
@@ -1726,6 +1873,9 @@ public class SeriesController(
             series, rating: moved.Rating, notificationMode: moved.NotificationMode,
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
+            ProvisionalRating = moved.ProvisionalRating,
+            ProvisionalAtChapter = moved.ProvisionalAtChapter,
+            Finished = moved.Finished,
             Warnings = [localizer.Get("error.series.folderMoved",
                 new { from = oldRootFolderPath, to = destination.Path })]
         });
@@ -1952,6 +2102,65 @@ public class SeriesController(
         return Ok(new { readFileCleanup = mode.ToString() });
     }
 
+    /// <param name="Mode">"Default", "Never", "Smallest", "Compact", "Balanced", "High" or "Lossless".</param>
+    public record PageConversionRequest(string Mode);
+
+    /// <summary>
+    /// The series' own page conversion choice. Files already checked that the plan now decides
+    /// differently are put back in line for the next pass; converted ones stay as they are.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("{id:int}/pageconversion")]
+    public async Task<IActionResult> SetPageConversion(int id, [FromBody] PageConversionRequest request,
+        [FromServices] PageConversionPlanService plans, CancellationToken ct)
+    {
+        if (!Enum.TryParse<PageConversionOverride>(request.Mode, true, out var mode) || !Enum.IsDefined(mode) ||
+            int.TryParse(request.Mode, out _))
+        {
+            return this.Fail(localizer, "error.series.invalidPageConversion");
+        }
+
+        var series = await db.Series.FindAsync([id], ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (series.PageConversion != mode)
+        {
+            series.PageConversion = mode;
+            await db.SaveChangesAsync(ct);
+            await plans.RecheckAsync(await PageConversionOptions.LoadPlanAsync(db, ct), id, ct);
+        }
+
+        return Ok(new { pageConversion = mode.ToString() });
+    }
+
+    /// <summary>What page conversion did to the series, and how much of it an undo can still put back.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("{id:int}/pageconversion/history")]
+    public async Task<IActionResult> PageConversionHistory(int id, [FromServices] PageConversionUndoService undo,
+        CancellationToken ct) =>
+        await undo.HistoryAsync(id, ct) is { } history ? Ok(history) : NotFound();
+
+    /// <param name="SetNever">Also set the series to Never afterwards.</param>
+    /// <param name="ConvertAgain">Convert the restored originals again under the current plan.</param>
+    public record PageConversionUndoRequest(bool SetNever, bool ConvertAgain);
+
+    /// <summary>Puts back the originals of the series' converted files that are still in the trash.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("{id:int}/pageconversion/undo")]
+    public async Task<IActionResult> UndoPageConversion(int id, [FromBody] PageConversionUndoRequest request,
+        [FromServices] PageConversionUndoService undo, CancellationToken ct)
+    {
+        if (request.SetNever && request.ConvertAgain)
+        {
+            return this.Fail(localizer, "error.pageConversion.undoConflict");
+        }
+
+        return await undo.UndoAsync(id, request.SetNever, request.ConvertAgain, ct) is { } result ? Ok(result) : NotFound();
+    }
+
     /// <param name="UpgradeProfileId">Null clears every pin so the series follow the instance default.</param>
     public record BulkUpgradeProfileRequest(List<int>? SeriesIds, int? UpgradeProfileId);
 
@@ -2011,7 +2220,12 @@ public class SeriesController(
     // EditMetadata for exactly as long as it was a shared column on Series, where a reader-only
     // account could overwrite the admin's score on the admin's AniList profile.
     [HttpPut("{id:int}/rating")]
-    public async Task<IActionResult> SetRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct)
+    public Task<IActionResult> SetRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct) =>
+        SetRatingCoreAsync(id, request, null, ct);
+
+    /// <param name="origin">For the history; null works it out from whether a prompt was waiting.</param>
+    private async Task<IActionResult> SetRatingCoreAsync(int id, SetRatingRequest request,
+        RatingSnapshotOrigin? origin, CancellationToken ct)
     {
         if (request.Rating is { } r && r is < 1 or > 10)
         {
@@ -2024,13 +2238,205 @@ public class SeriesController(
             return NotFound();
         }
 
-        var state = await UpsertUserStateAsync(id, s => s.Rating = request.Rating, ct);
+        var prompted = false;
+        var state = await UpsertUserStateAsync(id, s =>
+        {
+            s.Rating = request.Rating;
+            if (request.Rating is not null)
+            {
+                prompted = s.PendingRatingCheckpoint != RatingCheckpoints.None;
+                ClearProvisional(s);
+                RatingCheckpointService.Answered(s);
+            }
+        }, ct);
+
+        if (request.Rating is { } rated)
+        {
+            await RatingSnapshotService.RecordAsync(db, currentUser.UserId, id, rated, final: true,
+                await RatingCheckpointService.HighestReadChapterAsync(db, id, ct),
+                origin ?? (prompted ? RatingSnapshotOrigin.Checkpoint : RatingSnapshotOrigin.Manual), ct);
+        }
 
         // Push the score (0 clears it on trackers that support that) in the background — tracker
         // auth-checks + network + pacing take several seconds, and the UI shouldn't wait on them.
         // The scrobble log records what synced.
         scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0);
-        return Ok(new { rating = state.Rating });
+        return Ok(new { rating = state.Rating, provisionalRating = state.ProvisionalRating });
+    }
+
+    /// <summary>
+    /// Sets the caller's "so far" score on a series they are partway through. Ignored while a final
+    /// rating exists, since the final one wins, and refused on a finished series, which takes a final one.
+    /// </summary>
+    [HttpPut("{id:int}/rating/provisional")]
+    public async Task<IActionResult> SetProvisionalRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct)
+    {
+        if (request.Rating is { } r && r is < 1 or > 10)
+        {
+            return this.Fail(localizer, "error.series.invalidRating");
+        }
+
+        var series = await db.Series.FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (request.Rating is not null &&
+            await RatingCheckpointService.FinishedAsync(db, currentUser.UserId, id, ct))
+        {
+            return this.Fail(localizer, "error.series.provisionalOnFinished");
+        }
+
+        var atChapter = request.Rating is null ? null : await RatingCheckpointService.HighestReadChapterAsync(db, id, ct);
+        var prompted = false;
+        var state = await UpsertUserStateAsync(id, s =>
+        {
+            if (s.Rating is not null)
+            {
+                return;
+            }
+
+            prompted = s.PendingRatingCheckpoint != RatingCheckpoints.None;
+            s.ProvisionalRating = request.Rating;
+            s.ProvisionalRatedAt = request.Rating is null ? null : DateTime.UtcNow;
+            s.ProvisionalAtChapter = atChapter;
+            if (request.Rating is not null)
+            {
+                RatingCheckpointService.Answered(s);
+            }
+        }, ct);
+
+        var ask = Array.Empty<object>();
+        if (state.Rating is null && request.Rating is { } soFar)
+        {
+            await RatingSnapshotService.RecordAsync(db, currentUser.UserId, id, soFar, final: false, atChapter,
+                prompted ? RatingSnapshotOrigin.Checkpoint : RatingSnapshotOrigin.Manual, ct);
+        }
+
+        if (state.Rating is null)
+        {
+            // Only trackers with the "so far" switch on take it; a cleared score clears it there too.
+            scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0, soFar: true);
+            if (request.Rating is not null && currentUser.Has(MakiPermission.UseTrackers))
+            {
+                ask = [.. (await scrobbler.SoFarAskAsync(db, currentUser.UserId, ct))
+                    .Select(t => new { service = t.Service, label = t.Label })];
+            }
+        }
+
+        return Ok(new
+        {
+            rating = state.Rating,
+            provisionalRating = state.ProvisionalRating,
+            provisionalAtChapter = state.ProvisionalAtChapter,
+            soFarSyncAsk = ask,
+        });
+    }
+
+    /// <summary>Makes the caller's "so far" score their rating, through <see cref="SetRating"/> so it is pushed like any other.</summary>
+    [HttpPost("{id:int}/rating/finalize")]
+    public async Task<IActionResult> FinalizeRating(int id, CancellationToken ct)
+    {
+        var provisional = await db.UserSeriesStates
+            .Where(s => s.SeriesId == id)
+            .Select(s => s.ProvisionalRating)
+            .FirstOrDefaultAsync(ct);
+        return provisional is { } rating
+            ? await SetRatingCoreAsync(id, new SetRatingRequest(rating), RatingSnapshotOrigin.Finish, ct)
+            : this.Fail(localizer, "error.series.noProvisionalRating");
+    }
+
+    /// <summary>The caller's score on this series over time, oldest first.</summary>
+    [HttpGet("{id:int}/rating-history")]
+    public async Task<IActionResult> RatingHistory(int id, CancellationToken ct) =>
+        Ok(await db.RatingSnapshots
+            .Where(s => s.SeriesId == id)
+            .OrderBy(s => s.CreatedAt).ThenBy(s => s.Id)
+            .Select(s => new
+            {
+                rating = s.Rating,
+                final = s.Final,
+                atChapter = s.AtChapter,
+                origin = s.Origin.ToString(),
+                createdAt = s.CreatedAt,
+            })
+            .ToListAsync(ct));
+
+    /// <summary>
+    /// The "how is it so far?" prompt waiting on this series for the caller, if any, for the reader's
+    /// end screen. A checkpoint is armed by the completing progress write, so the screen asks again
+    /// shortly after it opens rather than trusting its first answer.
+    /// </summary>
+    [HttpGet("{id:int}/rating-checkpoint")]
+    public async Task<IActionResult> RatingCheckpoint(int id, CancellationToken ct)
+    {
+        var state = await db.UserSeriesStates
+            .Where(s => s.SeriesId == id)
+            .Select(s => new { s.PendingRatingCheckpoint, s.ProvisionalRating, s.Rating })
+            .FirstOrDefaultAsync(ct);
+        var waiting = state is { Rating: null, PendingRatingCheckpoint: not RatingCheckpoints.None } &&
+            !await RatingCheckpointService.FinishedAsync(db, currentUser.UserId, id, ct);
+        return Ok(new
+        {
+            checkpoint = waiting ? RatingCheckpointService.WireName(state!.PendingRatingCheckpoint) : null,
+            provisionalRating = state?.ProvisionalRating,
+        });
+    }
+
+    /// <summary>Waves off the waiting prompt. Three in a row on one series and it stops asking there.</summary>
+    [HttpPost("{id:int}/rating-checkpoint/dismiss")]
+    public async Task<IActionResult> DismissRatingCheckpoint(int id, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        await UpsertUserStateAsync(id, RatingCheckpointService.Dismissed, ct);
+        return NoContent();
+    }
+
+    private static void ClearProvisional(UserSeriesState state)
+    {
+        state.ProvisionalRating = null;
+        state.ProvisionalRatedAt = null;
+        state.ProvisionalAtChapter = null;
+    }
+
+    /// <summary>Hides the "finished, archive it?" hint on this series for the caller, on every device.</summary>
+    [HttpPost("{id:int}/archive-hint/dismiss")]
+    public async Task<IActionResult> DismissArchiveHint(int id, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        await UpsertUserStateAsync(id, s => s.ArchiveHintDismissedAt = DateTime.UtcNow, ct);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Whether the series page asks the caller to rate the series: they finished it (a completed series
+    /// read to its last chapter), have not rated it and have not dismissed the ask. <paramref name="db"/>
+    /// is the caller's scoped context.
+    /// </summary>
+    internal static async Task<bool> RateHintAsync(MakiDbContext db, int seriesId, CancellationToken ct) =>
+        !await db.UserSeriesStates.AnyAsync(s => s.SeriesId == seriesId && (s.Rating != null || s.RateHintDismissedAt != null), ct) &&
+        await db.ReadingStates.AnyAsync(r => r.SeriesId == seriesId && r.Finished, ct);
+
+    /// <summary>Hides the "finished, rate it?" hint on this series for the caller, on every device.</summary>
+    [HttpPost("{id:int}/rate-hint/dismiss")]
+    public async Task<IActionResult> DismissRateHint(int id, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        await UpsertUserStateAsync(id, s => s.RateHintDismissedAt = DateTime.UtcNow, ct);
+        return NoContent();
     }
 
     /// <summary>

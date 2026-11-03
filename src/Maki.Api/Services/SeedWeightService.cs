@@ -174,6 +174,12 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
                     .Where(u => u.SeriesId == s.Id)
                     .Select(u => u.Rating)
                     .FirstOrDefault(),
+                Provisional = db.UserSeriesStates
+                    .Where(u => u.SeriesId == s.Id)
+                    .Select(u => u.ProvisionalRating)
+                    .FirstOrDefault(),
+                s.Status,
+                s.TotalChapters,
                 AddedAt = db.UserSeriesStates
                     .Where(u => u.SeriesId == s.Id)
                     .Select(u => u.AddedToLibraryAtUtc)
@@ -195,7 +201,8 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         var observedRows = rows
             .Where(r => r.Incognito != IncognitoMode.Full &&
                 (r.ContentRating is null || allowed.Contains(r.ContentRating)))
-            .Select(r => new SeedRow(r.Id, r.Rating, r.AddedAt))
+            .Select(r => new SeedRow(r.Id, r.Rating, r.AddedAt,
+                r.Rating is null ? r.Provisional : null, r.Status == SeriesStatus.Completed, r.TotalChapters))
             .ToList();
         var effectiveRows = observedRows.Where(r => !ignored.Contains(r.Id)).ToList();
         var observedIds = observedRows.Select(r => r.Id).Distinct().ToList();
@@ -210,6 +217,11 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         // The same argument, pulling the other way. A dislike is a whole-catalogue statement, so
         // most of these are not shelf rows either; a low rating can only ever be one.
         var disliked = await RecommendationFeedbackService.DislikedAsync(db, scope.UserId, ct);
+
+        // Read before the avoid pass: a "so far" rating's strength depends on how far the reader got.
+        // Over the wider population, narrowed in memory below: the effective ids are a subset, so a
+        // second query would fetch the same progress rows only to throw some away.
+        var signals = await taste.ReadSignalsAsync(db, scope.UserId, observedIds, ct);
         var avoided = new Dictionary<long, double>();
         foreach (var id in disliked.Except(ignored))
         {
@@ -218,7 +230,9 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
 
         foreach (var r in effectiveRows)
         {
-            var strength = RecommendationFeedbackPolicy.AvoidStrength(r.Rating ?? 0);
+            var strength = r.Provisional is { } soFar
+                ? ProvisionalRatingPolicy.AvoidStrength(soFar, ConfidenceOf(r, signals))
+                : RecommendationFeedbackPolicy.AvoidStrength(r.Rating ?? 0);
             // Max, not overwrite. Both actions say the same thing, so a title that is both thumbed
             // down and rated 4 is pushed by the stronger of the two rather than by whichever the
             // reader happened to do second.
@@ -238,9 +252,6 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             .Where(r => !avoided.ContainsKey(r.Id))
             .ToList();
 
-        // Read over the wider population and narrow in memory: the effective ids are a subset, so a
-        // second query would fetch the same progress rows only to throw some away.
-        var signals = await taste.ReadSignalsAsync(db, scope.UserId, observedIds, ct);
         var behavioural = await TasteWeightingEnabledAsync(ct);
         var addWeighting =
             await settings.GetAsync(SettingKeys.RecommendationsPersonalAddWeighting, ct) != "false";
@@ -361,9 +372,22 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             }
         }
 
+        // A "so far" rating replaces the behavioural weight the way a final one does, at the reduced
+        // strength ProvisionalRatingPolicy gives it. After the behavioural pass, so it overwrites
+        // rather than being blended.
+        foreach (var r in population.Where(r => r.Provisional is >= 1 and <= 10))
+        {
+            seedWeights[r.Id] = ProvisionalRatingPolicy.Weight(r.Provisional!.Value, ConfidenceOf(r, signals), tuning);
+        }
+
         if (addWeighting)
         {
-            var ratedIds = population.Where(r => r.Rating is >= 1 and <= 10).Select(r => r.Id).ToHashSet();
+            // A provisional 5 or above still takes the add weight when that is higher, so rating
+            // something just added never makes it steer less than leaving it unrated. A low one is
+            // treated like a low final rating and keeps its own weight.
+            var ratedIds = population
+                .Where(r => r.Rating is >= 1 and <= 10 || r.Provisional is >= 1 and < 5)
+                .Select(r => r.Id).ToHashSet();
             foreach (var r in population.Where(r => !ratedIds.Contains(r.Id) && r.AddedAt is not null))
             {
                 var added = RecommendationFeedbackPolicy.AddedWeight(r.AddedAt!.Value, now);
@@ -374,7 +398,14 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         return seedWeights;
     }
 
-    private sealed record SeedRow(long Id, int? Rating, DateTime? AddedAt);
+    private static double ConfidenceOf(SeedRow r, IReadOnlyDictionary<long, SeriesReadSignal> signals) =>
+        ProvisionalRatingPolicy.Confidence(
+            signals.TryGetValue(r.Id, out var signal) ? signal.Completed : 0, r.TotalChapters, r.Completed);
+
+    /// <param name="Provisional">The "so far" score, only when there is no final <paramref name="Rating"/>.</param>
+    private sealed record SeedRow(
+        long Id, int? Rating, DateTime? AddedAt, int? Provisional = null, bool Completed = false,
+        int? TotalChapters = null);
 
     /// <summary>
     /// The subset of <paramref name="ids"/> the dump rates at or below the reader's ceiling, or null

@@ -1,6 +1,6 @@
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import type { Icon } from '@tabler/icons-react'
+import type { Icon } from '../../lib/icons'
 import {
   IconBook2,
   IconBooks,
@@ -8,7 +8,7 @@ import {
   IconClock,
   IconHeart,
   IconTrophy,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 
 export type StatsSectionKey = 'reading' | 'rhythm' | 'taste' | 'habits' | 'library' | 'progress'
 

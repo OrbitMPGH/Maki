@@ -33,6 +33,7 @@ export type InboxEventType =
   | 'accountSecurity'
   | 'seriesStatusChanged'
   | 'noteReply'
+  | 'customSourceUpdated'
 
 export type InboxLevel = 'info' | 'warning' | 'error'
 
@@ -140,7 +141,7 @@ export const INBOX_CATEGORIES: {
   {
     id: 'system',
     label: msg`System`,
-    types: ['healthIssue', 'updateAvailable', 'importFinished', 'backupFinished'],
+    types: ['healthIssue', 'updateAvailable', 'importFinished', 'backupFinished', 'customSourceUpdated'],
     adminOnly: true,
   },
 ]
@@ -178,6 +179,7 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   accountSecurity: msg`Account security`,
   seriesStatusChanged: msg`Series status changed`,
   noteReply: msg`Replies to your notes`,
+  customSourceUpdated: msg`Custom source updated by its repository`,
 }
 
 /**

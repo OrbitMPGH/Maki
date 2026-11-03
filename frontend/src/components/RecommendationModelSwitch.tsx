@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Button, Group, Progress, Switch, Text } from '@mantine/core'
 import { useDownloadPrebuiltIndex, type RecommendationIndexStatus } from '../api/hooks'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now, plural } from '@lingui/core/macro'
 import { formatDate, formatDateTime, formatNumber } from '../format'
@@ -34,7 +34,7 @@ function statusLine(status: RecommendationIndexStatus | undefined): string {
   const total = status.recommendableTotal
   if (status.running) {
     const remaining = status.estimatedSecondsRemaining
-    const etaPart = remaining != null ? ` · ${formatRemaining(remaining)}` : ''
+    const etaPart = remaining != null ? `, ${formatRemaining(remaining)}` : ''
     const embedded = status.embedded
     const freshPart = embedded > 0 ? ` (${plural(embedded, { one: '# new', other: '# new' })})` : ''
     const scanned = formatNumber(status.scanned)
@@ -95,7 +95,7 @@ export function RecommendationModelSwitch({
     <>
       <Switch
         label={t`Semantic search and recommendations`}
-        description={description ?? t`Uses about 240 MB of RAM.`}
+        description={description ?? t`Uses about 150 MB of RAM.`}
         checked={selected !== 'off'}
         disabled={disabled}
         onChange={(e) => onSelect(e.currentTarget.checked ? ON_MODEL : 'off')}

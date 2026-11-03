@@ -151,7 +151,7 @@ public sealed class ContentCeilingTests : IDisposable
                 Authors: JaggedInts.From(new int[count][]),
                 Artists: JaggedInts.From(new int[count][]),
                 Popularity: Enumerable.Repeat(VectorIndex.Unknown, count).ToArray(),
-                TagBlobs: new byte[]?[count],
+                Tags: PackedTags.From(new byte[]?[count]),
                 ContentRatings: [0, 2, 3],
                 Franchise: Enumerable.Repeat(VectorIndex.Unknown, count).ToArray()),
             new VectorIndexVocabularies(

@@ -10,8 +10,8 @@ import {
   IconWand,
   IconTrash,
   IconX,
-} from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+} from '../lib/icons'
+import { notifications } from '../lib/toast'
 import { useSeriesFiles, useDeleteSeriesFiles } from '../api/hooks'
 import { offersPermanentDelete, useRecycleBinDays } from '../api/recycleBin'
 import { PermanentDeleteFallback } from './PermanentDeleteFallback'
@@ -30,6 +30,7 @@ import { Panel } from './ui/Panel'
 import { useAuth } from '../auth/AuthProvider'
 import { LinkFileToChaptersModal } from './LinkFileToChaptersModal'
 import { RelinkFilesModal } from './RelinkFilesModal'
+import { MetaList } from './ui/MetaList'
 
 /** "21" → "Ch. 21"; ["21","22","23"] → "Ch. 21, 22, 23". */
 function mappedLabel(file: SeriesFileDto): string {
@@ -137,14 +138,13 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             <Trans>Files</Trans>
           </Title>
           {files && (
-            <Text size="sm" c="var(--ink-3)" className="tnum">
-              {files.length}
-              {problems > 0 && (
-                <>
-                  {' · '}
-                  <Plural value={problems} one="# needs attention" other="# need attention" />
-                </>
-              )}
+            <Text component="div" size="sm" c="var(--ink-3)" className="tnum">
+              <MetaList
+                items={[
+                  files.length,
+                  problems > 0 && <Plural key="problems" value={problems} one="# needs attention" other="# need attention" />,
+                ]}
+              />
             </Text>
           )}
         </Group>
@@ -152,7 +152,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             <Button
               size="xs"
               variant="subtle"
-              leftSection={<IconRefresh size={14} />}
+              leftSection={<IconRefresh size={16} />}
               loading={isFetching && !isLoading}
               onClick={() => void refetch()}
             >
@@ -163,7 +163,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                 <Button
                   size="xs"
                   variant="subtle"
-                  leftSection={<IconWand size={14} />}
+                  leftSection={<IconWand size={16} />}
                   onClick={() => setRelinkOpen(true)}
                 >
                   <Trans>Relink files</Trans>
@@ -205,7 +205,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
           {unlinkedOnDisk > 0 && canLink && !selectMode && (
             <Paper className="series-files-hint" withBorder p="xs" radius="lg" mt="sm">
               <Group gap="xs" wrap="nowrap" align="flex-start">
-                <IconLink size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+                <IconLink size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} />
                 <Text size="sm" c="var(--ink-2)">
                   <Plural
                     value={unlinkedOnDisk}
@@ -243,7 +243,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                     size="xs"
                     variant="light"
                     color="var(--danger)"
-                    leftSection={<IconTrash size={15} />}
+                    leftSection={<IconTrash size={16} />}
                     disabled={selected.size === 0}
                     onClick={() => setConfirmOpen(true)}
                   >
@@ -252,7 +252,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                   <Button
                     size="xs"
                     variant="default"
-                    leftSection={<IconX size={15} />}
+                    leftSection={<IconX size={16} />}
                     onClick={exitSelectMode}
                   >
                     <Trans>Done</Trans>
@@ -287,9 +287,9 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                         <Table.Td>
                           <Group gap={6} wrap="nowrap">
                             {isPdfFile(f.fileName) ? (
-                              <IconFileTypePdf size={15} style={{ flexShrink: 0 }} />
+                              <IconFileTypePdf size={16} style={{ flexShrink: 0 }} />
                             ) : (
-                              <IconFileZip size={15} style={{ flexShrink: 0 }} />
+                              <IconFileZip size={16} style={{ flexShrink: 0 }} />
                             )}
                             <MonoValue value={f.fileName} full={f.relativePath} copy />
                           </Group>

@@ -30,7 +30,7 @@ using Microsoft.Extensions.Logging;
 
 if (args.Length < 2)
 {
-    Console.WriteLine("usage: build-embeddings.cs <base|base-facets> <artifactsDir> [--keep-dump]");
+    Console.WriteLine("usage: build-embeddings.cs <base|base-facets|candidate> <artifactsDir> [--keep-dump]");
     return 2;
 }
 
@@ -40,9 +40,9 @@ if (args.Length < 2)
 var keepDump = args.Contains("--keep-dump", StringComparer.OrdinalIgnoreCase);
 
 var modelArg = args[0].Trim().ToLowerInvariant();
-if (modelArg is not ("base" or "base-facets"))
+if (modelArg is not ("base" or "base-facets") && !EmbeddingModelProfile.Candidates.ContainsKey(modelArg))
 {
-    Console.WriteLine($"error: unknown model '{args[0]}' (expected 'base' or 'base-facets')");
+    Console.WriteLine($"error: unknown model '{args[0]}' (expected base, base-facets or one of {string.Join(", ", EmbeddingModelProfile.Candidates.Keys)})");
     return 2;
 }
 
@@ -51,13 +51,15 @@ if (modelArg is not ("base" or "base-facets"))
 // (SeriesEmbeddingIndexer.BuildFacets). It gets its own version string because a faceted vector and
 // a plain one are not comparable, and its own file so both can exist at once and be graded against
 // each other. Nothing publishes it - publish-embeddings.ps1 asks for `base`.
+// A candidate (EmbeddingModelProfile.Candidates) is an evaluation build too, graded with
+// eval-search.cs / eval-reco-labels.cs --model.
 var profile = modelArg == "base-facets"
     ? EmbeddingModelProfile.Base with
     {
         Version = EmbeddingModelProfile.Base.Version + "-facets",
         PassageFacets = true,
     }
-    : EmbeddingModelProfile.Base;
+    : EmbeddingModelProfile.Candidates.GetValueOrDefault(modelArg) ?? EmbeddingModelProfile.Base;
 var artifactsDir = Path.GetFullPath(args[1]);
 Directory.CreateDirectory(artifactsDir);
 

@@ -1,8 +1,10 @@
 // Prop types of Maki's shared UI primitives (frontend/src/components/ui), as documentation.
 // Button and Badge are Mantine components with theme defaults and are not re-declared here.
-import type { ReactNode, CSSProperties, MouseEventHandler, ComponentPropsWithRef } from 'react'
+import type { ReactNode, CSSProperties, MouseEventHandler, ComponentPropsWithRef, ComponentType, SVGProps } from 'react'
 import type { PaperProps } from '@mantine/core'
-import type { Icon } from '@tabler/icons-react'
+
+/** An icon from frontend/src/lib/icons.tsx (Phosphor, Regular; Bold below 14px). */
+type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number | string }>
 
 /** Page title row: title and description left, actions right. */
 export declare function PageHeader(props: {
@@ -222,6 +224,15 @@ export declare function SurfaceFrame(props: ComponentPropsWithRef<'div'> & {
 
 /** A panel-table outline while rows load. */
 export declare function TableSkeleton(props: { columns: number; rows?: number }): JSX.Element
+
+/** Short facts in a row split by a hairline, not a centre dot. Falsy items are dropped. */
+export declare function MetaList(props: {
+  items: ReactNode[]
+  /** Spans instead of a list, for a parent that truncates or line-clamps. */
+  inline?: boolean
+  className?: string
+  style?: CSSProperties
+}): JSX.Element | null
 
 /**
  * A file name, path or id on one line. Too long for its column, it loses its middle, keeping the

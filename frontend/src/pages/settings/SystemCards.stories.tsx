@@ -138,6 +138,37 @@ export const UpdateAvailableWithNotes: Story = {
   },
 }
 
+export const DesktopUpdateDownloading: Story = {
+  render: () => <UpdatesSection />,
+  parameters: {
+    msw: settingsMsw(
+      http.get(api('/system/update'), () => HttpResponse.json({ ...updateStatusAvailable, isDocker: false, runtime: 'desktop' })),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Downloading the update in the background.')).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Restart to update' })).toBeDisabled())
+  },
+}
+
+export const DesktopUpdateReady: Story = {
+  render: () => <UpdatesSection />,
+  parameters: {
+    msw: settingsMsw(
+      http.get(api('/system/update'), () =>
+        HttpResponse.json({ ...updateStatusAvailable, isDocker: false, runtime: 'desktop', updateReady: true }),
+      ),
+    ),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText(/Maki downloads updates in the background/)).toBeVisible()
+    const restart = await canvas.findByRole('button', { name: 'Restart to update' })
+    await waitFor(() => expect(restart).toBeEnabled())
+    await userEvent.click(restart)
+    await expect(await within(document.body).findByText(/Installing the update/)).toBeVisible()
+  },
+}
+
 export const DevBuild: Story = {
   render: () => <UpdatesSection />,
   parameters: {

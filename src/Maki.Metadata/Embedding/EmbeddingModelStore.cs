@@ -27,6 +27,7 @@ public class EmbeddingModelStore(
     private const long MinGraphBytes = 100_000;
 
     private readonly SemaphoreSlim _lock = new(1, 1);
+    private int _retiredRemoved;
 
     /// <summary>
     /// Size floor for the .onnx itself. Split from <see cref="MinModelBytes"/> because "the model
@@ -46,6 +47,7 @@ public class EmbeddingModelStore(
     {
         if (IsPresent())
         {
+            RemoveRetiredModels();
             return;
         }
 
@@ -90,6 +92,40 @@ public class EmbeddingModelStore(
         finally
         {
             _lock.Release();
+        }
+
+        RemoveRetiredModels();
+    }
+
+    /// <summary>
+    /// Deletes the folders of models this release no longer uses (<see cref="EmbeddingModelProfile.RetiredFolderNames"/>),
+    /// once per process and only for the shipped profile, so a distribution tool scoring a candidate
+    /// never deletes another candidate's files. A folder still in use stays for the next start.
+    /// </summary>
+    internal void RemoveRetiredModels()
+    {
+        if (!ReferenceEquals(options.Model, EmbeddingModelProfile.Base) || Interlocked.Exchange(ref _retiredRemoved, 1) != 0)
+        {
+            return;
+        }
+
+        foreach (var name in EmbeddingModelProfile.RetiredFolderNames)
+        {
+            var folder = Path.Combine(options.ModelsRootDirectory, name);
+            if (string.Equals(name, options.Model.FolderName, StringComparison.OrdinalIgnoreCase) || !Directory.Exists(folder))
+            {
+                continue;
+            }
+
+            try
+            {
+                Directory.Delete(folder, recursive: true);
+                logger.LogInformation("Removed the retired embedding model folder {Folder}", name);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                logger.LogDebug(ex, "Could not remove the retired embedding model folder {Folder}", name);
+            }
         }
     }
 

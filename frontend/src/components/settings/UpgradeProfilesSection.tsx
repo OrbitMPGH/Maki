@@ -16,7 +16,7 @@ import {
   Textarea,
   Tooltip,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import { SettingsNumberInput } from './SettingsNumberInput'
 import {
   IconArrowDown,
@@ -27,7 +27,7 @@ import {
   IconLinkOff,
   IconPlus,
   IconTrash,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -154,7 +154,7 @@ export function UpgradeProfilesSection() {
         <Button
           size="xs"
           variant="light"
-          leftSection={<IconPlus size={14} />}
+          leftSection={<IconPlus size={16} />}
           onClick={() => setCreating((open) => !open)}
         >
           <Trans>New profile</Trans>
@@ -396,7 +396,7 @@ function ProfileEditor({
               onClick={() => setTiers((current) => moveTier(current, index, -1))}
               aria-label={t`Move ${tierLabel} up`}
             >
-              <IconArrowUp size={14} />
+              <IconArrowUp size={16} />
             </ActionIcon>
             <ActionIcon
               size="sm"
@@ -406,7 +406,7 @@ function ProfileEditor({
               onClick={() => setTiers((current) => moveTier(current, index, 1))}
               aria-label={t`Move ${tierLabel} down`}
             >
-              <IconArrowDown size={14} />
+              <IconArrowDown size={16} />
             </ActionIcon>
           </Group>
           <Text size="sm" fw={500} w={100}>
@@ -422,7 +422,7 @@ function ProfileEditor({
                 aria-label={row.grouped ? t`Split from the tier above` : t`Group with the tier above`}
                 aria-pressed={row.grouped}
               >
-                {row.grouped ? <IconLink size={14} /> : <IconLinkOff size={14} />}
+                {row.grouped ? <IconLink size={16} /> : <IconLinkOff size={16} />}
               </ActionIcon>
             </Tooltip>
           )}
@@ -643,7 +643,7 @@ export function QualityFormatsSection() {
         <Button
           size="xs"
           variant="light"
-          leftSection={<IconPlus size={14} />}
+          leftSection={<IconPlus size={16} />}
           onClick={() => setCreating((open) => !open)}
         >
           <Trans>New format</Trans>
@@ -929,7 +929,7 @@ function FormatEditor({
           size="xs"
           variant="subtle"
           mt="xs"
-          leftSection={<IconPlus size={14} />}
+          leftSection={<IconPlus size={16} />}
           onClick={addCondition}
         >
           <Trans>Add condition</Trans>

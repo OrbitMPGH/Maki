@@ -5,7 +5,7 @@ import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { usePageState } from '../lib/pageState'
 import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Text } from '@mantine/core'
-import { IconDeviceFloppy } from '@tabler/icons-react'
+import { IconDeviceFloppy } from '../lib/icons'
 import {
   allowedContentRatings,
   BROWSE_SORTS,
@@ -20,6 +20,7 @@ import { CreditPicker } from './CreditPicker'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
 import { formatFixedDecimal } from '../format'
+import { MetaList } from './ui/MetaList'
 
 /** {@link BROWSE_SORTS} as `Select` data in the current language. */
 export function useBrowseSortOptions() {
@@ -377,7 +378,7 @@ export function CatalogueFilters({
       if (yearsSet) parts.push(`${yearMin}–${yearMax}`)
       if (minRating > 0) parts.push(t`Rated ${ratingLabel} or more`)
     }
-    if (parts.length > 0) return <span className="disclosure-summary-active">{parts.join(' · ')}</span>
+    if (parts.length > 0) return <MetaList inline className="disclosure-summary-active" items={parts} />
     return {
       terms: t`Require or exclude genres and tags`,
       series: t`Creators, type, status, content rating`,
@@ -533,7 +534,7 @@ export function CatalogueFilterActions({
           <Button
             variant="subtle"
             size="xs"
-            leftSection={<IconDeviceFloppy size={14} />}
+            leftSection={<IconDeviceFloppy size={16} />}
             loading={saving}
             onClick={onSaveAsDefault}
             // Never disabled: saving an untouched panel is how a stored default gets cleared.

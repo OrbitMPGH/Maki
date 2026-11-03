@@ -25,7 +25,8 @@ public sealed record FilterPlan(
     bool[]? CreditMask = null,
     PlannedRule[]? Rules = null,
     PlannedRule? Hidden = null,
-    bool[]? Exclude = null)
+    bool[]? Exclude = null,
+    int? MinStartDay = null)
 {
     public static readonly FilterPlan None = new(null, null, null, null, null, null, null, null, null, null, false);
 
@@ -33,7 +34,7 @@ public sealed record FilterPlan(
         !Impossible && YearMin is null && YearMax is null && MinRating is null &&
         MinChapters is null && MaxChapters is null && Types is null && Statuses is null &&
         Genres is null && Tags is null && ContentRatings is null && CreditMask is null &&
-        Rules is null && Hidden is null && Exclude is null;
+        Rules is null && Hidden is null && Exclude is null && MinStartDay is null;
 
     /// <summary>Narrows <see cref="CreditMask"/> to rows <paramref name="mask"/> also allows.</summary>
     public FilterPlan RestrictTo(bool[] mask)
@@ -88,23 +89,23 @@ public readonly record struct PlannedTerm(int GenreId, int[]? TagIds, byte MinCl
 /// </param>
 /// <param name="StartDays">
 /// <c>published_start_date</c> as a <see cref="DateOnly.DayNumber"/>, or <see cref="VectorIndex.Unknown"/>.
-/// Optional so fixtures built without it still sort, through <see cref="VectorIndex.StartDayAt"/>'s
-/// year fallback.
+/// Optional (empty) so fixtures built without it still sort, through
+/// <see cref="VectorIndex.StartDayAt"/>'s year fallback.
 /// </param>
 public sealed record VectorIndexColumns(
-    int[] Years,
-    float[] Ratings,
-    int[] Chapters,
-    byte[] Types,
-    byte[] Statuses,
+    Column<int> Years,
+    Column<float> Ratings,
+    Column<int> Chapters,
+    Column<byte> Types,
+    Column<byte> Statuses,
     JaggedInts Genres,
     JaggedInts Authors,
     JaggedInts Artists,
-    int[] Popularity,
-    byte[]?[] TagBlobs,
-    byte[] ContentRatings,
+    Column<int> Popularity,
+    PackedTags Tags,
+    Column<byte> ContentRatings,
     int[] Franchise,
-    int[]? StartDays = null);
+    Column<int> StartDays = default);
 
 /// <summary>
 /// The interned vocabularies behind <see cref="VectorIndexColumns"/>, so a per-row filter test is
@@ -136,12 +137,75 @@ public sealed record VectorIndexVocabularies(
 /// questions and are trained by different things, so they are quantized separately and never
 /// concatenated.
 /// </para>
+///
+/// <para>
+/// Stores only the rows that have a vector (about half the index), with a slot per row pointing at
+/// them; a full row-aligned array spent 8 MB on rows the artifact does not cover.
+/// </para>
 /// </summary>
-/// <param name="Covered">
-/// How many rows actually carry a vector. Only useful for logging, but the number is the whole
-/// argument for the channel existing, so it is worth being able to print.
-/// </param>
-public sealed record TasteLayer(sbyte[] Data, float[] Scales, int Dimensions, int Covered);
+public sealed class TasteLayer
+{
+    private readonly Column<int> _slots;
+    private readonly Column<sbyte> _data;
+    private readonly Column<float> _scales;
+
+    /// <param name="slots">Per index row, the slot holding its vector, or -1 for none.</param>
+    /// <param name="data">The covered vectors, one per slot, <paramref name="dimensions"/> wide.</param>
+    /// <param name="scales">One non-zero scale per slot.</param>
+    public TasteLayer(Column<int> slots, Column<sbyte> data, Column<float> scales, int dimensions)
+    {
+        _slots = slots;
+        _data = data;
+        _scales = scales;
+        Dimensions = dimensions;
+    }
+
+    public int Dimensions { get; }
+
+    /// <summary>
+    /// How many rows actually carry a vector. Only useful for logging, but the number is the whole
+    /// argument for the channel existing, so it is worth being able to print.
+    /// </summary>
+    public int Covered => _scales.Length;
+
+    internal Column<int> Slots => _slots;
+
+    internal Column<sbyte> Data => _data;
+
+    internal Column<float> Scales => _scales;
+
+    public bool Has(int row) => _slots[row] >= 0;
+
+    /// <summary>The row's vector. Check <see cref="Has"/> first.</summary>
+    public ReadOnlySpan<sbyte> VectorAt(int row) => _data.AsSpan(_slots[row] * Dimensions, Dimensions);
+
+    /// <summary>The row's scale. Check <see cref="Has"/> first.</summary>
+    public float ScaleAt(int row) => _scales[_slots[row]];
+
+    /// <summary>Builds a layer from row-aligned vectors, where a scale of 0 marks a row with none.</summary>
+    public static TasteLayer FromRows(sbyte[] data, float[] scales, int dimensions)
+    {
+        var slots = new int[scales.Length];
+        var covered = 0;
+        for (var row = 0; row < scales.Length; row++)
+        {
+            slots[row] = scales[row] == 0 ? -1 : covered++;
+        }
+
+        var packed = new sbyte[covered * dimensions];
+        var packedScales = new float[covered];
+        for (var row = 0; row < scales.Length; row++)
+        {
+            if (slots[row] >= 0)
+            {
+                data.AsSpan(row * dimensions, dimensions).CopyTo(packed.AsSpan(slots[row] * dimensions));
+                packedScales[slots[row]] = scales[row];
+            }
+        }
+
+        return new TasteLayer(slots, packed, packedScales, dimensions);
+    }
+}
 
 /// <summary>
 /// The whole embedding index, in memory, laid out for a linear scan: every candidate's vector
@@ -168,9 +232,9 @@ public sealed record TasteLayer(sbyte[] Data, float[] Scales, int Dimensions, in
 /// packing step, which is what that does.
 /// </param>
 public sealed class VectorIndex(
-    long[] ids,
-    byte[] data,
-    float[] scales,
+    Column<long> ids,
+    Column<byte> data,
+    Column<float> scales,
     int dimensions,
     VectorIndexColumns columns,
     VectorIndexVocabularies vocabularies,
@@ -215,10 +279,94 @@ public sealed class VectorIndex(
             ids, packed, packedScales, dimensions, columns, vocabularies, taste, franchiseLoader);
     }
 
-    private readonly Dictionary<long, int> _rowById = BuildRowMap(ids);
+    // Null when the ids are sorted, which is how the cache builds them: a binary search over the id
+    // array then replaces a 128k-entry dictionary.
+    private readonly Dictionary<long, int>? _rowById = IsSorted(ids) ? null : BuildRowMap(ids);
     private readonly Lazy<int[]> _franchises = new(() => franchiseLoader?.Invoke() ?? columns.Franchise);
 
     public int Count => ids.Length;
+
+    /// <summary>True when the vectors are read from a mapped snapshot.</summary>
+    internal bool IsMapped => data.IsMapped;
+
+    internal VectorIndexVocabularies Vocabularies => vocabularies;
+
+    /// <summary>
+    /// A heap copy whose text vectors, and the behavioural ones when <paramref name="includeTaste"/>,
+    /// are rounded onto the grid a <paramref name="bits"/>-wide element would have, for
+    /// distribution/eval-reco-labels.cs --quant: it prices a narrower stored vector without
+    /// re-embedding. Rows wide enough to be packed are already 4-bit, so only narrower ones apply.
+    ///
+    /// <para>
+    /// This is the exact loss packing at that width would cause, not an approximation of it. A
+    /// packed element is a level index n, and scoring it means n times the step; writing n times the
+    /// step back as int8 and leaving the row's scale alone gives the identical dot product, since the
+    /// step factors out of the sum. The step is kept a whole number so the value is exactly
+    /// representable, which costs one level of range (±126 rather than ±127 at four bits) and makes
+    /// this very slightly pessimistic rather than optimistic.
+    /// </para>
+    /// </summary>
+    internal VectorIndex Requantized(
+        int bits, bool includeTaste, out (long Total, long Changed) text, out (long Total, long Changed) behavioural)
+    {
+        if (EmbeddingMath.ShouldPack(dimensions))
+        {
+            throw new InvalidOperationException($"{dimensions}-dim rows are already stored as 4-bit levels");
+        }
+
+        var rows = new sbyte[(long)Count * dimensions];
+        for (var row = 0; row < Count; row++)
+        {
+            UnpackRow(row, rows.AsSpan(row * dimensions, dimensions));
+        }
+
+        text = Requantize(rows, bits);
+        behavioural = (0, 0);
+        var layer = taste;
+        if (includeTaste && taste is not null)
+        {
+            var vectors = taste.Data.Span.ToArray();
+            behavioural = Requantize(vectors, bits);
+            layer = new TasteLayer(taste.Slots, vectors, taste.Scales, taste.Dimensions);
+        }
+
+        return FromQuantized(
+            ids.Span.ToArray(), rows, scales.Span.ToArray(), dimensions, columns, vocabularies, layer,
+            SharedFranchises);
+    }
+
+    private static (long Total, long Changed) Requantize(sbyte[] values, int bits)
+    {
+        var levels = (1 << (bits - 1)) - 1;
+        var step = 127 / levels;
+        long changed = 0;
+        for (var i = 0; i < values.Length; i++)
+        {
+            var level = Math.Clamp((int)MathF.Round(values[i] / (float)step), -levels, levels);
+            var rounded = (sbyte)(level * step);
+            if (rounded != values[i])
+            {
+                changed++;
+            }
+
+            values[i] = rounded;
+        }
+
+        return (values.LongLength, changed);
+    }
+
+    /// <summary>
+    /// This index's franchise components, for an index over the same rows: one load serves both,
+    /// including one already in flight.
+    /// </summary>
+    internal Func<int[]> SharedFranchises
+    {
+        get
+        {
+            var franchises = _franchises;
+            return () => franchises.Value;
+        }
+    }
 
     public int Dimensions => dimensions;
 
@@ -239,9 +387,9 @@ public sealed class VectorIndex(
     /// </summary>
     public int StartDayAt(int row)
     {
-        if (columns.StartDays is { } days && days[row] != Unknown)
+        if (columns.StartDays.Length > 0 && columns.StartDays[row] != Unknown)
         {
-            return days[row];
+            return columns.StartDays[row];
         }
 
         var year = columns.Years[row];
@@ -257,8 +405,8 @@ public sealed class VectorIndex(
     /// <summary>The row's interned artist ids, from the same vocabulary as its authors.</summary>
     public ReadOnlySpan<int> ArtistsAt(int row) => columns.Artists[row];
 
-    /// <summary>The row's packed tags (<see cref="TagMath"/>), or null when it has none.</summary>
-    public byte[]? TagsAt(int row) => columns.TagBlobs[row];
+    /// <summary>The row's packed tags (<see cref="TagMath"/>), empty when it has none.</summary>
+    public ReadOnlySpan<byte> TagsAt(int row) => columns.Tags[row];
 
     /// <summary>
     /// The row's same-work component, or <see cref="Unknown"/> when it is in no franchise. Shared by
@@ -271,7 +419,16 @@ public sealed class VectorIndex(
     /// </summary>
     public int FranchiseAt(int row) => _franchises.Value[row];
 
-    public bool TryGetRow(long id, out int row) => _rowById.TryGetValue(id, out row);
+    public bool TryGetRow(long id, out int row)
+    {
+        if (_rowById is not null)
+        {
+            return _rowById.TryGetValue(id, out row);
+        }
+
+        row = ids.Span.BinarySearch(id);
+        return row >= 0;
+    }
 
     public bool TryGetGenreId(string name, out int id) => vocabularies.Genres.TryGetValue(name, out id);
 
@@ -343,7 +500,7 @@ public sealed class VectorIndex(
     public TasteLayer? Taste => taste;
 
     /// <summary>True when this row has a behavioural vector at all.</summary>
-    public bool HasTasteAt(int row) => taste is not null && taste.Scales[row] != 0;
+    public bool HasTasteAt(int row) => taste is not null && taste.Has(row);
 
     /// <summary>
     /// Cosine of one row's BEHAVIOURAL vector against a taste query, or 0 when either side has no
@@ -352,13 +509,12 @@ public sealed class VectorIndex(
     /// </summary>
     public float TasteCosineAt(int row, ReadOnlySpan<sbyte> query, float queryScale)
     {
-        if (taste is null || taste.Scales[row] == 0)
+        if (taste is null || !taste.Has(row))
         {
             return 0;
         }
 
-        return EmbeddingMath.QuantizedDot(
-            query, queryScale, taste.Data.AsSpan(row * taste.Dimensions, taste.Dimensions), taste.Scales[row]);
+        return EmbeddingMath.QuantizedDot(query, queryScale, taste.VectorAt(row), taste.ScaleAt(row));
     }
 
     /// <summary>
@@ -390,29 +546,29 @@ public sealed class VectorIndex(
     /// </summary>
     public float TasteCosineBetween(int rowA, int rowB)
     {
-        if (taste is null || taste.Scales[rowA] == 0 || taste.Scales[rowB] == 0)
+        if (taste is null || !taste.Has(rowA) || !taste.Has(rowB))
         {
             return 0;
         }
 
         return EmbeddingMath.QuantizedDot(
-            taste.Data.AsSpan(rowA * taste.Dimensions, taste.Dimensions), taste.Scales[rowA],
-            taste.Data.AsSpan(rowB * taste.Dimensions, taste.Dimensions), taste.Scales[rowB]);
+            taste.VectorAt(rowA), taste.ScaleAt(rowA), taste.VectorAt(rowB), taste.ScaleAt(rowB));
     }
 
     /// <summary>The row's behavioural vector as floats, for building a seed centroid. Null if absent.</summary>
     public float[]? TasteVectorAt(int row)
     {
-        if (taste is null || taste.Scales[row] == 0)
+        if (taste is null || !taste.Has(row))
         {
             return null;
         }
 
         var vec = new float[taste.Dimensions];
-        var offset = row * taste.Dimensions;
+        var levels = taste.VectorAt(row);
+        var scale = taste.ScaleAt(row);
         for (var d = 0; d < taste.Dimensions; d++)
         {
-            vec[d] = taste.Data[offset + d] * taste.Scales[row];
+            vec[d] = levels[d] * scale;
         }
 
         return vec;
@@ -570,7 +726,7 @@ public sealed class VectorIndex(
     private bool Passes(int row, PlannedRule rule)
     {
         var genres = columns.Genres[row];
-        var blob = columns.TagBlobs[row];
+        var blob = columns.Tags[row];
         foreach (var term in rule.Terms)
         {
             var held = term.TagIds is { } tagIds
@@ -635,7 +791,7 @@ public sealed class VectorIndex(
         var mask = new bool[Count];
         foreach (var id in ids)
         {
-            if (_rowById.TryGetValue(id, out var row))
+            if (TryGetRow(id, out var row))
             {
                 mask[row] = true;
             }
@@ -659,6 +815,11 @@ public sealed class VectorIndex(
         }
 
         if (plan.Exclude is { } excluded && excluded[row])
+        {
+            return false;
+        }
+
+        if (plan.MinStartDay is int since && StartDayAt(row) is var day && (day == Unknown || day < since))
         {
             return false;
         }
@@ -710,7 +871,7 @@ public sealed class VectorIndex(
             }
         }
 
-        if (plan.Tags is { } wantTags && !TagMath.ContainsAll(columns.TagBlobs[row], wantTags))
+        if (plan.Tags is { } wantTags && !TagMath.ContainsAll(columns.Tags[row], wantTags))
         {
             return false;
         }
@@ -751,9 +912,9 @@ public sealed class VectorIndex(
         // Rented, not allocated: a float per row is half a megabyte at catalogue scale, which is
         // three Large Object Heap allocations on every keystroke-driven search. The LOH is not
         // compacted, so allocating them grew the process for the life of the install.
-        var scores = ArrayPool<float>.Shared.Rent(Count);
-        var keys = ArrayPool<float>.Shared.Rent(Count);
-        var values = ArrayPool<int>.Shared.Rent(Count);
+        var scores = ScanPools.Floats.Rent(Count);
+        var keys = ScanPools.Floats.Rent(Count);
+        var values = ScanPools.Ints.Rent(Count);
         try
         {
             Parallel.For(
@@ -790,13 +951,26 @@ public sealed class VectorIndex(
         }
         finally
         {
-            ArrayPool<float>.Shared.Return(scores);
-            ArrayPool<float>.Shared.Return(keys);
-            ArrayPool<int>.Shared.Return(values);
+            ScanPools.Floats.Return(scores);
+            ScanPools.Floats.Return(keys);
+            ScanPools.Ints.Return(values);
         }
     }
 
-    private static Dictionary<long, int> BuildRowMap(long[] ids)
+    private static bool IsSorted(Column<long> ids)
+    {
+        for (var i = 1; i < ids.Length; i++)
+        {
+            if (ids[i] <= ids[i - 1])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static Dictionary<long, int> BuildRowMap(Column<long> ids)
     {
         var map = new Dictionary<long, int>(ids.Length);
         for (var i = 0; i < ids.Length; i++)

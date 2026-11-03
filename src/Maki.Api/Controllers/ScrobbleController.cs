@@ -19,8 +19,8 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/scrobble")]
 // Connecting and pushing to a tracker is per-account behaviour, so it rides on UseTrackers rather
-// than on admin. The OAuth callback below opts out — the provider redirects the user's browser there
-// and it is authenticated by the random state instead.
+// than on admin. The OAuth callback below opts out, since the provider redirects the user's browser
+// there; it checks the random state and that the session belongs to whoever started the flow.
 [Authorize(Policy = Policies.UseTrackers)]
 public class ScrobbleController(
     ILocalizer localizer,
@@ -35,8 +35,8 @@ public class ScrobbleController(
 {
     /// <summary>
     /// Everything here acts for the signed-in caller: their tokens, their mappings, their toggles.
-    /// The one exception is the OAuth callback, which reads the user id out of the in-flight session
-    /// because no cookie reaches it.
+    /// The OAuth callback is anonymous at the policy level but still requires the caller's session to
+    /// match the in-flight one.
     /// </summary>
     private int UserId => currentUser.UserId;
 
@@ -58,7 +58,7 @@ public class ScrobbleController(
     public record ConnectionDto(
         string Service, string Label, bool Configured, bool Connected, string? Username, bool OAuth,
         bool SyncReading, bool SyncRatings, bool AnimeList, bool AnimeSignals, bool? SavedDetails = null,
-        DateTimeOffset? BackOffUntil = null);
+        DateTimeOffset? BackOffUntil = null, bool SyncSoFar = false);
 
     public record MatchRequest(int KavitaSeriesId, string Service, string RemoteId);
     public record IgnoreRequest(int KavitaSeriesId, string Service);
@@ -66,7 +66,14 @@ public class ScrobbleController(
     /// Nullable and written only when present: the switch shows on two of the five tracker blocks,
     /// so a client saving the other three sends no opinion about it rather than an accidental off.
     /// </param>
-    public record PreferencesRequest(bool Reading, bool Ratings, bool? Anime = null);
+    /// <param name="SoFar">Nullable and written only when present, like <paramref name="Anime"/>.</param>
+    public record PreferencesRequest(bool Reading, bool Ratings, bool? Anime = null, bool? SoFar = null);
+
+    /// <summary>
+    /// The answer to "send so-far scores to these trackers too?". <paramref name="SeriesId"/> is the
+    /// series whose rating raised the question: on yes its "so far" score goes out straight away.
+    /// </summary>
+    public record SoFarSyncRequest(string[] Services, bool Enabled, int? SeriesId = null);
     public record ApplyRatingImportRequest(int[] SeriesIds);
 
     [HttpGet("status")]
@@ -96,7 +103,8 @@ public class ScrobbleController(
                 AnimeList: tracker is IAnimeListSource,
                 AnimeSignals: await animeSources.EnabledForAsync(UserId, tracker.Name, ct),
                 SavedDetails: await SavedDetailsAsync(tracker.Name, ct),
-                BackOffUntil: tracker.BackOffUntil));
+                BackOffUntil: tracker.BackOffUntil,
+                SyncSoFar: await scrobbler.SyncSoFarEnabledAsync(UserId, tracker.Name, ct)));
         }
 
         var lastSync = await scrobbler.LastSyncAtAsync(ct);
@@ -387,6 +395,11 @@ public class ScrobbleController(
         await userSettings.SetAsync(
             SettingKeys.ScrobbleRatingsKey(service), request.Ratings ? "true" : "false", ct);
 
+        if (request.SoFar is { } soFar)
+        {
+            await userSettings.SetAsync(SettingKeys.ScrobbleSoFarKey(service), soFar ? "true" : "false", ct);
+        }
+
         if (request.Anime is { } anime)
         {
             await userSettings.SetAsync(
@@ -413,7 +426,41 @@ public class ScrobbleController(
             reading = request.Reading,
             ratings = request.Ratings,
             anime = request.Anime,
+            soFar = request.SoFar,
         });
+    }
+
+    [HttpPut("sofar")]
+    public async Task<IActionResult> SetSoFarSync([FromBody] SoFarSyncRequest request, CancellationToken ct)
+    {
+        var saved = new List<string>();
+        foreach (var service in request.Services.Where(s => scrobbler.FindTracker(s) is not null).Distinct())
+        {
+            // "So far" sits under "Sync ratings": turning it on where that is off would also mark the
+            // tracker as asked, so it would never get the question once ratings are switched back on.
+            if (request.Enabled && !await scrobbler.SyncRatingsEnabledAsync(UserId, service, ct))
+            {
+                continue;
+            }
+
+            saved.Add(service);
+            await userSettings.SetAsync(SettingKeys.ScrobbleSoFarKey(service), request.Enabled ? "true" : "false", ct);
+        }
+
+        if (request.Enabled && saved.Count > 0 && request.SeriesId is { } seriesId)
+        {
+            var series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
+            var soFar = await db.UserSeriesStates
+                .Where(s => s.SeriesId == seriesId && s.Rating == null)
+                .Select(s => s.ProvisionalRating)
+                .FirstOrDefaultAsync(ct);
+            if (series is not null && soFar is { } score)
+            {
+                scrobbler.QueueRatingPush(UserId, series, score, soFar: true);
+            }
+        }
+
+        return Ok(new { services = saved, enabled = request.Enabled });
     }
 
     // ---- rating import (preview → apply) ----
@@ -515,9 +562,8 @@ public class ScrobbleController(
     /// and controls none of Maki's credentials. The random <c>state</c>, bound to the in-flight
     /// session that started the flow, is what authenticates the request.
     /// <para>
-    /// Being anonymous is also why this must stay a GET that only exchanges a code and redirects —
-    /// it is the one unauthenticated write path in the app, and the state is the whole of its
-    /// security. Per-user tracker tokens bind that state to the initiating user id.
+    /// Being anonymous is also why this must stay a GET that only exchanges a code and redirects.
+    /// The state picks the flow and the signed-in session must belong to the account that started it.
     /// </para>
     /// </summary>
     [HttpGet("/api/v1/scrobble/oauth/{service}")]
@@ -538,12 +584,18 @@ public class ScrobbleController(
                 localizer.Get("error.scrobble.oauthStateMismatch")));
         }
 
+        // The state proves which flow this is, not which browser finished it. The session cookie
+        // rides this top-level GET under Lax, so only the account that started the flow may end it.
+        if (!currentUser.IsAuthenticated || currentUser.UserId != session.UserId)
+        {
+            return Redirect("/scrobble?error=" + Uri.EscapeDataString(
+                localizer.Get("error.scrobble.oauthUserMismatch")));
+        }
+
         try
         {
             switch (service)
             {
-                // session.UserId, never the request's — there is no authenticated caller here, and
-                // the state that matched is the only thing that says whose flow this was.
                 case "anilist":
                     await scrobbler.AniList.ExchangeCodeAsync(session.UserId, code, session.RedirectUri, ct);
                     break;

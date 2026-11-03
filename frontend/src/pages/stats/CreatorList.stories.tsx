@@ -30,7 +30,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.getByRole('link', { name: 'Aoi Mizuhara' })).toHaveAttribute('href', '/creator/Aoi%20Mizuhara'))
-    await expect(await canvas.findByText('Story · Art')).toBeVisible()
+    await expect(await canvas.findByText('Story and art')).toBeVisible()
   },
 }
 

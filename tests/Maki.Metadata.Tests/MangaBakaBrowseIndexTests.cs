@@ -29,7 +29,7 @@ public class MangaBakaBrowseIndexTests : IDisposable
 
     private static readonly string[] AllIndexes =
     [
-        "ix_browse_pop", "ix_browse_trend", "ix_browse_new", "ix_browse_rating", "ix_browse_type",
+        "mb_browse_pop", "mb_browse_trend", "mb_browse_new", "mb_browse_rating", "mb_browse_type",
     ];
 
     private SqliteConnection OpenWith(string columns)
@@ -51,7 +51,7 @@ public class MangaBakaBrowseIndexTests : IDisposable
     {
         var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'ix_browse_%'";
+        cmd.CommandText = "SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'mb_browse_%'";
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
@@ -93,7 +93,7 @@ public class MangaBakaBrowseIndexTests : IDisposable
         MangaBakaDumpService.BuildBrowseIndexes(conn);
         using (var drop = conn.CreateCommand())
         {
-            drop.CommandText = "DROP INDEX ix_title_nocase";
+            drop.CommandText = "DROP INDEX mb_title_nocase";
             drop.ExecuteNonQuery();
         }
 
@@ -102,7 +102,7 @@ public class MangaBakaBrowseIndexTests : IDisposable
             new MangaBakaDumpStatus(), NullLogger<MangaBakaDumpService>.Instance);
         await service.EnsureBrowseIndexesAsync();
         using var check = conn.CreateCommand();
-        check.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE name = 'ix_title_nocase'";
+        check.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE name = 'mb_title_nocase'";
         Assert.Equal(1L, check.ExecuteScalar());
         check.CommandText = "PRAGMA schema_version";
         var repairedVersion = check.ExecuteScalar();
@@ -127,10 +127,10 @@ public class MangaBakaBrowseIndexTests : IDisposable
     {
         using var conn = OpenWith(FullColumns + ExternalIdColumns);
         MangaBakaDumpService.BuildBrowseIndexes(conn);
-        var popBefore = RootPage(conn, "ix_browse_pop");
+        var popBefore = RootPage(conn, "mb_browse_pop");
         using (var drop = conn.CreateCommand())
         {
-            drop.CommandText = "DROP INDEX ix_ext_kitsu";
+            drop.CommandText = "DROP INDEX mb_ext_kitsu";
             drop.ExecuteNonQuery();
         }
 
@@ -140,14 +140,14 @@ public class MangaBakaBrowseIndexTests : IDisposable
         await service.EnsureBrowseIndexesAsync();
 
         // Rebuilding would have dropped and recreated it on a fresh page.
-        Assert.Equal(popBefore, RootPage(conn, "ix_browse_pop"));
-        Assert.True(RootPage(conn, "ix_ext_kitsu") > 0);
+        Assert.Equal(popBefore, RootPage(conn, "mb_browse_pop"));
+        Assert.True(RootPage(conn, "mb_ext_kitsu") > 0);
     }
 
     [Theory]
-    [InlineData("source_anilist_id", "ix_ext_anilist")]
-    [InlineData("source_my_anime_list_id", "ix_ext_mal")]
-    [InlineData("source_kitsu_id", "ix_ext_kitsu")]
+    [InlineData("source_anilist_id", "mb_ext_anilist")]
+    [InlineData("source_my_anime_list_id", "mb_ext_mal")]
+    [InlineData("source_kitsu_id", "mb_ext_kitsu")]
     public void External_id_lookups_use_their_partial_index(string column, string expected)
     {
         using var conn = OpenWith(FullColumns + ExternalIdColumns);
@@ -155,7 +155,7 @@ public class MangaBakaBrowseIndexTests : IDisposable
 
         using var cmd = conn.CreateCommand();
         // The shape MangaBakaLocalStore.GetIdsByExternalIdsAsync sends.
-        cmd.CommandText = $"EXPLAIN QUERY PLAN SELECT {column}, id, state, merged_with, type FROM series WHERE {column} IN (1,2,3)";
+        cmd.CommandText = $"EXPLAIN QUERY PLAN SELECT {column}, id, state, merged_with, type FROM maki_browse WHERE {column} IN (1,2,3)";
         var plan = new List<string>();
         using (var reader = cmd.ExecuteReader())
         {
@@ -178,7 +178,7 @@ public class MangaBakaBrowseIndexTests : IDisposable
         // The shape MangaBakaLocalStore.GetIdsByMangaUpdatesIdsAsync sends.
         cmd.CommandText = """
             EXPLAIN QUERY PLAN
-            SELECT lower(source_manga_updates_id), id, state, merged_with, type FROM series
+            SELECT lower(source_manga_updates_id), id, state, merged_with, type FROM maki_browse
             WHERE source_manga_updates_id IS NOT NULL AND lower(source_manga_updates_id) IN ($a, $b)
             """;
         cmd.Parameters.AddWithValue("$a", "pb8uwds");
@@ -192,7 +192,7 @@ public class MangaBakaBrowseIndexTests : IDisposable
             }
         }
 
-        Assert.Contains("ix_ext_mangaupdates", string.Join(" | ", plan));
+        Assert.Contains("mb_ext_mangaupdates", string.Join(" | ", plan));
     }
 
     [Fact]
@@ -202,7 +202,7 @@ public class MangaBakaBrowseIndexTests : IDisposable
         MangaBakaDumpService.BuildBrowseIndexes(conn);
         using (var drop = conn.CreateCommand())
         {
-            drop.CommandText = "DROP INDEX ix_ext_mangaupdates";
+            drop.CommandText = "DROP INDEX mb_ext_mangaupdates";
             drop.ExecuteNonQuery();
         }
 
@@ -211,7 +211,7 @@ public class MangaBakaBrowseIndexTests : IDisposable
             new MangaBakaDumpStatus(), NullLogger<MangaBakaDumpService>.Instance);
 
         Assert.True(await service.EnsureBrowseIndexesAsync());
-        Assert.True(RootPage(conn, "ix_ext_mangaupdates") > 0);
+        Assert.True(RootPage(conn, "mb_ext_mangaupdates") > 0);
     }
 
     [Fact]
@@ -238,11 +238,11 @@ public class MangaBakaBrowseIndexTests : IDisposable
         MangaBakaDumpService.BuildBrowseIndexes(conn, NullLogger.Instance);
 
         var built = IndexesOn(conn);
-        Assert.Contains("ix_browse_pop", built);
-        Assert.Contains("ix_browse_rating", built);
-        Assert.DoesNotContain("ix_browse_trend", built);   // no popularity_global_history_1mo
-        Assert.DoesNotContain("ix_browse_new", built);     // no published_start_date
-        Assert.DoesNotContain("ix_browse_type", built);    // no popularity_type_current
+        Assert.Contains("mb_browse_pop", built);
+        Assert.Contains("mb_browse_rating", built);
+        Assert.DoesNotContain("mb_browse_trend", built);   // no popularity_global_history_1mo
+        Assert.DoesNotContain("mb_browse_new", built);     // no published_start_date
+        Assert.DoesNotContain("mb_browse_type", built);    // no popularity_type_current
     }
 
     [Fact]
@@ -260,9 +260,9 @@ public class MangaBakaBrowseIndexTests : IDisposable
     /// only proof; asserting the index merely exists would pass while it went unused.
     /// </summary>
     [Theory]
-    [InlineData("popularity_global_current IS NOT NULL", "popularity_global_current ASC", "ix_browse_pop")]
-    [InlineData("published_start_date IS NOT NULL", "published_start_date DESC", "ix_browse_new")]
-    [InlineData("type = 'manhwa' AND popularity_type_current IS NOT NULL", "popularity_type_current ASC", "ix_browse_type")]
+    [InlineData("popularity_global_current IS NOT NULL", "popularity_global_current ASC", "mb_browse_pop")]
+    [InlineData("published_start_date IS NOT NULL", "published_start_date DESC", "mb_browse_new")]
+    [InlineData("type = 'manhwa' AND popularity_type_current IS NOT NULL", "popularity_type_current ASC", "mb_browse_type")]
     public void The_rail_queries_actually_use_the_partial_indexes(string extraWhere, string orderBy, string expected)
     {
         using var conn = OpenWith(FullColumns);
@@ -273,7 +273,7 @@ public class MangaBakaBrowseIndexTests : IDisposable
         // index deliberately omits.
         cmd.CommandText = $"""
             EXPLAIN QUERY PLAN
-            SELECT id FROM series
+            SELECT id FROM maki_browse
             WHERE state = 'active' AND type != 'novel' AND rating IS NOT NULL
               AND cover_raw_url IS NOT NULL AND title NOT LIKE 'unknown title%'
               AND {extraWhere}

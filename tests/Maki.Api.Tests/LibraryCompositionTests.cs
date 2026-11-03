@@ -87,6 +87,28 @@ public sealed class LibraryCompositionTests : IDisposable
     }
 
     [Fact]
+    public async Task ArchivedSeriesAreLeftOutOfEveryFigure()
+    {
+        var kept = _db.SeedSeries("Kept");
+        var shelved = _db.SeedSeries("Shelved");
+        SeedFile(kept, "MangaDex", 1_000);
+        SeedFile(shelved, "MangaDex", 9_000);
+        using (var write = _db.NewContext())
+        {
+            write.Series.Single(s => s.Id == shelved).ArchivedAt = T0;
+            write.SaveChanges();
+        }
+
+        using var db = _db.NewContext(Owner);
+        var stats = await Service(db).GetAsync(CancellationToken.None);
+
+        Assert.Equal(1, stats.Totals.SeriesCount);
+        Assert.Equal(1, stats.Totals.ChapterCount);
+        Assert.Equal(1_000, stats.Totals.TotalBytes);
+        Assert.Equal([kept], stats.Largest.Select(s => s.SeriesId));
+    }
+
+    [Fact]
     public async Task EmptyLibraryReportsZeroRatherThanFailingOnANullSum()
     {
         using var db = _db.NewContext(Owner);

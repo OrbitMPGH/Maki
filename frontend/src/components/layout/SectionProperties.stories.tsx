@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, waitFor, within } from 'storybook/test'
-import { IconCalendarStats } from '@tabler/icons-react'
+import { IconCalendarStats } from '../../lib/icons'
 import { customRails, homePage } from '../../../.storybook/mocks/home'
 import { HOME_SECTION_DEFS } from '../home/homeSectionDefs'
 import type { SectionDef } from './pageLayout'

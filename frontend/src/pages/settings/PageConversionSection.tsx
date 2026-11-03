@@ -1,126 +1,107 @@
-import { useState } from 'react'
-import { Button, Divider, Group, Radio, Stack, Text } from '@mantine/core'
-import { IconPlayerPause, IconPlayerPlay } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { Button, Divider, Group, Select, Stack, Text } from '@mantine/core'
+import { IconPlayerPause, IconPlayerPlay, IconSettings } from '../../lib/icons'
+import { Link } from 'react-router-dom'
+import { notifications } from '../../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { SettingsSection } from './SettingsSection'
-import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
+import { useSettingsSummary } from '../../components/pageconversion/labels'
 import { formatBytes, formatDateTime } from '../../format'
 import {
   usePageConversion,
   usePausePageConversion,
-  useSavePageConversion,
+  useSavePageConversionParallel,
   useStartPageConversion,
-  type PageConversionSettings,
   type PageConversionStatus,
 } from '../../api/pageConversion'
 
-const DEFAULT_QUALITY = { webp: 80, avif: 55 } as const
-
-/** Converts stored pages to WebP or AVIF: the format for new downloads and the pass over the existing library. */
+/** Converts stored pages to WebP or AVIF: the current choice, the pass over the existing library, and the way into the wizard that changes either. */
 export function PageConversionSection() {
-  const { t } = useLingui()
   const { data: status } = usePageConversion()
-  const save = useSavePageConversion()
-  const [draft, setDraft] = useState<PageConversionSettings | null>(null)
-
-  const saved = status?.settings
-  const current = draft ?? saved
-  const dirty =
-    draft !== null &&
-    saved !== undefined &&
-    (draft.format !== saved.format ||
-      draft.webpQuality !== saved.webpQuality ||
-      draft.avifQuality !== saved.avifQuality)
-  const update = (changes: Partial<PageConversionSettings>) => {
-    if (current) setDraft({ ...current, ...changes })
-  }
+  const summarize = useSettingsSummary()
 
   return (
     <SettingsSection
       id="page-conversion"
       title={<Trans>Page conversion</Trans>}
-      description={
-        <Trans>Stores chapter pages in a smaller image format.</Trans>
-      }
-      dirty={dirty}
-      saving={save.isPending}
-      onSave={() => {
-        if (!draft) return
-        save.mutate(draft, {
-          onSuccess: () => {
-            setDraft(null)
-            notifications.show({ message: now`Saved`, color: 'var(--ok)' })
-          },
-        })
-      }}
-      onDiscard={() => setDraft(null)}
+      description={<Trans>Stores chapter pages in a smaller image format.</Trans>}
     >
-      {current && status && (
+      {status && (
         <Stack>
-          <Radio.Group
-            label={t`Format`}
-            value={current.format}
-            onChange={(format) => update({ format: format as PageConversionSettings['format'] })}
-          >
-            <Stack gap="sm" mt="xs">
-              <Radio value="off" label={t`Off`} />
-              <Radio
-                value="webp"
-                label={t`WebP`}
-                description={t`Opens in every reader Maki works with.`}
-              />
-              <Radio
-                value="avif"
-                label={t`AVIF`}
-                description={t`Smaller than WebP. KOReader and iOS before 16 can't open it.`}
-              />
+          <Group justify="space-between" wrap="wrap" gap="sm">
+            <Stack gap={2}>
+              <Text fw={500} size="sm">
+                <Trans>Current setting</Trans>
+              </Text>
+              <Text size="sm">{summarize(status.settings, status.library.ruleCount)}</Text>
+              {status.settings.format && status.settings.pngLossless && (
+                <Text size="xs" c="var(--ink-3)">
+                  <Trans>PNG pages are kept lossless.</Trans>
+                </Text>
+              )}
+              {status.settings.format && status.library.overrideSeries > 0 && (
+                <Text size="xs" c="var(--ink-3)">
+                  <Plural
+                    value={status.library.overrideSeries}
+                    one="# series has its own setting in its menu."
+                    other="# series have their own setting in their menus."
+                  />
+                </Text>
+              )}
             </Stack>
-          </Radio.Group>
+            {status.settings.format ? (
+              <Button
+                component={Link}
+                to="/settings/page-conversion?step=2"
+                variant="default"
+                size="xs"
+                leftSection={<IconSettings size={16} />}
+              >
+                <Trans>Change settings</Trans>
+              </Button>
+            ) : (
+              <Button component={Link} to="/settings/page-conversion" size="xs" leftSection={<IconSettings size={16} />}>
+                <Trans>Set up conversion</Trans>
+              </Button>
+            )}
+          </Group>
 
-          {current.format !== 'off' && <QualityInput settings={current} onChange={update} />}
+          {status.settings.format && (
+            <>
+              <Divider />
+              <NewDownloads queued={status.library.queuedFiles} />
+            </>
+          )}
 
           <Divider />
           <LibraryPass status={status} />
+
+          <Divider />
+          <ParallelLimit parallel={status.parallel} />
         </Stack>
       )}
     </SettingsSection>
   )
 }
 
-function QualityInput({
-  settings,
-  onChange,
-}: {
-  settings: PageConversionSettings
-  onChange: (changes: Partial<PageConversionSettings>) => void
-}) {
-  const { t } = useLingui()
-  if (settings.format === 'avif') {
-    const fallback = DEFAULT_QUALITY.avif
-    return (
-      <SettingsNumberInput
-        label={t`AVIF quality`}
-        description={t`1 to 100, higher keeps more detail. Default ${fallback}.`}
-        min={1}
-        max={100}
-        value={settings.avifQuality}
-        onChange={(avifQuality) => onChange({ avifQuality })}
-      />
-    )
-  }
-
-  const fallback = DEFAULT_QUALITY.webp
+function NewDownloads({ queued }: { queued: number }) {
   return (
-    <SettingsNumberInput
-      label={t`WebP quality`}
-      description={t`1 to 100, higher keeps more detail. Default ${fallback}.`}
-      min={1}
-      max={100}
-      value={settings.webpQuality}
-      onChange={(webpQuality) => onChange({ webpQuality })}
-    />
+    <Stack gap={2}>
+      <Text fw={500} size="sm">
+        <Trans>New downloads</Trans>
+      </Text>
+      <Text size="sm" c="var(--ink-3)">
+        {queued > 0 ? (
+          <Plural
+            value={queued}
+            one="# file waiting to be converted. A chapter someone is reading is converted once they stop."
+            other="# files waiting to be converted. A chapter someone is reading is converted once they stop."
+          />
+        ) : (
+          <Trans>Downloads and torrent imports are converted in the background once they finish.</Trans>
+        )}
+      </Text>
+    </Stack>
   )
 }
 
@@ -130,7 +111,7 @@ function LibraryPass({ status }: { status: PageConversionStatus }) {
   const { pass, library } = status
   const { pendingFiles, convertedFiles } = library
   const totals = pass.totals
-  const off = status.settings.format === 'off'
+  const off = status.settings.format === null
   const saved = formatBytes(library.savedBytes)
   const trash = formatBytes(library.trashBytes)
   const days = library.trashDays
@@ -145,7 +126,7 @@ function LibraryPass({ status }: { status: PageConversionStatus }) {
           <Button
             variant="default"
             size="xs"
-            leftSection={<IconPlayerPause size={14} />}
+            leftSection={<IconPlayerPause size={16} />}
             loading={pause.isPending}
             onClick={() => pause.mutate(undefined)}
           >
@@ -155,7 +136,7 @@ function LibraryPass({ status }: { status: PageConversionStatus }) {
           <Button
             variant="default"
             size="xs"
-            leftSection={<IconPlayerPlay size={14} />}
+            leftSection={<IconPlayerPlay size={16} />}
             disabled={off || pendingFiles === 0}
             loading={start.isPending}
             onClick={() => start.mutate(undefined)}
@@ -219,12 +200,43 @@ function LibraryPass({ status }: { status: PageConversionStatus }) {
   )
 }
 
+function ParallelLimit({ parallel }: { parallel: PageConversionStatus['parallel'] }) {
+  const { t } = useLingui()
+  const save = useSavePageConversionParallel()
+  const auto = parallel.default
+  const data = [
+    { value: 'auto', label: t`Automatic (${auto})` },
+    ...Array.from({ length: parallel.max }, (_, i) => ({ value: String(i + 1), label: String(i + 1) })),
+  ]
+
+  return (
+    <Select
+      styles={{ wrapper: { maxWidth: 200 } }}
+      label={t`Pages converted at once`}
+      description={t`Applies to the library pass and to new downloads. Higher finishes sooner but uses more of the server's CPU while it runs.`}
+      data={data}
+      value={parallel.limit === null ? 'auto' : String(parallel.limit)}
+      onChange={(value) =>
+        value &&
+        save.mutate(value === 'auto' ? null : Number(value), {
+          onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
+        })
+      }
+      disabled={save.isPending}
+      allowDeselect={false}
+    />
+  )
+}
+
 function PausedLine({ hold, pending }: { hold: PageConversionStatus['pass']['hold']; pending: number }) {
   if (hold === 'lowDisk') {
     return <Trans>Paused: converting the next file would leave less than 1 GB free on the library drive.</Trans>
   }
   if (hold === 'conversionOff') {
     return <Trans>Paused because page conversion was switched off.</Trans>
+  }
+  if (hold === 'settingsChanged') {
+    return <Trans>Paused because the settings changed. Restart the pass to use them.</Trans>
   }
   return <Plural value={pending} one="Paused, # file left to check." other="Paused, # files left to check." />
 }

@@ -1,6 +1,6 @@
 import { Button, Group } from '@mantine/core'
-import { IconArrowLeft, IconArrowRight, IconNote } from '@tabler/icons-react'
-import { useEffect, useRef } from 'react'
+import { IconArrowLeft, IconArrowRight, IconNote } from '../../lib/icons'
+import { type ReactNode, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Plural, Trans } from '@lingui/react/macro'
 import type { ReaderManifest } from '../../api/reader'
@@ -86,6 +86,7 @@ export default function ChapterEnd({
   onNext,
   onStay,
   onOpenNotes,
+  ratingPrompt,
 }: {
   manifest: ReaderManifest
   readingCounted: boolean
@@ -93,6 +94,8 @@ export default function ChapterEnd({
   onNext: () => void
   onStay: () => void
   onOpenNotes: () => void
+  /** The "how is it so far?" line, when a checkpoint is waiting. */
+  ratingPrompt?: ReactNode
 }) {
   const { label: chapterLabel, seriesChapterCount, nextChapterLabel } = manifest
   const readCount = Math.min(seriesChapterCount, manifest.seriesReadCount + (readingCounted ? 1 : 0))
@@ -149,6 +152,7 @@ export default function ChapterEnd({
                 </span>
               </div>
             )}
+            {ratingPrompt}
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using System.Threading.Channels;
 using Maki.Core.Entities;
+using Maki.Core.Parsing;
 using Maki.Core.Scrobbling;
 using Maki.Core.Quality;
 using Maki.Core.Sources;
@@ -59,6 +60,7 @@ public partial class SourceMatchService(
     SourceAvailability sourceAvailability,
     SourceExternalIdCache externalIdCache,
     SourceMatchSearchCache searchCache,
+    RivalTitleProvider rivalTitles,
     ILogger<SourceMatchService> logger)
 {
     /// <summary>
@@ -154,26 +156,35 @@ public partial class SourceMatchService(
     /// fan-out starts. Sources are searched in parallel and an EF entity is not thread-safe, so no
     /// task is given the <see cref="Series"/> itself.
     /// </summary>
+    /// <param name="Rivals">Titles of related works a result could be naming instead (<see cref="RivalTitleProvider"/>).</param>
     internal sealed record MatchTarget(
         string Title,
         string? OriginalTitle,
         IReadOnlyDictionary<string, string> ExternalIds,
         IReadOnlyList<string> Authors,
-        IReadOnlyList<LocalizedTitle> AltTitles)
+        IReadOnlyList<LocalizedTitle> AltTitles,
+        IReadOnlyList<string> Rivals)
     {
-        public static MatchTarget For(Series series) =>
+        public static MatchTarget For(Series series, IReadOnlyList<string> rivals) =>
             new(series.Title, DisambiguatingOriginalTitle(series), ExternalIdsOf(series),
                 [.. AuthorNames(series.AuthorStory).Concat(AuthorNames(series.AuthorArt)).Distinct()],
-                [.. series.AltTitles]);
+                [.. series.AltTitles], rivals);
 
         public bool SameAs(MatchTarget other) =>
             Title == other.Title &&
             OriginalTitle == other.OriginalTitle &&
             AltTitles.SequenceEqual(other.AltTitles) &&
             Authors.SequenceEqual(other.Authors) &&
+            Rivals.ToHashSet(StringComparer.Ordinal).SetEquals(other.Rivals) &&
             ExternalIds.Count == other.ExternalIds.Count &&
             ExternalIds.All(pair => other.ExternalIds.TryGetValue(pair.Key, out var value) && value == pair.Value);
     }
+
+    // Read before the fan-out, on the caller's thread: the searches run in parallel and may not
+    // touch the DbContext.
+    private Task<IReadOnlyList<string>> RivalTitlesAsync(Series series, CancellationToken ct) =>
+        rivalTitles.ForAsync(db, series,
+            ReleaseTitleMatcher.Titles(series.Title, series.OriginalTitle, series.AltTitles), ct);
 
     /// <summary>
     /// Reads the search results' tracker ids and returns the one that is provably the same work,
@@ -402,7 +413,8 @@ public partial class SourceMatchService(
         try
         {
             var results = await source.SearchAsync(target.Title, ct);
-            var outcome = await JudgeAsync(source, priority, target, results, ct);
+            var namedRivals = new Dictionary<string, string?>(StringComparer.Ordinal);
+            var outcome = await JudgeAsync(source, priority, target, results, namedRivals, ct);
 
             // A source with no English in it often has no use for the English title. Its own
             // spelling of the work is only tried once that has found nothing, so a source the
@@ -423,7 +435,7 @@ public partial class SourceMatchService(
                         continue;
                     }
 
-                    outcome = await JudgeAsync(source, priority, target, results, ct);
+                    outcome = await JudgeAsync(source, priority, target, results, namedRivals, ct);
                     if (outcome.Match is not null)
                     {
                         break;
@@ -445,7 +457,7 @@ public partial class SourceMatchService(
 
     private async Task<SourceOutcome> JudgeAsync(
         ISource source, int priority, MatchTarget target, IReadOnlyList<SourceSeriesResult> results,
-        CancellationToken ct)
+        Dictionary<string, string?> namedRivals, CancellationToken ct)
     {
         var verdict = await CrossIdPassAsync(source, target, results, ct);
 
@@ -464,11 +476,32 @@ public partial class SourceMatchService(
             .Where(r => !r.UserGenerated || AuthorsAgree(target.Authors, r.Author))
             .ToList();
 
-        var candidates = usable
-            .Select(r => new ScrobbleCandidate(r.SourceSeriesId, r.Title, [], r.Url))
-            .ToList();
-        var best = ScrobbleMatching.BestCandidate(
-            [target.Title, .. NativeTitles(source, target)], candidates, MatchThreshold);
+        // Dropped before the pick, so a weaker result naming the series itself can still win.
+        string[] queries = [target.Title, .. NativeTitles(source, target)];
+        var candidates = new List<ScrobbleCandidate>();
+        foreach (var result in usable)
+        {
+            if (!namedRivals.TryGetValue(result.SourceSeriesId, out var rival))
+            {
+                rival = NamesRival(queries, target.Rivals, result.Title);
+                namedRivals[result.SourceSeriesId] = rival;
+                if (rival is not null)
+                {
+                    logger.LogInformation(
+                        "Skipping {Source} result {Title} ({Id}): it names related work {Rival} better than the series",
+                        source.Name, result.Title, result.SourceSeriesId, rival);
+                }
+            }
+
+            if (rival is not null)
+            {
+                continue;
+            }
+
+            candidates.Add(new ScrobbleCandidate(result.SourceSeriesId, result.Title, [], result.Url));
+        }
+
+        var best = ScrobbleMatching.BestCandidate(queries, candidates, MatchThreshold);
         return best is null
             ? new SourceOutcome(source, priority, null, SourceMappingOrigin.TitleSearch, null)
             : new SourceOutcome(
@@ -476,9 +509,30 @@ public partial class SourceMatchService(
                 SourceMappingOrigin.TitleSearch, null);
     }
 
+    /// <summary>The rival a result's title names strictly better than it names the series, if any.</summary>
+    internal static string? NamesRival(IReadOnlyList<string> queries, IReadOnlyList<string> rivals, string resultTitle)
+    {
+        if (rivals.Count == 0)
+        {
+            return null;
+        }
+
+        var ours = ScrobbleMatching.MatchScore(queries, resultTitle, MatchThreshold);
+        if (ours < MatchThreshold)
+        {
+            return null;
+        }
+
+        var (rival, score) = rivals
+            .Select(r => (Title: r, Score: ScrobbleMatching.MatchScore([r], resultTitle, MatchThreshold)))
+            .MaxBy(r => r.Score);
+        return score > ours ? rival : null;
+    }
+
     /// <summary>
-    /// The titles to score a result against besides the English one: the original title, and for a
-    /// source that publishes no English, the alt title in the language it does publish.
+    /// The titles to score a result against besides the English one: the original title, the other
+    /// English titles for a source that publishes English, and for a source that publishes no
+    /// English, the alt title in the language it does publish.
     /// </summary>
     private static List<string> NativeTitles(ISource source, MatchTarget target)
     {
@@ -488,8 +542,11 @@ public partial class SourceMatchService(
             titles.Add(target.OriginalTitle);
         }
 
-        if (!PublishesEnglish(source) &&
-            LocalizedTitle.Pick(target.AltTitles, source.SupportedLanguages) is { } alt &&
+        if (PublishesEnglish(source))
+        {
+            titles.AddRange(EnglishAltTitles(target));
+        }
+        else if (LocalizedTitle.Pick(target.AltTitles, source.SupportedLanguages) is { } alt &&
             !titles.Contains(alt, StringComparer.OrdinalIgnoreCase))
         {
             titles.Insert(0, alt);
@@ -499,17 +556,19 @@ public partial class SourceMatchService(
     }
 
     /// <summary>
-    /// Queries for a source that publishes no English, other than the title already searched: the alt
-    /// title in the source's own language, and the original title only where its script is one the
-    /// source is written in, so a Spanish site is not asked for a Japanese title.
+    /// Queries tried once the main title found nothing. A source that publishes English gets the
+    /// series' other English titles, since sites often list a work under one the provider files as an
+    /// alt. Any other source gets the alt title in its own language, and the original title only where
+    /// its script is one the source is written in, so a Spanish site is not asked for a Japanese title.
     /// </summary>
     private static List<string> NativeSearchTerms(ISource source, MatchTarget target)
     {
-        var terms = new List<string>();
         if (PublishesEnglish(source))
         {
-            return terms;
+            return EnglishAltTitles(target);
         }
+
+        var terms = new List<string>();
 
         if (LocalizedTitle.Pick(target.AltTitles, source.SupportedLanguages) is { } alt)
         {
@@ -539,6 +598,22 @@ public partial class SourceMatchService(
             _ => false,
         });
     }
+
+    /// <summary>
+    /// English alt titles that read differently from the main title, at most
+    /// <see cref="MaxEnglishAltSearches"/> of them: each one can cost a rate-limited search.
+    /// </summary>
+    internal static List<string> EnglishAltTitles(MatchTarget target)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal) { Compact(target.Title) };
+        return [.. target.AltTitles
+            .Where(t => LocalizedTitle.Matches(t.Language, "en") && !string.IsNullOrWhiteSpace(t.Title))
+            .Select(t => t.Title.Trim())
+            .Where(t => Compact(t).Length > 0 && seen.Add(Compact(t)))
+            .Take(MaxEnglishAltSearches)];
+    }
+
+    private const int MaxEnglishAltSearches = 2;
 
     private static bool PublishesEnglish(ISource source) =>
         source.SupportedLanguages.Any(l => LocalizedTitle.Matches(l, "en"));
@@ -593,7 +668,9 @@ public partial class SourceMatchService(
         var work = orderedSources
             .Select((source, index) => (Source: source, Priority: index + 1))
             .Where(item => !disabledSources.Contains(item.Source.Name, StringComparer.OrdinalIgnoreCase)
-                           && !skip.Contains(item.Source.Name))
+                           && !skip.Contains(item.Source.Name)
+                           // A custom source with no search is linked by URL only; asking it would just read "No match".
+                           && item.Source is not Maki.Sources.Custom.CustomSource { HasSearch: false })
             .ToList();
 
         foreach (var (source, _) in work)
@@ -640,7 +717,7 @@ public partial class SourceMatchService(
         Exception? error = null;
         try
         {
-            var target = MatchTarget.For(series);
+            var target = MatchTarget.For(series, await RivalTitlesAsync(series, ct));
             var run = await SearchSourcesAsync(
                 target, new HashSet<string>(StringComparer.OrdinalIgnoreCase), null, null, ct,
                 (outcome, languages) =>
@@ -696,7 +773,7 @@ public partial class SourceMatchService(
             StringComparer.OrdinalIgnoreCase);
 
         // A Discover preview of this series may have searched every source minutes ago.
-        var target = MatchTarget.For(series);
+        var target = MatchTarget.For(series, await RivalTitlesAsync(series, ct));
         var known = series.MangaBakaId is { } mangaBakaId ? searchCache.Take(mangaBakaId, target) : null;
         if (known is not null)
         {

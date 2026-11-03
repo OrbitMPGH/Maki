@@ -4,15 +4,15 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { Button, Group, Loader, Text, VisuallyHidden } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../../lib/toast'
 import {
   IconFilter,
   IconGripVertical,
   IconLayoutDashboard,
   IconLibrary,
   IconPlus,
-  IconSparkles,
-} from '@tabler/icons-react'
+  IconCompass,
+} from '../../lib/icons'
 import { isRailKey, railIdOf, useSavePageLayout, type PageSection } from '../../api/hooks'
 import {
   RAIL_SOURCE_LABELS,
@@ -32,7 +32,7 @@ import {
 } from './pageLayout'
 import { SectionProperties } from './SectionProperties'
 
-const RAIL_ICONS = { library: IconLibrary, recommendations: IconSparkles, catalogue: IconFilter }
+const RAIL_ICONS = { library: IconLibrary, recommendations: IconCompass, catalogue: IconFilter }
 
 export interface PageLayoutEditorProps {
   page: 'home' | 'discover'
@@ -161,7 +161,7 @@ export function PageLayoutEditor({
           </div>
         </Group>
         <Group gap="xs" wrap="nowrap">
-          <Button variant="subtle" size="xs" leftSection={<IconPlus size={14} />} onClick={() => setAdding(true)}>
+          <Button variant="subtle" size="xs" leftSection={<IconPlus size={16} />} onClick={() => setAdding(true)}>
             <Trans>Add a rail</Trans>
           </Button>
           <Button variant="default" size="xs" onClick={onExit} disabled={save.isPending}>

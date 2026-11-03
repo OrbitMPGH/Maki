@@ -9,7 +9,7 @@ import {
   Switch,
   Text,
 } from '@mantine/core'
-import { IconTrash } from '@tabler/icons-react'
+import { IconTrash } from '../../lib/icons'
 import {
   useDeleteReadingGoal,
   useProgressSettings,

@@ -255,6 +255,14 @@ public class SeriesEmbeddingIndexer(
                 if (modelChanged)
                 {
                     store.SetModelVersion(options.ModelVersion);
+                    try
+                    {
+                        store.Compact();
+                    }
+                    catch (SqliteException ex)
+                    {
+                        logger.LogWarning(ex, "Embedding index compaction after the model change failed; the file keeps its old size");
+                    }
                 }
             }
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Badge, Button, Group, Stack, Text } from '@mantine/core'
-import { IconLock, IconUsers } from '@tabler/icons-react'
+import { IconLock, IconUsers } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { errorText } from '../../api/errorText'
 import { notePage, type NoteDto, type NotePatch } from '../../api/notes'

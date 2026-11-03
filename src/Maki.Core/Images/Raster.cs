@@ -49,6 +49,13 @@ public sealed class Raster
         Pixels = pixels;
     }
 
+    /// <summary>Takes <paramref name="pixels"/> as they are, without a copy.</summary>
+    internal static Raster Wrap(int width, int height, int bands, byte[] pixels)
+    {
+        if (pixels.Length != width * height * bands) throw new ArgumentException("Pixel count does not match the size", nameof(pixels));
+        return new Raster(width, height, bands, pixels);
+    }
+
     public Rgba this[int x, int y]
     {
         get

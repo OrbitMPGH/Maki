@@ -26,11 +26,11 @@ import {
   IconMinus,
   IconNote,
   IconPhotoSearch,
-  IconSparkles,
+  IconCircleArrowUp,
   IconTrash,
   IconTrashX,
   IconUsers,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import type { NoteCountDto } from '../../api/notes'
 import { queueErrorMessage } from '../../api/queue'
 import type { ChapterProgressDto, ChapterReadState } from '../../api/reader'
@@ -41,6 +41,7 @@ import type { SaveProgress } from '../../pwa/offlineChapters'
 import type { AnimeMarker, AnimeSpan } from '../../lib/animeCoverage'
 import { onPressKey, pressable } from '../../lib/pressable'
 import type { PickChapter } from '../SourceCompareModal'
+import { MetaList } from '../ui/MetaList'
 import { queueStatusVisual, statusColor } from '../ui/status'
 import { FileQualityBadge } from './FileQualityBadge'
 import { HoverTooltip } from './HoverTooltip'
@@ -90,6 +91,8 @@ type ChapterRowProps = {
   canDownload: boolean
   canDelete: boolean
   canFindBetterCopy: boolean
+  /** Why the actions that talk to a source are switched off (an archived series), or null while they work. */
+  sourceToolsDisabledReason?: string | null
   /** This browser can keep chapters for offline reading (a secure context with a service worker). */
   canSaveOffline: boolean
   /** This device's copy of the chapter, if it keeps one. */
@@ -120,6 +123,7 @@ export const ChapterRow = memo(function ChapterRow({
   canDownload,
   canDelete,
   canFindBetterCopy,
+  sourceToolsDisabledReason = null,
   canSaveOffline,
   offline,
   offlineSaving,
@@ -210,11 +214,11 @@ export const ChapterRow = memo(function ChapterRow({
                             span
                                 ? marker.kind === 'start'
                                     ? folded
-                                        ? t`${markerLabel} Anime adaptation starts here · click to expand`
-                                        : t`${markerLabel} Anime adaptation starts here · click to collapse`
+                                        ? t`${markerLabel} Anime adaptation starts here. Click to expand.`
+                                        : t`${markerLabel} Anime adaptation starts here. Click to collapse.`
                                     : folded
-                                        ? t`${markerLabel} Anime adaptation ends here · click to expand`
-                                        : t`${markerLabel} Anime adaptation ends here · click to collapse`
+                                        ? t`${markerLabel} Anime adaptation ends here. Click to expand.`
+                                        : t`${markerLabel} Anime adaptation ends here. Click to collapse.`
                                 : marker.kind === 'start'
                                     ? t`${markerLabel} Anime adaptation starts here`
                                     : t`${markerLabel} Anime adaptation ends here`
@@ -481,11 +485,15 @@ export const ChapterRow = memo(function ChapterRow({
                 </HoverTooltip>
             )}
             {!c.hasFile && canDownload && (
-                <HoverTooltip label={t`Download this chapter`} withArrow>
+                <HoverTooltip label={sourceToolsDisabledReason ?? t`Download this chapter`} withArrow>
                   <LightActionIcon
                       variant="subtle"
                       color="brand"
-                      onClick={() => actions.download(c.id, chapterLbl)}
+                      data-disabled={sourceToolsDisabledReason !== null || undefined}
+                      aria-disabled={sourceToolsDisabledReason !== null || undefined}
+                      onClick={() => {
+                        if (sourceToolsDisabledReason === null) actions.download(c.id, chapterLbl)
+                      }}
                       aria-label={t`Download ${chapterLbl}`}
                   >
                     <IconDownload size={17} />
@@ -506,7 +514,7 @@ export const ChapterRow = memo(function ChapterRow({
                   <Menu.Dropdown>
                     {canSaveOffline && (!offline || offline.state === 'error') && (
                         <Menu.Item
-                            leftSection={<IconDeviceMobileDown size={14} />}
+                            leftSection={<IconDeviceMobileDown size={16} />}
                             onClick={() => actions.saveOffline(c.id)}
                         >
                           <Trans>Save for offline</Trans>
@@ -514,7 +522,7 @@ export const ChapterRow = memo(function ChapterRow({
                     )}
                     {canSaveOffline && offline && (
                         <Menu.Item
-                            leftSection={<IconDeviceMobileOff size={14} />}
+                            leftSection={<IconDeviceMobileOff size={16} />}
                             onClick={() => actions.removeOffline(c.id)}
                         >
                           <Trans>Remove from this device</Trans>
@@ -522,35 +530,48 @@ export const ChapterRow = memo(function ChapterRow({
                     )}
                     {canSaveOffline && (canDownload || canDelete) && <Menu.Divider />}
                     {canDownload && c.number !== null && canFindBetterCopy && !removing && (
+                        <Tooltip label={sourceToolsDisabledReason} position="left" withArrow disabled={sourceToolsDisabledReason === null} events={{ hover: true, focus: true, touch: true }}>
                         <Menu.Item
-                            leftSection={<IconPhotoSearch size={14} />}
-                            onClick={() =>
-                                actions.pickChapter({
-                                  id: c.id,
-                                  number: c.number!,
-                                  label: chapterLbl,
-                                  currentSourceName: c.fileSourceName,
-                                })
-                            }
+                            leftSection={<IconPhotoSearch size={16} />}
+                            data-disabled={sourceToolsDisabledReason !== null || undefined}
+                            aria-disabled={sourceToolsDisabledReason !== null || undefined}
+                            closeMenuOnClick={sourceToolsDisabledReason === null}
+                            onClick={() => {
+                              if (sourceToolsDisabledReason !== null) return
+                              actions.pickChapter({
+                                id: c.id,
+                                number: c.number!,
+                                label: chapterLbl,
+                                currentSourceName: c.fileSourceName,
+                              })
+                            }}
                         >
                           <Trans>Find better copy</Trans>
                         </Menu.Item>
+                        </Tooltip>
                     )}
                     {canDownload && !removing && (
+                    <Tooltip label={sourceToolsDisabledReason} position="left" withArrow disabled={sourceToolsDisabledReason === null} events={{ hover: true, focus: true, touch: true }}>
                     <Menu.Item
-                        leftSection={upgradingThis ? <Loader size={14} /> : <IconSparkles size={14} />}
+                        leftSection={upgradingThis ? <Loader size={16} /> : <IconCircleArrowUp size={16} />}
                         disabled={upgradePending}
-                        onClick={() => actions.upgradeNow(c.id)}
+                        data-disabled={sourceToolsDisabledReason !== null || undefined}
+                        aria-disabled={sourceToolsDisabledReason !== null || undefined}
+                        closeMenuOnClick={sourceToolsDisabledReason === null}
+                        onClick={() => {
+                          if (sourceToolsDisabledReason === null) actions.upgradeNow(c.id)
+                        }}
                     >
                       <Trans>Upgrade now</Trans>
                     </Menu.Item>
+                    </Tooltip>
                     )}
                     {canDownload && c.fileQuality && (
                         <Menu.Item
                             leftSection={
                               c.fileQuality.trusted
-                                  ? <IconLockOpen size={14} />
-                                  : <IconLock size={14} />
+                                  ? <IconLockOpen size={16} />
+                                  : <IconLock size={16} />
                             }
                             onClick={() => actions.setTrusted(c.fileQuality!.fileId, !c.fileQuality!.trusted)}
                         >
@@ -564,7 +585,7 @@ export const ChapterRow = memo(function ChapterRow({
                           {canDownload && <Menu.Divider />}
                           <Menu.Item
                               color="var(--danger)"
-                              leftSection={<IconTrash size={14} />}
+                              leftSection={<IconTrash size={16} />}
                               onClick={() => actions.deleteFile(c.id)}
                           >
                             <Trans>Delete file</Trans>
@@ -666,8 +687,8 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
               label={
                 mixed
                     ? plural(total, {
-                        one: `${wantedCount} of # chapter wanted · click to want all`,
-                        other: `${wantedCount} of # chapters wanted · click to want all`,
+                        one: `${wantedCount} of # chapter wanted. Click to want all.`,
+                        other: `${wantedCount} of # chapters wanted. Click to want all.`,
                       })
                     : allWanted
                         ? plural(total, { one: 'All # chapter wanted', other: 'All # chapters wanted' })
@@ -679,7 +700,7 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
                 size="xs"
                 checked={allWanted}
                 classNames={mixed ? { track: 'chapter-span-wanted-mixed' } : undefined}
-                thumbIcon={mixed ? <IconMinus size={10} stroke={3} /> : undefined}
+                thumbIcon={mixed ? <IconMinus size={10} /> : undefined}
                 aria-label={plural(total, {
                   one: `Wanted for ${spanLabel}: ${wantedCount} of # chapter`,
                   other: `Wanted for ${spanLabel}: ${wantedCount} of # chapters`,
@@ -708,32 +729,19 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
           </Group>
         </Table.Td>
         <Table.Td>
-          <Text size="sm" c="var(--ink-3)" className="tnum">
-            {plural(total, {
-              one: `# chapter · ${downloadedCount} downloaded`,
-              other: `# chapters · ${downloadedCount} downloaded`,
-            })}
-            {watchedCount > 0 && (
-                <>
-                  {' · '}
-                  <Trans>{watchedCount} watched</Trans>
-                </>
-            )}
-            {readCount > 0 && (
-                <>
-                  {' · '}
-                  <Trans>{readCount} read</Trans>
-                </>
-            )}
-            {/* Spelled out only when the range disagrees with itself: the switch alone can show
-              that state but not its size, and hovering for a tooltip is a poor way to find out. */}
-            {mixed && (
-                <>
-                  {' · '}
-                  <Trans>{wantedCount} wanted</Trans>
-                </>
-            )}
-          </Text>
+          {/* Wanted is spelled out only when the range disagrees with itself: the switch alone can
+            show that state but not its size, and hovering for a tooltip is a poor way to find out. */}
+          <MetaList
+              className="tnum"
+              style={{ color: 'var(--ink-3)', fontSize: 'var(--mantine-font-size-sm)' }}
+              items={[
+                plural(total, { one: '# chapter', other: '# chapters' }),
+                t`${downloadedCount} downloaded`,
+                watchedCount > 0 && <Trans>{watchedCount} watched</Trans>,
+                readCount > 0 && <Trans>{readCount} read</Trans>,
+                mixed && <Trans>{wantedCount} wanted</Trans>,
+              ]}
+          />
         </Table.Td>
         <Table.Td />
         <Table.Td />
@@ -759,26 +767,26 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
                   </Menu.Target>
                   <Menu.Dropdown>
                     <Menu.Item
-                        leftSection={<IconDeviceTv size={15} />}
+                        leftSection={<IconDeviceTv size={16} />}
                         onClick={() => actions.applyReadState(ids, 'watched')}
                     >
                       <Trans>Mark watched</Trans>
                     </Menu.Item>
                     <Menu.Item
-                        leftSection={<IconEyeCheck size={15} />}
+                        leftSection={<IconEyeCheck size={16} />}
                         onClick={() => actions.applyReadState(ids, 'read')}
                     >
                       <Trans>Mark read</Trans>
                     </Menu.Item>
                     <Menu.Item
-                        leftSection={<IconEyeOff size={15} />}
+                        leftSection={<IconEyeOff size={16} />}
                         onClick={() => actions.applyReadState(ids, 'unread')}
                     >
                       <Trans>Mark unread</Trans>
                     </Menu.Item>
                     <Menu.Divider />
                     <Menu.Item
-                        leftSection={<IconListCheck size={15} />}
+                        leftSection={<IconListCheck size={16} />}
                         onClick={() => actions.selectChapters(ids)}
                     >
                       <Trans>Select these chapters</Trans>

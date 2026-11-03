@@ -41,6 +41,7 @@ public class UpgradeTrashTests : IDisposable
         using var db = _world.Db.NewContext();
         var job = new HousekeepingJob(db, _world.Paths,
             new UpgradeTrashService(db, _world.Settings, NullLogger<UpgradeTrashService>.Instance),
+            new Maki.Api.Services.Upscaling.UpscaleCache(_world.Paths, _world.Settings, NullLogger<Maki.Api.Services.Upscaling.UpscaleCache>.Instance),
             NullLogger<HousekeepingJob>.Instance);
         await job.Execute(new TestJobContext());
     }

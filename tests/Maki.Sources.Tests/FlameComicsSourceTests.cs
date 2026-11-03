@@ -5,8 +5,10 @@ namespace Maki.Sources.Tests;
 
 public class FlameComicsSourceTests
 {
+    private static string ChallengePage() => FakeHttpClientFactory.Fixture("cloudflare-challenge.html");
+
     private static FlameComicsSource SourceFor(Dictionary<string, string> responses) =>
-        new(new FakeHttpClientFactory(responses));
+        new(new FakeHtmlFetcher(responses));
 
     private static FlameComicsSource WithCatalog() =>
         SourceFor(new() { ["browse"] = FakeHttpClientFactory.Fixture("flamecomics-browse.html") });
@@ -24,6 +26,36 @@ public class FlameComicsSourceTests
         Assert.Equal("Omniscient Reader's Viewpoint", hit.Title);
         Assert.Equal("https://flamecomics.xyz/series/2", hit.Url);
         Assert.StartsWith("https://cdn.flamecomics.xyz/uploads/images/series/2/thumbnail", hit.CoverUrl);
+    }
+
+    [Fact]
+    public async Task Search_reads_the_catalog_from_the_absolute_browse_url()
+    {
+        var fetcher = new FakeHtmlFetcher(new() { ["browse"] = FakeHttpClientFactory.Fixture("flamecomics-browse.html") });
+
+        await new FlameComicsSource(fetcher).SearchAsync("omniscient reader");
+
+        Assert.Equal("https://flamecomics.xyz/browse", Assert.Single(fetcher.Requested));
+    }
+
+    [Fact]
+    public async Task Search_throws_on_a_challenge_page_rather_than_an_empty_catalog()
+    {
+        var source = SourceFor(new() { ["browse"] = ChallengePage() });
+
+        var ex = await Assert.ThrowsAsync<SourceErrorException>(() => source.SearchAsync("omniscient reader"));
+
+        Assert.Contains("challenge", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ListChapters_throws_on_a_challenge_page_rather_than_reading_no_chapters()
+    {
+        var source = SourceFor(new() { ["series/2"] = ChallengePage() });
+
+        var ex = await Assert.ThrowsAsync<SourceErrorException>(() => source.ListChaptersAsync("2"));
+
+        Assert.Contains("challenge", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

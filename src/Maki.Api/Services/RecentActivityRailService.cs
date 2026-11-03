@@ -245,6 +245,7 @@ public class RecentActivityRailService(
         // you read X" would put a title the user asked to leave no trace of on the front page.
         // ScrobbleOnly is kept — it already counts in Rewind and read history.
         var visible = await db.Series
+            .Active()
             .Where(s => candidates.Contains(s.Id)
                         && s.MangaBakaId != null
                         && s.Incognito != IncognitoMode.Full)

@@ -1,6 +1,7 @@
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
+using Maki.Sources.Custom;
 using Maki.Sources.Suwayomi;
 
 namespace Maki.Api.Services;
@@ -83,6 +84,8 @@ public class SourceAvailability(IAppSettings settings, SourceRegistry sourceRegi
     /// <c>SearchController.ListSources</c>, which reports it per source without disabling anything.
     /// </summary>
     public static bool DefaultsOn(ISource source, string instanceLanguage) =>
+        // An admin created a custom source on purpose, whatever its language.
+        source is CustomSource or InvalidCustomSource ||
         // English always defaults on (today's behaviour for the thirteen English-only sources);
         // a non-English source also defaults on when it matches the instance's own language.
         source is not SuwayomiSource &&

@@ -214,7 +214,7 @@ public sealed class TextEmbedder(
     /// reports whether it did.
     ///
     /// <para>
-    /// The default model is ~240 MB resident and was held for the life of the process once anything
+    /// The default model is ~140 MB resident and was held for the life of the process once anything
     /// touched it — a single natural-language search, or one local indexing pass — even though a
     /// self-hosted instance spends nearly all its time embedding nothing. Recommendations do not
     /// need it at all: they score seed vectors that already sit in the index, so only a typed query
@@ -333,30 +333,12 @@ public sealed class TextEmbedder(
     }
 
     /// <summary>
-    /// ONNX Runtime's intra-op threads spin between work items by default, which on an always-on
-    /// NAS reads as CPU burned while an indexing pass waits on the dump between batches.
+    /// No arena (see <see cref="OnnxMemoryOptions"/>) and two threads, which a 20-token query cannot
+    /// keep busy anyway. A local indexing batch gets several times slower on a many-core host; the
+    /// prebuilt artifact covers most installs, and only series it lacks are indexed here.
     /// </summary>
-    private static SessionOptions CpuSessionOptions()
-    {
-        var sessionOptions = new SessionOptions();
-        sessionOptions.AddSessionConfigEntry("session.intra_op.allow_spinning", "0");
-        return sessionOptions;
-    }
-
-    /// <summary>
-    /// The CPU arena otherwise keeps the high-water mark of the largest batch it has run (a full
-    /// batch of 512-token passages) until the session is disposed. Shrinking after each batch run hands
-    /// that back between batches and costs a fresh allocation per batch. A single query embed is
-    /// tiny and frequent, so it skips the shrink.
-    /// </summary>
-    private static readonly RunOptions CpuRunOptions = CreateCpuRunOptions();
-
-    private static RunOptions CreateCpuRunOptions()
-    {
-        var runOptions = new RunOptions();
-        runOptions.AddRunConfigEntry("memory.enable_memory_arena_shrinkage", "cpu:0");
-        return runOptions;
-    }
+    private static SessionOptions CpuSessionOptions() =>
+        OnnxMemoryOptions.Create(Math.Min(2, Environment.ProcessorCount), fixedShapes: false);
 
     /// <summary>
     /// Builds the tokenizer the model's vocabulary needs. Three families, none interchangeable: the
@@ -428,13 +410,11 @@ public sealed class TextEmbedder(
         return buffer;
     }
 
-    /// <summary>Embeds one text, typically a search query. Leaves the CPU arena as it is rather than shrinking it.</summary>
-    public float[] Embed(string text) => EmbedBatch([text], shrinkArena: false)[0];
+    /// <summary>Embeds one text, typically a search query.</summary>
+    public float[] Embed(string text) => EmbedBatch([text])[0];
 
     /// <summary>Embeds a batch in one forward pass; sequences are padded to the batch's longest.</summary>
-    public float[][] EmbedBatch(IReadOnlyList<string> texts) => EmbedBatch(texts, shrinkArena: true);
-
-    private float[][] EmbedBatch(IReadOnlyList<string> texts, bool shrinkArena)
+    public float[][] EmbedBatch(IReadOnlyList<string> texts)
     {
         // The read lock is what makes ReleaseIfIdle safe: the session cannot be disposed while any
         // pass holds it. Stamping on the way out rather than the way in means a long indexing pass
@@ -451,7 +431,7 @@ public sealed class TextEmbedder(
             {
                 if (_session is not null && _tokenizer is not null)
                 {
-                    return EmbedBatchCore(texts, shrinkArena);
+                    return EmbedBatchCore(texts);
                 }
             }
             finally
@@ -467,7 +447,7 @@ public sealed class TextEmbedder(
         }
     }
 
-    private float[][] EmbedBatchCore(IReadOnlyList<string> texts, bool shrinkArena)
+    private float[][] EmbedBatchCore(IReadOnlyList<string> texts)
     {
         if (_session is null || _tokenizer is null)
         {
@@ -535,15 +515,16 @@ public sealed class TextEmbedder(
         var pooled = options.Model.Pooling == EmbeddingPooling.Pooled;
         var outputName = pooled ? PooledOutput : HiddenStateOutput;
         using var results = ActiveProvider == EmbeddingProvider.Cpu
-            ? (shrinkArena
-                ? _session.Run(inputs, [outputName], CpuRunOptions)
-                : _session.Run(inputs, [outputName]))
+            ? _session.Run(inputs, [outputName])
             : _session.Run(inputs);
         // Both supported precisions emit a float tensor: int8 models are QDQ graphs that dequantize
         // before the output, and fp32 is float by definition. See EmbeddingPrecision for why there
         // is no half-precision case to handle here.
         var output = results.First(r => r.Name == outputName).AsTensor<float>();
         var dim = output.Dimensions[^1];
+        // A Matryoshka-trained model keeps its leading dimensions meaningful on their own, so a
+        // profile narrower than the graph takes those and renormalizes.
+        var width = Math.Min(dim, options.Dimensions);
         var mean = options.Model.Pooling == EmbeddingPooling.Mean;
 
         // The multi-index indexer on Tensor<T> takes a params array, so reading element by element
@@ -553,14 +534,14 @@ public sealed class TextEmbedder(
 
         if (pooled)
         {
-            // Already [batch, dim] and already unit length; the normalize below is a no-op kept for
-            // the invariant rather than for the arithmetic. Masking happened inside the graph, so
-            // padding is handled there and the row lengths are not needed here.
+            // Already [batch, dim] and unit length, so the normalize below only matters when the
+            // profile truncates. Masking happened inside the graph, so padding is handled there
+            // and the row lengths are not needed here.
             var done = new float[batch][];
             for (var b = 0; b < batch; b++)
             {
-                var vec = new float[dim];
-                for (var h = 0; h < dim; h++)
+                var vec = new float[width];
+                for (var h = 0; h < width; h++)
                 {
                     vec[h] = data[(b * dim) + h];
                 }
@@ -575,7 +556,7 @@ public sealed class TextEmbedder(
         var vectors = new float[batch][];
         for (var b = 0; b < batch; b++)
         {
-            var vec = new float[dim];
+            var vec = new float[width];
             if (options.Model.Pooling == EmbeddingPooling.LastToken)
             {
                 // The final REAL token, not the final padded one. Sequences are right-padded to the
@@ -583,7 +564,7 @@ public sealed class TextEmbedder(
                 // longest - and in a causal model only the last real position has attended to the
                 // whole sequence, which is the entire reason this pooling exists.
                 var last = rows[b].Length - 1;
-                for (var h = 0; h < dim; h++)
+                for (var h = 0; h < width; h++)
                 {
                     vec[h] = data[(((b * seq) + last) * dim) + h];
                 }
@@ -596,20 +577,20 @@ public sealed class TextEmbedder(
                 var length = rows[b].Length;
                 for (var t = 0; t < length; t++)
                 {
-                    for (var h = 0; h < dim; h++)
+                    for (var h = 0; h < width; h++)
                     {
                         vec[h] += data[(((b * seq) + t) * dim) + h];
                     }
                 }
 
-                for (var h = 0; h < dim; h++)
+                for (var h = 0; h < width; h++)
                 {
                     vec[h] /= length;
                 }
             }
             else
             {
-                for (var h = 0; h < dim; h++)
+                for (var h = 0; h < width; h++)
                 {
                     vec[h] = data[b * seq * dim + h]; // CLS token = position 0
                 }
@@ -642,6 +623,15 @@ public sealed class TextEmbedder(
     {
         BertTokenizer bert => bert.EncodeToIds(text, addSpecialTokens: true),
         _ => tokenizer.EncodeToIds(text),
+    };
+
+    /// <summary>A SentencePiece id in XLM-R's fairseq layout. See <see cref="EmbeddingModelProfile.FairseqTokenIds"/>.</summary>
+    internal static long FairseqId(int id) => id switch
+    {
+        0 => 3,
+        1 => 0,
+        2 => 2,
+        _ => id + 1L,
     };
 
     private IReadOnlyList<int> Encode(string text) => _tokenizer is { } t
@@ -682,10 +672,16 @@ public sealed class TextEmbedder(
             count = Math.Min(ids.Count, options.MaxTokens - 1);
         }
 
+        var fairseq = options.Model.FairseqTokenIds;
         var tokens = new long[isDecoder ? count + 1 : Math.Max(count, 2)];
         for (var i = 0; i < count; i++)
         {
-            tokens[i] = ids[i];
+            tokens[i] = fairseq ? FairseqId(ids[i]) : ids[i];
+        }
+
+        if (fairseq && ids.Count > options.MaxTokens)
+        {
+            tokens[count - 1] = options.Model.EndOfSequenceToken;
         }
 
         if (isDecoder)

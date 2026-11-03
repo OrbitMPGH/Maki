@@ -225,6 +225,23 @@ public sealed class ReaderArchiveCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task A_page_list_with_no_pages_is_read_again_once_its_short_lifetime_is_up()
+    {
+        var path = WriteZip("h/ch.cbz", ("readme.txt", "no pages"));
+        var cache = NewCache();
+        var size = new FileInfo(path).Length;
+
+        Assert.Empty((await cache.GetAsync(14, size, path)).Pages);
+        Assert.Empty((await cache.GetAsync(14, size, path)).Pages);
+        Assert.Equal(1, cache.Loads);
+
+        _clock.Advance(ReaderArchiveCache.EmptyEntryLifetime);
+        await cache.GetAsync(14, size, path);
+
+        Assert.Equal(2, cache.Loads);
+    }
+
+    [Fact]
     public async Task A_page_of_a_file_that_vanished_is_unreadable_not_an_error()
     {
         var cache = NewCache();

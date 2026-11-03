@@ -221,11 +221,12 @@ public class EmbeddingMathTests
     }
 
     /// <summary>
-    /// Widths chosen around the vector lane boundary: 512 is the narrowest that packs at all, 768
-    /// is what ships, and 520 and 1025 land mid-lane and odd so the scalar tail and the odd-element
-    /// case are both exercised rather than assumed.
+    /// Widths chosen around the vector lane boundary: 256 is the narrowest that packs at all and
+    /// what ships, 512 and 768 are whole lanes, and 520 and 1025 land mid-lane and odd so the scalar
+    /// tail and the odd-element case are both exercised rather than assumed.
     /// </summary>
     [Theory]
+    [InlineData(256)]
     [InlineData(512)]
     [InlineData(520)]
     [InlineData(768)]
@@ -288,13 +289,17 @@ public class EmbeddingMathTests
     /// this is pinned by measurement rather than by a round number: the eval is what established
     /// that the ranking does not care (nDCG@40 within [-0.0013, +0.0002] of int8 over 400 requests
     /// on an independent grader), and this only has to catch a codec change that made it worse.
+    /// The averaged error grows as one over the square root of the width, so the bounds scale with
+    /// it; 256 is the width that ships and measured free in the eval as well.
     /// </para>
     /// </summary>
-    [Fact]
-    public void PackQuantized_KeepsTheCosineCloseEnoughToRank()
+    [Theory]
+    [InlineData(768)]
+    [InlineData(256)]
+    public void PackQuantized_KeepsTheCosineCloseEnoughToRank(int Dimensions)
     {
         var rng = new Random(7);
-        const int Dimensions = 768;
+        var widen = MathF.Sqrt(768f / Dimensions);
         var errors = new List<float>();
 
         for (var pair = 0; pair < 200; pair++)
@@ -324,7 +329,7 @@ public class EmbeddingMathTests
             errors.Add(Math.Abs(packedCosine - int8Cosine));
         }
 
-        Assert.True(errors.Average() < 0.008f, $"mean absolute cosine error {errors.Average()}");
-        Assert.True(errors.Max() < 0.02f, $"worst absolute cosine error {errors.Max()}");
+        Assert.True(errors.Average() < 0.008f * widen, $"mean absolute cosine error {errors.Average()}");
+        Assert.True(errors.Max() < 0.02f * widen, $"worst absolute cosine error {errors.Max()}");
     }
 }

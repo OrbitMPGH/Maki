@@ -20,9 +20,10 @@ public record FeedbackState(long MangaBakaId, string Suppression, string[] Expos
     string? CoverUrl = null, string[]? Genres = null, DateTime? UpdatedAtUtc = null);
 /// <summary>Catalogue fields the lab surfaces need for a title it already knows the id of.</summary>
 public record CatalogueEntry(string Title, string? CoverUrl, string[] Genres);
+/// <param name="ShortlistRemoved">A hide or thumbs down took the caller's shortlist entry for the title away.</param>
 public record FeedbackMutation(bool Changed, long? EventId, FeedbackState State,
     long FeedbackRevision, long SignalRevision, string QueueEffect, string TasteEffect,
-    string FeedbackEffect = "none");
+    string FeedbackEffect = "none", bool ShortlistRemoved = false);
 public record FeedbackPage<T>(IReadOnlyList<T> Items, long? NextCursor, long FeedbackRevision, long SignalRevision);
 public record FeedbackActivity(long Id, long MangaBakaId, string? Title, string Action,
     DateTime OccurredAtUtc, long StateRevision, DateTime? DismissedUntilUtc,
@@ -33,7 +34,7 @@ public record SignalOverrideMutation(bool Changed, SignalOverrideState State, lo
 public record FranchiseFeedbackCommand(string Action, Guid ClientMutationId);
 public record FranchiseFeedbackTitle(long MangaBakaId, string? Title);
 public record FranchiseFeedbackResult(int Changed, IReadOnlyList<FranchiseFeedbackTitle> Titles,
-    long FeedbackRevision, int Skipped = 0);
+    long FeedbackRevision, int Skipped = 0, bool ShortlistRemoved = false);
 /// <summary>
 /// A failure this service reports to a caller, carrying the catalogue key rather than a sentence.
 /// The service has no request locale of its own worth spending here and the controller already
@@ -298,14 +299,17 @@ public class RecommendationFeedbackService(
     }
 
     public Task<FeedbackMutation> MutateAsync(int userId, long id, FeedbackCommand command,
-        CancellationToken ct = default) => MutateAsync(userId, id, command, verified: null, ct);
+        CancellationToken ct = default) => MutateAsync(userId, id, command, verified: null, shortlistKeys: null, ct);
 
     /// <param name="verified">
     /// The title when the caller already resolved it through <see cref="VisibleTitlesAsync"/>, which
     /// applies the same existence and content-ceiling checks the detail read would.
     /// </param>
+    /// <param name="shortlistKeys">
+    /// <see cref="ShortlistKeysAsync"/> for the user, so a franchise resolves the stored keys once.
+    /// </param>
     private async Task<FeedbackMutation> MutateAsync(int userId, long id, FeedbackCommand command,
-        CatalogueEntry? verified, CancellationToken ct)
+        CatalogueEntry? verified, IReadOnlyDictionary<int, long>? shortlistKeys, CancellationToken ct)
     {
         if (id <= 0 || command.ClientMutationId == Guid.Empty || command.ExpectedRevision < 0)
             throw new FeedbackValidationException("error.feedback.titleAndRevisionRequired");
@@ -362,6 +366,23 @@ public class RecommendationFeedbackService(
             db.Entry(state).State = EntityState.Detached;
         }
 
+        // Saved by whichever SaveChanges below runs first. Undo does not put the entry back. An entry
+        // stored under an id since merged into this one goes too, since cards only know this id.
+        var shortlistRemoved = false;
+        if (action is "hide" or "dislike")
+        {
+            shortlistKeys ??= await ShortlistKeysAsync(userId, ct);
+            var stored = shortlistKeys.Where(k => k.Value == id).Select(k => k.Key).ToList();
+            if (stored.Count > 0)
+            {
+                var shortlisted = await db.ShortlistEntries
+                    .Where(x => x.UserId == userId && stored.Contains(x.MangaBakaId))
+                    .ToListAsync(ct);
+                db.ShortlistEntries.RemoveRange(shortlisted);
+                shortlistRemoved = shortlisted.Count > 0;
+            }
+        }
+
         RecommendationFeedbackEvent? evt = null;
         if (changed)
         {
@@ -397,7 +418,8 @@ public class RecommendationFeedbackService(
                 "dismiss" => "temporary",
                 "mark-exposed" => "neutral-exposure",
                 _ => "cleared"
-            } : "none");
+            } : "none",
+            shortlistRemoved);
         db.RecommendationMutationReceipts.Add(new RecommendationMutationReceipt
         {
             UserId = userId, ClientMutationId = command.ClientMutationId, Operation = "feedback",
@@ -453,6 +475,8 @@ public class RecommendationFeedbackService(
             .ToDictionaryAsync(x => x.ProviderId, ct);
         var changed = new List<FranchiseFeedbackTitle>();
         var skipped = 0;
+        var shortlistRemoved = false;
+        var shortlistKeys = await ShortlistKeysAsync(userId, ct);
         var revision = (await VersionsAsync(userId, ct)).FeedbackRevision;
         foreach (var member in wanted.Where(visible.ContainsKey))
         {
@@ -462,8 +486,9 @@ public class RecommendationFeedbackService(
             {
                 var result = await MutateAsync(userId, member,
                     new FeedbackCommand(verb, Derive(clientMutationId, member), current?.Revision ?? 0),
-                    visible[member], ct);
+                    visible[member], shortlistKeys, ct);
                 revision = result.FeedbackRevision;
+                shortlistRemoved |= result.ShortlistRemoved;
                 if (result.Changed) changed.Add(new FranchiseFeedbackTitle(member, result.State.Title));
             }
             catch (Exception ex) when (member != id && ex is FeedbackConflictException or FeedbackValidationException)
@@ -474,7 +499,24 @@ public class RecommendationFeedbackService(
             }
         }
 
-        return new FranchiseFeedbackResult(changed.Count, changed, revision, skipped);
+        return new FranchiseFeedbackResult(changed.Count, changed, revision, skipped, shortlistRemoved);
+    }
+
+    /// <summary>
+    /// The user's shortlist keys, each with the canonical id it resolves to now (itself when the dump
+    /// has no merge for it). Resolution only, no ceiling.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<int, long>> ShortlistKeysAsync(int userId, CancellationToken ct)
+    {
+        var keys = await db.ShortlistEntries.AsNoTracking()
+            .Where(x => x.UserId == userId).Select(x => x.MangaBakaId).ToListAsync(ct);
+        if (keys.Count == 0)
+        {
+            return new Dictionary<int, long>();
+        }
+
+        var canonical = await catalogue.ResolveCanonicalIdsAsync(keys.Select(k => (long)k).ToList(), ct);
+        return keys.ToDictionary(k => k, k => canonical.GetValueOrDefault(k, k));
     }
 
     /// <summary>

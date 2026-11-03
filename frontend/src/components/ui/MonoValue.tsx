@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
-import { IconCheck, IconCopy } from '@tabler/icons-react'
+import { IconCheck, IconCopy } from '../../lib/icons'
 import { useLingui } from '@lingui/react/macro'
 import { useCopyText } from './useCopyText'
 

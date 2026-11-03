@@ -6,7 +6,7 @@ import {
   IconDeviceMobileCheck,
   IconEye,
   IconEyeOff,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import type { OfflineAvailability } from './CoverCard'

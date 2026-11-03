@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Anchor, Button, Group, NumberInput, Paper, Stack, Text } from '@mantine/core'
-import { IconDeviceTv } from '@tabler/icons-react'
+import { IconDeviceTv } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { AnimeResume, SeriesAnimeResume } from '../../api/animeResume'

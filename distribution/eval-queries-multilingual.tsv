@@ -1,0 +1,216 @@
+# Thirty of eval-queries.tsv's `premise` searches, each in English and six of the languages the
+# app ships in. The class is the language. Same labels as eval-queries.tsv, and every indexed
+# passage is English, so a non-English hit is cross-lingual retrieval. The translations avoid
+# the series' own title words, so a hit cannot be name matching.
+#
+# Format: <query> TAB <expected MangaBaka title> TAB <language>
+humanity lives behind giant walls to hide from man-eating giants	Attack on Titan	en
+Menschheit lebt hinter riesigen Mauern, um sich vor menschenfressenden Riesen zu verstecken	Attack on Titan	de
+la humanidad vive tras enormes murallas para esconderse de gigantes devoradores de hombres	Attack on Titan	es
+l'humanité vit derrière d'immenses murs pour se cacher de géants mangeurs d'hommes	Attack on Titan	fr
+人を食う巨人から身を守るため巨大な壁の中で暮らす人類	Attack on Titan	ja
+사람을 잡아먹는 거인을 피해 거대한 벽 안에서 사는 인류	Attack on Titan	ko
+人类躲在巨大的城墙后面躲避吃人的巨人	Attack on Titan	zh
+boy finds a notebook that kills anyone whose name is written in it	Death Note	en
+Junge findet ein Notizbuch, das jeden tötet, dessen Name hineingeschrieben wird	Death Note	de
+un chico encuentra un cuaderno que mata a cualquiera cuyo nombre se escriba en él	Death Note	es
+un garçon trouve un carnet qui tue toute personne dont le nom y est écrit	Death Note	fr
+名前を書かれた人間が死ぬノートを拾った少年	Death Note	ja
+이름을 적으면 그 사람이 죽는 노트를 주운 소년	Death Note	ko
+少年捡到一本写上名字就会让人死去的笔记本	Death Note	zh
+two brothers lose their bodies in a failed alchemy ritual	Fullmetal Alchemist	en
+zwei Brüder verlieren bei einem misslungenen Alchemie-Ritual ihre Körper	Fullmetal Alchemist	de
+dos hermanos pierden sus cuerpos en un ritual de alquimia fallido	Fullmetal Alchemist	es
+deux frères perdent leur corps lors d'un rituel d'alchimie raté	Fullmetal Alchemist	fr
+錬成に失敗して体を失った兄弟	Fullmetal Alchemist	ja
+연금술 의식에 실패해 몸을 잃은 형제	Fullmetal Alchemist	ko
+炼成失败而失去身体的兄弟	Fullmetal Alchemist	zh
+boy whose sister was turned into a demon joins a corps of swordsmen	Demon Slayer: Kimetsu no Yaiba	en
+Junge, dessen Schwester in einen Dämon verwandelt wurde, tritt einem Korps von Schwertkämpfern bei	Demon Slayer: Kimetsu no Yaiba	de
+chico cuya hermana fue convertida en demonio se une a un cuerpo de espadachines	Demon Slayer: Kimetsu no Yaiba	es
+un garçon dont la sœur a été changée en démon rejoint un corps d'épéistes	Demon Slayer: Kimetsu no Yaiba	fr
+鬼にされた妹を救うため剣士の組織に入る少年	Demon Slayer: Kimetsu no Yaiba	ja
+여동생이 귀신으로 변해 버린 소년이 검사 조직에 들어간다	Demon Slayer: Kimetsu no Yaiba	ko
+妹妹变成了鬼的少年加入了剑士组织	Demon Slayer: Kimetsu no Yaiba	zh
+bald hero who defeats every enemy with a single punch	One-Punch Man	en
+glatzköpfiger Held, der jeden Gegner mit einem einzigen Schlag besiegt	One-Punch Man	de
+héroe calvo que derrota a cualquier enemigo de un solo puñetazo	One-Punch Man	es
+un héros chauve qui bat tous ses ennemis d'un seul coup de poing	One-Punch Man	fr
+どんな敵も一撃で倒すハゲのヒーロー	One-Punch Man	ja
+어떤 적이든 주먹 한 방에 쓰러뜨리는 대머리 히어로	One-Punch Man	ko
+一拳就能打倒任何敌人的光头英雄	One-Punch Man	zh
+short volleyball player who can jump incredibly high	Haikyu!!	en
+kleiner Volleyballspieler, der unglaublich hoch springen kann	Haikyu!!	de
+jugador de voleibol bajito que puede saltar increíblemente alto	Haikyu!!	es
+petit joueur de volley capable de sauter incroyablement haut	Haikyu!!	fr
+背は低いが驚異的なジャンプ力を持つバレーボール選手	Haikyu!!	ja
+키는 작지만 엄청나게 높이 뛰는 배구 선수	Haikyu!!	ko
+个子矮却能跳得特别高的排球选手	Haikyu!!	zh
+rubber boy sails to become king of the pirates	One Piece	en
+Gummijunge segelt los, um König der Piraten zu werden	One Piece	de
+chico de goma navega para convertirse en el rey de los piratas	One Piece	es
+un garçon en caoutchouc prend la mer pour devenir le roi des pirates	One Piece	fr
+ゴム人間の少年が海賊王を目指して航海する	One Piece	ja
+고무 인간 소년이 해적왕이 되기 위해 항해한다	One Piece	ko
+橡胶人少年出海立志成为海贼王	One Piece	zh
+orphan ninja with a nine tailed fox sealed inside him	Naruto	en
+Waisen-Ninja, in dem ein neunschwänziger Fuchs versiegelt ist	Naruto	de
+ninja huérfano con un zorro de nueve colas sellado en su interior	Naruto	es
+un ninja orphelin dans lequel est scellé un renard à neuf queues	Naruto	fr
+体内に九尾の狐を封印された孤児の忍者	Naruto	ja
+몸속에 구미호가 봉인된 고아 닌자	Naruto	ko
+体内封印着九尾狐的孤儿忍者	Naruto	zh
+children discover their orphanage is a farm for demons	The Promised Neverland	en
+Kinder entdecken, dass ihr Waisenhaus eine Farm für Dämonen ist	The Promised Neverland	de
+niños descubren que su orfanato es una granja para demonios	The Promised Neverland	es
+des enfants découvrent que leur orphelinat est une ferme pour démons	The Promised Neverland	fr
+孤児院が実は鬼のための農園だと知った子供たち	The Promised Neverland	ja
+자신들의 고아원이 괴물들을 위한 농장이라는 사실을 알게 된 아이들	The Promised Neverland	ko
+孩子们发现孤儿院其实是为鬼准备的农场	The Promised Neverland	zh
+a lone mercenary branded for sacrifice hunts demons with a huge sword	Berserk	en
+ein einsamer Söldner, als Opfer gebrandmarkt, jagt Dämonen mit einem riesigen Schwert	Berserk	de
+un mercenario solitario marcado para el sacrificio caza demonios con una espada enorme	Berserk	es
+un mercenaire solitaire marqué pour le sacrifice chasse les démons avec une épée immense	Berserk	fr
+生贄の烙印を押された孤独な傭兵が巨大な剣で魔物を狩る	Berserk	ja
+제물의 낙인이 찍힌 고독한 용병이 거대한 검으로 악마를 사냥한다	Berserk	ko
+被打上祭品烙印的孤独佣兵挥舞巨剑猎杀恶魔	Berserk	zh
+viking boy seeks revenge for his father then renounces violence	Vinland Saga	en
+Wikingerjunge sinnt auf Rache für seinen Vater und schwört dann der Gewalt ab	Vinland Saga	de
+chico vikingo busca venganza por su padre y luego renuncia a la violencia	Vinland Saga	es
+un jeune viking cherche à venger son père puis renonce à la violence	Vinland Saga	fr
+父の仇を追うヴァイキングの少年がやがて暴力を捨てる	Vinland Saga	ja
+아버지의 복수를 꿈꾸던 바이킹 소년이 결국 폭력을 버린다	Vinland Saga	ko
+维京少年为父报仇，后来放弃了暴力	Vinland Saga	zh
+boy with a chainsaw devil heart works as a devil hunter	Chainsaw Man	en
+Junge mit dem Herz eines Kettensägenteufels arbeitet als Teufelsjäger	Chainsaw Man	de
+chico con el corazón de un demonio motosierra trabaja como cazador de demonios	Chainsaw Man	es
+un garçon au cœur de démon tronçonneuse travaille comme chasseur de démons	Chainsaw Man	fr
+チェーンソーの悪魔の心臓を持つ少年が悪魔狩りとして働く	Chainsaw Man	ja
+전기톱 악마의 심장을 가진 소년이 악마 사냥꾼으로 일한다	Chainsaw Man	ko
+拥有电锯恶魔心脏的少年当上了恶魔猎人	Chainsaw Man	zh
+delinquent time travels to save his girlfriend from a gang	Tokyo Revengers	en
+Ex-Rowdy reist in der Zeit zurück, um seine Freundin vor einer Gang zu retten	Tokyo Revengers	de
+un delincuente viaja en el tiempo para salvar a su novia de una pandilla	Tokyo Revengers	es
+un ancien voyou voyage dans le temps pour sauver sa petite amie d'un gang	Tokyo Revengers	fr
+不良だった男がタイムリープして暴走族から恋人を救う	Tokyo Revengers	ja
+불량배였던 남자가 시간을 거슬러 갱단으로부터 여자친구를 구한다	Tokyo Revengers	ko
+前不良少年穿越时空从帮派手中拯救女友	Tokyo Revengers	zh
+world where almost everyone has superpowers and one boy has none	My Hero Academia	en
+eine Welt, in der fast jeder Superkräfte hat, nur ein Junge nicht	My Hero Academia	de
+un mundo donde casi todos tienen superpoderes y un chico no tiene ninguno	My Hero Academia	es
+un monde où presque tout le monde a des super-pouvoirs sauf un garçon	My Hero Academia	fr
+ほとんどの人が超能力を持つ世界で一人だけ能力のない少年	My Hero Academia	ja
+거의 모두가 초능력을 가진 세상에서 혼자만 능력이 없는 소년	My Hero Academia	ko
+几乎人人都有超能力的世界里唯独一个少年没有	My Hero Academia	zh
+girl descends into a giant abyss to find her missing mother	Made in Abyss	en
+Mädchen steigt in einen riesigen Abgrund hinab, um ihre verschwundene Mutter zu finden	Made in Abyss	de
+niña desciende a un abismo gigante para encontrar a su madre desaparecida	Made in Abyss	es
+une fille descend dans un immense abîme pour retrouver sa mère disparue	Made in Abyss	fr
+行方不明の母を探して巨大な縦穴に潜る少女	Made in Abyss	ja
+실종된 엄마를 찾아 거대한 심연으로 내려가는 소녀	Made in Abyss	ko
+少女潜入巨大深渊寻找失踪的母亲	Made in Abyss	zh
+parasitic alien takes over a boy's right hand	Parasyte	en
+ein parasitärer Außerirdischer übernimmt die rechte Hand eines Jungen	Parasyte	de
+un alienígena parásito se apodera de la mano derecha de un chico	Parasyte	es
+un parasite extraterrestre prend le contrôle de la main droite d'un garçon	Parasyte	fr
+寄生生物に右手を乗っ取られた少年	Parasyte	ja
+기생 생물에게 오른손을 빼앗긴 소년	Parasyte	ko
+寄生生物占据了少年的右手	Parasyte	zh
+deaf girl bullied in elementary school reunites with her bully years later	A Silent Voice	en
+gehörloses Mädchen, in der Grundschule gemobbt, trifft Jahre später ihren Peiniger wieder	A Silent Voice	de
+chica sorda acosada en primaria se reencuentra años después con quien la acosaba	A Silent Voice	es
+une fille sourde harcelée à l'école primaire retrouve son harceleur des années plus tard	A Silent Voice	fr
+小学校でいじめられた耳の聞こえない少女が数年後にいじめた少年と再会する	A Silent Voice	ja
+초등학교 때 괴롭힘을 당한 청각장애 소녀가 몇 년 뒤 가해자와 다시 만난다	A Silent Voice	ko
+小学时被欺负的聋哑少女多年后与欺负她的人重逢	A Silent Voice	zh
+spiral shapes curse a small japanese town	Uzumaki	en
+Spiralen verfluchen eine japanische Kleinstadt	Uzumaki	de
+las espirales maldicen un pequeño pueblo japonés	Uzumaki	es
+des spirales maudissent une petite ville japonaise	Uzumaki	fr
+螺旋の形に呪われた小さな町	Uzumaki	ja
+나선 모양에 저주받은 일본의 작은 마을	Uzumaki	ko
+被螺旋形状诅咒的日本小镇	Uzumaki	zh
+teenage boxer trains from bullied kid to japanese champion	Hajime no Ippo	en
+gemobbter Junge trainiert als Boxer bis zum japanischen Meister	Hajime no Ippo	de
+un chico acosado entrena boxeo hasta llegar a campeón de Japón	Hajime no Ippo	es
+un ado harcelé devient boxeur et vise le titre de champion du Japon	Hajime no Ippo	fr
+いじめられっ子がボクシングで日本チャンピオンを目指す	Hajime no Ippo	ja
+괴롭힘당하던 소년이 복싱으로 일본 챔피언에 도전한다	Hajime no Ippo	ko
+被欺负的少年练习拳击成为日本冠军	Hajime no Ippo	zh
+tall delinquent joins the basketball team to impress a girl	Slam Dunk	en
+großer Rowdy tritt dem Basketballteam bei, um ein Mädchen zu beeindrucken	Slam Dunk	de
+un delincuente alto se une al equipo de baloncesto para impresionar a una chica	Slam Dunk	es
+un grand voyou rejoint l'équipe de basket pour impressionner une fille	Slam Dunk	fr
+好きな女の子の気を引くためバスケ部に入る長身の不良	Slam Dunk	ja
+좋아하는 여자아이에게 잘 보이려고 농구부에 들어간 키 큰 불량아	Slam Dunk	ko
+高个子不良少年为了打动女孩加入篮球队	Slam Dunk	zh
+street racer delivers tofu in the mountains at night	Initial D	en
+Straßenrennfahrer liefert nachts in den Bergen Tofu aus	Initial D	de
+corredor callejero reparte tofu por la montaña de noche	Initial D	es
+un pilote de rue livre du tofu dans les montagnes la nuit	Initial D	fr
+夜の峠で豆腐を配達する走り屋	Initial D	ja
+밤마다 산길에서 두부를 배달하는 스트리트 레이서	Initial D	ko
+深夜在山路上送豆腐的赛车手	Initial D	zh
+doctor hunts the serial killer he once saved as a child	Monster	en
+Arzt jagt den Serienmörder, dem er als Kind das Leben gerettet hat	Monster	de
+un médico persigue al asesino en serie al que salvó de niño	Monster	es
+un médecin traque le tueur en série qu'il a sauvé quand il était enfant	Monster	fr
+かつて命を救った子供が連続殺人鬼となり、その男を追う医師	Monster	ja
+어릴 적 목숨을 구해 준 아이가 연쇄살인범이 되자 그를 쫓는 의사	Monster	ko
+医生追查自己曾救过的那个孩子成长为的连环杀手	Monster	zh
+detective shrunk into a child's body keeps solving murders	Detective Conan	en
+Detektiv, der in den Körper eines Kindes geschrumpft ist, löst weiter Mordfälle	Detective Conan	de
+detective encogido al cuerpo de un niño sigue resolviendo asesinatos	Detective Conan	es
+un détective rajeuni dans un corps d'enfant continue de résoudre des meurtres	Detective Conan	fr
+体が子供になってしまった探偵が殺人事件を解決し続ける	Detective Conan	ja
+몸이 어린아이로 줄어든 탐정이 계속 살인 사건을 해결한다	Detective Conan	ko
+身体缩小成孩子的侦探继续破解杀人案	Detective Conan	zh
+students taken to an island and forced to kill each other	Battle Royale	en
+Schüler werden auf eine Insel gebracht und gezwungen, sich gegenseitig zu töten	Battle Royale	de
+estudiantes llevados a una isla y obligados a matarse entre ellos	Battle Royale	es
+des élèves emmenés sur une île et forcés de s'entretuer	Battle Royale	fr
+島に連れて行かれ殺し合いを強制される中学生たち	Battle Royale	ja
+섬으로 끌려가 서로 죽이도록 강요받는 학생들	Battle Royale	ko
+学生们被带到岛上被迫互相残杀	Battle Royale	zh
+spy an assassin and a telepath form a fake family	SPY×FAMILY	en
+ein Spion, eine Auftragsmörderin und eine Telepathin bilden eine falsche Familie	SPY×FAMILY	de
+un espía, una asesina y una telépata forman una familia falsa	SPY×FAMILY	es
+un espion, une tueuse et une télépathe forment une fausse famille	SPY×FAMILY	fr
+スパイと殺し屋と超能力者が偽の家族になる	SPY×FAMILY	ja
+스파이와 암살자와 독심술사가 가짜 가족을 이룬다	SPY×FAMILY	ko
+间谍、杀手和超能力者组成了假家庭	SPY×FAMILY	zh
+players trapped in a death game inside a virtual mmo	Sword Art Online	en
+Spieler sind in einem tödlichen Spiel in einem virtuellen MMO gefangen	Sword Art Online	de
+jugadores atrapados en un juego mortal dentro de un MMO virtual	Sword Art Online	es
+des joueurs piégés dans un jeu mortel au sein d'un MMO virtuel	Sword Art Online	fr
+VRMMOのデスゲームに閉じ込められたプレイヤーたち	Sword Art Online	ja
+가상현실 MMO의 데스 게임에 갇힌 플레이어들	Sword Art Online	ko
+玩家被困在虚拟网游的死亡游戏中	Sword Art Online	zh
+man sent back in time as a child to prevent a series of murders	Erased	en
+Mann wird als Kind in die Vergangenheit zurückgeschickt, um eine Mordserie zu verhindern	Erased	de
+un hombre regresa en el tiempo a su infancia para impedir una serie de asesinatos	Erased	es
+un homme renvoyé dans son enfance pour empêcher une série de meurtres	Erased	fr
+連続殺人を防ぐため子供時代に戻った男	Erased	ja
+연쇄 살인을 막기 위해 어린 시절로 돌아간 남자	Erased	ko
+男人回到童年去阻止一连串谋杀案	Erased	zh
+two girls ride a motorbike through the ruins of a dead civilisation	Girls' Last Tour	en
+zwei Mädchen fahren auf einem Motorrad durch die Ruinen einer untergegangenen Zivilisation	Girls' Last Tour	de
+dos chicas recorren en moto las ruinas de una civilización muerta	Girls' Last Tour	es
+deux filles traversent à moto les ruines d'une civilisation disparue	Girls' Last Tour	fr
+滅びた文明の廃墟をバイクで旅する二人の少女	Girls' Last Tour	ja
+멸망한 문명의 폐허를 오토바이로 여행하는 두 소녀	Girls' Last Tour	ko
+两个少女骑着摩托车穿行于灭亡文明的废墟	Girls' Last Tour	zh
+travelling doctor treats supernatural organisms in old japan	Mushishi	en
+reisender Heiler behandelt übernatürliche Lebewesen im alten Japan	Mushishi	de
+un médico itinerante trata organismos sobrenaturales en el antiguo Japón	Mushishi	es
+un médecin itinérant soigne des organismes surnaturels dans le Japon d'autrefois	Mushishi	fr
+昔の日本を旅しながら不思議な生命体が引き起こす病を治す男	Mushishi	ja
+옛 일본을 떠돌며 초자연적인 생명체로 인한 병을 치료하는 남자	Mushishi	ko
+在古代日本旅行、治疗超自然生物引发怪病的医生	Mushishi	zh
+class of students trying to assassinate their own teacher	Assassination Classroom	en
+eine Schulklasse versucht, ihren eigenen Lehrer zu ermorden	Assassination Classroom	de
+una clase de alumnos intenta asesinar a su propio profesor	Assassination Classroom	es
+une classe d'élèves tente d'assassiner son propre professeur	Assassination Classroom	fr
+担任教師の暗殺を命じられた生徒たち	Assassination Classroom	ja
+담임 선생님을 암살하려는 반 학생들	Assassination Classroom	ko
+一班学生试图暗杀自己的老师	Assassination Classroom	zh

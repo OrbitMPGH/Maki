@@ -9,7 +9,7 @@ import {
   Stack,
   Text,
 } from '@mantine/core'
-import { IconAdjustmentsHorizontal, IconBell, IconBellCheck } from '@tabler/icons-react'
+import { IconAdjustmentsHorizontal, IconBell, IconBellCheck } from '../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import {
@@ -31,6 +31,7 @@ import {
   useLiveApply,
 } from '../components/CatalogueFilters'
 import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
+import type { ShortlistSource } from '../api/shortlist'
 import { CREDIT_ROLE_LABELS } from '../components/CreditPicker'
 import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
@@ -97,6 +98,7 @@ export default function CreatorPage() {
     setPages(1)
   }, [filtersAsMounted, applied, setPages])
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
+  const savedFrom = useMemo<ShortlistSource>(() => ({ savedFrom: 'creator', savedFromDetail: decoded }), [decoded])
 
   // Clicking a credit on this page navigates to the same route with a different name, so React
   // Router re-renders rather than unmounting and the previous creator's modal would otherwise
@@ -297,7 +299,7 @@ export default function CreatorPage() {
 
       {items.length > 0 && (
         <>
-          <Results items={items} prefs={prefs} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+          <Results items={items} prefs={prefs} seriesIdFor={seriesIdFor} onOpen={setDetailItem} savedFrom={savedFrom} />
           {canLoadMore && (
             <Group justify="center" mt="lg">
               <Button variant="default" loading={isFetching} onClick={() => setPages((p) => p + 1)}>
@@ -324,6 +326,7 @@ export default function CreatorPage() {
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={closeDetail}
+        savedFrom={savedFrom}
       />
     </SurfaceFrame>
   )

@@ -3,7 +3,7 @@ import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api, failWith } from '../../../.storybook/mocks/api'
-import { oidcSettings, securitySettings } from '../../../.storybook/mocks/settings/data'
+import { hostDesktop, oidcSettings, securitySettings } from '../../../.storybook/mocks/settings/data'
 import { NetworkSection, OidcSection, SecuritySection, SignInPageSection } from './SecuritySection'
 
 const meta = {
@@ -92,6 +92,28 @@ export const NetworkEditShowsSave: Story = {
     await waitFor(() => expect(proxies).toHaveValue('172.18.0.0/16'))
     await userEvent.type(proxies, ', 10.0.0.5')
     await expect(await canvas.findByText('Unsaved')).toBeVisible()
+  },
+}
+
+export const NetworkDockerHasNoAccessSwitch: Story = {
+  render: () => <NetworkSection />,
+  play: async ({ canvas }) => {
+    await canvas.findByRole('switch', { name: /^Require HTTPS/ })
+    await expect(canvas.queryByRole('switch', { name: /^Allow other devices/ })).toBeNull()
+  },
+}
+
+export const NetworkDesktopAllowOtherDevices: Story = {
+  render: () => <NetworkSection />,
+  parameters: { msw: settingsMsw(http.get(api('/system/host'), () => HttpResponse.json(hostDesktop))) },
+  play: async ({ canvas, userEvent }) => {
+    const toggle = await canvas.findByRole('switch', { name: /^Allow other devices on your network/ })
+    await waitFor(() => expect(toggle).not.toBeChecked())
+    await userEvent.click(toggle)
+    await expect(await canvas.findByText('Unsaved')).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'Save' }))
+    await expect(await canvas.findByText('Network access changes after Maki restarts.')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Restart now' })).toBeVisible()
   },
 }
 

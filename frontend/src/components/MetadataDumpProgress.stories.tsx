@@ -36,11 +36,21 @@ export const ToastWhileDownloading: Story = {
   },
 }
 
+const indexingDump: DumpProgress = {
+  ...downloadingDump,
+  phase: 'indexing',
+  indexProgress: 0.42,
+  bytesPerSecond: null,
+  estimatedSecondsRemaining: 75,
+}
+
 export const ToastWhileIndexing: Story = {
-  parameters: { msw: serving({ ...downloadingDump, phase: 'indexing' }) },
+  parameters: { msw: serving(indexingDump) },
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body)
     await expect(await body.findByText('Building metadata search indexes')).toBeVisible()
+    await expect(await body.findByText('42%')).toBeVisible()
+    await expect(await body.findByText(/left$/)).toBeVisible()
   },
 }
 
@@ -71,7 +81,14 @@ export const BarWithoutTotal: StoryObj<typeof DumpProgressBar> = {
 }
 
 export const BarIndexing: StoryObj<typeof DumpProgressBar> = {
-  render: () => <DumpProgressBar progress={{ ...downloadingDump, phase: 'indexing' }} />,
+  render: () => <DumpProgressBar progress={indexingDump} />,
+}
+
+export const BarIndexingStarting: StoryObj<typeof DumpProgressBar> = {
+  render: () => <DumpProgressBar progress={{ ...indexingDump, indexProgress: 0.01, estimatedSecondsRemaining: null }} />,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/only happens once per snapshot/)).toBeVisible()
+  },
 }
 
 export const BarInstalling: StoryObj<typeof DumpProgressBar> = {

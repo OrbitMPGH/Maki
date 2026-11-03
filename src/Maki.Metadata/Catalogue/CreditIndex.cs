@@ -1,5 +1,8 @@
+using System.Buffers;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
+using Maki.Metadata.MangaBaka;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
@@ -62,6 +65,12 @@ public readonly record struct CreditMatch(int NameId, int Distance, int WorkCoun
 /// Works are stored in popularity order, which is what a creator page wants by default and what
 /// makes capping a huge publisher's list principled rather than arbitrary.
 /// </para>
+///
+/// <para>
+/// The three spellings of every name live in <see cref="TextBlob"/>s and the key lookup is a binary
+/// search over the keys in sorted order, not a dictionary: three arrays of 111k short strings and a
+/// 111k-entry dictionary were most of this index's 33.5 MB.
+/// </para>
 /// </summary>
 public sealed class CreditIndex
 {
@@ -69,29 +78,32 @@ public sealed class CreditIndex
     private const int UnknownPopularity = int.MaxValue;
 
     public static readonly CreditIndex Empty = new(
-        [], [], [], [], [0], [], [], new Dictionary<string, int>());
+        TextBlob.Empty, TextBlob.Empty, TextBlob.Empty, [], [0], [], []);
 
-    private readonly string[] _names;
+    private readonly TextBlob _names;
 
     /// <summary>Display names folded once at build time, so autocomplete is a scan and not 129k re-folds per keystroke.</summary>
-    private readonly string[] _normalized;
+    private readonly TextBlob _normalized;
 
-    private readonly string[] _keys;
-    private readonly CreditRole[] _roles;
+    private readonly TextBlob _keys;
+
+    /// <summary>Name ids ordered by key, for <see cref="TryResolve"/>'s binary search.</summary>
+    private readonly int[] _keyOrder;
+
+    private readonly Column<CreditRole> _roles;
 
     /// <summary>Concatenated work lists; name <c>i</c> owns <c>[_workOffsets[i], _workOffsets[i+1])</c>.</summary>
-    private readonly int[] _workOffsets;
-    private readonly long[] _works;
+    private readonly Column<int> _workOffsets;
+
+    /// <summary>MangaBaka ids, which are six figures and fit an int.</summary>
+    private readonly Column<int> _works;
 
     /// <summary>The role held on each entry of <see cref="_works"/>, so <c>artist:</c> can exclude writing credits.</summary>
-    private readonly CreditRole[] _workRoles;
-
-    private readonly Dictionary<string, int> _byKey;
+    private readonly Column<CreditRole> _workRoles;
 
     private CreditIndex(
-        string[] names, string[] normalized, string[] keys, CreditRole[] roles,
-        int[] workOffsets, long[] works, CreditRole[] workRoles,
-        Dictionary<string, int> byKey)
+        TextBlob names, TextBlob normalized, TextBlob keys, Column<CreditRole> roles,
+        Column<int> workOffsets, Column<int> works, Column<CreditRole> workRoles)
     {
         _names = names;
         _normalized = normalized;
@@ -100,8 +112,49 @@ public sealed class CreditIndex
         _workOffsets = workOffsets;
         _works = works;
         _workRoles = workRoles;
-        _byKey = byKey;
-        MaxSeriesId = works.Length == 0 ? 0 : works.Max();
+        var max = 0;
+        foreach (var work in works.Span)
+        {
+            max = Math.Max(max, work);
+        }
+
+        MaxSeriesId = max;
+
+        _keyOrder = new int[keys.Count];
+        for (var i = 0; i < _keyOrder.Length; i++)
+        {
+            _keyOrder[i] = i;
+        }
+
+        Array.Sort(_keyOrder, (a, b) => keys[a].SequenceCompareTo(keys[b]));
+    }
+
+    internal void WriteTo(BinaryWriter writer)
+    {
+        _names.WriteTo(writer);
+        _normalized.WriteTo(writer);
+        _keys.WriteTo(writer);
+        SnapshotFile.WriteArray(writer, _roles.AsSpan());
+        SnapshotFile.WriteArray(writer, _workOffsets.AsSpan());
+        SnapshotFile.WriteArray(writer, _works.AsSpan());
+        SnapshotFile.WriteArray(writer, _workRoles.AsSpan());
+    }
+
+    internal static CreditIndex? ReadFrom(BinaryReader reader)
+    {
+        var names = TextBlob.ReadFrom(reader);
+        var normalized = TextBlob.ReadFrom(reader);
+        var keys = TextBlob.ReadFrom(reader);
+        var roles = SnapshotFile.ReadArray<CreditRole>(reader);
+        var workOffsets = SnapshotFile.ReadArray<int>(reader);
+        var works = SnapshotFile.ReadArray<int>(reader);
+        var workRoles = SnapshotFile.ReadArray<CreditRole>(reader);
+        var count = names.Count;
+        return normalized.Count == count && keys.Count == count && roles.Length == count
+            && workOffsets.Length == count + 1 && workRoles.Length == works.Length
+            && (count == 0 || workOffsets[^1] == works.Length)
+            ? new CreditIndex(names, normalized, keys, roles, workOffsets, works, workRoles)
+            : null;
     }
 
     /// <summary>
@@ -110,13 +163,16 @@ public sealed class CreditIndex
     /// </summary>
     public long MaxSeriesId { get; }
 
-    public int NameCount => _names.Length;
+    public int NameCount => _names.Count;
+
+    /// <summary>True when the work lists are read from a mapped snapshot.</summary>
+    internal bool IsMapped => _workOffsets.IsMapped;
 
     public int PairCount => _works.Length;
 
-    public bool IsEmpty => _names.Length == 0;
+    public bool IsEmpty => _names.Count == 0;
 
-    public string NameAt(int nameId) => _names[nameId];
+    public string NameAt(int nameId) => new(_names[nameId]);
 
     public CreditRole RolesAt(int nameId) => _roles[nameId];
 
@@ -134,8 +190,13 @@ public sealed class CreditIndex
         var entries = new List<Entry>(1_000_000);
         // How often each raw spelling of each merged name appears, so the display name is the one
         // the catalogue mostly uses rather than whichever row happened to be read first.
-        var spellingCounts = new Dictionary<(int NameId, string Spelling), int>();
+        var spellingSlots = new Dictionary<(int NameId, string Spelling), int>();
+        var spellingCounts = new List<int>(200_000);
         var bestSpelling = new List<int>(160_000);
+
+        // ~920k credits are ~115k names written the same way over and over, so everything that only
+        // depends on the raw text is worked out once per distinct string.
+        var seenRaw = new Dictionary<string, RawCredit>(200_000, StringComparer.Ordinal);
         var rows = 0;
 
         using (var scan = conn.CreateCommand())
@@ -144,9 +205,9 @@ public sealed class CreditIndex
             // into random reads across the multi-GB dump; scan the table in storage order instead.
             // Sort the projected rows afterward to retain title order, which breaks ties between
             // equally common display spellings and assigns name ids used by autocomplete.
-            scan.CommandText = """
+            scan.CommandText = $"""
                 SELECT id, authors, artists, publishers, popularity_global_current
-                FROM series NOT INDEXED
+                FROM {MangaBakaDumpService.BrowseSource(conn)} NOT INDEXED
                 WHERE state = 'active' AND type != 'novel'
                 ORDER BY title COLLATE NOCASE
                 """;
@@ -160,44 +221,63 @@ public sealed class CreditIndex
                 var seriesId = reader.GetInt64(0);
                 var popularity = reader.IsDBNull(4) ? UnknownPopularity : reader.GetInt32(4);
 
-                Collect(reader.IsDBNull(1) ? null : reader.GetString(1), CreditRole.Author, ParseNames);
-                Collect(reader.IsDBNull(2) ? null : reader.GetString(2), CreditRole.Artist, ParseNames);
-                Collect(reader.IsDBNull(3) ? null : reader.GetString(3), CreditRole.Publisher, ParsePublisherNames);
+                Collect(ParseColumn(reader, 1, publishers: false), CreditRole.Author);
+                Collect(ParseColumn(reader, 2, publishers: false), CreditRole.Artist);
+                Collect(ParseColumn(reader, 3, publishers: true), CreditRole.Publisher);
 
-                void Collect(string? json, CreditRole role, Func<string?, List<string>> parse)
+                void Collect(List<string> parsed, CreditRole role)
                 {
-                    foreach (var raw in parse(json))
+                    foreach (var raw in parsed)
                     {
+                        if (!seenRaw.TryGetValue(raw, out var credit))
+                        {
+                            seenRaw[raw] = credit = new RawCredit(
+                                MangaBaka.CreditNames.IsPerson(raw), CatalogueText.RomanizationKey(raw), raw.Trim());
+                        }
+
                         // A publisher is never a person, so the placeholder list only applies to the
                         // writer and artist columns.
-                        if (role != CreditRole.Publisher && !MangaBaka.CreditNames.IsPerson(raw))
+                        if (role != CreditRole.Publisher && !credit.IsPerson)
                         {
                             continue;
                         }
 
-                        var key = CatalogueText.RomanizationKey(raw);
-                        if (key.Length == 0)
+                        if (credit.Key.Length == 0)
                         {
                             continue;
                         }
 
-                        var spelling = raw.Trim();
-                        if (!byKey.TryGetValue(key, out var nameId))
+                        // The name and its spelling's counter are made on the first credit that is
+                        // kept, never on one skipped above, so ids come out in the order they did.
+                        if (credit.Slot < 0)
                         {
-                            nameId = names.Count;
-                            byKey[key] = nameId;
-                            names.Add(spelling);
-                            keys.Add(key);
-                            roles.Add(CreditRole.None);
-                            bestSpelling.Add(0);
+                            if (!byKey.TryGetValue(credit.Key, out var id))
+                            {
+                                id = names.Count;
+                                byKey[credit.Key] = id;
+                                names.Add(credit.Spelling);
+                                keys.Add(credit.Key);
+                                roles.Add(CreditRole.None);
+                                bestSpelling.Add(0);
+                            }
+
+                            if (!spellingSlots.TryGetValue((id, credit.Spelling), out var slot))
+                            {
+                                slot = spellingCounts.Count;
+                                spellingSlots[(id, credit.Spelling)] = slot;
+                                spellingCounts.Add(0);
+                            }
+
+                            credit.NameId = id;
+                            credit.Slot = slot;
                         }
 
-                        var seen = spellingCounts.GetValueOrDefault((nameId, spelling)) + 1;
-                        spellingCounts[(nameId, spelling)] = seen;
+                        var nameId = credit.NameId;
+                        var seen = ++CollectionsMarshal.AsSpan(spellingCounts)[credit.Slot];
                         if (seen > bestSpelling[nameId])
                         {
                             bestSpelling[nameId] = seen;
-                            names[nameId] = spelling;
+                            names[nameId] = credit.Spelling;
                         }
 
                         roles[nameId] |= role;
@@ -238,7 +318,7 @@ public sealed class CreditIndex
         }
 
         var workOffsets = new int[names.Count + 1];
-        var works = new long[merged];
+        var works = new int[merged];
         var workRoles = new CreditRole[merged];
 
         var cursor = 0;
@@ -264,7 +344,7 @@ public sealed class CreditIndex
 
             for (var i = cursor; i < end; i++)
             {
-                works[i] = packed[i].SeriesId;
+                works[i] = checked((int)packed[i].SeriesId);
                 workRoles[i] = packed[i].Role;
             }
 
@@ -287,7 +367,7 @@ public sealed class CreditIndex
         }
 
         return new CreditIndex(
-            [.. names], normalized, [.. keys], [.. roles], workOffsets, works, workRoles, byKey);
+            new TextBlob(names), new TextBlob(normalized), new TextBlob(keys), [.. roles], workOffsets, works, workRoles);
     }
 
     /// <summary>How many works this name holds in any of <paramref name="roles"/>.</summary>
@@ -319,7 +399,13 @@ public sealed class CreditIndex
         var to = _workOffsets[nameId + 1];
         if (roles == CreditRole.Any)
         {
-            return _works[from..to];
+            var all = new long[to - from];
+            for (var i = from; i < to; i++)
+            {
+                all[i - from] = _works[i];
+            }
+
+            return all;
         }
 
         var kept = new List<long>(to - from);
@@ -342,7 +428,7 @@ public sealed class CreditIndex
     {
         nameId = -1;
         var key = CatalogueText.RomanizationKey(name);
-        if (key.Length == 0 || !_byKey.TryGetValue(key, out var candidate))
+        if (key.Length == 0 || FindKey(key) is not { } candidate)
         {
             return false;
         }
@@ -354,6 +440,32 @@ public sealed class CreditIndex
 
         nameId = candidate;
         return true;
+    }
+
+    private int? FindKey(ReadOnlySpan<char> key)
+    {
+        var low = 0;
+        var high = _keyOrder.Length - 1;
+        while (low <= high)
+        {
+            var mid = low + ((high - low) >> 1);
+            var order = _keys[_keyOrder[mid]].SequenceCompareTo(key);
+            if (order == 0)
+            {
+                return _keyOrder[mid];
+            }
+
+            if (order < 0)
+            {
+                low = mid + 1;
+            }
+            else
+            {
+                high = mid - 1;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -384,9 +496,9 @@ public sealed class CreditIndex
         var bestDistance = maxDistance + 1;
         var bestWorks = -1;
 
-        for (var i = 0; i < _keys.Length; i++)
+        for (var i = 0; i < _keys.Count; i++)
         {
-            if ((_roles[i] & roles) == 0 || Math.Abs(_keys[i].Length - key.Length) > maxDistance)
+            if ((_roles[i] & roles) == 0 || Math.Abs(_keys.LengthAt(i) - key.Length) > maxDistance)
             {
                 continue;
             }
@@ -486,7 +598,8 @@ public sealed class CreditIndex
         }
 
         var hits = new List<(int NameId, int Rank, int Works)>();
-        for (var i = 0; i < _names.Length; i++)
+        var wordStart = ' ' + needle;
+        for (var i = 0; i < _names.Count; i++)
         {
             if ((_roles[i] & roles) == 0)
             {
@@ -501,7 +614,7 @@ public sealed class CreditIndex
             // beating Naoki Urasawa because it happened to match at the start of the string.
             int rank;
             if (normalized.StartsWith(needle, StringComparison.Ordinal) ||
-                normalized.Contains(' ' + needle, StringComparison.Ordinal))
+                normalized.Contains(wordStart, StringComparison.Ordinal))
             {
                 rank = 0;
             }
@@ -529,82 +642,136 @@ public sealed class CreditIndex
             .ToList();
     }
 
-    /// <summary><c>authors</c> and <c>artists</c> are plain JSON string arrays.</summary>
-    private static List<string> ParseNames(string? json)
+    /// <summary>What one distinct raw credit string resolves to; see the build loop.</summary>
+    private sealed class RawCredit(bool isPerson, string key, string spelling)
     {
-        var names = new List<string>();
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return names;
-        }
-
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                return names;
-            }
-
-            foreach (var element in doc.RootElement.EnumerateArray())
-            {
-                if (element.ValueKind == JsonValueKind.String && element.GetString() is { } name &&
-                    !string.IsNullOrWhiteSpace(name))
-                {
-                    names.Add(name);
-                }
-            }
-        }
-        catch (JsonException)
-        {
-            // One unreadable column of one row, not a reason to lose the row's other credits.
-        }
-
-        return names;
+        public bool IsPerson { get; } = isPerson;
+        public string Key { get; } = key;
+        public string Spelling { get; } = spelling;
+        public int NameId { get; set; }
+        public int Slot { get; set; } = -1;
     }
+
+    /// <summary>
+    /// One credit column, parsed from SQLite's own UTF-8 bytes rather than decoded to a string and
+    /// encoded back. Bytes that do not parse take the string route instead, which is the only way
+    /// the two could differ: invalid UTF-8 there becomes replacement characters, and the names
+    /// around them still count.
+    /// </summary>
+    private static List<string> ParseColumn(SqliteDataReader reader, int ordinal, bool publishers)
+    {
+        if (reader.IsDBNull(ordinal))
+        {
+            return [];
+        }
+
+        var bytes = reader.GetFieldValue<byte[]>(ordinal);
+        return ParseUtf8(bytes, publishers) ?? ParseCredits(Encoding.UTF8.GetString(bytes), publishers);
+    }
+
+    /// <summary><c>authors</c> and <c>artists</c> are plain JSON string arrays.</summary>
+    internal static List<string> ParseNames(string? json) => ParseCredits(json, publishers: false);
 
     /// <summary>
     /// <c>publishers</c> holds objects (<c>{"name","note","type"}</c>), and occasionally bare
     /// strings. Mirrors <c>MangaBakaLocalStore.ParsePublishers</c>, which surfaces the same names on
     /// the detail card.
     /// </summary>
-    private static List<string> ParsePublisherNames(string? json)
+    internal static List<string> ParsePublisherNames(string? json) => ParseCredits(json, publishers: true);
+
+    /// <summary>
+    /// Streams the array with <see cref="Utf8JsonReader"/> rather than building a
+    /// <see cref="JsonDocument"/> per column: the build parses about 830k of these. It answers exactly
+    /// what the document version did: nothing for a value that is not an array or not valid JSON
+    /// (one unreadable column of one row, not a reason to lose the row's other credits), and for a
+    /// publisher object with a repeated <c>name</c>, the last one, as
+    /// <see cref="JsonElement.TryGetProperty(string, out JsonElement)"/> does.
+    /// </summary>
+    private static List<string> ParseCredits(string? json, bool publishers)
     {
-        var names = new List<string>();
         if (string.IsNullOrWhiteSpace(json))
         {
-            return names;
+            return [];
         }
 
+        var max = Encoding.UTF8.GetMaxByteCount(json.Length);
+        var rented = max > 512 ? ArrayPool<byte>.Shared.Rent(max) : null;
+        Span<byte> buffer = rented ?? stackalloc byte[512];
         try
         {
-            using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            return ParseUtf8(buffer[..Encoding.UTF8.GetBytes(json, buffer)], publishers) ?? [];
+        }
+        finally
+        {
+            if (rented is not null)
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+        }
+    }
+
+    /// <summary>The names in <paramref name="utf8"/>, or null when it is not valid JSON.</summary>
+    private static List<string>? ParseUtf8(ReadOnlySpan<byte> utf8, bool publishers)
+    {
+        var names = new List<string>();
+        try
+        {
+            var reader = new Utf8JsonReader(utf8);
+            if (!reader.Read() || reader.TokenType != JsonTokenType.StartArray)
             {
                 return names;
             }
 
-            foreach (var element in doc.RootElement.EnumerateArray())
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
             {
-                var name = element.ValueKind switch
+                var name = reader.TokenType switch
                 {
-                    JsonValueKind.String => element.GetString(),
-                    JsonValueKind.Object when element.TryGetProperty("name", out var property)
-                        && property.ValueKind == JsonValueKind.String => property.GetString(),
+                    JsonTokenType.String => reader.GetString(),
+                    JsonTokenType.StartObject when publishers => LastNameProperty(ref reader),
                     _ => null,
                 };
+
+                if (reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+                {
+                    reader.Skip();
+                }
 
                 if (!string.IsNullOrWhiteSpace(name))
                 {
                     names.Add(name);
                 }
             }
+
+            // Trailing content after the array is invalid JSON, which the document version refused.
+            reader.Read();
+            return names;
         }
         catch (JsonException)
         {
+            return null;
+        }
+    }
+
+    /// <summary>Reads an object through its end, returning its last <c>name</c> when that is a string.</summary>
+    private static string? LastNameProperty(ref Utf8JsonReader reader)
+    {
+        string? name = null;
+        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+        {
+            var isName = reader.ValueTextEquals("name"u8);
+            reader.Read();
+            if (isName)
+            {
+                name = reader.TokenType == JsonTokenType.String ? reader.GetString() : null;
+            }
+
+            if (reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+            {
+                reader.Skip();
+            }
         }
 
-        return names;
+        return name;
     }
 
     private readonly record struct Entry(int NameId, long SeriesId, int Popularity, CreditRole Role);

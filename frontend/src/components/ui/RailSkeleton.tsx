@@ -31,7 +31,7 @@ export function RailSkeleton({
       >
         {Array.from({ length: count }, (_, i) => (
           <div key={i} className="discover-rail-item">
-            <Skeleton radius="lg" style={{ aspectRatio: '2 / 3' }} />
+            <Skeleton radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
           </div>
         ))}
       </div>

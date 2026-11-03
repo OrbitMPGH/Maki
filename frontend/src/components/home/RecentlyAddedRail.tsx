@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { IconPlayerPlayFilled } from '@tabler/icons-react'
+import { IconPlayerPlayFilled } from '../../lib/icons'
 import type { HomeRecentSeriesItem } from '../../api/hooks'
 import { Rail } from '../ui/Rail'
 import { relativeTime } from '../ui/time'

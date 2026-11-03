@@ -16,7 +16,7 @@ import {
   IconArrowLeft,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
-} from '@tabler/icons-react'
+} from './lib/icons'
 import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -54,6 +54,7 @@ import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, type NavItem } from './nav'
 import { DocumentTitle, DocumentTitleProvider } from './lib/documentTitle'
 import { lazyRoute, preloadRoutes } from './lib/routePreload'
+import { SoFarSyncAskDialog } from './components/SoFarSyncAskDialog'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
 // (StartPageRedirect), so splitting them would only add a round trip to the first paint.
 import HomePage from './pages/HomePage'
@@ -74,6 +75,7 @@ const StatsPage = lazyRoute(() => import('./pages/StatsPage'))
 const NotificationsPage = lazyRoute(() => import('./pages/NotificationsPage'))
 const SettingsPage = lazyRoute(() => import('./pages/SettingsPage'))
 const HealthPage = lazyRoute(() => import('./pages/HealthPage'))
+const PageConversionWizardPage = lazyRoute(() => import('./pages/PageConversionWizardPage'))
 const ReaderPage = lazyRoute(() => import('./pages/reader/ReaderPage'))
 
 const NAV_COLLAPSED_KEY = 'sidebar-collapsed'
@@ -142,7 +144,7 @@ function NavLinks({
                 aria-current={active ? 'page' : undefined}
                 onClick={onNavigate}
               >
-                <item.icon size={18} stroke={1.7} className="nav-icon" />
+                <item.icon size={18} className="nav-icon" />
                 {_(item.label)}
                 {count > 0 && (
                   <span className="nav-count tnum" data-tone={tone}>
@@ -204,6 +206,7 @@ function AuthGate() {
     <DocumentTitleProvider>
       <LiveEvents />
       <OfflineSync />
+      <SoFarSyncAskDialog />
       <DocumentTitle />
       <MetadataGate>
         {inReader ? (
@@ -286,8 +289,11 @@ function AppShellRoutes() {
       openPinned()
     }
   }
+  // The burger can appear under a mouse that has not moved: leaving the reader puts its back button
+  // right there. Chrome still sends pointerenter then, so a closed drawer opens only on real movement.
   const peekEnter = (e: React.PointerEvent) => {
     if (e.pointerType !== 'mouse') return
+    if (!opened && e.movementX === 0 && e.movementY === 0) return
     window.clearTimeout(peekTimer.current)
     if (!opened) setReveal('hover')
     setPeeking(true)
@@ -450,6 +456,7 @@ function AppShellRoutes() {
               opened={opened}
               onClick={toggle}
               onPointerEnter={peekEnter}
+              onPointerMove={peeking ? undefined : peekEnter}
               onPointerLeave={peekLeave}
               size="sm"
               aria-label={t`Menu`}
@@ -468,7 +475,7 @@ function AppShellRoutes() {
                     className="app-header-link"
                     data-active={isActive(item, location.pathname)}
                   >
-                    <item.icon size={18} stroke={1.7} />
+                    <item.icon size={18} />
                     {_(item.label)}
                   </Link>
                 ))}
@@ -589,6 +596,7 @@ function AppShellRoutes() {
               element={homeEnabled ? <HomePage /> : <Navigate to="/library" replace />}
             />
             <Route path="/library" element={<LibraryPage />} />
+            <Route path="/library/archived" element={<LibraryPage scope="archived" />} />
             <Route path="/series/:id" element={<SeriesDetailPage />} />
             <Route path="/add" element={<AddSeriesPage />} />
             <Route path="/creator/:name" element={<CreatorPage />} />
@@ -609,6 +617,10 @@ function AppShellRoutes() {
                 already out there keep working. */}
             <Route path="/rewind" element={<Navigate replace to="/stats" />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route
+              path="/settings/page-conversion"
+              element={isAdmin ? <PageConversionWizardPage /> : <Navigate to="/" replace />}
+            />
             <Route path="/health" element={isAdmin ? <HealthPage /> : <Navigate to="/" replace />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

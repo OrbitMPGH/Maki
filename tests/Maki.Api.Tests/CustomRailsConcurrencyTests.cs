@@ -90,7 +90,7 @@ public sealed class CustomRailsConcurrencyTests : IDisposable
     /// real request's scoped context is its own connection.</summary>
     private static CustomRailsController Controller(int userId, MakiDbContext db)
     {
-        var service = new CustomRailService(db, new TestCurrentUser(userId), null!, null!, null!, null!, null!, null!);
+        var service = new CustomRailService(db, new TestCurrentUser(userId), null!, null!, null!, null!, null!);
         return new CustomRailsController(new TestLocalizer(), db, service);
     }
 

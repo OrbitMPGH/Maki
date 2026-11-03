@@ -1,7 +1,7 @@
 import { useId, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Tooltip } from '@mantine/core'
-import { IconFlame } from '@tabler/icons-react'
+import { IconFlame } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HeatmapDay, ProgressSummary, ReadingGoal } from '../../api/hooks'
@@ -137,7 +137,7 @@ export function ReadingWeeks({
               data-lit={weeks.readToday || undefined}
               aria-label={plural(currentStreak, { one: '# day streak', other: '# day streak' })}
             >
-              <IconFlame size={15} aria-hidden />
+              <IconFlame size={16} aria-hidden />
               {formatNumber(currentStreak)}
               <span className="reading-weeks-streak-l" aria-hidden>
                 <Trans>day streak</Trans>

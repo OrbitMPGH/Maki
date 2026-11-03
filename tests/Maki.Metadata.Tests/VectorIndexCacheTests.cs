@@ -169,6 +169,28 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task An_empty_build_is_not_repeated_until_the_vectors_change()
+    {
+        // After a model change every stored vector has the old width, and without a memo each
+        // search and recommendation request ran the full scan again to find nothing.
+        Store().UpsertBatch([(1L, "old", [1f, 0f, 0f, 0f])]);
+        var cache = Cache(dimensions: 8);
+        var builds = 0;
+        cache.AfterBuildForTest = () => builds++;
+
+        Assert.Null(await cache.GetAsync());
+        Assert.Null(await cache.GetAsync());
+        cache.WarmInBackground();
+        Assert.Equal(1, builds);
+
+        Store().UpsertBatch([(2L, "new", [0f, 1f, 0f, 0f, 0f, 0f, 0f, 0f])]);
+
+        var index = await cache.GetAsync();
+        Assert.Equal(2, builds);
+        Assert.Equal([2L], Enumerable.Range(0, index!.Count).Select(index.IdAt));
+    }
+
+    [Fact]
     public async Task A_taste_artifact_holding_a_null_vector_does_not_break_the_build()
     {
         Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f]), (2L, "h", [0f, 1f, 0f, 0f])]);

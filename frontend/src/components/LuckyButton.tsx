@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Ref } from 'react'
 import { ActionIcon, CloseButton, Popover, Text, Tooltip, UnstyledButton } from '@mantine/core'
 import type { MantineSize } from '@mantine/core'
-import { IconDice5 } from '@tabler/icons-react'
+import { IconDice5 } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { pickRandom, prefersReducedMotion, useDiceTumble } from '../lib/lucky'
 

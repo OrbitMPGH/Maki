@@ -346,6 +346,90 @@ public class DelugeClientTests
         Assert.Equal(TorrentClientFailure.LoginFailed, ex.Failure);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Removing_a_labelled_torrent_calls_remove_torrent_with_the_data_flag(bool deleteData)
+    {
+        var (client, handler) = Create();
+        handler.Replies["core.get_torrent_status"] = _ => new Reply(new { hash = Hash, label = "maki" });
+        handler.Replies["core.remove_torrent"] = _ => new Reply(true);
+
+        var removal = await client.RemoveAsync(Settings, Hash.ToUpperInvariant(), deleteData);
+
+        Assert.Equal(TorrentRemoval.Removed, removal);
+        var remove = Assert.Single(handler.Calls, c => c.Method == "core.remove_torrent");
+        Assert.Equal($"[\"{Hash}\",{(deleteData ? "true" : "false")}]", remove.Params);
+    }
+
+    [Fact]
+    public async Task A_torrent_deluge_does_not_have_is_absent_and_nothing_is_removed()
+    {
+        var (client, handler) = Create();
+        handler.Replies["core.get_torrent_status"] = _ => new Reply(new { });
+
+        var removal = await client.RemoveAsync(Settings, Hash, deleteData: true);
+
+        Assert.Equal(TorrentRemoval.Absent, removal);
+        Assert.DoesNotContain("core.remove_torrent", handler.Methods);
+    }
+
+    [Fact]
+    public async Task A_torrent_under_another_label_is_left_alone()
+    {
+        var (client, handler) = Create();
+        handler.Replies["core.get_torrent_status"] = _ => new Reply(new { hash = Hash, label = "keep-seeding" });
+
+        var removal = await client.RemoveAsync(Settings, Hash, deleteData: true);
+
+        Assert.Equal(TorrentRemoval.HeldOutsideLabel, removal);
+        Assert.DoesNotContain("core.remove_torrent", handler.Methods);
+    }
+
+    [Fact]
+    public async Task A_torrent_removed_between_the_lookup_and_the_remove_counts_as_absent()
+    {
+        var (client, handler) = Create();
+        var lookups = 0;
+        handler.Replies["core.get_torrent_status"] = _ => ++lookups == 1
+            ? new Reply(new { hash = Hash, label = "maki" })
+            : new Reply(new { });
+        handler.Replies["core.remove_torrent"] = _ => new Reply(null, 3, "InvalidTorrentError: torrent_id not in session");
+
+        var removal = await client.RemoveAsync(Settings, Hash, deleteData: true);
+
+        Assert.Equal(TorrentRemoval.Absent, removal);
+    }
+
+    [Fact]
+    public async Task A_removal_on_a_web_ui_without_a_daemon_connects_before_asking_about_labels()
+    {
+        var (client, handler) = Create();
+        var connected = false;
+        handler.Replies["web.connected"] = _ => new Reply(connected);
+        handler.Replies["web.get_hosts"] = _ => new Reply(new object[] { new object[] { "local-id", "127.0.0.1", 58846, "Online" } });
+        handler.Replies["web.connect"] = _ => { connected = true; return new Reply(null); };
+        handler.Replies["core.get_enabled_plugins"] = _ => connected ? new Reply(new[] { "Label" }) : new Reply(null, 3, "not connected");
+        handler.Replies["core.get_torrent_status"] = _ => new Reply(new { hash = Hash, label = "keep-seeding" });
+
+        var removal = await client.RemoveAsync(Settings, Hash, deleteData: true);
+
+        Assert.Equal(TorrentRemoval.HeldOutsideLabel, removal);
+        Assert.True(handler.Methods.IndexOf("web.connect") < handler.Methods.IndexOf("core.get_enabled_plugins"));
+    }
+
+    [Fact]
+    public async Task A_refused_remove_of_a_torrent_still_there_is_rejected()
+    {
+        var (client, handler) = Create();
+        handler.Replies["core.get_torrent_status"] = _ => new Reply(new { hash = Hash, label = "maki" });
+        handler.Replies["core.remove_torrent"] = _ => new Reply(null, 3, "permission denied");
+
+        var ex = await Assert.ThrowsAsync<TorrentClientException>(() => client.RemoveAsync(Settings, Hash, deleteData: true));
+
+        Assert.Equal(TorrentClientFailure.Rejected, ex.Failure);
+    }
+
     [Fact]
     public async Task A_non_json_answer_is_unreachable()
     {

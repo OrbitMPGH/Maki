@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect } from 'storybook/test'
 import { Button } from '@mantine/core'
-import { IconPlus } from '@tabler/icons-react'
+import { IconPlus } from '../../lib/icons'
 import { PageHeader } from './PageHeader'
 
 const meta = {

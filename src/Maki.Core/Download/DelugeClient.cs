@@ -142,6 +142,64 @@ public partial class DelugeClient : ITorrentClient
         return list;
     }
 
+    public async Task<TorrentRemoval> RemoveAsync(
+        TorrentClientSettings settings, string hash, bool deleteData, CancellationToken ct = default)
+    {
+        hash = hash.ToLowerInvariant();
+
+        // Connected first: a plugin check sent to a web UI with no daemon fails, and that answer would be
+        // remembered as "no labels", leaving every later removal without its label guard.
+        await EnsureConnectedAsync(settings, ct);
+        var label = await LabelsAvailableAsync(settings, ct);
+        try
+        {
+            // An empty status is Deluge's answer for a torrent it does not have.
+            var status = await CallAsync(settings, "core.get_torrent_status", ct, hash, new[] { "hash", "label" });
+            if (status.ValueKind != JsonValueKind.Object || !status.EnumerateObject().Any())
+            {
+                return TorrentRemoval.Absent;
+            }
+
+            if (label is not null && !string.Equals(String(status, "label"), label, StringComparison.Ordinal))
+            {
+                return TorrentRemoval.HeldOutsideLabel;
+            }
+        }
+        catch (DelugeRpcException ex)
+        {
+            throw new TorrentClientException(TorrentClientFailure.Unreachable, "Deluge could not look the torrent up: " + ex.Message, ex);
+        }
+
+        try
+        {
+            await CallAsync(settings, "core.remove_torrent", ct, hash, deleteData);
+            return TorrentRemoval.Removed;
+        }
+        catch (DelugeRpcException ex)
+        {
+            // Deluge raises InvalidTorrentError for an id it does not have: removed in between.
+            if (await GoneAsync(settings, hash, ct))
+            {
+                return TorrentRemoval.Absent;
+            }
+
+            throw new TorrentClientException(TorrentClientFailure.Rejected, "Deluge would not remove the torrent: " + ex.Message, ex);
+        }
+    }
+
+    private async Task<bool> GoneAsync(TorrentClientSettings settings, string hash, CancellationToken ct)
+    {
+        try
+        {
+            var status = await CallAsync(settings, "core.get_torrent_status", ct, hash, new[] { "hash" });
+            return status.ValueKind != JsonValueKind.Object || !status.EnumerateObject().Any();
+        }
+        catch (DelugeRpcException)
+        {
+            return false;
+        }
+    }
+
     private static bool TryGetTorrents(JsonElement result, out JsonElement torrents)
     {
         torrents = default;

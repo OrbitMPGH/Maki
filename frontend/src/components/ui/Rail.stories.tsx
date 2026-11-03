@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor } from 'storybook/test'
-import { IconBook } from '@tabler/icons-react'
+import { IconBook } from '../../lib/icons'
 import { Rail } from './Rail'
 import { SectionHeader } from './SectionHeader'
 

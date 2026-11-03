@@ -93,8 +93,11 @@ public static class ImportListPrefs
 
 /// <summary>Per-user, per-tracker record of the last run, under <see cref="SettingKeys.ImportListLastRunKey"/>.</summary>
 /// <param name="DumpUnavailable">Skipped because the local MangaBaka database was not downloaded yet.</param>
+/// <param name="Shortlisted">Plan to read entries put on the shortlist.</param>
+/// <param name="ShortlistFull">The run stopped shortlisting because the shortlist was full.</param>
 public record ImportListLastRun(
-    DateTime At, int Added, int Requested, int Skipped, int Errors, bool DumpUnavailable = false)
+    DateTime At, int Added, int Requested, int Skipped, int Errors, bool DumpUnavailable = false,
+    int Shortlisted = 0, bool ShortlistFull = false)
 {
     public static ImportListLastRun? Parse(string? json)
     {

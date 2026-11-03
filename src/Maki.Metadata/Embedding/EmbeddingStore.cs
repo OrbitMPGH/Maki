@@ -218,6 +218,7 @@ public class EmbeddingStore(EmbeddingOptions options)
                 }
             }
 
+            BumpContentVersion(conn, tx);
             tx.Commit();
         }
 
@@ -329,6 +330,7 @@ public class EmbeddingStore(EmbeddingOptions options)
             cmd.ExecuteNonQuery();
         }
 
+        BumpContentVersion(conn, tx);
         tx.Commit();
     }
 
@@ -374,6 +376,7 @@ public class EmbeddingStore(EmbeddingOptions options)
             cmd.ExecuteNonQuery();
         }
 
+        BumpContentVersion(conn, tx);
         tx.Commit();
     }
 
@@ -470,6 +473,7 @@ public class EmbeddingStore(EmbeddingOptions options)
             cmd.ExecuteNonQuery();
         }
 
+        BumpContentVersion(conn, tx);
         tx.Commit();
     }
 
@@ -514,6 +518,20 @@ public class EmbeddingStore(EmbeddingOptions options)
     }
 
     /// <summary>
+    /// Rebuilds the file so pages left half empty by rows rewritten smaller are given back. A model
+    /// change that narrows the vectors otherwise keeps the old file size: 768 to 256 dims left
+    /// 157 MB on disk for 57 MB of rows.
+    /// </summary>
+    public void Compact()
+    {
+        using var conn = OpenWritable();
+        using var vacuum = conn.CreateCommand();
+        vacuum.CommandText = "VACUUM";
+        vacuum.CommandTimeout = 1800;
+        vacuum.ExecuteNonQuery();
+    }
+
+    /// <summary>
     /// Stamps a database that is not open through a store yet, such as a downloaded artifact before
     /// it is swapped in.
     /// </summary>
@@ -554,6 +572,25 @@ public class EmbeddingStore(EmbeddingOptions options)
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value";
         cmd.Parameters.AddWithValue("$key", ModelVersionKey);
         cmd.Parameters.AddWithValue("$value", version);
+        cmd.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Changes whenever the vectors or tag blobs change: written in the same transaction as every
+    /// such write, and read by the vector index snapshot as its key into this file. File times
+    /// cannot serve: in WAL mode a commit can leave the main file untouched, and after a checkpoint
+    /// the log is rewritten from the start at the same length.
+    /// </summary>
+    internal const string ContentVersionKey = "content_version";
+
+    private static void BumpContentVersion(SqliteConnection conn, SqliteTransaction? tx)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "INSERT INTO meta (key, value) VALUES ($key, $value) " +
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value";
+        cmd.Parameters.AddWithValue("$key", ContentVersionKey);
+        cmd.Parameters.AddWithValue("$value", Guid.NewGuid().ToString("N"));
         cmd.ExecuteNonQuery();
     }
 
@@ -762,6 +799,7 @@ public class EmbeddingStore(EmbeddingOptions options)
             drop.ExecuteNonQuery();
         }
 
+        BumpContentVersion(conn, tx);
         tx.Commit();
         return removed;
     }

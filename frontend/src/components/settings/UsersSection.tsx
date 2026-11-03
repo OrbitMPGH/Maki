@@ -16,8 +16,8 @@ import {
   TextInput,
   VisuallyHidden,
 } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
-import { IconPlus } from '@tabler/icons-react'
+import { notifications } from '../../lib/toast'
+import { IconPlus } from '../../lib/icons'
 import {
   useCreateUser,
   useDeleteUser,
@@ -65,6 +65,7 @@ const GRANTABLE_DEFS: { value: Exclude<Permission, 'Admin'>; label: MessageDescr
   { value: 'UseTrackers', label: msg`Use trackers` },
   { value: 'UseOpds', label: msg`Use OPDS` },
   { value: 'ImportLibrary', label: msg`Import library` },
+  { value: 'ArchiveSeries', label: msg({ message: 'Archive series', context: 'series' }) },
 ]
 
 function useGrantablePermissions() {
@@ -89,6 +90,7 @@ const BIT: Record<Permission, number> = {
   UseTrackers: 1 << 9,
   UseOpds: 1 << 10,
   ImportLibrary: 1 << 11,
+  ArchiveSeries: 1 << 12,
 }
 
 /**
@@ -164,7 +166,7 @@ export function UsersSection() {
       id="users"
       title={<Trans>Users</Trans>}
       actions={
-        <Button size="xs" leftSection={<IconPlus size={14} />} onClick={() => setEditing('new')}>
+        <Button size="xs" leftSection={<IconPlus size={16} />} onClick={() => setEditing('new')}>
           <Trans>Add user</Trans>
         </Button>
       }

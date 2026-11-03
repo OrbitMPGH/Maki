@@ -1,5 +1,6 @@
 using Maki.Api.Services;
 using Maki.Api.Hubs;
+using Maki.Core.Io;
 using Maki.Metadata.MangaBaka;
 using Quartz;
 
@@ -16,11 +17,13 @@ namespace Maki.Api.Jobs;
 [DisallowConcurrentExecution]
 public class MangaBakaDumpRefreshJob(
     MangaBakaDumpService dumpService,
+    MangaBakaDumpOptions dumpOptions,
     MangaBakaDumpStatus dumpStatus,
     EventBroadcaster events,
     ISchedulerFactory schedulerFactory,
     ArtifactBuildGate gate,
     MangaBakaDumpRetry retry,
+    ShortlistMergeService shortlistMerge,
     ILogger<MangaBakaDumpRefreshJob> logger) : IJob
 {
     public static readonly JobKey Key = new("mangabaka-dump");
@@ -46,6 +49,9 @@ public class MangaBakaDumpRefreshJob(
             if (installed || backfilled)
             {
                 build.MarkBuilt();
+                // Writing a 3.7 GB file, or indexing one, leaves its pages in the cache, and those
+                // count toward the container's memory until something else wants the RAM.
+                PageCache.DropAfterScan(dumpOptions.DatabasePath);
             }
 
             if (installed)
@@ -54,6 +60,17 @@ public class MangaBakaDumpRefreshJob(
                 var scheduler = await schedulerFactory.GetScheduler(context.CancellationToken);
                 await scheduler.TriggerJob(DiscoverCacheWarmJob.Key, context.CancellationToken);
                 await scheduler.TriggerJob(FollowedCreatorReleaseJob.Key, context.CancellationToken);
+
+                // Its own catch: a database error here is not a failed dump refresh and must not
+                // schedule a dump retry.
+                try
+                {
+                    await shortlistMerge.RekeyAsync(context.CancellationToken);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger.LogWarning(ex, "Could not move shortlist entries onto merged MangaBaka ids");
+                }
             }
         }
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)

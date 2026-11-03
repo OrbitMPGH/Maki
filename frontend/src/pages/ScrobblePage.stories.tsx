@@ -109,7 +109,7 @@ export const SyncRunning: Story = {
     msw: [...scrobbleHandlers({ ...scrobbleStatus, running: true, lastSyncAt: minutesAgo(31), nextSyncAt: null })],
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText(/sync running/)).toBeVisible()
+    await expect(await canvas.findByText('Syncing now')).toBeVisible()
   },
 }
 

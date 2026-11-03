@@ -129,19 +129,15 @@ public class TasteVectorTests
         const int dims = 4;
         var data = new sbyte[vectors.Length * dims];
         var scales = new float[vectors.Length];
-        var covered = 0;
         for (var i = 0; i < vectors.Length; i++)
         {
-            if (vectors[i] is not { } vec)
+            if (vectors[i] is { } vec)
             {
-                continue;
+                scales[i] = EmbeddingMath.Quantize(vec, data.AsSpan(i * dims, dims));
             }
-
-            scales[i] = EmbeddingMath.Quantize(vec, data.AsSpan(i * dims, dims));
-            covered++;
         }
 
-        return new TasteLayer(data, scales, dims, covered);
+        return TasteLayer.FromRows(data, scales, dims);
     }
 
     private static VectorIndex Build(float[][] vectors, TasteLayer? taste = null)
@@ -161,7 +157,7 @@ public class TasteVectorTests
             JaggedInts.From(new int[count][]),
             JaggedInts.From(new int[count][]),
             JaggedInts.From(new int[count][]),
-            new int[count], new byte[]?[count], new byte[count],
+            new int[count], PackedTags.From(new byte[]?[count]), new byte[count],
             [.. Enumerable.Repeat(VectorIndex.Unknown, count)]);
         var vocabularies = new VectorIndexVocabularies(
             new Dictionary<string, byte>(), new Dictionary<string, byte>(),

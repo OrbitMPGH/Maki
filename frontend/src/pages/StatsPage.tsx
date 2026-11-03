@@ -4,7 +4,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 // Imported here rather than in main.tsx so the chart stylesheet travels with this route's chunk,
 // and here in the shell rather than in a section so it loads once.
 import '@mantine/charts/styles.css'
-import { IconPlayerPlay } from '@tabler/icons-react'
+import { IconPlayerPlay } from '../lib/icons'
 import { useActivityStats, useActivityYears } from '../api/hooks'
 import { useUsers } from '../api/auth'
 import { useAuth } from '../auth/AuthProvider'

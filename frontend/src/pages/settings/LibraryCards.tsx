@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLabel } from '../../i18n-context'
 import { useDebouncedValue } from '@mantine/hooks'
@@ -20,9 +20,10 @@ import {
   TextInput,
   VisuallyHidden,
 } from '@mantine/core'
-import { IconRestore, IconTrash } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+import { IconRestore, IconTrash } from '../../lib/icons'
+import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
+import { activeSeries } from '../../lib/series'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { MonoValue } from '../../components/ui/MonoValue'
 import { RecommendationModelSwitch } from '../../components/RecommendationModelSwitch'
@@ -52,6 +53,7 @@ import {
   type LibrarySettings,
 } from '../../api/hooks'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
+import { FolderBrowserModal } from '../../components/settings/FolderBrowserModal'
 import { SUPPORTED_LOCALES } from '../../i18n'
 import { MONITOR_OPTIONS } from '../../components/series/SeriesActionsMenu'
 import { DumpProgressBar } from '../../components/MetadataDumpProgress'
@@ -67,10 +69,12 @@ import {
   type RecycleBinEntry,
   type RecycleReason,
 } from '../../api/recycleBin'
+import { MetaList } from '../../components/ui/MetaList'
 
 export function RootFoldersSection() {
   const { t } = useLingui()
   const [newPath, setNewPath] = useState('')
+  const [browsing, setBrowsing] = useState(false)
   const { data: rootFolders } = useRootFolders()
   const addFolder = useAddRootFolder()
   const deleteFolder = useDeleteRootFolder()
@@ -140,13 +144,23 @@ export function RootFoldersSection() {
             placeholder={t`C:\\Manga or /library`}
             value={newPath}
             onChange={(e) => setNewPath(e.currentTarget.value)}
-            style={{ flex: 1 }}
+            style={{ flex: '1 1 16rem' }}
           />
+          <Button variant="default" onClick={() => setBrowsing(true)}>
+            <Trans>Browse</Trans>
+          </Button>
           <Button type="submit" loading={addFolder.isPending}>
             <Trans>Add</Trans>
           </Button>
         </Group>
       </Stack>
+
+      <FolderBrowserModal
+        opened={browsing}
+        onClose={() => setBrowsing(false)}
+        onSelect={setNewPath}
+        initialPath={newPath}
+      />
 
       <ConfirmDialog
         opened={deleting !== null}
@@ -270,7 +284,7 @@ export function RecommendationIndexSection() {
         status={status}
         busy={setModel.isPending}
         onSelect={selectModel}
-        description={t`Uses about 240 MB of RAM. Needs the local MangaBaka database above.`}
+        description={t`Uses about 150 MB of RAM. Needs the local MangaBaka database above.`}
       />
     </SettingsSection>
   )
@@ -402,8 +416,9 @@ export function LibraryFilesSection() {
 export function NamingSection() {
   const { t } = useLingui()
   const { settings, patch } = useLibraryPatch()
-  const { data: allSeries } = useSeries()
-  const seriesCount = allSeries?.length ?? 0
+  const { data: everySeries } = useSeries()
+  const allSeries = useMemo(() => activeSeries(everySeries ?? []), [everySeries])
+  const seriesCount = allSeries.length
   const renameMany = useRenameManySeries()
   const [confirmRenameAll, setConfirmRenameAll] = useState(false)
 
@@ -468,7 +483,7 @@ export function NamingSection() {
         variant="default"
         size="xs"
         mb="lg"
-        disabled={!allSeries?.length}
+        disabled={!allSeries.length}
         onClick={() => setConfirmRenameAll(true)}
       >
         <Trans>Rename every series to current format</Trans>
@@ -494,7 +509,7 @@ export function NamingSection() {
             color="var(--danger-fill)"
             loading={renameMany.isPending}
             onClick={() =>
-              renameMany.mutate((allSeries ?? []).map((s) => s.id), {
+              renameMany.mutate(allSeries.map((s) => s.id), {
                 onSuccess: (results) => {
                   const renamed = results.filter((r) => r.applied).length
                   const failed = results.filter((r) => r.error).length
@@ -604,6 +619,7 @@ const RECYCLE_REASON_LABELS: Record<RecycleReason, MessageDescriptor> = {
   deleteFile: msg`Deleted file`,
   removeChapter: msg`Removed chapter`,
   seriesDelete: msg`Removed series`,
+  seriesArchive: msg({ message: 'Series archived', context: 'series' }),
 }
 
 function daysLeft(expiresAt: string): number {
@@ -743,9 +759,8 @@ export function RecycleBinSection() {
                           <Table.Tr key={entry.id}>
                             <Table.Td>
                               <Text size="sm" style={{ wordBreak: 'break-all' }}>{entry.fileName}</Text>
-                              <Text size="xs" c="var(--ink-3)">
-                                {renderLabel(RECYCLE_REASON_LABELS[entry.reason])}
-                                {chapters && ` · ${chapters}`}
+                              <Text component="div" size="xs" c="var(--ink-3)">
+                                <MetaList items={[renderLabel(RECYCLE_REASON_LABELS[entry.reason]), chapters]} />
                               </Text>
                               {entry.missing && (
                                 <Text size="xs" c="var(--danger)">
@@ -770,7 +785,7 @@ export function RecycleBinSection() {
                                 <Button
                                   size="xs"
                                   variant="default"
-                                  leftSection={<IconRestore size={14} />}
+                                  leftSection={<IconRestore size={16} />}
                                   disabled={entry.missing}
                                   loading={restore.isPending && restore.variables === entry.id}
                                   onClick={() => onRestore(entry)}

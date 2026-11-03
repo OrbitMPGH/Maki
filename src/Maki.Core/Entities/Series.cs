@@ -62,6 +62,9 @@ public class Series
 
     /// <summary>Opts this series in or out of deleting read chapter files; see <c>ReadFileCleanupService</c>.</summary>
     public ReadFileCleanup ReadFileCleanup { get; set; }
+
+    /// <summary>Overrides the page conversion rules for this series' files; see <c>PageConversionPlan</c>.</summary>
+    public PageConversionOverride PageConversion { get; set; }
     public UpgradeProfile? UpgradeProfile { get; set; }
 
     /// <summary>Which source a download tries first. Null means the instance default from <c>SettingKeys.DownloadSourceOrder</c>.</summary>
@@ -84,6 +87,18 @@ public class Series
 
     /// <summary>When the monitored refresh next syncs this series. Null means due now.</summary>
     public DateTime? NextCheckAt { get; set; }
+
+    /// <summary>When the series was archived, or null while it is active. See <c>SeriesQueries.Active</c>.</summary>
+    public DateTime? ArchivedAt { get; set; }
+
+    /// <summary>Who archived it. Set to null if that user is later deleted.</summary>
+    public int? ArchivedByUserId { get; set; }
+
+    /// <summary>
+    /// Set by restore and cleared by the first full chapter sync after it. That sync stamps no
+    /// <see cref="ChapterSourceLink.FirstSeenAt"/>: what it finds was released while nobody looked.
+    /// </summary>
+    public DateTime? RestoredAt { get; set; }
 
     public int RootFolderId { get; set; }
     public RootFolder? RootFolder { get; set; }

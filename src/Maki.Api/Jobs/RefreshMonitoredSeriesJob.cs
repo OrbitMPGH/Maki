@@ -251,6 +251,7 @@ public class RefreshMonitoredSeriesJob(
 
     internal static IQueryable<Series> Refreshable(MakiDbContext db, List<string> disabledSources) =>
         db.Series
+            .Active()
             .Where(s => s.SourceMappings.Any(m => m.Enabled && !disabledSources.Contains(m.SourceName)))
             .Where(s => s.PendingImportLink == PendingImportLink.None)
             .Where(s => s.Status != SeriesStatus.Completed

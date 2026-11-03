@@ -14,6 +14,8 @@ public address:
 4. **Give each reader their own account.** A new account starts with OPDS and tracker access, no
    root folders, and no admin. If you run an identity provider, use
    [single sign-on](single-sign-on.md) instead of handing out passwords.
+5. **Consider CrowdSec or fail2ban.** Turn on the access log and use the rules Maki ships to ban
+   addresses that keep failing to sign in. See [Access log and CrowdSec](crowdsec.md).
 
 Security settings are read at startup, so **restart Maki after changing them**.
 

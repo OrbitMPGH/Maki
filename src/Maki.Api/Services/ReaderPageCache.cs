@@ -10,6 +10,53 @@ namespace Maki.Api.Services;
 public static class ReaderPageCache
 {
     /// <summary>
+    /// Deletes the cached page renders and thumbnails of these chapter files. Best effort: a folder
+    /// that cannot be deleted now is left for the housekeeping sweep.
+    /// </summary>
+    public static void Evict(AppPaths paths, IEnumerable<int> chapterFileIds)
+    {
+        foreach (var id in chapterFileIds)
+        {
+            var dir = Path.Combine(paths.ReaderCacheDir, id.ToString());
+            try
+            {
+                if (Directory.Exists(dir))
+                {
+                    Directory.Delete(dir, recursive: true);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
+    /// One page's bytes, read the way the reader's page endpoint serves them: a PDF page from its
+    /// cached full render, anything else out of the archive. Null when the page cannot be read.
+    /// </summary>
+    public static async Task<byte[]?> ReadPageBytesAsync(
+        AppPaths paths, ReaderArchiveCache archives, ReaderService.PageSlice slice, int absoluteIndex, CancellationToken ct)
+    {
+        var entry = slice.Pages[absoluteIndex];
+        if (ComicFile.IsPdf(slice.ArchivePath))
+        {
+            var cached = await GetOrRenderFullPageAsync(paths, slice, absoluteIndex, entry, ct);
+            return cached is null ? null : await File.ReadAllBytesAsync(cached, ct);
+        }
+
+        await using var stream = await archives.OpenPageAsync(slice.ArchivePath, entry, ct);
+        if (stream is null)
+        {
+            return null;
+        }
+
+        using var copy = new MemoryStream();
+        await stream.CopyToAsync(copy, ct);
+        return copy.ToArray();
+    }
+
+    /// <summary>
     /// Full-size PDF page render, disk-cached alongside the thumbnail cache for the same chapter
     /// file so a page opened twice (once by the reader, once to build its thumbnail) is only ever
     /// rendered once. Named <c>{ArchiveVersion}-{index}.full.jpg</c> so it shares the thumbnail

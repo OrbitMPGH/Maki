@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IconAffiliate } from '@tabler/icons-react'
+import { IconAffiliate } from '../lib/icons'
 import { useLingui } from '@lingui/react/macro'
 import {
   useRootFolders,
@@ -10,6 +10,7 @@ import {
 } from '../api/hooks'
 import { DiscoverDetailModal } from './discover/DiscoverDetailModal'
 import { DiscoverRailRow } from './ui/DiscoverRail'
+import { SERIES_SOURCE } from '../api/shortlist'
 import { SectionHeader } from './ui/SectionHeader'
 
 /**
@@ -36,7 +37,7 @@ export function RelatedSeriesSection({ seriesId }: { seriesId: number }) {
   return (
     <>
       <SectionHeader icon={IconAffiliate} title={t`Related series`} />
-      <DiscoverRailRow items={related} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+      <DiscoverRailRow items={related} seriesIdFor={seriesIdFor} onOpen={setDetailItem} savedFrom={SERIES_SOURCE} />
 
       <DiscoverDetailModal
         item={detailItem}
@@ -44,6 +45,7 @@ export function RelatedSeriesSection({ seriesId }: { seriesId: number }) {
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
+        savedFrom={SERIES_SOURCE}
       />
     </>
   )
