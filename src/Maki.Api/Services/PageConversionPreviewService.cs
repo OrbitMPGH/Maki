@@ -296,7 +296,7 @@ public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILog
                       (ImageCodec.IsColour(bytes) is not { } colour || colour != (kind == PageKind.Colour))
                     ? null
                     : Encode(bytes, extension, SampleSettings),
-                ImageWorkGate.Weigh(bytes), ArchivePageConverter.IsAvif(bytes, extension, SampleSettings), ct);
+                PageConversion.WeightOf(bytes, extension, SampleSettings), ct);
             if (encoded?.Bytes is null)
             {
                 continue;
@@ -433,7 +433,7 @@ public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILog
         var encoded = settings is null
             ? null
             : await ImageWorkGate.RunConversionAsync(() => Encode(bytes, extension, settings),
-                ImageWorkGate.Weigh(bytes), ArchivePageConverter.IsAvif(bytes, extension, settings), CancellationToken.None);
+                PageConversion.WeightOf(bytes, extension, settings), CancellationToken.None);
         Store(prefix, key, extension, bytes, encoded);
         return true;
     }

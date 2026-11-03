@@ -405,7 +405,7 @@ public class PageConversionEstimateService(
                 Interlocked.Decrement(ref running);
                 InterlockedMax(ref last, Stopwatch.GetTimestamp());
             }
-        }, ImageWorkGate.Weigh(p.Bytes), ArchivePageConverter.IsAvif(p.Bytes, p.Extension, pick.Settings), ct), ct)));
+        }, PageConversion.WeightOf(p.Bytes, p.Extension, pick.Settings), ct), ct)));
         var wall = pages.Count == 0 ? 0 : Stopwatch.GetElapsedTime(first, last).TotalMilliseconds;
 
         var original = pages.Sum(p => (long)p.Bytes.Length);
@@ -418,7 +418,7 @@ public class PageConversionEstimateService(
         var sampled = megapixels.Sum();
         // Fewer pages ran together than were sampled when the gate held them back, and it holds the pass back
         // the same way; when all of them did, the pass runs as many as its lanes allow.
-        var lanes = ImageWorkGate.ConversionsInFlight(pages.Any(p => ArchivePageConverter.IsAvif(p.Bytes, p.Extension, pick.Settings)));
+        var lanes = ImageWorkGate.ConversionsInFlight(pages.Any(p => PageConversion.WeightOf(p.Bytes, p.Extension, pick.Settings).Avif));
         var inFlight = together < pages.Count ? Math.Max(1, together) : Math.Max(together, lanes);
         var times = megapixels
             .Where(mp => mp > 0)

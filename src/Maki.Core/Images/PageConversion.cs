@@ -189,6 +189,12 @@ public static class PageConversion
     public static PageEncoding? EncodingFor(byte[] bytes, string extension, PageConversionSettings settings) =>
         Decide(bytes, extension, settings, out _, out _);
 
+    /// <summary>What encoding the page takes from the conversion gate, read from its header before any decode.</summary>
+    public static ConversionWeight WeightOf(byte[] bytes, string extension, PageConversionSettings settings) =>
+        EncodingFor(bytes, extension, settings) is { } encoding && ImageCodec.TryShape(bytes) is { } shape
+            ? ImageWorkGate.WeighConversion(shape.Width, shape.Height, shape.Bands, encoding)
+            : ImageWorkGate.LightConversion;
+
     private static PageEncoding? Decide(byte[] bytes, string extension, PageConversionSettings settings,
         out string format, out PageSkip? kept)
     {

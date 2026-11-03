@@ -138,7 +138,7 @@ public static class ArchivePageConverter
                         var extension = Path.GetExtension(entry.FullName);
                         page = Task.Run(() => ImageWorkGate.RunConversionAsync(
                             () => PageConversion.Convert(bytes, extension, settings),
-                            ImageWorkGate.Weigh(bytes), IsAvif(bytes, extension, settings), encodes.Token), encodes.Token);
+                            PageConversion.WeightOf(bytes, extension, settings), encodes.Token), encodes.Token);
                     }
 
                     pending.Enqueue(new Pending(entry, bytes, page));
@@ -225,8 +225,8 @@ public static class ArchivePageConverter
             foreach (var (bytes, extension) in picked)
             {
                 var page = await ImageWorkGate.RunConversionAsync(
-                    () => PageConversion.Convert(bytes, extension, settings), ImageWorkGate.Weigh(bytes),
-                    IsAvif(bytes, extension, settings), ct);
+                    () => PageConversion.Convert(bytes, extension, settings),
+                    PageConversion.WeightOf(bytes, extension, settings), ct);
                 if (page.Converted)
                 {
                     return true;
@@ -303,9 +303,6 @@ public static class ArchivePageConverter
 
         return picked;
     }
-
-    public static bool IsAvif(byte[] bytes, string extension, PageConversionSettings settings) =>
-        PageConversion.EncodingFor(bytes, extension, settings) == PageEncoding.Avif;
 
     private static string? ExtensionFormat(string name) => Path.GetExtension(name).ToLowerInvariant() switch
     {

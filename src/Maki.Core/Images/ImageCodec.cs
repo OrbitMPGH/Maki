@@ -100,6 +100,20 @@ public static class ImageCodec
         return Header(image, null);
     }
 
+    /// <summary>Width, height and bands from the header, or null when no permitted loader reads it.</summary>
+    public static (int Width, int Height, int Bands)? TryShape(byte[] bytes)
+    {
+        try
+        {
+            using var image = VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
+            return (image.Width, image.Height, image.Bands);
+        }
+        catch (VipsException)
+        {
+            return null;
+        }
+    }
+
     public static ImageHeader? TryIdentify(byte[] bytes)
     {
         try
