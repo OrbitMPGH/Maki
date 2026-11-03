@@ -21,6 +21,9 @@ public class CatalogueIndexCacheTests : IDisposable
             .AddSeries(2, "Uzumaki", authorsJson: """["Junji Ito"]""")
             .BuildSearchIndex();
         var cache = Cache();
+        await cache.GetAsync();
+        // A fresh build is swapped for its memory-mapped twin once the snapshot save lands.
+        await cache.SnapshotSavedForTest;
         var first = (await cache.GetAsync())!;
         Assert.True(first.Credits.TryResolve("Kentaro Miura", CreditRole.Author, out _));
 
@@ -64,7 +67,7 @@ public class CatalogueIndexCacheTests : IDisposable
         Assert.True(refreshed.Credits.TryResolve("New Author", CreditRole.Author, out _));
         Assert.NotSame(original, refreshed);
         Assert.Same(refreshed, await latest);
-        Assert.Same(refreshed, await cache.GetAsync());
+        await cache.GetAsync();
         Assert.Equal(2, pause.Builds);
     }
 
@@ -90,6 +93,9 @@ public class CatalogueIndexCacheTests : IDisposable
     {
         _db.AddSeries(1, "Berserk", authorsJson: """["Kentaro Miura"]""").BuildSearchIndex();
         var cache = Cache();
+        await cache.GetAsync();
+        // A fresh build is swapped for its memory-mapped twin once the snapshot save lands.
+        await cache.SnapshotSavedForTest;
         var first = (await cache.GetAsync())!;
 
         // Just read, so nothing goes yet. This is the half that matters: a window that fired while
