@@ -5,6 +5,7 @@ import { notifications } from '../lib/toast'
 import { api } from './client'
 import { inboxPrefsQuery, type InboxPush } from './inbox'
 import type { SourceMatchProgress, SourceMatchState } from './hooks'
+import { createSeriesListRefresher } from './seriesListPatch'
 import type { QueueHistoryDto, QueueItemDto, QueuePauseDto } from './types'
 
 let connection: HubConnection | null = null
@@ -172,6 +173,7 @@ export function useLiveEvents() {
   const queryClient = useQueryClient()
 
   useEffect(() => {
+    const seriesList = createSeriesListRefresher(queryClient)
     let summaryTimer: ReturnType<typeof setTimeout> | null = null
     let seriesTimer: ReturnType<typeof setTimeout> | null = null
     const importedSeries = new Set<number>()
@@ -191,7 +193,7 @@ export function useLiveEvents() {
         if (ids.length > 0) {
           void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
         }
-        void queryClient.invalidateQueries({ queryKey: ['series'] })
+        seriesList.flush()
       }, 1000)
     }
 
@@ -279,6 +281,7 @@ export function useLiveEvents() {
       // an import just wrote) and the detail page's Read button gate (`reader-continue`).
       listen(conn, 'chapterImported', ({ seriesId }: { seriesId: number }) => {
         importedSeries.add(seriesId)
+        seriesList.mark(seriesId)
         scheduleSeriesRefresh()
       })
 
@@ -292,6 +295,7 @@ export function useLiveEvents() {
         // The detail row carries the pending flag the spinner reads, so it refreshes at once; the
         // library list joins the coalesced refresh.
         void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+        seriesList.mark(seriesId)
         scheduleSeriesRefresh()
         // The per-source states the card drew while it waited. Cleared here rather than when the
         // next match starts: the first `Searching` pushes of a run arrive *before* the client has
@@ -305,6 +309,7 @@ export function useLiveEvents() {
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+        seriesList.mark(seriesId)
         scheduleSeriesRefresh()
       })
 
@@ -341,6 +346,7 @@ export function useLiveEvents() {
         void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+        seriesList.mark(seriesId)
         scheduleSeriesRefresh()
         void queryClient.invalidateQueries({ queryKey: ['home'] })
       })

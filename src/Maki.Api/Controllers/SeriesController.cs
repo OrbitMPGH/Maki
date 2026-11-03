@@ -2,6 +2,7 @@
 using Maki.Api.Auth;
 using System.Globalization;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text.Json;
 using Maki.Api.Dtos;
 using Maki.Api.Jobs;
@@ -360,13 +361,25 @@ public class SeriesController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> List(CancellationToken ct)
+    public async Task<IActionResult> List(CancellationToken ct) => Ok(await ListRowsAsync(null, ct));
+
+    /// <summary>
+    /// The library list's rows for just these series, built by the same code as <see cref="List"/>
+    /// so every count matches. The SPA patches them into its cached list as imports land instead of
+    /// refetching the whole library. Ids the caller cannot see are left out.
+    /// </summary>
+    [HttpGet("summary")]
+    public async Task<IActionResult> Summary([FromQuery] int[] ids, CancellationToken ct) =>
+        Ok(ids.Length == 0 ? [] : await ListRowsAsync([.. ids.Distinct()], ct));
+
+    /// <param name="ids">The series to build, or null for every series the caller can see.</param>
+    private async Task<List<SeriesDto>> ListRowsAsync(int[]? ids, CancellationToken ct)
     {
-        var series = await db.Series.AsNoTracking().OrderBy(s => s.SortTitle).ToListAsync(ct);
-        var chapterCounts = await ChapterTalliesAsync(db.Chapters, ct);
+        var series = await ForSeries(db.Series.AsNoTracking(), ids, s => s.Id).OrderBy(s => s.SortTitle).ToListAsync(ct);
+        var chapterCounts = await ChapterTalliesAsync(ForSeries(db.Chapters, ids, c => c.SeriesId), ct);
 
         // Active download work per series, so cards can show "queued"/"downloading" at a glance.
-        var queueCounts = await db.DownloadQueue
+        var queueCounts = await ForSeries(db.DownloadQueue, ids, q => q.SeriesId)
             .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
                         q.Status != QueueStatus.Cancelled)
             .GroupBy(q => q.SeriesId)
@@ -378,10 +391,10 @@ public class SeriesController(
             })
             .ToDictionaryAsync(x => x.SeriesId, ct);
 
-        var readCounts = await ReadChapterCountsBySeriesAsync(ct);
+        var readCounts = await ReadChapterCountsBySeriesAsync(ids, ct);
 
         // Flat join-table read; the SeriesTag query filter keeps it to series the caller can see.
-        var tagIdsBySeries = (await db.SeriesTags
+        var tagIdsBySeries = (await ForSeries(db.SeriesTags, ids, x => x.SeriesId)
                 .AsNoTracking()
                 .ToListAsync(ct))
             .GroupBy(x => x.SeriesId)
@@ -391,10 +404,10 @@ public class SeriesController(
         // rows, so a shared library shows each reader their own score and their own notification
         // mode with no per-series lookup. Unfiltered on Rating now that a row can exist for the
         // mode alone: filtering on it would report every muted-but-unrated series as Default.
-        var userStates = await db.UserSeriesStates
+        var userStates = await ForSeries(db.UserSeriesStates, ids, x => x.SeriesId)
             .Select(x => new { x.SeriesId, x.Rating, x.ProvisionalRating, x.ProvisionalAtChapter, x.NotificationMode })
             .ToDictionaryAsync(x => x.SeriesId, x => x, ct);
-        var finishedIds = (await db.ReadingStates
+        var finishedIds = (await ForSeries(db.ReadingStates, ids, r => r.SeriesId)
             .Where(r => r.Finished)
             .Select(r => r.SeriesId)
             .ToListAsync(ct)).ToHashSet();
@@ -403,7 +416,7 @@ public class SeriesController(
         // grouped in memory rather than Include(s => s.SourceMappings) on the materialized list
         // above: the same shape as the tag read, and one query instead of one per series.
         var disabledSources = await sourceAvailability.DisabledAsync(ct);
-        var mappingsBySeries = (await db.SourceMappings
+        var mappingsBySeries = (await ForSeries(db.SourceMappings, ids, m => m.SeriesId)
                 .Select(m => new { m.SeriesId, m.SourceName, m.Enabled })
                 .ToListAsync(ct))
             .GroupBy(m => m.SeriesId)
@@ -411,7 +424,7 @@ public class SeriesController(
 
         // Grouped in SQL to one row per (series, source) before crossing the wire. The ChapterFile
         // query filter already scopes this to visible series, so no explicit Series check here.
-        var fileSourcesBySeries = (await db.ChapterFiles
+        var fileSourcesBySeries = (await ForSeries(db.ChapterFiles, ids, f => f.SeriesId)
                 .Where(f => f.SourceName != "")
                 .GroupBy(f => new { f.SeriesId, f.SourceName })
                 .Select(g => g.Key)
@@ -423,7 +436,7 @@ public class SeriesController(
         // and Kavita syncs say nothing about when anyone read, mark-unread tombstones are the
         // opposite of a read, and a fully incognito series keeps no reading history. The series
         // join also keeps the aggregate to series the caller can see.
-        var lastReadBySeries = await db.ChapterProgress
+        var lastReadBySeries = await ForSeries(db.ChapterProgress, ids, p => p.SeriesId)
             .Where(p => !p.Watched && !p.BulkMarked && p.UnreadAt == null)
             .Where(p => db.Series.Any(s => s.Id == p.SeriesId && s.Incognito != IncognitoMode.Full))
             .OwnedByScopeUser(db)
@@ -431,7 +444,7 @@ public class SeriesController(
             .Select(g => new { SeriesId = g.Key, At = g.Max(p => p.UpdatedAt) })
             .ToDictionaryAsync(x => x.SeriesId, x => x.At, ct);
 
-        var lastDownloadBySeries = await db.ChapterFiles
+        var lastDownloadBySeries = await ForSeries(db.ChapterFiles, ids, f => f.SeriesId)
             .GroupBy(f => f.SeriesId)
             .Select(g => new { SeriesId = g.Key, At = g.Max(f => f.DateAdded) })
             .ToDictionaryAsync(x => x.SeriesId, x => x.At, ct);
@@ -439,7 +452,7 @@ public class SeriesController(
         var titleLanguage = await TitleLanguageAsync(ct);
         var communityRatings = await CommunityRatingsAsync(series, ct);
 
-        return Ok(series.Select(s =>
+        return [.. series.Select(s =>
         {
             chapterCounts.TryGetValue(s.Id, out var counts);
             queueCounts.TryGetValue(s.Id, out var queue);
@@ -457,6 +470,11 @@ public class SeriesController(
                 notificationMode: userState?.NotificationMode ?? SeriesNotificationMode.Default,
                 titleLanguage: titleLanguage) with
             {
+                // The list is the heaviest response there is; nothing that reads it needs the links
+                // or the alt titles' languages, which the detail endpoint still sends.
+                AltTitles = null,
+                AltTitleNames = [.. s.AltTitles.Select(t => t.Title)],
+                Links = null,
                 RemovedChapterCount = counts?.Removed ?? 0,
                 ProvisionalRating = userState?.ProvisionalRating,
                 ProvisionalAtChapter = userState?.ProvisionalAtChapter,
@@ -477,7 +495,22 @@ public class SeriesController(
                     ? Math.Round(score / 10.0, 1)
                     : null,
             };
-        }));
+        })];
+    }
+
+    /// <summary>Narrows a list query to <paramref name="ids"/>, or leaves it whole when that is null.</summary>
+    private static IQueryable<T> ForSeries<T>(IQueryable<T> query, int[]? ids, Expression<Func<T, int>> seriesId) =>
+        ids is null ? query : Where(query, seriesId, id => ids.Contains(id));
+
+    private static IQueryable<T> ForSeries<T>(IQueryable<T> query, int[]? ids, Expression<Func<T, int?>> seriesId) =>
+        ids is null ? query : Where(query, seriesId, id => id != null && ids.Contains(id.Value));
+
+    private static IQueryable<T> Where<T, TKey>(
+        IQueryable<T> query, Expression<Func<T, TKey>> seriesId, Expression<Func<TKey, bool>> contains)
+    {
+        var body = Microsoft.EntityFrameworkCore.Query.ReplacingExpressionVisitor.Replace(
+            contains.Parameters[0], seriesId.Body, contains.Body);
+        return query.Where(Expression.Lambda<Func<T, bool>>(body, seriesId.Parameters));
     }
 
     /// <summary>
@@ -543,8 +576,8 @@ public class SeriesController(
     /// been opened — and nothing could clear it, because the mark may not be lowered.
     /// </para>
     /// </summary>
-    private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct) =>
-        await ReadCounts.Read(db)
+    private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(int[]? ids, CancellationToken ct) =>
+        await ForSeries(ReadCounts.Read(db), ids, p => p.SeriesId)
             .GroupBy(p => p.SeriesId)
             .Select(g => new { SeriesId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);

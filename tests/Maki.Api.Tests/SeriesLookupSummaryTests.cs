@@ -6,6 +6,7 @@ using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Data.Identity;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Maki.Api.Tests;
@@ -74,6 +75,89 @@ public sealed class SeriesLookupSummaryTests : IDisposable
 
         Assert.Equal(granted, Assert.Single(lookup).Id);
         Assert.Equal(list.Select(s => s.Id), lookup.Select(r => r.Id));
+    }
+
+    private static readonly DateTime At = new(2026, 3, 1, 8, 0, 0, DateTimeKind.Utc);
+
+    /// <summary>Two series with a bit of everything the list counts: chapters, a file, a queue item, reads, tags, a rating.</summary>
+    private (int Busy, int Quiet) SeedLibrary(int userId)
+    {
+        var busy = _db.SeedSeries("Busy", configure: s => s.AltTitles = [new LocalizedTitle("Isogashii", "ja-ro")],
+            mappings: new SourceMapping { SourceName = "mangadex", SourceSeriesId = "busy", Enabled = true });
+        var quiet = _db.SeedSeries("Quiet");
+        using var db = _db.NewContext();
+        var file = new ChapterFile { SeriesId = busy, RelativePath = "busy/1.cbz", SourceName = "mangadex", DateAdded = At };
+        db.ChapterFiles.Add(file);
+        db.SaveChanges();
+        var read = new Chapter { SeriesId = busy, Number = 1, Wanted = true, ChapterFileId = file.Id };
+        var queued = new Chapter { SeriesId = busy, Number = 2, Wanted = true };
+        db.Chapters.AddRange(read, queued, new Chapter { SeriesId = busy, Number = 3 }, new Chapter { SeriesId = quiet, Number = 1, Wanted = true });
+        db.SaveChanges();
+        db.DownloadQueue.Add(new DownloadQueueItem
+        {
+            SeriesId = busy, ChapterId = queued.Id, Protocol = AcquisitionProtocol.Scraper, Status = QueueStatus.Queued, QueuedAt = At,
+        });
+        db.ChapterProgress.Add(new ChapterProgress
+        {
+            UserId = userId, SeriesId = busy, ChapterId = read.Id, Completed = true, StartedAt = At, UpdatedAt = At,
+        });
+        var tag = new Tag { Label = "Favourite" };
+        db.Tags.Add(tag);
+        db.SaveChanges();
+        db.SeriesTags.Add(new SeriesTag { SeriesId = busy, TagId = tag.Id });
+        db.UserSeriesStates.Add(new UserSeriesState { UserId = userId, SeriesId = busy, Rating = 8 });
+        db.SaveChanges();
+        return (busy, quiet);
+    }
+
+    [Fact]
+    public async Task Summary_rows_are_the_list_rows_for_those_series()
+    {
+        var alice = _db.SeedUser("alice");
+        var (busy, quiet) = SeedLibrary(alice);
+
+        using var db = _db.NewContext(alice);
+        var controller = Controller(db);
+        var list = Body<SeriesDto>(await controller.List(default));
+        var summary = Body<SeriesDto>(await controller.Summary([busy, busy], default));
+
+        var row = Assert.Single(summary);
+        Assert.Equal(JsonSerializer.Serialize(list.Single(s => s.Id == busy)), JsonSerializer.Serialize(row));
+        Assert.Equal((3, 1, 1, 1, 8), (row.KnownChapterCount, row.ChapterFileCount, row.QueuedCount, row.ReadChapterCount, row.Rating));
+        Assert.Equal(["mangadex"], row.Sources);
+        Assert.Single(row.TagIds);
+        Assert.Equal(list.Select(s => s.Id).Order(), Body<SeriesDto>(await controller.Summary([quiet, busy], default)).Select(s => s.Id).Order());
+    }
+
+    [Fact]
+    public async Task Summary_leaves_out_series_the_caller_cannot_see()
+    {
+        var reader = _db.SeedUser("reader", MakiPermission.None, allRootFolders: false);
+        var (busy, quiet) = SeedLibrary(reader);
+        Grant(reader, quiet);
+
+        using var db = _db.NewContext(reader, allRootFolders: false);
+        var rows = Body<SeriesDto>(await Controller(db).Summary([busy, quiet, 9999], default));
+
+        Assert.Equal(quiet, Assert.Single(rows).Id);
+    }
+
+    [Fact]
+    public async Task List_rows_send_alt_titles_as_names_and_no_links()
+    {
+        var alice = _db.SeedUser("alice");
+        var (busy, _) = SeedLibrary(alice);
+
+        using var db = _db.NewContext(alice);
+        var row = Body<SeriesDto>(await Controller(db).List(default)).Single(s => s.Id == busy);
+        var json = JsonSerializer.Serialize(row, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        Assert.Equal(["Isogashii"], row.AltTitleNames);
+        Assert.Null(row.AltTitles);
+        Assert.Null(row.Links);
+        Assert.DoesNotContain("\"links\"", json);
+        Assert.DoesNotContain("\"altTitles\"", json);
+        Assert.Contains("\"altTitleNames\":[\"Isogashii\"]", json);
     }
 
     private sealed class NoUserSettings : IUserSettings

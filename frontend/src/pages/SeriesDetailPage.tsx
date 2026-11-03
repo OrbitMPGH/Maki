@@ -1465,7 +1465,7 @@ function SeriesDetailBody() {
 
   const status = seriesStatusVisual(series.status)
   const contentRating = contentRatingVisual(series.contentRating)
-  const altTitles = readableTitles(series.altTitles, i18n.locale)
+  const altTitles = readableTitles(series.altTitles ?? [], i18n.locale)
   const seriesTitle = series.title
   const scanSeriesForUpgrades = () =>
     runUpgradeScan.mutate(seriesId, {
@@ -2377,7 +2377,7 @@ function SeriesDetailBody() {
                   )}
                   <Divider mt="sm" color="var(--hairline)" />
                   <SeriesTagsEditor seriesId={series.id} tagIds={series.tagIds} />
-                  {series.links.length > 0 && (
+                  {series.links && series.links.length > 0 && (
                       <div>
                         <Divider mb="sm" color="var(--hairline)" />
                         <Title order={3} size="h4" fz="var(--type-body)" mb={10}>

@@ -2,6 +2,7 @@
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Paths;
+using System.Text.Json.Serialization;
 
 namespace Maki.Api.Dtos;
 
@@ -37,9 +38,11 @@ public record SeriesDto(
     /// <summary>
     /// Other primary titles from the provider with the language each is written in, for the
     /// "show more" expander next to <see cref="OriginalTitle"/> and as the pool
-    /// <see cref="DisplayTitle"/> is chosen from.
+    /// <see cref="DisplayTitle"/> is chosen from. Left out of library list rows, which send
+    /// <see cref="AltTitleNames"/> instead.
     /// </summary>
-    List<LocalizedTitleDto> AltTitles,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    List<LocalizedTitleDto>? AltTitles,
     string Status,
     /// <summary>
     /// One of <see cref="SeriesTypes"/>, or null when the series predates the column and has not
@@ -92,7 +95,9 @@ public record SeriesDto(
     int? AniListId,
     int? MalId,
     int? KitsuId,
-    List<MetadataLink> Links,
+    /// <summary>Left out of library list rows: only the series page and the catalogue modal show them.</summary>
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    List<MetadataLink>? Links,
     string? NumberingClash,
     DateTime Added,
     /// <summary>
@@ -154,6 +159,13 @@ public record SeriesDto(
     /// </summary>
     public IReadOnlyList<string>? Warnings { get; init; }
     public SeriesOperationDto? Operation { get; init; }
+
+    /// <summary>
+    /// <see cref="AltTitles"/> as bare names, which is all the title search reads. Library list rows
+    /// only, where they replace the titles with their languages.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? AltTitleNames { get; init; }
 
     /// <summary>
     /// Source keys with a <see cref="SourceMapping"/> on this series, enabled or not. Empty means
