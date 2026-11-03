@@ -231,18 +231,33 @@ public static class ArchivePageConverter
                 return true;
             }
 
-            foreach (var (bytes, extension) in picked)
+            // Both pages encode at once, as the full pass would; the first one that clears the floor
+            // answers, and an encode still waiting on the gate is called off.
+            using var probes = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            var pending = picked
+                .Select(p => Task.Run(() => ImageWorkGate.RunConversionAsync(
+                    () => PageConversion.Convert(p.Bytes, p.Extension, settings),
+                    PageConversion.WeightOf(p.Bytes, p.Extension, settings), probes.Token), probes.Token))
+                .ToList();
+            try
             {
-                var page = await ImageWorkGate.RunConversionAsync(
-                    () => PageConversion.Convert(bytes, extension, settings),
-                    PageConversion.WeightOf(bytes, extension, settings), ct);
-                if (page.Converted)
+                while (pending.Count > 0)
                 {
-                    return true;
+                    var done = await Task.WhenAny(pending);
+                    pending.Remove(done);
+                    if ((await done).Converted)
+                    {
+                        return true;
+                    }
                 }
-            }
 
-            return false;
+                return false;
+            }
+            finally
+            {
+                await probes.CancelAsync();
+                await Task.WhenAll(pending.Cast<Task>()).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            }
         }
         catch (Exception ex) when (ex is VipsException or InvalidDataException or EndOfStreamException or IOException
                                        or UnauthorizedAccessException or NotSupportedException)
