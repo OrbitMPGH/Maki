@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    [Migration("20261103210529_ChapterNotes")]
+    [Migration("20261103221138_ChapterNotes")]
     partial class ChapterNotes
     {
         /// <inheritdoc />
@@ -19,6 +19,32 @@ namespace Maki.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
+
+            modelBuilder.Entity("Maki.Core.Entities.AnimeResumeRailDismissal", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double?>("CoveredTo")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime>("DismissedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("MangaBakaId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "MangaBakaId")
+                        .IsUnique();
+
+                    b.ToTable("AnimeResumeRailDismissals");
+                });
 
             modelBuilder.Entity("Maki.Core.Entities.AnimeSignal", b =>
                 {
@@ -39,6 +65,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Format")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ListUpdatedAtUtc")
                         .HasColumnType("TEXT");
 
                     b.Property<long?>("MalAnimeId")
@@ -3308,6 +3337,15 @@ namespace Maki.Data.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.AnimeResumeRailDismissal", b =>
+                {
+                    b.HasOne("Maki.Data.Identity.MakiUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.AnimeSignal", b =>

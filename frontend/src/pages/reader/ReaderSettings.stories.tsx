@@ -124,9 +124,11 @@ export const EscapeStepsBackThenCloses: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const b = body(canvasElement)
     await userEvent.click(await b.findByRole('button', { name: /^While reading/ }))
-    await expect(await b.findByRole('button', { name: /^Back/ })).toHaveFocus()
+    await b.findByRole('button', { name: /^Back/ })
+    await waitFor(() => expect(b.getByRole('button', { name: /^Back/ })).toHaveFocus())
     await userEvent.keyboard('{Escape}')
-    await expect(await b.findByRole('radiogroup', { name: 'Layout' })).toBeVisible()
+    await b.findByRole('radiogroup', { name: 'Layout' })
+    await waitFor(() => expect(b.getByRole('radiogroup', { name: 'Layout' })).toBeVisible())
     await waitFor(() => expect(b.getByRole('button', { name: /^While reading/ })).toHaveFocus())
     await expect(args.onOpenedChange).not.toHaveBeenCalled()
     await userEvent.keyboard('{Escape}')

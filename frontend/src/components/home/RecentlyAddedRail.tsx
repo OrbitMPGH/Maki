@@ -11,7 +11,7 @@ import { plural } from '@lingui/core/macro'
  * Horizontal rail of series that recently gained chapter files. Cards go to the series page;
  * the small Read button jumps straight into the next unread chapter.
  */
-export function RecentlyAddedRail({ items }: { items: HomeRecentSeriesItem[] }) {
+export const RecentlyAddedRail = memo(function RecentlyAddedRail({ items }: { items: HomeRecentSeriesItem[] }) {
   return (
     <Rail>
       {items.map((item) => (
@@ -22,7 +22,7 @@ export function RecentlyAddedRail({ items }: { items: HomeRecentSeriesItem[] }) 
       ))}
     </Rail>
   )
-}
+})
 
 // A sibling of the card link rather than inside it: interactive content nested in an anchor is invalid.
 function ReadNextButton({ chapterId }: { chapterId: number }) {

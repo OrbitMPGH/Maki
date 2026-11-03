@@ -139,7 +139,7 @@ public class AnimeSignalSyncTests : IDisposable
             [
                 new AnimeListEntry(1, "Season 1", null, AnimeWatchStatus.Watching,
                     Format: "TV", StartDate: new DateOnly(2019, 7, 7), EndDate: new DateOnly(2019, 12, 29),
-                    Episodes: 24, Progress: 12),
+                    Episodes: 24, Progress: 12, ListUpdatedAtUtc: new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc)),
             ],
             failing: 0);
 
@@ -152,6 +152,7 @@ public class AnimeSignalSyncTests : IDisposable
         Assert.Equal(new DateOnly(2019, 12, 29), row.EndDate);
         Assert.Equal(24, row.Episodes);
         Assert.Equal(12, row.Progress);
+        Assert.Equal(new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc), row.ListUpdatedAtUtc);
     }
 
     /// <summary>

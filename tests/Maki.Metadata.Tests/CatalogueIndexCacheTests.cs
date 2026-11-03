@@ -21,10 +21,10 @@ public class CatalogueIndexCacheTests : IDisposable
             .AddSeries(2, "Uzumaki", authorsJson: """["Junji Ito"]""")
             .BuildSearchIndex();
         var cache = Cache();
-        await cache.GetAsync();
-        // A fresh build is swapped for its memory-mapped twin once the snapshot save lands.
-        await cache.SnapshotSavedForTest;
         var first = (await cache.GetAsync())!;
+        // A fresh build is swapped for its memory-mapped twin once the background snapshot save lands.
+        await cache.SnapshotSavedForTest;
+        first = (await cache.GetAsync())!;
         Assert.True(first.Credits.TryResolve("Kentaro Miura", CreditRole.Author, out _));
 
         var later = (await cache.GetAsync())!;
@@ -66,8 +66,13 @@ public class CatalogueIndexCacheTests : IDisposable
         Assert.False(original.Credits.TryResolve("New Author", CreditRole.Author, out _));
         Assert.True(refreshed.Credits.TryResolve("New Author", CreditRole.Author, out _));
         Assert.NotSame(original, refreshed);
-        Assert.Same(refreshed, await latest);
-        await cache.GetAsync();
+        // A fresh build is swapped for its memory-mapped twin once the background snapshot save lands.
+        await cache.SnapshotSavedForTest;
+        var settled = (await cache.GetAsync())!;
+        Assert.True(settled.Credits.TryResolve("New Author", CreditRole.Author, out _));
+        var last = await latest;
+        Assert.True(ReferenceEquals(last, refreshed) || ReferenceEquals(last, settled));
+        Assert.Same(settled, await cache.GetAsync());
         Assert.Equal(2, pause.Builds);
     }
 
@@ -93,10 +98,10 @@ public class CatalogueIndexCacheTests : IDisposable
     {
         _db.AddSeries(1, "Berserk", authorsJson: """["Kentaro Miura"]""").BuildSearchIndex();
         var cache = Cache();
-        await cache.GetAsync();
-        // A fresh build is swapped for its memory-mapped twin once the snapshot save lands.
-        await cache.SnapshotSavedForTest;
         var first = (await cache.GetAsync())!;
+        // A fresh build is swapped for its memory-mapped twin once the background snapshot save lands.
+        await cache.SnapshotSavedForTest;
+        first = (await cache.GetAsync())!;
 
         // Just read, so nothing goes yet. This is the half that matters: a window that fired while
         // the cache was being read every second would reload it on a timer forever.

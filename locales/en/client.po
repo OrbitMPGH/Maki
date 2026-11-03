@@ -5540,10 +5540,12 @@ msgstr "Could not read progress for {seriesFailed, plural, one {# series} other 
 msgid "Could not read your profile"
 msgstr "Could not read your profile"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "Could not remove {seriesTitle}: {reason}"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 msgid "Could not restore {seriesTitle}: {reason}"
 msgstr "Could not restore {seriesTitle}: {reason}"
@@ -8122,6 +8124,10 @@ msgstr "Hero"
 msgid "Hiatus"
 msgstr "Hiatus"
 
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Hid {seriesTitle}. It comes back when you finish a new season."
+msgstr "Hid {seriesTitle}. It comes back when you finish a new season."
+
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -8193,6 +8199,10 @@ msgstr "Hide this and its franchise"
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Hide this title"
 msgstr "Hide this title"
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Hide until a new season"
+msgstr "Hide until a new season"
 
 #: src/components/settings/UsersSection.tsx
 msgid "Hides the controls for sharing the instance."
@@ -10400,6 +10410,7 @@ msgstr "More of this"
 msgid "More options"
 msgstr "More options"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 msgid "More options for {seriesTitle}"
 msgstr "More options for {seriesTitle}"
@@ -11615,6 +11626,10 @@ msgstr "Not monitored"
 #: src/components/series/SeriesHero.tsx
 msgid "Not rated"
 msgstr "Not rated"
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Not reading this one"
+msgstr "Not reading this one"
 
 #: src/components/import/ImportPlanModal.tsx
 msgid "not really a CBZ: the original is renamed to {aside} and a CBZ is built under this name"
@@ -14365,6 +14380,10 @@ msgstr "Removed"
 #: src/components/home/ReadingCardMenu.tsx
 msgid "Removed {seriesTitle}. It comes back when you read it again."
 msgstr "Removed {seriesTitle}. It comes back when you read it again."
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Removed {seriesTitle}. It won't be suggested here again."
+msgstr "Removed {seriesTitle}. It won't be suggested here again."
 
 #: src/components/discover/shortlistActions.tsx
 msgid "Removed {title} from your shortlist."
@@ -18693,6 +18712,7 @@ msgstr "Underscore (_)"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/discover/shortlistActions.tsx
 #: src/components/DiscoverPresets.tsx
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/series/UndoConversionModal.tsx

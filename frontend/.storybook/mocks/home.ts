@@ -37,6 +37,8 @@ export const homeHandlers: HttpHandler[] = [
     const limit = Number(new URL(request.url).searchParams.get('limit') ?? 0)
     return HttpResponse.json(limit > 100 ? animeResumeAllPage : animeResumePage)
   }),
+  http.post(api('/home/from-anime/:mangaBakaId/dismiss'), noContent),
+  http.delete(api('/home/from-anime/:mangaBakaId/dismiss'), noContent),
   http.get(api('/progress/summary'), () => HttpResponse.json(progressSummary)),
   http.get(api('/progress/heatmap'), () => HttpResponse.json(heatmapDays)),
 

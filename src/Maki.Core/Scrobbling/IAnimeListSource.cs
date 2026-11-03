@@ -21,6 +21,7 @@ namespace Maki.Core.Scrobbling;
 /// <param name="EndDate">Last air date, only when the provider knows the full day.</param>
 /// <param name="Episodes">Total episode count, null when unknown.</param>
 /// <param name="Progress">Episodes the watcher has seen.</param>
+/// <param name="ListUpdatedAtUtc">When the watcher last changed this entry on the tracker.</param>
 public record AnimeListEntry(
     long AnimeId,
     string Title,
@@ -34,7 +35,8 @@ public record AnimeListEntry(
     DateOnly? StartDate = null,
     DateOnly? EndDate = null,
     int? Episodes = null,
-    int? Progress = null);
+    int? Progress = null,
+    DateTime? ListUpdatedAtUtc = null);
 
 /// <summary>Normalizers shared by the anime list readers, so both trackers store the same shapes.</summary>
 public static class AnimeListFields
@@ -68,6 +70,16 @@ public static class AnimeListFields
         DateOnly.TryParseExact(raw?.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None,
             out var date)
             ? date
+            : null;
+
+    /// <summary>A tracker's Unix-seconds timestamp, null when missing or zero.</summary>
+    public static DateTime? FromUnixSeconds(long? seconds) =>
+        seconds is > 0 and < 253402300800 ? DateTimeOffset.FromUnixTimeSeconds(seconds.Value).UtcDateTime : null;
+
+    /// <summary>An ISO 8601 timestamp as UTC, null when missing or unreadable.</summary>
+    public static DateTime? ParseTimestamp(string? raw) =>
+        DateTimeOffset.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var at)
+            ? at.UtcDateTime
             : null;
 }
 

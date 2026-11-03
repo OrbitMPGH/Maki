@@ -29,7 +29,8 @@ function accentStyle(item: HomeReadingItem): CSSProperties | undefined {
   return item.coverAccent ? ({ '--series-accent': item.coverAccent } as CSSProperties) : undefined
 }
 
-export function ContinueHero({
+// Memoized: Home re-renders on every library refresh, and the hero's props rarely change with it.
+export const ContinueHero = memo(function ContinueHero({
   items,
   glance,
   queue = 'tray',
@@ -72,7 +73,7 @@ export function ContinueHero({
       {glance && <div className="continue-glance-below">{glance}</div>}
     </div>
   )
-}
+})
 
 /**
  * Continue reading's shape while it loads, built from the same classes so the page holds still
