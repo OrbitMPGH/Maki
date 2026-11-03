@@ -186,7 +186,8 @@ public class TorrentImportService(
     IAppSettings settings,
     UpgradeEvaluationService evaluation,
     InboxService inbox,
-    ILogger<TorrentImportService> logger)
+    ILogger<TorrentImportService> logger,
+    TorrentPollState? pollState = null)
 {
     public const int GuardSamplePages = 6;
 
@@ -612,6 +613,7 @@ public class TorrentImportService(
         item.ClientRemovalDeleteData = outcome is { Imported: > 0, PlacedFresh: true } &&
             await settings.GetAsync(SettingKeys.DownloadClientRemoveData, ct) != "false";
         item.ClientRemovalClient = DownloadClientSettingsStore.Fingerprint(client);
+        pollState?.RemovalMarked();
     }
 
     /// <summary>
