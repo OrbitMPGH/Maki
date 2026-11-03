@@ -260,7 +260,7 @@ public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILog
                 return names.Count == 0 ? null : new Probe(SuggestPage(zip, names), names.Count);
             }
 
-            return await ImageWorkGate.RunAsync(() => Task.FromResult(Qualify(candidate.Id, path, wanted)), ct);
+            return await QualifyAsync(candidate.Id, path, wanted, ct);
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -269,35 +269,42 @@ public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILog
         }
     }
 
-    private Probe? Qualify(int fileId, string path, PageKind kind)
+    private async Task<Probe?> QualifyAsync(int fileId, string path, PageKind kind, CancellationToken ct)
     {
-        using var zip = ZipFile.OpenRead(path);
-        var names = CbzReader.PageNames(zip);
         var info = new FileInfo(path);
-        foreach (var page in MiddlePages(zip, names).Take(PagesPerArchive))
+        var candidates = new List<(int Page, string Extension, byte[] Bytes)>();
+        int pageCount;
+        using (var zip = ZipFile.OpenRead(path))
         {
-            if (ReadPage(zip, names[page]) is not { } bytes ||
-                ImageCodec.TryIdentify(bytes) is not { } header ||
-                header.Width < MinSampleWidth || header.Height < MinSampleHeight)
+            var names = CbzReader.PageNames(zip);
+            pageCount = names.Count;
+            foreach (var page in MiddlePages(zip, names).Take(PagesPerArchive))
             {
-                continue;
+                if (ReadPage(zip, names[page]) is { } bytes &&
+                    ImageCodec.TryIdentify(bytes) is { } header &&
+                    header.Width >= MinSampleWidth && header.Height >= MinSampleHeight)
+                {
+                    candidates.Add((page, Path.GetExtension(names[page]), bytes));
+                }
             }
+        }
 
-            if (kind != PageKind.Any && (ImageCodec.IsColour(bytes) is not { } colour || colour != (kind == PageKind.Colour)))
-            {
-                continue;
-            }
-
-            var extension = Path.GetExtension(names[page]);
-            var encoded = Encode(bytes, extension, SampleSettings);
-            if (encoded.Bytes is null)
+        foreach (var (page, extension, bytes) in candidates)
+        {
+            var encoded = await ImageWorkGate.RunConversionAsync(
+                () => kind != PageKind.Any &&
+                      (ImageCodec.IsColour(bytes) is not { } colour || colour != (kind == PageKind.Colour))
+                    ? null
+                    : Encode(bytes, extension, SampleSettings),
+                ImageWorkGate.Weigh(bytes), ArchivePageConverter.IsAvif(bytes, extension, SampleSettings), ct);
+            if (encoded?.Bytes is null)
             {
                 continue;
             }
 
             var (prefix, key) = KeysFor(fileId, info, page, SampleSettings);
             Store(prefix, key, extension, bytes, encoded);
-            return new Probe(page, names.Count);
+            return new Probe(page, pageCount);
         }
 
         return null;
@@ -393,12 +400,9 @@ public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILog
     /// Reads the page and writes the stored copy (<c>{prefix}-original.ext</c>) and, for a setting,
     /// the encoded one (<c>{key}.webp</c> or <c>.avif</c>, or a <c>{key}.kept</c> holding the reason
     /// when the page is left as it is). Shared by every request for the key, so it never takes their
-    /// tokens. The archive is read once the work gate is held, so queued builds hold no page.
+    /// tokens. The encode waits for the conversion gate at its own weight, as the pass's do.
     /// </summary>
-    private Task<bool> BuildAsync(string path, int page, string prefix, string key, PageConversionSettings? settings) =>
-        ImageWorkGate.RunAsync(() => Task.FromResult(Build(path, page, prefix, key, settings)));
-
-    private bool Build(string path, int page, string prefix, string key, PageConversionSettings? settings)
+    private async Task<bool> BuildAsync(string path, int page, string prefix, string key, PageConversionSettings? settings)
     {
         byte[]? bytes;
         string name;
@@ -426,7 +430,11 @@ public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILog
         }
 
         var extension = Path.GetExtension(name);
-        Store(prefix, key, extension, bytes, settings is null ? null : Encode(bytes, extension, settings));
+        var encoded = settings is null
+            ? null
+            : await ImageWorkGate.RunConversionAsync(() => Encode(bytes, extension, settings),
+                ImageWorkGate.Weigh(bytes), ArchivePageConverter.IsAvif(bytes, extension, settings), CancellationToken.None);
+        Store(prefix, key, extension, bytes, encoded);
         return true;
     }
 
