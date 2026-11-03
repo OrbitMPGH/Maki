@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Maki.Core.Io;
 using Microsoft.Extensions.Logging;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
@@ -121,6 +122,11 @@ public sealed class TextEmbedder(
 
                 throw;
             }
+
+            // The session holds its own copy of the weights, so the file's pages would only sit in
+            // the container's page cache (about 110 MB) until the next load.
+            PageCache.DropAfterScan(options.ModelPath);
+            PageCache.DropAfterScan(options.ModelDataPath);
 
             // Read the graph rather than assume it. token_type_ids is a BERT-family input that the
             // Gemma export simply does not declare, and ONNX Runtime rejects a run that feeds an
