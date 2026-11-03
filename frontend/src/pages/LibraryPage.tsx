@@ -2,6 +2,7 @@ import { errorText } from '../api/errorText'
 import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePageState } from '../lib/pageState'
 import { shownRating } from '../lib/rating'
+import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
 import { useStableActions } from '../lib/useStableActions'
 import {
   ActionIcon,
@@ -540,18 +541,14 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const [deleteOne, setDeleteOne] = useState<{ series: SeriesDto; binRefused: boolean } | null>(null)
   const [deleteOneFiles, setDeleteOneFiles] = useState(false)
 
+  const titlesOf = useMemo(
+    () =>
+      titleIndex(series ?? [], (s) => [s.title, s.displayTitle, s.originalTitle, ...s.altTitles.map((alt) => alt.title)]),
+    [series],
+  )
+
   const visible = useMemo(() => {
     let list = [...(series ?? [])]
-    const q = debouncedQuery.trim().toLowerCase()
-    if (q) {
-      list = list.filter(
-        (s) =>
-          s.title.toLowerCase().includes(q) ||
-          s.displayTitle.toLowerCase().includes(q) ||
-          (s.originalTitle?.toLowerCase().includes(q) ?? false) ||
-          s.altTitles.some((alt) => alt.title.toLowerCase().includes(q)),
-      )
-    }
     if (onDevice) list = list.filter((s) => offlineSeries.has(s.id))
     if (statusFilter !== 'all') list = list.filter((s) => s.status === statusFilter)
     if (typeFilter.length > 0) list = list.filter((s) => s.type != null && typeFilter.includes(s.type))
@@ -627,13 +624,15 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       })
     }
     list.sort(compareSeries(sort, sortDir))
+    // After the other filters, so a typo fallback only kicks in when nothing in the filtered view matches.
+    list = fuzzyFilter(list, debouncedQuery, titlesOf)
     if (isOffline) {
       // A stable partition, so the chosen sort still orders each half.
       list = [...list.filter((s) => availableOffline.has(s.id)), ...list.filter((s) => !availableOffline.has(s.id))]
     }
     return list
   }, [
-    series, debouncedQuery, statusFilter, typeFilter, tagFilter, tagMatch, genreFilter, genreMatch,
+    series, titlesOf, debouncedQuery, statusFilter, typeFilter, tagFilter, tagMatch, genreFilter, genreMatch,
     excludeTagFilter, excludeGenreFilter, untaggedOnly,
     metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, sortDir, contentRatingFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,

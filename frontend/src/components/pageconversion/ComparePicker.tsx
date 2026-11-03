@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { fuzzyFilter, titleIndex } from '../../lib/fuzzySearch'
 import { Alert, Button, Group, Loader, Modal, NumberInput, Stack, Text, TextInput } from '@mantine/core'
 import { IconArrowLeft, IconSearch } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -60,16 +61,11 @@ function SeriesStage({ onPick }: { onPick: (series: SeriesDto) => void }) {
   const { data: all, isLoading } = useSeries()
   const [query, setQuery] = useState('')
 
+  const titlesOf = useMemo(() => titleIndex(all ?? [], (s) => [s.displayTitle, s.title]), [all])
   const rows = useMemo(() => {
-    const needle = query.trim().toLocaleLowerCase()
-    const matches = (all ?? []).filter(
-      (s) =>
-        needle === '' ||
-        s.displayTitle.toLocaleLowerCase().includes(needle) ||
-        s.title.toLocaleLowerCase().includes(needle),
-    )
-    return matches.sort((a, b) => a.sortTitle.localeCompare(b.sortTitle))
-  }, [all, query])
+    const sorted = [...(all ?? [])].sort((a, b) => a.sortTitle.localeCompare(b.sortTitle))
+    return fuzzyFilter(sorted, query, titlesOf)
+  }, [all, query, titlesOf])
 
   return (
     <Stack gap="sm">

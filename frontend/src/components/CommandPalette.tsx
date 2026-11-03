@@ -2,6 +2,7 @@ import { Center, Group, Loader, Modal, ScrollArea, Stack, Text, TextInput } from
 import { useDisclosure, useHotkeys, useOs } from '@mantine/hooks'
 import { IconAdjustments, IconArchive, IconBooks, IconPlus, IconSearch, IconSend } from '@tabler/icons-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
 import { useNavigate } from 'react-router-dom'
 import { useSeries } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
@@ -100,6 +101,16 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
     }
   }, [opened])
 
+  // Typing the displayed name has to find the series even when a language preference has moved it
+  // off the canonical title, and typing the canonical name still has to.
+  const seriesTitles = useMemo(
+    () =>
+      titleIndex(series ?? [], (s) => [
+        s.title, s.displayTitle, s.sortTitle, s.originalTitle, ...s.altTitles.map((t) => t.title),
+      ]),
+    [series],
+  )
+
   const results = useMemo<Result[]>(() => {
     const q = query.trim().toLowerCase()
 
@@ -157,17 +168,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
       : []
 
     const seriesMatches = q
-      ? (series ?? [])
-          .filter(
-            (s) =>
-              s.title.toLowerCase().includes(q) ||
-              // Typing the displayed name has to find the series even when a language preference
-              // has moved it off the canonical title, and typing the canonical name still has to.
-              s.displayTitle.toLowerCase().includes(q) ||
-              s.sortTitle.toLowerCase().includes(q) ||
-              s.originalTitle?.toLowerCase().includes(q) ||
-              s.altTitles.some((t) => t.title.toLowerCase().includes(q)),
-          )
+      ? fuzzyFilter(series ?? [], q, seriesTitles)
           .slice(0, MAX_SERIES_RESULTS)
           .map((s) => ({
             kind: 'series' as const,
@@ -196,7 +197,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
       : []
 
     return [...navMatches, ...archivedNav, ...settingMatches, ...seriesMatches, ...searchFallback]
-  }, [query, navItems, series, visibleSettings, canAdd, renderLabel, _, i18n.locale])
+  }, [query, navItems, series, seriesTitles, visibleSettings, canAdd, renderLabel, _, i18n.locale])
 
   useEffect(() => {
     setSelected(0)

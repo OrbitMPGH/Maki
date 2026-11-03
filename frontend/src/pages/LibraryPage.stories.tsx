@@ -184,6 +184,14 @@ export const SearchMatches: Story = {
   },
 }
 
+export const SearchToleratesTypos: Story = {
+  beforeEach: () => seedLibraryPrefs({ page: { query: 'lantrens over kasmui' } }),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('1 of 14 series match')).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })).toBeVisible()
+  },
+}
+
 export const NoMatches: Story = {
   beforeEach: () => seedLibraryPrefs({ page: { query: 'zzzz nothing like this' } }),
   play: async ({ canvas }) => {
