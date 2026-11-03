@@ -618,7 +618,7 @@ export default function ReaderPage() {
   const onKey = useRef<(event: KeyboardEvent) => void>(() => {})
   onKey.current = (event: KeyboardEvent) => {
     if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
-    const target = event.target as HTMLElement | null
+    const target = event.target instanceof HTMLElement ? event.target : null
     if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
     // Keys inside the notes panel belong to the panel, not to the page behind it.
     if (target?.closest('.notes-drawer')) return
