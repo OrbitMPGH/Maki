@@ -1457,7 +1457,9 @@ try
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Digests chapter files so KOReader's progress sync can name them. Does nothing while no user
-        // has the OPDS catalogue on; a sync for an unknown document also fires it.
+        // has the OPDS catalogue on; a sync for an unknown document also fires it. Daily, because a
+        // pass stats every file in the library: new files are caught by that early trigger and OPDS
+        // downloads record their own ids, so the sweep only finds files rewritten or copied by hand.
         q.AddJob<Maki.Api.Jobs.KoreaderDocumentIndexJob>(j => j
             .WithIdentity(Maki.Api.Jobs.KoreaderDocumentIndexJob.Key)
             .StoreDurably());
@@ -1465,7 +1467,7 @@ try
             .ForJob(Maki.Api.Jobs.KoreaderDocumentIndexJob.Key)
             .WithIdentity("koreader-document-index-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(18))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Daily upgrade scan. Polls every 15 minutes and runs once per local day after the configured
         // hour (UpgradeScanJob checks the marker), so changing the hour needs no reschedule. First
