@@ -63,7 +63,7 @@ public class RefreshMonitoredSeriesJob(
                 {
                     try
                     {
-                        await RefreshSeriesAsync(seriesId, token);
+                        await RefreshSeriesAsync(seriesId, token, ChapterListingDepth.NewestFirst);
                         Interlocked.Increment(ref done);
                     }
                     catch (Exception ex) when (!token.IsCancellationRequested)
@@ -87,8 +87,10 @@ public class RefreshMonitoredSeriesJob(
     /// in the change tracker, and each per-series <c>SaveChangesAsync</c> then runs DetectChanges over
     /// all of them. Cost per series grows with how many came before it, so a large library turned the
     /// refresh quadratic - burning CPU and holding SQLite's writer long enough to stall live requests.
+    /// Only the scheduled pass lists newest-first sources partially; recovery and restore walk it all.
     /// </summary>
-    internal async Task RefreshSeriesAsync(int seriesId, CancellationToken ct)
+    internal async Task RefreshSeriesAsync(
+        int seriesId, CancellationToken ct, ChapterListingDepth depth = ChapterListingDepth.Full)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -102,7 +104,7 @@ public class RefreshMonitoredSeriesJob(
 
         var chapterSync = scope.ServiceProvider.GetRequiredService<ChapterSyncService>();
 
-        var newChapterIds = await chapterSync.SyncSeriesAsync(seriesId, ct);
+        var newChapterIds = await chapterSync.SyncSeriesAsync(seriesId, depth, ct);
         var wanted = await db.Chapters
             .Where(c => newChapterIds.Contains(c.Id) && c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null)
             .Select(c => c.Id)

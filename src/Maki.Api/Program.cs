@@ -958,6 +958,7 @@ try
     builder.Services.AddSingleton<IDownloadQueueLiveness, DownloadQueueLiveness>();
     builder.Services.AddSingleton<DownloadBatchNotifier>();
     builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());
+    builder.Services.AddSingleton<ChapterListingSchedule>();
     builder.Services.AddScoped<ChapterSyncService>();
     builder.Services.AddScoped<ReleaseOutlookService>();
     builder.Services.AddScoped<SourceMappingRemovalService>();

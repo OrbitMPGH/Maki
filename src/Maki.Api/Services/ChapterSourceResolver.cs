@@ -116,7 +116,7 @@ public class ChapterSourceResolver(
 
             try
             {
-                var sourceChapterId = await ResolveSourceChapterIdAsync(source, mapping, chapter, ct, requireExactMatch);
+                var sourceChapterId = await ResolveSourceChapterIdAsync(db, source, mapping, chapter, ct, requireExactMatch);
                 if (sourceChapterId != null)
                 {
                     return new ResolvedChapterSource(mapping, source, sourceChapterId);
@@ -158,11 +158,40 @@ public class ChapterSourceResolver(
     /// resolution is per chapter but the listing is per series, so a bulk enqueue would otherwise
     /// issue one full catalog listing per queued chapter against the same rate-limited source.
     /// </para>
+    /// <para>
+    /// A newest-first source's monitored sync lists only its newest pages and caches nothing, so with
+    /// no fresh whole listing cached the link that sync wrote is used before walking the whole list.
+    /// A stale id there 404s, and the processor's fallback takes it from that.
+    /// </para>
     /// </summary>
     private async Task<string?> ResolveSourceChapterIdAsync(
-        ISource source, SourceMapping mapping, Chapter chapter, CancellationToken ct, bool requireExactMatch = false)
+        MakiDbContext db, ISource source, SourceMapping mapping, Chapter chapter, CancellationToken ct,
+        bool requireExactMatch = false)
     {
-        var chapters = await chapterLists.GetAsync(source, mapping.SourceSeriesId, mapping.LanguageFilter, ct);
+        if (source is INewestFirstChapterSource)
+        {
+            if (chapterLists.TryGetFresh(source, mapping.SourceSeriesId, mapping.LanguageFilter) is { } fresh &&
+                Match(fresh, chapter, requireExactMatch) is { } listed)
+            {
+                return listed;
+            }
+
+            var stored = await db.ChapterSourceLinks.AsNoTracking()
+                .Where(l => l.SourceMappingId == mapping.Id && l.ChapterId == chapter.Id)
+                .Select(l => l.SourceChapterId)
+                .FirstOrDefaultAsync(ct);
+            if (!string.IsNullOrEmpty(stored))
+            {
+                return stored;
+            }
+        }
+
+        return Match(await chapterLists.GetAsync(source, mapping.SourceSeriesId, mapping.LanguageFilter, ct),
+            chapter, requireExactMatch);
+    }
+
+    private static string? Match(IReadOnlyList<SourceChapter> chapters, Chapter chapter, bool requireExactMatch)
+    {
         if (requireExactMatch)
         {
             var exact = chapters.Where(c => SourceLanguages.Same(c.Language, chapter.Language) &&
