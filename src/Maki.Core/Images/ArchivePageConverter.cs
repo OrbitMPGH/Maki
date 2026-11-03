@@ -77,7 +77,7 @@ public static class ArchivePageConverter
                 var pages = order.ToHashSet(StringComparer.Ordinal);
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(targetPath))!);
                 await using var output = new FileStream(partial, FileMode.Create, FileAccess.Write, FileShare.None);
-                using var target = new ZipArchive(output, ZipArchiveMode.Create);
+                using var target = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true);
 
                 async Task WriteAsync(Pending item)
                 {
@@ -118,9 +118,9 @@ public static class ArchivePageConverter
                     await stream.WriteAsync(bytes, ct);
                 }
 
-                // Pages encode ahead of the writer, as many at once as the conversion limit allows, and are
-                // written in the source order. AV1 is the slow part, and one page at a time left
-                // all but one core idle.
+                // Pages encode ahead of the writer, as many at once as the conversion limit allows (half as
+                // many AVIF pages, each on two threads), and are written in the source order. AV1 is the
+                // slow part, and one page at a time left all but one core idle.
                 foreach (var entry in source.Entries)
                 {
                     ct.ThrowIfCancellationRequested();
@@ -138,7 +138,7 @@ public static class ArchivePageConverter
                         var extension = Path.GetExtension(entry.FullName);
                         page = Task.Run(() => ImageWorkGate.RunConversionAsync(
                             () => PageConversion.Convert(bytes, extension, settings),
-                            ImageWorkGate.Weigh(bytes), encodes.Token), encodes.Token);
+                            PageConversion.WeightOf(bytes, extension, settings), encodes.Token), encodes.Token);
                     }
 
                     pending.Enqueue(new Pending(entry, bytes, page));
@@ -153,6 +153,15 @@ public static class ArchivePageConverter
                 {
                     await WriteAsync(next);
                     pending.Dequeue();
+                }
+
+                // On disk before any rename, so a crash never leaves a renamed archive whose data never
+                // landed, and clean, so the caller can drop it from the page cache. A copy that will not
+                // be kept is not worth the flush.
+                target.Dispose();
+                if (converted > 0 && output.Length <= sourceBytes * (1 - PageConversion.MinFileSaving))
+                {
+                    output.Flush(flushToDisk: true);
                 }
             }
 
@@ -222,17 +231,33 @@ public static class ArchivePageConverter
                 return true;
             }
 
-            foreach (var (bytes, extension) in picked)
+            // Both pages encode at once, as the full pass would; the first one that clears the floor
+            // answers, and an encode still waiting on the gate is called off.
+            using var probes = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            var pending = picked
+                .Select(p => Task.Run(() => ImageWorkGate.RunConversionAsync(
+                    () => PageConversion.Convert(p.Bytes, p.Extension, settings),
+                    PageConversion.WeightOf(p.Bytes, p.Extension, settings), probes.Token), probes.Token))
+                .ToList();
+            try
             {
-                var page = await ImageWorkGate.RunConversionAsync(
-                    () => PageConversion.Convert(bytes, extension, settings), ImageWorkGate.Weigh(bytes), ct);
-                if (page.Converted)
+                while (pending.Count > 0)
                 {
-                    return true;
+                    var done = await Task.WhenAny(pending);
+                    pending.Remove(done);
+                    if ((await done).Converted)
+                    {
+                        return true;
+                    }
                 }
-            }
 
-            return false;
+                return false;
+            }
+            finally
+            {
+                await probes.CancelAsync();
+                await Task.WhenAll(pending.Cast<Task>()).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            }
         }
         catch (Exception ex) when (ex is VipsException or InvalidDataException or EndOfStreamException or IOException
                                        or UnauthorizedAccessException or NotSupportedException)

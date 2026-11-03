@@ -165,31 +165,11 @@ public static class PageConversion
     /// </summary>
     public static Page Convert(byte[] bytes, string extension, PageConversionSettings settings)
     {
-        var format = FormatOf(bytes, extension);
-        if (format is not ("jpg" or "png"))
+        if (Decide(bytes, extension, settings, out var format, out var kept) is not { } encoding)
         {
-            return new Page(bytes, extension, format, PageSkip.AlreadyCompact);
+            return new Page(bytes, extension, format, kept);
         }
 
-        if (format == "jpg" && settings.Stop == PageConversionStop.Lossless)
-        {
-            return new Page(bytes, extension, format, PageSkip.Lossless);
-        }
-
-        if (bytes.Length < MinPageBytes)
-        {
-            return new Page(bytes, extension, format, PageSkip.TooSmall);
-        }
-
-        if (format == "png" && IsAnimatedPng(bytes))
-        {
-            return new Page(bytes, extension, format, PageSkip.Animated);
-        }
-
-        var lossless = settings.Stop == PageConversionStop.Lossless;
-        var encoding = format == "png" && (lossless || settings.PngLossless)
-            ? PageEncoding.LosslessWebp
-            : settings.Format == PageConversionFormat.Avif ? PageEncoding.Avif : PageEncoding.Webp;
         var quality = encoding == PageEncoding.LosslessWebp ? 100 : PageConversionSettings.Quality(settings.Format, settings.Stop);
         var encoded = ImageCodec.EncodePage(bytes, encoding, quality, out var skipped);
         if (encoded is null)
@@ -203,6 +183,35 @@ public static class PageConversion
         }
 
         return new Page(encoded, encoding == PageEncoding.Avif ? ".avif" : ".webp", format, null);
+    }
+
+    /// <summary>How <see cref="Convert"/> encodes the page, or null when it keeps the page without decoding it.</summary>
+    public static PageEncoding? EncodingFor(byte[] bytes, string extension, PageConversionSettings settings) =>
+        Decide(bytes, extension, settings, out _, out _);
+
+    /// <summary>What encoding the page takes from the conversion gate, read from its header before any decode.</summary>
+    public static ConversionWeight WeightOf(byte[] bytes, string extension, PageConversionSettings settings) =>
+        EncodingFor(bytes, extension, settings) is { } encoding && ImageCodec.TryShape(bytes) is { } shape
+            ? ImageWorkGate.WeighConversion(shape.Width, shape.Height, shape.Bands, encoding)
+            : ImageWorkGate.LightConversion;
+
+    private static PageEncoding? Decide(byte[] bytes, string extension, PageConversionSettings settings,
+        out string format, out PageSkip? kept)
+    {
+        format = FormatOf(bytes, extension);
+        kept = format is not ("jpg" or "png") ? PageSkip.AlreadyCompact
+            : format == "jpg" && settings.Stop == PageConversionStop.Lossless ? PageSkip.Lossless
+            : bytes.Length < MinPageBytes ? PageSkip.TooSmall
+            : format == "png" && IsAnimatedPng(bytes) ? PageSkip.Animated
+            : null;
+        if (kept is not null)
+        {
+            return null;
+        }
+
+        return format == "png" && (settings.Stop == PageConversionStop.Lossless || settings.PngLossless)
+            ? PageEncoding.LosslessWebp
+            : settings.Format == PageConversionFormat.Avif ? PageEncoding.Avif : PageEncoding.Webp;
     }
 
     /// <summary>The format name <see cref="ChapterFileMeasurer"/> would give these bytes.</summary>

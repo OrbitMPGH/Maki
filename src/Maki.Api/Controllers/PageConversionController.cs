@@ -144,6 +144,8 @@ public class PageConversionController(
         if (changed)
         {
             await plans.RecheckAsync(await PageConversionOptions.LoadPlanAsync(db, ct), null, ct);
+            // Turning conversion on leaves files queued while it was off waiting on the worker's idle wake.
+            PageConversionWorker.Signal();
         }
 
         return await Status(ct);
@@ -181,6 +183,8 @@ public class PageConversionController(
         if (changed)
         {
             await plans.RecheckAsync(await PageConversionOptions.LoadPlanAsync(db, ct), null, ct);
+            // Turning conversion on leaves files queued while it was off waiting on the worker's idle wake.
+            PageConversionWorker.Signal();
         }
 
         return Ok(await RulesAsync(ct));
@@ -245,6 +249,8 @@ public class PageConversionController(
         if (changed)
         {
             await plans.RecheckAsync(await PageConversionOptions.LoadPlanAsync(db, ct), null, ct);
+            // Turning conversion on leaves files queued while it was off waiting on the worker's idle wake.
+            PageConversionWorker.Signal();
         }
 
         return await Status(ct);

@@ -76,7 +76,8 @@ public sealed partial class PageConversionTests : IDisposable
     private PageConversionService Service(MakiDbContext db, Func<string, string, bool>? hardlink = null,
         Action<string, string>? moveOver = null,
         Func<string, string, PageConversionSettings, CancellationToken, Task<ArchiveConversionResult>>? converter = null,
-        Func<string, long?>? freeSpace = null, bool? copiesSource = null, ReaderArchiveCache? archives = null) =>
+        Func<string, long?>? freeSpace = null, bool? copiesSource = null, ReaderArchiveCache? archives = null,
+        List<string>? dropped = null) =>
         new(db, archives ?? _world.Archives,
             new KavitaScanService(new KavitaClient(new StubHttpClientFactory("{}")), _world.Settings, _world.Db.ScopeFactory(),
                 NullLogger<KavitaScanService>.Instance),
@@ -86,7 +87,8 @@ public sealed partial class PageConversionTests : IDisposable
             MoveOver = moveOver ?? ((from, to) => File.Move(from, to, overwrite: true)),
             Converter = converter ?? ArchivePageConverter.ConvertAsync,
             FreeSpace = freeSpace ?? DiskSpace.AvailableFor,
-            CopiesSource = copiesSource ?? OperatingSystem.IsWindows()
+            CopiesSource = copiesSource ?? OperatingSystem.IsWindows(),
+            DropCache = path => dropped?.Add(Path.GetFullPath(path))
         };
 
     private string[] TmpFiles() =>
@@ -237,6 +239,37 @@ public sealed partial class PageConversionTests : IDisposable
         Assert.NotNull(Row(fileId).ConversionCheckedAtUtc);
         Assert.Equal(0, Row(fileId).ConversionSavedBytes);
         Assert.Empty(TrashedOriginals());
+    }
+
+    [Fact]
+    public async Task A_pass_drops_what_it_read_from_the_page_cache_and_the_queue_keeps_a_fresh_download()
+    {
+        var (_, converted, convertedPath) = JpegChapter(1);
+        var (_, kept, keptPath) = JpegChapter(2, quality: 35);
+        var (_, queued, _) = QueuedChapter(3);
+        var high = new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.High, false);
+        var dropped = new List<string>();
+
+        using (var db = _world.Db.NewContext())
+        {
+            Assert.Equal(FileConversionStatus.Converted,
+                (await Service(db, dropped: dropped).ConvertAsync(converted, Webp, CancellationToken.None)).Status);
+        }
+
+        using (var db = _world.Db.NewContext())
+        {
+            Assert.Equal(FileConversionStatus.Unchanged,
+                (await Service(db, dropped: dropped).ConvertAsync(kept, high, CancellationToken.None)).Status);
+        }
+
+        using (var db = _world.Db.NewContext())
+        {
+            Assert.Equal(FileConversionStatus.Converted, (await Service(db, dropped: dropped).ConvertAsync(queued,
+                PageConversionPlan.For(Webp), new PageConversionPassCache(), CancellationToken.None, queued: true)).Status);
+        }
+
+        var trashed = Path.GetFullPath(Assert.Single(TrashedOriginals()));
+        Assert.Equal([trashed, Path.GetFullPath(convertedPath), Path.GetFullPath(keptPath)], dropped);
     }
 
     [Fact]
@@ -454,6 +487,27 @@ public sealed partial class PageConversionTests : IDisposable
         clock.Ticks += PageConversionService.ReadingQuiet.Ticks + TimeSpan.TicksPerSecond;
         Assert.Equal(1, await worker.RunQueueAsync(CancellationToken.None));
         Assert.Equal("webp", Row(fileId).ImageFormat);
+    }
+
+    [Fact]
+    public async Task The_idle_worker_sleeps_until_the_next_queued_retry_or_the_fallback()
+    {
+        EnableConversion();
+        var worker = QueueWorker();
+        var now = DateTime.UtcNow;
+        Assert.Equal(PageConversionWorker.IdleFallback, worker.IdleWait(now));
+
+        var (ownChapter, _, _) = QueuedChapter(1);
+        Downloading(ownChapter);
+        worker.BusyRetry = TimeSpan.FromMinutes(2);
+        var before = DateTime.UtcNow;
+        Assert.Equal(0, await worker.RunQueueAsync(CancellationToken.None));
+        var after = DateTime.UtcNow;
+        Assert.InRange(worker.IdleWait(after), TimeSpan.FromMinutes(2) - (after - before) - TimeSpan.FromSeconds(1),
+            TimeSpan.FromMinutes(2));
+
+        Assert.Equal(0, await worker.RunQueueAsync(CancellationToken.None));
+        Assert.Equal(TimeSpan.Zero, worker.IdleWait(DateTime.UtcNow + TimeSpan.FromMinutes(3)));
     }
 
     [Fact]

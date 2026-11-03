@@ -56,8 +56,10 @@ public static class ImageCodec
         // libvips otherwise starts one worker per core for every pipeline, on top of the parallelism
         // ImageWorkGate already allows, and each worker keeps its own buffers. On a 16-core host
         // that is four gated decodes times sixteen threads of native heap that glibc never gives
-        // back. One cover or thumbnail on its own gets slower; throughput comes from the gate.
-        global::NetVips.NetVips.Concurrency = 1;
+        // back. Two rather than one because libaom splits an AVIF encode across them for about the
+        // memory of one thread (a 14 MP page: 672 MB at one, 689 MB at four, 3.4x faster at four), so
+        // the gate runs half as many AVIF pages at once instead. A process global: never set per call.
+        global::NetVips.NetVips.Concurrency = EncoderThreads;
 
         global::NetVips.NetVips.BlockUntrusted = true;
         Operation.Block("VipsForeignLoad", true);
@@ -66,6 +68,9 @@ public static class ImageCodec
             Operation.Block(loader, false);
         }
     }
+
+    /// <summary>The libvips worker threads of one pipeline, which an AVIF encode uses in full.</summary>
+    public const int EncoderThreads = 2;
 
     /// <summary>Bytes libvips has allocated through its own tracker: pixel buffers, not every malloc it makes.</summary>
     public static long TrackedMemoryBytes => Stats.Mem;
@@ -93,6 +98,20 @@ public static class ImageCodec
 
         using var image = VipsImage.NewFromFile(path, access: Enums.Access.Sequential);
         return Header(image, null);
+    }
+
+    /// <summary>Width, height and bands from the header, or null when no permitted loader reads it.</summary>
+    public static (int Width, int Height, int Bands)? TryShape(byte[] bytes)
+    {
+        try
+        {
+            using var image = VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
+            return (image.Width, image.Height, image.Bands);
+        }
+        catch (VipsException)
+        {
+            return null;
+        }
     }
 
     public static ImageHeader? TryIdentify(byte[] bytes)
@@ -128,17 +147,40 @@ public static class ImageCodec
                 return null;
             }
 
-            using var thumb = VipsImage.ThumbnailBuffer(bytes, 64);
-            using var rgb = thumb.HasAlpha() ? thumb.Flatten(background: [255, 255, 255]) : thumb.Copy();
-            using var lch = rgb.Colourspace(Enums.Interpretation.Lch);
-            using var chroma = lch[1];
-            using var colourful = chroma > 20;
-            return colourful.Avg() / 255 > 0.02;
+            using var thumb = VipsImage.ThumbnailBuffer(bytes, ColourThumbWidth);
+            return Colourful(thumb);
         }
         catch (VipsException)
         {
             return null;
         }
+    }
+
+    private const int ColourThumbWidth = 64;
+
+    private static bool Colourful(VipsImage thumb)
+    {
+        using var rgb = thumb.HasAlpha() ? thumb.Flatten(background: [255, 255, 255]) : thumb.Copy();
+        using var lch = rgb.Colourspace(Enums.Interpretation.Lch);
+        using var chroma = lch[1];
+        using var colourful = chroma > 20;
+        return colourful.Avg() / 255 > 0.02;
+    }
+
+    /// <summary>
+    /// Sharp YUV only helps chroma edges. On a grey page, most of a manga library and often stored as
+    /// RGB, it doubles a WebP encode's time and memory for the same bytes. The check thumbnails the
+    /// page already loaded for the encode, so the page is decoded once.
+    /// </summary>
+    internal static bool SharpYuvHelps(VipsImage image)
+    {
+        if (image.Bands < 3 || image.Interpretation is Enums.Interpretation.Bw or Enums.Interpretation.Grey16)
+        {
+            return false;
+        }
+
+        using var thumb = image.ThumbnailImage(ColourThumbWidth);
+        return Colourful(thumb);
     }
 
     private const int BmpHeaderBytes = 26;
@@ -263,7 +305,7 @@ public static class ImageCodec
         return target switch
         {
             PageEncoding.LosslessWebp => image.WebpsaveBuffer(lossless: true, effort: 4, keep: Enums.ForeignKeep.Icc),
-            PageEncoding.Webp => image.WebpsaveBuffer(q: quality, effort: 4, smartSubsample: true, keep: Enums.ForeignKeep.Icc),
+            PageEncoding.Webp => image.WebpsaveBuffer(q: quality, effort: 4, smartSubsample: SharpYuvHelps(image), keep: Enums.ForeignKeep.Icc),
             PageEncoding.Avif => image.HeifsaveBuffer(q: quality, bitdepth: 8, compression: Enums.ForeignHeifCompression.Av1,
                 effort: AvifEffort, keep: Enums.ForeignKeep.Icc),
             _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)
