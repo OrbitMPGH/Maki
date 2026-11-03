@@ -9,6 +9,7 @@ import {
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusGlyph, seriesStatusVisual, statusColor, statusOnColor } from './status'
+import { coverSrcSet, COVER_CARD_SIZES } from '../../lib/coverSrcSet'
 import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -115,7 +116,14 @@ export const CoverCard = memo(function CoverCard({
     >
       <div className="cover-poster">
         {series.coverUrl ? (
-          <img src={series.coverUrl} alt="" loading="lazy" decoding="async" />
+          <img
+            src={series.coverUrl}
+            srcSet={coverSrcSet(series.coverUrl)}
+            sizes={COVER_CARD_SIZES}
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           <div className="cover-placeholder" aria-hidden>{series.displayTitle}</div>
         )}

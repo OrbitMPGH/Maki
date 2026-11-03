@@ -13,6 +13,7 @@ public class CoverService(
     : INotificationCoverStore
 {
     private const int PosterWidth = 400;
+    private const int SmallPosterWidth = 240;
 
     internal const long MaxDownloadBytes = 20 * 1024 * 1024;
 
@@ -41,6 +42,67 @@ public class CoverService(
     }
 
     public string CoverPathFor(int seriesId) => Path.Combine(paths.MediaCoverDir, seriesId.ToString(), "cover.jpg");
+
+    public string SmallCoverPathFor(int seriesId) => Path.Combine(paths.MediaCoverDir, seriesId.ToString(), "cover-sm.jpg");
+
+    /// <summary>
+    /// The 240 px poster for grid cards. Written beside cover.jpg whenever that is stored; a library
+    /// that predates it gets the file made here on first request, and a cover.jpg newer than it
+    /// remakes it. Null when the series has no poster.
+    /// </summary>
+    public async Task<string?> EnsureSmallCoverAsync(int seriesId, CancellationToken ct = default)
+    {
+        var cover = CoverPathFor(seriesId);
+        var small = SmallCoverPathFor(seriesId);
+        if (!File.Exists(cover))
+        {
+            return null;
+        }
+
+        if (File.Exists(small) && File.GetLastWriteTimeUtc(small) >= File.GetLastWriteTimeUtc(cover))
+        {
+            return small;
+        }
+
+        try
+        {
+            var bytes = await File.ReadAllBytesAsync(cover, ct);
+            await ImageWorkGate.RunAsync(
+                () => Task.FromResult(WriteSmallPoster(seriesId, bytes)), ImageWorkGate.Weigh(bytes), ct);
+            return small;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not make the small cover for series {SeriesId}", seriesId);
+            return null;
+        }
+    }
+
+    private string WriteSmallPoster(int seriesId, byte[] source)
+    {
+        var target = SmallCoverPathFor(seriesId);
+        var poster = ImageCodec.JpegThumbnail(source, SmallPosterWidth, 85, enlarge: false);
+        var temp = $"{target}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            File.WriteAllBytes(temp, poster);
+            File.Move(temp, target, overwrite: true);
+        }
+        catch
+        {
+            try
+            {
+                File.Delete(temp);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+
+            throw;
+        }
+
+        return target;
+    }
 
     /// <summary>
     /// Removes a series' whole poster folder. Must run on series delete: SQLite reuses a rowid
@@ -149,6 +211,15 @@ public class CoverService(
             }
 
             throw;
+        }
+
+        try
+        {
+            WriteSmallPoster(seriesId, source);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not write the small cover for series {SeriesId}", seriesId);
         }
 
         return target;
