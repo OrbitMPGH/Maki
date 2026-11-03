@@ -490,6 +490,27 @@ public sealed partial class PageConversionTests : IDisposable
     }
 
     [Fact]
+    public async Task The_idle_worker_sleeps_until_the_next_queued_retry_or_the_fallback()
+    {
+        EnableConversion();
+        var worker = QueueWorker();
+        var now = DateTime.UtcNow;
+        Assert.Equal(PageConversionWorker.IdleFallback, worker.IdleWait(now));
+
+        var (ownChapter, _, _) = QueuedChapter(1);
+        Downloading(ownChapter);
+        worker.BusyRetry = TimeSpan.FromMinutes(2);
+        var before = DateTime.UtcNow;
+        Assert.Equal(0, await worker.RunQueueAsync(CancellationToken.None));
+        var after = DateTime.UtcNow;
+        Assert.InRange(worker.IdleWait(after), TimeSpan.FromMinutes(2) - (after - before) - TimeSpan.FromSeconds(1),
+            TimeSpan.FromMinutes(2));
+
+        Assert.Equal(0, await worker.RunQueueAsync(CancellationToken.None));
+        Assert.Equal(TimeSpan.Zero, worker.IdleWait(DateTime.UtcNow + TimeSpan.FromMinutes(3)));
+    }
+
+    [Fact]
     public async Task A_queued_file_waits_only_for_a_download_of_its_own_chapters()
     {
         EnableConversion();

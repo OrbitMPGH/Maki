@@ -64,6 +64,12 @@ public class PageConversionWorker(
     internal TimeSpan FailedRetry { get; set; } = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan LowDiskRetry = TimeSpan.FromMinutes(10);
 
+    /// <summary>
+    /// The longest the worker sleeps with nothing due. Every source of new work signals it: a queued file,
+    /// a start, a settings save. This only covers a signal lost to a restart race.
+    /// </summary>
+    internal static readonly TimeSpan IdleFallback = TimeSpan.FromMinutes(30);
+
     private const int BatchSize = 20;
 
     internal TimeSpan DelayBetweenFiles { get; set; } = TimeSpan.FromMilliseconds(250);
@@ -74,6 +80,9 @@ public class PageConversionWorker(
     /// <summary>Per queued file, when it may be tried again and how many tries failed. In memory: a restart retries at once.</summary>
     private readonly Dictionary<int, (DateTime RetryAt, int Failures)> _queueRetry = [];
     private DateTime _queueHeldUntil;
+
+    // The earliest retry among the files the last queue run saw; null while conversion is off.
+    private DateTime? _queueNextRetry;
 
     private readonly Lock _sync = new();
     private PageConversionPassTotals? _current;
@@ -171,7 +180,7 @@ public class PageConversionWorker(
                     continue;
                 }
 
-                await Wake.WaitAsync(TimeSpan.FromMinutes(1), stoppingToken);
+                await Wake.WaitAsync(IdleWait(DateTime.UtcNow), stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -182,6 +191,34 @@ public class PageConversionWorker(
                 logger.LogError(ex, "Page conversion pass failed");
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
+        }
+    }
+
+    /// <summary>
+    /// Until the earliest file the last queue run left waiting may be tried again, or the low-disk hold
+    /// ends, at most <see cref="IdleFallback"/>. Zero when one came due while the run was busy.
+    /// </summary>
+    internal TimeSpan IdleWait(DateTime now)
+    {
+        var next = now + IdleFallback;
+        if (_queueNextRetry is { } retry && retry < next)
+        {
+            next = retry;
+        }
+
+        if (_queueHeldUntil > now && _queueHeldUntil < next)
+        {
+            next = _queueHeldUntil;
+        }
+
+        return next > now ? next - now : TimeSpan.Zero;
+    }
+
+    private void RetryNoLaterThan(DateTime retryAt)
+    {
+        if (_queueNextRetry is not { } earliest || retryAt < earliest)
+        {
+            _queueNextRetry = retryAt;
         }
     }
 
@@ -342,6 +379,7 @@ public class PageConversionWorker(
     /// </summary>
     internal async Task<int> RunQueueAsync(CancellationToken ct)
     {
+        _queueNextRetry = null;
         if (DateTime.UtcNow < _queueHeldUntil)
         {
             return 0;
@@ -383,6 +421,7 @@ public class PageConversionWorker(
                 var now = DateTime.UtcNow;
                 if (_queueRetry.TryGetValue(file.Id, out var retry) && retry.RetryAt > now)
                 {
+                    RetryNoLaterThan(retry.RetryAt);
                     continue;
                 }
 
@@ -430,12 +469,14 @@ public class PageConversionWorker(
         {
             case FileConversionStatus.Busy:
                 _queueRetry[fileId] = (now + BusyRetry, _queueRetry.GetValueOrDefault(fileId).Failures);
+                RetryNoLaterThan(now + BusyRetry);
                 return false;
             case FileConversionStatus.Failed:
                 var failures = _queueRetry.GetValueOrDefault(fileId).Failures + 1;
                 if (failures < MaxQueueAttempts)
                 {
                     _queueRetry[fileId] = (now + FailedRetry * failures, failures);
+                    RetryNoLaterThan(now + FailedRetry * failures);
                     return false;
                 }
 
