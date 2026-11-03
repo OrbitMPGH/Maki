@@ -14,6 +14,32 @@ public class CoverService(
 {
     private const int PosterWidth = 400;
 
+    internal const long MaxDownloadBytes = 20 * 1024 * 1024;
+
+    /// <summary>Reads the body into a buffer sized from Content-Length when known, refusing anything over <paramref name="cap"/>.</summary>
+    internal static async Task<byte[]> ReadCappedAsync(Stream stream, long? contentLength, long cap, CancellationToken ct)
+    {
+        if (contentLength > cap)
+        {
+            throw new InvalidDataException($"Cover is {contentLength} bytes, over the {cap} byte limit");
+        }
+
+        using var buffer = new MemoryStream(contentLength is > 0 ? (int)contentLength.Value : 0);
+        var chunk = new byte[81920];
+        int read;
+        while ((read = await stream.ReadAsync(chunk, ct)) > 0)
+        {
+            if (buffer.Length + read > cap)
+            {
+                throw new InvalidDataException($"Cover is over the {cap} byte limit");
+            }
+
+            buffer.Write(chunk, 0, read);
+        }
+
+        return buffer.ToArray();
+    }
+
     public string CoverPathFor(int seriesId) => Path.Combine(paths.MediaCoverDir, seriesId.ToString(), "cover.jpg");
 
     /// <summary>
@@ -62,10 +88,10 @@ public class CoverService(
         try
         {
             var client = httpClientFactory.CreateClient("covers");
-            await using var stream = await client.GetStreamAsync(coverUrl, ct);
-            using var buffer = new MemoryStream();
-            await stream.CopyToAsync(buffer, ct);
-            var bytes = buffer.ToArray();
+            using var response = await client.GetAsync(coverUrl, HttpCompletionOption.ResponseHeadersRead, ct);
+            response.EnsureSuccessStatusCode();
+            await using var stream = await response.Content.ReadAsStreamAsync(ct);
+            var bytes = await ReadCappedAsync(stream, response.Content.Headers.ContentLength, MaxDownloadBytes, ct);
             return await ImageWorkGate.RunAsync(
                 () => Task.FromResult(SavePoster(seriesId, bytes)), ImageWorkGate.Weigh(bytes), ct);
         }
