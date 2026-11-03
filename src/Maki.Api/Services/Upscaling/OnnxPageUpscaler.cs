@@ -52,11 +52,12 @@ public sealed class OnnxPageUpscaler(
         }
 
         var grey = UpscalePixels.IsGreyscale(source.Pixels);
+        var luma = grey && UpscalePixels.IsExactGrey(source.Pixels);
         var threads = (await UpscaleOptions.LoadAsync(settings, ct)).Threads;
         StitchedPage stitched;
         try
         {
-            stitched = await Task.Run(() => Run(source, info, threads, ct), ct);
+            stitched = await Task.Run(() => Run(source, info, threads, luma, ct), ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -76,6 +77,13 @@ public sealed class OnnxPageUpscaler(
         try
         {
             var outputWeight = ImageWorkGate.Weigh(stitched.Width, stitched.Height);
+            if (luma)
+            {
+                return UpscaleResult.Ready(await ImageWorkGate.RunAsync(
+                    () => Task.FromResult(ImageCodec.EncodeUpscaledGrey(stitched.Pixels, stitched.Width, stitched.Height)),
+                    outputWeight, ct));
+            }
+
             var original = await ImageWorkGate.RunAsync(() => Task.FromResult(ImageCodec.ResizeRgb(
                 source.Pixels, source.Width, source.Height, (double)stitched.Width / source.Width)), outputWeight, ct);
             if ((original.Width, original.Height) != (stitched.Width, stitched.Height))
@@ -83,9 +91,9 @@ public sealed class OnnxPageUpscaler(
                 throw new InvalidDataException("The resized source does not match the upscaled page.");
             }
 
-            UpscalePixels.TakeColourFrom(stitched.Rgb, original.Rgb);
+            UpscalePixels.TakeColourFrom(stitched.Pixels, original.Rgb);
             var encoded = await ImageWorkGate.RunAsync(
-                () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Rgb, stitched.Width, stitched.Height, grey)),
+                () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Pixels, stitched.Width, stitched.Height, grey)),
                 outputWeight, ct);
             return UpscaleResult.Ready(encoded);
         }
@@ -157,12 +165,16 @@ public sealed class OnnxPageUpscaler(
         }
     }
 
-    internal StitchedPage Run(Raster source, UpscaleModelInfo info, int threads, CancellationToken ct)
+    /// <param name="luma">
+    /// Stitch one band, the luma of the model output, instead of RGB. Only for an exact-grey source
+    /// (<see cref="UpscalePixels.IsExactGrey"/>), where it equals the colour pass and band average.
+    /// </param>
+    internal StitchedPage Run(Raster source, UpscaleModelInfo info, int threads, bool luma, CancellationToken ct)
     {
         var loaded = Acquire(info, threads);
         try
         {
-            return RunTiles(loaded, source, info, ct);
+            return RunTiles(loaded, source, info, luma, ct);
         }
         finally
         {
@@ -170,19 +182,20 @@ public sealed class OnnxPageUpscaler(
         }
     }
 
-    private StitchedPage RunTiles(LoadedModel loaded, Raster source, UpscaleModelInfo info, CancellationToken ct)
+    private StitchedPage RunTiles(LoadedModel loaded, Raster source, UpscaleModelInfo info, bool luma, CancellationToken ct)
     {
         var tiles = UpscaleTiling.Plan(source.Width, source.Height,
             multiple: info.Adapter == UpscaleAdapter.Plain4xThenHalve ? 1 : 4);
         var scale = info.OutputScale;
         var width = source.Width * scale;
         var height = source.Height * scale;
-        if ((long)width * height * 3 > Array.MaxLength)
+        var bands = luma ? 1 : 3;
+        if ((long)width * height * bands > Array.MaxLength)
         {
             throw new InvalidDataException("The upscaled page does not fit in one buffer.");
         }
 
-        var output = new byte[width * height * 3];
+        var output = new byte[width * height * bands];
         using var runOptions = new RunOptions();
         using var cancel = ct.Register(() => runOptions.Terminate = true);
         for (var i = 0; i < tiles.Count; i++)
@@ -214,13 +227,13 @@ public sealed class OnnxPageUpscaler(
                     }
                 }
 
-                StitchTile(rgb, tileWidth, tile, scale, output, width);
+                StitchTile(rgb, tileWidth, tile, scale, output, width, bands);
             }
 
             TileCompleted?.Invoke(i);
         }
 
-        return new StitchedPage(output, width, height);
+        return new StitchedPage(output, width, height, bands);
     }
 
     private static OrtValue CreateInput(TensorElementType type, Raster source, UpscaleTile tile)
@@ -305,15 +318,28 @@ public sealed class OnnxPageUpscaler(
         return (rgb, width, height);
     }
 
-    /// <summary>Copies the tile's interior, past <c>Pad × scale</c> px of context, into the page.</summary>
-    private static void StitchTile(byte[] rgb, int rgbWidth, UpscaleTile tile, int scale, byte[] output, int outputWidth)
+    /// <summary>
+    /// Copies the tile's interior, past <c>Pad × scale</c> px of context, into the page: as RGB, or as
+    /// its luma when the page has one band.
+    /// </summary>
+    private static void StitchTile(byte[] rgb, int rgbWidth, UpscaleTile tile, int scale, byte[] output, int outputWidth, int bands)
     {
         var offset = tile.Pad * scale;
-        var rowBytes = tile.Width * scale * 3;
+        var rowPixels = tile.Width * scale;
         for (var y = 0; y < tile.Height * scale; y++)
         {
-            Buffer.BlockCopy(rgb, ((offset + y) * rgbWidth + offset) * 3,
-                output, ((tile.Y * scale + y) * outputWidth + tile.X * scale) * 3, rowBytes);
+            var from = ((offset + y) * rgbWidth + offset) * 3;
+            var to = (tile.Y * scale + y) * outputWidth + tile.X * scale;
+            if (bands == 3)
+            {
+                Buffer.BlockCopy(rgb, from, output, to * 3, rowPixels * 3);
+                continue;
+            }
+
+            for (var x = 0; x < rowPixels; x++, from += 3)
+            {
+                output[to + x] = (byte)UpscalePixels.Luma(rgb[from], rgb[from + 1], rgb[from + 2]);
+            }
         }
     }
 
@@ -389,7 +415,8 @@ public sealed class OnnxPageUpscaler(
             ? metadata.ElementDataType
             : throw new InvalidDataException($"Unsupported tensor type {metadata.ElementDataType}.");
 
-    internal sealed record StitchedPage(byte[] Rgb, int Width, int Height);
+    /// <param name="Bands">3 for interleaved RGB, 1 for luma.</param>
+    internal sealed record StitchedPage(byte[] Pixels, int Width, int Height, int Bands);
 
     private sealed class ModelLoadException(Exception inner) : Exception(inner.Message, inner);
 

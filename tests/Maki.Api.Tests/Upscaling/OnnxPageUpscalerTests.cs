@@ -62,9 +62,9 @@ public class OnnxPageUpscalerTests : IDisposable
         {
             var expected = source[x / 2, y / 2];
             var o = (y * page.Width + x) * 3;
-            if (page.Rgb[o] != expected.R || page.Rgb[o + 1] != expected.G || page.Rgb[o + 2] != expected.B)
+            if (page.Pixels[o] != expected.R || page.Pixels[o + 1] != expected.G || page.Pixels[o + 2] != expected.B)
             {
-                Assert.Fail($"Pixel ({x}, {y}) is ({page.Rgb[o]}, {page.Rgb[o + 1]}, {page.Rgb[o + 2]}), expected {expected}.");
+                Assert.Fail($"Pixel ({x}, {y}) is ({page.Pixels[o]}, {page.Pixels[o + 1]}, {page.Pixels[o + 2]}), expected {expected}.");
             }
         }
     }
@@ -79,7 +79,7 @@ public class OnnxPageUpscalerTests : IDisposable
         var tiles = 0;
         upscaler.TileCompleted = _ => tiles++;
 
-        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 2, CancellationToken.None);
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 2, luma: false, CancellationToken.None);
 
         Assert.Equal(12, tiles);
         AssertNearest2x(source, page);
@@ -101,7 +101,7 @@ public class OnnxPageUpscalerTests : IDisposable
 
         var (expected, width, height) = ImageCodec.ResizeRgb(whole, source.Width * 4, source.Height * 4, 0.5);
 
-        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.RealEsrganAv3), threads: 2, CancellationToken.None);
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.RealEsrganAv3), threads: 2, luma: false, CancellationToken.None);
 
         Assert.Equal((width, height), (page.Width, page.Height));
         var edge = 0;
@@ -110,7 +110,7 @@ public class OnnxPageUpscalerTests : IDisposable
         for (var c = 0; c < 3; c++)
         {
             var o = (y * width + x) * 3 + c;
-            var diff = Math.Abs(page.Rgb[o] - expected[o]);
+            var diff = Math.Abs(page.Pixels[o] - expected[o]);
             var nearBorder = x < 4 || y < 4 || x >= width - 4 || y >= height - 4;
             if (nearBorder)
             {
@@ -118,12 +118,31 @@ public class OnnxPageUpscalerTests : IDisposable
             }
             else if (diff != 0)
             {
-                Assert.Fail($"Pixel ({x}, {y}) channel {c} is {page.Rgb[o]}, whole-page halving gives {expected[o]}.");
+                Assert.Fail($"Pixel ({x}, {y}) channel {c} is {page.Pixels[o]}, whole-page halving gives {expected[o]}.");
             }
         }
 
         // A tile's context is reflected at the page edge where vips extends the edge pixel instead.
         Assert.True(edge <= 16, $"Border pixels differ by up to {edge}.");
+    }
+
+    [Theory]
+    [InlineData("identity-2x-fp16.onnx", "span-s")]
+    [InlineData("identity-4x.onnx", "realesrgan-av3")]
+    public void A_luma_run_on_an_exact_grey_page_equals_the_colour_pass_and_band_average(string fixture, string model)
+    {
+        var id = UpscaleModelId.Parse(model);
+        using var upscaler = NewUpscaler(fixture, id);
+        var info = _catalog.Get(id);
+        var source = Pattern(500, 700, grey: true);
+
+        var rgb = upscaler.Run(source, info, threads: 2, luma: false, CancellationToken.None);
+        var luma = upscaler.Run(source, info, threads: 2, luma: true, CancellationToken.None);
+        var (original, _, _) = ImageCodec.ResizeRgb(source.Pixels, source.Width, source.Height, 2.0);
+        UpscalePixels.TakeColourFrom(rgb.Pixels, original);
+
+        Assert.Equal((1, rgb.Width, rgb.Height), (luma.Bands, luma.Width, luma.Height));
+        Assert.Equal(UpscalePixels.ToSingleBand(rgb.Pixels), luma.Pixels);
     }
 
     [Fact]

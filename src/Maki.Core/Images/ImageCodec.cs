@@ -339,10 +339,16 @@ public static class ImageCodec
     /// over <see cref="MaxWebpEdge"/>. A <paramref name="grey"/> page is saved with one band. The caller
     /// decides that from the source page: models tint flat screentone, so the output can fail the test.
     /// </summary>
-    public static UpscaledImage EncodeUpscaled(byte[] rgb, int width, int height, bool grey)
+    public static UpscaledImage EncodeUpscaled(byte[] rgb, int width, int height, bool grey) =>
+        grey ? EncodeUpscaledGrey(UpscalePixels.ToSingleBand(rgb), width, height) : EncodeBands(rgb, width, height, 3);
+
+    /// <summary>Encodes an upscaled grey page from one 8-bit band per pixel, as <see cref="EncodeUpscaled(byte[], int, int, bool)"/>.</summary>
+    public static UpscaledImage EncodeUpscaledGrey(byte[] band, int width, int height) =>
+        EncodeBands(band, width, height, 1);
+
+    private static UpscaledImage EncodeBands(byte[] pixels, int width, int height, int bands)
     {
-        var pixels = grey ? UpscalePixels.ToSingleBand(rgb) : rgb;
-        var bands = grey ? 1 : 3;
+        var grey = bands == 1;
         using var raw = FromMemory(pixels, width, height, bands);
         using var image = raw.Copy(interpretation: grey ? Enums.Interpretation.Bw : Enums.Interpretation.Srgb);
         return Math.Max(width, height) > MaxWebpEdge
