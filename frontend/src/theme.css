@@ -2939,6 +2939,10 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .reading-card:hover > .reading-card-menu {
   transform: translateY(-4px);
 }
+/* The anime rail's unadded cards carry both the add hint and the menu in the top right. */
+.reading-card > .discover-card .discover-corner[data-add='true'] {
+  right: 40px;
+}
 @media (hover: hover) and (pointer: fine) {
   .reading-card-menu {
     opacity: 0;

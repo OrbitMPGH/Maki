@@ -6715,11 +6715,13 @@ msgstr "Nie udało się odczytać postępu dla {seriesFailed, plural, one {# ser
 msgid "Could not read your profile"
 msgstr "Nie udało się odczytać Twojego profilu"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "Nie udało się usunąć {seriesTitle}: {reason}"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "Could not restore {seriesTitle}: {reason}"
@@ -9837,6 +9839,10 @@ msgstr "Wyróżnienie"
 msgid "Hiatus"
 msgstr "Wstrzymane"
 
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Hid {seriesTitle}. It comes back when you finish a new season."
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -9925,6 +9931,10 @@ msgstr "Ukryj ten tytuł i całe uniwersum"
 #, fuzzy
 msgid "Hide this title"
 msgstr "Ukryj ten tytuł"
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Hide until a new season"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -12623,6 +12633,7 @@ msgstr "Więcej takich"
 msgid "More options"
 msgstr "Więcej opcji"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "More options for {seriesTitle}"
@@ -14104,6 +14115,10 @@ msgstr "Niemonitorowane"
 #, fuzzy
 msgid "Not rated"
 msgstr "Brak oceny"
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Not reading this one"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -17392,6 +17407,10 @@ msgstr "Usunięte"
 #, fuzzy
 msgid "Removed {seriesTitle}. It comes back when you read it again."
 msgstr "Usunięto {seriesTitle}. Pojawi się ponownie, gdy znów zaczniesz ją czytać."
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Removed {seriesTitle}. It won't be suggested here again."
+msgstr ""
 
 #: src/components/discover/shortlistActions.tsx
 msgid "Removed {title} from your shortlist."
@@ -22614,6 +22633,7 @@ msgstr "Podkreślenie (_)"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/discover/shortlistActions.tsx
 #: src/components/DiscoverPresets.tsx
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/series/UndoConversionModal.tsx

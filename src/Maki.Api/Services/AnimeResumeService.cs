@@ -18,9 +18,11 @@ public record AnimeResumeApplyResult(int Updated, int? ResumeChapterId, decimal 
 
 /// <summary>One card on Home's "Continue from the anime" rail.</summary>
 /// <param name="SeriesId">The library copy, or null for a manga nobody has added yet.</param>
+/// <param name="MangaBakaId">What the rail's dismissal is keyed on, for both kinds of card.</param>
 /// <param name="Catalogue">The dump row behind a card with no library copy, which is what the Discover modal opens.</param>
 public record HomeAnimeResumeItem(
     int? SeriesId,
+    int MangaBakaId,
     string SeriesTitle,
     string? CoverUrl,
     string AnimeTitle,
@@ -148,9 +150,9 @@ public class AnimeResumeService(
     }
 
     /// <summary>
-    /// Series whose anime the reader finished and whose reading has not caught up with it: library
-    /// series first, then manga nobody has added yet. Once they have read or watched past the
-    /// frontier, Continue reading covers the series instead. The page is capped at
+    /// Series whose anime the reader finished and whose reading has not caught up with it, library
+    /// copies and manga nobody has added yet alike, most recently watched first. Once they have read
+    /// or watched past the frontier, Continue reading covers the series instead. The page is capped at
     /// <paramref name="limit"/>; <see cref="RailPage.Total"/> is every match, so a count can stay honest.
     /// </summary>
     public async Task<RailPage> RailAsync(CancellationToken ct, int limit = RailLimit)
@@ -168,7 +170,15 @@ public class AnimeResumeService(
             .ToList();
         if (candidates.Count == 0) return RailPage.Empty;
 
-        var library = await LibraryRailAsync(rows, candidates, ct);
+        var dismissed = (await db.AnimeResumeRailDismissals.AsNoTracking()
+                .Where(d => candidates.Contains(d.MangaBakaId))
+                .Select(d => new { d.MangaBakaId, d.CoveredTo })
+                .ToListAsync(ct))
+            .ToDictionary(d => d.MangaBakaId, d => d.CoveredTo);
+        bool Dismissed(HomeAnimeResumeItem item) =>
+            dismissed.TryGetValue(item.MangaBakaId, out var at) && (at is null || (double)item.CoveredTo <= at);
+
+        var library = (await LibraryRailAsync(rows, candidates, ct)).Where(i => !Dismissed(i)).ToList();
 
         // Every root folder, not just the reader's: a copy they cannot see still makes an add fail.
         var owned = (await db.Series.IgnoreQueryFilters().AsNoTracking()
@@ -176,9 +186,24 @@ public class AnimeResumeService(
             .Select(s => s.MangaBakaId!.Value)
             .ToListAsync(ct)).ToHashSet();
         var unowned = candidates.Where(id => !owned.Contains(id)).Select(id => (long)id).ToList();
-        var fromCatalogue = await CatalogueRailAsync(rows, unowned, ct);
+        var fromCatalogue = (await CatalogueRailAsync(rows, unowned, ct)).Where(i => !Dismissed(i));
 
-        var all = library.Concat(fromCatalogue).ToList();
+        // Newest watch first, so a show finished last night is at the front rather than somewhere
+        // in a long list ordered by score. Rows synced before trackers sent the time tie and fall
+        // back to the old order.
+        var watchedAt = (await db.AnimeSignals.AsNoTracking()
+                .Where(x => x.UserId == UserId && x.MangaBakaId != null && x.ListUpdatedAtUtc != null)
+                .Select(x => new { MangaBakaId = x.MangaBakaId!.Value, At = x.ListUpdatedAtUtc!.Value })
+                .ToListAsync(ct))
+            .GroupBy(x => x.MangaBakaId)
+            .ToDictionary(g => g.Key, g => g.Max(x => x.At));
+        var all = library.Concat(fromCatalogue)
+            .OrderByDescending(i => watchedAt.GetValueOrDefault(i.MangaBakaId))
+            .ThenBy(i => i.SeriesId is null ? 1 : 0)
+            .ThenBy(i => i.Score is null ? 1 : 0)
+            .ThenByDescending(i => i.Score)
+            .ThenBy(i => i.SeriesTitle, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
         return new RailPage(all.Take(limit).ToList(), all.Count);
     }
 
@@ -225,9 +250,11 @@ public class AnimeResumeService(
             var library = Library(resume.CoveredTo, chapters, completed);
             if (library.HighestCompleted >= resume.CoveredTo) continue;
             if (Suppressed(resume, library, dismissed.TryGetValue(s.Id, out var at) ? at : null)) continue;
+            if (NothingAfter(resume.CoveredTo, chapters.Max(c => c.Number), s.TotalChapters)) continue;
 
             items.Add(new HomeAnimeResumeItem(
                 s.Id,
+                s.MangaBakaId!.Value,
                 s.Title,
                 SeriesDto.CoverUrlFor(s.Id, s.CoverPath, s.LastMetadataRefresh),
                 resume.AnimeTitle,
@@ -238,7 +265,7 @@ public class AnimeResumeService(
                 library.Resume is { } r ? ChapterLabel.For(r.Number, r.Volume, r.Title, r.IsOneShot) : null));
         }
 
-        return Ranked(items);
+        return items;
     }
 
     /// <summary>
@@ -264,17 +291,22 @@ public class AnimeResumeService(
                 AnimeSignalGrouping.Watched(rowsByManga[id].ToList()),
                 AnimeCoverage.Parse(coverage.AnimeStart, coverage.AnimeEnd),
                 coverage.TotalChapters);
-            if (resume is not null) resolved[id] = resume;
+            if (resume is not null && !NothingAfter(resume.CoveredTo, null, coverage.TotalChapters))
+            {
+                resolved[id] = resume;
+            }
         }
         if (resolved.Count == 0) return [];
 
         var cards = await catalogue.GetByIdsAsync(
             resolved.Keys.ToList(), ContentRating.Allowed(currentUser.MaxContentRating), ct);
-        return Ranked(cards.Select(card =>
+        return cards.Select(card =>
         {
-            var resume = resolved[long.Parse(card.ProviderId)];
+            var id = long.Parse(card.ProviderId);
+            var resume = resolved[id];
             return new HomeAnimeResumeItem(
                 null,
+                (int)id,
                 card.Title,
                 card.ThumbUrlHiDpi ?? card.ThumbUrl ?? card.CoverUrl,
                 resume.AnimeTitle,
@@ -284,15 +316,53 @@ public class AnimeResumeService(
                 null,
                 null,
                 card);
-        }));
+        }).ToList();
     }
 
-    private static List<HomeAnimeResumeItem> Ranked(IEnumerable<HomeAnimeResumeItem> items) =>
-        items
-            .OrderBy(i => i.Score is null ? 1 : 0)
-            .ThenByDescending(i => i.Score)
-            .ThenBy(i => i.SeriesTitle, StringComparer.CurrentCultureIgnoreCase)
-            .ToList();
+    /// <summary>
+    /// The anime adapted every chapter anyone knows of (Your Lie in April's one season is all 44), so
+    /// there is nowhere to continue. An unknown total keeps the card.
+    /// </summary>
+    private static bool NothingAfter(decimal coveredTo, decimal? lastChapterRow, decimal? totalChapters)
+    {
+        var last = lastChapterRow is null ? totalChapters
+            : totalChapters is null ? lastChapterRow
+            : Math.Max(lastChapterRow.Value, totalChapters.Value);
+        return last is { } known && coveredTo >= known;
+    }
+
+    /// <summary>
+    /// Takes a title off the rail. With <paramref name="coveredTo"/> it stays off until a newly
+    /// watched season moves the frontier past that chapter; without, for good.
+    /// </summary>
+    public async Task DismissFromRailAsync(int mangaBakaId, decimal? coveredTo, CancellationToken ct)
+    {
+        var row = await db.AnimeResumeRailDismissals.FirstOrDefaultAsync(d => d.MangaBakaId == mangaBakaId, ct);
+        if (row is null)
+        {
+            row = new AnimeResumeRailDismissal { MangaBakaId = mangaBakaId };
+            db.AnimeResumeRailDismissals.Add(row);
+        }
+
+        row.CoveredTo = (double?)coveredTo;
+        row.DismissedAtUtc = DateTime.UtcNow;
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
+        {
+            // A double click inserted twice. The loser updates the row the winner created.
+            db.ChangeTracker.Clear();
+            await db.AnimeResumeRailDismissals.Where(d => d.MangaBakaId == mangaBakaId)
+                .ExecuteUpdateAsync(u => u
+                    .SetProperty(d => d.CoveredTo, (double?)coveredTo)
+                    .SetProperty(d => d.DismissedAtUtc, DateTime.UtcNow), ct);
+        }
+    }
+
+    public Task RestoreToRailAsync(int mangaBakaId, CancellationToken ct) =>
+        db.AnimeResumeRailDismissals.Where(d => d.MangaBakaId == mangaBakaId).ExecuteDeleteAsync(ct);
 
     /// <summary>
     /// Ticks chapters up to the frontier off as watched, then raises the reading high-water mark to

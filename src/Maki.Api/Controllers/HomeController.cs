@@ -432,6 +432,37 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         return Ok(await animeResume.RailAsync(ct, Math.Clamp(limit, 1, AnimeResumeService.MaxRailLimit)));
     }
 
+    /// <param name="CoveredTo">The frontier the card showed, to bring it back after a new season; null hides it for good.</param>
+    public record FromAnimeDismissRequest(decimal? CoveredTo);
+
+    /// <summary>Takes a title off the "Continue from the anime" rail, by MangaBaka id.</summary>
+    [HttpPost("from-anime/{mangaBakaId:int}/dismiss")]
+    public async Task<IActionResult> DismissFromAnime(
+        int mangaBakaId,
+        [FromBody] FromAnimeDismissRequest request,
+        [FromServices] AnimeResumeService animeResume,
+        CancellationToken ct)
+    {
+        if (mangaBakaId <= 0 || request.CoveredTo is <= 0)
+        {
+            return BadRequest();
+        }
+
+        await animeResume.DismissFromRailAsync(mangaBakaId, request.CoveredTo, ct);
+        return NoContent();
+    }
+
+    /// <summary>Undoes <see cref="DismissFromAnime"/>.</summary>
+    [HttpDelete("from-anime/{mangaBakaId:int}/dismiss")]
+    public async Task<IActionResult> RestoreFromAnime(
+        int mangaBakaId,
+        [FromServices] AnimeResumeService animeResume,
+        CancellationToken ct)
+    {
+        await animeResume.RestoreToRailAsync(mangaBakaId, ct);
+        return NoContent();
+    }
+
     /// <summary>Labels for a set of chapter ids, in one query.</summary>
     private async Task<Dictionary<int, string>> ChapterLabelsAsync(
         IReadOnlyCollection<int> chapterIds, CancellationToken ct)

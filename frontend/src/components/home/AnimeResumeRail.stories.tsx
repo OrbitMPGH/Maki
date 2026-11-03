@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
-import { animeResumeItems } from '../../../.storybook/mocks/home'
+import { animeResumeAllPage, animeResumeItems } from '../../../.storybook/mocks/home'
 import { AnimeResumeExpandModal, AnimeResumeRail } from './AnimeResumeRail'
 
 const meta = {
@@ -26,6 +26,44 @@ export const OpensCatalogueEntry: Story = {
     // A manga that is not in the library opens the detail modal through onOpen instead of linking.
     await userEvent.click(await canvas.findByRole('button', { name: /View and add The Salt Cartographer/ }))
     await waitFor(() => expect(args.onOpen).toHaveBeenCalledWith(animeResumeItems[3].catalogue))
+  },
+}
+
+export const HideUntilNewSeason: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByRole('button', { name: 'More options for Clockwork Tea House' }))
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Hide until a new season' }))
+    await expect(await body.findByText(/Hid Clockwork Tea House\. It comes back when you finish a new season\./)).toBeVisible()
+    await expect(await body.findByRole('button', { name: 'Undo' })).toBeVisible()
+  },
+}
+
+const dismissed = new Set<number>()
+
+export const NotReadingFromExpandedModal: Story = {
+  beforeEach: () => dismissed.clear(),
+  parameters: {
+    msw: [
+      http.get(api('/home/from-anime'), () => {
+        const items = animeResumeAllPage.items.filter((i) => !dismissed.has(i.mangaBakaId))
+        return HttpResponse.json({ items, total: items.length })
+      }),
+      http.post(api('/home/from-anime/:mangaBakaId/dismiss'), ({ params }) => {
+        dismissed.add(Number(params.mangaBakaId))
+        return new HttpResponse(null, { status: 204 })
+      }),
+    ],
+  },
+  render:(args) => <AnimeResumeExpandModal opened onClose={fn()} onOpen={args.onOpen} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    // An unadded manga can be taken off too; the grid drops it at once.
+    await userEvent.click(await body.findByRole('button', { name: 'More options for The Salt Cartographer' }))
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Not reading this one' }))
+    await expect(await body.findByText(/It won't be suggested here again\./)).toBeVisible()
+    await waitFor(() => expect(body.queryByRole('button', { name: /View and add The Salt Cartographer/ })).toBeNull())
+    await expect(await body.findByText('8 titles')).toBeVisible()
   },
 }
 

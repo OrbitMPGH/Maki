@@ -6715,11 +6715,13 @@ msgstr "시리즈 {seriesFailed, plural, other {#개}}의 진행 상황을 읽�
 msgid "Could not read your profile"
 msgstr "프로필을 읽을 수 없습니다"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "{seriesTitle}을(를) 삭제하지 못했습니다: {reason}"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "Could not restore {seriesTitle}: {reason}"
@@ -9837,6 +9839,10 @@ msgstr "히어로"
 msgid "Hiatus"
 msgstr "휴재"
 
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Hid {seriesTitle}. It comes back when you finish a new season."
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -9925,6 +9931,10 @@ msgstr "이 작품과 프랜차이즈 전체 숨기기"
 #, fuzzy
 msgid "Hide this title"
 msgstr "이 작품 숨기기"
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Hide until a new season"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -12623,6 +12633,7 @@ msgstr "이 항목 더 보기"
 msgid "More options"
 msgstr "더 많은 옵션"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "More options for {seriesTitle}"
@@ -14104,6 +14115,10 @@ msgstr "모니터링하지 않음"
 #, fuzzy
 msgid "Not rated"
 msgstr "평점 없음"
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Not reading this one"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -17392,6 +17407,10 @@ msgstr "제거됨"
 #, fuzzy
 msgid "Removed {seriesTitle}. It comes back when you read it again."
 msgstr "{seriesTitle}이(가) 삭제되었습니다. 다시 읽으면 표시됩니다."
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Removed {seriesTitle}. It won't be suggested here again."
+msgstr ""
 
 #: src/components/discover/shortlistActions.tsx
 msgid "Removed {title} from your shortlist."
@@ -22614,6 +22633,7 @@ msgstr "밑줄 (_)"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/discover/shortlistActions.tsx
 #: src/components/DiscoverPresets.tsx
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/series/UndoConversionModal.tsx
