@@ -4067,6 +4067,8 @@ export function useSourcePriority(enabled = true) {
     queryKey: ['settings', 'sources', 'priority'],
     queryFn: () => api<SourcePrioritySettings>('/settings/sources/priority'),
     enabled,
+    // Changes only through its own save, which writes the cache.
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -4148,6 +4150,9 @@ export function useRootFolders() {
     queryKey: ['rootfolders'],
     queryFn: () => api<RootFolder[]>('/rootfolder'),
     enabled: can('AddSeries'),
+    // Mounted by some twenty components, often several per page. Edits invalidate it; only the
+    // free space and the reachable flag move on their own, and a couple of minutes is fine for those.
+    staleTime: 2 * 60 * 1000,
   })
 }
 
