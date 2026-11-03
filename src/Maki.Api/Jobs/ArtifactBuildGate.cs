@@ -85,7 +85,8 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
         if (Volatile.Read(ref _waiting) == 0 && Interlocked.Exchange(ref _built, 0) == 1)
         {
             GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-            GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+            // Aggressive, so the freed regions are decommitted rather than kept for the next build.
+            GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
             NativeHeap.Trim();
             Interlocked.Increment(ref _collections);
         }
