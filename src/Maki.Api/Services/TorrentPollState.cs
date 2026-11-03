@@ -10,10 +10,17 @@ namespace Maki.Api.Services;
 /// state. The queue is still read every <see cref="RecheckWhileIdle"/>, so a path that revives one
 /// some other way only delays its import.
 /// </para>
+/// <para>
+/// <see cref="Jobs.TorrentRemovalJob"/> gets the same skip on its own generation:
+/// <c>TorrentImportService.MarkForClientRemovalAsync</c> is the only place a removal is marked, and
+/// the queue is still read every <see cref="RecheckRemovalsWhileIdle"/>, so a mark that lands just
+/// before its row is saved waits at most that long.
+/// </para>
 /// </summary>
 public sealed class TorrentPollState(TimeProvider time)
 {
     public static readonly TimeSpan RecheckWhileIdle = TimeSpan.FromMinutes(5);
+    public static readonly TimeSpan RecheckRemovalsWhileIdle = TimeSpan.FromMinutes(30);
 
     private long _generation;
     private long _idleGeneration = -1;
@@ -38,4 +45,23 @@ public sealed class TorrentPollState(TimeProvider time)
     }
 
     public void TorrentAdded() => Interlocked.Increment(ref _generation);
+
+    private long _removalGeneration;
+    private long _removalIdleGeneration = -1;
+    private long _removalIdleSinceTicks;
+
+    public long RemovalGeneration => Interlocked.Read(ref _removalGeneration);
+
+    /// <summary>True when the last removal run found no row waiting and none was marked since.</summary>
+    public bool CanSkipRemovals =>
+        Interlocked.Read(ref _removalIdleGeneration) == Interlocked.Read(ref _removalGeneration) &&
+        time.GetUtcNow().UtcTicks - Interlocked.Read(ref _removalIdleSinceTicks) < RecheckRemovalsWhileIdle.Ticks;
+
+    public void MarkRemovalsIdle(long generation)
+    {
+        Interlocked.Exchange(ref _removalIdleSinceTicks, time.GetUtcNow().UtcTicks);
+        Interlocked.Exchange(ref _removalIdleGeneration, generation);
+    }
+
+    public void RemovalMarked() => Interlocked.Increment(ref _removalGeneration);
 }

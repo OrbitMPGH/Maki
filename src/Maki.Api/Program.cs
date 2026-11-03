@@ -141,6 +141,11 @@ try
 
     builder.Services.AddScoped<BackupService>();
 
+    // Every client asks for compressed bodies: chapter listings and JSON APIs shrink about 13x.
+    // A client with its own primary handler sets the flag there (PublicAddressGuard does).
+    builder.Services.ConfigureHttpClientDefaults(http => http.ConfigurePrimaryHttpMessageHandler(() =>
+        new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All }));
+
     builder.Services.AddHttpClient("covers", client =>
         {
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
@@ -614,9 +619,9 @@ try
     // Manhuagui — Simplified Chinese manhua/manga aggregator, plain HTTP, no Cloudflare. Bans IPs
     // on bulk reads, hence a standalone, stricter-than-usual limiter (1 req/2s) rather than a slot
     // in the standard batch. Every response is gzip-compressed regardless of what Accept-Encoding
-    // asked for, hence AutomaticDecompression here (most named clients don't need it because they
-    // never request compression in the first place). isAdult=1 is the cookie Keiyoushi sends for
-    // audited/R18 titles; harmless on everything else, unverified whether it's load-bearing here.
+    // asked for, which the default primary handler's AutomaticDecompression covers. isAdult=1 is the
+    // cookie Keiyoushi sends for audited/R18 titles; harmless on everything else, unverified whether
+    // it's load-bearing here.
     var manhuaguiBaseUrl = (Environment.GetEnvironmentVariable("MAKI_SOURCE_MANHUAGUI_BASEURL")?.TrimEnd('/')
         ?? "https://www.manhuagui.com") + "/";
     var manhuaguiLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(2), burst: 1);
@@ -628,10 +633,6 @@ try
             client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("zh-CN,zh;q=0.9");
             client.DefaultRequestHeaders.TryAddWithoutValidation("Cookie", "isAdult=1");
             client.Timeout = TimeSpan.FromSeconds(30);
-        })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-        {
-            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli
         })
         .AddHttpMessageHandler(() => new RateLimitingHandler(manhuaguiLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
@@ -648,7 +649,10 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            UseCookies = false, AutomaticDecompression = DecompressionMethods.All
+        })
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaTubeLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -954,6 +958,7 @@ try
     builder.Services.AddSingleton<IDownloadQueueLiveness, DownloadQueueLiveness>();
     builder.Services.AddSingleton<DownloadBatchNotifier>();
     builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());
+    builder.Services.AddSingleton<ChapterListingSchedule>();
     builder.Services.AddScoped<ChapterSyncService>();
     builder.Services.AddScoped<ReleaseOutlookService>();
     builder.Services.AddScoped<SourceMappingRemovalService>();
@@ -1035,6 +1040,7 @@ try
     builder.Services.AddSingleton<ExternalReadSyncService>();
     builder.Services.AddSingleton<VolumeBoundaryService>();
     builder.Services.AddSingleton<KavitaReadImportService>();
+    builder.Services.AddSingleton<KavitaLiveCoverage>();
     builder.Services.AddSingleton<KavitaLiveReadSync>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<KavitaLiveReadSync>());
     builder.Services.AddScoped<ReaderService>();
@@ -1453,7 +1459,9 @@ try
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Digests chapter files so KOReader's progress sync can name them. Does nothing while no user
-        // has the OPDS catalogue on; a sync for an unknown document also fires it.
+        // has the OPDS catalogue on; a sync for an unknown document also fires it. Daily, because a
+        // pass stats every file in the library: new files are caught by that early trigger and OPDS
+        // downloads record their own ids, so the sweep only finds files rewritten or copied by hand.
         q.AddJob<Maki.Api.Jobs.KoreaderDocumentIndexJob>(j => j
             .WithIdentity(Maki.Api.Jobs.KoreaderDocumentIndexJob.Key)
             .StoreDurably());
@@ -1461,7 +1469,7 @@ try
             .ForJob(Maki.Api.Jobs.KoreaderDocumentIndexJob.Key)
             .WithIdentity("koreader-document-index-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(18))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Daily upgrade scan. Polls every 15 minutes and runs once per local day after the configured
         // hour (UpgradeScanJob checks the marker), so changing the hour needs no reschedule. First

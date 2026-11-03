@@ -29,6 +29,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
     IUserLocaleResolver locales, ISchedulerFactory schedulerFactory)
 {
     private static readonly SemaphoreSlim Gate = new(1);
+    private readonly HealthWriteProbe writeProbe = HealthWriteProbe.Shared;
     private const string UnmeasuredFilesId = "unmeasured-files";
     private const string UpgradeTrashId = "upgrade-trash";
     private const string RecycleBinId = "recycle-bin";
@@ -82,17 +83,26 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             foreach (var (id, directory) in roots.Select(r => ($"root:{r.Id}", r.Path)).Append(("config", paths.ConfigDir)))
             {
                 string? probe = null;
+                var probedAt = DateTime.UtcNow;
                 try
                 {
                     if (!Directory.Exists(directory)) throw new IOException();
-                    HealthPaths.Resolve(directory, ".maki-health-check");
-                    probe = Path.Combine(directory, $".maki-health-{Guid.NewGuid():N}.tmp");
-                    await using (var stream = new FileStream(probe, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-                        await stream.WriteAsync(new byte[] { 1 }, ct);
-                    File.Delete(probe);
+                    if (writeProbe.WriteDue(directory, probedAt))
+                    {
+                        HealthPaths.Resolve(directory, ".maki-health-check");
+                        probe = Path.Combine(directory, $".maki-health-{Guid.NewGuid():N}.tmp");
+                        await using (var stream = new FileStream(probe, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                            await stream.WriteAsync(new byte[] { 1 }, ct);
+                        File.Delete(probe);
+                        writeProbe.RecordWrite(directory, true, probedAt);
+                    }
                     Add(id, "storage", "healthy", "health.check.writable", new { path = directory });
                 }
-                catch { Add(id, "storage", "error", "health.check.notWritable", new { path = directory }, "/settings"); }
+                catch
+                {
+                    writeProbe.RecordWrite(directory, false, probedAt);
+                    Add(id, "storage", "error", "health.check.notWritable", new { path = directory }, "/settings");
+                }
                 finally { if (probe != null) { try { File.Delete(probe); } catch { } } }
                 try
                 {
@@ -164,19 +174,31 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             var failedNow = DateTime.UtcNow;
             var failed = await Maki.Api.Jobs.HousekeepingJob
                 .RecentFailures(db.DownloadQueue, failedNow, failedNow.AddDays(-30)).CountAsync(ct);
+            var operationCount = await db.HealthOperations.CountAsync(ct);
+            var openOperations = await db.HealthOperations
+                .CountAsync(o => o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct);
             foreach (var root in roots)
             {
+                var fingerprint = $"{operationCount}:{openOperations}:{root.Path}";
+                var measuredAt = DateTime.UtcNow;
                 try
                 {
-                    var stage = HealthPaths.Resolve(root.Path, ".maki/health");
-                    long size = 0;
-                    if (Directory.Exists(stage))
-                        foreach (var candidate in HealthPaths.Archives(stage)) size += new FileInfo(candidate).Length;
+                    var size = writeProbe.CachedStaging(root.Id, fingerprint, openOperations > 0, measuredAt);
+                    if (size is null)
+                    {
+                        var stage = HealthPaths.Resolve(root.Path, ".maki/health");
+                        long measured = 0;
+                        if (Directory.Exists(stage))
+                            foreach (var candidate in HealthPaths.Archives(stage)) measured += new FileInfo(candidate).Length;
+                        writeProbe.RecordStaging(root.Id, fingerprint, measured, measuredAt);
+                        size = measured;
+                    }
                     Add($"staging:{root.Id}", "storage", "healthy", "health.check.repairStaging",
-                        new { root = root.Id, mib = Math.Round(size / 1048576.0, 1) }, "/health?tab=repairs");
+                        new { root = root.Id, mib = Math.Round(size.Value / 1048576.0, 1) }, "/health?tab=repairs");
                 }
                 catch
                 {
+                    writeProbe.RecordStaging(root.Id, fingerprint, null, measuredAt);
                     Add($"staging:{root.Id}", "storage", "unavailable",
                         "health.check.repairStagingUnreadable", new { root = root.Id });
                 }
