@@ -353,7 +353,7 @@ public class AuthController(
         }
 
         user.PendingSetup = false;
-        user.DisplayName = request.DisplayName?.Trim();
+        user.DisplayName = string.IsNullOrWhiteSpace(request.DisplayName) ? null : request.DisplayName.Trim();
         // Belt and braces: the migration already set these, but setup is what makes the account
         // real and an admin that cannot administer would be unrecoverable.
         user.Permissions |= MakiPermission.Admin;

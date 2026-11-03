@@ -15,7 +15,11 @@ public static class UserNameVisibility
     /// </summary>
     public static string? For(
         ICurrentUser reader, int userId, string? displayName, string? loginName, bool loginNamesVisible = false) =>
-        displayName ?? (loginNamesVisible || reader.Has(MakiPermission.Admin) || userId == reader.UserId ? loginName : null);
+        ShownName(displayName, loginName, loginNamesVisible || reader.Has(MakiPermission.Admin) || userId == reader.UserId);
+
+    /// <summary>The display name unless it is blank, else the login name when <paramref name="loginNameAllowed"/>.</summary>
+    public static string? ShownName(string? displayName, string? loginName, bool loginNameAllowed) =>
+        !string.IsNullOrWhiteSpace(displayName) ? displayName : loginNameAllowed ? loginName : null;
 
     public static async Task<bool> LoginNamesVisibleAsync(IAppSettings? settings, CancellationToken ct) =>
         settings is not null && await settings.GetAsync(SettingKeys.LoginNamesVisible, ct) == "true";

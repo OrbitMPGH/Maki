@@ -197,7 +197,16 @@ public class NotesController(
         }
 
         await BroadcastAsync(root.SeriesId, root.ChapterId, ct);
-        await NotifyRepliedAsync(root, ct);
+        try
+        {
+            await NotifyRepliedAsync(root, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The reply is saved; a failed request here would only invite a duplicate retry.
+            logger.LogWarning(ex, "Could not raise reply notifications for note {NoteId}", root.Id);
+        }
+
         return Ok((await ThreadsAsync([reply], ct))[0]);
     }
 
@@ -454,8 +463,8 @@ public class NotesController(
 
         foreach (var recipient in recipients)
         {
-            var name = replier.DisplayName ??
-                       (loginNamesVisible || recipient.Permissions.Grants(MakiPermission.Admin) ? replier.UserName : null);
+            var name = UserNameVisibility.ShownName(replier.DisplayName, replier.UserName,
+                loginNamesVisible || recipient.Permissions.Grants(MakiPermission.Admin));
             inbox.Raise(InboxEventType.NoteReply, new InboxMessage(
                 Key: "inbox.noteReply",
                 Params: InboxMessage.Args(new { userName = name ?? string.Empty, hasName = name is null ? "no" : "yes", chapter = label }),
