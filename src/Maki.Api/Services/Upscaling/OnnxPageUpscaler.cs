@@ -25,6 +25,9 @@ public sealed class OnnxPageUpscaler(
     /// <summary>Called after each tile with its index. Tests only.</summary>
     internal Action<int>? TileCompleted { get; set; }
 
+    /// <summary>Called with the index of each tile filled without inference. Tests only.</summary>
+    internal Action<int>? TileSkipped { get; set; }
+
     public Task<UpscaleResult> UpscaleAsync(byte[] page, string modelId, CancellationToken ct) =>
         UpscaleModelId.TryParse(modelId, out var id)
             ? UpscaleAsync(page, id, ct)
@@ -203,6 +206,14 @@ public sealed class OnnxPageUpscaler(
         {
             ct.ThrowIfCancellationRequested();
             var tile = tiles[i];
+            if (FlatValue(source, tile) is { } flat && KeepsFlat(info, flat))
+            {
+                FillTile(tile, scale, output, width, bands, flat);
+                TileSkipped?.Invoke(i);
+                TileCompleted?.Invoke(i);
+                continue;
+            }
+
             buffers.Fill(source, tile);
             try
             {
@@ -233,6 +244,44 @@ public sealed class OnnxPageUpscaler(
         }
 
         return new StitchedPage(output, width, height, bands);
+    }
+
+    /// <summary>
+    /// The grey value of a context tile whose every pixel is that one grey, or null. SPAN-S returns
+    /// such a tile unchanged at every level; Real-ESRGAN only at 0 and 255 and drifts a few levels
+    /// on mid-grey, measured on a 416 px tile.
+    /// </summary>
+    private static byte? FlatValue(Raster source, UpscaleTile tile)
+    {
+        var pixels = source.Pixels;
+        var first = tile.SourceY(0, source.Height) * source.Stride + tile.SourceX(0, source.Width) * 3;
+        var value = pixels[first];
+        for (var y = 0; y < tile.ContextHeight; y++)
+        {
+            var row = tile.SourceY(y, source.Height) * source.Stride;
+            for (var x = 0; x < tile.ContextWidth; x++)
+            {
+                var p = row + tile.SourceX(x, source.Width) * 3;
+                if (pixels[p] != value || pixels[p + 1] != value || pixels[p + 2] != value)
+                {
+                    return null;
+                }
+            }
+        }
+
+        return value;
+    }
+
+    private static bool KeepsFlat(UpscaleModelInfo info, byte value) =>
+        info.Id == UpscaleModelId.SpanS || value is 0 or 255;
+
+    private static void FillTile(UpscaleTile tile, int scale, byte[] output, int outputWidth, int bands, byte value)
+    {
+        var rowBytes = tile.Width * scale * bands;
+        for (var y = 0; y < tile.Height * scale; y++)
+        {
+            output.AsSpan(((tile.Y * scale + y) * outputWidth + tile.X * scale) * bands, rowBytes).Fill(value);
+        }
     }
 
     /// <summary>

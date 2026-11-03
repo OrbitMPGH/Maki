@@ -86,6 +86,44 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
+    public void Flat_tiles_are_filled_without_inference_and_match_the_model()
+    {
+        using var upscaler = NewUpscaler("identity-2x-fp16.onnx");
+        var source = Pattern(900, 1300);
+        for (var y = 0; y < 700; y++)
+        for (var x = 0; x < 900; x++)
+        {
+            source[x, y] = new Rgba(37, 37, 37);
+        }
+
+        var skipped = new List<int>();
+        upscaler.TileSkipped = skipped.Add;
+
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 2, luma: false, CancellationToken.None);
+
+        // Rows of 325 px with 360 px contexts: the first row reads y -16 to 343, the second 309 to 668.
+        Assert.Equal([0, 1, 2, 3, 4, 5], skipped);
+        AssertNearest2x(source, page);
+    }
+
+    [Theory]
+    [InlineData(255, true)]
+    [InlineData(0, true)]
+    [InlineData(128, false)]
+    public void Real_esrgan_skips_only_black_and_white_flat_tiles(byte level, bool skips)
+    {
+        using var upscaler = NewUpscaler("identity-4x.onnx", UpscaleModelId.RealEsrganAv3);
+        var source = new Raster(200, 200, new Rgba(level, level, level), bands: 3);
+        var skipped = 0;
+        upscaler.TileSkipped = _ => skipped++;
+
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.RealEsrganAv3), threads: 2, luma: true, CancellationToken.None);
+
+        Assert.Equal(skips ? 1 : 0, skipped);
+        Assert.All(page.Pixels, v => Assert.Equal(level, v));
+    }
+
+    [Fact]
     public void A_4x_model_is_halved_per_tile_like_halving_the_whole_page()
     {
         using var upscaler = NewUpscaler("identity-4x.onnx", UpscaleModelId.RealEsrganAv3);
