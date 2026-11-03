@@ -1,7 +1,7 @@
 import { memo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Group, Modal, SimpleGrid, Text, ThemeIcon } from '@mantine/core'
-import { IconDeviceTv, IconPlus } from '@tabler/icons-react'
+import { IconDeviceTv, IconPlus } from '../../lib/icons'
 import { useHomeFromAnimeAll, type HomeAnimeResumeItem } from '../../api/animeResume'
 import type { RecommendationItem } from '../../api/hooks'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'

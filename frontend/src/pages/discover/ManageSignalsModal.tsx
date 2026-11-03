@@ -7,7 +7,7 @@ import {
   ActionIcon, Alert, Badge, Button, Chip, Group, Modal, Select, Stack, Tabs, Text,
   TextInput,
 } from '@mantine/core'
-import { IconSearch, IconX } from '@tabler/icons-react'
+import { IconSearch, IconX } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'

@@ -1,32 +1,33 @@
 import { ActionIcon, Group, Loader, Menu, Text, UnstyledButton, VisuallyHidden } from '@mantine/core'
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import {
-    IconArchive,
-    IconArchiveOff,
-    IconArrowLeft,
-    IconBell,
-    IconChevronRight,
-    IconDeviceMobile,
-    IconDeviceMobileDown,
-    IconDeviceMobileOff,
-    IconDotsVertical,
-    IconEyeOff,
-    IconFileText,
-    IconFolder,
-    IconFolderSymlink,
-    IconInfoCircle,
-    IconEye,
-    IconPencil,
-    IconPhoto,
-    IconPhotoCog,
-    IconRefresh,
-    IconScan,
-    IconSearch,
-    IconSparkles,
-    IconTrash,
-    IconTrashX,
-    IconArrowBackUp,
-} from '@tabler/icons-react'
+  IconArchive,
+  IconArchiveOff,
+  IconArrowLeft,
+  IconBell,
+  IconChevronRight,
+  IconDeviceMobile,
+  IconDeviceMobileDown,
+  IconDeviceMobileOff,
+  IconDotsVertical,
+  IconEyeOff,
+  IconFileText,
+  IconFolder,
+  IconFolderSymlink,
+  IconInfoCircle,
+  IconEye,
+  IconPencil,
+  IconPhoto,
+  IconPhotoCog,
+  IconRefresh,
+  IconScan,
+  IconSearch,
+  IconCircleArrowUp,
+  IconTrash,
+  IconTrashX,
+  IconArrowBackUp,
+  IconRanking,
+} from '../../lib/icons'
 import { useIncognitoOptions } from '../ui/incognito'
 import { useSeriesNotificationHelp, type SeriesNotificationMode } from '../ui/seriesNotifications'
 import { msg } from '@lingui/core/macro'
@@ -239,7 +240,7 @@ export function SeriesActionsMenu({
     // Said once, above the first item it switches off, rather than in a tooltip touch never shows.
     const reason = toolsOff && (
         <div className="series-actions-reason">
-            <IconInfoCircle size={14} aria-hidden />
+            <IconInfoCircle size={16} aria-hidden />
             <span>{sourceToolsDisabledReason}</span>
         </div>
     )
@@ -280,7 +281,7 @@ export function SeriesActionsMenu({
             rightSection={
                 <Group gap={6} wrap="nowrap">
                     {current !== undefined && value(current)}
-                    <IconChevronRight size={14} color="var(--ink-3)" />
+                    <IconChevronRight size={16} color="var(--ink-3)" />
                 </Group>
             }
         >
@@ -444,7 +445,7 @@ export function SeriesActionsMenu({
                             <>
                                 {reason}
                                 <Menu.Item
-                                    leftSection={refreshingChapters ? <Loader size={14} /> : <IconRefresh size={16} />}
+                                    leftSection={refreshingChapters ? <Loader size={16} /> : <IconRefresh size={16} />}
                                     disabled={refreshingChapters}
                                     onClick={whenOn(onRefreshChapters)}
                                     {...offProps}
@@ -452,7 +453,7 @@ export function SeriesActionsMenu({
                                     <Trans>Refresh chapters</Trans>
                                 </Menu.Item>
                                 <Menu.Item
-                                    leftSection={refreshingMetadata ? <Loader size={14} /> : <IconPhoto size={16} />}
+                                    leftSection={refreshingMetadata ? <Loader size={16} /> : <IconPhoto size={16} />}
                                     disabled={refreshingMetadata}
                                     onClick={onRefreshMetadata}
                                 >
@@ -467,7 +468,7 @@ export function SeriesActionsMenu({
                         {hasFiles && drill('files', <IconFolder size={16} />, <Trans>Files</Trans>)}
                         {/* A reader's Automation page would hold Notify alone, so for them it sits here. */}
                         {canEdit ? drill('automation', <IconEye size={16} />, <Trans>Automation</Trans>) : notifyField}
-                        {hasUpgrades && drill('upgrades', <IconSparkles size={16} />, <Trans>Upgrades</Trans>)}
+                        {hasUpgrades && drill('upgrades', <IconCircleArrowUp size={16} />, <Trans>Upgrades</Trans>)}
                         {offlineSaved !== undefined &&
                             drill('device', <IconDeviceMobile size={16} />, <Trans>This device</Trans>)}
                         {(canArchive || canRemove) && <Menu.Divider />}
@@ -507,7 +508,7 @@ export function SeriesActionsMenu({
                         {canEdit && (
                             <>
                                 <Menu.Item
-                                    leftSection={rescanning ? <Loader size={14} /> : <IconScan size={16} />}
+                                    leftSection={rescanning ? <Loader size={16} /> : <IconScan size={16} />}
                                     disabled={rescanning}
                                     onClick={onRescan}
                                 >
@@ -563,10 +564,10 @@ export function SeriesActionsMenu({
                     <>
                         {back(<Trans>Upgrades</Trans>)}
                         {canScanUpgrades && reason}
-                        {canEdit && drill('profile', <IconSparkles size={16} />, <Trans>Quality profile</Trans>, upgradeProfileLabel)}
+                        {canEdit && drill('profile', <IconRanking size={16} />, <Trans>Quality profile</Trans>, upgradeProfileLabel)}
                         {canScanUpgrades && (
                             <Menu.Item
-                                leftSection={scanningUpgrades ? <Loader size={14} /> : <IconRefresh size={16} />}
+                                leftSection={scanningUpgrades ? <Loader size={16} /> : <IconRefresh size={16} />}
                                 disabled={scanningUpgrades}
                                 onClick={whenOn(onScanUpgrades)}
                                 {...offProps}
@@ -576,7 +577,7 @@ export function SeriesActionsMenu({
                         )}
                         {canScanUpgrades && (
                             <Menu.Item
-                                leftSection={searchingVolumes ? <Loader size={14} /> : <IconSearch size={16} />}
+                                leftSection={searchingVolumes ? <Loader size={16} /> : <IconSearch size={16} />}
                                 disabled={searchingVolumes}
                                 onClick={whenOn(onSearchVolumes)}
                                 {...offProps}

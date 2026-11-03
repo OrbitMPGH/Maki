@@ -39,7 +39,7 @@ import {
   IconRefresh,
   IconTrash,
   IconWand,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { useDebouncedValue } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '../lib/toast'
@@ -317,7 +317,7 @@ export function SourceMappingsSection({
               <Button
                 size="xs"
                 variant="default"
-                leftSection={<IconWand size={14} />}
+                leftSection={<IconWand size={16} />}
                 disabled={matching || nothingLeftToMatch}
                 loading={autoMatch.isPending}
                 onClick={() =>
@@ -349,7 +349,7 @@ export function SourceMappingsSection({
               <Button
                 size="xs"
                 variant="default"
-                leftSection={<IconColumns size={14} />}
+                leftSection={<IconColumns size={16} />}
                 disabled={matching || comparable < 2}
                 onClick={() => setCompareOpen(true)}
               >
@@ -373,7 +373,7 @@ export function SourceMappingsSection({
               <Button
                 size="xs"
                 variant="default"
-                leftSection={scouting ? <Loader size={12} /> : <IconRuler size={14} />}
+                leftSection={scouting ? <Loader size={12} /> : <IconRuler size={16} />}
                 disabled={matching || scouting || (mappings?.length ?? 0) === 0}
                 loading={measureSources.isPending}
                 onClick={() => measureSources.mutate()}
@@ -391,7 +391,7 @@ export function SourceMappingsSection({
               <Button
                 size="xs"
                 variant="light"
-                leftSection={<IconLink size={14} />}
+                leftSection={<IconLink size={16} />}
                 disabled={matching || nothingLeftToMatch}
                 onClick={() => {
                   setSourceName(unmappedSources?.[0]?.name ?? null)
@@ -480,7 +480,7 @@ export function SourceMappingsSection({
               {/* Icon-only: the label survives for assistive tech via VisuallyHidden. */}
               <Table.Th w={40}>
                 <VisuallyHidden><Trans>Enabled</Trans></VisuallyHidden>
-                <IconPower size={14} style={{ opacity: 0.7 }} aria-hidden />
+                <IconPower size={16} style={{ opacity: 0.7 }} aria-hidden />
               </Table.Th>
               <Table.Th w={36}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
             </Table.Tr>
@@ -738,7 +738,7 @@ export function SourceMappingsSection({
                 <Button
                   size="xs"
                   variant="light"
-                  leftSection={<IconRefresh size={14} />}
+                  leftSection={<IconRefresh size={16} />}
                   loading={refreshSnapshots.isPending}
                   onClick={() => {
                     if (!removing) return
@@ -956,7 +956,7 @@ export function SourceMappingsSection({
                   <Button
                     size="xs"
                     variant="default"
-                    leftSection={<IconPencil size={14} />}
+                    leftSection={<IconPencil size={16} />}
                     onClick={() => setSetupSite({ editId: ownerOfHost.custom!.id })}
                   >
                     <Trans>Edit {ownerOfHost.displayName}</Trans>

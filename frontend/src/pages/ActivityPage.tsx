@@ -28,10 +28,10 @@ import {
   IconPackage,
   IconRefresh,
   IconSearch,
-  IconSparkles,
+  IconCircleArrowUp,
   IconTarget,
   IconX,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { Link, useSearchParams } from 'react-router-dom'
 import { notifications } from '../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -928,7 +928,7 @@ export default function ActivityPage() {
                     <Button
                       size="xs"
                       variant="default"
-                      leftSection={<IconSearch size={14} />}
+                      leftSection={<IconSearch size={16} />}
                       loading={runVolumeSearch.isPending}
                       disabled={upgradesSummary.scanRunning}
                       onClick={runUpgradeVolumeSearch}
@@ -938,7 +938,7 @@ export default function ActivityPage() {
                     <Button
                       size="xs"
                       variant="default"
-                      leftSection={<IconRefresh size={14} />}
+                      leftSection={<IconRefresh size={16} />}
                       loading={runScan.isPending}
                       disabled={upgradesSummary.scanRunning}
                       onClick={runUpgradeScan}
@@ -969,7 +969,7 @@ export default function ActivityPage() {
 
               {!upgradesQuiet && (
               <Stack gap="sm">
-                <SectionHeader icon={IconSparkles} title={t`Recent upgrades`} count={upgradeHistory?.total} />
+                <SectionHeader icon={IconCircleArrowUp} title={t`Recent upgrades`} count={upgradeHistory?.total} />
                 {!upgradeHistory ? (
                   upgradeHistoryQuery.isError ? (
                     <LoadFailed query={upgradeHistoryQuery} />
@@ -1075,7 +1075,7 @@ export default function ActivityPage() {
                                           aria-label={expanded ? t`Hide replaced files` : t`Show replaced files`}
                                           aria-expanded={expanded}
                                         >
-                                          {expanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+                                          {expanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                                         </ActionIcon>
                                       </Group>
                                     </Table.Td>

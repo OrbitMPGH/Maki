@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button, Group, SimpleGrid, Text } from '@mantine/core'
-import { IconChevronRight } from '@tabler/icons-react'
+import { IconChevronRight } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { DiscoverRail, RecommendationItem } from '../../api/hooks'
 import { onRovingKeyDown } from '../../lib/rovingFocus'
@@ -66,7 +66,7 @@ export function DiscoverCatalogue({
         <Button
           variant="subtle"
           size="xs"
-          rightSection={<IconChevronRight size={14} />}
+          rightSection={<IconChevronRight size={16} />}
           onClick={() => onShowMore(active)}
         >
           <Trans>Show more</Trans>
@@ -89,7 +89,7 @@ export function DiscoverCatalogue({
       <Group justify="center" mt="lg">
         <Button
           variant="default"
-          rightSection={<IconChevronRight size={14} />}
+          rightSection={<IconChevronRight size={16} />}
           onClick={() => onShowMore(active)}
         >
           <Trans>Show more</Trans>

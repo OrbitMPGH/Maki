@@ -14,7 +14,7 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import { IconAlertTriangle, IconArrowDown, IconArrowUp, IconPlus, IconX } from '@tabler/icons-react'
+import { IconAlertTriangle, IconArrowDown, IconArrowUp, IconPlus, IconX } from '../../lib/icons'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -330,7 +330,7 @@ export function RuleCard({
                     aria-label={t`Remove condition: ${conditionLabel}`}
                     onClick={() => removeCondition(kind)}
                   >
-                    <IconX size={14} />
+                    <IconX size={16} />
                   </ActionIcon>
                 </Group>
               )
@@ -344,7 +344,7 @@ export function RuleCard({
               <Button
                 variant="default"
                 size="xs"
-                leftSection={<IconPlus size={14} />}
+                leftSection={<IconPlus size={16} />}
                 disabled={addable.length === 0}
                 aria-label={t`Add condition to rule ${number}`}
               >
@@ -361,7 +361,7 @@ export function RuleCard({
           </Menu>
           {!hasConditions(c) && (
             <Group gap={6} wrap="nowrap" c="var(--warn)">
-              <IconAlertTriangle size={14} />
+              <IconAlertTriangle size={16} />
               <Text size="xs" c="var(--warn)">
                 <Trans>No conditions, so this rule matches every file that reaches it.</Trans>
               </Text>

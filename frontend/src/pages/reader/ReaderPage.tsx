@@ -2,7 +2,7 @@ import { Button, Center, Group, Stack, Text, VisuallyHidden } from '@mantine/cor
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { IconCloudOff } from '@tabler/icons-react'
+import { IconCloudOff } from '../../lib/icons'
 import { api, ApiError, isOfflineUnavailable } from '../../api/client'
 import { Trans } from '@lingui/react/macro'
 import { useDocumentTitle } from '../../lib/documentTitle'
@@ -782,7 +782,7 @@ export default function ReaderPage() {
             {isOfflineUnavailable(error) ? (
               <Stack align="center" gap={4}>
                 <Group gap={8} wrap="nowrap">
-                  <IconCloudOff size={18} stroke={1.75} color="var(--warn)" aria-hidden />
+                  <IconCloudOff size={18} color="var(--warn)" aria-hidden />
                   <Text c="var(--ink-2)" fw={600}>
                     <Trans>Not available offline</Trans>
                   </Text>

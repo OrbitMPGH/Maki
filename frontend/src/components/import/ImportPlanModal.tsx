@@ -12,7 +12,7 @@ import {
   TextInput,
   UnstyledButton,
 } from '@mantine/core'
-import { IconAlertTriangle, IconArrowRight, IconChevronDown, IconInfoCircle, IconSearch } from '@tabler/icons-react'
+import { IconAlertTriangle, IconArrowRight, IconChevronDown, IconInfoCircle, IconSearch } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -278,7 +278,7 @@ function FolderHead({ plan }: { plan: ImportPlan }) {
       </Text>
       {!plan.error && plan.folderAction !== 'keep' && (
         <>
-          <IconArrowRight size={14} className="import-plan-arrow" aria-hidden />
+          <IconArrowRight size={16} className="import-plan-arrow" aria-hidden />
           <Text span size="sm" fw={600} c="var(--ink-2)" style={{ overflowWrap: 'anywhere' }}>
             {targetFolderName}
           </Text>
@@ -441,7 +441,7 @@ function PlanList({ plans }: { plans: ImportPlan[] }) {
           size="xs"
           aria-label={t`Find a folder`}
           placeholder={t`Find a folder`}
-          leftSection={<IconSearch size={14} />}
+          leftSection={<IconSearch size={16} />}
           value={query}
           onChange={(e) => setQuery(e.currentTarget.value)}
           style={{ flex: '1 1 180px', maxWidth: 280 }}

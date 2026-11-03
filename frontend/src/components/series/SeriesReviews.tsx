@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Anchor, Button, Drawer, Group, Stack, Text, Title } from '@mantine/core'
-import { IconExternalLink, IconMessage2 } from '@tabler/icons-react'
+import { IconExternalLink, IconMessage2 } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useMangaReviews } from '../../api/hooks'
 import { ReviewList } from '../discover/DiscoverReviews'
@@ -22,7 +22,7 @@ export function SeriesReviews({ malId }: { malId: number }) {
       <Button
         size="xs"
         variant="light"
-        leftSection={<IconMessage2 size={14} />}
+        leftSection={<IconMessage2 size={16} />}
         onClick={() => {
           setRequested(true)
           setOpened(true)
@@ -67,7 +67,7 @@ export function SeriesReviews({ malId }: { malId: number }) {
             size="sm"
           >
             <Group gap={4}>
-              <Trans>Read more on MyAnimeList</Trans> <IconExternalLink size={14} />
+              <Trans>Read more on MyAnimeList</Trans> <IconExternalLink size={16} />
             </Group>
           </Anchor>
         </Stack>

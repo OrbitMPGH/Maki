@@ -4,7 +4,7 @@ import { ApiError } from '../../api/client'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { Box, Button, Checkbox, Group, MultiSelect, Select, SimpleGrid, Stack, Switch, Text } from '@mantine/core'
-import { IconAdjustments } from '@tabler/icons-react'
+import { IconAdjustments } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { PriorityList } from '../../components/PriorityList'
@@ -171,7 +171,7 @@ export function SourcePrioritySection() {
       id="sources"
       title={<Trans>Sources</Trans>}
       actions={
-        <Button size="xs" leftSection={<IconAdjustments size={14} />} onClick={() => setManaging(true)}>
+        <Button size="xs" leftSection={<IconAdjustments size={16} />} onClick={() => setManaging(true)}>
           <Trans>Manage sources</Trans>
         </Button>
       }

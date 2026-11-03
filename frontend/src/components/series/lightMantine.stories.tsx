@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor } from 'storybook/test'
-import { IconDownload, IconSearch } from '@tabler/icons-react'
+import { IconDownload, IconSearch } from '../../lib/icons'
 import { LightActionIcon, LightBadge, LightGroup, LightStack, LightSwitch, LightText } from './lightMantine'
 
 const meta = {

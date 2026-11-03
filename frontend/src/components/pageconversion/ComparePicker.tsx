@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { fuzzyFilter, titleIndex } from '../../lib/fuzzySearch'
 import { Alert, Button, Group, Loader, Modal, NumberInput, Stack, Text, TextInput } from '@mantine/core'
-import { IconArrowLeft, IconSearch } from '@tabler/icons-react'
+import { IconArrowLeft, IconSearch } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useChapters, useSeries } from '../../api/hooks'
 import type { SeriesDto } from '../../api/types'
@@ -131,7 +131,7 @@ function ChapterStage({
   return (
     <Stack gap="sm">
       <Group gap="xs" wrap="nowrap">
-        <Button variant="subtle" color="gray" size="xs" leftSection={<IconArrowLeft size={14} />} onClick={onBack}>
+        <Button variant="subtle" color="gray" size="xs" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
           <Trans>Back</Trans>
         </Button>
         <Text fw={600} truncate="end">
@@ -196,7 +196,7 @@ function PageStage({
   return (
     <Stack gap="sm">
       <Group gap="xs" wrap="nowrap">
-        <Button variant="subtle" color="gray" size="xs" leftSection={<IconArrowLeft size={14} />} onClick={onBack}>
+        <Button variant="subtle" color="gray" size="xs" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
           <Trans>Back</Trans>
         </Button>
         <Text fw={600} truncate="end">

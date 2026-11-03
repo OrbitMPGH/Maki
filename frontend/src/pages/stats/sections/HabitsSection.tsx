@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { RingProgress, SimpleGrid, Skeleton, Stack, Text } from '@mantine/core'
 import { Trans, Plural, Select, useLingui } from '@lingui/react/macro'
-import { IconArchive, IconBooks, IconChartHistogram, IconFlame } from '@tabler/icons-react'
+import { IconArchive, IconBooks, IconChartHistogram, IconFlame } from '../../../lib/icons'
 import { useActivityStats, useLibraryComposition } from '../../../api/hooks'
 import type { BehaviourSeries } from '../../../api/hooks'
 import { useStatsStanding } from '../../../api/stats'

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Alert, Button, Group, Modal, Select, Stack, Text, TextInput } from '@mantine/core'
-import { IconPlayerPause, IconPlayerPlay } from '@tabler/icons-react'
+import { IconPlayerPause, IconPlayerPlay } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { usePauseQueue, useQueuePause, useResumeQueue, useSources } from '../api/hooks'
@@ -183,7 +183,7 @@ export function QueuePauseBanner({ canManage }: { canManage: boolean }) {
               <Button
                 size="compact-sm"
                 variant="light"
-                leftSection={<IconPlayerPlay size={14} />}
+                leftSection={<IconPlayerPlay size={16} />}
                 loading={resume.isPending && resume.variables === line.source}
                 onClick={() =>
                   resume.mutate(line.source, {

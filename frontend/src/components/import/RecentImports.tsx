@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Badge, Button, Card, Group, Modal, Stack, Text } from '@mantine/core'
-import { IconArrowBackUp, IconArrowRight, IconHistory } from '@tabler/icons-react'
+import { IconArrowBackUp, IconArrowRight, IconHistory } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -114,7 +114,7 @@ export function UndoBatchButton({
       <Button
         size="xs"
         variant="default"
-        leftSection={<IconArrowBackUp size={14} />}
+        leftSection={<IconArrowBackUp size={16} />}
         onClick={() => setTarget({ batchId, count })}
       >
         <Trans>Undo this import</Trans>
@@ -189,7 +189,7 @@ function FolderRow({
         <Button
           size="xs"
           variant="default"
-          leftSection={<IconArrowBackUp size={14} />}
+          leftSection={<IconArrowBackUp size={16} />}
           onClick={onUndo}
           disabled={busy}
           style={{ flexShrink: 0 }}
@@ -202,7 +202,7 @@ function FolderRow({
           <Button
             size="xs"
             variant="default"
-            leftSection={<IconArrowBackUp size={14} />}
+            leftSection={<IconArrowBackUp size={16} />}
             onClick={onUndo}
             disabled={busy}
             style={{ flexShrink: 0 }}
@@ -231,7 +231,7 @@ function BatchCard({ batch, onUndo, busy }: { batch: ImportBatch; onUndo: (t: Un
             size="xs"
             variant="light"
             color="var(--danger)"
-            leftSection={<IconArrowBackUp size={14} />}
+            leftSection={<IconArrowBackUp size={16} />}
             disabled={busy}
             onClick={() => onUndo({ batchId: batch.batchId, count: open.length })}
           >

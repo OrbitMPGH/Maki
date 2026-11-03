@@ -475,7 +475,7 @@
       "assets": [
         "frontend/public/favicon.svg",
         "frontend/public/favicon.png",
-        "frontend/node_modules/@tabler/icons/icons/outline"
+        "frontend/node_modules/@phosphor-icons/core/assets/bold"
       ],
       "docs": [
         "README.md",

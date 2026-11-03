@@ -27,7 +27,7 @@ import {
   IconPencil,
   IconTrash,
   IconX,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now, plural, msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -360,7 +360,7 @@ export default function RequestsPage() {
                           size="xs"
                           variant="light"
                           color="var(--ok)"
-                          leftSection={<IconCheck size={15} />}
+                          leftSection={<IconCheck size={16} />}
                           onClick={() => openApprove(r)}
                         >
                           <Trans>Approve</Trans>
@@ -369,7 +369,7 @@ export default function RequestsPage() {
                           size="xs"
                           variant="subtle"
                           color="var(--danger)"
-                          leftSection={<IconX size={15} />}
+                          leftSection={<IconX size={16} />}
                           onClick={() => {
                             setRejecting(r)
                             setRejectNote('')

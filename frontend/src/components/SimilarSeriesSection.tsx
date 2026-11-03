@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IconSparkles } from '@tabler/icons-react'
+import { IconIntersect } from '../lib/icons'
 import { useLingui } from '@lingui/react/macro'
 import {
   useRootFolders,
@@ -39,7 +39,7 @@ export function SimilarSeriesSection({ seriesId }: { seriesId: number }) {
 
   return (
     <>
-      <SectionHeader icon={IconSparkles} title={t`More like this`} />
+      <SectionHeader icon={IconIntersect} title={t`More like this`} />
       <EngineRailRow items={similar} seriesIdFor={seriesIdFor} onOpen={setDetailItem} savedFrom={SERIES_SOURCE} />
 
       <DiscoverDetailModal

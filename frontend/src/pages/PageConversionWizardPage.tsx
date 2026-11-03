@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Button, Group, Skeleton, Stack } from '@mantine/core'
-import { IconArrowLeft, IconArrowRight } from '@tabler/icons-react'
+import { IconArrowLeft, IconArrowRight } from '../lib/icons'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { plural } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -83,7 +83,7 @@ export default function PageConversionWizardPage() {
         title={<Trans>Set up page conversion</Trans>}
         description={<Trans>Compare your own pages at each quality before anything is rewritten.</Trans>}
         actions={
-          <Button component={Link} to={SETTINGS_URL} variant="default" size="xs" leftSection={<IconArrowLeft size={14} />}>
+          <Button component={Link} to={SETTINGS_URL} variant="default" size="xs" leftSection={<IconArrowLeft size={16} />}>
             <Trans>Back to settings</Trans>
           </Button>
         }
@@ -114,14 +114,14 @@ export default function PageConversionWizardPage() {
             )}
             <Group justify="space-between">
               {index > 0 ? (
-                <Button variant="default" leftSection={<IconArrowLeft size={14} />} onClick={() => goTo(index - 1)}>
+                <Button variant="default" leftSection={<IconArrowLeft size={16} />} onClick={() => goTo(index - 1)}>
                   <Trans>Back</Trans>
                 </Button>
               ) : (
                 <span />
               )}
               {index < STEP_IDS.length - 1 && (
-                <Button rightSection={<IconArrowRight size={14} />} onClick={() => goTo(index + 1)}>
+                <Button rightSection={<IconArrowRight size={16} />} onClick={() => goTo(index + 1)}>
                   <Trans>Next</Trans>
                 </Button>
               )}

@@ -1,5 +1,5 @@
 import { Stack, Text } from '@mantine/core'
-import { IconLock } from '@tabler/icons-react'
+import { IconLock } from '../../lib/icons'
 import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'

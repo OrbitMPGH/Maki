@@ -26,7 +26,7 @@ import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '../lib/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
-import { IconAdjustmentsHorizontal, IconSearch, IconUser, IconX } from '@tabler/icons-react'
+import { IconAdjustmentsHorizontal, IconSearch, IconUser, IconX } from '../lib/icons'
 import { Panel } from './ui/Panel'
 import { TagChip } from './ui/TagChip'
 import {

@@ -30,7 +30,7 @@ import {
   IconServer,
   IconTrash,
   IconWebhook,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { notifications as toast } from '../lib/toast'
 import {
   useCreateNotification,

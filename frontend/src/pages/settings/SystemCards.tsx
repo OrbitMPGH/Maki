@@ -32,7 +32,7 @@ import {
   IconDownload,
   IconTrash,
   IconUpload,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { SettingsSection } from './SettingsSection'
@@ -302,7 +302,7 @@ function ReleaseNotes({ notes }: { notes: string }) {
         onClick={() => setOpen((v) => !v)}
       >
         <Group gap={4} wrap="nowrap">
-          {open ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+          {open ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
           <Trans>What's new</Trans>
         </Group>
       </UnstyledButton>

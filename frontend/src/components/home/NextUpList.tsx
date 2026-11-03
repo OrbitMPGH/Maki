@@ -1,7 +1,7 @@
 import { memo, useCallback, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { VisuallyHidden } from '@mantine/core'
-import { IconPlayerPlayFilled } from '@tabler/icons-react'
+import { IconPlayerPlayFilled } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HomeReadingItem } from '../../api/hooks'

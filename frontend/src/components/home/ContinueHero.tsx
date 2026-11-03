@@ -1,7 +1,7 @@
 import { memo, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Skeleton } from '@mantine/core'
-import { IconPlayerPlay, IconPlayerTrackNext } from '@tabler/icons-react'
+import { IconPlayerPlay, IconPlayerTrackNext } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HomeReadingItem } from '../../api/hooks'

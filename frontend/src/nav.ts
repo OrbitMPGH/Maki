@@ -9,9 +9,9 @@ import {
   IconPlus,
   IconRefreshDot,
   IconSettings,
-  IconSparkles,
+  IconCompass,
   type Icon,
-} from '@tabler/icons-react'
+} from './lib/icons'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 
@@ -37,7 +37,7 @@ export const NAV_SECTIONS: { label: MessageDescriptor; items: NavItem[] }[] = [
       { label: msg`Home`, path: '/home', icon: IconHome },
       { label: msg`Library`, path: '/library', icon: IconLibrary },
       { label: msg`Add series`, path: '/add', icon: IconPlus },
-      { label: msg`Discover`, path: '/discover', icon: IconSparkles },
+      { label: msg`Discover`, path: '/discover', icon: IconCompass },
       { label: msg`Import`, path: '/import', icon: IconFolderDown },
       // "Stats" rather than "Rewind": the page is a standing reading dashboard, and Rewind is the
       // year playback it launches. Naming the whole thing after the once-a-year part is what made

@@ -5,7 +5,7 @@ import {
   IconDeviceMobileCheck,
   IconDownload,
   IconEyeOff,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusGlyph, seriesStatusVisual, statusColor, statusOnColor } from './status'
@@ -155,7 +155,7 @@ export const CoverCard = memo(function CoverCard({
           <div className="cover-corner cover-corner-left">
             {offline === 'saved' && (
               <span className="cover-state" data-tone="saved" data-tip={savedTip} role="img" aria-label={savedTip}>
-                <IconDeviceMobileCheck size={13} stroke={2} />
+                <IconDeviceMobileCheck size={13} />
               </span>
             )}
             {!downloading && readPct !== null && readPct > 0 && (
@@ -167,12 +167,12 @@ export const CoverCard = memo(function CoverCard({
                 aria-label={readTip}
                 style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
               >
-                {unread === 0 && <IconCheck size={14} stroke={2.2} className="cover-ring-check" />}
+                {unread === 0 && <IconCheck size={16} className="cover-ring-check" />}
               </span>
             )}
             {downloadTip && (
               <span className="cover-state" data-tone="info" data-tip={downloadTip} role="img" aria-label={downloadTip}>
-                <IconDownload size={13} stroke={2} />
+                <IconDownload size={13} />
               </span>
             )}
           </div>
@@ -186,7 +186,7 @@ export const CoverCard = memo(function CoverCard({
                 role="img"
                 aria-label={notMonitoredTip}
               >
-                <IconEyeOff size={15} />
+                <IconEyeOff size={16} />
               </span>
             )}
             {/* Only when muted: the other three modes are the normal case and would be noise. */}
@@ -198,7 +198,7 @@ export const CoverCard = memo(function CoverCard({
                 role="img"
                 aria-label={mutedTip}
               >
-                <IconBellOff size={15} />
+                <IconBellOff size={16} />
               </span>
             )}
             {/* Last in the row so it holds the corner; the eye and bell only show on hover. */}
@@ -211,7 +211,7 @@ export const CoverCard = memo(function CoverCard({
               aria-label={statusTip}
               style={{ '--tone': statusColor(status.color), '--tone-on': statusOnColor(status.color) } as React.CSSProperties}
             >
-              <StatusGlyph size={13} stroke={2} />
+              <StatusGlyph size={13} />
             </span>
           </div>
         </div>

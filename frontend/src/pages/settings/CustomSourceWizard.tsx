@@ -4,8 +4,14 @@ import {
   Stepper, Switch, Table, Text, TextInput, Textarea,
 } from '@mantine/core'
 import {
-  IconAlertTriangle, IconCheck, IconChevronDown, IconChevronRight, IconFileImport, IconMinus, IconX,
-} from '@tabler/icons-react'
+  IconAlertTriangle,
+  IconCheck,
+  IconChevronDown,
+  IconChevronRight,
+  IconFileImport,
+  IconMinus,
+  IconX,
+} from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { errorText } from '../../api/errorText'
 import { languageName } from '../../api/titles'
@@ -47,9 +53,9 @@ function parseJson(text: string): { value: Section | null; invalid: boolean } {
 const pretty = (value: unknown) => JSON.stringify(compact(value ?? {}), null, 2)
 
 function StepIcon({ status }: { status: CustomSourceTestStep['status'] }) {
-  if (status === 'ok') return <IconCheck size={14} color="var(--ok)" />
-  if (status === 'failed') return <IconX size={14} color="var(--danger)" />
-  return <IconMinus size={14} color="var(--ink-4)" />
+  if (status === 'ok') return <IconCheck size={16} color="var(--ok)" />
+  if (status === 'failed') return <IconX size={16} color="var(--danger)" />
+  return <IconMinus size={16} color="var(--ink-4)" />
 }
 
 function StepRow({ step }: { step: CustomSourceTestStep }) {
@@ -109,7 +115,7 @@ function Advanced({ value, onApply, label }: { value: unknown; onApply: (section
     <Stack gap={6}>
       <Anchor component="button" type="button" size="sm" onClick={() => setOpen((o) => !o)} c="var(--ink-2)">
         <Group gap={4}>
-          {open ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+          {open ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
           <Trans>Advanced</Trans>
         </Group>
       </Anchor>
@@ -604,7 +610,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
               </Text>
               <FileButton onChange={(file) => void file?.text().then(applyJson)} accept="application/json,.json">
                 {(props) => (
-                  <Button {...props} variant="default" size="xs" leftSection={<IconFileImport size={14} />}>
+                  <Button {...props} variant="default" size="xs" leftSection={<IconFileImport size={16} />}>
                     <Trans>Open file</Trans>
                   </Button>
                 )}

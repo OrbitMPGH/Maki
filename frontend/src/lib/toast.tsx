@@ -1,5 +1,5 @@
 import { notifications as mantine, type NotificationData } from '@mantine/notifications'
-import { IconAlertCircle, IconAlertTriangle, IconCircleCheck, IconInfoCircle, type Icon } from '@tabler/icons-react'
+import { IconAlertCircle, IconAlertTriangle, IconCircleCheck, IconInfoCircle, type Icon } from './icons'
 
 const TONE_ICONS: Record<string, Icon> = {
   'var(--ok)': IconCircleCheck,
@@ -11,7 +11,7 @@ const TONE_ICONS: Record<string, Icon> = {
 function withIcon(data: NotificationData): NotificationData {
   if (data.icon !== undefined || data.loading) return data
   const Tone = TONE_ICONS[data.color ?? ''] ?? IconInfoCircle
-  return { ...data, icon: <Tone size={18} stroke={1.8} /> }
+  return { ...data, icon: <Tone size={18} /> }
 }
 
 /** Drop-in for Mantine's `notifications`: import this one, never `@mantine/notifications` directly. */

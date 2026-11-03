@@ -11,7 +11,7 @@ import {
   Switch,
   Text,
 } from '@mantine/core'
-import { IconDownload, IconRefresh } from '@tabler/icons-react'
+import { IconDownload, IconRefresh } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -188,7 +188,7 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
           <Button
             size="compact-sm"
             variant="default"
-            leftSection={<IconRefresh size={14} />}
+            leftSection={<IconRefresh size={16} />}
             loading={runningPartial}
             disabled={!listsEnabled}
             onClick={() => run(false)}
@@ -198,7 +198,7 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
           <Button
             size="compact-sm"
             variant="subtle"
-            leftSection={<IconDownload size={14} />}
+            leftSection={<IconDownload size={16} />}
             loading={runningFull}
             disabled={!listsEnabled}
             onClick={() => setConfirmingFull(true)}

@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro'
-import { IconArrowDown, IconArrowUp, IconCheck } from '@tabler/icons-react'
+import { IconArrowDown, IconArrowUp, IconCheck } from '../../lib/icons'
 
 const RING_RADIUS = 15.5
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS
@@ -68,7 +68,7 @@ export default function NextChapterHint({
             strokeDashoffset={RING_LENGTH * (1 - fill)}
           />
         </svg>
-        <Glyph size={16} stroke={2.2} />
+        <Glyph size={16} />
       </span>
       <div className="reader-card-text">
         {eyebrow && <span className="reader-card-eyebrow">{eyebrow}</span>}

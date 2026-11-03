@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActionIcon, Button, Center, Group, Portal, SegmentedControl, Stack, Text } from '@mantine/core'
-import { IconArrowLeft, IconX } from '@tabler/icons-react'
+import { IconArrowLeft, IconX } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { previewPageUrl, useSeriesPreview } from '../../api/preview'

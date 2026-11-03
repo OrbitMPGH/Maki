@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Collapse, Group, Text, Tooltip, UnstyledButton } from '@mantine/core'
-import { IconChevronDown } from '@tabler/icons-react'
+import { IconChevronDown } from '../lib/icons'
 import {
   animeSpanKind,
   buildAnimeSpans,

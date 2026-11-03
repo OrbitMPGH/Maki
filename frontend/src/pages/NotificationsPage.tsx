@@ -11,7 +11,7 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core'
-import { IconSettings, IconX } from '@tabler/icons-react'
+import { IconSettings, IconX } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { I18n } from '@lingui/core'
@@ -347,7 +347,7 @@ function Row({
           onClick={onDismiss}
           m="sm"
         >
-          <IconX size={15} />
+          <IconX size={16} />
         </ActionIcon>
       </Tooltip>
     </Group>

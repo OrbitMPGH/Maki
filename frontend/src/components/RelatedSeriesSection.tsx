@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IconAffiliate } from '@tabler/icons-react'
+import { IconAffiliate } from '../lib/icons'
 import { useLingui } from '@lingui/react/macro'
 import {
   useRootFolders,

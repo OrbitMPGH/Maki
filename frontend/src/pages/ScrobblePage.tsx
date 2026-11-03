@@ -16,7 +16,7 @@ import {
   Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
-import { IconHistory, IconListDetails, IconRefresh, IconUserQuestion } from '@tabler/icons-react'
+import { IconHistory, IconListDetails, IconRefresh, IconUserQuestion } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'

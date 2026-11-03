@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ActionIcon, Button, Checkbox, Group, Menu, Modal, Select, Stack, Text } from '@mantine/core'
-import { IconDots, IconRefresh, IconTrash } from '@tabler/icons-react'
+import { IconDots, IconRefresh, IconTrash } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'

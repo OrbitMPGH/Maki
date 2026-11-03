@@ -1,5 +1,5 @@
 import { ActionIcon, FocusTrap } from '@mantine/core'
-import { IconX } from '@tabler/icons-react'
+import { IconX } from '../../lib/icons'
 import { useEffect } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 

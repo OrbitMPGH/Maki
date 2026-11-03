@@ -37,7 +37,7 @@ import {
   IconDeviceFloppy,
   IconDeviceMobileCheck,
   IconEye,
-  IconStars,
+  IconRanking,
   IconFileOff,
   IconFileText,
   IconFilter,
@@ -56,7 +56,7 @@ import {
   IconTrash,
   IconWand,
   IconX,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { notifications } from '../lib/toast'
 import {
   useSeriesNotificationHelp,
@@ -1312,13 +1312,13 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     canArchive && {
       key: 'Restore',
       label: <Trans context="series">Restore</Trans>,
-      icon: <IconArchiveOff size={15} />,
+      icon: <IconArchiveOff size={16} />,
       run: restoreSelected,
     },
     canDelete && {
       key: 'Remove files',
       label: <Trans>Remove files</Trans>,
-      icon: <IconFileOff size={15} />,
+      icon: <IconFileOff size={16} />,
       run: () => setRemoveFilesAsk({ series: null, binRefused: false }),
     },
   ]
@@ -1326,19 +1326,19 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     can('DownloadChapters') && {
       key: 'Search missing',
       label: <Trans>Search missing</Trans>,
-      icon: <IconSearch size={15} />,
+      icon: <IconSearch size={16} />,
       run: () => runBulk('Search missing', (id) => api(`/series/${id}/searchmissing`, { method: 'POST' })),
     },
     can('EditMetadata') && {
       key: 'Monitoring',
       label: <Trans>Monitoring</Trans>,
-      icon: <IconEye size={15} />,
+      icon: <IconEye size={16} />,
       run: () => setMonitorModalOpen(true),
     },
     can('ManageTags') && {
       key: 'Tags',
       label: <Trans>Tags</Trans>,
-      icon: <IconTag size={15} />,
+      icon: <IconTag size={16} />,
       run: () => {
         setTagsToAdd([])
         setTagsToRemove([])
@@ -1348,25 +1348,25 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     can('EditMetadata') && {
       key: 'Refresh',
       label: <Trans>Refresh</Trans>,
-      icon: <IconRefresh size={15} />,
+      icon: <IconRefresh size={16} />,
       run: () => runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
     },
     can('EditMetadata') && {
       key: 'Metadata',
       label: <Trans>Metadata</Trans>,
-      icon: <IconPhoto size={15} />,
+      icon: <IconPhoto size={16} />,
       run: () => runBulk('Metadata', (id) => api(`/series/${id}/refreshmetadata`, { method: 'POST' })),
     },
     can('ManageSources') && {
       key: 'Auto-match',
       label: <Trans>Auto-match</Trans>,
-      icon: <IconWand size={15} />,
+      icon: <IconWand size={16} />,
       run: () => setAutoMatchModalOpen(true),
     },
     can('EditMetadata') && {
       key: 'Quality profile',
       label: <Trans>Quality profile</Trans>,
-      icon: <IconStars size={15} />,
+      icon: <IconRanking size={16} />,
       run: () => {
         setBulkProfile(DEFAULT_PROFILE_FILTER)
         setProfileModalOpen(true)
@@ -1375,20 +1375,20 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     {
       key: 'Notifications',
       label: <Trans>Notifications</Trans>,
-      icon: <IconBell size={15} />,
+      icon: <IconBell size={16} />,
       run: () => setNotifyModalOpen(true),
     },
     // "ComicInfo" is the ComicInfo.xml format name, not translated (see rule 5).
     can('EditMetadata') && {
       key: 'ComicInfo',
       label: 'ComicInfo',
-      icon: <IconFileText size={15} />,
+      icon: <IconFileText size={16} />,
       run: () => runBulk('ComicInfo', (id) => api(`/series/${id}/updatecomicinfo`, { method: 'POST' })),
     },
     can('EditMetadata') && {
       key: 'Move',
       label: <Trans>Move</Trans>,
-      icon: <IconFolderSymlink size={15} />,
+      icon: <IconFolderSymlink size={16} />,
       run: () => {
         setMoveTarget(null)
         setMoveFiles(true)
@@ -1557,7 +1557,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                   onClick={exitSelectMode}
                   aria-label={t`Done`}
                 >
-                  <IconX size={15} />
+                  <IconX size={16} />
                 </ActionIcon>
                 <Text size="sm" c="var(--ink-3)" className="tnum">
                   <Plural value={selectedCount} one="# selected" other="# selected" />
@@ -1609,7 +1609,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                     <Button
                       size="xs"
                       variant="default"
-                      rightSection={<IconChevronDown size={14} />}
+                      rightSection={<IconChevronDown size={16} />}
                       disabled={selected.size === 0 || (busy !== null && !moreActions.some((a) => a.key === busy))}
                       loading={moreActions.some((a) => a.key === busy)}
                       className={moreActions.length === 0 ? 'library-bulk-more-phone' : undefined}
@@ -1638,7 +1638,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                     {bulkArchiveOffered && (
                       <>
                         <Menu.Divider hiddenFrom="sm" />
-                        <Menu.Item hiddenFrom="sm" leftSection={<IconArchive size={15} />} onClick={openArchive}>
+                        <Menu.Item hiddenFrom="sm" leftSection={<IconArchive size={16} />} onClick={openArchive}>
                           <Trans context="series">Archive</Trans>
                         </Menu.Item>
                       </>
@@ -1653,7 +1653,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                     visibleFrom="sm"
                     size="xs"
                     variant="light"
-                    leftSection={<IconArchive size={15} />}
+                    leftSection={<IconArchive size={16} />}
                     disabled={bulkDisabled('Archive')}
                     loading={bulkArchive.isPending}
                     onClick={openArchive}
@@ -1666,7 +1666,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                     size="xs"
                     variant="light"
                     color="var(--danger)"
-                    leftSection={<IconTrash size={15} />}
+                    leftSection={<IconTrash size={16} />}
                     disabled={bulkDisabled(removeKey)}
                     loading={busy === removeKey}
                     onClick={() => {
@@ -1681,7 +1681,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                   visibleFrom="sm"
                   size="xs"
                   variant="default"
-                  leftSection={<IconX size={15} />}
+                  leftSection={<IconX size={16} />}
                   disabled={busy !== null}
                   onClick={exitSelectMode}
                 >
@@ -1787,7 +1787,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                       <ToolbarMenuButton />
                     </Menu.Target>
                     <Menu.Dropdown>
-                      <Menu.Item leftSection={<IconSettings size={14} />} onClick={() => setTagManagerOpen(true)}>
+                      <Menu.Item leftSection={<IconSettings size={16} />} onClick={() => setTagManagerOpen(true)}>
                         <Trans>Manage tags</Trans>
                       </Menu.Item>
                       {/* A phone keeps search, Filters, the dice and this menu, so view and sort move in here. */}
@@ -1801,7 +1801,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                               setViewMode(mode)
                               writeStored(LS_VIEW, mode)
                             }}
-                            rightSection={viewMode === mode ? <IconCheck size={14} /> : undefined}
+                            rightSection={viewMode === mode ? <IconCheck size={16} /> : undefined}
                           >
                             {mode === 'grid' ? t`Grid view` : t`List view`}
                           </Menu.Item>
@@ -1815,7 +1815,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                               setSort(o.value)
                               setSortDirOverride('')
                             }}
-                            rightSection={sort === o.value ? <IconCheck size={14} /> : undefined}
+                            rightSection={sort === o.value ? <IconCheck size={16} /> : undefined}
                           >
                             {o.label}
                           </Menu.Item>
@@ -1864,7 +1864,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           )}
           {(savedFilters ?? []).length > 0 && (
             <span className="library-saved-label">
-              <IconBookmark size={14} />
+              <IconBookmark size={16} />
               <Trans>Saved filters</Trans>
             </span>
           )}
@@ -1891,7 +1891,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             <Button
               size="compact-xs"
               variant="subtle"
-              leftSection={<IconDeviceFloppy size={14} />}
+              leftSection={<IconDeviceFloppy size={16} />}
               onClick={() => {
                 const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
                 setFilterName(active?.name ?? '')
@@ -1906,7 +1906,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
               size="compact-xs"
               variant="subtle"
               color="var(--neutral)"
-              leftSection={<IconX size={14} />}
+              leftSection={<IconX size={16} />}
               onClick={() => {
                 applySpec(DEFAULT_SPEC, null)
                 setOnDeviceOnly(false)
@@ -2033,7 +2033,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                 variant="subtle"
                 size="compact-sm"
                 color="var(--neutral)"
-                leftSection={<IconSettings size={14} />}
+                leftSection={<IconSettings size={16} />}
                 style={{ alignSelf: 'flex-start' }}
                 onClick={() => {
                   setFiltersOpen(false)
@@ -2217,7 +2217,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             <Button
               visibleFrom="sm"
               variant="default"
-              leftSection={<IconX size={15} />}
+              leftSection={<IconX size={16} />}
               onClick={() => applySpec(DEFAULT_SPEC, null)}
             >
               <Trans>Clear all filters</Trans>

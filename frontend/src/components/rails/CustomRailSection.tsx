@@ -19,9 +19,9 @@ import {
   IconLibrary,
   IconPencil,
   IconPlus,
-  IconSparkles,
+  IconCompass,
   IconTrash,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import {
   useSeries,
   useSeriesIdLookup,
@@ -48,7 +48,7 @@ import { useDensityPref } from '../ui/viewPrefs'
 import { CustomRailEditor, type CustomRailDraft } from './CustomRailEditor'
 import { DeleteRailDialog } from './DeleteRailDialog'
 
-const ICONS = { library: IconLibrary, recommendations: IconSparkles, catalogue: IconFilter }
+const ICONS = { library: IconLibrary, recommendations: IconCompass, catalogue: IconFilter }
 
 /**
  * One custom rail, fetched once it nears the viewport: every rail on a page is its own query, and a
@@ -135,21 +135,21 @@ export function CustomRailSection({
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item leftSection={<IconPencil size={14} />} onClick={() => setEditing({ rail })}>
+                <Menu.Item leftSection={<IconPencil size={16} />} onClick={() => setEditing({ rail })}>
                   <Trans>Edit</Trans>
                 </Menu.Item>
-                <Menu.Item leftSection={<IconCopy size={14} />} onClick={() => duplicate(rail.placement)}>
+                <Menu.Item leftSection={<IconCopy size={16} />} onClick={() => duplicate(rail.placement)}>
                   <Trans>Duplicate</Trans>
                 </Menu.Item>
                 {canDuplicateAcross && (
-                  <Menu.Item leftSection={<IconCopy size={14} />} onClick={() => duplicate(otherPlacement)}>
+                  <Menu.Item leftSection={<IconCopy size={16} />} onClick={() => duplicate(otherPlacement)}>
                     {otherPlacement === 'home' ? <Trans>Copy to Home</Trans> : <Trans>Copy to Discover</Trans>}
                   </Menu.Item>
                 )}
                 <Menu.Divider />
                 <Menu.Item
                   color="var(--danger)"
-                  leftSection={<IconTrash size={14} />}
+                  leftSection={<IconTrash size={16} />}
                   onClick={() => setConfirmDelete(true)}
                 >
                   <Trans>Delete</Trans>
@@ -283,7 +283,7 @@ export function AddRailButton({
   }
   return (
     <>
-      <Button variant="subtle" size="xs" leftSection={<IconPlus size={14} />} onClick={() => setOpen(true)}>
+      <Button variant="subtle" size="xs" leftSection={<IconPlus size={16} />} onClick={() => setOpen(true)}>
         {label ?? <Trans>Add a rail</Trans>}
       </Button>
       {open && <CustomRailEditor draft={draft} onSaved={onCreated} onClose={() => setOpen(false)} />}

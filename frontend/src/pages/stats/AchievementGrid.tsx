@@ -17,17 +17,17 @@ import {
   IconMoon,
   IconMoonStars,
   IconMountain,
-  IconSparkles,
+  IconPlant,
   IconSunrise,
   IconWorld,
   type Icon,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { Achievement } from '../../api/hooks'
 import { useAuth } from '../../auth/AuthProvider'
 import { formatNumber, formatReadingTime } from '../../format'
 
-/** Server icon keys (`AchievementCatalog.cs`) mapped to the closest Tabler glyph. No literal owl icon
+/** Server icon keys (`AchievementCatalog.cs`) mapped to the closest Phosphor glyph. No literal owl icon
  * exists, so night-owl borrows the starry moon instead. */
 const ICONS: Record<string, Icon> = {
   book: IconBook,
@@ -36,7 +36,7 @@ const ICONS: Record<string, Icon> = {
   compass: IconCompass,
   calendar: IconCalendar,
   flame: IconFlame,
-  sparkle: IconSparkles,
+  sparkle: IconPlant,
   moon: IconMoon,
   sofa: IconArmchair,
   mountain: IconMountain,
@@ -175,7 +175,7 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
             >
               {(() => {
                 const Icon = iconFor(achievement.icon)
-                return <Icon size={14} />
+                return <Icon size={16} />
               })()}
             </ThemeIcon>
             <Text fw={600} size="sm" lineClamp={1}>
@@ -197,7 +197,7 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
               </Badge>
             )
           ) : (
-            <IconLock size={14} opacity={0.5} />
+            <IconLock size={16} opacity={0.5} />
           )}
         </Group>
 

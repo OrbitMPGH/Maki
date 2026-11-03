@@ -14,7 +14,7 @@ import {
     Title,
     Tooltip
 } from '@mantine/core'
-import {IconAlertTriangle, IconArrowLeft, IconBook, IconCheck, IconDownload, IconX} from '@tabler/icons-react'
+import { IconAlertTriangle, IconArrowLeft, IconBook, IconCheck, IconDownload, IconX } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import { otherTitles, readableTitles } from '../../api/titles'
 import type { SeriesDto } from '../../api/types'
@@ -182,7 +182,7 @@ export function SeriesHero({
                     size="sm"
                     fw={600}
                 >
-                    <IconArrowLeft size={16} stroke={1.9} />
+                    <IconArrowLeft size={16} />
                     {label(back.label)}
                 </Text>
 
@@ -290,7 +290,7 @@ export function SeriesHero({
                                                             onClick={onFinalize}
                                                             aria-label={t`Make this my rating`}
                                                         >
-                                                            <IconCheck size={14} />
+                                                            <IconCheck size={16} />
                                                         </ActionIcon>
                                                     </Tooltip>
                                                 </>
@@ -303,7 +303,7 @@ export function SeriesHero({
                                                     onClick={() => onRate(null)}
                                                     aria-label={t`Clear rating`}
                                                 >
-                                                    <IconX size={14} />
+                                                    <IconX size={16} />
                                                 </ActionIcon>
                                             </Tooltip>
                                             <RatingHistoryButton seriesId={series.id} />

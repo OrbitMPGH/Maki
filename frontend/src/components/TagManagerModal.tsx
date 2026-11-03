@@ -11,7 +11,7 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import { IconCheck, IconPencil, IconPlus, IconTrash, IconX } from '@tabler/icons-react'
+import { IconCheck, IconPencil, IconPlus, IconTrash, IconX } from '../lib/icons'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { useCreateTag, useDeleteTag, useTags, useUpdateTag } from '../api/hooks'
 import { ConfirmDialog } from './ui/ConfirmDialog'
@@ -57,7 +57,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
             style={{ flex: 1 }}
           />
           <Button
-            leftSection={<IconPlus size={15} />}
+            leftSection={<IconPlus size={16} />}
             onClick={create}
             loading={createTag.isPending}
             disabled={!newLabel.trim()}
@@ -88,10 +88,10 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                     autoFocus
                   />
                   <ActionIcon variant="subtle" color="var(--ok)" onClick={() => saveLabel(id)} aria-label={t`Save`}>
-                    <IconCheck size={15} />
+                    <IconCheck size={16} />
                   </ActionIcon>
                   <ActionIcon variant="subtle" color="var(--neutral)" onClick={() => setEditingId(null)} aria-label={t`Cancel`}>
-                    <IconX size={15} />
+                    <IconX size={16} />
                   </ActionIcon>
                 </>
               ) : (
@@ -142,7 +142,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                     }}
                     aria-label={t`Rename ${label}`}
                   >
-                    <IconPencil size={15} />
+                    <IconPencil size={16} />
                   </ActionIcon>
                   <ActionIcon
                     variant="subtle"
@@ -150,7 +150,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                     onClick={() => setDeleting({ id, label, seriesCount })}
                     aria-label={t`Delete ${label}`}
                   >
-                    <IconTrash size={15} />
+                    <IconTrash size={16} />
                   </ActionIcon>
                 </>
               )}

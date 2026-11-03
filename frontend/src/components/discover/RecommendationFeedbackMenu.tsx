@@ -5,8 +5,13 @@ import { randomUUID } from '../../lib/uuid'
 import { ApiError } from '../../api/client'
 import { notifications } from '../../lib/toast'
 import {
-  IconDots, IconEye, IconEyeOff, IconClock, IconThumbUp, IconThumbDown,
-} from '@tabler/icons-react'
+  IconDots,
+  IconEye,
+  IconEyeOff,
+  IconClock,
+  IconThumbUp,
+  IconThumbDown,
+} from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import {
   useFeedbackState, useMutateFeedback, useMutateFranchiseFeedback, useUndoFeedback,
@@ -78,10 +83,10 @@ export function RecommendationFeedbackMenu({ providerId }: { providerId: string 
         message: <Group gap="xs" wrap="wrap">
           <Text size="sm">{describe(result.feedbackEffect, result.queueEffect) + leftShortlist}</Text>
           {offerOpinion && <>
-            <Button size="xs" variant="subtle" leftSection={<IconThumbUp size={14} />} onClick={() => opinion('like')}>
+            <Button size="xs" variant="subtle" leftSection={<IconThumbUp size={16} />} onClick={() => opinion('like')}>
               <Trans>Liked it</Trans>
             </Button>
-            <Button size="xs" variant="subtle" leftSection={<IconThumbDown size={14} />} onClick={() => opinion('dislike')}>
+            <Button size="xs" variant="subtle" leftSection={<IconThumbDown size={16} />} onClick={() => opinion('dislike')}>
               <Trans>Disliked it</Trans>
             </Button>
           </>}

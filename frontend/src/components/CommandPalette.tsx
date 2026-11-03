@@ -1,6 +1,6 @@
 import { Center, Group, Loader, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
 import { useDisclosure, useHotkeys, useOs } from '@mantine/hooks'
-import { IconAdjustments, IconArchive, IconBooks, IconPlus, IconSearch, IconSend } from '@tabler/icons-react'
+import { IconAdjustments, IconArchive, IconBooks, IconPlus, IconSearch, IconSend } from '../lib/icons'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
 import { useNavigate } from 'react-router-dom'
@@ -54,7 +54,7 @@ export function CommandPaletteTrigger({
       onClick={onOpen}
       aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'}
     >
-      <IconSearch size={16} stroke={1.8} />
+      <IconSearch size={16} />
       <span className="command-palette-trigger-label">
         <Trans>Search</Trans>
       </span>
@@ -302,14 +302,14 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
                   style={{ cursor: 'pointer', borderRadius: 'var(--radius-thumb)' }}
                 >
                   {r.kind === 'nav' ? (
-                    <r.icon size={18} stroke={1.7} />
+                    <r.icon size={18} />
                   ) : r.kind === 'setting' ? (
-                    <IconAdjustments size={18} stroke={1.7} />
+                    <IconAdjustments size={18} />
                   ) : r.kind === 'search' ? (
                     canAdd ? (
-                      <IconPlus size={18} stroke={1.7} />
+                      <IconPlus size={18} />
                     ) : (
-                      <IconSend size={18} stroke={1.7} />
+                      <IconSend size={18} />
                     )
                   ) : r.coverUrl ? (
                     <img
@@ -320,7 +320,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
                       style={{ objectFit: 'cover', borderRadius: 'var(--mantine-radius-xs)', flexShrink: 0 }}
                     />
                   ) : (
-                    <IconBooks size={18} stroke={1.7} />
+                    <IconBooks size={18} />
                   )}
                   <Stack gap={0} style={{ minWidth: 0 }}>
                     <Text size="sm" fw={600} truncate>

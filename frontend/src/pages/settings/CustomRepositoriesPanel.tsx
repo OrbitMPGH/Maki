@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Alert, Anchor, Button, Card, Group, List, Modal, Stack, Switch, Table, Text, TextInput, Tooltip } from '@mantine/core'
-import { IconAlertTriangle, IconRefresh, IconTrash } from '@tabler/icons-react'
+import { IconAlertTriangle, IconRefresh, IconTrash } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { errorText } from '../../api/errorText'
 import { languageName } from '../../api/titles'

@@ -13,7 +13,7 @@ import {
   TextInput,
   UnstyledButton,
 } from '@mantine/core'
-import { IconFileZip, IconSearch, IconX } from '@tabler/icons-react'
+import { IconFileZip, IconSearch, IconX } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -181,7 +181,7 @@ export function LinkFileToChaptersModal({
                 style={{ flex: 1, minWidth: 160 }}
                 value={query}
                 onChange={(e) => setQuery(e.currentTarget.value)}
-                leftSection={<IconSearch size={14} />}
+                leftSection={<IconSearch size={16} />}
                 rightSection={
                   query ? (
                     <ActionIcon size={24} variant="subtle" color="var(--neutral)" aria-label={t`Clear search`} onClick={() => setQuery('')}>

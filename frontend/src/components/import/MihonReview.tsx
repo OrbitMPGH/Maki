@@ -13,7 +13,7 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core'
-import { IconPackageImport, IconSearch } from '@tabler/icons-react'
+import { IconPackageImport, IconSearch } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLibrarySettings, useRootFolders } from '../../api/hooks'
 import { useAuth } from '../../auth/AuthProvider'
@@ -361,7 +361,7 @@ export function MihonReview({
                         <Button
                           size="xs"
                           variant="light"
-                          leftSection={<IconSearch size={14} />}
+                          leftSection={<IconSearch size={16} />}
                           onClick={() => setFinderFor(row)}
                         >
                           {match ? <Trans>Change</Trans> : <Trans>Find match</Trans>}

@@ -24,7 +24,7 @@ import {
   IconFolderSearch,
   IconPackageImport,
   IconSearch,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
@@ -744,7 +744,7 @@ function FolderImport() {
                                   }
                                   disabled={doImport.isPending}
                                 >
-                                  <IconEye size={14} />
+                                  <IconEye size={16} />
                                 </ActionIcon>
                               </Tooltip>
                             )}
@@ -758,7 +758,7 @@ function FolderImport() {
                                   onClick={() => ignore(c.folderName)}
                                   disabled={doImport.isPending || !!rowProgress}
                                 >
-                                  <IconEyeOff size={14} />
+                                  <IconEyeOff size={16} />
                                 </ActionIcon>
                               </Tooltip>
                             )}
@@ -837,7 +837,7 @@ function FolderImport() {
                               <Button
                                 size="xs"
                                 variant="light"
-                                leftSection={<IconSearch size={14} />}
+                                leftSection={<IconSearch size={16} />}
                                 onClick={() => setFinderFor(c)}
                                 disabled={doImport.isPending}
                               >

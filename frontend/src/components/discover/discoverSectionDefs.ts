@@ -9,7 +9,7 @@ import {
   IconStar,
   IconUsers,
   IconWand,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { DISCOVER_SECTIONS, DISCOVER_SECTION_LABELS } from '../../api/hooks'
 import type { LayoutConfig, SectionRegistry } from '../layout/pageLayout'
 

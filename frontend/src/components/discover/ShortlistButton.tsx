@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button, TextInput } from '@mantine/core'
-import { IconBookmark, IconBookmarkFilled } from '@tabler/icons-react'
+import { IconBookmark, IconBookmarkFilled } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useShortlist, useUpdateShortlistNote, type ShortlistSource } from '../../api/shortlist'
 import { useShortlistToggle } from './shortlistActions'

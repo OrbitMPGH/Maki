@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ActionIcon } from '@mantine/core'
-import { IconPlayerPauseFilled, IconPlayerPlayFilled, IconX } from '@tabler/icons-react'
+import { IconPlayerPauseFilled, IconPlayerPlayFilled, IconX } from '../../lib/icons'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useLingui } from '@lingui/react/macro'
 import type { ActivityStats } from '../../api/hooks'

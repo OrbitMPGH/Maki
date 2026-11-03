@@ -1,5 +1,5 @@
 import { Badge, Divider, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
-import { IconCalendarEvent } from '@tabler/icons-react'
+import { IconCalendarEvent } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { confidenceLevel, useSeriesOutlook, type ReleaseOutlookDto } from '../../api/releases'

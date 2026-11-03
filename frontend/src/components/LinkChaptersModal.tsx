@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Badge, Button, Group, Loader, Modal, ScrollArea, Stack, Text, UnstyledButton } from '@mantine/core'
-import { IconFileZip, IconLinkOff } from '@tabler/icons-react'
+import { IconFileZip, IconLinkOff } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'

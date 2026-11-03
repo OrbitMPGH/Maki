@@ -20,7 +20,7 @@ import {
   IconStar,
   IconTrendingDown,
   IconTrendingUp,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import {

@@ -7,9 +7,25 @@ import { useHotkeys, useMediaQuery } from '@mantine/hooks'
 import { notifications } from '../../lib/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import {
-  IconArrowUp, IconChevronDown, IconChevronUp, IconDots, IconDownload, IconFileImport, IconFilter, IconGripVertical,
-  IconLanguage, IconPencil, IconPlus, IconPuzzle, IconSearch, IconShield, IconTool, IconTrash, IconWorldWww, IconPackages,
-} from '@tabler/icons-react'
+  IconArrowUp,
+  IconChevronDown,
+  IconChevronUp,
+  IconDots,
+  IconDownload,
+  IconFileImport,
+  IconFilter,
+  IconGripVertical,
+  IconLanguage,
+  IconPencil,
+  IconPlus,
+  IconPuzzle,
+  IconSearch,
+  IconShield,
+  IconTool,
+  IconTrash,
+  IconWorldWww,
+  IconPackages,
+} from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
@@ -210,7 +226,7 @@ function SourceTags({ source, contentLabels, nameOfLanguage }: {
       )}
       {source.needsFlareSolverr && (
         <span className="source-tag" data-tone="flare">
-          <IconShield size={11} stroke={2.4} />
+          <IconShield size={11} />
           <Trans>FlareSolverr</Trans>
         </span>
       )}
@@ -309,7 +325,7 @@ function PriorityRail({ items, onChange, labelOf }: {
               pointerEvents: dragFrom !== null && i !== dragFrom ? 'none' : undefined,
             }}
           >
-            <IconGripVertical size={14} className="source-rail-grip" />
+            <IconGripVertical size={16} className="source-rail-grip" />
             <span className="source-rail-rank">{i + 1}</span>
             <SourceIcon name={name} label={label} size={28} />
             <span className="source-rail-name">{label}</span>
@@ -319,14 +335,14 @@ function PriorityRail({ items, onChange, labelOf }: {
                 aria-label={t`Move ${label} up`}
                 onClick={() => move(i, -1)}
               >
-                <IconChevronUp size={14} />
+                <IconChevronUp size={16} />
               </ActionIcon>
               <ActionIcon
                 variant="subtle" color="var(--neutral)" size="sm" disabled={i === items.length - 1}
                 aria-label={t`Move ${label} down`}
                 onClick={() => move(i, 1)}
               >
-                <IconChevronDown size={14} />
+                <IconChevronDown size={16} />
               </ActionIcon>
             </span>
           </div>
@@ -380,7 +396,7 @@ function SuwayomiLanguageSetup({ source, options, opened, onToggle, onSaved }: {
             aria-expanded={opened}
             aria-label={t`Change the chapter language of ${label}`}
           >
-            <IconLanguage size={15} />
+            <IconLanguage size={16} />
           </ActionIcon>
         )}
       </Popover.Target>
@@ -503,7 +519,7 @@ function SuwayomiLanguagePicker({ siteName, members, selected, onChange, opened,
 function SuwayomiBadge() {
   return (
     <span className="source-provider" data-provider="suwayomi">
-      <IconPuzzle size={12} stroke={2.2} />
+      <IconPuzzle size={12} />
       Suwayomi
     </span>
   )
@@ -513,7 +529,7 @@ function SuwayomiBadge() {
 function CustomBadge() {
   return (
     <span className="source-provider" data-provider="custom">
-      <IconTool size={12} stroke={2.2} />
+      <IconTool size={12} />
       <Trans>Custom</Trans>
     </span>
   )
@@ -948,13 +964,13 @@ export function ManageSourcesModal({
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item leftSection={<IconPencil size={14} />} onClick={() => openEdit(source)}>
+                <Menu.Item leftSection={<IconPencil size={16} />} onClick={() => openEdit(source)}>
                   <Trans>Edit</Trans>
                 </Menu.Item>
-                <Menu.Item leftSection={<IconDownload size={14} />} onClick={() => void exportDefinition(source)}>
+                <Menu.Item leftSection={<IconDownload size={16} />} onClick={() => void exportDefinition(source)}>
                   <Trans>Export</Trans>
                 </Menu.Item>
-                <Menu.Item leftSection={<IconTrash size={14} />} color="var(--danger)" onClick={() => setDeleting(source)}>
+                <Menu.Item leftSection={<IconTrash size={16} />} color="var(--danger)" onClick={() => setDeleting(source)}>
                   <Trans>Delete</Trans>
                 </Menu.Item>
               </Menu.Dropdown>
@@ -1000,7 +1016,7 @@ export function ManageSourcesModal({
           onChange={(e) => setSearch(e.currentTarget.value)}
           placeholder={plural(total, { one: 'Search # source', other: 'Search # sources' })}
           aria-label={t`Search sources`}
-          leftSection={<IconSearch size={14} />}
+          leftSection={<IconSearch size={16} />}
           rightSection={narrow ? undefined : <Kbd size="xs">/</Kbd>}
           style={{ flex: '1 1 200px', minWidth: 160 }}
         />
@@ -1018,7 +1034,7 @@ export function ManageSourcesModal({
           <Popover.Target>
             <Button
               variant="default"
-              leftSection={<IconFilter size={14} />}
+              leftSection={<IconFilter size={16} />}
               rightSection={activeFilters > 0 ? <span className="source-filter-count">{activeFilters}</span> : undefined}
               onClick={() => setFiltersOpen((o) => !o)}
               aria-expanded={filtersOpen}
@@ -1108,18 +1124,18 @@ export function ManageSourcesModal({
         {isAdmin && (
           <Menu position="bottom-end" withinPortal>
             <Menu.Target>
-              <Button variant="default" leftSection={<IconPlus size={14} />}>
+              <Button variant="default" leftSection={<IconPlus size={16} />}>
                 <Trans>Add source</Trans>
               </Button>
             </Menu.Target>
             <Menu.Dropdown>
-              <Menu.Item leftSection={<IconWorldWww size={14} />} onClick={() => setWizard({ mode: 'setup', id: null, initial: null, startUrl: null })}>
+              <Menu.Item leftSection={<IconWorldWww size={16} />} onClick={() => setWizard({ mode: 'setup', id: null, initial: null, startUrl: null })}>
                 <Trans>Set up a site</Trans>
               </Menu.Item>
-              <Menu.Item leftSection={<IconFileImport size={14} />} onClick={() => setWizard({ mode: 'import', id: null, initial: {}, startUrl: null })}>
+              <Menu.Item leftSection={<IconFileImport size={16} />} onClick={() => setWizard({ mode: 'import', id: null, initial: {}, startUrl: null })}>
                 <Trans>Import definition</Trans>
               </Menu.Item>
-              <Menu.Item leftSection={<IconPackages size={14} />} onClick={() => setRepositoriesOpen(true)}>
+              <Menu.Item leftSection={<IconPackages size={16} />} onClick={() => setRepositoriesOpen(true)}>
                 <Trans>Repositories</Trans>
               </Menu.Item>
             </Menu.Dropdown>

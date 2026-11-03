@@ -14,7 +14,7 @@ import {
   IconZoomIn,
   IconZoomOut,
   IconZoomReset,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'

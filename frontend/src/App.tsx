@@ -16,7 +16,7 @@ import {
   IconArrowLeft,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
-} from '@tabler/icons-react'
+} from './lib/icons'
 import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -144,7 +144,7 @@ function NavLinks({
                 aria-current={active ? 'page' : undefined}
                 onClick={onNavigate}
               >
-                <item.icon size={18} stroke={1.7} className="nav-icon" />
+                <item.icon size={18} className="nav-icon" />
                 {_(item.label)}
                 {count > 0 && (
                   <span className="nav-count tnum" data-tone={tone}>
@@ -475,7 +475,7 @@ function AppShellRoutes() {
                     className="app-header-link"
                     data-active={isActive(item, location.pathname)}
                   >
-                    <item.icon size={18} stroke={1.7} />
+                    <item.icon size={18} />
                     {_(item.label)}
                   </Link>
                 ))}

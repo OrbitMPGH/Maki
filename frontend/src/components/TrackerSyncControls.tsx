@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button, Group, Stack, Switch, Text } from '@mantine/core'
-import { IconDownload } from '@tabler/icons-react'
+import { IconDownload } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { RatingImportModal } from './RatingImportModal'
 import { useScrobblePreferences, type ScrobbleConnection } from '../api/hooks'

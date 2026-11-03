@@ -1,6 +1,6 @@
 import { useId, type ReactNode } from 'react'
 import { Collapse, UnstyledButton, VisuallyHidden } from '@mantine/core'
-import { IconChevronDown } from '@tabler/icons-react'
+import { IconChevronDown } from '../../lib/icons'
 
 /**
  * A heading that opens the controls under it, for surfaces that keep every control but only need a

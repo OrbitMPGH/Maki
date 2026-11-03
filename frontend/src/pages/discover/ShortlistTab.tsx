@@ -27,7 +27,7 @@ import {
   IconPlus,
   IconStar,
   IconThumbDown,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -232,7 +232,7 @@ function ShortlistRow({
           )}
           {item?.rating != null && (
             <span className="shortlist-score tnum">
-              <IconStar size={14} style={{ color: 'var(--rating)' }} />
+              <IconStar size={16} style={{ color: 'var(--rating)' }} />
               {formatFixedDecimal(item.rating / 10, 1)}
             </span>
           )}
@@ -311,7 +311,7 @@ function ShortlistRow({
               {note}
             </Text>
             <ActionIcon size="sm" variant="subtle" color="var(--neutral)" aria-label={t`Edit note`} onClick={startEdit}>
-              <IconPencil size={14} />
+              <IconPencil size={16} />
             </ActionIcon>
           </div>
         ) : null}
@@ -370,13 +370,13 @@ function ShortlistRow({
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEdit}>
+                <Menu.Item leftSection={<IconPencil size={16} />} onClick={startEdit}>
                   <Trans>Edit note</Trans>
                 </Menu.Item>
-                <Menu.Item leftSection={<IconThumbDown size={14} />} onClick={() => void leave('dislike')}>
+                <Menu.Item leftSection={<IconThumbDown size={16} />} onClick={() => void leave('dislike')}>
                   <Trans>Not for me</Trans>
                 </Menu.Item>
-                <Menu.Item leftSection={<IconEyeOff size={14} />} onClick={() => void leave('hide')}>
+                <Menu.Item leftSection={<IconEyeOff size={16} />} onClick={() => void leave('hide')}>
                   <Trans>Hide this title</Trans>
                 </Menu.Item>
                 <Menu.Divider />
@@ -385,7 +385,7 @@ function ShortlistRow({
                   href={`https://mangabaka.org/${item.providerId}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  leftSection={<IconExternalLink size={14} />}
+                  leftSection={<IconExternalLink size={16} />}
                 >
                   <Trans>Open on MangaBaka</Trans>
                 </Menu.Item>
@@ -446,7 +446,7 @@ function EmptyShortlist() {
   return (
     <div className="shortlist-empty">
       <span className="shortlist-empty-disc" aria-hidden>
-        <IconBookmark size={28} stroke={1.8} />
+        <IconBookmark size={28} />
       </span>
       <Text className="empty-state-title">
         <Trans>Nothing on your shortlist</Trans>

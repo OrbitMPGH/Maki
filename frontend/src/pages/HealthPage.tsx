@@ -46,7 +46,7 @@ import {
   IconStethoscope,
   IconTrash,
   type Icon,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -457,7 +457,7 @@ export default function HealthPage() {
             </Tooltip>
             <Menu position="bottom-end" withinPortal width={320}>
               <Menu.Target>
-                <Button leftSection={<IconScan size={16} />} rightSection={<IconChevronDown size={14} />}>
+                <Button leftSection={<IconScan size={16} />} rightSection={<IconChevronDown size={16} />}>
                   <Trans>Scan files</Trans>
                 </Button>
               </Menu.Target>
@@ -663,7 +663,7 @@ export default function HealthPage() {
                     <Button
                       size="xs"
                       variant="default"
-                      leftSection={<IconDownload size={14} />}
+                      leftSection={<IconDownload size={16} />}
                       {...bulkPending('/repairs/bulk')}
                       onClick={() =>
                         bulkWithReport(
@@ -686,7 +686,7 @@ export default function HealthPage() {
                     <Button
                       size="xs"
                       variant="default"
-                      leftSection={<IconRefresh size={14} />}
+                      leftSection={<IconRefresh size={16} />}
                       {...bulkPending('/records/refresh')}
                       onClick={() =>
                         bulkWithReport('/records/refresh', { fileIds: resized.map(([id]) => id) }, ({ updated = 0 }) =>
@@ -701,7 +701,7 @@ export default function HealthPage() {
                     size="xs"
                     color="var(--danger)"
                     variant="light"
-                    leftSection={<IconTrash size={14} />}
+                    leftSection={<IconTrash size={16} />}
                     disabled={deletable.length === 0}
                     onClick={() => setDeleteTargets({ files: deletable, spares: grouped })}
                   >
@@ -731,7 +731,7 @@ export default function HealthPage() {
                   size="xs"
                   color="var(--danger)"
                   variant="light"
-                  leftSection={<IconTrash size={14} />}
+                  leftSection={<IconTrash size={16} />}
                   onClick={() => setDeleteTargets({ files: spares!.items, spares: true })}
                 >
                   {sparesShown < sparesTotal ? (
@@ -1081,7 +1081,7 @@ function MissingBar({
           </div>
           <Button
             size="xs"
-            leftSection={<IconLink size={14} />}
+            leftSection={<IconLink size={16} />}
             loading={action.isPending && action.variables?.path === '/moves/bulk'}
             disabled={action.isPending && action.variables?.path !== '/moves/bulk'}
             onClick={onRelinkAll}
@@ -1113,7 +1113,7 @@ function MissingBar({
               <Button
                 size="xs"
                 variant="default"
-                leftSection={<IconDownload size={14} />}
+                leftSection={<IconDownload size={16} />}
                 disabled={action.isPending}
                 onClick={() => onFetch(group.items)}
               >
@@ -1187,7 +1187,7 @@ function CasesBar({
             </div>
             <Group gap="xs" wrap="nowrap">
               {c === 'import' && (
-                <Button size="xs" leftSection={<IconFileImport size={14} />} loading={pending} onClick={onImportAll}>
+                <Button size="xs" leftSection={<IconFileImport size={16} />} loading={pending} onClick={onImportAll}>
                   {importShown < importTotal ? (
                     <Trans>Import the first {importShown}</Trans>
                   ) : (
@@ -1259,7 +1259,7 @@ function HistoryTimeline({ entries }: { entries: HistoryEntry[] }) {
               return (
                 <li key={entry.id} className="health-history-row" data-tone={entryTone}>
                   <span className="health-history-icon" aria-hidden>
-                    <KindIcon size={15} stroke={1.8} />
+                    <KindIcon size={16} />
                   </span>
                   <div className="health-history-body">
                     <Text size="sm" className="health-history-message">
@@ -1515,7 +1515,7 @@ function ChecksPanel({
         return (
           <div className="health-group" key={category}>
             <Group gap={7} className="health-group-label" wrap="nowrap">
-              <CategoryIcon size={14} stroke={1.8} />
+              <CategoryIcon size={16} />
               <span>{CATEGORY_LABEL[category] ? renderLabel(CATEGORY_LABEL[category]) : category}</span>
               <Text span size="xs" c="var(--ink-4)" fw={500} className="tnum">
                 {rows.length}
@@ -1701,7 +1701,7 @@ function CheckRow({ check, run }: { check: HealthCheck; run: (path: string, body
           <Button
             size="xs"
             variant="light"
-            leftSection={<IconRefresh size={14} />}
+            leftSection={<IconRefresh size={16} />}
             disabled={failures.data?.refreshing || count === 0}
             onClick={() => run(`/sources/${source}/refresh`)}
           >
@@ -1867,7 +1867,7 @@ function FileReview({
                     <Button
                       size="xs"
                       variant="default"
-                      leftSection={<IconPhotoScan size={14} />}
+                      leftSection={<IconPhotoScan size={16} />}
                       onClick={() =>
                         action.mutate({ path: '/scans', body: { fileIds: [id], force: true, verify: true } })
                       }
@@ -1928,7 +1928,7 @@ function FileReview({
                     px={0}
                     aria-expanded={moreOpen}
                     rightSection={
-                      <IconChevronDown size={14} style={{ transform: moreOpen ? 'rotate(180deg)' : undefined }} />
+                      <IconChevronDown size={16} style={{ transform: moreOpen ? 'rotate(180deg)' : undefined }} />
                     }
                     onClick={() => setMoreOpen((open) => !open)}
                   >
@@ -2085,7 +2085,7 @@ function InlineConfirm({
         <Button
           color={danger ? 'var(--danger-fill)' : undefined}
           size="xs"
-          leftSection={danger ? <IconTrash size={14} /> : undefined}
+          leftSection={danger ? <IconTrash size={16} /> : undefined}
           loading={pending}
           onClick={onConfirm}
         >
@@ -2616,7 +2616,7 @@ function DuplicatePanel({ detail, openFile, close }: { detail: FileDetail; openF
                 <Button
                   color="var(--danger-fill)"
                   size="xs"
-                  leftSection={<IconTrash size={14} />}
+                  leftSection={<IconTrash size={16} />}
                   loading={action.isPending}
                   onClick={deleteSpares}
                 >
@@ -2657,7 +2657,7 @@ function DuplicatePanel({ detail, openFile, close }: { detail: FileDetail; openF
                 <Button
                   color="var(--danger-fill)"
                   size="xs"
-                  leftSection={<IconTrash size={14} />}
+                  leftSection={<IconTrash size={16} />}
                   loading={action.isPending}
                   onClick={deleteSelf}
                 >

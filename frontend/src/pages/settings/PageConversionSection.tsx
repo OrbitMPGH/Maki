@@ -1,5 +1,5 @@
 import { Button, Divider, Group, Select, Stack, Text } from '@mantine/core'
-import { IconPlayerPause, IconPlayerPlay, IconSettings } from '@tabler/icons-react'
+import { IconPlayerPause, IconPlayerPlay, IconSettings } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import { notifications } from '../../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -55,12 +55,12 @@ export function PageConversionSection() {
                 to="/settings/page-conversion?step=2"
                 variant="default"
                 size="xs"
-                leftSection={<IconSettings size={14} />}
+                leftSection={<IconSettings size={16} />}
               >
                 <Trans>Change settings</Trans>
               </Button>
             ) : (
-              <Button component={Link} to="/settings/page-conversion" size="xs" leftSection={<IconSettings size={14} />}>
+              <Button component={Link} to="/settings/page-conversion" size="xs" leftSection={<IconSettings size={16} />}>
                 <Trans>Set up conversion</Trans>
               </Button>
             )}
@@ -126,7 +126,7 @@ function LibraryPass({ status }: { status: PageConversionStatus }) {
           <Button
             variant="default"
             size="xs"
-            leftSection={<IconPlayerPause size={14} />}
+            leftSection={<IconPlayerPause size={16} />}
             loading={pause.isPending}
             onClick={() => pause.mutate(undefined)}
           >
@@ -136,7 +136,7 @@ function LibraryPass({ status }: { status: PageConversionStatus }) {
           <Button
             variant="default"
             size="xs"
-            leftSection={<IconPlayerPlay size={14} />}
+            leftSection={<IconPlayerPlay size={16} />}
             disabled={off || pendingFiles === 0}
             loading={start.isPending}
             onClick={() => start.mutate(undefined)}

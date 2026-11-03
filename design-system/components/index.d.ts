@@ -1,8 +1,10 @@
 // Prop types of Maki's shared UI primitives (frontend/src/components/ui), as documentation.
 // Button and Badge are Mantine components with theme defaults and are not re-declared here.
-import type { ReactNode, CSSProperties, MouseEventHandler, ComponentPropsWithRef } from 'react'
+import type { ReactNode, CSSProperties, MouseEventHandler, ComponentPropsWithRef, ComponentType, SVGProps } from 'react'
 import type { PaperProps } from '@mantine/core'
-import type { Icon } from '@tabler/icons-react'
+
+/** An icon from frontend/src/lib/icons.tsx (Phosphor, Regular; Bold below 14px). */
+type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number | string }>
 
 /** Page title row: title and description left, actions right. */
 export declare function PageHeader(props: {

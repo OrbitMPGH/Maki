@@ -24,7 +24,7 @@ import {
   IconFolder,
   IconFolderPlus,
   IconTrash,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { useNavigate } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -567,7 +567,7 @@ function SummaryLine({ tone, children, action }: { tone: Tone; children: ReactNo
   return (
     <div className="setup-summary-line" data-tone={tone}>
       <span className="setup-summary-icon">
-        {tone === 'warn' ? <IconAlertTriangle size={14} /> : <IconCheck size={14} />}
+        {tone === 'warn' ? <IconAlertTriangle size={16} /> : <IconCheck size={16} />}
       </span>
       <Text className="setup-summary-text">{children}</Text>
       {action}
@@ -815,7 +815,7 @@ function GuideRail({
                   aria-current={current ? 'step' : undefined}
                   onClick={() => onSelect(i)}
                 >
-                  <span className="setup-step-index">{done ? <IconCheck size={13} stroke={2.6} /> : i + 1}</span>
+                  <span className="setup-step-index">{done ? <IconCheck size={13} /> : i + 1}</span>
                   <span className="setup-step-text">
                     <span className="setup-step-label">{step.label}</span>
                     {step.hint && (

@@ -1,6 +1,6 @@
 import { ActionIcon, Button, Group, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { IconArchive, IconX } from '@tabler/icons-react'
+import { IconArchive, IconX } from '../../lib/icons'
 
 /** A quiet line for a completed series everyone has finished: offers the archive and can be waved off for good. */
 export function ArchiveHint({ onArchive, onDismiss }: { onArchive: () => void; onDismiss: () => void }) {
@@ -15,7 +15,7 @@ export function ArchiveHint({ onArchive, onDismiss }: { onArchive: () => void; o
         <Trans context="series">Archive</Trans>
       </Button>
       <ActionIcon size="sm" variant="subtle" color="gray" aria-label={t`Dismiss`} onClick={onDismiss}>
-        <IconX size={14} />
+        <IconX size={16} />
       </ActionIcon>
     </Group>
   )

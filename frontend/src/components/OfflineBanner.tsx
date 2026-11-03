@@ -1,5 +1,5 @@
 import { Anchor, Group, Text } from '@mantine/core'
-import { IconCloudOff } from '@tabler/icons-react'
+import { IconCloudOff } from '../lib/icons'
 import { Trans } from '@lingui/react/macro'
 import { Link } from 'react-router-dom'
 import { useConnectivity } from '../lib/connectivity'
@@ -23,7 +23,7 @@ export function OfflineBanner() {
         borderRadius: 'var(--radius-control)',
       }}
     >
-      <IconCloudOff size={16} stroke={1.75} color="var(--warn)" aria-hidden style={{ flexShrink: 0 }} />
+      <IconCloudOff size={16} color="var(--warn)" aria-hidden style={{ flexShrink: 0 }} />
       <Text size="sm" style={{ flex: 1, minWidth: 0 }}>
         <Trans>You're offline. Showing what's saved on this device.</Trans>
       </Text>

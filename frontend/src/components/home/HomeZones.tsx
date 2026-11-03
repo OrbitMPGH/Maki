@@ -2,7 +2,7 @@ import { useId } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Title } from '@mantine/core'
 import { Trans } from '@lingui/react/macro'
-import { IconArrowRight, IconCompass } from '@tabler/icons-react'
+import { IconArrowRight, IconCompass } from '../../lib/icons'
 
 /**
  * How Home tells what you can read now from what you would have to add first. Draft: compared in
@@ -27,7 +27,7 @@ export function DiscoverZone({
     <section className="home-zone" data-variant={variant} aria-labelledby={titleId}>
       <div className="home-zone-head">
         <span className="home-zone-icon" aria-hidden>
-          <IconCompass size={22} stroke={1.9} />
+          <IconCompass size={22} />
         </span>
         <div className="home-zone-text">
           <Title order={2} id={titleId} className="home-zone-title">
@@ -43,7 +43,7 @@ export function DiscoverZone({
             to="/discover"
             variant="light"
             size="compact-sm"
-            rightSection={<IconArrowRight size={14} />}
+            rightSection={<IconArrowRight size={16} />}
             className="home-zone-action"
           >
             <Trans>Open Discover</Trans>

@@ -18,7 +18,7 @@ import {
   VisuallyHidden,
 } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconCheck, IconCopy } from '@tabler/icons-react'
+import { IconCheck, IconCopy } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
@@ -492,7 +492,7 @@ function TwoFactorCard() {
               size="xs"
               variant="default"
               onClick={() => void keyCopy.copy(enrolling?.sharedKey ?? '')}
-              leftSection={keyCopy.copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+              leftSection={keyCopy.copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
             >
               {keyCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
             </Button>

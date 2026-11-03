@@ -10,7 +10,7 @@ import {
   IconWand,
   IconTrash,
   IconX,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { useSeriesFiles, useDeleteSeriesFiles } from '../api/hooks'
 import { offersPermanentDelete, useRecycleBinDays } from '../api/recycleBin'
@@ -152,7 +152,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             <Button
               size="xs"
               variant="subtle"
-              leftSection={<IconRefresh size={14} />}
+              leftSection={<IconRefresh size={16} />}
               loading={isFetching && !isLoading}
               onClick={() => void refetch()}
             >
@@ -163,7 +163,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                 <Button
                   size="xs"
                   variant="subtle"
-                  leftSection={<IconWand size={14} />}
+                  leftSection={<IconWand size={16} />}
                   onClick={() => setRelinkOpen(true)}
                 >
                   <Trans>Relink files</Trans>
@@ -243,7 +243,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                     size="xs"
                     variant="light"
                     color="var(--danger)"
-                    leftSection={<IconTrash size={15} />}
+                    leftSection={<IconTrash size={16} />}
                     disabled={selected.size === 0}
                     onClick={() => setConfirmOpen(true)}
                   >
@@ -252,7 +252,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                   <Button
                     size="xs"
                     variant="default"
-                    leftSection={<IconX size={15} />}
+                    leftSection={<IconX size={16} />}
                     onClick={exitSelectMode}
                   >
                     <Trans>Done</Trans>
@@ -287,9 +287,9 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                         <Table.Td>
                           <Group gap={6} wrap="nowrap">
                             {isPdfFile(f.fileName) ? (
-                              <IconFileTypePdf size={15} style={{ flexShrink: 0 }} />
+                              <IconFileTypePdf size={16} style={{ flexShrink: 0 }} />
                             ) : (
-                              <IconFileZip size={15} style={{ flexShrink: 0 }} />
+                              <IconFileZip size={16} style={{ flexShrink: 0 }} />
                             )}
                             <MonoValue value={f.fileName} full={f.relativePath} copy />
                           </Group>

@@ -25,7 +25,7 @@ Owner decisions (2026-11-02):
 - No notifications for shortlisted series. Not on completion, not on new chapters.
 - No Home rail.
 - Users without `AddSeries` get Request where others get Add to library.
-- The icon is Tabler's bookmark (`IconBookmark`, `IconBookmarkFilled` when saved), even though saved filters use the outline bookmark too.
+- The icon is the bookmark (`IconBookmark`, `IconBookmarkFilled` when saved), even though saved filters use the outline bookmark too.
 - The "how this differs from your library" table is a collapsed disclosure on the empty state, never expanded by default.
 
 ## Data model

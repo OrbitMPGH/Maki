@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Button, Group, Stack, Text, Title } from '@mantine/core'
-import { IconCloudOff, IconPlus, IconQuestionMark, type Icon } from '@tabler/icons-react'
+import { IconCloudOff, IconPlus, IconQuestionMark, type Icon } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import { IconBrandMark } from '../IconBrandMark'
 
@@ -155,7 +155,7 @@ function ShelfArt({ addTo, icon: MiddleIcon }: { addTo?: string; icon: Icon }) {
     <>
       <span className="empty-shelf-cover">
         <span className="empty-shelf-plus">
-          <MiddleIcon size={24} stroke={2} />
+          <MiddleIcon size={24} />
         </span>
       </span>
       {lines}
@@ -184,7 +184,7 @@ function MissingArt({ code }: { code?: string }) {
       <span className="empty-missing-cover" data-back />
       <span className="empty-missing-cover">
         <span className="empty-missing-mark">
-          <IconQuestionMark size={26} stroke={2} />
+          <IconQuestionMark size={26} />
         </span>
         {code && <span className="empty-missing-code">{code}</span>}
       </span>

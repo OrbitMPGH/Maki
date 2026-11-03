@@ -118,7 +118,7 @@ export function StatsRail({ end }: { end?: ReactNode }) {
               )
             }}
           >
-            <SectionIcon size={15} stroke={1.8} aria-hidden />
+            <SectionIcon size={16} aria-hidden />
             {renderLabel(s.label)}
             {s.railChip && !singleUser && <span className="stats-rail-chip">{renderLabel(s.railChip)}</span>}
           </UnstyledButton>

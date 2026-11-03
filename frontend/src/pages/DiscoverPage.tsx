@@ -36,9 +36,8 @@ import {
   IconLibrary,
   IconPlus,
   IconRefresh,
-  IconSparkles,
   IconUsers,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { useIsFetching } from '@tanstack/react-query'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
@@ -772,7 +771,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
                 <Button
                   variant="subtle"
                   size="xs"
-                  leftSection={<IconDeviceFloppy size={14} />}
+                  leftSection={<IconDeviceFloppy size={16} />}
                   loading={saveDefaults.isPending}
                   // Nothing set and nothing stored: there is neither a default to save nor one to clear.
                   disabled={!isCustomized && !hasAnyDefault(savedDefaults)}
@@ -837,7 +836,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
       {similar.length > 0 && (
         <>
           <SectionHeader
-            icon={IconSparkles}
+            icon={IconCompass}
             title={seedIds.length > 0 ? t`Feels like your seeds` : t`Because of what you collect`}
             count={similar.length}
           />
@@ -1055,7 +1054,7 @@ function FeedExpandModal({
       title={
         <Group gap="xs">
           <ThemeIcon variant="light" color="brand" size="md" radius="md">
-            <IconSparkles size={16} />
+            <IconCompass size={16} />
           </ThemeIcon>
           <Text
             span
@@ -1368,7 +1367,7 @@ function DiscoverBrowseTab({
         <Button
           size="xs"
           variant="default"
-          leftSection={<IconRefresh size={14} />}
+          leftSection={<IconRefresh size={16} />}
           loading={isFetching}
           onClick={onRefresh}
         >
@@ -1535,7 +1534,7 @@ function DiscoverBrowseTab({
             <Button
               variant="subtle"
               size="xs"
-              leftSection={<IconAdjustmentsHorizontal size={14} />}
+              leftSection={<IconAdjustmentsHorizontal size={16} />}
               onClick={() =>
                 navigate('/add', {
                   state: { catalogueSeed: { sort: 'popular', filters: {}, openFilters: true } satisfies CatalogueSeed },
@@ -1696,7 +1695,7 @@ export default function DiscoverPage() {
                 <Menu.Dropdown>
                   {active === 'browse' && (
                     <>
-                      <Menu.Item leftSection={<IconLayoutDashboard size={14} />} onClick={enterEditing}>
+                      <Menu.Item leftSection={<IconLayoutDashboard size={16} />} onClick={enterEditing}>
                         <Trans>Edit layout</Trans>
                       </Menu.Item>
                       <Menu.Divider />

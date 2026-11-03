@@ -89,9 +89,8 @@ export default defineConfig(({ mode }) => {
           },
           advancedChunks: {
             groups: [
-              // One chunk for the icon set instead of dozens of one-icon modules, each of which was
-              // its own modulepreload request on a LAN served over HTTP/1.1.
-              { name: 'icons', test: /node_modules[\\/]@tabler[\\/]icons-react/ },
+              // Its own chunk, so the icon set stays cached across releases that don't change it.
+              { name: 'icons', test: /[\\/]src[\\/]lib[\\/]icons\.tsx$/ },
             ],
           },
         },

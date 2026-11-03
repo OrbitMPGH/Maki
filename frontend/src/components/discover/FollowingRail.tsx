@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ActionIcon, Anchor, Button, Group, Modal, Stack, Text } from '@mantine/core'
-import { IconBell, IconChevronRight, IconSettings, IconX } from '@tabler/icons-react'
+import { IconBell, IconChevronRight, IconSettings, IconX } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useDiscoverFeed, type CatalogueCredit, type DiscoverRail, type RecommendationItem } from '../../api/hooks'
 import {
@@ -77,7 +77,7 @@ export function FollowingRail({
             <Button
               variant="subtle"
               size="xs"
-              leftSection={<IconSettings size={14} />}
+              leftSection={<IconSettings size={16} />}
               onClick={() => setManaging(true)}
             >
               <Trans>Manage</Trans>
@@ -85,7 +85,7 @@ export function FollowingRail({
             <Button
               variant="subtle"
               size="xs"
-              rightSection={<IconChevronRight size={14} />}
+              rightSection={<IconChevronRight size={16} />}
               onClick={() => onShowMore(expanded)}
             >
               <Trans>Show more</Trans>

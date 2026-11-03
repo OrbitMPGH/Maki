@@ -11,8 +11,8 @@ import {
   IconLayoutDashboard,
   IconPlayerPlay,
   IconPlus,
-  IconSparkles,
-} from '@tabler/icons-react'
+  IconCompass,
+} from '../lib/icons'
 import { useHomeFromAnime } from '../api/animeResume'
 import { isOfflineUnavailable } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
@@ -380,7 +380,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
     ) : (
       youMightLike.length > 0 && (
         <>
-          <SectionHeader icon={IconSparkles} title={t`You might like`} action={<FindMore />} chevron />
+          <SectionHeader icon={IconCompass} title={t`You might like`} action={<FindMore />} chevron />
           <EngineRailRow
             items={youMightLike}
             seriesIdFor={seriesIdFor}

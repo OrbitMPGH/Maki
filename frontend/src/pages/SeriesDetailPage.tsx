@@ -55,7 +55,7 @@ import {
   IconEyeOff,
   IconSortAscendingNumbers,
   IconSortDescendingNumbers,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { useMediaQuery } from '@mantine/hooks'
 import { notifications } from '../lib/toast'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -1279,7 +1279,7 @@ function SeriesDetailBody() {
                     aria-label={t`Clear chapter search`}
                     onClick={() => setChapterSearch('')}
                 >
-                  <IconX size={14} />
+                  <IconX size={16} />
                 </ActionIcon>
             ) : null
           }
@@ -1790,7 +1790,7 @@ function SeriesDetailBody() {
       ? [{
           key: 'download',
           label: <Trans>Download</Trans>,
-          icon: <IconDownload size={15} />,
+          icon: <IconDownload size={16} />,
           disabled: archived,
           loading: downloadChapters.isPending,
           run: () => {
@@ -1808,7 +1808,7 @@ function SeriesDetailBody() {
       ? [{
           key: 'read',
           label: <Trans>Mark read</Trans>,
-          icon: <IconEyeCheck size={15} />,
+          icon: <IconEyeCheck size={16} />,
           loading: setChaptersState.isPending && setChaptersState.variables?.state === 'read',
           run: () => applyReadState([...selected], 'read'),
         }]
@@ -1817,7 +1817,7 @@ function SeriesDetailBody() {
       ? [{
           key: 'want',
           label: <Trans>Want</Trans>,
-          icon: <IconEye size={15} />,
+          icon: <IconEye size={16} />,
           loading: setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === true,
           run: () => applyWanted([...selected], true),
         }]
@@ -1829,14 +1829,14 @@ function SeriesDetailBody() {
           {
             key: 'unread',
             label: <Trans>Mark unread</Trans>,
-            icon: <IconEyeOff size={15} />,
+            icon: <IconEyeOff size={16} />,
             loading: setChaptersState.isPending && setChaptersState.variables?.state === 'unread',
             run: () => applyReadState([...selected], 'unread'),
           },
           {
             key: 'watched',
             label: <Trans>Mark watched</Trans>,
-            icon: <IconDeviceTv size={15} />,
+            icon: <IconDeviceTv size={16} />,
             loading: setChaptersState.isPending && setChaptersState.variables?.state === 'watched',
             run: () => applyReadState([...selected], 'watched'),
           },
@@ -1847,7 +1847,7 @@ function SeriesDetailBody() {
           {
             key: 'unwant',
             label: <Trans>Don't want</Trans>,
-            icon: <IconEyeOff size={15} />,
+            icon: <IconEyeOff size={16} />,
             loading: setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === false,
             run: () => applyWanted([...selected], false),
           },
@@ -1858,13 +1858,13 @@ function SeriesDetailBody() {
           {
             key: 'link',
             label: <Trans>Link to file</Trans>,
-            icon: <IconLink size={15} />,
+            icon: <IconLink size={16} />,
             run: () => setLinkChapterIds([...selected]),
           },
           {
             key: 'unlink',
             label: <Trans>Unlink</Trans>,
-            icon: <IconLinkOff size={15} />,
+            icon: <IconLinkOff size={16} />,
             loading: unlinkChapters.isPending,
             run: () =>
               unlinkChapters.mutate([...selected], {
@@ -2769,7 +2769,7 @@ function SeriesDetailBody() {
                           <Button
                               size="xs"
                               variant="default"
-                              leftSection={<IconListCheck size={14} />}
+                              leftSection={<IconListCheck size={16} />}
                               onClick={() => setSelectMode(true)}
                           >
                             <Trans>Select</Trans>
@@ -2800,10 +2800,10 @@ function SeriesDetailBody() {
                       </Text>
                     </Group>
                     <Group gap="xs">
-                      <Button size="xs" variant="light" leftSection={<IconWand size={14} />} onClick={() => setRelinkOpen(true)}>
+                      <Button size="xs" variant="light" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
                         <Trans>Relink files</Trans>
                       </Button>
-                      <Button size="xs" variant="subtle" leftSection={<IconLink size={14} />} onClick={() => changeTab('files')}>
+                      <Button size="xs" variant="subtle" leftSection={<IconLink size={16} />} onClick={() => changeTab('files')}>
                         <Trans>Link by hand</Trans>
                       </Button>
                     </Group>
@@ -2820,14 +2820,14 @@ function SeriesDetailBody() {
                   <Group justify="space-between" wrap="wrap" gap="xs">
                     <Group gap="xs">
                       <ActionIcon hiddenFrom="sm" variant="default" onClick={exitSelectMode} aria-label={t`Done`}>
-                        <IconX size={15} />
+                        <IconX size={16} />
                       </ActionIcon>
                       <Text size="sm" c="var(--ink-3)" className="tnum">
                         <Trans>{selectedCount} selected</Trans>
                       </Text>
                       <Menu shadow="md" position="bottom-start" withinPortal>
                         <Menu.Target>
-                          <Button size="xs" variant="subtle" rightSection={<IconChevronDown size={14} />}>
+                          <Button size="xs" variant="subtle" rightSection={<IconChevronDown size={16} />}>
                             <Trans>Select all</Trans>
                           </Button>
                         </Menu.Target>
@@ -2902,7 +2902,7 @@ function SeriesDetailBody() {
                               <Button
                                   size="xs"
                                   variant="default"
-                                  rightSection={<IconChevronDown size={14} />}
+                                  rightSection={<IconChevronDown size={16} />}
                                   disabled={selected.size === 0}
                                   loading={chapterMoreBusy}
                                   className={chapterMoreGroups.length === 0 ? 'library-bulk-more-phone' : undefined}
@@ -2945,18 +2945,18 @@ function SeriesDetailBody() {
                                     size="xs"
                                     variant="light"
                                     color="var(--danger)"
-                                    leftSection={<IconTrash size={15} />}
-                                    rightSection={<IconChevronDown size={14} />}
+                                    leftSection={<IconTrash size={16} />}
+                                    rightSection={<IconChevronDown size={16} />}
                                     disabled={selected.size === 0}
                                 >
                                   <Trans>Delete</Trans>
                                 </Button>
                               </Menu.Target>
                               <Menu.Dropdown>
-                                <Menu.Item leftSection={<IconTrash size={15} />} onClick={() => setDeleteFileIds([...selected])}>
+                                <Menu.Item leftSection={<IconTrash size={16} />} onClick={() => setDeleteFileIds([...selected])}>
                                   <Trans>Delete files</Trans>
                                 </Menu.Item>
-                                <Menu.Item leftSection={<IconRowRemove size={15} />} onClick={() => setDeleteChaptersModalOpen(true)}>
+                                <Menu.Item leftSection={<IconRowRemove size={16} />} onClick={() => setDeleteChaptersModalOpen(true)}>
                                   <Trans>Remove chapters</Trans>
                                 </Menu.Item>
                               </Menu.Dropdown>
@@ -2967,7 +2967,7 @@ function SeriesDetailBody() {
                           visibleFrom="sm"
                           size="xs"
                           variant="default"
-                          leftSection={<IconX size={15} />}
+                          leftSection={<IconX size={16} />}
                           onClick={exitSelectMode}
                       >
                         <Trans>Done</Trans>

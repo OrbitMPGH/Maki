@@ -14,7 +14,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconChevronDown, IconChevronUp, IconPlus, IconTrash } from '@tabler/icons-react'
+import { IconChevronDown, IconChevronUp, IconPlus, IconTrash } from '../../lib/icons'
 import {
   SERIES_TYPES,
   SERIES_TYPE_LABELS,
@@ -106,7 +106,7 @@ export function ReadingProfilesSection() {
         <Button
           size="xs"
           variant="light"
-          leftSection={<IconPlus size={14} />}
+          leftSection={<IconPlus size={16} />}
           onClick={() => setCreating((open) => !open)}
         >
           <Trans>New profile</Trans>

@@ -9,7 +9,7 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core'
-import { IconExternalLink, IconRefresh } from '@tabler/icons-react'
+import { IconExternalLink, IconRefresh } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { useState, type FormEvent } from 'react'
 import {
@@ -149,7 +149,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
         <Button
           size="xs"
           variant="subtle"
-          leftSection={<IconRefresh size={14} />}
+          leftSection={<IconRefresh size={16} />}
           loading={syncNow.isPending}
           onClick={() =>
             syncNow.mutate(undefined, {

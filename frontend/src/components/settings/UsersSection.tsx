@@ -17,7 +17,7 @@ import {
   VisuallyHidden,
 } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconPlus } from '@tabler/icons-react'
+import { IconPlus } from '../../lib/icons'
 import {
   useCreateUser,
   useDeleteUser,
@@ -138,7 +138,7 @@ export function UsersSection() {
       id="users"
       title={<Trans>Users</Trans>}
       actions={
-        <Button size="xs" leftSection={<IconPlus size={14} />} onClick={() => setEditing('new')}>
+        <Button size="xs" leftSection={<IconPlus size={16} />} onClick={() => setEditing('new')}>
           <Trans>Add user</Trans>
         </Button>
       }

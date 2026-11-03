@@ -6,7 +6,7 @@ import {
   IconPlus,
   IconTrash,
   type Icon,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -172,7 +172,7 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
                 variant="light"
                 style={{ color: kind.color, background: `color-mix(in srgb, ${kind.color} 14%, transparent)` }}
               >
-                <KindIcon size={15} />
+                <KindIcon size={16} />
               </ThemeIcon>
               <SeriesThumb url={e.coverUrl} alt={e.title} seriesId={e.seriesId} />
               <div style={{ flex: 1, minWidth: 0 }}>

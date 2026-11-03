@@ -8,7 +8,7 @@ import {
   IconHistory,
   IconHourglassLow,
   IconTrophy,
-} from '@tabler/icons-react'
+} from '../../../lib/icons'
 import { Trans, Plural, Select, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { useState } from 'react'

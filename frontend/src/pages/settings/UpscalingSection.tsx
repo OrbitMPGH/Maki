@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Anchor, Badge, Button, Checkbox, Divider, Group, Stack, Switch, Text } from '@mantine/core'
-import { IconDownload, IconGauge, IconTrash } from '@tabler/icons-react'
+import { IconDownload, IconGauge, IconTrash } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -219,7 +219,7 @@ function ModelRow({
           <Button
             variant="default"
             size="xs"
-            leftSection={<IconTrash size={14} />}
+            leftSection={<IconTrash size={16} />}
             loading={remove.isPending}
             onClick={() => remove.mutate(model.id)}
           >
@@ -229,7 +229,7 @@ function ModelRow({
           <Button
             variant="default"
             size="xs"
-            leftSection={<IconDownload size={14} />}
+            leftSection={<IconDownload size={16} />}
             disabled={model.status === 'downloading'}
             loading={download.isPending}
             onClick={() => download.mutate(model.id)}
@@ -240,7 +240,7 @@ function ModelRow({
         <Button
           variant="default"
           size="xs"
-          leftSection={<IconGauge size={14} />}
+          leftSection={<IconGauge size={16} />}
           disabled={!ready}
           loading={benchmark.isPending}
           onClick={() => benchmark.mutate(model.id)}
@@ -270,7 +270,7 @@ function CacheUsage({ bytes, files, limitMb }: { bytes: number; files: number; l
       <Button
         variant="default"
         size="xs"
-        leftSection={<IconTrash size={14} />}
+        leftSection={<IconTrash size={16} />}
         disabled={files === 0}
         loading={clear.isPending}
         onClick={() => clear.mutate(undefined)}

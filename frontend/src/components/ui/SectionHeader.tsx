@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 import { Title } from '@mantine/core'
-import type { Icon } from '@tabler/icons-react'
+import type { Icon } from '../../lib/icons'
 import { formatNumber } from '../../format'
 
 /** A short label drawn after the title of every header under the provider. */
@@ -34,7 +34,7 @@ export function SectionHeader({
     <div className="section-header">
       <span className="section-header-lead">
         <span className="section-header-icon" aria-hidden>
-          <SectionIcon size={21} stroke={1.9} />
+          <SectionIcon size={21} />
         </span>
         <Title order={2} className="section-header-title">
           {title}

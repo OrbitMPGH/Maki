@@ -1,5 +1,5 @@
 import { Alert, Button, Group, Loader, Progress, Text, Tooltip } from '@mantine/core'
-import { IconCheck, IconRuler } from '@tabler/icons-react'
+import { IconCheck, IconRuler } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { ScoutSourceProgress, SourceOrderDto } from '../api/upgrades'

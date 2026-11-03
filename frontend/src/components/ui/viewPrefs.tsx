@@ -1,6 +1,6 @@
 import { type ComponentPropsWithRef, useMemo, useState } from 'react'
 import { ActionIcon, Menu, SegmentedControl, Tooltip } from '@mantine/core'
-import { IconCheck, IconDots, IconLayoutGrid, IconLayoutList } from '@tabler/icons-react'
+import { IconCheck, IconDots, IconLayoutGrid, IconLayoutList } from '../../lib/icons'
 import { msg } from '@lingui/core/macro'
 import { useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { useLingui } from '@lingui/react'
@@ -186,7 +186,7 @@ export function DensityMenuItems({ value, onChange }: { value: Density; onChange
         <Menu.Item
           key={o.value}
           onClick={() => onChange(o.value)}
-          rightSection={o.value === value ? <IconCheck size={14} /> : undefined}
+          rightSection={o.value === value ? <IconCheck size={16} /> : undefined}
           aria-current={o.value === value || undefined}
         >
           {o.label}

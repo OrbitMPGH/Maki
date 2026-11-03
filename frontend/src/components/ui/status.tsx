@@ -21,7 +21,7 @@ import {
   IconPlayerPlay,
   IconX,
   type Icon,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { obtainedCount } from '../../lib/chapterCounts'

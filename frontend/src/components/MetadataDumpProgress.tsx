@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Button, Group, Progress, Stack, Text } from '@mantine/core'
 import { notifications } from '../lib/toast'
 import { useQueryClient } from '@tanstack/react-query'
-import { IconCheck } from '@tabler/icons-react'
+import { IconCheck } from '../lib/icons'
 import { Trans } from '@lingui/react/macro'
 import {
   DUMP_PROGRESS_KEY,

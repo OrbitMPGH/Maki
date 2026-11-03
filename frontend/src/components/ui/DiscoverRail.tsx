@@ -8,12 +8,12 @@ import {
   IconFeather,
   IconHeartFilled,
   IconPlus,
-  IconSparkles,
+  IconIntersect,
   IconStar,
   IconStarFilled,
   IconUsers,
-} from '@tabler/icons-react'
-import type { Icon } from '@tabler/icons-react'
+} from '../../lib/icons'
+import type { Icon } from '../../lib/icons'
 import { useLibraryCoverLookup, type RecommendationItem } from '../../api/hooks'
 import { formatFixedDecimal } from '../../format'
 import { Rail } from './Rail'
@@ -129,7 +129,7 @@ function CardSaveButton({ title, saved, onToggle }: { title: string; saved: bool
       data-tip={saved ? t`Remove from shortlist` : t`Shortlist`}
       onClick={onToggle}
     >
-      {saved ? <IconBookmarkFilled size={14} /> : <IconBookmark size={14} />}
+      {saved ? <IconBookmarkFilled size={16} /> : <IconBookmark size={16} />}
     </button>
   )
 }
@@ -150,7 +150,7 @@ function DiscoverSub({ item }: { item: RecommendationItem }) {
             style={{ '--tone': statusColor(visual.color), '--tone-on': statusOnColor(visual.color) } as CSSProperties}
             aria-hidden
           >
-            <Glyph size={10} stroke={2.6} />
+            <Glyph size={10} />
           </span>
           <span className="discover-sub-word">{label(visual.label)}</span>
         </span>
@@ -232,11 +232,11 @@ export const RecommendationCard = memo(function RecommendationCard({
 
         {owned ? (
           <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
-            <IconCheck size={14} stroke={2.2} />
+            <IconCheck size={16} />
           </span>
         ) : saved ? (
           <span className="discover-corner" data-saved="true" data-tip={t`On your shortlist`} aria-hidden="true">
-            <IconBookmarkFilled size={14} />
+            <IconBookmarkFilled size={16} />
           </span>
         ) : (
           <span
@@ -245,7 +245,7 @@ export const RecommendationCard = memo(function RecommendationCard({
             data-tip={t`View and add`}
             aria-hidden="true"
           >
-            <IconPlus size={16} stroke={2} />
+            <IconPlus size={16} />
           </span>
         )}
 
@@ -415,7 +415,7 @@ function engineWhy(item: RecommendationItem): EngineWhy {
   if (item.becauseOfTitle) {
     const { becauseOfTitle } = item
     return {
-      Glyph: IconSparkles,
+      Glyph: IconIntersect,
       text: now`Feels like ${becauseOfTitle}`,
       seed: {
         label: now`Feels like`,
@@ -445,7 +445,7 @@ function engineWhy(item: RecommendationItem): EngineWhy {
   if (item.coRead) return { Glyph: IconUsers, text: coReadPhrase(item) }
   if (item.coRecommended) return { Glyph: IconUsers, text: now`Readers like you also recommended this` }
   if (item.tasteMatch) return { Glyph: IconHeartFilled, text: now`Close to your taste` }
-  return { Glyph: IconSparkles, text: now`Similar feel` }
+  return { Glyph: IconIntersect, text: now`Similar feel` }
 }
 
 /**
@@ -517,15 +517,15 @@ export const EngineCard = memo(function EngineCard({
 
         {owned ? (
           <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
-            <IconCheck size={14} stroke={2.2} />
+            <IconCheck size={16} />
           </span>
         ) : saved ? (
           <span className="discover-corner" data-saved="true" data-tip={t`On your shortlist`} aria-hidden="true">
-            <IconBookmarkFilled size={14} />
+            <IconBookmarkFilled size={16} />
           </span>
         ) : (
           <span className="discover-corner" data-add="true" data-tip={t`View and add`} aria-hidden="true">
-            <IconPlus size={16} stroke={2} />
+            <IconPlus size={16} />
           </span>
         )}
 

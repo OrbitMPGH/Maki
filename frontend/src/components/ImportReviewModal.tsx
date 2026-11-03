@@ -12,7 +12,7 @@ import {
   Text,
   VisuallyHidden,
 } from '@mantine/core'
-import { IconAlertTriangle, IconBan, IconTrash } from '@tabler/icons-react'
+import { IconAlertTriangle, IconBan, IconTrash } from '../lib/icons'
 import { useEffect, useMemo, useState } from 'react'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'

@@ -1,6 +1,6 @@
 import { Button, Group, Paper, Text } from '@mantine/core'
 import { Trans } from '@lingui/react/macro'
-import { IconArchive, IconArchiveOff, IconTrash } from '@tabler/icons-react'
+import { IconArchive, IconArchiveOff, IconTrash } from '../../lib/icons'
 import { formatDate } from '../../format'
 
 /** Sits above the series page while it is archived: what that means and the two ways out of it. */
@@ -48,12 +48,12 @@ export function ArchivedBanner({
         </Group>
         <Group gap="xs">
           {onRestore && (
-            <Button size="xs" variant="light" leftSection={<IconArchiveOff size={14} />} loading={restoring} onClick={onRestore}>
+            <Button size="xs" variant="light" leftSection={<IconArchiveOff size={16} />} loading={restoring} onClick={onRestore}>
               <Trans context="series">Restore to library</Trans>
             </Button>
           )}
           {onRemoveFiles && (
-            <Button size="xs" variant="subtle" leftSection={<IconTrash size={14} />} onClick={onRemoveFiles}>
+            <Button size="xs" variant="subtle" leftSection={<IconTrash size={16} />} onClick={onRemoveFiles}>
               <Trans>Remove files</Trans>
             </Button>
           )}

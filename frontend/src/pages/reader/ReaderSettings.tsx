@@ -27,12 +27,12 @@ import {
   IconMoon,
   IconPalette,
   IconSettings,
-  IconSparkles,
+  IconAperture,
   IconSquare,
   IconSun,
   IconUserCircle,
   IconViewportWide,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
@@ -305,7 +305,7 @@ export default function ReaderSettings({
   const togglesOn = toggles.filter((toggle) => prefs[toggle.key]).length
   const togglesTotal = toggles.length
 
-  const row = (target: View, Icon: typeof IconSparkles, label: string, value: string) => (
+  const row = (target: View, Icon: typeof IconAperture, label: string, value: string) => (
     <UnstyledButton
       ref={(node) => {
         rowRefs.current[target] = node
@@ -320,7 +320,7 @@ export default function ReaderSettings({
       <Text fz="xs" c="var(--ink-3)" truncate maw={140}>
         {value}
       </Text>
-      <IconChevronRight size={14} color="var(--ink-3)" aria-hidden />
+      <IconChevronRight size={16} color="var(--ink-3)" aria-hidden />
     </UnstyledButton>
   )
 
@@ -399,7 +399,7 @@ export default function ReaderSettings({
                       size="xs"
                       radius="xl"
                       variant={incognito ? 'filled' : 'default'}
-                      leftSection={<IconEyeOff size={14} />}
+                      leftSection={<IconEyeOff size={16} />}
                       aria-pressed={incognito}
                       onClick={() => onIncognito(!incognito)}
                     >
@@ -549,7 +549,7 @@ export default function ReaderSettings({
                   </div>
                 </Group>
                 <Group gap={8} wrap="nowrap">
-                  <IconMoon size={14} color="var(--ink-3)" aria-hidden />
+                  <IconMoon size={16} color="var(--ink-3)" aria-hidden />
                   <Slider
                     style={{ flex: 1 }}
                     thumbLabel={t`Brightness`}
@@ -561,14 +561,14 @@ export default function ReaderSettings({
                     value={100 - prefs.dim}
                     onChange={(value) => onPrefs({ dim: 100 - value })}
                   />
-                  <IconSun size={14} color="var(--ink-3)" aria-hidden />
+                  <IconSun size={16} color="var(--ink-3)" aria-hidden />
                 </Group>
               </div>
 
               <Stack gap={0} className="reader-settings-rows">
                 {prefs.mode === 'paged' && row('wide', IconViewportWide, t`Wide pages`, wideLabel)}
                 {row('look', IconPalette, t`Page look`, lookSummary)}
-                {row('enhance', IconSparkles, t`Enhance`, enhanceSummary)}
+                {row('enhance', IconAperture, t`Enhance`, enhanceSummary)}
                 {row('reading', IconListCheck, t`While reading`, t`${togglesOn} of ${togglesTotal} on`)}
               </Stack>
             </Stack>

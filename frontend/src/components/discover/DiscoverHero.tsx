@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { Badge, Box, Button, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconArrowRight, IconPlus, IconStar } from '@tabler/icons-react'
+import { IconArrowRight, IconPlus, IconStar } from '../../lib/icons'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Trans, useLingui } from '@lingui/react/macro'

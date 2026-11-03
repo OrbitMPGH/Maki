@@ -5,7 +5,7 @@ import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { usePageState } from '../lib/pageState'
 import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Text } from '@mantine/core'
-import { IconDeviceFloppy } from '@tabler/icons-react'
+import { IconDeviceFloppy } from '../lib/icons'
 import {
   allowedContentRatings,
   BROWSE_SORTS,
@@ -534,7 +534,7 @@ export function CatalogueFilterActions({
           <Button
             variant="subtle"
             size="xs"
-            leftSection={<IconDeviceFloppy size={14} />}
+            leftSection={<IconDeviceFloppy size={16} />}
             loading={saving}
             onClick={onSaveAsDefault}
             // Never disabled: saving an untouched panel is how a stored default gets cleared.

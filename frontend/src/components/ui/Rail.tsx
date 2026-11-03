@@ -9,7 +9,7 @@ import {
   type HTMLAttributes,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
+import { IconChevronLeft, IconChevronRight } from '../../lib/icons'
 import { useLingui } from '@lingui/react/macro'
 
 const RAIL_GAP = 14
@@ -158,7 +158,7 @@ export function Rail({
               disabled={!reach.left}
               onClick={() => move(-1)}
             >
-              <IconChevronLeft size={16} stroke={2} aria-hidden />
+              <IconChevronLeft size={16} aria-hidden />
             </button>
             <button
               type="button"
@@ -167,7 +167,7 @@ export function Rail({
               disabled={!reach.right}
               onClick={() => move(1)}
             >
-              <IconChevronRight size={16} stroke={2} aria-hidden />
+              <IconChevronRight size={16} aria-hidden />
             </button>
           </>,
           slot,

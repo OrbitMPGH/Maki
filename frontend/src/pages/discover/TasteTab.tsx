@@ -25,9 +25,9 @@ import {
   IconLock,
   IconPencil,
   IconRoute,
-  IconSparkles,
+  IconLightning,
   IconTags,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -293,7 +293,7 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
           format={(item) => formatReadingTime(item.measure)}
         />
         <BehaviourList
-          icon={IconSparkles}
+          icon={IconLightning}
           title={t`You tear through`}
           items={behaviour.devoured}
           emptyText={t`Not enough timed chapters yet.`}
@@ -743,7 +743,7 @@ export function TasteTab() {
       )}
 
       <Group gap="xs" mt="xs">
-        <IconLock size={14} style={{ color: 'var(--ink-3)' }} />
+        <IconLock size={16} style={{ color: 'var(--ink-3)' }} />
         <Text c="var(--ink-3)" size="xs">
           <Trans>Only you can see this.</Trans>{' '}
           <Trans>Reading history stays visible when a source is excluded from recommendations.</Trans>

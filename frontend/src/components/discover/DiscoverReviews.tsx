@@ -1,5 +1,5 @@
 import { Anchor, Badge, Group, Loader, Paper, Spoiler, Stack, Text, Title } from '@mantine/core'
-import { IconExternalLink, IconStar } from '@tabler/icons-react'
+import { IconExternalLink, IconStar } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useMangaReviews, type MangaReview } from '../../api/hooks'
 import { ratingBandVisual } from '../ui/status'

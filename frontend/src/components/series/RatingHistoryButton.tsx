@@ -1,6 +1,6 @@
 import { ActionIcon, Group, Popover, Stack, Text, Tooltip } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { IconHistory } from '@tabler/icons-react'
+import { IconHistory } from '../../lib/icons'
 import { useRatingHistory, type RatingHistoryEntry } from '../../api/hooks'
 import { formatDate, formatDecimal } from '../../format'
 
@@ -24,7 +24,7 @@ export function RatingHistoryButton({ seriesId }: { seriesId: number }) {
       <Popover.Target>
         <Tooltip label={t`Your rating over time`} withArrow>
           <ActionIcon size="sm" variant="subtle" color="var(--neutral)" aria-label={t`Your rating over time`}>
-            <IconHistory size={14} />
+            <IconHistory size={16} />
           </ActionIcon>
         </Tooltip>
       </Popover.Target>

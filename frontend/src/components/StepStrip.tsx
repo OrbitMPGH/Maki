@@ -1,4 +1,4 @@
-import { IconCheck } from '@tabler/icons-react'
+import { IconCheck } from '../lib/icons'
 
 export interface Step {
   label: string
@@ -26,7 +26,7 @@ export function StepStrip({ steps, label }: { steps: Step[]; label: string }) {
           aria-current={step.state === 'current' ? 'step' : undefined}
         >
           <span className="import-step-index">
-            {step.state === 'done' ? <IconCheck size={13} stroke={2.6} /> : i + 1}
+            {step.state === 'done' ? <IconCheck size={13} /> : i + 1}
           </span>
           <span className="import-step-text">
             <span className="import-step-label">{step.label}</span>

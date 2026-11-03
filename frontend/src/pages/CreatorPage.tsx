@@ -9,7 +9,7 @@ import {
   Stack,
   Text,
 } from '@mantine/core'
-import { IconAdjustmentsHorizontal, IconBell, IconBellCheck } from '@tabler/icons-react'
+import { IconAdjustmentsHorizontal, IconBell, IconBellCheck } from '../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import {

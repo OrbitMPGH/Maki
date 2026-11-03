@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react'
 import { ActionIcon, Badge, Group, Menu, Rating, Stack, Text, Tooltip } from '@mantine/core'
-import { IconArchiveOff, IconArrowRight, IconDots, IconFileOff, IconTrash, IconX } from '@tabler/icons-react'
+import { IconArchiveOff, IconArrowRight, IconDots, IconFileOff, IconTrash, IconX } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useChapters } from '../../api/hooks'
@@ -74,16 +74,16 @@ export const ArchivedSeriesCard = memo(function ArchivedSeriesCard({
         </ActionIcon>
       </Menu.Target>
       <Menu.Dropdown>
-        <Menu.Item component={Link} to={`/series/${series.id}`} leftSection={<IconArrowRight size={14} />}>
+        <Menu.Item component={Link} to={`/series/${series.id}`} leftSection={<IconArrowRight size={16} />}>
           <Trans>Open</Trans>
         </Menu.Item>
         {canRestore && (
-          <Menu.Item leftSection={<IconArchiveOff size={14} />} onClick={() => onAction('restore', series)}>
+          <Menu.Item leftSection={<IconArchiveOff size={16} />} onClick={() => onAction('restore', series)}>
             <Trans context="series">Restore to library</Trans>
           </Menu.Item>
         )}
         {canRemoveFiles && series.chapterFileCount > 0 && (
-          <Menu.Item leftSection={<IconFileOff size={14} />} onClick={() => onAction('removeFiles', series)}>
+          <Menu.Item leftSection={<IconFileOff size={16} />} onClick={() => onAction('removeFiles', series)}>
             <Trans>Remove files</Trans>
           </Menu.Item>
         )}
@@ -92,7 +92,7 @@ export const ArchivedSeriesCard = memo(function ArchivedSeriesCard({
             <Menu.Divider />
             <Menu.Item
               color="var(--danger)"
-              leftSection={<IconTrash size={14} />}
+              leftSection={<IconTrash size={16} />}
               onClick={() => onAction('delete', series)}
             >
               <Trans>Delete</Trans>

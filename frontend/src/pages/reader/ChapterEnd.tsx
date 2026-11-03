@@ -1,5 +1,5 @@
 import { Button, Group } from '@mantine/core'
-import { IconArrowLeft, IconArrowRight } from '@tabler/icons-react'
+import { IconArrowLeft, IconArrowRight } from '../../lib/icons'
 import { type ReactNode, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Plural, Trans } from '@lingui/react/macro'

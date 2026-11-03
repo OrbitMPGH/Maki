@@ -1,5 +1,5 @@
 import { Checkbox, Divider, SegmentedControl, Switch, Text } from '@mantine/core'
-import { IconBell, IconDeviceMobile } from '@tabler/icons-react'
+import { IconBell, IconDeviceMobile } from '../../lib/icons'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import {
   INBOX_ADMIN_ONLY,
@@ -91,13 +91,13 @@ export function NotificationPrefsSection() {
             </th>
             <th scope="col" className="notify-matrix-check">
               <span className="notify-matrix-head">
-                <IconBell size={14} aria-hidden />
+                <IconBell size={16} aria-hidden />
                 <Trans>Bell</Trans>
               </span>
             </th>
             <th scope="col" className="notify-matrix-check">
               <span className="notify-matrix-head">
-                <IconDeviceMobile size={14} aria-hidden />
+                <IconDeviceMobile size={16} aria-hidden />
                 <Trans>Push</Trans>
               </span>
             </th>

@@ -4,7 +4,7 @@ import { randomUUID } from '../../lib/uuid'
 import {
   Alert, Badge, Button, Card, Collapse, Group, Loader, Paper, SimpleGrid, Stack, Text, Tooltip,
 } from '@mantine/core'
-import { IconSparkles } from '@tabler/icons-react'
+import { IconCompass } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { AvoidanceLabel, FeedbackActivity, FeedbackLabData } from '../../api/recommendationFeedback'
 import { useFeedbackLab, useUndoFeedback } from '../../api/recommendationFeedback'
@@ -125,7 +125,7 @@ export function SignalsCard() {
   return (
     <>
       <SectionHeader
-        icon={IconSparkles}
+        icon={IconCompass}
         title={t`What shapes your recommendations`}
         action={
           <Group gap="xs">
