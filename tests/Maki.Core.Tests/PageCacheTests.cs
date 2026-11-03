@@ -37,4 +37,25 @@ public class PageCacheTests
             File.Delete(path);
         }
     }
+
+    [Fact]
+    public async Task CopyDroppingWritten_writesEveryByte_pastADrop()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"maki-page-cache-{Guid.NewGuid():N}.bin");
+        try
+        {
+            var data = new byte[300_000];
+            new Random(7).NextBytes(data);
+            await using (var output = File.Create(path))
+            {
+                await PageCache.CopyDroppingWrittenAsync(new MemoryStream(data), output, CancellationToken.None, window: 4096);
+            }
+
+            Assert.Equal(data, await File.ReadAllBytesAsync(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }
