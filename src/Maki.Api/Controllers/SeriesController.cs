@@ -344,6 +344,21 @@ public class SeriesController(
         string[]? ExcludedPaths, int[]? PinnedChapterIds, bool DeleteSuperseded, string[]? ConfirmedSuperseded = null)
         : RelinkPlanRequest(ExcludedPaths, PinnedChapterIds);
 
+    /// <summary>
+    /// Id, MangaBaka id, cover and archived flag of every series the caller can see. What Home and
+    /// the catalogue rails need to tell owned items apart, without building the whole list.
+    /// </summary>
+    [HttpGet("lookup")]
+    public async Task<IActionResult> Lookup(CancellationToken ct)
+    {
+        var rows = await db.Series.AsNoTracking()
+            .OrderBy(s => s.Id)
+            .Select(s => new { s.Id, s.MangaBakaId, s.CoverPath, s.LastMetadataRefresh, s.ArchivedAt })
+            .ToListAsync(ct);
+        return Ok(rows.Select(s => new SeriesLookupDto(
+            s.Id, s.MangaBakaId, SeriesDto.CoverUrlFor(s.Id, s.CoverPath, s.LastMetadataRefresh), s.ArchivedAt != null)));
+    }
+
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
     {

@@ -125,33 +125,7 @@ export function useLibraryStats(): LibraryStats {
   }, [series])
 }
 
-/** Maps a catalogue (MangaBaka) item to the library series id that owns it, or null. */
-export function useSeriesIdLookup() {
-  const { data: library } = useSeries()
-  const seriesIdByMangaBaka = useMemo(() => {
-    const map = new Map<number, number>()
-    for (const s of library ?? []) {
-      if (s.mangaBakaId != null) map.set(s.mangaBakaId, s.id)
-    }
-    return map
-  }, [library])
-  return (item: RecommendationItem) =>
-    seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
-}
-
-/** Maps a MangaBaka id to the poster of the library series that owns it, or null. */
-export function useLibraryCoverLookup() {
-  const { data: library } = useSeries()
-  const coverByMangaBaka = useMemo(() => {
-    const map = new Map<number, string>()
-    for (const s of library ?? []) {
-      if (s.mangaBakaId != null && s.coverUrl) map.set(s.mangaBakaId, s.coverUrl)
-    }
-    return map
-  }, [library])
-  return (mangaBakaId: string | null | undefined) =>
-    mangaBakaId ? coverByMangaBaka.get(Number(mangaBakaId)) ?? null : null
-}
+export { useHasLibrary, useLibraryCoverLookup, useSeriesIdLookup } from './seriesLookup'
 
 // When each series was first seen waiting on its match or link, for the polling backoff below.
 const pendingSince = new Map<number, number>()

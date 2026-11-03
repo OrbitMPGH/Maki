@@ -15,6 +15,9 @@ public record ReadingTimeEstimateDto(
 /// <summary>One of <see cref="Series.AltTitles"/>, flattened for the wire.</summary>
 public record LocalizedTitleDto(string Title, string? Language);
 
+/// <summary>One row of <c>GET series/lookup</c>.</summary>
+public record SeriesLookupDto(int Id, int? MangaBakaId, string? CoverUrl, bool Archived);
+
 public record SeriesDto(
     int Id,
     /// <summary>

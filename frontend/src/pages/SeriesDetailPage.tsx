@@ -1395,7 +1395,7 @@ function SeriesDetailBody() {
   const location = useLocation()
   const arrivedLucky = Boolean((location.state as { lucky?: boolean } | null)?.lucky)
   const [lucky, setLucky] = useState(arrivedLucky)
-  const { data: library } = useSeries()
+  const { data: library } = useSeries(lucky)
   const luckyPool = useMemo(
     () =>
       activeSeries(library ?? [])
