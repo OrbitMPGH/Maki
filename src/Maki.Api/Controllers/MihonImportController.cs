@@ -35,15 +35,10 @@ public class MihonImportController(ILocalizer localizer, MihonImportService miho
         MihonBackup backup;
         try
         {
-            // Read async into one exact-size buffer; the reader parses it in place.
-            using var buffer = new MemoryStream((int)file.Length);
-            await using (var upload = file.OpenReadStream())
-            {
-                await upload.CopyToAsync(buffer, ct);
-            }
-
-            buffer.Position = 0;
-            backup = MihonBackupReader.Read(buffer);
+            // The form is already buffered (to disk past 64 KB), so this reads no request body and
+            // the parser holds one manga message at a time rather than the whole backup.
+            await using var upload = file.OpenReadStream();
+            backup = MihonBackupReader.Read(upload);
         }
         catch (MihonBackupException ex)
         {
