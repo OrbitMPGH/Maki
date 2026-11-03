@@ -1039,6 +1039,7 @@ try
     builder.Services.AddSingleton<ExternalReadSyncService>();
     builder.Services.AddSingleton<VolumeBoundaryService>();
     builder.Services.AddSingleton<KavitaReadImportService>();
+    builder.Services.AddSingleton<KavitaLiveCoverage>();
     builder.Services.AddSingleton<KavitaLiveReadSync>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<KavitaLiveReadSync>());
     builder.Services.AddScoped<ReaderService>();

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net;
 using System.Text;
 using Maki.Api.Services;
@@ -679,11 +679,88 @@ public class ScrobbleServiceTests
         Content = new StringContent(json, Encoding.UTF8, "application/json"),
     };
 
+    /// <summary>
+    /// While the live hub is connected, the Kavita pass after a full sweep asks Kavita for the
+    /// volumes of the series the hub reported only; without the hub every pass asks for all of them.
+    /// </summary>
+    [Theory]
+    [InlineData(true, 4)]
+    [InlineData(false, 6)]
+    public async Task The_kavita_pass_fetches_only_reported_series_while_the_hub_is_connected(
+        bool connected, int expectedVolumeCalls)
+    {
+        using var db = new TestDb();
+        db.SeedUser();
+        var scopes = db.ScopeFactory();
+        var settings = new SettingsService(scopes);
+        await settings.SetAsync(SettingKeys.KavitaUrl, "http://kavita.test");
+        await settings.SetAsync(SettingKeys.KavitaApiKey, "key");
+
+        const string SeriesJson =
+            """[{"id":1,"name":"One","libraryId":1,"pages":10,"pagesRead":2},{"id":2,"name":"Two","libraryId":1,"pages":10,"pagesRead":2},{"id":3,"name":"Three","libraryId":1,"pages":10,"pagesRead":2}]""";
+        var volumeCalls = 0;
+        var kavitaHandler = new FakeHttpMessageHandler((request, _) =>
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            var json = path.Contains("Plugin/authenticate") ? """{"token":"jwt"}"""
+                : path.Contains("all-v2") ? request.RequestUri.Query.Contains("PageNumber=1")
+                    ? SeriesJson
+                    : "[]"
+                : path.Contains("Series/volumes")
+                    ? """[{"number":1,"maxNumber":1,"pages":10,"pagesRead":2,"chapters":[{"number":"1","maxNumber":"1","pages":10,"pagesRead":2,"isSpecial":false}]}]"""
+                    : null;
+            if (path.Contains("Series/volumes"))
+            {
+                Interlocked.Increment(ref volumeCalls);
+            }
+
+            return Task.FromResult(json is null
+                ? new HttpResponseMessage(HttpStatusCode.NotFound)
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") });
+        });
+        var noopHttp = new FakeHttpClientFactory(new HttpClient(new FakeHttpMessageHandler(
+            (_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound)))));
+        var appSettings = new FakeAppSettings();
+        var tokens = new FakeScrobbleTokenStore();
+        var options = new ScrobbleTrackerOptions();
+        var userSettings = new FakeUserSettingsStore(db);
+        var coverage = new KavitaLiveCoverage(TimeProvider.System);
+        if (connected)
+        {
+            coverage.Connected();
+        }
+
+        var service = new ScrobbleService(
+            scopes, settings, userSettings, new KavitaUserResolver(scopes, settings),
+            new Maki.Core.Kavita.KavitaClient(new HandlerClientFactory(kavitaHandler)),
+            new VolumeBoundaryService(scopes),
+            new AniListTracker(noopHttp, appSettings, tokens, options, NullLogger<AniListTracker>.Instance),
+            new MalTracker(noopHttp, appSettings, tokens, options, NullLogger<MalTracker>.Instance),
+            new MangaBakaTracker(noopHttp, userSettings, tokens, options, NullLogger<MangaBakaTracker>.Instance),
+            new KitsuTracker(noopHttp, appSettings, userSettings, tokens, options, NullLogger<KitsuTracker>.Instance),
+            new MangaUpdatesTracker(noopHttp, userSettings, tokens, options, NullLogger<MangaUpdatesTracker>.Instance),
+            NullLogger<ScrobbleService>.Instance,
+            coverage);
+
+        var summary = await service.SyncAsync();
+        Assert.True(3 == volumeCalls, summary);
+
+        coverage.Saw(2);
+        await service.SyncAsync();
+
+        Assert.Equal(expectedVolumeCalls, volumeCalls);
+    }
+
     private sealed class FakeHttpMessageHandler(
         Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> respond) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken ct) => respond(request, ct);
+    }
+
+    private sealed class HandlerClientFactory(HttpMessageHandler handler) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new(handler, disposeHandler: false);
     }
 
     private sealed class FakeHttpClientFactory(HttpClient client) : IHttpClientFactory
