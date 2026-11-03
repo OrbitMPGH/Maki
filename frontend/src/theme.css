@@ -1733,11 +1733,11 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     transition: opacity var(--dur-base) var(--ease);
   }
   .cover-card:hover .cover-corner-right > .cover-badge-circle,
-  .cover-card:focus-within .cover-corner-right > .cover-badge-circle {
+  .cover-card:has(:focus-visible) .cover-corner-right > .cover-badge-circle {
     opacity: 0.9;
   }
   .cover-card:hover .cover-corner-right > .cover-badge-circle[data-dim],
-  .cover-card:focus-within .cover-corner-right > .cover-badge-circle[data-dim] {
+  .cover-card:has(:focus-visible) .cover-corner-right > .cover-badge-circle[data-dim] {
     opacity: 0.7;
   }
 }
@@ -2950,7 +2950,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   }
 }
 .discover-card:hover .discover-corner[data-add='true'],
-.discover-card:focus-within .discover-corner[data-add='true'] {
+.discover-card:has(:focus-visible) .discover-corner[data-add='true'] {
   opacity: 1;
 }
 @media (hover: none), (pointer: coarse) {
@@ -3004,7 +3004,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 @media (hover: hover) and (pointer: fine) {
   .discover-card:hover .discover-card-save,
-  .discover-card:focus-within .discover-card-save {
+  .discover-card:has(:focus-visible) .discover-card-save {
     opacity: 1;
   }
 }
