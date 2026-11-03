@@ -174,7 +174,25 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   const continueReading = reading?.continueReading ?? []
 
   const popular = rails?.find((r) => r.key === 'popular')?.items ?? []
-  const youMightLike = recommendations.data?.pages[0]?.similar?.slice(0, RAIL_SIZE) ?? []
+  // Memoized so the rail's memo holds when something unrelated re-renders the page.
+  const similar = recommendations.data?.pages[0]?.similar
+  const youMightLike = useMemo(() => similar?.slice(0, RAIL_SIZE) ?? [], [similar])
+
+  // The glance belongs to Continue reading: in its hero when that draws one, a strip at its slot
+  // otherwise. Without read tracking every day would read as missed, so it waits for that.
+  // Memoized because the hero card is: a fresh element each render would re-render it every time.
+  const glanceHosted = heroOn('continue') && continueReading.length > 0
+  const glanceLoading = glanceOn && readTracking && (progressLoading || (progress?.enabled === true && heatmapLoading))
+  // A brand-new reader would get a card of zeros, so the glance waits for the first day read.
+  const glanceNode = useMemo(
+    () =>
+      glanceOn && readTracking && progress?.enabled && heatmap && rollingWeeks(heatmap).daysRead > 0 ? (
+        <ReadingWeeks days={heatmap} summary={progress} hosted={glanceHosted} />
+      ) : glanceLoading ? (
+        <ReadingWeeksPlaceholder hosted={glanceHosted} />
+      ) : null,
+    [glanceOn, readTracking, progress, heatmap, glanceHosted, glanceLoading],
+  )
 
   // Home has no visible title row: the sidebar says where you are and the hero says what you are
   // reading. The h1 stays for screen readers. Editing the layout is a mode with its own exit, so
@@ -287,18 +305,6 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   }
 
   const visible = layout.filter(sectionVisible)
-
-  // The glance belongs to Continue reading: in its hero when that draws one, a strip at its slot
-  // otherwise. Without read tracking every day would read as missed, so it waits for that.
-  const glanceHosted = heroOn('continue') && continueReading.length > 0
-  const glanceLoading = glanceOn && readTracking && (progressLoading || (progress?.enabled === true && heatmapLoading))
-  // A brand-new reader would get a card of zeros, so the glance waits for the first day read.
-  const glanceNode =
-    glanceOn && readTracking && progress?.enabled && heatmap && rollingWeeks(heatmap).daysRead > 0 ? (
-      <ReadingWeeks days={heatmap} summary={progress} hosted={glanceHosted} />
-    ) : glanceLoading ? (
-      <ReadingWeeksPlaceholder hosted={glanceHosted} />
-    ) : null
 
   // One node per section key. Rendered in the user's order below; a section with nothing to show
   // yields null and takes up no space, exactly as when it is switched off.

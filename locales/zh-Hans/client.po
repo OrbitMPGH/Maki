@@ -6715,11 +6715,13 @@ msgstr "无法读取 {seriesFailed, plural, other {# 个系列}} 的阅读进度
 msgid "Could not read your profile"
 msgstr "无法读取你的资料"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "无法移除 {seriesTitle}：{reason}"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "Could not restore {seriesTitle}: {reason}"
@@ -9837,6 +9839,10 @@ msgstr "主视觉"
 msgid "Hiatus"
 msgstr "暂停连载"
 
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Hid {seriesTitle}. It comes back when you finish a new season."
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -9925,6 +9931,10 @@ msgstr "隐藏此标题及其系列"
 #, fuzzy
 msgid "Hide this title"
 msgstr "隐藏此标题"
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Hide until a new season"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -12623,6 +12633,7 @@ msgstr "更多此类内容"
 msgid "More options"
 msgstr "更多选项"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "More options for {seriesTitle}"
@@ -14104,6 +14115,10 @@ msgstr "未监控"
 #, fuzzy
 msgid "Not rated"
 msgstr "未评分"
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Not reading this one"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -17392,6 +17407,10 @@ msgstr "已移除"
 #, fuzzy
 msgid "Removed {seriesTitle}. It comes back when you read it again."
 msgstr "已移除 {seriesTitle}。再次阅读后会重新显示。"
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Removed {seriesTitle}. It won't be suggested here again."
+msgstr ""
 
 #: src/components/discover/shortlistActions.tsx
 msgid "Removed {title} from your shortlist."
@@ -22614,6 +22633,7 @@ msgstr "下划线（_）"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/discover/shortlistActions.tsx
 #: src/components/DiscoverPresets.tsx
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/series/UndoConversionModal.tsx

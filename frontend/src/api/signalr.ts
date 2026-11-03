@@ -2,6 +2,7 @@ import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/s
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '../lib/toast'
+import { isPageScrolling } from '../lib/pageScrolling'
 import { api } from './client'
 import { inboxPrefsQuery, type InboxPush } from './inbox'
 import type { SourceMatchProgress, SourceMatchState } from './hooks'
@@ -179,22 +180,29 @@ export function useLiveEvents() {
     const importedSeries = new Set<number>()
 
     // A bulk download fires one chapterImported per chapter. The library list is the heaviest thing
-    // they touch, so every event just marks work as pending and one timer refreshes it per second.
+    // they touch, so every event just marks work as pending and one timer refreshes it every few
+    // seconds. Refetching it parses the whole list and re-renders the page showing it, so a flush
+    // that comes due mid-scroll waits for the scroll to stop.
+    const flushSeriesRefresh = () => {
+      if (isPageScrolling()) {
+        seriesTimer = setTimeout(flushSeriesRefresh, 250)
+        return
+      }
+      seriesTimer = null
+      const ids = [...importedSeries]
+      importedSeries.clear()
+      for (const id of ids) {
+        void queryClient.invalidateQueries({ queryKey: ['chapters', id] })
+        void queryClient.invalidateQueries({ queryKey: ['reader-continue', id] })
+      }
+      if (ids.length > 0) {
+        void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
+      }
+      seriesList.flush()
+    }
     const scheduleSeriesRefresh = () => {
       if (seriesTimer !== null) return
-      seriesTimer = setTimeout(() => {
-        seriesTimer = null
-        const ids = [...importedSeries]
-        importedSeries.clear()
-        for (const id of ids) {
-          void queryClient.invalidateQueries({ queryKey: ['chapters', id] })
-          void queryClient.invalidateQueries({ queryKey: ['reader-continue', id] })
-        }
-        if (ids.length > 0) {
-          void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
-        }
-        seriesList.flush()
-      }, 1000)
+      seriesTimer = setTimeout(flushSeriesRefresh, 3000)
     }
 
     // Events sent while the socket was down are gone, and the queue lists are patched in place from

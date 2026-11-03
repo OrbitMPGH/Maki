@@ -528,7 +528,8 @@ public class MalTracker(
                     StartDate: AnimeListFields.ParseFullDate(GetString(node, "start_date")),
                     EndDate: AnimeListFields.ParseFullDate(GetString(node, "end_date")),
                     Episodes: PositiveOrNull(GetInt(node, "num_episodes")),
-                    Progress: hasStatus ? GetInt(ls, "num_episodes_watched") : null));
+                    Progress: hasStatus ? GetInt(ls, "num_episodes_watched") : null,
+                    ListUpdatedAtUtc: hasStatus ? AnimeListFields.ParseTimestamp(GetString(ls, "updated_at")) : null));
             }
 
             truncated = count >= pageSize && offset + pageSize >= maxOffset;

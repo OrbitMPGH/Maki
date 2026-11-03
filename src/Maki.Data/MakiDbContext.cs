@@ -41,6 +41,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<RecommendationProfileState> RecommendationProfileStates => Set<RecommendationProfileState>();
     public DbSet<RecommendationMutationReceipt> RecommendationMutationReceipts => Set<RecommendationMutationReceipt>();
     public DbSet<AnimeSignal> AnimeSignals => Set<AnimeSignal>();
+    public DbSet<AnimeResumeRailDismissal> AnimeResumeRailDismissals => Set<AnimeResumeRailDismissal>();
     public DbSet<AuthEvent> AuthEvents => Set<AuthEvent>();
 
     public DbSet<Series> Series => Set<Series>();
@@ -326,6 +327,12 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         {
             e.HasIndex(x => new { x.UserId, x.Service, x.AnimeId }).IsUnique();
             e.HasIndex(x => new { x.UserId, x.MangaBakaId });
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+        modelBuilder.Entity<AnimeResumeRailDismissal>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.MangaBakaId }).IsUnique();
             e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
         });

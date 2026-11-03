@@ -1,6 +1,5 @@
 import { useId, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Tooltip } from '@mantine/core'
 import { IconFlame } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -174,19 +173,21 @@ export function ReadingWeeks({
               chapters === 0 && cell.seconds === 0
                 ? t`${cellDate}: nothing read`
                 : plural(chapters, { one: `${cellDate}: # chapter`, other: `${cellDate}: # chapters` })
+            // The shared tip layer rather than a Mantine Tooltip per day: the glance renders twice
+            // (one copy hidden), so that was seventy floating instances on Home.
             return (
-              <Tooltip key={cell.date} label={label}>
-                <span
-                  role="img"
-                  aria-label={label}
-                  className="reading-weeks-day"
-                  data-today={cell.today || undefined}
-                  data-empty={level === 0 || undefined}
-                  style={shade ? { background: shade } : undefined}
-                >
-                  {mark}
-                </span>
-              </Tooltip>
+              <span
+                key={cell.date}
+                role="img"
+                aria-label={label}
+                data-tip={label}
+                className="reading-weeks-day"
+                data-today={cell.today || undefined}
+                data-empty={level === 0 || undefined}
+                style={shade ? { background: shade } : undefined}
+              >
+                {mark}
+              </span>
             )
           })}
         </div>

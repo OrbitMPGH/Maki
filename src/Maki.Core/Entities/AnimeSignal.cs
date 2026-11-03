@@ -60,6 +60,9 @@ public class AnimeSignal : IUserOwned
     /// <summary>Episodes the watcher has seen.</summary>
     public int? Progress { get; set; }
 
+    /// <summary>When the watcher last changed this entry on the tracker. Orders Home's anime rail.</summary>
+    public DateTime? ListUpdatedAtUtc { get; set; }
+
     /// <summary>The catalogue series this anime's source manga resolved to, when it resolved.</summary>
     public long? MangaBakaId { get; set; }
 

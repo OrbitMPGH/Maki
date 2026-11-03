@@ -6715,11 +6715,13 @@ msgstr "Não foi possível ler o progresso de {seriesFailed, plural, one {# sér
 msgid "Could not read your profile"
 msgstr "Não foi possível ler seu perfil"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "Não foi possível remover {seriesTitle}: {reason}"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "Could not restore {seriesTitle}: {reason}"
@@ -9837,6 +9839,10 @@ msgstr "Destaque"
 msgid "Hiatus"
 msgstr "Hiato"
 
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Hid {seriesTitle}. It comes back when you finish a new season."
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -9925,6 +9931,10 @@ msgstr "Ocultar este e sua franquia"
 #, fuzzy
 msgid "Hide this title"
 msgstr "Ocultar este título"
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Hide until a new season"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -12623,6 +12633,7 @@ msgstr "Mais deste tipo"
 msgid "More options"
 msgstr "Mais opções"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "More options for {seriesTitle}"
@@ -14104,6 +14115,10 @@ msgstr "Não monitorado"
 #, fuzzy
 msgid "Not rated"
 msgstr "Não avaliado"
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Not reading this one"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -17392,6 +17407,10 @@ msgstr "Removido"
 #, fuzzy
 msgid "Removed {seriesTitle}. It comes back when you read it again."
 msgstr "{seriesTitle} foi removida. Ela volta quando você ler de novo."
+
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Removed {seriesTitle}. It won't be suggested here again."
+msgstr ""
 
 #: src/components/discover/shortlistActions.tsx
 msgid "Removed {title} from your shortlist."
@@ -22614,6 +22633,7 @@ msgstr "Sublinhado (_)"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/discover/shortlistActions.tsx
 #: src/components/DiscoverPresets.tsx
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/series/UndoConversionModal.tsx

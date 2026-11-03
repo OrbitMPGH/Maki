@@ -309,6 +309,7 @@ public class AnimeSignalSyncService(
                 row.EndDate = entry.EndDate;
                 row.Episodes = entry.Episodes;
                 row.Progress = entry.Progress;
+                row.ListUpdatedAtUtc = entry.ListUpdatedAtUtc ?? row.ListUpdatedAtUtc;
                 if (entry.RelationsResolved)
                 {
                     row.AniListMangaId = entry.AniListMangaId;
