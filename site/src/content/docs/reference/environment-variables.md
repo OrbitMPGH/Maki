@@ -34,6 +34,7 @@ In the timer and cache variables below, a value that is not a whole number or is
 | `MAKI_EMBED_IDLE_MINUTES` | `5` | Minutes idle before the embedding model is unloaded from memory. `0` keeps it loaded. |
 | `MAKI_ARTIFACT_IDLE_MINUTES` | `10` | Minutes idle before the in-memory catalogue and recommendation indexes are dropped. `0` keeps them loaded. |
 | `MAKI_VECTOR_IDLE_MINUTES` | `15` | Minutes idle before the search vectors are dropped from memory. `0` keeps them loaded. |
+| `MAKI_SNAPSHOT_MMAP` | On | The search vectors, catalogue indexes and co-read graph are read in place from their snapshot files instead of being copied into memory, so the OS can drop those pages under pressure. `0` copies them into memory instead, for a filesystem where memory-mapped files misbehave. |
 | `MAKI_BROWSER_IDLE_MINUTES` | `3` | Minutes idle before the headless browser used by some sources shuts down. `0` keeps it running. |
 
 ## Embeddings

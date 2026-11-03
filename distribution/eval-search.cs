@@ -89,6 +89,7 @@ var explain = (string?)null;
 var filterTags = (string[]?)null;
 var engine = "semantic";
 var facetPassage = false;
+string? modelOverride = null;
 var variantArgs = new List<string>();
 for (var i = 0; i < args.Length; i++)
 {
@@ -121,6 +122,11 @@ for (var i = 0; i < args.Length; i++)
         case "--facets":
             facetPassage = true;
             break;
+        // Score an index built by `build-embeddings.cs <candidate>` with that candidate's model,
+        // one of EmbeddingModelProfile.Candidates, instead of the one the settings name.
+        case "--model":
+            modelOverride = args[++i];
+            break;
         default:
             variantArgs.Add(args[i]);
             break;
@@ -137,8 +143,18 @@ var variants = variantArgs.Count > 0
     ? variantArgs.Select(Variants.Parse).ToList()
     : [Variants.Parse("baseline"), Variants.Parse("default")];
 
-var modelKind = Settings.ReadEmbeddingModel(Path.Combine(configDir, "maki.db")) ?? "base";
+var modelKind = modelOverride ?? Settings.ReadEmbeddingModel(Path.Combine(configDir, "maki.db")) ?? "base";
 var modelProfile = EmbeddingModelProfile.Resolve(modelKind);
+if (modelOverride is not null)
+{
+    if (!EmbeddingModelProfile.Candidates.TryGetValue(modelOverride, out var candidate))
+    {
+        Console.WriteLine($"error: unknown --model '{modelOverride}'. Known: {string.Join(", ", EmbeddingModelProfile.Candidates.Keys)}");
+        return 2;
+    }
+
+    modelProfile = candidate;
+}
 if (facetPassage)
 {
     modelProfile = modelProfile with

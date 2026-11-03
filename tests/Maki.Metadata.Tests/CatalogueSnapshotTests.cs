@@ -73,6 +73,22 @@ public class CatalogueSnapshotTests : IDisposable
     }
 
     [Fact]
+    public async Task A_built_entry_is_swapped_for_the_mapped_snapshot()
+    {
+        Seed();
+        var cache = Cache();
+        var built = (await cache.GetAsync())!;
+        await cache.SnapshotSavedForTest;
+
+        var published = (await cache.GetAsync())!;
+
+        Assert.False(built.Credits.IsMapped);
+        Assert.True(published.Credits.IsMapped);
+        Assert.True(published.Terms.IsMapped);
+        Assert.Equal(Fingerprint(built), Fingerprint(published));
+    }
+
+    [Fact]
     public async Task A_changed_dump_rebuilds_instead_of_reading_the_old_snapshot()
     {
         Seed();
@@ -96,6 +112,8 @@ public class CatalogueSnapshotTests : IDisposable
         await first.SnapshotSavedForTest;
         var bytes = File.ReadAllBytes(first.SnapshotPath);
         bytes[^12] ^= 0xFF;
+        // Replaced rather than written in place: the live cache has the file mapped.
+        File.Delete(first.SnapshotPath);
         File.WriteAllBytes(first.SnapshotPath, bytes[..^3]);
 
         var cache = Cache();

@@ -238,9 +238,10 @@ public sealed class CatalogueIndexCache(
         var length = info.Length;
         var observed = new LoadFailureMemo.Stamp(ticks, length);
         CatalogueIndexes? built;
+        string? unsavedKey;
         try
         {
-            built = Build(ticks, length, CancellationToken.None);
+            (built, unsavedKey) = Build(ticks, length, CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -260,10 +261,16 @@ public sealed class CatalogueIndexCache(
         var entry = new CacheEntry(built, ticks, length);
         _entry = entry;
         _idle.Touch();
+        if (unsavedKey is not null)
+        {
+            SaveSnapshot(entry, unsavedKey);
+        }
+
         return entry;
     }
 
-    private CatalogueIndexes? Build(long ticks, long length, CancellationToken ct)
+    /// <summary>The indexes, and the snapshot key to save them under when they were built rather than loaded.</summary>
+    private (CatalogueIndexes? Indexes, string? UnsavedKey) Build(long ticks, long length, CancellationToken ct)
     {
         var key = $"{SnapshotFile.BuildIdentity}|{ticks}:{length}";
         var started = DateTime.UtcNow;
@@ -274,7 +281,7 @@ public sealed class CatalogueIndexCache(
                 logger.LogInformation(
                     "Loaded the catalogue indexes from their snapshot in {Elapsed:F2}s",
                     (DateTime.UtcNow - started).TotalSeconds);
-                return saved;
+                return (saved, null);
             }
         }
         catch (Exception ex)
@@ -282,18 +289,9 @@ public sealed class CatalogueIndexCache(
             // A damaged or half-written file only costs this load its shortcut.
             logger.LogInformation(ex, "Ignoring an unreadable catalogue snapshot; rebuilding");
         }
-        finally
-        {
-            PageCache.DropAfterScan(SnapshotPath);
-        }
 
         var built = BuildFromDump(ct);
-        if (built is not null)
-        {
-            SaveSnapshot(built, key);
-        }
-
-        return built;
+        return (built, built is null ? null : key);
     }
 
     private static CatalogueIndexes? ReadSnapshot(BinaryReader reader) =>
@@ -301,8 +299,11 @@ public sealed class CatalogueIndexCache(
             ? new CatalogueIndexes(credits, terms)
             : null;
 
-    /// <summary>Off the request path; a failure only costs the next reload its shortcut.</summary>
-    private void SaveSnapshot(CatalogueIndexes indexes, string key)
+    /// <summary>
+    /// Off the request path, then swaps the published entry for one reading the snapshot in place so
+    /// the built copy on the heap can be collected. A failure only costs the next reload its shortcut.
+    /// </summary>
+    private void SaveSnapshot(CacheEntry entry, string key)
     {
         SnapshotSavedForTest = Task.Run(() =>
         {
@@ -310,17 +311,19 @@ public sealed class CatalogueIndexCache(
             {
                 SnapshotFile.Save(SnapshotPath, SnapshotMagic, key, writer =>
                 {
-                    indexes.Credits.WriteTo(writer);
-                    indexes.Terms.WriteTo(writer);
+                    entry.Indexes.Credits.WriteTo(writer);
+                    entry.Indexes.Terms.WriteTo(writer);
                 });
+
+                // A heap reread (mapping off or unavailable) would only be a second copy.
+                if (SnapshotFile.Load(SnapshotPath, SnapshotMagic, key, ReadSnapshot) is { Credits.IsMapped: true } mapped)
+                {
+                    Interlocked.CompareExchange(ref _entry, entry with { Indexes = mapped }, entry);
+                }
             }
             catch (Exception ex)
             {
                 logger.LogInformation(ex, "Could not save the catalogue snapshot");
-            }
-            finally
-            {
-                PageCache.DropAfterScan(SnapshotPath);
             }
         });
     }

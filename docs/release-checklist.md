@@ -262,6 +262,13 @@ builds some on the old version first.
       are all intact.
 - [ ] **8.4** Queue another download on the upgraded instance and read it: the same flow still
       works end to end.
+- [ ] **8.5** If `EmbeddingModelProfile.Base` changed since the previous tag (its `Version`,
+      `Dimensions` or `PrebuiltTag`), the prebuilt index for it is published **before** the release
+      is tagged: `./distribution/publish-embeddings.ps1 -Cuda -Publish` uploads to the profile's
+      `PrebuiltTag`. Without it every upgraded install skips its old-model vectors at load and has
+      no semantic search or recommendations until an admin presses Build in settings, which is
+      hours on a CPU. On the upgraded instance the log then shows the prebuilt index installing a
+      few minutes after startup.
 
 ## 9. Release-specific
 

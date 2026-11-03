@@ -90,20 +90,20 @@ public sealed class CreditIndex
     /// <summary>Name ids ordered by key, for <see cref="TryResolve"/>'s binary search.</summary>
     private readonly int[] _keyOrder;
 
-    private readonly CreditRole[] _roles;
+    private readonly Column<CreditRole> _roles;
 
     /// <summary>Concatenated work lists; name <c>i</c> owns <c>[_workOffsets[i], _workOffsets[i+1])</c>.</summary>
-    private readonly int[] _workOffsets;
+    private readonly Column<int> _workOffsets;
 
     /// <summary>MangaBaka ids, which are six figures and fit an int.</summary>
-    private readonly int[] _works;
+    private readonly Column<int> _works;
 
     /// <summary>The role held on each entry of <see cref="_works"/>, so <c>artist:</c> can exclude writing credits.</summary>
-    private readonly CreditRole[] _workRoles;
+    private readonly Column<CreditRole> _workRoles;
 
     private CreditIndex(
-        TextBlob names, TextBlob normalized, TextBlob keys, CreditRole[] roles,
-        int[] workOffsets, int[] works, CreditRole[] workRoles)
+        TextBlob names, TextBlob normalized, TextBlob keys, Column<CreditRole> roles,
+        Column<int> workOffsets, Column<int> works, Column<CreditRole> workRoles)
     {
         _names = names;
         _normalized = normalized;
@@ -112,7 +112,13 @@ public sealed class CreditIndex
         _workOffsets = workOffsets;
         _works = works;
         _workRoles = workRoles;
-        MaxSeriesId = works.Length == 0 ? 0 : works.Max();
+        var max = 0;
+        foreach (var work in works.Span)
+        {
+            max = Math.Max(max, work);
+        }
+
+        MaxSeriesId = max;
 
         _keyOrder = new int[keys.Count];
         for (var i = 0; i < _keyOrder.Length; i++)
@@ -158,6 +164,9 @@ public sealed class CreditIndex
     public long MaxSeriesId { get; }
 
     public int NameCount => _names.Count;
+
+    /// <summary>True when the work lists are read from a mapped snapshot.</summary>
+    internal bool IsMapped => _workOffsets.IsMapped;
 
     public int PairCount => _works.Length;
 

@@ -69,8 +69,8 @@ public class EmbeddingRuntimeTests
     }
 
     [Theory]
-    [InlineData(EmbeddingPrecision.Int8, "https://huggingface.co/Snowflake/snowflake-arctic-embed-m/resolve/main/onnx/model_quantized.onnx")]
-    [InlineData(EmbeddingPrecision.Fp32, "https://huggingface.co/Snowflake/snowflake-arctic-embed-m/resolve/main/onnx/model.onnx")]
+    [InlineData(EmbeddingPrecision.Int8, "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v1.5/resolve/main/onnx/model_quantized.onnx")]
+    [InlineData(EmbeddingPrecision.Fp32, "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v1.5/resolve/main/onnx/model.onnx")]
     public void ModelUrlFor_SwapsOnlyTheFinalSegment(EmbeddingPrecision precision, string expected) =>
         Assert.Equal(expected, EmbeddingModelProfile.Base.ModelUrlFor(precision));
 
@@ -84,13 +84,18 @@ public class EmbeddingRuntimeTests
     /// CLS-pooled encoder and was trained with the same "Represent this sentence…" query instruction,
     /// which is a large part of why that swap needed no code change at all. Verified against the
     /// model's own 1_Pooling/config.json and config_sentence_transformers.json, not assumed.
+    ///
+    /// arctic-embed-m-v1.5 keeps both (1_Pooling is CLS, the query prompt is the same sentence),
+    /// but Snowflake's ONNX export runs the pooling and the normalize inside the graph and exposes
+    /// only token_embeddings and sentence_embedding, so the shipped profile reads the graph's own
+    /// pooled output instead of pooling position 0 by hand. The v1 profile still pools by hand.
     /// </summary>
-    [Theory]
-    [InlineData("base")]
-    public void ShippedModels_KeepClsPoolingAndTheInstructionPrefixes(string kind)
+    [Fact]
+    public void ShippedModels_KeepClsPoolingAndTheInstructionPrefixes()
     {
-        var profile = EmbeddingModelProfile.Resolve(kind);
-        Assert.Equal(EmbeddingPooling.Cls, profile.Pooling);
+        var profile = EmbeddingModelProfile.Resolve("base");
+        Assert.Equal(EmbeddingPooling.Pooled, profile.Pooling);
+        Assert.Equal(EmbeddingPooling.Cls, EmbeddingModelProfile.ArcticV1.Pooling);
         Assert.Equal("Represent this sentence for searching relevant passages: ", profile.QueryPrefix);
         Assert.Equal(string.Empty, profile.PassagePrefix);
     }

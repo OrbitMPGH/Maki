@@ -9,25 +9,28 @@ internal sealed class TextBlob
 {
     public static readonly TextBlob Empty = new([]);
 
-    private readonly char[] _chars;
-    private readonly int[] _offsets;
+    private readonly Column<char> _chars;
+    private readonly Column<int> _offsets;
 
     public TextBlob(IReadOnlyList<string> items)
     {
-        _offsets = new int[items.Count + 1];
+        var offsets = new int[items.Count + 1];
         for (var i = 0; i < items.Count; i++)
         {
-            _offsets[i + 1] = _offsets[i] + items[i].Length;
+            offsets[i + 1] = offsets[i] + items[i].Length;
         }
 
-        _chars = new char[_offsets[^1]];
+        var chars = new char[offsets[^1]];
         for (var i = 0; i < items.Count; i++)
         {
-            items[i].CopyTo(_chars.AsSpan(_offsets[i]));
+            items[i].CopyTo(chars.AsSpan(offsets[i]));
         }
+
+        _chars = chars;
+        _offsets = offsets;
     }
 
-    private TextBlob(char[] chars, int[] offsets)
+    private TextBlob(Column<char> chars, Column<int> offsets)
     {
         _chars = chars;
         _offsets = offsets;

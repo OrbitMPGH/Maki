@@ -40,12 +40,16 @@
     <InternalsVisibleTo Include="Maki.Metadata.Tests" />
     <!-- Maki.Api.Tests links DumpDbBuilder rather than keeping a second fake dump schema. -->
     <InternalsVisibleTo Include="Maki.Api.Tests" />
+    <!-- The file-based eval tool grades a requantized copy of the index (VectorIndex.Requantized). -->
+    <InternalsVisibleTo Include="eval-reco-labels" />
   </ItemGroup>
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Column<T> reads snapshots in place through a memory mapping. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
 </Project>

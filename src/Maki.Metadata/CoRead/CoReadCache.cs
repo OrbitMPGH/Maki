@@ -215,11 +215,16 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
         var loaded = LoadFromDatabase(ct, started);
         if (loaded is not null)
         {
+            // Then trade the copy just built on the heap for one reading the snapshot in place.
             SnapshotSavedForTest = Task.Run(() =>
             {
                 try
                 {
                     SnapshotFile.Save(SnapshotPath, SnapshotMagic, key, loaded.WriteTo);
+                    if (SnapshotFile.Load(SnapshotPath, SnapshotMagic, key, PairGraphIndex.ReadFrom) is { IsMapped: true } mapped)
+                    {
+                        Interlocked.CompareExchange(ref _graph, mapped, loaded);
+                    }
                 }
                 catch (Exception ex)
                 {

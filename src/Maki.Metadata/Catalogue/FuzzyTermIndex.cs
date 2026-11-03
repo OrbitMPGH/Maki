@@ -37,20 +37,21 @@ public sealed class FuzzyTermIndex
 
     public static readonly FuzzyTermIndex Empty = new([], [0], [], [], BuildEmptyLengthStarts());
 
-    private readonly byte[] _terms;
-    private readonly int[] _offsets;
-    private readonly int[] _docFrequency;
+    private readonly Column<byte> _terms;
+    private readonly Column<int> _offsets;
+    private readonly Column<int> _docFrequency;
 
     /// <summary>Per-term <see cref="CatalogueText.LetterMask"/>, the prefilter that keeps the scan cheap.</summary>
-    private readonly uint[] _charMask;
+    private readonly Column<uint> _charMask;
 
     /// <summary>
     /// <c>_lengthStart[n]</c> is the first term index whose length is at least <c>n</c>, so the
     /// terms of exactly length <c>n</c> are <c>[_lengthStart[n], _lengthStart[n + 1])</c>.
     /// </summary>
-    private readonly int[] _lengthStart;
+    private readonly Column<int> _lengthStart;
 
-    private FuzzyTermIndex(byte[] terms, int[] offsets, int[] docFrequency, uint[] charMask, int[] lengthStart)
+    private FuzzyTermIndex(
+        Column<byte> terms, Column<int> offsets, Column<int> docFrequency, Column<uint> charMask, Column<int> lengthStart)
     {
         _terms = terms;
         _offsets = offsets;
@@ -84,6 +85,9 @@ public sealed class FuzzyTermIndex
     }
 
     public int TermCount => _offsets.Length - 1;
+
+    /// <summary>True when the terms are read from a mapped snapshot.</summary>
+    internal bool IsMapped => _offsets.IsMapped;
 
     public bool IsEmpty => TermCount == 0;
 

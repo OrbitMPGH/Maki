@@ -51,6 +51,7 @@ control how long each dataset stays in memory after last use.
 | `MAKI_EMBED_IDLE_MINUTES` | 5 | Minutes before the embedding model is unloaded. `0` keeps it loaded. |
 | `MAKI_VECTOR_IDLE_MINUTES` | 15 | Minutes before the search vectors are unloaded. |
 | `MAKI_ARTIFACT_IDLE_MINUTES` | 10 | Minutes before the catalogue, co-read, graph and cohort data are unloaded. `0` turns unloading off. |
+| `MAKI_SNAPSHOT_MMAP` | On | Reads the vectors, catalogue and co-read data in place from their snapshot files. `0` copies them into memory instead. |
 
 Unloading saves memory at the cost of a short reload (a second or two for the embedding model) on the
 next search or recommendation. Leave the defaults unless memory is tight or you search often.

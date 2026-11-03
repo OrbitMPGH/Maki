@@ -47,30 +47,42 @@ namespace Maki.Metadata.RecoGraph;
 /// </summary>
 public sealed class PairGraphIndex
 {
-    private readonly long[] _ids;
-    private readonly int[] _offsets;
-    private readonly ushort[]? _narrow;
-    private readonly int[]? _wide;
-    private readonly Half[] _weights;
+    private readonly Column<long> _ids;
+    private readonly Column<int> _offsets;
+    private readonly bool _isNarrow;
+    private readonly Column<ushort> _narrow;
+    private readonly Column<int> _wide;
+    private readonly Column<Half> _weights;
     private readonly DateTime? _generatedAt;
 
     internal PairGraphIndex(
-        long[] ids, int[] offsets, ushort[]? narrow, int[]? wide, Half[] weights, DateTime? generatedAt)
+        Column<long> ids, Column<int> offsets, ushort[]? narrow, int[]? wide, Column<Half> weights, DateTime? generatedAt)
+        : this(ids, offsets, narrow is not null, narrow, wide, weights, generatedAt)
+    {
+    }
+
+    private PairGraphIndex(
+        Column<long> ids, Column<int> offsets, bool isNarrow, Column<ushort> narrow, Column<int> wide,
+        Column<Half> weights, DateTime? generatedAt)
     {
         _ids = ids;
         _offsets = offsets;
+        _isNarrow = isNarrow;
         _narrow = narrow;
         _wide = wide;
         _weights = weights;
         _generatedAt = generatedAt;
     }
 
+    /// <summary>True when the adjacency is read from a mapped snapshot.</summary>
+    internal bool IsMapped => _weights.IsMapped;
+
     internal void WriteTo(BinaryWriter writer)
     {
         SnapshotFile.WriteArray(writer, _ids.AsSpan());
         SnapshotFile.WriteArray(writer, _offsets.AsSpan());
-        writer.Write(_narrow is not null);
-        if (_narrow is not null)
+        writer.Write(_isNarrow);
+        if (_isNarrow)
         {
             SnapshotFile.WriteArray(writer, _narrow.AsSpan());
         }
@@ -89,14 +101,15 @@ public sealed class PairGraphIndex
         var ids = SnapshotFile.ReadArray<long>(reader);
         var offsets = SnapshotFile.ReadArray<int>(reader);
         var isNarrow = reader.ReadBoolean();
-        var narrow = isNarrow ? SnapshotFile.ReadArray<ushort>(reader) : null;
-        var wide = isNarrow ? null : SnapshotFile.ReadArray<int>(reader);
+        var narrow = isNarrow ? SnapshotFile.ReadArray<ushort>(reader) : default;
+        var wide = isNarrow ? default : SnapshotFile.ReadArray<int>(reader);
         var weights = SnapshotFile.ReadArray<Half>(reader);
         var generatedAt = reader.ReadInt64();
         var hasGeneratedAt = reader.ReadBoolean();
-        var targets = narrow?.Length ?? wide!.Length;
+        var targets = isNarrow ? narrow.Length : wide.Length;
         return offsets.Length == ids.Length + 1 && targets == weights.Length && offsets[^1] == weights.Length
-            ? new PairGraphIndex(ids, offsets, narrow, wide, weights, hasGeneratedAt ? DateTime.FromBinary(generatedAt) : null)
+            ? new PairGraphIndex(
+                ids, offsets, isNarrow, narrow, wide, weights, hasGeneratedAt ? DateTime.FromBinary(generatedAt) : null)
             : null;
     }
 
@@ -113,7 +126,7 @@ public sealed class PairGraphIndex
 
     public bool TryGetNode(long id, out int node)
     {
-        node = Array.BinarySearch(_ids, id);
+        node = _ids.Span.BinarySearch(id);
         return node >= 0;
     }
 
@@ -143,8 +156,8 @@ public sealed class PairGraphIndex
         var start = _offsets[node];
         var length = _offsets[node + 1] - start;
         return new Edges(
-            _narrow is null ? default : _narrow.AsSpan(start, length),
-            _wide is null ? default : _wide.AsSpan(start, length),
+            _isNarrow ? _narrow.AsSpan(start, length) : default,
+            _isNarrow ? default : _wide.AsSpan(start, length),
             _weights.AsSpan(start, length));
     }
 

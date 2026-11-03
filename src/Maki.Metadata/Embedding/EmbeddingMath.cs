@@ -181,13 +181,14 @@ public static class EmbeddingMath
     /// <para>
     /// Packing is only free because the per-element error averages out across the dot product, so
     /// it gets safer as vectors get wider and the floor is the honest expression of that. Measured:
-    /// free at 768 (the only width that ships), and at 128 — the behavioural layer — the same
-    /// change cost -0.0015 nDCG@40, 95% [-0.0032, +0.0001], which is not a result but is not
-    /// nothing either. Nothing between those two widths has been measured, so this sits well above
-    /// the one that looked borderline rather than splitting the difference.
+    /// free at 768, free at 256 (the width that ships: -0.0010 nDCG@40, 95% [-0.0028, +0.0007],
+    /// single seed against MangaUpdates, and +0.0010 [-0.0010, +0.0031] on held-out reading lists,
+    /// against the same 256-dim rows at int8), and at 128, the behavioural layer, the same change
+    /// cost -0.0015, 95% [-0.0032, +0.0001], which is not a result but is not nothing either. So the
+    /// floor is the narrowest width measured free, and the behavioural layer stays below it.
     /// </para>
     /// </summary>
-    public const int PackMinimumDimensions = 512;
+    public const int PackMinimumDimensions = 256;
 
     /// <summary>Whether a row this wide is stored as 4-bit levels rather than int8.</summary>
     public static bool ShouldPack(int dimensions) => dimensions >= PackMinimumDimensions;
@@ -201,14 +202,14 @@ public static class EmbeddingMath
     /// has to be multiplied by for a level to still stand for the same number.
     ///
     /// <para>
-    /// Halves what the index holds — the packed vectors are the single largest allocation in the
-    /// process, 93 MB against 46 MB at catalogue scale — and measured free: over 500 held-out
-    /// reader libraries with the behavioural channel off, nDCG@40 moved +0.0010, bootstrap 95%
-    /// [-0.0009, +0.0030], and over 400 requests on the independent MangaUpdates grader -0.0003,
-    /// 95% [-0.0011, +0.0004]. Opposite signs and tight intervals, which is what no effect looks
-    /// like. 768 dimensions is what makes it free: the per-element error averages out of a dot
-    /// product that wide. Do NOT extend this to the behavioural vectors, which are 128 and where
-    /// the same change measured -0.0015, 95% [-0.0032, +0.0001].
+    /// Halves what the index holds and measured free at both widths it has run at. At 768 (93 MB
+    /// against 46 MB at catalogue scale): over 500 held-out reader libraries with the behavioural
+    /// channel off, nDCG@40 moved +0.0010, bootstrap 95% [-0.0009, +0.0030], and over 400 requests
+    /// on the independent MangaUpdates grader -0.0003, 95% [-0.0011, +0.0004]. At 256, the width
+    /// that ships (31 MB against 16 MB), see <see cref="PackMinimumDimensions"/>. The width is what
+    /// makes it free: the per-element error averages out of a wide dot product. Do NOT extend this
+    /// to the behavioural vectors, which are 128 and where the same change measured -0.0015, 95%
+    /// [-0.0032, +0.0001].
     /// </para>
     ///
     /// <para>

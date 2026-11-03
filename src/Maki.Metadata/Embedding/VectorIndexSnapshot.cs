@@ -8,16 +8,17 @@ namespace Maki.Metadata.Embedding;
 /// either scans it or reads it back from a snapshot.
 /// </summary>
 internal sealed record VectorIndexParts(
-    long[] Ids,
-    byte[] Data,
-    float[] Scales,
+    Column<long> Ids,
+    Column<byte> Data,
+    Column<float> Scales,
     int Dimensions,
     VectorIndexColumns Columns,
     Dictionary<string, byte> Types,
     Dictionary<string, byte> Statuses,
     Dictionary<string, int> Genres,
     string[] AuthorsById,
-    Dictionary<string, byte> ContentRatings);
+    Dictionary<string, byte> ContentRatings,
+    TasteLayer? Taste = null);
 
 /// <summary>
 /// The built search vector index on disk (<see cref="SnapshotFile"/>), so a reload after an idle
@@ -51,7 +52,7 @@ internal static class VectorIndexSnapshot
         WriteArray(writer, columns.Tags.Data.AsSpan());
         WriteArray(writer, columns.Tags.Offsets.AsSpan());
         WriteArray(writer, columns.ContentRatings.AsSpan());
-        WriteArray(writer, (columns.StartDays ?? []).AsSpan());
+        WriteArray(writer, columns.StartDays.Span);
 
         Vocabulary(writer, parts.Types, (w, v) => w.Write(v));
         Vocabulary(writer, parts.Statuses, (w, v) => w.Write(v));
@@ -63,6 +64,15 @@ internal static class VectorIndexSnapshot
         }
 
         Vocabulary(writer, parts.ContentRatings, (w, v) => w.Write(v));
+
+        writer.Write(parts.Taste is not null);
+        if (parts.Taste is { } taste)
+        {
+            writer.Write(taste.Dimensions);
+            WriteArray(writer, taste.Slots.Span);
+            WriteArray(writer, taste.Data.Span);
+            WriteArray(writer, taste.Scales.Span);
+        }
     });
 
     /// <summary>The parts stored under <paramref name="key"/>, or null when there are none.</summary>
@@ -96,6 +106,21 @@ internal static class VectorIndexSnapshot
         }
 
         var contentRatingIds = Vocabulary(reader, r => r.ReadByte());
+        TasteLayer? taste = null;
+        if (reader.ReadBoolean())
+        {
+            var tasteDimensions = reader.ReadInt32();
+            var slots = ReadArray<int>(reader);
+            var tasteData = ReadArray<sbyte>(reader);
+            var tasteScales = ReadArray<float>(reader);
+            if (tasteDimensions <= 0 || slots.Length != rows || tasteData.Length != (long)tasteScales.Length * tasteDimensions)
+            {
+                return null;
+            }
+
+            taste = new TasteLayer(slots, tasteData, tasteScales, tasteDimensions);
+        }
+
         if (ids.Length != rows || scales.Length != rows || years.Length != rows || ratings.Length != rows
             || chapters.Length != rows || types.Length != rows || statuses.Length != rows
             || popularity.Length != rows || contentRatings.Length != rows
@@ -110,8 +135,8 @@ internal static class VectorIndexSnapshot
             ids, data, scales, dimensions,
             new VectorIndexColumns(
                 years, ratings, chapters, types, statuses, genres, authors, artists, popularity, tags,
-                contentRatings, [], startDays.Length == 0 ? null : startDays),
-            typeIds, statusIds, genreIds, authorsById, contentRatingIds);
+                contentRatings, [], startDays),
+            typeIds, statusIds, genreIds, authorsById, contentRatingIds, taste);
     });
 
     private static void Jagged(BinaryWriter writer, JaggedInts column)

@@ -113,6 +113,15 @@ public sealed record EmbeddingModelProfile(
     public long EndOfSequenceToken { get; init; } = 1;
 
     /// <summary>
+    /// For <see cref="EmbeddingTokenizer.SentencePiece"/>: the graph expects XLM-R's fairseq id
+    /// layout rather than the SentencePiece model's own. Fairseq puts &lt;s&gt; &lt;pad&gt; &lt;/s&gt;
+    /// &lt;unk&gt; at 0 to 3 and shifts every piece up by one, so the raw ids are all off by one and
+    /// still look valid. XLM-R models ship only a tokenizer.json, so the vocab is xlm-roberta-base's
+    /// sentencepiece.bpe.model, which this remaps. Also keeps &lt;/s&gt; on a truncated sequence.
+    /// </summary>
+    public bool FairseqTokenIds { get; init; }
+
+    /// <summary>
     /// Set for a causal export; null for every encoder model, which is all Maki ships. See
     /// <see cref="DecoderGraph"/>.
     /// </summary>
@@ -148,41 +157,129 @@ public sealed record EmbeddingModelProfile(
     public string PassagePrefix { get; init; } = "";
 
     /// <summary>
-    /// snowflake-arctic-embed-m, 768-dim. The default: ~240 MB resident, ~110 MB model download.
+    /// snowflake-arctic-embed-m-v1.5, stored at its first 256 of 768 dimensions. The default: the
+    /// same ~110 MB download and the same resident size as v1 (+139 MB private while loaded, both
+    /// measured on CPU at int8), and a vector index a third the size: 128 bytes a row packed against
+    /// v1's 384, 16 MB at catalogue scale against 49 MB.
     ///
-    /// Replaced bge-base-en-v1.5 at q5, at identical cost - same 768 dims, same ~110M parameters,
-    /// same CLS pooling, and the same query instruction, so nothing but the weights changed. Measured
-    /// on the full 95,745-series catalogue (distribution/run-eval.ps1), 2,000 held-out descriptions
-    /// with title words stripped: MRR@10 0.4561 against bge-base's 0.3512, paired difference +0.1049
-    /// with a bootstrap 95% interval of [+0.0895, +0.1202], and recall@1 taken on 290 queries where
-    /// bge-base fails against 83 the other way (McNemar exact p=5.3e-28).
+    /// <para>
+    /// v1.5 is trained with Matryoshka loss, so its leading 256 dimensions stand on their own, and
+    /// <see cref="TextEmbedder"/> keeps those and renormalizes. v1 is not: cut to 256 it falls from
+    /// MRR@10 0.4382 to 0.2679 on 2,000 held-out descriptions. Measured against v1 at 768 on the
+    /// 128,403-row catalogue (distribution/CLAUDE.md, "v6: the embedding model, at 256 dimensions"):
+    /// the full search fusion over the 190 hand-written queries +0.0255 MRR, 95% [+0.0002, +0.0527],
+    /// and recommendation nDCG@40 indistinguishable on every grader that is not trained on the same
+    /// readers (single seed against MangaUpdates +0.0009 [-0.0025, +0.0045], held-out reading lists
+    /// -0.0004 [-0.0056, +0.0047]). The dense channel alone gives up 0.06 MRR on held-out
+    /// descriptions; the other channels absorb it.
+    /// </para>
     ///
-    /// Two honest caveats, both recorded so nobody re-derives them:
-    /// * On the 151 hand-written queries (distribution/eval-queries.tsv), which look far more like
-    ///   what somebody types, arctic-m only TIES bge-base on the `premise` class (+0.0565, interval
-    ///   spans zero). It wins the big-sample eval and never loses; that is the whole case.
-    /// * EmbeddingGemma-300m beats it on the hand-written set overall (+0.083, p=0.034), mostly on
-    ///   title and alias queries that the FTS5 channel already answers, and costs ~309 MB. That is
-    ///   why it is not the default.
+    /// <para>
+    /// Snowflake's export pools (CLS) and normalizes inside the graph and takes no token_type_ids,
+    /// unlike v1's, hence <see cref="EmbeddingPooling.Pooled"/>. arctic-embed-m-v2.0 was measured
+    /// too and is the multilingual one, but it is a 305M-parameter model (+251 MB resident) that
+    /// loses English premise search to this one by 0.108 MRR, and its cross-lingual retrieval is
+    /// weak (0.2 MRR in German, French and Spanish, under 0.12 in Japanese, Korean and Chinese).
+    /// </para>
     /// </summary>
     public static readonly EmbeddingModelProfile Base = new(
         Kind: "base",
+        FolderName: "snowflake-arctic-embed-m-v1.5",
+        Dimensions: 256,
+        // q4: dropped the genre/theme facet block from the embedded text and preferred the
+        // MangaUpdates description where present (see SeriesEmbeddingIndexer.BuildText).
+        // q5: bge-base-en-v1.5 to snowflake-arctic-embed-m.
+        // q6: arctic-embed-m to arctic-embed-m-v1.5 at 256 dimensions. The version string is what
+        // stops a v1 index being installed into a v1.5 install; PrebuiltIndexInstaller compares it
+        // exactly. With no prebuilt index published for it, an upgraded install has no usable
+        // vectors until an admin runs the local pass.
+        Version: "snowflake-arctic-embed-m-v1.5-256-q6",
+        ModelUrl: "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v1.5/resolve/main/onnx/model_quantized.onnx",
+        VocabUrl: "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v1.5/resolve/main/vocab.txt",
+        // A new tag rather than the old one: installs still on v1 keep reading embeddings-base-latest,
+        // and this one can be published before the release that reads it.
+        PrebuiltTag: "embeddings-base-v15-256-latest")
+    {
+        Pooling = EmbeddingPooling.Pooled,
+    };
+
+    /// <summary>
+    /// snowflake-arctic-embed-m at 768, the default through q5, kept so the distribution tools can
+    /// still grade an index built with it. Its version string is the one those indexes carry.
+    /// </summary>
+    public static readonly EmbeddingModelProfile ArcticV1 = new(
+        Kind: "arctic-m",
         FolderName: "snowflake-arctic-embed-m",
         Dimensions: 768,
-        // q4: dropped the genre/theme facet block from the embedded text and preferred the
-        // MangaUpdates description where present (see SeriesEmbeddingIndexer.BuildText). Measured
-        // 0.393 → 0.545 MRR on the 12-query set.
-        // q5: bge-base-en-v1.5 → snowflake-arctic-embed-m (see the summary above). The version string
-        // is what stops a published bge-base index being installed into an arctic-m install:
-        // PrebuiltIndexInstaller compares it exactly, and the DIMENSION CHECK CANNOT CATCH THIS ONE
-        // because both models are 768-dim. Forces the one-time re-embed.
         Version: "snowflake-arctic-embed-m-q5",
         ModelUrl: "https://huggingface.co/Snowflake/snowflake-arctic-embed-m/resolve/main/onnx/model_quantized.onnx",
         VocabUrl: "https://huggingface.co/Snowflake/snowflake-arctic-embed-m/resolve/main/vocab.txt",
-        // Deliberately the same tag. The version check above makes a stale index on either side safe:
-        // an old client rejects a newly published arctic-m index, a new client rejects the old
-        // bge-base one, and both fall back to embedding locally rather than loading wrong vectors.
         PrebuiltTag: "embeddings-base-latest");
+
+    /// <summary>
+    /// Model folders earlier releases downloaded into the models directory, removed once the
+    /// current model is in place (<see cref="EmbeddingModelStore.RemoveRetiredModels"/>). Listed by
+    /// name rather than swept, because the same directory holds the upscaler's models.
+    /// </summary>
+    public static IReadOnlyList<string> RetiredFolderNames { get; } =
+        ["bge-small-en-v1.5", "bge-base-en-v1.5", "bge-large-en-v1.5", "snowflake-arctic-embed-m"];
+
+    /// <summary>
+    /// Profiles measured against <see cref="Base"/> by the distribution tools (build-embeddings,
+    /// eval-search, eval-reco-labels take one by key), so those three cannot disagree about a model.
+    /// eval-embeddings keeps its own table, since it also scores models the app never loads.
+    /// A <c>-256</c> entry stores the model's first 256 dimensions; only Matryoshka-trained models
+    /// (both v1.5 and v2.0 are, v1 is not) keep their quality there. <c>arctic-m15-256</c> is
+    /// <see cref="Base"/> under an evaluation version string. Nothing in the app reads these.
+    /// </summary>
+    public static IReadOnlyDictionary<string, EmbeddingModelProfile> Candidates { get; } = BuildCandidates();
+
+    private static Dictionary<string, EmbeddingModelProfile> BuildCandidates()
+    {
+        var v15 = new EmbeddingModelProfile(
+            Kind: "arctic-m15",
+            FolderName: "snowflake-arctic-embed-m-v1.5",
+            Dimensions: 768,
+            Version: "snowflake-arctic-embed-m-v1.5-eval",
+            ModelUrl: "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v1.5/resolve/main/onnx/model_quantized.onnx",
+            VocabUrl: "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v1.5/resolve/main/vocab.txt",
+            PrebuiltTag: "unpublished")
+        {
+            // Snowflake's export pools (CLS) and normalizes inside the graph, unlike v1's.
+            Pooling = EmbeddingPooling.Pooled,
+        };
+
+        // A GTE-multilingual encoder despite the name: 305M parameters, a 250k XLM-R vocabulary,
+        // pooled and normalized inside the graph. The repo ships only tokenizer.json, so the vocab
+        // is xlm-roberta's SentencePiece model with the fairseq id shift (FairseqTokenIds).
+        var v2 = new EmbeddingModelProfile(
+            Kind: "arctic-m2",
+            FolderName: "snowflake-arctic-embed-m-v2.0",
+            Dimensions: 768,
+            Version: "snowflake-arctic-embed-m-v2.0-eval",
+            ModelUrl: "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0/resolve/main/onnx/model_quantized.onnx",
+            VocabUrl: "https://huggingface.co/FacebookAI/xlm-roberta-base/resolve/main/sentencepiece.bpe.model",
+            PrebuiltTag: "unpublished")
+        {
+            Pooling = EmbeddingPooling.Pooled,
+            TokenizerKind = EmbeddingTokenizer.SentencePiece,
+            FairseqTokenIds = true,
+            BeginOfSequenceToken = 0,
+            EndOfSequenceToken = 2,
+            QueryPrefix = "query: ",
+            PassagePrefix = "",
+        };
+
+        static EmbeddingModelProfile Narrow(EmbeddingModelProfile profile, int dimensions) => profile with
+        {
+            Kind = $"{profile.Kind}-{dimensions}",
+            Dimensions = dimensions,
+            Version = $"{profile.Version}-{dimensions}",
+        };
+
+        var all = new[] { ArcticV1, v15, Narrow(v15, 256), v2, Narrow(v2, 256) };
+        return all.ToDictionary(p => p.Kind, StringComparer.OrdinalIgnoreCase);
+    }
 
     /// <summary>
     /// This model's ONNX export at a given precision. <see cref="ModelUrl"/> is the int8 one, and

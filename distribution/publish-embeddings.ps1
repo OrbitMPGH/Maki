@@ -118,8 +118,9 @@ function Require-Command {
 function Get-ModelProfile {
   $profilePath = Join-Path $repoRoot "src\Maki.Metadata\Embedding\EmbeddingModelProfile.cs"
   $profileText = Get-Content $profilePath -Raw
-  # Grab just the `Base = new(...)` block.
-  if ($profileText -notmatch "(?s)EmbeddingModelProfile\s+Base\s*=\s*new\((.*?)\);") {
+  # Grab just the `Base = new(...)` arguments, up to and including PrebuiltTag: an object
+  # initializer after the arguments means the first `);` is no longer the end of Base.
+  if ($profileText -notmatch "(?s)EmbeddingModelProfile\s+Base\s*=\s*new\((.*?PrebuiltTag:\s*`"[^`"]+`")") {
     throw "Could not find the 'Base' model profile in $profilePath"
   }
   $block = $Matches[1]

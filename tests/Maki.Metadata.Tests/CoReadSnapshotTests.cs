@@ -21,8 +21,9 @@ public class CoReadSnapshotTests : IDisposable
         {
             Directory.Delete(_dir, recursive: true);
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            // A background save or a mapping still open; only leaves a temp folder behind.
         }
     }
 
@@ -80,6 +81,21 @@ public class CoReadSnapshotTests : IDisposable
     }
 
     [Fact]
+    public async Task A_loaded_graph_is_swapped_for_the_mapped_snapshot()
+    {
+        Write((1, 2, 0.5f), (1, 3, 0.25f), (4, 5, 0.125f));
+        var cache = Cache();
+        var loaded = (await cache.GetAsync())!;
+        await cache.SnapshotSavedForTest;
+
+        var published = (await cache.GetAsync())!;
+
+        Assert.False(loaded.IsMapped);
+        Assert.True(published.IsMapped);
+        Assert.Equal(Describe(loaded), Describe(published));
+    }
+
+    [Fact]
     public async Task A_replaced_artifact_is_read_instead_of_the_old_snapshot()
     {
         Write((1, 2, 0.5f));
@@ -88,7 +104,9 @@ public class CoReadSnapshotTests : IDisposable
         await first.SnapshotSavedForTest;
 
         Write((7, 8, 0.75f), (7, 9, 0.5f));
-        var reloaded = (await Cache().GetAsync())!;
+        var second = Cache();
+        var reloaded = (await second.GetAsync())!;
+        await second.SnapshotSavedForTest;
 
         Assert.True(reloaded.TryGetNode(9, out _));
         Assert.False(reloaded.TryGetNode(1, out _));
