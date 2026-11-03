@@ -123,6 +123,16 @@ public class UpscaleTilingTests
     }
 
     [Fact]
+    public void Decoding_for_upscaling_skips_a_page_over_the_server_pixel_limit()
+    {
+        using var limit = NetVips.Image.Black(4000, 4000).Cast(NetVips.Enums.BandFormat.Uchar);
+        using var over = NetVips.Image.Black(4000, 4001).Cast(NetVips.Enums.BandFormat.Uchar);
+
+        Assert.Null(ImageCodec.DecodeForUpscale(limit.PngsaveBuffer(compression: 1)).SkipReason);
+        Assert.Equal(UpscaleReasons.TooLarge, ImageCodec.DecodeForUpscale(over.PngsaveBuffer(compression: 1)).SkipReason);
+    }
+
+    [Fact]
     public void An_upscaled_page_is_webp_with_one_band_when_grey_and_jpeg_past_the_webp_limit()
     {
         var grey = Enumerable.Repeat((byte)90, 30 * 20 * 3).ToArray();

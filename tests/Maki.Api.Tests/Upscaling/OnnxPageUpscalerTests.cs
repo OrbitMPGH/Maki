@@ -189,6 +189,20 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_page_over_the_server_pixel_limit_is_skipped_as_too_large()
+    {
+        using var upscaler = NewUpscaler();
+        var tiles = 0;
+        upscaler.TileCompleted = _ => tiles++;
+        using var big = NetVips.Image.Black(4000, 4001).Cast(NetVips.Enums.BandFormat.Uchar);
+
+        var result = await upscaler.UpscaleAsync(big.PngsaveBuffer(compression: 1), "span-s", CancellationToken.None);
+
+        Assert.Equal((UpscaleOutcome.Skipped, UpscaleReasons.TooLarge), (result.Outcome, result.Reason));
+        Assert.Equal(0, tiles);
+    }
+
+    [Fact]
     public async Task Cancelling_stops_between_tiles_with_an_operation_cancelled_exception()
     {
         using var upscaler = NewUpscaler();

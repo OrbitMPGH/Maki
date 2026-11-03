@@ -271,9 +271,16 @@ public static class ImageCodec
     }
 
     /// <summary>
+    /// The largest source page the server upscaler takes. Its memory grows with the page, to about
+    /// 2 GB at the encode stage for a 40 MP source. Bigger pages are skipped and the reader's browser
+    /// fallback covers them.
+    /// </summary>
+    public const long MaxUpscalePixels = 16_000_000;
+
+    /// <summary>
     /// Decodes a page for an upscale model, or returns a reason it cannot be: the bytes do not decode
     /// cleanly (<see cref="UpscaleReasons.Unreadable"/>), more than 8 bits per channel, or over
-    /// <see cref="PageConversion.MaxEdge"/> or <see cref="Reading.ArchiveHealthAnalyzer.MaxPixels"/>.
+    /// <see cref="PageConversion.MaxEdge"/> or <see cref="MaxUpscalePixels"/>.
     /// Orientation is applied, CMYK and greyscale become sRGB, transparency lands on white, and the
     /// result always has 3 bands.
     /// </summary>
@@ -288,7 +295,7 @@ public static class ImageCodec
             }
 
             if (Math.Max(loaded.Width, loaded.Height) > PageConversion.MaxEdge ||
-                (long)loaded.Width * loaded.Height > Reading.ArchiveHealthAnalyzer.MaxPixels)
+                (long)loaded.Width * loaded.Height > MaxUpscalePixels)
             {
                 return (null, UpscaleReasons.TooLarge);
             }
