@@ -23275,13 +23275,13 @@ msgstr "Korzysta z konfiguracji zapisanej na serwerze Apprise."
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
-msgid "Uses about 240 MB of RAM."
-msgstr "Zajmuje około 240 MB pamięci RAM."
+msgid "Uses about 150 MB of RAM."
+msgstr "Zajmuje około 150 MB pamięci RAM."
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Uses about 240 MB of RAM. Needs the local MangaBaka database above."
-msgstr "Zużywa około 240 MB RAM. Wymaga lokalnej bazy MangaBaka powyżej."
+msgid "Uses about 150 MB of RAM. Needs the local MangaBaka database above."
+msgstr "Zużywa około 150 MB RAM. Wymaga lokalnej bazy MangaBaka powyżej."
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy

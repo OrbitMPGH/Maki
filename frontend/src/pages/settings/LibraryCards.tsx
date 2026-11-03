@@ -284,7 +284,7 @@ export function RecommendationIndexSection() {
         status={status}
         busy={setModel.isPending}
         onSelect={selectModel}
-        description={t`Uses about 240 MB of RAM. Needs the local MangaBaka database above.`}
+        description={t`Uses about 150 MB of RAM. Needs the local MangaBaka database above.`}
       />
     </SettingsSection>
   )

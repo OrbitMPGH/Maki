@@ -23275,13 +23275,13 @@ msgstr "Использует конфигурацию, сохранённую н
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
-msgid "Uses about 240 MB of RAM."
-msgstr "Использует около 240 МБ ОЗУ."
+msgid "Uses about 150 MB of RAM."
+msgstr "Использует около 150 МБ ОЗУ."
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Uses about 240 MB of RAM. Needs the local MangaBaka database above."
-msgstr "Использует около 240 МБ ОЗУ. Нужна локальная база MangaBaka, см. выше."
+msgid "Uses about 150 MB of RAM. Needs the local MangaBaka database above."
+msgstr "Использует около 150 МБ ОЗУ. Нужна локальная база MangaBaka, см. выше."
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy

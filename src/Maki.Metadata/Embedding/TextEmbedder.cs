@@ -214,7 +214,7 @@ public sealed class TextEmbedder(
     /// reports whether it did.
     ///
     /// <para>
-    /// The default model is ~240 MB resident and was held for the life of the process once anything
+    /// The default model is ~140 MB resident and was held for the life of the process once anything
     /// touched it — a single natural-language search, or one local indexing pass — even though a
     /// self-hosted instance spends nearly all its time embedding nothing. Recommendations do not
     /// need it at all: they score seed vectors that already sit in the index, so only a typed query

@@ -36,7 +36,7 @@ meaning, and recommendations use it to find similar titles, even when they share
 Toggle it in **Settings → Library → Semantic search & recommendations**. It needs the MangaBaka
 database first. Turning it on starts a model switch that downloads the model and index, with progress
 on the status line. Maki tries the prebuilt vectors first. If none are available, it builds the index
-on your machine, which takes a long time on a CPU. While loaded, it uses about 240 MB of RAM. It unloads after 5 idle minutes by default.
+on your machine, which takes a long time on a CPU. While loaded, it uses about 140 MB of RAM. It unloads after 5 idle minutes by default.
 
 With the switch off, search falls back to title matching, and rails that need the index are left out.
 Side interests, for example, have no rows without it.

@@ -5,7 +5,7 @@ import { SelectCards } from './SelectCards'
 
 const options = [
   { value: 'off', title: 'Off', subtitle: 'Titles only' },
-  { value: 'base', title: 'Base', subtitle: 'About 240 MB of RAM' },
+  { value: 'base', title: 'Base', subtitle: 'About 150 MB of RAM' },
   { value: 'large', title: 'Large', subtitle: 'Better matches, slower' },
 ]
 

@@ -23275,13 +23275,13 @@ msgstr "Apprise sunucusunda kayıtlı yapılandırmayı kullanır."
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
-msgid "Uses about 240 MB of RAM."
-msgstr "Yaklaşık 240 MB RAM kullanır."
+msgid "Uses about 150 MB of RAM."
+msgstr "Yaklaşık 150 MB RAM kullanır."
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Uses about 240 MB of RAM. Needs the local MangaBaka database above."
-msgstr "Yaklaşık 240 MB RAM kullanır. Yukarıdaki yerel MangaBaka veritabanı gerekir."
+msgid "Uses about 150 MB of RAM. Needs the local MangaBaka database above."
+msgstr "Yaklaşık 150 MB RAM kullanır. Yukarıdaki yerel MangaBaka veritabanı gerekir."
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy

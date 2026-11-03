@@ -1090,7 +1090,7 @@ file static class Candidates
 
         // A decoder embedder, and the reason EmbeddingPooling.LastToken and DecoderGraph exist.
         // Reference only, not a shipping candidate: 600M parameters is ~600 MB resident on a user's
-        // CPU for every search, against 240 MB for the current default. Its 8B sibling has no ONNX
+        // CPU for every search, against 140 MB for the current default. Its 8B sibling has no ONNX
         // export at all and would be ~8 GB, which is why that one could not be scored even in
         // principle. The instruction prefix is the format Qwen documents for retrieval; passages
         // deliberately get none, which is the asymmetry the model was trained with.

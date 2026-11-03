@@ -19066,12 +19066,12 @@ msgid "Uses a configuration saved on the Apprise server."
 msgstr "Uses a configuration saved on the Apprise server."
 
 #: src/components/RecommendationModelSwitch.tsx
-msgid "Uses about 240 MB of RAM."
-msgstr "Uses about 240 MB of RAM."
+msgid "Uses about 150 MB of RAM."
+msgstr "Uses about 150 MB of RAM."
 
 #: src/pages/settings/LibraryCards.tsx
-msgid "Uses about 240 MB of RAM. Needs the local MangaBaka database above."
-msgstr "Uses about 240 MB of RAM. Needs the local MangaBaka database above."
+msgid "Uses about 150 MB of RAM. Needs the local MangaBaka database above."
+msgstr "Uses about 150 MB of RAM. Needs the local MangaBaka database above."
 
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "Uses the sources of the extensions installed in Suwayomi."
