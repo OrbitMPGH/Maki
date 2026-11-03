@@ -100,6 +100,26 @@ const BOTTOM_EPSILON = 2
 // Scroll banked towards the next chapter is dropped after this long without more of it, so a
 // half-filled meter left behind does not turn the next wheel notch into a chapter jump.
 const PAST_END_IDLE_MS = 1200
+// The card stays hidden until the meter is this full: the tail of a fling that lands on the bottom,
+// or a finger settling there, is not a request for the next chapter. Once up, it stays up until
+// the meter is empty.
+const HINT_SHOW_AT = 0.15
+// How long the card stays after the meter empties, fade included (theme.css, `[data-leaving]`).
+// Scrolling back down within it picks the same card up again instead of flashing a new one in.
+const HINT_LINGER_MS = 600
+
+function useLinger(on: boolean, ms: number): boolean {
+  const [held, setHeld] = useState(on)
+  useEffect(() => {
+    if (on) {
+      setHeld(true)
+      return
+    }
+    const timer = setTimeout(() => setHeld(false), ms)
+    return () => clearTimeout(timer)
+  }, [on, ms])
+  return on || held
+}
 
 interface StripPageProps {
   index: number
@@ -297,11 +317,17 @@ export default function ContinuousView({
   // events in the same frame accumulate correctly instead of each reading a stale 0.
   const progress = useRef(0)
   const [pastEndProgress, setPastEndProgress] = useState(0)
+  const hintShown = useRef(false)
+  const [hintOn, setHintOn] = useState(false)
+  const setMeter = useCallback((value: number) => {
+    progress.current = value
+    setPastEndProgress(value)
+    hintShown.current = value >= HINT_SHOW_AT || (hintShown.current && value > 0)
+    setHintOn(hintShown.current)
+  }, [])
+  const hintMounted = useLinger(hintOn, HINT_LINGER_MS)
   // A finger is pulling the meter, which fills by distance and moves on only on release.
   const [pulling, setPulling] = useState(false)
-  // The last chapter's counterpart to `pastEndProgress`: shown under the same conditions, but it
-  // only ever says the strip has run out, so nothing accumulates and nothing fires.
-  const [atLibraryEnd, setAtLibraryEnd] = useState(false)
   // Read fresh inside the seek effect below without making `page` itself a dependency: the band
   // tracker updates `page` continuously while scrolling, and re-running the seek effect on every
   // one of those would re-scroll to wherever the user just scrolled from.
@@ -378,12 +404,10 @@ export default function ContinuousView({
   }, [enhanceOn, urls, page, shape, fit, scale, gap])
 
   useEffect(() => {
-    progress.current = 0
-    setPastEndProgress(0)
-    setAtLibraryEnd(false)
+    setMeter(0)
     samples.current = { widths: [], aspects: [] }
     setShape(null)
-  }, [urls])
+  }, [urls, setMeter])
 
   // Pages before the seek target whose load can still shift the target's offset. Re-scroll keeps
   // firing while this is non-empty; cleared once every preceding page has reported loaded (or the
@@ -505,31 +529,18 @@ export default function ContinuousView({
       scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < BOTTOM_EPSILON
 
     let idle: ReturnType<typeof setTimeout> | undefined
-    const decay = () => {
-      progress.current = 0
-      setPastEndProgress(0)
-    }
+    const decay = () => setMeter(0)
 
     // `delta` is in pixels, `distance` how many of them this input needs for a full meter.
     const advance = (delta: number, distance: number) => {
       clearTimeout(idle)
       if (delta <= 0 || !atBottom()) {
-        setAtLibraryEnd(false)
-        if (progress.current !== 0) {
-          progress.current = 0
-          setPastEndProgress(0)
-        }
+        if (progress.current !== 0) decay()
         return
       }
-      // Nothing to scroll into, so the prompt appears on the same gesture but stays inert: no
-      // meter, no navigation.
-      if (!hasNext) {
-        setAtLibraryEnd(true)
-        return
-      }
-      progress.current = Math.min(1, progress.current + delta / distance)
-      setPastEndProgress(progress.current)
-      if (progress.current >= 1) {
+      setMeter(Math.min(1, progress.current + delta / distance))
+      // On the last chapter the card only says the strip has run out, so a full meter goes nowhere.
+      if (hasNext && progress.current >= 1) {
         decay()
         onPastEnd()
         return
@@ -583,7 +594,6 @@ export default function ContinuousView({
       if (y == null) return
       if (!atBottom()) {
         pullFrom = null
-        setAtLibraryEnd(false)
         if (progress.current !== 0) decay()
         return
       }
@@ -593,12 +603,7 @@ export default function ContinuousView({
         if (progress.current !== 0) decay()
         return
       }
-      if (!hasNext) {
-        setAtLibraryEnd(true)
-        return
-      }
-      progress.current = Math.min(1, pull / touchDistance())
-      setPastEndProgress(progress.current)
+      setMeter(Math.min(1, pull / touchDistance()))
     }
     const endTouch = (release: boolean) => {
       const full = release && !multiTouch && hasNext && progress.current >= 1
@@ -640,7 +645,7 @@ export default function ContinuousView({
       window.removeEventListener('blur', onLostFocus)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [urls, hasNext, onPastEnd])
+  }, [urls, hasNext, onPastEnd, setMeter])
 
   return (
     <>
@@ -678,11 +683,12 @@ export default function ContinuousView({
         ))}
         <div ref={sentinel} style={{ height: 1 }} />
       </div>
-      {(pastEndProgress > 0 || atLibraryEnd) && (
+      {hintMounted && (
         <NextChapterHint
           progress={pastEndProgress}
           pulling={pulling}
-          atEnd={atLibraryEnd}
+          leaving={!hintOn}
+          atEnd={!hasNext}
           nextLabel={nextLabel}
           fallbackLabel={pastEndLabel}
         />

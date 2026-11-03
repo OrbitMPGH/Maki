@@ -110,6 +110,40 @@ export const TouchPullAndRelease: Story = {
   },
 }
 
+/**
+ * At the bottom, a single wheel notch (the tail of a fling that lands there) shows nothing. A
+ * deliberate push does, and scrolling back up fades the card out instead of dropping it, so
+ * scrolling down again picks up the same card rather than flashing in a new one.
+ */
+export const WheelNudgeStaysQuiet: Story = {
+  play: async ({ canvas, canvasElement }) => {
+    const scroller = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    await waitFor(() => expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight * 2))
+    scroller.scrollTop = scroller.scrollHeight
+    await waitFor(() =>
+      expect(scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight).toBeLessThan(2),
+    )
+    const wheel = (deltaY: number) => scroller.dispatchEvent(new WheelEvent('wheel', { deltaY, bubbles: true }))
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 100))
+
+    wheel(100)
+    await settle()
+    expect(canvas.queryByText('Scroll for next chapter')).toBeNull()
+
+    wheel(100)
+    const card = await canvas.findByText('Scroll for next chapter')
+    wheel(-100)
+    await settle()
+    expect(canvasElement.querySelector('.reader-next-chapter-hint')).toHaveAttribute('data-leaving')
+    wheel(200)
+    await waitFor(() => expect(canvasElement.querySelector('.reader-next-chapter-hint')).not.toHaveAttribute('data-leaving'))
+    expect(canvas.getByText('Scroll for next chapter')).toBe(card)
+
+    wheel(-100)
+    await waitFor(() => expect(canvas.queryByText('Scroll for next chapter')).toBeNull())
+  },
+}
+
 export const LastChapter: Story = {
   args: { hasNext: false, page: 11, seekVersion: 1 },
 }

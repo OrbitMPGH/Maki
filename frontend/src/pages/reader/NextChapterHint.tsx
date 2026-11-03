@@ -11,12 +11,15 @@ const RING_LENGTH = 2 * Math.PI * RING_RADIUS
 export default function NextChapterHint({
   progress,
   pulling,
+  leaving = false,
   atEnd,
   nextLabel,
   fallbackLabel,
 }: {
   progress: number
   pulling: boolean
+  /** The meter has emptied and the card is fading out. */
+  leaving?: boolean
   /** Last chapter: the same card, but the ring never fills. */
   atEnd: boolean
   nextLabel?: string | null
@@ -55,7 +58,7 @@ export default function NextChapterHint({
   const fill = atEnd ? 0 : Math.min(1, progress)
 
   return (
-    <div className="reader-card reader-next-chapter-hint" data-state={state}>
+    <div className="reader-card reader-next-chapter-hint" data-state={state} data-leaving={leaving || undefined}>
       <span className="reader-ring" aria-hidden>
         <svg className="reader-ring-svg" viewBox="0 0 36 36">
           <circle className="reader-ring-track" cx="18" cy="18" r={RING_RADIUS} />
