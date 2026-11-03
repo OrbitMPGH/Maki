@@ -68,6 +68,24 @@ public class MediaCoverController(
         return PhysicalFile(path, "image/jpeg");
     }
 
+    /// <summary>The 240 px poster the grid cards use; same visibility rule and cache-buster as <see cref="Cover"/>.</summary>
+    [HttpGet("{seriesId:int}/cover-sm.jpg")]
+    public async Task<IActionResult> SmallCover(int seriesId, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        {
+            return NotFound();
+        }
+
+        if (await covers.EnsureSmallCoverAsync(seriesId, ct) is not { } path)
+        {
+            return NotFound();
+        }
+
+        Response.Headers.CacheControl = "private, max-age=31536000, immutable";
+        return PhysicalFile(path, "image/jpeg");
+    }
+
     /// <summary>
     /// Replaces a series' poster with an uploaded image and locks it, so neither a metadata refresh
     /// nor the image-cache rebuild puts the provider's poster back. "Reset to provider" on the

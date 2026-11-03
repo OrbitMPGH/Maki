@@ -8,7 +8,14 @@
  * mounted.
  */
 
-const MAX_BYTES = 96 * 1024 * 1024
+/** Scaled by the device's reported memory where the browser reports it; Safari does not, and keeps the top cap. */
+function blobCap(): number {
+  const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory
+  const mb = memory === undefined ? 96 : memory <= 2 ? 32 : memory <= 4 ? 64 : 96
+  return mb * 1024 * 1024
+}
+
+const MAX_BYTES = blobCap()
 
 interface Entry {
   objectUrl: string | null
