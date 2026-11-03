@@ -77,7 +77,7 @@ public static class ArchivePageConverter
                 var pages = order.ToHashSet(StringComparer.Ordinal);
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(targetPath))!);
                 await using var output = new FileStream(partial, FileMode.Create, FileAccess.Write, FileShare.None);
-                using var target = new ZipArchive(output, ZipArchiveMode.Create);
+                using var target = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true);
 
                 async Task WriteAsync(Pending item)
                 {
@@ -153,6 +153,15 @@ public static class ArchivePageConverter
                 {
                     await WriteAsync(next);
                     pending.Dequeue();
+                }
+
+                // On disk before any rename, so a crash never leaves a renamed archive whose data never
+                // landed, and clean, so the caller can drop it from the page cache. A copy that will not
+                // be kept is not worth the flush.
+                target.Dispose();
+                if (converted > 0 && output.Length <= sourceBytes * (1 - PageConversion.MinFileSaving))
+                {
+                    output.Flush(flushToDisk: true);
                 }
             }
 
